@@ -24,9 +24,9 @@ import com.ruoyi.common.utils.uuid.Seq;
 public class FileUploadUtils
 {
     /**
-     * 默认大小 50M
+     * 默认大小 10M
      */
-    public static final long DEFAULT_MAX_SIZE = 50 * 1024 * 1024L;
+    public static final long DEFAULT_MAX_SIZE = 10 * 1024 * 1024L;
 
     /**
      * 默认的文件名最大长度 100
@@ -194,6 +194,34 @@ public class FileUploadUtils
 
         String fileName = file.getOriginalFilename();
         String extension = getExtension(file);
+
+        // 禁止上传可执行文件/脚本文件
+        if (MimeTypeUtils.isForbiddenExtension(extension))
+        {
+            throw new InvalidExtensionException(allowedExtension, extension, fileName);
+        }
+
+        // MIME类型校验：如果文件声明了ContentType，检查后缀与MIME是否匹配
+        String contentType = file.getContentType();
+        if (contentType != null && !contentType.isEmpty())
+        {
+            String mimeExtension = MimeTypeUtils.getExtension(contentType);
+            if (mimeExtension != null && !mimeExtension.isEmpty())
+            {
+                // 后缀与MIME类型不匹配，拒绝上传
+                if (!mimeExtension.equalsIgnoreCase(extension))
+                {
+                    throw new InvalidExtensionException(allowedExtension, extension, fileName);
+                }
+            }
+        }
+
+        // 图片文件魔数校验
+        if (MimeTypeUtils.isImageExtension(extension))
+        {
+            validateFileMagicNumber(file);
+        }
+
         if (allowedExtension != null && !isAllowedExtension(extension, allowedExtension))
         {
             if (allowedExtension == MimeTypeUtils.IMAGE_EXTENSION)
@@ -221,6 +249,76 @@ public class FileUploadUtils
                 throw new InvalidExtensionException(allowedExtension, extension, fileName);
             }
         }
+    }
+
+    /**
+     * 校验图片文件头魔数，防止伪造图片上传
+     *
+     * @param file 上传的文件
+     * @throws InvalidExtensionException 如果魔数不匹配
+     */
+    public static final void validateFileMagicNumber(MultipartFile file) throws InvalidExtensionException
+    {
+        try
+        {
+            byte[] headerBytes = new byte[4];
+            file.getInputStream().read(headerBytes, 0, 4);
+            String hexHeader = bytesToHex(headerBytes).toUpperCase();
+
+            String extension = getExtension(file);
+            String fileName = file.getOriginalFilename();
+
+            boolean valid = false;
+            switch (extension.toLowerCase())
+            {
+                case "png":
+                    // PNG: 89504E47
+                    valid = "89504E47".equals(hexHeader);
+                    break;
+                case "jpg":
+                case "jpeg":
+                    // JPEG: FFD8FF
+                    valid = hexHeader.startsWith("FFD8FF");
+                    break;
+                case "gif":
+                    // GIF: 47494638
+                    valid = hexHeader.startsWith("47494638");
+                    break;
+                case "bmp":
+                    // BMP: 424D
+                    valid = hexHeader.startsWith("424D");
+                    break;
+                default:
+                    valid = true;
+                    break;
+            }
+
+            if (!valid)
+            {
+                throw new InvalidExtensionException(new String[] { extension }, extension, fileName);
+            }
+        }
+        catch (InvalidExtensionException e)
+        {
+            throw e;
+        }
+        catch (Exception e)
+        {
+            throw new InvalidExtensionException(new String[] { getExtension(file) }, getExtension(file), file.getOriginalFilename());
+        }
+    }
+
+    /**
+     * 字节数组转十六进制字符串
+     */
+    private static String bytesToHex(byte[] bytes)
+    {
+        StringBuilder sb = new StringBuilder();
+        for (byte b : bytes)
+        {
+            sb.append(String.format("%02X", b));
+        }
+        return sb.toString();
     }
 
     /**

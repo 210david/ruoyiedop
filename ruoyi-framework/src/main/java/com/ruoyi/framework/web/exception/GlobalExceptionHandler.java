@@ -1,5 +1,6 @@
 package com.ruoyi.framework.web.exception;
 
+import java.sql.SQLException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -91,25 +92,58 @@ public class GlobalExceptionHandler
     }
 
     /**
-     * 拦截未知的运行时异常
+     * 空指针异常 → 业务化提示（不暴露技术细节）
+     */
+    @ExceptionHandler(NullPointerException.class)
+    public AjaxResult handleNullPointerException(NullPointerException e, HttpServletRequest request)
+    {
+        String requestURI = request.getRequestURI();
+        log.error("请求地址'{}',发生空指针异常.", requestURI, e);
+        return AjaxResult.error("系统处理异常，请联系管理员");
+    }
+
+    /**
+     * SQL异常 → 业务化提示（不暴露技术细节）
+     */
+    @ExceptionHandler(SQLException.class)
+    public AjaxResult handleSQLException(SQLException e, HttpServletRequest request)
+    {
+        String requestURI = request.getRequestURI();
+        log.error("请求地址'{}',发生SQL异常.", requestURI, e);
+        return AjaxResult.error("数据操作异常，请稍后重试");
+    }
+
+    /**
+     * 参数校验异常 → 业务化提示（不暴露技术细节）
+     */
+    @ExceptionHandler(IllegalArgumentException.class)
+    public AjaxResult handleIllegalArgumentException(IllegalArgumentException e, HttpServletRequest request)
+    {
+        String requestURI = request.getRequestURI();
+        log.error("请求地址'{}',发生参数异常.", requestURI, e);
+        return AjaxResult.error("请求参数有误，请检查后重试");
+    }
+
+    /**
+     * 拦截未知的运行时异常 → 业务化提示（不暴露技术细节）
      */
     @ExceptionHandler(RuntimeException.class)
     public AjaxResult handleRuntimeException(RuntimeException e, HttpServletRequest request)
     {
         String requestURI = request.getRequestURI();
         log.error("请求地址'{}',发生未知异常.", requestURI, e);
-        return AjaxResult.error(e.getMessage());
+        return AjaxResult.error("系统繁忙，请稍后重试");
     }
 
     /**
-     * 系统异常
+     * 系统异常 → 业务化提示（不暴露技术细节）
      */
     @ExceptionHandler(Exception.class)
     public AjaxResult handleException(Exception e, HttpServletRequest request)
     {
         String requestURI = request.getRequestURI();
         log.error("请求地址'{}',发生系统异常.", requestURI, e);
-        return AjaxResult.error(e.getMessage());
+        return AjaxResult.error("系统处理异常，请联系管理员");
     }
 
     /**

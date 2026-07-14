@@ -3,21 +3,27 @@ package com.ruoyi.web.controller.system;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+import com.ruoyi.common.annotation.RateLimiter;
+import com.ruoyi.common.constant.CacheConstants;
 import com.ruoyi.common.constant.Constants;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.core.domain.entity.SysMenu;
 import com.ruoyi.common.core.domain.entity.SysUser;
 import com.ruoyi.common.core.domain.model.LoginBody;
 import com.ruoyi.common.core.domain.model.LoginUser;
+import com.ruoyi.common.core.redis.RedisCache;
 import com.ruoyi.common.core.text.Convert;
+import com.ruoyi.common.enums.LimitType;
 import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.StringUtils;
+import com.ruoyi.common.utils.uuid.IdUtils;
 import com.ruoyi.framework.web.service.SysLoginService;
 import com.ruoyi.framework.web.service.SysPermissionService;
 import com.ruoyi.framework.web.service.TokenService;
@@ -47,12 +53,16 @@ public class SysLoginController
     @Autowired
     private ISysConfigService configService;
 
+    @Autowired
+    private RedisCache redisCache;
+
     /**
      * 登录方法
      * 
      * @param loginBody 登录信息
      * @return 结果
      */
+    @RateLimiter(time = 60, count = 5, limitType = LimitType.IP)
     @PostMapping("/login")
     public AjaxResult login(@RequestBody LoginBody loginBody)
     {
@@ -61,6 +71,25 @@ public class SysLoginController
         String token = loginService.login(loginBody.getUsername(), loginBody.getPassword(), loginBody.getCode(),
                 loginBody.getUuid());
         ajax.put(Constants.TOKEN, token);
+        return ajax;
+    }
+
+    /**
+     * 获取CSRF Token
+     * 
+     * @return CSRF Token
+     */
+    @GetMapping("/csrf-token")
+    public AjaxResult getCsrfToken()
+    {
+        LoginUser loginUser = SecurityUtils.getLoginUser();
+        String uuid = loginUser.getToken();
+        String csrfToken = IdUtils.fastSimpleUUID();
+        String csrfKey = CacheConstants.CSRF_TOKEN_KEY + uuid;
+        // CSRF Token有效期30分钟
+        redisCache.setCacheObject(csrfKey, csrfToken, 30, TimeUnit.MINUTES);
+        AjaxResult ajax = AjaxResult.success();
+        ajax.put("csrfToken", csrfToken);
         return ajax;
     }
 

@@ -16,6 +16,11 @@ public enum DesensitizedType
     USERNAME(s -> s.replaceAll("(\\S)\\S(\\S*)", "$1*$2")),
 
     /**
+     * 姓名脱敏，仅保留姓，名用*代替
+     */
+    NAME(s -> s.replaceAll("(.).*", "$1*")),
+
+    /**
      * 密码，全部字符都用*代替
      */
     PASSWORD(DesensitizedUtil::password),

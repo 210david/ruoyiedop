@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.wms.mapper.WmsMoveOrderMapper">
+
+    <resultMap type="WmsMoveOrder" id="WmsMoveOrderResult">
+        <result property="moveId"           column="move_id"/>
+        <result property="moveNo"           column="move_no"/>
+        <result property="warehouseId"      column="warehouse_id"/>
+        <result property="warehouseName"    column="warehouse_name"/>
+        <result property="materialId"       column="material_id"/>
+        <result property="materialCode"     column="material_code"/>
+        <result property="materialName"     column="material_name"/>
+        <result property="batchNo"          column="batch_no"/>
+        <result property="fromLocationId"   column="from_location_id"/>
+        <result property="fromLocationCode" column="from_location_code"/>
+        <result property="fromLocationName" column="from_location_name"/>
+        <result property="toLocationId"     column="to_location_id"/>
+        <result property="toLocationCode"   column="to_location_code"/>
+        <result property="toLocationName"   column="to_location_name"/>
+        <result property="moveQty"          column="move_qty"/>
+        <result property="status"           column="status"/>
+        <result property="approveBy"        column="approve_by"/>
+        <result property="approveTime"      column="approve_time"/>
+        <result property="completeTime"     column="complete_time"/>
+        <result property="delFlag"          column="del_flag"/>
+        <result property="createBy"         column="create_by"/>
+        <result property="createTime"       column="create_time"/>
+        <result property="updateBy"         column="update_by"/>
+        <result property="updateTime"       column="update_time"/>
+        <result property="remark"           column="remark"/>
+    </resultMap>
+
+    <sql id="selectMoveOrderVo">
+        SELECT mo.move_id, mo.move_no, mo.warehouse_id, w.warehouse_name,
+               mo.material_id, m.material_code, m.material_name, mo.batch_no,
+               mo.from_location_id, lf.warehouse_code as from_location_code, lf.warehouse_name as from_location_name,
+               mo.to_location_id, lt.warehouse_code as to_location_code, lt.warehouse_name as to_location_name,
+               mo.move_qty, mo.status, mo.approve_by, mo.approve_time, mo.complete_time,
+               mo.del_flag, mo.create_by, mo.create_time, mo.update_by, mo.update_time, mo.remark
+        FROM wms_move_order mo
+        LEFT JOIN wms_warehouse w ON mo.warehouse_id = w.warehouse_id
+        LEFT JOIN wms_material m ON mo.material_id = m.material_id
+        LEFT JOIN wms_warehouse lf ON mo.from_location_id = lf.warehouse_id
+        LEFT JOIN wms_warehouse lt ON mo.to_location_id = lt.warehouse_id
+    </sql>
+
+    <select id="selectMoveOrderList" parameterType="WmsMoveOrder" resultMap="WmsMoveOrderResult">
+        <include refid="selectMoveOrderVo"/>
+        <where>
+            mo.del_flag = '0'
+            <if test="moveNo != null and moveNo != ''"> AND mo.move_no LIKE CONCAT('%', #{moveNo}, '%')</if>
+            <if test="warehouseId != null"> AND mo.warehouse_id = #{warehouseId}</if>
+            <if test="materialId != null"> AND mo.material_id = #{materialId}</if>
+            <if test="status != null and status != ''"> AND mo.status = #{status}</if>
+        </where>
+        ORDER BY mo.move_id DESC
+    </select>
+
+    <select id="selectMoveOrderById" parameterType="Long" resultMap="WmsMoveOrderResult">
+        <include refid="selectMoveOrderVo"/> WHERE mo.move_id = #{moveId}
+    </select>
+
+    <insert id="insertMoveOrder" parameterType="WmsMoveOrder" useGeneratedKeys="true" keyProperty="moveId">
+        INSERT INTO wms_move_order (move_no, warehouse_id, material_id, batch_no, from_location_id, to_location_id,
+            move_qty, status, create_by, create_time, remark)
+        VALUES (#{moveNo}, #{warehouseId}, #{materialId}, #{batchNo}, #{fromLocationId}, #{toLocationId},
+            #{moveQty}, #{status}, #{createBy}, sysdate(), #{remark})
+    </insert>
+
+    <update id="updateMoveOrder" parameterType="WmsMoveOrder">
+        UPDATE wms_move_order
+        <set>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="approveBy != null">approve_by = #{approveBy},</if>
+            <if test="approveTime != null">approve_time = #{approveTime},</if>
+            <if test="completeTime != null">complete_time = #{completeTime},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE move_id = #{moveId}
+    </update>
+
+    <delete id="deleteMoveOrderByIds" parameterType="Long">
+        UPDATE wms_move_order SET del_flag = '2' WHERE move_id IN
+        <foreach item="moveId" collection="array" open="(" separator="," close=")">#{moveId}</foreach>
+    </delete>
+
+</mapper>

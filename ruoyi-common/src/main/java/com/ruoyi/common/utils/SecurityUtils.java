@@ -2,6 +2,7 @@ package com.ruoyi.common.utils;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -183,6 +184,43 @@ public class SecurityUtils
     {
         return roles.stream().filter(StringUtils::hasText)
                 .anyMatch(x -> Constants.SUPER_ADMIN.equals(x) || PatternMatchUtils.simpleMatch(x, role));
+    }
+
+    /**
+     * 密码复杂度校验（最少8位，必须包含大写字母、小写字母、数字、特殊字符中至少三种）
+     * 
+     * @param password 密码明文
+     * @return 密码是否符合复杂度要求
+     */
+    public static boolean validatePasswordComplexity(String password)
+    {
+        if (StringUtils.isEmpty(password) || password.length() < 8)
+        {
+            return false;
+        }
+        // 统计包含的字符种类数量
+        int categoryCount = 0;
+        // 包含大写字母
+        if (Pattern.compile("[A-Z]").matcher(password).find())
+        {
+            categoryCount++;
+        }
+        // 包含小写字母
+        if (Pattern.compile("[a-z]").matcher(password).find())
+        {
+            categoryCount++;
+        }
+        // 包含数字
+        if (Pattern.compile("[0-9]").matcher(password).find())
+        {
+            categoryCount++;
+        }
+        // 包含特殊字符
+        if (Pattern.compile("[^a-zA-Z0-9]").matcher(password).find())
+        {
+            categoryCount++;
+        }
+        return categoryCount >= 3;
     }
 
 }

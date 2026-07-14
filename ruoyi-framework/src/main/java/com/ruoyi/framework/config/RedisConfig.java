@@ -1,9 +1,15 @@
 package com.ruoyi.framework.config;
 
+import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
+import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CachingConfigurerSupport;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.cache.RedisCacheConfiguration;
+import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
@@ -38,6 +44,34 @@ public class RedisConfig extends CachingConfigurerSupport
 
         template.afterPropertiesSet();
         return template;
+    }
+
+    /**
+     * 配置缓存管理器，支持按缓存名称设置不同的TTL过期时间
+     */
+    @Bean
+    public CacheManager cacheManager(RedisConnectionFactory connectionFactory)
+    {
+        // 默认缓存配置（30分钟过期）
+        RedisCacheConfiguration defaultConfig = RedisCacheConfiguration.defaultCacheConfig()
+                .entryTtl(Duration.ofMinutes(30))
+                .disableCachingNullValues();
+
+        // 按缓存名称配置不同的TTL
+        Map<String, RedisCacheConfiguration> ttlConfigs = new HashMap<>();
+        // 字典数据缓存：1小时
+        ttlConfigs.put("dictData", RedisCacheConfiguration.defaultCacheConfig()
+                .entryTtl(Duration.ofHours(1))
+                .disableCachingNullValues());
+        // 系统配置缓存：30分钟（与默认一致）
+        ttlConfigs.put("sysConfig", RedisCacheConfiguration.defaultCacheConfig()
+                .entryTtl(Duration.ofMinutes(30))
+                .disableCachingNullValues());
+
+        return RedisCacheManager.builder(connectionFactory)
+                .cacheDefaults(defaultConfig)
+                .withInitialCacheConfigurations(ttlConfigs)
+                .build();
     }
 
     @Bean

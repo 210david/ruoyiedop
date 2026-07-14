@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.wms.mapper.WmsInventoryLogMapper">
+
+    <resultMap type="WmsInventoryLog" id="WmsInventoryLogResult">
+        <result property="logId"         column="log_id"/>
+        <result property="materialId"    column="material_id"/>
+        <result property="materialCode"  column="material_code"/>
+        <result property="materialName"  column="material_name"/>
+        <result property="warehouseId"   column="warehouse_id"/>
+        <result property="warehouseName" column="warehouse_name"/>
+        <result property="locationId"    column="location_id"/>
+        <result property="locationCode"  column="location_code"/>
+        <result property="locationName"  column="location_name"/>
+        <result property="areaName"      column="area_name"/>
+        <result property="batchNo"       column="batch_no"/>
+        <result property="changeType"    column="change_type"/>
+        <result property="changeQty"     column="change_qty"/>
+        <result property="beforeQty"     column="before_qty"/>
+        <result property="afterQty"      column="after_qty"/>
+        <result property="refOrderType"  column="ref_order_type"/>
+        <result property="refOrderNo"    column="ref_order_no"/>
+        <result property="createBy"      column="create_by"/>
+        <result property="createTime"    column="create_time"/>
+        <result property="remark"        column="remark"/>
+    </resultMap>
+
+    <sql id="selectLogVo">
+        SELECT l.log_id, l.material_id, m.material_code, m.material_name,
+               l.warehouse_id, w.warehouse_name, l.location_id, loc.warehouse_code as location_code,
+               loc.warehouse_name as location_name, a.warehouse_name as area_name,
+               l.batch_no, l.change_type, l.change_qty, l.before_qty, l.after_qty,
+               l.ref_order_type, l.ref_order_no, l.create_by, l.create_time, l.remark
+        FROM wms_inventory_log l
+        LEFT JOIN wms_material m ON l.material_id = m.material_id
+        LEFT JOIN wms_warehouse w ON l.warehouse_id = w.warehouse_id
+        LEFT JOIN wms_warehouse loc ON l.location_id = loc.warehouse_id
+        LEFT JOIN wms_warehouse a ON loc.parent_id = a.warehouse_id
+    </sql>
+
+    <select id="selectInventoryLogList" parameterType="WmsInventoryLog" resultMap="WmsInventoryLogResult">
+        <include refid="selectLogVo"/>
+        <where>
+            <if test="materialId != null"> AND l.material_id = #{materialId}</if>
+            <if test="materialCode != null and materialCode != ''"> AND m.material_code LIKE CONCAT('%', #{materialCode}, '%')</if>
+            <if test="materialName != null and materialName != ''"> AND m.material_name LIKE CONCAT('%', #{materialName}, '%')</if>
+            <if test="warehouseId != null"> AND l.warehouse_id = #{warehouseId}</if>
+            <if test="changeType != null and changeType != ''"> AND l.change_type = #{changeType}</if>
+            <if test="refOrderNo != null and refOrderNo != ''"> AND l.ref_order_no LIKE CONCAT('%', #{refOrderNo}, '%')</if>
+            <if test="params.beginTime != null and params.beginTime != ''"><![CDATA[ AND l.create_time >= #{params.beginTime}]]></if>
+            <if test="params.endTime != null and params.endTime != ''"><![CDATA[ AND l.create_time <= #{params.endTime}]]></if>
+        </where>
+        ORDER BY l.log_id DESC
+    </select>
+
+    <insert id="insertInventoryLog" parameterType="WmsInventoryLog">
+        INSERT INTO wms_inventory_log (material_id, warehouse_id, location_id, batch_no, change_type,
+            change_qty, before_qty, after_qty, ref_order_type, ref_order_no, create_by, create_time, remark)
+        VALUES (#{materialId}, #{warehouseId}, #{locationId}, #{batchNo}, #{changeType},
+            #{changeQty}, #{beforeQty}, #{afterQty}, #{refOrderType}, #{refOrderNo}, #{createBy}, sysdate(), #{remark})
+    </insert>
+
+</mapper>

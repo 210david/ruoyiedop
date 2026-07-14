@@ -15,8 +15,8 @@ ruoyi:
 
 # 开发环境配置
 server:
-  # 服务器的HTTP端口，默认为8080
-  port: 8080
+  # 服务器的HTTP端口（改为8081，避免与JeecgBoot的8080冲突）
+  port: 8081
   servlet:
     # 应用的访问路径
     context-path: /
@@ -34,16 +34,24 @@ server:
 # 日志配置
 logging:
   level:
-    com.ruoyi: debug
+    com.ruoyi: info
     org.springframework: warn
+  file:
+    name: logs/ruoyi.log
 
 # 用户配置
 user:
   password:
     # 密码最大错误次数
     maxRetryCount: 5
-    # 密码锁定时间（默认10分钟）
-    lockTime: 10
+    # 密码锁定时间（默认30分钟）
+    lockTime: 30
+    # 允许同时在线数（默认1）
+    onlineCount: 1
+    # 并发登录模式（kick踢出旧session / deny拒绝登录）
+    onlineMode: kick
+    # 密码过期天数（超过后仅标记过期，不阻止登录）
+    passwordExpireDays: 90
 
 # Spring配置
 spring:
@@ -144,4 +152,4 @@ xss:
   # 排除链接（多个用逗号分隔）
   excludes: /system/notice
   # 匹配链接
-  urlPatterns: /system/*,/monitor/*,/tool/*
+  urlPatterns: /system/*,/monitor/*,/tool/*,/wms/*

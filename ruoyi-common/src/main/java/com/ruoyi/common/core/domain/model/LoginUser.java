@@ -66,6 +66,16 @@ public class LoginUser implements UserDetails
     private String os;
 
     /**
+     * 密码是否过期
+     */
+    private Boolean pwdExpired = false;
+
+    /**
+     * 是否首次登录（login_date为null时标记为首次登录）
+     */
+    private Boolean firstLogin = false;
+
+    /**
      * 权限列表
      */
     private Set<String> permissions;
@@ -230,6 +240,26 @@ public class LoginUser implements UserDetails
     public void setOs(String os)
     {
         this.os = os;
+    }
+
+    public Boolean getPwdExpired()
+    {
+        return pwdExpired;
+    }
+
+    public void setPwdExpired(Boolean pwdExpired)
+    {
+        this.pwdExpired = pwdExpired;
+    }
+
+    public Boolean getFirstLogin()
+    {
+        return firstLogin;
+    }
+
+    public void setFirstLogin(Boolean firstLogin)
+    {
+        this.firstLogin = firstLogin;
     }
 
     public Long getExpireTime()

@@ -12,6 +12,7 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import com.ruoyi.common.utils.StringUtils;
+import com.ruoyi.common.utils.html.EscapeUtil;
 import com.ruoyi.common.enums.HttpMethod;
 
 /**
@@ -64,7 +65,30 @@ public class XssFilter implements Filter
         {
             return true;
         }
+        // PUT请求也需要进行XSS过滤
         return StringUtils.matches(url, excludes);
+    }
+
+    /**
+     * 对请求头进行XSS过滤检查
+     */
+    private boolean hasXssInHeaders(HttpServletRequest request)
+    {
+        // 检查常见可能包含注入的请求头
+        String[] headerNames = { "Referer", "User-Agent", "Origin", "X-Forwarded-For" };
+        for (String headerName : headerNames)
+        {
+            String headerValue = request.getHeader(headerName);
+            if (headerValue != null)
+            {
+                String cleaned = EscapeUtil.clean(headerValue);
+                if (!cleaned.equals(headerValue))
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     @Override

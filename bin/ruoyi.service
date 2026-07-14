@@ -1,0 +1,14 @@
+[Unit]
+Description=RuoYi Server
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/ruoyi
+ExecStart=/usr/bin/java -jar -Xms256m -Xmx512m /opt/ruoyi/ruoyi-admin.jar
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

@@ -54,6 +54,12 @@
             <artifactId>ruoyi-generator</artifactId>
         </dependency>
 
+        <!-- WMS仓库管理 -->
+        <dependency>
+            <groupId>com.ruoyi</groupId>
+            <artifactId>ruoyi-wms</artifactId>
+        </dependency>
+
     </dependencies>
 
     <build>

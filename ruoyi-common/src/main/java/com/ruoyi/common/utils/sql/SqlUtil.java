@@ -13,7 +13,7 @@ public class SqlUtil
     /**
      * 定义常用的 sql关键字
      */
-    public static String SQL_REGEX = "\u000B|%0A|and |extractvalue|updatexml|sleep|information_schema|exec |insert |select |delete |update |drop |count |chr |mid |master |truncate |char |declare |or |union |like |+|/*|user()";
+    public static String SQL_REGEX = "\u000B|%0A|and |extractvalue|updatexml|sleep|information_schema|exec |insert |select |delete |update |drop |count |chr |mid |master |truncate |char |declare |or |union |like |+|/*|user()|xp_cmdshell|waitfor|delay|benchmark|load_file|into outfile|loadfile|outfile";
 
     /**
      * 仅支持字母、数字、下划线、空格、逗号、小数点（支持多个字段排序）
@@ -66,6 +66,44 @@ public class SqlUtil
             {
                 throw new UtilException("请求参数包含敏感关键词'" + sqlKeyword + "'，可能存在安全风险");
             }
+        }
+    }
+
+    /**
+     * 对字符串参数进行通用SQL注入检测
+     *
+     * @param param 待校验的字符串参数
+     */
+    public static void validateParamString(String param)
+    {
+        if (StringUtils.isEmpty(param))
+        {
+            return;
+        }
+        // 检查SQL关键字
+        filterKeyword(param);
+        // 检查危险操作符
+        if (param.contains("'") || param.contains("\"") || param.contains("--") || param.contains("#")
+                || param.contains("/*") || param.contains("*/") || param.contains(";"))
+        {
+            throw new UtilException("请求参数包含非法字符，可能存在SQL注入风险");
+        }
+    }
+
+    /**
+     * 批量校验字符串参数
+     *
+     * @param params 待校验的参数数组
+     */
+    public static void validateParamArray(String[] params)
+    {
+        if (params == null || params.length == 0)
+        {
+            return;
+        }
+        for (String param : params)
+        {
+            validateParamString(param);
         }
     }
 }

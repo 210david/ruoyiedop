@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.wms.mapper.WmsInboundOrderMapper">
+
+    <resultMap type="WmsInboundOrder" id="WmsInboundOrderResult">
+        <result property="orderId"       column="order_id"/>
+        <result property="orderNo"       column="order_no"/>
+        <result property="orderType"     column="order_type"/>
+        <result property="supplierId"    column="supplier_id"/>
+        <result property="supplierName"  column="supplier_name"/>
+        <result property="warehouseId"   column="warehouse_id"/>
+        <result property="warehouseName" column="warehouse_name"/>
+        <result property="status"        column="status"/>
+        <result property="inboundDate"   column="inbound_date"/>
+        <result property="completeDate"  column="complete_date"/>
+        <result property="totalQty"      column="total_qty"/>
+        <result property="totalAmount"   column="total_amount"/>
+        <result property="delFlag"       column="del_flag"/>
+        <result property="createBy"      column="create_by"/>
+        <result property="createTime"    column="create_time"/>
+        <result property="updateBy"      column="update_by"/>
+        <result property="updateTime"    column="update_time"/>
+        <result property="remark"        column="remark"/>
+    </resultMap>
+
+    <resultMap type="WmsInboundOrderDetail" id="WmsInboundOrderDetailResult">
+        <result property="detailId"       column="detail_id"/>
+        <result property="orderId"        column="order_id"/>
+        <result property="materialId"     column="material_id"/>
+        <result property="materialCode"   column="material_code"/>
+        <result property="materialName"   column="material_name"/>
+        <result property="specModel"      column="spec_model"/>
+        <result property="unit"           column="unit"/>
+        <result property="planQty"        column="plan_qty"/>
+        <result property="receivedQty"    column="received_qty"/>
+        <result property="putawayQty"     column="putaway_qty"/>
+        <result property="batchNo"        column="batch_no"/>
+        <result property="productionDate" column="production_date"/>
+        <result property="expiryDate"     column="expiry_date"/>
+        <result property="locationId"     column="location_id"/>
+        <result property="locationCode"   column="location_code"/>
+        <result property="unitPrice"      column="unit_price"/>
+        <result property="delFlag"        column="del_flag"/>
+        <result property="createBy"       column="create_by"/>
+        <result property="createTime"     column="create_time"/>
+        <result property="updateBy"       column="update_by"/>
+        <result property="updateTime"     column="update_time"/>
+        <result property="remark"         column="remark"/>
+    </resultMap>
+
+    <sql id="selectInboundOrderVo">
+        SELECT o.order_id, o.order_no, o.order_type, o.supplier_id, s.supplier_name,
+               o.warehouse_id, w.warehouse_name, o.status, o.inbound_date, o.complete_date,
+               o.total_qty, o.total_amount, o.del_flag, o.create_by, o.create_time, o.update_by, o.update_time, o.remark
+        FROM wms_inbound_order o
+        LEFT JOIN wms_supplier s ON o.supplier_id = s.supplier_id
+        LEFT JOIN wms_warehouse w ON o.warehouse_id = w.warehouse_id
+    </sql>
+
+    <select id="selectInboundOrderList" parameterType="WmsInboundOrder" resultMap="WmsInboundOrderResult">
+        <include refid="selectInboundOrderVo"/>
+        <where>
+            o.del_flag = '0'
+            <if test="orderNo != null and orderNo != ''"> AND o.order_no LIKE CONCAT('%', #{orderNo}, '%')</if>
+            <if test="orderType != null and orderType != ''"> AND o.order_type = #{orderType}</if>
+            <if test="warehouseId != null"> AND o.warehouse_id = #{warehouseId}</if>
+            <if test="supplierId != null"> AND o.supplier_id = #{supplierId}</if>
+            <if test="status != null and status != ''"> AND o.status = #{status}</if>
+        </where>
+        ORDER BY o.order_id DESC
+    </select>
+
+    <select id="selectInboundOrderById" parameterType="Long" resultMap="WmsInboundOrderResult">
+        <include refid="selectInboundOrderVo"/> WHERE o.order_id = #{orderId}
+    </select>
+
+    <insert id="insertInboundOrder" parameterType="WmsInboundOrder" useGeneratedKeys="true" keyProperty="orderId">
+        INSERT INTO wms_inbound_order (order_no, order_type, supplier_id, warehouse_id, status,
+            inbound_date, total_qty, total_amount, create_by, create_time, remark)
+        VALUES (#{orderNo}, #{orderType}, #{supplierId}, #{warehouseId}, #{status},
+            #{inboundDate}, #{totalQty}, #{totalAmount}, #{createBy}, sysdate(), #{remark})
+    </insert>
+
+    <update id="updateInboundOrder" parameterType="WmsInboundOrder">
+        UPDATE wms_inbound_order
+        <set>
+            <if test="orderType != null and orderType != ''">order_type = #{orderType},</if>
+            <if test="supplierId != null">supplier_id = #{supplierId},</if>
+            <if test="warehouseId != null">warehouse_id = #{warehouseId},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="inboundDate != null">inbound_date = #{inboundDate},</if>
+            <if test="completeDate != null">complete_date = #{completeDate},</if>
+            <if test="totalQty != null">total_qty = #{totalQty},</if>
+            <if test="totalAmount != null">total_amount = #{totalAmount},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE order_id = #{orderId}
+    </update>
+
+    <delete id="deleteInboundOrderByIds" parameterType="Long">
+        UPDATE wms_inbound_order SET del_flag = '2' WHERE order_id IN
+        <foreach item="orderId" collection="array" open="(" separator="," close=")">#{orderId}</foreach>
+    </delete>
+
+    <select id="selectInboundDetailByOrderId" parameterType="Long" resultMap="WmsInboundOrderDetailResult">
+        SELECT d.detail_id, d.order_id, d.material_id, m.material_code, m.material_name, m.spec_model, m.unit,
+               d.plan_qty, d.received_qty, d.putaway_qty, d.batch_no, d.production_date, d.expiry_date,
+               d.location_id, l.warehouse_code as location_code, d.unit_price, d.del_flag,
+               d.create_by, d.create_time, d.update_by, d.update_time, d.remark
+        FROM wms_inbound_order_detail d
+        LEFT JOIN wms_material m ON d.material_id = m.material_id
+        LEFT JOIN wms_warehouse l ON d.location_id = l.warehouse_id
+        WHERE d.order_id = #{orderId} AND d.del_flag = '0'
+    </select>
+
+    <insert id="insertInboundDetail" parameterType="WmsInboundOrderDetail">
+        INSERT INTO wms_inbound_order_detail (order_id, material_id, plan_qty, received_qty, putaway_qty,
+            batch_no, production_date, expiry_date, location_id, unit_price, create_by, create_time, remark)
+        VALUES (#{orderId}, #{materialId}, #{planQty}, #{receivedQty}, #{putawayQty},
+            #{batchNo}, #{productionDate}, #{expiryDate}, #{locationId}, #{unitPrice}, #{createBy}, sysdate(), #{remark})
+    </insert>
+
+    <update id="updateInboundDetail" parameterType="WmsInboundOrderDetail">
+        UPDATE wms_inbound_order_detail
+        <set>
+            <if test="materialId != null">material_id = #{materialId},</if>
+            <if test="planQty != null">plan_qty = #{planQty},</if>
+            <if test="receivedQty != null">received_qty = #{receivedQty},</if>
+            <if test="putawayQty != null">putaway_qty = #{putawayQty},</if>
+            <if test="batchNo != null">batch_no = #{batchNo},</if>
+            <if test="productionDate != null">production_date = #{productionDate},</if>
+            <if test="expiryDate != null">expiry_date = #{expiryDate},</if>
+            <if test="locationId != null">location_id = #{locationId},</if>
+            <if test="unitPrice != null">unit_price = #{unitPrice},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE detail_id = #{detailId}
+    </update>
+
+    <delete id="deleteInboundDetailByOrderId" parameterType="Long">
+        UPDATE wms_inbound_order_detail SET del_flag = '2' WHERE order_id = #{orderId}
+    </delete>
+
+</mapper>

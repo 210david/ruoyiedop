@@ -38,6 +38,55 @@ public class MimeTypeUtils
             // pdf
             "pdf" };
 
+    /**
+     * 禁止上传的文件扩展名（可执行/脚本文件）
+     */
+    public static final String[] FORBIDDEN_EXTENSION = { "exe", "bat", "sh", "jsp", "php", "py", "dll", "so", "cmd", "com", "vbs", "ps1", "jar", "class" };
+
+    /**
+     * 判断是否为禁止上传的扩展名
+     *
+     * @param extension 扩展名
+     * @return 是否被禁止
+     */
+    public static boolean isForbiddenExtension(String extension)
+    {
+        if (extension == null || extension.isEmpty())
+        {
+            return false;
+        }
+        for (String forbidden : FORBIDDEN_EXTENSION)
+        {
+            if (forbidden.equalsIgnoreCase(extension))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 判断是否为图片扩展名
+     *
+     * @param extension 扩展名
+     * @return 是否为图片
+     */
+    public static boolean isImageExtension(String extension)
+    {
+        if (extension == null || extension.isEmpty())
+        {
+            return false;
+        }
+        for (String imageExt : IMAGE_EXTENSION)
+        {
+            if (imageExt.equalsIgnoreCase(extension))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public static String getExtension(String prefix)
     {
         switch (prefix)

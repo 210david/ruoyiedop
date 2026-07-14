@@ -2,8 +2,11 @@ package com.ruoyi.system.service.impl;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import com.ruoyi.common.constant.CacheConstants;
 import com.ruoyi.common.constant.UserConstants;
@@ -53,12 +56,13 @@ public class SysConfigServiceImpl implements ISysConfigService
     }
 
     /**
-     * 根据键名查询参数配置信息
+     * 根据键名查询参数配置信息（带Spring缓存，30分钟过期）
      * 
      * @param configKey 参数key
      * @return 参数键值
      */
     @Override
+    @Cacheable(value = "sysConfig", key = "'config:' + #configKey")
     public String selectConfigByKey(String configKey)
     {
         String configValue = Convert.toStr(redisCache.getCacheObject(getCacheKey(configKey)));
@@ -71,7 +75,7 @@ public class SysConfigServiceImpl implements ISysConfigService
         SysConfig retConfig = configMapper.selectConfig(config);
         if (StringUtils.isNotNull(retConfig))
         {
-            redisCache.setCacheObject(getCacheKey(configKey), retConfig.getConfigValue());
+            redisCache.setCacheObject(getCacheKey(configKey), retConfig.getConfigValue(), 30, TimeUnit.MINUTES);
             return retConfig.getConfigValue();
         }
         return StringUtils.EMPTY;
@@ -106,29 +110,31 @@ public class SysConfigServiceImpl implements ISysConfigService
     }
 
     /**
-     * 新增参数配置
+     * 新增参数配置（清除对应缓存）
      * 
      * @param config 参数配置信息
      * @return 结果
      */
     @Override
+    @CacheEvict(value = "sysConfig", key = "'config:' + #config.configKey")
     public int insertConfig(SysConfig config)
     {
         int row = configMapper.insertConfig(config);
         if (row > 0)
         {
-            redisCache.setCacheObject(getCacheKey(config.getConfigKey()), config.getConfigValue());
+            redisCache.setCacheObject(getCacheKey(config.getConfigKey()), config.getConfigValue(), 30, TimeUnit.MINUTES);
         }
         return row;
     }
 
     /**
-     * 修改参数配置
+     * 修改参数配置（清除对应缓存）
      * 
      * @param config 参数配置信息
      * @return 结果
      */
     @Override
+    @CacheEvict(value = "sysConfig", key = "'config:' + #config.configKey")
     public int updateConfig(SysConfig config)
     {
         SysConfig temp = configMapper.selectConfigById(config.getConfigId());
@@ -140,7 +146,7 @@ public class SysConfigServiceImpl implements ISysConfigService
         int row = configMapper.updateConfig(config);
         if (row > 0)
         {
-            redisCache.setCacheObject(getCacheKey(config.getConfigKey()), config.getConfigValue());
+            redisCache.setCacheObject(getCacheKey(config.getConfigKey()), config.getConfigValue(), 30, TimeUnit.MINUTES);
         }
         return row;
     }

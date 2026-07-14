@@ -46,6 +46,18 @@ public class XssHttpServletRequestWrapper extends HttpServletRequestWrapper
     }
 
     @Override
+    public String getHeader(String name)
+    {
+        String value = super.getHeader(name);
+        if (value != null)
+        {
+            // 对请求头值进行XSS过滤
+            value = EscapeUtil.clean(value).trim();
+        }
+        return value;
+    }
+
+    @Override
     public ServletInputStream getInputStream() throws IOException
     {
         // 非json类型，直接返回

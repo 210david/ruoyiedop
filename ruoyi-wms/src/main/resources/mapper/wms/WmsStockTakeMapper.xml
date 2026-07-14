@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.wms.mapper.WmsStockTakeMapper">
+
+    <resultMap type="WmsStockTake" id="WmsStockTakeResult">
+        <result property="takeId"        column="take_id"/>
+        <result property="takeNo"        column="take_no"/>
+        <result property="warehouseId"   column="warehouse_id"/>
+        <result property="warehouseName" column="warehouse_name"/>
+        <result property="areaId"        column="area_id"/>
+        <result property="areaName"      column="area_name"/>
+        <result property="takeType"      column="take_type"/>
+        <result property="sampleRatio"   column="sample_ratio"/>
+        <result property="cycleNo"       column="cycle_no"/>
+        <result property="status"        column="status"/>
+        <result property="planDate"      column="plan_date"/>
+        <result property="startTime"     column="start_time"/>
+        <result property="endTime"       column="end_time"/>
+        <result property="approveBy"     column="approve_by"/>
+        <result property="approveTime"   column="approve_time"/>
+        <result property="delFlag"       column="del_flag"/>
+        <result property="createBy"      column="create_by"/>
+        <result property="createTime"    column="create_time"/>
+        <result property="updateBy"      column="update_by"/>
+        <result property="updateTime"    column="update_time"/>
+        <result property="remark"        column="remark"/>
+    </resultMap>
+
+    <resultMap type="WmsStockTakeDetail" id="WmsStockTakeDetailResult">
+        <result property="detailId"      column="detail_id"/>
+        <result property="takeId"        column="take_id"/>
+        <result property="materialId"    column="material_id"/>
+        <result property="materialCode"  column="material_code"/>
+        <result property="materialName"  column="material_name"/>
+        <result property="locationId"    column="location_id"/>
+        <result property="locationCode"  column="location_code"/>
+        <result property="locationName"  column="location_name"/>
+        <result property="areaName"      column="area_name"/>
+        <result property="batchNo"       column="batch_no"/>
+        <result property="bookQty"       column="book_qty"/>
+        <result property="actualQty"     column="actual_qty"/>
+        <result property="diffQty"       column="diff_qty"/>
+        <result property="diffReason"    column="diff_reason"/>
+        <result property="status"        column="status"/>
+        <result property="delFlag"       column="del_flag"/>
+        <result property="createBy"      column="create_by"/>
+        <result property="createTime"    column="create_time"/>
+        <result property="updateBy"      column="update_by"/>
+        <result property="updateTime"    column="update_time"/>
+        <result property="remark"        column="remark"/>
+    </resultMap>
+
+    <resultMap type="WmsStockTakeSnapshot" id="WmsStockTakeSnapshotResult">
+        <result property="snapshotId"    column="snapshot_id"/>
+        <result property="takeId"        column="take_id"/>
+        <result property="materialId"    column="material_id"/>
+        <result property="locationId"    column="location_id"/>
+        <result property="batchNo"       column="batch_no"/>
+        <result property="snapshotQty"   column="snapshot_qty"/>
+        <result property="snapshotTime"  column="snapshot_time"/>
+    </resultMap>
+
+    <sql id="selectStockTakeVo">
+        SELECT t.take_id, t.take_no, t.warehouse_id, w.warehouse_name, t.area_id, a.warehouse_name as area_name,
+               t.take_type, t.sample_ratio, t.cycle_no, t.status, t.plan_date, t.start_time, t.end_time, t.approve_by, t.approve_time,
+               t.del_flag, t.create_by, t.create_time, t.update_by, t.update_time, t.remark
+        FROM wms_stock_take t
+        LEFT JOIN wms_warehouse w ON t.warehouse_id = w.warehouse_id
+        LEFT JOIN wms_warehouse a ON t.area_id = a.warehouse_id
+    </sql>
+
+    <select id="selectStockTakeList" parameterType="WmsStockTake" resultMap="WmsStockTakeResult">
+        <include refid="selectStockTakeVo"/>
+        <where>
+            t.del_flag = '0'
+            <if test="takeNo != null and takeNo != ''"> AND t.take_no LIKE CONCAT('%', #{takeNo}, '%')</if>
+            <if test="warehouseId != null"> AND t.warehouse_id = #{warehouseId}</if>
+            <if test="takeType != null and takeType != ''"> AND t.take_type = #{takeType}</if>
+            <if test="status != null and status != ''"> AND t.status = #{status}</if>
+        </where>
+        ORDER BY t.take_id DESC
+    </select>
+
+    <select id="selectStockTakeById" parameterType="Long" resultMap="WmsStockTakeResult">
+        <include refid="selectStockTakeVo"/> WHERE t.take_id = #{takeId}
+    </select>
+
+    <insert id="insertStockTake" parameterType="WmsStockTake" useGeneratedKeys="true" keyProperty="takeId">
+        INSERT INTO wms_stock_take (take_no, warehouse_id, area_id, take_type, sample_ratio, cycle_no, status, plan_date,
+            create_by, create_time, remark)
+        VALUES (#{takeNo}, #{warehouseId}, #{areaId}, #{takeType}, #{sampleRatio}, #{cycleNo}, #{status}, #{planDate},
+            #{createBy}, sysdate(), #{remark})
+    </insert>
+
+    <update id="updateStockTake" parameterType="WmsStockTake">
+        UPDATE wms_stock_take
+        <set>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="startTime != null">start_time = #{startTime},</if>
+            <if test="endTime != null">end_time = #{endTime},</if>
+            <if test="approveBy != null">approve_by = #{approveBy},</if>
+            <if test="approveTime != null">approve_time = #{approveTime},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE take_id = #{takeId}
+    </update>
+
+    <delete id="deleteStockTakeByIds" parameterType="Long">
+        UPDATE wms_stock_take SET del_flag = '2' WHERE take_id IN
+        <foreach item="takeId" collection="array" open="(" separator="," close=")">#{takeId}</foreach>
+    </delete>
+
+    <select id="selectStockTakeDetailByTakeId" parameterType="Long" resultMap="WmsStockTakeDetailResult">
+        SELECT d.detail_id, d.take_id, d.material_id, m.material_code, m.material_name,
+               d.location_id, l.warehouse_code as location_code, l.warehouse_name as location_name,
+               p.warehouse_name as area_name,
+               d.batch_no, d.book_qty, d.actual_qty, d.diff_qty,
+               d.diff_reason, d.status, d.del_flag,
+               d.create_by, d.create_time, d.update_by, d.update_time, d.remark
+        FROM wms_stock_take_detail d
+        LEFT JOIN wms_material m ON d.material_id = m.material_id
+        LEFT JOIN wms_warehouse l ON d.location_id = l.warehouse_id
+        LEFT JOIN wms_warehouse p ON l.parent_id = p.warehouse_id
+        WHERE d.take_id = #{takeId} AND d.del_flag = '0'
+    </select>
+
+    <insert id="insertStockTakeDetail" parameterType="WmsStockTakeDetail">
+        INSERT INTO wms_stock_take_detail (take_id, material_id, location_id, batch_no, book_qty, actual_qty,
+            diff_qty, diff_reason, status, create_by, create_time, remark)
+        VALUES (#{takeId}, #{materialId}, #{locationId}, #{batchNo}, #{bookQty}, #{actualQty},
+            #{diffQty}, #{diffReason}, #{status}, #{createBy}, sysdate(), #{remark})
+    </insert>
+
+    <update id="updateStockTakeDetail" parameterType="WmsStockTakeDetail">
+        UPDATE wms_stock_take_detail
+        <set>
+            <if test="actualQty != null">actual_qty = #{actualQty},</if>
+            <if test="diffQty != null">diff_qty = #{diffQty},</if>
+            <if test="diffReason != null">diff_reason = #{diffReason},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE detail_id = #{detailId}
+    </update>
+
+    <insert id="insertSnapshot" parameterType="WmsStockTakeSnapshot">
+        INSERT INTO wms_stock_take_snapshot (take_id, material_id, location_id, batch_no, snapshot_qty, snapshot_time)
+        VALUES (#{takeId}, #{materialId}, #{locationId}, #{batchNo}, #{snapshotQty}, sysdate())
+    </insert>
+
+    <select id="selectSnapshotByTakeId" parameterType="Long" resultMap="WmsStockTakeSnapshotResult">
+        SELECT snapshot_id, take_id, material_id, location_id, batch_no, snapshot_qty, snapshot_time
+        FROM wms_stock_take_snapshot WHERE take_id = #{takeId}
+    </select>
+
+</mapper>

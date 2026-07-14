@@ -2,6 +2,7 @@ package com.ruoyi.framework.aspectj;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.regex.Pattern;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.ArrayUtils;
@@ -45,13 +46,23 @@ public class LogAspect
     private static final Logger log = LoggerFactory.getLogger(LogAspect.class);
 
     /** 排除敏感属性字段 */
-    public static final String[] EXCLUDE_PROPERTIES = { "password", "oldPassword", "newPassword", "confirmPassword" };
+    public static final String[] EXCLUDE_PROPERTIES = { "password", "oldPassword", "newPassword", "confirmPassword",
+            "phone", "phonenumber", "idCard", "bankCard", "email" };
 
     /** 计算操作消耗时间 */
     private static final ThreadLocal<Long> TIME_THREADLOCAL = new NamedThreadLocal<Long>("Cost Time");
 
     /** 参数最大长度限制 */
     private static final int PARAM_MAX_LENGTH = 2000;
+
+    /** 手机号正则 */
+    private static final Pattern PHONE_PATTERN = Pattern.compile("(1[3-9]\\d)\\d{4}(\\d{4})");
+    /** 身份证正则 */
+    private static final Pattern IDCARD_PATTERN = Pattern.compile("(\\d{6})\\d{8}(\\d{4})");
+    /** 银行卡正则 */
+    private static final Pattern BANKCARD_PATTERN = Pattern.compile("(\\d{4})\\d{8,12}(\\d{4})");
+    /** 邮箱正则 */
+    private static final Pattern EMAIL_PATTERN = Pattern.compile("(.{1,3}).*(@.*)");
 
     /**
      * 处理请求前执行
@@ -164,6 +175,9 @@ public class LogAspect
         if (log.isSaveResponseData() && StringUtils.isNotNull(jsonResult))
         {
             operLog.setJsonResult(StringUtils.substring(JSON.toJSONString(jsonResult), 0, 2000));
+            // 对返回值中的敏感数据进行脱敏处理
+            String maskedResult = maskSensitiveData(operLog.getJsonResult());
+            operLog.setJsonResult(maskedResult);
         }
     }
 
@@ -260,5 +274,35 @@ public class LogAspect
         }
         return o instanceof MultipartFile || o instanceof HttpServletRequest || o instanceof HttpServletResponse
                 || o instanceof BindingResult;
+    }
+
+    /**
+     * 对敏感数据进行脱敏处理（手机号、身份证、银行卡、邮箱）
+     * 
+     * @param jsonStr JSON字符串
+     * @return 脱敏后的字符串
+     */
+    private String maskSensitiveData(String jsonStr)
+    {
+        if (StringUtils.isEmpty(jsonStr))
+        {
+            return jsonStr;
+        }
+        try
+        {
+            // 手机号脱敏：138****1234
+            jsonStr = PHONE_PATTERN.matcher(jsonStr).replaceAll("$1****$2");
+            // 身份证脱敏：320***********1234
+            jsonStr = IDCARD_PATTERN.matcher(jsonStr).replaceAll("$1********$2");
+            // 银行卡脱敏：6222********1234
+            jsonStr = BANKCARD_PATTERN.matcher(jsonStr).replaceAll("$1********$2");
+            // 邮箱脱敏：abc***@xxx.com
+            jsonStr = EMAIL_PATTERN.matcher(jsonStr).replaceAll("$1***$2");
+        }
+        catch (Exception e)
+        {
+            // 脱敏异常不中断流程
+        }
+        return jsonStr;
     }
 }

@@ -11,8 +11,11 @@ import com.ruoyi.common.utils.http.UserAgentUtils;
 import com.ruoyi.common.utils.ip.AddressUtils;
 import com.ruoyi.common.utils.ip.IpUtils;
 import com.ruoyi.common.utils.spring.SpringUtils;
+import com.ruoyi.common.alert.AlarmInfo;
+import com.ruoyi.system.domain.SysAlarmLog;
 import com.ruoyi.system.domain.SysLogininfor;
 import com.ruoyi.system.domain.SysOperLog;
+import com.ruoyi.system.service.ISysAlarmLogService;
 import com.ruoyi.system.service.ISysLogininforService;
 import com.ruoyi.system.service.ISysOperLogService;
 
@@ -57,6 +60,8 @@ public class AsyncFactory
                 String os = UserAgentUtils.getOperatingSystem(userAgent);
                 // 获取客户端浏览器
                 String browser = UserAgentUtils.getBrowser(userAgent);
+                // 获取登录设备类型
+                String loginDevice = getDeviceType(userAgent);
                 // 封装对象
                 SysLogininfor logininfor = new SysLogininfor();
                 logininfor.setUserName(username);
@@ -64,6 +69,7 @@ public class AsyncFactory
                 logininfor.setLoginLocation(address);
                 logininfor.setBrowser(browser);
                 logininfor.setOs(os);
+                logininfor.setLoginDevice(loginDevice);
                 logininfor.setMsg(message);
                 // 日志状态
                 if (StringUtils.equalsAny(status, Constants.LOGIN_SUCCESS, Constants.LOGOUT, Constants.REGISTER))
@@ -78,6 +84,34 @@ public class AsyncFactory
                 SpringUtils.getBean(ISysLogininforService.class).insertLogininfor(logininfor);
             }
         };
+    }
+
+    /**
+     * 根据User-Agent判断登录设备类型
+     * 
+     * @param userAgent 用户代理字符串
+     * @return 设备类型：PC/手机/平板
+     */
+    private static String getDeviceType(String userAgent)
+    {
+        if (StringUtils.isEmpty(userAgent))
+        {
+            return "未知";
+        }
+        String ua = userAgent.toLowerCase();
+        // 判断是否为平板
+        if (ua.contains("ipad") || ua.contains("tablet") || (ua.contains("android") && !ua.contains("mobile")))
+        {
+            return "平板";
+        }
+        // 判断是否为手机
+        if (ua.contains("mobile") || ua.contains("iphone") || ua.contains("android") || ua.contains("phone")
+                || ua.contains("ipod") || ua.contains("symbian") || ua.contains("windows phone"))
+        {
+            return "手机";
+        }
+        // 默认为PC
+        return "PC";
     }
 
     /**
@@ -96,6 +130,30 @@ public class AsyncFactory
                 // 远程查询操作地点
                 operLog.setOperLocation(AddressUtils.getRealAddressByIP(operLog.getOperIp()));
                 SpringUtils.getBean(ISysOperLogService.class).insertOperlog(operLog);
+            }
+        };
+    }
+
+    /**
+     * 告警日志记录
+     * 
+     * @param alarm 告警信息
+     * @return 任务task
+     */
+    public static TimerTask recordAlarm(final AlarmInfo alarm)
+    {
+        return new TimerTask()
+        {
+            @Override
+            public void run()
+            {
+                SysAlarmLog alarmLog = new SysAlarmLog();
+                alarmLog.setAlarmType(alarm.getType());
+                alarmLog.setAlarmLevel(alarm.getLevel());
+                alarmLog.setAlarmTitle(alarm.getTitle());
+                alarmLog.setAlarmDetail(alarm.getContent());
+                alarmLog.setStatus("0");
+                SpringUtils.getBean(ISysAlarmLogService.class).insertAlarmLog(alarmLog);
             }
         };
     }

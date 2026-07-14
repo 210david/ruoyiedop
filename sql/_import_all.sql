@@ -1,0 +1,11 @@
+CREATE DATABASE IF NOT EXISTS `ry-vue` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+USE `ry-vue`;
+SOURCE e:/AIcode/EDOP/RuoYi/RuoYi-Vue3/sql/ry_20260417.sql;
+SOURCE e:/AIcode/EDOP/RuoYi/RuoYi-Vue3/sql/quartz.sql;
+SOURCE e:/AIcode/EDOP/RuoYi/RuoYi-Vue3/sql/performance_indexes.sql;
+SOURCE e:/AIcode/EDOP/RuoYi/RuoYi-Vue3/sql/role_templates.sql;
+SOURCE e:/AIcode/EDOP/RuoYi/RuoYi-Vue3/sql/menu_hide_tech.sql;
+SOURCE e:/AIcode/EDOP/RuoYi/RuoYi-Vue3/sql/sys_data_change_log.sql;
+SOURCE e:/AIcode/EDOP/RuoYi/RuoYi-Vue3/sql/sys_undo_log.sql;
+SOURCE e:/AIcode/EDOP/RuoYi/RuoYi-Vue3/sql/logininfor_upgrade.sql;
+SOURCE e:/AIcode/EDOP/RuoYi/RuoYi-Vue3/sql/wms_all.sql;

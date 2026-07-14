@@ -43,6 +43,10 @@ public class SysLogininfor extends BaseEntity
     @Excel(name = "操作系统")
     private String os;
 
+    /** 登录设备类型（PC/手机/平板） */
+    @Excel(name = "登录设备")
+    private String loginDevice;
+
     /** 提示消息 */
     @Excel(name = "提示消息")
     private String msg;
@@ -120,6 +124,16 @@ public class SysLogininfor extends BaseEntity
     public void setOs(String os)
     {
         this.os = os;
+    }
+
+    public String getLoginDevice()
+    {
+        return loginDevice;
+    }
+
+    public void setLoginDevice(String loginDevice)
+    {
+        this.loginDevice = loginDevice;
     }
 
     public String getMsg()

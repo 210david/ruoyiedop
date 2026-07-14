@@ -76,6 +76,16 @@ public class UserConstants
     /**
      * 密码长度限制
      */
-    public static final int PASSWORD_MIN_LENGTH = 5;
+    public static final int PASSWORD_MIN_LENGTH = 8;
     public static final int PASSWORD_MAX_LENGTH = 20;
+
+    /**
+     * 密码过期天数（默认90天）
+     */
+    public static final int PASSWORD_EXPIRE_DAYS = 90;
+
+    /**
+     * 同时在线用户数配置key
+     */
+    public static final String ALLOWED_ONLINE_COUNT_KEY = "sys.user.onlineCount";
 }

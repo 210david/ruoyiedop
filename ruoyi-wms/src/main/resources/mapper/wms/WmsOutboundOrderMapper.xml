@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.wms.mapper.WmsOutboundOrderMapper">
+
+    <resultMap type="WmsOutboundOrder" id="WmsOutboundOrderResult">
+        <result property="orderId"       column="order_id"/>
+        <result property="orderNo"       column="order_no"/>
+        <result property="orderType"     column="order_type"/>
+        <result property="warehouseId"   column="warehouse_id"/>
+        <result property="warehouseName" column="warehouse_name"/>
+        <result property="status"        column="status"/>
+        <result property="waveId"        column="wave_id"/>
+        <result property="waveNo"        column="wave_no"/>
+        <result property="outboundDate"  column="outbound_date"/>
+        <result property="completeDate"  column="complete_date"/>
+        <result property="totalQty"      column="total_qty"/>
+        <result property="delFlag"       column="del_flag"/>
+        <result property="createBy"      column="create_by"/>
+        <result property="createTime"    column="create_time"/>
+        <result property="updateBy"      column="update_by"/>
+        <result property="updateTime"    column="update_time"/>
+        <result property="remark"        column="remark"/>
+    </resultMap>
+
+    <resultMap type="WmsOutboundOrderDetail" id="WmsOutboundOrderDetailResult">
+        <result property="detailId"      column="detail_id"/>
+        <result property="orderId"       column="order_id"/>
+        <result property="materialId"    column="material_id"/>
+        <result property="materialCode"  column="material_code"/>
+        <result property="materialName"  column="material_name"/>
+        <result property="specModel"     column="spec_model"/>
+        <result property="unit"          column="unit"/>
+        <result property="batchNo"       column="batch_no"/>
+        <result property="planQty"       column="plan_qty"/>
+        <result property="actualQty"     column="actual_qty"/>
+        <result property="locationId"    column="location_id"/>
+        <result property="locationCode"  column="location_code"/>
+        <result property="pickQty"       column="pick_qty"/>
+        <result property="delFlag"       column="del_flag"/>
+        <result property="createBy"      column="create_by"/>
+        <result property="createTime"    column="create_time"/>
+        <result property="updateBy"      column="update_by"/>
+        <result property="updateTime"    column="update_time"/>
+        <result property="remark"        column="remark"/>
+    </resultMap>
+
+    <sql id="selectOutboundOrderVo">
+        SELECT o.order_id, o.order_no, o.order_type, o.warehouse_id, w.warehouse_name,
+               o.status, o.wave_id, v.wave_no, o.outbound_date, o.complete_date,
+               o.total_qty, o.del_flag, o.create_by, o.create_time, o.update_by, o.update_time, o.remark
+        FROM wms_outbound_order o
+        LEFT JOIN wms_warehouse w ON o.warehouse_id = w.warehouse_id
+        LEFT JOIN wms_wave v ON o.wave_id = v.wave_id
+    </sql>
+
+    <select id="selectOutboundOrderList" parameterType="WmsOutboundOrder" resultMap="WmsOutboundOrderResult">
+        <include refid="selectOutboundOrderVo"/>
+        <where>
+            o.del_flag = '0'
+            <if test="orderNo != null and orderNo != ''"> AND o.order_no LIKE CONCAT('%', #{orderNo}, '%')</if>
+            <if test="orderType != null and orderType != ''"> AND o.order_type = #{orderType}</if>
+            <if test="warehouseId != null"> AND o.warehouse_id = #{warehouseId}</if>
+            <if test="status != null and status != ''"> AND o.status = #{status}</if>
+            <if test="waveId != null"> AND o.wave_id = #{waveId}</if>
+        </where>
+        ORDER BY o.order_id DESC
+    </select>
+
+    <select id="selectOutboundOrderById" parameterType="Long" resultMap="WmsOutboundOrderResult">
+        <include refid="selectOutboundOrderVo"/> WHERE o.order_id = #{orderId}
+    </select>
+
+    <insert id="insertOutboundOrder" parameterType="WmsOutboundOrder" useGeneratedKeys="true" keyProperty="orderId">
+        INSERT INTO wms_outbound_order (order_no, order_type, warehouse_id, status, wave_id,
+            outbound_date, total_qty, create_by, create_time, remark)
+        VALUES (#{orderNo}, #{orderType}, #{warehouseId}, #{status}, #{waveId},
+            #{outboundDate}, #{totalQty}, #{createBy}, sysdate(), #{remark})
+    </insert>
+
+    <update id="updateOutboundOrder" parameterType="WmsOutboundOrder">
+        UPDATE wms_outbound_order
+        <set>
+            <if test="orderType != null and orderType != ''">order_type = #{orderType},</if>
+            <if test="warehouseId != null">warehouse_id = #{warehouseId},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="waveId != null">wave_id = #{waveId},</if>
+            <if test="outboundDate != null">outbound_date = #{outboundDate},</if>
+            <if test="completeDate != null">complete_date = #{completeDate},</if>
+            <if test="totalQty != null">total_qty = #{totalQty},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE order_id = #{orderId}
+    </update>
+
+    <delete id="deleteOutboundOrderByIds" parameterType="Long">
+        UPDATE wms_outbound_order SET del_flag = '2' WHERE order_id IN
+        <foreach item="orderId" collection="array" open="(" separator="," close=")">#{orderId}</foreach>
+    </delete>
+
+    <select id="selectOutboundDetailByOrderId" parameterType="Long" resultMap="WmsOutboundOrderDetailResult">
+        SELECT d.detail_id, d.order_id, d.material_id, m.material_code, m.material_name, m.spec_model, m.unit,
+               d.batch_no, d.plan_qty, d.actual_qty, d.location_id, l.warehouse_code as location_code, d.pick_qty,
+               d.del_flag, d.create_by, d.create_time, d.update_by, d.update_time, d.remark
+        FROM wms_outbound_order_detail d
+        LEFT JOIN wms_material m ON d.material_id = m.material_id
+        LEFT JOIN wms_warehouse l ON d.location_id = l.warehouse_id
+        WHERE d.order_id = #{orderId} AND d.del_flag = '0'
+    </select>
+
+    <insert id="insertOutboundDetail" parameterType="WmsOutboundOrderDetail">
+        INSERT INTO wms_outbound_order_detail (order_id, material_id, batch_no, plan_qty, actual_qty,
+            location_id, pick_qty, create_by, create_time, remark)
+        VALUES (#{orderId}, #{materialId}, #{batchNo}, #{planQty}, #{actualQty},
+            #{locationId}, #{pickQty}, #{createBy}, sysdate(), #{remark})
+    </insert>
+
+    <update id="updateOutboundDetail" parameterType="WmsOutboundOrderDetail">
+        UPDATE wms_outbound_order_detail
+        <set>
+            <if test="materialId != null">material_id = #{materialId},</if>
+            <if test="batchNo != null">batch_no = #{batchNo},</if>
+            <if test="planQty != null">plan_qty = #{planQty},</if>
+            <if test="actualQty != null">actual_qty = #{actualQty},</if>
+            <if test="locationId != null">location_id = #{locationId},</if>
+            <if test="pickQty != null">pick_qty = #{pickQty},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE detail_id = #{detailId}
+    </update>
+
+    <delete id="deleteOutboundDetailByOrderId" parameterType="Long">
+        UPDATE wms_outbound_order_detail SET del_flag = '2' WHERE order_id = #{orderId}
+    </delete>
+
+    <update id="updateOutboundWaveId">
+        UPDATE wms_outbound_order SET wave_id = #{waveId}, status = #{status}, update_time = sysdate()
+        WHERE order_id = #{orderId} AND del_flag = '0'
+    </update>
+
+    <select id="selectOutboundOrdersByWaveId" parameterType="Long" resultMap="WmsOutboundOrderResult">
+        <include refid="selectOutboundOrderVo"/>
+        WHERE o.del_flag = '0' AND o.wave_id = #{waveId}
+        ORDER BY o.order_id DESC
+    </select>
+
+    <update id="clearOutboundWaveId" parameterType="Long">
+        UPDATE wms_outbound_order SET wave_id = NULL, status = '0', update_time = sysdate()
+        WHERE wave_id = #{waveId} AND del_flag = '0'
+    </update>
+
+</mapper>

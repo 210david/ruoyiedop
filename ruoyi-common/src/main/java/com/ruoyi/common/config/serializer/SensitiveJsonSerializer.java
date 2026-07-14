@@ -11,6 +11,7 @@ import tools.jackson.databind.ser.std.StdSerializer;
 import com.ruoyi.common.annotation.Sensitive;
 import com.ruoyi.common.core.domain.model.LoginUser;
 import com.ruoyi.common.enums.DesensitizedType;
+import com.ruoyi.common.utils.DesensitizedUtil;
 import com.ruoyi.common.utils.SecurityUtils;
 
 /**
@@ -39,7 +40,27 @@ public class SensitiveJsonSerializer extends StdSerializer<String>
     {
         if (desensitizedType != null && desensitization())
         {
-            gen.writeString(desensitizedType.desensitizer().apply(value));
+            switch (desensitizedType)
+            {
+                case PHONE:
+                    gen.writeString(DesensitizedUtil.maskPhone(value));
+                    break;
+                case ID_CARD:
+                    gen.writeString(DesensitizedUtil.maskIdCard(value));
+                    break;
+                case EMAIL:
+                    gen.writeString(DesensitizedUtil.maskEmail(value));
+                    break;
+                case NAME:
+                    gen.writeString(DesensitizedUtil.maskName(value));
+                    break;
+                case BANK_CARD:
+                    gen.writeString(DesensitizedUtil.maskBankCard(value));
+                    break;
+                default:
+                    gen.writeString(desensitizedType.desensitizer().apply(value));
+                    break;
+            }
         }
         else
         {

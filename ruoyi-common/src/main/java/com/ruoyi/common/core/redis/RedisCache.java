@@ -6,7 +6,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.RedisConnectionFailureException;
 import org.springframework.data.redis.core.BoundSetOperations;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -22,8 +25,30 @@ import org.springframework.stereotype.Component;
 @Component
 public class RedisCache
 {
+    private static final Logger log = LoggerFactory.getLogger(RedisCache.class);
+
     @Autowired
     public RedisTemplate redisTemplate;
+
+    /**
+     * Redis是否可用的标记，volatile保证可见性
+     */
+    private volatile boolean redisAvailable = true;
+
+    /**
+     * 检测Redis异常并更新可用状态
+     *
+     * @param e 异常
+     */
+    private void handleRedisException(Exception e)
+    {
+        boolean wasAvailable = redisAvailable;
+        redisAvailable = false;
+        if (wasAvailable)
+        {
+            log.warn("Redis连接不可用，进入降级模式：{}", e.getMessage());
+        }
+    }
 
     /**
      * 缓存基本的对象，Integer、String、实体类等
@@ -33,7 +58,24 @@ public class RedisCache
      */
     public <T> void setCacheObject(final String key, final T value)
     {
-        redisTemplate.opsForValue().set(key, value);
+        if (!redisAvailable)
+        {
+            return;
+        }
+        try
+        {
+            redisTemplate.opsForValue().set(key, value);
+            // 操作成功，确认可用
+            if (!redisAvailable)
+            {
+                redisAvailable = true;
+                log.info("Redis连接已恢复，退出降级模式");
+            }
+        }
+        catch (RedisConnectionFailureException e)
+        {
+            handleRedisException(e);
+        }
     }
 
     /**
@@ -46,7 +88,23 @@ public class RedisCache
      */
     public <T> void setCacheObject(final String key, final T value, final Integer timeout, final TimeUnit timeUnit)
     {
-        redisTemplate.opsForValue().set(key, value, timeout, timeUnit);
+        if (!redisAvailable)
+        {
+            return;
+        }
+        try
+        {
+            redisTemplate.opsForValue().set(key, value, timeout, timeUnit);
+            if (!redisAvailable)
+            {
+                redisAvailable = true;
+                log.info("Redis连接已恢复，退出降级模式");
+            }
+        }
+        catch (RedisConnectionFailureException e)
+        {
+            handleRedisException(e);
+        }
     }
 
     /**
@@ -58,7 +116,25 @@ public class RedisCache
      */
     public boolean expire(final String key, final long timeout)
     {
-        return expire(key, timeout, TimeUnit.SECONDS);
+        if (!redisAvailable)
+        {
+            return false;
+        }
+        try
+        {
+            boolean result = expire(key, timeout, TimeUnit.SECONDS);
+            if (!redisAvailable)
+            {
+                redisAvailable = true;
+                log.info("Redis连接已恢复，退出降级模式");
+            }
+            return result;
+        }
+        catch (RedisConnectionFailureException e)
+        {
+            handleRedisException(e);
+            return false;
+        }
     }
 
     /**
@@ -71,7 +147,25 @@ public class RedisCache
      */
     public boolean expire(final String key, final long timeout, final TimeUnit unit)
     {
-        return redisTemplate.expire(key, timeout, unit);
+        if (!redisAvailable)
+        {
+            return false;
+        }
+        try
+        {
+            boolean result = redisTemplate.expire(key, timeout, unit);
+            if (!redisAvailable)
+            {
+                redisAvailable = true;
+                log.info("Redis连接已恢复，退出降级模式");
+            }
+            return result;
+        }
+        catch (RedisConnectionFailureException e)
+        {
+            handleRedisException(e);
+            return false;
+        }
     }
 
     /**
@@ -82,7 +176,25 @@ public class RedisCache
      */
     public long getExpire(final String key)
     {
-        return redisTemplate.getExpire(key);
+        if (!redisAvailable)
+        {
+            return -1L;
+        }
+        try
+        {
+            long result = redisTemplate.getExpire(key);
+            if (!redisAvailable)
+            {
+                redisAvailable = true;
+                log.info("Redis连接已恢复，退出降级模式");
+            }
+            return result;
+        }
+        catch (RedisConnectionFailureException e)
+        {
+            handleRedisException(e);
+            return -1L;
+        }
     }
 
     /**
@@ -93,7 +205,25 @@ public class RedisCache
      */
     public Boolean hasKey(String key)
     {
-        return redisTemplate.hasKey(key);
+        if (!redisAvailable)
+        {
+            return false;
+        }
+        try
+        {
+            Boolean result = redisTemplate.hasKey(key);
+            if (!redisAvailable)
+            {
+                redisAvailable = true;
+                log.info("Redis连接已恢复，退出降级模式");
+            }
+            return result;
+        }
+        catch (RedisConnectionFailureException e)
+        {
+            handleRedisException(e);
+            return false;
+        }
     }
 
     /**
@@ -104,8 +234,26 @@ public class RedisCache
      */
     public <T> T getCacheObject(final String key)
     {
-        ValueOperations<String, T> operation = redisTemplate.opsForValue();
-        return operation.get(key);
+        if (!redisAvailable)
+        {
+            return null;
+        }
+        try
+        {
+            ValueOperations<String, T> operation = redisTemplate.opsForValue();
+            T result = operation.get(key);
+            if (!redisAvailable)
+            {
+                redisAvailable = true;
+                log.info("Redis连接已恢复，退出降级模式");
+            }
+            return result;
+        }
+        catch (RedisConnectionFailureException e)
+        {
+            handleRedisException(e);
+            return null;
+        }
     }
 
     /**
@@ -115,7 +263,25 @@ public class RedisCache
      */
     public boolean deleteObject(final String key)
     {
-        return redisTemplate.delete(key);
+        if (!redisAvailable)
+        {
+            return false;
+        }
+        try
+        {
+            boolean result = redisTemplate.delete(key);
+            if (!redisAvailable)
+            {
+                redisAvailable = true;
+                log.info("Redis连接已恢复，退出降级模式");
+            }
+            return result;
+        }
+        catch (RedisConnectionFailureException e)
+        {
+            handleRedisException(e);
+            return false;
+        }
     }
 
     /**
@@ -126,7 +292,25 @@ public class RedisCache
      */
     public boolean deleteObject(final Collection collection)
     {
-        return redisTemplate.delete(collection) > 0;
+        if (!redisAvailable)
+        {
+            return false;
+        }
+        try
+        {
+            boolean result = redisTemplate.delete(collection) > 0;
+            if (!redisAvailable)
+            {
+                redisAvailable = true;
+                log.info("Redis连接已恢复，退出降级模式");
+            }
+            return result;
+        }
+        catch (RedisConnectionFailureException e)
+        {
+            handleRedisException(e);
+            return false;
+        }
     }
 
     /**
@@ -138,8 +322,25 @@ public class RedisCache
      */
     public <T> long setCacheList(final String key, final List<T> dataList)
     {
-        Long count = redisTemplate.opsForList().rightPushAll(key, dataList);
-        return count == null ? 0 : count;
+        if (!redisAvailable)
+        {
+            return 0;
+        }
+        try
+        {
+            Long count = redisTemplate.opsForList().rightPushAll(key, dataList);
+            if (!redisAvailable)
+            {
+                redisAvailable = true;
+                log.info("Redis连接已恢复，退出降级模式");
+            }
+            return count == null ? 0 : count;
+        }
+        catch (RedisConnectionFailureException e)
+        {
+            handleRedisException(e);
+            return 0;
+        }
     }
 
     /**
@@ -150,7 +351,25 @@ public class RedisCache
      */
     public <T> List<T> getCacheList(final String key)
     {
-        return redisTemplate.opsForList().range(key, 0, -1);
+        if (!redisAvailable)
+        {
+            return null;
+        }
+        try
+        {
+            List<T> result = redisTemplate.opsForList().range(key, 0, -1);
+            if (!redisAvailable)
+            {
+                redisAvailable = true;
+                log.info("Redis连接已恢复，退出降级模式");
+            }
+            return result;
+        }
+        catch (RedisConnectionFailureException e)
+        {
+            handleRedisException(e);
+            return null;
+        }
     }
 
     /**
@@ -162,13 +381,30 @@ public class RedisCache
      */
     public <T> BoundSetOperations<String, T> setCacheSet(final String key, final Set<T> dataSet)
     {
-        BoundSetOperations<String, T> setOperation = redisTemplate.boundSetOps(key);
-        Iterator<T> it = dataSet.iterator();
-        while (it.hasNext())
+        if (!redisAvailable)
         {
-            setOperation.add(it.next());
+            return null;
         }
-        return setOperation;
+        try
+        {
+            BoundSetOperations<String, T> setOperation = redisTemplate.boundSetOps(key);
+            Iterator<T> it = dataSet.iterator();
+            while (it.hasNext())
+            {
+                setOperation.add(it.next());
+            }
+            if (!redisAvailable)
+            {
+                redisAvailable = true;
+                log.info("Redis连接已恢复，退出降级模式");
+            }
+            return setOperation;
+        }
+        catch (RedisConnectionFailureException e)
+        {
+            handleRedisException(e);
+            return null;
+        }
     }
 
     /**
@@ -179,7 +415,25 @@ public class RedisCache
      */
     public <T> Set<T> getCacheSet(final String key)
     {
-        return redisTemplate.opsForSet().members(key);
+        if (!redisAvailable)
+        {
+            return null;
+        }
+        try
+        {
+            Set<T> result = redisTemplate.opsForSet().members(key);
+            if (!redisAvailable)
+            {
+                redisAvailable = true;
+                log.info("Redis连接已恢复，退出降级模式");
+            }
+            return result;
+        }
+        catch (RedisConnectionFailureException e)
+        {
+            handleRedisException(e);
+            return null;
+        }
     }
 
     /**
@@ -190,8 +444,24 @@ public class RedisCache
      */
     public <T> void setCacheMap(final String key, final Map<String, T> dataMap)
     {
-        if (dataMap != null) {
-            redisTemplate.opsForHash().putAll(key, dataMap);
+        if (!redisAvailable)
+        {
+            return;
+        }
+        try
+        {
+            if (dataMap != null) {
+                redisTemplate.opsForHash().putAll(key, dataMap);
+            }
+            if (!redisAvailable)
+            {
+                redisAvailable = true;
+                log.info("Redis连接已恢复，退出降级模式");
+            }
+        }
+        catch (RedisConnectionFailureException e)
+        {
+            handleRedisException(e);
         }
     }
 
@@ -203,7 +473,25 @@ public class RedisCache
      */
     public <T> Map<String, T> getCacheMap(final String key)
     {
-        return redisTemplate.opsForHash().entries(key);
+        if (!redisAvailable)
+        {
+            return null;
+        }
+        try
+        {
+            Map<String, T> result = redisTemplate.opsForHash().entries(key);
+            if (!redisAvailable)
+            {
+                redisAvailable = true;
+                log.info("Redis连接已恢复，退出降级模式");
+            }
+            return result;
+        }
+        catch (RedisConnectionFailureException e)
+        {
+            handleRedisException(e);
+            return null;
+        }
     }
 
     /**
@@ -215,7 +503,23 @@ public class RedisCache
      */
     public <T> void setCacheMapValue(final String key, final String hKey, final T value)
     {
-        redisTemplate.opsForHash().put(key, hKey, value);
+        if (!redisAvailable)
+        {
+            return;
+        }
+        try
+        {
+            redisTemplate.opsForHash().put(key, hKey, value);
+            if (!redisAvailable)
+            {
+                redisAvailable = true;
+                log.info("Redis连接已恢复，退出降级模式");
+            }
+        }
+        catch (RedisConnectionFailureException e)
+        {
+            handleRedisException(e);
+        }
     }
 
     /**
@@ -227,8 +531,26 @@ public class RedisCache
      */
     public <T> T getCacheMapValue(final String key, final String hKey)
     {
-        HashOperations<String, String, T> opsForHash = redisTemplate.opsForHash();
-        return opsForHash.get(key, hKey);
+        if (!redisAvailable)
+        {
+            return null;
+        }
+        try
+        {
+            HashOperations<String, String, T> opsForHash = redisTemplate.opsForHash();
+            T result = opsForHash.get(key, hKey);
+            if (!redisAvailable)
+            {
+                redisAvailable = true;
+                log.info("Redis连接已恢复，退出降级模式");
+            }
+            return result;
+        }
+        catch (RedisConnectionFailureException e)
+        {
+            handleRedisException(e);
+            return null;
+        }
     }
 
     /**
@@ -240,7 +562,25 @@ public class RedisCache
      */
     public <T> List<T> getMultiCacheMapValue(final String key, final Collection<Object> hKeys)
     {
-        return redisTemplate.opsForHash().multiGet(key, hKeys);
+        if (!redisAvailable)
+        {
+            return null;
+        }
+        try
+        {
+            List<T> result = redisTemplate.opsForHash().multiGet(key, hKeys);
+            if (!redisAvailable)
+            {
+                redisAvailable = true;
+                log.info("Redis连接已恢复，退出降级模式");
+            }
+            return result;
+        }
+        catch (RedisConnectionFailureException e)
+        {
+            handleRedisException(e);
+            return null;
+        }
     }
 
     /**

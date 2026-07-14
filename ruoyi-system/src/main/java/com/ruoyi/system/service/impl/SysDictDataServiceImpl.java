@@ -2,6 +2,8 @@ package com.ruoyi.system.service.impl;
 
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import com.ruoyi.common.core.domain.entity.SysDictData;
 import com.ruoyi.common.utils.DictUtils;
@@ -57,11 +59,12 @@ public class SysDictDataServiceImpl implements ISysDictDataService
     }
 
     /**
-     * 批量删除字典数据信息
+     * 批量删除字典数据信息（清除Spring缓存）
      * 
      * @param dictCodes 需要删除的字典数据ID
      */
     @Override
+    @CacheEvict(value = "dictData", allEntries = true)
     public void deleteDictDataByIds(Long[] dictCodes)
     {
         for (Long dictCode : dictCodes)
@@ -74,12 +77,13 @@ public class SysDictDataServiceImpl implements ISysDictDataService
     }
 
     /**
-     * 新增保存字典数据信息
+     * 新增保存字典数据信息（清除对应类型缓存）
      * 
      * @param data 字典数据信息
      * @return 结果
      */
     @Override
+    @CacheEvict(value = "dictData", key = "'dict:type:' + #data.dictType")
     public int insertDictData(SysDictData data)
     {
         int row = dictDataMapper.insertDictData(data);
@@ -92,12 +96,13 @@ public class SysDictDataServiceImpl implements ISysDictDataService
     }
 
     /**
-     * 修改保存字典数据信息
+     * 修改保存字典数据信息（清除对应类型缓存）
      * 
      * @param data 字典数据信息
      * @return 结果
      */
     @Override
+    @CacheEvict(value = "dictData", key = "'dict:type:' + #data.dictType")
     public int updateDictData(SysDictData data)
     {
         int row = dictDataMapper.updateDictData(data);
@@ -107,5 +112,18 @@ public class SysDictDataServiceImpl implements ISysDictDataService
             DictUtils.setDictCache(data.getDictType(), dictDatas);
         }
         return row;
+    }
+
+    /**
+     * 根据字典类型查询字典数据（带Spring缓存，1小时过期）
+     * 
+     * @param dictType 字典类型
+     * @return 字典数据集合
+     */
+    @Override
+    @Cacheable(value = "dictData", key = "'dict:type:' + #dictType")
+    public List<SysDictData> selectDictDataByType(String dictType)
+    {
+        return dictDataMapper.selectDictDataByType(dictType);
     }
 }

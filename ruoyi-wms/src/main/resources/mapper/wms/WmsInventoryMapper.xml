@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.wms.mapper.WmsInventoryMapper">
+
+    <resultMap type="WmsInventory" id="WmsInventoryResult">
+        <result property="inventoryId"   column="inventory_id"/>
+        <result property="materialId"    column="material_id"/>
+        <result property="materialCode"  column="material_code"/>
+        <result property="materialName"  column="material_name"/>
+        <result property="specModel"     column="spec_model"/>
+        <result property="unit"          column="unit"/>
+        <result property="warehouseId"   column="warehouse_id"/>
+        <result property="warehouseName" column="warehouse_name"/>
+        <result property="locationId"    column="location_id"/>
+        <result property="locationCode"  column="location_code"/>
+        <result property="locationName"  column="location_name"/>
+        <result property="areaName"      column="area_name"/>
+        <result property="batchNo"       column="batch_no"/>
+        <result property="productionDate" column="production_date"/>
+        <result property="expiryDate"    column="expiry_date"/>
+        <result property="qty"           column="qty"/>
+        <result property="lockQty"       column="lock_qty"/>
+        <result property="version"       column="version"/>
+        <result property="delFlag"       column="del_flag"/>
+        <result property="createBy"      column="create_by"/>
+        <result property="createTime"    column="create_time"/>
+        <result property="updateBy"      column="update_by"/>
+        <result property="updateTime"    column="update_time"/>
+        <result property="remark"        column="remark"/>
+    </resultMap>
+
+    <sql id="selectInventoryVo">
+        SELECT i.inventory_id, i.material_id, m.material_code, m.material_name, m.spec_model, m.unit,
+               i.warehouse_id, w.warehouse_name, i.location_id, l.warehouse_code as location_code,
+               l.warehouse_name as location_name, a.warehouse_name as area_name,
+               i.batch_no, i.production_date, i.expiry_date,
+               i.qty, i.lock_qty, i.version, i.del_flag,
+               i.create_by, i.create_time, i.update_by, i.update_time, i.remark
+        FROM wms_inventory i
+        LEFT JOIN wms_material m ON i.material_id = m.material_id
+        LEFT JOIN wms_warehouse w ON i.warehouse_id = w.warehouse_id
+        LEFT JOIN wms_warehouse l ON i.location_id = l.warehouse_id
+        LEFT JOIN wms_warehouse a ON l.parent_id = a.warehouse_id
+    </sql>
+
+    <select id="selectInventoryList" parameterType="WmsInventory" resultMap="WmsInventoryResult">
+        <include refid="selectInventoryVo"/>
+        <where>
+            i.del_flag = '0'
+            <if test="materialId != null"> AND i.material_id = #{materialId}</if>
+            <if test="materialCode != null and materialCode != ''"> AND m.material_code LIKE CONCAT('%', #{materialCode}, '%')</if>
+            <if test="materialName != null and materialName != ''"> AND m.material_name LIKE CONCAT('%', #{materialName}, '%')</if>
+            <if test="warehouseId != null"> AND i.warehouse_id = #{warehouseId}</if>
+            <if test="locationId != null"> AND i.location_id = #{locationId}</if>
+            <if test="batchNo != null and batchNo != ''"> AND i.batch_no = #{batchNo}</if>
+        </where>
+        ORDER BY i.inventory_id DESC
+    </select>
+
+    <select id="selectInventoryById" parameterType="Long" resultMap="WmsInventoryResult">
+        <include refid="selectInventoryVo"/> WHERE i.inventory_id = #{inventoryId}
+    </select>
+
+    <select id="selectInventoryByUnique" resultMap="WmsInventoryResult">
+        <include refid="selectInventoryVo"/>
+        WHERE i.material_id = #{materialId} AND i.warehouse_id = #{warehouseId}
+          AND i.location_id = #{locationId} AND i.batch_no = #{batchNo} AND i.del_flag = '0'
+    </select>
+
+    <select id="selectInventoryForUpdate" parameterType="Long" resultMap="WmsInventoryResult">
+        <include refid="selectInventoryVo"/> WHERE i.inventory_id = #{inventoryId} FOR UPDATE
+    </select>
+
+    <insert id="insertInventory" parameterType="WmsInventory" useGeneratedKeys="true" keyProperty="inventoryId">
+        INSERT INTO wms_inventory (material_id, warehouse_id, location_id, batch_no, production_date, expiry_date, qty, lock_qty, version, create_by, create_time, remark)
+        VALUES (#{materialId}, #{warehouseId}, #{locationId}, #{batchNo}, #{productionDate}, #{expiryDate}, #{qty}, #{lockQty}, 0, #{createBy}, sysdate(), #{remark})
+    </insert>
+
+    <update id="updateInventory" parameterType="WmsInventory">
+        UPDATE wms_inventory
+        <set>
+            <if test="qty != null">qty = #{qty},</if>
+            <if test="lockQty != null">lock_qty = #{lockQty},</if>
+            <if test="productionDate != null">production_date = #{productionDate},</if>
+            <if test="expiryDate != null">expiry_date = #{expiryDate},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            version = version + 1,
+            update_time = sysdate()
+        </set>
+        WHERE inventory_id = #{inventoryId}
+    </update>
+
+    <update id="updateInventoryWithVersion" parameterType="WmsInventory">
+        UPDATE wms_inventory
+        SET qty = #{qty}, lock_qty = #{lockQty}, version = version + 1, update_by = #{updateBy}, update_time = sysdate()
+        WHERE inventory_id = #{inventoryId} AND version = #{version}
+    </update>
+
+    <delete id="deleteInventoryByIds" parameterType="Long">
+        UPDATE wms_inventory SET del_flag = '2' WHERE inventory_id IN
+        <foreach item="inventoryId" collection="array" open="(" separator="," close=")">#{inventoryId}</foreach>
+    </delete>
+
+</mapper>
