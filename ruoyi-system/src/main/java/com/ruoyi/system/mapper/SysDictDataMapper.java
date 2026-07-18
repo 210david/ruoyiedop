@@ -92,4 +92,22 @@ public interface SysDictDataMapper
      * @return 结果
      */
     public int updateDictDataType(@Param("oldDictType") String oldDictType, @Param("newDictType") String newDictType);
+
+    /**
+     * 校验字典键值是否唯一
+     *
+     * @param dictType 字典类型
+     * @param dictValue 字典键值
+     * @return 字典数据
+     */
+    public SysDictData checkDictValueUnique(@Param("dictType") String dictType, @Param("dictValue") String dictValue);
+
+    /**
+     * 校验字典标签是否唯一
+     *
+     * @param dictType 字典类型
+     * @param dictLabel 字典标签
+     * @return 字典数据
+     */
+    public SysDictData checkDictLabelUnique(@Param("dictType") String dictType, @Param("dictLabel") String dictLabel);
 }

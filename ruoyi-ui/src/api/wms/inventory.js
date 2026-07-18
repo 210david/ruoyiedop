@@ -22,3 +22,17 @@ export function listInventoryLog(query) {
     params: query
   })
 }
+
+export function delInventory(inventoryId) {
+  return request({
+    url: '/wms/inventory/' + inventoryId,
+    method: 'delete'
+  })
+}
+
+export function delInventoryLog(logId) {
+  return request({
+    url: '/wms/log/' + logId,
+    method: 'delete'
+  })
+}

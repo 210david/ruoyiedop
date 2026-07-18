@@ -18,4 +18,14 @@ public interface IWmsInventoryService
     public int lockInventory(Long materialId, Long warehouseId, Long locationId, String batchNo, BigDecimal qty, String createBy);
     public int unlockInventory(Long materialId, Long warehouseId, Long locationId, String batchNo, BigDecimal qty, String createBy);
     public List<WmsInventoryLog> selectInventoryLogList(WmsInventoryLog log);
+
+    /**
+     * 删除库存记录（软删除）
+     */
+    public int deleteInventoryByIds(Long[] inventoryIds);
+
+    /**
+     * 删除库存流水记录（硬删除）
+     */
+    public int deleteInventoryLogByIds(Long[] logIds);
 }

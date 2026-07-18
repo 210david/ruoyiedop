@@ -5,8 +5,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
+import com.ruoyi.common.constant.UserConstants;
 import com.ruoyi.common.core.domain.entity.SysDictData;
 import com.ruoyi.common.utils.DictUtils;
+import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.system.mapper.SysDictDataMapper;
 import com.ruoyi.system.service.ISysDictDataService;
 
@@ -125,5 +127,41 @@ public class SysDictDataServiceImpl implements ISysDictDataService
     public List<SysDictData> selectDictDataByType(String dictType)
     {
         return dictDataMapper.selectDictDataByType(dictType);
+    }
+
+    /**
+     * 校验字典键值是否唯一
+     *
+     * @param dict 字典数据
+     * @return 结果
+     */
+    @Override
+    public boolean checkDictValueUnique(SysDictData dict)
+    {
+        Long dictCode = StringUtils.isNull(dict.getDictCode()) ? -1L : dict.getDictCode();
+        SysDictData dictData = dictDataMapper.checkDictValueUnique(dict.getDictType(), dict.getDictValue());
+        if (StringUtils.isNotNull(dictData) && dictData.getDictCode().longValue() != dictCode.longValue())
+        {
+            return UserConstants.NOT_UNIQUE;
+        }
+        return UserConstants.UNIQUE;
+    }
+
+    /**
+     * 校验字典标签是否唯一
+     *
+     * @param dict 字典数据
+     * @return 结果
+     */
+    @Override
+    public boolean checkDictLabelUnique(SysDictData dict)
+    {
+        Long dictCode = StringUtils.isNull(dict.getDictCode()) ? -1L : dict.getDictCode();
+        SysDictData dictData = dictDataMapper.checkDictLabelUnique(dict.getDictType(), dict.getDictLabel());
+        if (StringUtils.isNotNull(dictData) && dictData.getDictCode().longValue() != dictCode.longValue())
+        {
+            return UserConstants.NOT_UNIQUE;
+        }
+        return UserConstants.UNIQUE;
     }
 }

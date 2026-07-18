@@ -94,9 +94,8 @@ public class MimeTypeUtils
             case IMAGE_PNG:
                 return "png";
             case IMAGE_JPG:
-                return "jpg";
             case IMAGE_JPEG:
-                return "jpeg";
+                return "jpg";
             case IMAGE_BMP:
                 return "bmp";
             case IMAGE_GIF:
@@ -104,5 +103,28 @@ public class MimeTypeUtils
             default:
                 return "";
         }
+    }
+
+    /**
+     * 判断两个扩展名是否等价（如 jpg 与 jpeg 等价）
+     *
+     * @param ext1 扩展名1
+     * @param ext2 扩展名2
+     * @return 是否等价
+     */
+    public static boolean isEquivalentExtension(String ext1, String ext2)
+    {
+        if (ext1 == null || ext2 == null)
+        {
+            return false;
+        }
+        if (ext1.equalsIgnoreCase(ext2))
+        {
+            return true;
+        }
+        // jpg 与 jpeg 等价
+        String norm1 = ext1.equalsIgnoreCase("jpeg") ? "jpg" : ext1.toLowerCase();
+        String norm2 = ext2.equalsIgnoreCase("jpeg") ? "jpg" : ext2.toLowerCase();
+        return norm1.equals(norm2);
     }
 }

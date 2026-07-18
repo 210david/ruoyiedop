@@ -1,0 +1,410 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.wms.mapper.WmsStatisticsMapper">
+
+    <resultMap type="com.ruoyi.wms.domain.vo.WmsStatisticsVO" id="WmsStatisticsResult">
+        <result property="name"            column="name"/>
+        <result property="code"            column="code"/>
+        <result property="qty"             column="qty"/>
+        <result property="lockQty"         column="lock_qty"/>
+        <result property="totalQty"        column="total_qty"/>
+        <result property="count"           column="count"/>
+        <result property="inboundQty"      column="inbound_qty"/>
+        <result property="outboundQty"     column="outbound_qty"/>
+        <result property="amount"          column="amount"/>
+        <result property="materialId"      column="material_id"/>
+        <result property="materialCode"    column="material_code"/>
+        <result property="materialName"    column="material_name"/>
+        <result property="specModel"       column="spec_model"/>
+        <result property="unit"            column="unit"/>
+        <result property="warehouseId"     column="warehouse_id"/>
+        <result property="warehouseName"   column="warehouse_name"/>
+        <result property="materialType"    column="material_type"/>
+        <result property="safetyStockMin"  column="safety_stock_min"/>
+        <result property="safetyStockMax"  column="safety_stock_max"/>
+        <result property="date"            column="date"/>
+        <result property="orderType"       column="order_type"/>
+        <result property="alertType"       column="alert_type"/>
+        <result property="productionDate"  column="production_date"/>
+        <result property="expiryDate"      column="expiry_date"/>
+        <result property="daysUntilExpiry" column="days_until_expiry"/>
+        <result property="expiryAlertDays" column="expiry_alert_days"/>
+        <result property="isExpiryManage"  column="is_expiry_manage"/>
+    </resultMap>
+
+    <!-- 概览统计 -->
+    <select id="selectOverview" resultMap="WmsStatisticsResult">
+        SELECT
+            (SELECT COUNT(*) FROM wms_material WHERE del_flag = '0') AS count,
+            (SELECT IFNULL(SUM(qty), 0) FROM wms_inventory WHERE del_flag = '0') AS qty,
+            (SELECT IFNULL(SUM(lock_qty), 0) FROM wms_inventory WHERE del_flag = '0') AS lock_qty,
+            (SELECT COUNT(*) FROM wms_warehouse WHERE del_flag = '0' AND node_type = '1') AS material_id,
+            (SELECT COUNT(*) FROM wms_inbound_order WHERE del_flag = '0' AND status = '3') AS inbound_qty,
+            (SELECT COUNT(*) FROM wms_outbound_order WHERE del_flag = '0' AND status = '3') AS outbound_qty
+        FROM dual
+    </select>
+
+    <!-- 按仓库统计库存分布 -->
+    <select id="selectInventoryByWarehouse" resultMap="WmsStatisticsResult">
+        SELECT
+            w.warehouse_id   AS warehouse_id,
+            w.warehouse_name AS name,
+            IFNULL(SUM(i.qty), 0)      AS qty,
+            IFNULL(SUM(i.lock_qty), 0)  AS lock_qty,
+            IFNULL(SUM(i.qty + i.lock_qty), 0) AS total_qty
+        FROM wms_warehouse w
+        LEFT JOIN wms_inventory i ON w.warehouse_id = i.warehouse_id AND i.del_flag = '0'
+        WHERE w.del_flag = '0' AND w.node_type = '1'
+        GROUP BY w.warehouse_id, w.warehouse_name
+        ORDER BY total_qty DESC
+    </select>
+
+    <!-- 按物料类型统计库存分布 -->
+    <select id="selectInventoryByMaterialType" resultMap="WmsStatisticsResult">
+        SELECT
+            m.material_type AS code,
+            CASE m.material_type
+                WHEN '0' THEN '原材料'
+                WHEN '1' THEN '半成品'
+                WHEN '2' THEN '成品'
+                WHEN '3' THEN '辅料'
+                ELSE '未分类'
+            END AS name,
+            IFNULL(SUM(i.qty), 0)      AS qty,
+            IFNULL(SUM(i.lock_qty), 0)  AS lock_qty,
+            IFNULL(SUM(i.qty + i.lock_qty), 0) AS total_qty
+        FROM wms_material m
+        LEFT JOIN wms_inventory i ON m.material_id = i.material_id AND i.del_flag = '0'
+        WHERE m.del_flag = '0'
+        GROUP BY m.material_type
+        ORDER BY total_qty DESC
+    </select>
+
+    <!-- 出入库趋势（按日统计） -->
+    <select id="selectInboundOutboundTrend" parameterType="com.ruoyi.wms.domain.vo.WmsStatisticsVO" resultMap="WmsStatisticsResult">
+        SELECT
+            t.date AS date,
+            IFNULL(SUM(t.inbound_qty), 0) AS inbound_qty,
+            IFNULL(SUM(t.outbound_qty), 0) AS outbound_qty
+        FROM (
+            SELECT
+                DATE(o.complete_date) AS date,
+                o.total_qty AS inbound_qty,
+                0 AS outbound_qty
+            FROM wms_inbound_order o
+            WHERE o.del_flag = '0' AND o.status = '3' AND o.complete_date IS NOT NULL
+            <if test="params.beginTime != null and params.beginTime != ''"><![CDATA[ AND DATE(o.complete_date) >= #{params.beginTime}]]></if>
+            <if test="params.endTime != null and params.endTime != ''"><![CDATA[ AND DATE(o.complete_date) <= #{params.endTime}]]></if>
+            UNION ALL
+            SELECT
+                DATE(o.complete_date) AS date,
+                0 AS inbound_qty,
+                o.total_qty AS outbound_qty
+            FROM wms_outbound_order o
+            WHERE o.del_flag = '0' AND o.status = '3' AND o.complete_date IS NOT NULL
+            <if test="params.beginTime != null and params.beginTime != ''"><![CDATA[ AND DATE(o.complete_date) >= #{params.beginTime}]]></if>
+            <if test="params.endTime != null and params.endTime != ''"><![CDATA[ AND DATE(o.complete_date) <= #{params.endTime}]]></if>
+        ) t
+        GROUP BY t.date
+        ORDER BY t.date
+    </select>
+
+    <!-- 入库按类型统计 -->
+    <select id="selectInboundByType" parameterType="com.ruoyi.wms.domain.vo.WmsStatisticsVO" resultMap="WmsStatisticsResult">
+        SELECT
+            o.order_type AS order_type,
+            CASE o.order_type
+                WHEN '0' THEN '采购入库'
+                WHEN '1' THEN '生产入库'
+                WHEN '2' THEN '退货入库'
+                WHEN '3' THEN '调拨入库'
+                ELSE '其他'
+            END AS name,
+            COUNT(*) AS count,
+            IFNULL(SUM(o.total_qty), 0) AS qty,
+            IFNULL(SUM(o.total_amount), 0) AS amount
+        FROM wms_inbound_order o
+        WHERE o.del_flag = '0' AND o.status = '3'
+        <if test="params.beginTime != null and params.beginTime != ''"><![CDATA[ AND DATE(o.complete_date) >= #{params.beginTime}]]></if>
+        <if test="params.endTime != null and params.endTime != ''"><![CDATA[ AND DATE(o.complete_date) <= #{params.endTime}]]></if>
+        GROUP BY o.order_type
+        ORDER BY qty DESC
+    </select>
+
+    <!-- 出库按类型统计 -->
+    <select id="selectOutboundByType" parameterType="com.ruoyi.wms.domain.vo.WmsStatisticsVO" resultMap="WmsStatisticsResult">
+        SELECT
+            o.order_type AS order_type,
+            CASE o.order_type
+                WHEN '0' THEN '销售出库'
+                WHEN '1' THEN '领料出库'
+                WHEN '2' THEN '调拨出库'
+                WHEN '3' THEN '退货出库'
+                ELSE '其他'
+            END AS name,
+            COUNT(*) AS count,
+            IFNULL(SUM(o.total_qty), 0) AS qty
+        FROM wms_outbound_order o
+        WHERE o.del_flag = '0' AND o.status = '3'
+        <if test="params.beginTime != null and params.beginTime != ''"><![CDATA[ AND DATE(o.complete_date) >= #{params.beginTime}]]></if>
+        <if test="params.endTime != null and params.endTime != ''"><![CDATA[ AND DATE(o.complete_date) <= #{params.endTime}]]></if>
+        GROUP BY o.order_type
+        ORDER BY qty DESC
+    </select>
+
+    <!-- 物料库存排行 Top N -->
+    <select id="selectMaterialTop" parameterType="com.ruoyi.wms.domain.vo.WmsStatisticsVO" resultMap="WmsStatisticsResult">
+        SELECT
+            m.material_id    AS material_id,
+            m.material_code  AS material_code,
+            m.material_name  AS material_name,
+            m.spec_model     AS spec_model,
+            m.unit           AS unit,
+            IFNULL(SUM(i.qty), 0)       AS qty,
+            IFNULL(SUM(i.lock_qty), 0)   AS lock_qty,
+            IFNULL(SUM(i.qty + i.lock_qty), 0) AS total_qty
+        FROM wms_material m
+        LEFT JOIN wms_inventory i ON m.material_id = i.material_id AND i.del_flag = '0'
+        WHERE m.del_flag = '0'
+        GROUP BY m.material_id, m.material_code, m.material_name, m.spec_model, m.unit
+        ORDER BY total_qty DESC
+        LIMIT #{count}
+    </select>
+
+    <!-- 库存预警：低于安全库存下限 -->
+    <select id="selectStockAlert" resultMap="WmsStatisticsResult">
+        SELECT
+            t.material_id,
+            t.material_code,
+            t.material_name,
+            t.spec_model,
+            t.unit,
+            t.material_type,
+            t.safety_stock_min,
+            t.safety_stock_max,
+            t.warehouse_name,
+            IFNULL(t.qty, 0) AS qty
+        FROM (
+            SELECT
+                m.material_id    AS material_id,
+                m.material_code  AS material_code,
+                m.material_name  AS material_name,
+                m.spec_model     AS spec_model,
+                m.unit           AS unit,
+                m.material_type  AS material_type,
+                m.safety_stock_min AS safety_stock_min,
+                m.safety_stock_max AS safety_stock_max,
+                w.warehouse_name AS warehouse_name,
+                SUM(IFNULL(i.qty, 0)) AS qty
+            FROM wms_material m
+            LEFT JOIN wms_inventory i ON m.material_id = i.material_id AND i.del_flag = '0'
+            LEFT JOIN wms_warehouse w ON i.warehouse_id = w.warehouse_id AND w.del_flag = '0'
+            WHERE m.del_flag = '0' AND m.safety_stock_min IS NOT NULL AND m.safety_stock_min > 0
+            GROUP BY m.material_id, m.material_code, m.material_name, m.spec_model, m.unit,
+                     m.material_type, m.safety_stock_min, m.safety_stock_max, w.warehouse_name
+        ) t
+        WHERE t.qty <![CDATA[ < ]]> t.safety_stock_min
+        ORDER BY (t.safety_stock_min - t.qty) DESC
+    </select>
+
+    <!-- 库存预警列表（统一：低库存/积压/临期/过期），支持筛选 -->
+    <select id="selectStockAlertList" parameterType="com.ruoyi.wms.domain.vo.WmsStatisticsVO" resultMap="WmsStatisticsResult">
+        SELECT * FROM (
+            <!-- 库存不足预警 -->
+            SELECT
+                'low_stock'      AS alert_type,
+                m.material_id     AS material_id,
+                m.material_code   AS material_code,
+                m.material_name   AS material_name,
+                m.spec_model      AS spec_model,
+                m.unit            AS unit,
+                m.material_type   AS material_type,
+                m.safety_stock_min AS safety_stock_min,
+                m.safety_stock_max AS safety_stock_max,
+                NULL              AS warehouse_id,
+                NULL              AS warehouse_name,
+                IFNULL(SUM(i.qty), 0) AS qty,
+                NULL              AS production_date,
+                NULL              AS expiry_date,
+                NULL              AS days_until_expiry,
+                NULL              AS expiry_alert_days,
+                m.is_expiry_manage AS is_expiry_manage
+            FROM wms_material m
+            LEFT JOIN wms_inventory i ON m.material_id = i.material_id AND i.del_flag = '0'
+            WHERE m.del_flag = '0'
+              AND m.safety_stock_min IS NOT NULL AND m.safety_stock_min > 0
+              AND m.status = '0'
+            GROUP BY m.material_id, m.material_code, m.material_name, m.spec_model, m.unit,
+                     m.material_type, m.safety_stock_min, m.safety_stock_max, m.is_expiry_manage
+            HAVING IFNULL(SUM(i.qty), 0) <![CDATA[ < ]]> MAX(m.safety_stock_min)
+
+            UNION ALL
+
+            <!-- 库存积压预警 -->
+            SELECT
+                'overstock'      AS alert_type,
+                m.material_id     AS material_id,
+                m.material_code   AS material_code,
+                m.material_name   AS material_name,
+                m.spec_model      AS spec_model,
+                m.unit            AS unit,
+                m.material_type   AS material_type,
+                m.safety_stock_min AS safety_stock_min,
+                m.safety_stock_max AS safety_stock_max,
+                NULL              AS warehouse_id,
+                NULL              AS warehouse_name,
+                IFNULL(SUM(i.qty), 0) AS qty,
+                NULL              AS production_date,
+                NULL              AS expiry_date,
+                NULL              AS days_until_expiry,
+                NULL              AS expiry_alert_days,
+                m.is_expiry_manage AS is_expiry_manage
+            FROM wms_material m
+            LEFT JOIN wms_inventory i ON m.material_id = i.material_id AND i.del_flag = '0'
+            WHERE m.del_flag = '0'
+              AND m.safety_stock_max IS NOT NULL AND m.safety_stock_max > 0
+              AND m.status = '0'
+            GROUP BY m.material_id, m.material_code, m.material_name, m.spec_model, m.unit,
+                     m.material_type, m.safety_stock_min, m.safety_stock_max, m.is_expiry_manage
+            HAVING IFNULL(SUM(i.qty), 0) <![CDATA[ > ]]> MAX(m.safety_stock_max)
+
+            UNION ALL
+
+            <!-- 临期预警 -->
+            SELECT
+                'near_expiry'     AS alert_type,
+                m.material_id     AS material_id,
+                m.material_code   AS material_code,
+                m.material_name   AS material_name,
+                m.spec_model      AS spec_model,
+                m.unit            AS unit,
+                m.material_type   AS material_type,
+                m.safety_stock_min AS safety_stock_min,
+                m.safety_stock_max AS safety_stock_max,
+                i.warehouse_id    AS warehouse_id,
+                w.warehouse_name  AS warehouse_name,
+                i.qty             AS qty,
+                i.production_date AS production_date,
+                i.expiry_date     AS expiry_date,
+                DATEDIFF(i.expiry_date, NOW()) AS days_until_expiry,
+                m.expiry_alert_days AS expiry_alert_days,
+                m.is_expiry_manage AS is_expiry_manage
+            FROM wms_inventory i
+            INNER JOIN wms_material m ON i.material_id = m.material_id AND m.del_flag = '0'
+            LEFT JOIN wms_warehouse w ON i.warehouse_id = w.warehouse_id AND w.del_flag = '0'
+            WHERE i.del_flag = '0'
+              AND m.is_expiry_manage = '1'
+              AND i.expiry_date IS NOT NULL
+              AND i.qty > 0
+              AND i.expiry_date <![CDATA[ > ]]> NOW()
+              AND DATEDIFF(i.expiry_date, NOW()) <![CDATA[ <= ]]> IFNULL(m.expiry_alert_days, 30)
+
+            UNION ALL
+
+            <!-- 过期预警 -->
+            SELECT
+                'expired'         AS alert_type,
+                m.material_id     AS material_id,
+                m.material_code   AS material_code,
+                m.material_name   AS material_name,
+                m.spec_model      AS spec_model,
+                m.unit            AS unit,
+                m.material_type   AS material_type,
+                m.safety_stock_min AS safety_stock_min,
+                m.safety_stock_max AS safety_stock_max,
+                i.warehouse_id    AS warehouse_id,
+                w.warehouse_name  AS warehouse_name,
+                i.qty             AS qty,
+                i.production_date AS production_date,
+                i.expiry_date     AS expiry_date,
+                DATEDIFF(i.expiry_date, NOW()) AS days_until_expiry,
+                m.expiry_alert_days AS expiry_alert_days,
+                m.is_expiry_manage AS is_expiry_manage
+            FROM wms_inventory i
+            INNER JOIN wms_material m ON i.material_id = m.material_id AND m.del_flag = '0'
+            LEFT JOIN wms_warehouse w ON i.warehouse_id = w.warehouse_id AND w.del_flag = '0'
+            WHERE i.del_flag = '0'
+              AND m.is_expiry_manage = '1'
+              AND i.expiry_date IS NOT NULL
+              AND i.qty > 0
+              AND i.expiry_date <![CDATA[ < ]]> NOW()
+        ) t
+        <where>
+            <if test="alertType != null and alertType != ''"> AND t.alert_type = #{alertType}</if>
+            <if test="materialCode != null and materialCode != ''"> AND t.material_code LIKE CONCAT('%', #{materialCode}, '%')</if>
+            <if test="materialName != null and materialName != ''"> AND t.material_name LIKE CONCAT('%', #{materialName}, '%')</if>
+            <if test="materialType != null and materialType != ''"> AND t.material_type = #{materialType}</if>
+            <if test="warehouseId != null"> AND t.warehouse_id = #{warehouseId}</if>
+        </where>
+        ORDER BY
+            CASE t.alert_type
+                WHEN 'expired' THEN 1
+                WHEN 'near_expiry' THEN 2
+                WHEN 'low_stock' THEN 3
+                WHEN 'overstock' THEN 4
+            END,
+            t.days_until_expiry ASC,
+            t.material_code ASC
+    </select>
+
+    <!-- 库存预警汇总统计 -->
+    <select id="selectStockAlertSummary" resultMap="WmsStatisticsResult">
+        SELECT
+            t.alert_type AS alert_type,
+            COUNT(*) AS count
+        FROM (
+            SELECT 'low_stock' AS alert_type
+            FROM wms_material m
+            LEFT JOIN wms_inventory i ON m.material_id = i.material_id AND i.del_flag = '0'
+            WHERE m.del_flag = '0' AND m.safety_stock_min IS NOT NULL AND m.safety_stock_min > 0 AND m.status = '0'
+            GROUP BY m.material_id, m.safety_stock_min
+            HAVING IFNULL(SUM(i.qty), 0) <![CDATA[ < ]]> MAX(m.safety_stock_min)
+
+            UNION ALL
+
+            SELECT 'overstock' AS alert_type
+            FROM wms_material m
+            LEFT JOIN wms_inventory i ON m.material_id = i.material_id AND i.del_flag = '0'
+            WHERE m.del_flag = '0' AND m.safety_stock_max IS NOT NULL AND m.safety_stock_max > 0 AND m.status = '0'
+            GROUP BY m.material_id, m.safety_stock_max
+            HAVING IFNULL(SUM(i.qty), 0) <![CDATA[ > ]]> MAX(m.safety_stock_max)
+
+            UNION ALL
+
+            SELECT 'near_expiry' AS alert_type
+            FROM wms_inventory i
+            INNER JOIN wms_material m ON i.material_id = m.material_id AND m.del_flag = '0'
+            WHERE i.del_flag = '0' AND m.is_expiry_manage = '1'
+              AND i.expiry_date IS NOT NULL AND i.qty > 0
+              AND i.expiry_date <![CDATA[ > ]]> NOW()
+              AND DATEDIFF(i.expiry_date, NOW()) <![CDATA[ <= ]]> IFNULL(m.expiry_alert_days, 30)
+
+            UNION ALL
+
+            SELECT 'expired' AS alert_type
+            FROM wms_inventory i
+            INNER JOIN wms_material m ON i.material_id = m.material_id AND m.del_flag = '0'
+            WHERE i.del_flag = '0' AND m.is_expiry_manage = '1'
+              AND i.expiry_date IS NOT NULL AND i.qty > 0
+              AND i.expiry_date <![CDATA[ < ]]> NOW()
+        ) t
+        GROUP BY t.alert_type
+    </select>
+
+    <!-- 根据预警信息删除对应的库存记录（临期/过期预警） -->
+    <update id="deleteInventoryByAlert">
+        UPDATE wms_inventory SET del_flag = '2'
+        WHERE del_flag = '0'
+          AND material_id = #{materialId}
+          <if test="warehouseId != null"> AND warehouse_id = #{warehouseId}</if>
+          <if test="productionDate != null"> AND production_date = #{productionDate}</if>
+          <if test="expiryDate != null"> AND expiry_date = #{expiryDate}</if>
+    </update>
+
+    <!-- 清除物料的安全库存上下限设置（库存不足/积压预警） -->
+    <update id="clearSafetyStock">
+        UPDATE wms_material SET safety_stock_min = NULL, safety_stock_max = NULL
+        WHERE material_id = #{materialId}
+    </update>
+
+</mapper>

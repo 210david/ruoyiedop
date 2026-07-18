@@ -21,14 +21,14 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="list" @selection-change="handleSelectionChange">
+    <el-table border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="供应商编码" prop="supplierCode" width="130" />
+      <el-table-column label="供应商编码" prop="supplierCode" :width="colWidth('supplierCode', 130)" resizable />
       <el-table-column label="供应商名称" prop="supplierName" show-overflow-tooltip />
-      <el-table-column label="联系人" prop="contactPerson" width="100" />
-      <el-table-column label="联系电话" prop="contactPhone" width="130" />
+      <el-table-column label="联系人" prop="contactPerson" :width="colWidth('contactPerson', 100)" resizable />
+      <el-table-column label="联系电话" prop="contactPhone" :width="colWidth('contactPhone', 130)" resizable />
       <el-table-column label="地址" prop="address" show-overflow-tooltip />
-      <el-table-column label="状态" prop="status" width="80" align="center">
+      <el-table-column label="状态" prop="status" :width="colWidth('status', 80)" resizable align="center">
         <template #default="scope">
           <el-tag :type="scope.row.status === '0' ? 'success' : 'danger'">{{ scope.row.status === '0' ? '正常' : '停用' }}</el-tag>
         </template>
@@ -76,8 +76,10 @@
 
 <script setup name="WmsSupplier">
 import { listSupplier, getSupplier, addSupplier, updateSupplier, delSupplier } from '@/api/wms/supplier'
+import { useColumnResize } from '@/composables/useColumnResize'
 
 const { proxy } = getCurrentInstance()
+const { colWidth, onHeaderDragEnd } = useColumnResize('wms_supplier_index')
 
 const list = ref([])
 const open = ref(false)

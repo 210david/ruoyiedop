@@ -60,4 +60,9 @@
             #{changeQty}, #{beforeQty}, #{afterQty}, #{refOrderType}, #{refOrderNo}, #{createBy}, sysdate(), #{remark})
     </insert>
 
+    <delete id="deleteInventoryLogByIds" parameterType="Long">
+        DELETE FROM wms_inventory_log WHERE log_id IN
+        <foreach item="logId" collection="array" open="(" separator="," close=")">#{logId}</foreach>
+    </delete>
+
 </mapper>

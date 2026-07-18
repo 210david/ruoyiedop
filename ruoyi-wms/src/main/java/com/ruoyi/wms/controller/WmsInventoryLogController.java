@@ -6,6 +6,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import com.ruoyi.common.annotation.Log;
 import com.ruoyi.common.core.controller.BaseController;
+import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.core.page.TableDataInfo;
 import com.ruoyi.common.enums.BusinessType;
 import com.ruoyi.common.utils.poi.ExcelUtil;
@@ -37,5 +38,13 @@ public class WmsInventoryLogController extends BaseController
         List<WmsInventoryLog> list = wmsInventoryService.selectInventoryLogList(log);
         ExcelUtil<WmsInventoryLog> util = new ExcelUtil<>(WmsInventoryLog.class);
         util.exportExcel(response, list, "库存流水数据");
+    }
+
+    @Log(title = "库存流水", businessType = BusinessType.DELETE)
+    @PreAuthorize("@ss.hasPermi('wms:log:remove')")
+    @DeleteMapping("/{logIds}")
+    public AjaxResult remove(@PathVariable Long[] logIds)
+    {
+        return toAjax(wmsInventoryService.deleteInventoryLogByIds(logIds));
     }
 }

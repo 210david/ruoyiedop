@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.dms.mapper.DmsWorkOrderMapper">
+
+    <resultMap type="DmsWorkOrder" id="DmsWorkOrderResult">
+        <result property="orderId"           column="order_id"/>
+        <result property="orderNo"           column="order_no"/>
+        <result property="equipmentId"       column="equipment_id"/>
+        <result property="equipmentCode"     column="equipment_code"/>
+        <result property="equipmentName"     column="equipment_name"/>
+        <result property="orderType"         column="order_type"/>
+        <result property="faultDescription"  column="fault_description"/>
+        <result property="reporterId"        column="reporter_id"/>
+        <result property="reporterName"      column="reporter_name"/>
+        <result property="reportTime"        column="report_time"/>
+        <result property="priority"          column="priority"/>
+        <result property="orderStatus"       column="order_status"/>
+        <result property="assigneeId"        column="assignee_id"/>
+        <result property="assigneeName"      column="assignee_name"/>
+        <result property="assignTime"        column="assign_time"/>
+        <result property="arriveTime"        column="arrive_time"/>
+        <result property="slaResponseDeadline" column="sla_response_deadline"/>
+        <result property="slaProcessDeadline" column="sla_process_deadline"/>
+        <result property="slaTimeoutStatus"   column="sla_timeout_status"/>
+        <result property="slaEscalated"       column="sla_escalated"/>
+        <result property="faultCause"        column="fault_cause"/>
+        <result property="repairMeasure"     column="repair_measure"/>
+        <result property="sparePartsUsed"    column="spare_parts_used"/>
+        <result property="taskChecklist"     column="task_checklist"/>
+        <result property="downtimeDuration"  column="downtime_duration"/>
+        <result property="completeTime"      column="complete_time"/>
+        <result property="completeRemark"    column="complete_remark"/>
+        <result property="deviationReason"   column="deviation_reason"/>
+        <result property="assignerId"        column="assigner_id"/>
+        <result property="assignerName"      column="assigner_name"/>
+        <result property="verifierId"        column="verifier_id"/>
+        <result property="verifierName"      column="verifier_name"/>
+        <result property="verifyTime"        column="verify_time"/>
+        <result property="verifyOpinion"     column="verify_opinion"/>
+        <result property="rating"            column="rating"/>
+        <result property="delFlag"           column="del_flag"/>
+        <result property="createBy"          column="create_by"/>
+        <result property="createTime"        column="create_time"/>
+        <result property="updateBy"          column="update_by"/>
+        <result property="updateTime"        column="update_time"/>
+        <result property="remark"            column="remark"/>
+    </resultMap>
+
+    <sql id="selectWorkOrderVo">
+        SELECT order_id, order_no, equipment_id, equipment_code, equipment_name, order_type,
+               fault_description, reporter_id, reporter_name, report_time, priority, order_status,
+               assignee_id, assignee_name, assign_time, arrive_time,
+               sla_response_deadline, sla_process_deadline, sla_timeout_status, sla_escalated,
+               fault_cause, repair_measure,
+               spare_parts_used, task_checklist, downtime_duration, complete_time, complete_remark, deviation_reason,
+               assigner_id, assigner_name, verifier_id, verifier_name, verify_time, verify_opinion, rating,
+               del_flag, create_by, create_time, update_by, update_time, remark
+        FROM dms_work_order
+    </sql>
+
+    <select id="selectWorkOrderList" parameterType="DmsWorkOrder" resultMap="DmsWorkOrderResult">
+        <include refid="selectWorkOrderVo"/>
+        <where>
+            del_flag = '0'
+            <if test="orderNo != null and orderNo != ''"> AND order_no LIKE CONCAT('%', #{orderNo}, '%')</if>
+            <if test="equipmentId != null"> AND equipment_id = #{equipmentId}</if>
+            <if test="equipmentName != null and equipmentName != ''"> AND equipment_name LIKE CONCAT('%', #{equipmentName}, '%')</if>
+            <if test="orderType != null and orderType != ''"> AND order_type = #{orderType}</if>
+            <if test="orderStatus != null and orderStatus != ''"> AND order_status = #{orderStatus}</if>
+            <if test="priority != null and priority != ''"> AND priority = #{priority}</if>
+            <if test="assigneeId != null"> AND assignee_id = #{assigneeId}</if>
+            <if test="reporterName != null and reporterName != ''"> AND reporter_name LIKE CONCAT('%', #{reporterName}, '%')</if>
+            <if test="faultDescription != null and faultDescription != ''"> AND fault_description LIKE CONCAT('%', #{faultDescription}, '%')</if>
+            <if test="remark != null and remark != ''"> AND remark LIKE CONCAT('%', #{remark}, '%')</if>
+        </where>
+        ORDER BY order_id DESC
+    </select>
+
+    <select id="selectWorkOrderById" parameterType="Long" resultMap="DmsWorkOrderResult">
+        <include refid="selectWorkOrderVo"/> WHERE order_id = #{orderId}
+    </select>
+
+    <select id="selectMaxOrderNo" resultType="String">
+        SELECT order_no FROM dms_work_order ORDER BY order_no DESC LIMIT 1
+    </select>
+
+    <!-- 查询SLA超时的工单（未完结且未升级） -->
+    <select id="selectSlaTimeoutOrders" resultMap="DmsWorkOrderResult">
+        <include refid="selectWorkOrderVo"/>
+        WHERE del_flag = '0'
+          AND sla_escalated = '0'
+          AND order_status IN ('0','1','2','3')
+          AND (
+              (sla_response_deadline IS NOT NULL AND sla_response_deadline &lt; NOW() AND order_status IN ('0'))
+              OR
+              (sla_process_deadline IS NOT NULL AND sla_process_deadline &lt; NOW() AND order_status IN ('1','2','3'))
+          )
+        ORDER BY order_id DESC
+    </select>
+
+    <insert id="insertWorkOrder" parameterType="DmsWorkOrder" useGeneratedKeys="true" keyProperty="orderId">
+        INSERT INTO dms_work_order (
+            order_no, equipment_id, equipment_code, equipment_name, order_type, fault_description,
+            reporter_id, reporter_name, report_time, priority, order_status,
+            assignee_id, assignee_name, assign_time, arrive_time,
+            sla_response_deadline, sla_process_deadline, sla_timeout_status, sla_escalated,
+            fault_cause, repair_measure,
+            spare_parts_used, task_checklist, downtime_duration, complete_time, complete_remark, deviation_reason,
+            assigner_id, assigner_name, verifier_id, verifier_name, verify_time, verify_opinion, rating,
+            create_by, create_time, remark
+        ) VALUES (
+            #{orderNo}, #{equipmentId}, #{equipmentCode}, #{equipmentName}, #{orderType}, #{faultDescription},
+            #{reporterId}, #{reporterName}, #{reportTime}, #{priority}, #{orderStatus},
+            #{assigneeId}, #{assigneeName}, #{assignTime}, #{arriveTime},
+            #{slaResponseDeadline}, #{slaProcessDeadline}, #{slaTimeoutStatus}, #{slaEscalated},
+            #{faultCause}, #{repairMeasure},
+            #{sparePartsUsed}, #{taskChecklist}, #{downtimeDuration}, #{completeTime}, #{completeRemark}, #{deviationReason},
+            #{assignerId}, #{assignerName}, #{verifierId}, #{verifierName}, #{verifyTime}, #{verifyOpinion}, #{rating},
+            #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateWorkOrder" parameterType="DmsWorkOrder">
+        UPDATE dms_work_order
+        <set>
+            <if test="orderNo != null and orderNo != ''">order_no = #{orderNo},</if>
+            <if test="equipmentId != null">equipment_id = #{equipmentId},</if>
+            <if test="equipmentCode != null">equipment_code = #{equipmentCode},</if>
+            <if test="equipmentName != null">equipment_name = #{equipmentName},</if>
+            <if test="orderType != null and orderType != ''">order_type = #{orderType},</if>
+            <if test="faultDescription != null">fault_description = #{faultDescription},</if>
+            <if test="reporterId != null">reporter_id = #{reporterId},</if>
+            <if test="reporterName != null">reporter_name = #{reporterName},</if>
+            <if test="reportTime != null">report_time = #{reportTime},</if>
+            <if test="priority != null and priority != ''">priority = #{priority},</if>
+            <if test="orderStatus != null and orderStatus != ''">order_status = #{orderStatus},</if>
+            <if test="assigneeId != null">assignee_id = #{assigneeId},</if>
+            <if test="assigneeName != null">assignee_name = #{assigneeName},</if>
+            <if test="assignTime != null">assign_time = #{assignTime},</if>
+            <if test="arriveTime != null">arrive_time = #{arriveTime},</if>
+            <if test="slaResponseDeadline != null">sla_response_deadline = #{slaResponseDeadline},</if>
+            <if test="slaProcessDeadline != null">sla_process_deadline = #{slaProcessDeadline},</if>
+            <if test="slaTimeoutStatus != null and slaTimeoutStatus != ''">sla_timeout_status = #{slaTimeoutStatus},</if>
+            <if test="slaEscalated != null and slaEscalated != ''">sla_escalated = #{slaEscalated},</if>
+            <if test="faultCause != null">fault_cause = #{faultCause},</if>
+            <if test="repairMeasure != null">repair_measure = #{repairMeasure},</if>
+            <if test="sparePartsUsed != null">spare_parts_used = #{sparePartsUsed},</if>
+            <if test="taskChecklist != null">task_checklist = #{taskChecklist},</if>
+            <if test="downtimeDuration != null">downtime_duration = #{downtimeDuration},</if>
+            <if test="completeTime != null">complete_time = #{completeTime},</if>
+            <if test="completeRemark != null">complete_remark = #{completeRemark},</if>
+            <if test="deviationReason != null">deviation_reason = #{deviationReason},</if>
+            <if test="assignerId != null">assigner_id = #{assignerId},</if>
+            <if test="assignerName != null">assigner_name = #{assignerName},</if>
+            <if test="verifierId != null">verifier_id = #{verifierId},</if>
+            <if test="verifierName != null">verifier_name = #{verifierName},</if>
+            <if test="verifyTime != null">verify_time = #{verifyTime},</if>
+            <if test="verifyOpinion != null">verify_opinion = #{verifyOpinion},</if>
+            <if test="rating != null">rating = #{rating},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE order_id = #{orderId}
+    </update>
+
+    <delete id="deleteWorkOrderByIds" parameterType="Long">
+        UPDATE dms_work_order SET del_flag = '2' WHERE order_id IN
+        <foreach item="orderId" collection="array" open="(" separator="," close=")">#{orderId}</foreach>
+    </delete>
+
+</mapper>

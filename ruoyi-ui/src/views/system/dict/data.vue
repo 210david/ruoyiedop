@@ -178,7 +178,7 @@
 <script setup name="Data">
 import useDictStore from '@/store/modules/dict'
 import { optionselect as getDictOptionselect, getType } from "@/api/system/dict/type"
-import { listData, getData, delData, addData, updateData } from "@/api/system/dict/data"
+import { listData, getData, delData, addData, updateData, checkDictValueUnique, checkDictLabelUnique } from "@/api/system/dict/data"
 
 const { proxy } = getCurrentInstance()
 const { sys_normal_disable } = useDict("sys_normal_disable")
@@ -215,8 +215,38 @@ const data = reactive({
     status: undefined
   },
   rules: {
-    dictLabel: [{ required: true, message: "数据标签不能为空", trigger: "blur" }],
-    dictValue: [{ required: true, message: "数据键值不能为空", trigger: "blur" }],
+    dictLabel: [
+      { required: true, message: "数据标签不能为空", trigger: "blur" },
+      {
+        validator: function(rule, value, callback) {
+          const dictCode = form.value.dictCode || undefined
+          checkDictLabelUnique(form.value.dictType, value, dictCode).then(response => {
+            if (response.data) {
+              callback()
+            } else {
+              callback(new Error("数据标签已存在"))
+            }
+          })
+        },
+        trigger: "blur"
+      }
+    ],
+    dictValue: [
+      { required: true, message: "数据键值不能为空", trigger: "blur" },
+      {
+        validator: function(rule, value, callback) {
+          const dictCode = form.value.dictCode || undefined
+          checkDictValueUnique(form.value.dictType, value, dictCode).then(response => {
+            if (response.data) {
+              callback()
+            } else {
+              callback(new Error("数据键值已存在"))
+            }
+          })
+        },
+        trigger: "blur"
+      }
+    ],
     dictSort: [{ required: true, message: "数据顺序不能为空", trigger: "blur" }]
   }
 })

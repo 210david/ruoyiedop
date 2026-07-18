@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.dms.mapper.DmsPmPlanMapper">
+
+    <resultMap type="DmsPmPlan" id="DmsPmPlanResult">
+        <result property="planId"            column="plan_id"/>
+        <result property="planName"          column="plan_name"/>
+        <result property="equipmentId"       column="equipment_id"/>
+        <result property="equipmentName"     column="equipment_name"/>
+        <result property="categoryId"        column="category_id"/>
+        <result property="triggerType"       column="trigger_type"/>
+        <result property="cycleValue"        column="cycle_value"/>
+        <result property="cycleUnit"         column="cycle_unit"/>
+        <result property="taskList"          column="task_list"/>
+        <result property="sparePartList"     column="spare_part_list"/>
+        <result property="estimatedHours"    column="estimated_hours"/>
+        <result property="advanceDays"       column="advance_days"/>
+        <result property="autoAssign"        column="auto_assign"/>
+        <result property="assigneeId"         column="assignee_id"/>
+        <result property="assigneeName"       column="assignee_name"/>
+        <result property="lastExecuteTime"   column="last_execute_time"/>
+        <result property="nextExecuteTime"   column="next_execute_time"/>
+        <result property="status"            column="status"/>
+        <result property="delFlag"           column="del_flag"/>
+        <result property="createBy"          column="create_by"/>
+        <result property="createTime"        column="create_time"/>
+        <result property="updateBy"          column="update_by"/>
+        <result property="updateTime"        column="update_time"/>
+        <result property="remark"            column="remark"/>
+    </resultMap>
+
+    <sql id="selectPmPlanVo">
+        SELECT p.plan_id, p.plan_name, p.equipment_id, e.equipment_name, p.category_id,
+               p.trigger_type, p.cycle_value, p.cycle_unit, p.task_list, p.spare_part_list,
+               p.estimated_hours, p.advance_days, p.auto_assign, p.assignee_id, p.assignee_name,
+               p.last_execute_time, p.next_execute_time,
+               p.status, p.del_flag, p.create_by, p.create_time, p.update_by, p.update_time, p.remark
+        FROM dms_pm_plan p
+        LEFT JOIN dms_equipment e ON p.equipment_id = e.equipment_id
+    </sql>
+
+    <select id="selectPmPlanList" parameterType="DmsPmPlan" resultMap="DmsPmPlanResult">
+        <include refid="selectPmPlanVo"/>
+        <where>
+            p.del_flag = '0'
+            <if test="planName != null and planName != ''"> AND p.plan_name LIKE CONCAT('%', #{planName}, '%')</if>
+            <if test="equipmentId != null"> AND p.equipment_id = #{equipmentId}</if>
+            <if test="categoryId != null"> AND p.category_id = #{categoryId}</if>
+            <if test="triggerType != null and triggerType != ''"> AND p.trigger_type = #{triggerType}</if>
+            <if test="status != null and status != ''"> AND p.status = #{status}</if>
+        </where>
+        ORDER BY p.plan_id DESC
+    </select>
+
+    <select id="selectPmPlanById" parameterType="Long" resultMap="DmsPmPlanResult">
+        <include refid="selectPmPlanVo"/> WHERE p.plan_id = #{planId}
+    </select>
+
+    <insert id="insertPmPlan" parameterType="DmsPmPlan" useGeneratedKeys="true" keyProperty="planId">
+        INSERT INTO dms_pm_plan (
+            plan_name, equipment_id, category_id, trigger_type, cycle_value, cycle_unit,
+            task_list, spare_part_list, estimated_hours, advance_days, auto_assign, assignee_id, assignee_name,
+            last_execute_time, next_execute_time, status, create_by, create_time, remark
+        ) VALUES (
+            #{planName}, #{equipmentId}, #{categoryId}, #{triggerType}, #{cycleValue}, #{cycleUnit},
+            #{taskList}, #{sparePartList}, #{estimatedHours}, #{advanceDays}, #{autoAssign}, #{assigneeId}, #{assigneeName},
+            #{lastExecuteTime}, #{nextExecuteTime}, #{status}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updatePmPlan" parameterType="DmsPmPlan">
+        UPDATE dms_pm_plan
+        <set>
+            <if test="planName != null and planName != ''">plan_name = #{planName},</if>
+            <if test="equipmentId != null">equipment_id = #{equipmentId},</if>
+            <if test="categoryId != null">category_id = #{categoryId},</if>
+            <if test="triggerType != null and triggerType != ''">trigger_type = #{triggerType},</if>
+            <if test="cycleValue != null">cycle_value = #{cycleValue},</if>
+            <if test="cycleUnit != null">cycle_unit = #{cycleUnit},</if>
+            <if test="taskList != null">task_list = #{taskList},</if>
+            <if test="sparePartList != null">spare_part_list = #{sparePartList},</if>
+            <if test="estimatedHours != null">estimated_hours = #{estimatedHours},</if>
+            <if test="advanceDays != null">advance_days = #{advanceDays},</if>
+            <if test="autoAssign != null and autoAssign != ''">auto_assign = #{autoAssign},</if>
+            <if test="assigneeId != null">assignee_id = #{assigneeId},</if>
+            <if test="assigneeName != null">assignee_name = #{assigneeName},</if>
+            <if test="lastExecuteTime != null">last_execute_time = #{lastExecuteTime},</if>
+            <if test="nextExecuteTime != null">next_execute_time = #{nextExecuteTime},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE plan_id = #{planId}
+    </update>
+
+    <delete id="deletePmPlanByIds" parameterType="Long">
+        UPDATE dms_pm_plan SET del_flag = '2' WHERE plan_id IN
+        <foreach item="planId" collection="array" open="(" separator="," close=")">#{planId}</foreach>
+    </delete>
+
+    <!-- 查询所有到期的PM计划（next_execute_time - advance_days <= 当前时间） -->
+    <select id="selectExpiredPmPlans" resultMap="DmsPmPlanResult">
+        <include refid="selectPmPlanVo"/>
+        WHERE p.del_flag = '0' AND p.status = '0'
+          AND p.next_execute_time IS NOT NULL
+          AND DATE_ADD(p.next_execute_time, INTERVAL -IFNULL(p.advance_days, 0) DAY) &lt;= NOW()
+          AND p.trigger_type = '0'
+        ORDER BY p.next_execute_time ASC
+    </select>
+
+</mapper>

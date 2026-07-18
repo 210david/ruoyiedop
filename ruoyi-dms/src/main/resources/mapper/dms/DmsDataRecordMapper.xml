@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.dms.mapper.DmsDataRecordMapper">
+    <resultMap type="DmsDataRecord" id="DmsDataRecordResult">
+        <result property="recordId" column="record_id"/>
+        <result property="equipmentId" column="equipment_id"/>
+        <result property="equipmentCode" column="equipment_code"/>
+        <result property="equipmentName" column="equipment_name"/>
+        <result property="runStatus" column="run_status"/>
+        <result property="runHours" column="run_hours"/>
+        <result property="productCount" column="product_count"/>
+        <result property="param1Value" column="param1_value"/>
+        <result property="param2Value" column="param2_value"/>
+        <result property="param3Value" column="param3_value"/>
+        <result property="collectTime" column="collect_time"/>
+        <result property="collectMode" column="collect_mode"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <sql id="selectRecordVo">
+        SELECT record_id, equipment_id, equipment_code, equipment_name, run_status, run_hours, product_count,
+               param1_value, param2_value, param3_value, collect_time, collect_mode, create_by, create_time, remark
+        FROM dms_data_record
+    </sql>
+
+    <select id="selectRecordList" parameterType="DmsDataRecord" resultMap="DmsDataRecordResult">
+        <include refid="selectRecordVo"/>
+        <where>
+            <if test="equipmentId != null"> AND equipment_id = #{equipmentId}</if>
+            <if test="equipmentCode != null and equipmentCode != ''"> AND equipment_code LIKE CONCAT('%', #{equipmentCode}, '%')</if>
+            <if test="equipmentName != null and equipmentName != ''"> AND equipment_name LIKE CONCAT('%', #{equipmentName}, '%')</if>
+            <if test="runStatus != null and runStatus != ''"> AND run_status = #{runStatus}</if>
+        </where>
+        ORDER BY collect_time DESC
+    </select>
+
+    <select id="selectRecordById" parameterType="Long" resultMap="DmsDataRecordResult">
+        <include refid="selectRecordVo"/> WHERE record_id = #{recordId}
+    </select>
+
+    <insert id="insertRecord" parameterType="DmsDataRecord" useGeneratedKeys="true" keyProperty="recordId">
+        INSERT INTO dms_data_record (
+            equipment_id, equipment_code, equipment_name, run_status, run_hours, product_count,
+            param1_value, param2_value, param3_value, collect_time, collect_mode, create_by, create_time, remark
+        ) VALUES (
+            #{equipmentId}, #{equipmentCode}, #{equipmentName}, #{runStatus}, #{runHours}, #{productCount},
+            #{param1Value}, #{param2Value}, #{param3Value}, #{collectTime}, #{collectMode}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateRecord" parameterType="DmsDataRecord">
+        UPDATE dms_data_record
+        <set>
+                        <if test="equipmentId != null">equipment_id = #{equipmentId},</if>
+            <if test="equipmentCode != null">equipment_code = #{equipmentCode},</if>
+            <if test="equipmentName != null">equipment_name = #{equipmentName},</if>
+            <if test="runStatus != null">run_status = #{runStatus},</if>
+            <if test="runHours != null">run_hours = #{runHours},</if>
+            <if test="productCount != null">product_count = #{productCount},</if>
+            <if test="param1Value != null">param1_value = #{param1Value},</if>
+            <if test="param2Value != null">param2_value = #{param2Value},</if>
+            <if test="param3Value != null">param3_value = #{param3Value},</if>
+            <if test="collectTime != null">collect_time = #{collectTime},</if>
+            <if test="collectMode != null">collect_mode = #{collectMode},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            update_time = sysdate()
+        </set>
+        WHERE record_id = #{recordId}
+    </update>
+
+    <delete id="deleteRecordByIds" parameterType="Long">
+        DELETE FROM dms_data_record WHERE record_id IN
+        <foreach item="recordId" collection="array" open="(" separator="," close=")">#{recordId}</foreach>
+    </delete>
+</mapper>

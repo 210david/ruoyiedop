@@ -43,18 +43,18 @@
     </el-row>
 
     <!-- 列表 -->
-    <el-table v-loading="loading" :data="list" highlight-current-row>
-      <el-table-column label="入库单号" prop="orderNo" width="180" />
-      <el-table-column label="入库类型" prop="orderType" width="100" align="center">
+    <el-table border v-loading="loading" :data="list" highlight-current-row @header-dragend="onHeaderDragEnd">
+      <el-table-column label="入库单号" prop="orderNo" :width="colWidth('orderNo', 180)" resizable />
+      <el-table-column label="入库类型" prop="orderType" :width="colWidth('orderType', 100)" resizable align="center">
         <template #default="scope"><dict-tag :options="wms_inbound_type" :value="scope.row.orderType" /></template>
       </el-table-column>
       <el-table-column label="供应商" prop="supplierName" show-overflow-tooltip />
-      <el-table-column label="目标仓库" prop="warehouseName" width="120" />
-      <el-table-column label="状态" prop="status" width="100" align="center">
+      <el-table-column label="目标仓库" prop="warehouseName" :width="colWidth('warehouseName', 120)" resizable />
+      <el-table-column label="状态" prop="status" :width="colWidth('status', 100)" resizable align="center">
         <template #default="scope"><dict-tag :options="wms_inbound_status" :value="scope.row.status" /></template>
       </el-table-column>
-      <el-table-column label="总数量" prop="totalQty" width="100" align="right" />
-      <el-table-column label="预计入库" prop="inboundDate" width="120" align="center" />
+      <el-table-column label="总数量" prop="totalQty" :width="colWidth('totalQty', 100)" resizable align="right" />
+      <el-table-column label="预计入库" prop="inboundDate" :width="colWidth('inboundDate', 120)" resizable align="center" />
       <el-table-column label="操作" width="240" align="center" fixed="right">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleDetail(scope.row)">详情</el-button>
@@ -76,14 +76,14 @@
         <el-descriptions-item label="总数量">{{ currentOrder.totalQty }}</el-descriptions-item>
       </el-descriptions>
 
-      <el-table :data="currentOrder.detailList" border style="margin-top: 15px">
-        <el-table-column label="物料编码" prop="materialCode" width="120" />
+      <el-table :data="currentOrder.detailList" border style="margin-top: 15px" @header-dragend="onHeaderDragEnd">
+        <el-table-column label="物料编码" prop="materialCode" :width="colWidth('materialCode', 120)" resizable />
         <el-table-column label="物料名称" prop="materialName" show-overflow-tooltip />
-        <el-table-column label="批次号" prop="batchNo" width="120" />
-        <el-table-column label="计划数量" prop="planQty" width="100" align="right" />
-        <el-table-column label="已收数量" prop="receivedQty" width="100" align="right" />
-        <el-table-column label="已上架" prop="putawayQty" width="100" align="right" />
-        <el-table-column label="上架库位" prop="locationCode" width="100" />
+        <el-table-column label="批次号" prop="batchNo" :width="colWidth('batchNo', 120)" resizable />
+        <el-table-column label="计划数量" prop="planQty" :width="colWidth('planQty', 100)" resizable align="right" />
+        <el-table-column label="已收数量" prop="receivedQty" :width="colWidth('receivedQty', 100)" resizable align="right" />
+        <el-table-column label="已上架" prop="putawayQty" :width="colWidth('putawayQty', 100)" resizable align="right" />
+        <el-table-column label="上架库位" prop="locationCode" :width="colWidth('locationCode', 100)" resizable />
         <el-table-column label="操作" width="200" align="center">
           <template #default="scope">
             <el-button link type="primary" icon="Download" @click="openReceive(scope.row)" v-if="currentOrder.status === '1'">收货</el-button>
@@ -137,7 +137,9 @@
 <script setup name="WmsInboundDetail">
 import { listInbound, getInbound, receiveInbound, putawayInbound } from '@/api/wms/inbound'
 import { listLocation } from '@/api/wms/warehouse'
+import { useColumnResize } from '@/composables/useColumnResize'
 const { proxy } = getCurrentInstance()
+const { colWidth, onHeaderDragEnd } = useColumnResize('wms_inbound_detail')
 const { wms_inbound_type, wms_inbound_status } = proxy.useDict('wms_inbound_type', 'wms_inbound_status')
 
 const list = ref([])

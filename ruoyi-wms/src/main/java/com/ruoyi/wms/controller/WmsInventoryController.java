@@ -46,4 +46,12 @@ public class WmsInventoryController extends BaseController
     {
         return AjaxResult.success(wmsInventoryService.selectInventoryById(inventoryId));
     }
+
+    @Log(title = "库存查询", businessType = BusinessType.DELETE)
+    @PreAuthorize("@ss.hasPermi('wms:inventory:remove')")
+    @DeleteMapping("/{inventoryIds}")
+    public AjaxResult remove(@PathVariable Long[] inventoryIds)
+    {
+        return toAjax(wmsInventoryService.deleteInventoryByIds(inventoryIds));
+    }
 }

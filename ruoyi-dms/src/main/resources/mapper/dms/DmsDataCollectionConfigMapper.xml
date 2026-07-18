@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.dms.mapper.DmsDataCollectionConfigMapper">
+    <resultMap type="DmsDataCollectionConfig" id="DmsDataCollectionConfigResult">
+        <result property="configId" column="config_id"/>
+        <result property="equipmentId" column="equipment_id"/>
+        <result property="equipmentName" column="equipment_name"/>
+        <result property="collectMode" column="collect_mode"/>
+        <result property="collectStatus" column="collect_status"/>
+        <result property="collectHours" column="collect_hours"/>
+        <result property="collectCount" column="collect_count"/>
+        <result property="param1Name" column="param1_name"/><result property="param1Unit" column="param1_unit"/><result property="param1AlarmMin" column="param1_alarm_min"/><result property="param1AlarmMax" column="param1_alarm_max"/>
+        <result property="param2Name" column="param2_name"/><result property="param2Unit" column="param2_unit"/><result property="param2AlarmMin" column="param2_alarm_min"/><result property="param2AlarmMax" column="param2_alarm_max"/>
+        <result property="param3Name" column="param3_name"/><result property="param3Unit" column="param3_unit"/><result property="param3AlarmMin" column="param3_alarm_min"/><result property="param3AlarmMax" column="param3_alarm_max"/>
+        <result property="status" column="status"/><result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/><result property="createTime" column="create_time"/><result property="updateBy" column="update_by"/><result property="updateTime" column="update_time"/><result property="remark" column="remark"/>
+    </resultMap>
+
+    <sql id="selectConfigVo">
+        SELECT config_id, equipment_id, equipment_name, collect_mode, collect_status, collect_hours, collect_count,
+               param1_name, param1_unit, param1_alarm_min, param1_alarm_max,
+               param2_name, param2_unit, param2_alarm_min, param2_alarm_max,
+               param3_name, param3_unit, param3_alarm_min, param3_alarm_max,
+               status, del_flag, create_by, create_time, update_by, update_time, remark
+        FROM dms_data_collection_config
+    </sql>
+
+    <select id="selectConfigList" parameterType="DmsDataCollectionConfig" resultMap="DmsDataCollectionConfigResult">
+        <include refid="selectConfigVo"/>
+        <where> del_flag = '0'
+            <if test="equipmentName != null and equipmentName != ''"> AND equipment_name LIKE CONCAT('%', #{equipmentName}, '%')</if>
+            <if test="status != null and status != ''"> AND status = #{status}</if>
+        </where>
+        ORDER BY config_id DESC
+    </select>
+
+    <select id="selectConfigById" parameterType="Long" resultMap="DmsDataCollectionConfigResult">
+        <include refid="selectConfigVo"/> WHERE config_id = #{configId}
+    </select>
+
+    <insert id="insertConfig" parameterType="DmsDataCollectionConfig" useGeneratedKeys="true" keyProperty="configId">
+        INSERT INTO dms_data_collection_config (
+            equipment_id, equipment_name, collect_mode, collect_status, collect_hours, collect_count,
+            param1_name, param1_unit, param1_alarm_min, param1_alarm_max,
+            param2_name, param2_unit, param2_alarm_min, param2_alarm_max,
+            param3_name, param3_unit, param3_alarm_min, param3_alarm_max,
+            status, create_by, create_time, remark
+        ) VALUES (
+            #{equipmentId}, #{equipmentName}, #{collectMode}, #{collectStatus}, #{collectHours}, #{collectCount},
+            #{param1Name}, #{param1Unit}, #{param1AlarmMin}, #{param1AlarmMax},
+            #{param2Name}, #{param2Unit}, #{param2AlarmMin}, #{param2AlarmMax},
+            #{param3Name}, #{param3Unit}, #{param3AlarmMin}, #{param3AlarmMax},
+            #{status}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateConfig" parameterType="DmsDataCollectionConfig">
+        UPDATE dms_data_collection_config
+        <set>
+            <if test="equipmentId != null">equipment_id = #{equipmentId},</if>
+            <if test="equipmentName != null">equipment_name = #{equipmentName},</if>
+            <if test="collectMode != null">collect_mode = #{collectMode},</if>
+            <if test="collectStatus != null">collect_status = #{collectStatus},</if>
+            <if test="collectHours != null">collect_hours = #{collectHours},</if>
+            <if test="collectCount != null">collect_count = #{collectCount},</if>
+            <if test="param1Name != null">param1_name = #{param1Name},</if>
+            <if test="param1Unit != null">param1_unit = #{param1Unit},</if>
+            <if test="param1AlarmMin != null">param1_alarm_min = #{param1AlarmMin},</if>
+            <if test="param1AlarmMax != null">param1_alarm_max = #{param1AlarmMax},</if>
+            <if test="param2Name != null">param2_name = #{param2Name},</if>
+            <if test="param2Unit != null">param2_unit = #{param2Unit},</if>
+            <if test="param2AlarmMin != null">param2_alarm_min = #{param2AlarmMin},</if>
+            <if test="param2AlarmMax != null">param2_alarm_max = #{param2AlarmMax},</if>
+            <if test="param3Name != null">param3_name = #{param3Name},</if>
+            <if test="param3Unit != null">param3_unit = #{param3Unit},</if>
+            <if test="param3AlarmMin != null">param3_alarm_min = #{param3AlarmMin},</if>
+            <if test="param3AlarmMax != null">param3_alarm_max = #{param3AlarmMax},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE config_id = #{configId}
+    </update>
+
+    <delete id="deleteConfigByIds" parameterType="Long">
+        UPDATE dms_data_collection_config SET del_flag = '2' WHERE config_id IN
+        <foreach item="configId" collection="array" open="(" separator="," close=")">#{configId}</foreach>
+    </delete>
+</mapper>

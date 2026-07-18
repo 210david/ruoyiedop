@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.dms.mapper.DmsEquipmentCategoryMapper">
+
+    <resultMap type="DmsEquipmentCategory" id="DmsEquipmentCategoryResult">
+        <result property="categoryId"     column="category_id"/>
+        <result property="parentId"       column="parent_id"/>
+        <result property="ancestors"      column="ancestors"/>
+        <result property="categoryCode"   column="category_code"/>
+        <result property="categoryName"   column="category_name"/>
+        <result property="categoryLevel"  column="category_level"/>
+        <result property="orderNum"       column="order_num"/>
+        <result property="status"         column="status"/>
+        <result property="delFlag"        column="del_flag"/>
+        <result property="createBy"       column="create_by"/>
+        <result property="createTime"     column="create_time"/>
+        <result property="updateBy"       column="update_by"/>
+        <result property="updateTime"     column="update_time"/>
+        <result property="remark"         column="remark"/>
+    </resultMap>
+
+    <sql id="selectCategoryVo">
+        SELECT category_id, parent_id, ancestors, category_code, category_name, category_level,
+               order_num, status, del_flag, create_by, create_time, update_by, update_time, remark
+        FROM dms_equipment_category
+    </sql>
+
+    <select id="selectCategoryList" parameterType="DmsEquipmentCategory" resultMap="DmsEquipmentCategoryResult">
+        <include refid="selectCategoryVo"/>
+        <where>
+            del_flag = '0'
+            <if test="categoryCode != null and categoryCode != ''"> AND category_code LIKE CONCAT('%', #{categoryCode}, '%')</if>
+            <if test="categoryName != null and categoryName != ''"> AND category_name LIKE CONCAT('%', #{categoryName}, '%')</if>
+            <if test="status != null and status != ''"> AND status = #{status}</if>
+        </where>
+        ORDER BY parent_id ASC, order_num ASC
+    </select>
+
+    <select id="selectCategoryById" parameterType="Long" resultMap="DmsEquipmentCategoryResult">
+        <include refid="selectCategoryVo"/> WHERE category_id = #{categoryId}
+    </select>
+
+    <select id="countChildByParentId" parameterType="Long" resultType="int">
+        SELECT COUNT(1) FROM dms_equipment_category WHERE parent_id = #{parentId} AND del_flag = '0'
+    </select>
+
+    <insert id="insertCategory" parameterType="DmsEquipmentCategory" useGeneratedKeys="true" keyProperty="categoryId">
+        INSERT INTO dms_equipment_category (
+            parent_id, ancestors, category_code, category_name, category_level,
+            order_num, status, create_by, create_time, remark
+        ) VALUES (
+            #{parentId}, #{ancestors}, #{categoryCode}, #{categoryName}, #{categoryLevel},
+            #{orderNum}, #{status}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateCategory" parameterType="DmsEquipmentCategory">
+        UPDATE dms_equipment_category
+        <set>
+            <if test="parentId != null">parent_id = #{parentId},</if>
+            <if test="ancestors != null">ancestors = #{ancestors},</if>
+            <if test="categoryCode != null and categoryCode != ''">category_code = #{categoryCode},</if>
+            <if test="categoryName != null and categoryName != ''">category_name = #{categoryName},</if>
+            <if test="categoryLevel != null">category_level = #{categoryLevel},</if>
+            <if test="orderNum != null">order_num = #{orderNum},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE category_id = #{categoryId}
+    </update>
+
+    <delete id="deleteCategoryByIds" parameterType="Long">
+        UPDATE dms_equipment_category SET del_flag = '2' WHERE category_id IN
+        <foreach item="categoryId" collection="array" open="(" separator="," close=")">#{categoryId}</foreach>
+    </delete>
+
+</mapper>

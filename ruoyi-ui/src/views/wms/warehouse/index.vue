@@ -32,53 +32,53 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-if="refreshTable" v-loading="loading" :data="warehouseList" row-key="warehouseId" :default-expand-all="isExpandAll" :tree-props="{ children: 'children', hasChildren: 'hasChildren' }">
-      <el-table-column prop="warehouseCode" label="编码" width="200" />
+    <el-table border v-if="refreshTable" v-loading="loading" :data="warehouseList" row-key="warehouseId" :default-expand-all="isExpandAll" :tree-props="{ children: 'children', hasChildren: 'hasChildren' }" @header-dragend="onHeaderDragEnd">
+      <el-table-column prop="warehouseCode" label="编码" :width="colWidth('warehouseCode', 200)" resizable />
       <el-table-column prop="warehouseName" label="名称" :show-overflow-tooltip="true" />
-      <el-table-column prop="nodeType" label="类型" width="90" align="center">
+      <el-table-column prop="nodeType" label="类型" :width="colWidth('nodeType', 90)" resizable align="center">
         <template #default="scope">
           <el-tag v-if="scope.row.nodeType === '1'" type="primary" size="small">仓库</el-tag>
           <el-tag v-else-if="scope.row.nodeType === '2'" type="success" size="small">仓区</el-tag>
           <el-tag v-else-if="scope.row.nodeType === '3'" type="warning" size="small">仓位</el-tag>
         </template>
       </el-table-column>
-      <el-table-column prop="areaType" label="库区类型" width="100" align="center">
+      <el-table-column prop="areaType" label="库区类型" :width="colWidth('areaType', 100)" resizable align="center">
         <template #default="scope">
           <dict-tag v-if="scope.row.nodeType === '2'" :options="wms_area_type" :value="scope.row.areaType" />
           <span v-else>-</span>
         </template>
       </el-table-column>
-      <el-table-column prop="locationType" label="库位类型" width="100" align="center">
+      <el-table-column prop="locationType" label="库位类型" :width="colWidth('locationType', 100)" resizable align="center">
         <template #default="scope">
           <dict-tag v-if="scope.row.nodeType === '3'" :options="wms_location_type" :value="scope.row.locationType" />
           <span v-else>-</span>
         </template>
       </el-table-column>
-      <el-table-column prop="capacity" label="容量" width="90" align="right">
+      <el-table-column prop="capacity" label="容量" :width="colWidth('capacity', 90)" resizable align="right">
         <template #default="scope">
           <span v-if="scope.row.nodeType === '3'">{{ scope.row.capacity }}</span>
           <span v-else>-</span>
         </template>
       </el-table-column>
-      <el-table-column prop="locationStatus" label="库位状态" width="90" align="center">
+      <el-table-column prop="locationStatus" label="库位状态" :width="colWidth('locationStatus', 90)" resizable align="center">
         <template #default="scope">
           <el-tag v-if="scope.row.nodeType === '3'" :type="locationStatusType(scope.row.locationStatus)" size="small">{{ locationStatusText(scope.row.locationStatus) }}</el-tag>
           <span v-else>-</span>
         </template>
       </el-table-column>
-      <el-table-column prop="deptName" label="管理部门" width="110" align="center">
+      <el-table-column prop="deptName" label="管理部门" :width="colWidth('deptName', 110)" resizable align="center">
         <template #default="scope">
           <span v-if="scope.row.nodeType === '1'">{{ scope.row.deptName || '-' }}</span>
           <span v-else>-</span>
         </template>
       </el-table-column>
-      <el-table-column prop="managerName" label="负责人" width="90" align="center">
+      <el-table-column prop="managerName" label="负责人" :width="colWidth('managerName', 90)" resizable align="center">
         <template #default="scope">
           <span v-if="scope.row.nodeType === '1'">{{ scope.row.managerName || '-' }}</span>
           <span v-else>-</span>
         </template>
       </el-table-column>
-      <el-table-column prop="status" label="状态" width="80" align="center">
+      <el-table-column prop="status" label="状态" :width="colWidth('status', 80)" resizable align="center">
         <template #default="scope">
           <el-tag :type="scope.row.status === '0' ? 'success' : 'danger'" size="small">{{ scope.row.status === '0' ? '正常' : '停用' }}</el-tag>
         </template>
@@ -214,8 +214,10 @@
 <script setup name="WmsWarehouse">
 import { listWarehouseTree, getWarehouse, addWarehouse, updateWarehouse, delWarehouse, genWarehouseCode } from '@/api/wms/warehouse'
 import { deptTreeSelect, listUser } from '@/api/system/user'
+import { useColumnResize } from '@/composables/useColumnResize'
 
 const { proxy } = getCurrentInstance()
+const { colWidth, onHeaderDragEnd } = useColumnResize('wms_warehouse_index')
 const { wms_area_type, wms_location_type } = proxy.useDict('wms_area_type', 'wms_location_type')
 
 const warehouseList = ref([])

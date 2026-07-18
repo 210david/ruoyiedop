@@ -7,42 +7,53 @@
       <el-form-item><el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button><el-button icon="Refresh" @click="resetQuery">重置</el-button></el-form-item>
     </el-form>
     <el-row :gutter="10" class="mb8">
+      <el-col :span="1.5"><el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['wms:inventory:remove']">删除</el-button></el-col>
       <el-col :span="1.5"><el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['wms:inventory:export']">导出</el-button></el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
-    <el-table v-loading="loading" :data="list">
-      <el-table-column label="物料编码" prop="materialCode" width="120" />
-      <el-table-column label="物料名称" prop="materialName" width="224" show-overflow-tooltip />
-      <el-table-column label="规格型号" prop="specModel" width="180" show-overflow-tooltip />
-      <el-table-column label="单位" prop="unit" width="80" align="center">
+    <el-table border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
+      <el-table-column type="selection" width="55" align="center" />
+      <el-table-column label="物料编码" prop="materialCode" :width="colWidth('materialCode', 120)" resizable />
+      <el-table-column label="物料名称" prop="materialName" :width="colWidth('materialName', 224)" resizable show-overflow-tooltip />
+      <el-table-column label="规格型号" prop="specModel" :width="colWidth('specModel', 180)" resizable show-overflow-tooltip />
+      <el-table-column label="单位" prop="unit" :width="colWidth('unit', 80)" resizable align="center">
         <template #default="scope"><dict-tag :options="wms_unit" :value="scope.row.unit" /></template>
       </el-table-column>
-      <el-table-column label="仓库/库区/库位" prop="warehouseName" width="220" show-overflow-tooltip>
+      <el-table-column label="仓库/库区/库位" prop="warehouseName" :width="colWidth('warehouseName', 220)" resizable show-overflow-tooltip>
         <template #default="scope">
           {{ scope.row.warehouseName || '' }}<span v-if="scope.row.areaName">/{{ scope.row.areaName }}</span><span v-if="scope.row.locationName">/{{ scope.row.locationName }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="批次号" prop="batchNo" width="120" />
-      <el-table-column label="生产日期" prop="productionDate" width="120" align="center" />
-      <el-table-column label="有效期" prop="expiryDate" width="120" align="center" />
-      <el-table-column label="可用数量" prop="qty" width="100" align="right" />
-      <el-table-column label="锁定数量" prop="lockQty" width="100" align="right" />
-      <el-table-column label="更新时间" prop="updateTime" width="160" align="center" />
+      <el-table-column label="批次号" prop="batchNo" :width="colWidth('batchNo', 120)" resizable />
+      <el-table-column label="生产日期" prop="productionDate" :width="colWidth('productionDate', 120)" resizable align="center" />
+      <el-table-column label="有效期" prop="expiryDate" :width="colWidth('expiryDate', 120)" resizable align="center" />
+      <el-table-column label="可用数量" prop="qty" :width="colWidth('qty', 100)" resizable align="right" />
+      <el-table-column label="锁定数量" prop="lockQty" :width="colWidth('lockQty', 100)" resizable align="right" />
+      <el-table-column label="更新时间" prop="updateTime" :width="colWidth('updateTime', 160)" resizable align="center" />
+      <el-table-column label="操作" width="80" align="center">
+        <template #default="scope">
+          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['wms:inventory:remove']">删除</el-button>
+        </template>
+      </el-table-column>
     </el-table>
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
   </div>
 </template>
 
 <script setup name="WmsInventory">
-import { listInventory } from '@/api/wms/inventory'
+import { listInventory, delInventory } from '@/api/wms/inventory'
+import { useColumnResize } from '@/composables/useColumnResize'
 const { proxy } = getCurrentInstance()
+const { colWidth, onHeaderDragEnd } = useColumnResize('wms_inventory_index')
 const { wms_unit } = proxy.useDict('wms_unit')
-const list = ref([]); const loading = ref(true); const showSearch = ref(true); const total = ref(0)
+const list = ref([]); const loading = ref(true); const showSearch = ref(true); const total = ref(0); const ids = ref([]); const multiple = ref(true)
 const data = reactive({ queryParams: { pageNum: 1, pageSize: 10, materialCode: undefined, materialName: undefined, warehouseId: undefined } })
 const { queryParams } = toRefs(data)
 function getList() { loading.value = true; listInventory(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false }) }
 function handleQuery() { queryParams.value.pageNum = 1; getList() }
 function resetQuery() { proxy.resetForm('queryRef'); handleQuery() }
 function handleExport() { proxy.download('wms/inventory/export', { ...queryParams.value }, `inventory_${new Date().getTime()}.xlsx`) }
+function handleSelectionChange(sel) { ids.value = sel.map(i => i.inventoryId); multiple.value = !sel.length }
+function handleDelete(row) { const inventoryIds = row.inventoryId || ids.value; proxy.$modal.confirm('确认删除选中的库存记录？').then(() => delInventory(inventoryIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
 getList()
 </script>

@@ -43,48 +43,48 @@
           <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
         </el-row>
 
-        <el-table v-loading="loading" :data="materialList" @selection-change="handleSelectionChange">
+        <el-table border v-loading="loading" :data="materialList" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
           <el-table-column type="selection" width="55" align="center" />
           <!-- 基本信息 -->
-          <el-table-column label="物料编码" prop="materialCode" width="120" />
-          <el-table-column label="物料名称" prop="materialName" width="224" show-overflow-tooltip />
-          <el-table-column label="物料类型" prop="materialType" width="100" align="center">
+          <el-table-column label="物料编码" prop="materialCode" :width="colWidth('materialCode', 120)" resizable />
+          <el-table-column label="物料名称" prop="materialName" :width="colWidth('materialName', 224)" resizable show-overflow-tooltip />
+          <el-table-column label="物料类型" prop="materialType" :width="colWidth('materialType', 100)" resizable align="center">
             <template #default="scope">
               <dict-tag :options="wms_material_type" :value="scope.row.materialType" />
             </template>
           </el-table-column>
-          <el-table-column label="规格型号" prop="specModel" width="225" show-overflow-tooltip />
-          <el-table-column label="单位" prop="unit" width="80" align="center">
+          <el-table-column label="规格型号" prop="specModel" :width="colWidth('specModel', 225)" resizable show-overflow-tooltip />
+          <el-table-column label="单位" prop="unit" :width="colWidth('unit', 80)" resizable align="center">
             <template #default="scope">
               <dict-tag :options="wms_unit" :value="scope.row.unit" />
             </template>
           </el-table-column>
-          <el-table-column label="批次管理" prop="isBatchManage" width="90" align="center">
+          <el-table-column label="批次管理" prop="isBatchManage" :width="colWidth('isBatchManage', 90)" resizable align="center">
             <template #default="scope">
               <el-tag :type="scope.row.isBatchManage === '1' ? 'success' : 'info'">{{ scope.row.isBatchManage === '1' ? '是' : '否' }}</el-tag>
             </template>
           </el-table-column>
           <!-- 效期管理 -->
-          <el-table-column label="效期管理" prop="isExpiryManage" width="90" align="center">
+          <el-table-column label="效期管理" prop="isExpiryManage" :width="colWidth('isExpiryManage', 90)" resizable align="center">
             <template #default="scope">
               <el-tag :type="scope.row.isExpiryManage === '1' ? 'success' : 'info'">{{ scope.row.isExpiryManage === '1' ? '是' : '否' }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="保质期(天)" prop="shelfLifeDays" width="100" align="center">
+          <el-table-column label="保质期(天)" prop="shelfLifeDays" :width="colWidth('shelfLifeDays', 100)" resizable align="center">
             <template #default="scope">
               {{ scope.row.shelfLifeDays != null ? scope.row.shelfLifeDays : '-' }}
             </template>
           </el-table-column>
           <!-- 库存控制 -->
-          <el-table-column label="安全库存下限" prop="safetyStockMin" width="120" align="right" />
-          <el-table-column label="安全库存上限" prop="safetyStockMax" width="120" align="right" />
+          <el-table-column label="安全库存下限" prop="safetyStockMin" :width="colWidth('safetyStockMin', 120)" resizable align="right" />
+          <el-table-column label="安全库存上限" prop="safetyStockMax" :width="colWidth('safetyStockMax', 120)" resizable align="right" />
           <!-- 其他 -->
-          <el-table-column label="状态" prop="status" width="80" align="center">
+          <el-table-column label="状态" prop="status" :width="colWidth('status', 80)" resizable align="center">
             <template #default="scope">
               <el-tag :type="scope.row.status === '0' ? 'success' : 'danger'">{{ scope.row.status === '0' ? '正常' : '停用' }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="创建时间" prop="createTime" width="160" align="center" />
+          <el-table-column label="创建时间" prop="createTime" :width="colWidth('createTime', 160)" resizable align="center" />
           <el-table-column label="操作" width="160" align="center" fixed="right">
             <template #default="scope">
               <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['wms:material:edit']">修改</el-button>
@@ -213,8 +213,10 @@
 
 <script setup name="WmsMaterial">
 import { listMaterial, getMaterial, addMaterial, updateMaterial, delMaterial } from '@/api/wms/material'
+import { useColumnResize } from '@/composables/useColumnResize'
 
 const { proxy } = getCurrentInstance()
+const { colWidth, onHeaderDragEnd } = useColumnResize('wms_material_index')
 const { wms_material_type, wms_unit } = proxy.useDict('wms_material_type', 'wms_unit')
 
 const materialList = ref([])

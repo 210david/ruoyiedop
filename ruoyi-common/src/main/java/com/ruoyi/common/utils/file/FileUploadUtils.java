@@ -24,9 +24,9 @@ import com.ruoyi.common.utils.uuid.Seq;
 public class FileUploadUtils
 {
     /**
-     * 默认大小 10M
+     * 默认大小 50M
      */
-    public static final long DEFAULT_MAX_SIZE = 10 * 1024 * 1024L;
+    public static final long DEFAULT_MAX_SIZE = 50 * 1024 * 1024L;
 
     /**
      * 默认的文件名最大长度 100
@@ -208,8 +208,8 @@ public class FileUploadUtils
             String mimeExtension = MimeTypeUtils.getExtension(contentType);
             if (mimeExtension != null && !mimeExtension.isEmpty())
             {
-                // 后缀与MIME类型不匹配，拒绝上传
-                if (!mimeExtension.equalsIgnoreCase(extension))
+                // 后缀与MIME类型不匹配（jpg/jpeg等价），拒绝上传
+                if (!MimeTypeUtils.isEquivalentExtension(mimeExtension, extension))
                 {
                     throw new InvalidExtensionException(allowedExtension, extension, fileName);
                 }

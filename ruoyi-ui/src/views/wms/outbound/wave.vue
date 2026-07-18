@@ -10,14 +10,14 @@
       <el-col :span="1.5"><el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['wms:wave:remove']">删除</el-button></el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
-    <el-table v-loading="loading" :data="list" @selection-change="handleSelectionChange">
+    <el-table border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="批次号" prop="waveNo" width="160" />
+      <el-table-column label="批次号" prop="waveNo" :width="colWidth('waveNo', 160)" resizable />
       <el-table-column label="批次名称" prop="waveName" show-overflow-tooltip />
-      <el-table-column label="仓库" prop="warehouseName" width="120" />
-      <el-table-column label="状态" prop="status" width="100" align="center"><template #default="scope"><dict-tag :options="wms_wave_status" :value="scope.row.status" /></template></el-table-column>
-      <el-table-column label="总数量" prop="totalQty" width="100" align="right" />
-      <el-table-column label="订单数" prop="orderCount" width="80" align="center" />
+      <el-table-column label="仓库" prop="warehouseName" :width="colWidth('warehouseName', 120)" resizable />
+      <el-table-column label="状态" prop="status" :width="colWidth('status', 100)" resizable align="center"><template #default="scope"><dict-tag :options="wms_wave_status" :value="scope.row.status" /></template></el-table-column>
+      <el-table-column label="总数量" prop="totalQty" :width="colWidth('totalQty', 100)" resizable align="right" />
+      <el-table-column label="订单数" prop="orderCount" :width="colWidth('orderCount', 80)" resizable align="center" />
       <el-table-column label="操作" width="300" align="center">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleDetail(scope.row)">详情</el-button>
@@ -51,25 +51,25 @@
         <el-descriptions-item label="订单数">{{ detailData.orderCount }}</el-descriptions-item>
       </el-descriptions>
       <el-divider content-position="center">关联出库单</el-divider>
-      <el-table :data="waveOrders" border style="margin-top: 10px">
-        <el-table-column label="出库单号" prop="orderNo" width="160" />
-        <el-table-column label="出库类型" prop="orderType" width="100" align="center"><template #default="scope"><dict-tag :options="wms_outbound_type" :value="scope.row.orderType" /></template></el-table-column>
-        <el-table-column label="状态" prop="status" width="100" align="center"><template #default="scope"><dict-tag :options="wms_outbound_status" :value="scope.row.status" /></template></el-table-column>
-        <el-table-column label="总数量" prop="totalQty" width="100" align="right" />
-        <el-table-column label="预计出库" prop="outboundDate" width="120" align="center" />
+      <el-table :data="waveOrders" border style="margin-top: 10px" @header-dragend="onHeaderDragEnd">
+        <el-table-column label="出库单号" prop="orderNo" :width="colWidth('orderNo', 160)" resizable />
+        <el-table-column label="出库类型" prop="orderType" :width="colWidth('orderType', 100)" resizable align="center"><template #default="scope"><dict-tag :options="wms_outbound_type" :value="scope.row.orderType" /></template></el-table-column>
+        <el-table-column label="状态" prop="status" :width="colWidth('status', 100)" resizable align="center"><template #default="scope"><dict-tag :options="wms_outbound_status" :value="scope.row.status" /></template></el-table-column>
+        <el-table-column label="总数量" prop="totalQty" :width="colWidth('totalQty', 100)" resizable align="right" />
+        <el-table-column label="预计出库" prop="outboundDate" :width="colWidth('outboundDate', 120)" resizable align="center" />
       </el-table>
     </el-dialog>
 
     <!-- 添加出库单对话框 -->
     <el-dialog :title="'添加出库单到批次 - ' + (currentWave.waveNo || '')" v-model="generateOpen" width="900px" append-to-body>
       <el-alert title="仅显示同仓库、草稿状态且未关联批次的出库单" type="info" :closable="false" style="margin-bottom: 15px" />
-      <el-table :data="availableOrders" @selection-change="handleOrderSelectChange" border>
+      <el-table :data="availableOrders" @selection-change="handleOrderSelectChange" border @header-dragend="onHeaderDragEnd">
         <el-table-column type="selection" width="55" align="center" />
-        <el-table-column label="出库单号" prop="orderNo" width="160" />
-        <el-table-column label="出库类型" prop="orderType" width="100" align="center"><template #default="scope"><dict-tag :options="wms_outbound_type" :value="scope.row.orderType" /></template></el-table-column>
-        <el-table-column label="总数量" prop="totalQty" width="100" align="right" />
-        <el-table-column label="预计出库" prop="outboundDate" width="120" align="center" />
-        <el-table-column label="创建时间" prop="createTime" width="160" align="center" />
+        <el-table-column label="出库单号" prop="orderNo" :width="colWidth('orderNo', 160)" resizable />
+        <el-table-column label="出库类型" prop="orderType" :width="colWidth('orderType', 100)" resizable align="center"><template #default="scope"><dict-tag :options="wms_outbound_type" :value="scope.row.orderType" /></template></el-table-column>
+        <el-table-column label="总数量" prop="totalQty" :width="colWidth('totalQty', 100)" resizable align="right" />
+        <el-table-column label="预计出库" prop="outboundDate" :width="colWidth('outboundDate', 120)" resizable align="center" />
+        <el-table-column label="创建时间" prop="createTime" :width="colWidth('createTime', 160)" resizable align="center" />
       </el-table>
       <template #footer>
         <el-button type="primary" :disabled="selectedOrderIds.length === 0" @click="submitGenerate">确认添加 ({{ selectedOrderIds.length }})</el-button>
@@ -83,7 +83,9 @@
 import { listWave, getWave, addWave, updateWave, delWave, generateWave, releaseWave, getWaveOrders } from '@/api/wms/wave'
 import { listWarehouse } from '@/api/wms/warehouse'
 import { listOutbound } from '@/api/wms/outbound'
+import { useColumnResize } from '@/composables/useColumnResize'
 const { proxy } = getCurrentInstance()
+const { colWidth, onHeaderDragEnd } = useColumnResize('wms_outbound_wave')
 const { wms_wave_status, wms_outbound_type, wms_outbound_status } = proxy.useDict('wms_wave_status', 'wms_outbound_type', 'wms_outbound_status')
 const list = ref([]); const open = ref(false); const loading = ref(true); const showSearch = ref(true); const ids = ref([]); const multiple = ref(true); const total = ref(0); const title = ref('')
 const detailOpen = ref(false); const detailData = ref({}); const waveOrders = ref([])

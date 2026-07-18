@@ -50,3 +50,35 @@ export function delData(dictCode) {
     method: 'delete'
   })
 }
+
+// 校验字典键值是否唯一
+export function checkDictValueUnique(dictType, dictValue, dictCode) {
+  const params = {
+    dictType: dictType,
+    dictValue: dictValue
+  }
+  if (dictCode !== undefined && dictCode !== null) {
+    params.dictCode = dictCode
+  }
+  return request({
+    url: '/system/dict/data/checkDictValueUnique',
+    method: 'get',
+    params: params
+  })
+}
+
+// 校验字典标签是否唯一
+export function checkDictLabelUnique(dictType, dictLabel, dictCode) {
+  const params = {
+    dictType: dictType,
+    dictLabel: dictLabel
+  }
+  if (dictCode !== undefined && dictCode !== null) {
+    params.dictCode = dictCode
+  }
+  return request({
+    url: '/system/dict/data/checkDictLabelUnique',
+    method: 'get',
+    params: params
+  })
+}

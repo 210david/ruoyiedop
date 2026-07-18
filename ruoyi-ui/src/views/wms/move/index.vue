@@ -11,19 +11,20 @@
       <el-col :span="1.5"><el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['wms:move:export']">导出</el-button></el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
-    <el-table v-loading="loading" :data="list" @selection-change="handleSelectionChange">
+    <el-table border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="移库单号" prop="moveNo" width="160" />
-      <el-table-column label="仓库" prop="warehouseName" width="120" />
-      <el-table-column label="物料编码" prop="materialCode" width="120" />
-      <el-table-column label="物料名称" prop="materialName" min-width="200" show-overflow-tooltip />
-      <el-table-column label="批次号" prop="batchNo" width="100" />
-      <el-table-column label="源库位" width="140" show-overflow-tooltip><template #default="scope">{{ scope.row.fromLocationCode }}{{ scope.row.fromLocationName ? ' / ' + scope.row.fromLocationName : '' }}</template></el-table-column>
-      <el-table-column label="目标库位" width="140" show-overflow-tooltip><template #default="scope">{{ scope.row.toLocationCode }}{{ scope.row.toLocationName ? ' / ' + scope.row.toLocationName : '' }}</template></el-table-column>
-      <el-table-column label="移库数量" prop="moveQty" width="100" align="right" />
-      <el-table-column label="状态" prop="status" width="100" align="center"><template #default="scope"><dict-tag :options="wms_move_status" :value="scope.row.status" /></template></el-table-column>
-      <el-table-column label="操作" width="260" align="center" fixed="right">
+      <el-table-column label="移库单号" prop="moveNo" :width="colWidth('moveNo', 160)" resizable />
+      <el-table-column label="仓库" prop="warehouseName" :width="colWidth('warehouseName', 120)" resizable />
+      <el-table-column label="物料编码" prop="materialCode" :width="colWidth('materialCode', 120)" resizable />
+      <el-table-column label="物料名称" prop="materialName" :width="colWidth('materialName', 200)" resizable show-overflow-tooltip />
+      <el-table-column label="批次号" prop="batchNo" :width="colWidth('batchNo', 100)" resizable />
+      <el-table-column label="源库位" :width="colWidth('源库位', 140)" resizable show-overflow-tooltip><template #default="scope">{{ scope.row.fromLocationCode }}{{ scope.row.fromLocationName ? ' / ' + scope.row.fromLocationName : '' }}</template></el-table-column>
+      <el-table-column label="目标库位" :width="colWidth('目标库位', 140)" resizable show-overflow-tooltip><template #default="scope">{{ scope.row.toLocationCode }}{{ scope.row.toLocationName ? ' / ' + scope.row.toLocationName : '' }}</template></el-table-column>
+      <el-table-column label="移库数量" prop="moveQty" :width="colWidth('moveQty', 100)" resizable align="right" />
+      <el-table-column label="状态" prop="status" :width="colWidth('status', 100)" resizable align="center"><template #default="scope"><dict-tag :options="wms_move_status" :value="scope.row.status" /></template></el-table-column>
+      <el-table-column label="操作" width="300" align="center" fixed="right">
         <template #default="scope">
+          <el-button link type="primary" icon="View" @click="handleDetail(scope.row)" v-hasPermi="['wms:move:query']">详情</el-button>
           <el-button link type="primary" icon="Check" @click="handleApprove(scope.row)" v-if="scope.row.status === '0'" v-hasPermi="['wms:move:edit']">审批</el-button>
           <el-button link type="primary" icon="Sort" @click="handleExecute(scope.row)" v-if="scope.row.status === '1'" v-hasPermi="['wms:move:edit']">执行</el-button>
           <el-button link type="warning" icon="CircleClose" @click="handleVoid(scope.row)" v-if="scope.row.status === '0' || scope.row.status === '1'" v-hasPermi="['wms:move:edit']">作废</el-button>
@@ -33,6 +34,7 @@
     </el-table>
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
+    <!-- 新增/编辑弹窗 -->
     <el-dialog :title="title" v-model="open" width="600px" append-to-body>
       <el-form ref="moveRef" :model="form" :rules="rules" label-width="100px">
         <el-form-item label="仓库" prop="warehouseId">
@@ -62,6 +64,28 @@
       </el-form>
       <template #footer><el-button type="primary" @click="submitForm">确 定</el-button><el-button @click="cancel">取 消</el-button></template>
     </el-dialog>
+
+    <!-- 详情弹窗 -->
+    <el-dialog title="移库单详情" v-model="detailOpen" width="600px" append-to-body>
+      <el-descriptions :column="2" border>
+        <el-descriptions-item label="移库单号">{{ detailData.moveNo }}</el-descriptions-item>
+        <el-descriptions-item label="状态"><dict-tag :options="wms_move_status" :value="detailData.status" /></el-descriptions-item>
+        <el-descriptions-item label="仓库">{{ detailData.warehouseName }}</el-descriptions-item>
+        <el-descriptions-item label="批次号">{{ detailData.batchNo || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="物料编码">{{ detailData.materialCode }}</el-descriptions-item>
+        <el-descriptions-item label="物料名称">{{ detailData.materialName }}</el-descriptions-item>
+        <el-descriptions-item label="源库位">{{ detailData.fromLocationCode }}{{ detailData.fromLocationName ? ' / ' + detailData.fromLocationName : '' }}</el-descriptions-item>
+        <el-descriptions-item label="目标库位">{{ detailData.toLocationCode }}{{ detailData.toLocationName ? ' / ' + detailData.toLocationName : '' }}</el-descriptions-item>
+        <el-descriptions-item label="移库数量">{{ detailData.moveQty }}</el-descriptions-item>
+        <el-descriptions-item label="审批人">{{ detailData.approveBy || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="审批时间">{{ detailData.approveTime }}</el-descriptions-item>
+        <el-descriptions-item label="完成时间">{{ detailData.completeTime }}</el-descriptions-item>
+        <el-descriptions-item label="创建人">{{ detailData.createBy }}</el-descriptions-item>
+        <el-descriptions-item label="创建时间">{{ detailData.createTime }}</el-descriptions-item>
+        <el-descriptions-item label="备注" :span="2">{{ detailData.remark || '-' }}</el-descriptions-item>
+      </el-descriptions>
+      <template #footer><el-button @click="detailOpen = false">关 闭</el-button></template>
+    </el-dialog>
   </div>
 </template>
 
@@ -69,10 +93,12 @@
 import { listMove, getMove, addMove, delMove, approveMove, executeMove, voidMove } from '@/api/wms/move'
 import { listWarehouse, listLocation } from '@/api/wms/warehouse'
 import { listInventory } from '@/api/wms/inventory'
+import { useColumnResize } from '@/composables/useColumnResize'
 const { proxy } = getCurrentInstance()
+const { colWidth, onHeaderDragEnd } = useColumnResize('wms_move_index')
 const { wms_move_status } = proxy.useDict('wms_move_status')
 const list = ref([]); const open = ref(false); const loading = ref(true); const showSearch = ref(true); const ids = ref([]); const multiple = ref(true); const total = ref(0); const title = ref('')
-const warehouseOptions = ref([]); const inventoryOptions = ref([]); const allLocationOptions = ref([])
+const warehouseOptions = ref([]); const inventoryOptions = ref([]); const allLocationOptions = ref([]); const detailOpen = ref(false); const detailData = ref({})
 const data = reactive({
   form: {},
   queryParams: { pageNum: 1, pageSize: 10, moveNo: undefined, status: undefined },
@@ -116,6 +142,7 @@ function handleVoid(row) { proxy.$modal.confirm('确认作废该移库单？作�
 function handleExport() { proxy.download('wms/move/export', { ...queryParams.value }, `move_${new Date().getTime()}.xlsx`) }
 function handleDelete(row) { const moveIds = row.moveId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delMove(moveIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
 function cancel() { open.value = false; reset() }
+function handleDetail(row) { getMove(row.moveId).then(res => { detailData.value = res.data; detailOpen.value = true }) }
 
 /** 选择目标库位后：记录编码和名称 */
 function onTargetLocationChange(locationId) {

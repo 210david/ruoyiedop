@@ -65,4 +65,20 @@ public interface ISysDictDataService
      * @return 字典数据集合
      */
     public List<SysDictData> selectDictDataByType(String dictType);
+
+    /**
+     * 校验字典键值是否唯一
+     *
+     * @param dict 字典数据
+     * @return 结果
+     */
+    public boolean checkDictValueUnique(SysDictData dict);
+
+    /**
+     * 校验字典标签是否唯一
+     *
+     * @param dict 字典数据
+     * @return 结果
+     */
+    public boolean checkDictLabelUnique(SysDictData dict);
 }

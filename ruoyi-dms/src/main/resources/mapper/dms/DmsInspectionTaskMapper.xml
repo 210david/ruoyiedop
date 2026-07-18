@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.dms.mapper.DmsInspectionTaskMapper">
+
+    <resultMap type="DmsInspectionTask" id="DmsInspectionTaskResult">
+        <result property="taskId"          column="task_id"/>
+        <result property="taskNo"          column="task_no"/>
+        <result property="routeId"         column="route_id"/>
+        <result property="routeName"       column="route_name"/>
+        <result property="planDate"        column="plan_date"/>
+        <result property="inspectorId"     column="inspector_id"/>
+        <result property="inspectorName"   column="inspector_name"/>
+        <result property="taskStatus"      column="task_status"/>
+        <result property="startTime"       column="start_time"/>
+        <result property="completeTime"    column="complete_time"/>
+        <result property="abnormalCount"   column="abnormal_count"/>
+        <result property="resultData"      column="result_data"/>
+        <result property="photoUrls"      column="photo_urls"/>
+        <result property="delFlag"         column="del_flag"/>
+        <result property="createBy"        column="create_by"/>
+        <result property="createTime"      column="create_time"/>
+        <result property="updateBy"        column="update_by"/>
+        <result property="updateTime"      column="update_time"/>
+        <result property="remark"          column="remark"/>
+    </resultMap>
+
+    <sql id="selectTaskVo">
+        SELECT task_id, task_no, route_id, route_name, plan_date, inspector_id, inspector_name,
+               task_status, start_time, complete_time, abnormal_count, result_data, photo_urls,
+               del_flag, create_by, create_time, update_by, update_time, remark
+        FROM dms_inspection_task
+    </sql>
+
+    <select id="selectTaskList" parameterType="DmsInspectionTask" resultMap="DmsInspectionTaskResult">
+        <include refid="selectTaskVo"/>
+        <where>
+            del_flag = '0'
+            <if test="taskNo != null and taskNo != ''"> AND task_no LIKE CONCAT('%', #{taskNo}, '%')</if>
+            <if test="routeName != null and routeName != ''"> AND route_name LIKE CONCAT('%', #{routeName}, '%')</if>
+            <if test="taskStatus != null and taskStatus != ''"> AND task_status = #{taskStatus}</if>
+            <if test="inspectorName != null and inspectorName != ''"> AND inspector_name LIKE CONCAT('%', #{inspectorName}, '%')</if>
+        </where>
+        ORDER BY task_id DESC
+    </select>
+
+    <select id="selectTaskById" parameterType="Long" resultMap="DmsInspectionTaskResult">
+        <include refid="selectTaskVo"/> WHERE task_id = #{taskId}
+    </select>
+
+    <insert id="insertTask" parameterType="DmsInspectionTask" useGeneratedKeys="true" keyProperty="taskId">
+        INSERT INTO dms_inspection_task (
+            task_no, route_id, route_name, plan_date, inspector_id, inspector_name,
+            task_status, start_time, complete_time, abnormal_count, result_data, photo_urls, create_by, create_time, remark
+        ) VALUES (
+            #{taskNo}, #{routeId}, #{routeName}, #{planDate}, #{inspectorId}, #{inspectorName},
+            #{taskStatus}, #{startTime}, #{completeTime}, #{abnormalCount}, #{resultData}, #{photoUrls}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateTask" parameterType="DmsInspectionTask">
+        UPDATE dms_inspection_task
+        <set>
+            <if test="routeId != null">route_id = #{routeId},</if>
+            <if test="routeName != null">route_name = #{routeName},</if>
+            <if test="planDate != null">plan_date = #{planDate},</if>
+            <if test="inspectorId != null">inspector_id = #{inspectorId},</if>
+            <if test="inspectorName != null">inspector_name = #{inspectorName},</if>
+            <if test="taskStatus != null and taskStatus != ''">task_status = #{taskStatus},</if>
+            <if test="startTime != null">start_time = #{startTime},</if>
+            <if test="completeTime != null">complete_time = #{completeTime},</if>
+            <if test="abnormalCount != null">abnormal_count = #{abnormalCount},</if>
+            <if test="resultData != null">result_data = #{resultData},</if>
+            <if test="photoUrls != null">photo_urls = #{photoUrls},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE task_id = #{taskId}
+    </update>
+
+    <delete id="deleteTaskByIds" parameterType="Long">
+        UPDATE dms_inspection_task SET del_flag = '2' WHERE task_id IN
+        <foreach item="taskId" collection="array" open="(" separator="," close=")">#{taskId}</foreach>
+    </delete>
+
+    <!-- 查询今天已存在的点检任务（防重复生成） -->
+    <select id="selectTodayTasksByRouteId" resultMap="DmsInspectionTaskResult">
+        <include refid="selectTaskVo"/>
+        WHERE del_flag = '0' AND route_id = #{routeId}
+          AND DATE(plan_date) = CURDATE()
+    </select>
+
+    <!-- 查询所有待执行且已过期的点检任务 -->
+    <select id="selectOverdueTasks" resultMap="DmsInspectionTaskResult">
+        <include refid="selectTaskVo"/>
+        WHERE del_flag = '0'
+          AND task_status = '0'
+          AND plan_date &lt; CURDATE()
+    </select>
+</mapper>

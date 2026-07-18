@@ -17,6 +17,13 @@ import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.core.text.Convert;
 import com.ruoyi.common.exception.DemoModeException;
 import com.ruoyi.common.exception.ServiceException;
+import com.ruoyi.common.exception.user.BlackListException;
+import com.ruoyi.common.exception.user.CaptchaException;
+import com.ruoyi.common.exception.user.CaptchaExpireException;
+import com.ruoyi.common.exception.user.UserNotExistsException;
+import com.ruoyi.common.exception.user.UserPasswordExpireException;
+import com.ruoyi.common.exception.user.UserPasswordNotMatchException;
+import com.ruoyi.common.exception.user.UserPasswordRetryLimitExceedException;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.common.utils.html.EscapeUtil;
 
@@ -175,5 +182,82 @@ public class GlobalExceptionHandler
     public AjaxResult handleDemoModeException(DemoModeException e)
     {
         return AjaxResult.error("演示模式，不允许操作");
+    }
+
+    /**
+     * 验证码过期异常
+     */
+    @ExceptionHandler(CaptchaExpireException.class)
+    public AjaxResult handleCaptchaExpireException(CaptchaExpireException e, HttpServletRequest request)
+    {
+        String requestURI = request.getRequestURI();
+        log.error("请求地址'{}',验证码已过期.", requestURI, e);
+        return AjaxResult.error("验证码已过期，请重新获取");
+    }
+
+    /**
+     * 验证码错误异常
+     */
+    @ExceptionHandler(CaptchaException.class)
+    public AjaxResult handleCaptchaException(CaptchaException e, HttpServletRequest request)
+    {
+        String requestURI = request.getRequestURI();
+        log.error("请求地址'{}',验证码错误.", requestURI, e);
+        return AjaxResult.error("验证码错误，请重新输入");
+    }
+
+    /**
+     * 用户不存在异常
+     */
+    @ExceptionHandler(UserNotExistsException.class)
+    public AjaxResult handleUserNotExistsException(UserNotExistsException e, HttpServletRequest request)
+    {
+        String requestURI = request.getRequestURI();
+        log.error("请求地址'{}',用户不存在.", requestURI, e);
+        return AjaxResult.error("用户不存在，请检查用户名");
+    }
+
+    /**
+     * 用户密码不匹配异常
+     */
+    @ExceptionHandler(UserPasswordNotMatchException.class)
+    public AjaxResult handleUserPasswordNotMatchException(UserPasswordNotMatchException e, HttpServletRequest request)
+    {
+        String requestURI = request.getRequestURI();
+        log.error("请求地址'{}',密码错误.", requestURI, e);
+        return AjaxResult.error("密码错误，请重新输入");
+    }
+
+    /**
+     * 用户密码过期异常
+     */
+    @ExceptionHandler(UserPasswordExpireException.class)
+    public AjaxResult handleUserPasswordExpireException(UserPasswordExpireException e, HttpServletRequest request)
+    {
+        String requestURI = request.getRequestURI();
+        log.error("请求地址'{}',用户密码已过期.", requestURI, e);
+        return AjaxResult.error("密码已过期，请联系管理员重置");
+    }
+
+    /**
+     * 登录重试次数超过限制异常
+     */
+    @ExceptionHandler(UserPasswordRetryLimitExceedException.class)
+    public AjaxResult handleUserPasswordRetryLimitExceedException(UserPasswordRetryLimitExceedException e, HttpServletRequest request)
+    {
+        String requestURI = request.getRequestURI();
+        log.error("请求地址'{}',登录重试次数超过限制.", requestURI, e);
+        return AjaxResult.error("登录失败次数过多，账户已锁定，请稍后重试");
+    }
+
+    /**
+     * 黑名单异常
+     */
+    @ExceptionHandler(BlackListException.class)
+    public AjaxResult handleBlackListException(BlackListException e, HttpServletRequest request)
+    {
+        String requestURI = request.getRequestURI();
+        log.error("请求地址'{}',IP被加入黑名单.", requestURI, e);
+        return AjaxResult.error("您的IP已被限制登录，请联系管理员");
     }
 }

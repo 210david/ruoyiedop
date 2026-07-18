@@ -1,0 +1,122 @@
+# ============================================================
+# 企业数字化运营平台 - 生产环境配置
+# 部署路径: D:\EDOP\app\application.yml
+# 说明: 此文件会覆盖jar包内部同名配置，修改后重启服务即可生效
+# ============================================================
+
+# 项目相关配置
+ruoyi:
+  name: RuoYi
+  version: 3.9.2
+  copyrightYear: 2026
+  # 文件上传路径（与Nginx中location /profile/对应）
+  profile: D:/EDOP/uploadPath
+  addressEnabled: false
+  captchaType: math
+
+# 开发环境配置
+server:
+  port: 8004
+  servlet:
+    context-path: /
+  tomcat:
+    uri-encoding: UTF-8
+    accept-count: 1000
+    threads:
+      max: 800
+      min-spare: 100
+
+# 日志配置
+logging:
+  level:
+    com.ruoyi: info
+    org.springframework: warn
+  file:
+    name: D:/EDOP/app/logs/ruoyi.log
+
+# 用户配置
+user:
+  password:
+    maxRetryCount: 5
+    lockTime: 30
+    onlineCount: 1
+    onlineMode: kick
+    passwordExpireDays: 90
+
+# Spring配置
+spring:
+  messages:
+    basename: i18n/messages
+  profiles:
+    active: druid
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 20MB
+  jackson:
+    time-zone: GMT+8
+    date-format: yyyy-MM-dd HH:mm:ss
+  # 生产环境关闭热部署
+  devtools:
+    restart:
+      enabled: false
+  data:
+    redis:
+      # Redis地址（本机部署用localhost，远程部署改为实际IP）
+      host: localhost
+      port: 6379
+      database: 0
+      # Redis密码（生产环境强烈建议设置密码）
+      password:
+      timeout: 10s
+      lettuce:
+        pool:
+          min-idle: 0
+          max-idle: 8
+          max-active: 8
+          max-wait: -1ms
+
+# token配置
+token:
+  header: Authorization
+  # 生产环境请修改此密钥！！！
+  secret: abcdefghijklmnopqrstuvwxyz
+  expireTime: 30
+
+# MyBatis配置
+mybatis:
+  typeAliasesPackage: com.ruoyi.**.domain
+  mapperLocations: classpath*:mapper/**/*Mapper.xml
+  configLocation: classpath:mybatis/mybatis-config.xml
+
+# PageHelper分页插件
+pagehelper:
+  helperDialect: mysql
+  supportMethodsArguments: true
+  params: count=countSql
+
+# Springdoc配置
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    # 生产环境可设为false关闭Swagger
+    enabled: true
+    path: /swagger-ui.html
+    tags-sorter: alpha
+  group-configs:
+    - group: 'default'
+      display-name: '测试模块'
+      paths-to-match: '/**'
+      packages-to-scan: com.ruoyi.web.controller.tool
+
+# 防盗链配置
+referer:
+  enabled: false
+  allowed-domains: localhost,127.0.0.1
+
+# 防止XSS攻击
+xss:
+  enabled: true
+  excludes: /system/notice
+  urlPatterns: /system/*,/monitor/*,/tool/*,/wms/*,/dms/*

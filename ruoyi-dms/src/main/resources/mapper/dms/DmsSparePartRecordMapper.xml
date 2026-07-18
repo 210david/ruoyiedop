@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.dms.mapper.DmsSparePartRecordMapper">
+
+    <resultMap type="DmsSparePartRecord" id="DmsSparePartRecordResult">
+        <result property="recordId"         column="record_id"/>
+        <result property="partId"           column="part_id"/>
+        <result property="documentCode"     column="document_code"/>
+        <result property="partCode"         column="part_code"/>
+        <result property="partName"         column="part_name"/>
+        <result property="moveType"         column="move_type"/>
+        <result property="sourceType"       column="source_type"/>
+        <result property="targetType"       column="target_type"/>
+        <result property="supplierOrDept"   column="supplier_or_dept"/>
+        <result property="receiver"         column="receiver"/>
+        <result property="quantity"         column="quantity"/>
+        <result property="beforeStock"      column="before_stock"/>
+        <result property="afterStock"       column="after_stock"/>
+        <result property="refType"          column="ref_type"/>
+        <result property="refId"            column="ref_id"/>
+        <result property="refNo"            column="ref_no"/>
+        <result property="operatorName"     column="operator_name"/>
+        <result property="operateDate"      column="operate_date"/>
+        <result property="storageLocation"  column="storage_location"/>
+        <result property="createTime"       column="create_time"/>
+        <result property="remark"           column="remark"/>
+    </resultMap>
+
+    <select id="selectRecordList" parameterType="DmsSparePartRecord" resultMap="DmsSparePartRecordResult">
+        SELECT record_id, part_id, document_code, part_code, part_name, move_type, source_type, target_type,
+               supplier_or_dept, receiver, quantity, before_stock, after_stock, ref_type, ref_id, ref_no,
+               operator_name, operate_date, storage_location, create_time, remark
+        FROM dms_spare_part_record
+        <where>
+            <if test="partId != null"> AND part_id = #{partId}</if>
+            <if test="partCode != null and partCode != ''"> AND part_code LIKE CONCAT('%', #{partCode}, '%')</if>
+            <if test="partName != null and partName != ''"> AND part_name LIKE CONCAT('%', #{partName}, '%')</if>
+            <if test="moveType != null and moveType != '' and moveType != 'not0'.toString()"> AND move_type = #{moveType}</if>
+            <if test="moveType != null and moveType == 'not0'.toString()"> AND move_type != '0'</if>
+            <if test="documentCode != null and documentCode != ''"> AND document_code LIKE CONCAT('%', #{documentCode}, '%')</if>
+            <if test="sourceType != null and sourceType != ''"> AND source_type = #{sourceType}</if>
+            <if test="targetType != null and targetType != ''"> AND target_type = #{targetType}</if>
+            <if test="supplierOrDept != null and supplierOrDept != ''"> AND supplier_or_dept LIKE CONCAT('%', #{supplierOrDept}, '%')</if>
+        </where>
+        ORDER BY record_id DESC
+    </select>
+
+    <select id="selectLastDocumentCode" resultType="String">
+        SELECT document_code FROM dms_spare_part_record
+        WHERE document_code LIKE CONCAT(#{prefix}, '%')
+        ORDER BY document_code DESC LIMIT 1
+    </select>
+
+    <insert id="insertRecord" parameterType="DmsSparePartRecord" useGeneratedKeys="true" keyProperty="recordId">
+        INSERT INTO dms_spare_part_record (
+            part_id, document_code, part_code, part_name, move_type, source_type, target_type,
+            supplier_or_dept, receiver, quantity, before_stock, after_stock, ref_type, ref_id, ref_no,
+            operator_name, operate_date, storage_location, create_time, remark
+        ) VALUES (
+            #{partId}, #{documentCode}, #{partCode}, #{partName}, #{moveType}, #{sourceType}, #{targetType},
+            #{supplierOrDept}, #{receiver}, #{quantity}, #{beforeStock}, #{afterStock}, #{refType}, #{refId}, #{refNo},
+            #{operatorName}, #{operateDate}, #{storageLocation}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <delete id="deleteRecordByIds" parameterType="Long">
+        DELETE FROM dms_spare_part_record WHERE record_id IN
+        <foreach item="recordId" collection="array" open="(" separator="," close=")">#{recordId}</foreach>
+    </delete>
+
+</mapper>

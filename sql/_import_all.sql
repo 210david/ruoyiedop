@@ -9,3 +9,6 @@ SOURCE e:/AIcode/EDOP/RuoYi/RuoYi-Vue3/sql/sys_data_change_log.sql;
 SOURCE e:/AIcode/EDOP/RuoYi/RuoYi-Vue3/sql/sys_undo_log.sql;
 SOURCE e:/AIcode/EDOP/RuoYi/RuoYi-Vue3/sql/logininfor_upgrade.sql;
 SOURCE e:/AIcode/EDOP/RuoYi/RuoYi-Vue3/sql/wms_all.sql;
+SOURCE e:/AIcode/EDOP/RuoYi/RuoYi-Vue3/sql/wms_statistics_menu.sql;
+SOURCE e:/AIcode/EDOP/RuoYi/RuoYi-Vue3/sql/wms_stock_alert_menu.sql;
+SOURCE e:/AIcode/EDOP/RuoYi/RuoYi-Vue3/sql/dms_all.sql;

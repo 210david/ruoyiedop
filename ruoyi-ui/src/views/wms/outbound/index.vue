@@ -12,20 +12,20 @@
       <el-col :span="1.5"><el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['wms:outbound:export']">导出</el-button></el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
-    <el-table v-loading="loading" :data="list" @selection-change="handleSelectionChange">
+    <el-table border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="出库单号" prop="orderNo" width="200" />
-      <el-table-column label="出库类型" prop="orderType" width="100" align="center"><template #default="scope"><dict-tag :options="wms_outbound_type" :value="scope.row.orderType" /></template></el-table-column>
-      <el-table-column label="出库仓库" prop="warehouseName" width="150" />
-      <el-table-column label="状态" prop="status" width="100" align="center"><template #default="scope"><dict-tag :options="wms_outbound_status" :value="scope.row.status" /></template></el-table-column>
-      <el-table-column label="总数量" prop="totalQty" width="100" align="right" />
+      <el-table-column label="出库单号" prop="orderNo" :width="colWidth('orderNo', 200)" resizable />
+      <el-table-column label="出库类型" prop="orderType" :width="colWidth('orderType', 100)" resizable align="center"><template #default="scope"><dict-tag :options="wms_outbound_type" :value="scope.row.orderType" /></template></el-table-column>
+      <el-table-column label="出库仓库" prop="warehouseName" :width="colWidth('warehouseName', 150)" resizable />
+      <el-table-column label="状态" prop="status" :width="colWidth('status', 100)" resizable align="center"><template #default="scope"><dict-tag :options="wms_outbound_status" :value="scope.row.status" /></template></el-table-column>
+      <el-table-column label="总数量" prop="totalQty" :width="colWidth('totalQty', 100)" resizable align="right" />
       <el-table-column label="备注" prop="remark" show-overflow-tooltip />
       <el-table-column label="操作" width="200" align="center">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleDetail(scope.row)">详情</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['wms:outbound:edit']" v-if="scope.row.status === '0'">修改</el-button>
           <el-button link type="primary" icon="Promotion" @click="handleSubmit(scope.row)" v-hasPermi="['wms:outbound:edit']" v-if="scope.row.status === '0'">提交</el-button>
-          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['wms:outbound:remove']" v-if="scope.row.status === '0'">删除</el-button>
+          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['wms:outbound:remove']">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -45,7 +45,7 @@
         <el-divider content-position="center">出库明细（从仓库库存中选择）</el-divider>
         <el-alert v-if="!form.warehouseId" title="请先选择出库仓库，系统将加载该仓库的可用库存" type="info" :closable="false" show-icon style="margin-bottom: 10px" />
         <el-row :gutter="10" class="mb8"><el-col :span="1.5"><el-button type="primary" plain icon="Plus" @click="handleAddDetail" :disabled="!form.warehouseId">添加明细</el-button></el-col></el-row>
-        <el-table :data="form.detailList" border>
+        <el-table :data="form.detailList" border @header-dragend="onHeaderDragEnd">
           <el-table-column label="库存物料" min-width="280">
             <template #default="scope">
               <el-select v-model="scope.row.inventoryId" filterable clearable placeholder="请选择库存物料" style="width:100%" @change="handleInventoryChange(scope.$index, $event)">
@@ -53,15 +53,15 @@
               </el-select>
             </template>
           </el-table-column>
-          <el-table-column label="物料编码" prop="materialCode" width="120" />
-          <el-table-column label="物料名称" prop="materialName" width="150" show-overflow-tooltip />
-          <el-table-column label="规格型号" prop="specModel" width="120" show-overflow-tooltip />
-          <el-table-column label="单位" prop="unit" width="70" align="center">
+          <el-table-column label="物料编码" prop="materialCode" :width="colWidth('materialCode', 120)" resizable />
+          <el-table-column label="物料名称" prop="materialName" :width="colWidth('materialName', 150)" resizable show-overflow-tooltip />
+          <el-table-column label="规格型号" prop="specModel" :width="colWidth('specModel', 120)" resizable show-overflow-tooltip />
+          <el-table-column label="单位" prop="unit" :width="colWidth('unit', 70)" resizable align="center">
             <template #default="scope"><dict-tag :options="wms_unit" :value="scope.row.unit" /></template>
           </el-table-column>
-          <el-table-column label="批次号" prop="batchNo" width="110" />
-          <el-table-column label="库位" prop="locationCode" width="90" />
-          <el-table-column label="可用库存" prop="availableQty" width="90" align="right" />
+          <el-table-column label="批次号" prop="batchNo" :width="colWidth('batchNo', 110)" resizable />
+          <el-table-column label="库位" prop="locationCode" :width="colWidth('locationCode', 90)" resizable />
+          <el-table-column label="可用库存" prop="availableQty" :width="colWidth('availableQty', 90)" resizable align="right" />
           <el-table-column label="出库数量" width="130">
             <template #default="scope">
               <el-input-number v-model="scope.row.planQty" :precision="2" :min="0" :max="scope.row.availableQty" controls-position="right" style="width:100%" @change="validatePlanQty(scope.$index)" />
@@ -83,18 +83,18 @@
         <el-descriptions-item label="出库仓库">{{ detailData.warehouseName }}</el-descriptions-item>
         <el-descriptions-item label="总数量">{{ detailData.totalQty }}</el-descriptions-item>
       </el-descriptions>
-      <el-table :data="detailData.detailList" border style="margin-top: 15px">
-        <el-table-column label="物料编码" prop="materialCode" width="120" />
+      <el-table :data="detailData.detailList" border style="margin-top: 15px" @header-dragend="onHeaderDragEnd">
+        <el-table-column label="物料编码" prop="materialCode" :width="colWidth('materialCode', 120)" resizable />
         <el-table-column label="物料名称" prop="materialName" show-overflow-tooltip />
-        <el-table-column label="规格型号" prop="specModel" width="120" show-overflow-tooltip />
-        <el-table-column label="单位" prop="unit" width="70" align="center">
+        <el-table-column label="规格型号" prop="specModel" :width="colWidth('specModel', 120)" resizable show-overflow-tooltip />
+        <el-table-column label="单位" prop="unit" :width="colWidth('unit', 70)" resizable align="center">
           <template #default="scope"><dict-tag :options="wms_unit" :value="scope.row.unit" /></template>
         </el-table-column>
-        <el-table-column label="批次号" prop="batchNo" width="110" />
-        <el-table-column label="计划数量" prop="planQty" width="90" align="right" />
-        <el-table-column label="已拣货" prop="pickQty" width="90" align="right" />
-        <el-table-column label="实际数量" prop="actualQty" width="90" align="right" />
-        <el-table-column label="拣货库位" prop="locationCode" width="90" />
+        <el-table-column label="批次号" prop="batchNo" :width="colWidth('batchNo', 110)" resizable />
+        <el-table-column label="计划数量" prop="planQty" :width="colWidth('planQty', 90)" resizable align="right" />
+        <el-table-column label="已拣货" prop="pickQty" :width="colWidth('pickQty', 90)" resizable align="right" />
+        <el-table-column label="实际数量" prop="actualQty" :width="colWidth('actualQty', 90)" resizable align="right" />
+        <el-table-column label="拣货库位" prop="locationCode" :width="colWidth('locationCode', 90)" resizable />
       </el-table>
     </el-dialog>
   </div>
@@ -104,7 +104,9 @@
 import { listOutbound, getOutbound, addOutbound, updateOutbound, delOutbound, submitOutbound } from '@/api/wms/outbound'
 import { listWarehouse } from '@/api/wms/warehouse'
 import { listInventory } from '@/api/wms/inventory'
+import { useColumnResize } from '@/composables/useColumnResize'
 const { proxy } = getCurrentInstance()
+const { colWidth, onHeaderDragEnd } = useColumnResize('wms_outbound_index')
 const { wms_outbound_type, wms_outbound_status, wms_unit } = proxy.useDict('wms_outbound_type', 'wms_outbound_status', 'wms_unit')
 const list = ref([]); const open = ref(false); const loading = ref(true); const showSearch = ref(true); const ids = ref([]); const multiple = ref(true); const total = ref(0); const title = ref(''); const detailOpen = ref(false); const detailData = ref({})
 const warehouseOptions = ref([]); const inventoryOptions = ref([])

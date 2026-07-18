@@ -30,17 +30,17 @@
     </el-row>
 
     <!-- 列表 -->
-    <el-table v-loading="loading" :data="list" highlight-current-row>
-      <el-table-column label="出库单号" prop="orderNo" width="200" />
-      <el-table-column label="出库类型" prop="orderType" width="100" align="center">
+    <el-table border v-loading="loading" :data="list" highlight-current-row @header-dragend="onHeaderDragEnd">
+      <el-table-column label="出库单号" prop="orderNo" :width="colWidth('orderNo', 200)" resizable />
+      <el-table-column label="出库类型" prop="orderType" :width="colWidth('orderType', 100)" resizable align="center">
         <template #default="scope"><dict-tag :options="wms_outbound_type" :value="scope.row.orderType" /></template>
       </el-table-column>
-      <el-table-column label="出库仓库" prop="warehouseName" width="150" />
-      <el-table-column label="状态" prop="status" width="100" align="center">
+      <el-table-column label="出库仓库" prop="warehouseName" :width="colWidth('warehouseName', 150)" resizable />
+      <el-table-column label="状态" prop="status" :width="colWidth('status', 100)" resizable align="center">
         <template #default="scope"><dict-tag :options="wms_outbound_status" :value="scope.row.status" /></template>
       </el-table-column>
-      <el-table-column label="总数量" prop="totalQty" width="100" align="right" />
-      <el-table-column label="预计出库" prop="outboundDate" width="120" align="center" />
+      <el-table-column label="总数量" prop="totalQty" :width="colWidth('totalQty', 100)" resizable align="right" />
+      <el-table-column label="预计出库" prop="outboundDate" :width="colWidth('outboundDate', 120)" resizable align="center" />
       <el-table-column label="备注" prop="remark" show-overflow-tooltip />
       <el-table-column label="操作" width="200" align="center" fixed="right">
         <template #default="scope">
@@ -61,13 +61,13 @@
         <el-descriptions-item label="总数量">{{ currentOrder.totalQty }}</el-descriptions-item>
       </el-descriptions>
 
-      <el-table :data="currentOrder.detailList" border style="margin-top: 15px">
-        <el-table-column label="物料编码" prop="materialCode" width="120" />
+      <el-table :data="currentOrder.detailList" border style="margin-top: 15px" @header-dragend="onHeaderDragEnd">
+        <el-table-column label="物料编码" prop="materialCode" :width="colWidth('materialCode', 120)" resizable />
         <el-table-column label="物料名称" prop="materialName" show-overflow-tooltip />
-        <el-table-column label="批次号" prop="batchNo" width="120" />
-        <el-table-column label="计划数量" prop="planQty" width="100" align="right" />
-        <el-table-column label="已拣货" prop="pickQty" width="100" align="right" />
-        <el-table-column label="复核数量" prop="actualQty" width="100" align="right">
+        <el-table-column label="批次号" prop="batchNo" :width="colWidth('batchNo', 120)" resizable />
+        <el-table-column label="计划数量" prop="planQty" :width="colWidth('planQty', 100)" resizable align="right" />
+        <el-table-column label="已拣货" prop="pickQty" :width="colWidth('pickQty', 100)" resizable align="right" />
+        <el-table-column label="复核数量" prop="actualQty" :width="colWidth('actualQty', 100)" resizable align="right">
           <template #default="scope">
             <span v-if="scope.row.actualQty != null">{{ scope.row.actualQty }}</span>
             <span v-else>-</span>
@@ -108,7 +108,9 @@
 
 <script setup name="WmsOutboundCheck">
 import { listOutbound, getOutbound, checkOutbound } from '@/api/wms/outbound'
+import { useColumnResize } from '@/composables/useColumnResize'
 const { proxy } = getCurrentInstance()
+const { colWidth, onHeaderDragEnd } = useColumnResize('wms_outbound_check')
 const { wms_outbound_type, wms_outbound_status } = proxy.useDict('wms_outbound_type', 'wms_outbound_status')
 
 const list = ref([])

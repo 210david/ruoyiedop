@@ -528,13 +528,19 @@ INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component,
 
 INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark) VALUES
 (2080, '库存查询', 2004, 1, 'list', 'wms/inventory/index', '', 'WmsInventoryList', 1, 0, 'C', '0', '0', 'wms:inventory:list', 'list', 'admin', sysdate(), ''),
-(2081, '库存流水', 2004, 2, 'log', 'wms/log/index', '', 'WmsInventoryLog', 1, 0, 'C', '0', '0', 'wms:log:list', 'time', 'admin', sysdate(), '');
+(2081, '库存流水', 2004, 2, 'log', 'wms/log/index', '', 'WmsInventoryLog', 1, 0, 'C', '0', '0', 'wms:log:list', 'time', 'admin', sysdate(), ''),
+(2120, '库存预警', 2004, 3, 'alert', 'wms/stockAlert/index', '', 'WmsStockAlert', 1, 0, 'C', '0', '0', 'wms:stockAlert:list', 'bug', 'admin', sysdate(), '库存预警管理（库存不足/积压/临期/过期）');
 
 INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark) VALUES
 (2082, '库存查询', 2080, 1, '', '', '', '', 1, 0, 'F', '0', '0', 'wms:inventory:query', '#', 'admin', sysdate(), ''),
 (2083, '库存导出', 2080, 2, '', '', '', '', 1, 0, 'F', '0', '0', 'wms:inventory:export', '#', 'admin', sysdate(), ''),
 (2084, '流水查询', 2081, 1, '', '', '', '', 1, 0, 'F', '0', '0', 'wms:log:query', '#', 'admin', sysdate(), ''),
-(2085, '流水导出', 2081, 2, '', '', '', '', 1, 0, 'F', '0', '0', 'wms:log:export', '#', 'admin', sysdate(), '');
+(2085, '流水导出', 2081, 2, '', '', '', '', 1, 0, 'F', '0', '0', 'wms:log:export', '#', 'admin', sysdate(), ''),
+(2121, '预警查询', 2120, 1, '', '', '', '', 1, 0, 'F', '0', '0', 'wms:stockAlert:query', '#', 'admin', sysdate(), ''),
+(2122, '预警导出', 2120, 2, '', '', '', '', 1, 0, 'F', '0', '0', 'wms:stockAlert:export', '#', 'admin', sysdate(), ''),
+(2123, '库存删除', 2080, 3, '', '', '', '', 1, 0, 'F', '0', '0', 'wms:inventory:remove', '#', 'admin', sysdate(), ''),
+(2124, '流水删除', 2081, 3, '', '', '', '', 1, 0, 'F', '0', '0', 'wms:log:remove', '#', 'admin', sysdate(), ''),
+(2125, '预警删除', 2120, 3, '', '', '', '', 1, 0, 'F', '0', '0', 'wms:stockAlert:remove', '#', 'admin', sysdate(), '');
 
 -- 二级目录：盘点管理
 INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark) VALUES
@@ -554,6 +560,13 @@ INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component,
 INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark) VALUES
 (2100, '移库管理', 2000, 6, 'move', 'wms/move/index', '', 'WmsMove', 1, 0, 'C', '0', '0', 'wms:move:list', 'swap', 'admin', sysdate(), '');
 
+-- 统计报表
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark) VALUES
+(2110, '统计报表', 2000, 7, 'statistics', 'wms/statistics/index', '', 'WmsStatistics', 1, 0, 'C', '0', '0', 'wms:statistics:list', 'chart', 'admin', sysdate(), '仓库管理统计报表');
+
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark) VALUES
+(2111, '统计查询', 2110, 1, '', '', '', '', 1, 0, 'F', '0', '0', 'wms:statistics:query', '#', 'admin', sysdate(), '');
+
 INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark) VALUES
 (2101, '移库查询', 2100, 1, '', '', '', '', 1, 0, 'F', '0', '0', 'wms:move:query', '#', 'admin', sysdate(), ''),
 (2102, '移库新增', 2100, 2, '', '', '', '', 1, 0, 'F', '0', '0', 'wms:move:add', '#', 'admin', sysdate(), ''),
@@ -569,6 +582,8 @@ INSERT INTO sys_role_menu (role_id, menu_id) VALUES
 (1, 2030), (1, 2031), (1, 2032), (1, 2033), (1, 2034), (1, 2035), (1, 2036), (1, 2037),
 (1, 2060), (1, 2061), (1, 2062), (1, 2063), (1, 2064), (1, 2065), (1, 2066),
 (1, 2070), (1, 2071), (1, 2072), (1, 2073), (1, 2074), (1, 2075), (1, 2076), (1, 2077), (1, 2078),
-(1, 2080), (1, 2081), (1, 2082), (1, 2083), (1, 2084), (1, 2085),
+(1, 2080), (1, 2081), (1, 2082), (1, 2083), (1, 2084), (1, 2085), (1, 2123), (1, 2124),
 (1, 2090), (1, 2091), (1, 2092), (1, 2093), (1, 2094), (1, 2095),
-(1, 2100), (1, 2101), (1, 2102), (1, 2103), (1, 2104), (1, 2105);
+(1, 2100), (1, 2101), (1, 2102), (1, 2103), (1, 2104), (1, 2105),
+(1, 2110), (1, 2111),
+(1, 2120), (1, 2121), (1, 2122), (1, 2125);

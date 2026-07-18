@@ -221,4 +221,16 @@ public class WmsInventoryServiceImpl implements IWmsInventoryService
     {
         return wmsInventoryLogMapper.selectInventoryLogList(log);
     }
+
+    @Override
+    public int deleteInventoryByIds(Long[] inventoryIds)
+    {
+        return wmsInventoryMapper.deleteInventoryByIds(inventoryIds);
+    }
+
+    @Override
+    public int deleteInventoryLogByIds(Long[] logIds)
+    {
+        return wmsInventoryLogMapper.deleteInventoryLogByIds(logIds);
+    }
 }

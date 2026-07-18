@@ -60,16 +60,6 @@ public class SysDictDataController extends BaseController
     }
 
     /**
-     * 查询字典数据详细
-     */
-    @PreAuthorize("@ss.hasPermi('system:dict:query')")
-    @GetMapping(value = "/{dictCode}")
-    public AjaxResult getInfo(@PathVariable Long dictCode)
-    {
-        return success(dictDataService.selectDictDataById(dictCode));
-    }
-
-    /**
      * 根据字典类型查询字典数据信息
      */
     @GetMapping(value = "/type/{dictType}")
@@ -81,6 +71,34 @@ public class SysDictDataController extends BaseController
             data = new ArrayList<SysDictData>();
         }
         return success(data);
+    }
+
+    /**
+     * 校验字典键值是否唯一
+     */
+    @GetMapping("/checkDictValueUnique")
+    public AjaxResult checkDictValueUnique(SysDictData dict)
+    {
+        return success(dictDataService.checkDictValueUnique(dict));
+    }
+
+    /**
+     * 校验字典标签是否唯一
+     */
+    @GetMapping("/checkDictLabelUnique")
+    public AjaxResult checkDictLabelUnique(SysDictData dict)
+    {
+        return success(dictDataService.checkDictLabelUnique(dict));
+    }
+
+    /**
+     * 查询字典数据详细
+     */
+    @PreAuthorize("@ss.hasPermi('system:dict:query')")
+    @GetMapping(value = "/{dictCode}")
+    public AjaxResult getInfo(@PathVariable Long dictCode)
+    {
+        return success(dictDataService.selectDictDataById(dictCode));
     }
 
     /**

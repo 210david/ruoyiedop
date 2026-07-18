@@ -11,22 +11,22 @@
       <el-col :span="1.5"><el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['wms:stocktake:remove']">删除</el-button></el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
-    <el-table v-loading="loading" :data="list" @selection-change="handleSelectionChange">
+    <el-table border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="盘点单号" prop="takeNo" width="160" />
-      <el-table-column label="仓库" prop="warehouseName" width="120" />
-      <el-table-column label="库区" prop="areaName" width="120" />
-      <el-table-column label="盘点类型" prop="takeType" width="100" align="center"><template #default="scope"><dict-tag :options="wms_take_type" :value="scope.row.takeType" /></template></el-table-column>
-      <el-table-column label="状态" prop="status" width="100" align="center"><template #default="scope"><dict-tag :options="wms_take_status" :value="scope.row.status" /></template></el-table-column>
-      <el-table-column label="计划日期" prop="planDate" width="120" align="center" />
+      <el-table-column label="盘点单号" prop="takeNo" :width="colWidth('takeNo', 160)" resizable />
+      <el-table-column label="仓库" prop="warehouseName" :width="colWidth('warehouseName', 120)" resizable />
+      <el-table-column label="库区" prop="areaName" :width="colWidth('areaName', 120)" resizable />
+      <el-table-column label="盘点类型" prop="takeType" :width="colWidth('takeType', 100)" resizable align="center"><template #default="scope"><dict-tag :options="wms_take_type" :value="scope.row.takeType" /></template></el-table-column>
+      <el-table-column label="状态" prop="status" :width="colWidth('status', 100)" resizable align="center"><template #default="scope"><dict-tag :options="wms_take_status" :value="scope.row.status" /></template></el-table-column>
+      <el-table-column label="计划日期" prop="planDate" :width="colWidth('planDate', 120)" resizable align="center" />
       <el-table-column label="备注" prop="remark" min-width="200" show-overflow-tooltip />
-      <el-table-column label="创建时间" prop="createTime" width="160" align="center" />
+      <el-table-column label="创建时间" prop="createTime" :width="colWidth('createTime', 160)" resizable align="center" />
       <el-table-column label="操作" width="280" align="center">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleDetail(scope.row)">详情</el-button>
           <el-button link type="primary" icon="VideoPlay" @click="handleStart(scope.row)" v-if="scope.row.status === '0'" v-hasPermi="['wms:stocktake:edit']">开始</el-button>
           <el-button link type="danger" icon="CircleClose" @click="handleVoid(scope.row)" v-if="scope.row.status === '0' || scope.row.status === '1'" v-hasPermi="['wms:stocktake:edit']">作废</el-button>
-          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-if="scope.row.status === '0' || scope.row.status === '4'" v-hasPermi="['wms:stocktake:remove']">删除</el-button>
+          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['wms:stocktake:remove']">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -57,16 +57,16 @@
         <el-descriptions-item label="开始时间">{{ detailData.startTime }}</el-descriptions-item>
         <el-descriptions-item label="结束时间">{{ detailData.endTime }}</el-descriptions-item>
       </el-descriptions>
-      <el-table :data="detailData.detailList" border style="margin-top: 15px">
-        <el-table-column label="物料编码" prop="materialCode" width="120" />
+      <el-table :data="detailData.detailList" border style="margin-top: 15px" @header-dragend="onHeaderDragEnd">
+        <el-table-column label="物料编码" prop="materialCode" :width="colWidth('materialCode', 120)" resizable />
         <el-table-column label="物料名称" prop="materialName" min-width="200" show-overflow-tooltip />
         <el-table-column label="库区/库位" width="180">
           <template #default="scope">{{ [scope.row.areaName, scope.row.locationName].filter(Boolean).join(' / ') || '-' }}</template>
         </el-table-column>
-        <el-table-column label="批次号" prop="batchNo" width="100" />
-        <el-table-column label="账面数量" prop="bookQty" width="100" align="right" />
-        <el-table-column label="实盘数量" prop="actualQty" width="100" align="right" />
-        <el-table-column label="差异" prop="diffQty" width="100" align="right">
+        <el-table-column label="批次号" prop="batchNo" :width="colWidth('batchNo', 100)" resizable />
+        <el-table-column label="账面数量" prop="bookQty" :width="colWidth('bookQty', 100)" resizable align="right" />
+        <el-table-column label="实盘数量" prop="actualQty" :width="colWidth('actualQty', 100)" resizable align="right" />
+        <el-table-column label="差异" prop="diffQty" :width="colWidth('diffQty', 100)" resizable align="right">
           <template #default="scope"><span :style="{color: scope.row.diffQty < 0 ? 'red' : scope.row.diffQty > 0 ? 'green' : ''}">{{ scope.row.diffQty }}</span></template>
         </el-table-column>
         <el-table-column label="差异原因" prop="diffReason" show-overflow-tooltip />
@@ -93,7 +93,9 @@
 <script setup name="WmsStockTake">
 import { listStockTake, getStockTake, addStockTake, delStockTake, startStockTake, submitStockTakeDetail, voidStockTake } from '@/api/wms/stocktake'
 import { listWarehouse, listArea } from '@/api/wms/warehouse'
+import { useColumnResize } from '@/composables/useColumnResize'
 const { proxy } = getCurrentInstance()
+const { colWidth, onHeaderDragEnd } = useColumnResize('wms_stocktake_index')
 const { wms_take_type, wms_take_status } = proxy.useDict('wms_take_type', 'wms_take_status')
 const list = ref([]); const open = ref(false); const loading = ref(true); const showSearch = ref(true); const ids = ref([]); const multiple = ref(true); const total = ref(0); const title = ref(''); const detailOpen = ref(false); const detailData = ref({}); const submitOpen = ref(false)
 const inputForm = ref({})

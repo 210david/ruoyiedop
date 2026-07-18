@@ -60,6 +60,12 @@
             <artifactId>ruoyi-wms</artifactId>
         </dependency>
 
+        <!-- DMS设备管理 -->
+        <dependency>
+            <groupId>com.ruoyi</groupId>
+            <artifactId>ruoyi-dms</artifactId>
+        </dependency>
+
     </dependencies>
 
     <build>

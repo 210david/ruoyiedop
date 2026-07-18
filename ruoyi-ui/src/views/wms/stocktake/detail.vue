@@ -24,21 +24,21 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="list" @row-click="handleRowClick" highlight-current-row>
-      <el-table-column label="盘点单号" prop="takeNo" width="180" />
-      <el-table-column label="仓库" prop="warehouseName" width="120" />
-      <el-table-column label="库区" prop="areaName" width="120" />
-      <el-table-column label="盘点类型" prop="takeType" width="100" align="center">
+    <el-table border v-loading="loading" :data="list" @row-click="handleRowClick" highlight-current-row @header-dragend="onHeaderDragEnd">
+      <el-table-column label="盘点单号" prop="takeNo" :width="colWidth('takeNo', 180)" resizable />
+      <el-table-column label="仓库" prop="warehouseName" :width="colWidth('warehouseName', 120)" resizable />
+      <el-table-column label="库区" prop="areaName" :width="colWidth('areaName', 120)" resizable />
+      <el-table-column label="盘点类型" prop="takeType" :width="colWidth('takeType', 100)" resizable align="center">
         <template #default="scope"><dict-tag :options="wms_take_type" :value="scope.row.takeType" /></template>
       </el-table-column>
-      <el-table-column label="状态" prop="status" width="100" align="center">
+      <el-table-column label="状态" prop="status" :width="colWidth('status', 100)" resizable align="center">
         <template #default="scope"><dict-tag :options="wms_take_status" :value="scope.row.status" /></template>
       </el-table-column>
-      <el-table-column label="计划日期" prop="planDate" width="120" align="center" />
-      <el-table-column label="开始时间" prop="startTime" width="160" align="center" />
-      <el-table-column label="结束时间" prop="endTime" width="160" align="center" />
+      <el-table-column label="计划日期" prop="planDate" :width="colWidth('planDate', 120)" resizable align="center" />
+      <el-table-column label="开始时间" prop="startTime" :width="colWidth('startTime', 160)" resizable align="center" />
+      <el-table-column label="结束时间" prop="endTime" :width="colWidth('endTime', 160)" resizable align="center" />
       <el-table-column label="备注" prop="remark" min-width="200" show-overflow-tooltip />
-      <el-table-column label="创建时间" prop="createTime" width="160" align="center" />
+      <el-table-column label="创建时间" prop="createTime" :width="colWidth('createTime', 160)" resizable align="center" />
       <el-table-column label="操作" width="180" align="center" fixed="right">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click.stop="handleRowClick(scope.row)">详情</el-button>
@@ -60,21 +60,21 @@
         <el-descriptions-item label="计划日期">{{ currentTake.planDate }}</el-descriptions-item>
       </el-descriptions>
 
-      <el-table :data="currentTake.detailList" border style="margin-top: 15px">
-        <el-table-column label="物料编码" prop="materialCode" width="120" />
+      <el-table :data="currentTake.detailList" border style="margin-top: 15px" @header-dragend="onHeaderDragEnd">
+        <el-table-column label="物料编码" prop="materialCode" :width="colWidth('materialCode', 120)" resizable />
         <el-table-column label="物料名称" prop="materialName" min-width="200" show-overflow-tooltip />
         <el-table-column label="库区/库位" width="180">
           <template #default="scope">{{ [scope.row.areaName, scope.row.locationName].filter(Boolean).join(' / ') || '-' }}</template>
         </el-table-column>
-        <el-table-column label="批次号" prop="batchNo" width="100" />
-        <el-table-column label="账面数量" prop="bookQty" width="100" align="right" />
-        <el-table-column label="实盘数量" prop="actualQty" width="100" align="right">
+        <el-table-column label="批次号" prop="batchNo" :width="colWidth('batchNo', 100)" resizable />
+        <el-table-column label="账面数量" prop="bookQty" :width="colWidth('bookQty', 100)" resizable align="right" />
+        <el-table-column label="实盘数量" prop="actualQty" :width="colWidth('actualQty', 100)" resizable align="right">
           <template #default="scope">
             <span v-if="scope.row.actualQty != null" :style="{color: scope.row.diffQty < 0 ? 'red' : scope.row.diffQty > 0 ? 'green' : ''}">{{ scope.row.actualQty }}</span>
             <span v-else>-</span>
           </template>
         </el-table-column>
-        <el-table-column label="差异" prop="diffQty" width="80" align="right">
+        <el-table-column label="差异" prop="diffQty" :width="colWidth('diffQty', 80)" resizable align="right">
           <template #default="scope">
             <span v-if="scope.row.diffQty != null" :style="{color: scope.row.diffQty < 0 ? 'red' : scope.row.diffQty > 0 ? 'green' : ''}">{{ scope.row.diffQty }}</span>
             <span v-else>-</span>
@@ -112,7 +112,9 @@
 
 <script setup name="WmsStockTakeDetail">
 import { listStockTake, getStockTake, submitStockTakeDetail, approveStockTake } from '@/api/wms/stocktake'
+import { useColumnResize } from '@/composables/useColumnResize'
 const { proxy } = getCurrentInstance()
+const { colWidth, onHeaderDragEnd } = useColumnResize('wms_stocktake_detail')
 const { wms_take_type, wms_take_status } = proxy.useDict('wms_take_type', 'wms_take_status')
 const list = ref([])
 const loading = ref(true)
