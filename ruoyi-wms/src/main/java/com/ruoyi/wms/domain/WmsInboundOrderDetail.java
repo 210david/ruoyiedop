@@ -71,6 +71,9 @@ public class WmsInboundOrderDetail extends BaseEntity
     @Excel(name = "上架库位")
     private String locationCode;
 
+    /** 库位名称 */
+    private String locationName;
+
     /** 单价 */
     private BigDecimal unitPrice;
 
@@ -107,6 +110,8 @@ public class WmsInboundOrderDetail extends BaseEntity
     public void setLocationId(Long locationId) { this.locationId = locationId; }
     public String getLocationCode() { return locationCode; }
     public void setLocationCode(String locationCode) { this.locationCode = locationCode; }
+    public String getLocationName() { return locationName; }
+    public void setLocationName(String locationName) { this.locationName = locationName; }
     public BigDecimal getUnitPrice() { return unitPrice; }
     public void setUnitPrice(BigDecimal unitPrice) { this.unitPrice = unitPrice; }
     public String getDelFlag() { return delFlag; }

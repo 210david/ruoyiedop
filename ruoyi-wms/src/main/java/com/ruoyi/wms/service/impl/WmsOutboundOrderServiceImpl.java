@@ -8,11 +8,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.SecurityUtils;
+import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.wms.domain.WmsOutboundOrder;
 import com.ruoyi.wms.domain.WmsOutboundOrderDetail;
 import com.ruoyi.wms.mapper.WmsOutboundOrderMapper;
 import com.ruoyi.wms.service.IWmsOutboundOrderService;
 import com.ruoyi.wms.service.IWmsInventoryService;
+import com.ruoyi.mk.service.IMkNumberRuleService;
 
 @Service
 public class WmsOutboundOrderServiceImpl implements IWmsOutboundOrderService
@@ -22,6 +24,9 @@ public class WmsOutboundOrderServiceImpl implements IWmsOutboundOrderService
 
     @Autowired
     private IWmsInventoryService wmsInventoryService;
+
+    @Autowired
+    private IMkNumberRuleService mkNumberRuleService;
 
     @Override
     public List<WmsOutboundOrder> selectOutboundOrderList(WmsOutboundOrder order)
@@ -44,9 +49,9 @@ public class WmsOutboundOrderServiceImpl implements IWmsOutboundOrderService
     @Transactional(rollbackFor = Exception.class)
     public int insertOutboundOrder(WmsOutboundOrder order)
     {
-        if (order.getOrderNo() == null || order.getOrderNo().isEmpty())
+        if (StringUtils.isEmpty(order.getOrderNo()))
         {
-            order.setOrderNo(generateOrderNo());
+            order.setOrderNo(mkNumberRuleService.generateNumber("wms_outbound"));
         }
         order.setDelFlag("0");
         if (order.getStatus() == null)
@@ -115,7 +120,7 @@ public class WmsOutboundOrderServiceImpl implements IWmsOutboundOrderService
     @Override
     public String generateOrderNo()
     {
-        return "OUT" + System.currentTimeMillis();
+        return mkNumberRuleService.generateNumber("wms_outbound");
     }
 
     @Override
@@ -187,50 +192,6 @@ public class WmsOutboundOrderServiceImpl implements IWmsOutboundOrderService
             }
         }
         if (allPicked)
-        {
-            order.setStatus("2");
-            wmsOutboundOrderMapper.updateOutboundOrder(order);
-        }
-        return 1;
-    }
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public int doCheck(Long orderId, Long detailId, BigDecimal actualQty)
-    {
-        WmsOutboundOrder order = wmsOutboundOrderMapper.selectOutboundOrderById(orderId);
-        if (order == null || !"2".equals(order.getStatus()))
-        {
-            throw new ServiceException("出库单状态不正确，无法复核");
-        }
-        List<WmsOutboundOrderDetail> details = wmsOutboundOrderMapper.selectOutboundDetailByOrderId(orderId);
-        WmsOutboundOrderDetail target = null;
-        for (WmsOutboundOrderDetail d : details)
-        {
-            if (d.getDetailId().equals(detailId))
-            {
-                target = d;
-                break;
-            }
-        }
-        if (target == null)
-        {
-            throw new ServiceException("出库明细不存在");
-        }
-        target.setActualQty(actualQty);
-        wmsOutboundOrderMapper.updateOutboundDetail(target);
-
-        // check if all checked
-        boolean allChecked = true;
-        for (WmsOutboundOrderDetail d : details)
-        {
-            if (d.getActualQty() == null)
-            {
-                allChecked = false;
-                break;
-            }
-        }
-        if (allChecked)
         {
             order.setStatus("3");
             order.setCompleteDate(new Date());

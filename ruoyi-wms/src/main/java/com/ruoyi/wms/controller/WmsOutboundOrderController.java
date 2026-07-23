@@ -89,13 +89,4 @@ public class WmsOutboundOrderController extends BaseController
     {
         return toAjax(wmsOutboundOrderService.doPick(orderId, detailId, pickQty));
     }
-
-    @Log(title = "出库复核", businessType = BusinessType.UPDATE)
-    @PreAuthorize("@ss.hasPermi('wms:outbound:edit')")
-    @PutMapping("/check/{orderId}/{detailId}")
-    public AjaxResult check(@PathVariable Long orderId, @PathVariable Long detailId,
-                            @RequestParam BigDecimal actualQty)
-    {
-        return toAjax(wmsOutboundOrderService.doCheck(orderId, detailId, actualQty));
-    }
 }

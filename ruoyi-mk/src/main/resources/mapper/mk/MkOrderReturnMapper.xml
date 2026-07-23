@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mk.mapper.MkOrderReturnMapper">
+
+    <resultMap type="com.ruoyi.mk.domain.MkOrderReturn" id="MkOrderReturnResult">
+        <result property="returnId"           column="return_id"/>
+        <result property="returnNo"           column="return_no"/>
+        <result property="orderId"            column="order_id"/>
+        <result property="orderNo"            column="order_no"/>
+        <result property="customerId"         column="customer_id"/>
+        <result property="customerName"        column="customer_name"/>
+        <result property="returnAmount"       column="return_amount"/>
+        <result property="returnReason"       column="return_reason"/>
+        <result property="returnStatus"       column="return_status"/>
+        <result property="refundAmount"        column="refund_amount"/>
+        <result property="refundDate"         column="refund_date"/>
+        <result property="approveOpinion"     column="approve_opinion"/>
+        <result property="approveBy"          column="approve_by"/>
+        <result property="approveTime"        column="approve_time"/>
+        <result property="delFlag"            column="del_flag"/>
+        <result property="createBy"           column="create_by"/>
+        <result property="createTime"         column="create_time"/>
+        <result property="updateBy"           column="update_by"/>
+        <result property="updateTime"         column="update_time"/>
+        <result property="remark"             column="remark"/>
+    </resultMap>
+
+    <sql id="selectReturnVo">
+        SELECT r.return_id, r.return_no, r.order_id, r.customer_id, r.return_amount, r.return_reason,
+               r.return_status, r.refund_amount, r.refund_date, r.approve_opinion, r.approve_by, r.approve_time,
+               r.del_flag, r.create_by, r.create_time, r.update_by, r.update_time, r.remark,
+               c.customer_name, o.order_no
+        FROM mk_order_return r
+        LEFT JOIN mk_customer c ON r.customer_id = c.customer_id
+        LEFT JOIN mk_order o ON r.order_id = o.order_id
+    </sql>
+
+    <select id="selectReturnList" parameterType="com.ruoyi.mk.domain.MkOrderReturn" resultMap="MkOrderReturnResult">
+        <include refid="selectReturnVo"/>
+        <where>
+            r.del_flag = '0'
+            <if test="returnNo != null and returnNo != ''"> AND r.return_no LIKE CONCAT('%', #{returnNo}, '%')</if>
+            <if test="returnStatus != null and returnStatus != ''"> AND r.return_status = #{returnStatus}</if>
+            <if test="customerId != null"> AND r.customer_id = #{customerId}</if>
+            <if test="orderId != null"> AND r.order_id = #{orderId}</if>
+            <if test="customerName != null and customerName != ''"> AND c.customer_name LIKE CONCAT('%', #{customerName}, '%')</if>
+        </where>
+        ORDER BY r.return_id DESC
+    </select>
+
+    <select id="selectReturnById" parameterType="Long" resultMap="MkOrderReturnResult">
+        <include refid="selectReturnVo"/> WHERE r.return_id = #{returnId}
+    </select>
+
+    <insert id="insertReturn" parameterType="com.ruoyi.mk.domain.MkOrderReturn" useGeneratedKeys="true" keyProperty="returnId">
+        INSERT INTO mk_order_return (return_no, order_id, customer_id, return_amount, return_reason, return_status,
+            refund_amount, refund_date, approve_opinion, approve_by, approve_time, del_flag, create_by, create_time, remark)
+        VALUES (#{returnNo}, #{orderId}, #{customerId}, #{returnAmount}, #{returnReason}, #{returnStatus},
+            #{refundAmount}, #{refundDate}, #{approveOpinion}, #{approveBy}, #{approveTime}, '0', #{createBy}, sysdate(), #{remark})
+    </insert>
+
+    <update id="updateReturn" parameterType="com.ruoyi.mk.domain.MkOrderReturn">
+        UPDATE mk_order_return
+        <set>
+            <if test="returnStatus != null">return_status = #{returnStatus},</if>
+            <if test="refundAmount != null">refund_amount = #{refundAmount},</if>
+            <if test="refundDate != null">refund_date = #{refundDate},</if>
+            <if test="approveOpinion != null">approve_opinion = #{approveOpinion},</if>
+            <if test="approveBy != null">approve_by = #{approveBy},</if>
+            <if test="approveTime != null">approve_time = #{approveTime},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE return_id = #{returnId}
+    </update>
+
+    <delete id="deleteReturnByIds" parameterType="Long">
+        UPDATE mk_order_return SET del_flag = '2' WHERE return_id IN
+        <foreach item="returnId" collection="array" open="(" separator="," close=")">#{returnId}</foreach>
+    </delete>
+
+</mapper>

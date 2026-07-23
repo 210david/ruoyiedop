@@ -12,7 +12,7 @@
       <el-col :span="1.5"><el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['wms:outbound:export']">导出</el-button></el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
-    <el-table border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
+    <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="出库单号" prop="orderNo" :width="colWidth('orderNo', 200)" resizable />
       <el-table-column label="出库类型" prop="orderType" :width="colWidth('orderType', 100)" resizable align="center"><template #default="scope"><dict-tag :options="wms_outbound_type" :value="scope.row.orderType" /></template></el-table-column>
@@ -34,13 +34,15 @@
     <!-- 新增/修改对话框 -->
     <el-dialog :title="title" v-model="open" width="1100px" append-to-body>
       <el-form ref="outboundRef" :model="form" :rules="rules" label-width="100px">
+        <el-divider content-position="center">单据信息</el-divider>
         <el-row>
           <el-col :span="8"><el-form-item label="出库单号" prop="orderNo"><el-input v-model="form.orderNo" placeholder="自动生成" disabled /></el-form-item></el-col>
           <el-col :span="8"><el-form-item label="出库类型" prop="orderType"><el-select v-model="form.orderType" style="width:100%"><el-option v-for="d in wms_outbound_type" :key="d.value" :label="d.label" :value="d.value" /></el-select></el-form-item></el-col>
-          <el-col :span="8"><el-form-item label="出库仓库" prop="warehouseId"><el-select v-model="form.warehouseId" filterable clearable placeholder="请选择仓库" style="width:100%" @change="onWarehouseChange"><el-option v-for="w in warehouseOptions" :key="w.warehouseId" :label="w.warehouseName" :value="w.warehouseId" /></el-select></el-form-item></el-col>
+          <el-col :span="8"><el-form-item label="出库日期" prop="outboundDate"><el-date-picker v-model="form.outboundDate" type="date" value-format="YYYY-MM-DD" style="width:100%" /></el-form-item></el-col>
         </el-row>
+        <el-divider content-position="center">出库信息</el-divider>
         <el-row>
-          <el-col :span="8"><el-form-item label="预计出库" prop="outboundDate"><el-date-picker v-model="form.outboundDate" type="date" value-format="YYYY-MM-DD" style="width:100%" /></el-form-item></el-col>
+          <el-col :span="8"><el-form-item label="出库仓库" prop="warehouseId"><el-select v-model="form.warehouseId" filterable clearable placeholder="请选择仓库" style="width:100%" @change="onWarehouseChange"><el-option v-for="w in warehouseOptions" :key="w.warehouseId" :label="w.warehouseName" :value="w.warehouseId" /></el-select></el-form-item></el-col>
         </el-row>
         <el-divider content-position="center">出库明细（从仓库库存中选择）</el-divider>
         <el-alert v-if="!form.warehouseId" title="请先选择出库仓库，系统将加载该仓库的可用库存" type="info" :closable="false" show-icon style="margin-bottom: 10px" />
@@ -60,7 +62,7 @@
             <template #default="scope"><dict-tag :options="wms_unit" :value="scope.row.unit" /></template>
           </el-table-column>
           <el-table-column label="批次号" prop="batchNo" :width="colWidth('batchNo', 110)" resizable />
-          <el-table-column label="库位" prop="locationCode" :width="colWidth('locationCode', 90)" resizable />
+          <el-table-column label="库位" prop="locationName" :width="colWidth('locationName', 90)" resizable show-overflow-tooltip />
           <el-table-column label="可用库存" prop="availableQty" :width="colWidth('availableQty', 90)" resizable align="right" />
           <el-table-column label="出库数量" width="130">
             <template #default="scope">
@@ -76,12 +78,16 @@
 
     <!-- 出库单详情对话框 -->
     <el-dialog title="出库单详情" v-model="detailOpen" width="1000px" append-to-body>
+      <el-divider content-position="center">单据信息</el-divider>
       <el-descriptions :column="3" border>
         <el-descriptions-item label="出库单号">{{ detailData.orderNo }}</el-descriptions-item>
         <el-descriptions-item label="出库类型"><dict-tag :options="wms_outbound_type" :value="detailData.orderType" /></el-descriptions-item>
         <el-descriptions-item label="状态"><dict-tag :options="wms_outbound_status" :value="detailData.status" /></el-descriptions-item>
-        <el-descriptions-item label="出库仓库">{{ detailData.warehouseName }}</el-descriptions-item>
         <el-descriptions-item label="总数量">{{ detailData.totalQty }}</el-descriptions-item>
+      </el-descriptions>
+      <el-divider content-position="center">出库信息</el-divider>
+      <el-descriptions :column="3" border>
+        <el-descriptions-item label="出库仓库">{{ detailData.warehouseName }}</el-descriptions-item>
       </el-descriptions>
       <el-table :data="detailData.detailList" border style="margin-top: 15px" @header-dragend="onHeaderDragEnd">
         <el-table-column label="物料编码" prop="materialCode" :width="colWidth('materialCode', 120)" resizable />
@@ -92,9 +98,8 @@
         </el-table-column>
         <el-table-column label="批次号" prop="batchNo" :width="colWidth('batchNo', 110)" resizable />
         <el-table-column label="计划数量" prop="planQty" :width="colWidth('planQty', 90)" resizable align="right" />
-        <el-table-column label="已拣货" prop="pickQty" :width="colWidth('pickQty', 90)" resizable align="right" />
-        <el-table-column label="实际数量" prop="actualQty" :width="colWidth('actualQty', 90)" resizable align="right" />
-        <el-table-column label="拣货库位" prop="locationCode" :width="colWidth('locationCode', 90)" resizable />
+        <el-table-column label="已拣货数量" prop="pickQty" :width="colWidth('pickQty', 90)" resizable align="right" />
+        <el-table-column label="拣货库位" prop="locationName" :width="colWidth('locationName', 90)" resizable show-overflow-tooltip />
       </el-table>
     </el-dialog>
   </div>
@@ -106,17 +111,18 @@ import { listWarehouse } from '@/api/wms/warehouse'
 import { listInventory } from '@/api/wms/inventory'
 import { useColumnResize } from '@/composables/useColumnResize'
 const { proxy } = getCurrentInstance()
-const { colWidth, onHeaderDragEnd } = useColumnResize('wms_outbound_index')
+const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('wms_outbound_index')
 const { wms_outbound_type, wms_outbound_status, wms_unit } = proxy.useDict('wms_outbound_type', 'wms_outbound_status', 'wms_unit')
 const list = ref([]); const open = ref(false); const loading = ref(true); const showSearch = ref(true); const ids = ref([]); const multiple = ref(true); const total = ref(0); const title = ref(''); const detailOpen = ref(false); const detailData = ref({})
 const warehouseOptions = ref([]); const inventoryOptions = ref([])
-const data = reactive({ form: {}, queryParams: { pageNum: 1, pageSize: 10, orderNo: undefined, orderType: undefined, status: undefined }, rules: { orderType: [{ required: true, message: '出库类型不能为空', trigger: 'change' }], warehouseId: [{ required: true, message: '出库仓库不能为空', trigger: 'change' }] } })
+function today() { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') }
+const data = reactive({ form: {}, queryParams: { pageNum: 1, pageSize: 10, orderNo: undefined, orderType: undefined, status: undefined }, rules: { orderType: [{ required: true, message: '出库类型不能为空', trigger: 'change' }], warehouseId: [{ required: true, message: '出库仓库不能为空', trigger: 'change' }], outboundDate: [{ required: true, message: '预计出库日期不能为空', trigger: 'change' }] } })
 const { queryParams, form, rules } = toRefs(data)
 function getList() { loading.value = true; listOutbound(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false }) }
 function handleQuery() { queryParams.value.pageNum = 1; getList() }
 function resetQuery() { proxy.resetForm('queryRef'); handleQuery() }
 function handleSelectionChange(sel) { ids.value = sel.map(i => i.orderId); multiple.value = !sel.length }
-function reset() { form.value = { orderNo: undefined, orderType: '0', warehouseId: undefined, outboundDate: undefined, status: '0', remark: undefined, detailList: [] }; proxy.resetForm('outboundRef') }
+function reset() { form.value = { orderNo: undefined, orderType: '0', warehouseId: undefined, outboundDate: today(), status: '0', remark: undefined, detailList: [] }; proxy.resetForm('outboundRef') }
 function handleAdd() { reset(); open.value = true; title.value = '添加出库单' }
 function handleUpdate(row) { reset(); getOutbound(row.orderId).then(res => { form.value = res.data; open.value = true; title.value = '修改出库单'; onWarehouseChange(form.value.warehouseId) }) }
 function handleDetail(row) { getOutbound(row.orderId).then(res => { detailData.value = res.data; detailOpen.value = true }) }
@@ -125,7 +131,7 @@ function handleDetail(row) { getOutbound(row.orderId).then(res => { detailData.v
 function formatInventoryLabel(inv) {
   let label = inv.materialCode + ' - ' + inv.materialName
   if (inv.batchNo) { label += ' [' + inv.batchNo + ']' }
-  if (inv.locationCode) { label += ' (' + inv.locationCode + ')' }
+  if (inv.locationName) { label += ' (' + inv.locationName + ')' }
   return label
 }
 
@@ -134,7 +140,7 @@ function handleAddDetail() {
   if (!form.value.detailList) form.value.detailList = []
   form.value.detailList.push({
     inventoryId: undefined, materialId: undefined, materialCode: '', materialName: '',
-    specModel: '', unit: '', batchNo: '', locationId: undefined, locationCode: '',
+    specModel: '', unit: '', batchNo: '', locationId: undefined, locationCode: '', locationName: '',
     availableQty: 0, planQty: 0
   })
 }
@@ -153,13 +159,14 @@ function handleInventoryChange(index, inventoryId) {
     row.batchNo = inv.batchNo || ''
     row.locationId = inv.locationId
     row.locationCode = inv.locationCode
+    row.locationName = inv.locationName
     row.availableQty = inv.qty
     row.planQty = inv.qty
   } else {
     const row = form.value.detailList[index]
     row.materialId = undefined; row.materialCode = ''; row.materialName = ''
     row.specModel = ''; row.unit = ''; row.batchNo = ''
-    row.locationId = undefined; row.locationCode = ''
+    row.locationId = undefined; row.locationCode = ''; row.locationName = ''
     row.availableQty = 0; row.planQty = 0
   }
 }
@@ -220,7 +227,7 @@ function onWarehouseChange(warehouseId) {
     form.value.detailList.forEach(d => {
       d.inventoryId = undefined; d.materialId = undefined; d.materialCode = ''
       d.materialName = ''; d.specModel = ''; d.unit = ''; d.batchNo = ''
-      d.locationId = undefined; d.locationCode = ''; d.availableQty = 0; d.planQty = 0
+      d.locationId = undefined; d.locationCode = ''; d.locationName = ''; d.availableQty = 0; d.planQty = 0
     })
   }
   if (warehouseId) {

@@ -10,6 +10,7 @@
         <result property="materialId"       column="material_id"/>
         <result property="materialCode"     column="material_code"/>
         <result property="materialName"     column="material_name"/>
+        <result property="unit"             column="unit"/>
         <result property="batchNo"          column="batch_no"/>
         <result property="fromLocationId"   column="from_location_id"/>
         <result property="fromLocationCode" column="from_location_code"/>
@@ -32,9 +33,17 @@
 
     <sql id="selectMoveOrderVo">
         SELECT mo.move_id, mo.move_no, mo.warehouse_id, w.warehouse_name,
-               mo.material_id, m.material_code, m.material_name, mo.batch_no,
-               mo.from_location_id, lf.warehouse_code as from_location_code, lf.warehouse_name as from_location_name,
-               mo.to_location_id, lt.warehouse_code as to_location_code, lt.warehouse_name as to_location_name,
+               mo.material_id, m.material_code, m.material_name, m.unit, mo.batch_no,
+               mo.from_location_id,
+               CONCAT_WS(' / ',
+                 (SELECT GROUP_CONCAT(p.warehouse_name SEPARATOR ' / ') FROM wms_warehouse p WHERE FIND_IN_SET(p.warehouse_id, REPLACE(lf.ancestors, ' ', '')) AND p.warehouse_id != 0 ORDER BY FIND_IN_SET(p.warehouse_id, REPLACE(lf.ancestors, ' ', ''))),
+                 lf.warehouse_name
+               ) as from_location_name,
+               mo.to_location_id,
+               CONCAT_WS(' / ',
+                 (SELECT GROUP_CONCAT(p.warehouse_name SEPARATOR ' / ') FROM wms_warehouse p WHERE FIND_IN_SET(p.warehouse_id, REPLACE(lt.ancestors, ' ', '')) AND p.warehouse_id != 0 ORDER BY FIND_IN_SET(p.warehouse_id, REPLACE(lt.ancestors, ' ', ''))),
+                 lt.warehouse_name
+               ) as to_location_name,
                mo.move_qty, mo.status, mo.approve_by, mo.approve_time, mo.complete_time,
                mo.del_flag, mo.create_by, mo.create_time, mo.update_by, mo.update_time, mo.remark
         FROM wms_move_order mo

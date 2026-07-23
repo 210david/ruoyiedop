@@ -157,7 +157,7 @@
           <el-tag type="danger" size="small">共 {{ alertList.length }} 条预警</el-tag>
         </div>
       </template>
-      <el-table border v-loading="alertLoading" :data="alertList" style="width: 100%" @header-dragend="onHeaderDragEnd">
+      <el-table ref="tableRef" border v-loading="alertLoading" :data="alertList" style="width: 100%" @header-dragend="onHeaderDragEnd">
         <el-table-column label="物料编码" prop="materialCode" :width="colWidth('materialCode', 140)" resizable />
         <el-table-column label="物料名称" prop="materialName" show-overflow-tooltip min-width="180" />
         <el-table-column label="规格型号" prop="specModel" :width="colWidth('specModel', 160)" resizable show-overflow-tooltip />
@@ -189,7 +189,7 @@ import { getOverview, getInventoryByWarehouse, getInventoryByMaterialType, getIn
 import { useColumnResize } from '@/composables/useColumnResize'
 
 const { proxy } = getCurrentInstance()
-const { colWidth, onHeaderDragEnd } = useColumnResize('wms_statistics_index')
+const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('wms_statistics_index')
 const { wms_material_type, wms_unit } = proxy.useDict('wms_material_type', 'wms_unit')
 
 // ==================== 概览 ====================

@@ -25,13 +25,17 @@ public class DmsSparePartRecord extends BaseEntity
     @Excel(name = "备件名称")
     private String partName;
 
-    @Excel(name = "类型", readConverterExp = "0=入库,1=出库-领用,2=出库-调拨,3=出库-报废,4=盘点调整")
+    /** 单位（关联备件表带出） */
+    @Excel(name = "单位", dictType = "wms_unit")
+    private String unit;
+
+    @Excel(name = "类型", dictType = "dms_stock_move_type")
     private String moveType;
 
-    @Excel(name = "入库类型", readConverterExp = "0=采购到货,1=初始化录入")
+    @Excel(name = "入库类型", dictType = "dms_partin_type")
     private String sourceType;
 
-    @Excel(name = "出库类型", readConverterExp = "1=工单领用,2=调拨,3=报废,4=盘点调整")
+    @Excel(name = "出库类型", dictType = "dms_partout_type")
     private String targetType;
 
     @Excel(name = "供应商/领用部门")
@@ -79,6 +83,8 @@ public class DmsSparePartRecord extends BaseEntity
     public void setPartCode(String partCode) { this.partCode = partCode; }
     public String getPartName() { return partName; }
     public void setPartName(String partName) { this.partName = partName; }
+    public String getUnit() { return unit; }
+    public void setUnit(String unit) { this.unit = unit; }
     public String getMoveType() { return moveType; }
     public void setMoveType(String moveType) { this.moveType = moveType; }
     public String getSourceType() { return sourceType; }

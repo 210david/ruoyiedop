@@ -22,7 +22,7 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
+    <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="设备编码" prop="equipmentCode" min-width="140" show-overflow-tooltip />
       <el-table-column label="设备名称" prop="equipmentName" min-width="140" show-overflow-tooltip />
@@ -84,7 +84,7 @@ import { listEquipment } from '@/api/dms/equipment'
 import { useColumnResize } from '@/composables/useColumnResize'
 
 const { proxy } = getCurrentInstance()
-const { colWidth, onHeaderDragEnd } = useColumnResize('dms_data_record_index')
+const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('dms_data_record_index')
 const { dms_run_status, dms_collect_mode } = proxy.useDict('dms_run_status', 'dms_collect_mode')
 
 const list = ref([])

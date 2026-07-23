@@ -40,6 +40,10 @@ public class WmsMoveOrder extends BaseEntity
     @Excel(name = "物料名称")
     private String materialName;
 
+    /** 计量单位 */
+    @Excel(name = "单位")
+    private String unit;
+
     /** 批次号 */
     @Excel(name = "批次号")
     private String batchNo;
@@ -103,6 +107,8 @@ public class WmsMoveOrder extends BaseEntity
     public void setMaterialCode(String materialCode) { this.materialCode = materialCode; }
     public String getMaterialName() { return materialName; }
     public void setMaterialName(String materialName) { this.materialName = materialName; }
+    public String getUnit() { return unit; }
+    public void setUnit(String unit) { this.unit = unit; }
     public String getBatchNo() { return batchNo; }
     public void setBatchNo(String batchNo) { this.batchNo = batchNo; }
     public Long getFromLocationId() { return fromLocationId; }

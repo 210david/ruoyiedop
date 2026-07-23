@@ -30,7 +30,7 @@
             <el-icon class="stat-icon" style="color: #e6a23c"><WarningFilled /></el-icon>
             <div>
               <div class="stat-num">{{ statLow }}</div>
-              <div class="stat-label">低于下限</div>
+              <div class="stat-label">库存不足</div>
             </div>
           </div>
         </el-card>
@@ -40,8 +40,8 @@
           <div class="stat-body">
             <el-icon class="stat-icon" style="color: #f56c6c"><CircleCloseFilled /></el-icon>
             <div>
-              <div class="stat-num">{{ statOut }}</div>
-              <div class="stat-label">缺货（≤0）</div>
+              <div class="stat-num">{{ statOver }}</div>
+              <div class="stat-label">库存积压</div>
             </div>
           </div>
         </el-card>
@@ -63,8 +63,8 @@
       <el-form-item label="库存状态" prop="stockStatus">
         <el-select v-model="queryParams.stockStatus" placeholder="请选择" clearable style="width: 120px">
           <el-option label="正常" value="normal" />
-          <el-option label="低于下限" value="low" />
-          <el-option label="缺货" value="out" />
+          <el-option label="库存不足" value="low" />
+          <el-option label="库存积压" value="over" />
         </el-select>
       </el-form-item>
       <el-form-item>
@@ -79,7 +79,7 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="filteredList" border @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
+    <el-table ref="tableRef" v-loading="loading" :data="filteredList" border @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="备件编号" prop="partCode" :width="colWidth('partCode', 130)" resizable />
       <el-table-column label="备件名称" prop="partName" :width="colWidth('partName', 150)" resizable show-overflow-tooltip />
@@ -101,7 +101,7 @@
       </el-table-column>
       <el-table-column label="库存下限" prop="stockMin" :width="colWidth('stockMin', 80)" resizable align="center" />
       <el-table-column label="库存上限" prop="stockMax" :width="colWidth('stockMax', 80)" resizable align="center" />
-      <el-table-column label="库存状态" :width="colWidth('库存状态', 90)" resizable align="center">
+      <el-table-column label="库存状态" prop="stockStatus" :width="colWidth('stockStatus', 90)" resizable align="center">
         <template #default="scope">
           <el-tag :type="getStockType(scope.row)" effect="dark" size="small">
             {{ getStockText(scope.row) }}
@@ -125,7 +125,7 @@ import { listPartLedger, delPartLedger } from '@/api/dms/partledger'
 import { useColumnResize } from '@/composables/useColumnResize'
 
 const { proxy } = getCurrentInstance()
-const { colWidth, onHeaderDragEnd } = useColumnResize('dms_partledger_index')
+const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('dms_partledger_index')
 const { wms_unit, dms_part_type } = proxy.useDict('wms_unit', 'dms_part_type')
 
 const list = ref([])
@@ -138,48 +138,47 @@ const total = ref(0)
 const statTotal = ref(0)
 const statNormal = ref(0)
 const statLow = ref(0)
-const statOut = ref(0)
+const statOver = ref(0)
 
 const data = reactive({
   queryParams: { pageNum: 1, pageSize: 10, partCode: undefined, partName: undefined, partType: undefined, stockStatus: undefined }
 })
 const { queryParams } = toRefs(data)
 
-/** 前端过滤库存状态 */
-const filteredList = computed(() => {
-  const status = queryParams.value.stockStatus
-  if (!status) return list.value
-  return list.value.filter(row => {
-    const s = getStockKey(row)
-    return s === status
-  })
-})
-
+/** 库存状态判断：库存不足(小于下限)、库存积压(大于上限)、正常 */
 function getStockKey(row) {
   const stock = row.currentStock != null ? Number(row.currentStock) : 0
-  if (stock <= 0) return 'out'
   const min = row.stockMin != null ? Number(row.stockMin) : 0
-  if (min > 0 && stock <= min) return 'low'
+  const max = row.stockMax != null ? Number(row.stockMax) : 0
+  if (min > 0 && stock < min) return 'low'
+  if (max > 0 && stock > max) return 'over'
   return 'normal'
 }
 function getStockType(row) {
   const k = getStockKey(row)
-  if (k === 'out') return 'danger'
   if (k === 'low') return 'warning'
+  if (k === 'over') return 'danger'
   return 'success'
 }
 function getStockText(row) {
   const k = getStockKey(row)
-  if (k === 'out') return '缺货'
-  if (k === 'low') return '低于下限'
+  if (k === 'low') return '库存不足'
+  if (k === 'over') return '库存积压'
   return '正常'
 }
 function getStockClass(row) {
   const k = getStockKey(row)
-  if (k === 'out') return 'stock-danger'
   if (k === 'low') return 'stock-warning'
+  if (k === 'over') return 'stock-danger'
   return ''
 }
+
+/** 前端过滤库存状态 */
+const filteredList = computed(() => {
+  const status = queryParams.value.stockStatus
+  if (!status) return list.value
+  return list.value.filter(row => getStockKey(row) === status)
+})
 
 function getList() {
   loading.value = true
@@ -189,17 +188,9 @@ function getList() {
     loading.value = false
     // 统计
     statTotal.value = res.total
-    statOut.value = res.rows.filter(i => (i.currentStock != null ? Number(i.currentStock) : 0) <= 0).length
-    statLow.value = res.rows.filter(i => {
-      const s = i.currentStock != null ? Number(i.currentStock) : 0
-      const min = i.stockMin != null ? Number(i.stockMin) : 0
-      return s > 0 && min > 0 && s <= min
-    }).length
-    statNormal.value = res.rows.filter(i => {
-      const s = i.currentStock != null ? Number(i.currentStock) : 0
-      const min = i.stockMin != null ? Number(i.stockMin) : 0
-      return s > 0 && (min === 0 || s > min)
-    }).length
+    statLow.value = res.rows.filter(i => getStockKey(i) === 'low').length
+    statOver.value = res.rows.filter(i => getStockKey(i) === 'over').length
+    statNormal.value = res.rows.filter(i => getStockKey(i) === 'normal').length
   })
 }
 function handleQuery() { queryParams.value.pageNum = 1; getList() }

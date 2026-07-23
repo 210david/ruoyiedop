@@ -8,7 +8,8 @@ const toggleDark = useToggle(isDark)
 
 const { sideTheme, showSettings, navType, tagsView, tagsViewPersist, tagsIcon, tagsViewStyle, fixedHeader, sidebarLogo, dynamicTitle, footerVisible, footerContent } = defaultSettings
 
-const storageSetting = JSON.parse(localStorage.getItem('layout-setting')) || ''
+let storageSetting = ''
+try { storageSetting = JSON.parse(localStorage.getItem('layout-setting')) || '' } catch (e) { storageSetting = '' }
 
 const useSettingsStore = defineStore(
   'settings',

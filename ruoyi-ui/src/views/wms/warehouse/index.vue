@@ -32,7 +32,7 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table border v-if="refreshTable" v-loading="loading" :data="warehouseList" row-key="warehouseId" :default-expand-all="isExpandAll" :tree-props="{ children: 'children', hasChildren: 'hasChildren' }" @header-dragend="onHeaderDragEnd">
+    <el-table ref="tableRef" border v-if="refreshTable" v-loading="loading" :data="warehouseList" row-key="warehouseId" :default-expand-all="isExpandAll" :tree-props="{ children: 'children', hasChildren: 'hasChildren' }" @header-dragend="onHeaderDragEnd">
       <el-table-column prop="warehouseCode" label="编码" :width="colWidth('warehouseCode', 200)" resizable />
       <el-table-column prop="warehouseName" label="名称" :show-overflow-tooltip="true" />
       <el-table-column prop="nodeType" label="类型" :width="colWidth('nodeType', 90)" resizable align="center">
@@ -116,11 +116,7 @@
         <el-row>
           <el-col :span="12">
             <el-form-item label="编码" prop="warehouseCode">
-              <el-input v-model="form.warehouseCode" placeholder="保存时自动生成" :disabled="form.warehouseId == null">
-                <template v-if="form.warehouseId == null" #append>
-                  <el-button @click="generateCode">生成</el-button>
-                </template>
-              </el-input>
+              <el-input v-model="form.warehouseCode" placeholder="保存后自动生成" disabled />
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -212,12 +208,12 @@
 </template>
 
 <script setup name="WmsWarehouse">
-import { listWarehouseTree, getWarehouse, addWarehouse, updateWarehouse, delWarehouse, genWarehouseCode } from '@/api/wms/warehouse'
+import { listWarehouseTree, getWarehouse, addWarehouse, updateWarehouse, delWarehouse } from '@/api/wms/warehouse'
 import { deptTreeSelect, listUser } from '@/api/system/user'
 import { useColumnResize } from '@/composables/useColumnResize'
 
 const { proxy } = getCurrentInstance()
-const { colWidth, onHeaderDragEnd } = useColumnResize('wms_warehouse_index')
+const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('wms_warehouse_index')
 const { wms_area_type, wms_location_type } = proxy.useDict('wms_area_type', 'wms_location_type')
 
 const warehouseList = ref([])
@@ -365,12 +361,6 @@ function findParentName(list, parentId) {
     }
   }
   return false
-}
-
-function generateCode() {
-  genWarehouseCode(form.value.nodeType, form.value.parentId || 0).then(response => {
-    form.value.warehouseCode = response.msg
-  })
 }
 
 function submitForm() {

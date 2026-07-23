@@ -65,7 +65,7 @@
     </el-row>
 
     <!-- 预警列表 -->
-    <el-table border v-loading="loading" :data="alertList" :row-class-name="rowClassName" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
+    <el-table ref="tableRef" border v-loading="loading" :data="alertList" :row-class-name="rowClassName" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="预警类型" prop="alertType" :width="colWidth('alertType', 110)" resizable align="center">
         <template #default="scope">
@@ -128,7 +128,7 @@ import { listWarehouse } from '@/api/wms/warehouse'
 import { useColumnResize } from '@/composables/useColumnResize'
 
 const { proxy } = getCurrentInstance()
-const { colWidth, onHeaderDragEnd } = useColumnResize('wms_stockAlert_index')
+const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('wms_stockAlert_index')
 const { wms_material_type, wms_unit } = proxy.useDict('wms_material_type', 'wms_unit')
 
 const alertList = ref([])

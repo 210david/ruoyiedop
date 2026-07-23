@@ -16,7 +16,7 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table border v-if="refreshTable" v-loading="loading" :data="categoryList" row-key="categoryId" :default-expand-all="isExpandAll" :tree-props="{ children: 'children', hasChildren: 'hasChildren' }" @header-dragend="onHeaderDragEnd">
+    <el-table ref="tableRef" border v-if="refreshTable" v-loading="loading" :data="categoryList" row-key="categoryId" :default-expand-all="isExpandAll" :tree-props="{ children: 'children', hasChildren: 'hasChildren' }" @header-dragend="onHeaderDragEnd">
       <el-table-column label="分类名称" prop="categoryName" :width="colWidth('categoryName', 260)" resizable />
       <el-table-column label="分类编码" prop="categoryCode" :width="colWidth('categoryCode', 160)" resizable align="center" />
       <el-table-column label="层级" prop="categoryLevel" :width="colWidth('categoryLevel', 80)" resizable align="center" />
@@ -74,7 +74,7 @@ import { listCategory, getCategory, addCategory, updateCategory, delCategory } f
 import { useColumnResize } from '@/composables/useColumnResize'
 
 const { proxy } = getCurrentInstance()
-const { colWidth, onHeaderDragEnd } = useColumnResize('dms_category_index')
+const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('dms_category_index')
 
 const categoryList = ref([])
 const categoryOptions = ref([])

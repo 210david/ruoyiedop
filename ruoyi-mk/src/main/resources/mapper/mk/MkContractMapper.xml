@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mk.mapper.MkContractMapper">
+
+    <resultMap type="MkContract" id="MkContractResult">
+        <result property="contractId"      column="contract_id"/>
+        <result property="contractNo"      column="contract_no"/>
+        <result property="contractName"    column="contract_name"/>
+        <result property="contractType"    column="contract_type"/>
+        <result property="customerId"      column="customer_id"/>
+        <result property="customerName"    column="customer_name"/>
+        <result property="opportunityId"   column="opportunity_id"/>
+        <result property="contractAmount"  column="contract_amount"/>
+        <result property="signDate"        column="sign_date"/>
+        <result property="effectiveDate"   column="effective_date"/>
+        <result property="expireDate"      column="expire_date"/>
+        <result property="paymentMethod"   column="payment_method"/>
+        <result property="contractStatus"  column="contract_status"/>
+        <result property="userId"          column="user_id"/>
+        <result property="userName"        column="user_name"/>
+        <result property="deptId"          column="dept_id"/>
+        <result property="deptName"        column="dept_name"/>
+        <result property="attachment"      column="attachment"/>
+        <result property="delFlag"         column="del_flag"/>
+        <result property="createBy"        column="create_by"/>
+        <result property="createTime"      column="create_time"/>
+        <result property="updateBy"        column="update_by"/>
+        <result property="updateTime"      column="update_time"/>
+        <result property="remark"          column="remark"/>
+    </resultMap>
+
+    <sql id="selectContractVo">
+        SELECT co.contract_id, co.contract_no, co.contract_name, co.contract_type, co.customer_id,
+               co.opportunity_id, co.contract_amount, co.sign_date, co.effective_date, co.expire_date,
+               co.payment_method, co.contract_status, co.user_id, co.dept_id, co.attachment,
+               co.del_flag, co.create_by, co.create_time, co.update_by, co.update_time, co.remark,
+               c.customer_name, u.nick_name as user_name, d.dept_name
+        FROM mk_contract co
+        LEFT JOIN mk_customer c ON co.customer_id = c.customer_id
+        LEFT JOIN sys_user u ON co.user_id = u.user_id
+        LEFT JOIN sys_dept d ON co.dept_id = d.dept_id
+    </sql>
+
+    <select id="selectContractList" parameterType="MkContract" resultMap="MkContractResult">
+        <include refid="selectContractVo"/>
+        <where>
+            co.del_flag = '0'
+            <if test="contractNo != null and contractNo != ''"> AND co.contract_no LIKE CONCAT('%', #{contractNo}, '%')</if>
+            <if test="contractName != null and contractName != ''"> AND co.contract_name LIKE CONCAT('%', #{contractName}, '%')</if>
+            <if test="contractType != null and contractType != ''"> AND co.contract_type = #{contractType}</if>
+            <if test="contractStatus != null and contractStatus != ''"> AND co.contract_status = #{contractStatus}</if>
+            <if test="customerId != null"> AND co.customer_id = #{customerId}</if>
+            <if test="opportunityId != null"> AND co.opportunity_id = #{opportunityId}</if>
+            <if test="customerName != null and customerName != ''"> AND c.customer_name LIKE CONCAT('%', #{customerName}, '%')</if>
+            <if test="userId != null"> AND co.user_id = #{userId}</if>
+        </where>
+        ORDER BY co.contract_id DESC
+    </select>
+
+    <select id="selectContractById" parameterType="Long" resultMap="MkContractResult">
+        <include refid="selectContractVo"/> WHERE co.contract_id = #{contractId}
+    </select>
+
+    <insert id="insertContract" parameterType="MkContract" useGeneratedKeys="true" keyProperty="contractId">
+        INSERT INTO mk_contract (contract_no, contract_name, contract_type, customer_id, opportunity_id,
+            contract_amount, sign_date, effective_date, expire_date, payment_method, contract_status,
+            user_id, dept_id, attachment, create_by, create_time, remark)
+        VALUES (#{contractNo}, #{contractName}, #{contractType}, #{customerId}, #{opportunityId},
+            #{contractAmount}, #{signDate}, #{effectiveDate}, #{expireDate}, #{paymentMethod}, #{contractStatus},
+            #{userId}, #{deptId}, #{attachment}, #{createBy}, sysdate(), #{remark})
+    </insert>
+
+    <update id="updateContract" parameterType="MkContract">
+        UPDATE mk_contract
+        <set>
+            <if test="contractNo != null and contractNo != ''">contract_no = #{contractNo},</if>
+            <if test="contractName != null and contractName != ''">contract_name = #{contractName},</if>
+            <if test="contractType != null">contract_type = #{contractType},</if>
+            <if test="customerId != null">customer_id = #{customerId},</if>
+            <if test="opportunityId != null">opportunity_id = #{opportunityId},</if>
+            <if test="contractAmount != null">contract_amount = #{contractAmount},</if>
+            <if test="signDate != null">sign_date = #{signDate},</if>
+            <if test="effectiveDate != null">effective_date = #{effectiveDate},</if>
+            <if test="expireDate != null">expire_date = #{expireDate},</if>
+            <if test="paymentMethod != null">payment_method = #{paymentMethod},</if>
+            <if test="contractStatus != null">contract_status = #{contractStatus},</if>
+            <if test="userId != null">user_id = #{userId},</if>
+            <if test="deptId != null">dept_id = #{deptId},</if>
+            <if test="attachment != null">attachment = #{attachment},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE contract_id = #{contractId}
+    </update>
+
+    <delete id="deleteContractByIds" parameterType="Long">
+        UPDATE mk_contract SET del_flag = '2' WHERE contract_id IN
+        <foreach item="contractId" collection="array" open="(" separator="," close=")">#{contractId}</foreach>
+    </delete>
+
+    <update id="updateContractStatus">
+        UPDATE mk_contract SET contract_status = #{contractStatus}, update_time = sysdate() WHERE contract_id = #{contractId}
+    </update>
+
+    <select id="selectExpiredContracts" resultMap="MkContractResult">
+        <include refid="selectContractVo"/> WHERE co.del_flag = '0' AND co.contract_status = '2' AND co.expire_date &lt; CURDATE()
+    </select>
+
+    <!-- 查询即将到期的合同（指定天数内到期的已生效合同） -->
+    <select id="selectExpiringContracts" resultMap="MkContractResult">
+        <include refid="selectContractVo"/>
+        WHERE co.del_flag = '0' AND co.contract_status = '2'
+          AND co.expire_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL #{days} DAY)
+        ORDER BY co.expire_date ASC
+    </select>
+
+</mapper>

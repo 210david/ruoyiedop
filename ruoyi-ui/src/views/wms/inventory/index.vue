@@ -11,7 +11,7 @@
       <el-col :span="1.5"><el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['wms:inventory:export']">导出</el-button></el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
-    <el-table border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
+    <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="物料编码" prop="materialCode" :width="colWidth('materialCode', 120)" resizable />
       <el-table-column label="物料名称" prop="materialName" :width="colWidth('materialName', 224)" resizable show-overflow-tooltip />
@@ -44,7 +44,7 @@
 import { listInventory, delInventory } from '@/api/wms/inventory'
 import { useColumnResize } from '@/composables/useColumnResize'
 const { proxy } = getCurrentInstance()
-const { colWidth, onHeaderDragEnd } = useColumnResize('wms_inventory_index')
+const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('wms_inventory_index')
 const { wms_unit } = proxy.useDict('wms_unit')
 const list = ref([]); const loading = ref(true); const showSearch = ref(true); const total = ref(0); const ids = ref([]); const multiple = ref(true)
 const data = reactive({ queryParams: { pageNum: 1, pageSize: 10, materialCode: undefined, materialName: undefined, warehouseId: undefined } })

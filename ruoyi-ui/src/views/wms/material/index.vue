@@ -43,7 +43,7 @@
           <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
         </el-row>
 
-        <el-table border v-loading="loading" :data="materialList" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
+        <el-table ref="tableRef" border v-loading="loading" :data="materialList" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
           <el-table-column type="selection" width="55" align="center" />
           <!-- 基本信息 -->
           <el-table-column label="物料编码" prop="materialCode" :width="colWidth('materialCode', 120)" resizable />
@@ -105,7 +105,7 @@
         <el-row>
           <el-col :span="12">
             <el-form-item label="物料编码" prop="materialCode">
-              <el-input v-model="form.materialCode" placeholder="请输入物料编码" />
+              <el-input v-model="form.materialCode" placeholder="保存后自动生成" disabled />
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -216,7 +216,7 @@ import { listMaterial, getMaterial, addMaterial, updateMaterial, delMaterial } f
 import { useColumnResize } from '@/composables/useColumnResize'
 
 const { proxy } = getCurrentInstance()
-const { colWidth, onHeaderDragEnd } = useColumnResize('wms_material_index')
+const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('wms_material_index')
 const { wms_material_type, wms_unit } = proxy.useDict('wms_material_type', 'wms_unit')
 
 const materialList = ref([])
@@ -239,9 +239,8 @@ const data = reactive({
     materialType: undefined,
     status: undefined
   },
-  rules: {
-    materialCode: [{ required: true, message: '物料编码不能为空', trigger: 'blur' }],
-    materialName: [{ required: true, message: '物料名称不能为空', trigger: 'blur' }],
+rules: {
+materialName: [{ required: true, message: '物料名称不能为空', trigger: 'blur' }],
     unit: [{ required: true, message: '计量单位不能为空', trigger: 'change' }]
   }
 })

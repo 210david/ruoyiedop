@@ -25,7 +25,7 @@ public class DmsSparePart extends BaseEntity
     private String partName;
 
     /** 备件类别（字典 dms_part_type） */
-    @Excel(name = "备件类别", readConverterExp = "0=轴承,1=紧固件,2=密封件,3=传动件,4=电气元件,5=液压气动,6=刀具刃具,7=其他")
+    @Excel(name = "备件类别", dictType = "dms_part_type")
     private String partType;
 
     /** 规格型号 */
@@ -33,7 +33,7 @@ public class DmsSparePart extends BaseEntity
     private String specModel;
 
     /** 单位 */
-    @Excel(name = "单位")
+    @Excel(name = "单位", dictType = "wms_unit")
     private String unit;
 
     /** 适用设备分类（JSON数组） */
@@ -63,7 +63,7 @@ public class DmsSparePart extends BaseEntity
     private String supplier;
 
     /** 状态（0正常 1停用） */
-    @Excel(name = "状态", readConverterExp = "0=正常,1=停用")
+    @Excel(name = "状态", dictType = "sys_normal_disable")
     private String status;
 
     /** 删除标志 */

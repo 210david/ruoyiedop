@@ -279,6 +279,7 @@ function handleLogin() {
         router.push({ path: redirect.value || "/", query: otherQueryParams })
       }).catch(() => {
         loading.value = false
+        getCode()
       })
     } else {
       ElMessage.warning('请填写用户名和密码')

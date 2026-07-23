@@ -119,4 +119,4 @@ referer:
 xss:
   enabled: true
   excludes: /system/notice
-  urlPatterns: /system/*,/monitor/*,/tool/*,/wms/*,/dms/*
+  urlPatterns: /system/*,/monitor/*,/tool/*,/wms/*,/dms/*,/mk/*

@@ -21,7 +21,7 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
+    <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="供应商编码" prop="supplierCode" :width="colWidth('supplierCode', 130)" resizable />
       <el-table-column label="供应商名称" prop="supplierName" show-overflow-tooltip />
@@ -46,7 +46,7 @@
       <el-form ref="supplierRef" :model="form" :rules="rules" label-width="100px">
         <el-row>
           <el-col :span="12">
-            <el-form-item label="供应商编码" prop="supplierCode"><el-input v-model="form.supplierCode" placeholder="请输入" /></el-form-item>
+            <el-form-item label="供应商编码" prop="supplierCode"><el-input v-model="form.supplierCode" placeholder="保存后自动生成" disabled /></el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="供应商名称" prop="supplierName"><el-input v-model="form.supplierName" placeholder="请输入" /></el-form-item>
@@ -79,7 +79,7 @@ import { listSupplier, getSupplier, addSupplier, updateSupplier, delSupplier } f
 import { useColumnResize } from '@/composables/useColumnResize'
 
 const { proxy } = getCurrentInstance()
-const { colWidth, onHeaderDragEnd } = useColumnResize('wms_supplier_index')
+const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('wms_supplier_index')
 
 const list = ref([])
 const open = ref(false)
@@ -94,9 +94,8 @@ const title = ref('')
 const data = reactive({
   form: {},
   queryParams: { pageNum: 1, pageSize: 10, supplierCode: undefined, supplierName: undefined },
-  rules: {
-    supplierCode: [{ required: true, message: '供应商编码不能为空', trigger: 'blur' }],
-    supplierName: [{ required: true, message: '供应商名称不能为空', trigger: 'blur' }]
+rules: {
+supplierName: [{ required: true, message: '供应商名称不能为空', trigger: 'blur' }]
   }
 })
 const { queryParams, form, rules } = toRefs(data)

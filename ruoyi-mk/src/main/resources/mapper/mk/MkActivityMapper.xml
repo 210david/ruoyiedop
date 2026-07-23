@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mk.mapper.MkActivityMapper">
+
+    <resultMap type="MkActivity" id="MkActivityResult">
+        <result property="activityId"        column="activity_id"/>
+        <result property="activityNo"        column="activity_no"/>
+        <result property="activityName"      column="activity_name"/>
+        <result property="activityType"      column="activity_type"/>
+        <result property="activityForm"      column="activity_form"/>
+        <result property="activityStatus"    column="activity_status"/>
+        <result property="startTime"         column="start_time"/>
+        <result property="endTime"           column="end_time"/>
+        <result property="location"          column="location"/>
+        <result property="budget"            column="budget"/>
+        <result property="cost"              column="cost"/>
+        <result property="targetCount"       column="target_count"/>
+        <result property="targetLeadCount"   column="target_lead_count"/>
+        <result property="userId"            column="user_id"/>
+        <result property="userName"          column="user_name"/>
+        <result property="ownerPhone"        column="owner_phone"/>
+        <result property="deptId"            column="dept_id"/>
+        <result property="deptName"          column="dept_name"/>
+        <result property="summary"           column="summary"/>
+        <result property="content"           column="content"/>
+        <result property="actualCount"       column="actual_count"/>
+        <result property="leadCount"         column="lead_count"/>
+        <result property="mqlCount"          column="mql_count"/>
+        <result property="sqlCount"          column="sql_count"/>
+        <result property="opportunityCount"  column="opportunity_count"/>
+        <result property="dealAmount"        column="deal_amount"/>
+        <result property="actualRoi"         column="actual_roi"/>
+        <result property="delFlag"           column="del_flag"/>
+        <result property="attachments"       column="attachments"/>
+        <result property="registerToken"    column="register_token"/>
+        <result property="createBy"          column="create_by"/>
+        <result property="createTime"        column="create_time"/>
+        <result property="updateBy"          column="update_by"/>
+        <result property="updateTime"        column="update_time"/>
+        <result property="remark"            column="remark"/>
+        <result property="signupCount"       column="signup_count"/>
+        <result property="signedCount"       column="signed_count"/>
+        <result property="convertedLeadCount" column="converted_lead_count"/>
+    </resultMap>
+
+    <sql id="selectActivityVo">
+        SELECT a.activity_id, a.activity_no, a.activity_name, a.activity_type, a.activity_form,
+               a.activity_status, a.start_time, a.end_time, a.location, a.budget, a.cost, a.target_count,
+               a.target_lead_count, a.user_id, a.dept_id, a.summary, a.content, a.actual_count,
+               a.lead_count, a.mql_count, a.sql_count, a.opportunity_count, a.deal_amount, a.actual_roi,
+               a.del_flag, a.attachments, a.owner_phone, a.register_token, a.create_by, a.create_time, a.update_by, a.update_time, a.remark,
+               u.nick_name as user_name, d.dept_name,
+               (SELECT COUNT(1) FROM mk_activity_participant p WHERE p.activity_id = a.activity_id) as signup_count,
+               (SELECT COUNT(1) FROM mk_activity_participant p WHERE p.activity_id = a.activity_id AND p.participate_status = '1') as signed_count,
+               (SELECT COUNT(1) FROM mk_lead l WHERE l.activity_id = a.activity_id AND l.del_flag = '0') as converted_lead_count
+        FROM mk_activity a
+        LEFT JOIN sys_user u ON a.user_id = u.user_id
+        LEFT JOIN sys_dept d ON a.dept_id = d.dept_id
+    </sql>
+
+    <select id="selectActivityList" parameterType="MkActivity" resultMap="MkActivityResult">
+        <include refid="selectActivityVo"/>
+        <where>
+            a.del_flag = '0'
+            <if test="activityNo != null and activityNo != ''"> AND a.activity_no LIKE CONCAT('%', #{activityNo}, '%')</if>
+            <if test="activityName != null and activityName != ''"> AND a.activity_name LIKE CONCAT('%', #{activityName}, '%')</if>
+            <if test="activityType != null and activityType != ''"> AND a.activity_type = #{activityType}</if>
+            <if test="activityStatus != null and activityStatus != ''"> AND a.activity_status = #{activityStatus}</if>
+            <if test="activityForm != null and activityForm != ''"> AND a.activity_form = #{activityForm}</if>
+        </where>
+        ORDER BY a.activity_id DESC
+    </select>
+
+    <select id="selectActivityById" parameterType="Long" resultMap="MkActivityResult">
+        <include refid="selectActivityVo"/> WHERE a.activity_id = #{activityId}
+    </select>
+
+    <insert id="insertActivity" parameterType="MkActivity" useGeneratedKeys="true" keyProperty="activityId">
+        INSERT INTO mk_activity (activity_no, activity_name, activity_type, activity_form, activity_status,
+            start_time, end_time, location, budget, cost, target_count, target_lead_count, user_id, dept_id,
+            owner_phone, summary, content, attachments, register_token, create_by, create_time, remark)
+        VALUES (#{activityNo}, #{activityName}, #{activityType}, #{activityForm}, #{activityStatus},
+            #{startTime}, #{endTime}, #{location}, #{budget}, #{cost}, #{targetCount}, #{targetLeadCount}, #{userId}, #{deptId},
+            #{ownerPhone}, #{summary}, #{content}, #{attachments}, #{registerToken}, #{createBy}, sysdate(), #{remark})
+    </insert>
+
+    <update id="updateActivity" parameterType="MkActivity">
+        UPDATE mk_activity
+        <set>
+            <if test="activityNo != null and activityNo != ''">activity_no = #{activityNo},</if>
+            <if test="activityName != null and activityName != ''">activity_name = #{activityName},</if>
+            <if test="activityType != null">activity_type = #{activityType},</if>
+            <if test="activityForm != null">activity_form = #{activityForm},</if>
+            <if test="activityStatus != null">activity_status = #{activityStatus},</if>
+            <if test="startTime != null">start_time = #{startTime},</if>
+            <if test="endTime != null">end_time = #{endTime},</if>
+            <if test="location != null">location = #{location},</if>
+            <if test="budget != null">budget = #{budget},</if>
+            <if test="cost != null">cost = #{cost},</if>
+            <if test="targetCount != null">target_count = #{targetCount},</if>
+            <if test="targetLeadCount != null">target_lead_count = #{targetLeadCount},</if>
+            <if test="userId != null">user_id = #{userId},</if>
+            <if test="deptId != null">dept_id = #{deptId},</if>
+            <if test="ownerPhone != null">owner_phone = #{ownerPhone},</if>
+            <if test="summary != null">summary = #{summary},</if>
+            <if test="content != null">content = #{content},</if>
+            <if test="actualCount != null">actual_count = #{actualCount},</if>
+            <if test="leadCount != null">lead_count = #{leadCount},</if>
+            <if test="mqlCount != null">mql_count = #{mqlCount},</if>
+            <if test="sqlCount != null">sql_count = #{sqlCount},</if>
+            <if test="opportunityCount != null">opportunity_count = #{opportunityCount},</if>
+            <if test="dealAmount != null">deal_amount = #{dealAmount},</if>
+            <if test="actualRoi != null">actual_roi = #{actualRoi},</if>
+            <if test="attachments != null">attachments = #{attachments},</if>
+            <if test="registerToken != null and registerToken != ''">register_token = #{registerToken},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE activity_id = #{activityId}
+    </update>
+
+    <delete id="deleteActivityByIds" parameterType="Long">
+        UPDATE mk_activity SET del_flag = '2' WHERE activity_id IN
+        <foreach item="activityId" collection="array" open="(" separator="," close=")">#{activityId}</foreach>
+    </delete>
+
+    <!-- P0-1: 更新活动状态 -->
+    <update id="updateActivityStatus">
+        UPDATE mk_activity SET activity_status = #{status}, update_by = #{updateBy}, update_time = sysdate()
+        WHERE activity_id = #{activityId}
+    </update>
+
+    <!-- P3-12: 批量更新活动状态 -->
+    <update id="batchUpdateStatus">
+        UPDATE mk_activity SET activity_status = #{status}, update_by = #{updateBy}, update_time = sysdate()
+        WHERE activity_id IN
+        <foreach item="id" collection="activityIds" open="(" separator="," close=")">#{id}</foreach>
+    </update>
+
+    <!-- P3-12: 批量更新活动负责人 -->
+    <update id="batchUpdateOwner">
+        UPDATE mk_activity SET user_id = #{userId}, user_name = #{userName}, dept_id = #{deptId}, owner_phone = #{ownerPhone},
+        update_by = #{updateBy}, update_time = sysdate()
+        WHERE activity_id IN
+        <foreach item="id" collection="activityIds" open="(" separator="," close=")">#{id}</foreach>
+    </update>
+
+    <!-- P2-9: 统计活动汇总指标 -->
+    <select id="selectActivityStats" resultType="java.util.Map">
+        SELECT
+            (SELECT COUNT(1) FROM mk_activity_participant p WHERE p.activity_id = #{activityId}) as signupCount,
+            (SELECT COUNT(1) FROM mk_activity_participant p WHERE p.activity_id = #{activityId} AND p.participate_status = '1') as signedCount,
+            (SELECT COUNT(1) FROM mk_lead l WHERE l.activity_id = #{activityId} AND l.del_flag = '0') as leadCount,
+            (SELECT COUNT(1) FROM mk_lead l WHERE l.activity_id = #{activityId} AND l.del_flag = '0' AND l.lead_grade = 'B') as mqlCount,
+            (SELECT COUNT(1) FROM mk_lead l WHERE l.activity_id = #{activityId} AND l.del_flag = '0' AND l.lead_grade = 'A') as sqlCount,
+            (SELECT COUNT(1) FROM mk_opportunity o WHERE o.lead_id IN (SELECT l.lead_id FROM mk_lead l WHERE l.activity_id = #{activityId}) AND o.del_flag = '0') as opportunityCount,
+            (SELECT COALESCE(SUM(o.actual_amount), 0) FROM mk_opportunity o WHERE o.lead_id IN (SELECT l.lead_id FROM mk_lead l WHERE l.activity_id = #{activityId}) AND o.del_flag = '0' AND o.opportunity_status = '1') as dealAmount
+        FROM dual
+    </select>
+
+    <!-- P3-15: 根据活动ID和安全令牌查询活动（公开接口专用） -->
+    <select id="selectActivityByToken" resultMap="MkActivityResult">
+        SELECT a.activity_id, a.activity_no, a.activity_name, a.activity_type, a.activity_form,
+               a.activity_status, a.start_time, a.end_time, a.location, a.target_count, a.summary, a.content,
+               a.register_token, a.del_flag,
+               (SELECT COUNT(1) FROM mk_activity_participant p WHERE p.activity_id = a.activity_id) as signup_count
+        FROM mk_activity a
+        WHERE a.activity_id = #{activityId}
+          AND a.register_token = #{registerToken}
+          AND a.del_flag = '0'
+    </select>
+
+    <!-- P3-15: 更新活动报名令牌 -->
+    <update id="updateRegisterToken">
+        UPDATE mk_activity SET register_token = #{registerToken}, update_time = sysdate()
+        WHERE activity_id = #{activityId}
+    </update>
+
+</mapper>

@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.SecurityUtils;
+import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.wms.domain.WmsInventory;
 import com.ruoyi.wms.domain.WmsStockTake;
 import com.ruoyi.wms.domain.WmsStockTakeDetail;
@@ -18,6 +19,7 @@ import com.ruoyi.wms.mapper.WmsInventoryMapper;
 import com.ruoyi.wms.mapper.WmsStockTakeMapper;
 import com.ruoyi.wms.service.IWmsStockTakeService;
 import com.ruoyi.wms.service.IWmsInventoryService;
+import com.ruoyi.mk.service.IMkNumberRuleService;
 
 @Service
 public class WmsStockTakeServiceImpl implements IWmsStockTakeService
@@ -30,6 +32,9 @@ public class WmsStockTakeServiceImpl implements IWmsStockTakeService
 
     @Autowired
     private IWmsInventoryService wmsInventoryService;
+
+    @Autowired
+    private IMkNumberRuleService mkNumberRuleService;
 
     @Override
     public List<WmsStockTake> selectStockTakeList(WmsStockTake take)
@@ -52,9 +57,9 @@ public class WmsStockTakeServiceImpl implements IWmsStockTakeService
     @Transactional(rollbackFor = Exception.class)
     public int insertStockTake(WmsStockTake take)
     {
-        if (take.getTakeNo() == null || take.getTakeNo().isEmpty())
+        if (StringUtils.isEmpty(take.getTakeNo()))
         {
-            take.setTakeNo("ST" + System.currentTimeMillis());
+            take.setTakeNo(mkNumberRuleService.generateNumber("wms_stocktake"));
         }
         take.setDelFlag("0");
         if (take.getStatus() == null)

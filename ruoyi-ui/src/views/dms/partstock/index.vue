@@ -28,7 +28,7 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="list" @selection-change="handleSelectionChange" border @header-dragend="onHeaderDragEnd">
+    <el-table ref="tableRef" v-loading="loading" :data="list" @selection-change="handleSelectionChange" border @header-dragend="onHeaderDragEnd">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="时间" prop="createTime" :width="colWidth('createTime', 160)" resizable align="center" />
       <el-table-column label="单据号" prop="documentCode" :width="colWidth('documentCode', 140)" resizable />
@@ -68,7 +68,7 @@ import { listPartStock, delPartStock } from '@/api/dms/partstock'
 import { useColumnResize } from '@/composables/useColumnResize'
 
 const { proxy } = getCurrentInstance()
-const { colWidth, onHeaderDragEnd } = useColumnResize('dms_partstock_index')
+const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('dms_partstock_index')
 const { dms_partin_type, dms_partout_type } = proxy.useDict('dms_partin_type', 'dms_partout_type')
 
 const list = ref([])

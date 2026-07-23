@@ -24,7 +24,7 @@ const sessionCache = {
   getJSON (key) {
     const value = this.get(key)
     if (value != null) {
-      return JSON.parse(value)
+      try { return JSON.parse(value) } catch (e) { return null }
     }
     return null
   },
@@ -58,7 +58,7 @@ const localCache = {
   getJSON (key) {
     const value = this.get(key)
     if (value != null) {
-      return JSON.parse(value)
+      try { return JSON.parse(value) } catch (e) { return null }
     }
     return null
   },

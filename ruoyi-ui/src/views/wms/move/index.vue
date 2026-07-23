@@ -11,15 +11,16 @@
       <el-col :span="1.5"><el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['wms:move:export']">导出</el-button></el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
-    <el-table border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
+    <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="移库单号" prop="moveNo" :width="colWidth('moveNo', 160)" resizable />
       <el-table-column label="仓库" prop="warehouseName" :width="colWidth('warehouseName', 120)" resizable />
       <el-table-column label="物料编码" prop="materialCode" :width="colWidth('materialCode', 120)" resizable />
       <el-table-column label="物料名称" prop="materialName" :width="colWidth('materialName', 200)" resizable show-overflow-tooltip />
+      <el-table-column label="单位" prop="unit" :width="colWidth('unit', 70)" resizable align="center"><template #default="scope"><dict-tag :options="wms_unit" :value="scope.row.unit" /></template></el-table-column>
       <el-table-column label="批次号" prop="batchNo" :width="colWidth('batchNo', 100)" resizable />
-      <el-table-column label="源库位" :width="colWidth('源库位', 140)" resizable show-overflow-tooltip><template #default="scope">{{ scope.row.fromLocationCode }}{{ scope.row.fromLocationName ? ' / ' + scope.row.fromLocationName : '' }}</template></el-table-column>
-      <el-table-column label="目标库位" :width="colWidth('目标库位', 140)" resizable show-overflow-tooltip><template #default="scope">{{ scope.row.toLocationCode }}{{ scope.row.toLocationName ? ' / ' + scope.row.toLocationName : '' }}</template></el-table-column>
+      <el-table-column label="源库位" prop="fromLocationName" :width="colWidth('fromLocationName', 180)" resizable show-overflow-tooltip />
+      <el-table-column label="目标库位" prop="toLocationName" :width="colWidth('toLocationName', 180)" resizable show-overflow-tooltip />
       <el-table-column label="移库数量" prop="moveQty" :width="colWidth('moveQty', 100)" resizable align="right" />
       <el-table-column label="状态" prop="status" :width="colWidth('status', 100)" resizable align="center"><template #default="scope"><dict-tag :options="wms_move_status" :value="scope.row.status" /></template></el-table-column>
       <el-table-column label="操作" width="300" align="center" fixed="right">
@@ -37,6 +38,7 @@
     <!-- 新增/编辑弹窗 -->
     <el-dialog :title="title" v-model="open" width="600px" append-to-body>
       <el-form ref="moveRef" :model="form" :rules="rules" label-width="100px">
+        <el-divider content-position="center">仓库与物料</el-divider>
         <el-form-item label="仓库" prop="warehouseId">
           <el-select v-model="form.warehouseId" filterable clearable placeholder="请选择仓库" style="width:100%" @change="onWarehouseChange">
             <el-option v-for="w in warehouseOptions" :key="w.warehouseId" :label="w.warehouseName" :value="w.warehouseId" />
@@ -44,45 +46,64 @@
         </el-form-item>
         <el-form-item label="库存物料" prop="inventoryId">
           <el-select v-model="form.inventoryId" filterable clearable placeholder="请先选择仓库，再选择库存物料" style="width:100%" :disabled="!form.warehouseId" @change="onInventoryChange">
-            <el-option v-for="inv in inventoryOptions" :key="inv.inventoryId" :label="inv.materialCode + ' - ' + inv.materialName + '（批次: ' + (inv.batchNo || '无') + '，库位: ' + (inv.locationCode || '') + '，可用: ' + inv.qty + '）'" :value="inv.inventoryId" />
+            <el-option v-for="inv in inventoryOptions" :key="inv.inventoryId" :label="inv.materialCode + ' - ' + inv.materialName + '（批次: ' + (inv.batchNo || '无') + '，库位: ' + (inv.locationName || '') + '，可用: ' + inv.qty + '）'" :value="inv.inventoryId" />
           </el-select>
         </el-form-item>
         <el-row>
           <el-col :span="12"><el-form-item label="批次号"><el-input v-model="form.batchNo" disabled /></el-form-item></el-col>
-          <el-col :span="12"><el-form-item label="源库位"><el-input :model-value="form.fromLocationCode ? form.fromLocationCode + (form.fromLocationName ? ' / ' + form.fromLocationName : '') : ''" disabled /></el-form-item></el-col>
+          <el-col :span="12"><el-form-item label="单位"><dict-tag :options="wms_unit" :value="form.unit" /></el-form-item></el-col>
         </el-row>
+        <el-divider content-position="center">移库信息</el-divider>
+        <el-form-item label="源库位">
+          <el-input :model-value="form.fromLocationName || ''" disabled />
+        </el-form-item>
         <el-row>
           <el-col :span="12"><el-form-item label="可用数量"><el-input v-model="form.availableQty" disabled /></el-form-item></el-col>
           <el-col :span="12"><el-form-item label="移库数量" prop="moveQty"><el-input-number v-model="form.moveQty" :precision="2" :min="0" :max="form.availableQty || 0" style="width:100%" /></el-form-item></el-col>
         </el-row>
         <el-form-item label="目标库位" prop="toLocationId">
           <el-select v-model="form.toLocationId" filterable clearable placeholder="请选择目标库位" style="width:100%" @change="onTargetLocationChange">
-            <el-option v-for="l in targetLocationOptions" :key="l.warehouseId" :label="l.warehouseCode + ' / ' + (l.warehouseName || '')" :value="l.warehouseId" />
+            <el-option v-for="l in targetLocationOptions" :key="l.warehouseId" :label="(l.warehouseName || '')" :value="l.warehouseId" />
           </el-select>
         </el-form-item>
+        <el-divider content-position="center">其他信息</el-divider>
         <el-form-item label="备注" prop="remark"><el-input v-model="form.remark" type="textarea" /></el-form-item>
       </el-form>
       <template #footer><el-button type="primary" @click="submitForm">确 定</el-button><el-button @click="cancel">取 消</el-button></template>
     </el-dialog>
 
     <!-- 详情弹窗 -->
-    <el-dialog title="移库单详情" v-model="detailOpen" width="600px" append-to-body>
+    <el-dialog title="移库单详情" v-model="detailOpen" width="700px" append-to-body>
+      <el-divider content-position="center">单据信息</el-divider>
       <el-descriptions :column="2" border>
         <el-descriptions-item label="移库单号">{{ detailData.moveNo }}</el-descriptions-item>
         <el-descriptions-item label="状态"><dict-tag :options="wms_move_status" :value="detailData.status" /></el-descriptions-item>
+      </el-descriptions>
+      <el-divider content-position="center">物料信息</el-divider>
+      <el-descriptions :column="2" border>
         <el-descriptions-item label="仓库">{{ detailData.warehouseName }}</el-descriptions-item>
         <el-descriptions-item label="批次号">{{ detailData.batchNo || '-' }}</el-descriptions-item>
         <el-descriptions-item label="物料编码">{{ detailData.materialCode }}</el-descriptions-item>
         <el-descriptions-item label="物料名称">{{ detailData.materialName }}</el-descriptions-item>
-        <el-descriptions-item label="源库位">{{ detailData.fromLocationCode }}{{ detailData.fromLocationName ? ' / ' + detailData.fromLocationName : '' }}</el-descriptions-item>
-        <el-descriptions-item label="目标库位">{{ detailData.toLocationCode }}{{ detailData.toLocationName ? ' / ' + detailData.toLocationName : '' }}</el-descriptions-item>
+        <el-descriptions-item label="单位"><dict-tag :options="wms_unit" :value="detailData.unit" /></el-descriptions-item>
         <el-descriptions-item label="移库数量">{{ detailData.moveQty }}</el-descriptions-item>
+      </el-descriptions>
+      <el-divider content-position="center">库位信息</el-divider>
+      <el-descriptions :column="2" border>
+        <el-descriptions-item label="源库位" :span="2">{{ detailData.fromLocationName || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="目标库位" :span="2">{{ detailData.toLocationName || '-' }}</el-descriptions-item>
+      </el-descriptions>
+      <el-divider content-position="center">流程信息</el-divider>
+      <el-descriptions :column="2" border>
         <el-descriptions-item label="审批人">{{ detailData.approveBy || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="审批时间">{{ detailData.approveTime }}</el-descriptions-item>
-        <el-descriptions-item label="完成时间">{{ detailData.completeTime }}</el-descriptions-item>
+        <el-descriptions-item label="审批时间">{{ detailData.approveTime || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="完成时间">{{ detailData.completeTime || '-' }}</el-descriptions-item>
         <el-descriptions-item label="创建人">{{ detailData.createBy }}</el-descriptions-item>
         <el-descriptions-item label="创建时间">{{ detailData.createTime }}</el-descriptions-item>
-        <el-descriptions-item label="备注" :span="2">{{ detailData.remark || '-' }}</el-descriptions-item>
+      </el-descriptions>
+      <el-divider content-position="center">其他信息</el-divider>
+      <el-descriptions :column="1" border>
+        <el-descriptions-item label="备注">{{ detailData.remark || '-' }}</el-descriptions-item>
       </el-descriptions>
       <template #footer><el-button @click="detailOpen = false">关 闭</el-button></template>
     </el-dialog>
@@ -95,8 +116,8 @@ import { listWarehouse, listLocation } from '@/api/wms/warehouse'
 import { listInventory } from '@/api/wms/inventory'
 import { useColumnResize } from '@/composables/useColumnResize'
 const { proxy } = getCurrentInstance()
-const { colWidth, onHeaderDragEnd } = useColumnResize('wms_move_index')
-const { wms_move_status } = proxy.useDict('wms_move_status')
+const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('wms_move_index')
+const { wms_move_status, wms_unit } = proxy.useDict('wms_move_status', 'wms_unit')
 const list = ref([]); const open = ref(false); const loading = ref(true); const showSearch = ref(true); const ids = ref([]); const multiple = ref(true); const total = ref(0); const title = ref('')
 const warehouseOptions = ref([]); const inventoryOptions = ref([]); const allLocationOptions = ref([]); const detailOpen = ref(false); const detailData = ref({})
 const data = reactive({
@@ -122,7 +143,7 @@ function handleQuery() { queryParams.value.pageNum = 1; getList() }
 function resetQuery() { proxy.resetForm('queryRef'); handleQuery() }
 function handleSelectionChange(sel) { ids.value = sel.map(i => i.moveId); multiple.value = !sel.length }
 function reset() {
-  form.value = { warehouseId: undefined, inventoryId: undefined, materialId: undefined, batchNo: undefined, fromLocationId: undefined, fromLocationCode: undefined, fromLocationName: undefined, toLocationId: undefined, toLocationCode: undefined, toLocationName: undefined, moveQty: 0, availableQty: 0, remark: undefined }
+  form.value = { warehouseId: undefined, inventoryId: undefined, materialId: undefined, unit: undefined, batchNo: undefined, fromLocationId: undefined, fromLocationCode: undefined, fromLocationName: undefined, toLocationId: undefined, toLocationCode: undefined, toLocationName: undefined, moveQty: 0, availableQty: 0, remark: undefined }
   inventoryOptions.value = []; allLocationOptions.value = []
   proxy.resetForm('moveRef')
 }
@@ -159,6 +180,7 @@ function onTargetLocationChange(locationId) {
 /** 选择仓库后：加载该仓库的库存列表和库位列表 */
 function onWarehouseChange(warehouseId) {
   form.value.inventoryId = undefined
+  form.value.unit = undefined
   form.value.batchNo = undefined
   form.value.fromLocationId = undefined
   form.value.fromLocationCode = undefined
@@ -184,6 +206,7 @@ function onInventoryChange(inventoryId) {
     form.value.materialId = inv.materialId
     form.value.materialCode = inv.materialCode
     form.value.materialName = inv.materialName
+    form.value.unit = inv.unit
     form.value.batchNo = inv.batchNo
     form.value.fromLocationId = inv.locationId
     form.value.fromLocationCode = inv.locationCode

@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mk.mapper.MkCustomerMapper">
+
+    <resultMap type="MkCustomer" id="MkCustomerResult">
+        <result property="customerId"       column="customer_id"/>
+        <result property="customerNo"       column="customer_no"/>
+        <result property="customerName"     column="customer_name"/>
+        <result property="creditCode"       column="credit_code"/>
+        <result property="customerLevel"    column="customer_level"/>
+        <result property="customerSource"   column="customer_source"/>
+        <result property="industry"         column="industry"/>
+        <result property="companySize"      column="company_size"/>
+        <result property="province"         column="province"/>
+        <result property="city"             column="city"/>
+        <result property="district"         column="district"/>
+        <result property="address"          column="address"/>
+        <result property="website"          column="website"/>
+        <result property="customerStatus"   column="customer_status"/>
+        <result property="firstContactDate" column="first_contact_date"/>
+        <result property="cooperationDate"  column="cooperation_date"/>
+        <result property="totalAmount"      column="total_amount"/>
+        <result property="userId"           column="user_id"/>
+        <result property="userName"         column="user_name"/>
+        <result property="deptId"           column="dept_id"/>
+        <result property="deptName"         column="dept_name"/>
+        <result property="tagNames"         column="tag_names"/>
+        <result property="delFlag"          column="del_flag"/>
+        <result property="createBy"         column="create_by"/>
+        <result property="createTime"       column="create_time"/>
+        <result property="updateBy"         column="update_by"/>
+        <result property="updateTime"       column="update_time"/>
+        <result property="remark"           column="remark"/>
+    </resultMap>
+
+    <sql id="selectCustomerVo">
+        SELECT c.customer_id, c.customer_no, c.customer_name, c.credit_code, c.customer_level,
+               c.customer_source, c.industry, c.company_size, c.province, c.city, c.district,
+               c.address, c.website, c.customer_status, c.first_contact_date, c.cooperation_date,
+               c.total_amount, c.user_id, c.dept_id, c.del_flag, c.create_by, c.create_time,
+               c.update_by, c.update_time, c.remark,
+               u.nick_name as user_name, d.dept_name,
+               (SELECT GROUP_CONCAT(t.tag_name SEPARATOR ',') FROM mk_customer_tag_rel r 
+                LEFT JOIN mk_customer_tag t ON r.tag_id = t.tag_id 
+                WHERE r.customer_id = c.customer_id) as tag_names
+        FROM mk_customer c
+        LEFT JOIN sys_user u ON c.user_id = u.user_id
+        LEFT JOIN sys_dept d ON c.dept_id = d.dept_id
+    </sql>
+
+    <select id="selectCustomerList" parameterType="MkCustomer" resultMap="MkCustomerResult">
+        <include refid="selectCustomerVo"/>
+        <where>
+            c.del_flag = '0' AND c.user_id IS NOT NULL
+            <if test="customerNo != null and customerNo != ''"> AND c.customer_no LIKE CONCAT('%', #{customerNo}, '%')</if>
+            <if test="customerName != null and customerName != ''"> AND c.customer_name LIKE CONCAT('%', #{customerName}, '%')</if>
+            <if test="customerLevel != null and customerLevel != ''"> AND c.customer_level = #{customerLevel}</if>
+            <if test="customerSource != null and customerSource != ''"> AND c.customer_source = #{customerSource}</if>
+            <if test="industry != null and industry != ''"> AND c.industry = #{industry}</if>
+            <if test="customerStatus != null and customerStatus != ''"> AND c.customer_status = #{customerStatus}</if>
+            <if test="userId != null"> AND c.user_id = #{userId}</if>
+            <if test="deptId != null"> AND c.dept_id = #{deptId}</if>
+        </where>
+        ORDER BY c.customer_id DESC
+    </select>
+
+    <!-- 查询全部客户（含公海，用于导入查重） -->
+    <select id="selectCustomerAllList" parameterType="MkCustomer" resultMap="MkCustomerResult">
+        <include refid="selectCustomerVo"/>
+        <where>
+            c.del_flag = '0'
+            <if test="customerNo != null and customerNo != ''"> AND c.customer_no LIKE CONCAT('%', #{customerNo}, '%')</if>
+            <if test="customerName != null and customerName != ''"> AND c.customer_name LIKE CONCAT('%', #{customerName}, '%')</if>
+        </where>
+        ORDER BY c.customer_id DESC
+    </select>
+
+    <select id="selectCustomerById" parameterType="Long" resultMap="MkCustomerResult">
+        <include refid="selectCustomerVo"/> WHERE c.customer_id = #{customerId}
+    </select>
+
+    <insert id="insertCustomer" parameterType="MkCustomer" useGeneratedKeys="true" keyProperty="customerId">
+        INSERT INTO mk_customer (customer_no, customer_name, credit_code, customer_level, customer_source,
+            industry, company_size, province, city, district, address, website, customer_status,
+            first_contact_date, cooperation_date, total_amount, user_id, dept_id, create_by, create_time, remark)
+        VALUES (#{customerNo}, #{customerName}, #{creditCode}, #{customerLevel}, #{customerSource},
+            #{industry}, #{companySize}, #{province}, #{city}, #{district}, #{address}, #{website}, #{customerStatus},
+            #{firstContactDate}, #{cooperationDate}, #{totalAmount}, #{userId}, #{deptId}, #{createBy}, sysdate(), #{remark})
+    </insert>
+
+    <update id="updateCustomer" parameterType="MkCustomer">
+        UPDATE mk_customer
+        <set>
+            <if test="customerNo != null and customerNo != ''">customer_no = #{customerNo},</if>
+            <if test="customerName != null and customerName != ''">customer_name = #{customerName},</if>
+            <if test="creditCode != null">credit_code = #{creditCode},</if>
+            <if test="customerLevel != null and customerLevel != ''">customer_level = #{customerLevel},</if>
+            <if test="customerSource != null">customer_source = #{customerSource},</if>
+            <if test="industry != null">industry = #{industry},</if>
+            <if test="companySize != null">company_size = #{companySize},</if>
+            <if test="province != null">province = #{province},</if>
+            <if test="city != null">city = #{city},</if>
+            <if test="district != null">district = #{district},</if>
+            <if test="address != null">address = #{address},</if>
+            <if test="website != null">website = #{website},</if>
+            <if test="customerStatus != null and customerStatus != ''">customer_status = #{customerStatus},</if>
+            <if test="firstContactDate != null">first_contact_date = #{firstContactDate},</if>
+            <if test="cooperationDate != null">cooperation_date = #{cooperationDate},</if>
+            <if test="totalAmount != null">total_amount = #{totalAmount},</if>
+            <if test="userId != null">user_id = #{userId},</if>
+            <if test="deptId != null">dept_id = #{deptId},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE customer_id = #{customerId}
+    </update>
+
+    <delete id="deleteCustomerByIds" parameterType="Long">
+        UPDATE mk_customer SET del_flag = '2' WHERE customer_id IN
+        <foreach item="customerId" collection="array" open="(" separator="," close=")">#{customerId}</foreach>
+    </delete>
+
+    <!-- 客户标签关联 -->
+    <delete id="deleteCustomerTags" parameterType="Long">
+        DELETE FROM mk_customer_tag_rel WHERE customer_id = #{customerId}
+    </delete>
+
+    <insert id="batchInsertCustomerTags">
+        INSERT INTO mk_customer_tag_rel (customer_id, tag_id, create_time) VALUES
+        <foreach item="tagId" collection="tagIds" open="" separator="," close="">
+            (#{customerId}, #{tagId}, sysdate())
+        </foreach>
+    </insert>
+
+    <select id="selectTagIdsByCustomerId" parameterType="Long" resultType="Long">
+        SELECT tag_id FROM mk_customer_tag_rel WHERE customer_id = #{customerId}
+    </select>
+
+    <!-- 公海客户列表 -->
+    <select id="selectPublicPoolList" parameterType="MkCustomer" resultMap="MkCustomerResult">
+        <include refid="selectCustomerVo"/>
+        <where>
+            c.del_flag = '0' AND c.user_id IS NULL
+            <if test="customerNo != null and customerNo != ''"> AND c.customer_no LIKE CONCAT('%', #{customerNo}, '%')</if>
+            <if test="customerName != null and customerName != ''"> AND c.customer_name LIKE CONCAT('%', #{customerName}, '%')</if>
+            <if test="customerLevel != null and customerLevel != ''"> AND c.customer_level = #{customerLevel}</if>
+            <if test="customerStatus != null and customerStatus != ''"> AND c.customer_status = #{customerStatus}</if>
+        </where>
+        ORDER BY c.update_time DESC
+    </select>
+
+    <!-- 释放到公海 -->
+    <update id="releaseToPool" parameterType="Long">
+        UPDATE mk_customer SET user_id = NULL, dept_id = NULL, update_time = sysdate() WHERE customer_id = #{customerId}
+    </update>
+
+    <!-- 批量分配负责人 -->
+    <update id="batchAssignCustomers">
+        UPDATE mk_customer
+        SET user_id = #{userId}, dept_id = #{deptId}, update_time = sysdate()
+        WHERE customer_id IN
+        <foreach item="customerId" collection="customerIds" open="(" separator="," close=")">#{customerId}</foreach>
+    </update>
+
+    <!-- 批量更新状态 -->
+    <update id="batchUpdateStatus">
+        UPDATE mk_customer
+        SET customer_status = #{customerStatus}, update_time = sysdate()
+        WHERE customer_id IN
+        <foreach item="customerId" collection="customerIds" open="(" separator="," close=")">#{customerId}</foreach>
+    </update>
+
+</mapper>

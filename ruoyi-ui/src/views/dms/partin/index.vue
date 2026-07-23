@@ -25,11 +25,12 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
+    <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="单据号" prop="documentCode" :width="colWidth('documentCode', 140)" resizable />
       <el-table-column label="备件编号" prop="partCode" :width="colWidth('partCode', 120)" resizable />
       <el-table-column label="备件名称" prop="partName" :width="colWidth('partName', 150)" resizable show-overflow-tooltip />
+      <el-table-column label="单位" prop="unit" :width="colWidth('unit', 70)" resizable align="center"><template #default="scope"><dict-tag :options="wms_unit" :value="scope.row.unit" /></template></el-table-column>
       <el-table-column label="入库类型" prop="sourceType" :width="colWidth('sourceType', 100)" resizable align="center">
         <template #default="scope">
           <dict-tag :options="dms_partin_type" :value="scope.row.sourceType" />
@@ -58,11 +59,7 @@
         <el-row>
           <el-col :span="12">
             <el-form-item label="单据号" prop="documentCode">
-              <el-input v-model="form.documentCode" placeholder="自动生成" disabled>
-                <template #append>
-                  <el-button @click="generateCode" :loading="codeLoading">生成</el-button>
-                </template>
-              </el-input>
+              <el-input v-model="form.documentCode" placeholder="保存后自动生成" disabled />
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -85,6 +82,11 @@
           <el-col :span="12">
             <el-form-item label="供应商" prop="supplierOrDept">
               <el-input v-model="form.supplierOrDept" placeholder="选择备件后自动带出" disabled />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="单位" prop="unit">
+              <dict-tag :options="wms_unit" :value="form.unit" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -118,19 +120,18 @@
 </template>
 
 <script setup name="DmsPartIn">
-import { listPartIn, addPartIn, genPartInCode, delPartIn } from '@/api/dms/partin'
+import { listPartIn, addPartIn, delPartIn } from '@/api/dms/partin'
 import { listSparepart } from '@/api/dms/sparepart'
 import { useColumnResize } from '@/composables/useColumnResize'
 
 const { proxy } = getCurrentInstance()
-const { colWidth, onHeaderDragEnd } = useColumnResize('dms_partin_index')
-const { dms_partin_type } = proxy.useDict('dms_partin_type')
+const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('dms_partin_index')
+const { dms_partin_type, wms_unit } = proxy.useDict('dms_partin_type', 'wms_unit')
 
 const list = ref([])
 const spareOptions = ref([])
 const open = ref(false)
 const loading = ref(true)
-const codeLoading = ref(false)
 const showSearch = ref(true)
 const ids = ref([])
 const multiple = ref(true)
@@ -150,7 +151,6 @@ const data = reactive({
   form: {},
   queryParams: { pageNum: 1, pageSize: 10, documentCode: undefined, sourceType: undefined, supplierOrDept: undefined },
   rules: {
-    documentCode: [{ required: true, message: '单据号不能为空', trigger: 'blur' }],
     sourceType: [{ required: true, message: '入库类型不能为空', trigger: 'change' }],
     partId: [{ required: true, message: '备件不能为空', trigger: 'change' }],
     quantity: [{ required: true, message: '数量不能为空', trigger: 'blur' }],
@@ -170,26 +170,22 @@ function handleSelectionChange(selection) { ids.value = selection.map(i => i.rec
 function handleAdd() {
   reset(); open.value = true
   title.value = '新增入库'
-  generateCode()
   getSpareOptions()
 }
 function reset() {
   form.value = {
     documentCode: undefined, sourceType: undefined, partId: undefined, partCode: undefined, partName: undefined,
-    supplierOrDept: undefined, storageLocation: undefined, operateDate: today(),
+    unit: undefined, supplierOrDept: undefined, storageLocation: undefined, operateDate: today(),
     quantity: 1, operatorName: undefined, remark: undefined
   }
   proxy.resetForm('partinRef')
-}
-function generateCode() {
-  codeLoading.value = true
-  genPartInCode().then(res => { form.value.documentCode = res.data }).finally(() => { codeLoading.value = false })
 }
 function onPartChange(val) {
   const part = spareOptions.value.find(i => i.partId === val)
   if (part) {
     form.value.partCode = part.partCode
     form.value.partName = part.partName
+    form.value.unit = part.unit || ''
     form.value.supplierOrDept = part.supplier || ''
     // 如果备件已有存放位置，自动带出
     if (part.storageLocation) {

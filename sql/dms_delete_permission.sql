@@ -16,6 +16,5 @@ FROM sys_menu WHERE perms = 'dms:partalert:export' LIMIT 1;
 
 -- 为超级管理员角色（role_id=1）分配新增权限
 -- 超级管理员本身已有 *:*:* 权限，这里仅为保险起见
-INSERT INTO sys_role_menu (role_id, menu_id)
-SELECT 1, menu_id FROM sys_menu WHERE perms IN ('dms:partstock:remove', 'dms:partalert:remove')
-ON DUPLICATE KEY UPDATE menu_id = menu_id;
+INSERT IGNORE INTO sys_role_menu (role_id, menu_id)
+SELECT 1, menu_id FROM sys_menu WHERE perms IN ('dms:partstock:remove', 'dms:partalert:remove');

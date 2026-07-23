@@ -106,8 +106,8 @@ public class DmsSparePartController extends BaseController
         return toAjax(dmsSparePartService.stockMove(record));
     }
 
-    /** 出入库记录列表 */
-    @PreAuthorize("@ss.hasPermi('dms:sparepart:query')")
+    /** 出入库记录列表（支持备件查询、入库查询、出库查询、库存查询任一权限） */
+    @PreAuthorize("@ss.hasAnyPermi('dms:sparepart:query,dms:partin:query,dms:partout:query,dms:partstock:query')")
     @GetMapping("/record/list")
     public TableDataInfo recordList(DmsSparePartRecord record)
     {
@@ -171,6 +171,17 @@ public class DmsSparePartController extends BaseController
         startPage();
         List<DmsSparePart> list = dmsSparePartService.selectStockAlertList(sparePart);
         return getDataTable(list);
+    }
+
+    /** 库存预警导出 */
+    @Log(title = "库存预警", businessType = BusinessType.EXPORT)
+    @PreAuthorize("@ss.hasPermi('dms:partalert:export')")
+    @PostMapping("/alert/export")
+    public void alertExport(HttpServletResponse response, DmsSparePart sparePart)
+    {
+        List<DmsSparePart> list = dmsSparePartService.selectStockAlertList(sparePart);
+        ExcelUtil<DmsSparePart> util = new ExcelUtil<>(DmsSparePart.class);
+        util.exportExcel(response, list, "库存预警数据");
     }
 
     /** 删除库存预警（清除备件安全库存设置） */

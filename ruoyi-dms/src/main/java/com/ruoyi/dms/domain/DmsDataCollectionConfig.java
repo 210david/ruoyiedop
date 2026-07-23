@@ -12,14 +12,14 @@ public class DmsDataCollectionConfig extends BaseEntity
     private Long configId;
     private Long equipmentId;
     @Excel(name = "设备名称") private String equipmentName;
-    @Excel(name = "采集模式", readConverterExp = "0=人工,1=自动") private String collectMode;
+    @Excel(name = "采集模式", dictType = "dms_collect_mode") private String collectMode;
     private String collectStatus;
     private String collectHours;
     private String collectCount;
     private String param1Name; private String param1Unit; private BigDecimal param1AlarmMin; private BigDecimal param1AlarmMax;
     private String param2Name; private String param2Unit; private BigDecimal param2AlarmMin; private BigDecimal param2AlarmMax;
     private String param3Name; private String param3Unit; private BigDecimal param3AlarmMin; private BigDecimal param3AlarmMax;
-    @Excel(name = "状态", readConverterExp = "0=正常,1=停用") private String status;
+    @Excel(name = "状态", dictType = "sys_normal_disable") private String status;
     private String delFlag;
 
     public Long getConfigId() { return configId; }

@@ -1,72 +1,71 @@
 @echo off
-chcp 65001 >nul
-title EDOP - 启动后端服务
+title EDOP - Start Backend
 REM ============================================================
-REM 启动后端 Spring Boot 服务
-REM 路径: D:\EDOP\scripts\start-backend.bat
+REM Start Backend Spring Boot service
+REM Path: D:\EDOP\scripts\start-backend.bat
 REM ============================================================
 
 cd /d "%~dp0"
 call env.bat
 
-echo %INFO% 正在启动后端服务...
+echo %INFO% Starting Backend service...
 
-REM 检查 JDK 是否存在
+REM Check JDK
 if not exist "%JAVA_HOME%\bin\java.exe" (
-    echo %ERR% 未找到 JDK: %JAVA_HOME%\bin\java.exe
-    echo %INFO% 请将 JDK 17 解压到 %JAVA_HOME% 目录
-    echo %INFO% 或修改 env.bat 中的 JAVA_HOME 路径
+    echo %ERR% JDK not found: %JAVA_HOME%\bin\java.exe
+    echo %INFO% Please extract JDK 17 to %JAVA_HOME%
+    echo %INFO% Or edit JAVA_HOME in env.bat
     pause
     exit /b 1
 )
 
-REM 检查 JAR 包是否存在
+REM Check JAR
 if not exist "%APP_HOME%\%JAR_NAME%" (
-    echo %ERR% 未找到应用包: %APP_HOME%\%JAR_NAME%
-    echo %INFO% 请先执行 build.bat 编译打包，并将 JAR 包复制到 %APP_HOME% 目录
+    echo %ERR% JAR not found: %APP_HOME%\%JAR_NAME%
+    echo %INFO% Please run build.bat first and copy JAR to %APP_HOME%
     pause
     exit /b 1
 )
 
-REM 创建日志目录
+REM Create directories
 if not exist "%LOG_HOME%" mkdir "%LOG_HOME%"
 if not exist "%UPLOAD_PATH%" mkdir "%UPLOAD_PATH%"
 
-REM 检查端口是否已被占用
+REM Check if port already in use
 netstat -ano | findstr ":%BACKEND_PORT% " | findstr LISTENING >nul 2>&1
 if %errorlevel% equ 0 (
-    echo %WARN% 端口 %BACKEND_PORT% 已被占用，后端服务可能已在运行
+    echo %WARN% Port %BACKEND_PORT% already in use, backend may be running
     pause
     exit /b 0
 )
 
-REM 启动后端服务（后台运行，使用 javaw）
+REM Start backend (background, using javaw)
 cd /d "%APP_HOME%"
-echo %INFO% JAR 包: %APP_HOME%\%JAR_NAME%
-echo %INFO% 端口: %BACKEND_PORT%
-echo %INFO% 日志: %LOG_HOME%\ruoyi.log
+echo %INFO% JAR:    %APP_HOME%\%JAR_NAME%
+echo %INFO% Port:   %BACKEND_PORT%
+echo %INFO% Log:    %LOG_HOME%\ruoyi.log
 
 start "EDOP-Backend" /min cmd /c "%JAVA_HOME%\bin\javaw %JVM_OPTS% -jar %JAR_NAME% > %LOG_HOME%\console.log 2>&1"
 
-REM 等待服务启动
-echo %INFO% 等待服务启动中，请稍候...
+REM Wait for startup
+echo %INFO% Waiting for service to start...
 set "wait=0"
 :wait_loop
 timeout /t 3 /nobreak >nul
 set /a wait+=3
 netstat -ano | findstr ":%BACKEND_PORT% " | findstr LISTENING >nul 2>&1
 if %errorlevel% equ 0 (
-    echo %OK% 后端服务启动成功！端口: %BACKEND_PORT%
-    echo %INFO% 启动耗时约 %wait% 秒
-    echo %INFO% 接口地址: http://localhost:%BACKEND_PORT%
+    echo %OK% Backend started! Port: %BACKEND_PORT%
+    echo %INFO% Startup took ~%wait% seconds
+    echo %INFO% API URL: http://localhost:%BACKEND_PORT%
     exit /b 0
 )
 if %wait% geq 60 (
-    echo %ERR% 后端服务启动超时（60秒），请检查日志:
-    echo %INFO% 控制台日志: %LOG_HOME%\console.log
-    echo %INFO% 应用日志:   %LOG_HOME%\ruoyi.log
+    echo %ERR% Backend startup timeout (60s), check logs:
+    echo %INFO% Console log: %LOG_HOME%\console.log
+    echo %INFO% App log:     %LOG_HOME%\ruoyi.log
     pause
     exit /b 1
 )
-echo %INFO% 已等待 %wait% 秒...
+echo %INFO% Waiting... %wait% seconds
 goto wait_loop

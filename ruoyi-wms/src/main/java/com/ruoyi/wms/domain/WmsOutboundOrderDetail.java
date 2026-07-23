@@ -57,6 +57,9 @@ public class WmsOutboundOrderDetail extends BaseEntity
     @Excel(name = "拣货库位")
     private String locationCode;
 
+    /** 库位名称 */
+    private String locationName;
+
     /** 已拣货数量 */
     @Excel(name = "已拣货数量")
     private BigDecimal pickQty;
@@ -88,6 +91,8 @@ public class WmsOutboundOrderDetail extends BaseEntity
     public void setLocationId(Long locationId) { this.locationId = locationId; }
     public String getLocationCode() { return locationCode; }
     public void setLocationCode(String locationCode) { this.locationCode = locationCode; }
+    public String getLocationName() { return locationName; }
+    public void setLocationName(String locationName) { this.locationName = locationName; }
     public BigDecimal getPickQty() { return pickQty; }
     public void setPickQty(BigDecimal pickQty) { this.pickQty = pickQty; }
     public String getDelFlag() { return delFlag; }

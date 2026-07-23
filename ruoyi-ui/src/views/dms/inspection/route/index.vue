@@ -22,7 +22,7 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
+    <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="路线名称" prop="routeName" min-width="140" show-overflow-tooltip />
       <el-table-column label="路线编码" prop="routeCode" min-width="160" show-overflow-tooltip />
@@ -154,7 +154,7 @@ import { deptTreeSelect } from '@/api/system/user'
 import { useColumnResize } from '@/composables/useColumnResize'
 
 const { proxy } = getCurrentInstance()
-const { colWidth, onHeaderDragEnd } = useColumnResize('dms_inspection_route_index')
+const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('dms_inspection_route_index')
 const { dms_inspection_cycle } = proxy.useDict('dms_inspection_cycle')
 
 const list = ref([])

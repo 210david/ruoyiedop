@@ -30,7 +30,7 @@
     </el-row>
 
     <!-- 列表 -->
-    <el-table border v-loading="loading" :data="list" highlight-current-row @header-dragend="onHeaderDragEnd">
+    <el-table ref="tableRef" border v-loading="loading" :data="list" highlight-current-row @header-dragend="onHeaderDragEnd">
       <el-table-column label="出库单号" prop="orderNo" :width="colWidth('orderNo', 200)" resizable />
       <el-table-column label="出库类型" prop="orderType" :width="colWidth('orderType', 100)" resizable align="center">
         <template #default="scope"><dict-tag :options="wms_outbound_type" :value="scope.row.orderType" /></template>
@@ -110,7 +110,7 @@
 import { listOutbound, getOutbound, checkOutbound } from '@/api/wms/outbound'
 import { useColumnResize } from '@/composables/useColumnResize'
 const { proxy } = getCurrentInstance()
-const { colWidth, onHeaderDragEnd } = useColumnResize('wms_outbound_check')
+const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('wms_outbound_check')
 const { wms_outbound_type, wms_outbound_status } = proxy.useDict('wms_outbound_type', 'wms_outbound_status')
 
 const list = ref([])

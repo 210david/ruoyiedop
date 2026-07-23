@@ -1,17 +1,16 @@
 @echo off
-chcp 65001 >nul
-title EDOP - 注册Windows服务
+title EDOP - Install Windows Services
 REM ============================================================
-REM 将 MySQL、Redis、后端、Nginx 注册为 Windows 服务（开机自启）
-REM 路径: D:\EDOP\scripts\install-services.bat
+REM Register MySQL, Redis, Backend, Nginx as Windows services
+REM Path: D:\EDOP\scripts\install-services.bat
 REM
-REM 前置条件: 需要下载 WinSW-x64.exe
-REM 下载地址: https://github.com/winsw/winsw/releases/download/v2.12.0/WinSW-x64.exe
-REM 下载后复制四份，分别重命名为:
+REM Prerequisite: WinSW-x64.exe required
+REM Download: https://github.com/winsw/winsw/releases/download/v2.12.0/WinSW-x64.exe
+REM Copy 4 copies and rename to:
 REM   edop-mysql.exe, edop-backend.exe, edop-nginx.exe, edop-redis.exe
-REM 放到 D:\EDOP\service\ 目录下
+REM Place in D:\EDOP\service\
 REM
-REM 注意: MySQL 注册服务前必须先运行 init-mysql.bat 完成初始化
+REM Note: MySQL must be initialized (init-mysql.bat) before registering service
 REM ============================================================
 
 cd /d "%~dp0"
@@ -20,117 +19,116 @@ call env.bat
 set SERVICE_DIR=%EDOP_HOME%\service
 
 echo ============================================
-echo    注册 Windows 服务（开机自启）
+echo    Install Windows Services (Auto-start)
 echo ============================================
 echo.
 
-REM 检查 WinSW 是否存在
+REM Check WinSW
 if not exist "%SERVICE_DIR%\edop-backend.exe" (
-    echo [ERROR] 未找到 WinSW: %SERVICE_DIR%\edop-backend.exe
+    echo [ERROR] WinSW not found: %SERVICE_DIR%\edop-backend.exe
     echo.
-    echo [INFO] 请按以下步骤操作:
-    echo   1. 下载 WinSW: https://github.com/winsw/winsw/releases/download/v2.12.0/WinSW-x64.exe
-    echo   2. 复制四份，分别重命名为:
+    echo [INFO] Steps:
+    echo   1. Download WinSW: https://github.com/winsw/winsw/releases/download/v2.12.0/WinSW-x64.exe
+    echo   2. Copy 4 copies, rename to:
     echo      edop-mysql.exe
     echo      edop-backend.exe
     echo      edop-nginx.exe
     echo      edop-redis.exe
-    echo   3. 放到 %SERVICE_DIR% 目录
+    echo   3. Place in %SERVICE_DIR%
     echo.
     pause
     exit /b 1
 )
 
-REM 检查 MySQL 是否已初始化
+REM Check MySQL initialized
 if exist "%MYSQL_HOME%\bin\mysqld.exe" (
     if not exist "%MYSQL_HOME%\data\mysql" (
-        echo [WARN] MySQL 尚未初始化，跳过 MySQL 服务注册
-        echo [INFO]  请先运行 init-mysql.bat 完成初始化后再注册服务
+        echo [WARN] MySQL not initialized, skipping MySQL service
+        echo [INFO]  Run init-mysql.bat first, then register service
         echo.
         goto :skip_mysql_service
     )
-    REM 复制 WinSW exe 为 edop-mysql.exe
     if not exist "%SERVICE_DIR%\edop-mysql.exe" (
         copy /Y "%SERVICE_DIR%\edop-backend.exe" "%SERVICE_DIR%\edop-mysql.exe" >nul
     )
 ) else (
-    echo [WARN] 未找到 MySQL，跳过 MySQL 服务注册
+    echo [WARN] MySQL not found, skipping MySQL service
     echo.
     goto :skip_mysql_service
 )
 
-REM ===== 注册 MySQL 服务 =====
-echo [1/4] 注册 MySQL 服务...
+REM ===== Register MySQL service =====
+echo [1/4] Registering MySQL service...
 cd /d "%SERVICE_DIR%"
 edop-mysql.exe install
 if %errorlevel% neq 0 (
-    echo [WARN] MySQL 服务注册可能失败，请检查上方输出
+    echo [WARN] MySQL service registration may have failed, check output above
 ) else (
-    echo [OK] MySQL 服务注册成功
+    echo [OK] MySQL service registered
     net start EDOP-MySQL >nul 2>&1
-    echo [OK] MySQL 服务已启动
+    echo [OK] MySQL service started
     timeout /t 3 /nobreak >nul
 )
 echo.
 
 :skip_mysql_service
 
-REM ===== 注册 Redis 服务 =====
-echo [2/4] 注册 Redis 服务...
+REM ===== Register Redis service =====
+echo [2/4] Registering Redis service...
 cd /d "%SERVICE_DIR%"
 edop-redis.exe install
 if %errorlevel% neq 0 (
-    echo [WARN] Redis 服务注册可能失败，请检查上方输出
+    echo [WARN] Redis service registration may have failed, check output above
 ) else (
-    echo [OK] Redis 服务注册成功
+    echo [OK] Redis service registered
     net start EDOP-Redis >nul 2>&1
-    echo [OK] Redis 服务已启动
+    echo [OK] Redis service started
 )
 echo.
 
-REM ===== 注册后端服务 =====
-echo [3/4] 注册后端服务...
+REM ===== Register Backend service =====
+echo [3/4] Registering Backend service...
 edop-backend.exe install
 if %errorlevel% neq 0 (
-    echo [WARN] 后端服务注册可能失败，请检查上方输出
+    echo [WARN] Backend service registration may have failed, check output above
 ) else (
-    echo [OK] 后端服务注册成功
-    REM 等 Redis 完全启动后再启动后端
+    echo [OK] Backend service registered
+    REM Wait for Redis to fully start before starting backend
     timeout /t 3 /nobreak >nul
     net start EDOP-Backend >nul 2>&1
-    echo [OK] 后端服务已启动
+    echo [OK] Backend service started
 )
 echo.
 
-REM ===== 注册 Nginx 服务 =====
-echo [4/4] 注册 Nginx 服务...
+REM ===== Register Nginx service =====
+echo [4/4] Registering Nginx service...
 edop-nginx.exe install
 if %errorlevel% neq 0 (
-    echo [WARN] Nginx 服务注册可能失败，请检查上方输出
+    echo [WARN] Nginx service registration may have failed, check output above
 ) else (
-    echo [OK] Nginx 服务注册成功
-    REM 等后端启动后再启动 Nginx
+    echo [OK] Nginx service registered
+    REM Wait for backend to start before starting Nginx
     timeout /t 5 /nobreak >nul
     net start EDOP-Nginx >nul 2>&1
-    echo [OK] Nginx 服务已启动
+    echo [OK] Nginx service started
 )
 echo.
 
 echo ============================================
-echo    服务注册完成！
+echo    Service Registration Complete!
 echo ============================================
 echo.
-echo  服务名称:
-echo    EDOP-MySQL   - MySQL 数据库服务
-echo    EDOP-Redis   - Redis 缓存服务
-echo    EDOP-Backend - 后端应用服务
-echo    EDOP-Nginx   - Nginx 代理服务
+echo  Service names:
+echo    EDOP-MySQL   - MySQL database service
+echo    EDOP-Redis   - Redis cache service
+echo    EDOP-Backend - Backend application service
+echo    EDOP-Nginx   - Nginx proxy service
 echo.
-echo  管理方式:
-echo    服务管理器: services.msc
-echo    命令行启动: net start EDOP-Backend
-echo    命令行停止: net stop EDOP-Backend
+echo  Management:
+echo    Service manager: services.msc
+echo    CLI start: net start EDOP-Backend
+echo    CLI stop:  net stop EDOP-Backend
 echo.
-echo  服务已设置为开机自启！
+echo  Services set to auto-start on boot!
 echo.
 pause

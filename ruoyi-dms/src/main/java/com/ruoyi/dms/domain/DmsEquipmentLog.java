@@ -22,7 +22,7 @@ public class DmsEquipmentLog extends BaseEntity
     @Excel(name = "设备名称")
     private String equipmentName;
 
-    @Excel(name = "变更类型", readConverterExp = "0=状态变更,1=位置变更,2=部门变更,3=责任人变更,4=调拨")
+    @Excel(name = "变更类型", dictType = "dms_eq_change_type")
     private String changeType;
 
     private String oldValue;

@@ -9,11 +9,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.SecurityUtils;
+import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.dms.domain.DmsSparePart;
 import com.ruoyi.dms.domain.DmsSparePartRecord;
 import com.ruoyi.dms.mapper.DmsSparePartMapper;
 import com.ruoyi.dms.mapper.DmsSparePartRecordMapper;
 import com.ruoyi.dms.service.IDmsSparePartService;
+import com.ruoyi.mk.service.IMkNumberRuleService;
 
 @Service
 public class DmsSparePartServiceImpl implements IDmsSparePartService
@@ -25,6 +27,9 @@ public class DmsSparePartServiceImpl implements IDmsSparePartService
 
     @Autowired
     private DmsSparePartRecordMapper dmsSparePartRecordMapper;
+
+    @Autowired
+    private IMkNumberRuleService mkNumberRuleService;
 
     @Override
     public List<DmsSparePart> selectSparePartList(DmsSparePart sparePart)
@@ -42,6 +47,10 @@ public class DmsSparePartServiceImpl implements IDmsSparePartService
     public int insertSparePart(DmsSparePart sparePart)
     {
         sparePart.setDelFlag("0");
+        if (StringUtils.isEmpty(sparePart.getPartCode()))
+        {
+            sparePart.setPartCode(mkNumberRuleService.generateNumber("dms_spare_part"));
+        }
         return dmsSparePartMapper.insertSparePart(sparePart);
     }
 
@@ -60,64 +69,19 @@ public class DmsSparePartServiceImpl implements IDmsSparePartService
     @Override
     public String generatePartCode()
     {
-        String dateStr = new SimpleDateFormat("yyyyMMdd").format(new Date());
-        String prefix = CODE_PREFIX + dateStr;
-        String lastCode = dmsSparePartMapper.selectLastPartCode(prefix);
-        int seq = 1;
-        if (lastCode != null && lastCode.length() > prefix.length())
-        {
-            try
-            {
-                seq = Integer.parseInt(lastCode.substring(prefix.length())) + 1;
-            }
-            catch (NumberFormatException ignored)
-            {
-                seq = 1;
-            }
-        }
-        return prefix + String.format("%03d", seq);
+        return mkNumberRuleService.generateNumber("dms_spare_part");
     }
 
     @Override
     public String generateInCode()
     {
-        String dateStr = new SimpleDateFormat("yyyyMMdd").format(new Date());
-        String prefix = "BJIN" + dateStr;
-        String lastCode = dmsSparePartRecordMapper.selectLastDocumentCode(prefix);
-        int seq = 1;
-        if (lastCode != null && lastCode.length() > prefix.length())
-        {
-            try
-            {
-                seq = Integer.parseInt(lastCode.substring(prefix.length())) + 1;
-            }
-            catch (NumberFormatException ignored)
-            {
-                seq = 1;
-            }
-        }
-        return prefix + String.format("%03d", seq);
+        return mkNumberRuleService.generateNumber("dms_spare_in");
     }
 
     @Override
     public String generateOutCode()
     {
-        String dateStr = new SimpleDateFormat("yyyyMMdd").format(new Date());
-        String prefix = "BJOUT" + dateStr;
-        String lastCode = dmsSparePartRecordMapper.selectLastDocumentCode(prefix);
-        int seq = 1;
-        if (lastCode != null && lastCode.length() > prefix.length())
-        {
-            try
-            {
-                seq = Integer.parseInt(lastCode.substring(prefix.length())) + 1;
-            }
-            catch (NumberFormatException ignored)
-            {
-                seq = 1;
-            }
-        }
-        return prefix + String.format("%03d", seq);
+        return mkNumberRuleService.generateNumber("dms_spare_out");
     }
 
     @Override
@@ -174,6 +138,18 @@ public class DmsSparePartServiceImpl implements IDmsSparePartService
         record.setPartName(part.getPartName());
         record.setBeforeStock(before);
         record.setAfterStock(after);
+        // 自动生成单据号
+        if (StringUtils.isEmpty(record.getDocumentCode()))
+        {
+            if ("0".equals(record.getMoveType()))
+            {
+                record.setDocumentCode(mkNumberRuleService.generateNumber("dms_spare_in"));
+            }
+            else
+            {
+                record.setDocumentCode(mkNumberRuleService.generateNumber("dms_spare_out"));
+            }
+        }
         return dmsSparePartRecordMapper.insertRecord(record);
     }
 

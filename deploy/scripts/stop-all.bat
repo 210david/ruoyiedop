@@ -1,41 +1,40 @@
 @echo off
-chcp 65001 >nul
-title EDOP - 一键停止全部服务
+title EDOP - Stop All Services
 REM ============================================================
-REM 一键停止: Nginx -> 后端 -> Redis -> MySQL
-REM 路径: D:\EDOP\scripts\stop-all.bat
+REM Stop all: Nginx -> Backend -> Redis -> MySQL
+REM Path: D:\EDOP\scripts\stop-all.bat
 REM ============================================================
 
 cd /d "%~dp0"
 call env.bat
 
 echo ============================================
-echo    企业数字化运营平台 - 一键停止
+echo    EDOP - Stop All Services
 echo ============================================
 echo.
 
-REM Step 1: 停止 Nginx
-echo [1/4] 停止 Nginx...
+REM Step 1: Stop Nginx
+echo [1/4] Stopping Nginx...
 call stop-nginx.bat
 echo.
 
-REM Step 2: 停止后端
-echo [2/4] 停止后端服务...
+REM Step 2: Stop Backend
+echo [2/4] Stopping Backend...
 call stop-backend.bat
 echo.
 
-REM Step 3: 停止 Redis
-echo [3/4] 停止 Redis...
+REM Step 3: Stop Redis
+echo [3/4] Stopping Redis...
 call stop-redis.bat
 echo.
 
-REM Step 4: 停止 MySQL
-echo [4/4] 停止 MySQL...
+REM Step 4: Stop MySQL
+echo [4/4] Stopping MySQL...
 call stop-mysql.bat
 echo.
 
 echo ============================================
-echo    全部服务已停止
+echo    All Services Stopped
 echo ============================================
 echo.
 pause

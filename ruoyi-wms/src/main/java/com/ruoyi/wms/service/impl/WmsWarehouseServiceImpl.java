@@ -4,15 +4,20 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.ruoyi.common.exception.ServiceException;
+import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.wms.domain.WmsWarehouse;
 import com.ruoyi.wms.mapper.WmsWarehouseMapper;
 import com.ruoyi.wms.service.IWmsWarehouseService;
+import com.ruoyi.mk.service.IMkNumberRuleService;
 
 @Service
 public class WmsWarehouseServiceImpl implements IWmsWarehouseService
 {
     @Autowired
     private WmsWarehouseMapper wmsWarehouseMapper;
+
+    @Autowired
+    private IMkNumberRuleService mkNumberRuleService;
 
     @Override
     public List<WmsWarehouse> selectWarehouseList(WmsWarehouse warehouse)
@@ -30,10 +35,19 @@ public class WmsWarehouseServiceImpl implements IWmsWarehouseService
     public int insertWarehouse(WmsWarehouse warehouse)
     {
         warehouse.setDelFlag("0");
-        // 自动生成编码
-        if (warehouse.getWarehouseCode() == null || warehouse.getWarehouseCode().isEmpty())
+        // 自动生成编码（所有节点类型）
+        if (StringUtils.isEmpty(warehouse.getWarehouseCode()))
         {
-            warehouse.setWarehouseCode(generateNextCode(warehouse));
+            if ("1".equals(warehouse.getNodeType()))
+            {
+                // 仓库级别使用编号规则
+                warehouse.setWarehouseCode(mkNumberRuleService.generateNumber("wms_warehouse"));
+            }
+            else
+            {
+                // 仓区/仓位使用层级编码（父编码+后缀）
+                warehouse.setWarehouseCode(generateNextCode(warehouse));
+            }
         }
         // 维护 ancestors
         buildAncestors(warehouse);

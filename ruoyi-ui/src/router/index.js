@@ -48,6 +48,36 @@ export const constantRoutes = [
     hidden: true
   },
   {
+    // 接口文档独立访问页（免登录，可直接分享URL访问）
+    path: '/apidoc',
+    component: () => import('@/views/tool/apidoc/index.vue'),
+    hidden: true,
+    meta: { title: '接口文档', standalone: true }
+  },
+  {
+    // 开放接口文档独立访问页（免登录）
+    path: '/openapi-doc',
+    component: () => import('@/views/tool/openapidoc/index.vue'),
+    hidden: true,
+    meta: { title: '开放接口文档', standalone: true }
+  },
+  // P3-15: H5公开报名页（无需登录，不使用Layout，必须放在404 catch-all之前）
+  {
+    path: '/h5/register/:activityId',
+    component: () => import('@/views/h5/register/index.vue'),
+    name: 'H5Register',
+    hidden: true,
+    meta: { title: '活动报名' }
+  },
+  // P3-15: 签到扫描页（无需登录）
+  {
+    path: '/h5/signin',
+    component: () => import('@/views/h5/signin/index.vue'),
+    name: 'H5SignIn',
+    hidden: true,
+    meta: { title: '活动签到' }
+  },
+  {
     path: "/:pathMatch(.*)*",
     component: () => import('@/views/error/404'),
     hidden: true
@@ -163,7 +193,63 @@ export const dynamicRoutes = [
         meta: { title: '修改生成配置', activeMenu: '/tool/gen' }
       }
     ]
-  }
+  },
+  {
+    path: '/mk/activity-detail',
+    component: Layout,
+    hidden: true,
+    permissions: ['marketing:activity:query'],
+    children: [
+      {
+        path: ':activityId(\\d+)',
+        component: () => import('@/views/mk/activity/detail'),
+        name: 'MkActivityDetail',
+        meta: { title: '活动详情', activeMenu: '/mk/activity/list' }
+      }
+    ]
+  },
+  {
+    path: '/mk/contact-detail',
+    component: Layout,
+    hidden: true,
+    permissions: ['marketing:contact:query'],
+    children: [
+      {
+        path: ':contactId(\\d+)',
+        component: () => import('@/views/mk/contact/detail'),
+        name: 'MkContactDetail',
+        meta: { title: '联系人详情', activeMenu: '/mk/customer/contact' }
+      }
+    ]
+  },
+  {
+    path: '/mk/lead-detail',
+    component: Layout,
+    hidden: true,
+    permissions: ['marketing:lead:query'],
+    children: [
+      {
+        path: ':leadId(\\d+)',
+        component: () => import('@/views/mk/lead/detail'),
+        name: 'MkLeadDetail',
+        meta: { title: '线索详情', activeMenu: '/mk/lead/list' }
+      }
+    ]
+  },
+  {
+    path: '/mk/customer-detail',
+    component: Layout,
+    hidden: true,
+    permissions: ['marketing:customer:query'],
+    children: [
+      {
+        path: ':customerId(\\d+)',
+        component: () => import('@/views/mk/customer/detail'),
+        name: 'MkCustomerDetail',
+        meta: { title: '客户详情', activeMenu: '/mk/customer/list' }
+      }
+    ]
+  },
 ]
 
 const router = createRouter({

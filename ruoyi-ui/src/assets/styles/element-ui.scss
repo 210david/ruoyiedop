@@ -94,3 +94,11 @@
 .el-dropdown .el-dropdown-link{
   color: var(--el-color-primary) !important;
 }
+
+// fix el-descriptions label width inconsistency across groups
+.el-descriptions__table {
+  table-layout: fixed;
+}
+.el-descriptions__label {
+  width: 110px !important;
+}

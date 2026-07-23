@@ -20,7 +20,7 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
+    <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="问题" prop="question" show-overflow-tooltip />
       <el-table-column label="分类" prop="categoryName" :width="colWidth('categoryName', 120)" resizable />
@@ -63,7 +63,7 @@ import { listFaq, getFaq, addFaq, updateFaq, delFaq } from '@/api/dms/ai'
 import { useColumnResize } from '@/composables/useColumnResize'
 
 const { proxy } = getCurrentInstance()
-const { colWidth, onHeaderDragEnd } = useColumnResize('dms_ai_faq_index')
+const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('dms_ai_faq_index')
 
 const list = ref([])
 const open = ref(false)

@@ -27,6 +27,12 @@
             <groupId>com.ruoyi</groupId>
             <artifactId>ruoyi-system</artifactId>
         </dependency>
+
+        <!-- 营销模块（编号规则服务） -->
+        <dependency>
+            <groupId>com.ruoyi</groupId>
+            <artifactId>ruoyi-mk</artifactId>
+        </dependency>
     </dependencies>
 
 </project>

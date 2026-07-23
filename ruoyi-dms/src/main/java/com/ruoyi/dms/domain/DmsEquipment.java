@@ -70,7 +70,7 @@ public class DmsEquipment extends BaseEntity
     private String installLocation;
 
     /** 设备状态（字典 dms_equipment_status） */
-    @Excel(name = "设备状态", readConverterExp = "0=在用,1=闲置,2=维修中,3=停机,4=故障,5=报废")
+    @Excel(name = "设备状态", dictType = "dms_equipment_status")
     private String equipmentStatus;
 
     /** 责任人ID */
@@ -87,7 +87,7 @@ public class DmsEquipment extends BaseEntity
     private String attachmentUrl;
 
     /** 状态（0正常 1停用） */
-    @Excel(name = "状态", readConverterExp = "0=正常,1=停用")
+    @Excel(name = "状态", dictType = "sys_normal_disable")
     private String status;
 
     /** 删除标志 */

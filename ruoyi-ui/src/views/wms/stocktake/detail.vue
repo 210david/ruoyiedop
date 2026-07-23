@@ -24,7 +24,7 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table border v-loading="loading" :data="list" @row-click="handleRowClick" highlight-current-row @header-dragend="onHeaderDragEnd">
+    <el-table ref="tableRef" border v-loading="loading" :data="list" @row-click="handleRowClick" highlight-current-row @header-dragend="onHeaderDragEnd">
       <el-table-column label="盘点单号" prop="takeNo" :width="colWidth('takeNo', 180)" resizable />
       <el-table-column label="仓库" prop="warehouseName" :width="colWidth('warehouseName', 120)" resizable />
       <el-table-column label="库区" prop="areaName" :width="colWidth('areaName', 120)" resizable />
@@ -114,7 +114,7 @@
 import { listStockTake, getStockTake, submitStockTakeDetail, approveStockTake } from '@/api/wms/stocktake'
 import { useColumnResize } from '@/composables/useColumnResize'
 const { proxy } = getCurrentInstance()
-const { colWidth, onHeaderDragEnd } = useColumnResize('wms_stocktake_detail')
+const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('wms_stocktake_detail')
 const { wms_take_type, wms_take_status } = proxy.useDict('wms_take_type', 'wms_take_status')
 const list = ref([])
 const loading = ref(true)

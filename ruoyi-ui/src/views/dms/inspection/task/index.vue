@@ -21,7 +21,7 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
+    <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="任务编号" prop="taskNo" :width="colWidth('taskNo', 180)" resizable />
       <el-table-column label="路线名称" prop="routeName" show-overflow-tooltip />
@@ -241,7 +241,7 @@ import { getToken } from '@/utils/auth'
 import { useColumnResize } from '@/composables/useColumnResize'
 
 const { proxy } = getCurrentInstance()
-const { colWidth, onHeaderDragEnd } = useColumnResize('dms_inspection_task_index')
+const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('dms_inspection_task_index')
 const { dms_inspection_status } = proxy.useDict('dms_inspection_status')
 
 const list = ref([])
@@ -417,9 +417,27 @@ function beforePhotoUpload(file) {
 
 function submitExecute() {
   let abnormalCount = 0
-  // 校验所有组的异常项
+  // 校验所有组的检查结果必填
   const allGroups = [...execGroups.value.common, ...execGroups.value.devices.flatMap(d => d.items)]
   for (const item of allGroups) {
+    // 检查结果必填校验
+    if (item.type === 'check') {
+      if (!item.result) {
+        proxy.$modal.msgError(`检查项「${item.item}」请选择检查结果（正常/异常）`)
+        return
+      }
+    } else if (item.type === 'number') {
+      if (item.value === undefined || item.value === null || item.value === '') {
+        proxy.$modal.msgError(`检查项「${item.item}」请填写检查数值`)
+        return
+      }
+    } else {
+      if (item.value === undefined || item.value === null || item.value === '') {
+        proxy.$modal.msgError(`检查项「${item.item}」请填写检查结果`)
+        return
+      }
+    }
+    // 异常项必须有异常说明
     const isAbnormal = item.abnormal || item.result === 'abnormal'
     if (isAbnormal) {
       abnormalCount++

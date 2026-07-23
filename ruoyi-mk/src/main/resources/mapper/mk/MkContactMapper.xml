@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mk.mapper.MkContactMapper">
+
+    <resultMap type="MkContact" id="MkContactResult">
+        <result property="contactId"     column="contact_id"/>
+        <result property="customerId"    column="customer_id"/>
+        <result property="customerName"  column="customer_name"/>
+        <result property="name"           column="name"/>
+        <result property="gender"         column="gender"/>
+        <result property="position"       column="position"/>
+        <result property="department"    column="department"/>
+        <result property="roleTag"       column="role_tag"/>
+        <result property="phone"          column="phone"/>
+        <result property="email"          column="email"/>
+        <result property="wechat"         column="wechat"/>
+        <result property="qq"             column="qq"/>
+        <result property="isKey"          column="is_key"/>
+        <result property="isPrimary"     column="is_primary"/>
+        <result property="ownerUserId"   column="owner_user_id"/>
+        <result property="ownerUserName" column="owner_user_name"/>
+        <result property="lastContactTime" column="last_contact_time"/>
+        <result property="nextContactTime" column="next_contact_time"/>
+        <result property="personalTrait" column="personal_trait"/>
+        <result property="delFlag"       column="del_flag"/>
+        <result property="createBy"      column="create_by"/>
+        <result property="createTime"    column="create_time"/>
+        <result property="updateBy"      column="update_by"/>
+        <result property="updateTime"    column="update_time"/>
+        <result property="remark"        column="remark"/>
+    </resultMap>
+
+    <sql id="selectContactVo">
+        SELECT c.contact_id, c.customer_id, c.name, c.gender, c.position, c.department, c.role_tag,
+               c.phone, c.email, c.wechat, c.qq, c.is_key, c.is_primary, c.owner_user_id,
+               c.last_contact_time, c.next_contact_time, c.personal_trait,
+               c.del_flag, c.create_by, c.create_time, c.update_by, c.update_time, c.remark,
+               cu.customer_name, u.nick_name as owner_user_name
+        FROM mk_contact c
+        LEFT JOIN mk_customer cu ON c.customer_id = cu.customer_id
+        LEFT JOIN sys_user u ON c.owner_user_id = u.user_id
+    </sql>
+
+    <select id="selectContactList" parameterType="MkContact" resultMap="MkContactResult">
+        <include refid="selectContactVo"/>
+        <where>
+            c.del_flag = '0'
+            <if test="customerId != null"> AND c.customer_id = #{customerId}</if>
+            <if test="name != null and name != ''"> AND c.name LIKE CONCAT('%', #{name}, '%')</if>
+            <if test="phone != null and phone != ''"> AND c.phone LIKE CONCAT('%', #{phone}, '%')</if>
+            <if test="customerName != null and customerName != ''"> AND cu.customer_name LIKE CONCAT('%', #{customerName}, '%')</if>
+            <if test="isKey != null and isKey != ''"> AND c.is_key = #{isKey}</if>
+            <if test="ownerUserId != null"> AND c.owner_user_id = #{ownerUserId}</if>
+        </where>
+        ORDER BY c.contact_id DESC
+    </select>
+
+    <select id="selectContactById" parameterType="Long" resultMap="MkContactResult">
+        <include refid="selectContactVo"/> WHERE c.contact_id = #{contactId}
+    </select>
+
+    <insert id="insertContact" parameterType="MkContact" useGeneratedKeys="true" keyProperty="contactId">
+        INSERT INTO mk_contact (customer_id, name, gender, position, department, role_tag, phone, email,
+            wechat, qq, is_key, is_primary, owner_user_id, last_contact_time, next_contact_time,
+            personal_trait, create_by, create_time, remark)
+        VALUES (#{customerId}, #{name}, #{gender}, #{position}, #{department}, #{roleTag}, #{phone}, #{email},
+            #{wechat}, #{qq}, #{isKey}, #{isPrimary}, #{ownerUserId}, #{lastContactTime}, #{nextContactTime},
+            #{personalTrait}, #{createBy}, sysdate(), #{remark})
+    </insert>
+
+    <update id="updateContact" parameterType="MkContact">
+        UPDATE mk_contact
+        <set>
+            <if test="customerId != null">customer_id = #{customerId},</if>
+            <if test="name != null and name != ''">name = #{name},</if>
+            <if test="gender != null">gender = #{gender},</if>
+            <if test="position != null">position = #{position},</if>
+            <if test="department != null">department = #{department},</if>
+            <if test="roleTag != null">role_tag = #{roleTag},</if>
+            <if test="phone != null and phone != ''">phone = #{phone},</if>
+            <if test="email != null">email = #{email},</if>
+            <if test="wechat != null">wechat = #{wechat},</if>
+            <if test="qq != null">qq = #{qq},</if>
+            <if test="isKey != null and isKey != ''">is_key = #{isKey},</if>
+            <if test="isPrimary != null and isPrimary != ''">is_primary = #{isPrimary},</if>
+            <if test="ownerUserId != null">owner_user_id = #{ownerUserId},</if>
+            <if test="lastContactTime != null">last_contact_time = #{lastContactTime},</if>
+            <if test="nextContactTime != null">next_contact_time = #{nextContactTime},</if>
+            <if test="personalTrait != null">personal_trait = #{personalTrait},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE contact_id = #{contactId}
+    </update>
+
+    <delete id="deleteContactByIds" parameterType="Long">
+        UPDATE mk_contact SET del_flag = '2' WHERE contact_id IN
+        <foreach item="contactId" collection="array" open="(" separator="," close=")">#{contactId}</foreach>
+    </delete>
+
+    <!-- P2-8: 按手机号/邮箱查重复联系人 -->
+    <select id="selectDuplicateContacts" resultMap="MkContactResult">
+        <include refid="selectContactVo"/>
+        WHERE c.del_flag = '0' AND (
+            <if test="phone != null and phone != ''">c.phone = #{phone}</if>
+            <if test="phone != null and phone != '' and email != null and email != ''"> OR </if>
+            <if test="email != null and email != ''">c.email = #{email}</if>
+        )
+    </select>
+
+    <!-- P2-8: 按客户ID查询疑似重复联系人 -->
+    <select id="selectContactsByCustomerForDedup" resultMap="MkContactResult">
+        <include refid="selectContactVo"/>
+        WHERE c.del_flag = '0' AND c.customer_id = #{customerId}
+        ORDER BY c.name
+    </select>
+
+    <!-- P2-8: 合并互动记录到主记录 -->
+    <update id="mergeInteractionsToMaster">
+        UPDATE mk_interaction SET contact_id = #{masterId} WHERE contact_id = #{slaveId}
+    </update>
+
+    <!-- P2-8: 合并参与人记录到主记录 -->
+    <update id="mergeParticipantsToMaster">
+        UPDATE mk_activity_participant SET contact_id = #{masterId} WHERE contact_id = #{slaveId}
+    </update>
+
+    <!-- P1-7: 清除同客户下其他联系人的主要联系人标识 -->
+    <update id="clearOtherPrimary">
+        UPDATE mk_contact SET is_primary = '0' WHERE customer_id = #{customerId} AND contact_id != #{contactId}
+    </update>
+
+    <!-- P1-7: 批量设置关键联系人 -->
+    <update id="batchSetKey">
+        UPDATE mk_contact SET is_key = #{isKey}, update_by = #{updateBy}, update_time = sysdate()
+        WHERE contact_id IN
+        <foreach item="id" collection="contactIds" open="(" separator="," close=")">#{id}</foreach>
+    </update>
+
+    <!-- P2-10: 分配/转移联系人 -->
+    <update id="assignContact">
+        UPDATE mk_contact SET owner_user_id = #{ownerUserId}, update_by = #{updateBy}, update_time = sysdate()
+        WHERE contact_id = #{contactId}
+    </update>
+
+    <!-- P3-14: 查询待跟进联系人 -->
+    <select id="selectFollowUpReminders" resultMap="MkContactResult">
+        <include refid="selectContactVo"/>
+        WHERE c.del_flag = '0' AND c.next_contact_time IS NOT NULL
+        AND c.next_contact_time &lt;= DATE_ADD(NOW(), INTERVAL 1 DAY)
+        <if test="userId != null"> AND c.owner_user_id = #{userId}</if>
+        ORDER BY c.next_contact_time ASC
+        LIMIT 20
+    </select>
+
+</mapper>

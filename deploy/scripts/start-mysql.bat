@@ -1,9 +1,8 @@
 @echo off
-chcp 65001 >nul
-title EDOP - 启动MySQL服务
+title EDOP - Start MySQL
 REM ============================================================
-REM 启动 MySQL 服务（便携版，控制台模式）
-REM 路径: D:\EDOP\scripts\start-mysql.bat
+REM Start MySQL service (portable, console mode)
+REM Path: D:\EDOP\scripts\start-mysql.bat
 REM ============================================================
 
 cd /d "%~dp0"
@@ -11,55 +10,55 @@ call env.bat
 
 set MYSQL_HOME=%EDOP_HOME%\mysql
 
-echo %INFO% 正在启动 MySQL 服务...
+echo %INFO% Starting MySQL...
 
 if not exist "%MYSQL_HOME%\bin\mysqld.exe" (
-    echo %ERR% 未找到 MySQL: %MYSQL_HOME%\bin\mysqld.exe
+    echo %ERR% MySQL not found: %MYSQL_HOME%\bin\mysqld.exe
     pause
     exit /b 1
 )
 
-REM 检查端口是否已占用
+REM Check if port already in use
 netstat -ano | findstr ":3306 " | findstr LISTENING >nul 2>&1
 if %errorlevel% equ 0 (
-    echo %WARN% 端口 3306 已被占用，MySQL 可能已在运行
+    echo %WARN% Port 3306 already in use, MySQL may be running
     pause
     exit /b 0
 )
 
-REM 检查是否已初始化
+REM Check if initialized
 if not exist "%MYSQL_HOME%\data\mysql" (
-    echo %ERR% MySQL 尚未初始化！
-    echo %INFO% 请先运行 init-mysql.bat 进行初始化
+    echo %ERR% MySQL not initialized!
+    echo %INFO% Please run init-mysql.bat first
     pause
     exit /b 1
 )
 
-REM 创建日志目录
+REM Create log directory
 if not exist "%MYSQL_HOME%\logs" mkdir "%MYSQL_HOME%\logs"
 
-REM 启动 MySQL（后台运行）
+REM Start MySQL (background)
 cd /d "%MYSQL_HOME%"
 start "EDOP-MySQL" /min bin\mysqld.exe --defaults-file="%MYSQL_HOME%\my.ini" --console
 
-REM 等待启动
-echo %INFO% 等待 MySQL 启动中...
+REM Wait for startup
+echo %INFO% Waiting for MySQL to start...
 set "wait=0"
 :wait_loop
 timeout /t 2 /nobreak >nul
 set /a wait+=2
 netstat -ano | findstr ":3306 " | findstr LISTENING >nul 2>&1
 if %errorlevel% equ 0 (
-    echo %OK% MySQL 启动成功！端口: 3306
-    echo %INFO% 启动耗时约 %wait% 秒
-    echo %INFO% 日志文件: %MYSQL_HOME%\logs\error.log
+    echo %OK% MySQL started! Port: 3306
+    echo %INFO% Startup took ~%wait% seconds
+    echo %INFO% Log file: %MYSQL_HOME%\logs\error.log
     exit /b 0
 )
 if %wait% geq 30 (
-    echo %ERR% MySQL 启动超时（30秒），请检查日志:
+    echo %ERR% MySQL startup timeout (30s), check log:
     echo %INFO% %MYSQL_HOME%\logs\error.log
     pause
     exit /b 1
 )
-echo %INFO% 已等待 %wait% 秒...
+echo %INFO% Waiting... %wait% seconds
 goto wait_loop

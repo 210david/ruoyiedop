@@ -3,7 +3,7 @@ const LOCK_PATH_KEY = 'screen-lock-path'
 
 export const useLockStore = defineStore('lock', {
   state: () => ({
-    isLock: JSON.parse(localStorage.getItem(LOCK_KEY) || 'false'),
+    isLock: (() => { try { return JSON.parse(localStorage.getItem(LOCK_KEY) || 'false') } catch (e) { return false } })(),
     lockPath: localStorage.getItem(LOCK_PATH_KEY) || '/index'
   }),
   actions: {

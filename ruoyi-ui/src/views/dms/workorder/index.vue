@@ -36,7 +36,7 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
+    <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="工单号" prop="orderNo" :width="colWidth('orderNo', 160)" resizable />
       <el-table-column label="设备名称" prop="equipmentName" :width="colWidth('equipmentName', 160)" resizable show-overflow-tooltip />
@@ -550,7 +550,7 @@ import { listSparepart } from '@/api/dms/sparepart'
 import { useColumnResize } from '@/composables/useColumnResize'
 
 const { proxy } = getCurrentInstance()
-const { colWidth, onHeaderDragEnd } = useColumnResize('dms_workorder_index')
+const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('dms_workorder_index')
 const { dms_order_type, dms_order_status, dms_priority, wms_unit } = proxy.useDict('dms_order_type', 'dms_order_status', 'dms_priority', 'wms_unit')
 
 const list = ref([])

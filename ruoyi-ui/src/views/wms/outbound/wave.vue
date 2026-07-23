@@ -10,7 +10,7 @@
       <el-col :span="1.5"><el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['wms:wave:remove']">删除</el-button></el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
-    <el-table border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
+    <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="批次号" prop="waveNo" :width="colWidth('waveNo', 160)" resizable />
       <el-table-column label="批次名称" prop="waveName" show-overflow-tooltip />
@@ -85,7 +85,7 @@ import { listWarehouse } from '@/api/wms/warehouse'
 import { listOutbound } from '@/api/wms/outbound'
 import { useColumnResize } from '@/composables/useColumnResize'
 const { proxy } = getCurrentInstance()
-const { colWidth, onHeaderDragEnd } = useColumnResize('wms_outbound_wave')
+const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('wms_outbound_wave')
 const { wms_wave_status, wms_outbound_type, wms_outbound_status } = proxy.useDict('wms_wave_status', 'wms_outbound_type', 'wms_outbound_status')
 const list = ref([]); const open = ref(false); const loading = ref(true); const showSearch = ref(true); const ids = ref([]); const multiple = ref(true); const total = ref(0); const title = ref('')
 const detailOpen = ref(false); const detailData = ref({}); const waveOrders = ref([])

@@ -1,18 +1,17 @@
 @echo off
-chcp 65001 >nul
-title 企业数字化运营平台 - 部署状态检查
+title EDOP - Deployment Check
 
 cd /d "%~dp0"
 
 setlocal enabledelayedexpansion
 
 echo ============================================================
-echo   企业数字化运营平台 - 部署状态检查
+echo   EDOP - Deployment Status Check
 echo ============================================================
 echo.
 
-REM ===== 检查目录结构 =====
-echo [目录结构]
+REM ===== Check directory structure =====
+echo [Directories]
 set dirs_checked=0
 set dirs_ok=0
 
@@ -32,16 +31,16 @@ for %%d in (
     set /a dirs_checked+=1
     if exist %%d (
         set /a dirs_ok+=1
-        echo   [OK]    %%d
+        echo   [OK]    %%~d
     ) else (
-        echo   [MISS]  %%d
+        echo   [MISS]  %%~d
     )
 )
-echo     !dirs_ok!/!dirs_checked! 目录存在
+echo     !dirs_ok!/!dirs_checked! directories exist
 echo.
 
-REM ===== 检查核心文件 =====
-echo [核心文件]
+REM ===== Check core files =====
+echo [Core Files]
 set files_checked=0
 set files_ok=0
 
@@ -65,16 +64,16 @@ for %%f in (
     set /a files_checked+=1
     if exist %%f (
         set /a files_ok+=1
-        echo   [OK]    %%f
+        echo   [OK]    %%~f
     ) else (
-        echo   [MISS]  %%f
+        echo   [MISS]  %%~f
     )
 )
-echo     !files_ok!/!files_checked! 文件存在
+echo     !files_ok!/!files_checked! files exist
 echo.
 
-REM ===== 检查运行时文件 =====
-echo [运行时文件 (build.bat 编译后生成)]
+REM ===== Check runtime files =====
+echo [Runtime Files (after build.bat)]
 set runtime_checked=0
 set runtime_ok=0
 
@@ -87,77 +86,77 @@ for %%f in (
     set /a runtime_checked+=1
     if exist %%f (
         set /a runtime_ok+=1
-        echo   [OK]    %%f
+        echo   [OK]    %%~f
     ) else (
-        echo   [MISS]  %%f
+        echo   [MISS]  %%~f
     )
 )
 if !runtime_checked! gtr 0 (
-    echo     !runtime_ok!/!runtime_checked! 文件存在
+    echo     !runtime_ok!/!runtime_checked! files exist
 )
 echo.
 
-REM ===== 检查端口 =====
-echo [端口占用]
+REM ===== Check ports =====
+echo [Port Status]
 
 netstat -ano | findstr ":8005 " | findstr LISTENING >nul 2>&1
 if !errorlevel! equ 0 (
-    echo   [USED]  Nginx 端口 8005
+    echo   [USED]  Nginx  port 8005
 ) else (
-    echo   [FREE]  Nginx 端口 8005
+    echo   [FREE]  Nginx  port 8005
 )
 
 netstat -ano | findstr ":8004 " | findstr LISTENING >nul 2>&1
 if !errorlevel! equ 0 (
-    echo   [USED]  后端端口 8004
+    echo   [USED]  Backend port 8004
 ) else (
-    echo   [FREE]  后端端口 8004
+    echo   [FREE]  Backend port 8004
 )
 
 netstat -ano | findstr ":6379 " | findstr LISTENING >nul 2>&1
 if !errorlevel! equ 0 (
-    echo   [USED]  Redis 端口 6379
+    echo   [USED]  Redis  port 6379
 ) else (
-    echo   [FREE]  Redis 端口 6379
+    echo   [FREE]  Redis  port 6379
 )
 
 netstat -ano | findstr ":3306 " | findstr LISTENING >nul 2>&1
 if !errorlevel! equ 0 (
-    echo   [USED]  MySQL 端口 3306
+    echo   [USED]  MySQL  port 3306
 ) else (
-    echo   [FREE]  MySQL 端口 3306
+    echo   [FREE]  MySQL  port 3306
 )
 echo.
 
-REM ===== 汇总 =====
+REM ===== Summary =====
 echo ============================================================
-echo   汇总
+echo   Summary
 echo ============================================================
 
 if !dirs_ok! equ !dirs_checked! (
     if !files_ok! equ !files_checked! (
-        echo   ✅ 主程序已就绪，只等 build.bat 编译前后端即可部署
+        echo   [OK] Core ready, just need build.bat to compile
     ) else (
-        echo   ⚠️  部分核心文件缺失，请检查
+        echo   [WARN] Some core files missing, please check
     )
 ) else (
-    echo   ❌ 目录结构不完整
+    echo   [ERROR] Directory structure incomplete
 )
 
 echo.
-echo   📋 使用方法:
+echo   Usage:
 if !dirs_ok! equ !dirs_checked! (
-    echo       1. 运行 D:\EDOP\scripts\init-mysql.bat 初始化MySQL
-    echo       2. 运行 D:\EDOP\scripts\start-mysql.bat 启动MySQL
-    echo       3. 运行 D:\EDOP\scripts\set-mysql-password.bat 修改root密码
-    echo       4. 运行 D:\EDOP\scripts\import-sql.bat 导入数据库
-    echo       5. 修改 D:\EDOP\app\application-druid.yml 数据库密码
-    echo       6. 运行 D:\EDOP\scripts\build.bat 编译前后端
-    echo       7. 运行 D:\EDOP\scripts\start-all.bat 启动全部服务
+    echo       1. Run D:\EDOP\scripts\init-mysql.bat to init MySQL
+    echo       2. Run D:\EDOP\scripts\start-mysql.bat to start MySQL
+    echo       3. Run D:\EDOP\scripts\set-mysql-password.bat to change root password
+    echo       4. Run D:\EDOP\scripts\import-sql.bat to import database
+    echo       5. Edit D:\EDOP\app\application-druid.yml for DB password
+    echo       6. Run D:\EDOP\scripts\build.bat to build frontend/backend
+    echo       7. Run D:\EDOP\scripts\start-all.bat to start all services
 ) else (
-    echo       1. 运行 D:\EDOP\scripts\init-dirs.bat
-    echo       2. 参考 DOWNLOAD.md 下载并解压 JDK/MySQL/Redis/Nginx
-    echo       3. 复制配置文件到对应目录
+    echo       1. Run D:\EDOP\scripts\init-dirs.bat
+    echo       2. Download and extract JDK/MySQL/Redis/Nginx
+    echo       3. Copy config files to corresponding directories
 )
 echo.
 echo ============================================================

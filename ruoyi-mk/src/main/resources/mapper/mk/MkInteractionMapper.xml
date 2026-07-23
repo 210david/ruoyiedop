@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mk.mapper.MkInteractionMapper">
+
+    <resultMap type="MkInteraction" id="MkInteractionResult">
+        <result property="recordId"        column="record_id"/>
+        <result property="customerId"      column="customer_id"/>
+        <result property="customerName"    column="customer_name"/>
+        <result property="contactId"       column="contact_id"/>
+        <result property="contactName"     column="contact_name"/>
+        <result property="opportunityId"   column="opportunity_id"/>
+        <result property="leadId"          column="lead_id"/>
+        <result property="interactType"    column="interact_type"/>
+        <result property="interactTime"    column="interact_time"/>
+        <result property="content"         column="content"/>
+        <result property="userId"          column="user_id"/>
+        <result property="userName"        column="user_name"/>
+        <result property="nextTime"        column="next_time"/>
+        <result property="nextContent"     column="next_content"/>
+        <result property="attachment"      column="attachment"/>
+        <result property="delFlag"         column="del_flag"/>
+        <result property="createBy"        column="create_by"/>
+        <result property="createTime"      column="create_time"/>
+        <result property="updateBy"        column="update_by"/>
+        <result property="updateTime"      column="update_time"/>
+    </resultMap>
+
+    <sql id="selectInteractionVo">
+        SELECT i.record_id, i.customer_id, i.contact_id, i.opportunity_id, i.lead_id, i.interact_type,
+               i.interact_time, i.content, i.user_id, i.next_time, i.next_content, i.attachment,
+               i.del_flag, i.create_by, i.create_time, i.update_by, i.update_time,
+               c.customer_name, ct.name as contact_name, u.nick_name as user_name
+        FROM mk_interaction i
+        LEFT JOIN mk_customer c ON i.customer_id = c.customer_id
+        LEFT JOIN mk_contact ct ON i.contact_id = ct.contact_id
+        LEFT JOIN sys_user u ON i.user_id = u.user_id
+    </sql>
+
+    <select id="selectInteractionList" parameterType="MkInteraction" resultMap="MkInteractionResult">
+        <include refid="selectInteractionVo"/>
+        <where>
+            i.del_flag = '0'
+            <if test="customerId != null"> AND i.customer_id = #{customerId}</if>
+            <if test="leadId != null"> AND i.lead_id = #{leadId}</if>
+            <if test="opportunityId != null"> AND i.opportunity_id = #{opportunityId}</if>
+            <if test="interactType != null and interactType != ''"> AND i.interact_type = #{interactType}</if>
+            <if test="userId != null"> AND i.user_id = #{userId}</if>
+            <if test="customerName != null and customerName != ''"> AND c.customer_name LIKE CONCAT('%', #{customerName}, '%')</if>
+        </where>
+        ORDER BY i.interact_time DESC
+    </select>
+
+    <select id="selectInteractionById" parameterType="Long" resultMap="MkInteractionResult">
+        <include refid="selectInteractionVo"/> WHERE i.record_id = #{recordId}
+    </select>
+
+    <insert id="insertInteraction" parameterType="MkInteraction" useGeneratedKeys="true" keyProperty="recordId">
+        INSERT INTO mk_interaction (customer_id, contact_id, opportunity_id, lead_id, interact_type,
+            interact_time, content, user_id, next_time, next_content, attachment, create_by, create_time)
+        VALUES (#{customerId}, #{contactId}, #{opportunityId}, #{leadId}, #{interactType},
+            #{interactTime}, #{content}, #{userId}, #{nextTime}, #{nextContent}, #{attachment}, #{createBy}, sysdate())
+    </insert>
+
+    <update id="updateInteraction" parameterType="MkInteraction">
+        UPDATE mk_interaction
+        <set>
+            <if test="customerId != null">customer_id = #{customerId},</if>
+            <if test="contactId != null">contact_id = #{contactId},</if>
+            <if test="opportunityId != null">opportunity_id = #{opportunityId},</if>
+            <if test="leadId != null">lead_id = #{leadId},</if>
+            <if test="interactType != null and interactType != ''">interact_type = #{interactType},</if>
+            <if test="interactTime != null">interact_time = #{interactTime},</if>
+            <if test="content != null">content = #{content},</if>
+            <if test="userId != null">user_id = #{userId},</if>
+            <if test="nextTime != null">next_time = #{nextTime},</if>
+            <if test="nextContent != null">next_content = #{nextContent},</if>
+            <if test="attachment != null">attachment = #{attachment},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            update_time = sysdate()
+        </set>
+        WHERE record_id = #{recordId}
+    </update>
+
+    <delete id="deleteInteractionByIds" parameterType="Long">
+        UPDATE mk_interaction SET del_flag = '2' WHERE record_id IN
+        <foreach item="recordId" collection="array" open="(" separator="," close=")">#{recordId}</foreach>
+    </delete>
+
+</mapper>

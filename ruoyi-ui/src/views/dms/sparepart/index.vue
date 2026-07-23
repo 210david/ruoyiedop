@@ -26,7 +26,7 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
+    <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="备件编号" prop="partCode" :width="colWidth('partCode', 140)" resizable />
       <el-table-column label="备件名称" prop="partName" show-overflow-tooltip />
@@ -64,11 +64,7 @@
         <el-row>
           <el-col :span="12">
             <el-form-item label="备件编号" prop="partCode">
-              <el-input v-model="form.partCode" placeholder="自动生成" disabled>
-                <template #append>
-                  <el-button @click="generateCode" :loading="codeLoading" :disabled="formDisabled">生成</el-button>
-                </template>
-              </el-input>
+              <el-input v-model="form.partCode" placeholder="保存后自动生成" disabled />
             </el-form-item>
           </el-col>
           <el-col :span="12"><el-form-item label="备件名称" prop="partName"><el-input v-model="form.partName" placeholder="请输入" /></el-form-item></el-col>
@@ -117,19 +113,18 @@
 </template>
 
 <script setup name="DmsSparePart">
-import { listSparepart, getSparepart, addSparepart, updateSparepart, delSparepart, genPartCode } from '@/api/dms/sparepart'
+import { listSparepart, getSparepart, addSparepart, updateSparepart, delSparepart } from '@/api/dms/sparepart'
 import { listSupplier } from '@/api/wms/supplier'
 import { useColumnResize } from '@/composables/useColumnResize'
 
 const { proxy } = getCurrentInstance()
-const { colWidth, onHeaderDragEnd } = useColumnResize('dms_sparepart_index')
+const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('dms_sparepart_index')
 const { wms_unit, dms_part_type } = proxy.useDict('wms_unit', 'dms_part_type')
 
 const list = ref([])
 const supplierOptions = ref([])
 const open = ref(false)
 const loading = ref(true)
-const codeLoading = ref(false)
 const showSearch = ref(true)
 const ids = ref([])
 const single = ref(true)
@@ -142,7 +137,7 @@ const data = reactive({
   form: {},
   queryParams: { pageNum: 1, pageSize: 10, partCode: undefined, partName: undefined, partType: undefined },
   rules: {
-    partCode: [{ required: true, message: '备件编号不能为空，请点击生成', trigger: 'blur' }],
+    partCode: [{ required: false }],
     partName: [{ required: true, message: '备件名称不能为空', trigger: 'blur' }],
     partType: [{ required: true, message: '备件类别不能为空', trigger: 'change' }],
     unit: [{ required: true, message: '单位不能为空', trigger: 'change' }],
@@ -187,7 +182,6 @@ function handleAdd() {
   formDisabled.value = false
   open.value = true
   title.value = '添加备件'
-  generateCode()
 }
 function handleUpdate(row) {
   reset()
@@ -198,15 +192,6 @@ function handleView(row) {
   reset()
   formDisabled.value = true
   getSparepart(row.partId).then(res => { form.value = res.data; open.value = true; title.value = '查看备件' })
-}
-/** 自动生成备件编号 */
-function generateCode() {
-  codeLoading.value = true
-  genPartCode().then(res => {
-    form.value.partCode = res.data
-  }).finally(() => {
-    codeLoading.value = false
-  })
 }
 function submitForm() {
   proxy.$refs['sparepartRef'].validate(valid => {

@@ -26,7 +26,7 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
+    <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="设备编号" prop="equipmentCode" :width="colWidth('equipmentCode', 130)" resizable />
       <el-table-column label="设备名称" prop="equipmentName" show-overflow-tooltip />
@@ -56,7 +56,7 @@
         <!-- 分组一：基本信息 -->
         <el-divider content-position="center">基本信息</el-divider>
         <el-row>
-          <el-col :span="12"><el-form-item label="设备编号" prop="equipmentCode"><el-input v-model="form.equipmentCode" placeholder="请输入" /></el-form-item></el-col>
+          <el-col :span="12"><el-form-item label="设备编号" prop="equipmentCode"><el-input v-model="form.equipmentCode" placeholder="保存后自动生成" disabled /></el-form-item></el-col>
           <el-col :span="12"><el-form-item label="设备名称" prop="equipmentName"><el-input v-model="form.equipmentName" placeholder="请输入" /></el-form-item></el-col>
           <el-col :span="12"><el-form-item label="设备分类" prop="categoryId"><el-tree-select v-model="form.categoryId" :data="categoryOptions" :props="{ value: 'categoryId', label: 'categoryName', children: 'children' }" value-key="categoryId" placeholder="请选择" check-strictly style="width: 100%" /></el-form-item></el-col>
           <el-col :span="12"><el-form-item label="设备状态" prop="equipmentStatus">
@@ -177,7 +177,7 @@ import DmsEquipmentViewDrawer from './view.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 
 const { proxy } = getCurrentInstance()
-const { colWidth, onHeaderDragEnd } = useColumnResize('dms_equipment_index')
+const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('dms_equipment_index')
 const { dms_equipment_status, dms_order_type, dms_order_status } = proxy.useDict('dms_equipment_status', 'dms_order_type', 'dms_order_status')
 
 const list = ref([])
@@ -201,7 +201,6 @@ const data = reactive({
   form: {},
   queryParams: { pageNum: 1, pageSize: 10, equipmentCode: undefined, equipmentName: undefined, equipmentStatus: undefined },
   rules: {
-    equipmentCode: [{ required: true, message: '设备编号不能为空', trigger: 'blur' }],
     equipmentName: [{ required: true, message: '设备名称不能为空', trigger: 'blur' }]
   }
 })

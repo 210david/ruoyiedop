@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mk.mapper.MkNumberRuleMapper">
+
+    <resultMap type="MkNumberRule" id="MkNumberRuleResult">
+        <result property="ruleId"          column="rule_id"/>
+        <result property="ruleCode"        column="rule_code"/>
+        <result property="module"          column="module"/>
+        <result property="ruleName"        column="rule_name"/>
+        <result property="prefix"          column="prefix"/>
+        <result property="dateFormat"      column="date_format"/>
+        <result property="resetType"       column="reset_type"/>
+        <result property="seqLength"       column="seq_length"/>
+        <result property="seqStart"        column="seq_start"/>
+        <result property="step"            column="step"/>
+        <result property="currentSeq"      column="current_seq"/>
+        <result property="currentDateStr"  column="current_date_str"/>
+        <result property="connector"       column="connector"/>
+        <result property="prefixField"          column="prefix_field"/>
+        <result property="prefixFieldDictType"  column="prefix_field_dict_type"/>
+        <result property="prefixFieldEnabled"   column="prefix_field_enabled"/>
+        <result property="status"          column="status"/>
+        <result property="createBy"        column="create_by"/>
+        <result property="createTime"      column="create_time"/>
+        <result property="updateBy"        column="update_by"/>
+        <result property="updateTime"      column="update_time"/>
+        <result property="remark"          column="remark"/>
+    </resultMap>
+
+    <sql id="selectRuleVo">
+        SELECT rule_id, rule_code, module, rule_name, prefix, date_format, reset_type, seq_length,
+               seq_start, step, current_seq, current_date_str, connector,
+               prefix_field, prefix_field_dict_type, prefix_field_enabled,
+               status, create_by, create_time, update_by, update_time, remark
+        FROM mk_number_rule
+    </sql>
+
+    <select id="selectRuleList" parameterType="MkNumberRule" resultMap="MkNumberRuleResult">
+        <include refid="selectRuleVo"/>
+        <where>
+            <if test="module != null and module != ''"> AND module = #{module}</if>
+            <if test="ruleCode != null and ruleCode != ''"> AND rule_code LIKE CONCAT('%', #{ruleCode}, '%')</if>
+            <if test="ruleName != null and ruleName != ''"> AND rule_name LIKE CONCAT('%', #{ruleName}, '%')</if>
+            <if test="status != null and status != ''"> AND status = #{status}</if>
+        </where>
+        ORDER BY rule_id
+    </select>
+
+    <select id="selectRuleById" parameterType="Long" resultMap="MkNumberRuleResult">
+        <include refid="selectRuleVo"/> WHERE rule_id = #{ruleId}
+    </select>
+
+    <select id="selectRuleByCode" parameterType="String" resultMap="MkNumberRuleResult">
+        <include refid="selectRuleVo"/> WHERE rule_code = #{ruleCode}
+    </select>
+
+    <select id="selectRuleForUpdate" parameterType="String" resultMap="MkNumberRuleResult">
+        <include refid="selectRuleVo"/> WHERE rule_code = #{ruleCode} FOR UPDATE
+    </select>
+
+    <select id="checkRuleCodeUnique" parameterType="String" resultMap="MkNumberRuleResult">
+        <include refid="selectRuleVo"/> WHERE rule_code = #{ruleCode} LIMIT 1
+    </select>
+
+    <insert id="insertRule" parameterType="MkNumberRule" useGeneratedKeys="true" keyProperty="ruleId">
+        INSERT INTO mk_number_rule (
+            rule_code, module, rule_name, prefix, date_format, reset_type, seq_length,
+            seq_start, step, current_seq, current_date_str, connector,
+            prefix_field, prefix_field_dict_type, prefix_field_enabled,
+            status, create_by, create_time, remark
+        ) VALUES (
+            #{ruleCode}, #{module}, #{ruleName}, #{prefix}, #{dateFormat}, #{resetType}, #{seqLength},
+            #{seqStart}, #{step}, #{currentSeq}, #{currentDateStr}, #{connector},
+            #{prefixField}, #{prefixFieldDictType}, #{prefixFieldEnabled},
+            #{status}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateRule" parameterType="MkNumberRule">
+        UPDATE mk_number_rule
+        <set>
+            <if test="ruleCode != null and ruleCode != ''">rule_code = #{ruleCode},</if>
+            <if test="ruleName != null and ruleName != ''">rule_name = #{ruleName},</if>
+            <if test="prefix != null">prefix = #{prefix},</if>
+            <if test="dateFormat != null">date_format = #{dateFormat},</if>
+            <if test="resetType != null">reset_type = #{resetType},</if>
+            <if test="seqLength != null">seq_length = #{seqLength},</if>
+            <if test="seqStart != null">seq_start = #{seqStart},</if>
+            <if test="step != null">step = #{step},</if>
+            <if test="connector != null">connector = #{connector},</if>
+            <if test="prefixField != null">prefix_field = #{prefixField},</if>
+            <if test="prefixFieldDictType != null">prefix_field_dict_type = #{prefixFieldDictType},</if>
+            <if test="prefixFieldEnabled != null">prefix_field_enabled = #{prefixFieldEnabled},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE rule_id = #{ruleId}
+    </update>
+
+    <update id="updateCurrentSeq" parameterType="MkNumberRule">
+        UPDATE mk_number_rule
+        SET current_seq = #{currentSeq},
+            current_date_str = #{currentDateStr},
+            update_time = sysdate()
+        WHERE rule_id = #{ruleId}
+    </update>
+
+    <delete id="deleteRuleByIds" parameterType="Long">
+        DELETE FROM mk_number_rule WHERE rule_id IN
+        <foreach item="ruleId" collection="array" open="(" separator="," close=")">#{ruleId}</foreach>
+    </delete>
+
+</mapper>

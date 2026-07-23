@@ -8,12 +8,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.SecurityUtils;
+import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.wms.domain.WmsInventory;
 import com.ruoyi.wms.domain.WmsMoveOrder;
 import com.ruoyi.wms.mapper.WmsInventoryMapper;
 import com.ruoyi.wms.mapper.WmsMoveOrderMapper;
 import com.ruoyi.wms.service.IWmsMoveOrderService;
 import com.ruoyi.wms.service.IWmsInventoryService;
+import com.ruoyi.mk.service.IMkNumberRuleService;
 
 @Service
 public class WmsMoveOrderServiceImpl implements IWmsMoveOrderService
@@ -26,6 +28,9 @@ public class WmsMoveOrderServiceImpl implements IWmsMoveOrderService
 
     @Autowired
     private WmsInventoryMapper wmsInventoryMapper;
+
+    @Autowired
+    private IMkNumberRuleService mkNumberRuleService;
 
     @Override
     public List<WmsMoveOrder> selectMoveOrderList(WmsMoveOrder move)
@@ -43,9 +48,9 @@ public class WmsMoveOrderServiceImpl implements IWmsMoveOrderService
     @Transactional(rollbackFor = Exception.class)
     public int insertMoveOrder(WmsMoveOrder move)
     {
-        if (move.getMoveNo() == null || move.getMoveNo().isEmpty())
+        if (StringUtils.isEmpty(move.getMoveNo()))
         {
-            move.setMoveNo("MV" + System.currentTimeMillis());
+            move.setMoveNo(mkNumberRuleService.generateNumber("wms_move"));
         }
         // 校验移库数量
         if (move.getMoveQty() == null || move.getMoveQty().compareTo(BigDecimal.ZERO) <= 0)

@@ -15,7 +15,7 @@ public class DmsDataRecord extends BaseEntity
     private Long equipmentId;
     @Excel(name = "设备编码") private String equipmentCode;
     @Excel(name = "设备名称") private String equipmentName;
-    @Excel(name = "运行状态", readConverterExp = "0=运行,1=停机,2=故障") private String runStatus;
+    @Excel(name = "运行状态", dictType = "dms_run_status") private String runStatus;
     @Excel(name = "运行小时") private BigDecimal runHours;
     @Excel(name = "加工件数") private BigDecimal productCount;
     private BigDecimal param1Value;

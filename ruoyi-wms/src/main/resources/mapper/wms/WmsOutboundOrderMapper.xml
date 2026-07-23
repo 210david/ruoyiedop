@@ -35,6 +35,7 @@
         <result property="actualQty"     column="actual_qty"/>
         <result property="locationId"    column="location_id"/>
         <result property="locationCode"  column="location_code"/>
+        <result property="locationName"  column="location_name"/>
         <result property="pickQty"       column="pick_qty"/>
         <result property="delFlag"       column="del_flag"/>
         <result property="createBy"      column="create_by"/>
@@ -101,7 +102,12 @@
 
     <select id="selectOutboundDetailByOrderId" parameterType="Long" resultMap="WmsOutboundOrderDetailResult">
         SELECT d.detail_id, d.order_id, d.material_id, m.material_code, m.material_name, m.spec_model, m.unit,
-               d.batch_no, d.plan_qty, d.actual_qty, d.location_id, l.warehouse_code as location_code, d.pick_qty,
+               d.batch_no, d.plan_qty, d.actual_qty, d.location_id, l.warehouse_code as location_code,
+               CONCAT_WS(' / ',
+                 (SELECT GROUP_CONCAT(p.warehouse_name SEPARATOR ' / ') FROM wms_warehouse p WHERE FIND_IN_SET(p.warehouse_id, REPLACE(l.ancestors, ' ', '')) AND p.warehouse_id != 0 ORDER BY FIND_IN_SET(p.warehouse_id, REPLACE(l.ancestors, ' ', ''))),
+                 l.warehouse_name
+               ) as location_name,
+               d.pick_qty,
                d.del_flag, d.create_by, d.create_time, d.update_by, d.update_time, d.remark
         FROM wms_outbound_order_detail d
         LEFT JOIN wms_material m ON d.material_id = m.material_id

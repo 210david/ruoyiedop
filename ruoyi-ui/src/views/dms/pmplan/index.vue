@@ -32,7 +32,7 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
+    <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="计划名称" prop="planName" min-width="180" show-overflow-tooltip />
       <el-table-column label="关联设备" prop="equipmentName" :width="colWidth('equipmentName', 160)" resizable show-overflow-tooltip />
@@ -223,7 +223,7 @@ import { listSparepart } from '@/api/dms/sparepart'
 import { useColumnResize } from '@/composables/useColumnResize'
 
 const { proxy } = getCurrentInstance()
-const { colWidth, onHeaderDragEnd } = useColumnResize('dms_pmplan_index')
+const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('dms_pmplan_index')
 const { dms_pm_trigger_type, wms_unit } = proxy.useDict('dms_pm_trigger_type', 'wms_unit')
 
 const list = ref([])

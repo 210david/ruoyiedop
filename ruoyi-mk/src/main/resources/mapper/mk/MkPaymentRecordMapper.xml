@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mk.mapper.MkPaymentRecordMapper">
+
+    <resultMap type="com.ruoyi.mk.domain.MkPaymentRecord" id="MkPaymentRecordResult">
+        <result property="recordId"          column="record_id"/>
+        <result property="planId"            column="plan_id"/>
+        <result property="contractId"        column="contract_id"/>
+        <result property="contractNo"        column="contract_no"/>
+        <result property="customerId"        column="customer_id"/>
+        <result property="customerName"      column="customer_name"/>
+        <result property="thisAmount"       column="this_amount"/>
+        <result property="paymentMethod"     column="payment_method"/>
+        <result property="bankAccount"      column="bank_account"/>
+        <result property="receiptAttachment" column="receipt_attachment"/>
+        <result property="paymentDate"      column="payment_date"/>
+        <result property="confirmStatus"     column="confirm_status"/>
+        <result property="confirmBy"        column="confirm_by"/>
+        <result property="confirmTime"      column="confirm_time"/>
+        <result property="createBy"         column="create_by"/>
+        <result property="createTime"       column="create_time"/>
+        <result property="updateBy"         column="update_by"/>
+        <result property="updateTime"       column="update_time"/>
+        <result property="remark"           column="remark"/>
+        <result property="planAmount"       column="plan_amount"/>
+        <result property="periodNo"         column="period_no"/>
+    </resultMap>
+
+    <sql id="selectPaymentRecordVo">
+        SELECT r.record_id, r.plan_id, r.contract_id, r.customer_id, r.this_amount, r.payment_method,
+               r.bank_account, r.receipt_attachment, r.payment_date, r.confirm_status, r.confirm_by,
+               r.confirm_time, r.create_by, r.create_time, r.update_by, r.update_time, r.remark,
+               c.customer_name, ct.contract_no, p.plan_amount, p.period_no
+        FROM mk_payment_record r
+        LEFT JOIN mk_customer c ON r.customer_id = c.customer_id
+        LEFT JOIN mk_contract ct ON r.contract_id = ct.contract_id
+        LEFT JOIN mk_payment_plan p ON r.plan_id = p.plan_id
+    </sql>
+
+    <select id="selectPaymentRecordList" parameterType="com.ruoyi.mk.domain.MkPaymentRecord" resultMap="MkPaymentRecordResult">
+        <include refid="selectPaymentRecordVo"/>
+        <where>
+            <if test="planId != null"> AND r.plan_id = #{planId}</if>
+            <if test="contractId != null"> AND r.contract_id = #{contractId}</if>
+            <if test="customerId != null"> AND r.customer_id = #{customerId}</if>
+            <if test="confirmStatus != null and confirmStatus != ''"> AND r.confirm_status = #{confirmStatus}</if>
+            <if test="customerName != null and customerName != ''"> AND c.customer_name LIKE CONCAT('%', #{customerName}, '%')</if>
+            <if test="contractNo != null and contractNo != ''"> AND ct.contract_no LIKE CONCAT('%', #{contractNo}, '%')</if>
+        </where>
+        ORDER BY r.record_id DESC
+    </select>
+
+    <select id="selectPaymentRecordByPlanId" parameterType="Long" resultMap="MkPaymentRecordResult">
+        <include refid="selectPaymentRecordVo"/> WHERE r.plan_id = #{planId} ORDER BY r.payment_date ASC
+    </select>
+
+    <select id="selectPaymentRecordById" parameterType="Long" resultMap="MkPaymentRecordResult">
+        <include refid="selectPaymentRecordVo"/> WHERE r.record_id = #{recordId}
+    </select>
+
+    <insert id="insertPaymentRecord" parameterType="com.ruoyi.mk.domain.MkPaymentRecord" useGeneratedKeys="true" keyProperty="recordId">
+        INSERT INTO mk_payment_record (plan_id, contract_id, customer_id, this_amount, payment_method,
+            bank_account, receipt_attachment, payment_date, confirm_status, confirm_by, confirm_time,
+            create_by, create_time, remark)
+        VALUES (#{planId}, #{contractId}, #{customerId}, #{thisAmount}, #{paymentMethod},
+            #{bankAccount}, #{receiptAttachment}, #{paymentDate}, #{confirmStatus}, #{confirmBy}, #{confirmTime},
+            #{createBy}, sysdate(), #{remark})
+    </insert>
+
+    <update id="updatePaymentRecord" parameterType="com.ruoyi.mk.domain.MkPaymentRecord">
+        UPDATE mk_payment_record
+        <set>
+            <if test="thisAmount != null">this_amount = #{thisAmount},</if>
+            <if test="paymentMethod != null">payment_method = #{paymentMethod},</if>
+            <if test="bankAccount != null">bank_account = #{bankAccount},</if>
+            <if test="receiptAttachment != null">receipt_attachment = #{receiptAttachment},</if>
+            <if test="paymentDate != null">payment_date = #{paymentDate},</if>
+            <if test="confirmStatus != null">confirm_status = #{confirmStatus},</if>
+            <if test="confirmBy != null">confirm_by = #{confirmBy},</if>
+            <if test="confirmTime != null">confirm_time = #{confirmTime},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE record_id = #{recordId}
+    </update>
+
+    <delete id="deletePaymentRecordByIds" parameterType="Long">
+        DELETE FROM mk_payment_record WHERE record_id IN
+        <foreach item="recordId" collection="array" open="(" separator="," close=")">#{recordId}</foreach>
+    </delete>
+
+    <delete id="deletePaymentRecordByPlanId" parameterType="Long">
+        DELETE FROM mk_payment_record WHERE plan_id = #{planId}
+    </delete>
+
+    <select id="selectConfirmedAmountByPlanId" parameterType="Long" resultType="java.math.BigDecimal">
+        SELECT IFNULL(SUM(this_amount), 0) FROM mk_payment_record WHERE plan_id = #{planId} AND confirm_status = '1'
+    </select>
+
+</mapper>

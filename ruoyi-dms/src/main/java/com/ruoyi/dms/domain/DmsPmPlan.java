@@ -33,7 +33,7 @@ public class DmsPmPlan extends BaseEntity
     private Long categoryId;
 
     /** 触发类型（字典 dms_pm_trigger_type） */
-    @Excel(name = "触发类型", readConverterExp = "0=周期(时间),1=周期(运行时长),2=周期(加工量)")
+    @Excel(name = "触发类型", dictType = "dms_pm_trigger_type")
     private String triggerType;
 
     /** 周期值 */
@@ -79,7 +79,7 @@ public class DmsPmPlan extends BaseEntity
     private Date nextExecuteTime;
 
     /** 状态（0正常 1停用） */
-    @Excel(name = "状态", readConverterExp = "0=正常,1=停用")
+    @Excel(name = "状态", dictType = "sys_normal_disable")
     private String status;
 
     /** 删除标志 */

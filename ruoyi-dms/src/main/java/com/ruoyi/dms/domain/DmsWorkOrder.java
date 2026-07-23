@@ -34,7 +34,7 @@ public class DmsWorkOrder extends BaseEntity
     private String equipmentName;
 
     /** 工单类型（字典 dms_order_type） */
-    @Excel(name = "工单类型", readConverterExp = "0=故障报修,1=PM维护,2=点检整改,3=临时任务,4=改造安装")
+    @Excel(name = "工单类型", dictType = "dms_order_type")
     private String orderType;
 
     /** 故障现象/任务描述 */
@@ -54,11 +54,11 @@ public class DmsWorkOrder extends BaseEntity
     private Date reportTime;
 
     /** 优先级（字典 dms_priority） */
-    @Excel(name = "优先级", readConverterExp = "0=紧急,1=高,2=中,3=低")
+    @Excel(name = "优先级", dictType = "dms_priority")
     private String priority;
 
     /** 工单状态（字典 dms_order_status） */
-    @Excel(name = "工单状态", readConverterExp = "0=新建,1=已派工,2=已接单,3=处理中,4=已完成,5=已验收,6=已撤销,7=驳回重做")
+    @Excel(name = "工单状态", dictType = "dms_order_status")
     private String orderStatus;
 
     /** 维修人ID */

@@ -14,6 +14,7 @@ import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import com.ruoyi.common.utils.SecurityUtils;
+import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.dms.domain.DmsEquipment;
 import com.ruoyi.dms.domain.DmsInspectionRoute;
 import com.ruoyi.dms.domain.DmsInspectionTask;
@@ -23,6 +24,7 @@ import com.ruoyi.dms.mapper.DmsInspectionRouteMapper;
 import com.ruoyi.dms.mapper.DmsInspectionTaskMapper;
 import com.ruoyi.dms.service.IDmsInspectionTaskService;
 import com.ruoyi.dms.service.IDmsWorkOrderService;
+import com.ruoyi.mk.service.IMkNumberRuleService;
 
 @Service
 public class DmsInspectionTaskServiceImpl implements IDmsInspectionTaskService
@@ -41,6 +43,9 @@ public class DmsInspectionTaskServiceImpl implements IDmsInspectionTaskService
     @Autowired
     private IDmsWorkOrderService dmsWorkOrderService;
 
+    @Autowired
+    private IMkNumberRuleService mkNumberRuleService;
+
     @Override
     public List<DmsInspectionTask> selectTaskList(DmsInspectionTask task) { return dmsInspectionTaskMapper.selectTaskList(task); }
     @Override
@@ -50,9 +55,9 @@ public class DmsInspectionTaskServiceImpl implements IDmsInspectionTaskService
     public int insertTask(DmsInspectionTask task)
     {
         task.setDelFlag("0");
-        if (task.getTaskNo() == null || task.getTaskNo().isEmpty())
+        if (StringUtils.isEmpty(task.getTaskNo()))
         {
-            task.setTaskNo("INS" + new SimpleDateFormat("yyyyMMddHHmmss").format(new Date()));
+            task.setTaskNo(mkNumberRuleService.generateNumber("dms_inspection_task"));
         }
         if (task.getTaskStatus() == null) task.setTaskStatus("0");
         return dmsInspectionTaskMapper.insertTask(task);
@@ -326,7 +331,7 @@ public class DmsInspectionTaskServiceImpl implements IDmsInspectionTaskService
                 task.setRouteName(route.getRouteName());
                 task.setPlanDate(new Date());
                 task.setTaskStatus("0");
-                task.setTaskNo("INS" + new SimpleDateFormat("yyyyMMddHHmmss").format(new Date()));
+                task.setTaskNo(mkNumberRuleService.generateNumber("dms_inspection_task"));
                 task.setCreateBy("system");
                 dmsInspectionTaskMapper.insertTask(task);
                 count++;

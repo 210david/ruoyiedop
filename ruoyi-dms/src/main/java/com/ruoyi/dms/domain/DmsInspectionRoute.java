@@ -13,11 +13,11 @@ public class DmsInspectionRoute extends BaseEntity
     @Excel(name = "路线编码") private String routeCode;
     private Long deptId;
     @Excel(name = "部门") private String deptName;
-    @Excel(name = "周期类型", readConverterExp = "0=日检,1=周检,2=月检") private String cycleType;
+    @Excel(name = "周期类型", dictType = "dms_inspection_cycle") private String cycleType;
     @Excel(name = "周期值") private Integer cycleValue;
     private String equipmentIds;
     private String inspectionItems;
-    @Excel(name = "状态", readConverterExp = "0=正常,1=停用") private String status;
+    @Excel(name = "状态", dictType = "sys_normal_disable") private String status;
     private String delFlag;
 
     public Long getRouteId() { return routeId; }

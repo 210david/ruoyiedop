@@ -11,7 +11,7 @@
       <el-col :span="1.5"><el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['wms:stocktake:remove']">删除</el-button></el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
-    <el-table border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
+    <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="盘点单号" prop="takeNo" :width="colWidth('takeNo', 160)" resizable />
       <el-table-column label="仓库" prop="warehouseName" :width="colWidth('warehouseName', 120)" resizable />
@@ -95,7 +95,7 @@ import { listStockTake, getStockTake, addStockTake, delStockTake, startStockTake
 import { listWarehouse, listArea } from '@/api/wms/warehouse'
 import { useColumnResize } from '@/composables/useColumnResize'
 const { proxy } = getCurrentInstance()
-const { colWidth, onHeaderDragEnd } = useColumnResize('wms_stocktake_index')
+const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('wms_stocktake_index')
 const { wms_take_type, wms_take_status } = proxy.useDict('wms_take_type', 'wms_take_status')
 const list = ref([]); const open = ref(false); const loading = ref(true); const showSearch = ref(true); const ids = ref([]); const multiple = ref(true); const total = ref(0); const title = ref(''); const detailOpen = ref(false); const detailData = ref({}); const submitOpen = ref(false)
 const inputForm = ref({})

@@ -13,5 +13,4 @@ public interface IWmsOutboundOrderService
     public String generateOrderNo();
     public int submitOutboundOrder(Long orderId);
     public int doPick(Long orderId, Long detailId, java.math.BigDecimal pickQty);
-    public int doCheck(Long orderId, Long detailId, java.math.BigDecimal actualQty);
 }

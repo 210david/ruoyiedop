@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mk.mapper.MkInvoiceMapper">
+
+    <resultMap type="com.ruoyi.mk.domain.MkInvoice" id="MkInvoiceResult">
+        <result property="invoiceId"          column="invoice_id"/>
+        <result property="invoiceNo"          column="invoice_no"/>
+        <result property="orderId"            column="order_id"/>
+        <result property="orderNo"            column="order_no"/>
+        <result property="contractId"         column="contract_id"/>
+        <result property="contractNo"         column="contract_no"/>
+        <result property="customerId"         column="customer_id"/>
+        <result property="customerName"       column="customer_name"/>
+        <result property="invoiceType"        column="invoice_type"/>
+        <result property="invoiceStatus"      column="invoice_status"/>
+        <result property="invoiceAmount"      column="invoice_amount"/>
+        <result property="taxRate"            column="tax_rate"/>
+        <result property="taxAmount"          column="tax_amount"/>
+        <result property="invoiceTitle"       column="invoice_title"/>
+        <result property="taxNo"              column="tax_no"/>
+        <result property="invoiceDate"        column="invoice_date"/>
+        <result property="invoiceAttachment"  column="invoice_attachment"/>
+        <result property="delFlag"            column="del_flag"/>
+        <result property="createBy"           column="create_by"/>
+        <result property="createTime"         column="create_time"/>
+        <result property="updateBy"           column="update_by"/>
+        <result property="updateTime"         column="update_time"/>
+        <result property="remark"             column="remark"/>
+    </resultMap>
+
+    <sql id="selectInvoiceVo">
+        SELECT i.invoice_id, i.invoice_no, i.order_id, i.contract_id, i.customer_id, i.invoice_type,
+               i.invoice_status, i.invoice_amount, i.tax_rate, i.tax_amount, i.invoice_title, i.tax_no,
+               i.invoice_date, i.invoice_attachment, i.del_flag, i.create_by, i.create_time,
+               i.update_by, i.update_time, i.remark,
+               c.customer_name, o.order_no, ct.contract_no
+        FROM mk_invoice i
+        LEFT JOIN mk_customer c ON i.customer_id = c.customer_id
+        LEFT JOIN mk_order o ON i.order_id = o.order_id
+        LEFT JOIN mk_contract ct ON i.contract_id = ct.contract_id
+    </sql>
+
+    <select id="selectInvoiceList" parameterType="com.ruoyi.mk.domain.MkInvoice" resultMap="MkInvoiceResult">
+        <include refid="selectInvoiceVo"/>
+        <where>
+            i.del_flag = '0'
+            <if test="invoiceNo != null and invoiceNo != ''"> AND i.invoice_no LIKE CONCAT('%', #{invoiceNo}, '%')</if>
+            <if test="invoiceType != null and invoiceType != ''"> AND i.invoice_type = #{invoiceType}</if>
+            <if test="invoiceStatus != null and invoiceStatus != ''"> AND i.invoice_status = #{invoiceStatus}</if>
+            <if test="customerId != null"> AND i.customer_id = #{customerId}</if>
+            <if test="orderId != null"> AND i.order_id = #{orderId}</if>
+            <if test="contractId != null"> AND i.contract_id = #{contractId}</if>
+            <if test="customerName != null and customerName != ''"> AND c.customer_name LIKE CONCAT('%', #{customerName}, '%')</if>
+        </where>
+        ORDER BY i.invoice_id DESC
+    </select>
+
+    <select id="selectInvoiceById" parameterType="Long" resultMap="MkInvoiceResult">
+        <include refid="selectInvoiceVo"/> WHERE i.invoice_id = #{invoiceId}
+    </select>
+
+    <insert id="insertInvoice" parameterType="com.ruoyi.mk.domain.MkInvoice" useGeneratedKeys="true" keyProperty="invoiceId">
+        INSERT INTO mk_invoice (invoice_no, order_id, contract_id, customer_id, invoice_type, invoice_status,
+            invoice_amount, tax_rate, tax_amount, invoice_title, tax_no, invoice_date, invoice_attachment,
+            del_flag, create_by, create_time, remark)
+        VALUES (#{invoiceNo}, #{orderId}, #{contractId}, #{customerId}, #{invoiceType}, #{invoiceStatus},
+            #{invoiceAmount}, #{taxRate}, #{taxAmount}, #{invoiceTitle}, #{taxNo}, #{invoiceDate}, #{invoiceAttachment},
+            '0', #{createBy}, sysdate(), #{remark})
+    </insert>
+
+    <update id="updateInvoice" parameterType="com.ruoyi.mk.domain.MkInvoice">
+        UPDATE mk_invoice
+        <set>
+            <if test="invoiceNo != null and invoiceNo != ''">invoice_no = #{invoiceNo},</if>
+            <if test="orderId != null">order_id = #{orderId},</if>
+            <if test="contractId != null">contract_id = #{contractId},</if>
+            <if test="customerId != null">customer_id = #{customerId},</if>
+            <if test="invoiceType != null">invoice_type = #{invoiceType},</if>
+            <if test="invoiceStatus != null">invoice_status = #{invoiceStatus},</if>
+            <if test="invoiceAmount != null">invoice_amount = #{invoiceAmount},</if>
+            <if test="taxRate != null">tax_rate = #{taxRate},</if>
+            <if test="taxAmount != null">tax_amount = #{taxAmount},</if>
+            <if test="invoiceTitle != null">invoice_title = #{invoiceTitle},</if>
+            <if test="taxNo != null">tax_no = #{taxNo},</if>
+            <if test="invoiceDate != null">invoice_date = #{invoiceDate},</if>
+            <if test="invoiceAttachment != null">invoice_attachment = #{invoiceAttachment},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE invoice_id = #{invoiceId}
+    </update>
+
+    <delete id="deleteInvoiceByIds" parameterType="Long">
+        UPDATE mk_invoice SET del_flag = '2' WHERE invoice_id IN
+        <foreach item="invoiceId" collection="array" open="(" separator="," close=")">#{invoiceId}</foreach>
+    </delete>
+
+</mapper>

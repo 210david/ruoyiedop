@@ -8,11 +8,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.SecurityUtils;
+import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.wms.domain.WmsInboundOrder;
 import com.ruoyi.wms.domain.WmsInboundOrderDetail;
 import com.ruoyi.wms.mapper.WmsInboundOrderMapper;
 import com.ruoyi.wms.service.IWmsInboundOrderService;
 import com.ruoyi.wms.service.IWmsInventoryService;
+import com.ruoyi.mk.service.IMkNumberRuleService;
 
 @Service
 public class WmsInboundOrderServiceImpl implements IWmsInboundOrderService
@@ -22,6 +24,9 @@ public class WmsInboundOrderServiceImpl implements IWmsInboundOrderService
 
     @Autowired
     private IWmsInventoryService wmsInventoryService;
+
+    @Autowired
+    private IMkNumberRuleService mkNumberRuleService;
 
     @Override
     public List<WmsInboundOrder> selectInboundOrderList(WmsInboundOrder order)
@@ -44,9 +49,9 @@ public class WmsInboundOrderServiceImpl implements IWmsInboundOrderService
     @Transactional(rollbackFor = Exception.class)
     public int insertInboundOrder(WmsInboundOrder order)
     {
-        if (order.getOrderNo() == null || order.getOrderNo().isEmpty())
+        if (StringUtils.isEmpty(order.getOrderNo()))
         {
-            order.setOrderNo(generateOrderNo());
+            order.setOrderNo(mkNumberRuleService.generateNumber("wms_inbound"));
         }
         order.setDelFlag("0");
         if (order.getStatus() == null)
@@ -116,7 +121,7 @@ public class WmsInboundOrderServiceImpl implements IWmsInboundOrderService
     @Override
     public String generateOrderNo()
     {
-        return "IN" + System.currentTimeMillis();
+        return mkNumberRuleService.generateNumber("wms_inbound");
     }
 
     @Override

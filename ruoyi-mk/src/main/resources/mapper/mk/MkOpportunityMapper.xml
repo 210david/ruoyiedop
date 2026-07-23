@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mk.mapper.MkOpportunityMapper">
+
+    <resultMap type="MkOpportunity" id="MkOpportunityResult">
+        <result property="opportunityId"     column="opportunity_id"/>
+        <result property="opportunityNo"     column="opportunity_no"/>
+        <result property="opportunityName"   column="opportunity_name"/>
+        <result property="customerId"        column="customer_id"/>
+        <result property="customerName"      column="customer_name"/>
+        <result property="contactId"         column="contact_id"/>
+        <result property="contactName"       column="contact_name"/>
+        <result property="leadId"            column="lead_id"/>
+        <result property="opportunitySource" column="opportunity_source"/>
+        <result property="expectedAmount"    column="expected_amount"/>
+        <result property="expectedDate"      column="expected_date"/>
+        <result property="stageCode"         column="stage_code"/>
+        <result property="stageName"         column="stage_name"/>
+        <result property="winRate"           column="win_rate"/>
+        <result property="weightedAmount"    column="weighted_amount"/>
+        <result property="opportunityStatus" column="opportunity_status"/>
+        <result property="competitor"        column="competitor"/>
+        <result property="painPoint"         column="pain_point"/>
+        <result property="solution"          column="solution"/>
+        <result property="lostReason"        column="lost_reason"/>
+        <result property="lostRemark"        column="lost_remark"/>
+        <result property="actualAmount"      column="actual_amount"/>
+        <result property="actualDate"        column="actual_date"/>
+        <result property="userId"            column="user_id"/>
+        <result property="userName"          column="user_name"/>
+        <result property="deptId"            column="dept_id"/>
+        <result property="deptName"          column="dept_name"/>
+        <result property="nextAction"        column="next_action"/>
+        <result property="nextTime"          column="next_time"/>
+        <result property="stageEnterTime"    column="stage_enter_time"/>
+        <result property="delFlag"           column="del_flag"/>
+        <result property="createBy"          column="create_by"/>
+        <result property="createTime"        column="create_time"/>
+        <result property="updateBy"          column="update_by"/>
+        <result property="updateTime"        column="update_time"/>
+        <result property="remark"            column="remark"/>
+    </resultMap>
+
+    <sql id="selectOpportunityVo">
+        SELECT o.opportunity_id, o.opportunity_no, o.opportunity_name, o.customer_id, o.contact_id, o.lead_id,
+               o.opportunity_source, o.expected_amount, o.expected_date, o.stage_code, o.stage_name,
+               o.win_rate, o.weighted_amount, o.opportunity_status, o.competitor, o.pain_point, o.solution,
+               o.lost_reason, o.lost_remark, o.actual_amount, o.actual_date, o.user_id, o.dept_id,
+               o.next_action, o.next_time, o.stage_enter_time, o.del_flag, o.create_by, o.create_time,
+               o.update_by, o.update_time, o.remark,
+               c.customer_name, ct.name as contact_name, u.nick_name as user_name, d.dept_name
+        FROM mk_opportunity o
+        LEFT JOIN mk_customer c ON o.customer_id = c.customer_id
+        LEFT JOIN mk_contact ct ON o.contact_id = ct.contact_id
+        LEFT JOIN sys_user u ON o.user_id = u.user_id
+        LEFT JOIN sys_dept d ON o.dept_id = d.dept_id
+    </sql>
+
+    <select id="selectOpportunityList" parameterType="MkOpportunity" resultMap="MkOpportunityResult">
+        <include refid="selectOpportunityVo"/>
+        <where>
+            o.del_flag = '0'
+            <if test="opportunityNo != null and opportunityNo != ''"> AND o.opportunity_no LIKE CONCAT('%', #{opportunityNo}, '%')</if>
+            <if test="opportunityName != null and opportunityName != ''"> AND o.opportunity_name LIKE CONCAT('%', #{opportunityName}, '%')</if>
+            <if test="customerId != null"> AND o.customer_id = #{customerId}</if>
+            <if test="stageCode != null and stageCode != ''"> AND o.stage_code = #{stageCode}</if>
+            <if test="opportunityStatus != null and opportunityStatus != ''"> AND o.opportunity_status = #{opportunityStatus}</if>
+            <if test="opportunitySource != null and opportunitySource != ''"> AND o.opportunity_source = #{opportunitySource}</if>
+            <if test="userId != null"> AND o.user_id = #{userId}</if>
+            <if test="deptId != null"> AND o.dept_id = #{deptId}</if>
+            <if test="customerName != null and customerName != ''"> AND c.customer_name LIKE CONCAT('%', #{customerName}, '%')</if>
+        </where>
+        ORDER BY o.opportunity_id DESC
+    </select>
+
+    <select id="selectOpportunityById" parameterType="Long" resultMap="MkOpportunityResult">
+        <include refid="selectOpportunityVo"/> WHERE o.opportunity_id = #{opportunityId}
+    </select>
+
+    <select id="selectOpportunityByStage" parameterType="String" resultMap="MkOpportunityResult">
+        <include refid="selectOpportunityVo"/> WHERE o.del_flag = '0' AND o.stage_code = #{stageCode}
+        ORDER BY o.opportunity_id DESC
+    </select>
+
+    <insert id="insertOpportunity" parameterType="MkOpportunity" useGeneratedKeys="true" keyProperty="opportunityId">
+        INSERT INTO mk_opportunity (opportunity_no, opportunity_name, customer_id, contact_id, lead_id,
+            opportunity_source, expected_amount, expected_date, stage_code, stage_name, win_rate,
+            weighted_amount, opportunity_status, competitor, pain_point, solution, user_id, dept_id,
+            next_action, next_time, stage_enter_time, create_by, create_time, remark)
+        VALUES (#{opportunityNo}, #{opportunityName}, #{customerId}, #{contactId}, #{leadId},
+            #{opportunitySource}, #{expectedAmount}, #{expectedDate}, #{stageCode}, #{stageName}, #{winRate},
+            #{weightedAmount}, #{opportunityStatus}, #{competitor}, #{painPoint}, #{solution}, #{userId}, #{deptId},
+            #{nextAction}, #{nextTime}, #{stageEnterTime}, #{createBy}, sysdate(), #{remark})
+    </insert>
+
+    <update id="updateOpportunity" parameterType="MkOpportunity">
+        UPDATE mk_opportunity
+        <set>
+            <if test="opportunityNo != null and opportunityNo != ''">opportunity_no = #{opportunityNo},</if>
+            <if test="opportunityName != null and opportunityName != ''">opportunity_name = #{opportunityName},</if>
+            <if test="customerId != null">customer_id = #{customerId},</if>
+            <if test="contactId != null">contact_id = #{contactId},</if>
+            <if test="leadId != null">lead_id = #{leadId},</if>
+            <if test="opportunitySource != null">opportunity_source = #{opportunitySource},</if>
+            <if test="expectedAmount != null">expected_amount = #{expectedAmount},</if>
+            <if test="expectedDate != null">expected_date = #{expectedDate},</if>
+            <if test="stageCode != null">stage_code = #{stageCode},</if>
+            <if test="stageName != null">stage_name = #{stageName},</if>
+            <if test="winRate != null">win_rate = #{winRate},</if>
+            <if test="weightedAmount != null">weighted_amount = #{weightedAmount},</if>
+            <if test="opportunityStatus != null">opportunity_status = #{opportunityStatus},</if>
+            <if test="competitor != null">competitor = #{competitor},</if>
+            <if test="painPoint != null">pain_point = #{painPoint},</if>
+            <if test="solution != null">solution = #{solution},</if>
+            <if test="lostReason != null">lost_reason = #{lostReason},</if>
+            <if test="lostRemark != null">lost_remark = #{lostRemark},</if>
+            <if test="actualAmount != null">actual_amount = #{actualAmount},</if>
+            <if test="actualDate != null">actual_date = #{actualDate},</if>
+            <if test="userId != null">user_id = #{userId},</if>
+            <if test="deptId != null">dept_id = #{deptId},</if>
+            <if test="nextAction != null">next_action = #{nextAction},</if>
+            <if test="nextTime != null">next_time = #{nextTime},</if>
+            <if test="stageEnterTime != null">stage_enter_time = #{stageEnterTime},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE opportunity_id = #{opportunityId}
+    </update>
+
+    <delete id="deleteOpportunityByIds" parameterType="Long">
+        UPDATE mk_opportunity SET del_flag = '2' WHERE opportunity_id IN
+        <foreach item="opportunityId" collection="array" open="(" separator="," close=")">#{opportunityId}</foreach>
+    </delete>
+
+    <!-- 更新商机阶段（含stageEnterTime） -->
+    <update id="updateOpportunityStage" parameterType="MkOpportunity">
+        UPDATE mk_opportunity
+        <set>
+            <if test="stageCode != null and stageCode != ''">stage_code = #{stageCode},</if>
+            <if test="stageName != null">stage_name = #{stageName},</if>
+            <if test="winRate != null">win_rate = #{winRate},</if>
+            <if test="weightedAmount != null">weighted_amount = #{weightedAmount},</if>
+            <if test="opportunityStatus != null">opportunity_status = #{opportunityStatus},</if>
+            <if test="stageEnterTime != null">stage_enter_time = #{stageEnterTime},</if>
+            <if test="actualAmount != null">actual_amount = #{actualAmount},</if>
+            <if test="actualDate != null">actual_date = #{actualDate},</if>
+            <if test="lostReason != null">lost_reason = #{lostReason},</if>
+            <if test="lostRemark != null">lost_remark = #{lostRemark},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            update_time = sysdate()
+        </set>
+        WHERE opportunity_id = #{opportunityId}
+    </update>
+
+    <!-- 查询停滞商机（阶段停留时间超过maxDays） -->
+    <select id="selectStagnantOpportunities" resultMap="MkOpportunityResult">
+        <include refid="selectOpportunityVo"/>
+        WHERE o.del_flag = '0' AND o.opportunity_status = '0'
+          AND o.stage_enter_time IS NOT NULL
+          AND DATEDIFF(NOW(), o.stage_enter_time) > (
+              SELECT IFNULL(MAX(s.max_days), 30)
+              FROM mk_opportunity_stage s
+              WHERE s.stage_code = o.stage_code AND s.status = '0'
+          )
+        ORDER BY o.stage_enter_time ASC
+    </select>
+
+</mapper>

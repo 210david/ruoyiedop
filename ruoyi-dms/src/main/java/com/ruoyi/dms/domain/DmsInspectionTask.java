@@ -17,7 +17,7 @@ public class DmsInspectionTask extends BaseEntity
     @JsonFormat(pattern = "yyyy-MM-dd") @Excel(name = "计划日期", width = 20) private Date planDate;
     private Long inspectorId;
     @Excel(name = "点检人") private String inspectorName;
-    @Excel(name = "状态", readConverterExp = "0=待执行,1=执行中,2=已完成,3=已逾期") private String taskStatus;
+    @Excel(name = "状态", dictType = "dms_inspection_status") private String taskStatus;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss") private Date startTime;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss") private Date completeTime;
     private Integer abnormalCount;

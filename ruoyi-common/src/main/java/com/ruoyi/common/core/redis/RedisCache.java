@@ -169,6 +169,38 @@ public class RedisCache
     }
 
     /**
+     * 如果key不存在则设置缓存（原子操作，用于分布式锁）
+     *
+     * @param key 缓存的键值
+     * @param value 缓存的值
+     * @param timeout 时间
+     * @param timeUnit 时间颗粒度
+     * @return true=设置成功（获取锁）；false=设置失败（key已存在）
+     */
+    public <T> Boolean setIfAbsent(final String key, final T value, final Integer timeout, final TimeUnit timeUnit)
+    {
+        if (!redisAvailable)
+        {
+            return false;
+        }
+        try
+        {
+            Boolean result = redisTemplate.opsForValue().setIfAbsent(key, value, timeout, timeUnit);
+            if (!redisAvailable)
+            {
+                redisAvailable = true;
+                log.info("Redis连接已恢复，退出降级模式");
+            }
+            return result;
+        }
+        catch (RedisConnectionFailureException e)
+        {
+            handleRedisException(e);
+            return false;
+        }
+    }
+
+    /**
      * 获取有效时间
      *
      * @param key Redis键

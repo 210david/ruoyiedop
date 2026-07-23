@@ -1,52 +1,51 @@
 @echo off
-chcp 65001 >nul
-title EDOP - 一键启动全部服务
+title EDOP - Start All Services
 REM ============================================================
-REM 一键启动: MySQL -> Redis -> 后端 -> Nginx
-REM 路径: D:\EDOP\scripts\start-all.bat
+REM Start all: MySQL -> Redis -> Backend -> Nginx
+REM Path: D:\EDOP\scripts\start-all.bat
 REM ============================================================
 
 cd /d "%~dp0"
 call env.bat
 
 echo ============================================
-echo    企业数字化运营平台 - 一键启动
+echo    EDOP - Start All Services
 echo ============================================
 echo.
 
-REM Step 1: 启动 MySQL
-echo [1/4] 启动 MySQL...
+REM Step 1: Start MySQL
+echo [1/4] Starting MySQL...
 call start-mysql.bat
 echo.
 
-REM Step 2: 启动 Redis
-echo [2/4] 启动 Redis...
+REM Step 2: Start Redis
+echo [2/4] Starting Redis...
 call start-redis.bat
 echo.
 
-REM Step 3: 启动后端
-echo [3/4] 启动后端服务...
+REM Step 3: Start Backend
+echo [3/4] Starting Backend...
 call start-backend.bat
 echo.
 
-REM Step 4: 启动 Nginx
-echo [4/4] 启动 Nginx...
+REM Step 4: Start Nginx
+echo [4/4] Starting Nginx...
 call start-nginx.bat
 echo.
 
 echo ============================================
-echo    全部服务启动完成！
+echo    All Services Started!
 echo ============================================
 echo.
-echo  访问地址:     http://localhost:%NGINX_PORT%
-echo  后端API:      http://localhost:%BACKEND_PORT%
-echo  Druid监控:    http://localhost:%NGINX_PORT%/druid/
-echo  Swagger文档:  http://localhost:%NGINX_PORT%/swagger-ui.html
+echo  Web URL:      http://localhost:%NGINX_PORT%
+echo  Backend API:  http://localhost:%BACKEND_PORT%
+echo  Druid:        http://localhost:%NGINX_PORT%/druid/
+echo  Swagger:      http://localhost:%NGINX_PORT%/swagger-ui.html
 echo.
-echo  默认账号: admin / admin123
+echo  Login:        admin / admin123
 echo.
-echo  MySQL端口:   %MYSQL_PORT%
-echo  Redis端口:   %REDIS_PORT%
-echo  日志目录:     %LOG_HOME%
+echo  MySQL Port:   %MYSQL_PORT%
+echo  Redis Port:   %REDIS_PORT%
+echo  Log Dir:      %LOG_HOME%
 echo.
 pause

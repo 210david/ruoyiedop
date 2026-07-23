@@ -15,7 +15,7 @@ public class DmsRepairFaq extends BaseEntity
     @Excel(name = "分类") private String categoryName;
     @Excel(name = "关键词") private String keywords;
     private Integer viewCount;
-    @Excel(name = "状态", readConverterExp = "0=正常,1=停用") private String status;
+    @Excel(name = "状态", dictType = "sys_normal_disable") private String status;
     private String delFlag;
 
     public Long getFaqId() { return faqId; }

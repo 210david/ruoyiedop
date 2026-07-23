@@ -66,6 +66,12 @@
             <artifactId>ruoyi-dms</artifactId>
         </dependency>
 
+        <!-- MK营销管理 -->
+        <dependency>
+            <groupId>com.ruoyi</groupId>
+            <artifactId>ruoyi-mk</artifactId>
+        </dependency>
+
     </dependencies>
 
     <build>

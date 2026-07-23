@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mk.mapper.MkLeadMapper">
+
+    <resultMap type="MkLead" id="MkLeadResult">
+        <result property="leadId"              column="lead_id"/>
+        <result property="leadNo"              column="lead_no"/>
+        <result property="companyName"         column="company_name"/>
+        <result property="contactName"         column="contact_name"/>
+        <result property="contactPhone"        column="contact_phone"/>
+        <result property="contactEmail"        column="contact_email"/>
+        <result property="position"            column="position"/>
+        <result property="industry"            column="industry"/>
+        <result property="companySize"         column="company_size"/>
+        <result property="address"             column="address"/>
+        <result property="leadSource"          column="lead_source"/>
+        <result property="activityId"          column="activity_id"/>
+        <result property="requirementDesc"     column="requirement_desc"/>
+        <result property="leadScore"           column="lead_score"/>
+        <result property="leadGrade"           column="lead_grade"/>
+        <result property="leadStatus"          column="lead_status"/>
+        <result property="isPublic"            column="is_public"/>
+        <result property="userId"              column="user_id"/>
+        <result property="userName"            column="user_name"/>
+        <result property="deptId"              column="dept_id"/>
+        <result property="deptName"            column="dept_name"/>
+        <result property="receiveTime"         column="receive_time"/>
+        <result property="receiveStatus"       column="receive_status"/>
+        <result property="receiveRemark"       column="receive_remark"/>
+        <result property="receiveApplyUserId"  column="receive_apply_user_id"/>
+        <result property="receiveApplyUserName" column="receive_apply_user_name"/>
+        <result property="receiveApplyTime"    column="receive_apply_time"/>
+        <result property="lastFollowTime"      column="last_follow_time"/>
+        <result property="ineffectiveReason"   column="ineffective_reason"/>
+        <result property="ineffectiveRemark"   column="ineffective_remark"/>
+        <result property="convertCustomerId"   column="convert_customer_id"/>
+        <result property="convertTime"         column="convert_time"/>
+        <result property="delFlag"             column="del_flag"/>
+        <result property="createBy"            column="create_by"/>
+        <result property="createTime"          column="create_time"/>
+        <result property="updateBy"            column="update_by"/>
+        <result property="updateTime"          column="update_time"/>
+        <result property="remark"              column="remark"/>
+    </resultMap>
+
+    <sql id="selectLeadVo">
+        SELECT l.lead_id, l.lead_no, l.company_name, l.contact_name, l.contact_phone, l.contact_email,
+               l.position, l.industry, l.company_size, l.address, l.lead_source,
+               l.activity_id, l.requirement_desc, l.lead_score, l.lead_grade, l.lead_status, l.is_public,
+               l.user_id, l.dept_id, l.receive_time, l.receive_status, l.receive_remark,
+               l.receive_apply_user_id, l.receive_apply_time, l.last_follow_time, l.ineffective_reason,
+               l.ineffective_remark, l.convert_customer_id, l.convert_time, l.del_flag,
+               l.create_by, l.create_time, l.update_by, l.update_time, l.remark,
+               u.nick_name as user_name, d.dept_name,
+               u2.nick_name as receive_apply_user_name
+        FROM mk_lead l
+        LEFT JOIN sys_user u ON l.user_id = u.user_id
+        LEFT JOIN sys_dept d ON l.dept_id = d.dept_id
+        LEFT JOIN sys_user u2 ON l.receive_apply_user_id = u2.user_id
+    </sql>
+
+    <select id="selectLeadList" parameterType="MkLead" resultMap="MkLeadResult">
+        <include refid="selectLeadVo"/>
+        <where>
+            l.del_flag = '0'
+            <if test="leadNo != null and leadNo != ''"> AND l.lead_no LIKE CONCAT('%', #{leadNo}, '%')</if>
+            <if test="companyName != null and companyName != ''"> AND l.company_name LIKE CONCAT('%', #{companyName}, '%')</if>
+            <if test="contactName != null and contactName != ''"> AND l.contact_name LIKE CONCAT('%', #{contactName}, '%')</if>
+            <if test="contactPhone != null and contactPhone != ''"> AND l.contact_phone LIKE CONCAT('%', #{contactPhone}, '%')</if>
+            <if test="leadStatus != null and leadStatus != ''"> AND l.lead_status = #{leadStatus}</if>
+            <if test="leadGrade != null and leadGrade != ''"> AND l.lead_grade = #{leadGrade}</if>
+            <if test="leadSource != null and leadSource != ''"> AND l.lead_source = #{leadSource}</if>
+            <if test="isPublic != null and isPublic != ''"> AND l.is_public = #{isPublic}</if>
+            <if test="receiveStatus != null and receiveStatus != ''"> AND l.receive_status = #{receiveStatus}</if>
+            <if test="userId != null"> AND l.user_id = #{userId}</if>
+            <if test="deptId != null"> AND l.dept_id = #{deptId}</if>
+        </where>
+        ORDER BY l.lead_id DESC
+    </select>
+
+    <select id="selectLeadById" parameterType="Long" resultMap="MkLeadResult">
+        <include refid="selectLeadVo"/> WHERE l.lead_id = #{leadId}
+    </select>
+
+    <insert id="insertLead" parameterType="MkLead" useGeneratedKeys="true" keyProperty="leadId">
+        INSERT INTO mk_lead (lead_no, company_name, contact_name, contact_phone, contact_email, position,
+            industry, company_size, address, lead_source, activity_id, requirement_desc,
+            lead_score, lead_grade, lead_status, is_public, user_id, dept_id, receive_time, create_by, create_time, remark)
+        VALUES (#{leadNo}, #{companyName}, #{contactName}, #{contactPhone}, #{contactEmail}, #{position},
+            #{industry}, #{companySize}, #{address}, #{leadSource}, #{activityId}, #{requirementDesc},
+            #{leadScore}, #{leadGrade}, #{leadStatus}, #{isPublic}, #{userId}, #{deptId}, #{receiveTime}, #{createBy}, sysdate(), #{remark})
+    </insert>
+
+    <update id="updateLead" parameterType="MkLead">
+        UPDATE mk_lead
+        <set>
+            <if test="leadNo != null and leadNo != ''">lead_no = #{leadNo},</if>
+            <if test="companyName != null and companyName != ''">company_name = #{companyName},</if>
+            <if test="contactName != null and contactName != ''">contact_name = #{contactName},</if>
+            <if test="contactPhone != null and contactPhone != ''">contact_phone = #{contactPhone},</if>
+            <if test="contactEmail != null">contact_email = #{contactEmail},</if>
+            <if test="position != null">position = #{position},</if>
+            <if test="industry != null">industry = #{industry},</if>
+            <if test="companySize != null">company_size = #{companySize},</if>
+<if test="address != null">address = #{address},</if>
+            <if test="leadSource != null">lead_source = #{leadSource},</if>
+            <if test="activityId != null">activity_id = #{activityId},</if>
+            <if test="requirementDesc != null">requirement_desc = #{requirementDesc},</if>
+            <if test="leadScore != null">lead_score = #{leadScore},</if>
+            <if test="leadGrade != null">lead_grade = #{leadGrade},</if>
+            <if test="leadStatus != null">lead_status = #{leadStatus},</if>
+            <if test="isPublic != null">is_public = #{isPublic},</if>
+            <if test="userId != null">user_id = #{userId},</if>
+            <if test="deptId != null">dept_id = #{deptId},</if>
+            <if test="receiveTime != null">receive_time = #{receiveTime},</if>
+            <if test="receiveStatus != null">receive_status = #{receiveStatus},</if>
+            <if test="receiveRemark != null">receive_remark = #{receiveRemark},</if>
+            <if test="receiveApplyUserId != null">receive_apply_user_id = #{receiveApplyUserId},</if>
+            <if test="receiveApplyTime != null">receive_apply_time = #{receiveApplyTime},</if>
+            <if test="lastFollowTime != null">last_follow_time = #{lastFollowTime},</if>
+            <if test="ineffectiveReason != null">ineffective_reason = #{ineffectiveReason},</if>
+            <if test="ineffectiveRemark != null">ineffective_remark = #{ineffectiveRemark},</if>
+            <if test="convertCustomerId != null">convert_customer_id = #{convertCustomerId},</if>
+            <if test="convertTime != null">convert_time = #{convertTime},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE lead_id = #{leadId}
+    </update>
+
+    <delete id="deleteLeadByIds" parameterType="Long">
+        UPDATE mk_lead SET del_flag = '2' WHERE lead_id IN
+        <foreach item="leadId" collection="array" open="(" separator="," close=")">#{leadId}</foreach>
+    </delete>
+
+    <!-- 领取申请：设置为待审批状态，不改变is_public，线索仍在公海池中 -->
+    <update id="receiveLead" parameterType="MkLead">
+        UPDATE mk_lead SET receive_status = '1', receive_apply_user_id = #{userId},
+            receive_apply_time = sysdate(), update_by = #{updateBy}, update_time = sysdate()
+        WHERE lead_id = #{leadId}
+    </update>
+
+    <!-- 直接分配线索：移出公海池，分配给指定负责人 -->
+    <update id="assignLead" parameterType="MkLead">
+        UPDATE mk_lead SET is_public = '0', user_id = #{userId}, dept_id = #{deptId},
+            receive_status = '2', receive_time = sysdate(),
+            update_by = #{updateBy}, update_time = sysdate()
+        WHERE lead_id = #{leadId}
+    </update>
+
+    <!-- 审批通过：分配线索给申请人 -->
+    <update id="approveReceive" parameterType="MkLead">
+        UPDATE mk_lead SET is_public = '0', user_id = receive_apply_user_id, dept_id = #{deptId},
+            receive_status = '2', receive_remark = #{receiveRemark}, receive_time = sysdate(),
+            update_by = #{updateBy}, update_time = sysdate()
+        WHERE lead_id = #{leadId}
+    </update>
+
+    <!-- 审批拒绝：退回公海池 -->
+    <update id="rejectReceive" parameterType="MkLead">
+        UPDATE mk_lead SET receive_status = '3', receive_remark = #{receiveRemark},
+            receive_apply_user_id = NULL, receive_apply_time = NULL,
+            update_by = #{updateBy}, update_time = sysdate()
+        WHERE lead_id = #{leadId}
+    </update>
+
+    <update id="convertLead" parameterType="MkLead">
+        UPDATE mk_lead SET lead_status = '4', convert_customer_id = #{convertCustomerId},
+            convert_time = sysdate(), update_by = #{updateBy}, update_time = sysdate()
+        WHERE lead_id = #{leadId}
+    </update>
+
+    <!-- ====== P1: 批量分配线索 ====== -->
+    <update id="batchAssignLeads">
+        UPDATE mk_lead SET is_public = '0', user_id = #{userId}, dept_id = #{deptId},
+            receive_status = '2', receive_time = sysdate(),
+            update_by = #{updateBy}, update_time = sysdate()
+        WHERE lead_id IN
+        <foreach item="leadId" collection="leadIds" open="(" separator="," close=")">#{leadId}</foreach>
+        AND del_flag = '0'
+    </update>
+
+    <!-- ====== P1: 批量变更线索状态 ====== -->
+    <update id="batchUpdateStatus">
+        UPDATE mk_lead SET lead_status = #{leadStatus},
+            update_by = #{updateBy}, update_time = sysdate()
+        WHERE lead_id IN
+        <foreach item="leadId" collection="leadIds" open="(" separator="," close=")">#{leadId}</foreach>
+        AND del_flag = '0'
+    </update>
+
+    <!-- ====== P1: 释放线索到公海 ====== -->
+    <update id="releaseToPool">
+        UPDATE mk_lead SET is_public = '1', user_id = NULL, dept_id = NULL,
+            receive_status = '0',
+            update_by = #{updateBy}, update_time = sysdate()
+        WHERE lead_id = #{leadId}
+    </update>
+
+    <!-- ====== P2: 标记线索无效 ====== -->
+    <update id="invalidateLead" parameterType="MkLead">
+        UPDATE mk_lead
+        <set>
+            lead_status = '5',
+            <if test="ineffectiveReason != null and ineffectiveReason != ''">ineffective_reason = #{ineffectiveReason},</if>
+            <if test="ineffectiveRemark != null">ineffective_remark = #{ineffectiveRemark},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            update_time = sysdate()
+        </set>
+        WHERE lead_id = #{leadId}
+    </update>
+
+    <!-- ====== P2: 更新最后跟进时间 ====== -->
+    <update id="updateLastFollowTime">
+        UPDATE mk_lead SET last_follow_time = #{followTime},
+            update_by = #{updateBy}, update_time = sysdate()
+        WHERE lead_id = #{leadId}
+    </update>
+
+    <!-- ====== P3: 查重 ====== -->
+    <select id="selectDuplicateLeads" resultMap="MkLeadResult">
+        <include refid="selectLeadVo"/>
+        WHERE l.del_flag = '0'
+        <if test="(companyName != null and companyName != '') or (contactPhone != null and contactPhone != '')">
+        AND (
+            <if test="companyName != null and companyName != ''">l.company_name = #{companyName}</if>
+            <if test="companyName != null and companyName != '' and contactPhone != null and contactPhone != ''"> OR</if>
+            <if test="contactPhone != null and contactPhone != ''">l.contact_phone = #{contactPhone}</if>
+        )
+        </if>
+    </select>
+
+</mapper>

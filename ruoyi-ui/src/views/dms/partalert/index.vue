@@ -19,7 +19,7 @@
             <el-icon class="alert-icon"><CircleCloseFilled /></el-icon>
             <div>
               <div class="alert-num">{{ shortageCount }}</div>
-              <div class="alert-label">库存不足（≤0）</div>
+              <div class="alert-label">库存不足（=0）</div>
             </div>
           </div>
         </el-card>
@@ -30,7 +30,7 @@
             <el-icon class="alert-icon"><InfoFilled /></el-icon>
             <div>
               <div class="alert-num">{{ lowStockCount }}</div>
-              <div class="alert-label">低于下限（>0）</div>
+              <div class="alert-label">低于下限</div>
             </div>
           </div>
         </el-card>
@@ -67,7 +67,7 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="list" border @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
+    <el-table ref="tableRef" v-loading="loading" :data="list" border @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="备件编号" prop="partCode" :width="colWidth('partCode', 130)" resizable />
       <el-table-column label="备件名称" prop="partName" :width="colWidth('partName', 150)" resizable show-overflow-tooltip />
@@ -113,7 +113,7 @@ import { listPartAlert, delPartAlert } from '@/api/dms/partalert'
 import { useColumnResize } from '@/composables/useColumnResize'
 
 const { proxy } = getCurrentInstance()
-const { colWidth, onHeaderDragEnd } = useColumnResize('dms_partalert_index')
+const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('dms_partalert_index')
 const { wms_unit, dms_part_type } = proxy.useDict('wms_unit', 'dms_part_type')
 
 const list = ref([])
@@ -186,7 +186,7 @@ function getStockClass(row) {
   return ''
 }
 
-function handleExport() { proxy.download('dms/sparepart/export', { ...queryParams.value }, `partalert_${new Date().getTime()}.xlsx`) }
+function handleExport() { proxy.download('dms/sparepart/alert/export', { ...queryParams.value }, `partalert_${new Date().getTime()}.xlsx`) }
 function handleDelete(row) {
   const partIds = row.partId || ids.value
   proxy.$modal.confirm('确认删除选中的备件库存预警？\n删除后将清除该备件的安全库存上下限设置。').then(() => delPartAlert(partIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {})

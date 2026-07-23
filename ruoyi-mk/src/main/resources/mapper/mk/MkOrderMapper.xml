@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mk.mapper.MkOrderMapper">
+
+    <resultMap type="MkOrder" id="MkOrderResult">
+        <result property="orderId"           column="order_id"/>
+        <result property="orderNo"           column="order_no"/>
+        <result property="contractId"        column="contract_id"/>
+        <result property="contractNo"        column="contract_no"/>
+        <result property="customerId"        column="customer_id"/>
+        <result property="customerName"      column="customer_name"/>
+        <result property="orderAmount"       column="order_amount"/>
+        <result property="orderStatus"       column="order_status"/>
+        <result property="logisticsCompany"  column="logistics_company"/>
+        <result property="trackingNo"        column="tracking_no"/>
+        <result property="deliverTime"       column="deliver_time"/>
+        <result property="finishTime"        column="finish_time"/>
+        <result property="confirmTime"        column="confirm_time"/>
+        <result property="receiveTime"        column="receive_time"/>
+        <result property="receivePerson"      column="receive_person"/>
+        <result property="cancelReason"        column="cancel_reason"/>
+        <result property="userId"            column="user_id"/>
+        <result property="userName"          column="user_name"/>
+        <result property="deptId"            column="dept_id"/>
+        <result property="deptName"          column="dept_name"/>
+        <result property="delFlag"           column="del_flag"/>
+        <result property="createBy"          column="create_by"/>
+        <result property="createTime"        column="create_time"/>
+        <result property="updateBy"          column="update_by"/>
+        <result property="updateTime"        column="update_time"/>
+        <result property="remark"            column="remark"/>
+    </resultMap>
+
+    <resultMap type="MkOrderItem" id="MkOrderItemResult">
+        <result property="itemId"        column="item_id"/>
+        <result property="orderId"       column="order_id"/>
+        <result property="lineNo"         column="line_no"/>
+        <result property="productName"   column="product_name"/>
+        <result property="productSpec"   column="product_spec"/>
+        <result property="unit"          column="unit"/>
+        <result property="quantity"      column="quantity"/>
+        <result property="unitPrice"     column="unit_price"/>
+        <result property="subtotal"      column="subtotal"/>
+        <result property="createTime"    column="create_time"/>
+        <result property="remark"        column="remark"/>
+    </resultMap>
+
+    <sql id="selectOrderVo">
+        SELECT o.order_id, o.order_no, o.contract_id, o.customer_id, o.order_amount, o.order_status,
+                              o.logistics_company, o.tracking_no, o.deliver_time, o.finish_time, o.confirm_time,
+               o.receive_time, o.receive_person, o.cancel_reason,
+               o.user_id, o.dept_id,
+               o.del_flag, o.create_by, o.create_time, o.update_by, o.update_time, o.remark,
+               c.customer_name, ct.contract_no, u.nick_name as user_name, d.dept_name
+        FROM mk_order o
+        LEFT JOIN mk_customer c ON o.customer_id = c.customer_id
+        LEFT JOIN mk_contract ct ON o.contract_id = ct.contract_id
+        LEFT JOIN sys_user u ON o.user_id = u.user_id
+        LEFT JOIN sys_dept d ON o.dept_id = d.dept_id
+    </sql>
+
+    <select id="selectOrderList" parameterType="MkOrder" resultMap="MkOrderResult">
+        <include refid="selectOrderVo"/>
+        <where>
+            o.del_flag = '0'
+            <if test="orderNo != null and orderNo != ''"> AND o.order_no LIKE CONCAT('%', #{orderNo}, '%')</if>
+            <if test="orderStatus != null and orderStatus != ''"> AND o.order_status = #{orderStatus}</if>
+            <if test="customerId != null"> AND o.customer_id = #{customerId}</if>
+            <if test="contractId != null"> AND o.contract_id = #{contractId}</if>
+            <if test="customerName != null and customerName != ''"> AND c.customer_name LIKE CONCAT('%', #{customerName}, '%')</if>
+            <if test="userId != null"> AND o.user_id = #{userId}</if>
+        </where>
+        ORDER BY o.order_id DESC
+    </select>
+
+    <select id="selectOrderById" parameterType="Long" resultMap="MkOrderResult">
+        <include refid="selectOrderVo"/> WHERE o.order_id = #{orderId}
+    </select>
+
+    <select id="selectOrderItems" parameterType="Long" resultMap="MkOrderItemResult">
+        SELECT item_id, order_id, line_no, product_name, product_spec, unit, quantity, unit_price, subtotal,
+               create_time, remark
+        FROM mk_order_item WHERE order_id = #{orderId}
+    </select>
+
+    <insert id="insertOrder" parameterType="MkOrder" useGeneratedKeys="true" keyProperty="orderId">
+        INSERT INTO mk_order (order_no, contract_id, customer_id, order_amount, order_status,
+            logistics_company, tracking_no, deliver_time, finish_time, confirm_time,
+            receive_time, receive_person, cancel_reason, user_id, dept_id, create_by, create_time, remark)
+        VALUES (#{orderNo}, #{contractId}, #{customerId}, #{orderAmount}, #{orderStatus},
+            #{logisticsCompany}, #{trackingNo}, #{deliverTime}, #{finishTime}, #{confirmTime},
+            #{receiveTime}, #{receivePerson}, #{cancelReason}, #{userId}, #{deptId}, #{createBy}, sysdate(), #{remark})
+    </insert>
+
+    <insert id="insertOrderItem" parameterType="MkOrderItem">
+        INSERT INTO mk_order_item (order_id, line_no, product_name, product_spec, unit, quantity, unit_price, subtotal, create_time, remark)
+        VALUES (#{orderId}, #{lineNo}, #{productName}, #{productSpec}, #{unit}, #{quantity}, #{unitPrice}, #{subtotal}, sysdate(), #{remark})
+    </insert>
+
+    <update id="updateOrder" parameterType="MkOrder">
+        UPDATE mk_order
+        <set>
+            <if test="orderNo != null and orderNo != ''">order_no = #{orderNo},</if>
+            <if test="contractId != null">contract_id = #{contractId},</if>
+            <if test="customerId != null">customer_id = #{customerId},</if>
+            <if test="orderAmount != null">order_amount = #{orderAmount},</if>
+            <if test="orderStatus != null">order_status = #{orderStatus},</if>
+            <if test="logisticsCompany != null">logistics_company = #{logisticsCompany},</if>
+            <if test="trackingNo != null">tracking_no = #{trackingNo},</if>
+            <if test="deliverTime != null">deliver_time = #{deliverTime},</if>
+            <if test="finishTime != null">finish_time = #{finishTime},</if>
+            <if test="confirmTime != null">confirm_time = #{confirmTime},</if>
+            <if test="receiveTime != null">receive_time = #{receiveTime},</if>
+            <if test="receivePerson != null">receive_person = #{receivePerson},</if>
+            <if test="cancelReason != null">cancel_reason = #{cancelReason},</if>
+            <if test="userId != null">user_id = #{userId},</if>
+            <if test="deptId != null">dept_id = #{deptId},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE order_id = #{orderId}
+    </update>
+
+    <delete id="deleteOrderByIds" parameterType="Long">
+        UPDATE mk_order SET del_flag = '2' WHERE order_id IN
+        <foreach item="orderId" collection="array" open="(" separator="," close=")">#{orderId}</foreach>
+    </delete>
+
+    <delete id="deleteOrderItemsByOrderId" parameterType="Long">
+        DELETE FROM mk_order_item WHERE order_id = #{orderId}
+    </delete>
+
+    <!-- 订单发货 -->
+    <update id="deliverOrder" parameterType="MkOrder">
+        UPDATE mk_order
+        SET order_status = #{orderStatus},
+            logistics_company = #{logisticsCompany},
+            tracking_no = #{trackingNo},
+            deliver_time = #{deliverTime},
+            update_by = #{updateBy},
+            update_time = sysdate()
+        WHERE order_id = #{orderId}
+    </update>
+
+</mapper>

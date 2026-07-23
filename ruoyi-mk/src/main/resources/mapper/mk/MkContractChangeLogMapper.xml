@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mk.mapper.MkContractChangeLogMapper">
+
+    <resultMap type="com.ruoyi.mk.domain.MkContractChangeLog" id="MkContractChangeLogResult">
+        <result property="logId"              column="log_id"/>
+        <result property="contractId"         column="contract_id"/>
+        <result property="contractNo"         column="contract_no"/>
+        <result property="changeType"         column="change_type"/>
+        <result property="fieldName"          column="field_name"/>
+        <result property="oldValue"           column="old_value"/>
+        <result property="newValue"           column="new_value"/>
+        <result property="changeReason"       column="change_reason"/>
+        <result property="changeStatus"      column="change_status"/>
+        <result property="approveOpinion"     column="approve_opinion"/>
+        <result property="approveBy"          column="approve_by"/>
+        <result property="approveTime"        column="approve_time"/>
+        <result property="createBy"           column="create_by"/>
+        <result property="createTime"         column="create_time"/>
+    </resultMap>
+
+    <sql id="selectChangeLogVo">
+        SELECT l.log_id, l.contract_id, l.contract_no, l.change_type, l.field_name, l.old_value, l.new_value,
+               l.change_reason, l.change_status, l.approve_opinion, l.approve_by, l.approve_time,
+               l.create_by, l.create_time
+        FROM mk_contract_change_log l
+    </sql>
+
+    <select id="selectChangeLogList" parameterType="com.ruoyi.mk.domain.MkContractChangeLog" resultMap="MkContractChangeLogResult">
+        <include refid="selectChangeLogVo"/>
+        <where>
+            <if test="contractId != null"> AND l.contract_id = #{contractId}</if>
+            <if test="changeType != null and changeType != ''"> AND l.change_type = #{changeType}</if>
+            <if test="changeStatus != null and changeStatus != ''"> AND l.change_status = #{changeStatus}</if>
+        </where>
+        ORDER BY l.log_id DESC
+    </select>
+
+    <select id="selectChangeLogByContractId" parameterType="Long" resultMap="MkContractChangeLogResult">
+        <include refid="selectChangeLogVo"/> WHERE l.contract_id = #{contractId} ORDER BY l.log_id DESC
+    </select>
+
+    <select id="selectChangeLogById" parameterType="Long" resultMap="MkContractChangeLogResult">
+        <include refid="selectChangeLogVo"/> WHERE l.log_id = #{logId}
+    </select>
+
+    <insert id="insertChangeLog" parameterType="com.ruoyi.mk.domain.MkContractChangeLog" useGeneratedKeys="true" keyProperty="logId">
+        INSERT INTO mk_contract_change_log (contract_id, contract_no, change_type, field_name, old_value, new_value,
+            change_reason, change_status, approve_opinion, approve_by, approve_time, create_by, create_time)
+        VALUES (#{contractId}, #{contractNo}, #{changeType}, #{fieldName}, #{oldValue}, #{newValue},
+            #{changeReason}, #{changeStatus}, #{approveOpinion}, #{approveBy}, #{approveTime}, #{createBy}, sysdate())
+    </insert>
+
+    <update id="updateChangeLog" parameterType="com.ruoyi.mk.domain.MkContractChangeLog">
+        UPDATE mk_contract_change_log
+        <set>
+            <if test="changeStatus != null">change_status = #{changeStatus},</if>
+            <if test="approveOpinion != null">approve_opinion = #{approveOpinion},</if>
+            <if test="approveBy != null">approve_by = #{approveBy},</if>
+            <if test="approveTime != null">approve_time = #{approveTime},</if>
+        </set>
+        WHERE log_id = #{logId}
+    </update>
+
+</mapper>

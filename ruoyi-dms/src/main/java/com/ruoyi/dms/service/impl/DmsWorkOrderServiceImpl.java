@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.SecurityUtils;
+import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.dms.domain.DmsSparePart;
 import com.ruoyi.dms.domain.DmsSparePartRecord;
 import com.ruoyi.dms.domain.DmsWorkOrder;
@@ -17,6 +18,7 @@ import com.ruoyi.dms.mapper.DmsWorkOrderMapper;
 import com.ruoyi.dms.service.IDmsSparePartService;
 import com.ruoyi.dms.service.IDmsWorkOrderLogService;
 import com.ruoyi.dms.service.IDmsWorkOrderService;
+import com.ruoyi.mk.service.IMkNumberRuleService;
 import com.ruoyi.system.domain.SysNotice;
 import com.ruoyi.system.service.ISysNoticeService;
 
@@ -34,6 +36,9 @@ public class DmsWorkOrderServiceImpl implements IDmsWorkOrderService
 
     @Autowired
     private ISysNoticeService sysNoticeService;
+
+    @Autowired
+    private IMkNumberRuleService mkNumberRuleService;
 
     /** SLA时效配置：优先级 → [响应分钟, 处理分钟] */
     private static final java.util.Map<String, int[]> SLA_CONFIG = new java.util.HashMap<>();
@@ -64,7 +69,7 @@ public class DmsWorkOrderServiceImpl implements IDmsWorkOrderService
         workOrder.setDelFlag("0");
         if (workOrder.getOrderNo() == null || workOrder.getOrderNo().isEmpty())
         {
-            workOrder.setOrderNo(generateOrderNo());
+            workOrder.setOrderNo(mkNumberRuleService.generateNumber("dms_work_order"));
         }
         if (workOrder.getOrderStatus() == null || workOrder.getOrderStatus().isEmpty())
         {
@@ -363,18 +368,11 @@ public class DmsWorkOrderServiceImpl implements IDmsWorkOrderService
     }
 
     /**
-     * 工单号生成（synchronized 保证并发安全）
+     * 工单号生成（使用编号规则服务）
      */
     private synchronized String generateOrderNo()
     {
-        String dateStr = new SimpleDateFormat("yyyyMMdd").format(new Date());
-        String maxNo = dmsWorkOrderMapper.selectMaxOrderNo();
-        int seq = 1;
-        if (maxNo != null && maxNo.length() > 10 && maxNo.contains(dateStr))
-        {
-            try { seq = Integer.parseInt(maxNo.substring(10)) + 1; } catch (Exception e) { seq = 1; }
-        }
-        return "WO" + dateStr + String.format("%04d", seq);
+        return mkNumberRuleService.generateNumber("dms_work_order");
     }
 
     private String getCurrentUsername()

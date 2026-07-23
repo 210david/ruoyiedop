@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mk.mapper.MkActivityParticipantMapper">
+
+    <resultMap type="MkActivityParticipant" id="MkActivityParticipantResult">
+        <result property="participantId"     column="participant_id"/>
+        <result property="activityId"        column="activity_id"/>
+        <result property="leadId"            column="lead_id"/>
+        <result property="contactId"         column="contact_id"/>
+        <result property="companyName"       column="company_name"/>
+        <result property="contactName"       column="contact_name"/>
+        <result property="contactPhone"      column="contact_phone"/>
+        <result property="contactEmail"      column="contact_email"/>
+        <result property="position"          column="position"/>
+        <result property="participateStatus" column="participate_status"/>
+        <result property="source"            column="source"/>
+        <result property="signTime"          column="sign_time"/>
+        <result property="signInCode"        column="sign_in_code"/>
+        <result property="activityName"      column="activity_name"/>
+        <result property="createBy"          column="create_by"/>
+        <result property="createTime"        column="create_time"/>
+        <result property="updateBy"          column="update_by"/>
+        <result property="updateTime"        column="update_time"/>
+        <result property="remark"            column="remark"/>
+    </resultMap>
+
+    <sql id="selectParticipantVo">
+        SELECT p.participant_id, p.activity_id, p.lead_id, p.contact_id, p.company_name, p.contact_name,
+               p.contact_phone, p.contact_email, p.position, p.participate_status, p.source, p.sign_time, p.sign_in_code,
+               p.create_by, p.create_time, p.update_by, p.update_time, p.remark, a.activity_name
+        FROM mk_activity_participant p
+        LEFT JOIN mk_activity a ON p.activity_id = a.activity_id
+    </sql>
+
+    <select id="selectParticipantList" parameterType="MkActivityParticipant" resultMap="MkActivityParticipantResult">
+        <include refid="selectParticipantVo"/>
+        <where>
+            <if test="activityId != null"> AND p.activity_id = #{activityId}</if>
+            <if test="companyName != null and companyName != ''"> AND p.company_name LIKE CONCAT('%', #{companyName}, '%')</if>
+            <if test="contactName != null and contactName != ''"> AND p.contact_name LIKE CONCAT('%', #{contactName}, '%')</if>
+            <if test="contactPhone != null and contactPhone != ''"> AND p.contact_phone LIKE CONCAT('%', #{contactPhone}, '%')</if>
+            <if test="participateStatus != null and participateStatus != ''"> AND p.participate_status = #{participateStatus}</if>
+        </where>
+        ORDER BY p.participant_id DESC
+    </select>
+
+    <select id="selectParticipantById" parameterType="Long" resultMap="MkActivityParticipantResult">
+        <include refid="selectParticipantVo"/> WHERE p.participant_id = #{participantId}
+    </select>
+
+    <insert id="insertParticipant" parameterType="MkActivityParticipant" useGeneratedKeys="true" keyProperty="participantId">
+        INSERT INTO mk_activity_participant (activity_id, lead_id, contact_id, company_name, contact_name, contact_phone,
+            contact_email, position, participate_status, source, sign_time, sign_in_code, create_by, create_time, remark)
+        VALUES (#{activityId}, #{leadId}, #{contactId}, #{companyName}, #{contactName}, #{contactPhone},
+            #{contactEmail}, #{position}, #{participateStatus}, #{source}, #{signTime}, #{signInCode}, #{createBy}, sysdate(), #{remark})
+    </insert>
+
+    <update id="updateParticipant" parameterType="MkActivityParticipant">
+        UPDATE mk_activity_participant
+        <set>
+            <if test="activityId != null">activity_id = #{activityId},</if>
+            <if test="leadId != null">lead_id = #{leadId},</if>
+            <if test="contactId != null">contact_id = #{contactId},</if>
+            <if test="companyName != null">company_name = #{companyName},</if>
+            <if test="contactName != null">contact_name = #{contactName},</if>
+            <if test="contactPhone != null">contact_phone = #{contactPhone},</if>
+            <if test="contactEmail != null">contact_email = #{contactEmail},</if>
+            <if test="position != null">position = #{position},</if>
+            <if test="participateStatus != null">participate_status = #{participateStatus},</if>
+            <if test="source != null">source = #{source},</if>
+            <if test="signTime != null">sign_time = #{signTime},</if>
+            <if test="signInCode != null">sign_in_code = #{signInCode},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE participant_id = #{participantId}
+    </update>
+
+    <delete id="deleteParticipantByIds" parameterType="Long">
+        DELETE FROM mk_activity_participant WHERE participant_id IN
+        <foreach item="participantId" collection="array" open="(" separator="," close=")">#{participantId}</foreach>
+    </delete>
+
+    <!-- P0-3: 按活动ID查询参与人列表 -->
+    <select id="selectByActivityId" resultMap="MkActivityParticipantResult">
+        <include refid="selectParticipantVo"/> WHERE p.activity_id = #{activityId}
+        ORDER BY p.participant_id DESC
+    </select>
+
+    <!-- P1-5: 签到 -->
+    <update id="signIn">
+        UPDATE mk_activity_participant SET participate_status = '1', sign_time = sysdate(),
+        update_by = #{updateBy}, update_time = sysdate()
+        WHERE participant_id = #{participantId}
+    </update>
+
+    <!-- P1-5: 回写leadId -->
+    <update id="updateLeadId">
+        UPDATE mk_activity_participant SET lead_id = #{leadId}, update_time = sysdate()
+        WHERE participant_id = #{participantId}
+    </update>
+
+    <!-- P3-15: 根据活动ID和手机号查询参与人（报名去重） -->
+    <select id="selectByActivityAndPhone" resultMap="MkActivityParticipantResult">
+        <include refid="selectParticipantVo"/>
+        WHERE p.activity_id = #{activityId} AND p.contact_phone = #{contactPhone}
+        LIMIT 1
+    </select>
+
+    <!-- P3-15: 根据签到码查询参与人（现场签到） -->
+    <select id="selectBySignInCode" resultMap="MkActivityParticipantResult">
+        <include refid="selectParticipantVo"/>
+        WHERE p.sign_in_code = #{signInCode}
+        LIMIT 1
+    </select>
+
+    <!-- P3-15: 统计活动报名人数 -->
+    <select id="countByActivityId" resultType="int">
+        SELECT COUNT(1) FROM mk_activity_participant WHERE activity_id = #{activityId}
+    </select>
+
+</mapper>

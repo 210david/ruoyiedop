@@ -52,11 +52,3 @@ export function pickOutbound(orderId, detailId, pickQty) {
     params: { pickQty }
   })
 }
-
-export function checkOutbound(orderId, detailId, actualQty) {
-  return request({
-    url: '/wms/outbound/check/' + orderId + '/' + detailId,
-    method: 'put',
-    params: { actualQty }
-  })
-}

@@ -8,6 +8,7 @@
         <result property="documentCode"     column="document_code"/>
         <result property="partCode"         column="part_code"/>
         <result property="partName"         column="part_name"/>
+        <result property="unit"             column="unit"/>
         <result property="moveType"         column="move_type"/>
         <result property="sourceType"       column="source_type"/>
         <result property="targetType"       column="target_type"/>
@@ -27,22 +28,24 @@
     </resultMap>
 
     <select id="selectRecordList" parameterType="DmsSparePartRecord" resultMap="DmsSparePartRecordResult">
-        SELECT record_id, part_id, document_code, part_code, part_name, move_type, source_type, target_type,
-               supplier_or_dept, receiver, quantity, before_stock, after_stock, ref_type, ref_id, ref_no,
-               operator_name, operate_date, storage_location, create_time, remark
-        FROM dms_spare_part_record
+        SELECT r.record_id, r.part_id, r.document_code, r.part_code, r.part_name, r.move_type, r.source_type, r.target_type,
+               r.supplier_or_dept, r.receiver, r.quantity, r.before_stock, r.after_stock, r.ref_type, r.ref_id, r.ref_no,
+               r.operator_name, r.operate_date, r.storage_location, r.create_time, r.remark,
+               sp.unit
+        FROM dms_spare_part_record r
+        LEFT JOIN dms_spare_part sp ON r.part_id = sp.part_id
         <where>
-            <if test="partId != null"> AND part_id = #{partId}</if>
-            <if test="partCode != null and partCode != ''"> AND part_code LIKE CONCAT('%', #{partCode}, '%')</if>
-            <if test="partName != null and partName != ''"> AND part_name LIKE CONCAT('%', #{partName}, '%')</if>
-            <if test="moveType != null and moveType != '' and moveType != 'not0'.toString()"> AND move_type = #{moveType}</if>
-            <if test="moveType != null and moveType == 'not0'.toString()"> AND move_type != '0'</if>
-            <if test="documentCode != null and documentCode != ''"> AND document_code LIKE CONCAT('%', #{documentCode}, '%')</if>
-            <if test="sourceType != null and sourceType != ''"> AND source_type = #{sourceType}</if>
-            <if test="targetType != null and targetType != ''"> AND target_type = #{targetType}</if>
-            <if test="supplierOrDept != null and supplierOrDept != ''"> AND supplier_or_dept LIKE CONCAT('%', #{supplierOrDept}, '%')</if>
+            <if test="partId != null"> AND r.part_id = #{partId}</if>
+            <if test="partCode != null and partCode != ''"> AND r.part_code LIKE CONCAT('%', #{partCode}, '%')</if>
+            <if test="partName != null and partName != ''"> AND r.part_name LIKE CONCAT('%', #{partName}, '%')</if>
+            <if test="moveType != null and moveType != '' and moveType != 'not0'.toString()"> AND r.move_type = #{moveType}</if>
+            <if test="moveType != null and moveType == 'not0'.toString()"> AND r.move_type != '0'</if>
+            <if test="documentCode != null and documentCode != ''"> AND r.document_code LIKE CONCAT('%', #{documentCode}, '%')</if>
+            <if test="sourceType != null and sourceType != ''"> AND r.source_type = #{sourceType}</if>
+            <if test="targetType != null and targetType != ''"> AND r.target_type = #{targetType}</if>
+            <if test="supplierOrDept != null and supplierOrDept != ''"> AND r.supplier_or_dept LIKE CONCAT('%', #{supplierOrDept}, '%')</if>
         </where>
-        ORDER BY record_id DESC
+        ORDER BY r.record_id DESC
     </select>
 
     <select id="selectLastDocumentCode" resultType="String">
