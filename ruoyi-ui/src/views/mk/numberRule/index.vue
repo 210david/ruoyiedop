@@ -74,7 +74,13 @@
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
     <!-- 新增/修改/查看 对话框 -->
-    <el-dialog :title="title" v-model="open" width="750px" append-to-body>
+    <el-dialog v-model="open" width="750px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <span class="rd-detail-header-title">{{ title }}</span>
+        </div>
+      </template>
       <el-form ref="ruleRef" :model="form" :rules="rules" label-width="120px" :disabled="isView">
         <el-collapse v-model="activeNames">
           <!-- 分组一：基本信息 -->
@@ -259,6 +265,8 @@ import { listNumberRule, getNumberRule, addNumberRule, updateNumberRule } from '
 import { getDicts } from '@/api/system/dict/data'
 
 const route = useRoute()
+import { useDetailCard } from '@/composables/useDetailCard'
+const { collapsedCards, toggleCard } = useDetailCard([])
 const { proxy } = getCurrentInstance()
 const { mk_number_reset_type, sys_normal_disable } = proxy.useDict('mk_number_reset_type', 'sys_normal_disable')
 

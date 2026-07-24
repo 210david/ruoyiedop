@@ -408,4 +408,41 @@ public class MkContractServiceImpl implements IMkContractService
         mkContractMapper.updateContractStatus(changeLog.getContractId(), "5");
         return rows;
     }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int submitContractChanges(List<MkContractChangeLog> changeLogs)
+    {
+        if (changeLogs == null || changeLogs.isEmpty())
+        {
+            throw new ServiceException("变更内容不能为空");
+        }
+        Long contractId = changeLogs.get(0).getContractId();
+        MkContract contract = mkContractMapper.selectContractById(contractId);
+        if (contract == null)
+        {
+            throw new ServiceException("合同不存在");
+        }
+        if (!"2".equals(contract.getContractStatus()))
+        {
+            throw new ServiceException("只有已生效的合同才能申请变更");
+        }
+        String username = SecurityUtils.getUsername();
+        String contractNo = contract.getContractNo();
+        int rows = 0;
+        for (MkContractChangeLog log : changeLogs)
+        {
+            if (log.getChangeStatus() == null)
+            {
+                log.setChangeStatus("0");
+            }
+            log.setContractId(contractId);
+            log.setContractNo(contractNo);
+            log.setCreateBy(username);
+            rows += mkContractChangeLogMapper.insertChangeLog(log);
+        }
+        // 将合同状态改为"变更审批中"
+        mkContractMapper.updateContractStatus(contractId, "5");
+        return rows;
+    }
 }

@@ -89,6 +89,43 @@ public class MkContractChangeServiceImpl implements IMkContractChangeService
         return mkContractChangeLogMapper.updateChangeLog(changeLog);
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int approveChangesByContractId(Long contractId, boolean approved, String opinion)
+    {
+        List<MkContractChangeLog> pendingLogs = mkContractChangeLogMapper.selectChangeLogByContractId(contractId);
+        if (pendingLogs == null || pendingLogs.isEmpty())
+        {
+            throw new ServiceException("未找到变更记录");
+        }
+        String username = SecurityUtils.getUsername();
+        Date now = new Date();
+        int rows = 0;
+        for (MkContractChangeLog log : pendingLogs)
+        {
+            if (!"0".equals(log.getChangeStatus()))
+            {
+                continue;
+            }
+            log.setApproveOpinion(opinion);
+            log.setApproveBy(username);
+            log.setApproveTime(now);
+            if (approved)
+            {
+                applyChange(log);
+                log.setChangeStatus("3");
+            }
+            else
+            {
+                log.setChangeStatus("2");
+            }
+            rows += mkContractChangeLogMapper.updateChangeLog(log);
+        }
+        // 无论批准还是驳回，都将合同状态恢复为"已生效"
+        mkContractMapper.updateContractStatus(contractId, "2");
+        return rows;
+    }
+
     /**
      * 执行合同变更
      */

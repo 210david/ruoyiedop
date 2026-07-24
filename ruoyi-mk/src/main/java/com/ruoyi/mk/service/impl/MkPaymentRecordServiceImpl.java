@@ -3,6 +3,8 @@ package com.ruoyi.mk.service.impl;
 import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +24,8 @@ import com.ruoyi.mk.service.IMkPaymentRecordService;
 @Service
 public class MkPaymentRecordServiceImpl implements IMkPaymentRecordService
 {
+    private static final Logger log = LoggerFactory.getLogger(MkPaymentRecordServiceImpl.class);
+
     @Autowired
     private MkPaymentRecordMapper mkPaymentRecordMapper;
 
@@ -54,6 +58,16 @@ public class MkPaymentRecordServiceImpl implements IMkPaymentRecordService
         {
             record.setConfirmStatus("0");
         }
+        // 设置创建者
+        record.setCreateBy(SecurityUtils.getUsername());
+
+        // 保存关键字段原始值（防止后续查询操作意外覆盖 BaseEntity 继承字段）
+        String originalRemark = record.getRemark();
+        String originalReceiptAttachment = record.getReceiptAttachment();
+
+        log.info("[insertPaymentRecord] Before plan lookup: remark={}, receiptAttachment={}",
+                originalRemark, originalReceiptAttachment);
+
         // 从回款计划中补充合同和客户信息
         if (record.getPlanId() != null)
         {
@@ -64,7 +78,26 @@ public class MkPaymentRecordServiceImpl implements IMkPaymentRecordService
                 record.setCustomerId(plan.getCustomerId());
             }
         }
+
+        // 恢复关键字段（防止 selectPaymentPlanById 查询意外覆盖）
+        record.setRemark(originalRemark);
+        record.setReceiptAttachment(originalReceiptAttachment);
+
+        log.info("[insertPaymentRecord] After plan lookup (restored): remark={}, receiptAttachment={}",
+                record.getRemark(), record.getReceiptAttachment());
+
         int rows = mkPaymentRecordMapper.insertPaymentRecord(record);
+        log.info("[insertPaymentRecord] After INSERT: recordId={}, remark={}, receiptAttachment={}",
+                record.getRecordId(), record.getRemark(), record.getReceiptAttachment());
+
+        // 验证数据库中实际存储的值
+        MkPaymentRecord verifyRecord = mkPaymentRecordMapper.selectPaymentRecordById(record.getRecordId());
+        if (verifyRecord != null)
+        {
+            log.info("[insertPaymentRecord] DB verify: recordId={}, remark={}, receiptAttachment={}",
+                    verifyRecord.getRecordId(), verifyRecord.getRemark(), verifyRecord.getReceiptAttachment());
+        }
+
         // 如果直接确认，更新回款计划的累计金额
         if ("1".equals(record.getConfirmStatus()))
         {
@@ -109,14 +142,20 @@ public class MkPaymentRecordServiceImpl implements IMkPaymentRecordService
         {
             throw new ServiceException("非待确认状态的记录不能操作");
         }
+        // 只更新确认相关字段，避免全量更新覆盖其他字段
         record.setConfirmStatus(confirmStatus);
         record.setConfirmBy(SecurityUtils.getUsername());
         record.setConfirmTime(new Date());
-        if (remark != null)
+        record.setUpdateBy(SecurityUtils.getUsername());
+        if (remark != null && !remark.trim().isEmpty())
         {
             record.setRemark(remark);
         }
+        log.info("[confirmPaymentRecord] Before UPDATE: recordId={}, confirmStatus={}, remark={}, receiptAttachment={}",
+                record.getRecordId(), record.getConfirmStatus(), record.getRemark(), record.getReceiptAttachment());
         int rows = mkPaymentRecordMapper.updatePaymentRecord(record);
+        log.info("[confirmPaymentRecord] After UPDATE: recordId={}, remark={}, receiptAttachment={}",
+                record.getRecordId(), record.getRemark(), record.getReceiptAttachment());
         // 确认或驳回后，更新回款计划的累计金额和状态
         updatePlanActualAmount(record.getPlanId());
         return rows;

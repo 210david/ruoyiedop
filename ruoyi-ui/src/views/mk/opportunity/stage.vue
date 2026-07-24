@@ -24,7 +24,13 @@
       </el-table-column>
     </el-table>
 
-    <el-dialog :title="title" v-model="open" width="600px" append-to-body>
+    <el-dialog v-model="open" width="600px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <span class="rd-detail-header-title">{{ title }}</span>
+        </div>
+      </template>
       <el-form ref="stageRef" :model="form" :rules="rules" label-width="120px">
         <el-form-item label="阶段编码" prop="stageCode"><el-input v-model="form.stageCode" placeholder="请输入阶段编号" /></el-form-item>
         <el-form-item label="阶段名称" prop="stageName"><el-input v-model="form.stageName" placeholder="请输入阶段名称" /></el-form-item>
@@ -37,16 +43,22 @@
       <template #footer><el-button type="primary" @click="submitForm">确 定</el-button><el-button @click="cancel">取 消</el-button></template>
     </el-dialog>
 
-    <el-dialog title="阶段详情" v-model="viewOpen" width="600px" append-to-body>
-      <el-descriptions :column="1" border>
-        <el-descriptions-item label="阶段编码">{{ viewForm.stageCode }}</el-descriptions-item>
-        <el-descriptions-item label="阶段名称">{{ viewForm.stageName }}</el-descriptions-item>
-        <el-descriptions-item label="排序">{{ viewForm.sort }}</el-descriptions-item>
-        <el-descriptions-item label="赢率(%)">{{ viewForm.winRate }}</el-descriptions-item>
-        <el-descriptions-item label="最大停留天数">{{ viewForm.maxDays }}</el-descriptions-item>
-        <el-descriptions-item label="状态">{{ viewForm.status === '0' ? '正常' : '停用' }}</el-descriptions-item>
-        <el-descriptions-item label="备注">{{ viewForm.remark }}</el-descriptions-item>
-      </el-descriptions>
+    <el-dialog v-model="viewOpen" width="600px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M9 12h6"/><path d="M12 9v6"/></svg></div>
+          <span class="rd-detail-header-title">阶段详情</span>
+        </div>
+      </template>
+      <div class="rd-grid">
+        <div class="rd-item"><span class="rd-label">阶段编码</span><div class="rd-value">{{ viewForm.stageCode }}</div></div>
+        <div class="rd-item"><span class="rd-label">阶段名称</span><div class="rd-value">{{ viewForm.stageName }}</div></div>
+        <div class="rd-item"><span class="rd-label">排序</span><div class="rd-value">{{ viewForm.sort }}</div></div>
+        <div class="rd-item"><span class="rd-label">赢率(%)</span><div class="rd-value">{{ viewForm.winRate }}</div></div>
+        <div class="rd-item"><span class="rd-label">最大停留天数</span><div class="rd-value">{{ viewForm.maxDays }}</div></div>
+        <div class="rd-item"><span class="rd-label">状态</span><div class="rd-value">{{ viewForm.status === '0' ? '正常' : '停用' }}</div></div>
+        <div class="rd-item"><span class="rd-label">备注</span><div class="rd-value">{{ viewForm.remark }}</div></div>
+      </div>
     </el-dialog>
   </div>
 </template>
@@ -54,6 +66,8 @@
 <script setup name="MkOpportunityStage">
 import { listStage, getStage, addStage, updateStage, delStage } from '@/api/mk/stage'
 import { useColumnResize } from '@/composables/useColumnResize'
+import { useDetailCard } from '@/composables/useDetailCard'
+const { collapsedCards, toggleCard } = useDetailCard([])
 
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('mk_opportunity_stage')

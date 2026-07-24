@@ -71,6 +71,10 @@ public class MkPaymentRecord extends BaseEntity
     /** 期次（关联查询） */
     private Integer periodNo;
 
+    /** 备注（显式声明，确保 MyBatis 正确映射） */
+    @Excel(name = "备注")
+    private String remark;
+
     public Long getRecordId() { return recordId; }
     public void setRecordId(Long recordId) { this.recordId = recordId; }
     public Long getPlanId() { return planId; }
@@ -103,4 +107,9 @@ public class MkPaymentRecord extends BaseEntity
     public void setPlanAmount(BigDecimal planAmount) { this.planAmount = planAmount; }
     public Integer getPeriodNo() { return periodNo; }
     public void setPeriodNo(Integer periodNo) { this.periodNo = periodNo; }
+    
+    @Override
+    public String getRemark() { return this.remark; }
+    @Override
+    public void setRemark(String remark) { this.remark = remark; }
 }

@@ -78,7 +78,13 @@
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
     <!-- 新增/修改对话框 -->
-    <el-dialog :title="title" v-model="open" width="750px" append-to-body>
+    <el-dialog v-model="open" width="750px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <span class="rd-detail-header-title">{{ title }}</span>
+        </div>
+      </template>
       <el-form ref="contactRef" :model="form" :rules="rules" label-width="100px">
         <el-collapse v-model="activeNames">
           <el-collapse-item title="基本信息" name="basic">
@@ -140,7 +146,13 @@
     </el-dialog>
 
     <!-- 重复联系人弹窗 -->
-    <el-dialog title="疑似重复联系人" v-model="dupOpen" width="700px" append-to-body>
+    <el-dialog v-model="dupOpen" width="700px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <span class="rd-detail-header-title">疑似重复联系人</span>
+        </div>
+      </template>
       <el-alert v-if="dupList.length > 0" title="系统检测到以下联系人可能与当前输入重复，请确认是否继续或选择合并" type="warning" :closable="false" class="mb8" />
       <el-table :data="dupList" border size="small">
         <el-table-column label="姓名" prop="name" width="100" />
@@ -160,7 +172,13 @@
     </el-dialog>
 
     <!-- 分配弹窗 -->
-    <el-dialog title="分配联系人" v-model="assignOpen" width="500px" append-to-body>
+    <el-dialog v-model="assignOpen" width="500px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <span class="rd-detail-header-title">分配联系人</span>
+        </div>
+      </template>
       <el-form label-width="80px">
         <el-form-item label="归属销售">
           <el-select v-model="assignUserId" filterable clearable placeholder="请选择（留空释放到公海）" style="width: 100%">
@@ -175,7 +193,13 @@
     </el-dialog>
 
     <!-- 导入弹窗 -->
-    <el-dialog title="联系人导入" v-model="importOpen" width="500px" append-to-body>
+    <el-dialog v-model="importOpen" width="500px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <span class="rd-detail-header-title">联系人导入</span>
+        </div>
+      </template>
       <el-upload ref="uploadRef" :limit="1" accept=".xlsx, .xls" :auto-upload="false" :action="importUrl" :headers="headers" :on-success="handleImportSuccess" :on-error="handleImportError" drag>
         <el-icon class="el-icon--upload"><upload-filled /></el-icon>
         <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
@@ -205,6 +229,8 @@ import { listCustomer } from '@/api/mk/customer'
 import { listUser } from '@/api/system/user'
 import { getToken } from '@/utils/auth'
 import { useColumnResize } from '@/composables/useColumnResize'
+import { useDetailCard } from '@/composables/useDetailCard'
+const { collapsedCards, toggleCard } = useDetailCard([])
 
 const router = useRouter()
 const { proxy } = getCurrentInstance()

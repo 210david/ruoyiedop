@@ -62,7 +62,13 @@
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
     <!-- 新增/修改对话框 -->
-    <el-dialog :title="title" v-model="open" width="600px" append-to-body>
+    <el-dialog v-model="open" width="600px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <span class="rd-detail-header-title">{{ title }}</span>
+        </div>
+      </template>
       <el-form ref="tagRef" :model="form" :rules="rules" label-width="100px">
         <el-form-item label="标签名称" prop="tagName"><el-input v-model="form.tagName" placeholder="请输入标签名称" /></el-form-item>
         <el-form-item label="标签类型" prop="tagType">
@@ -89,28 +95,30 @@
     </el-dialog>
 
     <!-- 查看详情对话框 -->
-    <el-dialog title="标签详情" v-model="viewOpen" width="600px" append-to-body>
+    <el-dialog v-model="viewOpen" width="600px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M9 12h6"/><path d="M12 9v6"/></svg></div>
+          <span class="rd-detail-header-title">标签详情</span>
+        </div>
+      </template>
       <el-collapse v-model="viewActiveNames">
         <el-collapse-item title="基本信息" name="basic">
-          <el-descriptions :column="1" border>
-            <el-descriptions-item label="标签名称">
-              <el-tag :color="viewForm.tagColor" effect="dark" v-if="viewForm.tagColor">{{ viewForm.tagName }}</el-tag>
-              <span v-else>{{ viewForm.tagName }}</span>
-            </el-descriptions-item>
-            <el-descriptions-item label="标签类型"><dict-tag :options="marketing_tag_type" :value="viewForm.tagType" /></el-descriptions-item>
-            <el-descriptions-item label="标签颜色">
-              <div v-if="viewForm.tagColor" :style="{ background: viewForm.tagColor, width: '60px', height: '24px', borderRadius: '4px', display: 'inline-block' }"></div>
-              <span v-else>-</span>
-            </el-descriptions-item>
-            <el-descriptions-item label="排序">{{ viewForm.sort }}</el-descriptions-item>
-            <el-descriptions-item label="状态"><dict-tag :options="sys_normal_disable" :value="viewForm.status" /></el-descriptions-item>
-          </el-descriptions>
+          <div class="rd-grid">
+            <div class="rd-item"><span class="rd-label">标签名称</span><div class="rd-value"><el-tag :color="viewForm.tagColor" effect="dark" v-if="viewForm.tagColor">{{ viewForm.tagName }}</el-tag>
+              <span v-else>{{ viewForm.tagName }}</span></div></div>
+            <div class="rd-item"><span class="rd-label">标签类型</span><div class="rd-value"><dict-tag :options="marketing_tag_type" :value="viewForm.tagType" /></div></div>
+            <div class="rd-item"><span class="rd-label">标签颜色</span><div class="rd-value"><div v-if="viewForm.tagColor" :style="{ background: viewForm.tagColor, width: '60px', height: '24px', borderRadius: '4px', display: 'inline-block' }"></div>
+              <span v-else>-</span></div></div>
+            <div class="rd-item"><span class="rd-label">排序</span><div class="rd-value">{{ viewForm.sort }}</div></div>
+            <div class="rd-item"><span class="rd-label">状态</span><div class="rd-value"><dict-tag :options="sys_normal_disable" :value="viewForm.status" /></div></div>
+          </div>
         </el-collapse-item>
         <el-collapse-item title="其他信息" name="other">
-          <el-descriptions :column="1" border>
-            <el-descriptions-item label="创建时间">{{ viewForm.createTime }}</el-descriptions-item>
-            <el-descriptions-item label="备注">{{ viewForm.remark }}</el-descriptions-item>
-          </el-descriptions>
+          <div class="rd-grid">
+            <div class="rd-item"><span class="rd-label">创建时间</span><div class="rd-value">{{ viewForm.createTime }}</div></div>
+            <div class="rd-item"><span class="rd-label">备注</span><div class="rd-value">{{ viewForm.remark }}</div></div>
+          </div>
         </el-collapse-item>
       </el-collapse>
     </el-dialog>
@@ -120,6 +128,8 @@
 <script setup name="MkCustomerTag">
 import { listTag, getTag, addTag, updateTag, delTag } from '@/api/mk/tag'
 import { useColumnResize } from '@/composables/useColumnResize'
+import { useDetailCard } from '@/composables/useDetailCard'
+const { collapsedCards, toggleCard } = useDetailCard([])
 
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('mk_tag_index')

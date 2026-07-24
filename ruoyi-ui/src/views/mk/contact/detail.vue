@@ -16,35 +16,35 @@
       <!-- 基本信息 -->
       <el-tab-pane label="基本信息" name="basic">
         <!-- 个人信息 -->
-        <el-descriptions :column="3" border title="个人信息" class="info-group">
-          <el-descriptions-item label="所属客户">{{ contact.customerName }}</el-descriptions-item>
-          <el-descriptions-item label="姓名">{{ contact.name }}</el-descriptions-item>
-          <el-descriptions-item label="性别">{{ contact.gender === '0' ? '男' : '女' }}</el-descriptions-item>
-          <el-descriptions-item label="职位">{{ contact.position }}</el-descriptions-item>
-          <el-descriptions-item label="所属部门">{{ contact.department }}</el-descriptions-item>
-          <el-descriptions-item label="角色标签"><dict-tag :options="marketing_contact_role" :value="contact.roleTag" /></el-descriptions-item>
-        </el-descriptions>
+        <div class="rd-grid">
+          <div class="rd-item"><span class="rd-label">所属客户</span><div class="rd-value">{{ contact.customerName }}</div></div>
+          <div class="rd-item"><span class="rd-label">姓名</span><div class="rd-value">{{ contact.name }}</div></div>
+          <div class="rd-item"><span class="rd-label">性别</span><div class="rd-value">{{ contact.gender === '0' ? '男' : '女' }}</div></div>
+          <div class="rd-item"><span class="rd-label">职位</span><div class="rd-value">{{ contact.position }}</div></div>
+          <div class="rd-item"><span class="rd-label">所属部门</span><div class="rd-value">{{ contact.department }}</div></div>
+          <div class="rd-item"><span class="rd-label">角色标签</span><div class="rd-value"><dict-tag :options="marketing_contact_role" :value="contact.roleTag" /></div></div>
+        </div>
 
         <!-- 联系方式 -->
-        <el-descriptions :column="3" border title="联系方式" class="info-group">
-          <el-descriptions-item label="手机号">{{ contact.phone }}</el-descriptions-item>
-          <el-descriptions-item label="邮箱">{{ contact.email }}</el-descriptions-item>
-          <el-descriptions-item label="微信号">{{ contact.wechat }}</el-descriptions-item>
-          <el-descriptions-item label="QQ号" :span="3">{{ contact.qq }}</el-descriptions-item>
-        </el-descriptions>
+        <div class="rd-grid">
+          <div class="rd-item"><span class="rd-label">手机号</span><div class="rd-value">{{ contact.phone }}</div></div>
+          <div class="rd-item"><span class="rd-label">邮箱</span><div class="rd-value">{{ contact.email }}</div></div>
+          <div class="rd-item"><span class="rd-label">微信号</span><div class="rd-value">{{ contact.wechat }}</div></div>
+          <div class="rd-item rd-item--full"><span class="rd-label">QQ号</span><div class="rd-value">{{ contact.qq }}</div></div>
+        </div>
 
         <!-- 归属与跟进 -->
-        <el-descriptions :column="3" border title="归属与跟进" class="info-group">
-          <el-descriptions-item label="归属销售">{{ contact.ownerUserName || '未分配' }}</el-descriptions-item>
-          <el-descriptions-item label="最后联系时间">{{ contact.lastContactTime }}</el-descriptions-item>
-          <el-descriptions-item label="下次联系时间">{{ contact.nextContactTime }}</el-descriptions-item>
-        </el-descriptions>
+        <div class="rd-grid">
+          <div class="rd-item"><span class="rd-label">归属销售</span><div class="rd-value">{{ contact.ownerUserName || '未分配' }}</div></div>
+          <div class="rd-item"><span class="rd-label">最后联系时间</span><div class="rd-value">{{ contact.lastContactTime }}</div></div>
+          <div class="rd-item"><span class="rd-label">下次联系时间</span><div class="rd-value">{{ contact.nextContactTime }}</div></div>
+        </div>
 
         <!-- 补充信息 -->
-        <el-descriptions :column="1" border title="补充信息" class="info-group">
-          <el-descriptions-item label="个人特点">{{ contact.personalTrait }}</el-descriptions-item>
-          <el-descriptions-item label="备注">{{ contact.remark }}</el-descriptions-item>
-        </el-descriptions>
+        <div class="rd-grid">
+          <div class="rd-item"><span class="rd-label">个人特点</span><div class="rd-value">{{ contact.personalTrait }}</div></div>
+          <div class="rd-item"><span class="rd-label">备注</span><div class="rd-value">{{ contact.remark }}</div></div>
+        </div>
       </el-tab-pane>
 
       <!-- 互动记录 -->
@@ -102,7 +102,13 @@
     </el-tabs>
 
     <!-- 新增互动弹窗 -->
-    <el-dialog title="新增互动记录" v-model="interactionOpen" width="600px" append-to-body>
+    <el-dialog v-model="interactionOpen" width="600px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></div>
+          <span class="rd-detail-header-title">新增互动记录</span>
+        </div>
+      </template>
       <el-form ref="interactionRef" :model="interactionForm" :rules="interactionRules" label-width="100px">
         <el-form-item label="互动类型" prop="interactType">
           <el-select v-model="interactionForm.interactType" placeholder="请选择" style="width: 100%">
@@ -132,6 +138,8 @@ import { listParticipant } from '@/api/mk/participant'
 
 const route = useRoute()
 const router = useRouter()
+import { useDetailCard } from '@/composables/useDetailCard'
+const { collapsedCards, toggleCard } = useDetailCard([])
 const { proxy } = getCurrentInstance()
 const { marketing_contact_role, marketing_interaction_type, marketing_participate_status } = proxy.useDict('marketing_contact_role', 'marketing_interaction_type', 'marketing_participate_status')
 

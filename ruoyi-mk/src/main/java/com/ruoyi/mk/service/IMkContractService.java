@@ -43,6 +43,9 @@ public interface IMkContractService
     /** 查询合同变更记录 */
     public List<MkContractChangeLog> selectContractChangeLogs(Long contractId);
 
-    /** 提交合同变更 */
+    /** 提交合同变更（单条） */
     public int submitContractChange(MkContractChangeLog changeLog);
+
+    /** 批量提交合同变更（多条） */
+    public int submitContractChanges(List<MkContractChangeLog> changeLogs);
 }

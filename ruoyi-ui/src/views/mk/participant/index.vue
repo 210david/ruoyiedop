@@ -63,7 +63,13 @@
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
     <!-- 新增/修改对话框 -->
-    <el-dialog :title="title" v-model="open" width="750px" append-to-body>
+    <el-dialog v-model="open" width="750px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <span class="rd-detail-header-title">{{ title }}</span>
+        </div>
+      </template>
       <el-form ref="participantRef" :model="form" :rules="rules" label-width="100px">
         <el-collapse v-model="activeNames">
           <el-collapse-item title="活动关联" name="activity">
@@ -107,30 +113,36 @@
     </el-dialog>
 
     <!-- 查看详情对话框 -->
-    <el-dialog title="参与人详情" v-model="viewOpen" width="750px" append-to-body>
+    <el-dialog v-model="viewOpen" width="750px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M9 12h6"/><path d="M12 9v6"/></svg></div>
+          <span class="rd-detail-header-title">参与人详情</span>
+        </div>
+      </template>
       <el-collapse v-model="viewActiveNames">
         <el-collapse-item title="活动关联" name="activity">
-          <el-descriptions :column="2" border>
-            <el-descriptions-item label="所属活动">{{ viewForm.activityName }}</el-descriptions-item>
-          </el-descriptions>
+          <div class="rd-grid">
+            <div class="rd-item"><span class="rd-label">所属活动</span><div class="rd-value">{{ viewForm.activityName }}</div></div>
+          </div>
         </el-collapse-item>
         <el-collapse-item title="参与人信息" name="info">
-          <el-descriptions :column="2" border>
-            <el-descriptions-item label="企业名称">{{ viewForm.companyName }}</el-descriptions-item>
-            <el-descriptions-item label="联系人">{{ viewForm.contactName }}</el-descriptions-item>
-            <el-descriptions-item label="手机号">{{ viewForm.contactPhone }}</el-descriptions-item>
-            <el-descriptions-item label="邮箱">{{ viewForm.contactEmail }}</el-descriptions-item>
-            <el-descriptions-item label="职位">{{ viewForm.position }}</el-descriptions-item>
-            <el-descriptions-item label="参与状态"><dict-tag :options="marketing_participate_status" :value="viewForm.participateStatus" /></el-descriptions-item>
-            <el-descriptions-item label="签到时间">{{ viewForm.signTime }}</el-descriptions-item>
-            <el-descriptions-item label="关联线索ID">{{ viewForm.leadId || '未转化' }}</el-descriptions-item>
-          </el-descriptions>
+          <div class="rd-grid">
+            <div class="rd-item"><span class="rd-label">企业名称</span><div class="rd-value">{{ viewForm.companyName }}</div></div>
+            <div class="rd-item"><span class="rd-label">联系人</span><div class="rd-value">{{ viewForm.contactName }}</div></div>
+            <div class="rd-item"><span class="rd-label">手机号</span><div class="rd-value">{{ viewForm.contactPhone }}</div></div>
+            <div class="rd-item"><span class="rd-label">邮箱</span><div class="rd-value">{{ viewForm.contactEmail }}</div></div>
+            <div class="rd-item"><span class="rd-label">职位</span><div class="rd-value">{{ viewForm.position }}</div></div>
+            <div class="rd-item"><span class="rd-label">参与状态</span><div class="rd-value"><dict-tag :options="marketing_participate_status" :value="viewForm.participateStatus" /></div></div>
+            <div class="rd-item"><span class="rd-label">签到时间</span><div class="rd-value">{{ viewForm.signTime }}</div></div>
+            <div class="rd-item"><span class="rd-label">关联线索ID</span><div class="rd-value">{{ viewForm.leadId || '未转化' }}</div></div>
+          </div>
         </el-collapse-item>
         <el-collapse-item title="其他信息" name="other">
-          <el-descriptions :column="2" border>
-            <el-descriptions-item label="创建时间">{{ viewForm.createTime }}</el-descriptions-item>
-            <el-descriptions-item label="备注" :span="2">{{ viewForm.remark }}</el-descriptions-item>
-          </el-descriptions>
+          <div class="rd-grid">
+            <div class="rd-item"><span class="rd-label">创建时间</span><div class="rd-value">{{ viewForm.createTime }}</div></div>
+            <div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value">{{ viewForm.remark }}</div></div>
+          </div>
         </el-collapse-item>
       </el-collapse>
     </el-dialog>
@@ -142,6 +154,8 @@ import { listParticipant, getParticipant, addParticipant, updateParticipant, del
 import { listActivity } from '@/api/mk/activity'
 import { listContact } from '@/api/mk/contact'
 import { useColumnResize } from '@/composables/useColumnResize'
+import { useDetailCard } from '@/composables/useDetailCard'
+const { collapsedCards, toggleCard } = useDetailCard([])
 
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('mk_participant_index')

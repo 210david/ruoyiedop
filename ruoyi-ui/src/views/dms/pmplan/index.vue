@@ -107,10 +107,22 @@
     </template>
 
     <!-- 新增/修改弹窗 -->
-    <el-dialog :title="title" v-model="open" width="780px" append-to-body>
+    <el-dialog v-model="open" width="780px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <span class="rd-detail-header-title">{{ title }}</span>
+        </div>
+      </template>
       <el-form ref="pmplanRef" :model="form" :rules="rules" label-width="100px">
-        <!-- 分组一：计划信息 -->
-        <el-divider content-position="center">计划信息</el-divider>
+                <!-- 分组一：计划信息 -->
+        <div class="rd-page">
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('c3')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>计划信息</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c3 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.c3">
         <el-row>
           <el-col :span="24"><el-form-item label="计划名称" prop="planName"><el-input v-model="form.planName" placeholder="请输入" /></el-form-item></el-col>
           <el-col :span="12"><el-form-item label="关联设备" prop="equipmentId">
@@ -122,7 +134,14 @@
         </el-row>
 
         <!-- 分组二：触发规则 -->
-        <el-divider content-position="center">触发规则</el-divider>
+                  </div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('c2')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>触发规则</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.c2">
         <el-row>
           <el-col :span="12"><el-form-item label="触发类型" prop="triggerType">
             <el-select v-model="form.triggerType" placeholder="请选择" style="width: 100%">
@@ -147,7 +166,14 @@
         </el-row>
 
         <!-- 分组三：任务配置 -->
-        <el-divider content-position="center">任务配置</el-divider>
+                  </div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('c1')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>任务配置</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.c1">
         <el-row>
           <el-col :span="12"><el-form-item label="预估工时" prop="estimatedHours"><el-input-number v-model="form.estimatedHours" :min="0" :precision="2" controls-position="right" style="width: 100%" /></el-form-item></el-col>
         </el-row>
@@ -199,13 +225,23 @@
         </el-form-item>
 
         <!-- 分组四：其他信息 -->
-        <el-divider content-position="center">其他信息</el-divider>
+                  </div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('c0')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>其他信息</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c0 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.c0">
         <el-row>
           <el-col :span="12"><el-form-item label="状态" prop="status">
             <el-radio-group v-model="form.status"><el-radio value="0">正常</el-radio><el-radio value="1">停用</el-radio></el-radio-group>
           </el-form-item></el-col>
         </el-row>
         <el-form-item label="备注" prop="remark"><el-input v-model="form.remark" type="textarea" placeholder="请输入内容" /></el-form-item>
+                </div>
+        </section>
+        </div>
       </el-form>
       <template #footer>
         <el-button type="primary" @click="submitForm">确 定</el-button>
@@ -221,6 +257,8 @@ import { listEquipment } from '@/api/dms/equipment'
 import { listUser } from '@/api/system/user'
 import { listSparepart } from '@/api/dms/sparepart'
 import { useColumnResize } from '@/composables/useColumnResize'
+import { useDetailCard } from '@/composables/useDetailCard'
+const { collapsedCards, toggleCard } = useDetailCard(["c3","c2","c1","c0"])
 
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('dms_pmplan_index')

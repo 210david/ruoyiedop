@@ -52,14 +52,20 @@
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
     <!-- 扫码复核详情面板 -->
-    <el-dialog :title="'扫码复核 - ' + (currentOrder.orderNo || '')" v-model="detailOpen" width="1000px" append-to-body>
-      <el-descriptions :column="3" border>
-        <el-descriptions-item label="出库单号">{{ currentOrder.orderNo }}</el-descriptions-item>
-        <el-descriptions-item label="出库类型"><dict-tag :options="wms_outbound_type" :value="currentOrder.orderType" /></el-descriptions-item>
-        <el-descriptions-item label="状态"><dict-tag :options="wms_outbound_status" :value="currentOrder.status" /></el-descriptions-item>
-        <el-descriptions-item label="出库仓库">{{ currentOrder.warehouseName }}</el-descriptions-item>
-        <el-descriptions-item label="总数量">{{ currentOrder.totalQty }}</el-descriptions-item>
-      </el-descriptions>
+    <el-dialog v-model="detailOpen" width="1000px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <span class="rd-detail-header-title">{{ '扫码复核 - ' + (currentOrder.orderNo || '') }}</span>
+        </div>
+      </template>
+      <div class="rd-grid">
+        <div class="rd-item"><span class="rd-label">出库单号</span><div class="rd-value">{{ currentOrder.orderNo }}</div></div>
+        <div class="rd-item"><span class="rd-label">出库类型</span><div class="rd-value"><dict-tag :options="wms_outbound_type" :value="currentOrder.orderType" /></div></div>
+        <div class="rd-item"><span class="rd-label">状态</span><div class="rd-value"><dict-tag :options="wms_outbound_status" :value="currentOrder.status" /></div></div>
+        <div class="rd-item"><span class="rd-label">出库仓库</span><div class="rd-value">{{ currentOrder.warehouseName }}</div></div>
+        <div class="rd-item"><span class="rd-label">总数量</span><div class="rd-value">{{ currentOrder.totalQty }}</div></div>
+      </div>
 
       <el-table :data="currentOrder.detailList" border style="margin-top: 15px" @header-dragend="onHeaderDragEnd">
         <el-table-column label="物料编码" prop="materialCode" :width="colWidth('materialCode', 120)" resizable />
@@ -87,7 +93,13 @@
     </el-dialog>
 
     <!-- 复核对话框 -->
-    <el-dialog title="复核确认" v-model="checkOpen" width="450px" append-to-body>
+    <el-dialog v-model="checkOpen" width="450px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <span class="rd-detail-header-title">复核确认</span>
+        </div>
+      </template>
       <el-form ref="checkRef" :model="checkForm" :rules="checkRules" label-width="100px">
         <el-form-item label="物料编码">{{ checkForm.materialCode }}</el-form-item>
         <el-form-item label="物料名称">{{ checkForm.materialName }}</el-form-item>
@@ -109,6 +121,8 @@
 <script setup name="WmsOutboundCheck">
 import { listOutbound, getOutbound, checkOutbound } from '@/api/wms/outbound'
 import { useColumnResize } from '@/composables/useColumnResize'
+import { useDetailCard } from '@/composables/useDetailCard'
+const { collapsedCards, toggleCard } = useDetailCard([])
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('wms_outbound_check')
 const { wms_outbound_type, wms_outbound_status } = proxy.useDict('wms_outbound_type', 'wms_outbound_status')

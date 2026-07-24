@@ -51,10 +51,22 @@
     </el-table>
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
-    <el-dialog :title="title" v-model="open" width="800px" append-to-body>
+    <el-dialog v-model="open" width="800px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <span class="rd-detail-header-title">{{ title }}</span>
+        </div>
+      </template>
       <el-form ref="equipmentRef" :model="form" :rules="rules" label-width="100px">
-        <!-- 分组一：基本信息 -->
-        <el-divider content-position="center">基本信息</el-divider>
+                <!-- 分组一：基本信息 -->
+        <div class="rd-page">
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('c4')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>基本信息</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c4 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.c4">
         <el-row>
           <el-col :span="12"><el-form-item label="设备编号" prop="equipmentCode"><el-input v-model="form.equipmentCode" placeholder="保存后自动生成" disabled /></el-form-item></el-col>
           <el-col :span="12"><el-form-item label="设备名称" prop="equipmentName"><el-input v-model="form.equipmentName" placeholder="请输入" /></el-form-item></el-col>
@@ -69,7 +81,14 @@
         </el-row>
 
         <!-- 分组二：资产信息 -->
-        <el-divider content-position="center">资产信息</el-divider>
+                  </div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('c3')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>资产信息</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c3 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.c3">
         <el-row>
           <el-col :span="12"><el-form-item label="制造商" prop="manufacturer"><el-input v-model="form.manufacturer" placeholder="请输入" /></el-form-item></el-col>
           <el-col :span="12"><el-form-item label="供应商" prop="supplier"><el-input v-model="form.supplier" placeholder="请输入" /></el-form-item></el-col>
@@ -78,8 +97,15 @@
         </el-row>
 
         <!-- 分组三：使用信息 -->
-        <el-divider content-position="center">使用信息</el-divider>
-        <el-row>
+                  </div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('c2')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>使用信息</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.c2">
+        <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="责任人" prop="responsibleId">
               <el-select v-model="form.responsibleId" filterable clearable placeholder="请选择责任人" style="width: 100%" @change="onResponsibleChange">
@@ -102,8 +128,15 @@
         </el-row>
 
         <!-- 分组四：图片与附件 -->
-        <el-divider content-position="center">图片与附件</el-divider>
-        <el-row>
+                  </div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('c1')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>图片与附件</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.c1">
+        <el-row :gutter="20">
           <el-col :span="24">
             <el-form-item label="设备图片" prop="equipmentImage">
               <image-upload v-model="form.equipmentImage" :limit="5" :fileSize="10" />
@@ -117,13 +150,23 @@
         </el-row>
 
         <!-- 分组五：其他信息 -->
-        <el-divider content-position="center">其他信息</el-divider>
-        <el-row>
+                  </div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('c0')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>其他信息</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c0 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.c0">
+        <el-row :gutter="20">
           <el-col :span="12"><el-form-item label="状态" prop="status">
             <el-radio-group v-model="form.status"><el-radio value="0">正常</el-radio><el-radio value="1">停用</el-radio></el-radio-group>
           </el-form-item></el-col>
         </el-row>
         <el-form-item label="备注" prop="remark"><el-input v-model="form.remark" type="textarea" placeholder="请输入内容" /></el-form-item>
+                </div>
+        </section>
+        </div>
       </el-form>
       <template #footer>
         <el-button type="primary" @click="submitForm">确 定</el-button>
@@ -135,7 +178,13 @@
     <dms-equipment-view-drawer ref="equipmentViewRef" />
 
     <!-- 设备履历弹窗 -->
-    <el-dialog title="设备履历" v-model="historyOpen" width="850px" append-to-body>
+    <el-dialog v-model="historyOpen" width="850px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <span class="rd-detail-header-title">设备履历</span>
+        </div>
+      </template>
       <el-tabs v-model="historyTab">
         <el-tab-pane label="工单记录" name="orders">
           <el-table :data="historyOrders" border size="small" @header-dragend="onHeaderDragEnd">
@@ -175,6 +224,8 @@ import { listCategory } from '@/api/dms/category'
 import { deptTreeSelect, listUser } from '@/api/system/user'
 import DmsEquipmentViewDrawer from './view.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
+import { useDetailCard } from '@/composables/useDetailCard'
+const { collapsedCards, toggleCard } = useDetailCard(["c4","c3","c2","c1","c0"])
 
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('dms_equipment_index')

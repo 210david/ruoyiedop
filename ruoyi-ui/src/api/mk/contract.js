@@ -104,6 +104,15 @@ export function submitContractChange(data) {
   })
 }
 
+// 批量提交合同变更
+export function submitContractChangeBatch(data) {
+  return request({
+    url: '/mk/contract/change/batch',
+    method: 'post',
+    data: data
+  })
+}
+
 // 查询合同变更记录
 export function contractChangeLogs(contractId) {
   return request({
@@ -112,10 +121,19 @@ export function contractChangeLogs(contractId) {
   })
 }
 
-// 审批合同变更
+// 审批合同变更（单条）
 export function approveContractChange(logId, approved, opinion) {
   return request({
     url: '/mk/contract/change/approve/' + logId + '/' + approved,
+    method: 'put',
+    params: { opinion }
+  })
+}
+
+// 审批合同变更（按合同ID批量审批）
+export function approveContractChangeByContractId(contractId, approved, opinion) {
+  return request({
+    url: '/mk/contract/change/approve/contract/' + contractId + '/' + approved,
     method: 'put',
     params: { opinion }
   })

@@ -38,7 +38,13 @@
     </el-table>
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
-    <el-dialog :title="title" v-model="open" width="750px" append-to-body>
+    <el-dialog v-model="open" width="750px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <span class="rd-detail-header-title">{{ title }}</span>
+        </div>
+      </template>
       <el-form ref="interactionRef" :model="form" :rules="rules" label-width="100px">
         <el-collapse v-model="activeNames">
           <el-collapse-item title="互动信息" name="interact">
@@ -81,28 +87,34 @@
       <template #footer><el-button type="primary" @click="submitForm">确 定</el-button><el-button @click="cancel">取 消</el-button></template>
     </el-dialog>
 
-    <el-dialog title="互动记录详情" v-model="viewOpen" width="750px" append-to-body>
+    <el-dialog v-model="viewOpen" width="750px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></div>
+          <span class="rd-detail-header-title">互动记录详情</span>
+        </div>
+      </template>
       <el-collapse v-model="viewActiveNames">
         <el-collapse-item title="互动信息" name="interact">
-          <el-descriptions :column="2" border>
-            <el-descriptions-item label="所属客户">{{ viewForm.customerName }}</el-descriptions-item>
-            <el-descriptions-item label="联系人">{{ viewForm.contactName }}</el-descriptions-item>
-            <el-descriptions-item label="互动类型"><dict-tag :options="marketing_interaction_type" :value="viewForm.interactType" /></el-descriptions-item>
-            <el-descriptions-item label="互动时间">{{ viewForm.interactTime }}</el-descriptions-item>
-            <el-descriptions-item label="互动内容" :span="2">{{ viewForm.content }}</el-descriptions-item>
-          </el-descriptions>
+          <div class="rd-grid">
+            <div class="rd-item"><span class="rd-label">所属客户</span><div class="rd-value">{{ viewForm.customerName }}</div></div>
+            <div class="rd-item"><span class="rd-label">联系人</span><div class="rd-value">{{ viewForm.contactName }}</div></div>
+            <div class="rd-item"><span class="rd-label">互动类型</span><div class="rd-value"><dict-tag :options="marketing_interaction_type" :value="viewForm.interactType" /></div></div>
+            <div class="rd-item"><span class="rd-label">互动时间</span><div class="rd-value">{{ viewForm.interactTime }}</div></div>
+            <div class="rd-item rd-item--full"><span class="rd-label">互动内容</span><div class="rd-value">{{ viewForm.content }}</div></div>
+          </div>
         </el-collapse-item>
         <el-collapse-item title="跟进安排" name="follow">
-          <el-descriptions :column="2" border>
-            <el-descriptions-item label="跟进人">{{ viewForm.userName }}</el-descriptions-item>
-            <el-descriptions-item label="下次跟进">{{ viewForm.nextTime }}</el-descriptions-item>
-            <el-descriptions-item label="跟进内容" :span="2">{{ viewForm.nextContent }}</el-descriptions-item>
-          </el-descriptions>
+          <div class="rd-grid">
+            <div class="rd-item"><span class="rd-label">跟进人</span><div class="rd-value">{{ viewForm.userName }}</div></div>
+            <div class="rd-item"><span class="rd-label">下次跟进</span><div class="rd-value">{{ viewForm.nextTime }}</div></div>
+            <div class="rd-item rd-item--full"><span class="rd-label">跟进内容</span><div class="rd-value">{{ viewForm.nextContent }}</div></div>
+          </div>
         </el-collapse-item>
         <el-collapse-item title="其他信息" name="other">
-          <el-descriptions :column="2" border>
-            <el-descriptions-item label="备注" :span="2">{{ viewForm.remark }}</el-descriptions-item>
-          </el-descriptions>
+          <div class="rd-grid">
+            <div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value">{{ viewForm.remark }}</div></div>
+          </div>
         </el-collapse-item>
       </el-collapse>
     </el-dialog>
@@ -115,6 +127,8 @@ import { listCustomer } from '@/api/mk/customer'
 import { listContact } from '@/api/mk/contact'
 import { listUser } from '@/api/system/user'
 import { useColumnResize } from '@/composables/useColumnResize'
+import { useDetailCard } from '@/composables/useDetailCard'
+const { collapsedCards, toggleCard } = useDetailCard([])
 
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('mk_interaction_index')

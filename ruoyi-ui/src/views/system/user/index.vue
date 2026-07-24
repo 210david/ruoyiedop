@@ -60,6 +60,7 @@
                 v-model="scope.row.status"
                 active-value="0"
                 inactive-value="1"
+                :disabled="scope.row.userId === 1"
                 @change="handleStatusChange(scope.row)"
               ></el-switch>
             </template>

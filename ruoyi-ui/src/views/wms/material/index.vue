@@ -85,8 +85,9 @@
             </template>
           </el-table-column>
           <el-table-column label="创建时间" prop="createTime" :width="colWidth('createTime', 160)" resizable align="center" />
-          <el-table-column label="操作" width="160" align="center" fixed="right">
+          <el-table-column label="操作" width="200" align="center" fixed="right">
             <template #default="scope">
+              <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
               <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['wms:material:edit']">修改</el-button>
               <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['wms:material:remove']">删除</el-button>
             </template>
@@ -98,11 +99,23 @@
     </el-row>
 
     <!-- 添加/修改对话框 -->
-    <el-dialog :title="title" v-model="open" width="780px" append-to-body>
-      <el-form ref="materialRef" :model="form" :rules="rules" label-width="100px">
-        <!-- 分组一：基本信息 -->
-        <el-divider content-position="center">基本信息</el-divider>
-        <el-row>
+    <el-dialog v-model="open" width="780px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <span class="rd-detail-header-title">{{ title }}</span>
+        </div>
+      </template>
+      <el-form ref="materialRef" :model="form" :rules="rules" label-width="100px" class="material-form">
+                <!-- 分组一：基本信息 -->
+        <div class="rd-page">
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('c3')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>基本信息</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c3 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.c3">
+        <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="物料编码" prop="materialCode">
               <el-input v-model="form.materialCode" placeholder="保存后自动生成" disabled />
@@ -114,7 +127,7 @@
             </el-form-item>
           </el-col>
         </el-row>
-        <el-row>
+        <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="物料类型" prop="materialType">
               <el-select v-model="form.materialType" placeholder="请选择" style="width: 100%">
@@ -130,7 +143,7 @@
             </el-form-item>
           </el-col>
         </el-row>
-        <el-row>
+        <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="规格型号" prop="specModel">
               <el-input v-model="form.specModel" placeholder="请输入规格型号" />
@@ -139,8 +152,15 @@
         </el-row>
 
         <!-- 分组二：效期管理 -->
-        <el-divider content-position="center">效期管理</el-divider>
-        <el-row>
+                  </div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('c2')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>效期管理</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.c2">
+        <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="效期管理" prop="isExpiryManage">
               <el-radio-group v-model="form.isExpiryManage">
@@ -158,7 +178,7 @@
             </el-form-item>
           </el-col>
         </el-row>
-        <el-row>
+        <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="保质期天数" prop="shelfLifeDays">
               <el-input-number v-model="form.shelfLifeDays" :min="0" :precision="0" controls-position="right" placeholder="天" style="width: 50%" />
@@ -172,8 +192,15 @@
         </el-row>
 
         <!-- 分组三：库存控制 -->
-        <el-divider content-position="center">库存控制</el-divider>
-        <el-row>
+                  </div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('c1')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>库存控制</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.c1">
+        <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="安全库存下限" prop="safetyStockMin">
               <el-input-number v-model="form.safetyStockMin" :precision="2" :min="0" style="width: 50%" />
@@ -186,8 +213,15 @@
           </el-col>
         </el-row>
         <!-- 分组四：其他信息 -->
-        <el-divider content-position="center">其他信息</el-divider>
-        <el-row>
+                  </div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('c0')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>其他信息</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c0 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.c0">
+        <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="状态" prop="status">
               <el-radio-group v-model="form.status">
@@ -200,6 +234,9 @@
         <el-form-item label="备注" prop="remark">
           <el-input v-model="form.remark" type="textarea" placeholder="请输入内容" />
         </el-form-item>
+                </div>
+        </section>
+        </div>
       </el-form>
       <template #footer>
         <div class="dialog-footer">
@@ -208,12 +245,88 @@
         </div>
       </template>
     </el-dialog>
+
+    <!-- 查看对话框 -->
+    <el-dialog v-model="viewOpen" width="780px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <span class="rd-detail-header-title">物料详情</span>
+          <div class="rd-detail-header-sub" v-if="viewData.materialCode">
+            <div class="rd-detail-header-divider"></div>
+            <span class="rd-detail-header-no">编码：{{ viewData.materialCode }}</span>
+          </div>
+        </div>
+      </template>
+      <div class="rd-page">
+        <!-- 基本信息 -->
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('v3')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>基本信息</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v3 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.v3">
+            <div class="rd-grid">
+              <div class="rd-item"><span class="rd-label">物料编码</span><div class="rd-value">{{ viewData.materialCode || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">物料名称</span><div class="rd-value">{{ viewData.materialName || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">物料类型</span><div class="rd-value"><dict-tag :options="wms_material_type" :value="viewData.materialType" /></div></div>
+              <div class="rd-item"><span class="rd-label">计量单位</span><div class="rd-value"><dict-tag :options="wms_unit" :value="viewData.unit" /></div></div>
+              <div class="rd-item rd-item--full"><span class="rd-label">规格型号</span><div class="rd-value">{{ viewData.specModel || '-' }}</div></div>
+            </div>
+          </div>
+        </section>
+        <!-- 效期管理 -->
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('v2')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>效期管理</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.v2">
+            <div class="rd-grid">
+              <div class="rd-item"><span class="rd-label">效期管理</span><div class="rd-value"><el-tag :type="viewData.isExpiryManage === '1' ? 'success' : 'info'">{{ viewData.isExpiryManage === '1' ? '是' : '否' }}</el-tag></div></div>
+              <div class="rd-item"><span class="rd-label">批次管理</span><div class="rd-value"><el-tag :type="viewData.isBatchManage === '1' ? 'success' : 'info'">{{ viewData.isBatchManage === '1' ? '是' : '否' }}</el-tag></div></div>
+              <div class="rd-item"><span class="rd-label">保质期天数</span><div class="rd-value">{{ viewData.shelfLifeDays != null ? viewData.shelfLifeDays + ' 天' : '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">临期预警</span><div class="rd-value">{{ viewData.expiryAlertDays != null ? viewData.expiryAlertDays + ' 天' : '-' }}</div></div>
+            </div>
+          </div>
+        </section>
+        <!-- 库存控制 -->
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('v1')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>库存控制</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.v1">
+            <div class="rd-grid">
+              <div class="rd-item"><span class="rd-label">安全库存下限</span><div class="rd-value">{{ viewData.safetyStockMin != null ? viewData.safetyStockMin : '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">安全库存上限</span><div class="rd-value">{{ viewData.safetyStockMax != null ? viewData.safetyStockMax : '-' }}</div></div>
+            </div>
+          </div>
+        </section>
+        <!-- 其他信息 -->
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('v0')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>其他信息</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v0 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.v0">
+            <div class="rd-grid">
+              <div class="rd-item"><span class="rd-label">状态</span><div class="rd-value"><el-tag :type="viewData.status === '0' ? 'success' : 'danger'">{{ viewData.status === '0' ? '正常' : '停用' }}</el-tag></div></div>
+              <div class="rd-item"><span class="rd-label">创建时间</span><div class="rd-value">{{ viewData.createTime || '-' }}</div></div>
+              <div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value">{{ viewData.remark || '-' }}</div></div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 <script setup name="WmsMaterial">
 import { listMaterial, getMaterial, addMaterial, updateMaterial, delMaterial } from '@/api/wms/material'
 import { useColumnResize } from '@/composables/useColumnResize'
+import { useDetailCard } from '@/composables/useDetailCard'
+const { collapsedCards, toggleCard } = useDetailCard(["c3","c2","c1","c0","v3","v2","v1","v0"])
 
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('wms_material_index')
@@ -221,6 +334,8 @@ const { wms_material_type, wms_unit } = proxy.useDict('wms_material_type', 'wms_
 
 const materialList = ref([])
 const open = ref(false)
+const viewOpen = ref(false)
+const viewData = ref({})
 const loading = ref(true)
 const showSearch = ref(true)
 const ids = ref([])
@@ -305,6 +420,13 @@ function handleUpdate(row) {
     form.value = response.data
     open.value = true
     title.value = '修改物料'
+  })
+}
+
+function handleView(row) {
+  getMaterial(row.materialId).then(response => {
+    viewData.value = response.data
+    viewOpen.value = true
   })
 }
 

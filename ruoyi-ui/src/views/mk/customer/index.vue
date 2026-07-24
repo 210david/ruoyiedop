@@ -87,7 +87,13 @@
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
     <!-- 新增/修改对话框 -->
-    <el-dialog :title="title" v-model="open" width="800px" append-to-body>
+    <el-dialog v-model="open" width="800px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <span class="rd-detail-header-title">{{ title }}</span>
+        </div>
+      </template>
       <el-form ref="customerRef" :model="form" :rules="rules" label-width="110px">
         <el-collapse v-model="activeNames">
           <el-collapse-item title="基本信息" name="basic">
@@ -168,7 +174,13 @@
     </el-dialog>
 
     <!-- 分配弹窗 -->
-    <el-dialog title="分配客户" v-model="assignOpen" width="500px" append-to-body>
+    <el-dialog v-model="assignOpen" width="500px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <span class="rd-detail-header-title">分配客户</span>
+        </div>
+      </template>
       <el-form label-width="80px">
         <el-form-item label="负责人">
           <el-select v-model="assignUserId" filterable clearable placeholder="请选择（留空释放到公海）" style="width: 100%">
@@ -183,7 +195,13 @@
     </el-dialog>
 
     <!-- 批量分配弹窗 -->
-    <el-dialog title="批量分配客户" v-model="batchAssignOpen" width="500px" append-to-body>
+    <el-dialog v-model="batchAssignOpen" width="500px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <span class="rd-detail-header-title">批量分配客户</span>
+        </div>
+      </template>
       <el-alert :title="'已选中 ' + ids.length + ' 个客户'" type="info" :closable="false" class="mb8" />
       <el-form label-width="80px">
         <el-form-item label="负责人">
@@ -199,7 +217,13 @@
     </el-dialog>
 
     <!-- 批量变更状态弹窗 -->
-    <el-dialog title="批量变更客户状态" v-model="batchStatusOpen" width="500px" append-to-body>
+    <el-dialog v-model="batchStatusOpen" width="500px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <span class="rd-detail-header-title">批量变更客户状态</span>
+        </div>
+      </template>
       <el-alert :title="'已选中 ' + ids.length + ' 个客户'" type="info" :closable="false" class="mb8" />
       <el-form label-width="80px">
         <el-form-item label="客户状态">
@@ -215,7 +239,13 @@
     </el-dialog>
 
     <!-- 变更状态弹窗（单条） -->
-    <el-dialog title="变更客户状态" v-model="statusOpen" width="500px" append-to-body>
+    <el-dialog v-model="statusOpen" width="500px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <span class="rd-detail-header-title">变更客户状态</span>
+        </div>
+      </template>
       <el-form label-width="80px">
         <el-form-item label="客户状态">
           <el-select v-model="statusValue" placeholder="请选择" style="width: 100%">
@@ -230,7 +260,13 @@
     </el-dialog>
 
     <!-- 导入弹窗 -->
-    <el-dialog title="客户导入" v-model="importOpen" width="500px" append-to-body>
+    <el-dialog v-model="importOpen" width="500px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <span class="rd-detail-header-title">客户导入</span>
+        </div>
+      </template>
       <el-upload ref="uploadRef" :limit="1" accept=".xlsx, .xls" :auto-upload="false" :action="importUrl" :headers="headers" :data="{ updateSupport: importUpdateSupport }" :on-success="handleImportSuccess" :on-error="handleImportError" drag>
         <el-icon class="el-icon--upload"><upload-filled /></el-icon>
         <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
@@ -259,6 +295,8 @@ import { listCustomer, getCustomer, addCustomer, updateCustomer, delCustomer, ch
 import { listTag } from '@/api/mk/tag'
 import { listUser, deptTreeSelect } from '@/api/system/user'
 import { useColumnResize } from '@/composables/useColumnResize'
+import { useDetailCard } from '@/composables/useDetailCard'
+const { collapsedCards, toggleCard } = useDetailCard([])
 import { getToken } from '@/utils/auth'
 
 const router = useRouter()

@@ -59,86 +59,98 @@
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
     <!-- 线索详情对话框 -->
-    <el-dialog title="线索详情" v-model="viewOpen" width="800px" append-to-body>
+    <el-dialog v-model="viewOpen" width="800px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M9 12h6"/><path d="M12 9v6"/></svg></div>
+          <span class="rd-detail-header-title">线索详情</span>
+        </div>
+      </template>
       <el-collapse v-model="viewActiveNames">
         <el-collapse-item title="线索信息" name="lead">
-          <el-descriptions :column="2" border>
-            <el-descriptions-item label="线索编号">{{ viewForm.leadNo }}</el-descriptions-item>
-            <el-descriptions-item label="企业名称">{{ viewForm.companyName }}</el-descriptions-item>
-            <el-descriptions-item label="联系人">{{ viewForm.contactName }}</el-descriptions-item>
-            <el-descriptions-item label="手机号">{{ viewForm.contactPhone }}</el-descriptions-item>
-            <el-descriptions-item label="邮箱">{{ viewForm.contactEmail }}</el-descriptions-item>
-            <el-descriptions-item label="职位">{{ viewForm.position }}</el-descriptions-item>
-          </el-descriptions>
+          <div class="rd-grid">
+            <div class="rd-item"><span class="rd-label">线索编号</span><div class="rd-value">{{ viewForm.leadNo }}</div></div>
+            <div class="rd-item"><span class="rd-label">企业名称</span><div class="rd-value">{{ viewForm.companyName }}</div></div>
+            <div class="rd-item"><span class="rd-label">联系人</span><div class="rd-value">{{ viewForm.contactName }}</div></div>
+            <div class="rd-item"><span class="rd-label">手机号</span><div class="rd-value">{{ viewForm.contactPhone }}</div></div>
+            <div class="rd-item"><span class="rd-label">邮箱</span><div class="rd-value">{{ viewForm.contactEmail }}</div></div>
+            <div class="rd-item"><span class="rd-label">职位</span><div class="rd-value">{{ viewForm.position }}</div></div>
+          </div>
         </el-collapse-item>
         <el-collapse-item title="企业信息" name="company">
-          <el-descriptions :column="2" border>
-            <el-descriptions-item label="所属行业"><dict-tag :options="marketing_industry" :value="viewForm.industry" /></el-descriptions-item>
-            <el-descriptions-item label="企业规模"><dict-tag :options="marketing_company_size" :value="viewForm.companySize" /></el-descriptions-item>
-            <el-descriptions-item label="详细地址" :span="2">{{ viewForm.address }}</el-descriptions-item>
-          </el-descriptions>
+          <div class="rd-grid">
+            <div class="rd-item"><span class="rd-label">所属行业</span><div class="rd-value"><dict-tag :options="marketing_industry" :value="viewForm.industry" /></div></div>
+            <div class="rd-item"><span class="rd-label">企业规模</span><div class="rd-value"><dict-tag :options="marketing_company_size" :value="viewForm.companySize" /></div></div>
+            <div class="rd-item rd-item--full"><span class="rd-label">详细地址</span><div class="rd-value">{{ viewForm.address }}</div></div>
+          </div>
         </el-collapse-item>
         <el-collapse-item title="需求与评分" name="requirement">
-          <el-descriptions :column="2" border>
-            <el-descriptions-item label="线索来源"><dict-tag :options="marketing_customer_source" :value="viewForm.leadSource" /></el-descriptions-item>
-            <el-descriptions-item label="线索评分">{{ viewForm.leadScore }}</el-descriptions-item>
-            <el-descriptions-item label="线索等级"><dict-tag :options="marketing_lead_grade" :value="viewForm.leadGrade" /></el-descriptions-item>
-            <el-descriptions-item label="线索状态"><dict-tag :options="marketing_lead_status" :value="viewForm.leadStatus" /></el-descriptions-item>
-            <el-descriptions-item label="需求描述" :span="2">{{ viewForm.requirementDesc }}</el-descriptions-item>
-          </el-descriptions>
+          <div class="rd-grid">
+            <div class="rd-item"><span class="rd-label">线索来源</span><div class="rd-value"><dict-tag :options="marketing_customer_source" :value="viewForm.leadSource" /></div></div>
+            <div class="rd-item"><span class="rd-label">线索评分</span><div class="rd-value">{{ viewForm.leadScore }}</div></div>
+            <div class="rd-item"><span class="rd-label">线索等级</span><div class="rd-value"><dict-tag :options="marketing_lead_grade" :value="viewForm.leadGrade" /></div></div>
+            <div class="rd-item"><span class="rd-label">线索状态</span><div class="rd-value"><dict-tag :options="marketing_lead_status" :value="viewForm.leadStatus" /></div></div>
+            <div class="rd-item rd-item--full"><span class="rd-label">需求描述</span><div class="rd-value">{{ viewForm.requirementDesc }}</div></div>
+          </div>
         </el-collapse-item>
         <el-collapse-item title="领取审批信息" name="receive">
-          <el-descriptions :column="2" border>
-            <el-descriptions-item label="审批状态"><dict-tag :options="marketing_lead_receive_status" :value="viewForm.receiveStatus || '0'" /></el-descriptions-item>
-            <el-descriptions-item label="申请人">{{ viewForm.receiveApplyUserName }}</el-descriptions-item>
-            <el-descriptions-item label="申请时间">{{ viewForm.receiveApplyTime }}</el-descriptions-item>
-            <el-descriptions-item label="审批备注">{{ viewForm.receiveRemark }}</el-descriptions-item>
-          </el-descriptions>
+          <div class="rd-grid">
+            <div class="rd-item"><span class="rd-label">审批状态</span><div class="rd-value"><dict-tag :options="marketing_lead_receive_status" :value="viewForm.receiveStatus || '0'" /></div></div>
+            <div class="rd-item"><span class="rd-label">申请人</span><div class="rd-value">{{ viewForm.receiveApplyUserName }}</div></div>
+            <div class="rd-item"><span class="rd-label">申请时间</span><div class="rd-value">{{ viewForm.receiveApplyTime }}</div></div>
+            <div class="rd-item"><span class="rd-label">审批备注</span><div class="rd-value">{{ viewForm.receiveRemark }}</div></div>
+          </div>
         </el-collapse-item>
         <el-collapse-item title="其他信息" name="other">
-          <el-descriptions :column="2" border>
-            <el-descriptions-item label="备注" :span="2">{{ viewForm.remark }}</el-descriptions-item>
-          </el-descriptions>
+          <div class="rd-grid">
+            <div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value">{{ viewForm.remark }}</div></div>
+          </div>
         </el-collapse-item>
       </el-collapse>
     </el-dialog>
 
     <!-- 审批对话框 -->
-    <el-dialog title="领取审批" v-model="approveOpen" width="750px" append-to-body>
+    <el-dialog v-model="approveOpen" width="750px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+          <span class="rd-detail-header-title">领取审批</span>
+        </div>
+      </template>
       <el-collapse v-model="approveActiveNames" class="approve-collapse">
         <el-collapse-item title="线索基本信息" name="basic">
-          <el-descriptions :column="2" border>
-            <el-descriptions-item label="线索编号">{{ approveForm.leadNo }}</el-descriptions-item>
-            <el-descriptions-item label="线索来源"><dict-tag :options="marketing_customer_source" :value="approveForm.leadSource" /></el-descriptions-item>
-            <el-descriptions-item label="企业名称">{{ approveForm.companyName }}</el-descriptions-item>
-            <el-descriptions-item label="联系人">{{ approveForm.contactName }}</el-descriptions-item>
-            <el-descriptions-item label="手机号">{{ approveForm.contactPhone }}</el-descriptions-item>
-            <el-descriptions-item label="邮箱">{{ approveForm.contactEmail }}</el-descriptions-item>
-            <el-descriptions-item label="职位">{{ approveForm.position }}</el-descriptions-item>
-            <el-descriptions-item label="详细地址" :span="2">{{ approveForm.address }}</el-descriptions-item>
-          </el-descriptions>
+          <div class="rd-grid">
+            <div class="rd-item"><span class="rd-label">线索编号</span><div class="rd-value">{{ approveForm.leadNo }}</div></div>
+            <div class="rd-item"><span class="rd-label">线索来源</span><div class="rd-value"><dict-tag :options="marketing_customer_source" :value="approveForm.leadSource" /></div></div>
+            <div class="rd-item"><span class="rd-label">企业名称</span><div class="rd-value">{{ approveForm.companyName }}</div></div>
+            <div class="rd-item"><span class="rd-label">联系人</span><div class="rd-value">{{ approveForm.contactName }}</div></div>
+            <div class="rd-item"><span class="rd-label">手机号</span><div class="rd-value">{{ approveForm.contactPhone }}</div></div>
+            <div class="rd-item"><span class="rd-label">邮箱</span><div class="rd-value">{{ approveForm.contactEmail }}</div></div>
+            <div class="rd-item"><span class="rd-label">职位</span><div class="rd-value">{{ approveForm.position }}</div></div>
+            <div class="rd-item rd-item--full"><span class="rd-label">详细地址</span><div class="rd-value">{{ approveForm.address }}</div></div>
+          </div>
         </el-collapse-item>
         <el-collapse-item title="企业画像" name="company">
-          <el-descriptions :column="2" border>
-            <el-descriptions-item label="所属行业"><dict-tag :options="marketing_industry" :value="approveForm.industry" /></el-descriptions-item>
-            <el-descriptions-item label="企业规模"><dict-tag :options="marketing_company_size" :value="approveForm.companySize" /></el-descriptions-item>
-          </el-descriptions>
+          <div class="rd-grid">
+            <div class="rd-item"><span class="rd-label">所属行业</span><div class="rd-value"><dict-tag :options="marketing_industry" :value="approveForm.industry" /></div></div>
+            <div class="rd-item"><span class="rd-label">企业规模</span><div class="rd-value"><dict-tag :options="marketing_company_size" :value="approveForm.companySize" /></div></div>
+          </div>
         </el-collapse-item>
         <el-collapse-item title="需求与评分" name="requirement">
-          <el-descriptions :column="2" border>
-            <el-descriptions-item label="线索等级"><dict-tag :options="marketing_lead_grade" :value="approveForm.leadGrade" /></el-descriptions-item>
-            <el-descriptions-item label="线索评分">{{ approveForm.leadScore }}</el-descriptions-item>
-            <el-descriptions-item label="线索状态"><dict-tag :options="marketing_lead_status" :value="approveForm.leadStatus" /></el-descriptions-item>
-            <el-descriptions-item label="最后跟进">{{ approveForm.lastFollowTime || '—' }}</el-descriptions-item>
-            <el-descriptions-item label="需求描述" :span="2">{{ approveForm.requirementDesc }}</el-descriptions-item>
-          </el-descriptions>
+          <div class="rd-grid">
+            <div class="rd-item"><span class="rd-label">线索等级</span><div class="rd-value"><dict-tag :options="marketing_lead_grade" :value="approveForm.leadGrade" /></div></div>
+            <div class="rd-item"><span class="rd-label">线索评分</span><div class="rd-value">{{ approveForm.leadScore }}</div></div>
+            <div class="rd-item"><span class="rd-label">线索状态</span><div class="rd-value"><dict-tag :options="marketing_lead_status" :value="approveForm.leadStatus" /></div></div>
+            <div class="rd-item"><span class="rd-label">最后跟进</span><div class="rd-value">{{ approveForm.lastFollowTime || '—' }}</div></div>
+            <div class="rd-item rd-item--full"><span class="rd-label">需求描述</span><div class="rd-value">{{ approveForm.requirementDesc }}</div></div>
+          </div>
         </el-collapse-item>
         <el-collapse-item title="申请信息" name="apply">
-          <el-descriptions :column="2" border>
-            <el-descriptions-item label="审批状态"><dict-tag :options="marketing_lead_receive_status" :value="approveForm.receiveStatus || '1'" /></el-descriptions-item>
-            <el-descriptions-item label="申请人">{{ approveForm.receiveApplyUserName }}</el-descriptions-item>
-            <el-descriptions-item label="申请时间" :span="2">{{ approveForm.receiveApplyTime }}</el-descriptions-item>
-          </el-descriptions>
+          <div class="rd-grid">
+            <div class="rd-item"><span class="rd-label">审批状态</span><div class="rd-value"><dict-tag :options="marketing_lead_receive_status" :value="approveForm.receiveStatus || '1'" /></div></div>
+            <div class="rd-item"><span class="rd-label">申请人</span><div class="rd-value">{{ approveForm.receiveApplyUserName }}</div></div>
+            <div class="rd-item rd-item--full"><span class="rd-label">申请时间</span><div class="rd-value">{{ approveForm.receiveApplyTime }}</div></div>
+          </div>
         </el-collapse-item>
       </el-collapse>
       <el-form ref="approveRef" :model="approveForm" label-width="80px" style="margin-top: 16px">
@@ -159,6 +171,8 @@
 import { useRouter } from 'vue-router'
 import { listLead, getLead, receiveLead, approveReceive, rejectReceive } from '@/api/mk/lead'
 import { useColumnResize } from '@/composables/useColumnResize'
+import { useDetailCard } from '@/composables/useDetailCard'
+const { collapsedCards, toggleCard } = useDetailCard([])
 
 const router = useRouter()
 const { proxy } = getCurrentInstance()

@@ -160,6 +160,17 @@ public class MkContractController extends BaseController
     }
 
     /**
+     * 提交合同变更申请（批量）
+     */
+    @Log(title = "合同变更", businessType = BusinessType.INSERT)
+    @PreAuthorize("@ss.hasPermi('marketing:contract:change')")
+    @PostMapping("/change/batch")
+    public AjaxResult submitChangeBatch(@RequestBody List<MkContractChangeLog> changeLogs)
+    {
+        return toAjax(mkContractService.submitContractChanges(changeLogs));
+    }
+
+    /**
      * 查询合同变更记录
      */
     @PreAuthorize("@ss.hasPermi('marketing:contract:list')")
@@ -170,15 +181,15 @@ public class MkContractController extends BaseController
     }
 
     /**
-     * 审批合同变更
+     * 审批合同变更（按合同ID批量审批）
      */
     @Log(title = "合同变更", businessType = BusinessType.UPDATE)
     @PreAuthorize("@ss.hasPermi('marketing:contract:change')")
-    @PutMapping("/change/approve/{logId}/{approved}")
-    public AjaxResult approveChange(@PathVariable("logId") Long logId,
-                                   @PathVariable("approved") boolean approved,
-                                   @RequestParam(required = false) String opinion)
+    @PutMapping("/change/approve/contract/{contractId}/{approved}")
+    public AjaxResult approveChangeByContract(@PathVariable("contractId") Long contractId,
+                                              @PathVariable("approved") boolean approved,
+                                              @RequestParam(required = false) String opinion)
     {
-        return toAjax(mkContractChangeService.approveChange(logId, approved, opinion));
+        return toAjax(mkContractChangeService.approveChangesByContractId(contractId, approved, opinion));
     }
 }

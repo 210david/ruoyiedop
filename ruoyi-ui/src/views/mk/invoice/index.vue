@@ -55,7 +55,7 @@
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
     <!-- 新增/修改对话框 -->
-    <el-dialog v-model="open" width="1000px" append-to-body draggable class="invoice-form-dialog">
+    <el-dialog v-model="open" width="1000px" append-to-body draggable class="rd-dialog">
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon">
@@ -236,7 +236,7 @@
     </el-dialog>
 
     <!-- 查看详情 -->
-    <el-dialog v-model="viewOpen" width="900px" append-to-body draggable class="invoice-detail-dialog">
+    <el-dialog v-model="viewOpen" width="900px" append-to-body draggable class="rd-dialog">
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon">
@@ -497,55 +497,7 @@ getCustomerOptions(); getContractOptions(); getOrderOptions(); getList()
 </script>
 
 <style scoped>
-/* ===== 卡片式样式 ===== */
-:deep(.invoice-form-dialog .el-dialog__header), :deep(.invoice-detail-dialog .el-dialog__header) { padding: 0; margin: 0; border: none; }
-:deep(.invoice-form-dialog .el-dialog__headerbtn), :deep(.invoice-detail-dialog .el-dialog__headerbtn) { top: 10px; right: 12px; z-index: 10; }
-:deep(.invoice-form-dialog .el-dialog__headerbtn .el-dialog__close), :deep(.invoice-detail-dialog .el-dialog__headerbtn .el-dialog__close) { color: #fff; font-size: 20px; }
-:deep(.invoice-form-dialog .el-dialog__headerbtn:hover .el-dialog__close), :deep(.invoice-detail-dialog .el-dialog__headerbtn:hover .el-dialog__close) { color: #fff; }
-:deep(.invoice-form-dialog .el-dialog__body), :deep(.invoice-detail-dialog .el-dialog__body) { padding: 12px 16px 16px; background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); }
-
-.rd-detail-header { display: flex; align-items: center; gap: 10px; padding: 8px 16px; background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 60%, #3b82f6 100%); border-radius: 12px 12px 0 0; position: relative; overflow: hidden; }
-.rd-detail-header::before { content: ''; position: absolute; top: -25px; right: -10px; width: 120px; height: 120px; border-radius: 50%; background: radial-gradient(circle, rgb(255 255 255 / 0.12) 0%, transparent 70%); pointer-events: none; }
-.rd-detail-header-icon { display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 8px; background: rgb(255 255 255 / 0.2); border: 1px solid rgb(255 255 255 / 0.25); color: #fff; flex-shrink: 0; backdrop-filter: blur(4px); box-shadow: 0 2px 8px rgb(0 0 0 / 0.1); }
-.rd-detail-header-title { font-size: 16px; font-weight: 700; color: #fff; letter-spacing: -0.02em; white-space: nowrap; }
-.rd-detail-header-sub { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.rd-detail-header-divider { width: 1px; height: 16px; background: rgb(255 255 255 / 0.3); flex-shrink: 0; }
-.rd-detail-header-no { font-size: 12px; font-weight: 500; color: rgb(255 255 255 / 0.85); font-variant-numeric: tabular-nums; white-space: nowrap; }
-
-.rd-page { max-width: 940px; margin: 0 auto; }
-
-.rd-card { background: #fff; border-radius: 12px; border: 1px solid #e5e7eb; box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); overflow: hidden; margin-bottom: 8px; transition: box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1); animation: rdFadeIn 0.4s ease-out forwards; }
-.rd-card:hover { box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); }
-.rd-card:last-child { margin-bottom: 0; }
-.rd-card-header { display: flex; align-items: center; justify-content: space-between; padding: 8px 16px; background: linear-gradient(to right, #f9fafb, #fff); border-bottom: 1px solid #f3f4f6; cursor: pointer; user-select: none; }
-.rd-card-title { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 700; color: #111827; }
-.rd-card-icon { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 8px; background: #fff; border: 1px solid #e5e7eb; color: #2563eb; box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); }
-.rd-card-body { padding: 14px 16px; }
-
-.rd-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px 24px; }
-.rd-item { display: flex; align-items: center; gap: 12px; }
-.rd-item--full { grid-column: 1 / -1; }
-.rd-label { flex: 0 0 auto; min-width: 72px; display: flex; align-items: center; font-size: 14px; font-weight: 500; color: #6b7280; white-space: nowrap; }
-.rd-value { flex: 1 1 auto; font-size: 14px; font-weight: 500; color: #111827; line-height: 1.5; padding-left: 12px; border-left: 1px solid #e5e7eb; min-width: 0; }
-.rd-value--large { font-size: 18px; font-weight: 700; }
-.rd-value--muted { color: #9ca3af; font-style: italic; }
-.rd-amount { font-variant-numeric: tabular-nums; font-weight: 700; color: #111827; }
-
-.rd-collapse-btn { display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 6px; border: none; background: transparent; color: #9ca3af; cursor: pointer; transition: all 0.15s ease; flex-shrink: 0; }
-.rd-collapse-btn:hover { background: #f3f4f6; color: #4b5563; }
-.rd-collapse-btn svg { transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
-.rd-collapse-btn.is-collapsed svg { transform: rotate(-90deg); }
-
-.rd-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; text-align: center; color: #9ca3af; background: #f9fafb; border-radius: 12px; border: 1px dashed #e5e7eb; }
-.rd-empty-icon { margin-bottom: 4px; color: #d1d5db; }
-.rd-empty-text { font-size: 14px; font-weight: 500; margin: 0; }
-
-@keyframes rdFadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-.rd-card:nth-child(2) { animation-delay: 0.06s; }
-.rd-card:nth-child(3) { animation-delay: 0.12s; }
-.rd-card:nth-child(4) { animation-delay: 0.18s; }
-
-@media (max-width: 768px) { .rd-grid { grid-template-columns: 1fr; } .rd-card-header { padding: 8px 12px; } .rd-card-body { padding: 12px; } }
+/* 卡片式样式使用全局 detail-page.scss，此处仅保留页面特有样式 */
 
 /* 发票识别区域 */
 .recognize-area { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: #f0f9eb; border-radius: 8px; border: 1px dashed #67c23a; }

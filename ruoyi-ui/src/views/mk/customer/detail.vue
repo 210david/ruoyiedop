@@ -17,60 +17,56 @@
       <!-- 基本信息 -->
       <el-tab-pane label="基本信息" name="basic">
         <!-- 客户信息 -->
-        <el-descriptions :column="3" border title="客户信息" class="info-group">
-          <el-descriptions-item label="客户编号">{{ customer.customerNo }}</el-descriptions-item>
-          <el-descriptions-item label="企业名称">{{ customer.customerName }}</el-descriptions-item>
-          <el-descriptions-item label="信用代码">{{ customer.creditCode }}</el-descriptions-item>
-          <el-descriptions-item label="客户等级"><dict-tag :options="marketing_customer_level" :value="customer.customerLevel" /></el-descriptions-item>
-          <el-descriptions-item label="客户来源"><dict-tag :options="marketing_customer_source" :value="customer.customerSource" /></el-descriptions-item>
-          <el-descriptions-item label="客户状态"><dict-tag :options="marketing_customer_status" :value="customer.customerStatus" /></el-descriptions-item>
-          <el-descriptions-item label="客户标签" :span="3">{{ customer.tagNames || '-' }}</el-descriptions-item>
-        </el-descriptions>
+        <div class="rd-grid">
+          <div class="rd-item"><span class="rd-label">客户编号</span><div class="rd-value">{{ customer.customerNo }}</div></div>
+          <div class="rd-item"><span class="rd-label">企业名称</span><div class="rd-value">{{ customer.customerName }}</div></div>
+          <div class="rd-item"><span class="rd-label">信用代码</span><div class="rd-value">{{ customer.creditCode }}</div></div>
+          <div class="rd-item"><span class="rd-label">客户等级</span><div class="rd-value"><dict-tag :options="marketing_customer_level" :value="customer.customerLevel" /></div></div>
+          <div class="rd-item"><span class="rd-label">客户来源</span><div class="rd-value"><dict-tag :options="marketing_customer_source" :value="customer.customerSource" /></div></div>
+          <div class="rd-item"><span class="rd-label">客户状态</span><div class="rd-value"><dict-tag :options="marketing_customer_status" :value="customer.customerStatus" /></div></div>
+          <div class="rd-item rd-item--full"><span class="rd-label">客户标签</span><div class="rd-value" :class="{ 'rd-value--muted': true }">{{ customer.tagNames || '暂无' }}</div></div>
+        </div>
 
         <!-- 企业信息 -->
-        <el-descriptions :column="3" border title="企业信息" class="info-group">
-          <el-descriptions-item label="所属行业"><dict-tag :options="marketing_industry" :value="customer.industry" /></el-descriptions-item>
-          <el-descriptions-item label="企业规模"><dict-tag :options="marketing_company_size" :value="customer.companySize" /></el-descriptions-item>
-          <el-descriptions-item label="官网">{{ customer.website || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="详细地址" :span="3">{{ customer.address || '-' }}</el-descriptions-item>
-        </el-descriptions>
+        <div class="rd-grid">
+          <div class="rd-item"><span class="rd-label">所属行业</span><div class="rd-value"><dict-tag :options="marketing_industry" :value="customer.industry" /></div></div>
+          <div class="rd-item"><span class="rd-label">企业规模</span><div class="rd-value"><dict-tag :options="marketing_company_size" :value="customer.companySize" /></div></div>
+          <div class="rd-item"><span class="rd-label">官网</span><div class="rd-value" :class="{ 'rd-value--muted': true }">{{ customer.website || '暂无' }}</div></div>
+          <div class="rd-item rd-item--full"><span class="rd-label">详细地址</span><div class="rd-value" :class="{ 'rd-value--muted': true }">{{ customer.address || '暂无' }}</div></div>
+        </div>
 
         <!-- 业务信息 -->
-        <el-descriptions :column="3" border title="业务信息" class="info-group">
-          <el-descriptions-item label="首次接触">{{ customer.firstContactDate }}</el-descriptions-item>
-          <el-descriptions-item label="合作开始">{{ customer.cooperationDate }}</el-descriptions-item>
-          <el-descriptions-item label="累计交易额">{{ customer.totalAmount }}</el-descriptions-item>
-        </el-descriptions>
+        <div class="rd-grid">
+          <div class="rd-item"><span class="rd-label">首次接触</span><div class="rd-value">{{ customer.firstContactDate }}</div></div>
+          <div class="rd-item"><span class="rd-label">合作开始</span><div class="rd-value">{{ customer.cooperationDate }}</div></div>
+          <div class="rd-item"><span class="rd-label">累计交易额</span><div class="rd-value">{{ customer.totalAmount }}</div></div>
+        </div>
 
         <!-- 负责信息 -->
-        <el-descriptions :column="3" border title="负责信息" class="info-group">
-          <el-descriptions-item label="负责人">{{ customer.userName || '未分配（公海）' }}</el-descriptions-item>
-          <el-descriptions-item label="所属部门">{{ customer.deptName || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="创建时间">{{ customer.createTime }}</el-descriptions-item>
-        </el-descriptions>
+        <div class="rd-grid">
+          <div class="rd-item"><span class="rd-label">负责人</span><div class="rd-value">{{ customer.userName || '未分配（公海）' }}</div></div>
+          <div class="rd-item"><span class="rd-label">所属部门</span><div class="rd-value" :class="{ 'rd-value--muted': true }">{{ customer.deptName || '暂无' }}</div></div>
+          <div class="rd-item"><span class="rd-label">创建时间</span><div class="rd-value">{{ customer.createTime }}</div></div>
+        </div>
 
         <!-- 补充信息 -->
-        <el-descriptions :column="1" border title="补充信息" class="info-group">
-          <el-descriptions-item label="备注">{{ customer.remark || '-' }}</el-descriptions-item>
-        </el-descriptions>
+        <div class="rd-grid">
+          <div class="rd-item"><span class="rd-label">备注</span><div class="rd-value" :class="{ 'rd-value--muted': true }">{{ customer.remark || '暂无' }}</div></div>
+        </div>
 
         <!-- 状态流转操作 -->
-        <el-descriptions :column="3" border title="状态管理" class="info-group">
-          <el-descriptions-item label="当前状态"><dict-tag :options="marketing_customer_status" :value="customer.customerStatus" /></el-descriptions-item>
-          <el-descriptions-item label="状态操作" :span="2">
-            <el-button size="small" type="primary" plain @click="handleStatusChange('1')" v-if="customer.customerStatus === '0'" v-hasPermi="['marketing:customer:edit']">转为签约</el-button>
+        <div class="rd-grid">
+          <div class="rd-item"><span class="rd-label">当前状态</span><div class="rd-value"><dict-tag :options="marketing_customer_status" :value="customer.customerStatus" /></div></div>
+          <div class="rd-item rd-item--full"><span class="rd-label">状态操作</span><div class="rd-value"><el-button size="small" type="primary" plain @click="handleStatusChange('1')" v-if="customer.customerStatus === '0'" v-hasPermi="['marketing:customer:edit']">转为签约</el-button>
             <el-button size="small" type="success" plain @click="handleStatusChange('2')" v-if="customer.customerStatus === '1'" v-hasPermi="['marketing:customer:edit']">转为合作中</el-button>
             <el-button size="small" type="warning" plain @click="handleStatusChange('3')" v-if="customer.customerStatus === '2'" v-hasPermi="['marketing:customer:edit']">暂停合作</el-button>
             <el-button size="small" type="success" plain @click="handleStatusChange('2')" v-if="customer.customerStatus === '3'" v-hasPermi="['marketing:customer:edit']">恢复合作</el-button>
             <el-button size="small" type="danger" plain @click="handleStatusChange('4')" v-if="['0','1','2','3'].includes(customer.customerStatus)" v-hasPermi="['marketing:customer:edit']">标记流失</el-button>
-            <el-button size="small" type="primary" plain @click="handleStatusChange('0')" v-if="customer.customerStatus === '4'" v-hasPermi="['marketing:customer:edit']">重新激活</el-button>
-          </el-descriptions-item>
-          <el-descriptions-item label="分配操作" :span="3">
-            <el-button size="small" type="primary" plain @click="handleAssign" v-if="customer.userId" v-hasPermi="['marketing:customer:assign']">转移分配</el-button>
+            <el-button size="small" type="primary" plain @click="handleStatusChange('0')" v-if="customer.customerStatus === '4'" v-hasPermi="['marketing:customer:edit']">重新激活</el-button></div></div>
+          <div class="rd-item rd-item--full"><span class="rd-label">分配操作</span><div class="rd-value"><el-button size="small" type="primary" plain @click="handleAssign" v-if="customer.userId" v-hasPermi="['marketing:customer:assign']">转移分配</el-button>
             <el-button size="small" type="warning" plain @click="handleRelease" v-if="customer.userId" v-hasPermi="['marketing:customer:edit']">释放到公海</el-button>
-            <el-button size="small" type="success" plain @click="handleClaim" v-if="!customer.userId" v-hasPermi="['marketing:customer:claim']">领取客户</el-button>
-          </el-descriptions-item>
-        </el-descriptions>
+            <el-button size="small" type="success" plain @click="handleClaim" v-if="!customer.userId" v-hasPermi="['marketing:customer:claim']">领取客户</el-button></div></div>
+        </div>
       </el-tab-pane>
 
       <!-- 联系人列表 -->
@@ -195,7 +191,13 @@
     </el-tabs>
 
     <!-- 分配弹窗 -->
-    <el-dialog title="分配客户" v-model="assignOpen" width="500px" append-to-body>
+    <el-dialog v-model="assignOpen" width="500px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <span class="rd-detail-header-title">分配客户</span>
+        </div>
+      </template>
       <el-form label-width="80px">
         <el-form-item label="负责人">
           <el-select v-model="assignUserId" filterable clearable placeholder="请选择（留空释放到公海）" style="width: 100%">
@@ -224,6 +226,8 @@ import { listUser } from '@/api/system/user'
 
 const route = useRoute()
 const router = useRouter()
+import { useDetailCard } from '@/composables/useDetailCard'
+const { collapsedCards, toggleCard } = useDetailCard([])
 const { proxy } = getCurrentInstance()
 const {
   marketing_customer_level, marketing_customer_source, marketing_customer_status,

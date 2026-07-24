@@ -63,8 +63,8 @@
             bank_account, receipt_attachment, payment_date, confirm_status, confirm_by, confirm_time,
             create_by, create_time, remark)
         VALUES (#{planId}, #{contractId}, #{customerId}, #{thisAmount}, #{paymentMethod},
-            #{bankAccount}, #{receiptAttachment}, #{paymentDate}, #{confirmStatus}, #{confirmBy}, #{confirmTime},
-            #{createBy}, sysdate(), #{remark})
+            #{bankAccount,jdbcType=VARCHAR}, #{receiptAttachment,jdbcType=VARCHAR}, #{paymentDate}, #{confirmStatus}, #{confirmBy,jdbcType=VARCHAR}, #{confirmTime,jdbcType=TIMESTAMP},
+            #{createBy,jdbcType=VARCHAR}, sysdate(), #{remark,jdbcType=VARCHAR})
     </insert>
 
     <update id="updatePaymentRecord" parameterType="com.ruoyi.mk.domain.MkPaymentRecord">
@@ -79,7 +79,7 @@
             <if test="confirmBy != null">confirm_by = #{confirmBy},</if>
             <if test="confirmTime != null">confirm_time = #{confirmTime},</if>
             <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
-            <if test="remark != null">remark = #{remark},</if>
+            <if test="remark != null">remark = #{remark,jdbcType=VARCHAR},</if>
             update_time = sysdate()
         </set>
         WHERE record_id = #{recordId}

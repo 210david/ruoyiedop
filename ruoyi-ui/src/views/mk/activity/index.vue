@@ -87,7 +87,13 @@
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
     <!-- 新增/修改对话框 -->
-    <el-dialog :title="title" v-model="open" width="850px" append-to-body>
+    <el-dialog v-model="open" width="850px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <span class="rd-detail-header-title">{{ title }}</span>
+        </div>
+      </template>
       <el-form ref="activityRef" :model="form" :rules="rules" label-width="110px">
         <el-collapse v-model="activeNames">
           <el-collapse-item title="基本信息" name="basic">
@@ -200,13 +206,19 @@
     </el-dialog>
 
     <!-- 活动结算弹窗 -->
-    <el-dialog title="活动结算" v-model="settleOpen" width="700px" append-to-body>
+    <el-dialog v-model="settleOpen" width="700px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <span class="rd-detail-header-title">活动结算</span>
+        </div>
+      </template>
       <el-alert title="请填写活动实际效果数据，完成结算后可归档活动" type="info" :closable="false" show-icon style="margin-bottom: 20px" />
       <el-descriptions :column="2" border style="margin-bottom: 20px">
-        <el-descriptions-item label="活动名称">{{ settleForm.activityName }}</el-descriptions-item>
-        <el-descriptions-item label="活动时间">{{ settleForm.startTime }} ~ {{ settleForm.endTime }}</el-descriptions-item>
-        <el-descriptions-item label="活动预算">{{ settleForm.budget }} 元</el-descriptions-item>
-        <el-descriptions-item label="目标人数">{{ settleForm.targetCount }} 人</el-descriptions-item>
+        <div class="rd-item"><span class="rd-label">活动名称</span><div class="rd-value">{{ settleForm.activityName }}</div></div>
+        <div class="rd-item"><span class="rd-label">活动时间</span><div class="rd-value">{{ settleForm.startTime }} ~ {{ settleForm.endTime }}</div></div>
+        <div class="rd-item"><span class="rd-label">活动预算</span><div class="rd-value">{{ settleForm.budget }} 元</div></div>
+        <div class="rd-item"><span class="rd-label">目标人数</span><div class="rd-value">{{ settleForm.targetCount }} 人</div></div>
       </el-descriptions>
       <el-form ref="settleRef" :model="settleForm" label-width="100px">
         <el-row>
@@ -252,7 +264,13 @@
     <file-preview ref="filePreviewRef" />
 
     <!-- 取消活动弹窗 -->
-    <el-dialog title="取消活动" v-model="cancelOpen" width="500px" append-to-body>
+    <el-dialog v-model="cancelOpen" width="500px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <span class="rd-detail-header-title">取消活动</span>
+        </div>
+      </template>
       <el-form label-width="80px">
         <el-form-item label="取消原因"><el-input v-model="cancelRemark" type="textarea" :rows="3" placeholder="请输入取消原因" /></el-form-item>
       </el-form>
@@ -263,7 +281,13 @@
     </el-dialog>
 
     <!-- 批量改负责人弹窗 -->
-    <el-dialog title="批量修改负责人" v-model="ownerOpen" width="500px" append-to-body>
+    <el-dialog v-model="ownerOpen" width="500px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <span class="rd-detail-header-title">批量修改负责人</span>
+        </div>
+      </template>
       <el-form label-width="80px">
         <el-form-item label="负责人">
           <el-select v-model="batchOwnerUserId" filterable placeholder="请选择负责人" style="width: 100%" @change="onBatchUserChange">
@@ -278,8 +302,25 @@
     </el-dialog>
 
     <!-- P3-15: 报名推广中心 -->
-    <el-dialog title="报名推广中心" v-model="promoteOpen" width="600px" append-to-body v-loading="promoteLoading">
-      <div v-if="promoteData.url" class="promote-center">
+    <el-dialog v-model="promoteOpen" width="600px" append-to-body draggable class="rd-dialog" v-loading="promoteLoading">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="2" y1="12" x2="22" y2="12"/>
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+            </svg>
+          </div>
+          <span class="rd-detail-header-title">报名推广中心</span>
+          <div class="rd-detail-header-sub" v-if="promoteData.activityName">
+            <span class="rd-detail-header-divider"></span>
+            <span class="rd-detail-header-no">{{ promoteData.activityName }}</span>
+          </div>
+        </div>
+      </template>
+      <div class="rd-page">
+        <div v-if="promoteData.url" class="promote-center">
         <!-- 活动名称 -->
         <div class="promote-activity-name">{{ promoteData.activityName }}</div>
 
@@ -313,6 +354,7 @@
           <p><b>3. 现场签到</b>：客户报名成功后获得签到码，活动当天扫码或输入签到码完成签到</p>
           <p><b>4. 线索转化</b>：签到后的参与人可一键转化为营销线索，进入销售漏斗</p>
         </div>
+        </div>
       </div>
     </el-dialog>
   </div>
@@ -325,6 +367,8 @@ import { getToken } from '@/utils/auth'
 import { listActivity, getActivity, addActivity, updateActivity, delActivity, changeActivityStatus, copyActivity, batchChangeStatus, batchUpdateOwner, getRegisterUrl } from '@/api/mk/activity'
 import { listUser, deptTreeSelect } from '@/api/system/user'
 import { useColumnResize } from '@/composables/useColumnResize'
+import { useDetailCard } from '@/composables/useDetailCard'
+const { collapsedCards, toggleCard } = useDetailCard([])
 
 const router = useRouter()
 const { proxy } = getCurrentInstance()

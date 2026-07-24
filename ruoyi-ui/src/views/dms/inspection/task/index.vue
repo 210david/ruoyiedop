@@ -45,7 +45,13 @@
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
     <!-- 新增弹窗 -->
-    <el-dialog :title="title" v-model="open" width="600px" append-to-body>
+    <el-dialog v-model="open" width="600px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <span class="rd-detail-header-title">{{ title }}</span>
+        </div>
+      </template>
       <el-form ref="taskRef" :model="form" :rules="rules" label-width="100px">
         <el-row>
           <el-col :span="12"><el-form-item label="任务编号" prop="taskNo"><el-input v-model="form.taskNo" placeholder="自动生成" disabled /></el-form-item></el-col>
@@ -70,17 +76,23 @@
     </el-dialog>
 
     <!-- 查看详情弹窗 -->
-    <el-dialog title="点检详情" v-model="viewOpen" width="850px" append-to-body>
-      <el-descriptions :column="2" border>
-        <el-descriptions-item label="任务编号">{{ viewForm.taskNo }}</el-descriptions-item>
-        <el-descriptions-item label="路线名称">{{ viewForm.routeName }}</el-descriptions-item>
-        <el-descriptions-item label="计划日期">{{ viewForm.planDate }}</el-descriptions-item>
-        <el-descriptions-item label="点检人">{{ viewForm.inspectorName }}</el-descriptions-item>
-        <el-descriptions-item label="状态"><dict-tag :options="dms_inspection_status" :value="viewForm.taskStatus" /></el-descriptions-item>
-        <el-descriptions-item label="异常项数">{{ viewForm.abnormalCount || 0 }}</el-descriptions-item>
-        <el-descriptions-item label="开始时间">{{ viewForm.startTime }}</el-descriptions-item>
-        <el-descriptions-item label="完成时间">{{ viewForm.completeTime }}</el-descriptions-item>
-      </el-descriptions>
+    <el-dialog v-model="viewOpen" width="850px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M9 12h6"/><path d="M12 9v6"/></svg></div>
+          <span class="rd-detail-header-title">点检详情</span>
+        </div>
+      </template>
+      <div class="rd-grid">
+        <div class="rd-item"><span class="rd-label">任务编号</span><div class="rd-value">{{ viewForm.taskNo }}</div></div>
+        <div class="rd-item"><span class="rd-label">路线名称</span><div class="rd-value">{{ viewForm.routeName }}</div></div>
+        <div class="rd-item"><span class="rd-label">计划日期</span><div class="rd-value">{{ viewForm.planDate }}</div></div>
+        <div class="rd-item"><span class="rd-label">点检人</span><div class="rd-value">{{ viewForm.inspectorName }}</div></div>
+        <div class="rd-item"><span class="rd-label">状态</span><div class="rd-value"><dict-tag :options="dms_inspection_status" :value="viewForm.taskStatus" /></div></div>
+        <div class="rd-item"><span class="rd-label">异常项数</span><div class="rd-value">{{ viewForm.abnormalCount || 0 }}</div></div>
+        <div class="rd-item"><span class="rd-label">开始时间</span><div class="rd-value">{{ viewForm.startTime }}</div></div>
+        <div class="rd-item"><span class="rd-label">完成时间</span><div class="rd-value">{{ viewForm.completeTime }}</div></div>
+      </div>
 
       <template v-if="viewGroups.common.length > 0">
         <el-divider content-position="left">通用检查项</el-divider>
@@ -124,13 +136,19 @@
     </el-dialog>
 
     <!-- 执行点检弹窗 -->
-    <el-dialog title="执行点检" v-model="execOpen" width="960px" append-to-body :close-on-click-modal="false">
+    <el-dialog v-model="execOpen" width="960px" append-to-body draggable class="rd-dialog" :close-on-click-modal="false">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <span class="rd-detail-header-title">执行点检</span>
+        </div>
+      </template>
       <el-descriptions :column="2" border style="margin-bottom: 16px">
-        <el-descriptions-item label="任务编号">{{ execForm.taskNo }}</el-descriptions-item>
-        <el-descriptions-item label="路线名称">{{ execForm.routeName }}</el-descriptions-item>
-        <el-descriptions-item label="点检人">{{ execForm.inspectorName }}</el-descriptions-item>
-        <el-descriptions-item label="计划日期">{{ execForm.planDate }}</el-descriptions-item>
-      </el-descriptions>
+        <div class="rd-item"><span class="rd-label">任务编号</span><div class="rd-value">{{ execForm.taskNo }}</div></div>
+        <div class="rd-item"><span class="rd-label">路线名称</span><div class="rd-value">{{ execForm.routeName }}</div></div>
+        <div class="rd-item"><span class="rd-label">点检人</span><div class="rd-value">{{ execForm.inspectorName }}</div></div>
+        <div class="rd-item"><span class="rd-label">计划日期</span><div class="rd-value">{{ execForm.planDate }}</div></div>
+      </div>
 
       <!-- 通用检查项 -->
       <template v-if="execGroups.common.length > 0">
@@ -239,6 +257,8 @@ import { listRoute } from '@/api/dms/inspection'
 import { listUser } from '@/api/system/user'
 import { getToken } from '@/utils/auth'
 import { useColumnResize } from '@/composables/useColumnResize'
+import { useDetailCard } from '@/composables/useDetailCard'
+const { collapsedCards, toggleCard } = useDetailCard([])
 
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('dms_inspection_task_index')

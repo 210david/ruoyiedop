@@ -78,7 +78,13 @@
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
     <!-- 新增/修改工单弹窗 -->
-    <el-dialog :title="title" v-model="open" width="780px" append-to-body>
+    <el-dialog v-model="open" width="780px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <span class="rd-detail-header-title">{{ title }}</span>
+        </div>
+      </template>
       <el-form ref="workorderRef" :model="form" :rules="rules" label-width="100px">
         <!-- AI智能报修 -->
         <el-alert v-if="aiResult" type="success" :closable="true" @close="aiResult = null" style="margin-bottom: 12px">
@@ -205,7 +211,13 @@
     </el-dialog>
 
     <!-- 派工/改派弹窗 -->
-    <el-dialog :title="isReassign ? '工单改派' : '工单派工'" v-model="dispatchOpen" width="560px" append-to-body>
+    <el-dialog v-model="dispatchOpen" width="560px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <span class="rd-detail-header-title">{{ isReassign ? '工单改派' : '工单派工' }}</span>
+        </div>
+      </template>
       <el-form ref="dispatchRef" :model="dispatchForm" label-width="100px">
         <el-form-item label="工单号"><el-input :model-value="dispatchForm.orderNo" disabled /></el-form-item>
         <el-form-item label="设备名称"><el-input :model-value="dispatchForm.equipmentName" disabled /></el-form-item>
@@ -239,7 +251,13 @@
     </el-dialog>
 
     <!-- AI智能报修弹窗 -->
-    <el-dialog title="智能报修助手" v-model="aiDialog" width="500px" append-to-body>
+    <el-dialog v-model="aiDialog" width="500px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <span class="rd-detail-header-title">智能报修助手</span>
+        </div>
+      </template>
       <el-form label-width="80px">
         <el-form-item label="描述">
           <el-input v-model="aiInput" type="textarea" :rows="4" placeholder="请用自然语言描述故障，如：3号车床主轴有异响，震动比较大，今天上午开始的，比较急" />
@@ -252,7 +270,13 @@
     </el-dialog>
 
     <!-- 完工弹窗 -->
-    <el-dialog title="工单完工" v-model="completeOpen" width="780px" append-to-body>
+    <el-dialog v-model="completeOpen" width="780px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <span class="rd-detail-header-title">工单完工</span>
+        </div>
+      </template>
       <el-form ref="completeRef" :model="completeForm" label-width="100px">
         <el-form-item label="工单号"><el-input :model-value="completeForm.orderNo" disabled /></el-form-item>
         <!-- 任务清单 -->
@@ -321,7 +345,13 @@
     </el-dialog>
 
     <!-- 验收弹窗 -->
-    <el-dialog title="工单验收" v-model="verifyOpen" width="560px" append-to-body>
+    <el-dialog v-model="verifyOpen" width="560px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <span class="rd-detail-header-title">工单验收</span>
+        </div>
+      </template>
       <el-form ref="verifyRef" :model="verifyForm" label-width="100px">
         <el-form-item label="工单号"><el-input :model-value="verifyForm.orderNo" disabled /></el-form-item>
         <el-alert v-if="verifyForm.sparePartsUsed" type="warning" :closable="false" show-icon style="margin-bottom: 16px">
@@ -347,7 +377,7 @@
     </el-dialog>
 
     <!-- 查看详情弹窗 -->
-    <el-dialog v-model="viewOpen" width="1120px" append-to-body class="workorder-detail-dialog" top="5vh">
+    <el-dialog v-model="viewOpen" width="1120px" append-to-body class="rd-dialog workorder-detail-dialog" top="5vh">
       <template #header>
         <div class="detail-dialog-header">
           <div class="header-left">
@@ -384,12 +414,12 @@
           </div>
           <div class="section-body">
             <el-descriptions :column="3" border :label-style="descLabelStyle" :content-style="descContentStyle">
-              <el-descriptions-item label="工单号">{{ viewForm.orderNo || '-' }}</el-descriptions-item>
-              <el-descriptions-item label="工单类型"><dict-tag :options="dms_order_type" :value="viewForm.orderType" /></el-descriptions-item>
-              <el-descriptions-item label="优先级"><dict-tag :options="dms_priority" :value="viewForm.priority" /></el-descriptions-item>
-              <el-descriptions-item label="报修人">{{ viewForm.reporterName || '-' }}</el-descriptions-item>
-              <el-descriptions-item label="报修时间">{{ viewForm.reportTime || '-' }}</el-descriptions-item>
-              <el-descriptions-item label="工单状态"><dict-tag :options="dms_order_status" :value="viewForm.orderStatus" /></el-descriptions-item>
+              <div class="rd-item"><span class="rd-label">工单号</span><div class="rd-value" :class="{ 'rd-value--muted': true }">{{ viewForm.orderNo || '暂无' }}</div></div>
+              <div class="rd-item"><span class="rd-label">工单类型</span><div class="rd-value"><dict-tag :options="dms_order_type" :value="viewForm.orderType" /></div></div>
+              <div class="rd-item"><span class="rd-label">优先级</span><div class="rd-value"><dict-tag :options="dms_priority" :value="viewForm.priority" /></div></div>
+              <div class="rd-item"><span class="rd-label">报修人</span><div class="rd-value" :class="{ 'rd-value--muted': true }">{{ viewForm.reporterName || '暂无' }}</div></div>
+              <div class="rd-item"><span class="rd-label">报修时间</span><div class="rd-value" :class="{ 'rd-value--muted': true }">{{ viewForm.reportTime || '暂无' }}</div></div>
+              <div class="rd-item"><span class="rd-label">工单状态</span><div class="rd-value"><dict-tag :options="dms_order_status" :value="viewForm.orderStatus" /></div></div>
             </el-descriptions>
           </div>
         </div>
@@ -402,9 +432,9 @@
           </div>
           <div class="section-body">
             <el-descriptions :column="3" border :label-style="descLabelStyle" :content-style="descContentStyle">
-              <el-descriptions-item label="设备编号">{{ viewForm.equipmentCode || '-' }}</el-descriptions-item>
-              <el-descriptions-item label="设备名称" :span="2">{{ viewForm.equipmentName || '-' }}</el-descriptions-item>
-              <el-descriptions-item label="故障描述" :span="3">{{ viewForm.faultDescription || '-' }}</el-descriptions-item>
+              <div class="rd-item"><span class="rd-label">设备编号</span><div class="rd-value" :class="{ 'rd-value--muted': true }">{{ viewForm.equipmentCode || '暂无' }}</div></div>
+              <div class="rd-item rd-item--full"><span class="rd-label">设备名称</span><div class="rd-value" :class="{ 'rd-value--muted': true }">{{ viewForm.equipmentName || '暂无' }}</div></div>
+              <div class="rd-item rd-item--full"><span class="rd-label">故障描述</span><div class="rd-value" :class="{ 'rd-value--muted': true }">{{ viewForm.faultDescription || '暂无' }}</div></div>
             </el-descriptions>
           </div>
         </div>
@@ -417,18 +447,14 @@
           </div>
           <div class="section-body">
             <el-descriptions :column="3" border :label-style="descLabelStyle" :content-style="descContentStyle">
-              <el-descriptions-item label="维修人">{{ viewForm.assigneeName || '-' }}</el-descriptions-item>
-              <el-descriptions-item label="派工人">{{ viewForm.assignerName || '-' }}</el-descriptions-item>
-              <el-descriptions-item label="派工时间">{{ viewForm.assignTime || '-' }}</el-descriptions-item>
-              <el-descriptions-item label="到达时间">{{ viewForm.arriveTime || '-' }}</el-descriptions-item>
-              <el-descriptions-item label="SLA响应截止">
-                <span :class="{ 'sla-warning': viewForm.slaTimeoutStatus === '1' }">{{ viewForm.slaResponseDeadline || '-' }}</span>
-                <el-tag v-if="viewForm.slaTimeoutStatus === '1'" type="danger" size="small" style="margin-left: 6px">已超时</el-tag>
-              </el-descriptions-item>
-              <el-descriptions-item label="SLA处理截止">
-                <span :class="{ 'sla-warning': viewForm.slaTimeoutStatus === '2' }">{{ viewForm.slaProcessDeadline || '-' }}</span>
-                <el-tag v-if="viewForm.slaTimeoutStatus === '2'" type="danger" size="small" style="margin-left: 6px">已超时</el-tag>
-              </el-descriptions-item>
+              <div class="rd-item"><span class="rd-label">维修人</span><div class="rd-value" :class="{ 'rd-value--muted': true }">{{ viewForm.assigneeName || '暂无' }}</div></div>
+              <div class="rd-item"><span class="rd-label">派工人</span><div class="rd-value" :class="{ 'rd-value--muted': true }">{{ viewForm.assignerName || '暂无' }}</div></div>
+              <div class="rd-item"><span class="rd-label">派工时间</span><div class="rd-value" :class="{ 'rd-value--muted': true }">{{ viewForm.assignTime || '暂无' }}</div></div>
+              <div class="rd-item"><span class="rd-label">到达时间</span><div class="rd-value" :class="{ 'rd-value--muted': true }">{{ viewForm.arriveTime || '暂无' }}</div></div>
+              <div class="rd-item"><span class="rd-label">SLA响应截止</span><div class="rd-value" :class="{ 'rd-value--muted': true }"><span :class="{ 'sla-warning': viewForm.slaTimeoutStatus === '1' }">{{ viewForm.slaResponseDeadline || '暂无' }}</span>
+                <el-tag v-if="viewForm.slaTimeoutStatus === '1'" type="danger" size="small" style="margin-left: 6px">已超时</el-tag></div></div>
+              <div class="rd-item"><span class="rd-label">SLA处理截止</span><div class="rd-value" :class="{ 'rd-value--muted': true }"><span :class="{ 'sla-warning': viewForm.slaTimeoutStatus === '2' }">{{ viewForm.slaProcessDeadline || '暂无' }}</span>
+                <el-tag v-if="viewForm.slaTimeoutStatus === '2'" type="danger" size="small" style="margin-left: 6px">已超时</el-tag></div></div>
             </el-descriptions>
           </div>
         </div>
@@ -441,12 +467,12 @@
           </div>
           <div class="section-body">
             <el-descriptions :column="3" border :label-style="descLabelStyle" :content-style="descContentStyle">
-              <el-descriptions-item label="故障原因" :span="3">{{ viewForm.faultCause || '-' }}</el-descriptions-item>
-              <el-descriptions-item label="维修措施" :span="3">{{ viewForm.repairMeasure || '-' }}</el-descriptions-item>
-              <el-descriptions-item label="更换备件">{{ viewForm.sparePartsUsed || '-' }}</el-descriptions-item>
-              <el-descriptions-item label="停机时长">{{ viewForm.downtimeDuration != null ? viewForm.downtimeDuration + ' 小时' : '-' }}</el-descriptions-item>
-              <el-descriptions-item label="完工时间">{{ viewForm.completeTime || '-' }}</el-descriptions-item>
-              <el-descriptions-item label="完工说明" :span="3">{{ viewForm.completeRemark || '-' }}</el-descriptions-item>
+              <div class="rd-item rd-item--full"><span class="rd-label">故障原因</span><div class="rd-value" :class="{ 'rd-value--muted': true }">{{ viewForm.faultCause || '暂无' }}</div></div>
+              <div class="rd-item rd-item--full"><span class="rd-label">维修措施</span><div class="rd-value" :class="{ 'rd-value--muted': true }">{{ viewForm.repairMeasure || '暂无' }}</div></div>
+              <div class="rd-item"><span class="rd-label">更换备件</span><div class="rd-value" :class="{ 'rd-value--muted': true }">{{ viewForm.sparePartsUsed || '暂无' }}</div></div>
+              <div class="rd-item"><span class="rd-label">停机时长</span><div class="rd-value">{{ viewForm.downtimeDuration != null ? viewForm.downtimeDuration + ' 小时' : '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">完工时间</span><div class="rd-value" :class="{ 'rd-value--muted': true }">{{ viewForm.completeTime || '暂无' }}</div></div>
+              <div class="rd-item rd-item--full"><span class="rd-label">完工说明</span><div class="rd-value" :class="{ 'rd-value--muted': true }">{{ viewForm.completeRemark || '暂无' }}</div></div>
               <el-descriptions-item v-if="viewForm.deviationReason" label="偏差原因" :span="3">{{ viewForm.deviationReason }}</el-descriptions-item>
             </el-descriptions>
             <!-- 任务清单完成情况 -->
@@ -471,13 +497,11 @@
           </div>
           <div class="section-body">
             <el-descriptions :column="3" border :label-style="descLabelStyle" :content-style="descContentStyle">
-              <el-descriptions-item label="验收人">{{ viewForm.verifierName || '-' }}</el-descriptions-item>
-              <el-descriptions-item label="验收时间">{{ viewForm.verifyTime || '-' }}</el-descriptions-item>
-              <el-descriptions-item label="评价">
-                <el-rate v-if="viewForm.rating != null" v-model="viewForm.rating" :max="5" disabled show-score :texts="['极差', '失望', '一般', '满意', '非常满意']" />
-                <span v-else>-</span>
-              </el-descriptions-item>
-              <el-descriptions-item label="验收意见" :span="3">{{ viewForm.verifyOpinion || '-' }}</el-descriptions-item>
+              <div class="rd-item"><span class="rd-label">验收人</span><div class="rd-value" :class="{ 'rd-value--muted': true }">{{ viewForm.verifierName || '暂无' }}</div></div>
+              <div class="rd-item"><span class="rd-label">验收时间</span><div class="rd-value" :class="{ 'rd-value--muted': true }">{{ viewForm.verifyTime || '暂无' }}</div></div>
+              <div class="rd-item"><span class="rd-label">评价</span><div class="rd-value"><el-rate v-if="viewForm.rating != null" v-model="viewForm.rating" :max="5" disabled show-score :texts="['极差', '失望', '一般', '满意', '非常满意']" />
+                <span v-else>-</span></div></div>
+              <div class="rd-item rd-item--full"><span class="rd-label">验收意见</span><div class="rd-value" :class="{ 'rd-value--muted': true }">{{ viewForm.verifyOpinion || '暂无' }}</div></div>
             </el-descriptions>
           </div>
         </div>
@@ -490,11 +514,11 @@
           </div>
           <div class="section-body">
             <el-descriptions :column="3" border :label-style="descLabelStyle" :content-style="descContentStyle">
-              <el-descriptions-item label="创建人">{{ viewForm.createBy || '-' }}</el-descriptions-item>
-              <el-descriptions-item label="创建时间">{{ viewForm.createTime || '-' }}</el-descriptions-item>
-              <el-descriptions-item label="更新人">{{ viewForm.updateBy || '-' }}</el-descriptions-item>
-              <el-descriptions-item label="更新时间">{{ viewForm.updateTime || '-' }}</el-descriptions-item>
-              <el-descriptions-item label="备注" :span="2">{{ viewForm.remark || '-' }}</el-descriptions-item>
+              <div class="rd-item"><span class="rd-label">创建人</span><div class="rd-value" :class="{ 'rd-value--muted': true }">{{ viewForm.createBy || '暂无' }}</div></div>
+              <div class="rd-item"><span class="rd-label">创建时间</span><div class="rd-value" :class="{ 'rd-value--muted': true }">{{ viewForm.createTime || '暂无' }}</div></div>
+              <div class="rd-item"><span class="rd-label">更新人</span><div class="rd-value" :class="{ 'rd-value--muted': true }">{{ viewForm.updateBy || '暂无' }}</div></div>
+              <div class="rd-item"><span class="rd-label">更新时间</span><div class="rd-value" :class="{ 'rd-value--muted': true }">{{ viewForm.updateTime || '暂无' }}</div></div>
+              <div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value" :class="{ 'rd-value--muted': true }">{{ viewForm.remark || '暂无' }}</div></div>
             </el-descriptions>
           </div>
         </div>
@@ -506,7 +530,13 @@
     </el-dialog>
 
     <!-- 驳回弹窗 -->
-    <el-dialog title="工单驳回" v-model="rejectOpen" width="500px" append-to-body>
+    <el-dialog v-model="rejectOpen" width="500px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <span class="rd-detail-header-title">工单驳回</span>
+        </div>
+      </template>
       <el-form ref="rejectRef" :model="rejectForm" label-width="100px">
         <el-form-item label="工单号"><el-input :model-value="rejectForm.orderNo" disabled /></el-form-item>
         <el-form-item label="驳回原因" required>
@@ -520,7 +550,13 @@
     </el-dialog>
 
     <!-- 操作历史弹窗 -->
-    <el-dialog title="工单操作历史" v-model="logOpen" width="700px" append-to-body>
+    <el-dialog v-model="logOpen" width="700px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <span class="rd-detail-header-title">工单操作历史</span>
+        </div>
+      </template>
       <el-timeline>
         <el-timeline-item v-for="(item, i) in logList" :key="i" :timestamp="item.createTime" placement="top"
           :type="item.action === 'create' ? 'primary' : (item.action === 'complete' || item.action === 'verify') ? 'success' : (item.action === 'reject' || item.action === 'cancel') ? 'danger' : 'info'">
@@ -548,6 +584,8 @@ import { listUser } from '@/api/system/user'
 import { listEquipment } from '@/api/dms/equipment'
 import { listSparepart } from '@/api/dms/sparepart'
 import { useColumnResize } from '@/composables/useColumnResize'
+import { useDetailCard } from '@/composables/useDetailCard'
+const { collapsedCards, toggleCard } = useDetailCard([])
 
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('dms_workorder_index')

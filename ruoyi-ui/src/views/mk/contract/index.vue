@@ -563,26 +563,49 @@
             </div>
           </div>
         </section>
+        <!-- 变更审批区（审批模式且有待审批变更时显示） -->
+        <section class="rd-card" v-if="viewApproveMode && pendingChangeLogs.length > 0">
+          <div class="rd-card-header" @click="toggleCard('changeApprove')">
+            <div class="rd-card-title">
+              <span class="rd-card-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                  <path d="M9 15l2 2 4-4"/>
+                </svg>
+              </span>
+              变更审批
+            </div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.changeApprove }" aria-label="折叠">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+            </button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.changeApprove">
+            <div class="change-approve-list">
+              <div class="change-approve-item" v-for="log in pendingChangeLogs" :key="log.logId">
+                <div class="change-approve-item-header">
+                  <el-tag size="small" type="warning" effect="light" round>{{ log.fieldName }}</el-tag>
+                  <span class="change-approve-item-reason" v-if="log.changeReason">{{ log.changeReason }}</span>
+                </div>
+                <div class="change-approve-item-values">
+                  <span class="change-approve-old">{{ log.oldValue }}</span>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #9ca3af;"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                  <span class="change-approve-new">{{ log.newValue }}</span>
+                </div>
+              </div>
+            </div>
+            <el-form label-width="100px" style="margin-top: 16px;">
+              <el-form-item label="审批意见" required>
+                <el-input v-model="changeApproveOpinion" type="textarea" :rows="4" placeholder="请输入审批意见" />
+              </el-form-item>
+            </el-form>
+          </div>
+        </section>
       </div>
-      <!-- 变更审批模式：底部审批操作区 -->
-      <template #footer v-if="viewApproveMode && pendingChangeLog">
-        <div class="change-approve-footer">
-          <div class="change-approve-info">
-            <span class="change-approve-label">待审批变更：</span>
-            <el-tag size="small" type="warning">{{ pendingChangeLog.fieldName }}</el-tag>
-            <span class="change-approve-values">
-              <span class="change-approve-old">{{ pendingChangeLog.oldValue }}</span>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #6b7280;"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-              <span class="change-approve-new">{{ pendingChangeLog.newValue }}</span>
-            </span>
-          </div>
-          <div class="change-approve-actions">
-            <el-input v-model="changeApproveOpinion" placeholder="审批意见（可选）" style="width: 300px;" clearable />
-            <el-button type="success" icon="Check" @click="confirmChangeApprove(true)">通过</el-button>
-            <el-button type="danger" icon="Close" @click="confirmChangeApprove(false)">驳回</el-button>
-            <el-button @click="viewOpen = false">取 消</el-button>
-          </div>
-        </div>
+      <template #footer v-if="viewApproveMode && pendingChangeLogs.length > 0">
+        <el-button type="success" @click="confirmChangeApprove(true)">全部通过</el-button>
+        <el-button type="danger" @click="confirmChangeApprove(false)">全部驳回</el-button>
+        <el-button @click="viewOpen = false">取 消</el-button>
       </template>
       <template #footer v-else>
         <el-button @click="viewOpen = false">关 闭</el-button>
@@ -653,132 +676,90 @@
           </div>
           <div class="rd-card-body" v-show="!collapsedCards.changeContent">
             <el-form ref="changeRef" :model="changeForm" :rules="changeRules" label-width="110px">
-              <el-row>
-                <el-col :span="24">
-                  <el-form-item label="变更类型" prop="changeType">
-                    <el-radio-group v-model="changeForm.changeType" @change="onChangeTypeChange">
-                      <el-radio-button v-for="d in marketing_contract_change_type" :key="d.value" :label="d.value">{{ d.label }}</el-radio-button>
-                    </el-radio-group>
+              <el-tabs v-model="changeActiveTab" type="border-card" class="change-tabs">
+                <!-- 金额变更页签 -->
+                <el-tab-pane label="金额变更" name="amount">
+                  <el-row>
+                    <el-col :span="12">
+                      <el-form-item label="原金额">
+                        <el-input-number v-model="changeForm.amountOld" :precision="2" :controls="false" disabled style="width: 100%" />
+                      </el-form-item>
+                    </el-col>
+                    <el-col :span="12">
+                      <el-form-item label="新金额" prop="amountNew">
+                        <el-input-number v-model="changeForm.amountNew" :min="0" :precision="2" controls-position="right" style="width: 100%" />
+                      </el-form-item>
+                    </el-col>
+                  </el-row>
+                  <el-form-item label="差额" v-if="changeForm.amountNew != null && changeForm.amountOld != null">
+                    <span class="change-diff" :class="{ 'change-diff--up': changeForm.amountNew - changeForm.amountOld > 0, 'change-diff--down': changeForm.amountNew - changeForm.amountOld < 0 }">
+                      {{ changeForm.amountNew - changeForm.amountOld > 0 ? '+' : '' }}￥{{ formatAmount(Math.abs(changeForm.amountNew - changeForm.amountOld)) }}
+                    </span>
                   </el-form-item>
-                </el-col>
-              </el-row>
+                </el-tab-pane>
 
-              <!-- 金额变更 -->
-              <template v-if="changeForm.changeType === '1'">
-                <el-row>
-                  <el-col :span="12">
-                    <el-form-item label="变更字段">
-                      <el-select v-model="changeForm.fieldName" style="width: 100%" @change="onChangeFieldChange">
-                        <el-option label="合同金额" value="contractAmount" />
-                      </el-select>
-                    </el-form-item>
-                  </el-col>
-                  <el-col :span="12">
-                    <el-form-item label="原金额">
-                      <el-input-number v-model="changeForm.oldAmount" :precision="2" :controls="false" disabled style="width: 100%" />
-                    </el-form-item>
-                  </el-col>
-                </el-row>
-                <el-row>
-                  <el-col :span="12">
-                    <el-form-item label="新金额" prop="newAmount">
-                      <el-input-number v-model="changeForm.newAmount" :min="0" :precision="2" controls-position="right" style="width: 100%" />
-                    </el-form-item>
-                  </el-col>
-                  <el-col :span="12">
-                    <el-form-item label="差额">
-                      <span class="change-diff" :class="{ 'change-diff--up': changeAmountDiff > 0, 'change-diff--down': changeAmountDiff < 0 }">
-                        {{ changeAmountDiff > 0 ? '+' : '' }}￥{{ formatAmount(Math.abs(changeAmountDiff)) }}
-                      </span>
-                    </el-form-item>
-                  </el-col>
-                </el-row>
-              </template>
+                <!-- 日期变更页签 -->
+                <el-tab-pane label="日期变更" name="date">
+                  <el-row>
+                    <el-col :span="24">
+                      <el-form-item label="变更字段" prop="dateField">
+                        <el-select v-model="changeForm.dateField" style="width: 100%" @change="onDateFieldChange">
+                          <el-option label="签约日期" value="signDate" />
+                          <el-option label="生效日期" value="effectiveDate" />
+                          <el-option label="到期日期" value="expireDate" />
+                        </el-select>
+                      </el-form-item>
+                    </el-col>
+                  </el-row>
+                  <el-row>
+                    <el-col :span="12">
+                      <el-form-item label="原日期">
+                        <el-date-picker v-model="changeForm.dateOld" type="date" value-format="YYYY-MM-DD" disabled style="width: 100%" />
+                      </el-form-item>
+                    </el-col>
+                    <el-col :span="12">
+                      <el-form-item label="新日期" prop="dateNew">
+                        <el-date-picker v-model="changeForm.dateNew" type="date" value-format="YYYY-MM-DD" placeholder="选择新日期" style="width: 100%" />
+                      </el-form-item>
+                    </el-col>
+                  </el-row>
+                </el-tab-pane>
 
-              <!-- 日期变更 -->
-              <template v-if="changeForm.changeType === '2'">
-                <el-row>
-                  <el-col :span="24">
-                    <el-form-item label="变更字段" prop="fieldName">
-                      <el-select v-model="changeForm.fieldName" style="width: 100%" @change="onChangeFieldChange">
-                        <el-option label="签约日期" value="signDate" />
-                        <el-option label="生效日期" value="effectiveDate" />
-                        <el-option label="到期日期" value="expireDate" />
-                      </el-select>
-                    </el-form-item>
-                  </el-col>
-                </el-row>
-                <el-row>
-                  <el-col :span="12">
-                    <el-form-item label="原日期">
-                      <el-date-picker v-model="changeForm.oldDateValue" type="date" value-format="YYYY-MM-DD" disabled style="width: 100%" />
-                    </el-form-item>
-                  </el-col>
-                  <el-col :span="12">
-                    <el-form-item label="新日期" prop="newDateValue">
-                      <el-date-picker v-model="changeForm.newDateValue" type="date" value-format="YYYY-MM-DD" placeholder="选择新日期" style="width: 100%" />
-                    </el-form-item>
-                  </el-col>
-                </el-row>
-              </template>
+                <!-- 条款变更页签 -->
+                <el-tab-pane label="条款变更" name="term">
+                  <el-row>
+                    <el-col :span="24">
+                      <el-form-item label="变更字段" prop="termField">
+                        <el-select v-model="changeForm.termField" style="width: 100%" @change="onTermFieldChange">
+                          <el-option label="付款方式" value="paymentMethod" />
+                          <el-option label="合同名称" value="contractName" />
+                        </el-select>
+                      </el-form-item>
+                    </el-col>
+                  </el-row>
+                  <el-row>
+                    <el-col :span="12">
+                      <el-form-item label="原值">
+                        <el-input v-if="changeForm.termField === 'contractName'" v-model="changeForm.termOld" disabled />
+                        <el-select v-else v-model="changeForm.termOld" disabled style="width: 100%">
+                          <el-option v-for="d in marketing_payment_method" :key="d.value" :label="d.label" :value="d.value" />
+                        </el-select>
+                      </el-form-item>
+                    </el-col>
+                    <el-col :span="12">
+                      <el-form-item label="新值" prop="termNew">
+                        <el-input v-if="changeForm.termField === 'contractName'" v-model="changeForm.termNew" placeholder="请输入新值" />
+                        <el-select v-else v-model="changeForm.termNew" placeholder="请选择" style="width: 100%">
+                          <el-option v-for="d in marketing_payment_method" :key="d.value" :label="d.label" :value="d.value" />
+                        </el-select>
+                      </el-form-item>
+                    </el-col>
+                  </el-row>
+                </el-tab-pane>
+              </el-tabs>
 
-              <!-- 条款变更 -->
-              <template v-if="changeForm.changeType === '3'">
-                <el-row>
-                  <el-col :span="24">
-                    <el-form-item label="变更字段" prop="fieldName">
-                      <el-select v-model="changeForm.fieldName" style="width: 100%" @change="onChangeFieldChange">
-                        <el-option label="付款方式" value="paymentMethod" />
-                        <el-option label="合同名称" value="contractName" />
-                      </el-select>
-                    </el-form-item>
-                  </el-col>
-                </el-row>
-                <el-row>
-                  <el-col :span="12">
-                    <el-form-item label="原值">
-                      <el-input v-if="changeForm.fieldName === 'contractName'" v-model="changeForm.oldValue" disabled />
-                      <el-select v-else v-model="changeForm.oldValue" disabled style="width: 100%">
-                        <el-option v-for="d in marketing_payment_method" :key="d.value" :label="d.label" :value="d.value" />
-                      </el-select>
-                    </el-form-item>
-                  </el-col>
-                  <el-col :span="12">
-                    <el-form-item label="新值" prop="newValue">
-                      <el-input v-if="changeForm.fieldName === 'contractName'" v-model="changeForm.newValue" placeholder="请输入新值" />
-                      <el-select v-else v-model="changeForm.newValue" placeholder="请选择" style="width: 100%">
-                        <el-option v-for="d in marketing_payment_method" :key="d.value" :label="d.label" :value="d.value" />
-                      </el-select>
-                    </el-form-item>
-                  </el-col>
-                </el-row>
-              </template>
-
-              <!-- 其他变更 -->
-              <template v-if="changeForm.changeType === '4'">
-                <el-row>
-                  <el-col :span="24">
-                    <el-form-item label="变更字段" prop="fieldName">
-                      <el-input v-model="changeForm.fieldName" placeholder="请输入变更字段名称" />
-                    </el-form-item>
-                  </el-col>
-                </el-row>
-                <el-row>
-                  <el-col :span="12">
-                    <el-form-item label="原值">
-                      <el-input v-model="changeForm.oldValue" disabled />
-                    </el-form-item>
-                  </el-col>
-                  <el-col :span="12">
-                    <el-form-item label="新值" prop="newValue">
-                      <el-input v-model="changeForm.newValue" placeholder="请输入新值" />
-                    </el-form-item>
-                  </el-col>
-                </el-row>
-              </template>
-
-              <!-- 变更原因（所有类型通用） -->
-              <el-row>
+              <!-- 变更原因（所有页签通用） -->
+              <el-row style="margin-top: 16px;">
                 <el-col :span="24">
                   <el-form-item label="变更原因" prop="changeReason">
                     <el-input v-model="changeForm.changeReason" type="textarea" :rows="3" placeholder="请详细说明变更原因，如：客户因业务调整需延期交付，申请将到期日期延长3个月等" />
@@ -1113,7 +1094,7 @@
 </template>
 
 <script setup name="MkContract">
-import { listContract, getContract, addContract, updateContract, delContract, submitContract, approveContract, rejectContract, terminateContract, renewContract, submitContractChange, approveContractChange } from '@/api/mk/contract'
+import { listContract, getContract, addContract, updateContract, delContract, submitContract, approveContract, rejectContract, terminateContract, renewContract, submitContractChangeBatch, approveContractChangeByContractId } from '@/api/mk/contract'
 import { listCustomer } from '@/api/mk/customer'
 import { listUser, deptTreeSelect } from '@/api/system/user'
 import { useColumnResize } from '@/composables/useColumnResize'
@@ -1154,7 +1135,7 @@ const isExpired = computed(() => {
   if (!renewForm.value.originalExpireDate) return false
   return new Date(renewForm.value.originalExpireDate) < new Date()
 })
-const collapsedCards = reactive({ basic: false, attachment: false, dates: false, owner: false, paymentPlans: false, approve: false, changes: false, other: false, approveBasic: false, approveDates: false, approveOwner: false, approveOpinion: false, renewOriginal: false, renewTerms: false, renewAttachment: false, renewRemark: false, changeOriginal: false, changeContent: false })
+const collapsedCards = reactive({ basic: false, attachment: false, dates: false, owner: false, paymentPlans: false, approve: false, changes: false, other: false, approveBasic: false, approveDates: false, approveOwner: false, approveOpinion: false, renewOriginal: false, renewTerms: false, renewAttachment: false, renewRemark: false, changeOriginal: false, changeContent: false, changeApprove: false })
 function toggleCard(name) { collapsedCards[name] = !collapsedCards[name] }
 const baseUrl = import.meta.env.VITE_APP_BASE_API
 
@@ -1250,18 +1231,17 @@ function handleView(row, approveMode = false) {
   })
 }
 
-// 待审批的变更记录（用于详情页审批模式）
-const pendingChangeLog = computed(() => {
-  if (!viewForm.value.changeLogs) return null
-  return viewForm.value.changeLogs.find(log => log.changeStatus === '0') || null
+// 待审批的变更记录列表（用于详情页审批模式）
+const pendingChangeLogs = computed(() => {
+  if (!viewForm.value.changeLogs) return []
+  return viewForm.value.changeLogs.filter(log => log.changeStatus === '0')
 })
 
-// 在详情页直接审批变更
+// 在详情页直接审批变更（按合同ID批量审批）
 function confirmChangeApprove(approved) {
-  const log = pendingChangeLog.value
-  if (!log) return
+  if (pendingChangeLogs.value.length === 0) return
   const msg = approved ? '通过' : '驳回'
-  approveContractChange(log.logId, approved, changeApproveOpinion.value).then(() => {
+  approveContractChangeByContractId(viewForm.value.contractId, approved, changeApproveOpinion.value).then(() => {
     proxy.$modal.msgSuccess(msg + '成功')
     viewOpen.value = false
     getList()
@@ -1387,18 +1367,15 @@ function confirmRenew() {
 
 const changeOpen = ref(false)
 const changeForm = ref({})
+const changeActiveTab = ref('amount')
 const changeRules = {
-  changeType: [{ required: true, message: '请选择变更类型', trigger: 'change' }],
-  fieldName: [{ required: true, message: '请选择变更字段', trigger: 'change' }],
-  newAmount: [{ required: true, message: '请输入新金额', trigger: 'blur' }],
-  newDateValue: [{ required: true, message: '请选择新日期', trigger: 'change' }],
-  newValue: [{ required: true, message: '请输入新值', trigger: 'blur' }],
+  amountNew: [{ required: false, message: '请输入新金额', trigger: 'blur' }],
+  dateField: [{ required: false, message: '请选择变更字段', trigger: 'change' }],
+  dateNew: [{ required: false, message: '请选择新日期', trigger: 'change' }],
+  termField: [{ required: false, message: '请选择变更字段', trigger: 'change' }],
+  termNew: [{ required: false, message: '请输入新值', trigger: 'blur' }],
   changeReason: [{ required: true, message: '请输入变更原因', trigger: 'blur' }]
 }
-const changeAmountDiff = computed(() => {
-  if (changeForm.value.newAmount == null || changeForm.value.oldAmount == null) return 0
-  return Number(changeForm.value.newAmount) - Number(changeForm.value.oldAmount)
-})
 
 // 变更字段标签映射
 const changeFieldLabels = {
@@ -1410,6 +1387,19 @@ const changeFieldLabels = {
   contractName: '合同名称'
 }
 
+// 根据字段名获取原值
+function getOriginalValue(orig, fieldName) {
+  switch (fieldName) {
+    case 'contractAmount': return String(orig.originalContractAmount ?? '')
+    case 'signDate': return orig.originalSignDate || ''
+    case 'effectiveDate': return orig.originalEffectiveDate || ''
+    case 'expireDate': return orig.originalExpireDate || ''
+    case 'paymentMethod': return orig.originalPaymentMethod || ''
+    case 'contractName': return orig.contractName || ''
+    default: return ''
+  }
+}
+
 function handleChange(row) {
   getContract(row.contractId).then(res => {
     const orig = res.data
@@ -1418,114 +1408,90 @@ function handleChange(row) {
       contractNo: orig.contractNo,
       contractName: orig.contractName,
       customerName: orig.customerName,
-      // 原始值（用于展示和提交）
       originalContractAmount: orig.contractAmount,
       originalSignDate: orig.signDate,
       originalEffectiveDate: orig.effectiveDate,
       originalExpireDate: orig.expireDate,
       originalPaymentMethod: orig.paymentMethod,
-      // 变更表单
-      changeType: '1',
-      fieldName: 'contractAmount',
-      // 金额变更专用
-      oldAmount: orig.contractAmount,
-      newAmount: orig.contractAmount,
-      // 日期变更专用
-      oldDateValue: orig.signDate,
-      newDateValue: undefined,
-      // 通用（条款变更/其他变更）
-      oldValue: String(orig.contractAmount),
-      newValue: String(orig.contractAmount),
+      // 金额变更
+      amountOld: orig.contractAmount,
+      amountNew: null,
+      // 日期变更
+      dateField: 'signDate',
+      dateOld: orig.signDate || '',
+      dateNew: '',
+      // 条款变更
+      termField: 'paymentMethod',
+      termOld: orig.paymentMethod || '',
+      termNew: '',
       changeReason: ''
     }
+    changeActiveTab.value = 'amount'
     changeOpen.value = true
   })
 }
 
-function onChangeTypeChange() {
+function onDateFieldChange() {
   const orig = changeForm.value
-  if (changeForm.value.changeType === '1') {
-    changeForm.value.fieldName = 'contractAmount'
-    changeForm.value.oldAmount = orig.originalContractAmount
-    changeForm.value.newAmount = orig.originalContractAmount
-    changeForm.value.oldValue = String(orig.originalContractAmount)
-    changeForm.value.newValue = String(orig.originalContractAmount)
-  } else if (changeForm.value.changeType === '2') {
-    changeForm.value.fieldName = 'signDate'
-    changeForm.value.oldDateValue = orig.originalSignDate
-    changeForm.value.newDateValue = undefined
-    changeForm.value.oldValue = orig.originalSignDate || ''
-    changeForm.value.newValue = ''
-  } else if (changeForm.value.changeType === '3') {
-    changeForm.value.fieldName = 'paymentMethod'
-    changeForm.value.oldValue = orig.originalPaymentMethod || ''
-    changeForm.value.newValue = orig.originalPaymentMethod || ''
-  } else if (changeForm.value.changeType === '4') {
-    changeForm.value.fieldName = ''
-    changeForm.value.oldValue = ''
-    changeForm.value.newValue = ''
-  }
+  if (orig.dateField === 'signDate') orig.dateOld = orig.originalSignDate || ''
+  else if (orig.dateField === 'effectiveDate') orig.dateOld = orig.originalEffectiveDate || ''
+  else if (orig.dateField === 'expireDate') orig.dateOld = orig.originalExpireDate || ''
+  orig.dateNew = ''
 }
 
-function onChangeFieldChange() {
+function onTermFieldChange() {
   const orig = changeForm.value
-  if (changeForm.value.changeType === '2') {
-    // 日期变更：根据选择的字段更新原日期
-    if (changeForm.value.fieldName === 'signDate') {
-      changeForm.value.oldDateValue = orig.originalSignDate
-      changeForm.value.oldValue = orig.originalSignDate || ''
-    } else if (changeForm.value.fieldName === 'effectiveDate') {
-      changeForm.value.oldDateValue = orig.originalEffectiveDate
-      changeForm.value.oldValue = orig.originalEffectiveDate || ''
-    } else if (changeForm.value.fieldName === 'expireDate') {
-      changeForm.value.oldDateValue = orig.originalExpireDate
-      changeForm.value.oldValue = orig.originalExpireDate || ''
-    }
-    changeForm.value.newDateValue = undefined
-    changeForm.value.newValue = ''
-  } else if (changeForm.value.changeType === '3') {
-    // 条款变更：根据选择的字段更新原值
-    if (changeForm.value.fieldName === 'paymentMethod') {
-      changeForm.value.oldValue = orig.originalPaymentMethod || ''
-      changeForm.value.newValue = orig.originalPaymentMethod || ''
-    } else if (changeForm.value.fieldName === 'contractName') {
-      changeForm.value.oldValue = orig.contractName || ''
-      changeForm.value.newValue = orig.contractName || ''
-    }
+  if (orig.termField === 'paymentMethod') {
+    orig.termOld = orig.originalPaymentMethod || ''
+  } else if (orig.termField === 'contractName') {
+    orig.termOld = orig.contractName || ''
   }
+  orig.termNew = ''
 }
 
 function submitChange() {
   proxy.$refs['changeRef'].validate(valid => {
     if (!valid) return
-    // 根据变更类型组装提交数据
     const f = changeForm.value
-    let oldValueStr = ''
-    let newValueStr = ''
-    if (f.changeType === '1') {
-      oldValueStr = String(f.oldAmount)
-      newValueStr = String(f.newAmount)
-    } else if (f.changeType === '2') {
-      oldValueStr = f.oldDateValue || ''
-      newValueStr = f.newDateValue || ''
-    } else {
-      oldValueStr = f.oldValue || ''
-      newValueStr = f.newValue || ''
+    const submitData = []
+    // 收集金额变更
+    if (f.amountNew != null && String(f.amountNew) !== String(f.amountOld)) {
+      submitData.push({
+        contractId: f.contractId,
+        changeType: '1',
+        fieldName: '合同金额',
+        oldValue: String(f.amountOld),
+        newValue: String(f.amountNew),
+        changeReason: f.changeReason
+      })
     }
-    // 校验新值不能与原值相同
-    if (oldValueStr === newValueStr) {
-      proxy.$modal.msgWarning('新值不能与原值相同')
+    // 收集日期变更
+    if (f.dateField && f.dateNew && f.dateNew !== f.dateOld) {
+      submitData.push({
+        contractId: f.contractId,
+        changeType: '2',
+        fieldName: changeFieldLabels[f.dateField] || f.dateField,
+        oldValue: f.dateOld || '',
+        newValue: f.dateNew,
+        changeReason: f.changeReason
+      })
+    }
+    // 收集条款变更
+    if (f.termField && f.termNew && f.termNew !== f.termOld) {
+      submitData.push({
+        contractId: f.contractId,
+        changeType: '3',
+        fieldName: changeFieldLabels[f.termField] || f.termField,
+        oldValue: f.termOld || '',
+        newValue: f.termNew,
+        changeReason: f.changeReason
+      })
+    }
+    if (submitData.length === 0) {
+      proxy.$modal.msgWarning('请至少填写一项变更内容，且新值不能与原值相同')
       return
     }
-    const submitData = {
-      contractId: f.contractId,
-      changeType: f.changeType,
-      fieldName: f.changeType === '4' ? f.fieldName : (changeFieldLabels[f.fieldName] || f.fieldName),
-      oldValue: oldValueStr,
-      newValue: newValueStr,
-      changeReason: f.changeReason
-    }
-    submitContractChange(submitData).then(() => {
+    submitContractChangeBatch(submitData).then(() => {
       proxy.$modal.msgSuccess('变更申请已提交，等待审批')
       changeOpen.value = false
       getList()
@@ -1584,6 +1550,7 @@ getList()
 .change-diff { font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .change-diff--up { color: #ef4444; }
 .change-diff--down { color: #10b981; }
+.change-old-value { color: #9ca3af; font-variant-numeric: tabular-nums; }
 
 .rd-detail-header { display: flex; align-items: center; gap: 10px; padding: 8px 16px; background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 60%, #3b82f6 100%); border-radius: 12px 12px 0 0; position: relative; overflow: hidden; }
 .rd-detail-header::before { content: ''; position: absolute; top: -25px; right: -10px; width: 120px; height: 120px; border-radius: 50%; background: radial-gradient(circle, rgb(255 255 255 / 0.12) 0%, transparent 70%); pointer-events: none; }
@@ -1645,14 +1612,18 @@ getList()
 .rd-card:nth-child(3) { animation-delay: 0.12s; }
 .rd-card:nth-child(4) { animation-delay: 0.18s; }
 
-/* 变更审批底部操作区 */
-.change-approve-footer { display: flex; flex-direction: column; gap: 12px; padding: 16px 20px; background: #fff; border-top: 1px solid #e5e7eb; }
-.change-approve-info { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 14px; color: #374151; }
-.change-approve-label { font-weight: 600; color: #6b7280; white-space: nowrap; }
-.change-approve-values { display: flex; align-items: center; gap: 6px; }
+/* 变更审批卡片样式 */
+.change-approve-list { display: flex; flex-direction: column; gap: 10px; }
+.change-approve-item { padding: 12px 14px; background: #fef3c7; border-radius: 10px; border: 1px solid #fde68a; border-left: 3px solid #f59e0b; }
+.change-approve-item-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.change-approve-item-reason { font-size: 13px; color: #92400e; }
+.change-approve-item-values { display: flex; align-items: center; gap: 8px; font-size: 14px; }
 .change-approve-old { color: #9ca3af; text-decoration: line-through; font-variant-numeric: tabular-nums; }
 .change-approve-new { color: #111827; font-weight: 700; font-variant-numeric: tabular-nums; }
-.change-approve-actions { display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
+
+/* 变更页签样式 */
+.change-tabs :deep(.el-tabs__content) { padding: 16px; }
+.change-tabs :deep(.el-tabs__item) { font-size: 14px; font-weight: 600; }
 
 @media (max-width: 768px) { .rd-grid, .rd-timeline-body { grid-template-columns: 1fr; } .rd-card-header { padding: 8px 12px; } .rd-card-body { padding: 12px; } .change-approve-footer { padding: 12px; } .change-approve-actions { flex-wrap: wrap; } }
 </style>

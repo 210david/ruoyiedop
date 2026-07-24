@@ -93,18 +93,18 @@
           <span v-else style="color: #c0c4cc">-</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="280" align="center" fixed="right">
+      <el-table-column label="操作" width="220" align="center" fixed="right">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">详情</el-button>
-          <el-button link type="success" icon="Money" @click="handleRecord(scope.row)" v-if="scope.row.paymentStatus !== '1'" v-hasPermi="['marketing:payment:edit']">回款登记</el-button>
-          <el-button link type="warning" icon="Check" @click="handleConfirm(scope.row)" v-if="scope.row.paymentStatus !== '1'" v-hasPermi="['marketing:payment:confirm']">回款确认</el-button>
+          <el-button link type="success" icon="Money" @click="handleRecord(scope.row)" v-if="scope.row.paymentStatus !== '1' && !hasPendingRecord(scope.row)" v-hasPermi="['marketing:payment:edit']">回款登记</el-button>
+          <el-button link type="warning" icon="Check" @click="handleConfirm(scope.row)" v-if="hasPendingRecord(scope.row)" v-hasPermi="['marketing:payment:confirm']">回款确认</el-button>
         </template>
       </el-table-column>
     </el-table>
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
     <!-- 新增回款计划对话框 -->
-    <el-dialog v-model="addOpen" width="800px" append-to-body draggable class="payment-add-dialog">
+    <el-dialog v-model="addOpen" width="800px" append-to-body draggable class="rd-dialog">
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon">
@@ -213,7 +213,7 @@
     </el-dialog>
 
     <!-- 回款登记对话框（多次回款） -->
-    <el-dialog v-model="recordOpen" width="1000px" append-to-body draggable class="payment-record-dialog">
+    <el-dialog v-model="recordOpen" width="1000px" append-to-body draggable class="rd-dialog">
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon">
@@ -348,20 +348,20 @@
           </div>
           <div class="rd-card-body" v-show="!collapsedCards.recordHistory">
             <el-table border :data="existingRecords" size="small" v-if="existingRecords.length > 0">
-              <el-table-column label="回款金额" prop="thisAmount" width="120" align="center" />
-              <el-table-column label="回款日期" prop="paymentDate" width="120" align="center" />
-              <el-table-column label="回款方式" width="100" align="center">
+              <el-table-column label="回款金额" prop="thisAmount" min-width="120" align="center" />
+              <el-table-column label="回款日期" prop="paymentDate" min-width="120" align="center" />
+              <el-table-column label="回款方式" min-width="100" align="center">
                 <template #default="scope"><dict-tag :options="marketing_payment_method" :value="scope.row.paymentMethod" /></template>
               </el-table-column>
-              <el-table-column label="确认状态" width="100" align="center">
+              <el-table-column label="确认状态" min-width="100" align="center">
                 <template #default="scope">
                   <el-tag v-if="scope.row.confirmStatus === '0'" type="warning" size="small">待确认</el-tag>
                   <el-tag v-else-if="scope.row.confirmStatus === '1'" type="success" size="small">已确认</el-tag>
                   <el-tag v-else type="danger" size="small">已驳回</el-tag>
                 </template>
               </el-table-column>
-              <el-table-column label="确认人" prop="confirmBy" width="100" align="center" />
-              <el-table-column label="凭证" width="80" align="center">
+              <el-table-column label="确认人" prop="confirmBy" min-width="100" align="center" />
+              <el-table-column label="凭证" min-width="80" align="center">
                 <template #default="scope">
                   <el-link v-if="scope.row.receiptAttachment" :href="baseUrl + scope.row.receiptAttachment" target="_blank" type="primary"><el-icon><View /></el-icon></el-link>
                   <span v-else style="color: #c0c4cc">-</span>
@@ -382,7 +382,7 @@
     </el-dialog>
 
     <!-- 查看详情对话框 -->
-    <el-dialog v-model="viewOpen" width="900px" append-to-body draggable class="payment-detail-dialog">
+    <el-dialog v-model="viewOpen" width="900px" append-to-body draggable class="rd-dialog">
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon">
@@ -513,6 +513,12 @@
                 </template>
               </el-table-column>
               <el-table-column label="确认人" prop="confirmBy" width="100" align="center" />
+              <el-table-column label="凭证" width="80" align="center">
+                <template #default="scope">
+                  <el-link v-if="scope.row.receiptAttachment" :href="baseUrl + scope.row.receiptAttachment" target="_blank" type="primary"><el-icon><View /></el-icon></el-link>
+                  <span v-else style="color: #c0c4cc">-</span>
+                </template>
+              </el-table-column>
               <el-table-column label="备注" prop="remark" show-overflow-tooltip />
             </el-table>
             <div class="rd-empty" v-else>
@@ -550,7 +556,7 @@
     </el-dialog>
 
     <!-- 回款确认对话框 -->
-    <el-dialog v-model="confirmOpen" width="1000px" append-to-body draggable class="payment-confirm-dialog">
+    <el-dialog v-model="confirmOpen" width="700px" append-to-body draggable class="rd-dialog">
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon">
@@ -597,9 +603,9 @@
           </div>
         </section>
 
-        <!-- 待确认的回款记录 -->
+        <!-- 待确认回款信息 -->
         <section class="rd-card">
-          <div class="rd-card-header" @click="toggleCard('confirmRecords')">
+          <div class="rd-card-header" @click="toggleCard('confirmRecord')">
             <div class="rd-card-title">
               <span class="rd-card-icon">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -609,49 +615,27 @@
                   <line x1="9" y1="15" x2="15" y2="15"/>
                 </svg>
               </span>
-              回款记录确认
+              待确认回款信息
             </div>
-            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.confirmRecords }" aria-label="折叠">
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.confirmRecord }" aria-label="折叠">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
             </button>
           </div>
-          <div class="rd-card-body" v-show="!collapsedCards.confirmRecords">
-            <el-table border :data="confirmRecords" size="small" v-if="confirmRecords.length > 0">
-              <el-table-column label="回款金额" prop="thisAmount" width="120" align="center" />
-              <el-table-column label="回款日期" prop="paymentDate" width="120" align="center" />
-              <el-table-column label="回款方式" width="100" align="center">
-                <template #default="scope"><dict-tag :options="marketing_payment_method" :value="scope.row.paymentMethod" /></template>
-              </el-table-column>
-              <el-table-column label="确认状态" width="100" align="center">
-                <template #default="scope">
-                  <el-tag v-if="scope.row.confirmStatus === '0'" type="warning" size="small">待确认</el-tag>
-                  <el-tag v-else-if="scope.row.confirmStatus === '1'" type="success" size="small">已确认</el-tag>
-                  <el-tag v-else type="danger" size="small">已驳回</el-tag>
-                </template>
-              </el-table-column>
-              <el-table-column label="确认人" prop="confirmBy" width="100" align="center" />
-              <el-table-column label="凭证" width="80" align="center">
-                <template #default="scope">
-                  <el-link v-if="scope.row.receiptAttachment" :href="baseUrl + scope.row.receiptAttachment" target="_blank" type="primary"><el-icon><View /></el-icon></el-link>
-                  <span v-else style="color: #c0c4cc">-</span>
-                </template>
-              </el-table-column>
-              <el-table-column label="操作" width="160" align="center">
-                <template #default="scope">
-                  <el-button v-if="scope.row.confirmStatus === '0'" link type="success" icon="Check" size="small" @click="handleConfirmRecord(scope.row, '1')" v-hasPermi="['marketing:payment:confirm']">确认</el-button>
-                  <el-button v-if="scope.row.confirmStatus === '0'" link type="danger" icon="Close" size="small" @click="handleConfirmRecord(scope.row, '2')" v-hasPermi="['marketing:payment:confirm']">驳回</el-button>
-                  <el-button v-if="scope.row.confirmStatus === '0'" link type="danger" icon="Delete" size="small" @click="handleDeleteConfirmRecord(scope.row)">删除</el-button>
-                </template>
-              </el-table-column>
-            </el-table>
-            <div class="rd-empty" v-else>
-              <svg class="rd-empty-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-              <p class="rd-empty-text">暂无待确认的回款记录</p>
+          <div class="rd-card-body" v-show="!collapsedCards.confirmRecord">
+            <div class="rd-grid">
+              <div class="rd-item"><span class="rd-label">本次回款金额</span><div class="rd-value rd-value--large rd-amount">￥{{ formatMoney(confirmRecordForm.thisAmount) }}</div></div>
+              <div class="rd-item"><span class="rd-label">回款日期</span><div class="rd-value">{{ confirmRecordForm.paymentDate }}</div></div>
+              <div class="rd-item"><span class="rd-label">回款方式</span><div class="rd-value"><dict-tag :options="marketing_payment_method" :value="confirmRecordForm.paymentMethod" /></div></div>
+              <div class="rd-item"><span class="rd-label">银行账户</span><div class="rd-value">{{ confirmRecordForm.bankAccount }}</div></div>
+              <div class="rd-item rd-item--full"><span class="rd-label">收款凭证</span><div class="rd-value"><el-link v-if="confirmRecordForm.receiptAttachment" :href="baseUrl + confirmRecordForm.receiptAttachment" target="_blank" type="primary">查看凭证</el-link><span v-else style="color: #c0c4cc">-</span></div></div>
+              <div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value" :class="{ 'rd-value--muted': !confirmRecordForm.remark }">{{ confirmRecordForm.remark || '暂无' }}</div></div>
             </div>
           </div>
         </section>
       </div>
       <template #footer>
+        <el-button type="success" @click="submitConfirm('1')" v-hasPermi="['marketing:payment:confirm']">确认回款</el-button>
+        <el-button type="danger" @click="submitConfirm('2')" v-hasPermi="['marketing:payment:confirm']">驳 回</el-button>
         <el-button @click="confirmOpen = false">关 闭</el-button>
       </template>
     </el-dialog>
@@ -688,8 +672,8 @@ const existingRecords = ref([])
 const recordForm = ref({})
 const recordFormData = ref({})
 const confirmPlanForm = ref({})
-const confirmRecords = ref([])
-const collapsedCards = reactive({ addRelation: false, addPlan: false, addOther: false, recordPlan: false, recordForm: false, recordHistory: false, viewContract: false, viewPlan: false, viewActual: false, viewRecords: false, viewOther: false, confirmPlan: false, confirmRecords: false })
+const confirmRecordForm = ref({})
+const collapsedCards = reactive({ addRelation: false, addPlan: false, addOther: false, recordPlan: false, recordForm: false, recordHistory: false, viewContract: false, viewPlan: false, viewActual: false, viewRecords: false, viewOther: false, confirmPlan: false, confirmRecord: false })
 function toggleCard(name) { collapsedCards[name] = !collapsedCards[name] }
 const baseUrl = import.meta.env.VITE_APP_BASE_API
 
@@ -814,79 +798,42 @@ function submitRecord() {
       return
     }
     addPaymentRecord(data).then(() => {
-      proxy.$modal.msgSuccess('回款登记成功')
+      proxy.$modal.msgSuccess('回款登记成功，请等待确认后再登记下一笔')
       getList()
       loadStats()
-      // 刷新对话框数据
-      getPayment(recordForm.value.planId).then(res => {
-        recordForm.value = res.data
-        existingRecords.value = res.data.recordList || []
-        // 如果回款已完成，显示完成提示，不重置表单
-        if (res.data.paymentStatus === '1') {
-          proxy.$modal.msgSuccess('该回款计划已全部回款完成')
-        } else {
-          // 重置表单，准备下一次登记
-          const remainingAmount = (res.data.planAmount || 0) - (res.data.actualAmount || 0)
-          recordFormData.value = {
-            planId: res.data.planId,
-            contractId: res.data.contractId,
-            customerId: res.data.customerId,
-            thisAmount: remainingAmount > 0 ? remainingAmount : 0,
-            paymentDate: undefined,
-            paymentMethod: res.data.paymentMethod || '0',
-            bankAccount: res.data.bankAccount,
-            receiptAttachment: undefined,
-            remark: undefined,
-            confirmStatus: '0'
-          }
-        }
-      })
+      // 登记后直接关闭对话框，需等确认后才能继续登记
+      recordOpen.value = false
     })
   })
 }
 
-function handleConfirmRecord(row, confirmStatus) {
-  const msg = confirmStatus === '1' ? '确认' : '驳回'
-  proxy.$modal.confirm('确认' + msg + '该回款记录？').then(() => confirmPaymentRecord(row.recordId, confirmStatus, '')).then(() => {
-    proxy.$modal.msgSuccess(msg + '成功')
-    // 刷新回款确认对话框数据
-    refreshConfirmDialog()
-    getList()
-    loadStats()
-  }).catch(() => {})
-}
-
-function handleDeleteConfirmRecord(row) {
-  proxy.$modal.confirm('确认删除该回款记录？').then(() => delPaymentRecord(row.recordId)).then(() => {
-    proxy.$modal.msgSuccess('删除成功')
-    refreshConfirmDialog()
-    getList()
-    loadStats()
-  }).catch(() => {})
-}
-
-/** 刷新回款确认对话框数据 */
-function refreshConfirmDialog() {
-  if (confirmPlanForm.value.planId) {
-    getPayment(confirmPlanForm.value.planId).then(res => {
-      confirmPlanForm.value = res.data
-      confirmRecords.value = res.data.recordList || []
-      // 如果回款已完成，关闭确认对话框
-      if (res.data.paymentStatus === '1') {
-        proxy.$modal.msgSuccess('该回款计划已全部回款完成')
-        confirmOpen.value = false
-      }
-    })
-  }
+/** 检查是否有待确认的回款记录 */
+function hasPendingRecord(row) {
+  return row.recordList && row.recordList.some(r => r.confirmStatus === '0')
 }
 
 /** 打开回款确认对话框 */
 function handleConfirm(row) {
   getPayment(row.planId).then(res => {
     confirmPlanForm.value = res.data
-    confirmRecords.value = res.data.recordList || []
+    // 找到待确认的那笔记录
+    const pending = (res.data.recordList || []).find(r => r.confirmStatus === '0')
+    confirmRecordForm.value = pending || {}
     confirmOpen.value = true
   })
+}
+
+/** 提交确认/驳回 */
+function submitConfirm(confirmStatus) {
+  const msg = confirmStatus === '1' ? '确认' : '驳回'
+  proxy.$modal.confirm('确认' + msg + '该笔回款记录？').then(() => {
+    return confirmPaymentRecord(confirmRecordForm.value.recordId, confirmStatus, '')
+  }).then(() => {
+    proxy.$modal.msgSuccess(msg + '成功')
+    confirmOpen.value = false
+    getList()
+    loadStats()
+  }).catch(() => {})
 }
 
 function handleExport() { proxy.download('mk/payment/export', { ...queryParams.value }, `payment_${new Date().getTime()}.xlsx`) }
@@ -904,54 +851,5 @@ loadStats()
 .stat-success .stat-value { color: #67c23a; }
 .stat-warning .stat-value { color: #e6a23c; }
 .stat-danger .stat-value { color: #f56c6c; }
-
-/* ===== 卡片式样式 ===== */
-:deep(.payment-add-dialog .el-dialog__header), :deep(.payment-record-dialog .el-dialog__header), :deep(.payment-detail-dialog .el-dialog__header), :deep(.payment-confirm-dialog .el-dialog__header) { padding: 0; margin: 0; border: none; }
-:deep(.payment-add-dialog .el-dialog__headerbtn), :deep(.payment-record-dialog .el-dialog__headerbtn), :deep(.payment-detail-dialog .el-dialog__headerbtn), :deep(.payment-confirm-dialog .el-dialog__headerbtn) { top: 10px; right: 12px; z-index: 10; }
-:deep(.payment-add-dialog .el-dialog__headerbtn .el-dialog__close), :deep(.payment-record-dialog .el-dialog__headerbtn .el-dialog__close), :deep(.payment-detail-dialog .el-dialog__headerbtn .el-dialog__close), :deep(.payment-confirm-dialog .el-dialog__headerbtn .el-dialog__close) { color: #fff; font-size: 20px; }
-:deep(.payment-add-dialog .el-dialog__headerbtn:hover .el-dialog__close), :deep(.payment-record-dialog .el-dialog__headerbtn:hover .el-dialog__close), :deep(.payment-detail-dialog .el-dialog__headerbtn:hover .el-dialog__close), :deep(.payment-confirm-dialog .el-dialog__headerbtn:hover .el-dialog__close) { color: #fff; }
-:deep(.payment-add-dialog .el-dialog__body), :deep(.payment-record-dialog .el-dialog__body), :deep(.payment-detail-dialog .el-dialog__body), :deep(.payment-confirm-dialog .el-dialog__body) { padding: 12px 16px 16px; background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); }
-
-.rd-detail-header { display: flex; align-items: center; gap: 10px; padding: 8px 16px; background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 60%, #3b82f6 100%); border-radius: 12px 12px 0 0; position: relative; overflow: hidden; }
-.rd-detail-header::before { content: ''; position: absolute; top: -25px; right: -10px; width: 120px; height: 120px; border-radius: 50%; background: radial-gradient(circle, rgb(255 255 255 / 0.12) 0%, transparent 70%); pointer-events: none; }
-.rd-detail-header-icon { display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 8px; background: rgb(255 255 255 / 0.2); border: 1px solid rgb(255 255 255 / 0.25); color: #fff; flex-shrink: 0; backdrop-filter: blur(4px); box-shadow: 0 2px 8px rgb(0 0 0 / 0.1); }
-.rd-detail-header-title { font-size: 16px; font-weight: 700; color: #fff; letter-spacing: -0.02em; white-space: nowrap; }
-.rd-detail-header-sub { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.rd-detail-header-divider { width: 1px; height: 16px; background: rgb(255 255 255 / 0.3); flex-shrink: 0; }
-.rd-detail-header-no { font-size: 12px; font-weight: 500; color: rgb(255 255 255 / 0.85); font-variant-numeric: tabular-nums; white-space: nowrap; }
-
-.rd-page { max-width: 940px; margin: 0 auto; }
-
-.rd-card { background: #fff; border-radius: 12px; border: 1px solid #e5e7eb; box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); overflow: hidden; margin-bottom: 8px; transition: box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1); animation: rdFadeIn 0.4s ease-out forwards; }
-.rd-card:hover { box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); }
-.rd-card:last-child { margin-bottom: 0; }
-.rd-card-header { display: flex; align-items: center; justify-content: space-between; padding: 8px 16px; background: linear-gradient(to right, #f9fafb, #fff); border-bottom: 1px solid #f3f4f6; cursor: pointer; user-select: none; }
-.rd-card-title { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 700; color: #111827; }
-.rd-card-icon { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 8px; background: #fff; border: 1px solid #e5e7eb; color: #2563eb; box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); }
-.rd-card-body { padding: 14px 16px; }
-
-.rd-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px 24px; }
-.rd-item { display: flex; align-items: center; gap: 12px; }
-.rd-item--full { grid-column: 1 / -1; }
-.rd-label { flex: 0 0 auto; min-width: 72px; display: flex; align-items: center; font-size: 14px; font-weight: 500; color: #6b7280; white-space: nowrap; }
-.rd-value { flex: 1 1 auto; font-size: 14px; font-weight: 500; color: #111827; line-height: 1.5; padding-left: 12px; border-left: 1px solid #e5e7eb; min-width: 0; }
-.rd-value--large { font-size: 18px; font-weight: 700; }
-.rd-value--muted { color: #9ca3af; font-style: italic; }
-.rd-amount { font-variant-numeric: tabular-nums; font-weight: 700; color: #111827; }
-
-.rd-collapse-btn { display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 6px; border: none; background: transparent; color: #9ca3af; cursor: pointer; transition: all 0.15s ease; flex-shrink: 0; }
-.rd-collapse-btn:hover { background: #f3f4f6; color: #4b5563; }
-.rd-collapse-btn svg { transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
-.rd-collapse-btn.is-collapsed svg { transform: rotate(-90deg); }
-
-.rd-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; text-align: center; color: #9ca3af; background: #f9fafb; border-radius: 12px; border: 1px dashed #e5e7eb; }
-.rd-empty-icon { margin-bottom: 4px; color: #d1d5db; }
-.rd-empty-text { font-size: 14px; font-weight: 500; margin: 0; }
-
-@keyframes rdFadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-.rd-card:nth-child(2) { animation-delay: 0.06s; }
-.rd-card:nth-child(3) { animation-delay: 0.12s; }
-.rd-card:nth-child(4) { animation-delay: 0.18s; }
-
-@media (max-width: 768px) { .rd-grid { grid-template-columns: 1fr; } .rd-card-header { padding: 8px 12px; } .rd-card-body { padding: 12px; } }
+/* 卡片式样式使用全局 detail-page.scss */
 </style>

@@ -82,7 +82,13 @@
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
     <!-- 新增/修改对话框 -->
-    <el-dialog :title="title" v-model="open" width="800px" append-to-body>
+    <el-dialog v-model="open" width="800px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <span class="rd-detail-header-title">{{ title }}</span>
+        </div>
+      </template>
       <el-form ref="leadRef" :model="form" :rules="rules" label-width="100px">
         <el-collapse v-model="activeNames">
           <el-collapse-item title="线索信息" name="lead">
@@ -145,7 +151,13 @@
     </el-dialog>
 
     <!-- 分配弹窗 -->
-    <el-dialog title="分配线索" v-model="assignOpen" width="500px" append-to-body>
+    <el-dialog v-model="assignOpen" width="500px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <span class="rd-detail-header-title">分配线索</span>
+        </div>
+      </template>
       <el-form label-width="80px">
         <el-form-item label="负责人">
           <el-select v-model="assignUserId" filterable clearable placeholder="请选择负责人" style="width: 100%">
@@ -160,7 +172,13 @@
     </el-dialog>
 
     <!-- 批量分配弹窗 -->
-    <el-dialog title="批量分配线索" v-model="batchAssignOpen" width="500px" append-to-body>
+    <el-dialog v-model="batchAssignOpen" width="500px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <span class="rd-detail-header-title">批量分配线索</span>
+        </div>
+      </template>
       <el-alert :title="'已选中 ' + ids.length + ' 条线索'" type="info" :closable="false" class="mb8" />
       <el-form label-width="80px">
         <el-form-item label="负责人">
@@ -176,7 +194,13 @@
     </el-dialog>
 
     <!-- 批量变更状态弹窗 -->
-    <el-dialog title="批量变更线索状态" v-model="batchStatusOpen" width="500px" append-to-body>
+    <el-dialog v-model="batchStatusOpen" width="500px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <span class="rd-detail-header-title">批量变更线索状态</span>
+        </div>
+      </template>
       <el-alert :title="'已选中 ' + ids.length + ' 条线索'" type="info" :closable="false" class="mb8" />
       <el-form label-width="80px">
         <el-form-item label="线索状态">
@@ -192,7 +216,13 @@
     </el-dialog>
 
     <!-- 转化确认弹窗 -->
-    <el-dialog title="线索转化" v-model="convertOpen" width="600px" append-to-body>
+    <el-dialog v-model="convertOpen" width="600px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <span class="rd-detail-header-title">线索转化</span>
+        </div>
+      </template>
       <el-alert type="info" :closable="false" class="mb8">
         <template #title>
           确认将线索"<b>{{ convertForm.companyName }}</b>"转化为客户？<br/>
@@ -200,10 +230,10 @@
         </template>
       </el-alert>
       <el-descriptions :column="2" border size="small" class="mb8">
-        <el-descriptions-item label="企业名称">{{ convertForm.companyName }}</el-descriptions-item>
-        <el-descriptions-item label="联系人">{{ convertForm.contactName }}</el-descriptions-item>
-        <el-descriptions-item label="手机号">{{ convertForm.contactPhone }}</el-descriptions-item>
-        <el-descriptions-item label="线索来源"><dict-tag :options="marketing_customer_source" :value="convertForm.leadSource" /></el-descriptions-item>
+        <div class="rd-item"><span class="rd-label">企业名称</span><div class="rd-value">{{ convertForm.companyName }}</div></div>
+        <div class="rd-item"><span class="rd-label">联系人</span><div class="rd-value">{{ convertForm.contactName }}</div></div>
+        <div class="rd-item"><span class="rd-label">手机号</span><div class="rd-value">{{ convertForm.contactPhone }}</div></div>
+        <div class="rd-item"><span class="rd-label">线索来源</span><div class="rd-value"><dict-tag :options="marketing_customer_source" :value="convertForm.leadSource" /></div></div>
       </el-descriptions>
       <template #footer>
         <el-button type="success" @click="confirmConvert">确认转化</el-button>
@@ -212,7 +242,13 @@
     </el-dialog>
 
     <!-- 无效标记弹窗 -->
-    <el-dialog title="标记线索无效" v-model="invalidateOpen" width="500px" append-to-body>
+    <el-dialog v-model="invalidateOpen" width="500px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <span class="rd-detail-header-title">标记线索无效</span>
+        </div>
+      </template>
       <el-form ref="invalidateRef" :model="invalidateForm" label-width="80px">
         <el-form-item label="无效原因" prop="ineffectiveReason">
           <el-select v-model="invalidateForm.ineffectiveReason" placeholder="请选择无效原因" style="width: 100%">
@@ -234,12 +270,18 @@
     </el-dialog>
 
     <!-- 快速跟进弹窗 -->
-    <el-dialog title="快速跟进" v-model="followOpen" width="600px" append-to-body>
+    <el-dialog v-model="followOpen" width="600px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <span class="rd-detail-header-title">快速跟进</span>
+        </div>
+      </template>
       <el-form ref="followRef" :model="followForm" :rules="followRules" label-width="100px">
         <el-descriptions :column="2" border size="small" class="mb8">
-          <el-descriptions-item label="企业名称">{{ followForm.companyName }}</el-descriptions-item>
-          <el-descriptions-item label="联系人">{{ followForm.contactName }}</el-descriptions-item>
-        </el-descriptions>
+          <div class="rd-item"><span class="rd-label">企业名称</span><div class="rd-value">{{ followForm.companyName }}</div></div>
+          <div class="rd-item"><span class="rd-label">联系人</span><div class="rd-value">{{ followForm.contactName }}</div></div>
+        </div>
         <el-form-item label="互动类型" prop="interactType">
           <el-select v-model="followForm.interactType" placeholder="请选择" style="width: 100%">
             <el-option v-for="d in marketing_interaction_type" :key="d.value" :label="d.label" :value="d.value" />
@@ -262,7 +304,13 @@
     </el-dialog>
 
     <!-- 导入弹窗 -->
-    <el-dialog title="线索导入" v-model="importOpen" width="500px" append-to-body>
+    <el-dialog v-model="importOpen" width="500px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <span class="rd-detail-header-title">线索导入</span>
+        </div>
+      </template>
       <el-upload ref="uploadRef" :limit="1" accept=".xlsx, .xls" :auto-upload="false" :action="importUrl" :headers="headers" :data="{ updateSupport: importUpdateSupport }" :on-success="handleImportSuccess" :on-error="handleImportError" drag>
         <el-icon class="el-icon--upload"><upload-filled /></el-icon>
         <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
@@ -283,7 +331,13 @@
     </el-dialog>
 
     <!-- 重复线索弹窗 -->
-    <el-dialog title="疑似重复线索" v-model="dupOpen" width="700px" append-to-body>
+    <el-dialog v-model="dupOpen" width="700px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <span class="rd-detail-header-title">疑似重复线索</span>
+        </div>
+      </template>
       <el-alert v-if="dupList.length > 0" title="系统检测到以下线索可能与当前输入重复，请确认是否继续" type="warning" :closable="false" class="mb8" />
       <el-table :data="dupList" border size="small">
         <el-table-column label="线索编号" prop="leadNo" width="150" />
@@ -309,6 +363,8 @@ import { listLead, getLead, addLead, updateLead, delLead, convertLead, assignLea
 import { addInteraction } from '@/api/mk/interaction'
 import { listUser, deptTreeSelect } from '@/api/system/user'
 import { useColumnResize } from '@/composables/useColumnResize'
+import { useDetailCard } from '@/composables/useDetailCard'
+const { collapsedCards, toggleCard } = useDetailCard([])
 import { getToken } from '@/utils/auth'
 
 const router = useRouter()

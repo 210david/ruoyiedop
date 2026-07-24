@@ -17,71 +17,63 @@
     <el-tabs v-model="activeTab" v-loading="loading">
       <!-- 基本信息 -->
       <el-tab-pane label="基本信息" name="basic">
-        <el-descriptions :column="3" border title="线索信息" class="info-group">
-          <el-descriptions-item label="线索编号">{{ lead.leadNo }}</el-descriptions-item>
-          <el-descriptions-item label="企业名称">{{ lead.companyName }}</el-descriptions-item>
-          <el-descriptions-item label="联系人">{{ lead.contactName }}</el-descriptions-item>
-          <el-descriptions-item label="手机号">{{ lead.contactPhone }}</el-descriptions-item>
-          <el-descriptions-item label="邮箱">{{ lead.contactEmail || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="职位">{{ lead.position || '-' }}</el-descriptions-item>
-        </el-descriptions>
+        <div class="rd-grid">
+          <div class="rd-item"><span class="rd-label">线索编号</span><div class="rd-value">{{ lead.leadNo }}</div></div>
+          <div class="rd-item"><span class="rd-label">企业名称</span><div class="rd-value">{{ lead.companyName }}</div></div>
+          <div class="rd-item"><span class="rd-label">联系人</span><div class="rd-value">{{ lead.contactName }}</div></div>
+          <div class="rd-item"><span class="rd-label">手机号</span><div class="rd-value">{{ lead.contactPhone }}</div></div>
+          <div class="rd-item"><span class="rd-label">邮箱</span><div class="rd-value" :class="{ 'rd-value--muted': true }">{{ lead.contactEmail || '暂无' }}</div></div>
+          <div class="rd-item"><span class="rd-label">职位</span><div class="rd-value" :class="{ 'rd-value--muted': true }">{{ lead.position || '暂无' }}</div></div>
+        </div>
 
-        <el-descriptions :column="3" border title="企业信息" class="info-group">
-          <el-descriptions-item label="所属行业"><dict-tag :options="marketing_industry" :value="lead.industry" /></el-descriptions-item>
-          <el-descriptions-item label="企业规模"><dict-tag :options="marketing_company_size" :value="lead.companySize" /></el-descriptions-item>
-          <el-descriptions-item label="线索来源"><dict-tag :options="marketing_customer_source" :value="lead.leadSource" /></el-descriptions-item>
-          <el-descriptions-item label="详细地址" :span="3">{{ lead.address || '-' }}</el-descriptions-item>
-        </el-descriptions>
+        <div class="rd-grid">
+          <div class="rd-item"><span class="rd-label">所属行业</span><div class="rd-value"><dict-tag :options="marketing_industry" :value="lead.industry" /></div></div>
+          <div class="rd-item"><span class="rd-label">企业规模</span><div class="rd-value"><dict-tag :options="marketing_company_size" :value="lead.companySize" /></div></div>
+          <div class="rd-item"><span class="rd-label">线索来源</span><div class="rd-value"><dict-tag :options="marketing_customer_source" :value="lead.leadSource" /></div></div>
+          <div class="rd-item rd-item--full"><span class="rd-label">详细地址</span><div class="rd-value" :class="{ 'rd-value--muted': true }">{{ lead.address || '暂无' }}</div></div>
+        </div>
 
-        <el-descriptions :column="3" border title="需求与评分" class="info-group">
-          <el-descriptions-item label="线索评分">{{ lead.leadScore }}</el-descriptions-item>
-          <el-descriptions-item label="线索等级"><dict-tag :options="marketing_lead_grade" :value="lead.leadGrade" /></el-descriptions-item>
-          <el-descriptions-item label="线索状态"><dict-tag :options="marketing_lead_status" :value="lead.leadStatus" /></el-descriptions-item>
-          <el-descriptions-item label="需求描述" :span="3">{{ lead.requirementDesc || '-' }}</el-descriptions-item>
-        </el-descriptions>
+        <div class="rd-grid">
+          <div class="rd-item"><span class="rd-label">线索评分</span><div class="rd-value">{{ lead.leadScore }}</div></div>
+          <div class="rd-item"><span class="rd-label">线索等级</span><div class="rd-value"><dict-tag :options="marketing_lead_grade" :value="lead.leadGrade" /></div></div>
+          <div class="rd-item"><span class="rd-label">线索状态</span><div class="rd-value"><dict-tag :options="marketing_lead_status" :value="lead.leadStatus" /></div></div>
+          <div class="rd-item rd-item--full"><span class="rd-label">需求描述</span><div class="rd-value" :class="{ 'rd-value--muted': true }">{{ lead.requirementDesc || '暂无' }}</div></div>
+        </div>
 
-        <el-descriptions :column="3" border title="负责信息" class="info-group">
-          <el-descriptions-item label="负责人">{{ lead.userName || '未分配（公海）' }}</el-descriptions-item>
-          <el-descriptions-item label="所属部门">{{ lead.deptName || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="领取时间">{{ lead.receiveTime || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="最后跟进">{{ lead.lastFollowTime || '未跟进' }}</el-descriptions-item>
-          <el-descriptions-item label="创建时间">{{ lead.createTime }}</el-descriptions-item>
-        </el-descriptions>
+        <div class="rd-grid">
+          <div class="rd-item"><span class="rd-label">负责人</span><div class="rd-value">{{ lead.userName || '未分配（公海）' }}</div></div>
+          <div class="rd-item"><span class="rd-label">所属部门</span><div class="rd-value" :class="{ 'rd-value--muted': true }">{{ lead.deptName || '暂无' }}</div></div>
+          <div class="rd-item"><span class="rd-label">领取时间</span><div class="rd-value" :class="{ 'rd-value--muted': true }">{{ lead.receiveTime || '暂无' }}</div></div>
+          <div class="rd-item"><span class="rd-label">最后跟进</span><div class="rd-value">{{ lead.lastFollowTime || '未跟进' }}</div></div>
+          <div class="rd-item"><span class="rd-label">创建时间</span><div class="rd-value">{{ lead.createTime }}</div></div>
+        </div>
 
         <!-- 转化信息 -->
         <el-descriptions v-if="lead.convertCustomerId" :column="3" border title="转化信息" class="info-group">
-          <el-descriptions-item label="转化状态">
-            <el-tag type="success" size="small">已转化</el-tag>
-          </el-descriptions-item>
-          <el-descriptions-item label="转化时间">{{ lead.convertTime }}</el-descriptions-item>
-          <el-descriptions-item label="转化客户">
-            <el-button link type="primary" @click="goCustomerDetail(lead.convertCustomerId)">查看客户</el-button>
-          </el-descriptions-item>
-        </el-descriptions>
+          <div class="rd-item"><span class="rd-label">转化状态</span><div class="rd-value"><el-tag type="success" size="small">已转化</el-tag></div></div>
+          <div class="rd-item"><span class="rd-label">转化时间</span><div class="rd-value">{{ lead.convertTime }}</div></div>
+          <div class="rd-item"><span class="rd-label">转化客户</span><div class="rd-value"><el-button link type="primary" @click="goCustomerDetail(lead.convertCustomerId)">查看客户</el-button></div></div>
+        </div>
 
         <!-- 无效信息 -->
         <el-descriptions v-if="lead.leadStatus === '5'" :column="3" border title="无效信息" class="info-group">
-          <el-descriptions-item label="无效原因">{{ lead.ineffectiveReason || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="无效说明" :span="2">{{ lead.ineffectiveRemark || '-' }}</el-descriptions-item>
-        </el-descriptions>
+          <div class="rd-item"><span class="rd-label">无效原因</span><div class="rd-value" :class="{ 'rd-value--muted': true }">{{ lead.ineffectiveReason || '暂无' }}</div></div>
+          <div class="rd-item rd-item--full"><span class="rd-label">无效说明</span><div class="rd-value" :class="{ 'rd-value--muted': true }">{{ lead.ineffectiveRemark || '暂无' }}</div></div>
+        </div>
 
         <!-- 状态流转操作 -->
         <el-descriptions :column="3" border title="状态管理" class="info-group" v-if="lead.leadStatus !== '4' && lead.leadStatus !== '5'">
-          <el-descriptions-item label="当前状态"><dict-tag :options="marketing_lead_status" :value="lead.leadStatus" /></el-descriptions-item>
-          <el-descriptions-item label="状态操作" :span="2">
-            <el-button size="small" type="primary" plain @click="handleStatusChange('1')" v-if="lead.leadStatus === '0'" v-hasPermi="['marketing:lead:edit']">标记已联系</el-button>
+          <div class="rd-item"><span class="rd-label">当前状态</span><div class="rd-value"><dict-tag :options="marketing_lead_status" :value="lead.leadStatus" /></div></div>
+          <div class="rd-item rd-item--full"><span class="rd-label">状态操作</span><div class="rd-value"><el-button size="small" type="primary" plain @click="handleStatusChange('1')" v-if="lead.leadStatus === '0'" v-hasPermi="['marketing:lead:edit']">标记已联系</el-button>
             <el-button size="small" type="success" plain @click="handleStatusChange('2')" v-if="lead.leadStatus === '0' || lead.leadStatus === '1'" v-hasPermi="['marketing:lead:edit']">标记有意向</el-button>
-            <el-button size="small" type="warning" plain @click="handleInvalidate" v-hasPermi="['marketing:lead:edit']">标记无效</el-button>
-          </el-descriptions-item>
-          <el-descriptions-item label="分配操作" :span="3">
-            <el-button size="small" type="primary" plain @click="handleAssign" v-if="lead.userId" v-hasPermi="['marketing:lead:assign']">转移分配</el-button>
-            <el-button size="small" type="warning" plain @click="handleRelease" v-if="lead.userId" v-hasPermi="['marketing:lead:edit']">退回公海</el-button>
-          </el-descriptions-item>
-        </el-descriptions>
+            <el-button size="small" type="warning" plain @click="handleInvalidate" v-hasPermi="['marketing:lead:edit']">标记无效</el-button></div></div>
+          <div class="rd-item rd-item--full"><span class="rd-label">分配操作</span><div class="rd-value"><el-button size="small" type="primary" plain @click="handleAssign" v-if="lead.userId" v-hasPermi="['marketing:lead:assign']">转移分配</el-button>
+            <el-button size="small" type="warning" plain @click="handleRelease" v-if="lead.userId" v-hasPermi="['marketing:lead:edit']">退回公海</el-button></div></div>
+        </div>
 
-        <el-descriptions :column="1" border title="补充信息" class="info-group">
-          <el-descriptions-item label="备注">{{ lead.remark || '-' }}</el-descriptions-item>
-        </el-descriptions>
+        <div class="rd-grid">
+          <div class="rd-item"><span class="rd-label">备注</span><div class="rd-value" :class="{ 'rd-value--muted': true }">{{ lead.remark || '暂无' }}</div></div>
+        </div>
       </el-tab-pane>
 
       <!-- 跟进记录 -->
@@ -125,7 +117,13 @@
     </el-tabs>
 
     <!-- 分配弹窗 -->
-    <el-dialog title="分配线索" v-model="assignOpen" width="500px" append-to-body>
+    <el-dialog v-model="assignOpen" width="500px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <span class="rd-detail-header-title">分配线索</span>
+        </div>
+      </template>
       <el-form label-width="80px">
         <el-form-item label="负责人">
           <el-select v-model="assignUserId" filterable clearable placeholder="请选择负责人" style="width: 100%">
@@ -140,7 +138,13 @@
     </el-dialog>
 
     <!-- 无效标记弹窗 -->
-    <el-dialog title="标记线索无效" v-model="invalidateOpen" width="500px" append-to-body>
+    <el-dialog v-model="invalidateOpen" width="500px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <span class="rd-detail-header-title">标记线索无效</span>
+        </div>
+      </template>
       <el-form ref="invalidateRef" :model="invalidateForm" label-width="80px">
         <el-form-item label="无效原因" prop="ineffectiveReason">
           <el-select v-model="invalidateForm.ineffectiveReason" placeholder="请选择无效原因" style="width: 100%">
@@ -162,7 +166,13 @@
     </el-dialog>
 
     <!-- 快速新增跟进弹窗 -->
-    <el-dialog title="新增跟进" v-model="interactionOpen" width="600px" append-to-body>
+    <el-dialog v-model="interactionOpen" width="600px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <span class="rd-detail-header-title">新增跟进</span>
+        </div>
+      </template>
       <el-form ref="interactionRef" :model="interactionForm" :rules="interactionRules" label-width="100px">
         <el-form-item label="互动类型" prop="interactType">
           <el-select v-model="interactionForm.interactType" placeholder="请选择" style="width: 100%">
@@ -203,6 +213,8 @@ import { listUser } from '@/api/system/user'
 
 const route = useRoute()
 const router = useRouter()
+import { useDetailCard } from '@/composables/useDetailCard'
+const { collapsedCards, toggleCard } = useDetailCard([])
 const { proxy } = getCurrentInstance()
 const {
   marketing_lead_status, marketing_lead_grade, marketing_customer_source,

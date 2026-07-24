@@ -16,6 +16,7 @@
 
     <!-- 搜索区域 -->
     <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch">
+        <div class="rd-page">
       <el-form-item label="出库单号" prop="orderNo">
         <el-input v-model="queryParams.orderNo" placeholder="请输入" clearable style="width: 200px" @keyup.enter="handleQuery" />
       </el-form-item>
@@ -28,6 +29,7 @@
         <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
         <el-button icon="Refresh" @click="resetQuery">重置</el-button>
       </el-form-item>
+    </div>
     </el-form>
 
     <el-row :gutter="10" class="mb8">
@@ -57,19 +59,44 @@
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
     <!-- 出库作业详情面板 -->
-    <el-dialog :title="'出库作业 - ' + (currentOrder.orderNo || '')" v-model="detailOpen" width="1000px" append-to-body>
-      <el-divider content-position="center">单据信息</el-divider>
-      <el-descriptions :column="3" border>
-        <el-descriptions-item label="出库单号">{{ currentOrder.orderNo }}</el-descriptions-item>
-        <el-descriptions-item label="出库类型"><dict-tag :options="wms_outbound_type" :value="currentOrder.orderType" /></el-descriptions-item>
-        <el-descriptions-item label="状态"><dict-tag :options="wms_outbound_status" :value="currentOrder.status" /></el-descriptions-item>
-        <el-descriptions-item label="总数量">{{ currentOrder.totalQty }}</el-descriptions-item>
-      </el-descriptions>
-      <el-divider content-position="center">出库信息</el-divider>
-      <el-descriptions :column="3" border>
-        <el-descriptions-item label="出库仓库">{{ currentOrder.warehouseName }}</el-descriptions-item>
-      </el-descriptions>
-      <el-divider content-position="center">出库明细</el-divider>
+    <el-dialog v-model="detailOpen" width="1000px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <span class="rd-detail-header-title">{{ '出库作业 - ' + (currentOrder.orderNo || '') }}</span>
+        </div>
+      </template>
+      <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('c4')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>单据信息</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c4 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.c4">
+      <div class="rd-grid">
+        <div class="rd-item"><span class="rd-label">出库单号</span><div class="rd-value">{{ currentOrder.orderNo }}</div></div>
+        <div class="rd-item"><span class="rd-label">出库类型</span><div class="rd-value"><dict-tag :options="wms_outbound_type" :value="currentOrder.orderType" /></div></div>
+        <div class="rd-item"><span class="rd-label">状态</span><div class="rd-value"><dict-tag :options="wms_outbound_status" :value="currentOrder.status" /></div></div>
+        <div class="rd-item"><span class="rd-label">总数量</span><div class="rd-value">{{ currentOrder.totalQty }}</div></div>
+      </div>
+                </div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('c3')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>出库信息</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c3 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.c3">
+      <div class="rd-grid">
+        <div class="rd-item"><span class="rd-label">出库仓库</span><div class="rd-value">{{ currentOrder.warehouseName }}</div></div>
+      </div>
+                </div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('c2')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></span>出库明细</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.c2">
 
       <el-table :data="currentOrder.detailList" border style="margin-top: 15px" @header-dragend="onHeaderDragEnd">
         <el-table-column label="物料编码" prop="materialCode" :width="colWidth('materialCode', 120)" resizable />
@@ -89,21 +116,43 @@
       <div style="margin-top: 15px; text-align: right" v-if="currentOrder.status === '1'">
         <el-tag type="warning">所有明细拣货完成后，出库单将自动完成</el-tag>
       </div>
+      </div>
+    </section>
     </el-dialog>
 
     <!-- 拣货对话框 -->
-    <el-dialog title="拣货确认" v-model="pickOpen" width="450px" append-to-body>
-      <el-form ref="pickRef" :model="pickForm" :rules="pickRules" label-width="100px">
-        <el-divider content-position="center">物料信息</el-divider>
+    <el-dialog v-model="pickOpen" width="450px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <span class="rd-detail-header-title">拣货确认</span>
+        </div>
+      </template>
+            <el-form ref="pickRef" :model="pickForm" :rules="pickRules" label-width="100px">
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('c1')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></span>物料信息</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.c1">
         <el-form-item label="物料">{{ pickForm.materialName }}</el-form-item>
         <el-form-item label="批次号">{{ pickForm.batchNo || '-' }}</el-form-item>
         <el-form-item label="拣货库位">{{ pickForm.locationName || pickForm.locationCode || '-' }}</el-form-item>
-        <el-divider content-position="center">拣货信息</el-divider>
+                  </div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('c0')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>拣货信息</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c0 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.c0">
         <el-form-item label="计划数量">{{ pickForm.planQty }}</el-form-item>
         <el-form-item label="已拣货数量">{{ pickForm.pickQty }}</el-form-item>
         <el-form-item label="本次拣货" prop="qty">
           <el-input-number v-model="pickForm.qty" :precision="2" :min="0" :max="pickForm.planQty - pickForm.pickQty" style="width: 100%" />
         </el-form-item>
+                                </div>
+        </section>
       </el-form>
       <template #footer>
         <el-button type="primary" @click="submitPick">确认拣货</el-button>
@@ -116,6 +165,8 @@
 <script setup name="WmsOutboundDetail">
 import { listOutbound, getOutbound, pickOutbound } from '@/api/wms/outbound'
 import { useColumnResize } from '@/composables/useColumnResize'
+import { useDetailCard } from '@/composables/useDetailCard'
+const { collapsedCards, toggleCard } = useDetailCard(["c4","c3","c2","c1","c0"])
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('wms_outbound_detail')
 const { wms_outbound_type, wms_outbound_status, wms_unit } = proxy.useDict('wms_outbound_type', 'wms_outbound_status', 'wms_unit')

@@ -50,15 +50,21 @@
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
     <!-- 盘点作业详情面板 -->
-    <el-dialog :title="'盘点作业 - ' + (currentTake.takeNo || '')" v-model="detailOpen" width="1100px" append-to-body>
-      <el-descriptions :column="3" border>
-        <el-descriptions-item label="盘点单号">{{ currentTake.takeNo }}</el-descriptions-item>
-        <el-descriptions-item label="仓库">{{ currentTake.warehouseName }}</el-descriptions-item>
-        <el-descriptions-item label="库区">{{ currentTake.areaName || '全部' }}</el-descriptions-item>
-        <el-descriptions-item label="盘点类型"><dict-tag :options="wms_take_type" :value="currentTake.takeType" /></el-descriptions-item>
-        <el-descriptions-item label="状态"><dict-tag :options="wms_take_status" :value="currentTake.status" /></el-descriptions-item>
-        <el-descriptions-item label="计划日期">{{ currentTake.planDate }}</el-descriptions-item>
-      </el-descriptions>
+    <el-dialog v-model="detailOpen" width="1100px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <span class="rd-detail-header-title">{{ '盘点作业 - ' + (currentTake.takeNo || '') }}</span>
+        </div>
+      </template>
+      <div class="rd-grid">
+        <div class="rd-item"><span class="rd-label">盘点单号</span><div class="rd-value">{{ currentTake.takeNo }}</div></div>
+        <div class="rd-item"><span class="rd-label">仓库</span><div class="rd-value">{{ currentTake.warehouseName }}</div></div>
+        <div class="rd-item"><span class="rd-label">库区</span><div class="rd-value">{{ currentTake.areaName || '全部' }}</div></div>
+        <div class="rd-item"><span class="rd-label">盘点类型</span><div class="rd-value"><dict-tag :options="wms_take_type" :value="currentTake.takeType" /></div></div>
+        <div class="rd-item"><span class="rd-label">状态</span><div class="rd-value"><dict-tag :options="wms_take_status" :value="currentTake.status" /></div></div>
+        <div class="rd-item"><span class="rd-label">计划日期</span><div class="rd-value">{{ currentTake.planDate }}</div></div>
+      </div>
 
       <el-table :data="currentTake.detailList" border style="margin-top: 15px" @header-dragend="onHeaderDragEnd">
         <el-table-column label="物料编码" prop="materialCode" :width="colWidth('materialCode', 120)" resizable />
@@ -90,7 +96,13 @@
     </el-dialog>
 
     <!-- 录入实盘数量 -->
-    <el-dialog title="录入实盘数量" v-model="submitOpen" width="450px" append-to-body>
+    <el-dialog v-model="submitOpen" width="450px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <span class="rd-detail-header-title">录入实盘数量</span>
+        </div>
+      </template>
       <el-form ref="submitRef" :model="submitFormData" :rules="submitRules" label-width="100px">
         <el-form-item label="物料编码">{{ submitFormData.materialCode }}</el-form-item>
         <el-form-item label="物料名称">{{ submitFormData.materialName }}</el-form-item>
@@ -113,6 +125,8 @@
 <script setup name="WmsStockTakeDetail">
 import { listStockTake, getStockTake, submitStockTakeDetail, approveStockTake } from '@/api/wms/stocktake'
 import { useColumnResize } from '@/composables/useColumnResize'
+import { useDetailCard } from '@/composables/useDetailCard'
+const { collapsedCards, toggleCard } = useDetailCard([])
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('wms_stocktake_detail')
 const { wms_take_type, wms_take_status } = proxy.useDict('wms_take_type', 'wms_take_status')

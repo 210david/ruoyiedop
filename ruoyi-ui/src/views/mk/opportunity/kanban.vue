@@ -58,101 +58,250 @@
     </div>
 
     <!-- 详情弹窗 -->
-    <el-dialog title="商机详情" v-model="viewOpen" width="900px" append-to-body @open="loadRelations">
-      <el-tabs v-model="detailTab">
-        <el-tab-pane label="基本信息" name="basic">
-          <el-collapse v-model="viewActiveNames">
-            <el-collapse-item title="基本信息" name="basic">
-              <el-descriptions :column="2" border>
-                <el-descriptions-item label="商机编号">{{ viewForm.opportunityNo }}</el-descriptions-item>
-                <el-descriptions-item label="商机名称">{{ viewForm.opportunityName }}</el-descriptions-item>
-                <el-descriptions-item label="所属客户">{{ viewForm.customerName }}</el-descriptions-item>
-                <el-descriptions-item label="主要联系人">{{ viewForm.contactName }}</el-descriptions-item>
-                <el-descriptions-item label="商机来源"><dict-tag :options="marketing_opportunity_source" :value="viewForm.opportunitySource" /></el-descriptions-item>
-              </el-descriptions>
-            </el-collapse-item>
-            <el-collapse-item title="金额与阶段" name="amount">
-              <el-descriptions :column="2" border>
-                <el-descriptions-item label="销售阶段">{{ viewForm.stageName }}</el-descriptions-item>
-                <el-descriptions-item label="预计金额">¥{{ viewForm.expectedAmount }}</el-descriptions-item>
-                <el-descriptions-item label="预计成交">{{ viewForm.expectedDate }}</el-descriptions-item>
-                <el-descriptions-item label="赢率">{{ viewForm.winRate }}%</el-descriptions-item>
-                <el-descriptions-item label="加权金额">¥{{ viewForm.weightedAmount }}</el-descriptions-item>
-                <el-descriptions-item label="商机状态"><dict-tag :options="marketing_opportunity_status" :value="viewForm.opportunityStatus" /></el-descriptions-item>
-              </el-descriptions>
-            </el-collapse-item>
-            <el-collapse-item title="竞争与方案" name="solution">
-              <el-descriptions :column="2" border>
-                <el-descriptions-item label="竞争对手">{{ viewForm.competitor }}</el-descriptions-item>
-                <el-descriptions-item label="客户痛点" :span="2">{{ viewForm.painPoint }}</el-descriptions-item>
-                <el-descriptions-item label="解决方案" :span="2">{{ viewForm.solution }}</el-descriptions-item>
-              </el-descriptions>
-            </el-collapse-item>
-            <el-collapse-item title="负责与跟进" name="owner">
-              <el-descriptions :column="2" border>
-                <el-descriptions-item label="负责人">{{ viewForm.userName }}</el-descriptions-item>
-                <el-descriptions-item label="所属部门">{{ viewForm.deptName }}</el-descriptions-item>
-                <el-descriptions-item label="下一步行动">{{ viewForm.nextAction }}</el-descriptions-item>
-                <el-descriptions-item label="下次行动时间">{{ viewForm.nextTime }}</el-descriptions-item>
-              </el-descriptions>
-            </el-collapse-item>
-          </el-collapse>
-        </el-tab-pane>
-        <el-tab-pane :label="`跟进记录 (${interactionList.length})`" name="interactions">
-          <el-timeline v-if="interactionList.length > 0">
-            <el-timeline-item v-for="item in interactionList" :key="item.recordId" :timestamp="item.interactTime" placement="top">
-              <el-card>
-                <p style="margin: 0">{{ item.content }}</p>
-                <div style="margin-top: 4px; font-size: 12px; color: #909399">{{ item.userName }}</div>
-              </el-card>
-            </el-timeline-item>
-          </el-timeline>
-          <el-empty v-else description="暂无跟进记录" />
-        </el-tab-pane>
-        <el-tab-pane :label="`阶段历史 (${stageLogList.length})`" name="stageLog">
-          <el-timeline v-if="stageLogList.length > 0">
-            <el-timeline-item v-for="log in stageLogList" :key="log.logId" :timestamp="log.operateTime" placement="top" :type="getLogTagType(log.actionType)">
-              <el-card>
-                <div style="display: flex; justify-content: space-between; align-items: center">
-                  <div>
-                    <el-tag size="small" :type="getLogTagType(log.actionType)">{{ getActionTypeLabel(log.actionType) }}</el-tag>
-                    <span style="margin-left: 8px">
-                      <span v-if="log.fromStageName">{{ log.fromStageName }}</span>
-                      <span v-if="log.toStageName"> → {{ log.toStageName }}</span>
-                    </span>
-                  </div>
-                  <span style="color: #909399; font-size: 12px">{{ log.operatorName }}</span>
+    <el-dialog v-model="viewOpen" width="900px" append-to-body draggable class="rd-dialog" @open="loadRelations">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+              <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+            </svg>
+          </div>
+          <span class="rd-detail-header-title">商机详情</span>
+          <div class="rd-detail-header-sub" v-if="viewForm.opportunityNo">
+            <span class="rd-detail-header-divider"></span>
+            <span class="rd-detail-header-no">编号：{{ viewForm.opportunityNo }}</span>
+            <dict-tag :options="marketing_opportunity_status" :value="viewForm.opportunityStatus" />
+          </div>
+        </div>
+      </template>
+      <div class="rd-page">
+        <el-tabs v-model="detailTab">
+          <el-tab-pane label="基本信息" name="basic">
+            <!-- 基本信息 -->
+            <section class="rd-card">
+              <div class="rd-card-header" @click="toggleCard('basic')">
+                <div class="rd-card-title">
+                  <span class="rd-card-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                  </span>
+                  基本信息
                 </div>
-                <p v-if="log.remark" style="margin: 8px 0 0; color: #606266; font-size: 13px">{{ log.remark }}</p>
-              </el-card>
-            </el-timeline-item>
-          </el-timeline>
-          <el-empty v-else description="暂无阶段变更记录" />
-        </el-tab-pane>
-        <el-tab-pane :label="`关联合同 (${contractList.length})`" name="contracts">
-          <el-table :data="contractList" border size="small" v-if="contractList.length > 0">
-            <el-table-column label="合同编号" prop="contractNo" width="150" />
-            <el-table-column label="合同名称" prop="contractName" show-overflow-tooltip />
-            <el-table-column label="合同金额" prop="contractAmount" width="120" align="right" />
-            <el-table-column label="签约日期" prop="signDate" width="120" />
-            <el-table-column label="状态" prop="contractStatus" width="80" align="center">
-              <template #default="scope"><dict-tag :options="marketing_contract_status" :value="scope.row.contractStatus" /></template>
-            </el-table-column>
-          </el-table>
-          <el-empty v-else description="暂无关联合同" />
-        </el-tab-pane>
-        <el-tab-pane :label="`关联订单 (${orderList.length})`" name="orders">
-          <el-table :data="orderList" border size="small" v-if="orderList.length > 0">
-            <el-table-column label="订单编号" prop="orderNo" width="150" />
-            <el-table-column label="客户名称" prop="customerName" show-overflow-tooltip />
-            <el-table-column label="订单金额" prop="orderAmount" width="120" align="right" />
-            <el-table-column label="状态" prop="orderStatus" width="80" align="center">
-              <template #default="scope"><dict-tag :options="marketing_order_status" :value="scope.row.orderStatus" /></template>
-            </el-table-column>
-          </el-table>
-          <el-empty v-else description="暂无关联订单" />
-        </el-tab-pane>
-      </el-tabs>
+                <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.basic }" aria-label="折叠">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+                </button>
+              </div>
+              <div class="rd-card-body" v-show="!collapsedCards.basic">
+                <div class="rd-grid">
+                  <div class="rd-item"><span class="rd-label">商机编号</span><div class="rd-value">{{ viewForm.opportunityNo }}</div></div>
+                  <div class="rd-item"><span class="rd-label">商机名称</span><div class="rd-value">{{ viewForm.opportunityName }}</div></div>
+                  <div class="rd-item"><span class="rd-label">所属客户</span><div class="rd-value">{{ viewForm.customerName }}</div></div>
+                  <div class="rd-item"><span class="rd-label">主要联系人</span><div class="rd-value">{{ viewForm.contactName }}</div></div>
+                  <div class="rd-item"><span class="rd-label">商机来源</span><div class="rd-value"><dict-tag :options="marketing_opportunity_source" :value="viewForm.opportunitySource" /></div></div>
+                </div>
+              </div>
+            </section>
+            <!-- 金额与阶段 -->
+            <section class="rd-card">
+              <div class="rd-card-header" @click="toggleCard('amount')">
+                <div class="rd-card-title">
+                  <span class="rd-card-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                  </span>
+                  金额与阶段
+                </div>
+                <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.amount }" aria-label="折叠">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+                </button>
+              </div>
+              <div class="rd-card-body" v-show="!collapsedCards.amount">
+                <div class="rd-grid">
+                  <div class="rd-item"><span class="rd-label">销售阶段</span><div class="rd-value">{{ viewForm.stageName }}</div></div>
+                  <div class="rd-item"><span class="rd-label">预计金额</span><div class="rd-value rd-value--large rd-amount">￥{{ formatAmount(viewForm.expectedAmount) }}</div></div>
+                  <div class="rd-item"><span class="rd-label">预计成交</span><div class="rd-value">{{ viewForm.expectedDate }}</div></div>
+                  <div class="rd-item"><span class="rd-label">赢率</span><div class="rd-value">{{ viewForm.winRate }}%</div></div>
+                  <div class="rd-item"><span class="rd-label">加权金额</span><div class="rd-value rd-amount">￥{{ formatAmount(viewForm.weightedAmount) }}</div></div>
+                  <div class="rd-item"><span class="rd-label">商机状态</span><div class="rd-value"><dict-tag :options="marketing_opportunity_status" :value="viewForm.opportunityStatus" /></div></div>
+                </div>
+              </div>
+            </section>
+            <!-- 竞争与方案 -->
+            <section class="rd-card">
+              <div class="rd-card-header" @click="toggleCard('solution')">
+                <div class="rd-card-title">
+                  <span class="rd-card-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+                  </span>
+                  竞争与方案
+                </div>
+                <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.solution }" aria-label="折叠">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+                </button>
+              </div>
+              <div class="rd-card-body" v-show="!collapsedCards.solution">
+                <div class="rd-grid">
+                  <div class="rd-item rd-item--full"><span class="rd-label">竞争对手</span><div class="rd-value" :class="{ 'rd-value--muted': !viewForm.competitor }">{{ viewForm.competitor || '暂无' }}</div></div>
+                  <div class="rd-item rd-item--full"><span class="rd-label">客户痛点</span><div class="rd-value" :class="{ 'rd-value--muted': !viewForm.painPoint }">{{ viewForm.painPoint || '暂无' }}</div></div>
+                  <div class="rd-item rd-item--full"><span class="rd-label">解决方案</span><div class="rd-value" :class="{ 'rd-value--muted': !viewForm.solution }">{{ viewForm.solution || '暂无' }}</div></div>
+                </div>
+              </div>
+            </section>
+            <!-- 负责与跟进 -->
+            <section class="rd-card">
+              <div class="rd-card-header" @click="toggleCard('owner')">
+                <div class="rd-card-title">
+                  <span class="rd-card-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                  </span>
+                  负责与跟进
+                </div>
+                <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.owner }" aria-label="折叠">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+                </button>
+              </div>
+              <div class="rd-card-body" v-show="!collapsedCards.owner">
+                <div class="rd-grid">
+                  <div class="rd-item"><span class="rd-label">负责人</span><div class="rd-value">{{ viewForm.userName }}</div></div>
+                  <div class="rd-item"><span class="rd-label">所属部门</span><div class="rd-value">{{ viewForm.deptName }}</div></div>
+                  <div class="rd-item rd-item--full"><span class="rd-label">下一步行动</span><div class="rd-value" :class="{ 'rd-value--muted': !viewForm.nextAction }">{{ viewForm.nextAction || '暂无' }}</div></div>
+                  <div class="rd-item rd-item--full"><span class="rd-label">下次行动时间</span><div class="rd-value">{{ viewForm.nextTime }}</div></div>
+                </div>
+              </div>
+            </section>
+          </el-tab-pane>
+          <el-tab-pane :label="`跟进记录 (${interactionList.length})`" name="interactions">
+            <section class="rd-card">
+              <div class="rd-card-header" @click="toggleCard('interactions')">
+                <div class="rd-card-title">
+                  <span class="rd-card-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+                  </span>
+                  跟进记录
+                </div>
+                <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.interactions }" aria-label="折叠">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+                </button>
+              </div>
+              <div class="rd-card-body" v-show="!collapsedCards.interactions">
+                <div class="rd-timeline" v-if="interactionList.length > 0">
+                  <div class="rd-timeline-item" v-for="item in interactionList" :key="item.recordId">
+                    <div class="rd-timeline-dot rd-timeline-dot--success"></div>
+                    <div class="rd-timeline-content">
+                      <div class="rd-timeline-header">
+                        <span class="rd-timeline-title">{{ item.userName }}</span>
+                        <span class="rd-timeline-time">{{ item.interactTime }}</span>
+                      </div>
+                      <div class="rd-timeline-comment">{{ item.content }}</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="rd-empty" v-else>
+                  <svg class="rd-empty-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                  <p class="rd-empty-text">暂无跟进记录</p>
+                </div>
+              </div>
+            </section>
+          </el-tab-pane>
+          <el-tab-pane :label="`阶段历史 (${stageLogList.length})`" name="stageLog">
+            <section class="rd-card">
+              <div class="rd-card-header" @click="toggleCard('stageLog')">
+                <div class="rd-card-title">
+                  <span class="rd-card-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></svg>
+                  </span>
+                  阶段历史
+                </div>
+                <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.stageLog }" aria-label="折叠">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+                </button>
+              </div>
+              <div class="rd-card-body" v-show="!collapsedCards.stageLog">
+                <div class="rd-timeline" v-if="stageLogList.length > 0">
+                  <div class="rd-timeline-item" v-for="log in stageLogList" :key="log.logId">
+                    <div class="rd-timeline-dot" :class="{ 'rd-timeline-dot--success': getLogTagType(log.actionType) === 'success', 'rd-timeline-dot--error': getLogTagType(log.actionType) === 'danger' }"></div>
+                    <div class="rd-timeline-content">
+                      <div class="rd-timeline-header">
+                        <span class="rd-timeline-title">
+                          <el-tag size="small" :type="getLogTagType(log.actionType)">{{ getActionTypeLabel(log.actionType) }}</el-tag>
+                          <span style="margin-left: 8px">
+                            <span v-if="log.fromStageName">{{ log.fromStageName }}</span>
+                            <span v-if="log.toStageName"> → {{ log.toStageName }}</span>
+                          </span>
+                        </span>
+                        <span class="rd-timeline-time">{{ log.operatorName }} · {{ log.operateTime }}</span>
+                      </div>
+                      <div class="rd-timeline-comment" v-if="log.remark">{{ log.remark }}</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="rd-empty" v-else>
+                  <svg class="rd-empty-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                  <p class="rd-empty-text">暂无阶段变更记录</p>
+                </div>
+              </div>
+            </section>
+          </el-tab-pane>
+          <el-tab-pane :label="`关联合同 (${contractList.length})`" name="contracts">
+            <section class="rd-card">
+              <div class="rd-card-header" @click="toggleCard('contracts')">
+                <div class="rd-card-title">
+                  <span class="rd-card-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>
+                  </span>
+                  关联合同
+                </div>
+                <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.contracts }" aria-label="折叠">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+                </button>
+              </div>
+              <div class="rd-card-body" v-show="!collapsedCards.contracts">
+                <el-table :data="contractList" border size="small" v-if="contractList.length > 0">
+                  <el-table-column label="合同编号" prop="contractNo" width="150" />
+                  <el-table-column label="合同名称" prop="contractName" show-overflow-tooltip />
+                  <el-table-column label="合同金额" prop="contractAmount" width="120" align="right" />
+                  <el-table-column label="签约日期" prop="signDate" width="120" />
+                  <el-table-column label="状态" prop="contractStatus" width="80" align="center">
+                    <template #default="scope"><dict-tag :options="marketing_contract_status" :value="scope.row.contractStatus" /></template>
+                  </el-table-column>
+                </el-table>
+                <div class="rd-empty" v-else>
+                  <svg class="rd-empty-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                  <p class="rd-empty-text">暂无关联合同</p>
+                </div>
+              </div>
+            </section>
+          </el-tab-pane>
+          <el-tab-pane :label="`关联订单 (${orderList.length})`" name="orders">
+            <section class="rd-card">
+              <div class="rd-card-header" @click="toggleCard('orders')">
+                <div class="rd-card-title">
+                  <span class="rd-card-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+                  </span>
+                  关联订单
+                </div>
+                <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.orders }" aria-label="折叠">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+                </button>
+              </div>
+              <div class="rd-card-body" v-show="!collapsedCards.orders">
+                <el-table :data="orderList" border size="small" v-if="orderList.length > 0">
+                  <el-table-column label="订单编号" prop="orderNo" width="150" />
+                  <el-table-column label="客户名称" prop="customerName" show-overflow-tooltip />
+                  <el-table-column label="订单金额" prop="orderAmount" width="120" align="right" />
+                  <el-table-column label="状态" prop="orderStatus" width="80" align="center">
+                    <template #default="scope"><dict-tag :options="marketing_order_status" :value="scope.row.orderStatus" /></template>
+                  </el-table-column>
+                </el-table>
+                <div class="rd-empty" v-else>
+                  <svg class="rd-empty-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/></svg>
+                  <p class="rd-empty-text">暂无关联订单</p>
+                </div>
+              </div>
+            </section>
+          </el-tab-pane>
+        </el-tabs>
+      </div>
     </el-dialog>
   </div>
 </template>
@@ -162,9 +311,11 @@ import { listOpportunity, getOpportunity, advanceOpportunity, retreatOpportunity
 import { listStage } from '@/api/mk/stage'
 import { listUser } from '@/api/system/user'
 import { WarningFilled, Plus } from '@element-plus/icons-vue'
+import { useDetailCard } from '@/composables/useDetailCard'
 
 const { proxy } = getCurrentInstance()
 const { marketing_opportunity_status, marketing_opportunity_source, marketing_contract_status, marketing_order_status } = proxy.useDict('marketing_opportunity_status', 'marketing_opportunity_source', 'marketing_contract_status', 'marketing_order_status')
+const { collapsedCards, toggleCard } = useDetailCard(['basic', 'amount', 'solution', 'owner', 'interactions', 'stageLog', 'contracts', 'orders'])
 
 const loading = ref(false)
 const stages = ref([])
@@ -173,7 +324,6 @@ const filterUserId = ref(undefined)
 const viewOpen = ref(false)
 const viewForm = ref({})
 const detailTab = ref('basic')
-const viewActiveNames = ref(['basic', 'amount', 'solution', 'owner'])
 const interactionList = ref([])
 const stageLogList = ref([])
 const contractList = ref([])
@@ -278,7 +428,12 @@ function onDrop(e, targetStage) {
 
 // ===== 详情 =====
 function handleView(row) {
-  getOpportunity(row.opportunityId).then(res => { viewForm.value = res.data; detailTab.value = 'basic'; viewOpen.value = true })
+  getOpportunity(row.opportunityId).then(res => {
+    viewForm.value = res.data
+    detailTab.value = 'basic'
+    Object.keys(collapsedCards).forEach(k => { collapsedCards[k] = false })
+    viewOpen.value = true
+  })
 }
 
 function loadRelations() {

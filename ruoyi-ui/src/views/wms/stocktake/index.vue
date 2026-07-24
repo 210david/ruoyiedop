@@ -32,7 +32,13 @@
     </el-table>
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
-    <el-dialog :title="title" v-model="open" width="500px" append-to-body>
+    <el-dialog v-model="open" width="500px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <span class="rd-detail-header-title">{{ title }}</span>
+        </div>
+      </template>
       <el-form ref="takeRef" :model="form" :rules="rules" label-width="100px">
         <el-form-item label="仓库" prop="warehouseId"><el-select v-model="form.warehouseId" filterable clearable placeholder="请选择仓库" style="width:100%" @change="onWarehouseChange"><el-option v-for="w in warehouseOptions" :key="w.warehouseId" :label="w.warehouseName" :value="w.warehouseId" /></el-select></el-form-item>
         <el-form-item label="库区" prop="areaId"><el-select v-model="form.areaId" filterable clearable placeholder="请选择库区（可选，不选则全仓库）" style="width:100%"><el-option v-for="a in areaOptions" :key="a.warehouseId" :label="a.warehouseName" :value="a.warehouseId" /></el-select></el-form-item>
@@ -46,17 +52,23 @@
     </el-dialog>
 
     <!-- 详情对话框 -->
-    <el-dialog title="盘点详情" v-model="detailOpen" width="900px" append-to-body>
-      <el-descriptions :column="3" border>
-        <el-descriptions-item label="盘点单号">{{ detailData.takeNo }}</el-descriptions-item>
-        <el-descriptions-item label="仓库">{{ detailData.warehouseName }}</el-descriptions-item>
-        <el-descriptions-item label="状态"><dict-tag :options="wms_take_status" :value="detailData.status" /></el-descriptions-item>
-        <el-descriptions-item label="盘点类型"><dict-tag :options="wms_take_type" :value="detailData.takeType" /></el-descriptions-item>
+    <el-dialog v-model="detailOpen" width="900px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M9 12h6"/><path d="M12 9v6"/></svg></div>
+          <span class="rd-detail-header-title">盘点详情</span>
+        </div>
+      </template>
+      <div class="rd-grid">
+        <div class="rd-item"><span class="rd-label">盘点单号</span><div class="rd-value">{{ detailData.takeNo }}</div></div>
+        <div class="rd-item"><span class="rd-label">仓库</span><div class="rd-value">{{ detailData.warehouseName }}</div></div>
+        <div class="rd-item"><span class="rd-label">状态</span><div class="rd-value"><dict-tag :options="wms_take_status" :value="detailData.status" /></div></div>
+        <div class="rd-item"><span class="rd-label">盘点类型</span><div class="rd-value"><dict-tag :options="wms_take_type" :value="detailData.takeType" /></div></div>
         <el-descriptions-item label="抽样比例" v-if="detailData.takeType === '1'">{{ detailData.sampleRatio }}%</el-descriptions-item>
         <el-descriptions-item label="循环批次" v-if="detailData.takeType === '2'">第{{ detailData.cycleNo }}轮（共4轮）</el-descriptions-item>
-        <el-descriptions-item label="开始时间">{{ detailData.startTime }}</el-descriptions-item>
-        <el-descriptions-item label="结束时间">{{ detailData.endTime }}</el-descriptions-item>
-      </el-descriptions>
+        <div class="rd-item"><span class="rd-label">开始时间</span><div class="rd-value">{{ detailData.startTime }}</div></div>
+        <div class="rd-item"><span class="rd-label">结束时间</span><div class="rd-value">{{ detailData.endTime }}</div></div>
+      </div>
       <el-table :data="detailData.detailList" border style="margin-top: 15px" @header-dragend="onHeaderDragEnd">
         <el-table-column label="物料编码" prop="materialCode" :width="colWidth('materialCode', 120)" resizable />
         <el-table-column label="物料名称" prop="materialName" min-width="200" show-overflow-tooltip />
@@ -79,7 +91,13 @@
     </el-dialog>
 
     <!-- 录入实盘数量 -->
-    <el-dialog title="录入实盘数量" v-model="submitOpen" width="400px" append-to-body>
+    <el-dialog v-model="submitOpen" width="400px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <span class="rd-detail-header-title">录入实盘数量</span>
+        </div>
+      </template>
       <el-form ref="submitRef" :model="inputForm" label-width="100px">
         <el-form-item label="账面数量">{{ inputForm.bookQty }}</el-form-item>
         <el-form-item label="实盘数量" prop="actualQty"><el-input-number v-model="inputForm.actualQty" :precision="2" :min="0" style="width: 100%" /></el-form-item>
@@ -94,6 +112,8 @@
 import { listStockTake, getStockTake, addStockTake, delStockTake, startStockTake, submitStockTakeDetail, voidStockTake } from '@/api/wms/stocktake'
 import { listWarehouse, listArea } from '@/api/wms/warehouse'
 import { useColumnResize } from '@/composables/useColumnResize'
+import { useDetailCard } from '@/composables/useDetailCard'
+const { collapsedCards, toggleCard } = useDetailCard([])
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('wms_stocktake_index')
 const { wms_take_type, wms_take_status } = proxy.useDict('wms_take_type', 'wms_take_status')

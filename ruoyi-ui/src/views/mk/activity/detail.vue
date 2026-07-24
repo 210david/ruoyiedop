@@ -18,38 +18,37 @@
       <el-tab-pane label="基本信息" name="basic">
         <!-- 活动信息 -->
         <el-descriptions title="活动信息" :column="3" border class="detail-group">
-          <el-descriptions-item label="活动编号">{{ activity.activityNo }}</el-descriptions-item>
-          <el-descriptions-item label="活动名称">{{ activity.activityName }}</el-descriptions-item>
-          <el-descriptions-item label="活动类型"><dict-tag :options="marketing_activity_type" :value="activity.activityType" /></el-descriptions-item>
-          <el-descriptions-item label="活动形式"><dict-tag :options="marketing_activity_form" :value="activity.activityForm" /></el-descriptions-item>
-          <el-descriptions-item label="活动状态"><dict-tag :options="marketing_activity_status" :value="activity.activityStatus" /></el-descriptions-item>
-          <el-descriptions-item label="活动地点">{{ activity.location }}</el-descriptions-item>
-        </el-descriptions>
+          <div class="rd-item"><span class="rd-label">活动编号</span><div class="rd-value">{{ activity.activityNo }}</div></div>
+          <div class="rd-item"><span class="rd-label">活动名称</span><div class="rd-value">{{ activity.activityName }}</div></div>
+          <div class="rd-item"><span class="rd-label">活动类型</span><div class="rd-value"><dict-tag :options="marketing_activity_type" :value="activity.activityType" /></div></div>
+          <div class="rd-item"><span class="rd-label">活动形式</span><div class="rd-value"><dict-tag :options="marketing_activity_form" :value="activity.activityForm" /></div></div>
+          <div class="rd-item"><span class="rd-label">活动状态</span><div class="rd-value"><dict-tag :options="marketing_activity_status" :value="activity.activityStatus" /></div></div>
+          <div class="rd-item"><span class="rd-label">活动地点</span><div class="rd-value">{{ activity.location }}</div></div>
+        </div>
         <!-- 时间与预算 -->
         <el-descriptions title="时间与预算" :column="3" border class="detail-group">
-          <el-descriptions-item label="开始时间">{{ activity.startTime }}</el-descriptions-item>
-          <el-descriptions-item label="结束时间">{{ activity.endTime }}</el-descriptions-item>
-          <el-descriptions-item label="活动预算">{{ activity.budget }} 元</el-descriptions-item>
-          <el-descriptions-item label="实际花费">{{ activity.cost }} 元</el-descriptions-item>
-          <el-descriptions-item label="目标人数">{{ activity.targetCount }} 人</el-descriptions-item>
-          <el-descriptions-item label="目标线索数">{{ activity.targetLeadCount }} 个</el-descriptions-item>
-        </el-descriptions>
+          <div class="rd-item"><span class="rd-label">开始时间</span><div class="rd-value">{{ activity.startTime }}</div></div>
+          <div class="rd-item"><span class="rd-label">结束时间</span><div class="rd-value">{{ activity.endTime }}</div></div>
+          <div class="rd-item"><span class="rd-label">活动预算</span><div class="rd-value">{{ activity.budget }} 元</div></div>
+          <div class="rd-item"><span class="rd-label">实际花费</span><div class="rd-value">{{ activity.cost }} 元</div></div>
+          <div class="rd-item"><span class="rd-label">目标人数</span><div class="rd-value">{{ activity.targetCount }} 人</div></div>
+          <div class="rd-item"><span class="rd-label">目标线索数</span><div class="rd-value">{{ activity.targetLeadCount }} 个</div></div>
+        </div>
         <!-- 负责信息 -->
         <el-descriptions title="负责信息" :column="3" border class="detail-group">
-          <el-descriptions-item label="负责人">{{ activity.userName }}</el-descriptions-item>
-          <el-descriptions-item label="联系方式">{{ activity.ownerPhone }}</el-descriptions-item>
-          <el-descriptions-item label="所属部门">{{ activity.deptName }}</el-descriptions-item>
-        </el-descriptions>
+          <div class="rd-item"><span class="rd-label">负责人</span><div class="rd-value">{{ activity.userName }}</div></div>
+          <div class="rd-item"><span class="rd-label">联系方式</span><div class="rd-value">{{ activity.ownerPhone }}</div></div>
+          <div class="rd-item"><span class="rd-label">所属部门</span><div class="rd-value">{{ activity.deptName }}</div></div>
+        </div>
         <!-- 活动描述 -->
         <el-descriptions title="活动描述" :column="3" border class="detail-group">
-          <el-descriptions-item label="活动简介" :span="3">{{ activity.summary }}</el-descriptions-item>
-          <el-descriptions-item label="活动详情" :span="3">{{ activity.content }}</el-descriptions-item>
-          <el-descriptions-item label="备注" :span="3">{{ activity.remark }}</el-descriptions-item>
-        </el-descriptions>
+          <div class="rd-item rd-item--full"><span class="rd-label">活动简介</span><div class="rd-value">{{ activity.summary }}</div></div>
+          <div class="rd-item rd-item--full"><span class="rd-label">活动详情</span><div class="rd-value">{{ activity.content }}</div></div>
+          <div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value">{{ activity.remark }}</div></div>
+        </div>
         <!-- 附件资料 -->
         <el-descriptions title="附件资料" :column="3" border class="detail-group">
-          <el-descriptions-item label="附件" :span="3">
-            <span v-if="!attachmentFileList.length">无</span>
+          <div class="rd-item rd-item--full"><span class="rd-label">附件</span><div class="rd-value"><span v-if="!attachmentFileList.length">无</span>
             <div v-else>
               <div v-for="(file, index) in attachmentFileList" :key="index" class="detail-attachment-item">
                 <el-link :underline="false" @click="handleAttachmentPreview(file)" type="primary">
@@ -57,9 +56,8 @@
                   <span>{{ file.name }}</span>
                 </el-link>
               </div>
-            </div>
-          </el-descriptions-item>
-        </el-descriptions>
+            </div></div></div>
+        </div>
       </el-tab-pane>
 
       <!-- 参与人列表 -->
@@ -89,14 +87,14 @@
       <!-- 活动效果 -->
       <el-tab-pane label="活动效果" name="result">
         <el-descriptions :column="3" border class="mb16">
-          <el-descriptions-item label="实际参与">{{ activity.actualCount || 0 }}</el-descriptions-item>
-          <el-descriptions-item label="获取线索">{{ activity.leadCount || 0 }}</el-descriptions-item>
-          <el-descriptions-item label="MQL数量">{{ activity.mqlCount || 0 }}</el-descriptions-item>
-          <el-descriptions-item label="SQL数量">{{ activity.sqlCount || 0 }}</el-descriptions-item>
-          <el-descriptions-item label="转化商机">{{ activity.opportunityCount || 0 }}</el-descriptions-item>
-          <el-descriptions-item label="成交金额">{{ activity.dealAmount || 0 }}</el-descriptions-item>
-          <el-descriptions-item label="实际ROI(%)">{{ activity.actualRoi || 0 }}%</el-descriptions-item>
-        </el-descriptions>
+          <div class="rd-item"><span class="rd-label">实际参与</span><div class="rd-value">{{ activity.actualCount || 0 }}</div></div>
+          <div class="rd-item"><span class="rd-label">获取线索</span><div class="rd-value">{{ activity.leadCount || 0 }}</div></div>
+          <div class="rd-item"><span class="rd-label">MQL数量</span><div class="rd-value">{{ activity.mqlCount || 0 }}</div></div>
+          <div class="rd-item"><span class="rd-label">SQL数量</span><div class="rd-value">{{ activity.sqlCount || 0 }}</div></div>
+          <div class="rd-item"><span class="rd-label">转化商机</span><div class="rd-value">{{ activity.opportunityCount || 0 }}</div></div>
+          <div class="rd-item"><span class="rd-label">成交金额</span><div class="rd-value">{{ activity.dealAmount || 0 }}</div></div>
+          <div class="rd-item"><span class="rd-label">实际ROI(%)</span><div class="rd-value">{{ activity.actualRoi || 0 }}%</div></div>
+        </div>
         <el-button type="warning" icon="DataAnalysis" @click="handleReview" v-hasPermi="['marketing:activity:review']" v-if="activity.activityStatus === '3'">一键复盘</el-button>
       </el-tab-pane>
 
@@ -124,11 +122,11 @@
                 </template>
               </el-input>
               <el-descriptions :column="2" border size="small">
-                <el-descriptions-item label="报名人数">{{ activity.signupCount || 0 }}</el-descriptions-item>
-                <el-descriptions-item label="签到人数">{{ activity.signedCount || 0 }}</el-descriptions-item>
-                <el-descriptions-item label="目标人数">{{ activity.targetCount || 0 }}</el-descriptions-item>
-                <el-descriptions-item label="转化线索">{{ activity.convertedLeadCount || 0 }}</el-descriptions-item>
-              </el-descriptions>
+                <div class="rd-item"><span class="rd-label">报名人数</span><div class="rd-value">{{ activity.signupCount || 0 }}</div></div>
+                <div class="rd-item"><span class="rd-label">签到人数</span><div class="rd-value">{{ activity.signedCount || 0 }}</div></div>
+                <div class="rd-item"><span class="rd-label">目标人数</span><div class="rd-value">{{ activity.targetCount || 0 }}</div></div>
+                <div class="rd-item"><span class="rd-label">转化线索</span><div class="rd-value">{{ activity.convertedLeadCount || 0 }}</div></div>
+              </div>
               <el-divider content-position="left">使用说明</el-divider>
               <div style="font-size: 13px; color: #606266; line-height: 2;">
                 <p><b>1. 线上推广</b>：复制链接通过微信/邮件/短信发给客户</p>
@@ -163,17 +161,23 @@
     <file-preview ref="filePreviewRef" />
 
     <!-- 复盘弹窗 -->
-    <el-dialog title="活动复盘" v-model="reviewOpen" width="600px" append-to-body>
-      <el-descriptions :column="2" border>
-        <el-descriptions-item label="实际参与（签到）">{{ reviewData.signedCount }}</el-descriptions-item>
-        <el-descriptions-item label="获取线索">{{ reviewData.leadCount }}</el-descriptions-item>
-        <el-descriptions-item label="MQL数量">{{ reviewData.mqlCount }}</el-descriptions-item>
-        <el-descriptions-item label="SQL数量">{{ reviewData.sqlCount }}</el-descriptions-item>
-        <el-descriptions-item label="转化商机">{{ reviewData.opportunityCount }}</el-descriptions-item>
-        <el-descriptions-item label="成交金额">{{ reviewData.dealAmount }}</el-descriptions-item>
-        <el-descriptions-item label="活动预算">{{ reviewData.budget }}</el-descriptions-item>
-        <el-descriptions-item label="实际ROI">{{ reviewData.actualRoi }}%</el-descriptions-item>
-      </el-descriptions>
+    <el-dialog v-model="reviewOpen" width="600px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <span class="rd-detail-header-title">活动复盘</span>
+        </div>
+      </template>
+      <div class="rd-grid">
+        <div class="rd-item"><span class="rd-label">实际参与（签到）</span><div class="rd-value">{{ reviewData.signedCount }}</div></div>
+        <div class="rd-item"><span class="rd-label">获取线索</span><div class="rd-value">{{ reviewData.leadCount }}</div></div>
+        <div class="rd-item"><span class="rd-label">MQL数量</span><div class="rd-value">{{ reviewData.mqlCount }}</div></div>
+        <div class="rd-item"><span class="rd-label">SQL数量</span><div class="rd-value">{{ reviewData.sqlCount }}</div></div>
+        <div class="rd-item"><span class="rd-label">转化商机</span><div class="rd-value">{{ reviewData.opportunityCount }}</div></div>
+        <div class="rd-item"><span class="rd-label">成交金额</span><div class="rd-value">{{ reviewData.dealAmount }}</div></div>
+        <div class="rd-item"><span class="rd-label">活动预算</span><div class="rd-value">{{ reviewData.budget }}</div></div>
+        <div class="rd-item"><span class="rd-label">实际ROI</span><div class="rd-value">{{ reviewData.actualRoi }}%</div></div>
+      </div>
       <div class="mt16">
         <el-alert title="系统已根据参与人签到和线索转化数据自动统计，您可修改后保存" type="info" :closable="false" />
       </div>
@@ -184,7 +188,13 @@
     </el-dialog>
 
     <!-- 新增参与人弹窗 -->
-    <el-dialog title="新增参与人" v-model="participantOpen" width="600px" append-to-body>
+    <el-dialog v-model="participantOpen" width="600px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <span class="rd-detail-header-title">新增参与人</span>
+        </div>
+      </template>
       <el-form ref="participantRef" :model="participantForm" :rules="participantRules" label-width="100px">
         <el-form-item label="从联系人库选择">
           <el-select v-model="participantForm.contactId" filterable clearable placeholder="选择后自动带出信息" style="width: 100%" @change="onContactSelect">
@@ -226,6 +236,8 @@ function handleAttachmentPreview(file) {
 
 const route = useRoute()
 const router = useRouter()
+import { useDetailCard } from '@/composables/useDetailCard'
+const { collapsedCards, toggleCard } = useDetailCard([])
 const { proxy } = getCurrentInstance()
 const { marketing_activity_type, marketing_activity_form, marketing_activity_status, marketing_participate_status } = proxy.useDict('marketing_activity_type', 'marketing_activity_form', 'marketing_activity_status', 'marketing_participate_status')
 

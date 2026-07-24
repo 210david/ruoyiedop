@@ -1,6 +1,7 @@
 <template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch">
+        <div class="rd-page">
       <el-form-item label="批次号" prop="waveNo"><el-input v-model="queryParams.waveNo" placeholder="请输入" clearable style="width: 200px" @keyup.enter="handleQuery" /></el-form-item>
       <el-form-item label="状态" prop="status"><el-select v-model="queryParams.status" placeholder="请选择" clearable style="width: 200px"><el-option v-for="d in wms_wave_status" :key="d.value" :label="d.label" :value="d.value" /></el-select></el-form-item>
       <el-form-item><el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button><el-button icon="Refresh" @click="resetQuery">重置</el-button></el-form-item>
@@ -31,7 +32,13 @@
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
     <!-- 新增/修改对话框 -->
-    <el-dialog :title="title" v-model="open" width="500px" append-to-body>
+    <el-dialog v-model="open" width="500px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <span class="rd-detail-header-title">{{ title }}</span>
+        </div>
+      </template>
       <el-form ref="waveRef" :model="form" :rules="rules" label-width="100px">
         <el-form-item label="批次名称" prop="waveName"><el-input v-model="form.waveName" placeholder="请输入" /></el-form-item>
         <el-form-item label="仓库" prop="warehouseId"><el-select v-model="form.warehouseId" filterable clearable placeholder="请选择仓库" style="width:100%"><el-option v-for="w in warehouseOptions" :key="w.warehouseId" :label="w.warehouseName" :value="w.warehouseId" /></el-select></el-form-item>
@@ -41,16 +48,27 @@
     </el-dialog>
 
     <!-- 批次详情对话框 -->
-    <el-dialog :title="'批次详情 - ' + (detailData.waveNo || '')" v-model="detailOpen" width="900px" append-to-body>
-      <el-descriptions :column="3" border>
-        <el-descriptions-item label="批次号">{{ detailData.waveNo }}</el-descriptions-item>
-        <el-descriptions-item label="批次名称">{{ detailData.waveName }}</el-descriptions-item>
-        <el-descriptions-item label="状态"><dict-tag :options="wms_wave_status" :value="detailData.status" /></el-descriptions-item>
-        <el-descriptions-item label="仓库">{{ detailData.warehouseName }}</el-descriptions-item>
-        <el-descriptions-item label="总数量">{{ detailData.totalQty }}</el-descriptions-item>
-        <el-descriptions-item label="订单数">{{ detailData.orderCount }}</el-descriptions-item>
-      </el-descriptions>
-      <el-divider content-position="center">关联出库单</el-divider>
+    <el-dialog v-model="detailOpen" width="900px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <span class="rd-detail-header-title">{{ '批次详情 - ' + (detailData.waveNo || '') }}</span>
+        </div>
+      </template>
+      <div class="rd-grid">
+        <div class="rd-item"><span class="rd-label">批次号</span><div class="rd-value">{{ detailData.waveNo }}</div></div>
+        <div class="rd-item"><span class="rd-label">批次名称</span><div class="rd-value">{{ detailData.waveName }}</div></div>
+        <div class="rd-item"><span class="rd-label">状态</span><div class="rd-value"><dict-tag :options="wms_wave_status" :value="detailData.status" /></div></div>
+        <div class="rd-item"><span class="rd-label">仓库</span><div class="rd-value">{{ detailData.warehouseName }}</div></div>
+        <div class="rd-item"><span class="rd-label">总数量</span><div class="rd-value">{{ detailData.totalQty }}</div></div>
+        <div class="rd-item"><span class="rd-label">订单数</span><div class="rd-value">{{ detailData.orderCount }}</div></div>
+      </div>
+      <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('c0')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>关联出库单</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c0 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.c0">
       <el-table :data="waveOrders" border style="margin-top: 10px" @header-dragend="onHeaderDragEnd">
         <el-table-column label="出库单号" prop="orderNo" :width="colWidth('orderNo', 160)" resizable />
         <el-table-column label="出库类型" prop="orderType" :width="colWidth('orderType', 100)" resizable align="center"><template #default="scope"><dict-tag :options="wms_outbound_type" :value="scope.row.orderType" /></template></el-table-column>
@@ -61,7 +79,13 @@
     </el-dialog>
 
     <!-- 添加出库单对话框 -->
-    <el-dialog :title="'添加出库单到批次 - ' + (currentWave.waveNo || '')" v-model="generateOpen" width="900px" append-to-body>
+    <el-dialog v-model="generateOpen" width="900px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <span class="rd-detail-header-title">{{ '添加出库单到批次 - ' + (currentWave.waveNo || '') }}</span>
+        </div>
+      </template>
       <el-alert title="仅显示同仓库、草稿状态且未关联批次的出库单" type="info" :closable="false" style="margin-bottom: 15px" />
       <el-table :data="availableOrders" @selection-change="handleOrderSelectChange" border @header-dragend="onHeaderDragEnd">
         <el-table-column type="selection" width="55" align="center" />
@@ -84,6 +108,8 @@ import { listWave, getWave, addWave, updateWave, delWave, generateWave, releaseW
 import { listWarehouse } from '@/api/wms/warehouse'
 import { listOutbound } from '@/api/wms/outbound'
 import { useColumnResize } from '@/composables/useColumnResize'
+import { useDetailCard } from '@/composables/useDetailCard'
+const { collapsedCards, toggleCard } = useDetailCard(["c0"])
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('wms_outbound_wave')
 const { wms_wave_status, wms_outbound_type, wms_outbound_status } = proxy.useDict('wms_wave_status', 'wms_outbound_type', 'wms_outbound_status')

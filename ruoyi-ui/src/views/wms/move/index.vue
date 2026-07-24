@@ -36,9 +36,23 @@
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
     <!-- 新增/编辑弹窗 -->
-    <el-dialog :title="title" v-model="open" width="600px" append-to-body>
+    <el-dialog v-model="open" width="600px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="5 9 2 12 5 15"/><polyline points="9 5 12 2 15 5"/><polyline points="15 19 12 22 9 19"/><polyline points="19 9 22 12 19 15"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/></svg>
+          </div>
+          <span class="rd-detail-header-title">{{ title }}</span>
+        </div>
+      </template>
       <el-form ref="moveRef" :model="form" :rules="rules" label-width="100px">
-        <el-divider content-position="center">仓库与物料</el-divider>
+        <div class="rd-page">
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('basic')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></span>仓库与物料</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.basic }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.basic">
         <el-form-item label="仓库" prop="warehouseId">
           <el-select v-model="form.warehouseId" filterable clearable placeholder="请选择仓库" style="width:100%" @change="onWarehouseChange">
             <el-option v-for="w in warehouseOptions" :key="w.warehouseId" :label="w.warehouseName" :value="w.warehouseId" />
@@ -53,7 +67,14 @@
           <el-col :span="12"><el-form-item label="批次号"><el-input v-model="form.batchNo" disabled /></el-form-item></el-col>
           <el-col :span="12"><el-form-item label="单位"><dict-tag :options="wms_unit" :value="form.unit" /></el-form-item></el-col>
         </el-row>
-        <el-divider content-position="center">移库信息</el-divider>
+          </div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('move')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="5 9 2 12 5 15"/><polyline points="9 5 12 2 15 5"/><polyline points="15 19 12 22 9 19"/><polyline points="19 9 22 12 19 15"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/></svg></span>移库信息</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.move }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.move">
         <el-form-item label="源库位">
           <el-input :model-value="form.fromLocationName || ''" disabled />
         </el-form-item>
@@ -66,45 +87,105 @@
             <el-option v-for="l in targetLocationOptions" :key="l.warehouseId" :label="(l.warehouseName || '')" :value="l.warehouseId" />
           </el-select>
         </el-form-item>
-        <el-divider content-position="center">其他信息</el-divider>
+          </div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('other')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>其他信息</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.other }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.other">
         <el-form-item label="备注" prop="remark"><el-input v-model="form.remark" type="textarea" /></el-form-item>
+          </div>
+        </section>
+        </div>
       </el-form>
       <template #footer><el-button type="primary" @click="submitForm">确 定</el-button><el-button @click="cancel">取 消</el-button></template>
     </el-dialog>
 
     <!-- 详情弹窗 -->
-    <el-dialog title="移库单详情" v-model="detailOpen" width="700px" append-to-body>
-      <el-divider content-position="center">单据信息</el-divider>
-      <el-descriptions :column="2" border>
-        <el-descriptions-item label="移库单号">{{ detailData.moveNo }}</el-descriptions-item>
-        <el-descriptions-item label="状态"><dict-tag :options="wms_move_status" :value="detailData.status" /></el-descriptions-item>
-      </el-descriptions>
-      <el-divider content-position="center">物料信息</el-divider>
-      <el-descriptions :column="2" border>
-        <el-descriptions-item label="仓库">{{ detailData.warehouseName }}</el-descriptions-item>
-        <el-descriptions-item label="批次号">{{ detailData.batchNo || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="物料编码">{{ detailData.materialCode }}</el-descriptions-item>
-        <el-descriptions-item label="物料名称">{{ detailData.materialName }}</el-descriptions-item>
-        <el-descriptions-item label="单位"><dict-tag :options="wms_unit" :value="detailData.unit" /></el-descriptions-item>
-        <el-descriptions-item label="移库数量">{{ detailData.moveQty }}</el-descriptions-item>
-      </el-descriptions>
-      <el-divider content-position="center">库位信息</el-divider>
-      <el-descriptions :column="2" border>
-        <el-descriptions-item label="源库位" :span="2">{{ detailData.fromLocationName || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="目标库位" :span="2">{{ detailData.toLocationName || '-' }}</el-descriptions-item>
-      </el-descriptions>
-      <el-divider content-position="center">流程信息</el-divider>
-      <el-descriptions :column="2" border>
-        <el-descriptions-item label="审批人">{{ detailData.approveBy || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="审批时间">{{ detailData.approveTime || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="完成时间">{{ detailData.completeTime || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="创建人">{{ detailData.createBy }}</el-descriptions-item>
-        <el-descriptions-item label="创建时间">{{ detailData.createTime }}</el-descriptions-item>
-      </el-descriptions>
-      <el-divider content-position="center">其他信息</el-divider>
-      <el-descriptions :column="1" border>
-        <el-descriptions-item label="备注">{{ detailData.remark || '-' }}</el-descriptions-item>
-      </el-descriptions>
+    <el-dialog v-model="detailOpen" width="700px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M9 12h6"/><path d="M12 9v6"/></svg>
+          </div>
+          <span class="rd-detail-header-title">移库单详情</span>
+          <div class="rd-detail-header-sub" v-if="detailData.moveNo">
+            <span class="rd-detail-header-divider"></span>
+            <span class="rd-detail-header-no">编号：{{ detailData.moveNo }}</span>
+            <dict-tag :options="wms_move_status" :value="detailData.status" />
+          </div>
+        </div>
+      </template>
+      <div class="rd-page">
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('dBasic')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>单据信息</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.dBasic }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.dBasic">
+            <div class="rd-grid">
+              <div class="rd-item"><span class="rd-label">移库单号</span><div class="rd-value">{{ detailData.moveNo }}</div></div>
+              <div class="rd-item"><span class="rd-label">状态</span><div class="rd-value"><dict-tag :options="wms_move_status" :value="detailData.status" /></div></div>
+            </div>
+          </div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('dMaterial')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></span>物料信息</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.dMaterial }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.dMaterial">
+            <div class="rd-grid">
+              <div class="rd-item"><span class="rd-label">仓库</span><div class="rd-value">{{ detailData.warehouseName }}</div></div>
+              <div class="rd-item"><span class="rd-label">批次号</span><div class="rd-value">{{ detailData.batchNo || '暂无' }}</div></div>
+              <div class="rd-item"><span class="rd-label">物料编码</span><div class="rd-value">{{ detailData.materialCode }}</div></div>
+              <div class="rd-item"><span class="rd-label">物料名称</span><div class="rd-value">{{ detailData.materialName }}</div></div>
+              <div class="rd-item"><span class="rd-label">单位</span><div class="rd-value"><dict-tag :options="wms_unit" :value="detailData.unit" /></div></div>
+              <div class="rd-item"><span class="rd-label">移库数量</span><div class="rd-value">{{ detailData.moveQty }}</div></div>
+            </div>
+          </div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('dLocation')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></span>库位信息</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.dLocation }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.dLocation">
+            <div class="rd-grid">
+              <div class="rd-item rd-item--full"><span class="rd-label">源库位</span><div class="rd-value">{{ detailData.fromLocationName || '暂无' }}</div></div>
+              <div class="rd-item rd-item--full"><span class="rd-label">目标库位</span><div class="rd-value">{{ detailData.toLocationName || '暂无' }}</div></div>
+            </div>
+          </div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('dFlow')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>流程信息</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.dFlow }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.dFlow">
+            <div class="rd-grid">
+              <div class="rd-item"><span class="rd-label">审批人</span><div class="rd-value">{{ detailData.approveBy || '暂无' }}</div></div>
+              <div class="rd-item"><span class="rd-label">审批时间</span><div class="rd-value">{{ detailData.approveTime || '暂无' }}</div></div>
+              <div class="rd-item"><span class="rd-label">完成时间</span><div class="rd-value">{{ detailData.completeTime || '暂无' }}</div></div>
+              <div class="rd-item"><span class="rd-label">创建人</span><div class="rd-value">{{ detailData.createBy }}</div></div>
+              <div class="rd-item"><span class="rd-label">创建时间</span><div class="rd-value">{{ detailData.createTime }}</div></div>
+            </div>
+          </div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('dOther')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>其他信息</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.dOther }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.dOther">
+            <div class="rd-grid">
+              <div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value" :class="{ 'rd-value--muted': !detailData.remark }">{{ detailData.remark || '暂无备注' }}</div></div>
+            </div>
+          </div>
+        </section>
+      </div>
       <template #footer><el-button @click="detailOpen = false">关 闭</el-button></template>
     </el-dialog>
   </div>
@@ -115,6 +196,8 @@ import { listMove, getMove, addMove, delMove, approveMove, executeMove, voidMove
 import { listWarehouse, listLocation } from '@/api/wms/warehouse'
 import { listInventory } from '@/api/wms/inventory'
 import { useColumnResize } from '@/composables/useColumnResize'
+import { useDetailCard } from '@/composables/useDetailCard'
+const { collapsedCards, toggleCard } = useDetailCard(['basic', 'move', 'other', 'dBasic', 'dMaterial', 'dLocation', 'dFlow', 'dOther'])
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('wms_move_index')
 const { wms_move_status, wms_unit } = proxy.useDict('wms_move_status', 'wms_unit')
