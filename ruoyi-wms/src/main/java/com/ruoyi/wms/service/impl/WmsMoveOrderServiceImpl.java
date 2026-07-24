@@ -103,7 +103,7 @@ public class WmsMoveOrderServiceImpl implements IWmsMoveOrderService
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public int approveMove(Long moveId)
+    public int approveMove(Long moveId, String approveOpinion)
     {
         WmsMoveOrder move = wmsMoveOrderMapper.selectMoveOrderById(moveId);
         if (move == null || !"0".equals(move.getStatus()))
@@ -113,6 +113,23 @@ public class WmsMoveOrderServiceImpl implements IWmsMoveOrderService
         move.setStatus("1");
         move.setApproveBy(SecurityUtils.getUsername());
         move.setApproveTime(new Date());
+        move.setApproveOpinion(approveOpinion);
+        return wmsMoveOrderMapper.updateMoveOrder(move);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int rejectMove(Long moveId, String approveOpinion)
+    {
+        WmsMoveOrder move = wmsMoveOrderMapper.selectMoveOrderById(moveId);
+        if (move == null || !"0".equals(move.getStatus()))
+        {
+            throw new ServiceException("移库单状态不正确，无法驳回");
+        }
+        move.setStatus("4");
+        move.setApproveBy(SecurityUtils.getUsername());
+        move.setApproveTime(new Date());
+        move.setApproveOpinion(approveOpinion);
         return wmsMoveOrderMapper.updateMoveOrder(move);
     }
 

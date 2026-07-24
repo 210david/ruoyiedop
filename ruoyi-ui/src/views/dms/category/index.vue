@@ -1,13 +1,8 @@
 <template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch">
-      <el-form-item label="分类名称" prop="categoryName">
-        <el-input v-model="queryParams.categoryName" placeholder="请输入" clearable style="width: 200px" @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-        <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-      </el-form-item>
+      <el-form-item label="分类名称" prop="categoryName"><el-input v-model="queryParams.categoryName" placeholder="请输入" clearable style="width: 200px" @keyup.enter="handleQuery" /></el-form-item>
+      <el-form-item><el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button><el-button icon="Refresh" @click="resetQuery">重置</el-button></el-form-item>
     </el-form>
 
     <el-row :gutter="10" class="mb8">
@@ -36,36 +31,56 @@
       </el-table-column>
     </el-table>
 
-    <el-dialog v-model="open" width="600px" append-to-body draggable class="rd-dialog">
+        <el-dialog v-model="open" width="720px" append-to-body draggable class="rd-dialog">
       <template #header>
         <div class="rd-detail-header">
-          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></div>
           <span class="rd-detail-header-title">{{ title }}</span>
+          <div class="rd-detail-header-sub" v-if="form.categoryCode">
+            <span class="rd-detail-header-divider"></span>
+            <span class="rd-detail-header-no">编码：{{ form.categoryCode }}</span>
+          </div>
         </div>
       </template>
       <el-form ref="categoryRef" :model="form" :rules="rules" label-width="100px">
-        <el-row>
-          <el-col :span="24" v-if="form.parentId !== 0">
-            <el-form-item label="上级分类" prop="parentId">
-              <el-tree-select v-model="form.parentId" :data="categoryOptions" :props="{ value: 'categoryId', label: 'categoryName', children: 'children' }" value-key="categoryId" placeholder="选择上级分类" check-strictly />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="分类编码" prop="categoryCode"><el-input v-model="form.categoryCode" placeholder="请输入" /></el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="分类名称" prop="categoryName"><el-input v-model="form.categoryName" placeholder="请输入" /></el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="显示排序" prop="orderNum"><el-input-number v-model="form.orderNum" :min="0" controls-position="right" /></el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="状态" prop="status">
-              <el-radio-group v-model="form.status"><el-radio value="0">正常</el-radio><el-radio value="1">停用</el-radio></el-radio-group>
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-form-item label="备注" prop="remark"><el-input v-model="form.remark" type="textarea" /></el-form-item>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('basic')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>基本信息</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.basic }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.basic">
+            <el-row>
+              <el-col :span="24" v-if="form.parentId !== 0">
+                <el-form-item label="上级分类" prop="parentId">
+                  <el-tree-select v-model="form.parentId" :data="categoryOptions" :props="{ value: 'categoryId', label: 'categoryName', children: 'children' }" value-key="categoryId" placeholder="选择上级分类" check-strictly />
+                </el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="分类编码" prop="categoryCode"><el-input v-model="form.categoryCode" placeholder="请输入" /></el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="分类名称" prop="categoryName"><el-input v-model="form.categoryName" placeholder="请输入" /></el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="显示排序" prop="orderNum"><el-input-number v-model="form.orderNum" :min="0" controls-position="right" /></el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="状态" prop="status">
+                  <el-radio-group v-model="form.status"><el-radio value="0">正常</el-radio><el-radio value="1">停用</el-radio></el-radio-group>
+                </el-form-item>
+              </el-col>
+            </el-row>
+          </div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('other')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></span>其他信息</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.other }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.other">
+            <el-form-item label="备注" prop="remark"><el-input v-model="form.remark" type="textarea" /></el-form-item>
+          </div>
+        </section>
       </el-form>
       <template #footer>
         <el-button type="primary" @click="submitForm">确 定</el-button>
@@ -79,7 +94,7 @@
 import { listCategory, getCategory, addCategory, updateCategory, delCategory } from '@/api/dms/category'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
-const { collapsedCards, toggleCard } = useDetailCard([])
+const { collapsedCards, toggleCard } = useDetailCard(["basic","other"])
 
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('dms_category_index')

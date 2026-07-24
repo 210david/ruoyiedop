@@ -71,11 +71,17 @@ public class WmsStockTake extends BaseEntity
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date approveTime;
 
+    /** 审批意见 */
+    private String approveOpinion;
+
     /** 删除标志 */
     private String delFlag;
 
     /** 盘点明细列表 */
     private List<WmsStockTakeDetail> detailList;
+
+    /** 审批日志列表 */
+    private List<WmsStockTakeApproveLog> approveLogList;
 
     public Long getTakeId() { return takeId; }
     public void setTakeId(Long takeId) { this.takeId = takeId; }
@@ -107,8 +113,12 @@ public class WmsStockTake extends BaseEntity
     public void setApproveBy(String approveBy) { this.approveBy = approveBy; }
     public Date getApproveTime() { return approveTime; }
     public void setApproveTime(Date approveTime) { this.approveTime = approveTime; }
+    public String getApproveOpinion() { return approveOpinion; }
+    public void setApproveOpinion(String approveOpinion) { this.approveOpinion = approveOpinion; }
     public String getDelFlag() { return delFlag; }
     public void setDelFlag(String delFlag) { this.delFlag = delFlag; }
     public List<WmsStockTakeDetail> getDetailList() { return detailList; }
     public void setDetailList(List<WmsStockTakeDetail> detailList) { this.detailList = detailList; }
+    public List<WmsStockTakeApproveLog> getApproveLogList() { return approveLogList; }
+    public void setApproveLogList(List<WmsStockTakeApproveLog> approveLogList) { this.approveLogList = approveLogList; }
 }

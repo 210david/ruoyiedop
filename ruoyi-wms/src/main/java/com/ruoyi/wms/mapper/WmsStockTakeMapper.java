@@ -4,6 +4,7 @@ import java.util.List;
 import com.ruoyi.wms.domain.WmsStockTake;
 import com.ruoyi.wms.domain.WmsStockTakeDetail;
 import com.ruoyi.wms.domain.WmsStockTakeSnapshot;
+import com.ruoyi.wms.domain.WmsStockTakeApproveLog;
 
 public interface WmsStockTakeMapper
 {
@@ -17,4 +18,6 @@ public interface WmsStockTakeMapper
     public int updateStockTakeDetail(WmsStockTakeDetail detail);
     public int insertSnapshot(WmsStockTakeSnapshot snapshot);
     public List<WmsStockTakeSnapshot> selectSnapshotByTakeId(Long takeId);
+    public int insertApproveLog(WmsStockTakeApproveLog log);
+    public List<WmsStockTakeApproveLog> selectApproveLogByTakeId(Long takeId);
 }

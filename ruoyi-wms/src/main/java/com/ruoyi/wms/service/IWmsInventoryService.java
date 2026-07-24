@@ -15,8 +15,10 @@ public interface IWmsInventoryService
                             String createBy, Date productionDate, Date expiryDate);
     public int reduceInventory(Long materialId, Long warehouseId, Long locationId, String batchNo,
                                BigDecimal qty, String changeType, String refOrderType, String refOrderNo, String createBy);
-    public int lockInventory(Long materialId, Long warehouseId, Long locationId, String batchNo, BigDecimal qty, String createBy);
-    public int unlockInventory(Long materialId, Long warehouseId, Long locationId, String batchNo, BigDecimal qty, String createBy);
+    public int lockInventory(Long materialId, Long warehouseId, Long locationId, String batchNo, BigDecimal qty, String refOrderType, String refOrderNo, String createBy);
+    public int unlockInventory(Long materialId, Long warehouseId, Long locationId, String batchNo, BigDecimal qty, String refOrderType, String refOrderNo, String createBy);
+    public int releaseLockedInventory(Long materialId, Long warehouseId, Long locationId, String batchNo,
+                               BigDecimal qty, String refOrderType, String refOrderNo, String createBy);
     public List<WmsInventoryLog> selectInventoryLogList(WmsInventoryLog log);
 
     /**

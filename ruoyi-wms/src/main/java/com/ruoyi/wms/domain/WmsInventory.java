@@ -84,6 +84,12 @@ public class WmsInventory extends BaseEntity
     /** 删除标志 */
     private String delFlag;
 
+    /** 仓库/库区/库位 联合模糊查询关键字 */
+    private String locationKeyword;
+
+    /** 库区ID（查询条件，用于按库区过滤库存） */
+    private Long areaId;
+
     public Long getInventoryId() { return inventoryId; }
     public void setInventoryId(Long inventoryId) { this.inventoryId = inventoryId; }
     public Long getMaterialId() { return materialId; }
@@ -122,4 +128,8 @@ public class WmsInventory extends BaseEntity
     public void setVersion(Integer version) { this.version = version; }
     public String getDelFlag() { return delFlag; }
     public void setDelFlag(String delFlag) { this.delFlag = delFlag; }
+    public String getLocationKeyword() { return locationKeyword; }
+    public void setLocationKeyword(String locationKeyword) { this.locationKeyword = locationKeyword; }
+    public Long getAreaId() { return areaId; }
+    public void setAreaId(Long areaId) { this.areaId = areaId; }
 }

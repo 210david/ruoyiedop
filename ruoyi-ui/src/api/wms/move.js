@@ -38,10 +38,19 @@ export function delMove(moveId) {
   })
 }
 
-export function approveMove(moveId) {
+export function approveMove(moveId, approveOpinion) {
   return request({
     url: '/wms/move/approve/' + moveId,
-    method: 'put'
+    method: 'put',
+    params: { approveOpinion }
+  })
+}
+
+export function rejectMove(moveId, approveOpinion) {
+  return request({
+    url: '/wms/move/reject/' + moveId,
+    method: 'put',
+    params: { approveOpinion }
   })
 }
 

@@ -76,10 +76,15 @@ public class WmsInventoryServiceImpl implements IWmsInventoryService
         else
         {
             inv = wmsInventoryMapper.selectInventoryForUpdate(inv.getInventoryId());
+            if ("2".equals(inv.getDelFlag()))
+            {
+                inv.setQty(BigDecimal.ZERO);
+            }
             beforeQty = inv.getQty();
             inv.setQty(inv.getQty().add(qty));
             if (productionDate != null) inv.setProductionDate(productionDate);
             if (expiryDate != null) inv.setExpiryDate(expiryDate);
+            inv.setDelFlag("0");
             inv.setUpdateBy(createBy);
             wmsInventoryMapper.updateInventory(inv);
         }
@@ -144,7 +149,7 @@ public class WmsInventoryServiceImpl implements IWmsInventoryService
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public int lockInventory(Long materialId, Long warehouseId, Long locationId, String batchNo, BigDecimal qty, String createBy)
+    public int lockInventory(Long materialId, Long warehouseId, Long locationId, String batchNo, BigDecimal qty, String refOrderType, String refOrderNo, String createBy)
     {
         WmsInventory inv = wmsInventoryMapper.selectInventoryByUnique(materialId, warehouseId, locationId,
                 batchNo == null ? "" : batchNo);
@@ -172,7 +177,8 @@ public class WmsInventoryServiceImpl implements IWmsInventoryService
         log.setChangeQty(qty);
         log.setBeforeQty(inv.getQty().add(qty));
         log.setAfterQty(inv.getQty());
-        log.setRefOrderType("lock");
+        log.setRefOrderType(refOrderType);
+        log.setRefOrderNo(refOrderNo);
         log.setCreateBy(createBy);
         wmsInventoryLogMapper.insertInventoryLog(log);
 
@@ -181,7 +187,7 @@ public class WmsInventoryServiceImpl implements IWmsInventoryService
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public int unlockInventory(Long materialId, Long warehouseId, Long locationId, String batchNo, BigDecimal qty, String createBy)
+    public int unlockInventory(Long materialId, Long warehouseId, Long locationId, String batchNo, BigDecimal qty, String refOrderType, String refOrderNo, String createBy)
     {
         WmsInventory inv = wmsInventoryMapper.selectInventoryByUnique(materialId, warehouseId, locationId,
                 batchNo == null ? "" : batchNo);
@@ -209,7 +215,43 @@ public class WmsInventoryServiceImpl implements IWmsInventoryService
         log.setChangeQty(qty);
         log.setBeforeQty(inv.getQty().subtract(qty));
         log.setAfterQty(inv.getQty());
-        log.setRefOrderType("unlock");
+        log.setRefOrderType(refOrderType);
+        log.setRefOrderNo(refOrderNo);
+        log.setCreateBy(createBy);
+        wmsInventoryLogMapper.insertInventoryLog(log);
+
+        return 1;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int releaseLockedInventory(Long materialId, Long warehouseId, Long locationId, String batchNo,
+                               BigDecimal qty, String refOrderType, String refOrderNo, String createBy)
+    {
+        WmsInventory inv = wmsInventoryMapper.selectInventoryByUnique(materialId, warehouseId, locationId,
+                batchNo == null ? "" : batchNo);
+        if (inv == null)
+        {
+            return 0;
+        }
+        inv = wmsInventoryMapper.selectInventoryForUpdate(inv.getInventoryId());
+        inv.setLockQty(inv.getLockQty().subtract(qty));
+        inv.setDelFlag("0");
+        inv.setUpdateBy(createBy);
+        wmsInventoryMapper.updateInventory(inv);
+
+        // log
+        WmsInventoryLog log = new WmsInventoryLog();
+        log.setMaterialId(materialId);
+        log.setWarehouseId(warehouseId);
+        log.setLocationId(locationId);
+        log.setBatchNo(batchNo);
+        log.setChangeType("1");
+        log.setChangeQty(qty.negate());
+        log.setBeforeQty(inv.getQty());
+        log.setAfterQty(inv.getQty());
+        log.setRefOrderType(refOrderType);
+        log.setRefOrderNo(refOrderNo);
         log.setCreateBy(createBy);
         wmsInventoryLogMapper.insertInventoryLog(log);
 

@@ -86,6 +86,9 @@ public class WmsMoveOrder extends BaseEntity
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date approveTime;
 
+    /** 审批意见 */
+    private String approveOpinion;
+
     /** 完成时间 */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date completeTime;
@@ -131,6 +134,8 @@ public class WmsMoveOrder extends BaseEntity
     public void setApproveBy(String approveBy) { this.approveBy = approveBy; }
     public Date getApproveTime() { return approveTime; }
     public void setApproveTime(Date approveTime) { this.approveTime = approveTime; }
+    public String getApproveOpinion() { return approveOpinion; }
+    public void setApproveOpinion(String approveOpinion) { this.approveOpinion = approveOpinion; }
     public Date getCompleteTime() { return completeTime; }
     public void setCompleteTime(Date completeTime) { this.completeTime = completeTime; }
     public String getDelFlag() { return delFlag; }

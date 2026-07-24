@@ -22,6 +22,7 @@
         <result property="status"           column="status"/>
         <result property="approveBy"        column="approve_by"/>
         <result property="approveTime"      column="approve_time"/>
+        <result property="approveOpinion"   column="approve_opinion"/>
         <result property="completeTime"     column="complete_time"/>
         <result property="delFlag"          column="del_flag"/>
         <result property="createBy"         column="create_by"/>
@@ -44,7 +45,7 @@
                  (SELECT GROUP_CONCAT(p.warehouse_name SEPARATOR ' / ') FROM wms_warehouse p WHERE FIND_IN_SET(p.warehouse_id, REPLACE(lt.ancestors, ' ', '')) AND p.warehouse_id != 0 ORDER BY FIND_IN_SET(p.warehouse_id, REPLACE(lt.ancestors, ' ', ''))),
                  lt.warehouse_name
                ) as to_location_name,
-               mo.move_qty, mo.status, mo.approve_by, mo.approve_time, mo.complete_time,
+               mo.move_qty, mo.status, mo.approve_by, mo.approve_time, mo.approve_opinion, mo.complete_time,
                mo.del_flag, mo.create_by, mo.create_time, mo.update_by, mo.update_time, mo.remark
         FROM wms_move_order mo
         LEFT JOIN wms_warehouse w ON mo.warehouse_id = w.warehouse_id
@@ -82,6 +83,7 @@
             <if test="status != null and status != ''">status = #{status},</if>
             <if test="approveBy != null">approve_by = #{approveBy},</if>
             <if test="approveTime != null">approve_time = #{approveTime},</if>
+            <if test="approveOpinion != null">approve_opinion = #{approveOpinion},</if>
             <if test="completeTime != null">complete_time = #{completeTime},</if>
             <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
             <if test="remark != null">remark = #{remark},</if>

@@ -1,0 +1,21 @@
+[2m18:53:11[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /captchaImage[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1194:18)
+    at afterConnectMultiple (node:net:1784:7)
+[2m18:53:32[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /captchaImage[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1194:18)
+    at afterConnectMultiple (node:net:1784:7)
+[2m18:53:33[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /captchaImage[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1194:18)
+    at afterConnectMultiple (node:net:1784:7)
+[2m18:53:48[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /captchaImage[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1194:18)
+    at afterConnectMultiple (node:net:1784:7)
+[2m18:55:51[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /captchaImage[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1194:18)
+    at afterConnectMultiple (node:net:1784:7)
+^C^C

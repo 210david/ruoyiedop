@@ -132,6 +132,13 @@
   font-weight: 700;
   color: #111827;
 }
+.rd-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  margin-right: 12px;
+}
 .rd-card-icon {
   display: flex;
   align-items: center;
@@ -352,7 +359,9 @@
 .rd-dialog .rd-card-body .el-form-item {
   margin-bottom: 22px !important;
 }
-.rd-dialog .rd-card-body .el-form-item:last-child {
+/* 仅消除卡片内容区最后一个直接子元素（el-row 或 el-form-item）内的最后一个表单项的下间距 */
+.rd-dialog .rd-card-body > .el-row:last-child .el-form-item,
+.rd-dialog .rd-card-body > .el-form-item:last-child {
   margin-bottom: 0 !important;
 }
 /* el-row 之间额外间距，确保行与行之间有充足留白 */

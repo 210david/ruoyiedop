@@ -18,6 +18,7 @@
         <result property="endTime"       column="end_time"/>
         <result property="approveBy"     column="approve_by"/>
         <result property="approveTime"   column="approve_time"/>
+        <result property="approveOpinion" column="approve_opinion"/>
         <result property="delFlag"       column="del_flag"/>
         <result property="createBy"      column="create_by"/>
         <result property="createTime"    column="create_time"/>
@@ -62,7 +63,7 @@
 
     <sql id="selectStockTakeVo">
         SELECT t.take_id, t.take_no, t.warehouse_id, w.warehouse_name, t.area_id, a.warehouse_name as area_name,
-               t.take_type, t.sample_ratio, t.cycle_no, t.status, t.plan_date, t.start_time, t.end_time, t.approve_by, t.approve_time,
+               t.take_type, t.sample_ratio, t.cycle_no, t.status, t.plan_date, t.start_time, t.end_time, t.approve_by, t.approve_time, t.approve_opinion,
                t.del_flag, t.create_by, t.create_time, t.update_by, t.update_time, t.remark
         FROM wms_stock_take t
         LEFT JOIN wms_warehouse w ON t.warehouse_id = w.warehouse_id
@@ -100,6 +101,7 @@
             <if test="endTime != null">end_time = #{endTime},</if>
             <if test="approveBy != null">approve_by = #{approveBy},</if>
             <if test="approveTime != null">approve_time = #{approveTime},</if>
+            <if test="approveOpinion != null">approve_opinion = #{approveOpinion},</if>
             <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
             <if test="remark != null">remark = #{remark},</if>
             update_time = sysdate()
@@ -155,6 +157,25 @@
     <select id="selectSnapshotByTakeId" parameterType="Long" resultMap="WmsStockTakeSnapshotResult">
         SELECT snapshot_id, take_id, material_id, location_id, batch_no, snapshot_qty, snapshot_time
         FROM wms_stock_take_snapshot WHERE take_id = #{takeId}
+    </select>
+
+    <resultMap type="WmsStockTakeApproveLog" id="WmsStockTakeApproveLogResult">
+        <result property="logId"          column="log_id"/>
+        <result property="takeId"         column="take_id"/>
+        <result property="approveBy"      column="approve_by"/>
+        <result property="approveTime"    column="approve_time"/>
+        <result property="approveAction"  column="approve_action"/>
+        <result property="approveOpinion" column="approve_opinion"/>
+    </resultMap>
+
+    <insert id="insertApproveLog" parameterType="WmsStockTakeApproveLog" useGeneratedKeys="true" keyProperty="logId">
+        INSERT INTO wms_stock_take_approve_log (take_id, approve_by, approve_time, approve_action, approve_opinion)
+        VALUES (#{takeId}, #{approveBy}, #{approveTime}, #{approveAction}, #{approveOpinion})
+    </insert>
+
+    <select id="selectApproveLogByTakeId" parameterType="Long" resultMap="WmsStockTakeApproveLogResult">
+        SELECT log_id, take_id, approve_by, approve_time, approve_action, approve_opinion
+        FROM wms_stock_take_approve_log WHERE take_id = #{takeId} ORDER BY log_id ASC
     </select>
 
 </mapper>

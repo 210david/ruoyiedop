@@ -29,14 +29,14 @@
           <el-button link type="primary" icon="Check" @click="handleApprove(scope.row)" v-if="scope.row.status === '0'" v-hasPermi="['wms:move:edit']">审批</el-button>
           <el-button link type="primary" icon="Sort" @click="handleExecute(scope.row)" v-if="scope.row.status === '1'" v-hasPermi="['wms:move:edit']">执行</el-button>
           <el-button link type="warning" icon="CircleClose" @click="handleVoid(scope.row)" v-if="scope.row.status === '0' || scope.row.status === '1'" v-hasPermi="['wms:move:edit']">作废</el-button>
-          <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-if="scope.row.status === '0' || scope.row.status === '3'" v-hasPermi="['wms:move:remove']">删除</el-button>
+          <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-if="scope.row.status === '0' || scope.row.status === '3' || scope.row.status === '4'" v-hasPermi="['wms:move:remove']">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
     <!-- 新增/编辑弹窗 -->
-    <el-dialog v-model="open" width="600px" append-to-body draggable class="rd-dialog">
+    <el-dialog v-model="open" width="720px" append-to-body draggable class="rd-dialog">
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon">
@@ -46,7 +46,6 @@
         </div>
       </template>
       <el-form ref="moveRef" :model="form" :rules="rules" label-width="100px">
-        <div class="rd-page">
         <section class="rd-card">
           <div class="rd-card-header" @click="toggleCard('basic')">
             <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></span>仓库与物料</div>
@@ -98,13 +97,12 @@
         <el-form-item label="备注" prop="remark"><el-input v-model="form.remark" type="textarea" /></el-form-item>
           </div>
         </section>
-        </div>
       </el-form>
       <template #footer><el-button type="primary" @click="submitForm">确 定</el-button><el-button @click="cancel">取 消</el-button></template>
     </el-dialog>
 
     <!-- 详情弹窗 -->
-    <el-dialog v-model="detailOpen" width="700px" append-to-body draggable class="rd-dialog">
+    <el-dialog v-model="detailOpen" width="840px" append-to-body draggable class="rd-dialog">
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon">
@@ -118,10 +116,9 @@
           </div>
         </div>
       </template>
-      <div class="rd-page">
         <section class="rd-card">
           <div class="rd-card-header" @click="toggleCard('dBasic')">
-            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>单据信息</div>
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>单据信息</div>
             <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.dBasic }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
           </div>
           <div class="rd-card-body" v-show="!collapsedCards.dBasic">
@@ -160,17 +157,43 @@
           </div>
         </section>
         <section class="rd-card">
-          <div class="rd-card-header" @click="toggleCard('dFlow')">
-            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>流程信息</div>
-            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.dFlow }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          <div class="rd-card-header" @click="toggleCard('dApprove')">
+            <div class="rd-card-title">
+              <span class="rd-card-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                  <path d="M9 15l2 2 4-4"/>
+                </svg>
+              </span>
+              审批信息
+            </div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.dApprove }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
           </div>
-          <div class="rd-card-body" v-show="!collapsedCards.dFlow">
-            <div class="rd-grid">
-              <div class="rd-item"><span class="rd-label">审批人</span><div class="rd-value">{{ detailData.approveBy || '暂无' }}</div></div>
-              <div class="rd-item"><span class="rd-label">审批时间</span><div class="rd-value">{{ detailData.approveTime || '暂无' }}</div></div>
-              <div class="rd-item"><span class="rd-label">完成时间</span><div class="rd-value">{{ detailData.completeTime || '暂无' }}</div></div>
-              <div class="rd-item"><span class="rd-label">创建人</span><div class="rd-value">{{ detailData.createBy }}</div></div>
-              <div class="rd-item"><span class="rd-label">创建时间</span><div class="rd-value">{{ detailData.createTime }}</div></div>
+          <div class="rd-card-body" v-show="!collapsedCards.dApprove">
+            <div class="rd-timeline" v-if="detailData.approveBy">
+              <div class="rd-timeline-item">
+                <div class="rd-timeline-dot" :class="{ 'rd-timeline-dot--success': detailData.status === '1' || detailData.status === '2', 'rd-timeline-dot--error': detailData.status === '4' }"></div>
+                <div class="rd-timeline-content">
+                  <div class="rd-timeline-header">
+                    <span class="rd-timeline-title">
+                      <el-tag v-if="detailData.status === '1' || detailData.status === '2'" type="success" size="small" effect="light" round>审批通过</el-tag>
+                      <el-tag v-else-if="detailData.status === '4'" type="danger" size="small" effect="light" round>审批驳回</el-tag>
+                    </span>
+                    <span class="rd-timeline-time">{{ detailData.approveTime }}</span>
+                  </div>
+                  <div class="rd-timeline-body">
+                    <div class="rd-item"><span class="rd-label">审批人</span><div class="rd-value">{{ detailData.approveBy }}</div></div>
+                  </div>
+                  <div class="rd-timeline-comment" v-if="detailData.approveOpinion">
+                    <strong>审批意见：</strong>{{ detailData.approveOpinion }}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="rd-empty" v-else>
+              <svg class="rd-empty-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+              <p class="rd-empty-text">暂无审批记录</p>
             </div>
           </div>
         </section>
@@ -182,27 +205,151 @@
           <div class="rd-card-body" v-show="!collapsedCards.dOther">
             <div class="rd-grid">
               <div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value" :class="{ 'rd-value--muted': !detailData.remark }">{{ detailData.remark || '暂无备注' }}</div></div>
+              <div class="rd-item"><span class="rd-label">创建人</span><div class="rd-value">{{ detailData.createBy }}</div></div>
+              <div class="rd-item"><span class="rd-label">创建时间</span><div class="rd-value">{{ detailData.createTime }}</div></div>
+              <div class="rd-item" v-if="detailData.completeTime"><span class="rd-label">完成时间</span><div class="rd-value">{{ detailData.completeTime }}</div></div>
             </div>
           </div>
         </section>
-      </div>
       <template #footer><el-button @click="detailOpen = false">关 闭</el-button></template>
+    </el-dialog>
+
+    <!-- 移库审批对话框 -->
+    <el-dialog v-model="approveOpen" width="960px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <path d="M9 15l2 2 4-4"/>
+            </svg>
+          </div>
+          <span class="rd-detail-header-title">移库审批</span>
+          <div class="rd-detail-header-sub" v-if="approveForm.moveNo">
+            <span class="rd-detail-header-divider"></span>
+            <span class="rd-detail-header-no">编号：{{ approveForm.moveNo }}</span>
+            <dict-tag :options="wms_move_status" :value="approveForm.status" />
+          </div>
+        </div>
+      </template>
+        <!-- 单据信息 -->
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('aBasic')">
+            <div class="rd-card-title">
+              <span class="rd-card-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                  <line x1="16" y1="13" x2="8" y2="13"/>
+                  <line x1="16" y1="17" x2="8" y2="17"/>
+                </svg>
+              </span>
+              单据信息
+            </div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.aBasic }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.aBasic">
+            <div class="rd-grid">
+              <div class="rd-item"><span class="rd-label">移库单号</span><div class="rd-value">{{ approveForm.moveNo }}</div></div>
+              <div class="rd-item"><span class="rd-label">状态</span><div class="rd-value"><dict-tag :options="wms_move_status" :value="approveForm.status" /></div></div>
+              <div class="rd-item"><span class="rd-label">移库数量</span><div class="rd-value rd-value--large rd-amount">{{ approveForm.moveQty }}</div></div>
+              <div class="rd-item"><span class="rd-label">创建人</span><div class="rd-value">{{ approveForm.createBy }}</div></div>
+              <div class="rd-item"><span class="rd-label">创建时间</span><div class="rd-value">{{ approveForm.createTime }}</div></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 物料信息 -->
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('aMaterial')">
+            <div class="rd-card-title">
+              <span class="rd-card-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                </svg>
+              </span>
+              物料信息
+            </div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.aMaterial }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.aMaterial">
+            <div class="rd-grid">
+              <div class="rd-item"><span class="rd-label">仓库</span><div class="rd-value">{{ approveForm.warehouseName }}</div></div>
+              <div class="rd-item"><span class="rd-label">批次号</span><div class="rd-value">{{ approveForm.batchNo || '暂无' }}</div></div>
+              <div class="rd-item"><span class="rd-label">物料编码</span><div class="rd-value">{{ approveForm.materialCode }}</div></div>
+              <div class="rd-item"><span class="rd-label">物料名称</span><div class="rd-value">{{ approveForm.materialName }}</div></div>
+              <div class="rd-item"><span class="rd-label">单位</span><div class="rd-value"><dict-tag :options="wms_unit" :value="approveForm.unit" /></div></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 库位信息 -->
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('aLocation')">
+            <div class="rd-card-title">
+              <span class="rd-card-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                  <circle cx="12" cy="10" r="3"/>
+                </svg>
+              </span>
+              库位信息
+            </div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.aLocation }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.aLocation">
+            <div class="rd-grid">
+              <div class="rd-item rd-item--full"><span class="rd-label">源库位</span><div class="rd-value">{{ approveForm.fromLocationName || '暂无' }}</div></div>
+              <div class="rd-item rd-item--full"><span class="rd-label">目标库位</span><div class="rd-value">{{ approveForm.toLocationName || '暂无' }}</div></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 审批意见 -->
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('aOpinion')">
+            <div class="rd-card-title">
+              <span class="rd-card-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                  <path d="M9 15l2 2 4-4"/>
+                </svg>
+              </span>
+              审批意见
+            </div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.aOpinion }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.aOpinion">
+            <el-form label-width="100px">
+              <el-form-item label="审批意见" required>
+                <el-input v-model="approveForm.approveOpinion" type="textarea" :rows="4" placeholder="请输入审批意见" />
+              </el-form-item>
+            </el-form>
+          </div>
+        </section>
+      <template #footer>
+        <el-button type="success" @click="confirmApprove(true)">通过</el-button>
+        <el-button type="danger" @click="confirmApprove(false)">驳回</el-button>
+        <el-button @click="approveOpen = false">取 消</el-button>
+      </template>
     </el-dialog>
   </div>
 </template>
 
 <script setup name="WmsMove">
-import { listMove, getMove, addMove, delMove, approveMove, executeMove, voidMove } from '@/api/wms/move'
+import { listMove, getMove, addMove, delMove, approveMove, rejectMove, executeMove, voidMove } from '@/api/wms/move'
 import { listWarehouse, listLocation } from '@/api/wms/warehouse'
 import { listInventory } from '@/api/wms/inventory'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
-const { collapsedCards, toggleCard } = useDetailCard(['basic', 'move', 'other', 'dBasic', 'dMaterial', 'dLocation', 'dFlow', 'dOther'])
+const { collapsedCards, toggleCard } = useDetailCard(['basic', 'move', 'other', 'dBasic', 'dMaterial', 'dLocation', 'dApprove', 'dOther', 'aBasic', 'aMaterial', 'aLocation', 'aOpinion'])
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('wms_move_index')
 const { wms_move_status, wms_unit } = proxy.useDict('wms_move_status', 'wms_unit')
 const list = ref([]); const open = ref(false); const loading = ref(true); const showSearch = ref(true); const ids = ref([]); const multiple = ref(true); const total = ref(0); const title = ref('')
-const warehouseOptions = ref([]); const inventoryOptions = ref([]); const allLocationOptions = ref([]); const detailOpen = ref(false); const detailData = ref({})
+const warehouseOptions = ref([]); const inventoryOptions = ref([]); const allLocationOptions = ref([]); const detailOpen = ref(false); const detailData = ref({}); const approveOpen = ref(false); const approveForm = ref({})
 const data = reactive({
   form: {},
   queryParams: { pageNum: 1, pageSize: 10, moveNo: undefined, status: undefined },
@@ -240,7 +387,31 @@ function submitForm() {
     }
   })
 }
-function handleApprove(row) { proxy.$modal.confirm('确认审批通过？').then(() => approveMove(row.moveId)).then(() => { getList(); proxy.$modal.msgSuccess('已审批') }).catch(() => {}) }
+function handleApprove(row) {
+  getMove(row.moveId).then(res => {
+    approveForm.value = { ...res.data, approveOpinion: '' }
+    approveOpen.value = true
+  })
+}
+function confirmApprove(passed) {
+  if (!approveForm.value.approveOpinion) {
+    proxy.$modal.msgWarning('请输入审批意见')
+    return
+  }
+  if (passed) {
+    approveMove(approveForm.value.moveId, approveForm.value.approveOpinion).then(() => {
+      proxy.$modal.msgSuccess('审批通过')
+      approveOpen.value = false
+      getList()
+    })
+  } else {
+    rejectMove(approveForm.value.moveId, approveForm.value.approveOpinion).then(() => {
+      proxy.$modal.msgSuccess('已驳回')
+      approveOpen.value = false
+      getList()
+    })
+  }
+}
 function handleExecute(row) { proxy.$modal.confirm('确认执行移库？').then(() => executeMove(row.moveId)).then(() => { getList(); proxy.$modal.msgSuccess('执行完成') }).catch(() => {}) }
 function handleVoid(row) { proxy.$modal.confirm('确认作废该移库单？作废后不可恢复').then(() => voidMove(row.moveId)).then(() => { getList(); proxy.$modal.msgSuccess('已作废') }).catch(() => {}) }
 function handleExport() { proxy.download('wms/move/export', { ...queryParams.value }, `move_${new Date().getTime()}.xlsx`) }

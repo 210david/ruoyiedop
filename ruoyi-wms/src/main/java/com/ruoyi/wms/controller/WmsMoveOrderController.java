@@ -75,9 +75,17 @@ public class WmsMoveOrderController extends BaseController
     @Log(title = "移库审批", businessType = BusinessType.UPDATE)
     @PreAuthorize("@ss.hasPermi('wms:move:edit')")
     @PutMapping("/approve/{moveId}")
-    public AjaxResult approve(@PathVariable Long moveId)
+    public AjaxResult approve(@PathVariable Long moveId, String approveOpinion)
     {
-        return toAjax(wmsMoveOrderService.approveMove(moveId));
+        return toAjax(wmsMoveOrderService.approveMove(moveId, approveOpinion));
+    }
+
+    @Log(title = "移库驳回", businessType = BusinessType.UPDATE)
+    @PreAuthorize("@ss.hasPermi('wms:move:edit')")
+    @PutMapping("/reject/{moveId}")
+    public AjaxResult reject(@PathVariable Long moveId, String approveOpinion)
+    {
+        return toAjax(wmsMoveOrderService.rejectMove(moveId, approveOpinion));
     }
 
     @Log(title = "执行移库", businessType = BusinessType.UPDATE)

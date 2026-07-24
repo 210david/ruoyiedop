@@ -214,25 +214,94 @@ public class WmsInboundOrderServiceImpl implements IWmsInboundOrderService
         {
             throw new ServiceException("入库明细不存在");
         }
-        if (target.getReceivedQty().compareTo(target.getPutawayQty().add(putawayQty)) < 0)
+        if (putawayQty == null || putawayQty.compareTo(BigDecimal.ZERO) <= 0)
+        {
+            throw new ServiceException("上架数量必须大于0");
+        }
+        // 汇总同物料同批次的已上架数量
+        BigDecimal totalPutaway = BigDecimal.ZERO;
+        for (WmsInboundOrderDetail d : details)
+        {
+            if (d.getMaterialId().equals(target.getMaterialId())
+                    && (d.getBatchNo() == null ? target.getBatchNo() == null : d.getBatchNo().equals(target.getBatchNo())))
+            {
+                totalPutaway = totalPutaway.add(d.getPutawayQty() == null ? BigDecimal.ZERO : d.getPutawayQty());
+            }
+        }
+        if (target.getReceivedQty().compareTo(totalPutaway.add(putawayQty)) < 0)
         {
             throw new ServiceException("上架数量不能超过已收数量");
         }
-        target.setPutawayQty(target.getPutawayQty().add(putawayQty));
-        target.setLocationId(locationId);
-        wmsInboundOrderMapper.updateInboundDetail(target);
+        String username = SecurityUtils.getUsername();
+
+        // 判断是否需要拆分：已有不同库位时，查找或创建拆分行
+        if (target.getLocationId() != null && !target.getLocationId().equals(locationId))
+        {
+            // 先查找是否已有同物料+同库位的拆分行
+            WmsInboundOrderDetail existingSplit = null;
+            for (WmsInboundOrderDetail d : details)
+            {
+                if (!d.getDetailId().equals(target.getDetailId())
+                        && d.getMaterialId().equals(target.getMaterialId())
+                        && (d.getBatchNo() == null ? target.getBatchNo() == null : d.getBatchNo().equals(target.getBatchNo()))
+                        && locationId.equals(d.getLocationId()))
+                {
+                    existingSplit = d;
+                    break;
+                }
+            }
+            if (existingSplit != null)
+            {
+                existingSplit.setPutawayQty(existingSplit.getPutawayQty().add(putawayQty));
+                wmsInboundOrderMapper.updateInboundDetail(existingSplit);
+            }
+            else
+            {
+                WmsInboundOrderDetail splitDetail = new WmsInboundOrderDetail();
+                splitDetail.setOrderId(orderId);
+                splitDetail.setMaterialId(target.getMaterialId());
+                splitDetail.setPlanQty(BigDecimal.ZERO);
+                splitDetail.setReceivedQty(BigDecimal.ZERO);
+                splitDetail.setPutawayQty(putawayQty);
+                splitDetail.setBatchNo(target.getBatchNo());
+                splitDetail.setProductionDate(target.getProductionDate());
+                splitDetail.setExpiryDate(target.getExpiryDate());
+                splitDetail.setLocationId(locationId);
+                splitDetail.setUnitPrice(target.getUnitPrice());
+                splitDetail.setCreateBy(username);
+                wmsInboundOrderMapper.insertInboundDetail(splitDetail);
+            }
+        }
+        else
+        {
+            target.setPutawayQty(target.getPutawayQty().add(putawayQty));
+            target.setLocationId(locationId);
+            wmsInboundOrderMapper.updateInboundDetail(target);
+        }
 
         // add inventory
-        String username = SecurityUtils.getUsername();
         wmsInventoryService.addInventory(target.getMaterialId(), order.getWarehouseId(), locationId,
-                target.getBatchNo(), putawayQty, "0", "inbound", order.getOrderNo(), 
+                target.getBatchNo(), putawayQty, "0", "inbound", order.getOrderNo(),
                 username, target.getProductionDate(), target.getExpiryDate());
 
-        // check if all putaway
+        // check if all putaway: 按物料+批次分组汇总
         boolean allPutaway = true;
+        // 重新查询明细列表（可能新增了拆分行）
+        details = wmsInboundOrderMapper.selectInboundDetailByOrderId(orderId);
+        // 按 materialId + batchNo 分组，检查每组 putawayQty 合计 >= receivedQty
+        java.util.Map<String, BigDecimal> groupPutaway = new java.util.HashMap<>();
+        java.util.Map<String, BigDecimal> groupReceived = new java.util.HashMap<>();
         for (WmsInboundOrderDetail d : details)
         {
-            if (d.getPutawayQty().compareTo(d.getReceivedQty()) < 0)
+            String key = d.getMaterialId() + "_" + (d.getBatchNo() == null ? "" : d.getBatchNo());
+            groupPutaway.merge(key, d.getPutawayQty() == null ? BigDecimal.ZERO : d.getPutawayQty(), BigDecimal::add);
+            groupReceived.merge(key, d.getReceivedQty() == null ? BigDecimal.ZERO : d.getReceivedQty(), BigDecimal::add);
+        }
+        for (java.util.Map.Entry<String, BigDecimal> entry : groupReceived.entrySet())
+        {
+            BigDecimal received = entry.getValue();
+            BigDecimal putaway = groupPutaway.getOrDefault(entry.getKey(), BigDecimal.ZERO);
+            if (received.compareTo(BigDecimal.ZERO) > 0 && putaway.compareTo(received) < 0)
             {
                 allPutaway = false;
                 break;

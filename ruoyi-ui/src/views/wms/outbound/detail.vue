@@ -16,20 +16,9 @@
 
     <!-- 搜索区域 -->
     <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch">
-        <div class="rd-page">
-      <el-form-item label="出库单号" prop="orderNo">
-        <el-input v-model="queryParams.orderNo" placeholder="请输入" clearable style="width: 200px" @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="出库类型" prop="orderType">
-        <el-select v-model="queryParams.orderType" placeholder="请选择" clearable style="width: 200px">
-          <el-option v-for="d in wms_outbound_type" :key="d.value" :label="d.label" :value="d.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-        <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-      </el-form-item>
-    </div>
+      <el-form-item label="出库单号" prop="orderNo"><el-input v-model="queryParams.orderNo" placeholder="请输入" clearable style="width: 200px" @keyup.enter="handleQuery" /></el-form-item>
+      <el-form-item label="出库类型" prop="orderType"><el-select v-model="queryParams.orderType" placeholder="请选择" clearable style="width: 200px"><el-option v-for="d in wms_outbound_type" :key="d.value" :label="d.label" :value="d.value" /></el-select></el-form-item>
+      <el-form-item><el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button><el-button icon="Refresh" @click="resetQuery">重置</el-button></el-form-item>
     </el-form>
 
     <el-row :gutter="10" class="mb8">
@@ -52,23 +41,27 @@
       <el-table-column label="操作" width="200" align="center" fixed="right">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleDetail(scope.row)">详情</el-button>
-          <el-button link type="primary" icon="HandTaking" @click="handleDetail(scope.row)" v-if="scope.row.status === '1'">拣货</el-button>
+          <el-button plain type="warning" icon="HandTaking" size="small" @click="handleDetail(scope.row)" v-if="scope.row.status === '1'">拣货</el-button>
         </template>
       </el-table-column>
     </el-table>
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
     <!-- 出库作业详情面板 -->
-    <el-dialog v-model="detailOpen" width="1000px" append-to-body draggable class="rd-dialog">
+    <el-dialog v-model="detailOpen" width="1200px" append-to-body draggable class="rd-dialog">
       <template #header>
         <div class="rd-detail-header">
-          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
-          <span class="rd-detail-header-title">{{ '出库作业 - ' + (currentOrder.orderNo || '') }}</span>
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+          <span class="rd-detail-header-title">出库作业</span>
+          <div class="rd-detail-header-sub" v-if="currentOrder.orderNo">
+            <span class="rd-detail-header-divider"></span>
+            <span class="rd-detail-header-no">编号：{{ currentOrder.orderNo }}</span>
+          </div>
         </div>
       </template>
       <section class="rd-card">
           <div class="rd-card-header" @click="toggleCard('c4')">
-            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>单据信息</div>
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>单据信息</div>
             <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c4 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
           </div>
           <div class="rd-card-body" v-show="!collapsedCards.c4">
@@ -82,7 +75,7 @@
         </section>
         <section class="rd-card">
           <div class="rd-card-header" @click="toggleCard('c3')">
-            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>出库信息</div>
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></span>出库信息</div>
             <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c3 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
           </div>
           <div class="rd-card-body" v-show="!collapsedCards.c3">
@@ -108,7 +101,7 @@
         <el-table-column label="拣货库位" prop="locationName" :width="colWidth('locationName', 100)" resizable show-overflow-tooltip />
         <el-table-column label="操作" width="100" align="center" v-if="currentOrder.status === '1'">
           <template #default="scope">
-            <el-button link type="primary" icon="HandTaking" @click="openPick(scope.row)">拣货</el-button>
+            <el-button plain type="warning" icon="HandTaking" size="small" @click="openPick(scope.row)" v-if="scope.row.planQty > scope.row.pickQty">拣货</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -121,41 +114,53 @@
     </el-dialog>
 
     <!-- 拣货对话框 -->
-    <el-dialog v-model="pickOpen" width="450px" append-to-body draggable class="rd-dialog">
+    <el-dialog v-model="pickOpen" width="600px" append-to-body draggable class="rd-dialog">
       <template #header>
         <div class="rd-detail-header">
-          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
           <span class="rd-detail-header-title">拣货确认</span>
+          <div class="rd-detail-header-sub" v-if="currentOrder.orderNo">
+            <span class="rd-detail-header-divider"></span>
+            <span class="rd-detail-header-no">编号：{{ currentOrder.orderNo }}</span>
+          </div>
         </div>
       </template>
-            <el-form ref="pickRef" :model="pickForm" :rules="pickRules" label-width="100px">
+      <el-form ref="pickRef" :model="pickForm" :rules="pickRules" label-width="100px">
         <section class="rd-card">
           <div class="rd-card-header" @click="toggleCard('c1')">
             <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></span>物料信息</div>
             <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
           </div>
           <div class="rd-card-body" v-show="!collapsedCards.c1">
-        <el-form-item label="物料">{{ pickForm.materialName }}</el-form-item>
-        <el-form-item label="批次号">{{ pickForm.batchNo || '-' }}</el-form-item>
-        <el-form-item label="拣货库位">{{ pickForm.locationName || pickForm.locationCode || '-' }}</el-form-item>
-                  </div>
+            <div class="rd-grid">
+              <div class="rd-item"><span class="rd-label">物料编码</span><div class="rd-value">{{ pickForm.materialCode || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">单位</span><div class="rd-value"><dict-tag :options="wms_unit" :value="pickForm.unit" /></div></div>
+              <div class="rd-item rd-item--full"><span class="rd-label">物料名称</span><div class="rd-value">{{ pickForm.materialName }}</div></div>
+              <div class="rd-item"><span class="rd-label">批次号</span><div class="rd-value">{{ pickForm.batchNo || '-' }}</div></div>
+              <div class="rd-item rd-item--full"><span class="rd-label">拣货库位</span><div class="rd-value">{{ pickForm.locationName || pickForm.locationCode || '-' }}</div></div>
+            </div>
+          </div>
         </section>
         <section class="rd-card">
           <div class="rd-card-header" @click="toggleCard('c0')">
-            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>拣货信息</div>
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></span>拣货信息</div>
             <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c0 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
           </div>
           <div class="rd-card-body" v-show="!collapsedCards.c0">
-        <el-form-item label="计划数量">{{ pickForm.planQty }}</el-form-item>
-        <el-form-item label="已拣货数量">{{ pickForm.pickQty }}</el-form-item>
-        <el-form-item label="本次拣货" prop="qty">
-          <el-input-number v-model="pickForm.qty" :precision="2" :min="0" :max="pickForm.planQty - pickForm.pickQty" style="width: 100%" />
-        </el-form-item>
-                                </div>
+            <div class="rd-grid" style="margin-bottom: 16px">
+              <div class="rd-item"><span class="rd-label">计划数量</span><div class="rd-value">{{ pickForm.planQty }}</div></div>
+              <div class="rd-item"><span class="rd-label">已拣货数量</span><div class="rd-value">{{ pickForm.pickQty }}</div></div>
+              <div class="rd-item"><span class="rd-label">待拣数量</span><div class="rd-value" style="color: #f56c6c; font-weight: 700">{{ pickForm.maxQty != null ? pickForm.maxQty.toFixed(2) : '0.00' }}</div></div>
+            </div>
+            <el-form-item label="本次拣货" prop="qty">
+              <el-input-number v-model="pickForm.qty" :precision="2" :min="0" :max="pickForm.maxQty" style="width: 100%" />
+              <div style="margin-top: 6px; color: #909399; font-size: 12px">最大可拣数量：{{ pickForm.maxQty != null ? pickForm.maxQty.toFixed(2) : '0.00' }}</div>
+            </el-form-item>
+          </div>
         </section>
       </el-form>
       <template #footer>
-        <el-button type="primary" @click="submitPick">确认拣货</el-button>
+        <el-button type="warning" @click="submitPick">确认拣货</el-button>
         <el-button @click="pickOpen = false">取 消</el-button>
       </template>
     </el-dialog>
@@ -236,13 +241,16 @@ function openPick(row) {
   pickForm.value = {
     orderId: currentOrder.value.orderId,
     detailId: row.detailId,
+    materialCode: row.materialCode,
     materialName: row.materialName,
+    unit: row.unit,
     batchNo: row.batchNo,
     locationCode: row.locationCode,
     locationName: row.locationName,
     planQty: row.planQty,
     pickQty: row.pickQty,
-    qty: row.planQty - row.pickQty
+    qty: row.planQty - row.pickQty,
+    maxQty: row.planQty - row.pickQty
   }
   pickOpen.value = true
 }
@@ -263,6 +271,11 @@ function submitPick() {
 // 初始化
 getList()
 loadTabCounts()
+
+onActivated(() => {
+  getList()
+  loadTabCounts()
+})
 </script>
 
 <style scoped>
@@ -271,5 +284,11 @@ loadTabCounts()
 }
 .el-tabs__item .el-tag {
   margin-left: 4px;
+}
+/* 表格内操作按钮优化 */
+.el-table .el-button--small {
+  border-radius: 6px;
+  padding: 5px 12px;
+  font-size: 12px;
 }
 </style>

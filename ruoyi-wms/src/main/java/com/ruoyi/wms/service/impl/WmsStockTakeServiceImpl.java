@@ -5,6 +5,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,6 +17,7 @@ import com.ruoyi.wms.domain.WmsInventory;
 import com.ruoyi.wms.domain.WmsStockTake;
 import com.ruoyi.wms.domain.WmsStockTakeDetail;
 import com.ruoyi.wms.domain.WmsStockTakeSnapshot;
+import com.ruoyi.wms.domain.WmsStockTakeApproveLog;
 import com.ruoyi.wms.mapper.WmsInventoryMapper;
 import com.ruoyi.wms.mapper.WmsStockTakeMapper;
 import com.ruoyi.wms.service.IWmsStockTakeService;
@@ -49,6 +52,7 @@ public class WmsStockTakeServiceImpl implements IWmsStockTakeService
         if (take != null)
         {
             take.setDetailList(wmsStockTakeMapper.selectStockTakeDetailByTakeId(takeId));
+            take.setApproveLogList(wmsStockTakeMapper.selectApproveLogByTakeId(takeId));
         }
         return take;
     }
@@ -70,6 +74,7 @@ public class WmsStockTakeServiceImpl implements IWmsStockTakeService
         // generate detail from inventory snapshot
         WmsInventory queryInv = new WmsInventory();
         queryInv.setWarehouseId(take.getWarehouseId());
+        queryInv.setAreaId(take.getAreaId());
         List<WmsInventory> invList = wmsInventoryMapper.selectInventoryList(queryInv);
 
         // 根据盘点类型进行差异化处理
@@ -176,33 +181,178 @@ public class WmsStockTakeServiceImpl implements IWmsStockTakeService
         detail.setActualQty(actualQty);
         detail.setDiffQty(actualQty.subtract(detail.getBookQty()));
         detail.setDiffReason(diffReason);
+        // 有差异时差异原因必填
+        if (detail.getDiffQty().compareTo(BigDecimal.ZERO) != 0 && StringUtils.isEmpty(diffReason))
+        {
+            throw new ServiceException("存在差异（差异数量：" + detail.getDiffQty() + "），请填写差异原因");
+        }
         detail.setStatus("1");
         wmsStockTakeMapper.updateStockTakeDetail(detail);
-
-        // check if all done
-        boolean allDone = true;
-        for (WmsStockTakeDetail d : details)
-        {
-            if (!"1".equals(d.getStatus()) && !"2".equals(d.getStatus()))
-            {
-                allDone = false;
-                break;
-            }
-        }
-        if (allDone)
-        {
-            WmsStockTake take = new WmsStockTake();
-            take.setTakeId(takeId);
-            take.setStatus("2");
-            take.setEndTime(new Date());
-            wmsStockTakeMapper.updateStockTake(take);
-        }
         return 1;
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public int approveTake(Long takeId)
+    public int batchSubmitDetail(Long takeId, List<WmsStockTakeDetail> detailList)
+    {
+        WmsStockTake take = wmsStockTakeMapper.selectStockTakeById(takeId);
+        if (take == null || !"1".equals(take.getStatus()))
+        {
+            throw new ServiceException("盘点单状态不正确，无法录入");
+        }
+        // 获取全部明细用于匹配
+        List<WmsStockTakeDetail> existingDetails = wmsStockTakeMapper.selectStockTakeDetailByTakeId(takeId);
+        Map<Long, WmsStockTakeDetail> detailMap = new HashMap<>();
+        for (WmsStockTakeDetail d : existingDetails)
+        {
+            detailMap.put(d.getDetailId(), d);
+        }
+        int count = 0;
+        for (WmsStockTakeDetail input : detailList)
+        {
+            if (input.getDetailId() == null || input.getActualQty() == null)
+            {
+                continue;
+            }
+            WmsStockTakeDetail detail = detailMap.get(input.getDetailId());
+            if (detail == null)
+            {
+                continue;
+            }
+            detail.setActualQty(input.getActualQty());
+            detail.setDiffQty(input.getActualQty().subtract(detail.getBookQty()));
+            detail.setDiffReason(input.getDiffReason());
+            // 有差异时差异原因必填
+            if (detail.getDiffQty().compareTo(BigDecimal.ZERO) != 0 && StringUtils.isEmpty(input.getDiffReason()))
+            {
+                throw new ServiceException("物料[" + detail.getMaterialCode() + "]存在差异（差异数量：" + detail.getDiffQty() + "），请填写差异原因");
+            }
+            detail.setStatus("1");
+            wmsStockTakeMapper.updateStockTakeDetail(detail);
+            count++;
+        }
+        return count;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public String importDetail(Long takeId, List<WmsStockTakeDetail> importList)
+    {
+        WmsStockTake take = wmsStockTakeMapper.selectStockTakeById(takeId);
+        if (take == null || !"1".equals(take.getStatus()))
+        {
+            throw new ServiceException("盘点单状态不正确，无法录入");
+        }
+        if (importList == null || importList.isEmpty())
+        {
+            throw new ServiceException("导入数据不能为空");
+        }
+        // 获取全部明细，按物料编码+库位编码+批次号建立索引
+        List<WmsStockTakeDetail> existingDetails = wmsStockTakeMapper.selectStockTakeDetailByTakeId(takeId);
+        Map<String, WmsStockTakeDetail> detailMap = new HashMap<>();
+        for (WmsStockTakeDetail d : existingDetails)
+        {
+            String key = buildMatchKey(d.getMaterialCode(), d.getLocationCode(), d.getBatchNo());
+            detailMap.put(key, d);
+        }
+        int successCount = 0;
+        int failCount = 0;
+        StringBuilder failMsg = new StringBuilder();
+        for (WmsStockTakeDetail importItem : importList)
+        {
+            String materialCode = importItem.getMaterialCode();
+            if (StringUtils.isEmpty(materialCode) || importItem.getActualQty() == null)
+            {
+                failCount++;
+                failMsg.append("<br/>物料编码或实盘数量为空，跳过");
+                continue;
+            }
+            String key = buildMatchKey(materialCode, importItem.getLocationCode(), importItem.getBatchNo());
+            WmsStockTakeDetail detail = detailMap.get(key);
+            if (detail == null)
+            {
+                failCount++;
+                failMsg.append("<br/>物料编码[").append(materialCode).append("]");
+                if (StringUtils.isNotEmpty(importItem.getLocationCode()))
+                {
+                    failMsg.append("库位[").append(importItem.getLocationCode()).append("]");
+                }
+                if (StringUtils.isNotEmpty(importItem.getBatchNo()))
+                {
+                    failMsg.append("批次[").append(importItem.getBatchNo()).append("]");
+                }
+                failMsg.append("未匹配到盘点明细");
+                continue;
+            }
+            detail.setActualQty(importItem.getActualQty());
+            detail.setDiffQty(importItem.getActualQty().subtract(detail.getBookQty()));
+            detail.setDiffReason(importItem.getDiffReason());
+            // 有差异时差异原因必填
+            if (detail.getDiffQty().compareTo(BigDecimal.ZERO) != 0 && StringUtils.isEmpty(importItem.getDiffReason()))
+            {
+                failCount++;
+                failMsg.append("<br/>物料编码[").append(materialCode).append("]");
+                if (StringUtils.isNotEmpty(importItem.getLocationCode()))
+                {
+                    failMsg.append("库位[").append(importItem.getLocationCode()).append("]");
+                }
+                if (StringUtils.isNotEmpty(importItem.getBatchNo()))
+                {
+                    failMsg.append("批次[").append(importItem.getBatchNo()).append("]");
+                }
+                failMsg.append("存在差异（差异数量：").append(detail.getDiffQty()).append("），未填写差异原因");
+                continue;
+            }
+            detail.setStatus("1");
+            wmsStockTakeMapper.updateStockTakeDetail(detail);
+            successCount++;
+        }
+        StringBuilder result = new StringBuilder();
+        result.append("导入完成：成功").append(successCount).append("条");
+        if (failCount > 0)
+        {
+            result.append("，失败").append(failCount).append("条");
+            result.append(failMsg.toString());
+        }
+        return result.toString();
+    }
+
+    private String buildMatchKey(String materialCode, String locationCode, String batchNo)
+    {
+        return materialCode + "|" + (locationCode == null ? "" : locationCode) + "|" + (batchNo == null ? "" : batchNo);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int submitForApproval(Long takeId)
+    {
+        WmsStockTake take = wmsStockTakeMapper.selectStockTakeById(takeId);
+        if (take == null || !"1".equals(take.getStatus()))
+        {
+            throw new ServiceException("盘点单状态不正确，无法提交审批");
+        }
+        // 检查是否所有明细都已录入
+        List<WmsStockTakeDetail> details = wmsStockTakeMapper.selectStockTakeDetailByTakeId(takeId);
+        for (WmsStockTakeDetail d : details)
+        {
+            if (!"1".equals(d.getStatus()) && !"2".equals(d.getStatus()))
+            {
+                throw new ServiceException("存在未录入的盘点明细，请全部录入后再提交审批");
+            }
+            // 有差异的明细必须填写差异原因
+            if (d.getDiffQty() != null && d.getDiffQty().compareTo(BigDecimal.ZERO) != 0 && StringUtils.isEmpty(d.getDiffReason()))
+            {
+                throw new ServiceException("物料[" + d.getMaterialCode() + "]存在差异（差异数量：" + d.getDiffQty() + "），请填写差异原因后再提交审批");
+            }
+        }
+        take.setStatus("2");
+        take.setEndTime(new Date());
+        return wmsStockTakeMapper.updateStockTake(take);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int approveTake(Long takeId, String approveOpinion)
     {
         WmsStockTake take = wmsStockTakeMapper.selectStockTakeById(takeId);
         if (take == null || !"2".equals(take.getStatus()))
@@ -236,6 +386,50 @@ public class WmsStockTakeServiceImpl implements IWmsStockTakeService
         take.setStatus("3");
         take.setApproveBy(username);
         take.setApproveTime(new Date());
+        take.setApproveOpinion(approveOpinion);
+        // 插入审批日志
+        WmsStockTakeApproveLog log = new WmsStockTakeApproveLog();
+        log.setTakeId(takeId);
+        log.setApproveBy(username);
+        log.setApproveTime(new Date());
+        log.setApproveAction("pass");
+        log.setApproveOpinion(approveOpinion);
+        wmsStockTakeMapper.insertApproveLog(log);
+        return wmsStockTakeMapper.updateStockTake(take);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int rejectTake(Long takeId, String approveOpinion)
+    {
+        WmsStockTake take = wmsStockTakeMapper.selectStockTakeById(takeId);
+        if (take == null || !"2".equals(take.getStatus()))
+        {
+            throw new ServiceException("盘点单状态不正确，无法驳回");
+        }
+        // 驳回后退回到"盘点中"状态，允许盘点人员根据驳回意见修改后重新提交
+        take.setStatus("1");
+        take.setApproveBy(SecurityUtils.getUsername());
+        take.setApproveTime(new Date());
+        take.setApproveOpinion(approveOpinion);
+        // 插入审批日志
+        WmsStockTakeApproveLog log = new WmsStockTakeApproveLog();
+        log.setTakeId(takeId);
+        log.setApproveBy(SecurityUtils.getUsername());
+        log.setApproveTime(new Date());
+        log.setApproveAction("reject");
+        log.setApproveOpinion(approveOpinion);
+        wmsStockTakeMapper.insertApproveLog(log);
+        // 将明细状态重置为未提交，让盘点人员重新核实
+        List<WmsStockTakeDetail> details = wmsStockTakeMapper.selectStockTakeDetailByTakeId(takeId);
+        for (WmsStockTakeDetail d : details)
+        {
+            if ("1".equals(d.getStatus()))
+            {
+                d.setStatus("0");
+                wmsStockTakeMapper.updateStockTakeDetail(d);
+            }
+        }
         return wmsStockTakeMapper.updateStockTake(take);
     }
 

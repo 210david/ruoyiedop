@@ -1,21 +1,10 @@
 <template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch">
-      <el-form-item label="规则编码" prop="ruleCode">
-        <el-input v-model="queryParams.ruleCode" placeholder="请输入" clearable style="width: 200px" @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="规则名称" prop="ruleName">
-        <el-input v-model="queryParams.ruleName" placeholder="请输入" clearable style="width: 200px" @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="状态" prop="status">
-        <el-select v-model="queryParams.status" placeholder="请选择" clearable style="width: 200px">
-          <el-option v-for="d in sys_normal_disable" :key="d.value" :label="d.label" :value="d.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-        <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-      </el-form-item>
+      <el-form-item label="规则编码" prop="ruleCode"><el-input v-model="queryParams.ruleCode" placeholder="请输入" clearable style="width: 200px" @keyup.enter="handleQuery" /></el-form-item>
+      <el-form-item label="规则名称" prop="ruleName"><el-input v-model="queryParams.ruleName" placeholder="请输入" clearable style="width: 200px" @keyup.enter="handleQuery" /></el-form-item>
+      <el-form-item label="状态" prop="status"><el-select v-model="queryParams.status" placeholder="请选择" clearable style="width: 200px"><el-option v-for="d in sys_normal_disable" :key="d.value" :label="d.label" :value="d.value" /></el-select></el-form-item>
+      <el-form-item><el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button><el-button icon="Refresh" @click="resetQuery">重置</el-button></el-form-item>
     </el-form>
 
     <el-row :gutter="10" class="mb8">
@@ -74,17 +63,24 @@
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
     <!-- 新增/修改/查看 对话框 -->
-    <el-dialog v-model="open" width="750px" append-to-body draggable class="rd-dialog">
+    <el-dialog v-model="open" width="900px" append-to-body draggable class="rd-dialog">
       <template #header>
         <div class="rd-detail-header">
-          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg></div>
           <span class="rd-detail-header-title">{{ title }}</span>
+          <div class="rd-detail-header-sub" v-if="form.ruleCode">
+            <span class="rd-detail-header-divider"></span>
+            <span class="rd-detail-header-no">编码：{{ form.ruleCode }}</span>
+          </div>
         </div>
       </template>
       <el-form ref="ruleRef" :model="form" :rules="rules" label-width="120px" :disabled="isView">
-        <el-collapse v-model="activeNames">
-          <!-- 分组一：基本信息 -->
-          <el-collapse-item title="基本信息" name="basic">
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('basic')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>基本信息</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.basic }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.basic">
             <el-row>
               <el-col :span="12">
                 <el-form-item label="所属模块" prop="module">
@@ -113,10 +109,15 @@
                 </el-form-item>
               </el-col>
             </el-row>
-          </el-collapse-item>
+          </div>
+        </section>
 
-          <!-- 分组二：编号格式 -->
-          <el-collapse-item title="编号格式" name="format">
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('format')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></span>编号格式</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.format }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.format">
             <el-row>
               <el-col :span="24">
                 <el-form-item label="序号重置类型" prop="resetType">
@@ -148,10 +149,15 @@
                 </el-form-item>
               </el-col>
             </el-row>
-          </el-collapse-item>
+          </div>
+        </section>
 
-          <!-- 分组三：动态前缀配置 -->
-          <el-collapse-item title="动态前缀配置" name="prefix">
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('prefix')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></span>动态前缀配置</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.prefix }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.prefix">
             <el-row>
               <el-col :span="24">
                 <el-form-item label="启用动态前缀" prop="prefixFieldEnabled">
@@ -205,10 +211,15 @@
                 </el-col>
               </template>
             </el-row>
-          </el-collapse-item>
+          </div>
+        </section>
 
-          <!-- 分组四：序列号设置 -->
-          <el-collapse-item title="序列号设置" name="seq">
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('seq')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></span>序列号设置</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.seq }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.seq">
             <el-row>
               <el-col :span="12">
                 <el-form-item label="序列号长度" prop="seqLength">
@@ -231,10 +242,15 @@
                 </el-form-item>
               </el-col>
             </el-row>
-          </el-collapse-item>
+          </div>
+        </section>
 
-          <!-- 分组五：预览与备注 -->
-          <el-collapse-item title="预览与备注" name="preview">
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('preview')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></span>预览与备注</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.preview }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.preview">
             <el-row>
               <el-col :span="24">
                 <el-form-item label="预览编号">
@@ -248,8 +264,8 @@
                 </el-form-item>
               </el-col>
             </el-row>
-          </el-collapse-item>
-        </el-collapse>
+          </div>
+        </section>
       </el-form>
       <template #footer>
         <el-button type="primary" @click="submitForm" v-if="!isView">确 定</el-button>
@@ -266,7 +282,7 @@ import { getDicts } from '@/api/system/dict/data'
 
 const route = useRoute()
 import { useDetailCard } from '@/composables/useDetailCard'
-const { collapsedCards, toggleCard } = useDetailCard([])
+const { collapsedCards, toggleCard } = useDetailCard(["basic","format","prefix","seq","preview"])
 const { proxy } = getCurrentInstance()
 const { mk_number_reset_type, sys_normal_disable } = proxy.useDict('mk_number_reset_type', 'sys_normal_disable')
 
@@ -287,8 +303,6 @@ const total = ref(0)
 const title = ref('')
 const previewText = ref('')
 const isView = ref(false)
-const activeNames = ref(['basic', 'format', 'prefix', 'seq', 'preview'])
-
 const data = reactive({
   form: {},
   queryParams: { pageNum: 1, pageSize: 10, ruleCode: undefined, ruleName: undefined, status: undefined },

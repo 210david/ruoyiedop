@@ -522,8 +522,12 @@
                 <template #default="scope"><dict-tag :options="marketing_contract_change_type" :value="scope.row.changeType" /></template>
               </el-table-column>
               <el-table-column label="变更字段" prop="fieldName" width="120" align="center" />
-              <el-table-column label="原值" prop="oldValue" width="120" align="center" show-overflow-tooltip />
-              <el-table-column label="新值" prop="newValue" width="120" align="center" show-overflow-tooltip />
+              <el-table-column label="原值" width="140" align="center" show-overflow-tooltip>
+                <template #default="scope">{{ formatChangeValue(scope.row.oldValue, scope.row.fieldName) }}</template>
+              </el-table-column>
+              <el-table-column label="新值" width="140" align="center" show-overflow-tooltip>
+                <template #default="scope">{{ formatChangeValue(scope.row.newValue, scope.row.fieldName) }}</template>
+              </el-table-column>
               <el-table-column label="变更原因" prop="changeReason" align="center" show-overflow-tooltip />
               <el-table-column label="状态" width="80" align="center">
                 <template #default="scope"><dict-tag :options="marketing_contract_change_status" :value="scope.row.changeStatus" /></template>
@@ -585,14 +589,17 @@
               <div class="change-approve-item" v-for="log in pendingChangeLogs" :key="log.logId">
                 <div class="change-approve-item-header">
                   <el-tag size="small" type="warning" effect="light" round>{{ log.fieldName }}</el-tag>
-                  <span class="change-approve-item-reason" v-if="log.changeReason">{{ log.changeReason }}</span>
                 </div>
                 <div class="change-approve-item-values">
-                  <span class="change-approve-old">{{ log.oldValue }}</span>
+                  <span class="change-approve-old">{{ formatChangeValue(log.oldValue, log.fieldName) }}</span>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #9ca3af;"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-                  <span class="change-approve-new">{{ log.newValue }}</span>
+                  <span class="change-approve-new">{{ formatChangeValue(log.newValue, log.fieldName) }}</span>
                 </div>
               </div>
+            </div>
+            <div class="change-approve-reason" v-if="pendingChangeLogs[0]?.changeReason">
+              <span class="change-approve-reason-label">变更原因：</span>
+              <span class="change-approve-reason-text">{{ pendingChangeLogs[0].changeReason }}</span>
             </div>
             <el-form label-width="100px" style="margin-top: 16px;">
               <el-form-item label="审批意见" required>
@@ -1387,6 +1394,26 @@ const changeFieldLabels = {
   contractName: '合同名称'
 }
 
+// 字段名与字典的映射（用于显示转换）
+const fieldDictMap = {
+  '付款方式': marketing_payment_method
+}
+
+// 格式化变更值显示：将字典值转换为标签
+function formatChangeValue(value, fieldName) {
+  if (!value) return '-'
+  const dict = fieldDictMap[fieldName]
+  if (dict) {
+    const item = dict.find(d => d.value === value)
+    return item ? item.label : value
+  }
+  // 合同金额添加货币符号
+  if (fieldName === '合同金额') {
+    return '￥' + formatAmount(value)
+  }
+  return value
+}
+
 // 根据字段名获取原值
 function getOriginalValue(orig, fieldName) {
   switch (fieldName) {
@@ -1413,6 +1440,12 @@ function handleChange(row) {
       originalEffectiveDate: orig.effectiveDate,
       originalExpireDate: orig.expireDate,
       originalPaymentMethod: orig.paymentMethod,
+      // 保留原始值用于 getOriginalValue
+      contractAmount: orig.contractAmount,
+      signDate: orig.signDate,
+      effectiveDate: orig.effectiveDate,
+      expireDate: orig.expireDate,
+      paymentMethod: orig.paymentMethod,
       // 金额变更
       amountOld: orig.contractAmount,
       amountNew: null,
@@ -1616,8 +1649,10 @@ getList()
 .change-approve-list { display: flex; flex-direction: column; gap: 10px; }
 .change-approve-item { padding: 12px 14px; background: #fef3c7; border-radius: 10px; border: 1px solid #fde68a; border-left: 3px solid #f59e0b; }
 .change-approve-item-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-.change-approve-item-reason { font-size: 13px; color: #92400e; }
 .change-approve-item-values { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.change-approve-reason { margin-top: 12px; padding: 10px 12px; background: #f0f9ff; border-radius: 8px; border-left: 3px solid #3b82f6; display: flex; align-items: center; gap: 8px; }
+.change-approve-reason-label { font-size: 13px; font-weight: 600; color: #1e40af; white-space: nowrap; }
+.change-approve-reason-text { font-size: 13px; color: #1f2937; line-height: 1.5; }
 .change-approve-old { color: #9ca3af; text-decoration: line-through; font-variant-numeric: tabular-nums; }
 .change-approve-new { color: #111827; font-weight: 700; font-variant-numeric: tabular-nums; }
 

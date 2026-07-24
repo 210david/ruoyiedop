@@ -114,6 +114,25 @@ public class WmsOutboundOrderServiceImpl implements IWmsOutboundOrderService
     @Transactional(rollbackFor = Exception.class)
     public int deleteOutboundOrderByIds(Long[] orderIds)
     {
+        // 删除前解锁：已提交状态的出库单需要先释放锁定的库存
+        String username = SecurityUtils.getUsername();
+        for (Long orderId : orderIds)
+        {
+            WmsOutboundOrder order = wmsOutboundOrderMapper.selectOutboundOrderById(orderId);
+            if (order != null && "1".equals(order.getStatus()))
+            {
+                List<WmsOutboundOrderDetail> details = wmsOutboundOrderMapper.selectOutboundDetailByOrderId(orderId);
+                for (WmsOutboundOrderDetail d : details)
+                {
+                    BigDecimal lockQty = d.getPlanQty().subtract(d.getPickQty() == null ? BigDecimal.ZERO : d.getPickQty());
+                    if (lockQty.compareTo(BigDecimal.ZERO) > 0)
+                    {
+                        wmsInventoryService.unlockInventory(d.getMaterialId(), order.getWarehouseId(),
+                                d.getLocationId(), d.getBatchNo(), lockQty, "outbound", order.getOrderNo(), username);
+                    }
+                }
+            }
+        }
         return wmsOutboundOrderMapper.deleteOutboundOrderByIds(orderIds);
     }
 
@@ -142,6 +161,13 @@ public class WmsOutboundOrderServiceImpl implements IWmsOutboundOrderService
         {
             throw new ServiceException("出库单明细不能为空，无法提交");
         }
+        // 锁定库存：将各明细的计划数量从可用库存移入锁定库存
+        String username = SecurityUtils.getUsername();
+        for (WmsOutboundOrderDetail d : details)
+        {
+            wmsInventoryService.lockInventory(d.getMaterialId(), order.getWarehouseId(),
+                    d.getLocationId(), d.getBatchNo(), d.getPlanQty(), "outbound", order.getOrderNo(), username);
+        }
         order.setStatus("1");
         return wmsOutboundOrderMapper.updateOutboundOrder(order);
     }
@@ -169,6 +195,10 @@ public class WmsOutboundOrderServiceImpl implements IWmsOutboundOrderService
         {
             throw new ServiceException("出库明细不存在");
         }
+        if (pickQty == null || pickQty.compareTo(BigDecimal.ZERO) <= 0)
+        {
+            throw new ServiceException("拣货数量必须大于0");
+        }
         if (target.getPlanQty().compareTo(target.getPickQty().add(pickQty)) < 0)
         {
             throw new ServiceException("拣货数量不能超过计划数量");
@@ -176,10 +206,8 @@ public class WmsOutboundOrderServiceImpl implements IWmsOutboundOrderService
         target.setPickQty(target.getPickQty().add(pickQty));
         wmsOutboundOrderMapper.updateOutboundDetail(target);
 
-        // reduce inventory
+        // 库存已在提交时锁定，拣货时无需再次操作
         String username = SecurityUtils.getUsername();
-        wmsInventoryService.reduceInventory(target.getMaterialId(), order.getWarehouseId(),
-                target.getLocationId(), target.getBatchNo(), pickQty, "1", "outbound", order.getOrderNo(), username);
 
         // check if all picked
         boolean allPicked = true;
@@ -193,6 +221,12 @@ public class WmsOutboundOrderServiceImpl implements IWmsOutboundOrderService
         }
         if (allPicked)
         {
+            // release locked inventory (truly deduct)
+            for (WmsOutboundOrderDetail d : details)
+            {
+                wmsInventoryService.releaseLockedInventory(d.getMaterialId(), order.getWarehouseId(),
+                        d.getLocationId(), d.getBatchNo(), d.getPickQty(), "outbound", order.getOrderNo(), username);
+            }
             order.setStatus("3");
             order.setCompleteDate(new Date());
             wmsOutboundOrderMapper.updateOutboundOrder(order);

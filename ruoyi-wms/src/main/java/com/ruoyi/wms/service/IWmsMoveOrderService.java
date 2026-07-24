@@ -10,7 +10,8 @@ public interface IWmsMoveOrderService
     public int insertMoveOrder(WmsMoveOrder move);
     public int updateMoveOrder(WmsMoveOrder move);
     public int deleteMoveOrderByIds(Long[] moveIds);
-    public int approveMove(Long moveId);
+    public int approveMove(Long moveId, String approveOpinion);
+    public int rejectMove(Long moveId, String approveOpinion);
     public int executeMove(Long moveId);
     public int voidMove(Long moveId);
 }
