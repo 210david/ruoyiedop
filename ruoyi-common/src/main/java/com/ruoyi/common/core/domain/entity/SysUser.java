@@ -93,6 +93,9 @@ public class SysUser extends BaseEntity
     /** 岗位组 */
     private Long[] postIds;
 
+    /** 岗位名称（查询时拼接） */
+    private String postName;
+
     /** 角色ID */
     private Long roleId;
 
@@ -298,6 +301,16 @@ public class SysUser extends BaseEntity
     public void setPostIds(Long[] postIds)
     {
         this.postIds = postIds;
+    }
+
+    public String getPostName()
+    {
+        return postName;
+    }
+
+    public void setPostName(String postName)
+    {
+        this.postName = postName;
     }
 
     public Long getRoleId()

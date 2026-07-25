@@ -58,10 +58,9 @@
         <template #default="{ node, data }">
           <slot name="node" :node="node" :data="data">
             <span class="tree-node">
-              <el-icon class="node-icon">
-                <Folder v-if="data.children && data.children.length" />
-                <Document v-else />
-              </el-icon>
+              <span class="node-icon-badge" :class="node.level === 0 ? 'node-icon-badge--company' : (data.children && data.children.length ? 'node-icon-badge--dept' : 'node-icon-badge--leaf')">
+                <el-icon><OfficeBuilding v-if="node.level === 0" /><Folder v-else-if="data.children && data.children.length" /><Document v-else /></el-icon>
+              </span>
               <span class="node-label" :title="node.label">{{ node.label }}</span>
             </span>
           </slot>
@@ -727,30 +726,47 @@ onBeforeUnmount(() => {
     background: #e6f0fd;
     color: #409eff;
     font-weight: 600;
-
-    .node-icon {
-      color: #409eff !important;
-    }
   }
 }
 
 .tree-node {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   font-size: 13px;
   overflow: hidden;
-
-  .node-icon {
-    font-size: 14px;
-    color: #f5a623;
-    flex-shrink: 0;
-  }
 
   .node-label {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+}
+
+.node-icon-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  flex-shrink: 0;
+
+  .el-icon {
+    font-size: 12px;
+    color: #fff;
+  }
+
+  &--company {
+    background: linear-gradient(135deg, #4facfe, #2f8eed);
+  }
+
+  &--dept {
+    background: linear-gradient(135deg, #f5b454, #e6a23c);
+  }
+
+  &--leaf {
+    background: linear-gradient(135deg, #67c23a, #529b2e);
   }
 }
 </style>

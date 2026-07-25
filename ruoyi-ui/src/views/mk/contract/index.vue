@@ -1162,7 +1162,7 @@ const { queryParams, form, rules } = toRefs(data)
 
 function getList() {
   loading.value = true
-  listContract(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false })
+  listContract(queryParams.value).then(res => { list.value = res.rows; total.value = res.total }).finally(() => { loading.value = false })
 }
 function getUserOptions() {
   listUser({ pageNum: 1, pageSize: 9999 }).then(res => { userOptions.value = res.rows.filter(u => u.userId !== 1) })
@@ -1221,7 +1221,7 @@ function handleUpdate(row) {
     if (!form.value.paymentPlanList) { form.value.paymentPlanList = [] }
     open.value = true
     title.value = '修改合同'
-  })
+  }).catch(() => {})
 }
 function formatAmount(val) { if (val == null || val === '') return '-'; return Number(val).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }
 function handleView(row, approveMode = false) {
@@ -1235,7 +1235,7 @@ function handleView(row, approveMode = false) {
     viewApproveMode.value = approveMode
     changeApproveOpinion.value = ''
     viewOpen.value = true
-  })
+  }).catch(() => {})
 }
 
 // 待审批的变更记录列表（用于详情页审批模式）
@@ -1252,13 +1252,13 @@ function confirmChangeApprove(approved) {
     proxy.$modal.msgSuccess(msg + '成功')
     viewOpen.value = false
     getList()
-  })
+  }).catch(() => {})
 }
 function submitForm() {
   proxy.$refs['contractRef'].validate(valid => {
     if (valid) {
-      if (form.value.contractId != undefined) { updateContract(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList() }) }
-      else { addContract(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList() }) }
+      if (form.value.contractId != undefined) { updateContract(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList() }).catch(() => {}) }
+      else { addContract(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList() }).catch(() => {}) }
     }
   })
 }
@@ -1282,7 +1282,7 @@ function handleApprove(row) {
   getContract(row.contractId).then(res => {
     approveForm.value = { ...res.data, approveOpinion: '' }
     approveOpen.value = true
-  })
+  }).catch(() => {})
 }
 function confirmApprove(passed) {
   if (!approveForm.value.approveOpinion) {
@@ -1294,13 +1294,13 @@ function confirmApprove(passed) {
       proxy.$modal.msgSuccess('审批通过，合同已生效')
       approveOpen.value = false
       getList()
-    })
+    }).catch(() => {})
   } else {
     rejectContract(approveForm.value.contractId, approveForm.value.approveOpinion).then(() => {
       proxy.$modal.msgSuccess('已驳回，合同退回草稿状态')
       approveOpen.value = false
       getList()
-    })
+    }).catch(() => {})
   }
 }
 function handleTerminate(row) {
@@ -1312,7 +1312,7 @@ function confirmTerminate() {
     proxy.$modal.msgSuccess('合同已终止')
     terminateOpen.value = false
     getList()
-  })
+  }).catch(() => {})
 }
 
 function handleRenew(row) {
@@ -1344,7 +1344,7 @@ function handleRenew(row) {
       remark: ''
     }
     renewOpen.value = true
-  })
+  }).catch(() => {})
 }
 
 function confirmRenew() {
@@ -1368,7 +1368,7 @@ function confirmRenew() {
       proxy.$modal.msgSuccess('续签合同已创建，请完善信息后提交审批')
       renewOpen.value = false
       getList()
-    })
+    }).catch(() => {})
   })
 }
 
@@ -1404,8 +1404,12 @@ function formatChangeValue(value, fieldName) {
   if (!value) return '-'
   const dict = fieldDictMap[fieldName]
   if (dict) {
-    const item = dict.find(d => d.value === value)
-    return item ? item.label : value
+    // dict 可能是 ref，需要解包
+    const dictArray = dict.value || dict
+    if (Array.isArray(dictArray)) {
+      const item = dictArray.find(d => d.value === value)
+      return item ? item.label : value
+    }
   }
   // 合同金额添加货币符号
   if (fieldName === '合同金额') {
@@ -1461,7 +1465,7 @@ function handleChange(row) {
     }
     changeActiveTab.value = 'amount'
     changeOpen.value = true
-  })
+  }).catch(() => {})
 }
 
 function onDateFieldChange() {
@@ -1528,7 +1532,7 @@ function submitChange() {
       proxy.$modal.msgSuccess('变更申请已提交，等待审批')
       changeOpen.value = false
       getList()
-    })
+    }).catch(() => {})
   })
 }
 

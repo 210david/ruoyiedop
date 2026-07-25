@@ -108,14 +108,26 @@
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="责任人" prop="responsibleId">
-              <el-select v-model="form.responsibleId" filterable clearable placeholder="请选择责任人" style="width: 100%" @change="onResponsibleChange">
-                <el-option v-for="u in userOptions" :key="u.userId" :label="u.nickName" :value="u.userId" />
-              </el-select>
+              <el-input v-model="form.responsibleName" readonly placeholder="请选择责任人" style="width: 100%" @click="openUserPicker">
+                <template #append>
+                  <el-button icon="Search" @click="openUserPicker" />
+                </template>
+                <template #suffix>
+                  <el-icon v-if="form.responsibleName" class="clear-icon" @click.stop="clearResponsible"><CircleClose /></el-icon>
+                </template>
+              </el-input>
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="使用部门" prop="deptId">
-              <el-tree-select v-model="form.deptId" :data="deptOptions" :props="{ value: 'id', label: 'label', children: 'children' }" value-key="id" placeholder="请选择部门" check-strictly clearable style="width: 100%" />
+              <el-input v-model="form.deptName" readonly placeholder="请选择部门" style="width: 100%" @click="openDeptPicker">
+                <template #append>
+                  <el-button icon="Search" @click="openDeptPicker" />
+                </template>
+                <template #suffix>
+                  <el-icon v-if="form.deptName" class="clear-icon" @click.stop="clearDept"><CircleClose /></el-icon>
+                </template>
+              </el-input>
             </el-form-item>
           </el-col>
         </el-row>
@@ -174,8 +186,14 @@
       </template>
     </el-dialog>
 
-    <!-- 设备详情抽屉 -->
+    <!-- 设备详情弹窗 -->
     <dms-equipment-view-drawer ref="equipmentViewRef" />
+
+    <!-- 责任人选择弹窗 -->
+    <user-picker ref="userPickerRef" title="选择设备责任人" @confirm="onUserPickerConfirm" />
+
+    <!-- 部门选择弹窗 -->
+    <dept-picker ref="deptPickerRef" title="选择使用部门" :disabled-ids="[100]" @confirm="onDeptPickerConfirm" />
 
     <!-- 设备履历弹窗 -->
     <el-dialog v-model="historyOpen" width="850px" append-to-body draggable class="rd-dialog">
@@ -223,6 +241,8 @@ import { listEquipment, getEquipment, addEquipment, updateEquipment, delEquipmen
 import { listCategory } from '@/api/dms/category'
 import { deptTreeSelect, listUser } from '@/api/system/user'
 import DmsEquipmentViewDrawer from './view.vue'
+import UserPicker from '@/components/UserPicker/index.vue'
+import DeptPicker from '@/components/DeptPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
 const { collapsedCards, toggleCard } = useDetailCard(["c4","c3","c2","c1","c0"])
@@ -270,14 +290,37 @@ function getDeptTree() {
 function getUserList() {
   listUser({ pageNum: 1, pageSize: 9999 }).then(res => { userOptions.value = res.rows })
 }
-/** 选择责任人后自动带出其所在部门 */
-function onResponsibleChange(userId) {
-  if (userId) {
-    const user = userOptions.value.find(u => u.userId === userId)
-    if (user && user.deptId) {
-      form.value.deptId = user.deptId
-    }
+/** 打开责任人选择弹窗 */
+function openUserPicker() {
+  proxy.$refs.userPickerRef.open(form.value.responsibleId)
+}
+/** 责任人选择确认回调 */
+function onUserPickerConfirm(user) {
+  form.value.responsibleId = user.userId
+  form.value.responsibleName = user.nickName
+  if (user.deptId) {
+    form.value.deptId = user.deptId
+    form.value.deptName = user.deptName
   }
+}
+/** 清除责任人 */
+function clearResponsible() {
+  form.value.responsibleId = undefined
+  form.value.responsibleName = undefined
+}
+/** 打开部门选择弹窗 */
+function openDeptPicker() {
+  proxy.$refs.deptPickerRef.open(form.value.deptId)
+}
+/** 部门选择确认回调 */
+function onDeptPickerConfirm(dept) {
+  form.value.deptId = dept.deptId
+  form.value.deptName = dept.deptName
+}
+/** 清除部门 */
+function clearDept() {
+  form.value.deptId = undefined
+  form.value.deptName = undefined
 }
 function handleQuery() { queryParams.value.pageNum = 1; getList() }
 function resetQuery() { proxy.resetForm('queryRef'); handleQuery() }
@@ -286,8 +329,9 @@ function reset() {
   form.value = {
     equipmentCode: undefined, equipmentName: undefined, categoryId: undefined, model: undefined, serialNumber: undefined,
     manufacturer: undefined, supplier: undefined, purchaseDate: undefined, originalValue: undefined,
-    deptId: undefined, installLocation: undefined, equipmentStatus: '0', responsibleId: undefined,
-    equipmentImage: undefined, attachmentUrl: undefined, status: '0', remark: undefined
+    deptId: undefined, deptName: undefined, installLocation: undefined, equipmentStatus: '0', responsibleId: undefined,
+    equipmentImage: undefined, attachmentUrl: undefined, status: '0', remark: undefined,
+    responsibleName: undefined
   }
   proxy.resetForm('equipmentRef')
 }
@@ -319,6 +363,19 @@ function handleView(row) {
 }
 getCategoryTree()
 getDeptTree()
-getUserList()
 getList()
 </script>
+
+<style scoped>
+.clear-icon {
+  cursor: pointer;
+  color: #c0c4cc;
+  font-size: 14px;
+}
+.clear-icon:hover {
+  color: #909399;
+}
+:deep(.el-input.is-disabled .el-input__inner) {
+  cursor: pointer;
+}
+</style>

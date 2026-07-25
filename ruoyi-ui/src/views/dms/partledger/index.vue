@@ -110,23 +110,90 @@
       </el-table-column>
       <el-table-column label="存放位置" prop="storageLocation" :width="colWidth('storageLocation', 110)" resizable show-overflow-tooltip />
       <el-table-column label="供应商" prop="supplier" :width="colWidth('supplier', 110)" resizable show-overflow-tooltip />
-      <el-table-column label="操作" width="80" align="center">
+      <el-table-column label="操作" width="130" align="center" fixed="right">
         <template #default="scope">
+          <el-button link type="primary" icon="View" @click="handleView(scope.row)">详情</el-button>
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['dms:sparepart:remove']">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+
+    <!-- 查看对话框 -->
+    <el-dialog v-model="viewOpen" width="780px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></div>
+          <span class="rd-detail-header-title">备件详情</span>
+          <div class="rd-detail-header-sub" v-if="viewData.partCode">
+            <div class="rd-detail-header-divider"></div>
+            <span class="rd-detail-header-no">编号：{{ viewData.partCode }}</span>
+          </div>
+        </div>
+      </template>
+      <div class="rd-page">
+        <!-- 基本信息 -->
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('v3')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>基本信息</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v3 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.v3">
+            <div class="rd-grid">
+              <div class="rd-item"><span class="rd-label">备件编号</span><div class="rd-value">{{ viewData.partCode || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">备件名称</span><div class="rd-value">{{ viewData.partName || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">备件类别</span><div class="rd-value"><dict-tag :options="dms_part_type" :value="viewData.partType" /></div></div>
+              <div class="rd-item"><span class="rd-label">规格型号</span><div class="rd-value">{{ viewData.specModel || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">计量单位</span><div class="rd-value"><dict-tag :options="wms_unit" :value="viewData.unit" /></div></div>
+              <div class="rd-item"><span class="rd-label">供应商</span><div class="rd-value">{{ viewData.supplier || '-' }}</div></div>
+            </div>
+          </div>
+        </section>
+        <!-- 库存信息 -->
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('v2')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="16 18 23 18 23 11"/></svg></span>库存信息</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.v2">
+            <div class="rd-grid">
+              <div class="rd-item"><span class="rd-label">当前库存</span><div class="rd-value">{{ viewData.currentStock != null ? viewData.currentStock : '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">库存状态</span><div class="rd-value"><el-tag :type="getStockType(viewData)" effect="dark" size="small">{{ getStockText(viewData) }}</el-tag></div></div>
+              <div class="rd-item"><span class="rd-label">库存下限</span><div class="rd-value">{{ viewData.stockMin != null ? viewData.stockMin : '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">库存上限</span><div class="rd-value">{{ viewData.stockMax != null ? viewData.stockMax : '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">存放位置</span><div class="rd-value">{{ viewData.storageLocation || '-' }}</div></div>
+            </div>
+          </div>
+        </section>
+        <!-- 其他信息 -->
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('v0')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>其他信息</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v0 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.v0">
+            <div class="rd-grid">
+              <div class="rd-item"><span class="rd-label">备件状态</span><div class="rd-value"><el-tag :type="viewData.status === '0' ? 'success' : 'danger'">{{ viewData.status === '0' ? '正常' : '停用' }}</el-tag></div></div>
+              <div class="rd-item"><span class="rd-label">创建时间</span><div class="rd-value">{{ viewData.createTime || '-' }}</div></div>
+              <div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value">{{ viewData.remark || '-' }}</div></div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 <script setup name="DmsPartLedger">
 import { listPartLedger, delPartLedger } from '@/api/dms/partledger'
+import { getSparepart } from '@/api/dms/sparepart'
 import { useColumnResize } from '@/composables/useColumnResize'
+import { useDetailCard } from '@/composables/useDetailCard'
 
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('dms_partledger_index')
 const { wms_unit, dms_part_type } = proxy.useDict('wms_unit', 'dms_part_type')
+const { collapsedCards, toggleCard } = useDetailCard(['v3', 'v2', 'v1', 'v0'])
 
 const list = ref([])
 const loading = ref(true)
@@ -134,6 +201,8 @@ const showSearch = ref(true)
 const ids = ref([])
 const multiple = ref(true)
 const total = ref(0)
+const viewOpen = ref(false)
+const viewData = ref({})
 
 const statTotal = ref(0)
 const statNormal = ref(0)
@@ -198,6 +267,14 @@ function resetQuery() { proxy.resetForm('queryRef'); handleQuery() }
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.partId); multiple.value = !selection.length }
 function handleDelete(row) { const partIds = row.partId || ids.value; proxy.$modal.confirm('确认删除选中的备件台账记录？').then(() => delPartLedger(partIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
 function handleExport() { proxy.download('dms/sparepart/export', { ...queryParams.value }, `partledger_${new Date().getTime()}.xlsx`) }
+
+/** 查看详情 */
+function handleView(row) {
+  getSparepart(row.partId).then(res => {
+    viewData.value = res.data
+    viewOpen.value = true
+  })
+}
 
 onActivated(() => {
   getList()
