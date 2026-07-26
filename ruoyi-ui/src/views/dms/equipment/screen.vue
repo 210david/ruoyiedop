@@ -78,11 +78,12 @@
                   </div>
                 </div>
                 <div class="timeline-label">
-                  <span class="label-text" :class="{ 'active-label': item.status === 'active' }">{{ item.label }}</span>
                   <template v-if="item.status === 'active' && item.currentStatus">
-                    <span class="label-status" :class="'status-' + item.statusType">{{ item.currentStatus }}</span>
+                    <span class="label-text active-label" :class="'status-' + item.statusType">{{ item.currentStatus }}</span>
+                    <span class="label-date font-mono active-label" :class="'status-' + item.statusType">当前</span>
                   </template>
                   <template v-else>
+                    <span class="label-text" :class="{ 'active-label': item.status === 'active' }">{{ item.label }}</span>
                     <span class="label-date font-mono" :class="{ 'active-label': item.status === 'active' }">{{ item.date }}</span>
                   </template>
                 </div>
@@ -647,7 +648,7 @@
 
           <!-- 底部设备名 -->
           <div class="bottom-device-name">
-            <span class="device-name-text">{{ deviceInfo.equipmentName }}</span>
+            <span class="device-name-text">{{ deviceInfo.equipmentCode }} · {{ deviceInfo.equipmentName }}</span>
           </div>
         </div>
 
@@ -1823,8 +1824,19 @@ onUnmounted(() => {
     font-weight: 500;
     
     &.active-label {
-      color: var(--state-success);
       font-weight: 700;
+    }
+    
+    &.status-running {
+      color: var(--state-success);
+    }
+    
+    &.status-stopped {
+      color: var(--state-warning);
+    }
+    
+    &.status-fault {
+      color: var(--state-error);
     }
   }
   
@@ -1833,34 +1845,19 @@ onUnmounted(() => {
     color: var(--eq-muted-foreground);
     
     &.active-label {
-      color: var(--state-success);
       opacity: 0.8;
     }
-  }
-  
-  .label-status {
-    font-size: 10px;
-    font-weight: 600;
-    padding: 1px 6px;
-    border-radius: 8px;
     
     &.status-running {
       color: var(--state-success);
-      background: rgba(34, 197, 94, 0.15);
-      border: 1px solid rgba(34, 197, 94, 0.3);
     }
     
     &.status-stopped {
       color: var(--state-warning);
-      background: rgba(245, 158, 11, 0.15);
-      border: 1px solid rgba(245, 158, 11, 0.3);
     }
     
     &.status-fault {
       color: var(--state-error);
-      background: rgba(239, 68, 68, 0.15);
-      border: 1px solid rgba(239, 68, 68, 0.3);
-      animation: fault-blink 1s ease-in-out infinite;
     }
   }
   
