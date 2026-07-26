@@ -90,80 +90,293 @@
         </div>
       </template>
       <el-form ref="leadRef" :model="form" :rules="rules" label-width="100px">
-        <el-collapse v-model="activeNames">
-          <el-collapse-item title="线索信息" name="lead">
-            <el-row>
-              <el-col :span="12"><el-form-item label="线索编号" prop="leadNo"><el-input v-model="form.leadNo" placeholder="保存后自动生成" disabled /></el-form-item></el-col>
-              <el-col :span="12"><el-form-item label="企业名称" prop="companyName"><el-input v-model="form.companyName" placeholder="请输入企业名称" @blur="onCompanyBlur" /></el-form-item></el-col>
-              <el-col :span="12"><el-form-item label="联系人" prop="contactName"><el-input v-model="form.contactName" placeholder="请输入联系人姓名" /></el-form-item></el-col>
-              <el-col :span="12"><el-form-item label="手机号" prop="contactPhone"><el-input v-model="form.contactPhone" placeholder="请输入手机号" @blur="onPhoneBlur" /></el-form-item></el-col>
-              <el-col :span="12"><el-form-item label="邮箱" prop="contactEmail"><el-input v-model="form.contactEmail" placeholder="请输入邮箱" /></el-form-item></el-col>
-              <el-col :span="12"><el-form-item label="职位" prop="position"><el-input v-model="form.position" placeholder="请输入职位" /></el-form-item></el-col>
-            </el-row>
-          </el-collapse-item>
-          <el-collapse-item title="企业信息" name="company">
-            <el-row>
-              <el-col :span="12"><el-form-item label="所属行业" prop="industry">
-                <el-select v-model="form.industry" placeholder="请选择" style="width: 100%"><el-option v-for="d in marketing_industry" :key="d.value" :label="d.label" :value="d.value" /></el-select>
-              </el-form-item></el-col>
-              <el-col :span="12"><el-form-item label="企业规模" prop="companySize">
-                <el-select v-model="form.companySize" placeholder="请选择" style="width: 100%"><el-option v-for="d in marketing_company_size" :key="d.value" :label="d.label" :value="d.value" /></el-select>
-              </el-form-item></el-col>
-              <el-col :span="24"><el-form-item label="详细地址" prop="address"><el-input v-model="form.address" placeholder="请输入详细地址" /></el-form-item></el-col>
-            </el-row>
-          </el-collapse-item>
-          <el-collapse-item title="需求与评分" name="requirement">
-            <el-row>
-              <el-col :span="12"><el-form-item label="线索来源" prop="leadSource">
-                <el-select v-model="form.leadSource" placeholder="请选择" style="width: 100%"><el-option v-for="d in marketing_customer_source" :key="d.value" :label="d.label" :value="d.value" /></el-select>
-              </el-form-item></el-col>
-              <el-col :span="12"><el-form-item label="线索评分" prop="leadScore"><el-input-number v-model="form.leadScore" :min="0" :max="100" controls-position="right" style="width: 100%" /></el-form-item></el-col>
-              <el-col :span="12"><el-form-item label="线索等级" prop="leadGrade">
-                <el-select v-model="form.leadGrade" placeholder="请选择" style="width: 100%"><el-option v-for="d in marketing_lead_grade" :key="d.value" :label="d.label" :value="d.value" /></el-select>
-              </el-form-item></el-col>
-              <el-col :span="12"><el-form-item label="线索状态" prop="leadStatus">
-                <el-select v-model="form.leadStatus" placeholder="请选择" style="width: 100%"><el-option v-for="d in marketing_lead_status" :key="d.value" :label="d.label" :value="d.value" /></el-select>
-              </el-form-item></el-col>
-              <el-col :span="24"><el-form-item label="需求描述" prop="requirementDesc"><el-input v-model="form.requirementDesc" type="textarea" :rows="3" placeholder="请输入需求描述" /></el-form-item></el-col>
-            </el-row>
-          </el-collapse-item>
-          <el-collapse-item title="负责信息" name="owner">
-            <el-row>
-              <el-col :span="12"><el-form-item label="负责人" prop="userId">
-                <el-input v-model="form.userName" readonly placeholder="请选择负责人" style="width: 100%" @click="openUserPicker">
-                  <template #append>
-                    <el-button icon="Search" @click="openUserPicker" />
-                  </template>
-                  <template #suffix>
-                    <el-icon v-if="form.userName" class="clear-icon" @click.stop="clearUser"><CircleClose /></el-icon>
-                  </template>
-                </el-input>
-              </el-form-item></el-col>
-              <el-col :span="12"><el-form-item label="所属部门" prop="deptId">
-                <el-input v-model="form.deptName" readonly placeholder="请选择部门" style="width: 100%" @click="openDeptPicker">
-                  <template #append>
-                    <el-button icon="Search" @click="openDeptPicker" />
-                  </template>
-                  <template #suffix>
-                    <el-icon v-if="form.deptName" class="clear-icon" @click.stop="clearDept"><CircleClose /></el-icon>
-                  </template>
-                </el-input>
-              </el-form-item></el-col>
-              <el-col :span="12"><el-form-item label="是否公海" prop="isPublic">
-                <el-radio-group v-model="form.isPublic"><el-radio value="0">否</el-radio><el-radio value="1">是</el-radio></el-radio-group>
-              </el-form-item></el-col>
-            </el-row>
-          </el-collapse-item>
-          <el-collapse-item title="其他信息" name="other">
-            <el-form-item label="备注" prop="remark"><el-input v-model="form.remark" type="textarea" :rows="2" placeholder="请输入备注" /></el-form-item>
-          </el-collapse-item>
-        </el-collapse>
+        <div class="rd-page">
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('c_lead')">
+              <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span>线索信息</div>
+              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c_lead }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.c_lead">
+              <el-row>
+                <el-col :span="12"><el-form-item label="线索编号" prop="leadNo"><el-input v-model="form.leadNo" placeholder="保存后自动生成" disabled /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="企业名称" prop="companyName"><el-input v-model="form.companyName" placeholder="请输入企业名称" @blur="onCompanyBlur" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="联系人" prop="contactName"><el-input v-model="form.contactName" placeholder="请输入联系人姓名" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="手机号" prop="contactPhone"><el-input v-model="form.contactPhone" placeholder="请输入手机号" @blur="onPhoneBlur" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="邮箱" prop="contactEmail"><el-input v-model="form.contactEmail" placeholder="请输入邮箱" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="职位" prop="position"><el-input v-model="form.position" placeholder="请输入职位" /></el-form-item></el-col>
+              </el-row>
+            </div>
+          </section>
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('c_company')">
+              <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/></svg></span>企业信息</div>
+              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c_company }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.c_company">
+              <el-row>
+                <el-col :span="12"><el-form-item label="所属行业" prop="industry">
+                  <el-select v-model="form.industry" placeholder="请选择" style="width: 100%"><el-option v-for="d in marketing_industry" :key="d.value" :label="d.label" :value="d.value" /></el-select>
+                </el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="企业规模" prop="companySize">
+                  <el-select v-model="form.companySize" placeholder="请选择" style="width: 100%"><el-option v-for="d in marketing_company_size" :key="d.value" :label="d.label" :value="d.value" /></el-select>
+                </el-form-item></el-col>
+                <el-col :span="24"><el-form-item label="详细地址" prop="address"><el-input v-model="form.address" placeholder="请输入详细地址" /></el-form-item></el-col>
+              </el-row>
+            </div>
+          </section>
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('c_requirement')">
+              <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg></span>需求与评分</div>
+              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c_requirement }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.c_requirement">
+              <el-row>
+                <el-col :span="12"><el-form-item label="线索来源" prop="leadSource">
+                  <el-select v-model="form.leadSource" placeholder="请选择" style="width: 100%"><el-option v-for="d in marketing_customer_source" :key="d.value" :label="d.label" :value="d.value" /></el-select>
+                </el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="线索评分" prop="leadScore"><el-input-number v-model="form.leadScore" :min="0" :max="100" controls-position="right" style="width: 100%" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="线索等级" prop="leadGrade">
+                  <el-select v-model="form.leadGrade" placeholder="请选择" style="width: 100%"><el-option v-for="d in marketing_lead_grade" :key="d.value" :label="d.label" :value="d.value" /></el-select>
+                </el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="线索状态" prop="leadStatus">
+                  <el-select v-model="form.leadStatus" placeholder="请选择" style="width: 100%"><el-option v-for="d in marketing_lead_status" :key="d.value" :label="d.label" :value="d.value" /></el-select>
+                </el-form-item></el-col>
+                <el-col :span="24"><el-form-item label="需求描述" prop="requirementDesc"><el-input v-model="form.requirementDesc" type="textarea" :rows="3" placeholder="请输入需求描述" /></el-form-item></el-col>
+              </el-row>
+            </div>
+          </section>
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('c_owner')">
+              <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>负责信息</div>
+              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c_owner }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.c_owner">
+              <el-row>
+                <el-col :span="12"><el-form-item label="负责人" prop="userId">
+                  <el-input v-model="form.userName" readonly placeholder="请选择负责人" style="width: 100%" @click="openUserPicker">
+                    <template #append>
+                      <el-button icon="Search" @click="openUserPicker" />
+                    </template>
+                    <template #suffix>
+                      <el-icon v-if="form.userName" class="clear-icon" @click.stop="clearUser"><CircleClose /></el-icon>
+                    </template>
+                  </el-input>
+                </el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="所属部门" prop="deptId">
+                  <el-input v-model="form.deptName" readonly placeholder="请选择部门" style="width: 100%" @click="openDeptPicker">
+                    <template #append>
+                      <el-button icon="Search" @click="openDeptPicker" />
+                    </template>
+                    <template #suffix>
+                      <el-icon v-if="form.deptName" class="clear-icon" @click.stop="clearDept"><CircleClose /></el-icon>
+                    </template>
+                  </el-input>
+                </el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="是否公海" prop="isPublic">
+                  <el-radio-group v-model="form.isPublic"><el-radio value="0">否</el-radio><el-radio value="1">是</el-radio></el-radio-group>
+                </el-form-item></el-col>
+              </el-row>
+            </div>
+          </section>
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('c_other')">
+              <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>其他信息</div>
+              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c_other }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.c_other">
+              <el-form-item label="备注" prop="remark"><el-input v-model="form.remark" type="textarea" :rows="2" placeholder="请输入备注" /></el-form-item>
+            </div>
+          </section>
+        </div>
       </el-form>
       <template #footer><el-button type="primary" @click="submitForm">确 定</el-button><el-button @click="cancel">取 消</el-button></template>
     </el-dialog>
 
+    <!-- 详情弹窗 - Tab页 -->
+    <el-dialog v-model="viewOpen" width="900px" append-to-body draggable class="rd-dialog" @open="loadLeadRelations">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+          </div>
+          <span class="rd-detail-header-title">线索详情</span>
+          <div class="rd-detail-header-sub" v-if="viewForm.leadNo">
+            <span class="rd-detail-header-divider"></span>
+            <span class="rd-detail-header-no">编号：{{ viewForm.leadNo }}</span>
+            <dict-tag :options="marketing_lead_status" :value="viewForm.leadStatus" />
+            <el-tag v-if="viewForm.isPublic === '1'" type="warning" size="small">公海</el-tag>
+          </div>
+        </div>
+      </template>
+      <div class="rd-page">
+        <el-tabs v-model="detailTab">
+          <el-tab-pane label="基本信息" name="basic">
+            <section class="rd-card">
+              <div class="rd-card-header" @click="toggleCard('viewBasic')">
+                <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>线索信息</div>
+                <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.viewBasic }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+              </div>
+              <div class="rd-card-body" v-show="!collapsedCards.viewBasic">
+                <div class="rd-grid">
+                  <div class="rd-item"><span class="rd-label">线索编号</span><div class="rd-value">{{ viewForm.leadNo }}</div></div>
+                  <div class="rd-item"><span class="rd-label">企业名称</span><div class="rd-value">{{ viewForm.companyName }}</div></div>
+                  <div class="rd-item"><span class="rd-label">联系人</span><div class="rd-value">{{ viewForm.contactName }}</div></div>
+                  <div class="rd-item"><span class="rd-label">手机号</span><div class="rd-value">{{ viewForm.contactPhone }}</div></div>
+                  <div class="rd-item"><span class="rd-label">邮箱</span><div class="rd-value" :class="{ 'rd-value--muted': !viewForm.contactEmail }">{{ viewForm.contactEmail || '暂无' }}</div></div>
+                  <div class="rd-item"><span class="rd-label">职位</span><div class="rd-value" :class="{ 'rd-value--muted': !viewForm.position }">{{ viewForm.position || '暂无' }}</div></div>
+                </div>
+              </div>
+            </section>
+            <section class="rd-card">
+              <div class="rd-card-header" @click="toggleCard('viewCompany')">
+                <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/></svg></span>企业信息</div>
+                <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.viewCompany }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+              </div>
+              <div class="rd-card-body" v-show="!collapsedCards.viewCompany">
+                <div class="rd-grid">
+                  <div class="rd-item"><span class="rd-label">所属行业</span><div class="rd-value"><dict-tag :options="marketing_industry" :value="viewForm.industry" /></div></div>
+                  <div class="rd-item"><span class="rd-label">企业规模</span><div class="rd-value"><dict-tag :options="marketing_company_size" :value="viewForm.companySize" /></div></div>
+                  <div class="rd-item"><span class="rd-label">线索来源</span><div class="rd-value"><dict-tag :options="marketing_customer_source" :value="viewForm.leadSource" /></div></div>
+                  <div class="rd-item rd-item--full"><span class="rd-label">详细地址</span><div class="rd-value" :class="{ 'rd-value--muted': !viewForm.address }">{{ viewForm.address || '暂无' }}</div></div>
+                </div>
+              </div>
+            </section>
+            <section class="rd-card">
+              <div class="rd-card-header" @click="toggleCard('viewRequirement')">
+                <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg></span>需求与评分</div>
+                <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.viewRequirement }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+              </div>
+              <div class="rd-card-body" v-show="!collapsedCards.viewRequirement">
+                <div class="rd-grid">
+                  <div class="rd-item"><span class="rd-label">线索评分</span><div class="rd-value">{{ viewForm.leadScore }}</div></div>
+                  <div class="rd-item"><span class="rd-label">线索等级</span><div class="rd-value"><dict-tag :options="marketing_lead_grade" :value="viewForm.leadGrade" /></div></div>
+                  <div class="rd-item"><span class="rd-label">线索状态</span><div class="rd-value"><dict-tag :options="marketing_lead_status" :value="viewForm.leadStatus" /></div></div>
+                  <div class="rd-item rd-item--full"><span class="rd-label">需求描述</span><div class="rd-value" :class="{ 'rd-value--muted': !viewForm.requirementDesc }">{{ viewForm.requirementDesc || '暂无' }}</div></div>
+                </div>
+              </div>
+            </section>
+            <section class="rd-card">
+              <div class="rd-card-header" @click="toggleCard('viewOwner')">
+                <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>负责信息</div>
+                <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.viewOwner }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+              </div>
+              <div class="rd-card-body" v-show="!collapsedCards.viewOwner">
+                <div class="rd-grid">
+                  <div class="rd-item"><span class="rd-label">负责人</span><div class="rd-value">{{ viewForm.userName || '未分配（公海）' }}</div></div>
+                  <div class="rd-item"><span class="rd-label">所属部门</span><div class="rd-value" :class="{ 'rd-value--muted': !viewForm.deptName }">{{ viewForm.deptName || '暂无' }}</div></div>
+                  <div class="rd-item"><span class="rd-label">领取时间</span><div class="rd-value" :class="{ 'rd-value--muted': !viewForm.receiveTime }">{{ viewForm.receiveTime || '暂无' }}</div></div>
+                  <div class="rd-item"><span class="rd-label">审批人</span><div class="rd-value" :class="{ 'rd-value--muted': !viewForm.receiveApproveUserName }">{{ viewForm.receiveApproveUserName || '暂无' }}</div></div>
+                  <div class="rd-item"><span class="rd-label">审批时间</span><div class="rd-value" :class="{ 'rd-value--muted': !viewForm.receiveApproveTime }">{{ viewForm.receiveApproveTime || '暂无' }}</div></div>
+                  <div class="rd-item"><span class="rd-label">最后跟进</span><div class="rd-value">{{ viewForm.lastFollowTime || '未跟进' }}</div></div>
+                  <div class="rd-item"><span class="rd-label">创建时间</span><div class="rd-value">{{ viewForm.createTime }}</div></div>
+                </div>
+              </div>
+            </section>
+            <section class="rd-card" v-if="viewForm.convertCustomerId">
+              <div class="rd-card-header" @click="toggleCard('viewConvert')">
+                <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>转化信息</div>
+                <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.viewConvert }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+              </div>
+              <div class="rd-card-body" v-show="!collapsedCards.viewConvert">
+                <div class="rd-grid">
+                  <div class="rd-item"><span class="rd-label">转化状态</span><div class="rd-value"><el-tag type="success" size="small">已转化</el-tag></div></div>
+                  <div class="rd-item"><span class="rd-label">转化时间</span><div class="rd-value">{{ viewForm.convertTime }}</div></div>
+                  <div class="rd-item"><span class="rd-label">转化客户</span><div class="rd-value"><el-button link type="primary" @click="goCustomerDetail(viewForm.convertCustomerId)">查看客户</el-button></div></div>
+                </div>
+              </div>
+            </section>
+            <section class="rd-card" v-if="viewForm.leadStatus === '5'">
+              <div class="rd-card-header" @click="toggleCard('viewInvalid')">
+                <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></span>无效信息</div>
+                <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.viewInvalid }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+              </div>
+              <div class="rd-card-body" v-show="!collapsedCards.viewInvalid">
+                <div class="rd-grid">
+                  <div class="rd-item"><span class="rd-label">无效原因</span><div class="rd-value" :class="{ 'rd-value--muted': !viewForm.ineffectiveReason }">{{ viewForm.ineffectiveReason || '暂无' }}</div></div>
+                  <div class="rd-item rd-item--full"><span class="rd-label">无效说明</span><div class="rd-value" :class="{ 'rd-value--muted': !viewForm.ineffectiveRemark }">{{ viewForm.ineffectiveRemark || '暂无' }}</div></div>
+                </div>
+              </div>
+            </section>
+            <section class="rd-card">
+              <div class="rd-card-header" @click="toggleCard('viewOther')">
+                <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>其他信息</div>
+                <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.viewOther }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+              </div>
+              <div class="rd-card-body" v-show="!collapsedCards.viewOther">
+                <div class="rd-grid">
+                  <div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value" :class="{ 'rd-value--muted': !viewForm.remark }">{{ viewForm.remark || '暂无' }}</div></div>
+                </div>
+              </div>
+            </section>
+          </el-tab-pane>
+          <el-tab-pane :label="`跟进记录 (${interactionList.length})`" name="interactions">
+            <section class="rd-card">
+              <div class="rd-card-header" @click="toggleCard('viewInteractions')">
+                <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></span>跟进记录</div>
+                <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.viewInteractions }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+              </div>
+              <div class="rd-card-body" v-show="!collapsedCards.viewInteractions">
+                <div class="rd-timeline" v-if="interactionList.length > 0">
+                  <div class="rd-timeline-item" v-for="item in interactionList" :key="item.recordId">
+                    <div class="rd-timeline-dot rd-timeline-dot--success"></div>
+                    <div class="rd-timeline-content">
+                      <div class="rd-timeline-header">
+                        <span class="rd-timeline-title"><el-tag size="small" type="info">{{ getInteractTypeLabel(item.interactType) }}</el-tag> {{ item.userName }}</span>
+                        <span class="rd-timeline-time">{{ item.interactTime }}</span>
+                      </div>
+                      <div class="rd-timeline-comment">{{ item.content }}</div>
+                      <div v-if="item.nextTime" style="margin-top: 6px; font-size: 12px; color: #e6a23c">
+                        下次跟进: {{ item.nextTime }} {{ item.nextContent ? '- ' + item.nextContent : '' }}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="rd-empty" v-else>
+                  <svg class="rd-empty-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                  <p class="rd-empty-text">暂无跟进记录</p>
+                </div>
+              </div>
+            </section>
+          </el-tab-pane>
+          <el-tab-pane label="时间线" name="timeline">
+            <section class="rd-card">
+              <div class="rd-card-header" @click="toggleCard('viewTimeline')">
+                <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></svg></span>时间线</div>
+                <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.viewTimeline }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+              </div>
+              <div class="rd-card-body" v-show="!collapsedCards.viewTimeline">
+                <div class="rd-timeline" v-if="timelineList.length > 0">
+                  <div class="rd-timeline-item" v-for="(item, idx) in timelineList" :key="idx">
+                    <div class="rd-timeline-dot" :class="{ 'rd-timeline-dot--success': item.type === 'success', 'rd-timeline-dot--error': item.type === 'danger' }"></div>
+                    <div class="rd-timeline-content">
+                      <div class="rd-timeline-header">
+                        <span class="rd-timeline-title">{{ item.title }}</span>
+                        <span class="rd-timeline-time">{{ item.time }}</span>
+                      </div>
+                      <div class="rd-timeline-comment" v-if="item.desc">{{ item.desc }}</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="rd-empty" v-else>
+                  <svg class="rd-empty-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                  <p class="rd-empty-text">暂无时间线</p>
+                </div>
+              </div>
+            </section>
+          </el-tab-pane>
+        </el-tabs>
+      </div>
+      <template #footer>
+        <el-button type="primary" @click="handleEditFromView" v-hasPermi="['marketing:lead:edit']">编辑</el-button>
+        <el-button type="success" @click="handleConvertFromView" v-if="viewForm.leadStatus !== '4' && viewForm.leadStatus !== '5'" v-hasPermi="['marketing:lead:edit']">转化为客户</el-button>
+        <el-button @click="viewOpen = false">关 闭</el-button>
+      </template>
+    </el-dialog>
+
     <!-- 负责人选择弹窗 -->
     <user-picker ref="userPickerRef" title="选择负责人" @confirm="onUserPickerConfirm" />
+    <user-picker ref="assignUserPickerRef" title="选择负责人" @confirm="onAssignUserPickerConfirm" />
+    <user-picker ref="batchAssignUserPickerRef" title="选择负责人" @confirm="onBatchAssignUserPickerConfirm" />
 
     <!-- 部门选择弹窗 -->
     <dept-picker ref="deptPickerRef" title="选择所属部门" :disabled-ids="[100]" @confirm="onDeptPickerConfirm" />
@@ -178,9 +391,14 @@
       </template>
       <el-form label-width="80px">
         <el-form-item label="负责人">
-          <el-select v-model="assignUserId" filterable clearable placeholder="请选择负责人" style="width: 100%">
-            <el-option v-for="u in userOptions" :key="u.userId" :label="u.nickName" :value="u.userId" />
-          </el-select>
+          <el-input v-model="assignUserName" readonly placeholder="请选择（留空释放到公海）" style="width: 100%" @click="openAssignUserPicker">
+            <template #append>
+              <el-button icon="Search" @click="openAssignUserPicker" />
+            </template>
+            <template #suffix>
+              <el-icon v-if="assignUserName" class="clear-icon" @click.stop="clearAssignUser"><CircleClose /></el-icon>
+            </template>
+          </el-input>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -200,9 +418,14 @@
       <el-alert :title="'已选中 ' + ids.length + ' 条线索'" type="info" :closable="false" class="mb8" />
       <el-form label-width="80px">
         <el-form-item label="负责人">
-          <el-select v-model="batchAssignUserId" filterable clearable placeholder="请选择负责人" style="width: 100%">
-            <el-option v-for="u in userOptions" :key="u.userId" :label="u.nickName" :value="u.userId" />
-          </el-select>
+          <el-input v-model="batchAssignUserName" readonly placeholder="请选择负责人" style="width: 100%" @click="openBatchAssignUserPicker">
+            <template #append>
+              <el-button icon="Search" @click="openBatchAssignUserPicker" />
+            </template>
+            <template #suffix>
+              <el-icon v-if="batchAssignUserName" class="clear-icon" @click.stop="clearBatchAssignUser"><CircleClose /></el-icon>
+            </template>
+          </el-input>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -288,7 +511,7 @@
     </el-dialog>
 
     <!-- 快速跟进弹窗 -->
-    <el-dialog v-model="followOpen" width="600px" append-to-body draggable class="rd-dialog">
+    <el-dialog v-model="followOpen" width="720px" append-to-body draggable class="rd-dialog">
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div>
@@ -296,24 +519,42 @@
         </div>
       </template>
       <el-form ref="followRef" :model="followForm" :rules="followRules" label-width="100px">
-        <el-descriptions :column="2" border size="small" class="mb8">
-          <div class="rd-item"><span class="rd-label">企业名称</span><div class="rd-value">{{ followForm.companyName }}</div></div>
-          <div class="rd-item"><span class="rd-label">联系人</span><div class="rd-value">{{ followForm.contactName }}</div></div>
-        </el-descriptions>
-        <el-form-item label="互动类型" prop="interactType">
-          <el-select v-model="followForm.interactType" placeholder="请选择" style="width: 100%">
-            <el-option v-for="d in marketing_interaction_type" :key="d.value" :label="d.label" :value="d.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="互动时间" prop="interactTime">
-          <el-date-picker v-model="followForm.interactTime" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" placeholder="选择时间" style="width: 100%" />
-        </el-form-item>
-        <el-form-item label="跟进内容" prop="content">
-          <el-input v-model="followForm.content" type="textarea" :rows="3" placeholder="请输入跟进内容" />
-        </el-form-item>
-        <el-form-item label="下次跟进">
-          <el-date-picker v-model="followForm.nextTime" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" placeholder="选择时间（可选）" style="width: 100%" />
-        </el-form-item>
+        <div class="rd-page">
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('followInfo')">
+              <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>线索信息</div>
+              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.followInfo }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.followInfo">
+              <div class="rd-grid">
+                <div class="rd-item"><span class="rd-label">企业名称</span><div class="rd-value">{{ followForm.companyName }}</div></div>
+                <div class="rd-item"><span class="rd-label">联系人</span><div class="rd-value">{{ followForm.contactName }}</div></div>
+              </div>
+            </div>
+          </section>
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('followForm')">
+              <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></span>跟进信息</div>
+              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.followForm }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.followForm">
+              <el-form-item label="互动类型" prop="interactType">
+                <el-select v-model="followForm.interactType" placeholder="请选择" style="width: 100%">
+                  <el-option v-for="d in marketing_interaction_type" :key="d.value" :label="d.label" :value="d.value" />
+                </el-select>
+              </el-form-item>
+              <el-form-item label="互动时间" prop="interactTime">
+                <el-date-picker v-model="followForm.interactTime" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" placeholder="选择时间" style="width: 100%" />
+              </el-form-item>
+              <el-form-item label="跟进内容" prop="content">
+                <el-input v-model="followForm.content" type="textarea" :rows="3" placeholder="请输入跟进内容" />
+              </el-form-item>
+              <el-form-item label="下次跟进">
+                <el-date-picker v-model="followForm.nextTime" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" placeholder="选择时间（可选）" style="width: 100%" />
+              </el-form-item>
+            </div>
+          </section>
+        </div>
       </el-form>
       <template #footer>
         <el-button type="primary" @click="confirmFollowUp">确 定</el-button>
@@ -370,21 +611,24 @@
       <template #footer>
         <el-button @click="dupOpen = false">关 闭</el-button>
       </template>
-    </el-dialog>
-  </div>
+</el-dialog>
+
+    <!-- 客户详情弹窗 -->
+    <CustomerDetailDialog v-model="customerDetailVisible" :customer-id="customerDetailId" />
+</div>
 </template>
 
 <script setup name="MkLead">
 import { useRouter } from 'vue-router'
 import { UploadFilled, CircleClose } from '@element-plus/icons-vue'
-import { listLead, getLead, addLead, updateLead, delLead, convertLead, assignLead, releaseLeadToPool, batchAssignLead, batchUpdateLeadStatus, invalidateLead, updateFollowTime, checkLeadDuplicate } from '@/api/mk/lead'
-import { addInteraction } from '@/api/mk/interaction'
-import { listUser } from '@/api/system/user'
+import { listLead, getLead, addLead, updateLead, delLead, convertLead, assignLead, releaseLeadToPool, batchAssignLead, batchUpdateLeadStatus, invalidateLead, updateFollowTime, checkLeadDuplicate, getLeadLog } from '@/api/mk/lead'
+import { listInteraction, addInteraction } from '@/api/mk/interaction'
 import UserPicker from '@/components/UserPicker/index.vue'
 import DeptPicker from '@/components/DeptPicker/index.vue'
+import CustomerDetailDialog from '@/components/CustomerDetailDialog/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
-const { collapsedCards, toggleCard } = useDetailCard([])
+const { collapsedCards, toggleCard } = useDetailCard(['c_lead', 'c_company', 'c_requirement', 'c_owner', 'c_other', 'viewBasic', 'viewCompany', 'viewRequirement', 'viewOwner', 'viewOther', 'viewConvert', 'viewInvalid', 'viewInteractions', 'viewTimeline', 'followInfo', 'followForm'])
 import { getToken } from '@/utils/auth'
 
 const router = useRouter()
@@ -394,6 +638,7 @@ const { marketing_lead_status, marketing_lead_grade, marketing_customer_source, 
 
 const list = ref([])
 const open = ref(false)
+const viewOpen = ref(false)
 const loading = ref(true)
 const showSearch = ref(true)
 const ids = ref([])
@@ -401,17 +646,23 @@ const single = ref(true)
 const multiple = ref(true)
 const total = ref(0)
 const title = ref('')
-const userOptions = ref([])
-const activeNames = ref(['lead', 'company', 'requirement', 'owner', 'other'])
+const viewForm = ref({})
+const detailTab = ref('basic')
+const interactionList = ref([])
+const timelineList = ref([])
 
 // 分配相关
 const assignOpen = ref(false)
 const assignUserId = ref(null)
+const assignUserName = ref(null)
+const assignUserDeptId = ref(null)
 const assignLeadId = ref(null)
 
 // 批量分配相关
 const batchAssignOpen = ref(false)
 const batchAssignUserId = ref(null)
+const batchAssignUserName = ref(null)
+const batchAssignUserDeptId = ref(null)
 
 // 批量变更状态相关
 const batchStatusOpen = ref(false)
@@ -500,7 +751,84 @@ function reset() {
 }
 function handleAdd() { reset(); open.value = true; title.value = '新增线索' }
 function handleUpdate(row) { reset(); getLead(row.leadId || ids.value[0]).then(res => { form.value = res.data; open.value = true; title.value = '修改线索' }) }
-function handleView(row) { router.push('/mk/lead-detail/' + row.leadId) }
+function handleView(row) {
+  getLead(row.leadId).then(res => {
+    viewForm.value = res.data
+    detailTab.value = 'basic'
+    interactionList.value = []
+    timelineList.value = []
+    Object.keys(collapsedCards).forEach(k => { collapsedCards[k] = false })
+    viewOpen.value = true
+  })
+}
+function loadLeadRelations() {
+  if (!viewForm.value.leadId) return
+  listInteraction({ leadId: viewForm.value.leadId, pageNum: 1, pageSize: 999 }).then(res => {
+    interactionList.value = res.rows || []
+  })
+}
+function buildTimeline() {
+  getLeadLog(viewForm.value.leadId).then(res => {
+    const logList = res.data || []
+    const typeMap = {
+      create: 'primary',
+      apply: 'warning',
+      approve: 'success',
+      reject: 'danger',
+      assign: 'success',
+      release: 'info',
+      convert: 'success',
+      invalidate: 'danger',
+      status_change: 'primary'
+    }
+    const titleMap = {
+      create: '线索创建',
+      apply: '申请领取',
+      approve: '审批通过',
+      reject: '审批退回',
+      assign: '线索分配',
+      release: '退回公海',
+      convert: '线索转化',
+      invalidate: '标记无效',
+      status_change: '信息更新'
+    }
+    const items = []
+    // 日志记录（持久化，不受退回公海影响）
+    logList.forEach(log => {
+      items.push({
+        time: log.operateTime,
+        title: titleMap[log.actionType] || log.actionType,
+        desc: (log.operatorName ? '操作人：' + log.operatorName + '　' : '') + (log.actionDesc || ''),
+        type: typeMap[log.actionType] || 'primary'
+      })
+    })
+    // 跟进记录仍然保留
+    interactionList.value.forEach(i => {
+      items.push({ time: i.interactTime, title: '跟进记录', desc: i.content, type: 'primary' })
+      if (i.nextTime) {
+        items.push({ time: i.nextTime, title: '计划跟进', desc: i.nextContent || '', type: 'warning' })
+      }
+    })
+    items.sort((a, b) => (b.time || '').localeCompare(a.time || ''))
+    timelineList.value = items
+  })
+}
+function handleEditFromView() {
+  viewOpen.value = false
+  handleUpdate(viewForm.value)
+}
+function handleConvertFromView() {
+  convertForm.value = { ...viewForm.value }
+  convertOpen.value = true
+}
+const customerDetailVisible = ref(false)
+const customerDetailId = ref(null)
+function openCustomerDetail(customerId) { customerDetailId.value = customerId; customerDetailVisible.value = true }
+function goCustomerDetail(customerId) { openCustomerDetail(customerId) }
+function getInteractTypeLabel(type) {
+  const item = marketing_interaction_type.value?.find(d => d.value === type)
+  return item ? item.label : type
+}
 function submitForm() {
   proxy.$refs['leadRef'].validate(valid => {
     if (valid) {
@@ -532,10 +860,10 @@ function confirmConvert() {
     proxy.$modal.msgSuccess('转化成功，已自动创建客户和联系人')
     convertOpen.value = false
     getList()
-    // 跳转到新创建的客户详情页
-    if (res.convertCustomerId) {
-      router.push('/mk/customer-detail/' + res.convertCustomerId)
-    }
+// 弹窗打开新创建的客户详情
+if (res.convertCustomerId) {
+openCustomerDetail(res.convertCustomerId)
+}
   })
 }
 
@@ -543,16 +871,28 @@ function confirmConvert() {
 function handleAssignSingle(row) {
   assignLeadId.value = row.leadId
   assignUserId.value = row.userId || null
+  assignUserName.value = row.userName || null
+  assignUserDeptId.value = row.deptId || null
   assignOpen.value = true
 }
+/** 打开分配负责人选择弹窗 */
+function openAssignUserPicker() {
+  proxy.$refs.assignUserPickerRef.open(assignUserId.value)
+}
+/** 分配负责人选择确认回调 */
+function onAssignUserPickerConfirm(user) {
+  assignUserId.value = user.userId
+  assignUserName.value = user.nickName
+  assignUserDeptId.value = user.deptId
+}
+/** 清除分配负责人 */
+function clearAssignUser() {
+  assignUserId.value = null
+  assignUserName.value = null
+  assignUserDeptId.value = null
+}
 function confirmAssign() {
-  const data = { userId: assignUserId.value }
-  const user = userOptions.value.find(u => u.userId === assignUserId.value)
-  if (user) {
-    data.deptId = user.deptId
-    data.userName = user.nickName
-    if (user.dept) data.deptName = user.dept.deptName
-  }
+  const data = { userId: assignUserId.value, deptId: assignUserDeptId.value, userName: assignUserName.value }
   assignLead(assignLeadId.value, data).then(() => {
     proxy.$modal.msgSuccess('分配成功')
     assignOpen.value = false
@@ -620,20 +960,36 @@ function confirmFollowUp() {
 // 批量分配
 function handleBatchAssign() {
   batchAssignUserId.value = null
+  batchAssignUserName.value = null
+  batchAssignUserDeptId.value = null
   batchAssignOpen.value = true
+}
+/** 打开批量分配负责人选择弹窗 */
+function openBatchAssignUserPicker() {
+  proxy.$refs.batchAssignUserPickerRef.open(batchAssignUserId.value)
+}
+/** 批量分配负责人选择确认回调 */
+function onBatchAssignUserPickerConfirm(user) {
+  batchAssignUserId.value = user.userId
+  batchAssignUserName.value = user.nickName
+  batchAssignUserDeptId.value = user.deptId
+}
+/** 清除批量分配负责人 */
+function clearBatchAssignUser() {
+  batchAssignUserId.value = null
+  batchAssignUserName.value = null
+  batchAssignUserDeptId.value = null
 }
 function confirmBatchAssign() {
   if (!batchAssignUserId.value) {
     proxy.$modal.msgWarning('请选择负责人')
     return
   }
-  const user = userOptions.value.find(u => u.userId === batchAssignUserId.value)
   const data = {
     leadIds: ids.value,
     userId: batchAssignUserId.value,
-    deptId: user ? user.deptId : undefined,
-    userName: user ? user.nickName : undefined,
-    deptName: user && user.dept ? user.dept.deptName : undefined
+    deptId: batchAssignUserDeptId.value,
+    userName: batchAssignUserName.value
   }
   batchAssignLead(data).then(() => {
     proxy.$modal.msgSuccess('批量分配成功')
@@ -686,7 +1042,13 @@ function doCheckDup() {
   })
 }
 
-listUser({ pageNum: 1, pageSize: 9999 }).then(res => { userOptions.value = res.rows.filter(u => u.userId !== 1) })
+// 监听详情tab切换
+watch(detailTab, (val) => {
+  if (val === 'timeline') {
+    buildTimeline()
+  }
+})
+
 handleQuery()
 getList()
 </script>

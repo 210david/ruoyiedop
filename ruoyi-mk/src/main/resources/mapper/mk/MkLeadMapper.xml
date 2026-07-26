@@ -30,6 +30,9 @@
         <result property="receiveApplyUserId"  column="receive_apply_user_id"/>
         <result property="receiveApplyUserName" column="receive_apply_user_name"/>
         <result property="receiveApplyTime"    column="receive_apply_time"/>
+        <result property="receiveApproveUserId"  column="receive_approve_user_id"/>
+        <result property="receiveApproveUserName" column="receive_approve_user_name"/>
+        <result property="receiveApproveTime"   column="receive_approve_time"/>
         <result property="lastFollowTime"      column="last_follow_time"/>
         <result property="ineffectiveReason"   column="ineffective_reason"/>
         <result property="ineffectiveRemark"   column="ineffective_remark"/>
@@ -48,15 +51,19 @@
                l.position, l.industry, l.company_size, l.address, l.lead_source,
                l.activity_id, l.requirement_desc, l.lead_score, l.lead_grade, l.lead_status, l.is_public,
                l.user_id, l.dept_id, l.receive_time, l.receive_status, l.receive_remark,
-               l.receive_apply_user_id, l.receive_apply_time, l.last_follow_time, l.ineffective_reason,
+               l.receive_apply_user_id, l.receive_apply_time,
+               l.receive_approve_user_id, l.receive_approve_time,
+               l.last_follow_time, l.ineffective_reason,
                l.ineffective_remark, l.convert_customer_id, l.convert_time, l.del_flag,
                l.create_by, l.create_time, l.update_by, l.update_time, l.remark,
                u.nick_name as user_name, d.dept_name,
-               u2.nick_name as receive_apply_user_name
+               u2.nick_name as receive_apply_user_name,
+               u3.nick_name as receive_approve_user_name
         FROM mk_lead l
         LEFT JOIN sys_user u ON l.user_id = u.user_id
         LEFT JOIN sys_dept d ON l.dept_id = d.dept_id
         LEFT JOIN sys_user u2 ON l.receive_apply_user_id = u2.user_id
+        LEFT JOIN sys_user u3 ON l.receive_approve_user_id = u3.user_id
     </sql>
 
     <select id="selectLeadList" parameterType="MkLead" resultMap="MkLeadResult">
@@ -134,10 +141,12 @@
         <foreach item="leadId" collection="array" open="(" separator="," close=")">#{leadId}</foreach>
     </delete>
 
-    <!-- 领取申请：设置为待审批状态，不改变is_public，线索仍在公海池中 -->
+    <!-- 领取申请：重置审批信息，设置为待审批状态 -->
     <update id="receiveLead" parameterType="MkLead">
         UPDATE mk_lead SET receive_status = '1', receive_apply_user_id = #{userId},
-            receive_apply_time = sysdate(), update_by = #{updateBy}, update_time = sysdate()
+            receive_apply_time = sysdate(),
+            receive_approve_user_id = NULL, receive_approve_time = NULL, receive_remark = NULL,
+            update_by = #{updateBy}, update_time = sysdate()
         WHERE lead_id = #{leadId}
     </update>
 
@@ -153,14 +162,15 @@
     <update id="approveReceive" parameterType="MkLead">
         UPDATE mk_lead SET is_public = '0', user_id = receive_apply_user_id, dept_id = #{deptId},
             receive_status = '2', receive_remark = #{receiveRemark}, receive_time = sysdate(),
+            receive_approve_user_id = #{receiveApproveUserId}, receive_approve_time = sysdate(),
             update_by = #{updateBy}, update_time = sysdate()
         WHERE lead_id = #{leadId}
     </update>
 
-    <!-- 审批拒绝：退回公海池 -->
+    <!-- 审批拒绝：保留申请信息，记录审批人 -->
     <update id="rejectReceive" parameterType="MkLead">
         UPDATE mk_lead SET receive_status = '3', receive_remark = #{receiveRemark},
-            receive_apply_user_id = NULL, receive_apply_time = NULL,
+            receive_approve_user_id = #{receiveApproveUserId}, receive_approve_time = sysdate(),
             update_by = #{updateBy}, update_time = sysdate()
         WHERE lead_id = #{leadId}
     </update>
@@ -194,6 +204,8 @@
     <update id="releaseToPool">
         UPDATE mk_lead SET is_public = '1', user_id = NULL, dept_id = NULL,
             receive_status = '0',
+            receive_apply_user_id = NULL, receive_apply_time = NULL,
+            receive_approve_user_id = NULL, receive_approve_time = NULL, receive_remark = NULL,
             update_by = #{updateBy}, update_time = sysdate()
         WHERE lead_id = #{leadId}
     </update>

@@ -201,15 +201,19 @@
         <el-button type="primary" @click="confirmAddInteraction">确 定</el-button>
         <el-button @click="interactionOpen = false">取 消</el-button>
       </template>
-    </el-dialog>
-  </div>
+</el-dialog>
+
+    <!-- 客户详情弹窗 -->
+    <CustomerDetailDialog v-model="customerDetailVisible" :customer-id="customerDetailId" />
+</div>
 </template>
 
 <script setup name="MkLeadDetail">
 import { useRoute, useRouter } from 'vue-router'
-import { getLead, updateLead, convertLead, assignLead, releaseLeadToPool, invalidateLead, updateFollowTime } from '@/api/mk/lead'
+import { getLead, updateLead, convertLead, assignLead, releaseLeadToPool, invalidateLead, updateFollowTime, getLeadLog } from '@/api/mk/lead'
 import { listInteraction, addInteraction } from '@/api/mk/interaction'
 import { listUser } from '@/api/system/user'
+import CustomerDetailDialog from '@/components/CustomerDetailDialog/index.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -283,29 +287,57 @@ function getUserOptions() {
 }
 
 function buildTimeline() {
-  const items = []
-  if (lead.value.createTime) {
-    items.push({ time: lead.value.createTime, title: '线索创建', desc: '企业：' + lead.value.companyName, type: 'primary' })
-  }
-  if (lead.value.receiveTime) {
-    items.push({ time: lead.value.receiveTime, title: '线索领取', desc: '负责人：' + (lead.value.userName || '-'), type: 'success' })
-  }
-  interactions.value.forEach(i => {
-    items.push({ time: i.interactTime, title: '跟进记录', desc: i.content, type: 'primary' })
-    if (i.nextTime) {
-      items.push({ time: i.nextTime, title: '计划跟进', desc: i.nextContent || '', type: 'warning' })
+  getLeadLog(leadId).then(res => {
+    const logList = res.data || []
+    const typeMap = {
+      create: 'primary',
+      apply: 'warning',
+      approve: 'success',
+      reject: 'danger',
+      assign: 'success',
+      release: 'info',
+      convert: 'success',
+      invalidate: 'danger',
+      status_change: 'primary'
     }
+    const titleMap = {
+      create: '线索创建',
+      apply: '申请领取',
+      approve: '审批通过',
+      reject: '审批退回',
+      assign: '线索分配',
+      release: '退回公海',
+      convert: '线索转化',
+      invalidate: '标记无效',
+      status_change: '信息更新'
+    }
+    const items = []
+    // 日志记录
+    logList.forEach(log => {
+      items.push({
+        time: log.operateTime,
+        title: titleMap[log.actionType] || log.actionType,
+        desc: (log.operatorName ? '操作人：' + log.operatorName + '　' : '') + (log.actionDesc || ''),
+        type: typeMap[log.actionType] || 'primary'
+      })
+    })
+    // 跟进记录仍然保留
+    interactions.value.forEach(i => {
+      items.push({ time: i.interactTime, title: '跟进记录', desc: i.content, type: 'primary' })
+      if (i.nextTime) {
+        items.push({ time: i.nextTime, title: '计划跟进', desc: i.nextContent || '', type: 'warning' })
+      }
+    })
+    items.sort((a, b) => (b.time || '').localeCompare(a.time || ''))
+    timeline.value = items
   })
-  if (lead.value.convertTime) {
-    items.push({ time: lead.value.convertTime, title: '线索转化', desc: '已转化为客户', type: 'success' })
-  }
-  items.sort((a, b) => (b.time || '').localeCompare(a.time || ''))
-  timeline.value = items
 }
 
 function goBack() { router.push('/mk/lead/list') }
 function handleEdit() { router.push('/mk/lead/list') }
-function goCustomerDetail(customerId) { router.push('/mk/customer-detail/' + customerId) }
+const customerDetailVisible = ref(false)
+const customerDetailId = ref(null)
+function goCustomerDetail(customerId) { customerDetailId.value = customerId; customerDetailVisible.value = true }
 
 // 状态流转
 function handleStatusChange(status) {
@@ -322,12 +354,13 @@ function handleStatusChange(status) {
 function handleConvert() {
   proxy.$modal.confirm('确认将线索"' + lead.value.companyName + '"转化为客户？转化后将自动创建客户和联系人。').then(() => {
     convertLead(leadId, {}).then(res => {
-      proxy.$modal.msgSuccess('转化成功')
-      getLeadData()
-      // 跳转到新创建的客户详情页
-      if (res.convertCustomerId) {
-        router.push('/mk/customer-detail/' + res.convertCustomerId)
-      }
+proxy.$modal.msgSuccess('转化成功')
+getLeadData()
+// 弹窗打开新创建的客户详情
+if (res.convertCustomerId) {
+customerDetailId.value = res.convertCustomerId
+customerDetailVisible.value = true
+}
     })
   }).catch(() => {})
 }

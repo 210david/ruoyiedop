@@ -2,6 +2,7 @@ package com.ruoyi.mk.service;
 
 import java.util.List;
 import com.ruoyi.mk.domain.MkLead;
+import com.ruoyi.mk.domain.MkLeadLog;
 
 /**
  * 线索 Service接口
@@ -47,4 +48,7 @@ public interface IMkLeadService
     public List<MkLead> checkDuplicate(String companyName, String contactPhone);
     /** 自动评分 */
     public void autoScoreLead(MkLead lead);
+
+    /** 查询线索操作日志列表 */
+    public List<MkLeadLog> selectLeadLogList(Long leadId);
 }

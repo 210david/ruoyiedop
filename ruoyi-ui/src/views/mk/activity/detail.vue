@@ -1,63 +1,120 @@
 <template>
   <div class="app-container">
-    <!-- 顶部信息栏 -->
-    <el-page-header @back="goBack" class="mb16">
-      <template #content>
-        <span class="text-large font-600 mr-3">{{ activity.activityName || '活动详情' }}</span>
-        <el-tag v-if="activity.activityStatus" :type="statusTagType(activity.activityStatus)" size="small">
-          {{ statusLabel(activity.activityStatus) }}
-        </el-tag>
-      </template>
-      <template #extra>
+    <!-- 页面级标题横幅 -->
+    <div class="detail-page-header" v-loading="loading">
+      <div class="detail-page-header-back">
+        <el-button @click="goBack" icon="ArrowLeft" circle />
+      </div>
+      <div class="detail-page-header-main">
+        <div class="detail-page-header-title">{{ activity.activityName || '活动详情' }}</div>
+        <div class="detail-page-header-sub" v-if="activity.activityNo">
+          <span class="detail-page-header-no">编号：{{ activity.activityNo }}</span>
+          <dict-tag v-if="activity.activityStatus" :options="marketing_activity_status" :value="activity.activityStatus" />
+        </div>
+        <div class="detail-page-header-sub" v-else>
+          <span class="detail-page-header-placeholder">查看活动详细信息</span>
+        </div>
+      </div>
+      <div class="detail-page-header-actions">
         <el-button @click="goBack">返回列表</el-button>
-      </template>
-    </el-page-header>
+      </div>
+    </div>
 
     <el-tabs v-model="activeTab" v-loading="loading">
       <!-- 基本信息 -->
       <el-tab-pane label="基本信息" name="basic">
-        <!-- 活动信息 -->
-        <el-descriptions title="活动信息" :column="3" border class="detail-group">
-          <div class="rd-item"><span class="rd-label">活动编号</span><div class="rd-value">{{ activity.activityNo }}</div></div>
-          <div class="rd-item"><span class="rd-label">活动名称</span><div class="rd-value">{{ activity.activityName }}</div></div>
-          <div class="rd-item"><span class="rd-label">活动类型</span><div class="rd-value"><dict-tag :options="marketing_activity_type" :value="activity.activityType" /></div></div>
-          <div class="rd-item"><span class="rd-label">活动形式</span><div class="rd-value"><dict-tag :options="marketing_activity_form" :value="activity.activityForm" /></div></div>
-          <div class="rd-item"><span class="rd-label">活动状态</span><div class="rd-value"><dict-tag :options="marketing_activity_status" :value="activity.activityStatus" /></div></div>
-          <div class="rd-item"><span class="rd-label">活动地点</span><div class="rd-value">{{ activity.location }}</div></div>
-        </el-descriptions>
-        <!-- 时间与预算 -->
-        <el-descriptions title="时间与预算" :column="3" border class="detail-group">
-          <div class="rd-item"><span class="rd-label">开始时间</span><div class="rd-value">{{ activity.startTime }}</div></div>
-          <div class="rd-item"><span class="rd-label">结束时间</span><div class="rd-value">{{ activity.endTime }}</div></div>
-          <div class="rd-item"><span class="rd-label">活动预算</span><div class="rd-value">{{ activity.budget }} 元</div></div>
-          <div class="rd-item"><span class="rd-label">实际花费</span><div class="rd-value">{{ activity.cost }} 元</div></div>
-          <div class="rd-item"><span class="rd-label">目标人数</span><div class="rd-value">{{ activity.targetCount }} 人</div></div>
-          <div class="rd-item"><span class="rd-label">目标线索数</span><div class="rd-value">{{ activity.targetLeadCount }} 个</div></div>
-        </el-descriptions>
-        <!-- 负责信息 -->
-        <el-descriptions title="负责信息" :column="3" border class="detail-group">
-          <div class="rd-item"><span class="rd-label">负责人</span><div class="rd-value">{{ activity.userName }}</div></div>
-          <div class="rd-item"><span class="rd-label">联系方式</span><div class="rd-value">{{ activity.ownerPhone }}</div></div>
-          <div class="rd-item"><span class="rd-label">所属部门</span><div class="rd-value">{{ activity.deptName }}</div></div>
-        </el-descriptions>
-        <!-- 活动描述 -->
-        <el-descriptions title="活动描述" :column="3" border class="detail-group">
-          <div class="rd-item rd-item--full"><span class="rd-label">活动简介</span><div class="rd-value">{{ activity.summary }}</div></div>
-          <div class="rd-item rd-item--full"><span class="rd-label">活动详情</span><div class="rd-value">{{ activity.content }}</div></div>
-        <div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value">{{ activity.remark }}</div></div>
-      </el-descriptions>
-        <!-- 附件资料 -->
-        <el-descriptions title="附件资料" :column="3" border class="detail-group">
-          <div class="rd-item rd-item--full"><span class="rd-label">附件</span><div class="rd-value"><span v-if="!attachmentFileList.length">无</span>
-            <div v-else>
-              <div v-for="(file, index) in attachmentFileList" :key="index" class="detail-attachment-item">
-                <el-link :underline="false" @click="handleAttachmentPreview(file)" type="primary">
-                  <el-icon style="margin-right: 4px"><Document /></el-icon>
-                  <span>{{ file.name }}</span>
-                </el-link>
+        <div class="rd-detail-page">
+          <!-- 活动信息 -->
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('info')">
+              <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>活动信息</div>
+              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.info }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.info">
+              <div class="rd-grid">
+                <div class="rd-item"><span class="rd-label">活动编号</span><div class="rd-value">{{ activity.activityNo || '—' }}</div></div>
+                <div class="rd-item"><span class="rd-label">活动名称</span><div class="rd-value">{{ activity.activityName || '—' }}</div></div>
+                <div class="rd-item"><span class="rd-label">活动类型</span><div class="rd-value"><dict-tag :options="marketing_activity_type" :value="activity.activityType" /></div></div>
+                <div class="rd-item"><span class="rd-label">活动形式</span><div class="rd-value"><dict-tag :options="marketing_activity_form" :value="activity.activityForm" /></div></div>
+                <div class="rd-item"><span class="rd-label">活动状态</span><div class="rd-value"><dict-tag :options="marketing_activity_status" :value="activity.activityStatus" /></div></div>
+                <div class="rd-item"><span class="rd-label">活动地点</span><div class="rd-value" :class="{ 'rd-value--muted': !activity.location }">{{ activity.location || '暂无' }}</div></div>
               </div>
-            </div></div></div>
-        </el-descriptions>
+            </div>
+          </section>
+
+          <!-- 时间与预算 -->
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('schedule')">
+              <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>时间与预算</div>
+              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.schedule }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.schedule">
+              <div class="rd-grid">
+                <div class="rd-item"><span class="rd-label">开始时间</span><div class="rd-value">{{ activity.startTime || '—' }}</div></div>
+                <div class="rd-item"><span class="rd-label">结束时间</span><div class="rd-value">{{ activity.endTime || '—' }}</div></div>
+                <div class="rd-item"><span class="rd-label">活动预算</span><div class="rd-value rd-amount">{{ formatAmount(activity.budget) }} 元</div></div>
+                <div class="rd-item"><span class="rd-label">实际花费</span><div class="rd-value rd-amount">{{ formatAmount(activity.cost) }} 元</div></div>
+                <div class="rd-item"><span class="rd-label">目标人数</span><div class="rd-value">{{ activity.targetCount || 0 }} 人</div></div>
+                <div class="rd-item"><span class="rd-label">目标线索数</span><div class="rd-value">{{ activity.targetLeadCount || 0 }} 个</div></div>
+              </div>
+            </div>
+          </section>
+
+          <!-- 负责信息 -->
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('owner')">
+              <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>负责信息</div>
+              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.owner }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.owner">
+              <div class="rd-grid">
+                <div class="rd-item"><span class="rd-label">负责人</span><div class="rd-value" :class="{ 'rd-value--muted': !activity.userName }">{{ activity.userName || '暂无' }}</div></div>
+                <div class="rd-item"><span class="rd-label">联系方式</span><div class="rd-value" :class="{ 'rd-value--muted': !activity.ownerPhone }">{{ activity.ownerPhone || '暂无' }}</div></div>
+                <div class="rd-item"><span class="rd-label">所属部门</span><div class="rd-value" :class="{ 'rd-value--muted': !activity.deptName }">{{ activity.deptName || '暂无' }}</div></div>
+              </div>
+            </div>
+          </section>
+
+          <!-- 活动描述 -->
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('desc')">
+              <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg></span>活动描述</div>
+              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.desc }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.desc">
+              <div class="rd-grid">
+                <div class="rd-item rd-item--full"><span class="rd-label">活动简介</span><div class="rd-value" :class="{ 'rd-value--muted': !activity.summary }">{{ activity.summary || '暂无' }}</div></div>
+                <div class="rd-item rd-item--full"><span class="rd-label">活动详情</span><div class="rd-value" :class="{ 'rd-value--muted': !activity.content }">{{ activity.content || '暂无' }}</div></div>
+                <div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value" :class="{ 'rd-value--muted': !activity.remark }">{{ activity.remark || '暂无' }}</div></div>
+              </div>
+            </div>
+          </section>
+
+          <!-- 附件资料 -->
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('attach')">
+              <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></span>附件资料</div>
+              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.attach }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.attach">
+              <div v-if="attachmentFileList.length > 0" class="rd-grid">
+                <div class="rd-item rd-item--full" v-for="(file, index) in attachmentFileList" :key="index">
+                  <span class="rd-label">附件{{ index + 1 }}</span>
+                  <div class="rd-value">
+                    <el-link :underline="false" @click="handleAttachmentPreview(file)" type="primary">
+                      <el-icon style="margin-right: 4px"><Document /></el-icon>
+                      <span>{{ file.name }}</span>
+                    </el-link>
+                  </div>
+                </div>
+              </div>
+              <div v-else class="rd-empty">
+                <svg class="rd-empty-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                <p class="rd-empty-text">暂无附件资料</p>
+              </div>
+            </div>
+          </section>
+        </div>
       </el-tab-pane>
 
       <!-- 参与人列表 -->
@@ -68,9 +125,9 @@
         </el-row>
         <el-table :data="participants" border size="small">
           <el-table-column label="企业名称" prop="companyName" show-overflow-tooltip />
-          <el-table-column label="联系人" prop="contactName" width="100" />
-          <el-table-column label="手机号" prop="contactPhone" width="130" />
-          <el-table-column label="职位" prop="position" width="100" />
+          <el-table-column label="联系人" prop="contactName" width="100" align="center" />
+          <el-table-column label="手机号" prop="contactPhone" width="130" align="center" />
+          <el-table-column label="职位" prop="position" width="100" align="center" />
           <el-table-column label="状态" prop="participateStatus" width="90" align="center">
             <template #default="scope"><dict-tag :options="marketing_participate_status" :value="scope.row.participateStatus" /></template>
           </el-table-column>
@@ -86,74 +143,110 @@
 
       <!-- 活动效果 -->
       <el-tab-pane label="活动效果" name="result">
-        <el-descriptions :column="3" border class="mb16">
-          <div class="rd-item"><span class="rd-label">实际参与</span><div class="rd-value">{{ activity.actualCount || 0 }}</div></div>
-          <div class="rd-item"><span class="rd-label">获取线索</span><div class="rd-value">{{ activity.leadCount || 0 }}</div></div>
-          <div class="rd-item"><span class="rd-label">MQL数量</span><div class="rd-value">{{ activity.mqlCount || 0 }}</div></div>
-          <div class="rd-item"><span class="rd-label">SQL数量</span><div class="rd-value">{{ activity.sqlCount || 0 }}</div></div>
-          <div class="rd-item"><span class="rd-label">转化商机</span><div class="rd-value">{{ activity.opportunityCount || 0 }}</div></div>
-          <div class="rd-item"><span class="rd-label">成交金额</span><div class="rd-value">{{ activity.dealAmount || 0 }}</div></div>
-          <div class="rd-item"><span class="rd-label">实际ROI(%)</span><div class="rd-value">{{ activity.actualRoi || 0 }}%</div></div>
-        </el-descriptions>
-        <el-button type="warning" icon="DataAnalysis" @click="handleReview" v-hasPermi="['marketing:activity:review']" v-if="activity.activityStatus === '3'">一键复盘</el-button>
+        <div class="rd-detail-page">
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('result')">
+              <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>活动效果数据</div>
+              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.result }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.result">
+              <div class="rd-grid">
+                <div class="rd-item"><span class="rd-label">实际参与</span><div class="rd-value">{{ activity.actualCount || 0 }} 人</div></div>
+                <div class="rd-item"><span class="rd-label">获取线索</span><div class="rd-value">{{ activity.leadCount || 0 }} 个</div></div>
+                <div class="rd-item"><span class="rd-label">MQL数量</span><div class="rd-value">{{ activity.mqlCount || 0 }} 个</div></div>
+                <div class="rd-item"><span class="rd-label">SQL数量</span><div class="rd-value">{{ activity.sqlCount || 0 }} 个</div></div>
+                <div class="rd-item"><span class="rd-label">转化商机</span><div class="rd-value">{{ activity.opportunityCount || 0 }} 个</div></div>
+                <div class="rd-item"><span class="rd-label">成交金额</span><div class="rd-value rd-amount">{{ formatAmount(activity.dealAmount) }} 元</div></div>
+                <div class="rd-item"><span class="rd-label">实际ROI</span><div class="rd-value">{{ activity.actualRoi || 0 }}%</div></div>
+              </div>
+            </div>
+          </section>
+          <div style="padding: 8px 0;">
+            <el-button type="warning" icon="DataAnalysis" @click="handleReview" v-hasPermi="['marketing:activity:review']" v-if="activity.activityStatus === '3'">一键复盘</el-button>
+          </div>
+        </div>
       </el-tab-pane>
 
       <!-- 报名推广 -->
       <el-tab-pane label="报名推广" name="promote" v-loading="promoteLoading">
-        <el-row :gutter="20">
-          <el-col :span="10">
-            <el-card shadow="hover">
-              <template #header><span>报名二维码</span></template>
-              <div style="text-align: center;">
-                <canvas ref="promoteQrRef" style="border-radius: 8px; border: 1px solid #ebeef5;"></canvas>
-                <div style="margin-top: 12px;">
-                  <el-button type="primary" size="small" icon="Download" @click="downloadPromoteQr">下载二维码</el-button>
-                  <el-button type="success" size="small" icon="Promotion" @click="openPromotePage">预览报名页</el-button>
-                </div>
-              </div>
-            </el-card>
-          </el-col>
-          <el-col :span="14">
-            <el-card shadow="hover">
-              <template #header><span>报名链接</span></template>
-              <el-input :model-value="promoteUrl" readonly style="margin-bottom: 16px;">
-                <template #append>
-                  <el-button @click="copyPromoteUrl">复制链接</el-button>
-                </template>
-              </el-input>
-              <el-descriptions :column="2" border size="small">
-                <div class="rd-item"><span class="rd-label">报名人数</span><div class="rd-value">{{ activity.signupCount || 0 }}</div></div>
-                <div class="rd-item"><span class="rd-label">签到人数</span><div class="rd-value">{{ activity.signedCount || 0 }}</div></div>
-                <div class="rd-item"><span class="rd-label">目标人数</span><div class="rd-value">{{ activity.targetCount || 0 }}</div></div>
-                <div class="rd-item"><span class="rd-label">转化线索</span><div class="rd-value">{{ activity.convertedLeadCount || 0 }}</div></div>
-              </el-descriptions>
-              <el-divider content-position="left">使用说明</el-divider>
-              <div style="font-size: 13px; color: #606266; line-height: 2;">
-                <p><b>1. 线上推广</b>：复制链接通过微信/邮件/短信发给客户</p>
-                <p><b>2. 线下推广</b>：下载二维码印制在海报/易拉宝/桌牌上</p>
-                <p><b>3. 现场签到</b>：客户报名后获得签到码，活动当天扫码签到</p>
-                <p><b>4. 线索转化</b>：签到后在"参与人"Tab一键转线索</p>
-              </div>
-            </el-card>
-          </el-col>
-        </el-row>
+        <div class="rd-detail-page">
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('promote')">
+              <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></span>报名推广</div>
+              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.promote }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.promote">
+              <el-row :gutter="20">
+                <el-col :span="10">
+                  <div style="text-align: center;">
+                    <canvas ref="promoteQrRef" style="border-radius: 8px; border: 1px solid #ebeef5;"></canvas>
+                    <div style="margin-top: 12px;">
+                      <el-button type="primary" size="small" icon="Download" @click="downloadPromoteQr">下载二维码</el-button>
+                      <el-button type="success" size="small" icon="Promotion" @click="openPromotePage">预览报名页</el-button>
+                    </div>
+                  </div>
+                </el-col>
+                <el-col :span="14">
+                  <div class="rd-grid">
+                    <div class="rd-item rd-item--full"><span class="rd-label">报名链接</span><div class="rd-value">
+                      <el-input :model-value="promoteUrl" readonly>
+                        <template #append><el-button @click="copyPromoteUrl">复制链接</el-button></template>
+                      </el-input>
+                    </div></div>
+                    <div class="rd-item"><span class="rd-label">报名人数</span><div class="rd-value">{{ activity.signupCount || 0 }} 人</div></div>
+                    <div class="rd-item"><span class="rd-label">签到人数</span><div class="rd-value">{{ activity.signedCount || 0 }} 人</div></div>
+                    <div class="rd-item"><span class="rd-label">目标人数</span><div class="rd-value">{{ activity.targetCount || 0 }} 人</div></div>
+                    <div class="rd-item"><span class="rd-label">转化线索</span><div class="rd-value">{{ activity.convertedLeadCount || 0 }} 个</div></div>
+                  </div>
+                  <el-divider content-position="left">使用说明</el-divider>
+                  <div style="font-size: 13px; color: #6b7280; line-height: 2;">
+                    <p><b>1. 线上推广</b>：复制链接通过微信/邮件/短信发给客户</p>
+                    <p><b>2. 线下推广</b>：下载二维码印制在海报/易拉宝/桌牌上</p>
+                    <p><b>3. 现场签到</b>：客户报名后获得签到码，活动当天扫码签到</p>
+                    <p><b>4. 线索转化</b>：签到后在"参与人"Tab一键转线索</p>
+                  </div>
+                </el-col>
+              </el-row>
+            </div>
+          </section>
+        </div>
       </el-tab-pane>
 
       <!-- 操作日志 -->
       <el-tab-pane label="操作日志" name="logs">
-        <el-timeline>
-          <el-timeline-item v-for="log in statusLogs" :key="log.logId" :timestamp="log.createTime" placement="top">
-            <el-card>
-              <p><b>{{ log.operatorName }}</b> 将状态从
-                <el-tag size="small" :type="statusTagType(log.fromStatus)">{{ statusLabel(log.fromStatus) }}</el-tag>
-                变更为
-                <el-tag size="small" :type="statusTagType(log.toStatus)">{{ statusLabel(log.toStatus) }}</el-tag>
-              </p>
-              <p v-if="log.remark" class="text-gray">备注：{{ log.remark }}</p>
-            </el-card>
-          </el-timeline-item>
-        </el-timeline>
-        <el-empty v-if="statusLogs.length === 0" description="暂无操作日志" />
+        <div class="rd-detail-page">
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('logs')">
+              <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>操作日志</div>
+              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.logs }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.logs">
+              <div v-if="statusLogs.length > 0" class="rd-timeline">
+                <div v-for="log in statusLogs" :key="log.logId" class="rd-timeline-item">
+                  <div class="rd-timeline-dot rd-timeline-dot--success"></div>
+                  <div class="rd-timeline-content">
+                    <div class="rd-timeline-header">
+                      <span class="rd-timeline-title">
+                        <el-tag size="small" :type="statusTagType(log.fromStatus)">{{ statusLabel(log.fromStatus) }}</el-tag>
+                        →
+                        <el-tag size="small" :type="statusTagType(log.toStatus)">{{ statusLabel(log.toStatus) }}</el-tag>
+                      </span>
+                      <span class="rd-timeline-time">{{ log.createTime }}</span>
+                    </div>
+                    <div class="rd-timeline-body">
+                      <div class="rd-item"><span class="rd-label">操作人</span><div class="rd-value">{{ log.operatorName }}</div></div>
+                    </div>
+                    <div class="rd-timeline-comment" v-if="log.remark">{{ log.remark }}</div>
+                  </div>
+                </div>
+              </div>
+              <div v-else class="rd-empty">
+                <svg class="rd-empty-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                <p class="rd-empty-text">暂无操作日志</p>
+              </div>
+            </div>
+          </section>
+        </div>
       </el-tab-pane>
     </el-tabs>
 
@@ -174,8 +267,8 @@
         <div class="rd-item"><span class="rd-label">MQL数量</span><div class="rd-value">{{ reviewData.mqlCount }}</div></div>
         <div class="rd-item"><span class="rd-label">SQL数量</span><div class="rd-value">{{ reviewData.sqlCount }}</div></div>
         <div class="rd-item"><span class="rd-label">转化商机</span><div class="rd-value">{{ reviewData.opportunityCount }}</div></div>
-        <div class="rd-item"><span class="rd-label">成交金额</span><div class="rd-value">{{ reviewData.dealAmount }}</div></div>
-        <div class="rd-item"><span class="rd-label">活动预算</span><div class="rd-value">{{ reviewData.budget }}</div></div>
+        <div class="rd-item"><span class="rd-label">成交金额</span><div class="rd-value rd-amount">{{ formatAmount(reviewData.dealAmount) }} 元</div></div>
+        <div class="rd-item"><span class="rd-label">活动预算</span><div class="rd-value rd-amount">{{ formatAmount(reviewData.budget) }} 元</div></div>
         <div class="rd-item"><span class="rd-label">实际ROI</span><div class="rd-value">{{ reviewData.actualRoi }}%</div></div>
       </div>
       <div class="mt16">
@@ -221,6 +314,8 @@ import QRCode from 'qrcode'
 import { getActivity, getActivityStatusLogs, reviewActivity, saveReview, getRegisterUrl } from '@/api/mk/activity'
 import { getParticipantsByActivity, addParticipant, signInParticipant, convertToLead } from '@/api/mk/participant'
 import { listContact } from '@/api/mk/contact'
+import { useDetailCard, formatAmount } from '@/composables/useDetailCard'
+const { collapsedCards, toggleCard } = useDetailCard(['info', 'schedule', 'owner', 'desc', 'attach', 'result', 'promote', 'logs'])
 
 const filePreviewRef = ref(null)
 const attachmentFileList = computed(() => {
@@ -236,8 +331,6 @@ function handleAttachmentPreview(file) {
 
 const route = useRoute()
 const router = useRouter()
-import { useDetailCard } from '@/composables/useDetailCard'
-const { collapsedCards, toggleCard } = useDetailCard([])
 const { proxy } = getCurrentInstance()
 const { marketing_activity_type, marketing_activity_form, marketing_activity_status, marketing_participate_status } = proxy.useDict('marketing_activity_type', 'marketing_activity_form', 'marketing_activity_status', 'marketing_participate_status')
 
@@ -409,20 +502,71 @@ function openPromotePage() {
 </script>
 
 <style scoped>
-.mb16 { margin-bottom: 16px; }
 .ml5 { margin-left: 5px; }
+.mb8 { margin-bottom: 8px; }
 .mt16 { margin-top: 16px; }
-.text-gray { color: #999; }
-.detail-group {
-  margin-bottom: 24px;
+
+/* 独立详情页：rd-page 容器取消 max-width 限制 */
+.rd-detail-page {
+  max-width: none;
 }
-.detail-group :deep(.el-descriptions__title) {
-  font-size: 15px;
-  font-weight: 600;
-  color: #303133;
+
+/* 页面级标题横幅 */
+.detail-page-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 20px;
+  background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 60%, #3b82f6 100%);
+  border-radius: 12px;
   margin-bottom: 12px;
+  position: relative;
+  overflow: hidden;
 }
-.detail-attachment-item {
-  margin-bottom: 6px;
+.detail-page-header::before {
+  content: '';
+  position: absolute;
+  top: -30px;
+  right: -15px;
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(255 255 255 / 0.15) 0%, transparent 70%);
+  pointer-events: none;
+}
+.detail-page-header-back {
+  flex-shrink: 0;
+}
+.detail-page-header-main {
+  flex: 1;
+  min-width: 0;
+}
+.detail-page-header-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+}
+.detail-page-header-sub {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+.detail-page-header-no {
+  font-size: 13px;
+  font-weight: 500;
+  color: rgb(255 255 255 / 0.8);
+  font-variant-numeric: tabular-nums;
+}
+.detail-page-header-placeholder {
+  font-size: 13px;
+  color: rgb(255 255 255 / 0.6);
+}
+.detail-page-header-actions {
+  flex-shrink: 0;
+  padding-right: 8px;
 }
 </style>

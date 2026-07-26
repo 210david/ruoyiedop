@@ -85,3 +85,8 @@ export function invalidateLead(leadId, data) {
 export function checkLeadDuplicate(companyName, contactPhone) {
   return request({ url: '/mk/lead/checkDuplicate', method: 'get', params: { companyName, contactPhone } })
 }
+
+// 查询线索操作日志（时间线）
+export function getLeadLog(leadId) {
+  return request({ url: '/mk/lead/log/' + leadId, method: 'get' })
+}

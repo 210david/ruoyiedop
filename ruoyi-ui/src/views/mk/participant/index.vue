@@ -63,7 +63,7 @@
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
     <!-- 新增/修改对话框 -->
-    <el-dialog v-model="open" width="750px" append-to-body draggable class="rd-dialog">
+    <el-dialog v-model="open" width="800px" append-to-body draggable class="rd-dialog">
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
@@ -71,40 +71,58 @@
         </div>
       </template>
       <el-form ref="participantRef" :model="form" :rules="rules" label-width="100px">
-        <el-collapse v-model="activeNames">
-          <el-collapse-item title="活动关联" name="activity">
-            <el-row>
-              <el-col :span="24"><el-form-item label="所属活动" prop="activityId">
-                <el-select v-model="form.activityId" filterable placeholder="请选择活动" style="width: 100%">
-                  <el-option v-for="a in activityOptions" :key="a.activityId" :label="a.activityName" :value="a.activityId" />
-                </el-select>
-              </el-form-item></el-col>
-            </el-row>
-          </el-collapse-item>
-          <el-collapse-item title="参与人信息" name="info">
-            <el-row>
-              <el-col :span="24"><el-form-item label="从联系人库选">
-                <el-select v-model="form.contactId" filterable clearable placeholder="选择后自动带出信息" style="width: 100%" @change="onContactSelect">
-                  <el-option v-for="c in contactOptions" :key="c.contactId" :label="c.name + ' (' + (c.customerName||'') + ')'" :value="c.contactId" />
-                </el-select>
-              </el-form-item></el-col>
-              <el-col :span="12"><el-form-item label="企业名称" prop="companyName"><el-input v-model="form.companyName" placeholder="请输入企业名称" /></el-form-item></el-col>
-              <el-col :span="12"><el-form-item label="联系人" prop="contactName"><el-input v-model="form.contactName" placeholder="请输入联系人姓名" /></el-form-item></el-col>
-              <el-col :span="12"><el-form-item label="手机号" prop="contactPhone"><el-input v-model="form.contactPhone" placeholder="请输入手机号" /></el-form-item></el-col>
-              <el-col :span="12"><el-form-item label="邮箱" prop="contactEmail"><el-input v-model="form.contactEmail" placeholder="请输入邮箱" /></el-form-item></el-col>
-              <el-col :span="12"><el-form-item label="职位" prop="position"><el-input v-model="form.position" placeholder="请输入职位" /></el-form-item></el-col>
-              <el-col :span="12"><el-form-item label="参与状态" prop="participateStatus">
-                <el-select v-model="form.participateStatus" placeholder="请选择" style="width: 100%">
-                  <el-option v-for="d in marketing_participate_status" :key="d.value" :label="d.label" :value="d.value" />
-                </el-select>
-              </el-form-item></el-col>
-              <el-col :span="12"><el-form-item label="签到时间" prop="signTime"><el-date-picker v-model="form.signTime" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" placeholder="选择签到时间" style="width: 100%" /></el-form-item></el-col>
-            </el-row>
-          </el-collapse-item>
-          <el-collapse-item title="其他信息" name="other">
-            <el-form-item label="备注" prop="remark"><el-input v-model="form.remark" type="textarea" :rows="2" placeholder="请输入备注" /></el-form-item>
-          </el-collapse-item>
-        </el-collapse>
+        <div class="rd-page">
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('c_activity')">
+              <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>活动关联</div>
+              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c_activity }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.c_activity">
+              <el-row>
+                <el-col :span="24"><el-form-item label="所属活动" prop="activityId">
+                  <el-select v-model="form.activityId" filterable placeholder="请选择活动" style="width: 100%">
+                    <el-option v-for="a in activityOptions" :key="a.activityId" :label="a.activityName" :value="a.activityId" />
+                  </el-select>
+                </el-form-item></el-col>
+              </el-row>
+            </div>
+          </section>
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('c_info')">
+              <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>参与人信息</div>
+              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c_info }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.c_info">
+              <el-row>
+                <el-col :span="24"><el-form-item label="从联系人库选">
+                  <el-select v-model="form.contactId" filterable clearable placeholder="选择后自动带出信息" style="width: 100%" @change="onContactSelect">
+                    <el-option v-for="c in contactOptions" :key="c.contactId" :label="c.name + ' (' + (c.customerName||'') + ')'" :value="c.contactId" />
+                  </el-select>
+                </el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="企业名称" prop="companyName"><el-input v-model="form.companyName" placeholder="请输入企业名称" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="联系人" prop="contactName"><el-input v-model="form.contactName" placeholder="请输入联系人姓名" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="手机号" prop="contactPhone"><el-input v-model="form.contactPhone" placeholder="请输入手机号" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="邮箱" prop="contactEmail"><el-input v-model="form.contactEmail" placeholder="请输入邮箱" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="职位" prop="position"><el-input v-model="form.position" placeholder="请输入职位" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="参与状态" prop="participateStatus">
+                  <el-select v-model="form.participateStatus" placeholder="请选择" style="width: 100%">
+                    <el-option v-for="d in marketing_participate_status" :key="d.value" :label="d.label" :value="d.value" />
+                  </el-select>
+                </el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="签到时间" prop="signTime"><el-date-picker v-model="form.signTime" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" placeholder="选择签到时间" style="width: 100%" /></el-form-item></el-col>
+              </el-row>
+            </div>
+          </section>
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('c_other')">
+              <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>其他信息</div>
+              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c_other }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.c_other">
+              <el-form-item label="备注" prop="remark"><el-input v-model="form.remark" type="textarea" :rows="2" placeholder="请输入备注" /></el-form-item>
+            </div>
+          </section>
+        </div>
       </el-form>
       <template #footer>
         <el-button type="primary" @click="submitForm">确 定</el-button>
@@ -112,39 +130,62 @@
       </template>
     </el-dialog>
 
-    <!-- 查看详情对话框 -->
-    <el-dialog v-model="viewOpen" width="750px" append-to-body draggable class="rd-dialog">
+    <!-- 详情弹窗 -->
+    <el-dialog v-model="viewOpen" width="900px" append-to-body draggable class="rd-dialog">
       <template #header>
         <div class="rd-detail-header">
-          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M9 12h6"/><path d="M12 9v6"/></svg></div>
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
           <span class="rd-detail-header-title">参与人详情</span>
+          <div class="rd-detail-header-sub" v-if="viewForm.contactName">
+            <span class="rd-detail-header-divider"></span>
+            <span class="rd-detail-header-no">{{ viewForm.contactName }}</span>
+            <dict-tag :options="marketing_participate_status" :value="viewForm.participateStatus" />
+          </div>
         </div>
       </template>
-      <el-collapse v-model="viewActiveNames">
-        <el-collapse-item title="活动关联" name="activity">
-          <div class="rd-grid">
-            <div class="rd-item"><span class="rd-label">所属活动</span><div class="rd-value">{{ viewForm.activityName }}</div></div>
+      <div class="rd-page">
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('v_activity')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>活动关联</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v_activity }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
           </div>
-        </el-collapse-item>
-        <el-collapse-item title="参与人信息" name="info">
-          <div class="rd-grid">
-            <div class="rd-item"><span class="rd-label">企业名称</span><div class="rd-value">{{ viewForm.companyName }}</div></div>
-            <div class="rd-item"><span class="rd-label">联系人</span><div class="rd-value">{{ viewForm.contactName }}</div></div>
-            <div class="rd-item"><span class="rd-label">手机号</span><div class="rd-value">{{ viewForm.contactPhone }}</div></div>
-            <div class="rd-item"><span class="rd-label">邮箱</span><div class="rd-value">{{ viewForm.contactEmail }}</div></div>
-            <div class="rd-item"><span class="rd-label">职位</span><div class="rd-value">{{ viewForm.position }}</div></div>
-            <div class="rd-item"><span class="rd-label">参与状态</span><div class="rd-value"><dict-tag :options="marketing_participate_status" :value="viewForm.participateStatus" /></div></div>
-            <div class="rd-item"><span class="rd-label">签到时间</span><div class="rd-value">{{ viewForm.signTime }}</div></div>
-            <div class="rd-item"><span class="rd-label">关联线索ID</span><div class="rd-value">{{ viewForm.leadId || '未转化' }}</div></div>
+          <div class="rd-card-body" v-show="!collapsedCards.v_activity">
+            <div class="rd-grid">
+              <div class="rd-item rd-item--full"><span class="rd-label">所属活动</span><div class="rd-value">{{ viewForm.activityName }}</div></div>
+            </div>
           </div>
-        </el-collapse-item>
-        <el-collapse-item title="其他信息" name="other">
-          <div class="rd-grid">
-            <div class="rd-item"><span class="rd-label">创建时间</span><div class="rd-value">{{ viewForm.createTime }}</div></div>
-            <div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value">{{ viewForm.remark }}</div></div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('v_info')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>参与人信息</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v_info }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
           </div>
-        </el-collapse-item>
-      </el-collapse>
+          <div class="rd-card-body" v-show="!collapsedCards.v_info">
+            <div class="rd-grid">
+              <div class="rd-item"><span class="rd-label">企业名称</span><div class="rd-value">{{ viewForm.companyName }}</div></div>
+              <div class="rd-item"><span class="rd-label">联系人</span><div class="rd-value">{{ viewForm.contactName }}</div></div>
+              <div class="rd-item"><span class="rd-label">手机号</span><div class="rd-value">{{ viewForm.contactPhone }}</div></div>
+              <div class="rd-item"><span class="rd-label">邮箱</span><div class="rd-value" :class="{ 'rd-value--muted': !viewForm.contactEmail }">{{ viewForm.contactEmail || '暂无' }}</div></div>
+              <div class="rd-item"><span class="rd-label">职位</span><div class="rd-value" :class="{ 'rd-value--muted': !viewForm.position }">{{ viewForm.position || '暂无' }}</div></div>
+              <div class="rd-item"><span class="rd-label">参与状态</span><div class="rd-value"><dict-tag :options="marketing_participate_status" :value="viewForm.participateStatus" /></div></div>
+              <div class="rd-item"><span class="rd-label">签到时间</span><div class="rd-value">{{ viewForm.signTime }}</div></div>
+              <div class="rd-item"><span class="rd-label">关联线索</span><div class="rd-value" :class="{ 'rd-value--muted': !viewForm.leadId }">{{ viewForm.leadId ? '已转线索 (ID: ' + viewForm.leadId + ')' : '未转化' }}</div></div>
+            </div>
+          </div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('v_other')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>其他信息</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v_other }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.v_other">
+            <div class="rd-grid">
+              <div class="rd-item"><span class="rd-label">创建时间</span><div class="rd-value">{{ viewForm.createTime }}</div></div>
+              <div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value" :class="{ 'rd-value--muted': !viewForm.remark }">{{ viewForm.remark || '暂无' }}</div></div>
+            </div>
+          </div>
+        </section>
+      </div>
     </el-dialog>
   </div>
 </template>
@@ -155,7 +196,7 @@ import { listActivity } from '@/api/mk/activity'
 import { listContact } from '@/api/mk/contact'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
-const { collapsedCards, toggleCard } = useDetailCard([])
+const { collapsedCards, toggleCard } = useDetailCard(['c_activity', 'c_info', 'c_other', 'v_activity', 'v_info', 'v_other'])
 
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('mk_participant_index')
@@ -174,8 +215,6 @@ const title = ref('')
 const activityOptions = ref([])
 const contactOptions = ref([])
 const viewForm = ref({})
-const activeNames = ref(['activity', 'info', 'other'])
-const viewActiveNames = ref(['activity', 'info', 'other'])
 
 const data = reactive({
   form: {},
@@ -206,9 +245,15 @@ function reset() {
   form.value = { activityId: undefined, leadId: undefined, contactId: undefined, companyName: undefined, contactName: undefined, contactPhone: undefined, contactEmail: undefined, position: undefined, participateStatus: '0', source: '0', signTime: undefined, remark: undefined }
   proxy.resetForm('participantRef')
 }
-function handleAdd() { reset(); if (contactOptions.value.length === 0) getContactOptions(); open.value = true; title.value = '新增活动参与人' }
-function handleUpdate(row) { reset(); if (contactOptions.value.length === 0) getContactOptions(); getParticipant(row.participantId || ids.value[0]).then(res => { form.value = res.data; open.value = true; title.value = '修改活动参与人' }) }
-function handleView(row) { getParticipant(row.participantId).then(res => { viewForm.value = res.data; viewOpen.value = true }) }
+function handleAdd() { reset(); if (contactOptions.value.length === 0) getContactOptions(); Object.keys(collapsedCards).forEach(k => { if (k.startsWith('c_')) collapsedCards[k] = false }); open.value = true; title.value = '新增活动参与人' }
+function handleUpdate(row) { reset(); if (contactOptions.value.length === 0) getContactOptions(); getParticipant(row.participantId || ids.value[0]).then(res => { form.value = res.data; Object.keys(collapsedCards).forEach(k => { if (k.startsWith('c_')) collapsedCards[k] = false }); open.value = true; title.value = '修改活动参与人' }) }
+function handleView(row) {
+  getParticipant(row.participantId).then(res => {
+    viewForm.value = res.data
+    Object.keys(collapsedCards).forEach(k => { if (k.startsWith('v_')) collapsedCards[k] = false })
+    viewOpen.value = true
+  })
+}
 function onContactSelect(contactId) {
   if (contactId) {
     const c = contactOptions.value.find(i => i.contactId === contactId)

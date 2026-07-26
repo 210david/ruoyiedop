@@ -57,7 +57,7 @@
       <el-table-column label="客户状态" prop="customerStatus" :width="colWidth('customerStatus', 100)" resizable align="center">
         <template #default="scope"><dict-tag :options="marketing_customer_status" :value="scope.row.customerStatus" /></template>
       </el-table-column>
-      <el-table-column label="累计交易额" prop="totalAmount" :width="colWidth('totalAmount', 120)" resizable align="right" />
+      <el-table-column label="累计交易额" prop="totalAmount" :width="colWidth('totalAmount', 120)" resizable align="right"><template #default="scope"><span class="rd-amount rd-amount--negative">￥{{ formatAmount(scope.row.totalAmount) }}</span></template></el-table-column>
       <el-table-column label="负责人" prop="userName" :width="colWidth('userName', 100)" resizable>
         <template #default="scope">
           <span v-if="scope.row.userName">{{ scope.row.userName }}</span>
@@ -94,9 +94,14 @@
           <span class="rd-detail-header-title">{{ title }}</span>
         </div>
       </template>
-      <el-form ref="customerRef" :model="form" :rules="rules" label-width="110px">
-        <el-collapse v-model="activeNames">
-          <el-collapse-item title="基本信息" name="basic">
+      <el-form ref="customerRef" :model="form" :rules="rules" label-width="100px">
+        <div class="rd-page">
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('c_basic')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>基本信息</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c_basic }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.c_basic">
             <el-row>
               <el-col :span="12"><el-form-item label="客户编号" prop="customerNo"><el-input v-model="form.customerNo" placeholder="保存后自动生成" disabled /></el-form-item></el-col>
               <el-col :span="12"><el-form-item label="企业名称" prop="customerName"><el-input v-model="form.customerName" placeholder="请输入企业名称" /></el-form-item></el-col>
@@ -122,8 +127,14 @@
                 </el-select>
               </el-form-item></el-col>
             </el-row>
-          </el-collapse-item>
-          <el-collapse-item title="企业信息" name="company">
+          </div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('c_company')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/><line x1="9" y1="9" x2="9" y2="9.01"/><line x1="9" y1="12" x2="9" y2="12.01"/><line x1="9" y1="15" x2="9" y2="15.01"/><line x1="9" y1="18" x2="9" y2="18.01"/></svg></span>企业信息</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c_company }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.c_company">
             <el-row>
               <el-col :span="12"><el-form-item label="所属行业" prop="industry">
                 <el-select v-model="form.industry" placeholder="请选择" style="width: 100%">
@@ -137,20 +148,38 @@
               </el-form-item></el-col>
               <el-col :span="12"><el-form-item label="官网" prop="website"><el-input v-model="form.website" placeholder="请输入官网地址" /></el-form-item></el-col>
             </el-row>
-          </el-collapse-item>
-          <el-collapse-item title="地址信息" name="address">
+          </div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('c_address')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></span>地址信息</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c_address }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.c_address">
             <el-row>
               <el-col :span="24"><el-form-item label="详细地址" prop="address"><el-input v-model="form.address" placeholder="请输入详细地址" /></el-form-item></el-col>
             </el-row>
-          </el-collapse-item>
-          <el-collapse-item title="业务信息" name="business">
+          </div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('c_business')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>业务信息</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c_business }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.c_business">
             <el-row>
               <el-col :span="12"><el-form-item label="首次接触" prop="firstContactDate"><el-date-picker v-model="form.firstContactDate" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" style="width: 100%" /></el-form-item></el-col>
               <el-col :span="12"><el-form-item label="合作开始" prop="cooperationDate"><el-date-picker v-model="form.cooperationDate" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" style="width: 100%" /></el-form-item></el-col>
               <el-col :span="12"><el-form-item label="累计交易额" prop="totalAmount"><el-input-number v-model="form.totalAmount" :min="0" :precision="2" controls-position="right" style="width: 100%" /></el-form-item></el-col>
             </el-row>
-          </el-collapse-item>
-          <el-collapse-item title="负责信息" name="owner">
+          </div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('c_owner')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>负责信息</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c_owner }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.c_owner">
             <el-row>
               <el-col :span="12"><el-form-item label="负责人" prop="userId">
                 <el-input v-model="form.userName" readonly placeholder="请选择负责人" style="width: 100%" @click="openUserPicker">
@@ -173,15 +202,24 @@
                 </el-input>
               </el-form-item></el-col>
             </el-row>
-          </el-collapse-item>
-          <el-collapse-item title="其他信息" name="other">
+          </div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('c_other')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>其他信息</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c_other }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.c_other">
             <el-form-item label="备注" prop="remark"><el-input v-model="form.remark" type="textarea" :rows="2" placeholder="请输入备注" /></el-form-item>
-          </el-collapse-item>
-        </el-collapse>
+          </div>
+        </section>
+        </div>
       </el-form>
       <template #footer>
-        <el-button type="primary" @click="submitForm">确 定</el-button>
-        <el-button @click="cancel">取 消</el-button>
+        <div class="dialog-footer">
+          <el-button type="primary" @click="submitForm">确 定</el-button>
+          <el-button @click="cancel">取 消</el-button>
+        </div>
       </template>
     </el-dialog>
 
@@ -195,9 +233,14 @@
       </template>
       <el-form label-width="80px">
         <el-form-item label="负责人">
-          <el-select v-model="assignUserId" filterable clearable placeholder="请选择（留空释放到公海）" style="width: 100%">
-            <el-option v-for="u in userOptions" :key="u.userId" :label="u.nickName" :value="u.userId" />
-          </el-select>
+          <el-input v-model="assignUserName" readonly placeholder="请选择（留空释放到公海）" style="width: 100%" @click="openAssignUserPicker">
+            <template #append>
+              <el-button icon="Search" @click="openAssignUserPicker" />
+            </template>
+            <template #suffix>
+              <el-icon v-if="assignUserName" class="clear-icon" @click.stop="clearAssignUser"><CircleClose /></el-icon>
+            </template>
+          </el-input>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -208,6 +251,8 @@
 
     <!-- 负责人选择弹窗 -->
     <user-picker ref="userPickerRef" title="选择负责人" @confirm="onUserPickerConfirm" />
+    <user-picker ref="assignUserPickerRef" title="选择负责人" @confirm="onAssignUserPickerConfirm" />
+    <user-picker ref="batchAssignUserPickerRef" title="选择负责人" @confirm="onBatchAssignUserPickerConfirm" />
 
     <!-- 部门选择弹窗 -->
     <dept-picker ref="deptPickerRef" title="选择所属部门" :disabled-ids="[100]" @confirm="onDeptPickerConfirm" />
@@ -223,9 +268,14 @@
       <el-alert :title="'已选中 ' + ids.length + ' 个客户'" type="info" :closable="false" class="mb8" />
       <el-form label-width="80px">
         <el-form-item label="负责人">
-          <el-select v-model="batchAssignUserId" filterable clearable placeholder="请选择负责人" style="width: 100%">
-            <el-option v-for="u in userOptions" :key="u.userId" :label="u.nickName" :value="u.userId" />
-          </el-select>
+          <el-input v-model="batchAssignUserName" readonly placeholder="请选择负责人" style="width: 100%" @click="openBatchAssignUserPicker">
+            <template #append>
+              <el-button icon="Search" @click="openBatchAssignUserPicker" />
+            </template>
+            <template #suffix>
+              <el-icon v-if="batchAssignUserName" class="clear-icon" @click.stop="clearBatchAssignUser"><CircleClose /></el-icon>
+            </template>
+          </el-input>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -277,6 +327,230 @@
       </template>
     </el-dialog>
 
+    <!-- 详情弹窗 -->
+    <el-dialog v-model="viewOpen" width="900px" append-to-body draggable class="rd-dialog" @open="loadRelations">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+          <span class="rd-detail-header-title">客户详情</span>
+          <div class="rd-detail-header-sub" v-if="viewForm.customerNo">
+            <span class="rd-detail-header-divider"></span>
+            <span class="rd-detail-header-no">编号：{{ viewForm.customerNo }}</span>
+            <dict-tag :options="marketing_customer_status" :value="viewForm.customerStatus" />
+          </div>
+        </div>
+      </template>
+      <div class="rd-page">
+        <el-tabs v-model="detailTab">
+          <el-tab-pane label="基本信息" name="basic">
+            <section class="rd-card">
+              <div class="rd-card-header" @click="toggleCard('v_basic')">
+                <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>客户信息</div>
+                <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v_basic }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+              </div>
+              <div class="rd-card-body" v-show="!collapsedCards.v_basic">
+                <div class="rd-grid">
+                  <div class="rd-item"><span class="rd-label">客户编号</span><div class="rd-value">{{ viewForm.customerNo }}</div></div>
+                  <div class="rd-item"><span class="rd-label">企业名称</span><div class="rd-value">{{ viewForm.customerName }}</div></div>
+                  <div class="rd-item"><span class="rd-label">信用代码</span><div class="rd-value">{{ viewForm.creditCode }}</div></div>
+                  <div class="rd-item"><span class="rd-label">客户等级</span><div class="rd-value"><dict-tag :options="marketing_customer_level" :value="viewForm.customerLevel" /></div></div>
+                  <div class="rd-item"><span class="rd-label">客户来源</span><div class="rd-value"><dict-tag :options="marketing_customer_source" :value="viewForm.customerSource" /></div></div>
+                  <div class="rd-item"><span class="rd-label">客户状态</span><div class="rd-value"><dict-tag :options="marketing_customer_status" :value="viewForm.customerStatus" /></div></div>
+                  <div class="rd-item rd-item--full"><span class="rd-label">客户标签</span><div class="rd-value" :class="{ 'rd-value--muted': !viewForm.tagNames }">{{ viewForm.tagNames || '暂无' }}</div></div>
+                </div>
+              </div>
+            </section>
+            <section class="rd-card">
+              <div class="rd-card-header" @click="toggleCard('v_company')">
+                <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/></svg></span>企业信息</div>
+                <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v_company }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+              </div>
+              <div class="rd-card-body" v-show="!collapsedCards.v_company">
+                <div class="rd-grid">
+                  <div class="rd-item"><span class="rd-label">所属行业</span><div class="rd-value"><dict-tag :options="marketing_industry" :value="viewForm.industry" /></div></div>
+                  <div class="rd-item"><span class="rd-label">企业规模</span><div class="rd-value"><dict-tag :options="marketing_company_size" :value="viewForm.companySize" /></div></div>
+                  <div class="rd-item"><span class="rd-label">官网</span><div class="rd-value" :class="{ 'rd-value--muted': !viewForm.website }">{{ viewForm.website || '暂无' }}</div></div>
+                  <div class="rd-item rd-item--full"><span class="rd-label">详细地址</span><div class="rd-value" :class="{ 'rd-value--muted': !viewForm.address }">{{ viewForm.address || '暂无' }}</div></div>
+                </div>
+              </div>
+            </section>
+            <section class="rd-card">
+              <div class="rd-card-header" @click="toggleCard('v_business')">
+                <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>业务信息</div>
+                <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v_business }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+              </div>
+              <div class="rd-card-body" v-show="!collapsedCards.v_business">
+                <div class="rd-grid">
+                  <div class="rd-item"><span class="rd-label">首次接触</span><div class="rd-value">{{ viewForm.firstContactDate }}</div></div>
+                  <div class="rd-item"><span class="rd-label">合作开始</span><div class="rd-value">{{ viewForm.cooperationDate }}</div></div>
+                  <div class="rd-item"><span class="rd-label">累计交易额</span><div class="rd-value rd-value--large rd-amount rd-amount--negative">￥{{ formatAmount(viewForm.totalAmount) }}</div></div>
+                </div>
+              </div>
+            </section>
+            <section class="rd-card">
+              <div class="rd-card-header" @click="toggleCard('v_owner')">
+                <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>负责信息</div>
+                <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v_owner }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+              </div>
+              <div class="rd-card-body" v-show="!collapsedCards.v_owner">
+                <div class="rd-grid">
+                  <div class="rd-item"><span class="rd-label">负责人</span><div class="rd-value">{{ viewForm.userName || '未分配（公海）' }}</div></div>
+                  <div class="rd-item"><span class="rd-label">所属部门</span><div class="rd-value" :class="{ 'rd-value--muted': !viewForm.deptName }">{{ viewForm.deptName || '暂无' }}</div></div>
+                  <div class="rd-item"><span class="rd-label">创建时间</span><div class="rd-value">{{ viewForm.createTime }}</div></div>
+                </div>
+              </div>
+            </section>
+            <section class="rd-card">
+              <div class="rd-card-header" @click="toggleCard('v_other')">
+                <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>其他信息</div>
+                <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v_other }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+              </div>
+              <div class="rd-card-body" v-show="!collapsedCards.v_other">
+                <div class="rd-grid">
+                  <div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value" :class="{ 'rd-value--muted': !viewForm.remark }">{{ viewForm.remark || '暂无' }}</div></div>
+                </div>
+              </div>
+            </section>
+            <section class="rd-card">
+              <div class="rd-card-header" @click="toggleCard('v_action')">
+                <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></span>状态与分配</div>
+                <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v_action }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+              </div>
+              <div class="rd-card-body" v-show="!collapsedCards.v_action">
+                <div class="rd-grid">
+                  <div class="rd-item"><span class="rd-label">当前状态</span><div class="rd-value"><dict-tag :options="marketing_customer_status" :value="viewForm.customerStatus" /></div></div>
+                  <div class="rd-item rd-item--full"><span class="rd-label">状态操作</span><div class="rd-value"><el-button size="small" type="primary" plain @click="handleViewStatusChange('1')" v-if="viewForm.customerStatus === '0'" v-hasPermi="['marketing:customer:edit']">转为签约</el-button>
+                    <el-button size="small" type="success" plain @click="handleViewStatusChange('2')" v-if="viewForm.customerStatus === '1'" v-hasPermi="['marketing:customer:edit']">转为合作中</el-button>
+                    <el-button size="small" type="warning" plain @click="handleViewStatusChange('3')" v-if="viewForm.customerStatus === '2'" v-hasPermi="['marketing:customer:edit']">暂停合作</el-button>
+                    <el-button size="small" type="success" plain @click="handleViewStatusChange('2')" v-if="viewForm.customerStatus === '3'" v-hasPermi="['marketing:customer:edit']">恢复合作</el-button>
+                    <el-button size="small" type="danger" plain @click="handleViewStatusChange('4')" v-if="['0','1','2','3'].includes(viewForm.customerStatus)" v-hasPermi="['marketing:customer:edit']">标记流失</el-button>
+                    <el-button size="small" type="primary" plain @click="handleViewStatusChange('0')" v-if="viewForm.customerStatus === '4'" v-hasPermi="['marketing:customer:edit']">重新激活</el-button></div></div>
+                  <div class="rd-item rd-item--full"><span class="rd-label">分配操作</span><div class="rd-value"><el-button size="small" type="primary" plain @click="handleViewAssign" v-if="viewForm.userId" v-hasPermi="['marketing:customer:assign']">转移分配</el-button>
+                    <el-button size="small" type="warning" plain @click="handleViewRelease" v-if="viewForm.userId" v-hasPermi="['marketing:customer:edit']">释放到公海</el-button>
+                    <el-button size="small" type="success" plain @click="handleViewClaim" v-if="!viewForm.userId" v-hasPermi="['marketing:customer:claim']">领取客户</el-button></div></div>
+                </div>
+              </div>
+            </section>
+          </el-tab-pane>
+          <el-tab-pane :label="`联系人 (${contacts.length})`" name="contacts">
+            <section class="rd-card">
+              <div class="rd-card-header" @click="toggleCard('v_contacts')">
+                <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>联系人</div>
+                <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v_contacts }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+              </div>
+              <div class="rd-card-body" v-show="!collapsedCards.v_contacts">
+                <el-table :data="contacts" border size="small" v-if="contacts.length > 0">
+                  <el-table-column label="姓名" prop="name" width="100" />
+                  <el-table-column label="职位" prop="position" width="120" show-overflow-tooltip />
+                  <el-table-column label="手机号" prop="phone" width="130" />
+                  <el-table-column label="邮箱" prop="email" show-overflow-tooltip />
+                  <el-table-column label="关键联系人" prop="isKey" width="100" align="center"><template #default="scope"><el-tag :type="scope.row.isKey === '1' ? 'danger' : 'info'" size="small">{{ scope.row.isKey === '1' ? '是' : '否' }}</el-tag></template></el-table-column>
+                  <el-table-column label="主要联系人" prop="isPrimary" width="100" align="center"><template #default="scope"><el-tag :type="scope.row.isPrimary === '1' ? 'success' : 'info'" size="small">{{ scope.row.isPrimary === '1' ? '是' : '否' }}</el-tag></template></el-table-column>
+                </el-table>
+                <div class="rd-empty" v-else><svg class="rd-empty-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><p class="rd-empty-text">暂无联系人</p></div>
+              </div>
+            </section>
+          </el-tab-pane>
+          <el-tab-pane :label="`商机 (${opportunities.length})`" name="opportunities">
+            <section class="rd-card">
+              <div class="rd-card-header" @click="toggleCard('v_opportunities')">
+                <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span>商机</div>
+                <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v_opportunities }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+              </div>
+              <div class="rd-card-body" v-show="!collapsedCards.v_opportunities">
+                <el-table :data="opportunities" border size="small" v-if="opportunities.length > 0">
+                  <el-table-column label="商机编号" prop="opportunityNo" width="150" />
+                  <el-table-column label="商机名称" prop="opportunityName" show-overflow-tooltip />
+                  <el-table-column label="销售阶段" prop="stageName" width="100" align="center" />
+                  <el-table-column label="预计金额" prop="expectedAmount" width="120" align="right"><template #default="scope">￥{{ formatAmount(scope.row.expectedAmount) }}</template></el-table-column>
+                  <el-table-column label="商机状态" prop="opportunityStatus" width="100" align="center"><template #default="scope"><dict-tag :options="marketing_opportunity_status" :value="scope.row.opportunityStatus" /></template></el-table-column>
+                </el-table>
+                <div class="rd-empty" v-else><svg class="rd-empty-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/></svg><p class="rd-empty-text">暂无商机</p></div>
+              </div>
+            </section>
+          </el-tab-pane>
+          <el-tab-pane :label="`合同 (${contracts.length})`" name="contracts">
+            <section class="rd-card">
+              <div class="rd-card-header" @click="toggleCard('v_contracts')">
+                <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>合同</div>
+                <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v_contracts }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+              </div>
+              <div class="rd-card-body" v-show="!collapsedCards.v_contracts">
+                <el-table :data="contracts" border size="small" v-if="contracts.length > 0">
+                  <el-table-column label="合同编号" prop="contractNo" width="150" />
+                  <el-table-column label="合同名称" prop="contractName" show-overflow-tooltip />
+                  <el-table-column label="合同金额" prop="contractAmount" width="120" align="right"><template #default="scope">￥{{ formatAmount(scope.row.contractAmount) }}</template></el-table-column>
+                  <el-table-column label="签订日期" prop="signDate" width="120" />
+                  <el-table-column label="合同状态" prop="contractStatus" width="100" align="center"><template #default="scope"><dict-tag :options="marketing_contract_status" :value="scope.row.contractStatus" /></template></el-table-column>
+                </el-table>
+                <div class="rd-empty" v-else><svg class="rd-empty-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><p class="rd-empty-text">暂无合同</p></div>
+              </div>
+            </section>
+          </el-tab-pane>
+          <el-tab-pane :label="`订单 (${orders.length})`" name="orders">
+            <section class="rd-card">
+              <div class="rd-card-header" @click="toggleCard('v_orders')">
+                <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/></svg></span>订单</div>
+                <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v_orders }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+              </div>
+              <div class="rd-card-body" v-show="!collapsedCards.v_orders">
+                <el-table :data="orders" border size="small" v-if="orders.length > 0">
+                  <el-table-column label="订单编号" prop="orderNo" width="150" />
+                  <el-table-column label="订单名称" prop="orderName" show-overflow-tooltip />
+                  <el-table-column label="订单金额" prop="orderAmount" width="120" align="right"><template #default="scope">￥{{ formatAmount(scope.row.orderAmount) }}</template></el-table-column>
+                  <el-table-column label="下单日期" prop="orderDate" width="120" />
+                  <el-table-column label="订单状态" prop="orderStatus" width="100" align="center"><template #default="scope"><dict-tag :options="marketing_order_status" :value="scope.row.orderStatus" /></template></el-table-column>
+                </el-table>
+                <div class="rd-empty" v-else><svg class="rd-empty-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/></svg><p class="rd-empty-text">暂无订单</p></div>
+              </div>
+            </section>
+          </el-tab-pane>
+          <el-tab-pane :label="`互动记录 (${interactions.length})`" name="interactions">
+            <section class="rd-card">
+              <div class="rd-card-header" @click="toggleCard('v_interactions')">
+                <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></span>互动记录</div>
+                <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v_interactions }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+              </div>
+              <div class="rd-card-body" v-show="!collapsedCards.v_interactions">
+                <div class="rd-timeline" v-if="interactions.length > 0">
+                  <div class="rd-timeline-item" v-for="item in interactions" :key="item.recordId">
+                    <div class="rd-timeline-dot rd-timeline-dot--success"></div>
+                    <div class="rd-timeline-content">
+                      <div class="rd-timeline-header">
+                        <span class="rd-timeline-title"><dict-tag :options="marketing_interaction_type" :value="item.interactType" /></span>
+                        <span class="rd-timeline-time">{{ item.interactTime }}</span>
+                      </div>
+                      <div class="rd-timeline-comment">{{ item.content }}</div>
+                      <div v-if="item.nextTime" style="margin-top: 6px; font-size: 12px; color: #e6a23c">下次跟进: {{ item.nextTime }} {{ item.nextContent ? '- ' + item.nextContent : '' }}</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="rd-empty" v-else><svg class="rd-empty-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg><p class="rd-empty-text">暂无互动记录</p></div>
+              </div>
+            </section>
+          </el-tab-pane>
+          <el-tab-pane :label="`参与活动 (${activities.length})`" name="activities">
+            <section class="rd-card">
+              <div class="rd-card-header" @click="toggleCard('v_activities')">
+                <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>参与活动</div>
+                <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v_activities }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+              </div>
+              <div class="rd-card-body" v-show="!collapsedCards.v_activities">
+                <el-table :data="activities" border size="small" v-if="activities.length > 0">
+                  <el-table-column label="活动名称" prop="activityName" show-overflow-tooltip />
+                  <el-table-column label="联系人" prop="contactName" width="100" />
+                  <el-table-column label="企业名称" prop="companyName" width="180" show-overflow-tooltip />
+                  <el-table-column label="参与状态" prop="participateStatus" width="100" align="center"><template #default="scope"><dict-tag :options="marketing_participate_status" :value="scope.row.participateStatus" /></template></el-table-column>
+                  <el-table-column label="签到时间" prop="signTime" width="160" />
+                </el-table>
+                <div class="rd-empty" v-else><svg class="rd-empty-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg><p class="rd-empty-text">暂无活动参与记录</p></div>
+              </div>
+            </section>
+          </el-tab-pane>
+        </el-tabs>
+      </div>
+    </el-dialog>
+
     <!-- 导入弹窗 -->
     <el-dialog v-model="importOpen" width="500px" append-to-body draggable class="rd-dialog">
       <template #header>
@@ -307,25 +581,32 @@
 </template>
 
 <script setup name="MkCustomer">
-import { useRouter } from 'vue-router'
 import { UploadFilled, CircleClose } from '@element-plus/icons-vue'
 import { listCustomer, getCustomer, addCustomer, updateCustomer, delCustomer, changeCustomerStatus, assignCustomer, releaseToPool, claimCustomer, batchAssignCustomer, batchUpdateStatus } from '@/api/mk/customer'
 import { listTag } from '@/api/mk/tag'
+import { listContact } from '@/api/mk/contact'
+import { listOpportunity } from '@/api/mk/opportunity'
+import { listContract } from '@/api/mk/contract'
+import { listOrder } from '@/api/mk/order'
+import { listInteraction } from '@/api/mk/interaction'
+import { listParticipant } from '@/api/mk/participant'
 import { listUser } from '@/api/system/user'
 import UserPicker from '@/components/UserPicker/index.vue'
 import DeptPicker from '@/components/DeptPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
-const { collapsedCards, toggleCard } = useDetailCard([])
+const { collapsedCards, toggleCard } = useDetailCard(["c_basic", "c_company", "c_address", "c_business", "c_owner", "c_other", "v_basic", "v_company", "v_business", "v_owner", "v_other", "v_action", "v_contacts", "v_opportunities", "v_contracts", "v_orders", "v_interactions", "v_activities"])
 import { getToken } from '@/utils/auth'
 
-const router = useRouter()
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('mk_customer_index')
-const { marketing_customer_level, marketing_customer_source, marketing_industry, marketing_company_size, marketing_customer_status } = proxy.useDict('marketing_customer_level', 'marketing_customer_source', 'marketing_industry', 'marketing_company_size', 'marketing_customer_status')
+const { marketing_customer_level, marketing_customer_source, marketing_industry, marketing_company_size, marketing_customer_status, marketing_opportunity_status, marketing_contract_status, marketing_order_status, marketing_interaction_type, marketing_participate_status } = proxy.useDict('marketing_customer_level', 'marketing_customer_source', 'marketing_industry', 'marketing_company_size', 'marketing_customer_status', 'marketing_opportunity_status', 'marketing_contract_status', 'marketing_order_status', 'marketing_interaction_type', 'marketing_participate_status')
 
 const list = ref([])
 const open = ref(false)
+const viewOpen = ref(false)
+const viewForm = ref({})
+const detailTab = ref('basic')
 const loading = ref(true)
 const showSearch = ref(true)
 const ids = ref([])
@@ -335,16 +616,25 @@ const total = ref(0)
 const title = ref('')
 const userOptions = ref([])
 const tagOptions = ref([])
-const activeNames = ref(['basic', 'company', 'address', 'business', 'owner', 'other'])
-
+// 详情关联数据
+const contacts = ref([])
+const opportunities = ref([])
+const contracts = ref([])
+const orders = ref([])
+const interactions = ref([])
+const activities = ref([])
 // 分配相关
 const assignOpen = ref(false)
 const assignUserId = ref(null)
+const assignUserName = ref(null)
+const assignUserDeptId = ref(null)
 const assignCustomerId = ref(null)
 
 // 批量分配相关
 const batchAssignOpen = ref(false)
 const batchAssignUserId = ref(null)
+const batchAssignUserName = ref(null)
+const batchAssignUserDeptId = ref(null)
 
 // 批量变更状态相关
 const batchStatusOpen = ref(false)
@@ -420,7 +710,74 @@ function reset() {
 }
 function handleAdd() { reset(); open.value = true; title.value = '新增企业客户' }
 function handleUpdate(row) { reset(); getCustomer(row.customerId || ids.value[0]).then(res => { form.value = res.data; open.value = true; title.value = '修改企业客户' }) }
-function handleView(row) { router.push('/mk/customer-detail/' + row.customerId) }
+function handleView(row) {
+  getCustomer(row.customerId).then(res => {
+    viewForm.value = res.data
+    detailTab.value = 'basic'
+    // 重置关联数据
+    contacts.value = []; opportunities.value = []; contracts.value = []; orders.value = []; interactions.value = []; activities.value = []
+    // 展开所有详情卡片
+    Object.keys(collapsedCards).forEach(k => {
+      if (k.startsWith('v_')) collapsedCards[k] = false
+    })
+    viewOpen.value = true
+  })
+}
+/** 加载详情关联数据 */
+function loadRelations() {
+  if (!viewForm.value.customerId) return
+  const cid = viewForm.value.customerId
+  listContact({ customerId: cid, pageNum: 1, pageSize: 999 }).then(res => { contacts.value = res.rows || [] })
+  listOpportunity({ customerId: cid, pageNum: 1, pageSize: 999 }).then(res => { opportunities.value = res.rows || [] })
+  listContract({ customerId: cid, pageNum: 1, pageSize: 999 }).then(res => { contracts.value = res.rows || [] })
+  listOrder({ customerId: cid, pageNum: 1, pageSize: 999 }).then(res => { orders.value = res.rows || [] })
+  listInteraction({ customerId: cid, pageNum: 1, pageSize: 999 }).then(res => { interactions.value = res.rows || [] })
+  listParticipant({ customerId: cid, pageNum: 1, pageSize: 999 }).then(res => { activities.value = res.rows || [] })
+}
+/** 金额格式化 */
+function formatAmount(val) { if (val == null || val === '') return '-'; return Number(val).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }
+/** 详情页状态流转 */
+function handleViewStatusChange(status) {
+  proxy.$modal.confirm('确认将客户状态变更为"' + statusLabel(status) + '"？').then(() => {
+    changeCustomerStatus(viewForm.value.customerId, status).then(() => {
+      proxy.$modal.msgSuccess('状态变更成功')
+      getCustomer(viewForm.value.customerId).then(res => { viewForm.value = res.data })
+      getList()
+    })
+  }).catch(() => {})
+}
+/** 详情页分配 */
+function handleViewAssign() {
+  assignCustomerId.value = viewForm.value.customerId
+  assignUserId.value = viewForm.value.userId || null
+  assignUserName.value = viewForm.value.userName || null
+  assignUserDeptId.value = viewForm.value.deptId || null
+  assignOpen.value = true
+}
+/** 详情页释放到公海 */
+function handleViewRelease() {
+  proxy.$modal.confirm('确认将该客户释放到公海？释放后其他销售人员可以领取。').then(() => {
+    releaseToPool(viewForm.value.customerId).then(() => {
+      proxy.$modal.msgSuccess('已释放到公海')
+      getCustomer(viewForm.value.customerId).then(res => { viewForm.value = res.data })
+      getList()
+    })
+  }).catch(() => {})
+}
+/** 详情页领取客户 */
+function handleViewClaim() {
+  proxy.$modal.confirm('确认领取该客户？领取后您将成为该客户的负责人。').then(() => {
+    claimCustomer(viewForm.value.customerId).then(() => {
+      proxy.$modal.msgSuccess('领取成功')
+      getCustomer(viewForm.value.customerId).then(res => { viewForm.value = res.data })
+      getList()
+    })
+  }).catch(() => {})
+}
+function levelTagType(val) { return { '1': 'danger', '2': 'warning', '3': '', '4': 'info' }[val] || '' }
+function levelLabel(val) { return { '1': '关键大客户', '2': '重要客户', '3': '普通客户', '4': '潜在客户' }[val] || '' }
+function statusTagType(val) { return { '0': 'primary', '1': 'success', '2': 'success', '3': 'warning', '4': 'info' }[val] || '' }
+function statusLabel(val) { return { '0': '意向客户', '1': '签约客户', '2': '合作中', '3': '暂停合作', '4': '流失客户' }[val] || '' }
 function submitForm() {
   proxy.$refs['customerRef'].validate(valid => {
     if (valid) {
@@ -446,15 +803,28 @@ function handleCommand(cmd, row) {
 function handleAssignSingle(row) {
   assignCustomerId.value = row.customerId
   assignUserId.value = row.userId || null
+  assignUserName.value = row.userName || null
+  assignUserDeptId.value = row.deptId || null
   assignOpen.value = true
 }
+/** 打开分配负责人选择弹窗 */
+function openAssignUserPicker() {
+  proxy.$refs.assignUserPickerRef.open(assignUserId.value)
+}
+/** 分配负责人选择确认回调 */
+function onAssignUserPickerConfirm(user) {
+  assignUserId.value = user.userId
+  assignUserName.value = user.nickName
+  assignUserDeptId.value = user.deptId
+}
+/** 清除分配负责人 */
+function clearAssignUser() {
+  assignUserId.value = null
+  assignUserName.value = null
+  assignUserDeptId.value = null
+}
 function confirmAssign() {
-  const data = { userId: assignUserId.value }
-  const user = userOptions.value.find(u => u.userId === assignUserId.value)
-  if (user) {
-    data.deptId = user.deptId
-    data.userName = user.nickName
-  }
+  const data = { userId: assignUserId.value, deptId: assignUserDeptId.value, userName: assignUserName.value }
   assignCustomer(assignCustomerId.value, data).then(() => {
     proxy.$modal.msgSuccess('分配成功')
     assignOpen.value = false
@@ -499,19 +869,36 @@ function confirmStatusChange() {
 // 批量分配
 function handleBatchAssign() {
   batchAssignUserId.value = null
+  batchAssignUserName.value = null
+  batchAssignUserDeptId.value = null
   batchAssignOpen.value = true
+}
+/** 打开批量分配负责人选择弹窗 */
+function openBatchAssignUserPicker() {
+  proxy.$refs.batchAssignUserPickerRef.open(batchAssignUserId.value)
+}
+/** 批量分配负责人选择确认回调 */
+function onBatchAssignUserPickerConfirm(user) {
+  batchAssignUserId.value = user.userId
+  batchAssignUserName.value = user.nickName
+  batchAssignUserDeptId.value = user.deptId
+}
+/** 清除批量分配负责人 */
+function clearBatchAssignUser() {
+  batchAssignUserId.value = null
+  batchAssignUserName.value = null
+  batchAssignUserDeptId.value = null
 }
 function confirmBatchAssign() {
   if (!batchAssignUserId.value) {
     proxy.$modal.msgWarning('请选择负责人')
     return
   }
-  const user = userOptions.value.find(u => u.userId === batchAssignUserId.value)
   const data = {
     customerIds: ids.value,
     userId: batchAssignUserId.value,
-    deptId: user ? user.deptId : undefined,
-    userName: user ? user.nickName : undefined
+    deptId: batchAssignUserDeptId.value,
+    userName: batchAssignUserName.value
   }
   batchAssignCustomer(data).then(() => {
     proxy.$modal.msgSuccess('批量分配成功')

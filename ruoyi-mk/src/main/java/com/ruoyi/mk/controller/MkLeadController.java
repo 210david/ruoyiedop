@@ -14,6 +14,7 @@ import com.ruoyi.common.enums.BusinessType;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.poi.ExcelUtil;
 import com.ruoyi.mk.domain.MkLead;
+import com.ruoyi.mk.domain.MkLeadLog;
 import com.ruoyi.mk.service.IMkLeadService;
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -209,6 +210,15 @@ public class MkLeadController extends BaseController
     public AjaxResult checkDuplicate(@RequestParam(required = false) String companyName, @RequestParam(required = false) String contactPhone)
     {
         return AjaxResult.success(mkLeadService.checkDuplicate(companyName, contactPhone));
+    }
+
+    /** 查询线索操作日志（时间线） */
+    @PreAuthorize("@ss.hasPermi('marketing:lead:query')")
+    @GetMapping("/log/{leadId}")
+    public AjaxResult getLeadLog(@PathVariable("leadId") Long leadId)
+    {
+        List<MkLeadLog> list = mkLeadService.selectLeadLogList(leadId);
+        return AjaxResult.success(list);
     }
 
     // ====== 请求体内部类 ======

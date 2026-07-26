@@ -1,4 +1,4 @@
-﻿import axios from 'axios'
+import axios from 'axios'
 import { ElLoading, ElMessage } from 'element-plus'
 import { saveAs } from 'file-saver'
 import { getToken } from '@/utils/auth'
@@ -19,7 +19,7 @@ export default {
     }).then((res) => {
       const isBlob = blobValidate(res.data)
       if (isBlob) {
-        const blob = new Blob([res.data])
+        const blob = new Blob([res.data], { type: 'application/octet-stream' })
         this.saveAs(blob, decodeURIComponent(res.headers['download-filename']))
       } else {
         this.printErrMsg(res.data)
@@ -36,7 +36,7 @@ export default {
     }).then((res) => {
       const isBlob = blobValidate(res.data)
       if (isBlob) {
-        const blob = new Blob([res.data])
+        const blob = new Blob([res.data], { type: 'application/octet-stream' })
         this.saveAs(blob, decodeURIComponent(res.headers['download-filename']))
       } else {
         this.printErrMsg(res.data)

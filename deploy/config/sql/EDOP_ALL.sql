@@ -1056,7 +1056,7 @@ DROP TABLE IF EXISTS `mk_interaction`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `mk_interaction` (
   `record_id` bigint NOT NULL AUTO_INCREMENT COMMENT '记录ID',
-  `customer_id` bigint NOT NULL COMMENT '客户ID',
+  `customer_id` bigint DEFAULT NULL COMMENT '客户ID',
   `contact_id` bigint DEFAULT NULL COMMENT '联系人ID',
   `opportunity_id` bigint DEFAULT NULL COMMENT '商机ID',
   `lead_id` bigint DEFAULT NULL COMMENT '线索ID',
@@ -1136,6 +1136,9 @@ CREATE TABLE `mk_lead` (
   `receive_remark` varchar(500) DEFAULT NULL COMMENT '领取审批备注',
   `receive_apply_user_id` bigint DEFAULT NULL COMMENT '领取申请人ID',
   `receive_apply_time` datetime DEFAULT NULL COMMENT '领取申请时间',
+  `receive_approve_user_id` bigint DEFAULT NULL COMMENT '审批人ID',
+  `receive_approve_user_name` varchar(50) DEFAULT NULL COMMENT '审批人名称',
+  `receive_approve_time` datetime DEFAULT NULL COMMENT '审批时间',
   PRIMARY KEY (`lead_id`),
   UNIQUE KEY `uk_lead_no` (`lead_no`),
   KEY `idx_lead_company` (`company_name`),

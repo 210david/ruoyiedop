@@ -69,78 +69,123 @@
         </div>
       </template>
       <el-form ref="opportunityRef" :model="form" :rules="rules" label-width="110px">
-        <el-collapse v-model="activeNames">
-          <el-collapse-item title="基本信息" name="basic">
-            <el-row>
-              <el-col :span="12"><el-form-item label="商机编号" prop="opportunityNo"><el-input v-model="form.opportunityNo" placeholder="保存后自动生成" disabled /></el-form-item></el-col>
-              <el-col :span="12"><el-form-item label="商机名称" prop="opportunityName"><el-input v-model="form.opportunityName" placeholder="请输入商机名称" /></el-form-item></el-col>
-              <el-col :span="12"><el-form-item label="所属客户" prop="customerId">
-                <el-select v-model="form.customerId" filterable clearable placeholder="请选择客户" style="width: 100%" @change="onCustomerChange">
-                  <el-option v-for="c in customerOptions" :key="c.customerId" :label="c.customerName" :value="c.customerId" />
-                </el-select>
-              </el-form-item></el-col>
-              <el-col :span="12"><el-form-item label="主要联系人" prop="contactId">
-                <el-select v-model="form.contactId" filterable clearable placeholder="请选择联系人" style="width: 100%">
-                  <el-option v-for="c in contactOptions" :key="c.contactId" :label="c.name" :value="c.contactId" />
-                </el-select>
-              </el-form-item></el-col>
-              <el-col :span="12"><el-form-item label="商机来源" prop="opportunitySource">
-                <el-select v-model="form.opportunitySource" placeholder="请选择" style="width: 100%"><el-option v-for="d in marketing_opportunity_source" :key="d.value" :label="d.label" :value="d.value" /></el-select>
-              </el-form-item></el-col>
-            </el-row>
-          </el-collapse-item>
-          <el-collapse-item title="金额与阶段" name="amount">
-            <el-row>
-              <el-col :span="12"><el-form-item label="预计金额" prop="expectedAmount"><el-input-number v-model="form.expectedAmount" :min="0" :precision="2" controls-position="right" style="width: 100%" /></el-form-item></el-col>
-              <el-col :span="12"><el-form-item label="预计成交日期" prop="expectedDate"><el-date-picker v-model="form.expectedDate" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" style="width: 100%" /></el-form-item></el-col>
-              <el-col :span="12"><el-form-item label="销售阶段" prop="stageCode">
-                <el-select v-model="form.stageCode" placeholder="请选择" style="width: 100%" @change="onStageChange">
-                  <el-option v-for="s in stageOptions" :key="s.stageCode" :label="s.stageName" :value="s.stageCode" />
-                </el-select>
-              </el-form-item></el-col>
-              <el-col :span="12"><el-form-item label="赢率" prop="winRate"><el-input-number v-model="form.winRate" :min="0" :max="100" controls-position="right" style="width: 100%" /></el-form-item></el-col>
-              <el-col :span="12"><el-form-item label="商机状态" prop="opportunityStatus">
-                <el-select v-model="form.opportunityStatus" placeholder="请选择" style="width: 100%"><el-option v-for="d in marketing_opportunity_status" :key="d.value" :label="d.label" :value="d.value" /></el-select>
-              </el-form-item></el-col>
-            </el-row>
-          </el-collapse-item>
-          <el-collapse-item title="竞争与方案" name="solution">
-            <el-row>
-              <el-col :span="12"><el-form-item label="竞争对手" prop="competitor"><el-input v-model="form.competitor" placeholder="请输入竞争对手" /></el-form-item></el-col>
-              <el-col :span="24"><el-form-item label="客户痛点" prop="painPoint"><el-input v-model="form.painPoint" type="textarea" :rows="2" placeholder="请输入客户痛点" /></el-form-item></el-col>
-              <el-col :span="24"><el-form-item label="解决方案" prop="solution"><el-input v-model="form.solution" type="textarea" :rows="2" placeholder="请输入解决方案" /></el-form-item></el-col>
-            </el-row>
-          </el-collapse-item>
-          <el-collapse-item title="负责与跟进" name="owner">
-            <el-row>
-              <el-col :span="12"><el-form-item label="负责人" prop="userId">
-                <el-input v-model="form.userName" readonly placeholder="请选择负责人" style="width: 100%" @click="openUserPicker">
-                  <template #append>
-                    <el-button icon="Search" @click="openUserPicker" />
-                  </template>
-                  <template #suffix>
-                    <el-icon v-if="form.userName" class="clear-icon" @click.stop="clearUser"><CircleClose /></el-icon>
-                  </template>
-                </el-input>
-              </el-form-item></el-col>
-              <el-col :span="12"><el-form-item label="所属部门" prop="deptId">
-                <el-input v-model="form.deptName" readonly placeholder="请选择部门" style="width: 100%" @click="openDeptPicker">
-                  <template #append>
-                    <el-button icon="Search" @click="openDeptPicker" />
-                  </template>
-                  <template #suffix>
-                    <el-icon v-if="form.deptName" class="clear-icon" @click.stop="clearDept"><CircleClose /></el-icon>
-                  </template>
-                </el-input>
-              </el-form-item></el-col>
-              <el-col :span="12"><el-form-item label="下一步行动" prop="nextAction"><el-input v-model="form.nextAction" placeholder="请输入下一步行动" /></el-form-item></el-col>
-              <el-col :span="12"><el-form-item label="下次行动时间" prop="nextTime"><el-date-picker v-model="form.nextTime" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" placeholder="选择时间" style="width: 100%" /></el-form-item></el-col>
-            </el-row>
-          </el-collapse-item>
-          <el-collapse-item title="其他信息" name="other">
-            <el-form-item label="备注" prop="remark"><el-input v-model="form.remark" type="textarea" :rows="2" placeholder="请输入备注" /></el-form-item>
-          </el-collapse-item>
-        </el-collapse>
+        <div class="rd-page">
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('c_basic')">
+              <div class="rd-card-title">
+                <span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>
+                基本信息
+              </div>
+              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c_basic }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.c_basic">
+              <el-row>
+                <el-col :span="12"><el-form-item label="商机编号" prop="opportunityNo"><el-input v-model="form.opportunityNo" placeholder="保存后自动生成" disabled /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="商机名称" prop="opportunityName"><el-input v-model="form.opportunityName" placeholder="请输入商机名称" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="所属客户" prop="customerId">
+                  <el-select v-model="form.customerId" filterable clearable placeholder="请选择客户" style="width: 100%" @change="onCustomerChange">
+                    <el-option v-for="c in customerOptions" :key="c.customerId" :label="c.customerName" :value="c.customerId" />
+                  </el-select>
+                </el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="主要联系人" prop="contactId">
+                  <el-select v-model="form.contactId" filterable clearable placeholder="请选择联系人" style="width: 100%">
+                    <el-option v-for="c in contactOptions" :key="c.contactId" :label="c.name" :value="c.contactId" />
+                  </el-select>
+                </el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="商机来源" prop="opportunitySource">
+                  <el-select v-model="form.opportunitySource" placeholder="请选择" style="width: 100%"><el-option v-for="d in marketing_opportunity_source" :key="d.value" :label="d.label" :value="d.value" /></el-select>
+                </el-form-item></el-col>
+              </el-row>
+            </div>
+          </section>
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('c_amount')">
+              <div class="rd-card-title">
+                <span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>
+                金额与阶段
+              </div>
+              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c_amount }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.c_amount">
+              <el-row>
+                <el-col :span="12"><el-form-item label="预计金额" prop="expectedAmount"><el-input-number v-model="form.expectedAmount" :min="0" :precision="2" controls-position="right" style="width: 100%" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="预计成交日期" prop="expectedDate"><el-date-picker v-model="form.expectedDate" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" style="width: 100%" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="销售阶段" prop="stageCode">
+                  <el-select v-model="form.stageCode" placeholder="请选择" style="width: 100%" @change="onStageChange">
+                    <el-option v-for="s in stageOptions" :key="s.stageCode" :label="s.stageName" :value="s.stageCode" />
+                  </el-select>
+                </el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="赢率" prop="winRate"><el-input-number v-model="form.winRate" :min="0" :max="100" controls-position="right" style="width: 100%" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="商机状态" prop="opportunityStatus">
+                  <el-select v-model="form.opportunityStatus" placeholder="请选择" style="width: 100%"><el-option v-for="d in marketing_opportunity_status" :key="d.value" :label="d.label" :value="d.value" /></el-select>
+                </el-form-item></el-col>
+              </el-row>
+            </div>
+          </section>
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('c_solution')">
+              <div class="rd-card-title">
+                <span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></span>
+                竞争与方案
+              </div>
+              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c_solution }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.c_solution">
+              <el-row>
+                <el-col :span="12"><el-form-item label="竞争对手" prop="competitor"><el-input v-model="form.competitor" placeholder="请输入竞争对手" /></el-form-item></el-col>
+                <el-col :span="24"><el-form-item label="客户痛点" prop="painPoint"><el-input v-model="form.painPoint" type="textarea" :rows="2" placeholder="请输入客户痛点" /></el-form-item></el-col>
+                <el-col :span="24"><el-form-item label="解决方案" prop="solution"><el-input v-model="form.solution" type="textarea" :rows="2" placeholder="请输入解决方案" /></el-form-item></el-col>
+              </el-row>
+            </div>
+          </section>
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('c_owner')">
+              <div class="rd-card-title">
+                <span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
+                负责与跟进
+              </div>
+              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c_owner }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.c_owner">
+              <el-row>
+                <el-col :span="12"><el-form-item label="负责人" prop="userId">
+                  <el-input v-model="form.userName" readonly placeholder="请选择负责人" style="width: 100%" @click="openUserPicker">
+                    <template #append>
+                      <el-button icon="Search" @click="openUserPicker" />
+                    </template>
+                    <template #suffix>
+                      <el-icon v-if="form.userName" class="clear-icon" @click.stop="clearUser"><CircleClose /></el-icon>
+                    </template>
+                  </el-input>
+                </el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="所属部门" prop="deptId">
+                  <el-input v-model="form.deptName" readonly placeholder="请选择部门" style="width: 100%" @click="openDeptPicker">
+                    <template #append>
+                      <el-button icon="Search" @click="openDeptPicker" />
+                    </template>
+                    <template #suffix>
+                      <el-icon v-if="form.deptName" class="clear-icon" @click.stop="clearDept"><CircleClose /></el-icon>
+                    </template>
+                  </el-input>
+                </el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="下一步行动" prop="nextAction"><el-input v-model="form.nextAction" placeholder="请输入下一步行动" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="下次行动时间" prop="nextTime"><el-date-picker v-model="form.nextTime" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" placeholder="选择时间" style="width: 100%" /></el-form-item></el-col>
+              </el-row>
+            </div>
+          </section>
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('c_other')">
+              <div class="rd-card-title">
+                <span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
+                其他信息
+              </div>
+              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c_other }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.c_other">
+              <el-form-item label="备注" prop="remark"><el-input v-model="form.remark" type="textarea" :rows="2" placeholder="请输入备注" /></el-form-item>
+            </div>
+          </section>
+        </div>
       </el-form>
       <template #footer><el-button type="primary" @click="submitForm">确 定</el-button><el-button @click="cancel">取 消</el-button></template>
     </el-dialog>
@@ -203,12 +248,12 @@
               <div class="rd-card-body" v-show="!collapsedCards.viewAmount">
                 <div class="rd-grid">
                   <div class="rd-item"><span class="rd-label">销售阶段</span><div class="rd-value">{{ viewForm.stageName }}</div></div>
-                  <div class="rd-item"><span class="rd-label">预计金额</span><div class="rd-value rd-value--large rd-amount">￥{{ viewForm.expectedAmount }}</div></div>
+                  <div class="rd-item"><span class="rd-label">预计金额</span><div class="rd-value rd-value--large rd-amount rd-amount--negative">￥{{ formatAmount(viewForm.expectedAmount) }}</div></div>
                   <div class="rd-item"><span class="rd-label">预计成交</span><div class="rd-value">{{ viewForm.expectedDate }}</div></div>
                   <div class="rd-item"><span class="rd-label">赢率</span><div class="rd-value">{{ viewForm.winRate }}%</div></div>
-                  <div class="rd-item"><span class="rd-label">加权金额</span><div class="rd-value rd-amount">￥{{ viewForm.weightedAmount }}</div></div>
+                  <div class="rd-item"><span class="rd-label">加权金额</span><div class="rd-value rd-amount rd-amount--negative">￥{{ formatAmount(viewForm.weightedAmount) }}</div></div>
                   <div class="rd-item"><span class="rd-label">商机状态</span><div class="rd-value"><dict-tag :options="marketing_opportunity_status" :value="viewForm.opportunityStatus" /></div></div>
-                  <div class="rd-item" v-if="viewForm.actualAmount"><span class="rd-label">实际成交金额</span><div class="rd-value rd-amount">￥{{ viewForm.actualAmount }}</div></div>
+                  <div class="rd-item" v-if="viewForm.actualAmount"><span class="rd-label">实际成交金额</span><div class="rd-value rd-amount rd-amount--negative">￥{{ formatAmount(viewForm.actualAmount) }}</div></div>
                   <div class="rd-item" v-if="viewForm.actualDate"><span class="rd-label">实际成交日期</span><div class="rd-value">{{ viewForm.actualDate }}</div></div>
                   <div class="rd-item rd-item--full" v-if="viewForm.lostReason"><span class="rd-label">输单原因</span><div class="rd-value">{{ viewForm.lostReason }}</div></div>
                   <div class="rd-item rd-item--full" v-if="viewForm.lostRemark"><span class="rd-label">输单说明</span><div class="rd-value">{{ viewForm.lostRemark }}</div></div>
@@ -525,7 +570,7 @@ import UserPicker from '@/components/UserPicker/index.vue'
 import DeptPicker from '@/components/DeptPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
-const { collapsedCards, toggleCard } = useDetailCard(['viewBasic', 'viewAmount', 'viewSolution', 'viewOwner', 'viewOther', 'viewInteractions', 'viewStageLog', 'viewContracts', 'viewOrders', 'actionInfo', 'actionForm'])
+const { collapsedCards, toggleCard } = useDetailCard(['c_basic', 'c_amount', 'c_solution', 'c_owner', 'c_other', 'viewBasic', 'viewAmount', 'viewSolution', 'viewOwner', 'viewOther', 'viewInteractions', 'viewStageLog', 'viewContracts', 'viewOrders', 'actionInfo', 'actionForm'])
 import { ArrowDown } from '@element-plus/icons-vue'
 
 const { proxy } = getCurrentInstance()
@@ -546,7 +591,6 @@ const customerOptions = ref([])
 const contactOptions = ref([])
 const stageOptions = ref([])
 const viewForm = ref({})
-const activeNames = ref(['basic', 'amount', 'solution', 'owner', 'other'])
 const detailTab = ref('basic')
 const interactionList = ref([])
 const stageLogList = ref([])
@@ -717,6 +761,8 @@ function getLogTagType(type) {
   const map = { advance: 'success', retreat: 'warning', win: 'success', lose: 'danger', reopen: 'info' }
   return map[type] || 'primary'
 }
+/** 金额格式化：千分位 + 两位小数 */
+function formatAmount(val) { if (val == null || val === '') return '-'; return Number(val).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }
 
 getCustomerOptions()
 getStageOptions()

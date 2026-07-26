@@ -63,6 +63,9 @@ public class MkActivityParticipant extends BaseEntity
     /** 活动名称（关联查询） */
     private String activityName;
 
+    /** 客户ID（仅用于查询条件，通过企业名称匹配） */
+    private Long customerId;
+
     public Long getParticipantId() { return participantId; }
     public void setParticipantId(Long participantId) { this.participantId = participantId; }
     public Long getActivityId() { return activityId; }
@@ -89,6 +92,8 @@ public class MkActivityParticipant extends BaseEntity
     public void setSignTime(Date signTime) { this.signTime = signTime; }
     public String getActivityName() { return activityName; }
     public void setActivityName(String activityName) { this.activityName = activityName; }
+    public Long getCustomerId() { return customerId; }
+    public void setCustomerId(Long customerId) { this.customerId = customerId; }
     public String getSignInCode() { return signInCode; }
     public void setSignInCode(String signInCode) { this.signInCode = signInCode; }
 }

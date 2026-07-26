@@ -112,6 +112,16 @@ public class MkLead extends BaseEntity
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date receiveApplyTime;
 
+    /** 审批人ID */
+    private Long receiveApproveUserId;
+
+    /** 审批人名称 */
+    private String receiveApproveUserName;
+
+    /** 审批时间 */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date receiveApproveTime;
+
     /** 最后跟进时间 */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date lastFollowTime;
@@ -186,6 +196,12 @@ public class MkLead extends BaseEntity
     public void setReceiveApplyUserName(String receiveApplyUserName) { this.receiveApplyUserName = receiveApplyUserName; }
     public Date getReceiveApplyTime() { return receiveApplyTime; }
     public void setReceiveApplyTime(Date receiveApplyTime) { this.receiveApplyTime = receiveApplyTime; }
+    public Long getReceiveApproveUserId() { return receiveApproveUserId; }
+    public void setReceiveApproveUserId(Long receiveApproveUserId) { this.receiveApproveUserId = receiveApproveUserId; }
+    public String getReceiveApproveUserName() { return receiveApproveUserName; }
+    public void setReceiveApproveUserName(String receiveApproveUserName) { this.receiveApproveUserName = receiveApproveUserName; }
+    public Date getReceiveApproveTime() { return receiveApproveTime; }
+    public void setReceiveApproveTime(Date receiveApproveTime) { this.receiveApproveTime = receiveApproveTime; }
     public Date getLastFollowTime() { return lastFollowTime; }
     public void setLastFollowTime(Date lastFollowTime) { this.lastFollowTime = lastFollowTime; }
     public String getIneffectiveReason() { return ineffectiveReason; }

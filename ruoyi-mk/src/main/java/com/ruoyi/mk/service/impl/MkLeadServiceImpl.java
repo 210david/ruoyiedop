@@ -11,8 +11,10 @@ import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.mk.domain.MkContact;
 import com.ruoyi.mk.domain.MkCustomer;
 import com.ruoyi.mk.domain.MkLead;
+import com.ruoyi.mk.domain.MkLeadLog;
 import com.ruoyi.mk.mapper.MkContactMapper;
 import com.ruoyi.mk.mapper.MkCustomerMapper;
+import com.ruoyi.mk.mapper.MkLeadLogMapper;
 import com.ruoyi.mk.mapper.MkLeadMapper;
 import com.ruoyi.mk.service.IMkLeadService;
 import com.ruoyi.mk.service.IMkNumberRuleService;
@@ -35,7 +37,24 @@ public class MkLeadServiceImpl implements IMkLeadService
     private MkContactMapper mkContactMapper;
 
     @Autowired
+    private MkLeadLogMapper mkLeadLogMapper;
+
+    @Autowired
     private IMkNumberRuleService mkNumberRuleService;
+
+    /**
+     * 记录线索操作日志
+     */
+    private void logLeadAction(Long leadId, String actionType, String actionDesc)
+    {
+        MkLeadLog log = new MkLeadLog();
+        log.setLeadId(leadId);
+        log.setActionType(actionType);
+        log.setActionDesc(actionDesc);
+        log.setOperatorId(SecurityUtils.getUserId());
+        log.setOperatorName(SecurityUtils.getUsername());
+        mkLeadLogMapper.insertLeadLog(log);
+    }
 
     @Override
     public List<MkLead> selectLeadList(MkLead lead)
@@ -76,13 +95,23 @@ public class MkLeadServiceImpl implements IMkLeadService
         }
         // 自动评分
         autoScoreLead(lead);
-        return mkLeadMapper.insertLead(lead);
+        int rows = mkLeadMapper.insertLead(lead);
+        if (rows > 0)
+        {
+            logLeadAction(lead.getLeadId(), "create", "创建线索：" + (lead.getCompanyName() != null ? lead.getCompanyName() : ""));
+        }
+        return rows;
     }
 
     @Override
     public int updateLead(MkLead lead)
     {
-        return mkLeadMapper.updateLead(lead);
+        int rows = mkLeadMapper.updateLead(lead);
+        if (rows > 0)
+        {
+            logLeadAction(lead.getLeadId(), "status_change", "更新线索信息");
+        }
+        return rows;
     }
 
     @Override
@@ -110,7 +139,17 @@ public class MkLeadServiceImpl implements IMkLeadService
         }
         lead.setReceiveStatus("1");
         lead.setUpdateBy(SecurityUtils.getUsername());
-        return mkLeadMapper.receiveLead(lead);
+        int rows = mkLeadMapper.receiveLead(lead);
+        if (rows > 0)
+        {
+            String desc = "申请领取线索";
+            if (lead.getReceiveApplyUserName() != null)
+            {
+                desc += "，申请人：" + lead.getReceiveApplyUserName();
+            }
+            logLeadAction(lead.getLeadId(), "apply", desc);
+        }
+        return rows;
     }
 
     @Override
@@ -126,8 +165,19 @@ public class MkLeadServiceImpl implements IMkLeadService
         {
             throw new ServiceException("该线索无待审批的领取申请");
         }
+        lead.setReceiveApproveUserId(SecurityUtils.getUserId());
         lead.setUpdateBy(SecurityUtils.getUsername());
-        return mkLeadMapper.approveReceive(lead);
+        int rows = mkLeadMapper.approveReceive(lead);
+        if (rows > 0)
+        {
+            String desc = "审批通过，分配给申请人";
+            if (lead.getReceiveRemark() != null && !lead.getReceiveRemark().isEmpty())
+            {
+                desc += "，审批意见：" + lead.getReceiveRemark();
+            }
+            logLeadAction(lead.getLeadId(), "approve", desc);
+        }
+        return rows;
     }
 
     @Override
@@ -143,8 +193,19 @@ public class MkLeadServiceImpl implements IMkLeadService
         {
             throw new ServiceException("该线索无待审批的领取申请");
         }
+        lead.setReceiveApproveUserId(SecurityUtils.getUserId());
         lead.setUpdateBy(SecurityUtils.getUsername());
-        return mkLeadMapper.rejectReceive(lead);
+        int rows = mkLeadMapper.rejectReceive(lead);
+        if (rows > 0)
+        {
+            String desc = "审批退回";
+            if (lead.getReceiveRemark() != null && !lead.getReceiveRemark().isEmpty())
+            {
+                desc += "，退回原因：" + lead.getReceiveRemark();
+            }
+            logLeadAction(lead.getLeadId(), "reject", desc);
+        }
+        return rows;
     }
 
     @Override
@@ -167,7 +228,17 @@ public class MkLeadServiceImpl implements IMkLeadService
         lead.setIsPublic("0");
         lead.setReceiveTime(new Date());
         lead.setUpdateBy(SecurityUtils.getUsername());
-        return mkLeadMapper.assignLead(lead);
+        int rows = mkLeadMapper.assignLead(lead);
+        if (rows > 0)
+        {
+            String desc = "分配线索";
+            if (lead.getUserName() != null)
+            {
+                desc += "，负责人：" + lead.getUserName();
+            }
+            logLeadAction(lead.getLeadId(), "assign", desc);
+        }
+        return rows;
     }
 
     @Override
@@ -231,24 +302,50 @@ public class MkLeadServiceImpl implements IMkLeadService
         }
         lead.setLeadStatus("4");
         lead.setUpdateBy(SecurityUtils.getUsername());
-        return mkLeadMapper.convertLead(lead);
+        int rows = mkLeadMapper.convertLead(lead);
+        if (rows > 0)
+        {
+            logLeadAction(lead.getLeadId(), "convert", "线索转化为客户，客户ID：" + lead.getConvertCustomerId());
+        }
+        return rows;
     }
 
     // ====== P1: 批量操作 + 退回公海 ======
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public int batchAssign(Long[] leadIds, Long userId, Long deptId, String userName, String deptName)
-    {
-        return mkLeadMapper.batchAssignLeads(leadIds, userId, deptId, userName, deptName, SecurityUtils.getUsername());
-    }
+public int batchAssign(Long[] leadIds, Long userId, Long deptId, String userName, String deptName)
+{
+int rows = mkLeadMapper.batchAssignLeads(leadIds, userId, deptId, userName, deptName, SecurityUtils.getUsername());
+if (rows > 0)
+{
+String desc = "批量分配线索";
+if (userName != null)
+{
+desc += "，负责人：" + userName;
+}
+for (Long leadId : leadIds)
+{
+logLeadAction(leadId, "assign", desc);
+}
+}
+return rows;
+}
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public int batchUpdateStatus(Long[] leadIds, String leadStatus)
-    {
-        return mkLeadMapper.batchUpdateStatus(leadIds, leadStatus, SecurityUtils.getUsername());
-    }
+public int batchUpdateStatus(Long[] leadIds, String leadStatus)
+{
+int rows = mkLeadMapper.batchUpdateStatus(leadIds, leadStatus, SecurityUtils.getUsername());
+if (rows > 0)
+{
+for (Long leadId : leadIds)
+{
+logLeadAction(leadId, "status_change", "批量变更状态为：" + leadStatus);
+}
+}
+return rows;
+}
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -271,7 +368,12 @@ public class MkLeadServiceImpl implements IMkLeadService
         {
             throw new ServiceException("线索已在公海，无需重复操作");
         }
-        return mkLeadMapper.releaseToPool(leadId, SecurityUtils.getUsername());
+        int rows = mkLeadMapper.releaseToPool(leadId, SecurityUtils.getUsername());
+        if (rows > 0)
+        {
+            logLeadAction(leadId, "release", "退回公海");
+        }
+        return rows;
     }
 
     @Override
@@ -306,6 +408,7 @@ public class MkLeadServiceImpl implements IMkLeadService
                         row.setLeadId(existingLead.getLeadId());
                         row.setUpdateBy(operName);
                         mkLeadMapper.updateLead(row);
+                        logLeadAction(row.getLeadId(), "status_change", "导入更新线索");
                         successNum++;
                         successMsg.append("<br/>" + successNum + "、企业名称 " + row.getCompanyName() + " 更新成功");
                     }
@@ -341,6 +444,7 @@ public class MkLeadServiceImpl implements IMkLeadService
                     autoScoreLead(row);
                     row.setCreateBy(operName);
                     mkLeadMapper.insertLead(row);
+                    logLeadAction(row.getLeadId(), "create", "导入创建线索：" + row.getCompanyName());
                     successNum++;
                     successMsg.append("<br/>" + successNum + "、企业名称 " + row.getCompanyName() + " 导入成功");
                 }
@@ -380,7 +484,17 @@ public class MkLeadServiceImpl implements IMkLeadService
         }
         lead.setLeadStatus("5");
         lead.setUpdateBy(SecurityUtils.getUsername());
-        return mkLeadMapper.invalidateLead(lead);
+        int rows = mkLeadMapper.invalidateLead(lead);
+        if (rows > 0)
+        {
+            String desc = "标记无效";
+            if (lead.getIneffectiveReason() != null && !lead.getIneffectiveReason().isEmpty())
+            {
+                desc += "，原因：" + lead.getIneffectiveReason();
+            }
+            logLeadAction(lead.getLeadId(), "invalidate", desc);
+        }
+        return rows;
     }
 
     @Override
@@ -470,5 +584,11 @@ public class MkLeadServiceImpl implements IMkLeadService
                 lead.setLeadGrade("D");
             }
         }
+    }
+
+    @Override
+    public List<MkLeadLog> selectLeadLogList(Long leadId)
+    {
+        return mkLeadLogMapper.selectLeadLogList(leadId);
     }
 }

@@ -220,11 +220,11 @@ public class DmsDashboardController extends BaseController
         lifecycleStages.add(stage3);
         // 运行（当前状态）- 根据设备实际状态显示
         Map<String, Object> stage4 = new HashMap<>();
-        stage4.put("label", statusText);  // 使用实际状态文字
+        stage4.put("label", "运行");  // 生命周期阶段名固定为"运行"
         stage4.put("date", "当前状态");
         stage4.put("status", "active");
         stage4.put("icon", null);
-        stage4.put("currentStatus", statusText);
+        stage4.put("currentStatus", statusText);  // 具体状态文字（运行中/故障/停机等）
         stage4.put("statusType", statusType);
         lifecycleStages.add(stage4);
         // 报废
