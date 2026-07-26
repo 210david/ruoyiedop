@@ -130,12 +130,24 @@
           <el-collapse-item title="负责信息" name="owner">
             <el-row>
               <el-col :span="12"><el-form-item label="负责人" prop="userId">
-                <el-select v-model="form.userId" filterable clearable placeholder="请选择负责人" style="width: 100%" @change="onUserChange">
-                  <el-option v-for="u in userOptions" :key="u.userId" :label="u.nickName" :value="u.userId" />
-                </el-select>
+                <el-input v-model="form.userName" readonly placeholder="请选择负责人" style="width: 100%" @click="openUserPicker">
+                  <template #append>
+                    <el-button icon="Search" @click="openUserPicker" />
+                  </template>
+                  <template #suffix>
+                    <el-icon v-if="form.userName" class="clear-icon" @click.stop="clearUser"><CircleClose /></el-icon>
+                  </template>
+                </el-input>
               </el-form-item></el-col>
               <el-col :span="12"><el-form-item label="所属部门" prop="deptId">
-                <el-tree-select v-model="form.deptId" :data="deptOptions" :props="{ value: 'id', label: 'label', children: 'children' }" value-key="id" placeholder="请选择部门" check-strictly clearable style="width: 100%" />
+                <el-input v-model="form.deptName" readonly placeholder="请选择部门" style="width: 100%" @click="openDeptPicker">
+                  <template #append>
+                    <el-button icon="Search" @click="openDeptPicker" />
+                  </template>
+                  <template #suffix>
+                    <el-icon v-if="form.deptName" class="clear-icon" @click.stop="clearDept"><CircleClose /></el-icon>
+                  </template>
+                </el-input>
               </el-form-item></el-col>
               <el-col :span="12"><el-form-item label="是否公海" prop="isPublic">
                 <el-radio-group v-model="form.isPublic"><el-radio value="0">否</el-radio><el-radio value="1">是</el-radio></el-radio-group>
@@ -149,6 +161,12 @@
       </el-form>
       <template #footer><el-button type="primary" @click="submitForm">确 定</el-button><el-button @click="cancel">取 消</el-button></template>
     </el-dialog>
+
+    <!-- 负责人选择弹窗 -->
+    <user-picker ref="userPickerRef" title="选择负责人" @confirm="onUserPickerConfirm" />
+
+    <!-- 部门选择弹窗 -->
+    <dept-picker ref="deptPickerRef" title="选择所属部门" :disabled-ids="[100]" @confirm="onDeptPickerConfirm" />
 
     <!-- 分配弹窗 -->
     <el-dialog v-model="assignOpen" width="500px" append-to-body draggable class="rd-dialog">
@@ -281,7 +299,7 @@
         <el-descriptions :column="2" border size="small" class="mb8">
           <div class="rd-item"><span class="rd-label">企业名称</span><div class="rd-value">{{ followForm.companyName }}</div></div>
           <div class="rd-item"><span class="rd-label">联系人</span><div class="rd-value">{{ followForm.contactName }}</div></div>
-        </div>
+        </el-descriptions>
         <el-form-item label="互动类型" prop="interactType">
           <el-select v-model="followForm.interactType" placeholder="请选择" style="width: 100%">
             <el-option v-for="d in marketing_interaction_type" :key="d.value" :label="d.label" :value="d.value" />
@@ -358,10 +376,12 @@
 
 <script setup name="MkLead">
 import { useRouter } from 'vue-router'
-import { UploadFilled } from '@element-plus/icons-vue'
+import { UploadFilled, CircleClose } from '@element-plus/icons-vue'
 import { listLead, getLead, addLead, updateLead, delLead, convertLead, assignLead, releaseLeadToPool, batchAssignLead, batchUpdateLeadStatus, invalidateLead, updateFollowTime, checkLeadDuplicate } from '@/api/mk/lead'
 import { addInteraction } from '@/api/mk/interaction'
-import { listUser, deptTreeSelect } from '@/api/system/user'
+import { listUser } from '@/api/system/user'
+import UserPicker from '@/components/UserPicker/index.vue'
+import DeptPicker from '@/components/DeptPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
 const { collapsedCards, toggleCard } = useDetailCard([])
@@ -382,7 +402,6 @@ const multiple = ref(true)
 const total = ref(0)
 const title = ref('')
 const userOptions = ref([])
-const deptOptions = ref([])
 const activeNames = ref(['lead', 'company', 'requirement', 'owner', 'other'])
 
 // 分配相关
@@ -438,12 +457,40 @@ const data = reactive({
 const { queryParams, form, rules } = toRefs(data)
 
 function getList() { loading.value = true; listLead(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false }) }
-function getUserOptions() { listUser({ pageNum: 1, pageSize: 9999 }).then(res => { userOptions.value = res.rows.filter(u => u.userId !== 1) }) }
-function getDeptTree() { deptTreeSelect().then(res => { deptOptions.value = res.data }) }
-function onUserChange(userId) {
-  if (userId) { const user = userOptions.value.find(u => u.userId === userId); if (user) { form.value.userName = user.nickName; if (user.deptId) { form.value.deptId = user.deptId; form.value.deptName = user.dept ? user.dept.deptName : undefined } } }
-  else { form.value.userName = undefined }
+
+/** 打开负责人选择弹窗 */
+function openUserPicker() {
+  proxy.$refs.userPickerRef.open(form.value.userId)
 }
+/** 负责人选择确认回调 */
+function onUserPickerConfirm(user) {
+  form.value.userId = user.userId
+  form.value.userName = user.nickName
+  if (user.deptId) {
+    form.value.deptId = user.deptId
+    form.value.deptName = user.deptName
+  }
+}
+/** 清除负责人 */
+function clearUser() {
+  form.value.userId = undefined
+  form.value.userName = undefined
+}
+/** 打开部门选择弹窗 */
+function openDeptPicker() {
+  proxy.$refs.deptPickerRef.open(form.value.deptId)
+}
+/** 部门选择确认回调 */
+function onDeptPickerConfirm(dept) {
+  form.value.deptId = dept.deptId
+  form.value.deptName = dept.deptName
+}
+/** 清除部门 */
+function clearDept() {
+  form.value.deptId = undefined
+  form.value.deptName = undefined
+}
+
 function handleQuery() { queryParams.value.pageNum = 1; getList() }
 function resetQuery() { proxy.resetForm('queryRef'); handleQuery() }
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.leadId); single.value = selection.length !== 1; multiple.value = !selection.length }
@@ -639,14 +686,25 @@ function doCheckDup() {
   })
 }
 
-getUserOptions()
-getDeptTree()
+listUser({ pageNum: 1, pageSize: 9999 }).then(res => { userOptions.value = res.rows.filter(u => u.userId !== 1) })
+handleQuery()
 getList()
 </script>
 
 <style scoped>
 .mb8 { margin-bottom: 8px; }
 .ml5 { margin-left: 5px; }
+.clear-icon {
+  cursor: pointer;
+  color: #c0c4cc;
+  font-size: 14px;
+}
+.clear-icon:hover {
+  color: #909399;
+}
+:deep(.el-input.is-disabled .el-input__inner) {
+  cursor: pointer;
+}
 .mt16 { margin-top: 16px; }
 .text-center { text-align: center; }
 </style>

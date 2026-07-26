@@ -27,6 +27,7 @@
         <result property="repairMeasure"     column="repair_measure"/>
         <result property="sparePartsUsed"    column="spare_parts_used"/>
         <result property="taskChecklist"     column="task_checklist"/>
+        <result property="repairCost"        column="repair_cost"/>
         <result property="downtimeDuration"  column="downtime_duration"/>
         <result property="completeTime"      column="complete_time"/>
         <result property="completeRemark"    column="complete_remark"/>
@@ -52,7 +53,7 @@
                assignee_id, assignee_name, assign_time, arrive_time,
                sla_response_deadline, sla_process_deadline, sla_timeout_status, sla_escalated,
                fault_cause, repair_measure,
-               spare_parts_used, task_checklist, downtime_duration, complete_time, complete_remark, deviation_reason,
+               spare_parts_used, task_checklist, repair_cost, downtime_duration, complete_time, complete_remark, deviation_reason,
                assigner_id, assigner_name, verifier_id, verifier_name, verify_time, verify_opinion, rating,
                del_flag, create_by, create_time, update_by, update_time, remark
         FROM dms_work_order
@@ -105,7 +106,7 @@
             assignee_id, assignee_name, assign_time, arrive_time,
             sla_response_deadline, sla_process_deadline, sla_timeout_status, sla_escalated,
             fault_cause, repair_measure,
-            spare_parts_used, task_checklist, downtime_duration, complete_time, complete_remark, deviation_reason,
+            spare_parts_used, task_checklist, repair_cost, downtime_duration, complete_time, complete_remark, deviation_reason,
             assigner_id, assigner_name, verifier_id, verifier_name, verify_time, verify_opinion, rating,
             create_by, create_time, remark
         ) VALUES (
@@ -114,7 +115,7 @@
             #{assigneeId}, #{assigneeName}, #{assignTime}, #{arriveTime},
             #{slaResponseDeadline}, #{slaProcessDeadline}, #{slaTimeoutStatus}, #{slaEscalated},
             #{faultCause}, #{repairMeasure},
-            #{sparePartsUsed}, #{taskChecklist}, #{downtimeDuration}, #{completeTime}, #{completeRemark}, #{deviationReason},
+            #{sparePartsUsed}, #{taskChecklist}, #{repairCost}, #{downtimeDuration}, #{completeTime}, #{completeRemark}, #{deviationReason},
             #{assignerId}, #{assignerName}, #{verifierId}, #{verifierName}, #{verifyTime}, #{verifyOpinion}, #{rating},
             #{createBy}, sysdate(), #{remark}
         )
@@ -146,6 +147,7 @@
             <if test="repairMeasure != null">repair_measure = #{repairMeasure},</if>
             <if test="sparePartsUsed != null">spare_parts_used = #{sparePartsUsed},</if>
             <if test="taskChecklist != null">task_checklist = #{taskChecklist},</if>
+            <if test="repairCost != null">repair_cost = #{repairCost},</if>
             <if test="downtimeDuration != null">downtime_duration = #{downtimeDuration},</if>
             <if test="completeTime != null">complete_time = #{completeTime},</if>
             <if test="completeRemark != null">complete_remark = #{completeRemark},</if>

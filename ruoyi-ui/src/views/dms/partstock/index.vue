@@ -28,9 +28,8 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table ref="tableRef" v-loading="loading" :data="list" @selection-change="handleSelectionChange" border @header-dragend="onHeaderDragEnd">
+    <el-table ref="tableRef" v-loading="loading" :data="list" @selection-change="handleSelectionChange" border @header-dragend="onHeaderDragEnd" :default-sort="{ prop: 'createTime', order: 'descending' }">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="时间" prop="createTime" :width="colWidth('createTime', 160)" resizable align="center" />
       <el-table-column label="单据号" prop="documentCode" :width="colWidth('documentCode', 140)" resizable />
       <el-table-column label="备件编号" prop="partCode" :width="colWidth('partCode', 120)" resizable />
       <el-table-column label="备件名称" prop="partName" :width="colWidth('partName', 150)" resizable show-overflow-tooltip />
@@ -52,6 +51,7 @@
       <el-table-column label="变更前" prop="beforeStock" :width="colWidth('beforeStock', 80)" resizable align="center" />
       <el-table-column label="变更后" prop="afterStock" :width="colWidth('afterStock', 80)" resizable align="center" />
       <el-table-column label="操作人" prop="operatorName" :width="colWidth('operatorName', 80)" resizable />
+      <el-table-column label="操作时间" prop="createTime" :width="colWidth('createTime', 160)" resizable align="center" sortable />
       <el-table-column label="备注" prop="remark" :width="colWidth('remark', 150)" resizable show-overflow-tooltip />
       <el-table-column label="操作" width="80" align="center">
         <template #default="scope">

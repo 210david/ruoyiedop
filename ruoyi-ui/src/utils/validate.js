@@ -42,6 +42,13 @@ export function isHttp(url) {
  * @returns {Boolean}
  */
 export function isExternal(path) {
+  // 设备大屏页面以新窗口打开
+  if (path) {
+    const pathStr = typeof path === 'string' ? path : (path.path || '')
+    if (pathStr.startsWith('/dms/dashboard/screen')) {
+      return true
+    }
+  }
   return /^(https?:|mailto:|tel:)/.test(path)
 }
 

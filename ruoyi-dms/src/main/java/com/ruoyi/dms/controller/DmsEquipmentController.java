@@ -71,25 +71,85 @@ public class DmsEquipmentController extends BaseController
     @PutMapping
     public AjaxResult edit(@Validated @RequestBody DmsEquipment equipment)
     {
-        // 记录状态变更日志
-        if (equipment.getEquipmentId() != null && equipment.getEquipmentStatus() != null)
+        if (equipment.getEquipmentId() != null)
         {
             DmsEquipment old = dmsEquipmentService.selectEquipmentById(equipment.getEquipmentId());
-            if (old != null && !old.getEquipmentStatus().equals(equipment.getEquipmentStatus()))
+            if (old != null)
             {
-                DmsEquipmentLog log = new DmsEquipmentLog();
-                log.setEquipmentId(equipment.getEquipmentId());
-                log.setEquipmentCode(old.getEquipmentCode());
-                log.setEquipmentName(old.getEquipmentName());
-                log.setChangeType("0"); // 状态变更
-                log.setOldValue(old.getEquipmentStatus());
-                log.setNewValue(equipment.getEquipmentStatus());
-                log.setChangeReason(equipment.getRemark());
-                log.setOperatorName(getUsername());
-                dmsEquipmentLogService.insertLog(log);
+                String operator = getUsername();
+                // 逐字段对比，记录所有变更
+                recordChange(old, equipment, "equipmentStatus", "设备状态", "0", operator);
+                recordChange(old, equipment, "installLocation", "安装位置", "1", operator);
+                recordChange(old, equipment, "deptName", "使用部门", "2", operator);
+                recordChange(old, equipment, "responsibleName", "责任人", "3", operator);
+                recordChange(old, equipment, "assetCode", "资产编号", "5", operator);
+                recordChange(old, equipment, "equipmentName", "设备名称", "5", operator);
+                recordChange(old, equipment, "model", "型号", "5", operator);
+                recordChange(old, equipment, "serialNumber", "序列号", "5", operator);
+                recordChange(old, equipment, "manufacturer", "制造商", "5", operator);
+                recordChange(old, equipment, "supplier", "供应商", "5", operator);
+                recordChange(old, equipment, "originalValue", "原值", "5", operator);
+                recordChange(old, equipment, "equipmentLevel", "设备等级", "5", operator);
+                recordChange(old, equipment, "purchaseDate", "购置日期", "5", operator);
+                recordChange(old, equipment, "installDate", "启用日期", "5", operator);
+                recordChange(old, equipment, "retireDate", "报废处置日期", "5", operator);
+                recordChange(old, equipment, "warrantyDate", "质保期限", "5", operator);
+                recordChange(old, equipment, "remark", "备注", "5", operator);
             }
         }
         return toAjax(dmsEquipmentService.updateEquipment(equipment));
+    }
+
+    /**
+     * 对比字段新旧值，如果有变化则记录变更日志
+     * @param oldData 旧数据
+     * @param newData 新数据
+     * @param fieldName 字段名（DmsEquipment属性名）
+     * @param fieldLabel 字段中文名（用于日志显示）
+     * @param changeType 变更类型（0状态 1位置 2部门 3责任人 5信息变更）
+     * @param operator 操作人
+     */
+    private void recordChange(DmsEquipment oldData, DmsEquipment newData, String fieldName, String fieldLabel, String changeType, String operator)
+    {
+        String oldVal = getFieldValue(oldData, fieldName);
+        String newVal = getFieldValue(newData, fieldName);
+        // 两个值都为空不算变更
+        if (isBlank(oldVal) && isBlank(newVal)) return;
+        // 值相同不算变更
+        if (eq(oldVal, newVal)) return;
+        DmsEquipmentLog log = new DmsEquipmentLog();
+        log.setEquipmentId(oldData.getEquipmentId());
+        log.setEquipmentCode(oldData.getEquipmentCode());
+        log.setEquipmentName(oldData.getEquipmentName());
+        log.setChangeType(changeType);
+        log.setOldValue(oldVal);
+        log.setNewValue(newVal);
+        log.setChangeReason(fieldLabel + "变更");
+        log.setOperatorName(operator);
+        dmsEquipmentLogService.insertLog(log);
+    }
+
+    /** 通过反射获取 DmsEquipment 字段值的字符串表示 */
+    private String getFieldValue(DmsEquipment obj, String fieldName)
+    {
+        try
+        {
+            java.lang.reflect.Field f = DmsEquipment.class.getDeclaredField(fieldName);
+            f.setAccessible(true);
+            Object val = f.get(obj);
+            return val == null ? "" : val.toString();
+        }
+        catch (Exception e)
+        {
+            return "";
+        }
+    }
+
+    private boolean isBlank(String s) { return s == null || s.trim().isEmpty(); }
+    private boolean eq(String a, String b) {
+        if (a == null) a = "";
+        if (b == null) b = "";
+        return a.equals(b);
     }
 
     @Log(title = "设备台账管理", businessType = BusinessType.DELETE)

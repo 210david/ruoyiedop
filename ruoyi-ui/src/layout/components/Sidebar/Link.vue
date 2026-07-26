@@ -27,8 +27,18 @@ const type = computed(() => {
 
 function linkProps() {
   if (isExt.value) {
+    let href = props.to
+    // 处理内部大屏路由，转换为完整 URL
+    if (typeof props.to === 'object') {
+      const path = props.to.path || '/'
+      const query = props.to.query || {}
+      const queryString = new URLSearchParams(query).toString()
+      href = window.location.origin + path + (queryString ? '?' + queryString : '')
+    } else if (props.to.startsWith('/dms/dashboard/screen')) {
+      href = window.location.origin + props.to
+    }
     return {
-      href: props.to,
+      href: href,
       target: '_blank',
       rel: 'noopener'
     }

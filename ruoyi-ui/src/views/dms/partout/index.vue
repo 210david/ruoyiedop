@@ -40,12 +40,10 @@
       <el-table-column label="领用人" prop="receiver" :width="colWidth('receiver', 80)" resizable />
       <el-table-column label="出库数量" prop="quantity" :width="colWidth('quantity', 90)" resizable align="center" />
       <el-table-column label="出库日期" prop="operateDate" :width="colWidth('operateDate', 110)" resizable align="center" />
-      <el-table-column label="变更前" prop="beforeStock" :width="colWidth('beforeStock', 80)" resizable align="center" />
-      <el-table-column label="变更后" prop="afterStock" :width="colWidth('afterStock', 80)" resizable align="center" />
-      <el-table-column label="操作人" prop="operatorName" :width="colWidth('operatorName', 80)" resizable />
-      <el-table-column label="操作时间" prop="createTime" :width="colWidth('createTime', 160)" resizable align="center" />
-      <el-table-column label="操作" width="80" align="center">
+      <el-table-column label="操作" width="180" align="center" fixed="right">
         <template #default="scope">
+          <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['dms:partout:query']">查看</el-button>
+          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['dms:partout:edit']">修改</el-button>
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['dms:partstock:remove']">删除</el-button>
         </template>
       </el-table-column>
@@ -60,7 +58,7 @@
           <span class="rd-detail-header-title">{{ title }}</span>
         </div>
       </template>
-      <el-form ref="partoutRef" :model="form" :rules="rules" label-width="100px">
+      <el-form ref="partoutRef" :model="form" :rules="rules" label-width="100px" :disabled="formDisabled">
         <div class="rd-page">
         <section class="rd-card">
           <div class="rd-card-header" @click="toggleCard('c3')">
@@ -92,9 +90,9 @@
           <div class="rd-card-body" v-show="!collapsedCards.c2">
         <el-row>
           <el-col :span="24">
-            <el-form-item label="备件" prop="partId">
-              <el-select v-model="form.partId" filterable placeholder="请选择备件（仅显示有库存的）" style="width: 100%" @change="onPartChange">
-                <el-option v-for="item in spareOptions" :key="item.partId" :label="item.partCode + ' - ' + item.partName + '（库存：' + (item.currentStock || 0) + '）'" :value="item.partId" />
+            <el-form-item label="备件" prop="stockId">
+              <el-select v-model="form.stockId" filterable placeholder="请选择备件（仅显示有库存的）" style="width: 100%" @change="onPartChange" :disabled="!!form.recordId">
+                <el-option v-for="item in spareOptions" :key="item.stockId" :label="item.partCode + ' - ' + item.partName + '（' + (item.warehouseName || '默认') + '：' + (item.currentStock || 0) + '）'" :value="item.stockId" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -106,11 +104,6 @@
           <el-col :span="12">
             <el-form-item label="单位" prop="unit">
               <dict-tag :options="wms_unit" :value="form.unit" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="出库数量" prop="quantity">
-              <el-input-number v-model="form.quantity" :min="0.01" :max="form.currentStock || 9999" :precision="2" controls-position="right" style="width: 100%" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -129,15 +122,32 @@
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="领用人" prop="receiver">
-              <el-select v-model="form.receiver" filterable clearable placeholder="请选择领用人" style="width: 100%" @change="onReceiverChange">
-                <el-option v-for="u in userOptions" :key="u.userId" :label="u.nickName" :value="u.nickName" />
-              </el-select>
+            <el-form-item label="出库数量" prop="quantity">
+              <el-input-number v-model="form.quantity" :min="0.01" :max="form.currentStock || 9999" :precision="2" controls-position="right" style="width: 100%" />
             </el-form-item>
           </el-col>
-          <el-col :span="24">
+          <el-col :span="12">
+            <el-form-item label="领用人" prop="receiver">
+              <el-input v-model="form.receiver" readonly placeholder="请选择领用人" style="width: 100%" @click="openReceiverPicker">
+                <template #append>
+                  <el-button icon="Search" @click="openReceiverPicker" />
+                </template>
+                <template #suffix>
+                  <el-icon v-if="form.receiver" class="clear-icon" @click.stop="clearReceiver"><CircleClose /></el-icon>
+                </template>
+              </el-input>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
             <el-form-item label="领用部门" prop="deptId">
-              <el-tree-select v-model="form.deptId" :data="deptOptions" :props="{ value: 'id', label: 'label', children: 'children' }" value-key="id" placeholder="请选择领用部门" check-strictly clearable style="width: 100%" @change="onDeptChange" />
+              <el-input v-model="form.supplierOrDept" readonly placeholder="请选择领用部门" style="width: 100%" @click="openDeptPicker">
+                <template #append>
+                  <el-button icon="Search" @click="openDeptPicker" />
+                </template>
+                <template #suffix>
+                  <el-icon v-if="form.supplierOrDept" class="clear-icon" @click.stop="clearDept"><CircleClose /></el-icon>
+                </template>
+              </el-input>
             </el-form-item>
           </el-col>
         </el-row>
@@ -155,17 +165,25 @@
         </div>
       </el-form>
       <template #footer>
-        <el-button type="primary" @click="submitForm">确 定</el-button>
+        <el-button type="primary" @click="submitForm" v-if="!formDisabled">确 定</el-button>
         <el-button @click="cancel">取 消</el-button>
       </template>
     </el-dialog>
+
+    <!-- 领用人选择弹窗 -->
+    <user-picker ref="userPickerRef" title="选择领用人" @confirm="onReceiverPickerConfirm" />
+
+    <!-- 领用部门选择弹窗 -->
+    <dept-picker ref="deptPickerRef" title="选择领用部门" :disabled-ids="[100]" @confirm="onDeptPickerConfirm" />
   </div>
 </template>
 
 <script setup name="DmsPartOut">
-import { listPartOut, addPartOut, delPartOut } from '@/api/dms/partout'
-import { listSparepart } from '@/api/dms/sparepart'
-import { listUser, deptTreeSelect } from '@/api/system/user'
+import { CircleClose } from '@element-plus/icons-vue'
+import { listPartOut, addPartOut, delPartOut, getPartOut, updatePartOut } from '@/api/dms/partout'
+import { listPartLedger } from '@/api/dms/partledger'
+import UserPicker from '@/components/UserPicker/index.vue'
+import DeptPicker from '@/components/DeptPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
 const { collapsedCards, toggleCard } = useDetailCard(["c3","c2","c1","c0"])
@@ -176,8 +194,6 @@ const { dms_partout_type, wms_unit } = proxy.useDict('dms_partout_type', 'wms_un
 
 const list = ref([])
 const spareOptions = ref([])
-const userOptions = ref([])
-const deptOptions = ref([])
 const open = ref(false)
 const loading = ref(true)
 const showSearch = ref(true)
@@ -185,6 +201,7 @@ const ids = ref([])
 const multiple = ref(true)
 const total = ref(0)
 const title = ref('')
+const formDisabled = ref(false)
 
 /** 获取当天日期 YYYY-MM-DD */
 function today() {
@@ -211,7 +228,7 @@ const data = reactive({
   queryParams: { pageNum: 1, pageSize: 10, documentCode: undefined, targetType: undefined, supplierOrDept: undefined },
   rules: {
     targetType: [{ required: true, message: '出库类型不能为空', trigger: 'change' }],
-    partId: [{ required: true, message: '备件不能为空', trigger: 'change' }],
+    stockId: [{ required: true, message: '备件不能为空', trigger: 'change' }],
     quantity: [{ required: true, validator: validateQuantity, trigger: 'blur' }],
     operateDate: [{ required: true, message: '出库日期不能为空', trigger: 'change' }],
     receiver: [{ required: true, message: '领用人不能为空', trigger: 'change' }],
@@ -229,58 +246,66 @@ function resetQuery() { proxy.resetForm('queryRef'); handleQuery() }
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.recordId); multiple.value = !selection.length }
 function handleAdd() {
   reset(); open.value = true
+  formDisabled.value = false
   title.value = '新增出库'
   getSpareOptions()
 }
+function handleView(row) {
+  reset(); formDisabled.value = true
+  getPartOut(row.recordId).then(res => { form.value = res.data; open.value = true; title.value = '查看出库记录' })
+}
+function handleUpdate(row) {
+  reset(); formDisabled.value = false
+  getPartOut(row.recordId).then(res => { form.value = res.data; open.value = true; title.value = '修改出库记录'; getSpareOptions() })
+}
 function reset() {
   form.value = {
-    documentCode: undefined, targetType: undefined, partId: undefined, partCode: undefined, partName: undefined,
-    unit: undefined, currentStock: undefined, quantity: 1, operateDate: today(),
+    documentCode: undefined, targetType: undefined, partId: undefined, stockId: undefined, partCode: undefined, partName: undefined,
+    unit: undefined, currentStock: undefined, warehouseName: undefined, quantity: 1, operateDate: today(),
     receiver: undefined, supplierOrDept: undefined, deptId: undefined, operatorName: undefined, remark: undefined
   }
   proxy.resetForm('partoutRef')
 }
-/** 领用人变更时，自动带出其所在部门 */
-function onReceiverChange(val) {
-  const user = userOptions.value.find(u => u.nickName === val)
-  if (user && user.deptId) {
+/** 打开领用人选择弹窗 */
+function openReceiverPicker() {
+  proxy.$refs.userPickerRef.open(undefined)
+}
+/** 领用人选择确认回调 */
+function onReceiverPickerConfirm(user) {
+  form.value.receiver = user.nickName
+  if (user.deptId) {
     form.value.deptId = user.deptId
-    form.value.supplierOrDept = user.dept ? user.dept.deptName : findDeptName(deptOptions.value, user.deptId)
-  } else {
-    form.value.deptId = undefined
-    form.value.supplierOrDept = undefined
+    form.value.supplierOrDept = user.deptName
   }
 }
-/** 部门树选择变更时，同步部门名称到 supplierOrDept */
-function onDeptChange(val) {
-  form.value.supplierOrDept = findDeptName(deptOptions.value, val)
+/** 清除领用人 */
+function clearReceiver() {
+  form.value.receiver = undefined
 }
-/** 递归查找部门名称 */
-function findDeptName(tree, targetId) {
-  for (const node of tree) {
-    if (node.id === targetId) return node.label
-    if (node.children) {
-      const found = findDeptName(node.children, targetId)
-      if (found) return found
-    }
-  }
-  return ''
+/** 打开部门选择弹窗 */
+function openDeptPicker() {
+  proxy.$refs.deptPickerRef.open(form.value.deptId)
 }
-/** 获取系统用户列表 */
-function getUserOptions() {
-  listUser({ pageNum: 1, pageSize: 9999, status: '0' }).then(res => { userOptions.value = res.rows })
+/** 部门选择确认回调 */
+function onDeptPickerConfirm(dept) {
+  form.value.deptId = dept.deptId
+  form.value.supplierOrDept = dept.deptName
 }
-/** 获取部门树 */
-function getDeptTree() {
-  deptTreeSelect().then(res => { deptOptions.value = res.data })
+/** 清除部门 */
+function clearDept() {
+  form.value.deptId = undefined
+  form.value.supplierOrDept = undefined
 }
 function onPartChange(val) {
-  const part = spareOptions.value.find(i => i.partId === val)
-  if (part) {
-    form.value.partCode = part.partCode
-    form.value.partName = part.partName
-    form.value.unit = part.unit || ''
-    form.value.currentStock = part.currentStock || 0
+  const item = spareOptions.value.find(i => i.stockId === val)
+  if (item) {
+    form.value.partId = item.partId
+    form.value.stockId = item.stockId
+    form.value.partCode = item.partCode
+    form.value.partName = item.partName
+    form.value.unit = item.unit || ''
+    form.value.currentStock = item.currentStock || 0
+    form.value.warehouseName = item.warehouseName || '备件库'
     // 重置出库数量，确保不超过库存
     if (form.value.quantity > form.value.currentStock) {
       form.value.quantity = form.value.currentStock
@@ -290,7 +315,8 @@ function onPartChange(val) {
 function submitForm() {
   proxy.$refs['partoutRef'].validate(valid => {
     if (valid) {
-      addPartOut(form.value).then(() => { proxy.$modal.msgSuccess('出库成功'); open.value = false; getList() })
+      if (form.value.recordId != undefined) { updatePartOut(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList() }) }
+      else { addPartOut(form.value).then(() => { proxy.$modal.msgSuccess('出库成功'); open.value = false; getList() }) }
     }
   })
 }
@@ -300,8 +326,8 @@ function handleDelete(row) { const recordIds = row.recordId || ids.value; proxy.
 
 /** 获取备件列表，只取库存大于0的 */
 function getSpareOptions() {
-  listSparepart({ pageNum: 1, pageSize: 99999, status: '0' }).then(res => {
-    spareOptions.value = (res.rows || []).filter(item => item.currentStock != null && item.currentStock > 0)
+  listPartLedger({ pageNum: 1, pageSize: 99999 }).then(res => {
+    spareOptions.value = (res.rows || []).filter(item => item.currentStock != null && Number(item.currentStock) > 0)
   })
 }
 
@@ -311,6 +337,18 @@ onActivated(() => {
 
 getList()
 getSpareOptions()
-getUserOptions()
-getDeptTree()
 </script>
+
+<style scoped>
+.clear-icon {
+  cursor: pointer;
+  color: #c0c4cc;
+  font-size: 14px;
+}
+.clear-icon:hover {
+  color: #909399;
+}
+:deep(.el-input.is-disabled .el-input__inner) {
+  cursor: pointer;
+}
+</style>

@@ -83,15 +83,20 @@ function resolvePath(routePath, routeQuery) {
   if (isExternal(props.basePath)) {
     return props.basePath
   }
+  const fullPath = getNormalPath(props.basePath + '/' + routePath)
+  // 检查完整路径是否需要新窗口打开（如大屏页面）
+  if (isExternal(fullPath)) {
+    return fullPath
+  }
   if (routeQuery) {
     try {
       let query = JSON.parse(routeQuery)
-      return { path: getNormalPath(props.basePath + '/' + routePath), query: query }
+      return { path: fullPath, query: query }
     } catch (e) {
-      return getNormalPath(props.basePath + '/' + routePath)
+      return fullPath
     }
   }
-  return getNormalPath(props.basePath + '/' + routePath)
+  return fullPath
 }
 
 function hasTitle(title){

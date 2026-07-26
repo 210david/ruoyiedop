@@ -51,8 +51,8 @@
       <el-table-column label="维修人" prop="assigneeName" :width="colWidth('assigneeName', 80)" resizable />
       <el-table-column label="工单状态" prop="orderStatus" :width="colWidth('orderStatus', 110)" resizable align="center">
         <template #default="scope">
-          <el-tag v-if="scope.row.slaTimeoutStatus === '1'" type="danger" size="small">响应超时</el-tag>
-          <el-tag v-else-if="scope.row.slaTimeoutStatus === '2'" type="danger" size="small">处理超时</el-tag>
+          <el-tag v-if="scope.row.slaTimeoutStatus === '1' && !isTerminalStatus(scope.row.orderStatus)" type="danger" size="small">响应超时</el-tag>
+          <el-tag v-else-if="scope.row.slaTimeoutStatus === '2' && !isTerminalStatus(scope.row.orderStatus)" type="danger" size="small">处理超时</el-tag>
           <dict-tag :options="dms_order_status" :value="scope.row.orderStatus" />
         </template>
       </el-table-column>
@@ -78,7 +78,7 @@
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
     <!-- 新增/修改工单弹窗 -->
-    <el-dialog v-model="open" width="780px" append-to-body draggable class="rd-dialog">
+    <el-dialog v-model="open" width="936px" append-to-body draggable class="rd-dialog">
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div>
@@ -121,7 +121,7 @@
               <el-option v-for="d in dms_order_status" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </el-form-item></el-col>
-          <el-col :span="12"><el-form-item label="报修人" prop="reporterId"><el-select v-model="form.reporterId" filterable clearable placeholder="请选择报修人" style="width: 100%" @change="(uid) => onUserSelect(form, 'reporterId', 'reporterName', uid)"><el-option v-for="u in userOptions" :key="u.userId" :label="u.nickName" :value="u.userId" /></el-select></el-form-item></el-col>
+          <el-col :span="12"><el-form-item label="报修人" prop="reporterId"><el-input v-model="form.reporterName" readonly placeholder="请选择报修人" style="width: 100%" @click="openUserPicker('form', 'reporterId', 'reporterName')"><template #append><el-button icon="Search" @click="openUserPicker('form', 'reporterId', 'reporterName')" /></template><template #suffix><el-icon v-if="form.reporterName" class="clear-icon" @click.stop="form.reporterId = undefined; form.reporterName = undefined"><CircleClose /></el-icon></template></el-input></el-form-item></el-col>
           <el-col :span="12"><el-form-item label="报修时间" prop="reportTime"><el-date-picker v-model="form.reportTime" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" placeholder="选择时间" style="width: 100%" /></el-form-item></el-col>
         </el-row>
         </el-collapse-item>
@@ -138,8 +138,8 @@
         <!-- 分组三：派工信息（仅修改时显示） -->
         <el-collapse-item v-if="!isAdd" title="派工信息" name="dispatch">
         <el-row>
-          <el-col :span="12"><el-form-item label="维修人" prop="assigneeId"><el-select v-model="form.assigneeId" filterable clearable placeholder="请选择维修人" style="width: 100%" @change="(uid) => onUserSelect(form, 'assigneeId', 'assigneeName', uid)"><el-option v-for="u in userOptions" :key="u.userId" :label="u.nickName" :value="u.userId" /></el-select></el-form-item></el-col>
-          <el-col :span="12"><el-form-item label="派工人" prop="assignerId"><el-select v-model="form.assignerId" filterable clearable placeholder="请选择派工人" style="width: 100%" @change="(uid) => onUserSelect(form, 'assignerId', 'assignerName', uid)"><el-option v-for="u in userOptions" :key="u.userId" :label="u.nickName" :value="u.userId" /></el-select></el-form-item></el-col>
+          <el-col :span="12"><el-form-item label="维修人" prop="assigneeId"><el-input v-model="form.assigneeName" readonly placeholder="请选择维修人" style="width: 100%" @click="openUserPicker('form', 'assigneeId', 'assigneeName')"><template #append><el-button icon="Search" @click="openUserPicker('form', 'assigneeId', 'assigneeName')" /></template><template #suffix><el-icon v-if="form.assigneeName" class="clear-icon" @click.stop="form.assigneeId = undefined; form.assigneeName = undefined"><CircleClose /></el-icon></template></el-input></el-form-item></el-col>
+          <el-col :span="12"><el-form-item label="派工人" prop="assignerId"><el-input v-model="form.assignerName" readonly placeholder="请选择派工人" style="width: 100%" @click="openUserPicker('form', 'assignerId', 'assignerName')"><template #append><el-button icon="Search" @click="openUserPicker('form', 'assignerId', 'assignerName')" /></template><template #suffix><el-icon v-if="form.assignerName" class="clear-icon" @click.stop="form.assignerId = undefined; form.assignerName = undefined"><CircleClose /></el-icon></template></el-input></el-form-item></el-col>
           <el-col :span="12"><el-form-item label="到达时间" prop="arriveTime"><el-date-picker v-model="form.arriveTime" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" placeholder="选择时间" style="width: 100%" /></el-form-item></el-col>
         </el-row>
         </el-collapse-item>
@@ -181,6 +181,7 @@
           </div>
         </el-form-item>
           </el-col>
+          <el-col :span="12"><el-form-item label="维修费用" prop="repairCost"><el-input-number v-model="form.repairCost" :min="0" :precision="2" :step="100" controls-position="right" style="width: 100%" /><span style="margin-left: 8px; color: #999">元</span></el-form-item></el-col>
           <el-col :span="12"><el-form-item label="停机时长" prop="downtimeDuration"><el-input-number v-model="form.downtimeDuration" :min="0" :precision="2" controls-position="right" style="width: 100%" /><span style="margin-left: 8px; color: #999">小时</span></el-form-item></el-col>
           <el-col :span="12"><el-form-item label="完工时间" prop="completeTime"><el-date-picker v-model="form.completeTime" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" placeholder="选择时间" style="width: 100%" /></el-form-item></el-col>
           <el-col :span="24"><el-form-item label="完工说明" prop="completeRemark"><el-input v-model="form.completeRemark" type="textarea" :rows="2" placeholder="请输入完工说明" /></el-form-item></el-col>
@@ -190,7 +191,7 @@
         <!-- 分组五：验收信息（仅修改时显示） -->
         <el-collapse-item v-if="!isAdd" title="验收信息" name="verify">
         <el-row>
-          <el-col :span="12"><el-form-item label="验收人" prop="verifierId"><el-select v-model="form.verifierId" filterable clearable placeholder="请选择验收人" style="width: 100%" @change="(uid) => onUserSelect(form, 'verifierId', 'verifierName', uid)"><el-option v-for="u in userOptions" :key="u.userId" :label="u.nickName" :value="u.userId" /></el-select></el-form-item></el-col>
+          <el-col :span="12"><el-form-item label="验收人" prop="verifierId"><el-input v-model="form.verifierName" readonly placeholder="请选择验收人" style="width: 100%" @click="openUserPicker('form', 'verifierId', 'verifierName')"><template #append><el-button icon="Search" @click="openUserPicker('form', 'verifierId', 'verifierName')" /></template><template #suffix><el-icon v-if="form.verifierName" class="clear-icon" @click.stop="form.verifierId = undefined; form.verifierName = undefined"><CircleClose /></el-icon></template></el-input></el-form-item></el-col>
           <el-col :span="12"><el-form-item label="评价" prop="rating">
             <el-rate v-model="form.rating" :max="5" />
           </el-form-item></el-col>
@@ -234,14 +235,10 @@
         </div>
         </div>
         <el-form-item label="维修人" required>
-          <el-select v-model="dispatchForm.assigneeId" filterable clearable placeholder="请选择维修人" style="width: 100%" @change="(uid) => onUserSelect(dispatchForm, 'assigneeId', 'assigneeName', uid)">
-            <el-option v-for="u in userOptions" :key="u.userId" :label="u.nickName" :value="u.userId" />
-          </el-select>
+          <el-input v-model="dispatchForm.assigneeName" readonly placeholder="请选择维修人" style="width: 100%" @click="openUserPicker('dispatchForm', 'assigneeId', 'assigneeName')"><template #append><el-button icon="Search" @click="openUserPicker('dispatchForm', 'assigneeId', 'assigneeName')" /></template><template #suffix><el-icon v-if="dispatchForm.assigneeName" class="clear-icon" @click.stop="dispatchForm.assigneeId = undefined; dispatchForm.assigneeName = undefined"><CircleClose /></el-icon></template></el-input>
         </el-form-item>
         <el-form-item label="派工人">
-          <el-select v-model="dispatchForm.assignerId" filterable clearable placeholder="请选择派工人" style="width: 100%" @change="(uid) => onUserSelect(dispatchForm, 'assignerId', 'assignerName', uid)">
-            <el-option v-for="u in userOptions" :key="u.userId" :label="u.nickName" :value="u.userId" />
-          </el-select>
+          <el-input v-model="dispatchForm.assignerName" readonly placeholder="请选择派工人" style="width: 100%" @click="openUserPicker('dispatchForm', 'assignerId', 'assignerName')"><template #append><el-button icon="Search" @click="openUserPicker('dispatchForm', 'assignerId', 'assignerName')" /></template><template #suffix><el-icon v-if="dispatchForm.assignerName" class="clear-icon" @click.stop="dispatchForm.assignerId = undefined; dispatchForm.assignerName = undefined"><CircleClose /></el-icon></template></el-input>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -270,7 +267,7 @@
     </el-dialog>
 
     <!-- 完工弹窗 -->
-    <el-dialog v-model="completeOpen" width="780px" append-to-body draggable class="rd-dialog">
+    <el-dialog v-model="completeOpen" width="936px" append-to-body draggable class="rd-dialog">
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
@@ -278,65 +275,81 @@
         </div>
       </template>
       <el-form ref="completeRef" :model="completeForm" label-width="100px">
-        <el-form-item label="工单号"><el-input :model-value="completeForm.orderNo" disabled /></el-form-item>
-        <!-- 任务清单 -->
-        <el-form-item v-if="completeTaskList.length > 0" label="任务清单">
-          <div style="width: 100%">
-            <el-alert type="info" :closable="false" show-icon style="margin-bottom: 8px">
-              <template #title>请逐项确认任务完成情况</template>
-            </el-alert>
-            <div v-for="(task, index) in completeTaskList" :key="index" style="display: flex; align-items: center; margin-bottom: 8px; padding: 6px 12px; border: 1px solid #ebeef5; border-radius: 4px">
-              <el-checkbox v-model="task.done" style="margin-right: 8px" />
-              <span :style="task.done ? 'text-decoration: line-through; color: #999' : ''">{{ task.text }}</span>
-            </div>
-          </div>
-        </el-form-item>
-        <el-form-item label="故障原因" required>
-          <el-input v-model="completeForm.faultCause" type="textarea" :rows="2" placeholder="请输入故障原因" />
-        </el-form-item>
-        <el-form-item label="维修措施" required>
-          <el-input v-model="completeForm.repairMeasure" type="textarea" :rows="2" placeholder="请输入维修措施" />
-        </el-form-item>
-        <el-form-item label="更换备件">
-          <div style="width: 100%">
-            <el-table :data="completeSparePartList" border size="small" style="margin-bottom: 8px" @header-dragend="onHeaderDragEnd">
-              <el-table-column label="备件名称" min-width="180">
-                <template #default="{ row }">
-                  <el-select v-model="row.partName" filterable clearable placeholder="请选择备件" style="width: 100%">
-                    <el-option v-for="p in getAvailableSpareParts(completeSparePartList, row.partName)" :key="p.partId" :label="p.partName + (p.specModel ? ' (' + p.specModel + ')' : '')" :value="p.partName" />
-                  </el-select>
-                </template>
-              </el-table-column>
-              <el-table-column label="库存" width="80" align="center">
-                <template #default="{ row }">{{ getSparePartStock(row.partName) != null ? getSparePartStock(row.partName) : '-' }}</template>
-              </el-table-column>
-              <el-table-column label="数量" width="120" align="center">
-                <template #default="{ row }">
-                  <el-input-number v-model="row.quantity" :min="1" :max="getSparePartStock(row.partName) != null ? getSparePartStock(row.partName) : undefined" :precision="0" size="small" controls-position="right" style="width: 100px" />
-                </template>
-              </el-table-column>
-              <el-table-column label="单位" width="70" align="center">
-                <template #default="{ row }">{{ getSparePartUnit(row.partName) }}</template>
-              </el-table-column>
-              <el-table-column label="操作" width="70" align="center">
-                <template #default="{ $index }">
-                  <el-button link type="danger" icon="Delete" @click="completeSparePartList.splice($index, 1)"></el-button>
-                </template>
-              </el-table-column>
-            </el-table>
-            <el-button type="primary" plain icon="Plus" size="small" @click="completeSparePartList.push({ partName: undefined, quantity: 1 })">添加备件</el-button>
-          </div>
-        </el-form-item>
-        <el-form-item label="停机时长">
-          <el-input-number v-model="completeForm.downtimeDuration" :min="0" :precision="2" controls-position="right" /> <span style="margin-left: 8px; color: #999">小时</span>
-        </el-form-item>
-        <el-form-item label="完工说明">
-          <el-input v-model="completeForm.completeRemark" type="textarea" :rows="2" placeholder="请输入完工说明" />
-        </el-form-item>
-        <!-- 偏差原因（PM工单） -->
-        <el-form-item v-if="completeForm.orderType === '1'" label="偏差原因">
-          <el-input v-model="completeForm.deviationReason" type="textarea" :rows="2" placeholder="如未按计划时间完成，请说明原因（选填）" />
-        </el-form-item>
+        <el-collapse v-model="completeSectionNames" class="workorder-collapse">
+        <!-- 分组一：工单信息 -->
+        <el-collapse-item title="工单信息" name="order">
+        <el-row>
+          <el-col :span="12"><el-form-item label="工单号"><el-input :model-value="completeForm.orderNo" placeholder="自动生成" disabled style="width: 100%" /></el-form-item></el-col>
+          <el-col :span="12"><el-form-item label="工单类型"><dict-tag :options="dms_order_type" :value="completeForm.orderType" /></el-form-item></el-col>
+          <el-col :span="12"><el-form-item label="设备名称"><el-input :model-value="completeForm.equipmentName" placeholder="-" disabled style="width: 100%" /></el-form-item></el-col>
+          <el-col :span="24"><el-form-item label="故障描述"><el-input :model-value="completeForm.faultDescription" placeholder="-" disabled type="textarea" :rows="2" style="width: 100%" /></el-form-item></el-col>
+          <el-col :span="24" v-if="completeTaskList.length > 0">
+            <el-form-item label="任务清单">
+              <div style="width: 100%">
+                <div class="task-checklist">
+                  <div class="task-checklist-body">
+                    <div v-for="(task, index) in completeTaskList" :key="index" class="task-item" :class="{ 'task-done': task.done }" style="cursor: pointer" @click="task.done = !task.done">
+                      <el-checkbox v-model="task.done" style="margin-right: 8px" @click.stop />
+                      <span :class="{ 'task-text-done': task.done }">{{ task.text }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </el-form-item>
+          </el-col>
+        </el-row>
+        </el-collapse-item>
+
+        <!-- 分组二：维修处理 -->
+        <el-collapse-item title="维修处理" name="repair">
+        <el-row>
+          <el-col :span="24"><el-form-item label="故障原因" required><el-input v-model="completeForm.faultCause" type="textarea" :rows="2" placeholder="请输入故障原因" /></el-form-item></el-col>
+          <el-col :span="24"><el-form-item label="维修措施" required><el-input v-model="completeForm.repairMeasure" type="textarea" :rows="2" placeholder="请输入维修措施" /></el-form-item></el-col>
+          <el-col :span="24">
+            <el-form-item label="更换备件">
+              <div style="width: 100%">
+                <el-table :data="completeSparePartList" border size="small" style="margin-bottom: 8px" @header-dragend="onHeaderDragEnd">
+                  <el-table-column label="备件名称" min-width="180">
+                    <template #default="{ row }">
+                      <el-select v-model="row.partName" filterable clearable placeholder="请选择备件" style="width: 100%">
+                        <el-option v-for="p in getAvailableSpareParts(completeSparePartList, row.partName)" :key="p.partId" :label="p.partName + (p.specModel ? ' (' + p.specModel + ')' : '')" :value="p.partName" />
+                      </el-select>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="库存" width="80" align="center">
+                    <template #default="{ row }">{{ getSparePartStock(row.partName) != null ? getSparePartStock(row.partName) : '-' }}</template>
+                  </el-table-column>
+                  <el-table-column label="数量" width="120" align="center">
+                    <template #default="{ row }">
+                      <el-input-number v-model="row.quantity" :min="1" :max="getSparePartStock(row.partName) != null ? getSparePartStock(row.partName) : undefined" :precision="0" size="small" controls-position="right" style="width: 100px" />
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="单位" width="70" align="center">
+                    <template #default="{ row }">{{ getSparePartUnit(row.partName) }}</template>
+                  </el-table-column>
+                  <el-table-column label="操作" width="70" align="center">
+                    <template #default="{ $index }">
+                      <el-button link type="danger" icon="Delete" @click="completeSparePartList.splice($index, 1)"></el-button>
+                    </template>
+                  </el-table-column>
+                </el-table>
+                <el-button type="primary" plain icon="Plus" size="small" @click="completeSparePartList.push({ partName: undefined, quantity: 1 })">添加备件</el-button>
+              </div>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12"><el-form-item label="维修费用"><el-input-number v-model="completeForm.repairCost" :min="0" :precision="2" :step="100" controls-position="right" style="width: 100%" /><span style="margin-left: 8px; color: #999">元</span></el-form-item></el-col>
+          <el-col :span="12"><el-form-item label="停机时长"><el-input-number v-model="completeForm.downtimeDuration" :min="0" :precision="2" controls-position="right" style="width: 100%" /><span style="margin-left: 8px; color: #999">小时</span></el-form-item></el-col>
+        </el-row>
+        </el-collapse-item>
+
+        <!-- 分组三：其他信息 -->
+        <el-collapse-item title="其他信息" name="other">
+        <el-row>
+          <el-col :span="24"><el-form-item label="完工说明"><el-input v-model="completeForm.completeRemark" type="textarea" :rows="2" placeholder="请输入完工说明" /></el-form-item></el-col>
+          <el-col :span="24" v-if="completeForm.orderType === '1'"><el-form-item label="偏差原因"><el-input v-model="completeForm.deviationReason" type="textarea" :rows="2" placeholder="如未按计划时间完成，请说明原因（选填）" /></el-form-item></el-col>
+        </el-row>
+        </el-collapse-item>
+        </el-collapse>
       </el-form>
       <template #footer>
         <el-button type="primary" @click="submitComplete">确认完工</el-button>
@@ -359,9 +372,7 @@
           <div style="margin-top: 4px">更换备件：{{ verifyForm.sparePartsUsed }}</div>
         </el-alert>
         <el-form-item label="验收人" required>
-          <el-select v-model="verifyForm.verifierId" filterable clearable placeholder="请选择验收人" style="width: 100%" @change="(uid) => onUserSelect(verifyForm, 'verifierId', 'verifierName', uid)">
-            <el-option v-for="u in userOptions" :key="u.userId" :label="u.nickName" :value="u.userId" />
-          </el-select>
+          <el-input v-model="verifyForm.verifierName" readonly placeholder="请选择验收人" style="width: 100%" @click="openUserPicker('verifyForm', 'verifierId', 'verifierName')"><template #append><el-button icon="Search" @click="openUserPicker('verifyForm', 'verifierId', 'verifierName')" /></template><template #suffix><el-icon v-if="verifyForm.verifierName" class="clear-icon" @click.stop="verifyForm.verifierId = undefined; verifyForm.verifierName = undefined"><CircleClose /></el-icon></template></el-input>
         </el-form-item>
         <el-form-item label="评价">
           <el-rate v-model="verifyForm.rating" :max="5" />
@@ -377,23 +388,23 @@
     </el-dialog>
 
     <!-- 查看详情弹窗 -->
-    <el-dialog v-model="viewOpen" width="1120px" append-to-body class="rd-dialog workorder-detail-dialog" top="5vh">
+    <el-dialog v-model="viewOpen" width="936px" append-to-body draggable class="rd-dialog workorder-detail-dialog" top="5vh">
       <template #header>
-        <div class="detail-dialog-header">
-          <div class="header-left">
-            <el-icon class="header-icon"><Tickets /></el-icon>
-            <span class="header-title">工单详情</span>
-            <el-tag v-if="viewForm.orderNo" size="small" effect="plain" class="header-order-no">{{ viewForm.orderNo }}</el-tag>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div>
+          <span class="rd-detail-header-title">工单详情</span>
+          <div class="rd-detail-header-sub" v-if="viewForm.orderNo">
+            <div class="rd-detail-header-divider"></div>
+            <span class="rd-detail-header-no">工单号：{{ viewForm.orderNo }}</span>
           </div>
-          <div class="header-right">
-            <el-tag v-if="viewForm.slaTimeoutStatus === '1'" type="danger" effect="dark" size="small">响应超时</el-tag>
-            <el-tag v-if="viewForm.slaTimeoutStatus === '2'" type="danger" effect="dark" size="small">处理超时</el-tag>
-            <el-tag v-if="viewForm.orderStatus != null" :type="orderStatusTagType(viewForm.orderStatus)" effect="dark">{{ statusText(viewForm.orderStatus) }}</el-tag>
+          <div class="rd-detail-header-tags" v-if="viewForm.orderStatus != null">
+            <el-tag v-if="viewForm.slaTimeoutStatus === '1' && !isTerminalStatus(viewForm.orderStatus)" type="danger" effect="dark" size="small">响应超时</el-tag>
+            <el-tag v-if="viewForm.slaTimeoutStatus === '2' && !isTerminalStatus(viewForm.orderStatus)" type="danger" effect="dark" size="small">处理超时</el-tag>
+            <el-tag :type="orderStatusTagType(viewForm.orderStatus)" effect="dark" size="small">{{ statusText(viewForm.orderStatus) }}</el-tag>
           </div>
         </div>
       </template>
-
-      <div class="detail-content">
+      <div v-loading="viewLoading" class="rd-page">
         <!-- 状态流程条 -->
         <div class="status-flow">
           <div v-for="(step, i) in statusSteps" :key="i" class="status-step" :class="{ active: isStepActive(i), done: isStepDone(i) }">
@@ -405,76 +416,71 @@
             <el-icon v-if="i < statusSteps.length - 1" class="step-arrow"><ArrowRight /></el-icon>
           </div>
         </div>
-
         <!-- 工单信息 -->
-        <div class="detail-section section-blue">
-          <div class="section-header">
-            <el-icon><Document /></el-icon>
-            <span>工单信息</span>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('wo_order')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>工单信息</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.wo_order }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
           </div>
-          <div class="section-body">
-            <el-descriptions :column="3" border :label-style="descLabelStyle" :content-style="descContentStyle">
-              <div class="rd-item"><span class="rd-label">工单号</span><div class="rd-value" :class="{ 'rd-value--muted': true }">{{ viewForm.orderNo || '暂无' }}</div></div>
+          <div class="rd-card-body" v-show="!collapsedCards.wo_order">
+            <div class="rd-grid">
+              <div class="rd-item"><span class="rd-label">工单号</span><div class="rd-value">{{ viewForm.orderNo || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">工单类型</span><div class="rd-value"><dict-tag :options="dms_order_type" :value="viewForm.orderType" /></div></div>
               <div class="rd-item"><span class="rd-label">优先级</span><div class="rd-value"><dict-tag :options="dms_priority" :value="viewForm.priority" /></div></div>
-              <div class="rd-item"><span class="rd-label">报修人</span><div class="rd-value" :class="{ 'rd-value--muted': true }">{{ viewForm.reporterName || '暂无' }}</div></div>
-              <div class="rd-item"><span class="rd-label">报修时间</span><div class="rd-value" :class="{ 'rd-value--muted': true }">{{ viewForm.reportTime || '暂无' }}</div></div>
+              <div class="rd-item"><span class="rd-label">报修人</span><div class="rd-value">{{ viewForm.reporterName || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">报修时间</span><div class="rd-value">{{ viewForm.reportTime || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">工单状态</span><div class="rd-value"><dict-tag :options="dms_order_status" :value="viewForm.orderStatus" /></div></div>
-            </el-descriptions>
+            </div>
           </div>
-        </div>
-
+        </section>
         <!-- 设备信息 -->
-        <div class="detail-section section-cyan">
-          <div class="section-header">
-            <el-icon><Monitor /></el-icon>
-            <span>设备信息</span>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('wo_equipment')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></span>设备信息</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.wo_equipment }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
           </div>
-          <div class="section-body">
-            <el-descriptions :column="3" border :label-style="descLabelStyle" :content-style="descContentStyle">
-              <div class="rd-item"><span class="rd-label">设备编号</span><div class="rd-value" :class="{ 'rd-value--muted': true }">{{ viewForm.equipmentCode || '暂无' }}</div></div>
-              <div class="rd-item rd-item--full"><span class="rd-label">设备名称</span><div class="rd-value" :class="{ 'rd-value--muted': true }">{{ viewForm.equipmentName || '暂无' }}</div></div>
-              <div class="rd-item rd-item--full"><span class="rd-label">故障描述</span><div class="rd-value" :class="{ 'rd-value--muted': true }">{{ viewForm.faultDescription || '暂无' }}</div></div>
-            </el-descriptions>
+          <div class="rd-card-body" v-show="!collapsedCards.wo_equipment">
+            <div class="rd-grid">
+              <div class="rd-item"><span class="rd-label">设备编号</span><div class="rd-value">{{ viewForm.equipmentCode || '-' }}</div></div>
+              <div class="rd-item rd-item--full"><span class="rd-label">设备名称</span><div class="rd-value">{{ viewForm.equipmentName || '-' }}</div></div>
+              <div class="rd-item rd-item--full"><span class="rd-label">故障描述</span><div class="rd-value">{{ viewForm.faultDescription || '-' }}</div></div>
+            </div>
           </div>
-        </div>
-
+        </section>
         <!-- 派工信息 -->
-        <div class="detail-section section-purple">
-          <div class="section-header">
-            <el-icon><UserFilled /></el-icon>
-            <span>派工信息</span>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('wo_dispatch')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>派工信息</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.wo_dispatch }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
           </div>
-          <div class="section-body">
-            <el-descriptions :column="3" border :label-style="descLabelStyle" :content-style="descContentStyle">
-              <div class="rd-item"><span class="rd-label">维修人</span><div class="rd-value" :class="{ 'rd-value--muted': true }">{{ viewForm.assigneeName || '暂无' }}</div></div>
-              <div class="rd-item"><span class="rd-label">派工人</span><div class="rd-value" :class="{ 'rd-value--muted': true }">{{ viewForm.assignerName || '暂无' }}</div></div>
-              <div class="rd-item"><span class="rd-label">派工时间</span><div class="rd-value" :class="{ 'rd-value--muted': true }">{{ viewForm.assignTime || '暂无' }}</div></div>
-              <div class="rd-item"><span class="rd-label">到达时间</span><div class="rd-value" :class="{ 'rd-value--muted': true }">{{ viewForm.arriveTime || '暂无' }}</div></div>
-              <div class="rd-item"><span class="rd-label">SLA响应截止</span><div class="rd-value" :class="{ 'rd-value--muted': true }"><span :class="{ 'sla-warning': viewForm.slaTimeoutStatus === '1' }">{{ viewForm.slaResponseDeadline || '暂无' }}</span>
-                <el-tag v-if="viewForm.slaTimeoutStatus === '1'" type="danger" size="small" style="margin-left: 6px">已超时</el-tag></div></div>
-              <div class="rd-item"><span class="rd-label">SLA处理截止</span><div class="rd-value" :class="{ 'rd-value--muted': true }"><span :class="{ 'sla-warning': viewForm.slaTimeoutStatus === '2' }">{{ viewForm.slaProcessDeadline || '暂无' }}</span>
-                <el-tag v-if="viewForm.slaTimeoutStatus === '2'" type="danger" size="small" style="margin-left: 6px">已超时</el-tag></div></div>
-            </el-descriptions>
+          <div class="rd-card-body" v-show="!collapsedCards.wo_dispatch">
+            <div class="rd-grid">
+              <div class="rd-item"><span class="rd-label">维修人</span><div class="rd-value">{{ viewForm.assigneeName || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">派工人</span><div class="rd-value">{{ viewForm.assignerName || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">派工时间</span><div class="rd-value">{{ viewForm.assignTime || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">到达时间</span><div class="rd-value">{{ viewForm.arriveTime || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">SLA响应截止</span><div class="rd-value"><span :class="{ 'sla-warning': viewForm.slaTimeoutStatus === '1' }">{{ viewForm.slaResponseDeadline || '-' }}</span><el-tag v-if="viewForm.slaTimeoutStatus === '1'" type="danger" size="small" style="margin-left: 6px">已超时</el-tag></div></div>
+              <div class="rd-item"><span class="rd-label">SLA处理截止</span><div class="rd-value"><span :class="{ 'sla-warning': viewForm.slaTimeoutStatus === '2' }">{{ viewForm.slaProcessDeadline || '-' }}</span><el-tag v-if="viewForm.slaTimeoutStatus === '2'" type="danger" size="small" style="margin-left: 6px">已超时</el-tag></div></div>
+            </div>
           </div>
-        </div>
-
+        </section>
         <!-- 维修处理 -->
-        <div class="detail-section section-orange">
-          <div class="section-header">
-            <el-icon><Tools /></el-icon>
-            <span>维修处理</span>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('wo_repair')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></span>维修处理</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.wo_repair }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
           </div>
-          <div class="section-body">
-            <el-descriptions :column="3" border :label-style="descLabelStyle" :content-style="descContentStyle">
-              <div class="rd-item rd-item--full"><span class="rd-label">故障原因</span><div class="rd-value" :class="{ 'rd-value--muted': true }">{{ viewForm.faultCause || '暂无' }}</div></div>
-              <div class="rd-item rd-item--full"><span class="rd-label">维修措施</span><div class="rd-value" :class="{ 'rd-value--muted': true }">{{ viewForm.repairMeasure || '暂无' }}</div></div>
-              <div class="rd-item"><span class="rd-label">更换备件</span><div class="rd-value" :class="{ 'rd-value--muted': true }">{{ viewForm.sparePartsUsed || '暂无' }}</div></div>
+          <div class="rd-card-body" v-show="!collapsedCards.wo_repair">
+            <div class="rd-grid">
+              <div class="rd-item rd-item--full"><span class="rd-label">故障原因</span><div class="rd-value">{{ viewForm.faultCause || '-' }}</div></div>
+              <div class="rd-item rd-item--full"><span class="rd-label">维修措施</span><div class="rd-value">{{ viewForm.repairMeasure || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">更换备件</span><div class="rd-value">{{ viewForm.sparePartsUsed || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">维修费用</span><div class="rd-value">{{ viewForm.repairCost != null ? '¥' + viewForm.repairCost : '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">停机时长</span><div class="rd-value">{{ viewForm.downtimeDuration != null ? viewForm.downtimeDuration + ' 小时' : '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label">完工时间</span><div class="rd-value" :class="{ 'rd-value--muted': true }">{{ viewForm.completeTime || '暂无' }}</div></div>
-              <div class="rd-item rd-item--full"><span class="rd-label">完工说明</span><div class="rd-value" :class="{ 'rd-value--muted': true }">{{ viewForm.completeRemark || '暂无' }}</div></div>
-              <el-descriptions-item v-if="viewForm.deviationReason" label="偏差原因" :span="3">{{ viewForm.deviationReason }}</el-descriptions-item>
-            </el-descriptions>
+              <div class="rd-item"><span class="rd-label">完工时间</span><div class="rd-value">{{ viewForm.completeTime || '-' }}</div></div>
+              <div class="rd-item rd-item--full"><span class="rd-label">完工说明</span><div class="rd-value">{{ viewForm.completeRemark || '-' }}</div></div>
+              <div class="rd-item rd-item--full" v-if="viewForm.deviationReason"><span class="rd-label">偏差原因</span><div class="rd-value">{{ viewForm.deviationReason }}</div></div>
+            </div>
             <!-- 任务清单完成情况 -->
             <div v-if="viewForm.taskChecklist" class="task-checklist">
               <div class="task-checklist-title">任务清单完成情况</div>
@@ -487,43 +493,39 @@
               </div>
             </div>
           </div>
-        </div>
-
+        </section>
         <!-- 验收信息 -->
-        <div class="detail-section section-green">
-          <div class="section-header">
-            <el-icon><CircleCheck /></el-icon>
-            <span>验收信息</span>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('wo_verify')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span>验收信息</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.wo_verify }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
           </div>
-          <div class="section-body">
-            <el-descriptions :column="3" border :label-style="descLabelStyle" :content-style="descContentStyle">
-              <div class="rd-item"><span class="rd-label">验收人</span><div class="rd-value" :class="{ 'rd-value--muted': true }">{{ viewForm.verifierName || '暂无' }}</div></div>
-              <div class="rd-item"><span class="rd-label">验收时间</span><div class="rd-value" :class="{ 'rd-value--muted': true }">{{ viewForm.verifyTime || '暂无' }}</div></div>
-              <div class="rd-item"><span class="rd-label">评价</span><div class="rd-value"><el-rate v-if="viewForm.rating != null" v-model="viewForm.rating" :max="5" disabled show-score :texts="['极差', '失望', '一般', '满意', '非常满意']" />
-                <span v-else>-</span></div></div>
-              <div class="rd-item rd-item--full"><span class="rd-label">验收意见</span><div class="rd-value" :class="{ 'rd-value--muted': true }">{{ viewForm.verifyOpinion || '暂无' }}</div></div>
-            </el-descriptions>
+          <div class="rd-card-body" v-show="!collapsedCards.wo_verify">
+            <div class="rd-grid">
+              <div class="rd-item"><span class="rd-label">验收人</span><div class="rd-value">{{ viewForm.verifierName || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">验收时间</span><div class="rd-value">{{ viewForm.verifyTime || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">评价</span><div class="rd-value"><el-rate v-if="viewForm.rating != null" v-model="viewForm.rating" :max="5" disabled show-score :texts="['极差', '失望', '一般', '满意', '非常满意']" /><span v-else>-</span></div></div>
+              <div class="rd-item rd-item--full"><span class="rd-label">验收意见</span><div class="rd-value">{{ viewForm.verifyOpinion || '-' }}</div></div>
+            </div>
           </div>
-        </div>
-
+        </section>
         <!-- 系统信息 -->
-        <div class="detail-section section-gray">
-          <div class="section-header">
-            <el-icon><InfoFilled /></el-icon>
-            <span>系统信息</span>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('wo_system')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>系统信息</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.wo_system }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
           </div>
-          <div class="section-body">
-            <el-descriptions :column="3" border :label-style="descLabelStyle" :content-style="descContentStyle">
-              <div class="rd-item"><span class="rd-label">创建人</span><div class="rd-value" :class="{ 'rd-value--muted': true }">{{ viewForm.createBy || '暂无' }}</div></div>
-              <div class="rd-item"><span class="rd-label">创建时间</span><div class="rd-value" :class="{ 'rd-value--muted': true }">{{ viewForm.createTime || '暂无' }}</div></div>
-              <div class="rd-item"><span class="rd-label">更新人</span><div class="rd-value" :class="{ 'rd-value--muted': true }">{{ viewForm.updateBy || '暂无' }}</div></div>
-              <div class="rd-item"><span class="rd-label">更新时间</span><div class="rd-value" :class="{ 'rd-value--muted': true }">{{ viewForm.updateTime || '暂无' }}</div></div>
-              <div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value" :class="{ 'rd-value--muted': true }">{{ viewForm.remark || '暂无' }}</div></div>
-            </el-descriptions>
+          <div class="rd-card-body" v-show="!collapsedCards.wo_system">
+            <div class="rd-grid">
+              <div class="rd-item"><span class="rd-label">创建人</span><div class="rd-value">{{ viewForm.createBy || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">创建时间</span><div class="rd-value">{{ viewForm.createTime || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">更新人</span><div class="rd-value">{{ viewForm.updateBy || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">更新时间</span><div class="rd-value">{{ viewForm.updateTime || '-' }}</div></div>
+              <div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value">{{ viewForm.remark || '-' }}</div></div>
+            </div>
           </div>
-        </div>
+        </section>
       </div>
-
       <template #footer>
         <el-button @click="viewOpen = false">关 闭</el-button>
       </template>
@@ -572,6 +574,8 @@
         <el-button @click="logOpen = false">关 闭</el-button>
       </template>
     </el-dialog>
+
+    <user-picker ref="userPickerRef" title="选择人员" @confirm="onUserPickerConfirm" />
   </div>
 </template>
 
@@ -583,9 +587,10 @@ import { repairAssistant, dispatchRecommend } from '@/api/dms/ai'
 import { listUser } from '@/api/system/user'
 import { listEquipment } from '@/api/dms/equipment'
 import { listSparepart } from '@/api/dms/sparepart'
+import UserPicker from '@/components/UserPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
-const { collapsedCards, toggleCard } = useDetailCard([])
+const { collapsedCards, toggleCard } = useDetailCard(['wo_order', 'wo_equipment', 'wo_dispatch', 'wo_repair', 'wo_verify', 'wo_system'])
 
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('dms_workorder_index')
@@ -608,7 +613,7 @@ const rejectOpen = ref(false)
 const isReassign = ref(false)
 const viewOpen = ref(false)
 const viewForm = ref({})
-const viewActiveNames = ref(['order', 'equipment', 'dispatch', 'repair', 'verify', 'system'])
+const viewLoading = ref(false)
 const logOpen = ref(false)
 const logList = ref([])
 const aiDialog = ref(false)
@@ -618,12 +623,16 @@ const aiResult = ref(null)
 const recommendLoading = ref(false)
 const recommendations = ref([])
 const userOptions = ref([])
+const currentPickerTarget = ref(null)
+const currentPickerIdField = ref('')
+const currentPickerNameField = ref('')
 const equipmentOptions = ref([])
 const sparePartOptions = ref([])
 const completeSparePartList = ref([])
 const completeTaskList = ref([])
 const formSparePartList = ref([])
 const activeSectionNames = ref(['order', 'equipment', 'other'])
+const completeSectionNames = ref(['order', 'repair', 'other'])
 const isAdd = computed(() => form.value.orderId == undefined)
 
 const data = reactive({
@@ -736,32 +745,36 @@ function onEquipmentChange(equipmentId) {
     form.value.equipmentName = undefined
   }
 }
-/** 通用：选择人员后同步ID和姓名（模板中传入的form已是解包后的响应式对象） */
-function onUserSelect(formObj, idField, nameField, userId) {
-  if (userId) {
-    const user = userOptions.value.find(u => u.userId === userId)
-    if (user) {
-      formObj[idField] = userId
-      formObj[nameField] = user.nickName
-    }
-  } else {
-    formObj[idField] = undefined
-    formObj[nameField] = undefined
-  }
+/** 打开人员选择弹窗（支持多个目标form） */
+function openUserPicker(target, idField, nameField) {
+  currentPickerTarget.value = target
+  currentPickerIdField.value = idField
+  currentPickerNameField.value = nameField
+  const targetForm = target === 'form' ? form.value : (target === 'dispatchForm' ? dispatchForm.value : verifyForm.value)
+  proxy.$refs.userPickerRef.open(targetForm[idField])
+}
+/** 人员选择确认回调 */
+function onUserPickerConfirm(user) {
+  if (!currentPickerTarget.value) return
+  const targetForm = currentPickerTarget.value === 'form' ? form.value : (currentPickerTarget.value === 'dispatchForm' ? dispatchForm.value : verifyForm.value)
+  targetForm[currentPickerIdField.value] = user.userId
+  targetForm[currentPickerNameField.value] = user.nickName
 }
 function reset() {
   form.value = { orderType: '0', priority: '2', orderStatus: '0', faultDescription: undefined, equipmentId: undefined, equipmentCode: undefined, equipmentName: undefined,
     reporterId: undefined, reporterName: undefined, reportTime: undefined, assigneeId: undefined, assigneeName: undefined,
     assignerId: undefined, assignerName: undefined, arriveTime: undefined,
-    faultCause: undefined, repairMeasure: undefined, sparePartsUsed: undefined, downtimeDuration: undefined,
+    faultCause: undefined, repairMeasure: undefined, sparePartsUsed: undefined, repairCost: undefined, downtimeDuration: undefined,
     completeTime: undefined, completeRemark: undefined, verifierId: undefined, verifierName: undefined, verifyOpinion: undefined, rating: 0, remark: undefined }
   proxy.resetForm('workorderRef')
 }
 function handleView(row) {
+  viewLoading.value = true
+  viewOpen.value = true
   getWorkorder(row.orderId).then(res => {
     viewForm.value = res.data
-    viewOpen.value = true
-  })
+    viewLoading.value = false
+  }).catch(() => { viewLoading.value = false })
 }
 function handleAdd() { reset(); activeSectionNames.value = ['order', 'equipment', 'other']; open.value = true; title.value = '新增工单' }
 function handleUpdate(row) { reset(); getWorkorder(row.orderId || ids.value[0]).then(res => { form.value = res.data; formSparePartList.value = parseSpareParts(form.value.sparePartsUsed); activeSectionNames.value = ['order', 'equipment']; open.value = true; title.value = '修改工单' }) }
@@ -805,13 +818,21 @@ function handleProcess(row) {
   proxy.$modal.confirm('确认开始处理？').then(() => processWorkorder(row.orderId)).then(() => { proxy.$modal.msgSuccess('已开始处理'); getList() }).catch(() => {})
 }
 function handleComplete(row) {
-  completeForm.value = { orderId: row.orderId, orderNo: row.orderNo, orderType: row.orderType, faultCause: '', repairMeasure: '', sparePartsUsed: '', downtimeDuration: 0, completeRemark: '', deviationReason: '' }
+  completeForm.value = { orderId: row.orderId, orderNo: row.orderNo, orderType: row.orderType, equipmentName: row.equipmentName, faultDescription: row.faultDescription, faultCause: '', repairMeasure: '', sparePartsUsed: '', repairCost: 0, downtimeDuration: 0, completeRemark: '', deviationReason: '' }
   completeSparePartList.value = []
   completeTaskList.value = []
+  completeSectionNames.value = ['order', 'repair', 'other']
   // 获取工单详情，带出任务清单
   getWorkorder(row.orderId).then(res => {
     if (res.data.taskChecklist) {
       completeTaskList.value = parseTaskChecklist(res.data.taskChecklist)
+    }
+    // 补充设备名称和故障描述
+    if (res.data.equipmentName) {
+      completeForm.value.equipmentName = res.data.equipmentName
+    }
+    if (res.data.faultDescription) {
+      completeForm.value.faultDescription = res.data.faultDescription
     }
   })
   completeOpen.value = true
@@ -874,10 +895,12 @@ function statusText(status) {
   const map = { '0': '新建', '1': '已派工', '2': '已接单', '3': '处理中', '4': '已完成', '5': '已验收', '6': '已撤销', '7': '驳回重做' }
   return map[status] || status
 }
+/** 终态状态：已验收(5)、已撤销(6)，不再显示SLA超时标签 */
+function isTerminalStatus(status) {
+  return status === '5' || status === '6'
+}
 
 // ===== 工单详情页辅助 =====
-const descLabelStyle = { width: '110px', color: '#909399', fontSize: '13px', fontWeight: 'normal', textAlign: 'right', whiteSpace: 'nowrap' }
-const descContentStyle = { color: '#303133', fontSize: '13px', whiteSpace: 'nowrap' }
 const statusSteps = [
   { label: '新建', status: '0' },
   { label: '已派工', status: '1' },
@@ -970,33 +993,9 @@ onActivated(() => {
   padding-bottom: 0;
 }
 
-/* ===== 工单详情弹窗样式 ===== */
-.detail-dialog-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-}
-.detail-dialog-header .header-left {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.detail-dialog-header .header-icon {
-  font-size: 20px;
-  color: #409eff;
-}
-.detail-dialog-header .header-title {
-  font-size: 17px;
-  font-weight: 700;
-  color: #303133;
-}
-.detail-dialog-header .header-order-no {
-  font-family: 'Courier New', monospace;
-  font-weight: 600;
-  margin-left: 4px;
-}
-.detail-dialog-header .header-right {
+/* ===== 工单详情弹窗：头部标签 ===== */
+.rd-detail-header-tags {
+  margin-left: auto;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -1067,57 +1066,10 @@ onActivated(() => {
   font-size: 14px;
 }
 
-/* 详情分区卡片 */
-.detail-section {
-  border-radius: 8px;
-  overflow: hidden;
-  margin-bottom: 12px;
-  border: 1px solid #ebeef5;
-  background: #fff;
-}
-.detail-section .section-header {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 10px 16px;
- font-size: 14px;
-  font-weight: 600;
-  color: #303133;
-  background: #f5f7fa;
-  border-left: 4px solid #dcdfe6;
-}
-.detail-section .section-header .el-icon {
-  font-size: 16px;
-}
-.detail-section .section-body {
-  padding: 16px 20px 4px;
-}
-
-/* 分区颜色主题 */
-.section-blue .section-header { border-left-color: #409eff; color: #409eff; background: #ecf5ff; }
-.section-cyan .section-header { border-left-color: #13c2c2; color: #13c2c2; background: #e6fffb; }
-.section-purple .section-header { border-left-color: #722ed1; color: #722ed1; background: #f9f0ff; }
-.section-orange .section-header { border-left-color: #fa8c16; color: #fa8c16; background: #fff7e6; }
-.section-green .section-header { border-left-color: #52c41a; color: #52c41a; background: #f6ffed; }
-.section-gray .section-header { border-left-color: #909399; color: #909399; background: #f4f4f5; }
-
 /* SLA 超时警告样式 */
 .sla-warning {
   color: #f56c6c;
   font-weight: 600;
-}
-
-/* 详情描述列表：字段名后加冒号，列宽等分，内容不换行 */
-.detail-section :deep(.el-descriptions__label)::after {
-  content: '：';
-}
-.detail-section :deep(.el-descriptions__table) {
-  table-layout: fixed;
-}
-.detail-section :deep(.el-descriptions__content) {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 /* 任务清单样式 */
@@ -1175,5 +1127,16 @@ onActivated(() => {
 }
 .workorder-detail-dialog .el-dialog__header {
   padding-bottom: 12px;
+}
+</style>
+
+<style scoped>
+.clear-icon {
+  cursor: pointer;
+  color: #c0c4cc;
+  font-size: 14px;
+}
+.clear-icon:hover {
+  color: #909399;
 }
 </style>

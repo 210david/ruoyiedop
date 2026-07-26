@@ -23,6 +23,12 @@ public interface IDmsSparePartService
     /** 删除出入库记录 */
     public int deleteRecordByIds(Long[] recordIds);
 
+    /** 查询单条出入库记录 */
+    public DmsSparePartRecord selectRecordById(Long recordId);
+
+    /** 修改出入库记录（含库存重算） */
+    public int updateRecord(DmsSparePartRecord record);
+
     /** 清除备件安全库存上下限设置（用于库存预警） */
     public int clearSparePartAlert(Long partId);
 

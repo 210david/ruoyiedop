@@ -5,7 +5,7 @@ import com.ruoyi.common.annotation.Excel;
 import com.ruoyi.common.core.domain.BaseEntity;
 
 /**
- * 备件管理 dms_spare_part
+ * 备件主数据 dms_spare_part
  *
  * @author ruoyi
  */
@@ -39,6 +39,10 @@ public class DmsSparePart extends BaseEntity
     /** 适用设备分类（JSON数组） */
     private String applicableCategory;
 
+    /** 供应商 */
+    @Excel(name = "供应商")
+    private String supplier;
+
     /** 库存下限 */
     @Excel(name = "库存下限")
     private BigDecimal stockMin;
@@ -46,21 +50,6 @@ public class DmsSparePart extends BaseEntity
     /** 库存上限 */
     @Excel(name = "库存上限")
     private BigDecimal stockMax;
-
-    /** 安全库存 */
-    private BigDecimal safetyStock;
-
-    /** 当前库存 */
-    @Excel(name = "当前库存")
-    private BigDecimal currentStock;
-
-    /** 存放位置 */
-    @Excel(name = "存放位置")
-    private String storageLocation;
-
-    /** 供应商 */
-    @Excel(name = "供应商")
-    private String supplier;
 
     /** 状态（0正常 1停用） */
     @Excel(name = "状态", dictType = "sys_normal_disable")
@@ -83,18 +72,12 @@ public class DmsSparePart extends BaseEntity
     public void setUnit(String unit) { this.unit = unit; }
     public String getApplicableCategory() { return applicableCategory; }
     public void setApplicableCategory(String applicableCategory) { this.applicableCategory = applicableCategory; }
+    public String getSupplier() { return supplier; }
+    public void setSupplier(String supplier) { this.supplier = supplier; }
     public BigDecimal getStockMin() { return stockMin; }
     public void setStockMin(BigDecimal stockMin) { this.stockMin = stockMin; }
     public BigDecimal getStockMax() { return stockMax; }
     public void setStockMax(BigDecimal stockMax) { this.stockMax = stockMax; }
-    public BigDecimal getSafetyStock() { return safetyStock; }
-    public void setSafetyStock(BigDecimal safetyStock) { this.safetyStock = safetyStock; }
-    public BigDecimal getCurrentStock() { return currentStock; }
-    public void setCurrentStock(BigDecimal currentStock) { this.currentStock = currentStock; }
-    public String getStorageLocation() { return storageLocation; }
-    public void setStorageLocation(String storageLocation) { this.storageLocation = storageLocation; }
-    public String getSupplier() { return supplier; }
-    public void setSupplier(String supplier) { this.supplier = supplier; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
     public String getDelFlag() { return delFlag; }

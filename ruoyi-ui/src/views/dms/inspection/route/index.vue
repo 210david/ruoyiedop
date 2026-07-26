@@ -61,7 +61,14 @@
           <el-col :span="12"><el-form-item label="路线名称" prop="routeName"><el-input v-model="form.routeName" placeholder="请输入" /></el-form-item></el-col>
           <el-col :span="12"><el-form-item label="路线编码" prop="routeCode"><el-input v-model="form.routeCode" placeholder="保存后自动生成" disabled /></el-form-item></el-col>
           <el-col :span="12"><el-form-item label="部门" prop="deptId">
-            <el-tree-select v-model="form.deptId" :data="deptOptions" :props="{ value: 'id', label: 'label', children: 'children' }" value-key="id" placeholder="请选择归属部门" clearable check-strictly style="width: 100%" @change="onDeptChange" />
+            <el-input v-model="form.deptName" readonly placeholder="请选择归属部门" style="width: 100%" @click="openDeptPicker">
+              <template #append>
+                <el-button icon="Search" @click="openDeptPicker" />
+              </template>
+              <template #suffix>
+                <el-icon v-if="form.deptName" class="clear-icon" @click.stop="clearDept"><CircleClose /></el-icon>
+              </template>
+            </el-input>
           </el-form-item></el-col>
           <el-col :span="12"><el-form-item label="状态" prop="status"><el-radio-group v-model="form.status"><el-radio value="0">正常</el-radio><el-radio value="1">停用</el-radio></el-radio-group></el-form-item></el-col>
         </el-row>
@@ -180,13 +187,17 @@
         <el-button @click="cancel">取 消</el-button>
       </template>
     </el-dialog>
+
+    <!-- 部门选择弹窗 -->
+    <dept-picker ref="deptPickerRef" title="选择归属部门" :disabled-ids="[100]" @confirm="onDeptPickerConfirm" />
   </div>
 </template>
 
 <script setup name="DmsInspectionRoute">
+import { CircleClose } from '@element-plus/icons-vue'
 import { listRoute, getRoute, addRoute, updateRoute, delRoute } from '@/api/dms/inspection'
 import { listEquipment } from '@/api/dms/equipment'
-import { deptTreeSelect } from '@/api/system/user'
+import DeptPicker from '@/components/DeptPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
 const { collapsedCards, toggleCard } = useDetailCard(["c3","c2","c1","c0"])
@@ -197,7 +208,6 @@ const { dms_inspection_cycle } = proxy.useDict('dms_inspection_cycle')
 
 const list = ref([])
 const equipmentOptions = ref([])
-const deptOptions = ref([])
 const open = ref(false)
 const loading = ref(true)
 const showSearch = ref(true)
@@ -220,16 +230,19 @@ const { queryParams, form, rules } = toRefs(data)
 
 function getList() { loading.value = true; listRoute(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false }) }
 function getEquipmentOptions() { listEquipment({ pageNum: 1, pageSize: 9999 }).then(res => { equipmentOptions.value = res.rows }) }
-function getDeptOptions() { deptTreeSelect().then(res => { deptOptions.value = res.data }) }
-function onDeptChange(deptId) {
-  const findDeptName = (nodes, id) => {
-    for (const node of nodes) {
-      if (node.id === id) return node.label
-      if (node.children) { const r = findDeptName(node.children, id); if (r) return r }
-    }
-    return ''
-  }
-  form.value.deptName = findDeptName(deptOptions.value, deptId)
+/** 打开部门选择弹窗 */
+function openDeptPicker() {
+  proxy.$refs.deptPickerRef.open(form.value.deptId)
+}
+/** 部门选择确认回调 */
+function onDeptPickerConfirm(dept) {
+  form.value.deptId = dept.deptId
+  form.value.deptName = dept.deptName
+}
+/** 清除部门 */
+function clearDept() {
+  form.value.deptId = undefined
+  form.value.deptName = undefined
 }
 function handleQuery() { queryParams.value.pageNum = 1; getList() }
 function resetQuery() { proxy.resetForm('queryRef'); handleQuery() }
@@ -323,6 +336,19 @@ function submitForm() {
 function handleDelete(row) { const routeIds = row.routeId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delRoute(routeIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
 function cancel() { open.value = false; reset() }
 getEquipmentOptions()
-getDeptOptions()
 getList()
 </script>
+
+<style scoped>
+.clear-icon {
+  cursor: pointer;
+  color: #c0c4cc;
+  font-size: 14px;
+}
+.clear-icon:hover {
+  color: #909399;
+}
+:deep(.el-input.is-disabled .el-input__inner) {
+  cursor: pointer;
+}
+</style>

@@ -66,15 +66,15 @@
           <span v-else>-</span>
         </template>
       </el-table-column>
-      <el-table-column prop="deptName" label="管理部门" :width="colWidth('deptName', 110)" resizable align="center">
-        <template #default="scope">
-          <span v-if="scope.row.nodeType === '1'">{{ scope.row.deptName || '-' }}</span>
-          <span v-else>-</span>
-        </template>
-      </el-table-column>
       <el-table-column prop="managerName" label="负责人" :width="colWidth('managerName', 90)" resizable align="center">
         <template #default="scope">
           <span v-if="scope.row.nodeType === '1'">{{ scope.row.managerName || '-' }}</span>
+          <span v-else>-</span>
+        </template>
+      </el-table-column>
+      <el-table-column prop="deptName" label="管理部门" :width="colWidth('deptName', 110)" resizable align="center">
+        <template #default="scope">
+          <span v-if="scope.row.nodeType === '1'">{{ scope.row.deptName || '-' }}</span>
           <span v-else>-</span>
         </template>
       </el-table-column>
@@ -93,7 +93,7 @@
     </el-table>
 
     <!-- 添加/修改对话框 -->
-    <el-dialog v-model="open" width="680px" append-to-body draggable class="rd-dialog">
+    <el-dialog v-model="open" width="816px" append-to-body draggable class="rd-dialog">
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
@@ -150,15 +150,19 @@
             <div class="rd-card-body" v-show="!collapsedCards.c3">
               <el-row>
                 <el-col :span="12">
-                  <el-form-item label="管理部门" prop="deptId">
-                    <el-tree-select v-model="form.deptId" :data="deptOptions" :props="{ value: 'id', label: 'label', children: 'children' }" value-key="id" placeholder="请选择部门" check-strictly clearable style="width: 100%" />
+                  <el-form-item label="负责人" prop="managerId">
+                    <el-input v-model="form.managerName" readonly placeholder="请选择负责人" style="width: 100%" @click="openUserPicker">
+                      <template #append><el-button icon="Search" @click="openUserPicker" /></template>
+                      <template #suffix><el-icon v-if="form.managerName" class="clear-icon" @click.stop="clearManager"><CircleClose /></el-icon></template>
+                    </el-input>
                   </el-form-item>
                 </el-col>
                 <el-col :span="12">
-                  <el-form-item label="负责人" prop="managerId">
-                    <el-select v-model="form.managerId" filterable placeholder="请选择负责人" clearable style="width: 100%">
-                      <el-option v-for="u in userOptions" :key="u.userId" :label="u.nickName" :value="u.userId" />
-                    </el-select>
+                  <el-form-item label="管理部门" prop="deptId">
+                    <el-input v-model="form.deptName" readonly placeholder="选择负责人后自动带出，或手动选择" style="width: 100%" @click="openDeptPicker">
+                      <template #append><el-button icon="Search" @click="openDeptPicker" /></template>
+                      <template #suffix><el-icon v-if="form.deptName" class="clear-icon" @click.stop="clearDept"><CircleClose /></el-icon></template>
+                    </el-input>
                   </el-form-item>
                 </el-col>
               </el-row>
@@ -247,12 +251,16 @@
         </div>
       </template>
     </el-dialog>
+
+    <user-picker ref="userPickerRef" title="选择仓库负责人" @confirm="onUserPickerConfirm" />
+    <dept-picker ref="deptPickerRef" title="选择管理部门" :disabled-ids="[100]" @confirm="onDeptPickerConfirm" />
   </div>
 </template>
 
 <script setup name="WmsWarehouse">
 import { listWarehouseTree, getWarehouse, addWarehouse, updateWarehouse, delWarehouse } from '@/api/wms/warehouse'
-import { deptTreeSelect, listUser } from '@/api/system/user'
+import UserPicker from '@/components/UserPicker/index.vue'
+import DeptPicker from '@/components/DeptPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
 const { collapsedCards, toggleCard } = useDetailCard(["c4","c3","c2","c1","c0"])
@@ -268,22 +276,6 @@ const showSearch = ref(true)
 const title = ref('')
 const isExpandAll = ref(true)
 const refreshTable = ref(true)
-const deptOptions = ref([])
-const userOptions = ref([])
-
-/** 查询部门下拉树 */
-function getDeptTree() {
-  deptTreeSelect().then(response => {
-    deptOptions.value = response.data
-  })
-}
-
-/** 查询用户列表 */
-function getUserList() {
-  listUser({ pageNum: 1, pageSize: 9999 }).then(response => {
-    userOptions.value = response.rows
-  })
-}
 
 const data = reactive({
   form: {},
@@ -349,7 +341,9 @@ function reset() {
     warehouseName: undefined,
     nodeType: '1',
     deptId: undefined,
+    deptName: undefined,
     managerId: undefined,
+    managerName: undefined,
     address: undefined,
     areaType: '0',
     locationType: '0',
@@ -442,7 +436,57 @@ function cancel() {
   reset()
 }
 
+/** 打开人员选择弹窗 */
+function openUserPicker() {
+  proxy.$refs.userPickerRef.open(form.value.managerId)
+}
+/** 人员选择确认回调 */
+function onUserPickerConfirm(user) {
+  form.value.managerId = user.userId
+  form.value.managerName = user.nickName
+  // 选择负责人后自动带出部门信息
+  if (user.deptId) {
+    form.value.deptId = user.deptId
+    form.value.deptName = user.deptName
+  }
+}
+/** 清除负责人 */
+function clearManager() {
+  form.value.managerId = undefined
+  form.value.managerName = undefined
+}
+/** 打开部门选择弹窗 */
+function openDeptPicker() {
+  proxy.$refs.deptPickerRef.open(form.value.deptId)
+}
+/** 部门选择确认回调 */
+function onDeptPickerConfirm(dept) {
+  form.value.deptId = dept.deptId
+  form.value.deptName = dept.deptName
+}
+/** 清除部门 */
+function clearDept() {
+  form.value.deptId = undefined
+  form.value.deptName = undefined
+}
+
 getList()
-getDeptTree()
-getUserList()
 </script>
+
+<style scoped>
+/* 仓库新增/修改页面：对话框及页内卡片宽度增加 20% */
+.rd-page {
+  max-width: 1008px;
+}
+.clear-icon {
+  cursor: pointer;
+  color: #c0c4cc;
+  font-size: 14px;
+}
+.clear-icon:hover {
+  color: #909399;
+}
+:deep(.el-input.is-disabled .el-input__inner) {
+  cursor: pointer;
+}
+</style>

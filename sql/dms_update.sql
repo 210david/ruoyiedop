@@ -188,7 +188,8 @@ INSERT INTO sys_dict_type (dict_name, dict_type, status, create_by, create_time,
 ('点检周期', 'dms_inspection_cycle', '0', 'admin', sysdate(), '点检巡检周期类型'),
 ('点检任务状态', 'dms_inspection_status', '0', 'admin', sysdate(), '点检任务状态'),
 ('采集模式', 'dms_collect_mode', '0', 'admin', sysdate(), '数据采集模式'),
-('设备运行状态', 'dms_run_status', '0', 'admin', sysdate(), '设备运行状态');
+('设备运行状态', 'dms_run_status', '0', 'admin', sysdate(), '设备运行状态'),
+('采集协议类型', 'dms_collect_protocol', '0', 'admin', sysdate(), '数据采集协议类型');
 
 -- 新增字典数据
 INSERT INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, css_class, list_class, is_default, status, create_by, create_time, remark) VALUES
@@ -218,7 +219,12 @@ INSERT INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, css_cla
 
 (1, '运行', '0', 'dms_run_status', '', 'success', 'Y', '0', 'admin', sysdate(), '正常运行'),
 (2, '停机', '1', 'dms_run_status', '', 'info', 'N', '0', 'admin', sysdate(), '停机'),
-(3, '故障', '2', 'dms_run_status', '', 'danger', 'N', '0', 'admin', sysdate(), '故障');
+(3, '故障', '2', 'dms_run_status', '', 'danger', 'N', '0', 'admin', sysdate(), '故障'),
+
+(1, 'HTTP推送', 'http', 'dms_collect_protocol', '', 'primary', 'Y', '0', 'admin', sysdate(), 'HTTP REST API推送'),
+(2, 'MQTT', 'mqtt', 'dms_collect_protocol', '', 'success', 'N', '0', 'admin', sysdate(), 'MQTT协议'),
+(3, 'Modbus TCP', 'modbus', 'dms_collect_protocol', '', 'warning', 'N', '0', 'admin', sysdate(), 'Modbus TCP协议'),
+(4, 'OPC UA', 'opcua', 'dms_collect_protocol', '', 'info', 'N', '0', 'admin', sysdate(), 'OPC UA协议');
 
 
 -- =============================================
@@ -269,6 +275,15 @@ INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component,
 (3087, '记录新增', 3085, 2, '', '', '', '', 1, 0, 'F', '0', '0', 'dms:data:record:add', '#', 'admin', sysdate(), ''),
 (3088, '记录删除', 3085, 3, '', '', '', '', 1, 0, 'F', '0', '0', 'dms:data:record:remove', '#', 'admin', sysdate(), '');
 
+-- 网关管理菜单（新增）
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark) VALUES
+(3089, '网关管理', 3005, 3, 'gateway', 'dms/data/gateway/index', '', 'DmsDataGateway', 1, 0, 'C', '0', '0', 'dms:data:gateway:list', 'server', 'admin', sysdate(), '数据采集网关管理');
+
+-- 网关管理按钮
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark) VALUES
+(3091, '网关查询', 3089, 1, '', '', '', '', 1, 0, 'F', '0', '0', 'dms:data:gateway:query', '#', 'admin', sysdate(), ''),
+(3092, '网关配置', 3089, 2, '', '', '', '', 1, 0, 'F', '0', '0', 'dms:data:gateway:edit', '#', 'admin', sysdate(), '');
+
 -- 二级目录：报表看板
 INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark) VALUES
 (3006, '报表看板', 3000, 6, 'dashboard', NULL, '', '', 1, 0, 'M', '0', '0', '', 'dashboard', 'admin', sysdate(), '报表与看板');
@@ -301,6 +316,7 @@ INSERT INTO sys_role_menu (role_id, menu_id) VALUES
 (1, 3070), (1, 3071), (1, 3072), (1, 3073), (1, 3074),
 (1, 3080), (1, 3081), (1, 3082), (1, 3083), (1, 3084),
 (1, 3085), (1, 3086), (1, 3087), (1, 3088),
+(1, 3089), (1, 3091), (1, 3092),
 (1, 3090),
 (1, 3100), (1, 3101), (1, 3102), (1, 3103), (1, 3104),
 (1, 3126);

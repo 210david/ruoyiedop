@@ -40,12 +40,10 @@
       <el-table-column label="存放位置" prop="storageLocation" :width="colWidth('storageLocation', 120)" resizable show-overflow-tooltip />
       <el-table-column label="数量" prop="quantity" :width="colWidth('quantity', 80)" resizable align="center" />
       <el-table-column label="入库日期" prop="operateDate" :width="colWidth('operateDate', 110)" resizable align="center" />
-      <el-table-column label="变更前" prop="beforeStock" :width="colWidth('beforeStock', 80)" resizable align="center" />
-      <el-table-column label="变更后" prop="afterStock" :width="colWidth('afterStock', 80)" resizable align="center" />
-      <el-table-column label="操作人" prop="operatorName" :width="colWidth('operatorName', 80)" resizable />
-      <el-table-column label="操作时间" prop="createTime" :width="colWidth('createTime', 160)" resizable align="center" />
-      <el-table-column label="操作" width="80" align="center">
+      <el-table-column label="操作" width="180" align="center" fixed="right">
         <template #default="scope">
+          <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['dms:partin:query']">查看</el-button>
+          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['dms:partin:edit']">修改</el-button>
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['dms:partstock:remove']">删除</el-button>
         </template>
       </el-table-column>
@@ -60,7 +58,7 @@
           <span class="rd-detail-header-title">{{ title }}</span>
         </div>
       </template>
-      <el-form ref="partinRef" :model="form" :rules="rules" label-width="100px">
+      <el-form ref="partinRef" :model="form" :rules="rules" label-width="100px" :disabled="formDisabled">
         <div class="rd-page">
         <section class="rd-card">
           <div class="rd-card-header" @click="toggleCard('c3')">
@@ -93,7 +91,7 @@
         <el-row>
           <el-col :span="24">
             <el-form-item label="备件" prop="partId">
-              <el-select v-model="form.partId" filterable placeholder="请选择备件" style="width: 100%" @change="onPartChange">
+              <el-select v-model="form.partId" filterable placeholder="请选择备件" style="width: 100%" @change="onPartChange" :disabled="!!form.recordId">
                 <el-option v-for="item in spareOptions" :key="item.partId" :label="item.partCode + ' - ' + item.partName" :value="item.partId" />
               </el-select>
             </el-form-item>
@@ -118,6 +116,11 @@
           </div>
           <div class="rd-card-body" v-show="!collapsedCards.c1">
         <el-row>
+          <el-col :span="12">
+            <el-form-item label="仓库" prop="warehouseName">
+              <el-input v-model="form.warehouseName" placeholder="请输入仓库名称" />
+            </el-form-item>
+          </el-col>
           <el-col :span="12">
             <el-form-item label="存放位置" prop="storageLocation">
               <el-input v-model="form.storageLocation" placeholder="请输入存放位置" />
@@ -148,7 +151,7 @@
         </div>
       </el-form>
       <template #footer>
-        <el-button type="primary" @click="submitForm">确 定</el-button>
+        <el-button type="primary" @click="submitForm" v-if="!formDisabled">确 定</el-button>
         <el-button @click="cancel">取 消</el-button>
       </template>
     </el-dialog>
@@ -156,7 +159,7 @@
 </template>
 
 <script setup name="DmsPartIn">
-import { listPartIn, addPartIn, delPartIn } from '@/api/dms/partin'
+import { listPartIn, addPartIn, delPartIn, getPartIn, updatePartIn } from '@/api/dms/partin'
 import { listSparepart } from '@/api/dms/sparepart'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
@@ -175,6 +178,7 @@ const ids = ref([])
 const multiple = ref(true)
 const total = ref(0)
 const title = ref('')
+const formDisabled = ref(false)
 
 /** 获取当天日期 YYYY-MM-DD */
 function today() {
@@ -207,13 +211,22 @@ function resetQuery() { proxy.resetForm('queryRef'); handleQuery() }
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.recordId); multiple.value = !selection.length }
 function handleAdd() {
   reset(); open.value = true
+  formDisabled.value = false
   title.value = '新增入库'
   getSpareOptions()
+}
+function handleView(row) {
+  reset(); formDisabled.value = true
+  getPartIn(row.recordId).then(res => { form.value = res.data; open.value = true; title.value = '查看入库记录' })
+}
+function handleUpdate(row) {
+  reset(); formDisabled.value = false
+  getPartIn(row.recordId).then(res => { form.value = res.data; open.value = true; title.value = '修改入库记录'; getSpareOptions() })
 }
 function reset() {
   form.value = {
     documentCode: undefined, sourceType: undefined, partId: undefined, partCode: undefined, partName: undefined,
-    unit: undefined, supplierOrDept: undefined, storageLocation: undefined, operateDate: today(),
+    unit: undefined, supplierOrDept: undefined, warehouseName: '备件库', storageLocation: undefined, operateDate: today(),
     quantity: 1, operatorName: undefined, remark: undefined
   }
   proxy.resetForm('partinRef')
@@ -234,7 +247,8 @@ function onPartChange(val) {
 function submitForm() {
   proxy.$refs['partinRef'].validate(valid => {
     if (valid) {
-      addPartIn(form.value).then(() => { proxy.$modal.msgSuccess('入库成功'); open.value = false; getList() })
+      if (form.value.recordId != undefined) { updatePartIn(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList() }) }
+      else { addPartIn(form.value).then(() => { proxy.$modal.msgSuccess('入库成功'); open.value = false; getList() }) }
     }
   })
 }

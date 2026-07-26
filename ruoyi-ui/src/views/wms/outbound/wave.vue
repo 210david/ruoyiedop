@@ -1,7 +1,6 @@
 <template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch">
-        <div class="rd-page">
       <el-form-item label="批次号" prop="waveNo"><el-input v-model="queryParams.waveNo" placeholder="请输入" clearable style="width: 200px" @keyup.enter="handleQuery" /></el-form-item>
       <el-form-item label="状态" prop="status"><el-select v-model="queryParams.status" placeholder="请选择" clearable style="width: 200px"><el-option v-for="d in wms_wave_status" :key="d.value" :label="d.label" :value="d.value" /></el-select></el-form-item>
       <el-form-item><el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button><el-button icon="Refresh" @click="resetQuery">重置</el-button></el-form-item>
@@ -76,6 +75,8 @@
         <el-table-column label="总数量" prop="totalQty" :width="colWidth('totalQty', 100)" resizable align="right" />
         <el-table-column label="预计出库" prop="outboundDate" :width="colWidth('outboundDate', 120)" resizable align="center" />
       </el-table>
+          </div>
+      </section>
     </el-dialog>
 
     <!-- 添加出库单对话框 -->

@@ -12,7 +12,9 @@ import com.ruoyi.common.core.page.TableDataInfo;
 import com.ruoyi.common.enums.BusinessType;
 import com.ruoyi.common.utils.poi.ExcelUtil;
 import com.ruoyi.dms.domain.DmsSparePart;
+import com.ruoyi.dms.domain.DmsSparePartStock;
 import com.ruoyi.dms.domain.DmsSparePartRecord;
+import com.ruoyi.dms.mapper.DmsSparePartStockMapper;
 import com.ruoyi.dms.service.IDmsSparePartService;
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -22,6 +24,11 @@ public class DmsSparePartController extends BaseController
 {
     @Autowired
     private IDmsSparePartService dmsSparePartService;
+
+    @Autowired
+    private DmsSparePartStockMapper dmsSparePartStockMapper;
+
+    // ==================== 备件主数据 CRUD ====================
 
     @PreAuthorize("@ss.hasPermi('dms:sparepart:list')")
     @GetMapping("/list")
@@ -49,7 +56,6 @@ public class DmsSparePartController extends BaseController
         return AjaxResult.success(dmsSparePartService.selectSparePartById(partId));
     }
 
-    /** 自动生成备件编号 */
     @PreAuthorize("@ss.hasPermi('dms:sparepart:add')")
     @GetMapping("/genCode")
     public AjaxResult genPartCode()
@@ -57,7 +63,6 @@ public class DmsSparePartController extends BaseController
         return AjaxResult.success("生成成功", dmsSparePartService.generatePartCode());
     }
 
-    /** 自动生成入库单号 */
     @PreAuthorize("@ss.hasPermi('dms:partin:add')")
     @GetMapping("/genInCode")
     public AjaxResult genInCode()
@@ -65,7 +70,6 @@ public class DmsSparePartController extends BaseController
         return AjaxResult.success("生成成功", dmsSparePartService.generateInCode());
     }
 
-    /** 自动生成出库单号 */
     @PreAuthorize("@ss.hasPermi('dms:partout:add')")
     @GetMapping("/genOutCode")
     public AjaxResult genOutCode()
@@ -97,7 +101,29 @@ public class DmsSparePartController extends BaseController
         return toAjax(dmsSparePartService.deleteSparePartByIds(partIds));
     }
 
-    /** 出入库操作 */
+    // ==================== 库存台账（stock表） ====================
+
+    /** 库存台账列表（关联查询 stock 表，带备件主数据） */
+    @PreAuthorize("@ss.hasPermi('dms:sparepart:list')")
+    @GetMapping("/stock/list")
+    public TableDataInfo stockList(DmsSparePartStock stock)
+    {
+        startPage();
+        List<DmsSparePartStock> list = dmsSparePartStockMapper.selectStockList(stock);
+        return getDataTable(list);
+    }
+
+    /** 删除库存记录（只删库存，不删主数据，支持批量删除） */
+    @Log(title = "备件库存台账", businessType = BusinessType.DELETE)
+    @PreAuthorize("@ss.hasPermi('dms:sparepart:remove')")
+    @DeleteMapping("/stock/{stockIds}")
+    public AjaxResult removeStock(@PathVariable Long[] stockIds)
+    {
+        return toAjax(dmsSparePartStockMapper.deleteStockByIds(stockIds));
+    }
+
+    // ==================== 出入库操作 ====================
+
     @Log(title = "备件出入库", businessType = BusinessType.UPDATE)
     @PreAuthorize("@ss.hasPermi('dms:sparepart:edit')")
     @PostMapping("/stockMove")
@@ -106,7 +132,6 @@ public class DmsSparePartController extends BaseController
         return toAjax(dmsSparePartService.stockMove(record));
     }
 
-    /** 出入库记录列表（支持备件查询、入库查询、出库查询、库存查询任一权限） */
     @PreAuthorize("@ss.hasAnyPermi('dms:sparepart:query,dms:partin:query,dms:partout:query,dms:partstock:query')")
     @GetMapping("/record/list")
     public TableDataInfo recordList(DmsSparePartRecord record)
@@ -116,7 +141,6 @@ public class DmsSparePartController extends BaseController
         return getDataTable(list);
     }
 
-    /** 删除出入库记录 */
     @Log(title = "备件出入库记录", businessType = BusinessType.DELETE)
     @PreAuthorize("@ss.hasPermi('dms:partstock:remove')")
     @DeleteMapping("/record/{recordIds}")
@@ -125,7 +149,25 @@ public class DmsSparePartController extends BaseController
         return toAjax(dmsSparePartService.deleteRecordByIds(recordIds));
     }
 
-    /** 入库记录导出 */
+    /** 查看出入库记录 */
+    @PreAuthorize("@ss.hasAnyPermi('dms:partin:query,dms:partout:query')")
+    @GetMapping(value = "/record/{recordId}")
+    public AjaxResult getRecord(@PathVariable("recordId") Long recordId)
+    {
+        return AjaxResult.success(dmsSparePartService.selectRecordById(recordId));
+    }
+
+    /** 修改出入库记录 */
+    @Log(title = "备件出入库记录", businessType = BusinessType.UPDATE)
+    @PreAuthorize("@ss.hasAnyPermi('dms:partin:edit,dms:partout:edit')")
+    @PutMapping("/record")
+    public AjaxResult editRecord(@RequestBody DmsSparePartRecord record)
+    {
+        return toAjax(dmsSparePartService.updateRecord(record));
+    }
+
+    // ==================== 导出 ====================
+
     @Log(title = "备件入库", businessType = BusinessType.EXPORT)
     @PreAuthorize("@ss.hasPermi('dms:partin:export')")
     @PostMapping("/partin/export")
@@ -138,7 +180,6 @@ public class DmsSparePartController extends BaseController
         util.exportExcel(response, list, "备件入库记录");
     }
 
-    /** 出库记录导出 */
     @Log(title = "备件出库", businessType = BusinessType.EXPORT)
     @PreAuthorize("@ss.hasPermi('dms:partout:export')")
     @PostMapping("/partout/export")
@@ -151,7 +192,6 @@ public class DmsSparePartController extends BaseController
         util.exportExcel(response, list, "备件出库记录");
     }
 
-    /** 库存流水报表导出 */
     @Log(title = "库存流水报表", businessType = BusinessType.EXPORT)
     @PreAuthorize("@ss.hasPermi('dms:partstock:export')")
     @PostMapping("/partstock/export")
@@ -163,13 +203,15 @@ public class DmsSparePartController extends BaseController
         util.exportExcel(response, list, "库存流水记录");
     }
 
-    /** 库存预警列表 */
+    // ==================== 库存预警 ====================
+
+    /** 库存预警列表（查询 stock 表） */
     @PreAuthorize("@ss.hasPermi('dms:partalert:query')")
     @GetMapping("/alert/list")
-    public TableDataInfo alertList(DmsSparePart sparePart)
+    public TableDataInfo alertList(DmsSparePartStock stock)
     {
         startPage();
-        List<DmsSparePart> list = dmsSparePartService.selectStockAlertList(sparePart);
+        List<DmsSparePartStock> list = dmsSparePartStockMapper.selectStockAlertList(stock);
         return getDataTable(list);
     }
 
@@ -177,14 +219,14 @@ public class DmsSparePartController extends BaseController
     @Log(title = "库存预警", businessType = BusinessType.EXPORT)
     @PreAuthorize("@ss.hasPermi('dms:partalert:export')")
     @PostMapping("/alert/export")
-    public void alertExport(HttpServletResponse response, DmsSparePart sparePart)
+    public void alertExport(HttpServletResponse response, DmsSparePartStock stock)
     {
-        List<DmsSparePart> list = dmsSparePartService.selectStockAlertList(sparePart);
-        ExcelUtil<DmsSparePart> util = new ExcelUtil<>(DmsSparePart.class);
+        List<DmsSparePartStock> list = dmsSparePartStockMapper.selectStockAlertList(stock);
+        ExcelUtil<DmsSparePartStock> util = new ExcelUtil<>(DmsSparePartStock.class);
         util.exportExcel(response, list, "库存预警数据");
     }
 
-    /** 删除库存预警（清除备件安全库存设置） */
+    /** 删除库存预警（清除库存上下限设置） */
     @Log(title = "库存预警", businessType = BusinessType.DELETE)
     @PreAuthorize("@ss.hasPermi('dms:partalert:remove')")
     @DeleteMapping("/alert/{partId}")

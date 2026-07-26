@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.dms.mapper.DmsSparePartStockMapper">
+
+    <resultMap type="DmsSparePartStock" id="DmsSparePartStockResult">
+        <result property="stockId"            column="stock_id"/>
+        <result property="partId"            column="part_id"/>
+        <result property="warehouseName"     column="warehouse_name"/>
+        <result property="storageLocation"  column="storage_location"/>
+        <result property="currentStock"     column="current_stock"/>
+        <result property="lockQty"           column="lock_qty"/>
+        <result property="stockMin"           column="stock_min"/>
+        <result property="stockMax"           column="stock_max"/>
+        <result property="safetyStock"        column="safety_stock"/>
+        <result property="version"           column="version"/>
+        <result property="status"             column="status"/>
+        <result property="delFlag"            column="del_flag"/>
+        <result property="createBy"           column="create_by"/>
+        <result property="createTime"         column="create_time"/>
+        <result property="updateBy"           column="update_by"/>
+        <result property="updateTime"         column="update_time"/>
+        <result property="remark"             column="remark"/>
+        <!-- 关联查询备件主数据 -->
+        <result property="partCode"           column="part_code"/>
+        <result property="partName"           column="part_name"/>
+        <result property="partType"           column="part_type"/>
+        <result property="specModel"          column="spec_model"/>
+        <result property="unit"               column="unit"/>
+        <result property="supplier"            column="supplier"/>
+        <result property="partStatus"         column="part_status"/>
+    </resultMap>
+
+    <sql id="selectStockVo">
+        SELECT s.stock_id, s.part_id, s.warehouse_name, s.storage_location,
+               s.current_stock, s.lock_qty, p.stock_min, p.stock_max, s.safety_stock,
+               s.version, s.status, s.del_flag, s.create_by, s.create_time, s.update_by, COALESCE(s.update_time, s.create_time) as update_time, s.remark,
+               p.part_code, p.part_name, p.part_type, p.spec_model, p.unit, p.supplier, p.status as part_status
+        FROM dms_spare_part_stock s
+        LEFT JOIN dms_spare_part p ON s.part_id = p.part_id
+    </sql>
+
+    <select id="selectStockList" parameterType="DmsSparePartStock" resultMap="DmsSparePartStockResult">
+        <include refid="selectStockVo"/>
+        <where>
+            s.del_flag = '0'
+            <if test="partId != null"> AND s.part_id = #{partId}</if>
+            <if test="partCode != null and partCode != ''"> AND p.part_code LIKE CONCAT('%', #{partCode}, '%')</if>
+            <if test="partName != null and partName != ''"> AND p.part_name LIKE CONCAT('%', #{partName}, '%')</if>
+            <if test="partType != null and partType != ''"> AND p.part_type = #{partType}</if>
+            <if test="status != null and status != ''"> AND s.status = #{status}</if>
+            <if test="warehouseName != null and warehouseName != ''"> AND s.warehouse_name LIKE CONCAT('%', #{warehouseName}, '%')</if>
+        </where>
+        ORDER BY s.stock_id DESC
+    </select>
+
+    <select id="selectStockById" parameterType="Long" resultMap="DmsSparePartStockResult">
+        <include refid="selectStockVo"/> WHERE s.stock_id = #{stockId}
+    </select>
+
+    <select id="selectByPartAndWarehouse" resultMap="DmsSparePartStockResult">
+        <include refid="selectStockVo"/>
+        WHERE s.del_flag = '0' AND s.part_id = #{partId} AND s.warehouse_name = #{warehouseName}
+    </select>
+
+    <insert id="insertStock" parameterType="DmsSparePartStock" useGeneratedKeys="true" keyProperty="stockId">
+        INSERT INTO dms_spare_part_stock (
+            part_id, warehouse_name, storage_location, current_stock, lock_qty, stock_min, stock_max, safety_stock,
+            status, del_flag, create_by, create_time, update_time, remark
+        ) VALUES (
+            #{partId}, #{warehouseName}, #{storageLocation}, #{currentStock}, 0,
+            #{stockMin}, #{stockMax}, #{safetyStock},
+            '0', '0', #{createBy}, sysdate(), sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateStock" parameterType="DmsSparePartStock">
+        UPDATE dms_spare_part_stock
+        <set>
+            <if test="warehouseName != null and warehouseName != ''">warehouse_name = #{warehouseName},</if>
+            <if test="storageLocation != null">storage_location = #{storageLocation},</if>
+            <if test="currentStock != null">current_stock = #{currentStock},</if>
+            <if test="lockQty != null">lock_qty = #{lockQty},</if>
+            <if test="stockMin != null">stock_min = #{stockMin},</if>
+            <if test="stockMax != null">stock_max = #{stockMax},</if>
+            <if test="safetyStock != null">safety_stock = #{safetyStock},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE stock_id = #{stockId}
+    </update>
+
+    <update id="updateStockWithLock" parameterType="DmsSparePartStock">
+        UPDATE dms_spare_part_stock
+        SET current_stock = current_stock + #{delta},
+            version = version + 1
+        WHERE stock_id = #{stockId} AND version = #{version}
+    </update>
+
+    <delete id="deleteStockByIds" parameterType="Long">
+        UPDATE dms_spare_part_stock SET del_flag = '2' WHERE stock_id IN
+        <foreach item="stockId" collection="array" open="(" separator="," close=")">#{stockId}</foreach>
+    </delete>
+
+    <!-- 库存预警查询 -->
+    <select id="selectStockAlertList" parameterType="DmsSparePartStock" resultMap="DmsSparePartStockResult">
+        <include refid="selectStockVo"/>
+        WHERE s.del_flag = '0' AND s.status = '0'
+          AND (
+            (p.stock_min > 0 AND s.current_stock &lt;= p.stock_min)
+            OR
+            (p.stock_max &gt; 0 AND s.current_stock &gt;= p.stock_max)
+          )
+        <if test="partCode != null and partCode != ''"> AND p.part_code LIKE CONCAT('%', #{partCode}, '%')</if>
+        <if test="partName != null and partName != ''"> AND p.part_name LIKE CONCAT('%', #{partName}, '%')</if>
+        ORDER BY
+          CASE
+            WHEN s.current_stock &lt;= 0 THEN 0
+            WHEN p.stock_min &gt; 0 AND s.current_stock &lt;= p.stock_min THEN 1
+            ELSE 2
+          END,
+          s.current_stock ASC
+    </select>
+</mapper>

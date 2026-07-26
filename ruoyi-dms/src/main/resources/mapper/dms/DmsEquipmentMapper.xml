@@ -5,6 +5,7 @@
     <resultMap type="DmsEquipment" id="DmsEquipmentResult">
         <result property="equipmentId"      column="equipment_id"/>
         <result property="equipmentCode"    column="equipment_code"/>
+        <result property="assetCode"         column="asset_code"/>
         <result property="equipmentName"    column="equipment_name"/>
         <result property="categoryId"       column="category_id"/>
         <result property="categoryName"     column="category_name"/>
@@ -13,11 +14,15 @@
         <result property="manufacturer"     column="manufacturer"/>
         <result property="supplier"         column="supplier"/>
         <result property="purchaseDate"     column="purchase_date"/>
+        <result property="installDate"      column="install_date"/>
+        <result property="retireDate"       column="retire_date"/>
         <result property="originalValue"    column="original_value"/>
         <result property="deptId"           column="dept_id"/>
         <result property="deptName"         column="dept_name"/>
         <result property="installLocation"  column="install_location"/>
         <result property="equipmentStatus"  column="equipment_status"/>
+        <result property="equipmentLevel"  column="equipment_level"/>
+        <result property="warrantyDate"     column="warranty_date"/>
         <result property="responsibleId"    column="responsible_id"/>
         <result property="responsibleName"  column="responsible_name"/>
         <result property="equipmentImage"   column="equipment_image"/>
@@ -32,9 +37,9 @@
     </resultMap>
 
     <sql id="selectEquipmentVo">
-        SELECT e.equipment_id, e.equipment_code, e.equipment_name, e.category_id, c.category_name,
-               e.model, e.serial_number, e.manufacturer, e.supplier, e.purchase_date, e.original_value,
-               e.dept_id, d.dept_name, e.install_location, e.equipment_status,
+        SELECT e.equipment_id, e.equipment_code, e.asset_code, e.equipment_name, e.category_id, c.category_name,
+               e.model, e.serial_number, e.manufacturer, e.supplier, e.purchase_date, e.install_date, e.retire_date, e.original_value,
+               e.dept_id, d.dept_name, e.install_location, e.equipment_status, e.equipment_level, e.warranty_date,
                e.responsible_id, u.nick_name as responsible_name, e.equipment_image, e.attachment_url,
                e.status, e.del_flag, e.create_by, e.create_time, e.update_by, e.update_time, e.remark
         FROM dms_equipment e
@@ -51,6 +56,7 @@
             <if test="equipmentName != null and equipmentName != ''"> AND e.equipment_name LIKE CONCAT('%', #{equipmentName}, '%')</if>
             <if test="categoryId != null"> AND e.category_id = #{categoryId}</if>
             <if test="equipmentStatus != null and equipmentStatus != ''"> AND e.equipment_status = #{equipmentStatus}</if>
+            <if test="equipmentLevel != null and equipmentLevel != ''"> AND e.equipment_level = #{equipmentLevel}</if>
             <if test="deptId != null"> AND e.dept_id = #{deptId}</if>
             <if test="status != null and status != ''"> AND e.status = #{status}</if>
         </where>
@@ -63,12 +69,12 @@
 
     <insert id="insertEquipment" parameterType="DmsEquipment" useGeneratedKeys="true" keyProperty="equipmentId">
         INSERT INTO dms_equipment (
-            equipment_code, equipment_name, category_id, model, serial_number, manufacturer, supplier,
-            purchase_date, original_value, dept_id, install_location, equipment_status,
+            equipment_code, asset_code, equipment_name, category_id, model, serial_number, manufacturer, supplier,
+            purchase_date, install_date, retire_date, original_value, dept_id, install_location, equipment_status, equipment_level, warranty_date,
             responsible_id, equipment_image, attachment_url, status, create_by, create_time, remark
         ) VALUES (
-            #{equipmentCode}, #{equipmentName}, #{categoryId}, #{model}, #{serialNumber}, #{manufacturer}, #{supplier},
-            #{purchaseDate}, #{originalValue}, #{deptId}, #{installLocation}, #{equipmentStatus},
+            #{equipmentCode}, #{assetCode}, #{equipmentName}, #{categoryId}, #{model}, #{serialNumber}, #{manufacturer}, #{supplier},
+            #{purchaseDate}, #{installDate}, #{retireDate}, #{originalValue}, #{deptId}, #{installLocation}, #{equipmentStatus}, #{equipmentLevel}, #{warrantyDate},
             #{responsibleId}, #{equipmentImage}, #{attachmentUrl}, #{status}, #{createBy}, sysdate(), #{remark}
         )
     </insert>
@@ -77,6 +83,7 @@
         UPDATE dms_equipment
         <set>
             <if test="equipmentCode != null and equipmentCode != ''">equipment_code = #{equipmentCode},</if>
+            <if test="assetCode != null">asset_code = #{assetCode},</if>
             <if test="equipmentName != null and equipmentName != ''">equipment_name = #{equipmentName},</if>
             <if test="categoryId != null">category_id = #{categoryId},</if>
             <if test="model != null">model = #{model},</if>
@@ -84,10 +91,14 @@
             <if test="manufacturer != null">manufacturer = #{manufacturer},</if>
             <if test="supplier != null">supplier = #{supplier},</if>
             <if test="purchaseDate != null">purchase_date = #{purchaseDate},</if>
+            <if test="installDate != null">install_date = #{installDate},</if>
+            <if test="retireDate != null">retire_date = #{retireDate},</if>
             <if test="originalValue != null">original_value = #{originalValue},</if>
             <if test="deptId != null">dept_id = #{deptId},</if>
             <if test="installLocation != null">install_location = #{installLocation},</if>
             <if test="equipmentStatus != null and equipmentStatus != ''">equipment_status = #{equipmentStatus},</if>
+            <if test="equipmentLevel != null and equipmentLevel != ''">equipment_level = #{equipmentLevel},</if>
+            <if test="warrantyDate != null">warranty_date = #{warrantyDate},</if>
             <if test="responsibleId != null">responsible_id = #{responsibleId},</if>
             <if test="equipmentImage != null">equipment_image = #{equipmentImage},</if>
             <if test="attachmentUrl != null">attachment_url = #{attachmentUrl},</if>

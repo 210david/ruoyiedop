@@ -1,5 +1,5 @@
 <template>
-  <el-dialog v-model="visible" width="780px" append-to-body draggable class="rd-dialog">
+  <el-dialog v-model="visible" width="900px" append-to-body draggable class="rd-dialog">
     <template #header>
       <div class="rd-detail-header">
         <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div>
@@ -11,6 +11,9 @@
       </div>
     </template>
     <div v-loading="loading" class="rd-page">
+      <el-tabs v-model="activeTab" class="equipment-detail-tabs">
+        <!-- 页签一：设备详情 -->
+        <el-tab-pane label="设备详情" name="detail">
       <!-- 基本信息 -->
       <section class="rd-card">
         <div class="rd-card-header" @click="toggleCard('v4')">
@@ -23,6 +26,7 @@
             <div class="rd-item"><span class="rd-label">设备名称</span><div class="rd-value">{{ info.equipmentName || '-' }}</div></div>
             <div class="rd-item"><span class="rd-label">设备分类</span><div class="rd-value">{{ info.categoryName || '-' }}</div></div>
             <div class="rd-item"><span class="rd-label">设备状态</span><div class="rd-value"><dict-tag :options="dms_equipment_status" :value="info.equipmentStatus" /></div></div>
+            <div class="rd-item"><span class="rd-label">设备等级</span><div class="rd-value"><dict-tag :options="dms_equipment_level" :value="info.equipmentLevel" /></div></div>
             <div class="rd-item"><span class="rd-label">型号</span><div class="rd-value">{{ info.model || '-' }}</div></div>
             <div class="rd-item"><span class="rd-label">序列号</span><div class="rd-value">{{ info.serialNumber || '-' }}</div></div>
           </div>
@@ -36,10 +40,14 @@
         </div>
         <div class="rd-card-body" v-show="!collapsedCards.v3">
           <div class="rd-grid">
+            <div class="rd-item"><span class="rd-label">资产编号</span><div class="rd-value">{{ info.assetCode || '-' }}</div></div>
             <div class="rd-item"><span class="rd-label">制造商</span><div class="rd-value">{{ info.manufacturer || '-' }}</div></div>
             <div class="rd-item"><span class="rd-label">供应商</span><div class="rd-value">{{ info.supplier || '-' }}</div></div>
             <div class="rd-item"><span class="rd-label">购置日期</span><div class="rd-value">{{ parseTime(info.purchaseDate, '{y}-{m}-{d}') || '-' }}</div></div>
-            <div class="rd-item"><span class="rd-label">原值</span><div class="rd-value">{{ info.originalValue != null ? '¥' + info.originalValue : '-' }}</div></div>
+            <div class="rd-item"><span class="rd-label">原值</span><div class="rd-value rd-amount rd-value--large" v-if="info.originalValue != null">¥{{ formatAmount(info.originalValue) }}</div><div class="rd-value rd-value--muted" v-else>-</div></div>
+            <div class="rd-item"><span class="rd-label">启用日期</span><div class="rd-value">{{ parseTime(info.installDate, '{y}-{m}-{d}') || '-' }}</div></div>
+            <div class="rd-item"><span class="rd-label">质保期限</span><div class="rd-value">{{ parseTime(info.warrantyDate, '{y}-{m}-{d}') || '-' }}</div></div>
+            <div class="rd-item"><span class="rd-label">报废处置日期</span><div class="rd-value">{{ parseTime(info.retireDate, '{y}-{m}-{d}') || '-' }}</div></div>
           </div>
         </div>
       </section>
@@ -97,6 +105,43 @@
           </div>
         </div>
       </section>
+        </el-tab-pane>
+
+        <!-- 页签二：设备履历 -->
+        <el-tab-pane label="设备履历" name="history">
+          <el-tabs v-model="historyTab" type="border-card" class="history-sub-tabs">
+            <el-tab-pane label="工单记录" name="orders">
+              <el-table :data="historyOrders" border size="small" v-loading="historyLoading">
+                <el-table-column label="工单号" prop="orderNo" width="150" />
+                <el-table-column label="工单类型" prop="orderType" width="100" align="center">
+                  <template #default="scope"><dict-tag :options="dms_order_type" :value="scope.row.orderType" /></template>
+                </el-table-column>
+                <el-table-column label="故障描述" prop="faultDescription" show-overflow-tooltip />
+                <el-table-column label="状态" prop="orderStatus" width="90" align="center">
+                  <template #default="scope"><dict-tag :options="dms_order_status" :value="scope.row.orderStatus" /></template>
+                </el-table-column>
+                <el-table-column label="报修时间" prop="reportTime" width="150" align="center" />
+              </el-table>
+              <el-empty v-if="!historyLoading && historyOrders.length === 0" description="暂无工单记录" />
+            </el-tab-pane>
+            <el-tab-pane label="变更日志" name="logs">
+              <el-table :data="historyLogs" border size="small" v-loading="historyLoading">
+                <el-table-column label="变更类型" prop="changeType" width="100" align="center">
+                  <template #default="scope">
+                    <el-tag>{{ {0:'状态变更',1:'位置变更',2:'部门变更',3:'责任人变更',4:'调拨',5:'信息变更'}[scope.row.changeType] }}</el-tag>
+                  </template>
+                </el-table-column>
+                <el-table-column label="原值" prop="oldValue" width="80" />
+                <el-table-column label="新值" prop="newValue" width="80" />
+                <el-table-column label="变更原因" prop="changeReason" show-overflow-tooltip />
+                <el-table-column label="操作人" prop="operatorName" width="80" />
+                <el-table-column label="时间" prop="createTime" width="160" align="center" />
+              </el-table>
+              <el-empty v-if="!historyLoading && historyLogs.length === 0" description="暂无变更日志" />
+            </el-tab-pane>
+          </el-tabs>
+        </el-tab-pane>
+      </el-tabs>
     </div>
     <!-- 文件预览弹窗 -->
     <file-preview ref="filePreviewRef" />
@@ -104,28 +149,65 @@
 </template>
 
 <script setup name="DmsEquipmentViewDrawer">
-import { getEquipment } from '@/api/dms/equipment'
+import { getEquipment, getEquipmentHistory, listEquipmentLog } from '@/api/dms/equipment'
 import { useDetailCard } from '@/composables/useDetailCard'
 const { collapsedCards, toggleCard } = useDetailCard(['v4', 'v3', 'v2', 'v1', 'v0'])
 
 const { proxy } = getCurrentInstance()
-const { dms_equipment_status } = proxy.useDict('dms_equipment_status')
+const { dms_equipment_status, dms_equipment_level, dms_order_type, dms_order_status } = proxy.useDict('dms_equipment_status', 'dms_equipment_level', 'dms_order_type', 'dms_order_status')
 
 const visible = ref(false)
 const loading = ref(false)
 const info = reactive({})
 const baseUrl = import.meta.env.VITE_APP_BASE_API
 
+const activeTab = ref('detail')
+const historyTab = ref('orders')
+const historyOrders = ref([])
+const historyLogs = ref([])
+const historyLoading = ref(false)
+const historyLoaded = ref(false)
+
 const open = async (equipmentId) => {
   visible.value = true
   loading.value = true
+  activeTab.value = 'detail'
+  historyLoaded.value = false
   try {
     const res = await getEquipment(equipmentId)
     Object.keys(info).forEach(k => { info[k] = undefined })
     Object.assign(info, res.data)
+    // 预存 equipmentId 供履历加载使用
+    info.equipmentId = equipmentId
   } finally {
     loading.value = false
   }
+}
+
+/** 切换到履历页签时加载数据 */
+watch(activeTab, (val) => {
+  if (val === 'history' && !historyLoaded.value) {
+    loadHistory()
+  }
+})
+
+function loadHistory() {
+  historyLoading.value = true
+  historyLoaded.value = true
+  getEquipmentHistory(info.equipmentId).then(res => {
+    historyOrders.value = res.data || []
+  }).finally(() => {
+    historyLoading.value = false
+  })
+  listEquipmentLog({ equipmentId: info.equipmentId, pageNum: 1, pageSize: 100 }).then(res => {
+    historyLogs.value = res.rows || []
+  })
+}
+
+/** 金额千分位格式化 */
+function formatAmount(val) {
+  if (val == null) return '-'
+  return Number(val).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
 function getFileName(url) {
@@ -142,3 +224,18 @@ function handlePreview(file) {
 
 defineExpose({ open })
 </script>
+
+<style scoped>
+.equipment-detail-tabs :deep(.el-tabs__header) {
+  margin-bottom: 16px;
+}
+.history-sub-tabs {
+  min-height: 300px;
+}
+/* 金额高亮：红色 + 等宽数字 + 千分位 */
+.rd-amount {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: #dc2626;
+}
+</style>

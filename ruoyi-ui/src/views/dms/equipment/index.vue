@@ -12,6 +12,11 @@
           <el-option v-for="d in dms_equipment_status" :key="d.value" :label="d.label" :value="d.value" />
         </el-select>
       </el-form-item>
+      <el-form-item label="设备等级" prop="equipmentLevel">
+        <el-select v-model="queryParams.equipmentLevel" placeholder="全部" clearable style="width: 120px">
+          <el-option v-for="d in dms_equipment_level" :key="d.value" :label="d.label" :value="d.value" />
+        </el-select>
+      </el-form-item>
       <el-form-item>
         <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
         <el-button icon="Refresh" @click="resetQuery">重置</el-button>
@@ -29,9 +34,15 @@
     <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="设备编号" prop="equipmentCode" :width="colWidth('equipmentCode', 130)" resizable />
+      <el-table-column label="资产编号" prop="assetCode" :width="colWidth('assetCode', 130)" resizable />
       <el-table-column label="设备名称" prop="equipmentName" show-overflow-tooltip />
       <el-table-column label="分类" prop="categoryName" :width="colWidth('categoryName', 120)" resizable />
       <el-table-column label="型号" prop="model" :width="colWidth('model', 120)" resizable />
+      <el-table-column label="设备等级" prop="equipmentLevel" :width="colWidth('equipmentLevel', 90)" resizable align="center">
+        <template #default="scope">
+          <dict-tag :options="dms_equipment_level" :value="scope.row.equipmentLevel" />
+        </template>
+      </el-table-column>
       <el-table-column label="使用部门" prop="deptName" :width="colWidth('deptName', 120)" resizable />
       <el-table-column label="安装位置" prop="installLocation" :width="colWidth('installLocation', 120)" resizable show-overflow-tooltip />
       <el-table-column label="责任人" prop="responsibleName" :width="colWidth('responsibleName', 80)" resizable />
@@ -40,11 +51,11 @@
           <dict-tag :options="dms_equipment_status" :value="scope.row.equipmentStatus" />
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="280" align="center" fixed="right">
+      <el-table-column label="操作" width="260" align="center" fixed="right">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['dms:equipment:query']">查看</el-button>
+          <el-button link type="primary" @click="handleScreen(scope.row)" v-hasPermi="['dms:equipment:query']">大屏</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['dms:equipment:edit']">修改</el-button>
-          <el-button link type="info" @click="handleHistory(scope.row)">履历</el-button>
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['dms:equipment:remove']">删除</el-button>
         </template>
       </el-table-column>
@@ -76,6 +87,11 @@
               <el-option v-for="d in dms_equipment_status" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </el-form-item></el-col>
+          <el-col :span="12"><el-form-item label="设备等级" prop="equipmentLevel">
+            <el-select v-model="form.equipmentLevel" placeholder="请选择" style="width: 100%">
+              <el-option v-for="d in dms_equipment_level" :key="d.value" :label="d.label" :value="d.value" />
+            </el-select>
+          </el-form-item></el-col>
           <el-col :span="12"><el-form-item label="型号" prop="model"><el-input v-model="form.model" placeholder="请输入" /></el-form-item></el-col>
           <el-col :span="12"><el-form-item label="序列号" prop="serialNumber"><el-input v-model="form.serialNumber" placeholder="请输入" /></el-form-item></el-col>
         </el-row>
@@ -90,10 +106,14 @@
           </div>
           <div class="rd-card-body" v-show="!collapsedCards.c3">
         <el-row>
+          <el-col :span="12"><el-form-item label="资产编号" prop="assetCode"><el-input v-model="form.assetCode" placeholder="请输入" /></el-form-item></el-col>
           <el-col :span="12"><el-form-item label="制造商" prop="manufacturer"><el-input v-model="form.manufacturer" placeholder="请输入" /></el-form-item></el-col>
           <el-col :span="12"><el-form-item label="供应商" prop="supplier"><el-input v-model="form.supplier" placeholder="请输入" /></el-form-item></el-col>
           <el-col :span="12"><el-form-item label="购置日期" prop="purchaseDate"><el-date-picker v-model="form.purchaseDate" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" style="width: 100%" /></el-form-item></el-col>
           <el-col :span="12"><el-form-item label="原值" prop="originalValue"><el-input-number v-model="form.originalValue" :min="0" :precision="2" controls-position="right" style="width: 100%" /></el-form-item></el-col>
+          <el-col :span="12"><el-form-item label="启用日期" prop="installDate"><el-date-picker v-model="form.installDate" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" style="width: 100%" /></el-form-item></el-col>
+          <el-col :span="12"><el-form-item label="质保期限" prop="warrantyDate"><el-date-picker v-model="form.warrantyDate" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" style="width: 100%" /></el-form-item></el-col>
+          <el-col :span="12"><el-form-item label="报废处置日期" prop="retireDate"><el-date-picker v-model="form.retireDate" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" style="width: 100%" /></el-form-item></el-col>
         </el-row>
 
         <!-- 分组三：使用信息 -->
@@ -194,52 +214,12 @@
 
     <!-- 部门选择弹窗 -->
     <dept-picker ref="deptPickerRef" title="选择使用部门" :disabled-ids="[100]" @confirm="onDeptPickerConfirm" />
-
-    <!-- 设备履历弹窗 -->
-    <el-dialog v-model="historyOpen" width="850px" append-to-body draggable class="rd-dialog">
-      <template #header>
-        <div class="rd-detail-header">
-          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><polyline points="12 7 12 12 15 14"/></svg></div>
-          <span class="rd-detail-header-title">设备履历</span>
-        </div>
-      </template>
-      <el-tabs v-model="historyTab">
-        <el-tab-pane label="工单记录" name="orders">
-          <el-table :data="historyOrders" border size="small" @header-dragend="onHeaderDragEnd">
-            <el-table-column label="工单号" prop="orderNo" :width="colWidth('orderNo', 150)" resizable />
-            <el-table-column label="工单类型" prop="orderType" :width="colWidth('orderType', 100)" resizable align="center">
-              <template #default="scope"><dict-tag :options="dms_order_type" :value="scope.row.orderType" /></template>
-            </el-table-column>
-            <el-table-column label="故障描述" prop="faultDescription" show-overflow-tooltip />
-            <el-table-column label="状态" prop="orderStatus" :width="colWidth('orderStatus', 90)" resizable align="center">
-              <template #default="scope"><dict-tag :options="dms_order_status" :value="scope.row.orderStatus" /></template>
-            </el-table-column>
-            <el-table-column label="报修时间" prop="reportTime" :width="colWidth('reportTime', 150)" resizable align="center" />
-          </el-table>
-        </el-tab-pane>
-        <el-tab-pane label="变更日志" name="logs">
-          <el-table :data="historyLogs" border size="small" @header-dragend="onHeaderDragEnd">
-            <el-table-column label="变更类型" prop="changeType" :width="colWidth('changeType', 100)" resizable align="center">
-              <template #default="scope">
-                <el-tag>{{ {0:'状态变更',1:'位置变更',2:'部门变更',3:'责任人变更',4:'调拨'}[scope.row.changeType] }}</el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column label="原值" prop="oldValue" :width="colWidth('oldValue', 80)" resizable />
-            <el-table-column label="新值" prop="newValue" :width="colWidth('newValue', 80)" resizable />
-            <el-table-column label="变更原因" prop="changeReason" show-overflow-tooltip />
-            <el-table-column label="操作人" prop="operatorName" :width="colWidth('operatorName', 80)" resizable />
-            <el-table-column label="时间" prop="createTime" :width="colWidth('createTime', 160)" resizable align="center" />
-          </el-table>
-        </el-tab-pane>
-      </el-tabs>
-    </el-dialog>
   </div>
 </template>
 
 <script setup name="DmsEquipment">
-import { listEquipment, getEquipment, addEquipment, updateEquipment, delEquipment, getEquipmentHistory, listEquipmentLog } from '@/api/dms/equipment'
+import { listEquipment, getEquipment, addEquipment, updateEquipment, delEquipment } from '@/api/dms/equipment'
 import { listCategory } from '@/api/dms/category'
-import { deptTreeSelect, listUser } from '@/api/system/user'
 import DmsEquipmentViewDrawer from './view.vue'
 import UserPicker from '@/components/UserPicker/index.vue'
 import DeptPicker from '@/components/DeptPicker/index.vue'
@@ -249,12 +229,10 @@ const { collapsedCards, toggleCard } = useDetailCard(["c4","c3","c2","c1","c0"])
 
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('dms_equipment_index')
-const { dms_equipment_status, dms_order_type, dms_order_status } = proxy.useDict('dms_equipment_status', 'dms_order_type', 'dms_order_status')
+const { dms_equipment_status, dms_equipment_level } = proxy.useDict('dms_equipment_status', 'dms_equipment_level')
 
 const list = ref([])
 const categoryOptions = ref([])
-const deptOptions = ref([])
-const userOptions = ref([])
 const open = ref(false)
 const loading = ref(true)
 const showSearch = ref(true)
@@ -263,14 +241,9 @@ const single = ref(true)
 const multiple = ref(true)
 const total = ref(0)
 const title = ref('')
-const historyOpen = ref(false)
-const historyTab = ref('orders')
-const historyOrders = ref([])
-const historyLogs = ref([])
-
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, equipmentCode: undefined, equipmentName: undefined, equipmentStatus: undefined },
+  queryParams: { pageNum: 1, pageSize: 10, equipmentCode: undefined, equipmentName: undefined, equipmentStatus: undefined, equipmentLevel: undefined },
   rules: {
     equipmentName: [{ required: true, message: '设备名称不能为空', trigger: 'blur' }]
   }
@@ -283,12 +256,6 @@ function getList() {
 }
 function getCategoryTree() {
   listCategory().then(res => { categoryOptions.value = proxy.handleTree(res.data, 'categoryId') })
-}
-function getDeptTree() {
-  deptTreeSelect().then(res => { deptOptions.value = res.data })
-}
-function getUserList() {
-  listUser({ pageNum: 1, pageSize: 9999 }).then(res => { userOptions.value = res.rows })
 }
 /** 打开责任人选择弹窗 */
 function openUserPicker() {
@@ -327,9 +294,10 @@ function resetQuery() { proxy.resetForm('queryRef'); handleQuery() }
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.equipmentId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function reset() {
   form.value = {
-    equipmentCode: undefined, equipmentName: undefined, categoryId: undefined, model: undefined, serialNumber: undefined,
-    manufacturer: undefined, supplier: undefined, purchaseDate: undefined, originalValue: undefined,
-    deptId: undefined, deptName: undefined, installLocation: undefined, equipmentStatus: '0', responsibleId: undefined,
+    equipmentCode: undefined, assetCode: undefined, equipmentName: undefined, categoryId: undefined, model: undefined, serialNumber: undefined,
+    manufacturer: undefined, supplier: undefined, purchaseDate: undefined, installDate: undefined, retireDate: undefined, originalValue: undefined,
+    deptId: undefined, deptName: undefined, installLocation: undefined, equipmentStatus: '0', equipmentLevel: undefined, warrantyDate: undefined,
+    responsibleId: undefined,
     equipmentImage: undefined, attachmentUrl: undefined, status: '0', remark: undefined,
     responsibleName: undefined
   }
@@ -351,18 +319,16 @@ function submitForm() {
 function handleDelete(row) { const equipmentIds = row.equipmentId || ids.value; proxy.$modal.confirm('确认删除编号为"' + equipmentIds + '"的数据？').then(() => delEquipment(equipmentIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
 function handleExport() { proxy.download('dms/equipment/export', { ...queryParams.value }, `equipment_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
-function handleHistory(row) {
-  historyTab.value = 'orders'
-  historyOpen.value = true
-  getEquipmentHistory(row.equipmentId).then(res => { historyOrders.value = res.data || [] })
-  listEquipmentLog({ equipmentId: row.equipmentId, pageNum: 1, pageSize: 100 }).then(res => { historyLogs.value = res.rows || [] })
-}
 /** 查看设备详情 */
 function handleView(row) {
   proxy.$refs.equipmentViewRef.open(row.equipmentId)
 }
+/** 跳转设备大屏（新窗口全屏打开） */
+function handleScreen(row) {
+  const url = '/dms/dashboard/screen?equipmentId=' + row.equipmentId
+  window.open(url, '_blank')
+}
 getCategoryTree()
-getDeptTree()
 getList()
 </script>
 

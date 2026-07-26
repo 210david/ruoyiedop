@@ -44,31 +44,62 @@
     </el-table>
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
-    <!-- 新增弹窗 -->
-    <el-dialog v-model="open" width="600px" append-to-body draggable class="rd-dialog">
+    <!-- 新增/修改弹窗 -->
+    <el-dialog v-model="open" width="936px" append-to-body draggable class="rd-dialog inspection-add-dialog" top="5vh">
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M9 12h6"/><path d="M12 9v6"/></svg></div>
           <span class="rd-detail-header-title">{{ title }}</span>
         </div>
       </template>
-      <el-form ref="taskRef" :model="form" :rules="rules" label-width="100px">
-        <el-row>
-          <el-col :span="12"><el-form-item label="任务编号" prop="taskNo"><el-input v-model="form.taskNo" placeholder="自动生成" disabled /></el-form-item></el-col>
-          <el-col :span="12"><el-form-item label="巡检路线" prop="routeId">
-            <el-select v-model="form.routeId" filterable placeholder="请选择路线" style="width: 100%" @change="onRouteChange">
-              <el-option v-for="r in routeOptions" :key="r.routeId" :label="r.routeName" :value="r.routeId" />
-            </el-select>
-          </el-form-item></el-col>
-          <el-col :span="12"><el-form-item label="计划日期" prop="planDate"><el-date-picker v-model="form.planDate" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" style="width: 100%" /></el-form-item></el-col>
-          <el-col :span="12"><el-form-item label="点检人" prop="inspectorId">
-            <el-select v-model="form.inspectorId" filterable placeholder="请选择点检人" style="width: 100%" @change="onInspectorChange">
-              <el-option v-for="u in userOptions" :key="u.userId" :label="u.nickName" :value="u.userId" />
-            </el-select>
-          </el-form-item></el-col>
-        </el-row>
-        <el-form-item label="备注" prop="remark"><el-input v-model="form.remark" type="textarea" placeholder="请输入" /></el-form-item>
-      </el-form>
+      <div class="rd-page">
+        <el-form ref="taskRef" :model="form" :rules="rules" label-width="100px">
+          <!-- 任务信息卡片 -->
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('add_basic')">
+              <div class="rd-card-title">
+                <span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>
+                任务信息
+              </div>
+              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.add_basic }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.add_basic">
+              <el-row>
+                <el-col :span="12"><el-form-item label="任务编号" prop="taskNo"><el-input v-model="form.taskNo" placeholder="自动生成" disabled style="width: 100%" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="巡检路线" prop="routeId">
+                  <el-select v-model="form.routeId" filterable placeholder="请选择路线" style="width: 100%" @change="onRouteChange">
+                    <el-option v-for="r in routeOptions" :key="r.routeId" :label="r.routeName" :value="r.routeId" />
+                  </el-select>
+                </el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="计划日期" prop="planDate"><el-date-picker v-model="form.planDate" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" style="width: 100%" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="点检人" prop="inspectorId">
+                  <el-input v-model="form.inspectorName" readonly placeholder="请选择点检人" style="width: 100%" @click="openInspectorPicker">
+                    <template #append>
+                      <el-button icon="Search" @click="openInspectorPicker" />
+                    </template>
+                    <template #suffix>
+                      <el-icon v-if="form.inspectorName" class="clear-icon" @click.stop="clearInspector"><CircleClose /></el-icon>
+                    </template>
+                  </el-input>
+                </el-form-item></el-col>
+              </el-row>
+            </div>
+          </section>
+          <!-- 其他信息卡片 -->
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('add_other')">
+              <div class="rd-card-title">
+                <span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
+                其他信息
+              </div>
+              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.add_other }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.add_other">
+              <el-form-item label="备注" prop="remark"><el-input v-model="form.remark" type="textarea" :rows="3" placeholder="请输入备注内容" style="width: 100%" /></el-form-item>
+            </div>
+          </section>
+        </el-form>
+      </div>
       <template #footer>
         <el-button type="primary" @click="submitForm">确 定</el-button>
         <el-button @click="cancel">取 消</el-button>
@@ -76,189 +107,276 @@
     </el-dialog>
 
     <!-- 查看详情弹窗 -->
-    <el-dialog v-model="viewOpen" width="850px" append-to-body draggable class="rd-dialog">
+    <el-dialog v-model="viewOpen" width="936px" append-to-body draggable class="rd-dialog inspection-detail-dialog" top="5vh">
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M9 12h6"/><path d="M12 9v6"/></svg></div>
           <span class="rd-detail-header-title">点检详情</span>
+          <div class="rd-detail-header-tags" v-if="viewForm.taskStatus != null">
+            <dict-tag :options="dms_inspection_status" :value="viewForm.taskStatus" />
+          </div>
         </div>
       </template>
-      <div class="rd-grid">
-        <div class="rd-item"><span class="rd-label">任务编号</span><div class="rd-value">{{ viewForm.taskNo }}</div></div>
-        <div class="rd-item"><span class="rd-label">路线名称</span><div class="rd-value">{{ viewForm.routeName }}</div></div>
-        <div class="rd-item"><span class="rd-label">计划日期</span><div class="rd-value">{{ viewForm.planDate }}</div></div>
-        <div class="rd-item"><span class="rd-label">点检人</span><div class="rd-value">{{ viewForm.inspectorName }}</div></div>
-        <div class="rd-item"><span class="rd-label">状态</span><div class="rd-value"><dict-tag :options="dms_inspection_status" :value="viewForm.taskStatus" /></div></div>
-        <div class="rd-item"><span class="rd-label">异常项数</span><div class="rd-value">{{ viewForm.abnormalCount || 0 }}</div></div>
-        <div class="rd-item"><span class="rd-label">开始时间</span><div class="rd-value">{{ viewForm.startTime }}</div></div>
-        <div class="rd-item"><span class="rd-label">完成时间</span><div class="rd-value">{{ viewForm.completeTime }}</div></div>
-      </div>
+      <div class="rd-page">
+        <!-- 基本信息卡片 -->
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('insp_basic')">
+            <div class="rd-card-title">
+              <span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>
+              基本信息
+            </div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.insp_basic }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.insp_basic">
+            <div class="rd-grid">
+              <div class="rd-item"><span class="rd-label">任务编号</span><div class="rd-value">{{ viewForm.taskNo || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">路线名称</span><div class="rd-value">{{ viewForm.routeName || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">计划日期</span><div class="rd-value">{{ viewForm.planDate || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">点检人</span><div class="rd-value">{{ viewForm.inspectorName || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">状态</span><div class="rd-value"><dict-tag :options="dms_inspection_status" :value="viewForm.taskStatus" /></div></div>
+              <div class="rd-item"><span class="rd-label">异常项数</span><div class="rd-value">{{ viewForm.abnormalCount || 0 }}</div></div>
+              <div class="rd-item"><span class="rd-label">开始时间</span><div class="rd-value">{{ viewForm.startTime || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">完成时间</span><div class="rd-value">{{ viewForm.completeTime || '-' }}</div></div>
+            </div>
+          </div>
+        </section>
 
-      <template v-if="viewGroups.common.length > 0">
-        <el-divider content-position="left">通用检查项</el-divider>
-        <el-table :data="viewGroups.common" border size="small" @header-dragend="onHeaderDragEnd">
-          <el-table-column label="序号" width="60" align="center" type="index" />
-          <el-table-column label="检查项" prop="item" />
-          <el-table-column label="结果" width="120" align="center">
-            <template #default="scope">
-              <el-tag v-if="scope.row.abnormal" type="danger" size="small">异常</el-tag>
-              <span v-else-if="scope.row.value !== undefined">{{ scope.row.value }}{{ scope.row.unit ? ' ' + scope.row.unit : '' }}</span>
-              <el-tag v-else type="success" size="small">正常</el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column label="异常说明" prop="abnormalDesc" show-overflow-tooltip />
-        </el-table>
-      </template>
+        <!-- 通用检查项卡片 -->
+        <section class="rd-card" v-if="viewGroups.common.length > 0">
+          <div class="rd-card-header" @click="toggleCard('insp_common')">
+            <div class="rd-card-title">
+              <span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg></span>
+              通用检查项
+            </div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.insp_common }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.insp_common">
+            <el-table :data="viewGroups.common" border size="small" @header-dragend="onHeaderDragEnd">
+              <el-table-column label="序号" width="60" align="center" type="index" />
+              <el-table-column label="检查项" prop="item" />
+              <el-table-column label="结果" width="120" align="center">
+                <template #default="scope">
+                  <el-tag v-if="scope.row.abnormal" type="danger" size="small">异常</el-tag>
+                  <span v-else-if="scope.row.value !== undefined">{{ scope.row.value }}{{ scope.row.unit ? ' ' + scope.row.unit : '' }}</span>
+                  <el-tag v-else type="success" size="small">正常</el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column label="异常说明" prop="abnormalDesc" show-overflow-tooltip />
+            </el-table>
+          </div>
+        </section>
 
-      <template v-for="(dg, di) in viewGroups.devices" :key="di">
-        <el-divider content-position="left">{{ dg.equipmentName }}</el-divider>
-        <el-table :data="dg.items" border size="small" @header-dragend="onHeaderDragEnd">
-          <el-table-column label="序号" width="60" align="center" type="index" />
-          <el-table-column label="检查项" prop="item" />
-          <el-table-column label="结果" width="120" align="center">
-            <template #default="scope">
-              <el-tag v-if="scope.row.abnormal" type="danger" size="small">异常</el-tag>
-              <span v-else-if="scope.row.value !== undefined">{{ scope.row.value }}{{ scope.row.unit ? ' ' + scope.row.unit : '' }}</span>
-              <el-tag v-else type="success" size="small">正常</el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column label="异常说明" prop="abnormalDesc" show-overflow-tooltip />
-        </el-table>
-      </template>
+        <!-- 设备检查项卡片 -->
+        <section class="rd-card" v-for="(dg, di) in viewGroups.devices" :key="di">
+          <div class="rd-card-header" @click="toggleCard('insp_device_' + di)">
+            <div class="rd-card-title">
+              <span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></span>
+              {{ dg.equipmentName }}
+            </div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards['insp_device_' + di] }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards['insp_device_' + di]">
+            <el-table :data="dg.items" border size="small" @header-dragend="onHeaderDragEnd">
+              <el-table-column label="序号" width="60" align="center" type="index" />
+              <el-table-column label="检查项" prop="item" />
+              <el-table-column label="结果" width="120" align="center">
+                <template #default="scope">
+                  <el-tag v-if="scope.row.abnormal" type="danger" size="small">异常</el-tag>
+                  <span v-else-if="scope.row.value !== undefined">{{ scope.row.value }}{{ scope.row.unit ? ' ' + scope.row.unit : '' }}</span>
+                  <el-tag v-else type="success" size="small">正常</el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column label="异常说明" prop="abnormalDesc" show-overflow-tooltip />
+            </el-table>
+          </div>
+        </section>
 
-      <div v-if="viewForm.photoUrls" style="margin-top: 12px">
-        <el-divider>点检照片</el-divider>
-        <div v-for="(url, i) in parsePhotos(viewForm.photoUrls)" :key="i" style="display: inline-block; margin-right: 8px">
-          <el-image :src="url" style="width: 120px; height: 120px" fit="cover" :preview-src-list="parsePhotos(viewForm.photoUrls)" />
-        </div>
+        <!-- 点检照片卡片 -->
+        <section class="rd-card" v-if="viewForm.photoUrls">
+          <div class="rd-card-header" @click="toggleCard('insp_photos')">
+            <div class="rd-card-title">
+              <span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></span>
+              点检照片
+            </div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.insp_photos }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.insp_photos">
+            <div v-for="(url, i) in parsePhotos(viewForm.photoUrls)" :key="i" style="display: inline-block; margin-right: 8px">
+              <el-image :src="url" style="width: 120px; height: 120px" fit="cover" :preview-src-list="parsePhotos(viewForm.photoUrls)" />
+            </div>
+          </div>
+        </section>
       </div>
       <template #footer><el-button @click="viewOpen = false">关 闭</el-button></template>
     </el-dialog>
 
     <!-- 执行点检弹窗 -->
-    <el-dialog v-model="execOpen" width="960px" append-to-body draggable class="rd-dialog" :close-on-click-modal="false">
+    <el-dialog v-model="execOpen" width="936px" append-to-body draggable class="rd-dialog inspection-exec-dialog" :close-on-click-modal="false" top="5vh">
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
           <span class="rd-detail-header-title">执行点检</span>
         </div>
       </template>
-      <el-descriptions :column="2" border style="margin-bottom: 16px">
-        <div class="rd-item"><span class="rd-label">任务编号</span><div class="rd-value">{{ execForm.taskNo }}</div></div>
-        <div class="rd-item"><span class="rd-label">路线名称</span><div class="rd-value">{{ execForm.routeName }}</div></div>
-        <div class="rd-item"><span class="rd-label">点检人</span><div class="rd-value">{{ execForm.inspectorName }}</div></div>
-        <div class="rd-item"><span class="rd-label">计划日期</span><div class="rd-value">{{ execForm.planDate }}</div></div>
+      <div class="rd-page">
+        <!-- 任务信息卡片 -->
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('exec_basic')">
+            <div class="rd-card-title">
+              <span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>
+              任务信息
+            </div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.exec_basic }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.exec_basic">
+            <div class="rd-grid">
+              <div class="rd-item"><span class="rd-label">任务编号</span><div class="rd-value">{{ execForm.taskNo || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">路线名称</span><div class="rd-value">{{ execForm.routeName || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">点检人</span><div class="rd-value">{{ execForm.inspectorName || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">计划日期</span><div class="rd-value">{{ execForm.planDate || '-' }}</div></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 通用检查项卡片 -->
+        <section class="rd-card" v-if="execGroups.common.length > 0">
+          <div class="rd-card-header" @click="toggleCard('exec_common')">
+            <div class="rd-card-title">
+              <span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg></span>
+              通用检查项
+            </div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.exec_common }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.exec_common">
+            <el-table :data="execGroups.common" border style="width: 100%" @header-dragend="onHeaderDragEnd">
+              <el-table-column label="序号" width="60" align="center" type="index" />
+              <el-table-column label="检查项" prop="item" min-width="180">
+                <template #default="scope"><span style="font-weight: 500">{{ scope.row.item }}</span></template>
+              </el-table-column>
+              <el-table-column label="类型" width="90" align="center">
+                <template #default="scope"><el-tag size="small" :type="scope.row.type === 'number' ? 'warning' : 'info'">{{ typeText(scope.row.type) }}</el-tag></template>
+              </el-table-column>
+              <el-table-column label="检查结果" min-width="260" align="center">
+                <template #default="scope">
+                  <div v-if="scope.row.type === 'check'" style="display: flex; align-items: center; justify-content: center; gap: 12px">
+                    <el-radio-group v-model="scope.row.result">
+                      <el-radio-button value="ok">正常</el-radio-button>
+                      <el-radio-button value="abnormal">异常</el-radio-button>
+                    </el-radio-group>
+                  </div>
+                  <div v-else-if="scope.row.type === 'number'" style="display: flex; align-items: center; justify-content: center; gap: 10px">
+                    <el-input-number v-model="scope.row.value" :controls="false" style="width: 140px" placeholder="输入数值" />
+                    <span style="color: #999; min-width: 30px">{{ scope.row.unit }}</span>
+                    <el-checkbox v-model="scope.row.abnormal">异常</el-checkbox>
+                  </div>
+                  <div v-else style="display: flex; flex-direction: column; gap: 6px">
+                    <el-input v-model="scope.row.value" placeholder="输入文本" />
+                    <el-checkbox v-model="scope.row.abnormal">标记为异常</el-checkbox>
+                  </div>
+                </template>
+              </el-table-column>
+              <el-table-column label="异常说明" min-width="240">
+                <template #default="scope">
+                  <el-input v-model="scope.row.abnormalDesc" type="textarea" :rows="2"
+                    :placeholder="(scope.row.abnormal || scope.row.result === 'abnormal') ? '必填：请描述异常情况' : '无异常时可不填'"
+                    :required="scope.row.abnormal || scope.row.result === 'abnormal'" />
+                </template>
+              </el-table-column>
+            </el-table>
+          </div>
+        </section>
+
+        <!-- 设备检查项卡片 -->
+        <section class="rd-card" v-for="(dg, di) in execGroups.devices" :key="di">
+          <div class="rd-card-header" @click="toggleCard('exec_device_' + di)">
+            <div class="rd-card-title">
+              <span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></span>
+              {{ dg.equipmentName }}
+            </div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards['exec_device_' + di] }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards['exec_device_' + di]">
+            <el-table :data="dg.items" border style="width: 100%" @header-dragend="onHeaderDragEnd">
+              <el-table-column label="序号" width="60" align="center" type="index" />
+              <el-table-column label="检查项" prop="item" min-width="180">
+                <template #default="scope"><span style="font-weight: 500">{{ scope.row.item }}</span></template>
+              </el-table-column>
+              <el-table-column label="类型" width="90" align="center">
+                <template #default="scope"><el-tag size="small" :type="scope.row.type === 'number' ? 'warning' : 'info'">{{ typeText(scope.row.type) }}</el-tag></template>
+              </el-table-column>
+              <el-table-column label="检查结果" min-width="260" align="center">
+                <template #default="scope">
+                  <div v-if="scope.row.type === 'check'" style="display: flex; align-items: center; justify-content: center; gap: 12px">
+                    <el-radio-group v-model="scope.row.result">
+                      <el-radio-button value="ok">正常</el-radio-button>
+                      <el-radio-button value="abnormal">异常</el-radio-button>
+                    </el-radio-group>
+                  </div>
+                  <div v-else-if="scope.row.type === 'number'" style="display: flex; align-items: center; justify-content: center; gap: 10px">
+                    <el-input-number v-model="scope.row.value" :controls="false" style="width: 140px" placeholder="输入数值" />
+                    <span style="color: #999; min-width: 30px">{{ scope.row.unit }}</span>
+                    <el-checkbox v-model="scope.row.abnormal">异常</el-checkbox>
+                  </div>
+                  <div v-else style="display: flex; flex-direction: column; gap: 6px">
+                    <el-input v-model="scope.row.value" placeholder="输入文本" />
+                    <el-checkbox v-model="scope.row.abnormal">标记为异常</el-checkbox>
+                  </div>
+                </template>
+              </el-table-column>
+              <el-table-column label="异常说明" min-width="240">
+                <template #default="scope">
+                  <el-input v-model="scope.row.abnormalDesc" type="textarea" :rows="2"
+                    :placeholder="(scope.row.abnormal || scope.row.result === 'abnormal') ? '必填：请描述异常情况' : '无异常时可不填'"
+                    :required="scope.row.abnormal || scope.row.result === 'abnormal'" />
+                </template>
+              </el-table-column>
+            </el-table>
+          </div>
+        </section>
+
+        <div v-if="execGroups.common.length === 0 && execGroups.devices.length === 0" class="rd-empty" style="margin-bottom: 16px">
+          <svg class="rd-empty-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <p class="rd-empty-text">该路线未配置点检项，请先在巡检路线中配置</p>
+        </div>
+
+        <!-- 照片上传卡片 -->
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('exec_photos')">
+            <div class="rd-card-title">
+              <span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></span>
+              现场照片
+            </div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.exec_photos }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.exec_photos">
+            <el-upload v-model:file-list="execPhotoList" :action="uploadUrl" :headers="uploadHeaders" list-type="picture-card"
+              :on-success="handlePhotoSuccess" :before-upload="beforePhotoUpload" accept="image/*" :limit="6">
+              <el-icon><Plus /></el-icon>
+            </el-upload>
+            <p style="color: #999; font-size: 12px; margin-top: 8px">最多上传6张照片，单张不超过10MB，支持 JPG/PNG 格式</p>
+          </div>
+        </section>
       </div>
-
-      <!-- 通用检查项 -->
-      <template v-if="execGroups.common.length > 0">
-        <el-divider content-position="left">通用检查项</el-divider>
-        <el-table :data="execGroups.common" border style="width: 100%" @header-dragend="onHeaderDragEnd">
-          <el-table-column label="序号" width="60" align="center" type="index" />
-          <el-table-column label="检查项" prop="item" min-width="180">
-            <template #default="scope"><span style="font-weight: 500">{{ scope.row.item }}</span></template>
-          </el-table-column>
-          <el-table-column label="类型" width="90" align="center">
-            <template #default="scope"><el-tag size="small" :type="scope.row.type === 'number' ? 'warning' : 'info'">{{ typeText(scope.row.type) }}</el-tag></template>
-          </el-table-column>
-          <el-table-column label="检查结果" min-width="260" align="center">
-            <template #default="scope">
-              <div v-if="scope.row.type === 'check'" style="display: flex; align-items: center; justify-content: center; gap: 12px">
-                <el-radio-group v-model="scope.row.result">
-                  <el-radio-button value="ok">正常</el-radio-button>
-                  <el-radio-button value="abnormal">异常</el-radio-button>
-                </el-radio-group>
-              </div>
-              <div v-else-if="scope.row.type === 'number'" style="display: flex; align-items: center; justify-content: center; gap: 10px">
-                <el-input-number v-model="scope.row.value" :controls="false" style="width: 140px" placeholder="输入数值" />
-                <span style="color: #999; min-width: 30px">{{ scope.row.unit }}</span>
-                <el-checkbox v-model="scope.row.abnormal">异常</el-checkbox>
-              </div>
-              <div v-else style="display: flex; flex-direction: column; gap: 6px">
-                <el-input v-model="scope.row.value" placeholder="输入文本" />
-                <el-checkbox v-model="scope.row.abnormal">标记为异常</el-checkbox>
-              </div>
-            </template>
-          </el-table-column>
-          <el-table-column label="异常说明" min-width="240">
-            <template #default="scope">
-              <el-input v-model="scope.row.abnormalDesc" type="textarea" :rows="2"
-                :placeholder="(scope.row.abnormal || scope.row.result === 'abnormal') ? '必填：请描述异常情况' : '无异常时可不填'"
-                :required="scope.row.abnormal || scope.row.result === 'abnormal'" />
-            </template>
-          </el-table-column>
-        </el-table>
-      </template>
-
-      <!-- 设备明细分组 -->
-      <template v-for="(dg, di) in execGroups.devices" :key="di">
-        <el-divider content-position="left">{{ dg.equipmentName }}</el-divider>
-        <el-table :data="dg.items" border style="width: 100%" @header-dragend="onHeaderDragEnd">
-          <el-table-column label="序号" width="60" align="center" type="index" />
-          <el-table-column label="检查项" prop="item" min-width="180">
-            <template #default="scope"><span style="font-weight: 500">{{ scope.row.item }}</span></template>
-          </el-table-column>
-          <el-table-column label="类型" width="90" align="center">
-            <template #default="scope"><el-tag size="small" :type="scope.row.type === 'number' ? 'warning' : 'info'">{{ typeText(scope.row.type) }}</el-tag></template>
-          </el-table-column>
-          <el-table-column label="检查结果" min-width="260" align="center">
-            <template #default="scope">
-              <div v-if="scope.row.type === 'check'" style="display: flex; align-items: center; justify-content: center; gap: 12px">
-                <el-radio-group v-model="scope.row.result">
-                  <el-radio-button value="ok">正常</el-radio-button>
-                  <el-radio-button value="abnormal">异常</el-radio-button>
-                </el-radio-group>
-              </div>
-              <div v-else-if="scope.row.type === 'number'" style="display: flex; align-items: center; justify-content: center; gap: 10px">
-                <el-input-number v-model="scope.row.value" :controls="false" style="width: 140px" placeholder="输入数值" />
-                <span style="color: #999; min-width: 30px">{{ scope.row.unit }}</span>
-                <el-checkbox v-model="scope.row.abnormal">异常</el-checkbox>
-              </div>
-              <div v-else style="display: flex; flex-direction: column; gap: 6px">
-                <el-input v-model="scope.row.value" placeholder="输入文本" />
-                <el-checkbox v-model="scope.row.abnormal">标记为异常</el-checkbox>
-              </div>
-            </template>
-          </el-table-column>
-          <el-table-column label="异常说明" min-width="240">
-            <template #default="scope">
-              <el-input v-model="scope.row.abnormalDesc" type="textarea" :rows="2"
-                :placeholder="(scope.row.abnormal || scope.row.result === 'abnormal') ? '必填：请描述异常情况' : '无异常时可不填'"
-                :required="scope.row.abnormal || scope.row.result === 'abnormal'" />
-            </template>
-          </el-table-column>
-        </el-table>
-      </template>
-
-      <div v-if="execGroups.common.length === 0 && execGroups.devices.length === 0" style="text-align: center; color: #999; padding: 24px 0">
-        该路线未配置点检项，请先在巡检路线中配置
-      </div>
-
-      <!-- 照片上传 -->
-      <el-divider>现场照片</el-divider>
-      <el-upload v-model:file-list="execPhotoList" :action="uploadUrl" :headers="uploadHeaders" list-type="picture-card"
-        :on-success="handlePhotoSuccess" :before-upload="beforePhotoUpload" accept="image/*" :limit="6">
-        <el-icon><Plus /></el-icon>
-      </el-upload>
-      <p style="color: #999; font-size: 12px">最多上传6张照片，单张不超过10MB，支持 JPG/PNG 格式</p>
-
       <template #footer>
         <el-button type="primary" @click="submitExecute" :loading="execSaving">提交点检结果</el-button>
         <el-button @click="execOpen = false">取 消</el-button>
       </template>
     </el-dialog>
+
+    <!-- 点检人选择弹窗 -->
+    <user-picker ref="userPickerRef" title="选择点检人" @confirm="onInspectorPickerConfirm" />
   </div>
 </template>
 
 <script setup name="DmsInspectionTask">
-import { Plus } from '@element-plus/icons-vue'
+import { Plus, CircleClose } from '@element-plus/icons-vue'
 import { listTask, getTask, addTask, updateTask, delTask, completeTask, startTask } from '@/api/dms/inspection'
 import { listRoute } from '@/api/dms/inspection'
-import { listUser } from '@/api/system/user'
+import UserPicker from '@/components/UserPicker/index.vue'
 import { getToken } from '@/utils/auth'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
-const { collapsedCards, toggleCard } = useDetailCard([])
+const { collapsedCards, toggleCard } = useDetailCard(['add_basic', 'add_other', 'insp_basic', 'insp_common', 'insp_photos', 'exec_basic', 'exec_common', 'exec_photos'])
 
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('dms_inspection_task_index')
@@ -276,7 +394,6 @@ const multiple = ref(true)
 const total = ref(0)
 const title = ref('')
 const routeOptions = ref([])
-const userOptions = ref([])
 const execSaving = ref(false)
 
 const viewForm = ref({})
@@ -299,7 +416,6 @@ const { queryParams, form, rules } = toRefs(data)
 
 function getList() { loading.value = true; listTask(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false }) }
 function getRouteOptions() { listRoute({ pageNum: 1, pageSize: 9999, status: '0' }).then(res => { routeOptions.value = res.rows }) }
-function getUserOptions() { listUser({ pageNum: 1, pageSize: 9999 }).then(res => { userOptions.value = res.rows }) }
 function handleQuery() { queryParams.value.pageNum = 1; getList() }
 function resetQuery() { proxy.resetForm('queryRef'); handleQuery() }
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.taskId); single.value = selection.length !== 1; multiple.value = !selection.length }
@@ -313,9 +429,19 @@ function onRouteChange(routeId) {
   const route = routeOptions.value.find(r => r.routeId === routeId)
   if (route) form.value.routeName = route.routeName
 }
-function onInspectorChange(userId) {
-  const user = userOptions.value.find(u => u.userId === userId)
-  if (user) form.value.inspectorName = user.nickName
+/** 打开点检人选择弹窗 */
+function openInspectorPicker() {
+  proxy.$refs.userPickerRef.open(form.value.inspectorId)
+}
+/** 点检人选择确认回调 */
+function onInspectorPickerConfirm(user) {
+  form.value.inspectorId = user.userId
+  form.value.inspectorName = user.nickName
+}
+/** 清除点检人 */
+function clearInspector() {
+  form.value.inspectorId = undefined
+  form.value.inspectorName = undefined
 }
 
 function submitForm() {
@@ -524,6 +650,19 @@ function parsePhotos(photoUrls) {
 }
 
 getRouteOptions()
-getUserOptions()
 getList()
 </script>
+
+<style scoped>
+.clear-icon {
+  cursor: pointer;
+  color: #c0c4cc;
+  font-size: 14px;
+}
+.clear-icon:hover {
+  color: #909399;
+}
+:deep(.el-input.is-disabled .el-input__inner) {
+  cursor: pointer;
+}
+</style>

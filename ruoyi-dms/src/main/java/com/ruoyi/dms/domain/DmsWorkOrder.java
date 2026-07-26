@@ -103,6 +103,10 @@ public class DmsWorkOrder extends BaseEntity
     /** 任务清单（JSON数组，含完成状态） */
     private String taskChecklist;
 
+    /** 维修费用（元） */
+    @Excel(name = "维修费用")
+    private BigDecimal repairCost;
+
     /** 停机时长（小时） */
     @Excel(name = "停机时长")
     private BigDecimal downtimeDuration;
@@ -192,6 +196,8 @@ public class DmsWorkOrder extends BaseEntity
     public void setSparePartsUsed(String sparePartsUsed) { this.sparePartsUsed = sparePartsUsed; }
     public String getTaskChecklist() { return taskChecklist; }
     public void setTaskChecklist(String taskChecklist) { this.taskChecklist = taskChecklist; }
+    public BigDecimal getRepairCost() { return repairCost; }
+    public void setRepairCost(BigDecimal repairCost) { this.repairCost = repairCost; }
     public BigDecimal getDowntimeDuration() { return downtimeDuration; }
     public void setDowntimeDuration(BigDecimal downtimeDuration) { this.downtimeDuration = downtimeDuration; }
     public Date getCompleteTime() { return completeTime; }

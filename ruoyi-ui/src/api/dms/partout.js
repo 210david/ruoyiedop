@@ -19,3 +19,13 @@ export function genPartOutCode() {
 export function delPartOut(recordId) {
   return request({ url: '/dms/sparepart/record/' + recordId, method: 'delete' })
 }
+
+/** 查看出库记录 */
+export function getPartOut(recordId) {
+  return request({ url: '/dms/sparepart/record/' + recordId, method: 'get' })
+}
+
+/** 修改出库记录 */
+export function updatePartOut(data) {
+  return request({ url: '/dms/sparepart/record', method: 'put', data: data })
+}

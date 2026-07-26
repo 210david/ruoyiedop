@@ -158,9 +158,10 @@
         <!-- 自动派工人员选择 -->
         <el-row v-if="form.autoAssign === '1'">
           <el-col :span="12"><el-form-item label="派工人员" prop="assigneeId">
-            <el-select v-model="form.assigneeId" filterable clearable placeholder="请选择默认派工人员" style="width: 100%" @change="onAssigneeChange">
-              <el-option v-for="u in userOptions" :key="u.userId" :label="u.nickName" :value="u.userId" />
-            </el-select>
+            <el-input v-model="form.assigneeName" readonly placeholder="请选择派工人员" style="width: 100%" @click="openUserPicker">
+              <template #append><el-button icon="Search" @click="openUserPicker" /></template>
+              <template #suffix><el-icon v-if="form.assigneeName" class="clear-icon" @click.stop="form.assigneeId = undefined; form.assigneeName = undefined"><CircleClose /></el-icon></template>
+            </el-input>
           </el-form-item></el-col>
           <el-col :span="12"><el-form-item label="人员名称"><el-input v-model="form.assigneeName" placeholder="选择后自动带出" disabled /></el-form-item></el-col>
         </el-row>
@@ -248,6 +249,8 @@
         <el-button @click="cancel">取 消</el-button>
       </template>
     </el-dialog>
+
+    <user-picker ref="userPickerRef" title="选择派工人员" @confirm="onUserPickerConfirm" />
   </div>
 </template>
 
@@ -256,6 +259,7 @@ import { listPmplan, getPmplan, addPmplan, updatePmplan, delPmplan, generateWork
 import { listEquipment } from '@/api/dms/equipment'
 import { listUser } from '@/api/system/user'
 import { listSparepart } from '@/api/dms/sparepart'
+import UserPicker from '@/components/UserPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
 const { collapsedCards, toggleCard } = useDetailCard(["c3","c2","c1","c0"])
@@ -343,15 +347,19 @@ function onEquipmentChange(equipmentId) {
     form.value.categoryName = undefined
   }
 }
-function onAssigneeChange(userId) {
-  if (userId) {
-    const user = userOptions.value.find(u => u.userId === userId)
-    if (user) {
-      form.value.assigneeName = user.nickName
-    }
-  } else {
-    form.value.assigneeName = undefined
-  }
+/** 打开人员选择弹窗 */
+function openUserPicker() {
+  proxy.$refs.userPickerRef.open(form.value.assigneeId)
+}
+/** 人员选择确认回调 */
+function onUserPickerConfirm(user) {
+  form.value.assigneeId = user.userId
+  form.assigneeName = user.nickName
+}
+/** 删除设备后清空派工人员 */
+function onRemoveEquipment() {
+  form.value.assigneeId = undefined
+  form.value.assigneeName = undefined
 }
 function handleQuery() { queryParams.value.pageNum = 1; getList() }
 function resetQuery() { proxy.resetForm('queryRef'); handleQuery() }
@@ -494,5 +502,16 @@ getList()
 .is-selected {
   color: #1989fa;
   font-weight: bold;
+}
+</style>
+
+<style scoped>
+.clear-icon {
+  cursor: pointer;
+  color: #c0c4cc;
+  font-size: 14px;
+}
+.clear-icon:hover {
+  color: #909399;
 }
 </style>

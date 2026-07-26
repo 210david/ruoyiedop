@@ -2004,6 +2004,259 @@ const DMS_MODULES = [
         remark: 'AI基于维修FAQ知识库进行问答，返回答案和相关参考条目。'
       }
     ]
+  },
+
+  // ==================== 数据采集网关接口 ====================
+  {
+    name: '数据采集网关',
+    basePath: '/api/dms/gateway',
+    description: '设备数据采集标准接口，支持HTTP/MQTT/Modbus等多种协议接入。设备或边缘网关通过这些接口将数据推送到系统。',
+    apis: [
+      {
+        method: 'POST',
+        path: '/api/dms/gateway/push',
+        summary: '单条数据推送（推荐）',
+        permission: '无（通过accessKey认证）',
+        params: [
+          { name: 'deviceCode', type: 'String', required: true, desc: '设备编码', in: 'body' },
+          { name: 'accessKey', type: 'String', required: true, desc: '访问密钥', in: 'body' },
+          { name: 'collectTime', type: 'String', required: true, desc: '采集时间（yyyy-MM-dd HH:mm:ss）', in: 'body' },
+          { name: 'runStatus', type: 'String', required: false, desc: '运行状态：0=运行 1=停机 2=故障', in: 'body' },
+          { name: 'runHours', type: 'BigDecimal', required: false, desc: '运行小时数', in: 'body' },
+          { name: 'productCount', type: 'BigDecimal', required: false, desc: '加工件数', in: 'body' },
+          { name: 'params', type: 'Object', required: false, desc: '自定义参数（key-value形式）', in: 'body' },
+          { name: 'signature', type: 'String', required: false, desc: '数据签名（可选）', in: 'body' }
+        ],
+        requestExample: `POST /api/dms/gateway/push
+Content-Type: application/json
+
+{
+  "deviceCode": "EQ001",
+  "accessKey": "sk_a1b2c3d4e5f67890",
+  "collectTime": "2024-01-15 10:30:00",
+  "runStatus": "0",
+  "runHours": 123.5,
+  "productCount": 1000,
+  "params": {
+    "temperature": 65.2,
+    "pressure": 0.8
+  }
+}`,
+        responseExample: `{
+  "success": true,
+  "code": 0,
+  "message": "数据接收成功",
+  "serverTime": "2024-01-15T10:30:01",
+  "recordId": 12345,
+  "alarmInfo": null
+}`,
+        remark: '设备或边缘网关通过HTTP POST推送数据到系统。这是最通用的接入方式，几乎所有设备都支持。'
+      },
+      {
+        method: 'POST',
+        path: '/api/dms/gateway/push/batch',
+        summary: '批量数据推送',
+        permission: '无（通过accessKey认证）',
+        params: [
+          { name: '-', type: 'Array', required: true, desc: 'HttpPushRequest数组', in: 'body' }
+        ],
+        requestExample: `POST /api/dms/gateway/push/batch
+Content-Type: application/json
+
+[
+  {
+    "deviceCode": "EQ001",
+    "accessKey": "sk_xxx",
+    "collectTime": "2024-01-15 10:30:00",
+    "runStatus": "0",
+    "runHours": 123.5
+  },
+  {
+    "deviceCode": "EQ002",
+    "accessKey": "sk_yyy",
+    "collectTime": "2024-01-15 10:30:00",
+    "runStatus": "1",
+    "runHours": 456.0
+  }
+]`,
+        responseExample: `{
+  "code": 200,
+  "msg": "批量处理完成",
+  "data": {
+    "total": 2,
+    "success": 2,
+    "fail": 0
+  }
+}`,
+        remark: '批量推送多条数据，适用于边缘网关汇总多个设备数据后统一推送的场景。'
+      },
+      {
+        method: 'GET',
+        path: '/api/dms/gateway/push/simple',
+        summary: '简化版数据推送（URL参数）',
+        permission: '无（通过accessKey认证）',
+        params: [
+          { name: 'deviceCode', type: 'String', required: true, desc: '设备编码', in: 'query' },
+          { name: 'accessKey', type: 'String', required: true, desc: '访问密钥', in: 'query' },
+          { name: 'runStatus', type: 'String', required: false, desc: '运行状态', in: 'query' },
+          { name: 'runHours', type: 'BigDecimal', required: false, desc: '运行小时数', in: 'query' },
+          { name: 'productCount', type: 'BigDecimal', required: false, desc: '加工件数', in: 'query' },
+          { name: 'param1', type: 'BigDecimal', required: false, desc: '参数1值', in: 'query' },
+          { name: 'param2', type: 'BigDecimal', required: false, desc: '参数2值', in: 'query' },
+          { name: 'param3', type: 'BigDecimal', required: false, desc: '参数3值', in: 'query' }
+        ],
+        requestExample: `GET /api/dms/gateway/push/simple?deviceCode=EQ001&accessKey=sk_xxx&runStatus=0&runHours=123.5`,
+        responseExample: `{
+  "success": true,
+  "code": 0,
+  "message": "数据接收成功",
+  "serverTime": "2024-01-15T10:30:01",
+  "recordId": 12345
+}`,
+        remark: '适用于简单设备或嵌入式系统，通过URL参数传递数据，无需构造JSON请求体。'
+      },
+      {
+        method: 'GET',
+        path: '/api/dms/gateway/heartbeat/{deviceCode}',
+        summary: '设备心跳检测',
+        permission: '无（通过accessKey认证）',
+        params: [
+          { name: 'deviceCode', type: 'String', required: true, desc: '设备编码', in: 'path' },
+          { name: 'accessKey', type: 'String', required: true, desc: '访问密钥', in: 'query' }
+        ],
+        requestExample: 'GET /api/dms/gateway/heartbeat/EQ001?accessKey=sk_xxx',
+        responseExample: `{
+  "code": 200,
+  "msg": "心跳正常"
+}`,
+        remark: '设备定期发送心跳，用于检测设备在线状态。'
+      },
+      {
+        method: 'GET',
+        path: '/api/dms/gateway/latest/{deviceCode}',
+        summary: '获取设备最新数据',
+        permission: '无（通过accessKey认证）',
+        params: [
+          { name: 'deviceCode', type: 'String', required: true, desc: '设备编码', in: 'path' },
+          { name: 'accessKey', type: 'String', required: true, desc: '访问密钥', in: 'query' }
+        ],
+        requestExample: 'GET /api/dms/gateway/latest/EQ001?accessKey=sk_xxx',
+        responseExample: `{
+  "code": 200,
+  "msg": "操作成功",
+  "data": {
+    "deviceCode": "EQ001",
+    "collectTime": "2024-01-15 10:30:00",
+    "runStatus": "0",
+    "runHours": 123.5,
+    "productCount": 1000
+  }
+}`,
+        remark: '获取设备最新采集的数据，用于设备端数据同步。'
+      },
+      {
+        method: 'GET',
+        path: '/dms/gateway/admin/adapters',
+        summary: '获取适配器状态列表',
+        permission: 'dms:data:config:list',
+        params: [],
+        requestExample: 'GET /dms/gateway/admin/adapters',
+        responseExample: `{
+  "code": 200,
+  "msg": "操作成功",
+  "data": [
+    {
+      "adapterType": "MQTT_ADAPTER",
+      "protocol": "MQTT",
+      "description": "MQTT协议订阅适配器",
+      "mode": "被动接收",
+      "running": true
+    },
+    {
+      "adapterType": "MODBUS_ADAPTER",
+      "protocol": "MODBUS_TCP",
+      "description": "Modbus TCP轮询适配器",
+      "mode": "主动轮询",
+      "running": false
+    }
+  ]
+}`,
+        remark: '查看当前启用的数据采集适配器状态，包括MQTT、Modbus等。'
+      },
+      {
+        method: 'POST',
+        path: '/dms/gateway/admin/adapter/{adapterType}/start',
+        summary: '启动指定适配器',
+        permission: 'dms:data:config:edit',
+        params: [
+          { name: 'adapterType', type: 'String', required: true, desc: '适配器类型：MQTT_ADAPTER/MODBUS_ADAPTER', in: 'path' }
+        ],
+        requestExample: 'POST /dms/gateway/admin/adapter/MQTT_ADAPTER/start',
+        responseExample: COMMON_RESPONSE.success,
+        remark: '启动指定的数据采集适配器。'
+      },
+      {
+        method: 'POST',
+        path: '/dms/gateway/admin/adapter/{adapterType}/stop',
+        summary: '停止指定适配器',
+        permission: 'dms:data:config:edit',
+        params: [
+          { name: 'adapterType', type: 'String', required: true, desc: '适配器类型', in: 'path' }
+        ],
+        requestExample: 'POST /dms/gateway/admin/adapter/MQTT_ADAPTER/stop',
+        responseExample: COMMON_RESPONSE.success,
+        remark: '停止指定的数据采集适配器。'
+      },
+      {
+        method: 'GET',
+        path: '/dms/gateway/admin/docs',
+        summary: '获取设备接入文档',
+        permission: '无（公开接口）',
+        params: [],
+        requestExample: 'GET /dms/gateway/admin/docs',
+        responseExample: `{
+  "code": 200,
+  "msg": "操作成功",
+  "data": {
+    "version": "1.0",
+    "updateTime": "2024-01-15",
+    "protocols": [
+      {
+        "name": "HTTP数据推送",
+        "endpoint": "POST /api/dms/gateway/push",
+        "contentType": "application/json"
+      },
+      {
+        "name": "MQTT数据推送",
+        "broker": "tcp://localhost:1883",
+        "topic": "dms/device/{deviceCode}/data"
+      }
+    ]
+  }
+}`,
+        remark: '获取设备接入文档，包含各种协议的接入说明和示例。'
+      },
+      {
+        method: 'POST',
+        path: '/dms/gateway/admin/device/{equipmentId}/key',
+        summary: '生成设备接入密钥',
+        permission: 'dms:data:config:edit',
+        params: [
+          { name: 'equipmentId', type: 'Long', required: true, desc: '设备ID', in: 'path' }
+        ],
+        requestExample: 'POST /dms/gateway/admin/device/1/key',
+        responseExample: `{
+  "code": 200,
+  "msg": "生成成功",
+  "data": {
+    "equipmentId": 1,
+    "accessKey": "sk_x7y8z9a0b1c2d3e4",
+    "note": "请妥善保管，此密钥仅显示一次"
+  }
+}`,
+        remark: '为设备生成访问密钥，设备通过此密钥进行身份验证。'
+      }
+    ]
   }
 ]
 

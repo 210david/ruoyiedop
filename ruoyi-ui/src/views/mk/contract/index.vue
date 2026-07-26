@@ -182,12 +182,24 @@
             <div class="rd-card-body" v-show="!collapsedCards.owner">
               <el-row>
                 <el-col :span="12"><el-form-item label="负责人" prop="userId">
-                  <el-select v-model="form.userId" filterable clearable placeholder="请选择负责人" style="width: 100%" @change="onUserChange">
-                    <el-option v-for="u in userOptions" :key="u.userId" :label="u.nickName" :value="u.userId" />
-                  </el-select>
+                  <el-input v-model="form.userName" readonly placeholder="请选择负责人" style="width: 100%" @click="openUserPicker">
+                    <template #append>
+                      <el-button icon="Search" @click="openUserPicker" />
+                    </template>
+                    <template #suffix>
+                      <el-icon v-if="form.userName" class="clear-icon" @click.stop="clearUser"><CircleClose /></el-icon>
+                    </template>
+                  </el-input>
                 </el-form-item></el-col>
                 <el-col :span="12"><el-form-item label="所属部门" prop="deptId">
-                  <el-tree-select v-model="form.deptId" :data="deptOptions" :props="{ value: 'id', label: 'label', children: 'children' }" value-key="id" placeholder="请选择部门" check-strictly clearable style="width: 100%" />
+                  <el-input v-model="form.deptName" readonly placeholder="请选择部门" style="width: 100%" @click="openDeptPicker">
+                    <template #append>
+                      <el-button icon="Search" @click="openDeptPicker" />
+                    </template>
+                    <template #suffix>
+                      <el-icon v-if="form.deptName" class="clear-icon" @click.stop="clearDept"><CircleClose /></el-icon>
+                    </template>
+                  </el-input>
                 </el-form-item></el-col>
               </el-row>
             </div>
@@ -1097,13 +1109,21 @@
 
     <!-- 文件预览组件 -->
     <file-preview ref="filePreviewRef" />
+
+    <!-- 负责人选择弹窗 -->
+    <user-picker ref="userPickerRef" title="选择负责人" @confirm="onUserPickerConfirm" />
+
+    <!-- 部门选择弹窗 -->
+    <dept-picker ref="deptPickerRef" title="选择所属部门" :disabled-ids="[100]" @confirm="onDeptPickerConfirm" />
   </div>
 </template>
 
 <script setup name="MkContract">
+import { CircleClose } from '@element-plus/icons-vue'
 import { listContract, getContract, addContract, updateContract, delContract, submitContract, approveContract, rejectContract, terminateContract, renewContract, submitContractChangeBatch, approveContractChangeByContractId } from '@/api/mk/contract'
 import { listCustomer } from '@/api/mk/customer'
-import { listUser, deptTreeSelect } from '@/api/system/user'
+import UserPicker from '@/components/UserPicker/index.vue'
+import DeptPicker from '@/components/DeptPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 
 const { proxy } = getCurrentInstance()
@@ -1123,8 +1143,6 @@ const single = ref(true)
 const multiple = ref(true)
 const total = ref(0)
 const title = ref('')
-const userOptions = ref([])
-const deptOptions = ref([])
 const customerOptions = ref([])
 const viewForm = ref({})
 const terminateForm = ref({})
@@ -1164,28 +1182,41 @@ function getList() {
   loading.value = true
   listContract(queryParams.value).then(res => { list.value = res.rows; total.value = res.total }).finally(() => { loading.value = false })
 }
-function getUserOptions() {
-  listUser({ pageNum: 1, pageSize: 9999 }).then(res => { userOptions.value = res.rows.filter(u => u.userId !== 1) })
-}
-function getDeptTree() {
-  deptTreeSelect().then(res => { deptOptions.value = res.data })
-}
 function getCustomerOptions() {
   listCustomer({ pageNum: 1, pageSize: 9999 }).then(res => { customerOptions.value = res.rows })
 }
-function onUserChange(userId) {
-  if (userId) {
-    const user = userOptions.value.find(u => u.userId === userId)
-    if (user) {
-      form.value.userName = user.nickName
-      if (user.deptId) {
-        form.value.deptId = user.deptId
-        form.value.deptName = user.dept ? user.dept.deptName : undefined
-      }
-    }
-  } else {
-    form.value.userName = undefined
+
+/** 打开负责人选择弹窗 */
+function openUserPicker() {
+  proxy.$refs.userPickerRef.open(form.value.userId)
+}
+/** 负责人选择确认回调 */
+function onUserPickerConfirm(user) {
+  form.value.userId = user.userId
+  form.value.userName = user.nickName
+  if (user.deptId) {
+    form.value.deptId = user.deptId
+    form.value.deptName = user.deptName
   }
+}
+/** 清除负责人 */
+function clearUser() {
+  form.value.userId = undefined
+  form.value.userName = undefined
+}
+/** 打开部门选择弹窗 */
+function openDeptPicker() {
+  proxy.$refs.deptPickerRef.open(form.value.deptId)
+}
+/** 部门选择确认回调 */
+function onDeptPickerConfirm(dept) {
+  form.value.deptId = dept.deptId
+  form.value.deptName = dept.deptName
+}
+/** 清除部门 */
+function clearDept() {
+  form.value.deptId = undefined
+  form.value.deptName = undefined
 }
 function onCustomerChange(customerId) {
   if (customerId) {
@@ -1538,13 +1569,22 @@ function submitChange() {
 
 function handleExport() { proxy.download('mk/contract/export', { ...queryParams.value }, `contract_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
-getUserOptions()
-getDeptTree()
 getCustomerOptions()
 getList()
 </script>
 
 <style scoped>
+.clear-icon {
+  cursor: pointer;
+  color: #c0c4cc;
+  font-size: 14px;
+}
+.clear-icon:hover {
+  color: #909399;
+}
+:deep(.el-input.is-disabled .el-input__inner) {
+  cursor: pointer;
+}
 .attachment-link { line-height: 28px; }
 
 /* ===== 详情页卡片式样式（遵循 detail-page-style-guide 规范） ===== */

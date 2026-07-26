@@ -77,6 +77,14 @@ export const constantRoutes = [
     hidden: true,
     meta: { title: '活动签到' }
   },
+  // 设备全生命周期监控大屏（独立全屏页面，不走Layout，需登录）
+  {
+    path: '/dms/dashboard/screen',
+    component: () => import('@/views/dms/equipment/screen.vue'),
+    name: 'EquipmentDashboardScreen',
+    hidden: true,
+    meta: { title: '设备全生命周期监控大屏' }
+  },
   {
     path: "/:pathMatch(.*)*",
     component: () => import('@/views/error/404'),

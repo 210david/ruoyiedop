@@ -53,13 +53,13 @@
           <div class="rd-item"><span class="rd-label">转化状态</span><div class="rd-value"><el-tag type="success" size="small">已转化</el-tag></div></div>
           <div class="rd-item"><span class="rd-label">转化时间</span><div class="rd-value">{{ lead.convertTime }}</div></div>
           <div class="rd-item"><span class="rd-label">转化客户</span><div class="rd-value"><el-button link type="primary" @click="goCustomerDetail(lead.convertCustomerId)">查看客户</el-button></div></div>
-        </div>
+        </el-descriptions>
 
         <!-- 无效信息 -->
         <el-descriptions v-if="lead.leadStatus === '5'" :column="3" border title="无效信息" class="info-group">
           <div class="rd-item"><span class="rd-label">无效原因</span><div class="rd-value" :class="{ 'rd-value--muted': true }">{{ lead.ineffectiveReason || '暂无' }}</div></div>
           <div class="rd-item rd-item--full"><span class="rd-label">无效说明</span><div class="rd-value" :class="{ 'rd-value--muted': true }">{{ lead.ineffectiveRemark || '暂无' }}</div></div>
-        </div>
+        </el-descriptions>
 
         <!-- 状态流转操作 -->
         <el-descriptions :column="3" border title="状态管理" class="info-group" v-if="lead.leadStatus !== '4' && lead.leadStatus !== '5'">
@@ -69,7 +69,7 @@
             <el-button size="small" type="warning" plain @click="handleInvalidate" v-hasPermi="['marketing:lead:edit']">标记无效</el-button></div></div>
           <div class="rd-item rd-item--full"><span class="rd-label">分配操作</span><div class="rd-value"><el-button size="small" type="primary" plain @click="handleAssign" v-if="lead.userId" v-hasPermi="['marketing:lead:assign']">转移分配</el-button>
             <el-button size="small" type="warning" plain @click="handleRelease" v-if="lead.userId" v-hasPermi="['marketing:lead:edit']">退回公海</el-button></div></div>
-        </div>
+        </el-descriptions>
 
         <div class="rd-grid">
           <div class="rd-item"><span class="rd-label">备注</span><div class="rd-value" :class="{ 'rd-value--muted': true }">{{ lead.remark || '暂无' }}</div></div>

@@ -7,6 +7,7 @@ public interface DmsEquipmentMapper
 {
     public List<DmsEquipment> selectEquipmentList(DmsEquipment equipment);
     public DmsEquipment selectEquipmentById(Long equipmentId);
+    public DmsEquipment selectEquipmentByCode(String equipmentCode);
     public int insertEquipment(DmsEquipment equipment);
     public int updateEquipment(DmsEquipment equipment);
     public int deleteEquipmentByIds(Long[] equipmentIds);

@@ -108,8 +108,10 @@
           </el-tag>
         </template>
       </el-table-column>
+      <el-table-column label="仓库" prop="warehouseName" :width="colWidth('warehouseName', 100)" resizable show-overflow-tooltip />
       <el-table-column label="存放位置" prop="storageLocation" :width="colWidth('storageLocation', 110)" resizable show-overflow-tooltip />
       <el-table-column label="供应商" prop="supplier" :width="colWidth('supplier', 110)" resizable show-overflow-tooltip />
+      <el-table-column label="更新时间" prop="updateTime" :width="colWidth('updateTime', 160)" resizable align="center" sortable="custom" />
       <el-table-column label="操作" width="130" align="center" fixed="right">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">详情</el-button>
@@ -162,6 +164,7 @@
               <div class="rd-item"><span class="rd-label">库存下限</span><div class="rd-value">{{ viewData.stockMin != null ? viewData.stockMin : '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">库存上限</span><div class="rd-value">{{ viewData.stockMax != null ? viewData.stockMax : '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">存放位置</span><div class="rd-value">{{ viewData.storageLocation || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">仓库名称</span><div class="rd-value">{{ viewData.warehouseName || '-' }}</div></div>
             </div>
           </div>
         </section>
@@ -264,8 +267,8 @@ function getList() {
 }
 function handleQuery() { queryParams.value.pageNum = 1; getList() }
 function resetQuery() { proxy.resetForm('queryRef'); handleQuery() }
-function handleSelectionChange(selection) { ids.value = selection.map(i => i.partId); multiple.value = !selection.length }
-function handleDelete(row) { const partIds = row.partId || ids.value; proxy.$modal.confirm('确认删除选中的备件台账记录？').then(() => delPartLedger(partIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleSelectionChange(selection) { ids.value = selection.map(i => i.stockId); multiple.value = !selection.length }
+function handleDelete(row) { const stockIds = row.stockId || ids.value; proxy.$modal.confirm('确认删除选中的库存记录？（不会删除备件主数据）').then(() => delPartLedger(stockIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
 function handleExport() { proxy.download('dms/sparepart/export', { ...queryParams.value }, `partledger_${new Date().getTime()}.xlsx`) }
 
 /** 查看详情 */

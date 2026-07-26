@@ -36,9 +36,11 @@ const usePermissionStore = defineStore(
         return new Promise(resolve => {
           // 向后端请求路由数据
           getRouters().then(res => {
-            const sdata = JSON.parse(JSON.stringify(res.data))
-            const rdata = JSON.parse(JSON.stringify(res.data))
-            const defaultData = JSON.parse(JSON.stringify(res.data))
+            // 过滤掉大屏路由（已在 constantRoutes 中注册为独立全屏页面）
+            const filteredData = filterScreenRoute(res.data)
+            const sdata = JSON.parse(JSON.stringify(filteredData))
+            const rdata = JSON.parse(JSON.stringify(filteredData))
+            const defaultData = JSON.parse(JSON.stringify(filteredData))
             const sidebarRoutes = filterAsyncRouter(sdata)
             const rewriteRoutes = filterAsyncRouter(rdata, false, true)
             const defaultRoutes = filterAsyncRouter(defaultData)
@@ -54,6 +56,21 @@ const usePermissionStore = defineStore(
       }
     }
   })
+
+// 过滤掉大屏路由（已在 constantRoutes 中注册为独立全屏页面，防止动态路由覆盖）
+function filterScreenRoute(routes) {
+  return routes.filter(route => {
+    // 检查当前路由路径是否包含大屏路径
+    if (route.path && route.path.includes('dashboard/screen')) {
+      return false
+    }
+    // 递归检查子路由
+    if (route.children && route.children.length) {
+      route.children = filterScreenRoute(route.children)
+    }
+    return true
+  })
+}
 
 // 遍历后台传来的路由字符串，转换为组件对象
 function filterAsyncRouter(asyncRouterMap, lastRouter = false, type = false) {

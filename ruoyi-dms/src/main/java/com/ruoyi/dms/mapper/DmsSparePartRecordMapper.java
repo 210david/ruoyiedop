@@ -13,4 +13,10 @@ public interface DmsSparePartRecordMapper
 
     /** 批量删除出入库记录 */
     public int deleteRecordByIds(Long[] recordIds);
+
+    /** 查询单条出入库记录 */
+    public DmsSparePartRecord selectRecordById(Long recordId);
+
+    /** 修改出入库记录 */
+    public int updateRecord(DmsSparePartRecord record);
 }

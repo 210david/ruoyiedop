@@ -5,6 +5,7 @@
     <resultMap type="DmsSparePartRecord" id="DmsSparePartRecordResult">
         <result property="recordId"         column="record_id"/>
         <result property="partId"           column="part_id"/>
+        <result property="stockId"           column="stock_id"/>
         <result property="documentCode"     column="document_code"/>
         <result property="partCode"         column="part_code"/>
         <result property="partName"         column="part_name"/>
@@ -28,7 +29,7 @@
     </resultMap>
 
     <select id="selectRecordList" parameterType="DmsSparePartRecord" resultMap="DmsSparePartRecordResult">
-        SELECT r.record_id, r.part_id, r.document_code, r.part_code, r.part_name, r.move_type, r.source_type, r.target_type,
+        SELECT r.record_id, r.part_id, r.stock_id, r.document_code, r.part_code, r.part_name, r.move_type, r.source_type, r.target_type,
                r.supplier_or_dept, r.receiver, r.quantity, r.before_stock, r.after_stock, r.ref_type, r.ref_id, r.ref_no,
                r.operator_name, r.operate_date, r.storage_location, r.create_time, r.remark,
                sp.unit
@@ -56,11 +57,11 @@
 
     <insert id="insertRecord" parameterType="DmsSparePartRecord" useGeneratedKeys="true" keyProperty="recordId">
         INSERT INTO dms_spare_part_record (
-            part_id, document_code, part_code, part_name, move_type, source_type, target_type,
+            part_id, stock_id, document_code, part_code, part_name, move_type, source_type, target_type,
             supplier_or_dept, receiver, quantity, before_stock, after_stock, ref_type, ref_id, ref_no,
             operator_name, operate_date, storage_location, create_time, remark
         ) VALUES (
-            #{partId}, #{documentCode}, #{partCode}, #{partName}, #{moveType}, #{sourceType}, #{targetType},
+            #{partId}, #{stockId}, #{documentCode}, #{partCode}, #{partName}, #{moveType}, #{sourceType}, #{targetType},
             #{supplierOrDept}, #{receiver}, #{quantity}, #{beforeStock}, #{afterStock}, #{refType}, #{refId}, #{refNo},
             #{operatorName}, #{operateDate}, #{storageLocation}, sysdate(), #{remark}
         )
@@ -70,5 +71,38 @@
         DELETE FROM dms_spare_part_record WHERE record_id IN
         <foreach item="recordId" collection="array" open="(" separator="," close=")">#{recordId}</foreach>
     </delete>
+
+    <select id="selectRecordById" parameterType="Long" resultMap="DmsSparePartRecordResult">
+        SELECT r.record_id, r.part_id, r.stock_id, r.document_code, r.part_code, r.part_name, r.move_type, r.source_type, r.target_type,
+               r.supplier_or_dept, r.receiver, r.quantity, r.before_stock, r.after_stock, r.ref_type, r.ref_id, r.ref_no,
+               r.operator_name, r.operate_date, r.storage_location, r.create_time, r.remark,
+               sp.unit
+        FROM dms_spare_part_record r
+        LEFT JOIN dms_spare_part sp ON r.part_id = sp.part_id
+        WHERE r.record_id = #{recordId}
+    </select>
+
+    <update id="updateRecord" parameterType="DmsSparePartRecord">
+        UPDATE dms_spare_part_record
+        <set>
+            <if test="partId != null">part_id = #{partId},</if>
+            <if test="stockId != null">stock_id = #{stockId},</if>
+            <if test="documentCode != null and documentCode != ''">document_code = #{documentCode},</if>
+            <if test="partCode != null and partCode != ''">part_code = #{partCode},</if>
+            <if test="partName != null and partName != ''">part_name = #{partName},</if>
+            <if test="moveType != null and moveType != ''">move_type = #{moveType},</if>
+            <if test="sourceType != null and sourceType != ''">source_type = #{sourceType},</if>
+            <if test="targetType != null and targetType != ''">target_type = #{targetType},</if>
+            <if test="supplierOrDept != null">supplier_or_dept = #{supplierOrDept},</if>
+            <if test="receiver != null">receiver = #{receiver},</if>
+            <if test="quantity != null">quantity = #{quantity},</if>
+            <if test="beforeStock != null">before_stock = #{beforeStock},</if>
+            <if test="afterStock != null">after_stock = #{afterStock},</if>
+            <if test="operateDate != null">operate_date = #{operateDate},</if>
+            <if test="storageLocation != null">storage_location = #{storageLocation},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </set>
+        WHERE record_id = #{recordId}
+    </update>
 
 </mapper>

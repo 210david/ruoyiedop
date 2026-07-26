@@ -16,6 +16,9 @@ public class DmsSparePartRecord extends BaseEntity
     private Long recordId;
     private Long partId;
 
+    /** 库存ID（关联dms_spare_part_stock） */
+    private Long stockId;
+
     @Excel(name = "单据号")
     private String documentCode;
 
@@ -69,6 +72,9 @@ public class DmsSparePartRecord extends BaseEntity
     @Excel(name = "存放位置")
     private String storageLocation;
 
+    /** 仓库名称 */
+    private String warehouseName;
+
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @Excel(name = "操作时间", width = 30)
     private Date createTime;
@@ -77,6 +83,8 @@ public class DmsSparePartRecord extends BaseEntity
     public void setRecordId(Long recordId) { this.recordId = recordId; }
     public Long getPartId() { return partId; }
     public void setPartId(Long partId) { this.partId = partId; }
+    public Long getStockId() { return stockId; }
+    public void setStockId(Long stockId) { this.stockId = stockId; }
     public String getDocumentCode() { return documentCode; }
     public void setDocumentCode(String documentCode) { this.documentCode = documentCode; }
     public String getPartCode() { return partCode; }
@@ -113,6 +121,8 @@ public class DmsSparePartRecord extends BaseEntity
     public void setOperateDate(Date operateDate) { this.operateDate = operateDate; }
     public String getStorageLocation() { return storageLocation; }
     public void setStorageLocation(String storageLocation) { this.storageLocation = storageLocation; }
+    public String getWarehouseName() { return warehouseName; }
+    public void setWarehouseName(String warehouseName) { this.warehouseName = warehouseName; }
     @Override
     public Date getCreateTime() { return createTime; }
     @Override

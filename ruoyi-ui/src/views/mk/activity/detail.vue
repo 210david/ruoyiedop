@@ -24,7 +24,7 @@
           <div class="rd-item"><span class="rd-label">活动形式</span><div class="rd-value"><dict-tag :options="marketing_activity_form" :value="activity.activityForm" /></div></div>
           <div class="rd-item"><span class="rd-label">活动状态</span><div class="rd-value"><dict-tag :options="marketing_activity_status" :value="activity.activityStatus" /></div></div>
           <div class="rd-item"><span class="rd-label">活动地点</span><div class="rd-value">{{ activity.location }}</div></div>
-        </div>
+        </el-descriptions>
         <!-- 时间与预算 -->
         <el-descriptions title="时间与预算" :column="3" border class="detail-group">
           <div class="rd-item"><span class="rd-label">开始时间</span><div class="rd-value">{{ activity.startTime }}</div></div>
@@ -33,19 +33,19 @@
           <div class="rd-item"><span class="rd-label">实际花费</span><div class="rd-value">{{ activity.cost }} 元</div></div>
           <div class="rd-item"><span class="rd-label">目标人数</span><div class="rd-value">{{ activity.targetCount }} 人</div></div>
           <div class="rd-item"><span class="rd-label">目标线索数</span><div class="rd-value">{{ activity.targetLeadCount }} 个</div></div>
-        </div>
+        </el-descriptions>
         <!-- 负责信息 -->
         <el-descriptions title="负责信息" :column="3" border class="detail-group">
           <div class="rd-item"><span class="rd-label">负责人</span><div class="rd-value">{{ activity.userName }}</div></div>
           <div class="rd-item"><span class="rd-label">联系方式</span><div class="rd-value">{{ activity.ownerPhone }}</div></div>
           <div class="rd-item"><span class="rd-label">所属部门</span><div class="rd-value">{{ activity.deptName }}</div></div>
-        </div>
+        </el-descriptions>
         <!-- 活动描述 -->
         <el-descriptions title="活动描述" :column="3" border class="detail-group">
           <div class="rd-item rd-item--full"><span class="rd-label">活动简介</span><div class="rd-value">{{ activity.summary }}</div></div>
           <div class="rd-item rd-item--full"><span class="rd-label">活动详情</span><div class="rd-value">{{ activity.content }}</div></div>
-          <div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value">{{ activity.remark }}</div></div>
-        </div>
+        <div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value">{{ activity.remark }}</div></div>
+      </el-descriptions>
         <!-- 附件资料 -->
         <el-descriptions title="附件资料" :column="3" border class="detail-group">
           <div class="rd-item rd-item--full"><span class="rd-label">附件</span><div class="rd-value"><span v-if="!attachmentFileList.length">无</span>
@@ -57,7 +57,7 @@
                 </el-link>
               </div>
             </div></div></div>
-        </div>
+        </el-descriptions>
       </el-tab-pane>
 
       <!-- 参与人列表 -->
@@ -94,7 +94,7 @@
           <div class="rd-item"><span class="rd-label">转化商机</span><div class="rd-value">{{ activity.opportunityCount || 0 }}</div></div>
           <div class="rd-item"><span class="rd-label">成交金额</span><div class="rd-value">{{ activity.dealAmount || 0 }}</div></div>
           <div class="rd-item"><span class="rd-label">实际ROI(%)</span><div class="rd-value">{{ activity.actualRoi || 0 }}%</div></div>
-        </div>
+        </el-descriptions>
         <el-button type="warning" icon="DataAnalysis" @click="handleReview" v-hasPermi="['marketing:activity:review']" v-if="activity.activityStatus === '3'">一键复盘</el-button>
       </el-tab-pane>
 
@@ -126,7 +126,7 @@
                 <div class="rd-item"><span class="rd-label">签到人数</span><div class="rd-value">{{ activity.signedCount || 0 }}</div></div>
                 <div class="rd-item"><span class="rd-label">目标人数</span><div class="rd-value">{{ activity.targetCount || 0 }}</div></div>
                 <div class="rd-item"><span class="rd-label">转化线索</span><div class="rd-value">{{ activity.convertedLeadCount || 0 }}</div></div>
-              </div>
+              </el-descriptions>
               <el-divider content-position="left">使用说明</el-divider>
               <div style="font-size: 13px; color: #606266; line-height: 2;">
                 <p><b>1. 线上推广</b>：复制链接通过微信/邮件/短信发给客户</p>

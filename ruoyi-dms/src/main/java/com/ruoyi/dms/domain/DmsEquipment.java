@@ -22,6 +22,10 @@ public class DmsEquipment extends BaseEntity
     @Excel(name = "设备编号")
     private String equipmentCode;
 
+    /** 资产编号 */
+    @Excel(name = "资产编号")
+    private String assetCode;
+
     /** 设备名称 */
     @Excel(name = "设备名称")
     private String equipmentName;
@@ -54,6 +58,16 @@ public class DmsEquipment extends BaseEntity
     @Excel(name = "购置日期", width = 20)
     private Date purchaseDate;
 
+    /** 启用日期 */
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    @Excel(name = "启用日期", width = 20)
+    private Date installDate;
+
+    /** 报废处置日期 */
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    @Excel(name = "报废处置日期", width = 20)
+    private Date retireDate;
+
     /** 原值 */
     @Excel(name = "原值")
     private BigDecimal originalValue;
@@ -72,6 +86,15 @@ public class DmsEquipment extends BaseEntity
     /** 设备状态（字典 dms_equipment_status） */
     @Excel(name = "设备状态", dictType = "dms_equipment_status")
     private String equipmentStatus;
+
+    /** 设备等级（字典 dms_equipment_level） */
+    @Excel(name = "设备等级", dictType = "dms_equipment_level")
+    private String equipmentLevel;
+
+    /** 质保期限 */
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    @Excel(name = "质保期限", width = 20)
+    private Date warrantyDate;
 
     /** 责任人ID */
     private Long responsibleId;
@@ -97,6 +120,8 @@ public class DmsEquipment extends BaseEntity
     public void setEquipmentId(Long equipmentId) { this.equipmentId = equipmentId; }
     public String getEquipmentCode() { return equipmentCode; }
     public void setEquipmentCode(String equipmentCode) { this.equipmentCode = equipmentCode; }
+    public String getAssetCode() { return assetCode; }
+    public void setAssetCode(String assetCode) { this.assetCode = assetCode; }
     public String getEquipmentName() { return equipmentName; }
     public void setEquipmentName(String equipmentName) { this.equipmentName = equipmentName; }
     public Long getCategoryId() { return categoryId; }
@@ -113,6 +138,10 @@ public class DmsEquipment extends BaseEntity
     public void setSupplier(String supplier) { this.supplier = supplier; }
     public Date getPurchaseDate() { return purchaseDate; }
     public void setPurchaseDate(Date purchaseDate) { this.purchaseDate = purchaseDate; }
+    public Date getInstallDate() { return installDate; }
+    public void setInstallDate(Date installDate) { this.installDate = installDate; }
+    public Date getRetireDate() { return retireDate; }
+    public void setRetireDate(Date retireDate) { this.retireDate = retireDate; }
     public BigDecimal getOriginalValue() { return originalValue; }
     public void setOriginalValue(BigDecimal originalValue) { this.originalValue = originalValue; }
     public Long getDeptId() { return deptId; }
@@ -123,6 +152,10 @@ public class DmsEquipment extends BaseEntity
     public void setInstallLocation(String installLocation) { this.installLocation = installLocation; }
     public String getEquipmentStatus() { return equipmentStatus; }
     public void setEquipmentStatus(String equipmentStatus) { this.equipmentStatus = equipmentStatus; }
+    public String getEquipmentLevel() { return equipmentLevel; }
+    public void setEquipmentLevel(String equipmentLevel) { this.equipmentLevel = equipmentLevel; }
+    public Date getWarrantyDate() { return warrantyDate; }
+    public void setWarrantyDate(Date warrantyDate) { this.warrantyDate = warrantyDate; }
     public Long getResponsibleId() { return responsibleId; }
     public void setResponsibleId(Long responsibleId) { this.responsibleId = responsibleId; }
     public String getResponsibleName() { return responsibleName; }

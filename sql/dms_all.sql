@@ -33,8 +33,9 @@ CREATE TABLE dms_equipment_category (
 DROP TABLE IF EXISTS dms_equipment;
 CREATE TABLE dms_equipment (
     equipment_id     BIGINT       NOT NULL AUTO_INCREMENT  COMMENT '设备ID',
-    equipment_code   VARCHAR(64)  NOT NULL                 COMMENT '设备编号（唯一标识）',
-    equipment_name   VARCHAR(255) NOT NULL                 COMMENT '设备名称',
+equipment_code   VARCHAR(64)  NOT NULL                 COMMENT '设备编号（唯一标识）',
+equipment_name   VARCHAR(255) NOT NULL                 COMMENT '设备名称',
+asset_code       VARCHAR(128)                          COMMENT '资产编号',
     category_id      BIGINT                                COMMENT '设备分类ID',
     model            VARCHAR(128)                          COMMENT '型号',
     serial_number    VARCHAR(128)                          COMMENT '序列号',
@@ -45,8 +46,10 @@ CREATE TABLE dms_equipment (
     dept_id          BIGINT                                COMMENT '使用部门ID',
     dept_name        VARCHAR(128)                          COMMENT '使用部门名称',
     install_location VARCHAR(255)                          COMMENT '安装位置',
-    equipment_status VARCHAR(10)  DEFAULT '0'              COMMENT '设备状态（字典 dms_equipment_status）',
-    responsible_id   BIGINT                                COMMENT '责任人ID',
+equipment_status VARCHAR(10)  DEFAULT '0'              COMMENT '设备状态（字典 dms_equipment_status）',
+equipment_level  VARCHAR(10)                           COMMENT '设备等级（字典 dms_equipment_level）',
+warranty_date    DATE                                  COMMENT '质保期限',
+responsible_id   BIGINT                                COMMENT '责任人ID',
     responsible_name VARCHAR(64)                           COMMENT '责任人名称',
 equipment_image  VARCHAR(500)                          COMMENT '设备图片URL',
 attachment_url   VARCHAR(1000)                         COMMENT '设备附件资料URL',
@@ -86,6 +89,7 @@ CREATE TABLE dms_work_order (
     fault_cause      VARCHAR(1000)                         COMMENT '故障原因',
     repair_measure   VARCHAR(1000)                         COMMENT '维修措施',
     spare_parts_used VARCHAR(500)                          COMMENT '更换备件',
+    repair_cost      DECIMAL(12,2)                         COMMENT '维修费用（元）',
     downtime_duration DECIMAL(10,2)                        COMMENT '停机时长（小时）',
     complete_time    DATETIME                              COMMENT '完工时间',
     complete_remark  VARCHAR(1000)                         COMMENT '完工说明',
@@ -176,6 +180,7 @@ CREATE TABLE dms_pm_plan (
 -- 字典类型
 INSERT INTO sys_dict_type (dict_name, dict_type, status, create_by, create_time, remark) VALUES
 ('设备状态', 'dms_equipment_status', '0', 'admin', sysdate(), '设备台账状态'),
+('设备等级', 'dms_equipment_level', '0', 'admin', sysdate(), '设备重要等级'),
 ('工单类型', 'dms_order_type', '0', 'admin', sysdate(), '维护工单类型'),
 ('工单状态', 'dms_order_status', '0', 'admin', sysdate(), '工单流转状态'),
 ('优先级', 'dms_priority', '0', 'admin', sysdate(), '工单优先级'),
@@ -189,6 +194,11 @@ INSERT INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, css_cla
 (4, '停机', '3', 'dms_equipment_status', '', 'danger', 'N', '0', 'admin', sysdate(), '因外部原因停机'),
 (5, '故障', '4', 'dms_equipment_status', '', 'danger', 'N', '0', 'admin', sysdate(), '等待维修'),
 (6, '报废', '5', 'dms_equipment_status', '', 'info', 'N', '0', 'admin', sysdate(), '已退出使用'),
+
+(1, '关键设备', '0', 'dms_equipment_level', '', 'danger', 'N', '0', 'admin', sysdate(), 'A类-关键设备，故障影响生产主线'),
+(2, '重要设备', '1', 'dms_equipment_level', '', 'warning', 'N', '0', 'admin', sysdate(), 'B类-重要设备，故障影响部分生产'),
+(3, '一般设备', '2', 'dms_equipment_level', '', 'success', 'Y', '0', 'admin', sysdate(), 'C类-一般设备，故障影响较小'),
+(4, '辅助设备', '3', 'dms_equipment_level', '', 'info', 'N', '0', 'admin', sysdate(), 'D类-辅助设备，故障不影响生产'),
 
 (1, '故障报修', '0', 'dms_order_type', '', 'danger', 'Y', '0', 'admin', sysdate(), '操作员/主管发起'),
 (2, 'PM维护', '1', 'dms_order_type', '', 'primary', 'N', '0', 'admin', sysdate(), '系统自动生成'),
