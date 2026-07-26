@@ -66,7 +66,7 @@ public class WmsStockTakeController extends BaseController
     }
 
     @Log(title = "开始盘点", businessType = BusinessType.UPDATE)
-    @PreAuthorize("@ss.hasPermi('wms:stocktake:edit')")
+    @PreAuthorize("@ss.hasPermi('wms:stocktake:start')")
     @PutMapping("/start/{takeId}")
     public AjaxResult start(@PathVariable Long takeId)
     {
@@ -74,7 +74,7 @@ public class WmsStockTakeController extends BaseController
     }
 
     @Log(title = "提交盘点明细", businessType = BusinessType.UPDATE)
-    @PreAuthorize("@ss.hasPermi('wms:stocktake:edit')")
+    @PreAuthorize("@ss.hasPermi('wms:stocktake:input')")
     @PutMapping("/submit/{takeId}/{detailId}")
     public AjaxResult submitDetail(@PathVariable Long takeId, @PathVariable Long detailId,
                                    @RequestParam BigDecimal actualQty, @RequestParam(required = false) String diffReason)
@@ -83,7 +83,7 @@ public class WmsStockTakeController extends BaseController
     }
 
     @Log(title = "批量录入盘点明细", businessType = BusinessType.UPDATE)
-    @PreAuthorize("@ss.hasPermi('wms:stocktake:edit')")
+    @PreAuthorize("@ss.hasPermi('wms:stocktake:batchInput')")
     @PutMapping("/batch-submit/{takeId}")
     public AjaxResult batchSubmitDetail(@PathVariable Long takeId, @RequestBody List<WmsStockTakeDetail> detailList)
     {
@@ -92,7 +92,7 @@ public class WmsStockTakeController extends BaseController
     }
 
     @Log(title = "导入盘点明细", businessType = BusinessType.IMPORT)
-    @PreAuthorize("@ss.hasPermi('wms:stocktake:edit')")
+    @PreAuthorize("@ss.hasPermi('wms:stocktake:import')")
     @PostMapping("/import/{takeId}")
     public AjaxResult importDetail(@PathVariable Long takeId, @RequestParam("file") MultipartFile file) throws Exception
     {
@@ -103,7 +103,7 @@ public class WmsStockTakeController extends BaseController
     }
 
     @Log(title = "导出盘点明细模板", businessType = BusinessType.EXPORT)
-    @PreAuthorize("@ss.hasPermi('wms:stocktake:edit')")
+    @PreAuthorize("@ss.hasPermi('wms:stocktake:export')")
     @PostMapping("/export-template/{takeId}")
     public void exportTemplate(HttpServletResponse response, @PathVariable Long takeId)
     {
@@ -114,7 +114,7 @@ public class WmsStockTakeController extends BaseController
     }
 
     @Log(title = "提交盘点审批", businessType = BusinessType.UPDATE)
-    @PreAuthorize("@ss.hasPermi('wms:stocktake:edit')")
+    @PreAuthorize("@ss.hasPermi('wms:stocktake:submit')")
     @PutMapping("/submit-approve/{takeId}")
     public AjaxResult submitForApproval(@PathVariable Long takeId)
     {
@@ -122,7 +122,7 @@ public class WmsStockTakeController extends BaseController
     }
 
     @Log(title = "盘点审批", businessType = BusinessType.UPDATE)
-    @PreAuthorize("@ss.hasPermi('wms:stocktake:edit')")
+    @PreAuthorize("@ss.hasPermi('wms:stocktake:approve')")
     @PutMapping("/approve/{takeId}")
     public AjaxResult approve(@PathVariable Long takeId, String approveOpinion)
     {
@@ -130,7 +130,7 @@ public class WmsStockTakeController extends BaseController
     }
 
     @Log(title = "盘点驳回", businessType = BusinessType.UPDATE)
-    @PreAuthorize("@ss.hasPermi('wms:stocktake:edit')")
+    @PreAuthorize("@ss.hasPermi('wms:stocktake:approve')")
     @PutMapping("/reject/{takeId}")
     public AjaxResult reject(@PathVariable Long takeId, String approveOpinion)
     {
@@ -138,7 +138,7 @@ public class WmsStockTakeController extends BaseController
     }
 
     @Log(title = "盘点作废", businessType = BusinessType.UPDATE)
-    @PreAuthorize("@ss.hasPermi('wms:stocktake:edit')")
+    @PreAuthorize("@ss.hasPermi('wms:stocktake:void')")
     @PutMapping("/void/{takeId}")
     public AjaxResult voidTake(@PathVariable Long takeId)
     {

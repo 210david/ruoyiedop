@@ -80,7 +80,7 @@ public class DmsWorkOrderController extends BaseController
 
     /** 派工 */
     @Log(title = "工单派工", businessType = BusinessType.UPDATE)
-    @PreAuthorize("@ss.hasPermi('dms:workorder:edit')")
+    @PreAuthorize("@ss.hasPermi('dms:workorder:dispatch')")
     @PutMapping("/dispatch")
     public AjaxResult dispatch(@RequestBody DmsWorkOrder workOrder)
     {
@@ -89,7 +89,7 @@ public class DmsWorkOrderController extends BaseController
 
     /** 改派 */
     @Log(title = "工单改派", businessType = BusinessType.UPDATE)
-    @PreAuthorize("@ss.hasPermi('dms:workorder:edit')")
+    @PreAuthorize("@ss.hasPermi('dms:workorder:reassign')")
     @PutMapping("/reassign")
     public AjaxResult reassign(@RequestBody DmsWorkOrder workOrder)
     {
@@ -98,7 +98,7 @@ public class DmsWorkOrderController extends BaseController
 
     /** 接单 */
     @Log(title = "工单接单", businessType = BusinessType.UPDATE)
-    @PreAuthorize("@ss.hasPermi('dms:workorder:edit')")
+    @PreAuthorize("@ss.hasPermi('dms:workorder:accept')")
     @PutMapping("/accept/{orderId}")
     public AjaxResult accept(@PathVariable("orderId") Long orderId)
     {
@@ -107,7 +107,7 @@ public class DmsWorkOrderController extends BaseController
 
     /** 开始处理 */
     @Log(title = "工单开始处理", businessType = BusinessType.UPDATE)
-    @PreAuthorize("@ss.hasPermi('dms:workorder:edit')")
+    @PreAuthorize("@ss.hasPermi('dms:workorder:process')")
     @PutMapping("/process/{orderId}")
     public AjaxResult startProcess(@PathVariable("orderId") Long orderId)
     {
@@ -116,7 +116,7 @@ public class DmsWorkOrderController extends BaseController
 
     /** 完工 */
     @Log(title = "工单完工", businessType = BusinessType.UPDATE)
-    @PreAuthorize("@ss.hasPermi('dms:workorder:edit')")
+    @PreAuthorize("@ss.hasPermi('dms:workorder:complete')")
     @PutMapping("/complete")
     public AjaxResult complete(@RequestBody DmsWorkOrder workOrder)
     {
@@ -125,7 +125,7 @@ public class DmsWorkOrderController extends BaseController
 
     /** 验收通过 */
     @Log(title = "工单验收", businessType = BusinessType.UPDATE)
-    @PreAuthorize("@ss.hasPermi('dms:workorder:edit')")
+    @PreAuthorize("@ss.hasPermi('dms:workorder:verify')")
     @PutMapping("/verify")
     public AjaxResult verify(@RequestBody DmsWorkOrder workOrder)
     {
@@ -134,7 +134,7 @@ public class DmsWorkOrderController extends BaseController
 
     /** 驳回重做 */
     @Log(title = "工单驳回", businessType = BusinessType.UPDATE)
-    @PreAuthorize("@ss.hasPermi('dms:workorder:edit')")
+    @PreAuthorize("@ss.hasPermi('dms:workorder:reject')")
     @PutMapping("/reject")
     public AjaxResult reject(@RequestBody DmsWorkOrder workOrder)
     {
@@ -143,7 +143,7 @@ public class DmsWorkOrderController extends BaseController
 
     /** 撤销 */
     @Log(title = "工单撤销", businessType = BusinessType.UPDATE)
-    @PreAuthorize("@ss.hasPermi('dms:workorder:edit')")
+    @PreAuthorize("@ss.hasPermi('dms:workorder:cancel')")
     @PutMapping("/cancel/{orderId}")
     public AjaxResult cancel(@PathVariable("orderId") Long orderId)
     {

@@ -51,8 +51,8 @@
       <el-table-column label="操作" width="200" align="center" fixed="right">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">详情</el-button>
-          <el-button link type="success" icon="Pointer" @click="handleReceive(scope.row)" v-hasPermi="['marketing:lead:receive']" v-if="!scope.row.receiveStatus || scope.row.receiveStatus === '0' || scope.row.receiveStatus === '3'">申请领取</el-button>
-          <el-button link type="warning" icon="Check" @click="handleApprove(scope.row)" v-hasPermi="['marketing:lead:assign']" v-if="scope.row.receiveStatus === '1'">审批</el-button>
+          <el-button link type="success" icon="Pointer" @click="handleReceive(scope.row)" v-hasPermi="['marketing:lead:pool:receive']" v-if="!scope.row.receiveStatus || scope.row.receiveStatus === '0' || scope.row.receiveStatus === '3'">申请领取</el-button>
+          <el-button link type="warning" icon="Check" @click="handleApprove(scope.row)" v-hasPermi="['marketing:lead:pool:approve']" v-if="scope.row.receiveStatus === '1'">审批</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -197,8 +197,8 @@
         </el-tabs>
       </div>
       <template #footer>
-        <el-button type="success" icon="Pointer" @click="handleViewReceive" v-if="!viewForm.receiveStatus || viewForm.receiveStatus === '0' || viewForm.receiveStatus === '3'" v-hasPermi="['marketing:lead:receive']">申请领取</el-button>
-        <el-button type="warning" icon="Check" @click="handleViewApprove" v-if="viewForm.receiveStatus === '1'" v-hasPermi="['marketing:lead:assign']">审批</el-button>
+        <el-button type="success" icon="Pointer" @click="handleViewReceive" v-if="!viewForm.receiveStatus || viewForm.receiveStatus === '0' || viewForm.receiveStatus === '3'" v-hasPermi="['marketing:lead:pool:receive']">申请领取</el-button>
+        <el-button type="warning" icon="Check" @click="handleViewApprove" v-if="viewForm.receiveStatus === '1'" v-hasPermi="['marketing:lead:pool:approve']">审批</el-button>
         <el-button @click="viewOpen = false">关 闭</el-button>
       </template>
     </el-dialog>

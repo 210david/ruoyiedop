@@ -63,14 +63,14 @@
           <el-button link type="primary" icon="List" @click="handleLog(scope.row)">历史</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['dms:workorder:edit']">修改</el-button>
           <!-- 状态流转按钮 -->
-          <el-button v-if="scope.row.orderStatus === '0'" link type="primary" @click="handleDispatch(scope.row)">派工</el-button>
-          <el-button v-if="scope.row.orderStatus === '1'" link type="success" @click="handleAccept(scope.row)">接单</el-button>
-          <el-button v-if="scope.row.orderStatus === '1'" link type="warning" @click="handleReassign(scope.row)">改派</el-button>
-          <el-button v-if="scope.row.orderStatus === '2' || scope.row.orderStatus === '7'" link type="primary" @click="handleProcess(scope.row)">开始处理</el-button>
-          <el-button v-if="scope.row.orderStatus === '3'" link type="success" @click="handleComplete(scope.row)">完工</el-button>
-          <el-button v-if="scope.row.orderStatus === '4'" link type="success" @click="handleVerify(scope.row)">验收</el-button>
-          <el-button v-if="scope.row.orderStatus === '4'" link type="danger" @click="handleReject(scope.row)">驳回</el-button>
-          <el-button v-if="scope.row.orderStatus === '0' || scope.row.orderStatus === '1'" link type="info" @click="handleCancel(scope.row)">撤销</el-button>
+          <el-button v-if="scope.row.orderStatus === '0'" v-hasPermi="['dms:workorder:dispatch']" link type="primary" @click="handleDispatch(scope.row)">派工</el-button>
+          <el-button v-if="scope.row.orderStatus === '1'" v-hasPermi="['dms:workorder:accept']" link type="success" @click="handleAccept(scope.row)">接单</el-button>
+          <el-button v-if="scope.row.orderStatus === '1'" v-hasPermi="['dms:workorder:reassign']" link type="warning" @click="handleReassign(scope.row)">改派</el-button>
+          <el-button v-if="scope.row.orderStatus === '2' || scope.row.orderStatus === '7'" v-hasPermi="['dms:workorder:process']" link type="primary" @click="handleProcess(scope.row)">开始处理</el-button>
+          <el-button v-if="scope.row.orderStatus === '3'" v-hasPermi="['dms:workorder:complete']" link type="success" @click="handleComplete(scope.row)">完工</el-button>
+          <el-button v-if="scope.row.orderStatus === '4'" v-hasPermi="['dms:workorder:verify']" link type="success" @click="handleVerify(scope.row)">验收</el-button>
+          <el-button v-if="scope.row.orderStatus === '4'" v-hasPermi="['dms:workorder:reject']" link type="danger" @click="handleReject(scope.row)">驳回</el-button>
+          <el-button v-if="scope.row.orderStatus === '0' || scope.row.orderStatus === '1'" v-hasPermi="['dms:workorder:cancel']" link type="info" @click="handleCancel(scope.row)">撤销</el-button>
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['dms:workorder:remove']">删除</el-button>
         </template>
       </el-table-column>

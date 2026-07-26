@@ -81,7 +81,7 @@ public class MkLeadController extends BaseController
     }
 
     @Log(title = "线索领取", businessType = BusinessType.UPDATE)
-    @PreAuthorize("@ss.hasPermi('marketing:lead:receive')")
+    @PreAuthorize("@ss.hasPermi('marketing:lead:pool:receive')")
     @PutMapping("/receive/{leadId}")
     public AjaxResult receive(@PathVariable Long leadId, @RequestBody MkLead lead)
     {
@@ -92,7 +92,7 @@ public class MkLeadController extends BaseController
     }
 
     @Log(title = "领取审批通过", businessType = BusinessType.UPDATE)
-    @PreAuthorize("@ss.hasPermi('marketing:lead:assign')")
+    @PreAuthorize("@ss.hasPermi('marketing:lead:pool:approve')")
     @PutMapping("/approve/{leadId}")
     public AjaxResult approveReceive(@PathVariable Long leadId, @RequestBody MkLead lead)
     {
@@ -102,7 +102,7 @@ public class MkLeadController extends BaseController
     }
 
     @Log(title = "领取审批拒绝", businessType = BusinessType.UPDATE)
-    @PreAuthorize("@ss.hasPermi('marketing:lead:assign')")
+    @PreAuthorize("@ss.hasPermi('marketing:lead:pool:approve')")
     @PutMapping("/reject/{leadId}")
     public AjaxResult rejectReceive(@PathVariable Long leadId, @RequestBody MkLead lead)
     {

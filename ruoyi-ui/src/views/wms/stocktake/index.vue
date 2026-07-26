@@ -24,9 +24,9 @@
       <el-table-column label="操作" width="300" align="center" fixed="right">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleDetail(scope.row)">详情</el-button>
-          <el-button link type="primary" icon="VideoPlay" @click="handleStart(scope.row)" v-if="scope.row.status === '0'" v-hasPermi="['wms:stocktake:edit']">开始</el-button>
-          <el-button link type="primary" icon="Check" @click="handleApprove(scope.row)" v-if="scope.row.status === '2'" v-hasPermi="['wms:stocktake:edit']">审批</el-button>
-          <el-button link type="danger" icon="CircleClose" @click="handleVoid(scope.row)" v-if="scope.row.status === '0' || scope.row.status === '1'" v-hasPermi="['wms:stocktake:edit']">作废</el-button>
+          <el-button link type="primary" icon="VideoPlay" @click="handleStart(scope.row)" v-if="scope.row.status === '0'" v-hasPermi="['wms:stocktake:start']">开始</el-button>
+          <el-button link type="primary" icon="Check" @click="handleApprove(scope.row)" v-if="scope.row.status === '2'" v-hasPermi="['wms:stocktake:approve']">审批</el-button>
+          <el-button link type="danger" icon="CircleClose" @click="handleVoid(scope.row)" v-if="scope.row.status === '0' || scope.row.status === '1'" v-hasPermi="['wms:stocktake:void']">作废</el-button>
           <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['wms:stocktake:remove']">删除</el-button>
         </template>
       </el-table-column>

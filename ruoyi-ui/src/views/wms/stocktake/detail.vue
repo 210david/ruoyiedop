@@ -42,8 +42,8 @@
       <el-table-column label="操作" width="200" align="center" fixed="right">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click.stop="handleRowClick(scope.row)">详情</el-button>
-          <el-button link type="primary" icon="Edit" @click.stop="handleRowClick(scope.row)" v-if="scope.row.status === '1'">录入</el-button>
-          <el-button link type="primary" icon="Check" @click.stop="handleApprove(scope.row)" v-if="scope.row.status === '2'">审批</el-button>
+          <el-button link type="primary" icon="Edit" @click.stop="handleRowClick(scope.row)" v-if="scope.row.status === '1'" v-hasPermi="['wms:stocktake:input']">录入</el-button>
+          <el-button link type="primary" icon="Check" @click.stop="handleApprove(scope.row)" v-if="scope.row.status === '2'" v-hasPermi="['wms:stocktake:approve']">审批</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -82,8 +82,8 @@
           <div class="rd-card-header" @click="toggleCard('dDetail')">
             <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></span>盘点明细</div>
             <div class="rd-card-actions" v-if="currentTake.status === '1'">
-              <el-button size="small" type="primary" plain @click.stop="openBatch">批量录入</el-button>
-              <el-button size="small" type="success" plain @click.stop="handleImport">批量导入</el-button>
+              <el-button size="small" type="primary" plain @click.stop="openBatch" v-hasPermi="['wms:stocktake:batchInput']">批量录入</el-button>
+              <el-button size="small" type="success" plain @click.stop="handleImport" v-hasPermi="['wms:stocktake:import']">批量导入</el-button>
             </div>
             <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.dDetail }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
           </div>
@@ -111,7 +111,7 @@
               <el-table-column label="差异原因" prop="diffReason" show-overflow-tooltip />
               <el-table-column label="操作" width="120" align="center" v-if="currentTake.status === '1'">
                 <template #default="scope">
-                  <el-button link type="primary" icon="Edit" @click="openSubmit(scope.row)">录入</el-button>
+                  <el-button link type="primary" icon="Edit" @click="openSubmit(scope.row)" v-hasPermi="['wms:stocktake:input']">录入</el-button>
                 </template>
               </el-table-column>
             </el-table>
@@ -148,7 +148,7 @@
 </div>
 </section>
       </div>
-      <template #footer><el-button type="primary" @click="handleSubmitForApproval" v-if="currentTake.status === '1'">提交审批</el-button><el-button @click="detailOpen = false">关 闭</el-button></template>
+      <template #footer><el-button type="primary" @click="handleSubmitForApproval" v-if="currentTake.status === '1'" v-hasPermi="['wms:stocktake:submit']">提交审批</el-button><el-button @click="detailOpen = false">关 闭</el-button></template>
     </el-dialog>
 
     <!-- 盘点审批对话框 -->
