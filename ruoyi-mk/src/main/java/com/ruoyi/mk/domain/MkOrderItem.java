@@ -39,6 +39,10 @@ public class MkOrderItem extends BaseEntity
     @Excel(name = "数量")
     private Integer quantity;
 
+    /** 已发货数量 */
+    @Excel(name = "已发货数量")
+    private BigDecimal shippedQty;
+
     /** 单价 */
     @Excel(name = "单价")
     private BigDecimal unitPrice;
@@ -46,6 +50,9 @@ public class MkOrderItem extends BaseEntity
     /** 小计 */
     @Excel(name = "小计")
     private BigDecimal subtotal;
+
+    /** 本次发货数量（非持久化，仅用于前端传入） */
+    private Integer deliverQty;
 
     public Long getItemId() { return itemId; }
     public void setItemId(Long itemId) { this.itemId = itemId; }
@@ -61,8 +68,12 @@ public class MkOrderItem extends BaseEntity
     public void setUnit(String unit) { this.unit = unit; }
     public Integer getQuantity() { return quantity; }
     public void setQuantity(Integer quantity) { this.quantity = quantity; }
+    public BigDecimal getShippedQty() { return shippedQty; }
+    public void setShippedQty(BigDecimal shippedQty) { this.shippedQty = shippedQty; }
     public BigDecimal getUnitPrice() { return unitPrice; }
     public void setUnitPrice(BigDecimal unitPrice) { this.unitPrice = unitPrice; }
     public BigDecimal getSubtotal() { return subtotal; }
     public void setSubtotal(BigDecimal subtotal) { this.subtotal = subtotal; }
+    public Integer getDeliverQty() { return deliverQty; }
+    public void setDeliverQty(Integer deliverQty) { this.deliverQty = deliverQty; }
 }

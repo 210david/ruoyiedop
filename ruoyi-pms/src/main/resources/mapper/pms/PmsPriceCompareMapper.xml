@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.pms.mapper.PmsPriceCompareMapper">
+
+    <resultMap type="com.ruoyi.pms.domain.vo.PmsPriceCompareVo" id="PmsPriceCompareResult">
+        <id property="detailId" column="detail_id"/>
+        <result property="inquiryNo" column="inquiry_no"/>
+        <result property="supplierCode" column="supplier_code"/>
+        <result property="supplierName" column="supplier_name"/>
+        <result property="materialCode" column="material_code"/>
+        <result property="materialName" column="material_name"/>
+        <result property="specification" column="specification"/>
+        <result property="unit" column="unit"/>
+        <result property="quantity" column="quantity"/>
+        <result property="price" column="price"/>
+        <result property="quotationDate" column="quotation_date"/>
+        <result property="validDate" column="valid_date"/>
+        <result property="taxRate" column="tax_rate"/>
+        <result property="deliveryDays" column="delivery_days"/>
+        <result property="paymentTerms" column="payment_terms"/>
+        <result property="isAward" column="is_award"/>
+    </resultMap>
+
+    <sql id="selectPriceCompareVo">
+        select qd.detail_id,
+               i.inquiry_no,
+               s.supplier_code,
+               q.supplier_name,
+               qd.material_code,
+               qd.material_name,
+               qd.specification,
+               qd.unit,
+               qd.quantity,
+               qd.price,
+               q.create_time as quotation_date,
+               q.valid_date,
+               qd.tax_rate,
+               q.delivery_days,
+               q.payment_terms,
+               case when q.supplier_id = i.award_supplier_id and i.award_supplier_id is not null then '1' else '0' end as is_award
+        from pms_quotation_detail qd
+        left join pms_quotation q on qd.quotation_id = q.quotation_id
+        left join pms_inquiry i on q.inquiry_id = i.inquiry_id
+        left join wms_supplier s on q.supplier_id = s.supplier_id
+        where qd.del_flag = '0'
+          and q.del_flag = '0'
+          and i.del_flag = '0'
+    </sql>
+
+    <select id="selectPriceCompareList" parameterType="com.ruoyi.pms.domain.vo.PmsPriceCompareVo" resultMap="PmsPriceCompareResult">
+        <include refid="selectPriceCompareVo"/>
+        <if test="supplierName != null and supplierName != ''">
+            AND q.supplier_name like concat('%', #{supplierName}, '%')
+        </if>
+        <if test="supplierCode != null and supplierCode != ''">
+            AND s.supplier_code like concat('%', #{supplierCode}, '%')
+        </if>
+        <if test="materialName != null and materialName != ''">
+            AND qd.material_name like concat('%', #{materialName}, '%')
+        </if>
+        <if test="materialCode != null and materialCode != ''">
+            AND qd.material_code like concat('%', #{materialCode}, '%')
+        </if>
+        <if test="inquiryNo != null and inquiryNo != ''">
+            AND i.inquiry_no like concat('%', #{inquiryNo}, '%')
+        </if>
+        order by qd.material_code, qd.price asc, q.create_time desc
+    </select>
+
+</mapper>

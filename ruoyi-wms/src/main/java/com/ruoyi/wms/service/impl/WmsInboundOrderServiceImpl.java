@@ -312,6 +312,16 @@ public class WmsInboundOrderServiceImpl implements IWmsInboundOrderService
             order.setStatus("3");
             order.setCompleteDate(new Date());
             wmsInboundOrderMapper.updateInboundOrder(order);
+            // 更新关联的收货单状态为已入库
+            try
+            {
+                wmsInboundOrderMapper.updateReceiveStatusByInboundOrderId(orderId);
+            }
+            catch (Exception e)
+            {
+                // 忽略错误，不影响入库单主流程
+                System.err.println("更新收货单状态失败：" + e.getMessage());
+            }
         }
         return 1;
     }

@@ -72,6 +72,12 @@
             <artifactId>ruoyi-mk</artifactId>
         </dependency>
 
+        <!-- PMS采购管理 -->
+        <dependency>
+            <groupId>com.ruoyi</groupId>
+            <artifactId>ruoyi-pms</artifactId>
+        </dependency>
+
     </dependencies>
 
     <build>

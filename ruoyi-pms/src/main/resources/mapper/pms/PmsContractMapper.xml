@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.pms.mapper.PmsContractMapper">
+
+    <resultMap type="PmsContract" id="PmsContractResult">
+        <result property="contractId"        column="contract_id"/>
+        <result property="contractNo"        column="contract_no"/>
+        <result property="contractName"      column="contract_name"/>
+        <result property="orderId"            column="order_id"/>
+        <result property="orderNo"            column="order_no"/>
+        <result property="supplierId"         column="supplier_id"/>
+        <result property="supplierName"       column="supplier_name"/>
+        <result property="status"             column="status"/>
+        <result property="contractType"       column="contract_type"/>
+        <result property="signDate"           column="sign_date"/>
+        <result property="effectiveDate"      column="effective_date"/>
+        <result property="expireDate"         column="expire_date"/>
+        <result property="contractAmount"     column="contract_amount"/>
+        <result property="paidAmount"          column="paid_amount"/>
+        <result property="paymentTerms"       column="payment_terms"/>
+        <result property="deliveryTerms"      column="delivery_terms"/>
+        <result property="signBy"             column="sign_by"/>
+        <result property="signDepartment"     column="sign_department"/>
+        <result property="partyA"             column="party_a"/>
+        <result property="partyB"             column="party_b"/>
+        <result property="fileUrl"            column="file_url"/>
+        <result property="fileName"            column="file_name"/>
+        <result property="changeCount"        column="change_count"/>
+        <result property="terminateDate"      column="terminate_date"/>
+        <result property="terminateReason"    column="terminate_reason"/>
+        <result property="delFlag"             column="del_flag"/>
+        <result property="auditBy"              column="audit_by"/>
+        <result property="auditTime"            column="audit_time"/>
+        <result property="auditOpinion"         column="audit_opinion"/>
+        <result property="createBy"            column="create_by"/>
+        <result property="createTime"          column="create_time"/>
+        <result property="updateBy"            column="update_by"/>
+        <result property="updateTime"          column="update_time"/>
+        <result property="remark"              column="remark"/>
+    </resultMap>
+
+    <resultMap type="PmsContractChange" id="PmsContractChangeResult">
+        <result property="changeId"           column="change_id"/>
+        <result property="contractId"         column="contract_id"/>
+        <result property="changeNo"           column="change_no"/>
+        <result property="changeType"         column="change_type"/>
+        <result property="fieldName"          column="field_name"/>
+        <result property="newValue"           column="new_value"/>
+        <result property="changeContent"      column="change_content"/>
+        <result property="originalContent"    column="original_content"/>
+        <result property="changeReason"       column="change_reason"/>
+        <result property="changeDate"         column="change_date"/>
+        <result property="changeBy"            column="change_by"/>
+        <result property="auditBy"             column="audit_by"/>
+        <result property="auditTime"           column="audit_time"/>
+        <result property="auditStatus"         column="audit_status"/>
+        <result property="auditRemark"         column="audit_remark"/>
+        <result property="delFlag"             column="del_flag"/>
+        <result property="createBy"            column="create_by"/>
+        <result property="createTime"          column="create_time"/>
+        <result property="updateBy"            column="update_by"/>
+        <result property="updateTime"          column="update_time"/>
+        <result property="remark"              column="remark"/>
+    </resultMap>
+
+    <sql id="selectContractVo">
+        SELECT contract_id, contract_no, contract_name, order_id, order_no, supplier_id, supplier_name,
+               status, contract_type, sign_date, effective_date, expire_date, contract_amount, paid_amount,
+               payment_terms, delivery_terms,
+               sign_by, sign_department, party_a, party_b, file_url, file_name, change_count,
+               terminate_date, terminate_reason,
+               del_flag, audit_by, audit_time, audit_opinion,
+               create_by, create_time, update_by, update_time, remark
+        FROM pms_contract
+    </sql>
+
+    <select id="selectContractList" parameterType="PmsContract" resultMap="PmsContractResult">
+        <include refid="selectContractVo"/>
+        <where>
+            del_flag = '0'
+            <if test="contractNo != null and contractNo != ''"> AND contract_no LIKE CONCAT('%', #{contractNo}, '%')</if>
+            <if test="contractName != null and contractName != ''"> AND contract_name LIKE CONCAT('%', #{contractName}, '%')</if>
+            <if test="orderNo != null and orderNo != ''"> AND order_no LIKE CONCAT('%', #{orderNo}, '%')</if>
+            <if test="supplierId != null"> AND supplier_id = #{supplierId}</if>
+            <if test="supplierName != null and supplierName != ''"> AND supplier_name LIKE CONCAT('%', #{supplierName}, '%')</if>
+            <if test="status != null and status != ''"> AND status = #{status}</if>
+            <if test="contractType != null and contractType != ''"> AND contract_type = #{contractType}</if>
+        </where>
+        ORDER BY contract_id DESC
+    </select>
+
+    <select id="selectContractById" parameterType="Long" resultMap="PmsContractResult">
+        <include refid="selectContractVo"/>
+        WHERE contract_id = #{contractId}
+    </select>
+
+    <insert id="insertContract" parameterType="PmsContract" useGeneratedKeys="true" keyProperty="contractId">
+        INSERT INTO pms_contract (
+            contract_no, contract_name, order_id, order_no, supplier_id, supplier_name,
+            status, contract_type, sign_date, effective_date, expire_date, contract_amount, paid_amount,
+            payment_terms, delivery_terms,
+            sign_by, sign_department, party_a, party_b, file_url, file_name, change_count,
+            terminate_date, terminate_reason,
+            del_flag, audit_by, audit_time, audit_opinion,
+            create_by, create_time, remark
+        ) VALUES (
+            #{contractNo}, #{contractName}, #{orderId}, #{orderNo}, #{supplierId}, #{supplierName},
+            #{status}, #{contractType}, #{signDate}, #{effectiveDate}, #{expireDate}, #{contractAmount}, #{paidAmount},
+            #{paymentTerms}, #{deliveryTerms},
+            #{signBy}, #{signDepartment}, #{partyA}, #{partyB}, #{fileUrl}, #{fileName}, #{changeCount},
+            #{terminateDate}, #{terminateReason},
+            #{delFlag}, #{auditBy}, #{auditTime}, #{auditOpinion},
+            #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateContract" parameterType="PmsContract">
+        UPDATE pms_contract
+        <set>
+            <if test="contractNo != null and contractNo != ''">contract_no = #{contractNo},</if>
+            <if test="contractName != null">contract_name = #{contractName},</if>
+            <if test="orderId != null">order_id = #{orderId},</if>
+            <if test="orderNo != null">order_no = #{orderNo},</if>
+            <if test="supplierId != null">supplier_id = #{supplierId},</if>
+            <if test="supplierName != null">supplier_name = #{supplierName},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="contractType != null">contract_type = #{contractType},</if>
+            <if test="signDate != null">sign_date = #{signDate},</if>
+            <if test="effectiveDate != null">effective_date = #{effectiveDate},</if>
+            <if test="expireDate != null">expire_date = #{expireDate},</if>
+            <if test="contractAmount != null">contract_amount = #{contractAmount},</if>
+            <if test="paidAmount != null">paid_amount = #{paidAmount},</if>
+            <if test="paymentTerms != null">payment_terms = #{paymentTerms},</if>
+            <if test="deliveryTerms != null">delivery_terms = #{deliveryTerms},</if>
+            <if test="signBy != null">sign_by = #{signBy},</if>
+            <if test="signDepartment != null">sign_department = #{signDepartment},</if>
+            <if test="partyA != null">party_a = #{partyA},</if>
+            <if test="partyB != null">party_b = #{partyB},</if>
+            <if test="fileUrl != null">file_url = #{fileUrl},</if>
+            <if test="fileName != null">file_name = #{fileName},</if>
+            <if test="changeCount != null">change_count = #{changeCount},</if>
+            <if test="terminateDate != null">terminate_date = #{terminateDate},</if>
+            <if test="terminateReason != null">terminate_reason = #{terminateReason},</if>
+            <if test="auditBy != null">audit_by = #{auditBy},</if>
+            <if test="auditTime != null">audit_time = #{auditTime},</if>
+            <if test="auditOpinion != null">audit_opinion = #{auditOpinion},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE contract_id = #{contractId}
+    </update>
+
+    <delete id="deleteContractByIds" parameterType="Long">
+        UPDATE pms_contract SET del_flag = '2' WHERE contract_id IN
+        <foreach item="contractId" collection="array" open="(" separator="," close=")">#{contractId}</foreach>
+    </delete>
+
+    <!-- 合同变更 -->
+    <select id="selectContractChangeByContractId" parameterType="Long" resultMap="PmsContractChangeResult">
+        SELECT change_id, contract_id, change_no, change_type, field_name, new_value, change_content, original_content,
+               change_reason, change_date, change_by, audit_by, audit_time, audit_status, audit_remark,
+               del_flag, create_by, create_time, update_by, update_time, remark
+        FROM pms_contract_change
+        WHERE contract_id = #{contractId} AND del_flag = '0'
+        ORDER BY change_id DESC
+    </select>
+
+    <select id="selectContractChangeById" parameterType="Long" resultMap="PmsContractChangeResult">
+        SELECT change_id, contract_id, change_no, change_type, field_name, new_value, change_content, original_content,
+               change_reason, change_date, change_by, audit_by, audit_time, audit_status, audit_remark,
+               del_flag, create_by, create_time, update_by, update_time, remark
+        FROM pms_contract_change
+        WHERE change_id = #{changeId} AND del_flag = '0'
+    </select>
+
+    <insert id="insertContractChange" parameterType="PmsContractChange" useGeneratedKeys="true" keyProperty="changeId">
+        INSERT INTO pms_contract_change (
+            contract_id, change_no, change_type, field_name, new_value, change_content, original_content,
+            change_reason, change_date, change_by, audit_by, audit_time, audit_status, audit_remark,
+            del_flag, create_by, create_time, remark
+        ) VALUES (
+            #{contractId}, #{changeNo}, #{changeType}, #{fieldName}, #{newValue}, #{changeContent}, #{originalContent},
+            #{changeReason}, #{changeDate}, #{changeBy}, #{auditBy}, #{auditTime}, #{auditStatus}, #{auditRemark},
+            #{delFlag}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateContractChange" parameterType="PmsContractChange">
+        UPDATE pms_contract_change
+        <set>
+            <if test="changeType != null">change_type = #{changeType},</if>
+            <if test="fieldName != null">field_name = #{fieldName},</if>
+            <if test="newValue != null">new_value = #{newValue},</if>
+            <if test="changeContent != null">change_content = #{changeContent},</if>
+            <if test="originalContent != null">original_content = #{originalContent},</if>
+            <if test="changeReason != null">change_reason = #{changeReason},</if>
+            <if test="auditBy != null">audit_by = #{auditBy},</if>
+            <if test="auditTime != null">audit_time = #{auditTime},</if>
+            <if test="auditStatus != null">audit_status = #{auditStatus},</if>
+            <if test="auditRemark != null">audit_remark = #{auditRemark},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE change_id = #{changeId}
+    </update>
+
+    <delete id="deleteContractChangeByContractId" parameterType="Long">
+        UPDATE pms_contract_change SET del_flag = '2' WHERE contract_id = #{contractId}
+    </delete>
+
+
+    <!-- 查询已到期但状态仍为已签订的合同 -->
+    <select id="selectExpiredContracts" resultMap="PmsContractResult">
+        <include refid="selectContractVo"/>
+        WHERE del_flag = '0'
+          AND status = '1'
+          AND expire_date IS NOT NULL
+          AND expire_date &lt; CURDATE()
+    </select>
+
+</mapper>

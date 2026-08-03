@@ -191,6 +191,13 @@
                 <version>${ruoyi.version}</version>
             </dependency>
 
+            <!-- PMS采购管理模块-->
+            <dependency>
+                <groupId>com.ruoyi</groupId>
+                <artifactId>ruoyi-pms</artifactId>
+                <version>${ruoyi.version}</version>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
 
@@ -204,6 +211,7 @@
         <module>ruoyi-wms</module>
         <module>ruoyi-dms</module>
         <module>ruoyi-mk</module>
+        <module>ruoyi-pms</module>
     </modules>
     <packaging>pom</packaging>
 

@@ -25,27 +25,22 @@ export function delOrder(orderId) {
   return request({ url: '/mk/order/' + orderId, method: 'delete' })
 }
 
-// 订单发货
+// 订单发货（支持多次发货）
 export function deliverOrder(data) {
   return request({ url: '/mk/order/deliver', method: 'put', data: data })
 }
 
-// 订单确认
-export function confirmOrder(orderId) {
-  return request({ url: '/mk/order/confirm/' + orderId, method: 'put' })
+// 订单提交（草稿/已驳回 → 待审核）
+export function submitOrder(orderId) {
+  return request({ url: '/mk/order/submit/' + orderId, method: 'put' })
 }
 
-// 订单签收
-export function receiveOrder(orderId, receivePerson) {
-  return request({ url: '/mk/order/receive/' + orderId, method: 'put', params: { receivePerson } })
+// 订单作废（草稿/待审核/已审核/部分发货 → 已作废）
+export function voidOrder(orderId, voidReason) {
+  return request({ url: '/mk/order/void/' + orderId, method: 'put', params: { voidReason } })
 }
 
-// 订单完成
-export function completeOrder(orderId) {
-  return request({ url: '/mk/order/complete/' + orderId, method: 'put' })
-}
-
-// 订单取消
-export function cancelOrder(orderId, cancelReason) {
-  return request({ url: '/mk/order/cancel/' + orderId, method: 'put', params: { cancelReason } })
+// 订单审核（待审核 → 已审核/已驳回）
+export function auditOrder(orderId, status, auditOpinion) {
+  return request({ url: '/mk/order/audit/' + orderId, method: 'put', params: { status, auditOpinion } })
 }

@@ -34,25 +34,21 @@
       <el-table-column label="订单状态" prop="orderStatus" :width="colWidth('orderStatus', 100)" resizable align="center">
         <template #default="scope"><dict-tag :options="marketing_order_status" :value="scope.row.orderStatus" /></template>
       </el-table-column>
-      <el-table-column label="物流公司" prop="logisticsCompany" :width="colWidth('logisticsCompany', 120)" resizable />
-      <el-table-column label="物流单号" prop="trackingNo" :width="colWidth('trackingNo', 150)" resizable />
       <el-table-column label="负责人" prop="userName" :width="colWidth('userName', 100)" resizable />
       <el-table-column label="操作" width="360" align="center" fixed="right">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">详情</el-button>
-          <!-- 待确认：确认 -->
-          <el-button v-if="scope.row.orderStatus === '0'" link type="success" icon="Check" @click="handleConfirm(scope.row)" v-hasPermi="['marketing:order:confirm']">确认</el-button>
-          <!-- 已确认：发货 -->
-          <el-button v-if="scope.row.orderStatus === '1'" link type="warning" icon="Promotion" @click="handleDeliver(scope.row)" v-hasPermi="['marketing:order:deliver']">发货</el-button>
-          <!-- 已发货：签收 -->
-          <el-button v-if="scope.row.orderStatus === '2'" link type="success" icon="Box" @click="handleReceive(scope.row)" v-hasPermi="['marketing:order:receive']">签收</el-button>
-          <!-- 已签收：完成 -->
-          <el-button v-if="scope.row.orderStatus === '3'" link type="success" icon="CircleCheck" @click="handleComplete(scope.row)" v-hasPermi="['marketing:order:edit']">完成</el-button>
-          <!-- 待确认/已确认：修改 -->
-          <el-button v-if="scope.row.orderStatus === '0' || scope.row.orderStatus === '1'" link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['marketing:order:edit']">修改</el-button>
-          <!-- 待确认/已确认：取消 -->
-          <el-button v-if="scope.row.orderStatus === '0' || scope.row.orderStatus === '1'" link type="danger" icon="CircleClose" @click="handleCancel(scope.row)" v-hasPermi="['marketing:order:cancel']">取消</el-button>
-          <!-- 已签收/已完成：退货 -->
+          <!-- 草稿/已驳回：提交 -->
+          <el-button v-if="scope.row.orderStatus === '0' || scope.row.orderStatus === '5'" link type="success" icon="Promotion" @click="handleSubmit(scope.row)" v-hasPermi="['marketing:order:edit']">提交</el-button>
+          <!-- 待审核：审核 -->
+          <el-button v-if="scope.row.orderStatus === '1'" link type="primary" icon="Check" @click="handleAudit(scope.row)" v-hasPermi="['marketing:order:approve']">审核</el-button>
+          <!-- 已审核/部分发货：发货 -->
+          <el-button v-if="scope.row.orderStatus === '2' || scope.row.orderStatus === '3'" link type="warning" icon="Promotion" @click="handleDeliver(scope.row)" v-hasPermi="['marketing:order:deliver']">发货</el-button>
+          <!-- 草稿/已驳回：修改 -->
+          <el-button v-if="scope.row.orderStatus === '0' || scope.row.orderStatus === '5'" link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['marketing:order:edit']">修改</el-button>
+          <!-- 草稿/待审核/已审核/部分发货：作废 -->
+          <el-button v-if="scope.row.orderStatus === '0' || scope.row.orderStatus === '1' || scope.row.orderStatus === '2' || scope.row.orderStatus === '3'" link type="danger" icon="CircleClose" @click="handleVoid(scope.row)" v-hasPermi="['marketing:order:cancel']">作废</el-button>
+          <!-- 部分发货/已完成：退货 -->
           <el-button v-if="scope.row.orderStatus === '3' || scope.row.orderStatus === '4'" link type="danger" icon="RefreshLeft" @click="handleReturn(scope.row)" v-hasPermi="['marketing:return:add']">退货</el-button>
         </template>
       </el-table-column>
@@ -252,6 +248,36 @@
               <el-form-item label="备注" prop="remark"><el-input v-model="form.remark" type="textarea" :rows="2" placeholder="请输入备注" /></el-form-item>
             </div>
           </section>
+
+          <!-- 审核记录（含驳回提示） -->
+          <section class="rd-card" v-if="form.auditLogList && form.auditLogList.length">
+            <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>审核记录</div></div>
+            <div class="rd-card-body" style="display:block">
+              <el-alert v-if="form.orderStatus === '5'" type="warning" :closable="false" show-icon class="reject-alert">
+                <template #title>该订单已被驳回，请根据审核意见修改后重新提交</template>
+              </el-alert>
+              <div class="rd-timeline">
+                <div class="rd-timeline-item" v-for="log in form.auditLogList" :key="log.logId">
+                  <div class="rd-timeline-dot" :class="{ 'rd-timeline-dot--success': log.auditAction === '1', 'rd-timeline-dot--error': log.auditAction === '2' }"></div>
+                  <div class="rd-timeline-content">
+                    <div class="rd-timeline-header">
+                      <span class="rd-timeline-title">
+                        <el-tag v-if="log.auditAction === '1'" type="success" size="small" effect="light" round>审核通过</el-tag>
+                        <el-tag v-else-if="log.auditAction === '2'" type="danger" size="small" effect="light" round>审核驳回</el-tag>
+                      </span>
+                      <span class="rd-timeline-time">{{ log.auditTime }}</span>
+                    </div>
+                    <div class="rd-timeline-body">
+                      <div class="rd-item"><span class="rd-label">审核人</span><div class="rd-value">{{ log.auditBy || '-' }}</div></div>
+                    </div>
+                    <div class="rd-timeline-comment" v-if="log.auditRemark">
+                      <strong>审核意见：</strong>{{ log.auditRemark }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
         </div>
       </el-form>
       <template #footer>
@@ -307,6 +333,7 @@
               <div class="rd-item"><span class="rd-label">客户名称</span><div class="rd-value">{{ viewForm.customerName }}</div></div>
               <div class="rd-item"><span class="rd-label">订单金额</span><div class="rd-value rd-value--large rd-amount">￥{{ formatAmount(viewForm.orderAmount) }}</div></div>
               <div class="rd-item"><span class="rd-label">订单状态</span><div class="rd-value"><dict-tag :options="marketing_order_status" :value="viewForm.orderStatus" /></div></div>
+              <div class="rd-item" v-if="viewForm.finishTime"><span class="rd-label">完成时间</span><div class="rd-value">{{ viewForm.finishTime }}</div></div>
             </div>
           </div>
         </section>
@@ -340,6 +367,9 @@
                 <template #default="scope"><dict-tag :options="wms_unit" :value="scope.row.unit" /></template>
               </el-table-column>
               <el-table-column label="数量" prop="quantity" width="80" align="center" />
+              <el-table-column label="已发货" width="80" align="center">
+                <template #default="scope"><span>{{ scope.row.shippedQty || 0 }}</span></template>
+              </el-table-column>
               <el-table-column label="单价" width="100" align="center">
                 <template #default="scope">{{ formatAmount(scope.row.unitPrice) }}</template>
               </el-table-column>
@@ -350,36 +380,6 @@
             <div class="rd-empty" v-else>
               <svg class="rd-empty-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
               <p class="rd-empty-text">暂无订单明细</p>
-            </div>
-          </div>
-        </section>
-
-        <!-- 物流信息 -->
-        <section class="rd-card">
-          <div class="rd-card-header" @click="toggleCard('logistics')">
-            <div class="rd-card-title">
-              <span class="rd-card-icon">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <rect x="1" y="3" width="15" height="13"/>
-                  <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/>
-                  <circle cx="5.5" cy="18.5" r="2.5"/>
-                  <circle cx="18.5" cy="18.5" r="2.5"/>
-                </svg>
-              </span>
-              物流信息
-            </div>
-            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.logistics }" aria-label="折叠">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
-            </button>
-          </div>
-          <div class="rd-card-body" v-show="!collapsedCards.logistics">
-            <div class="rd-grid">
-              <div class="rd-item"><span class="rd-label">物流公司</span><div class="rd-value">{{ viewForm.logisticsCompany }}</div></div>
-              <div class="rd-item"><span class="rd-label">物流单号</span><div class="rd-value">{{ viewForm.trackingNo }}</div></div>
-              <div class="rd-item"><span class="rd-label">发货时间</span><div class="rd-value">{{ viewForm.deliverTime }}</div></div>
-              <div class="rd-item"><span class="rd-label">签收时间</span><div class="rd-value">{{ viewForm.receiveTime }}</div></div>
-              <div class="rd-item"><span class="rd-label">签收人</span><div class="rd-value">{{ viewForm.receivePerson }}</div></div>
-              <div class="rd-item"><span class="rd-label">完成时间</span><div class="rd-value">{{ viewForm.finishTime }}</div></div>
             </div>
           </div>
         </section>
@@ -435,8 +435,35 @@
                 <div class="rd-value" :class="{ 'rd-value--muted': !viewForm.remark }">{{ viewForm.remark || '暂无备注' }}</div>
               </div>
               <div class="rd-item rd-item--full" v-if="viewForm.cancelReason">
-                <span class="rd-label">取消原因</span>
+                <span class="rd-label">作废原因</span>
                 <div class="rd-value">{{ viewForm.cancelReason }}</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 审核记录 -->
+        <section class="rd-card" v-if="viewForm.auditLogList && viewForm.auditLogList.length">
+          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>审核记录</div></div>
+          <div class="rd-card-body" style="display:block">
+            <div class="rd-timeline">
+              <div class="rd-timeline-item" v-for="log in viewForm.auditLogList" :key="log.logId">
+                <div class="rd-timeline-dot" :class="{ 'rd-timeline-dot--success': log.auditAction === '1', 'rd-timeline-dot--error': log.auditAction === '2' }"></div>
+                <div class="rd-timeline-content">
+                  <div class="rd-timeline-header">
+                    <span class="rd-timeline-title">
+                      <el-tag v-if="log.auditAction === '1'" type="success" size="small" effect="light" round>审核通过</el-tag>
+                      <el-tag v-else-if="log.auditAction === '2'" type="danger" size="small" effect="light" round>审核驳回</el-tag>
+                    </span>
+                    <span class="rd-timeline-time">{{ log.auditTime }}</span>
+                  </div>
+                  <div class="rd-timeline-body">
+                    <div class="rd-item"><span class="rd-label">审核人</span><div class="rd-value">{{ log.auditBy || '-' }}</div></div>
+                  </div>
+                  <div class="rd-timeline-comment" v-if="log.auditRemark">
+                    <strong>审核意见：</strong>{{ log.auditRemark }}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -444,8 +471,8 @@
       </div>
     </el-dialog>
 
-    <!-- 发货对话框 -->
-    <el-dialog v-model="deliverOpen" width="700px" append-to-body draggable class="order-deliver-dialog">
+    <!-- 发货对话框（支持多次发货） -->
+    <el-dialog v-model="deliverOpen" width="900px" append-to-body draggable class="order-deliver-dialog">
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon">
@@ -491,54 +518,42 @@
             </div>
           </section>
 
-          <!-- 物流信息 -->
+          <!-- 发货明细 -->
           <section class="rd-card">
-            <div class="rd-card-header" @click="toggleCard('deliverLogistics')">
+            <div class="rd-card-header" @click="toggleCard('deliverItems')">
               <div class="rd-card-title">
                 <span class="rd-card-icon">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="1" y="3" width="15" height="13"/>
-                    <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/>
-                    <circle cx="5.5" cy="18.5" r="2.5"/>
-                    <circle cx="18.5" cy="18.5" r="2.5"/>
-                  </svg>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
                 </span>
-                物流信息
+                发货明细
               </div>
-              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.deliverLogistics }" aria-label="折叠">
+              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.deliverItems }" aria-label="折叠">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
               </button>
             </div>
-            <div class="rd-card-body" v-show="!collapsedCards.deliverLogistics">
-              <el-row>
-                <el-col :span="12"><el-form-item label="物流公司" prop="logisticsCompany"><el-input v-model="deliverForm.logisticsCompany" placeholder="请输入物流公司" style="width: 100%" /></el-form-item></el-col>
-                <el-col :span="12"><el-form-item label="物流单号" prop="trackingNo"><el-input v-model="deliverForm.trackingNo" placeholder="请输入物流单号" style="width: 100%" /></el-form-item></el-col>
-                <el-col :span="12"><el-form-item label="发货时间" prop="deliverTime"><el-date-picker v-model="deliverForm.deliverTime" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" placeholder="选择发货时间" style="width: 100%" /></el-form-item></el-col>
-              </el-row>
+            <div class="rd-card-body" v-show="!collapsedCards.deliverItems">
+              <el-table border :data="deliverForm.itemList" size="small" v-if="deliverForm.itemList && deliverForm.itemList.length > 0">
+                <el-table-column label="商品名称" prop="productName" show-overflow-tooltip align="center" />
+                <el-table-column label="规格型号" prop="productSpec" width="140" align="center" />
+                <el-table-column label="单位" width="80" align="center">
+                  <template #default="scope"><dict-tag :options="wms_unit" :value="scope.row.unit" /></template>
+                </el-table-column>
+                <el-table-column label="订购数量" prop="quantity" width="90" align="center" />
+                <el-table-column label="已发货" width="90" align="center">
+                  <template #default="scope"><span>{{ scope.row.shippedQty || 0 }}</span></template>
+                </el-table-column>
+                <el-table-column label="本次发货" width="120" align="center">
+                  <template #default="scope">
+                    <el-input-number v-model="scope.row.deliverQty" :min="0" :max="scope.row.quantity - (scope.row.shippedQty || 0)" :controls="false" size="small" style="width: 100%" />
+                  </template>
+                </el-table-column>
+              </el-table>
+              <div class="rd-empty" v-else>
+                <p class="rd-empty-text">暂无订单明细</p>
+              </div>
             </div>
           </section>
 
-          <!-- 其他信息 -->
-          <section class="rd-card">
-            <div class="rd-card-header" @click="toggleCard('deliverOther')">
-              <div class="rd-card-title">
-                <span class="rd-card-icon">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="10"/>
-                    <line x1="12" y1="16" x2="12" y2="12"/>
-                    <line x1="12" y1="8" x2="12.01" y2="8"/>
-                  </svg>
-                </span>
-                其他信息
-              </div>
-              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.deliverOther }" aria-label="折叠">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
-              </button>
-            </div>
-            <div class="rd-card-body" v-show="!collapsedCards.deliverOther">
-              <el-form-item label="备注"><el-input v-model="deliverForm.remark" type="textarea" :rows="2" placeholder="请输入备注" /></el-form-item>
-            </div>
-          </section>
         </div>
       </el-form>
       <template #footer>
@@ -547,82 +562,8 @@
       </template>
     </el-dialog>
 
-    <!-- 签收对话框 -->
-    <el-dialog v-model="receiveOpen" width="600px" append-to-body draggable class="order-receive-dialog">
-      <template #header>
-        <div class="rd-detail-header">
-          <div class="rd-detail-header-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 8V21H3V8"/>
-              <path d="M1 3h22v5H1z"/>
-              <path d="M10 12h4"/>
-            </svg>
-          </div>
-          <span class="rd-detail-header-title">订单签收</span>
-          <div class="rd-detail-header-sub" v-if="receiveForm.orderNo">
-            <span class="rd-detail-header-divider"></span>
-            <span class="rd-detail-header-no">编号：{{ receiveForm.orderNo }}</span>
-          </div>
-        </div>
-      </template>
-      <el-form ref="receiveRef" :model="receiveForm" label-width="100px">
-        <div class="rd-page">
-          <!-- 订单信息 -->
-          <section class="rd-card">
-            <div class="rd-card-header" @click="toggleCard('receiveOrder')">
-              <div class="rd-card-title">
-                <span class="rd-card-icon">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                    <polyline points="14 2 14 8 20 8"/>
-                    <line x1="16" y1="13" x2="8" y2="13"/>
-                    <line x1="16" y1="17" x2="8" y2="17"/>
-                  </svg>
-                </span>
-                订单信息
-              </div>
-              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.receiveOrder }" aria-label="折叠">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
-              </button>
-            </div>
-            <div class="rd-card-body" v-show="!collapsedCards.receiveOrder">
-              <div class="rd-grid">
-                <div class="rd-item"><span class="rd-label">订单编号</span><div class="rd-value">{{ receiveForm.orderNo }}</div></div>
-                <div class="rd-item"><span class="rd-label">客户名称</span><div class="rd-value">{{ receiveForm.customerName }}</div></div>
-              </div>
-            </div>
-          </section>
-
-          <!-- 签收信息 -->
-          <section class="rd-card">
-            <div class="rd-card-header" @click="toggleCard('receiveInfo')">
-              <div class="rd-card-title">
-                <span class="rd-card-icon">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                    <polyline points="22 4 12 14.01 9 11.01"/>
-                  </svg>
-                </span>
-                签收信息
-              </div>
-              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.receiveInfo }" aria-label="折叠">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
-              </button>
-            </div>
-            <div class="rd-card-body" v-show="!collapsedCards.receiveInfo">
-              <el-form-item label="签收人" prop="receivePerson"><el-input v-model="receiveForm.receivePerson" placeholder="请输入签收人" style="width: 100%" /></el-form-item>
-            </div>
-          </section>
-        </div>
-      </el-form>
-      <template #footer>
-        <el-button type="success" @click="submitReceive">确认签收</el-button>
-        <el-button @click="receiveOpen = false">取 消</el-button>
-      </template>
-    </el-dialog>
-
-    <!-- 取消订单对话框 -->
-    <el-dialog v-model="cancelOpen" width="600px" append-to-body draggable class="order-cancel-dialog">
+    <!-- 作废订单对话框 -->
+    <el-dialog v-model="voidOpen" width="600px" append-to-body draggable class="order-cancel-dialog">
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon">
@@ -632,10 +573,10 @@
               <line x1="9" y1="9" x2="15" y2="15"/>
             </svg>
           </div>
-          <span class="rd-detail-header-title">取消订单</span>
-          <div class="rd-detail-header-sub" v-if="cancelForm.orderNo">
+          <span class="rd-detail-header-title">订单作废</span>
+          <div class="rd-detail-header-sub" v-if="voidForm.orderNo">
             <span class="rd-detail-header-divider"></span>
-            <span class="rd-detail-header-no">编号：{{ cancelForm.orderNo }}</span>
+            <span class="rd-detail-header-no">编号：{{ voidForm.orderNo }}</span>
           </div>
         </div>
       </template>
@@ -661,12 +602,12 @@
             </div>
             <div class="rd-card-body" v-show="!collapsedCards.cancelOrder">
               <div class="rd-grid">
-                <div class="rd-item"><span class="rd-label">订单编号</span><div class="rd-value">{{ cancelForm.orderNo }}</div></div>
+                <div class="rd-item"><span class="rd-label">订单编号</span><div class="rd-value">{{ voidForm.orderNo }}</div></div>
               </div>
             </div>
           </section>
 
-          <!-- 取消信息 -->
+          <!-- 作废信息 -->
           <section class="rd-card">
             <div class="rd-card-header" @click="toggleCard('cancelInfo')">
               <div class="rd-card-title">
@@ -677,23 +618,23 @@
                     <line x1="9" y1="9" x2="15" y2="15"/>
                   </svg>
                 </span>
-                取消信息
+                作废信息
               </div>
               <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.cancelInfo }" aria-label="折叠">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
               </button>
             </div>
             <div class="rd-card-body" v-show="!collapsedCards.cancelInfo">
-              <el-form-item label="取消原因">
-                <el-input v-model="cancelForm.cancelReason" type="textarea" :rows="3" placeholder="请输入取消原因" />
+              <el-form-item label="作废原因">
+                <el-input v-model="voidForm.voidReason" type="textarea" :rows="3" placeholder="请输入作废原因" />
               </el-form-item>
             </div>
           </section>
         </div>
       </el-form>
       <template #footer>
-        <el-button type="danger" @click="submitCancel">确认取消</el-button>
-        <el-button @click="cancelOpen = false">取 消</el-button>
+        <el-button type="danger" @click="submitVoid">确认作废</el-button>
+        <el-button @click="voidOpen = false">取 消</el-button>
       </template>
     </el-dialog>
 
@@ -776,6 +717,112 @@
       </template>
     </el-dialog>
 
+    <!-- 审核对话框 -->
+    <el-dialog v-model="auditOpen" width="960px" append-to-body draggable class="order-audit-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          </div>
+          <span class="rd-detail-header-title">订单审核</span>
+          <div class="rd-detail-header-sub" v-if="auditData.orderNo">
+            <span class="rd-detail-header-divider"></span>
+            <span class="rd-detail-header-no">编号：{{ auditData.orderNo }}</span>
+          </div>
+        </div>
+      </template>
+      <div class="rd-page">
+        <!-- 订单信息摘要 -->
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('auditOrder')">
+            <div class="rd-card-title">
+              <span class="rd-card-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+              </span>
+              订单信息
+            </div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.auditOrder }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.auditOrder">
+            <div class="rd-grid">
+              <div class="rd-item"><span class="rd-label">订单编号</span><div class="rd-value">{{ auditData.orderNo || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">合同编号</span><div class="rd-value">{{ auditData.contractNo || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">客户名称</span><div class="rd-value">{{ auditData.customerName || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">订单金额</span><div class="rd-value rd-value--large rd-amount">￥{{ formatAmount(auditData.orderAmount) }}</div></div>
+              <div class="rd-item"><span class="rd-label">订单状态</span><div class="rd-value"><dict-tag :options="marketing_order_status" :value="auditData.orderStatus" /></div></div>
+              <div class="rd-item"><span class="rd-label">负责人</span><div class="rd-value">{{ auditData.userName || '-' }}</div></div>
+              <div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value">{{ auditData.remark || '-' }}</div></div>
+            </div>
+          </div>
+        </section>
+        <!-- 订单明细 -->
+        <section class="rd-card" v-if="auditData.itemList && auditData.itemList.length > 0">
+          <div class="rd-card-header" @click="toggleCard('auditItems')">
+            <div class="rd-card-title">
+              <span class="rd-card-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+              </span>
+              订单明细
+            </div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.auditItems }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.auditItems">
+            <el-table border :data="auditData.itemList" size="small">
+              <el-table-column label="行号" prop="lineNo" width="70" align="center" />
+              <el-table-column label="商品名称" prop="productName" show-overflow-tooltip align="center" />
+              <el-table-column label="规格型号" prop="productSpec" width="140" align="center" />
+              <el-table-column label="单位" width="80" align="center"><template #default="scope"><dict-tag :options="wms_unit" :value="scope.row.unit" /></template></el-table-column>
+              <el-table-column label="数量" prop="quantity" width="80" align="center" />
+              <el-table-column label="单价" width="100" align="center"><template #default="scope">{{ formatAmount(scope.row.unitPrice) }}</template></el-table-column>
+              <el-table-column label="小计" width="120" align="center"><template #default="scope">{{ formatAmount(scope.row.subtotal) }}</template></el-table-column>
+            </el-table>
+          </div>
+        </section>
+        <!-- 历史审核记录 -->
+        <section class="rd-card" v-if="auditData.auditLogList && auditData.auditLogList.length">
+          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>审核记录</div></div>
+          <div class="rd-card-body" style="display:block">
+            <div class="rd-timeline">
+              <div class="rd-timeline-item" v-for="log in auditData.auditLogList" :key="log.logId">
+                <div class="rd-timeline-dot" :class="{ 'rd-timeline-dot--success': log.auditAction === '1', 'rd-timeline-dot--error': log.auditAction === '2' }"></div>
+                <div class="rd-timeline-content">
+                  <div class="rd-timeline-header">
+                    <span class="rd-timeline-title">
+                      <el-tag v-if="log.auditAction === '1'" type="success" size="small" effect="light" round>审核通过</el-tag>
+                      <el-tag v-else-if="log.auditAction === '2'" type="danger" size="small" effect="light" round>审核驳回</el-tag>
+                    </span>
+                    <span class="rd-timeline-time">{{ log.auditTime }}</span>
+                  </div>
+                  <div class="rd-timeline-body">
+                    <div class="rd-item"><span class="rd-label">审核人</span><div class="rd-value">{{ log.auditBy || '-' }}</div></div>
+                  </div>
+                  <div class="rd-timeline-comment" v-if="log.auditRemark">
+                    <strong>审核意见：</strong>{{ log.auditRemark }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+        <!-- 审核意见 -->
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('auditOpinion')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 15l2 2 4-4"/></svg></span>审核意见</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.auditOpinion }" type="button"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.auditOpinion">
+            <el-form ref="auditRef" :model="auditForm" :rules="auditRules" label-width="100px">
+              <el-form-item label="审核意见" prop="auditOpinion">
+                <el-input v-model="auditForm.auditOpinion" type="textarea" :rows="4" placeholder="请输入审核意见" show-word-limit maxlength="500" />
+              </el-form-item>
+            </el-form>
+          </div>
+        </section>
+      </div>
+      <template #footer>
+        <el-button type="success" @click="submitAudit(true)">通 过</el-button>
+        <el-button type="danger" @click="submitAudit(false)">驳 回</el-button>
+        <el-button @click="auditOpen = false">取 消</el-button>
+      </template>
+    </el-dialog>
+
     <!-- 负责人选择弹窗 -->
     <user-picker ref="userPickerRef" title="选择负责人" @confirm="onUserPickerConfirm" />
 
@@ -786,7 +833,7 @@
 
 <script setup name="MkOrder">
 import { CircleClose } from '@element-plus/icons-vue'
-import { listOrder, getOrder, addOrder, updateOrder, delOrder, deliverOrder, confirmOrder, receiveOrder, completeOrder, cancelOrder } from '@/api/mk/order'
+import { listOrder, getOrder, addOrder, updateOrder, delOrder, deliverOrder, submitOrder, voidOrder, auditOrder } from '@/api/mk/order'
 import { listContract } from '@/api/mk/contract'
 import { listCustomer } from '@/api/mk/customer'
 import { listMaterial } from '@/api/wms/material'
@@ -803,8 +850,7 @@ const list = ref([])
 const open = ref(false)
 const viewOpen = ref(false)
 const deliverOpen = ref(false)
-const receiveOpen = ref(false)
-const cancelOpen = ref(false)
+const voidOpen = ref(false)
 const returnOpen = ref(false)
 const loading = ref(true)
 const showSearch = ref(true)
@@ -818,17 +864,16 @@ const contractOptions = ref([])
 const materialOptions = ref([])
 const viewForm = ref({})
 const deliverForm = ref({})
-const receiveForm = ref({})
-const cancelForm = ref({})
+const voidForm = ref({})
 const returnForm = ref({})
-const collapsedCards = reactive({ basic: false, logistics: false, owner: false, items: false, other: false, deliverOrder: false, deliverLogistics: false, deliverOther: false, returnOrder: false, returnInfo: false, receiveOrder: false, receiveInfo: false, cancelOrder: false, cancelInfo: false })
+const auditOpen = ref(false)
+const auditData = ref({})
+const auditForm = ref({ orderId: null, auditOpinion: null })
+const collapsedCards = reactive({ basic: false, owner: false, items: false, other: false, deliverOrder: false, deliverItems: false, returnOrder: false, returnInfo: false, cancelOrder: false, cancelInfo: false })
 function toggleCard(name) { collapsedCards[name] = !collapsedCards[name] }
 function formatAmount(val) { if (val == null || val === '') return '-'; return Number(val).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }
 
 const deliverRules = {
-  logisticsCompany: [{ required: true, message: '请输入物流公司', trigger: 'blur' }],
-  trackingNo: [{ required: true, message: '请输入物流单号', trigger: 'blur' }],
-  deliverTime: [{ required: true, message: '请选择发货时间', trigger: 'change' }]
 }
 
 const returnRules = {
@@ -842,9 +887,12 @@ const data = reactive({
   rules: {
     customerId: [{ required: true, message: '请选择关联客户', trigger: 'change' }],
     orderAmount: [{ required: true, message: '订单金额不能为空', trigger: 'blur' }]
+  },
+  auditRules: {
+    auditOpinion: [{ required: true, message: '请输入审核意见', trigger: 'blur' }]
   }
 })
-const { queryParams, form, rules } = toRefs(data)
+const { queryParams, form, rules, auditRules } = toRefs(data)
 
 const selectedMaterialIds = computed(() => {
   if (!form.value.itemList) return []
@@ -905,25 +953,27 @@ function calcSubtotal(index) { const item = form.value.itemList[index]; if (item
 function handleQuery() { queryParams.value.pageNum = 1; getList() }
 function resetQuery() { proxy.resetForm('queryRef'); handleQuery() }
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.orderId); single.value = selection.length !== 1; multiple.value = !selection.length }
-function reset() { form.value = { orderNo: undefined, contractId: undefined, contractNo: undefined, customerId: undefined, customerName: undefined, orderAmount: 0, orderStatus: '0', logisticsCompany: undefined, trackingNo: undefined, deliverTime: undefined, finishTime: undefined, userId: undefined, userName: undefined, deptId: undefined, deptName: undefined, itemList: [], remark: undefined }; collapsedCards.basic = false; collapsedCards.logistics = false; collapsedCards.owner = false; collapsedCards.items = false; collapsedCards.other = false; proxy.resetForm('orderRef') }
+function reset() { form.value = { orderNo: undefined, contractId: undefined, contractNo: undefined, customerId: undefined, customerName: undefined, orderAmount: 0, orderStatus: '0', userId: undefined, userName: undefined, deptId: undefined, deptName: undefined, itemList: [], remark: undefined }; collapsedCards.basic = false; collapsedCards.owner = false; collapsedCards.items = false; collapsedCards.other = false; proxy.resetForm('orderRef') }
 function handleAdd() { reset(); open.value = true; title.value = '新增订单' }
 function handleUpdate(row) { reset(); getOrder(row.orderId || ids.value[0]).then(res => { form.value = res.data; if (!form.value.itemList) { form.value.itemList = [] }; open.value = true; title.value = '修改订单' }) }
-function handleView(row) { getOrder(row.orderId).then(res => { viewForm.value = res.data; collapsedCards.basic = false; collapsedCards.logistics = !res.data.logisticsCompany && !res.data.trackingNo && !res.data.deliverTime && !res.data.receiveTime && !res.data.receivePerson && !res.data.finishTime; collapsedCards.owner = false; collapsedCards.items = !res.data.itemList || res.data.itemList.length === 0; collapsedCards.other = !res.data.remark && !res.data.cancelReason; viewOpen.value = true }) }
+function handleView(row) { getOrder(row.orderId).then(res => { viewForm.value = res.data; collapsedCards.basic = false; collapsedCards.owner = false; collapsedCards.items = !res.data.itemList || res.data.itemList.length === 0; collapsedCards.other = !res.data.remark && !res.data.cancelReason; viewOpen.value = true }) }
 function submitForm() { proxy.$refs['orderRef'].validate(valid => { if (valid) { if (form.value.orderId != undefined) { updateOrder(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList() }) } else { addOrder(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList() }) } } }) }
 function handleDelete(row) { const orderIds = row.orderId || ids.value; proxy.$modal.confirm('确认删除编号为"' + orderIds + '"的数据？').then(() => delOrder(orderIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
 
-function handleConfirm(row) { proxy.$modal.confirm('确认订单【' + row.orderNo + '】？').then(() => confirmOrder(row.orderId)).then(() => { getList(); proxy.$modal.msgSuccess('订单已确认') }).catch(() => {}) }
+function handleSubmit(row) { proxy.$modal.confirm('确认提交订单【' + row.orderNo + '】？').then(() => submitOrder(row.orderId)).then(() => { getList(); proxy.$modal.msgSuccess('订单提交成功') }).catch(() => {}) }
 
-function handleDeliver(row) { deliverForm.value = { orderId: row.orderId, orderNo: row.orderNo, customerName: row.customerName, logisticsCompany: undefined, trackingNo: undefined, deliverTime: undefined, remark: undefined }; deliverOpen.value = true }
-function submitDeliver() { proxy.$refs['deliverRef'].validate(valid => { if (valid) { deliverOrder(deliverForm.value).then(() => { proxy.$modal.msgSuccess('发货成功'); deliverOpen.value = false; getList() }) } }) }
+/** 审核按钮操作 */
+async function handleAudit(row) { const response = await getOrder(row.orderId); auditData.value = response.data; auditForm.value = { orderId: row.orderId, auditOpinion: null }; auditOpen.value = true }
 
-function handleReceive(row) { receiveForm.value = { orderId: row.orderId, orderNo: row.orderNo, customerName: row.customerName, receivePerson: undefined }; receiveOpen.value = true }
-function submitReceive() { receiveOrder(receiveForm.value.orderId, receiveForm.value.receivePerson).then(() => { proxy.$modal.msgSuccess('签收成功'); receiveOpen.value = false; getList() }) }
+/** 提交审核 */
+function submitAudit(passed) { proxy.$refs['auditRef'].validate(valid => { if (valid) { const status = passed ? '2' : '1'; const actionText = passed ? '通过' : '驳回'; proxy.$modal.confirm('确认' + actionText + '该订单？').then(() => auditOrder(auditForm.value.orderId, status, auditForm.value.auditOpinion)).then(() => { proxy.$modal.msgSuccess('审核成功'); auditOpen.value = false; getList() }).catch(() => {}) } }) }
 
-function handleComplete(row) { proxy.$modal.confirm('确认完成订单【' + row.orderNo + '】？').then(() => completeOrder(row.orderId)).then(() => { getList(); proxy.$modal.msgSuccess('订单已完成') }).catch(() => {}) }
+/** 发货按钮操作 - 加载订单明细 */
+async function handleDeliver(row) { const res = await getOrder(row.orderId); const items = (res.data.itemList || []).map(i => ({ ...i, deliverQty: 0 })); deliverForm.value = { orderId: row.orderId, orderNo: row.orderNo, customerName: row.customerName, itemList: items }; collapsedCards.deliverOrder = false; collapsedCards.deliverItems = false; deliverOpen.value = true }
+function submitDeliver() { proxy.$refs['deliverRef'].validate(valid => { if (valid) { const hasDeliverQty = deliverForm.value.itemList && deliverForm.value.itemList.some(i => i.deliverQty > 0); if (!hasDeliverQty) { proxy.$modal.msgWarning('请至少填写一行发货数量'); return } deliverOrder(deliverForm.value).then(() => { proxy.$modal.msgSuccess('发货成功'); deliverOpen.value = false; getList() }) } }) }
 
-function handleCancel(row) { cancelForm.value = { orderId: row.orderId, orderNo: row.orderNo, cancelReason: '' }; cancelOpen.value = true }
-function submitCancel() { if (!cancelForm.value.cancelReason) { proxy.$modal.msgWarning('请输入取消原因'); return }; cancelOrder(cancelForm.value.orderId, cancelForm.value.cancelReason).then(() => { proxy.$modal.msgSuccess('订单已取消'); cancelOpen.value = false; getList() }) }
+function handleVoid(row) { voidForm.value = { orderId: row.orderId, orderNo: row.orderNo, voidReason: '' }; voidOpen.value = true }
+function submitVoid() { if (!voidForm.value.voidReason) { proxy.$modal.msgWarning('请输入作废原因'); return }; voidOrder(voidForm.value.orderId, voidForm.value.voidReason).then(() => { proxy.$modal.msgSuccess('订单已作废'); voidOpen.value = false; getList() }) }
 
 function handleReturn(row) { returnForm.value = { orderId: row.orderId, orderNo: row.orderNo, customerId: row.customerId, customerName: row.customerName, orderAmount: row.orderAmount, returnAmount: row.orderAmount, returnReason: '' }; returnOpen.value = true }
 function submitReturn() { proxy.$refs['returnRef'].validate(valid => { if (valid) { addReturn(returnForm.value).then(() => { proxy.$modal.msgSuccess('退货申请已提交'); returnOpen.value = false; getList() }) } }) }
@@ -1024,5 +1074,84 @@ getCustomerOptions(); getContractOptions(); getMaterialOptions(); getList()
 }
 :deep(.el-input.is-disabled .el-input__inner) {
   cursor: pointer;
+}
+
+:deep(.order-audit-dialog .el-dialog__header) { padding: 0; margin: 0; border: none; }
+:deep(.order-audit-dialog .el-dialog__headerbtn) { top: 10px; right: 12px; z-index: 10; }
+:deep(.order-audit-dialog .el-dialog__headerbtn .el-dialog__close) { color: #fff; font-size: 20px; }
+:deep(.order-audit-dialog .el-dialog__headerbtn:hover .el-dialog__close) { color: #fff; }
+:deep(.order-audit-dialog .el-dialog__body) { padding: 12px 16px 16px; background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); }
+
+.reject-alert {
+  margin-bottom: 16px;
+}
+
+.rd-timeline {
+  position: relative;
+  padding-left: 20px;
+}
+.rd-timeline::before {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 4px;
+  bottom: 4px;
+  width: 2px;
+  background: #e5e7eb;
+}
+.rd-timeline-item {
+  position: relative;
+  padding-bottom: 20px;
+}
+.rd-timeline-item:last-child {
+  padding-bottom: 0;
+}
+.rd-timeline-dot {
+  position: absolute;
+  left: -18px;
+  top: 4px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #d1d5db;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px #e5e7eb;
+}
+.rd-timeline-dot--success {
+  background: #67c23a;
+  box-shadow: 0 0 0 1px #b3e19d;
+}
+.rd-timeline-dot--error {
+  background: #f56c6c;
+  box-shadow: 0 0 0 1px #fab6b6;
+}
+.rd-timeline-content {
+  padding-left: 8px;
+}
+.rd-timeline-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.rd-timeline-title {
+  display: flex;
+  align-items: center;
+}
+.rd-timeline-time {
+  font-size: 12px;
+  color: #9ca3af;
+  font-variant-numeric: tabular-nums;
+}
+.rd-timeline-body {
+  margin-bottom: 4px;
+}
+.rd-timeline-comment {
+  font-size: 13px;
+  color: #6b7280;
+  background: #f9fafb;
+  border-radius: 6px;
+  padding: 6px 10px;
+  margin-top: 4px;
 }
 </style>

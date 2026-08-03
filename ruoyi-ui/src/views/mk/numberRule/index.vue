@@ -1,5 +1,6 @@
 <template>
   <div class="app-container">
+    <el-alert v-if="presetRuleCode" :title="presetAlertText" type="info" :closable="false" show-icon style="margin-bottom: 12px" />
     <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch">
       <el-form-item label="规则编码" prop="ruleCode"><el-input v-model="queryParams.ruleCode" placeholder="请输入" clearable style="width: 200px" @keyup.enter="handleQuery" /></el-form-item>
       <el-form-item label="规则名称" prop="ruleName"><el-input v-model="queryParams.ruleName" placeholder="请输入" clearable style="width: 200px" @keyup.enter="handleQuery" /></el-form-item>
@@ -22,6 +23,7 @@
           <el-tag v-if="scope.row.module === 'mk'" type="primary" size="small">营销管理</el-tag>
           <el-tag v-else-if="scope.row.module === 'dms'" type="warning" size="small">设备管理</el-tag>
           <el-tag v-else-if="scope.row.module === 'wms'" type="success" size="small">仓储管理</el-tag>
+          <el-tag v-else-if="scope.row.module === 'pms'" type="info" size="small">采购管理</el-tag>
           <span v-else>{{ scope.row.module }}</span>
         </template>
       </el-table-column>
@@ -88,6 +90,7 @@
                     <el-option label="营销管理" value="mk" />
                     <el-option label="设备管理" value="dms" />
                     <el-option label="仓储管理" value="wms" />
+                    <el-option label="采购管理" value="pms" />
                   </el-select>
                 </el-form-item>
               </el-col>
@@ -289,9 +292,19 @@ const { mk_number_reset_type, sys_normal_disable } = proxy.useDict('mk_number_re
 /** 从路由参数获取当前模块（mk/dms/wms），默认为 mk */
 const currentModule = computed(() => route.query.module || 'mk')
 
+/** 从路由参数获取预设规则编码（用于从特定业务模块跳转过来时预过滤） */
+const presetRuleCode = computed(() => route.query.ruleCode || '')
+
 /** 模块名称映射 */
-const moduleNames = { mk: '营销管理', dms: '设备管理', wms: '仓储管理' }
+const moduleNames = { mk: '营销管理', dms: '设备管理', wms: '仓储管理', pms: '采购管理' }
 const currentModuleName = computed(() => moduleNames[currentModule.value] || '编号规则')
+
+/** 预设规则提示文案 */
+const presetAlertText = computed(() => {
+  const rule = list.value.find(r => r.ruleCode === presetRuleCode.value)
+  const ruleName = rule ? rule.ruleName : presetRuleCode.value
+  return `当前显示「${ruleName}」的编号规则配置，清除规则编码筛选可查看全部${currentModuleName.value}编号规则`
+})
 
 const list = ref([])
 const open = ref(false)
@@ -323,12 +336,18 @@ useHead()
 function getList() {
   loading.value = true
   queryParams.value.module = currentModule.value
+  if (presetRuleCode.value) {
+    queryParams.value.ruleCode = presetRuleCode.value
+  }
   listNumberRule(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false })
 }
 function handleQuery() { queryParams.value.pageNum = 1; getList() }
 function resetQuery() {
   proxy.resetForm('queryRef')
   queryParams.value.module = currentModule.value
+  if (presetRuleCode.value) {
+    queryParams.value.ruleCode = presetRuleCode.value
+  }
   handleQuery()
 }
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.ruleId); single.value = selection.length !== 1 }
@@ -558,7 +577,7 @@ watch(() => form.value.resetType, (newVal) => {
 watch(() => form.value, () => { buildLocalPreview() }, { deep: true })
 
 // 监听路由参数变化，重新加载列表
-watch(() => route.query.module, () => { getList() })
+watch([() => route.query.module, () => route.query.ruleCode], () => { getList() })
 
 getList()
 </script>

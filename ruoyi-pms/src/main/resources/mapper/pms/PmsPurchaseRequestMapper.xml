@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.pms.mapper.PmsPurchaseRequestMapper">
+
+    <resultMap type="PmsPurchaseRequest" id="PmsPurchaseRequestResult">
+        <result property="requestId"     column="request_id"/>
+        <result property="requestNo"     column="request_no"/>
+        <result property="title"         column="title"/>
+        <result property="status"        column="status"/>
+        <result property="priority"      column="priority"/>
+        <result property="expectDate"    column="expect_date"/>
+        <result property="purpose"       column="purpose"/>
+        <result property="totalAmount"   column="total_amount"/>
+        <result property="requesterId"   column="requester_id"/>
+        <result property="requesterName" column="requester_name"/>
+        <result property="deptId"        column="dept_id"/>
+        <result property="deptName"      column="dept_name"/>
+        <result property="auditBy"       column="audit_by"/>
+        <result property="auditTime"     column="audit_time"/>
+        <result property="auditOpinion"  column="audit_opinion"/>
+        <result property="planId"         column="plan_id"/>
+        <result property="planNo"         column="plan_no"/>
+        <result property="delFlag"       column="del_flag"/>
+        <result property="createBy"      column="create_by"/>
+        <result property="createTime"    column="create_time"/>
+        <result property="updateBy"      column="update_by"/>
+        <result property="updateTime"    column="update_time"/>
+        <result property="remark"        column="remark"/>
+    </resultMap>
+
+    <resultMap type="PmsPurchaseRequestDetail" id="PmsPurchaseRequestDetailResult">
+        <result property="detailId"         column="detail_id"/>
+        <result property="requestId"        column="request_id"/>
+        <result property="materialId"       column="material_id"/>
+        <result property="materialCode"     column="material_code"/>
+        <result property="materialName"     column="material_name"/>
+        <result property="specModel"        column="spec_model"/>
+        <result property="unit"             column="unit"/>
+        <result property="qty"              column="qty"/>
+        <result property="estimatedPrice"   column="estimated_price"/>
+        <result property="estimatedAmount"  column="estimated_amount"/>
+        <result property="delFlag"          column="del_flag"/>
+        <result property="createBy"         column="create_by"/>
+        <result property="createTime"       column="create_time"/>
+        <result property="updateBy"         column="update_by"/>
+        <result property="updateTime"       column="update_time"/>
+        <result property="remark"           column="remark"/>
+    </resultMap>
+
+    <sql id="selectRequestVo">
+        SELECT request_id, request_no, title, status, priority, expect_date, purpose, total_amount,
+               requester_id, requester_name, dept_id, dept_name, audit_by, audit_time, audit_opinion,
+               plan_id, plan_no,
+               del_flag, create_by, create_time, update_by, update_time, remark
+        FROM pms_purchase_request
+    </sql>
+
+    <select id="selectPurchaseRequestList" parameterType="PmsPurchaseRequest" resultMap="PmsPurchaseRequestResult">
+        <include refid="selectRequestVo"/>
+        <where>
+            del_flag = '0'
+            <if test="requestNo != null and requestNo != ''"> AND request_no LIKE CONCAT('%', #{requestNo}, '%')</if>
+            <if test="title != null and title != ''"> AND title LIKE CONCAT('%', #{title}, '%')</if>
+            <if test="status != null and status != ''"> AND status = #{status}</if>
+            <if test="priority != null and priority != ''"> AND priority = #{priority}</if>
+            <if test="requesterName != null and requesterName != ''"> AND requester_name LIKE CONCAT('%', #{requesterName}, '%')</if>
+            <if test="deptId != null"> AND dept_id = #{deptId}</if>
+            <if test="params.beginDate != null and params.beginDate != ''"> AND date(create_time) &gt;= #{params.beginDate}</if>
+            <if test="params.endDate != null and params.endDate != ''"> AND date(create_time) &lt;= #{params.endDate}</if>
+        </where>
+        ORDER BY request_id DESC
+    </select>
+
+    <select id="selectPurchaseRequestById" parameterType="Long" resultMap="PmsPurchaseRequestResult">
+        <include refid="selectRequestVo"/>
+        WHERE request_id = #{requestId}
+    </select>
+
+    <insert id="insertPurchaseRequest" parameterType="PmsPurchaseRequest" useGeneratedKeys="true" keyProperty="requestId">
+        INSERT INTO pms_purchase_request (
+            request_no, title, status, priority, expect_date, purpose, total_amount,
+            requester_id, requester_name, dept_id, dept_name, audit_by, audit_time, audit_opinion,
+            plan_id, plan_no,
+            del_flag, create_by, create_time, remark
+        ) VALUES (
+            #{requestNo}, #{title}, #{status}, #{priority}, #{expectDate}, #{purpose}, #{totalAmount},
+            #{requesterId}, #{requesterName}, #{deptId}, #{deptName}, #{auditBy}, #{auditTime}, #{auditOpinion},
+            #{planId}, #{planNo},
+            #{delFlag}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updatePurchaseRequest" parameterType="PmsPurchaseRequest">
+        UPDATE pms_purchase_request
+        <set>
+            <if test="requestNo != null and requestNo != ''">request_no = #{requestNo},</if>
+            <if test="title != null">title = #{title},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="priority != null">priority = #{priority},</if>
+            <if test="expectDate != null">expect_date = #{expectDate},</if>
+            <if test="purpose != null">purpose = #{purpose},</if>
+            <if test="totalAmount != null">total_amount = #{totalAmount},</if>
+            <if test="requesterId != null">requester_id = #{requesterId},</if>
+            <if test="requesterName != null">requester_name = #{requesterName},</if>
+            <if test="deptId != null">dept_id = #{deptId},</if>
+            <if test="deptName != null">dept_name = #{deptName},</if>
+            <if test="auditBy != null">audit_by = #{auditBy},</if>
+            <if test="auditTime != null">audit_time = #{auditTime},</if>
+            <if test="auditOpinion != null">audit_opinion = #{auditOpinion},</if>
+            <if test="planId != null">plan_id = #{planId},</if>
+            <if test="planNo != null">plan_no = #{planNo},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE request_id = #{requestId}
+    </update>
+
+    <delete id="deletePurchaseRequestByIds" parameterType="Long">
+        UPDATE pms_purchase_request SET del_flag = '2' WHERE request_id IN
+        <foreach item="requestId" collection="array" open="(" separator="," close=")">#{requestId}</foreach>
+    </delete>
+
+    <!-- 明细 -->
+    <select id="selectRequestDetailByRequestId" parameterType="Long" resultMap="PmsPurchaseRequestDetailResult">
+        SELECT detail_id, request_id, material_id, material_code, material_name, spec_model, unit,
+               qty, estimated_price, estimated_amount, del_flag, create_by, create_time, update_by, update_time, remark
+        FROM pms_purchase_request_detail
+        WHERE request_id = #{requestId} AND del_flag = '0'
+        ORDER BY detail_id ASC
+    </select>
+
+    <insert id="insertRequestDetail" parameterType="PmsPurchaseRequestDetail" useGeneratedKeys="true" keyProperty="detailId">
+        INSERT INTO pms_purchase_request_detail (
+            request_id, material_id, material_code, material_name, spec_model, unit,
+            qty, estimated_price, estimated_amount, del_flag, create_by, create_time, remark
+        ) VALUES (
+            #{requestId}, #{materialId}, #{materialCode}, #{materialName}, #{specModel}, #{unit},
+            #{qty}, #{estimatedPrice}, #{estimatedAmount}, #{delFlag}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <delete id="deleteRequestDetailByRequestId" parameterType="Long">
+        UPDATE pms_purchase_request_detail SET del_flag = '2' WHERE request_id = #{requestId}
+    </delete>
+
+</mapper>

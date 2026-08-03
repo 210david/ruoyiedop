@@ -15,4 +15,5 @@ public interface WmsInboundOrderMapper
     public int insertInboundDetail(WmsInboundOrderDetail detail);
     public int updateInboundDetail(WmsInboundOrderDetail detail);
     public int deleteInboundDetailByOrderId(Long orderId);
+    public int updateReceiveStatusByInboundOrderId(Long orderId);
 }

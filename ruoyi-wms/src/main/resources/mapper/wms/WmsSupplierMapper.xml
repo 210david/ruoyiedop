@@ -3,24 +3,56 @@
 <mapper namespace="com.ruoyi.wms.mapper.WmsSupplierMapper">
 
     <resultMap type="WmsSupplier" id="WmsSupplierResult">
-        <result property="supplierId"    column="supplier_id"/>
-        <result property="supplierCode"  column="supplier_code"/>
-        <result property="supplierName"  column="supplier_name"/>
-        <result property="contactPerson" column="contact_person"/>
-        <result property="contactPhone"  column="contact_phone"/>
-        <result property="address"       column="address"/>
-        <result property="status"        column="status"/>
-        <result property="delFlag"       column="del_flag"/>
-        <result property="createBy"      column="create_by"/>
-        <result property="createTime"    column="create_time"/>
-        <result property="updateBy"      column="update_by"/>
-        <result property="updateTime"    column="update_time"/>
-        <result property="remark"        column="remark"/>
+        <result property="supplierId"          column="supplier_id"/>
+        <result property="supplierCode"        column="supplier_code"/>
+        <result property="supplierName"        column="supplier_name"/>
+        <result property="supplierShortName"   column="supplier_short_name"/>
+        <result property="supplierType"        column="supplier_type"/>
+        <result property="supplierLevel"       column="supplier_level"/>
+        <result property="unifiedCreditCode"   column="unified_credit_code"/>
+        <result property="contactPerson"       column="contact_person"/>
+        <result property="contactPhone"        column="contact_phone"/>
+        <result property="email"               column="email"/>
+        <result property="fax"                 column="fax"/>
+        <result property="website"             column="website"/>
+        <result property="postcode"            column="postcode"/>
+        <result property="address"             column="address"/>
+        <result property="legalPerson"         column="legal_person"/>
+        <result property="registeredCapital"   column="registered_capital"/>
+        <result property="enterpriseNature"    column="enterprise_nature"/>
+        <result property="businessScope"       column="business_scope"/>
+        <result property="establishedDate"     column="established_date"/>
+        <result property="bankName"            column="bank_name"/>
+        <result property="bankBranch"          column="bank_branch"/>
+        <result property="bankAccount"         column="bank_account"/>
+        <result property="taxNumber"           column="tax_number"/>
+        <result property="invoiceTitle"        column="invoice_title"/>
+        <result property="invoiceAddress"      column="invoice_address"/>
+        <result property="invoicePhone"        column="invoice_phone"/>
+        <result property="paymentMethod"       column="payment_method"/>
+        <result property="paymentDays"         column="payment_days"/>
+        <result property="settlementType"      column="settlement_type"/>
+        <result property="currency"            column="currency"/>
+        <result property="deliveryCycle"       column="delivery_cycle"/>
+        <result property="minOrderAmount"      column="min_order_amount"/>
+        <result property="cooperationDate"     column="cooperation_date"/>
+        <result property="qualificationStatus" column="qualification_status"/>
+        <result property="status"              column="status"/>
+        <result property="delFlag"             column="del_flag"/>
+        <result property="createBy"            column="create_by"/>
+        <result property="createTime"          column="create_time"/>
+        <result property="updateBy"            column="update_by"/>
+        <result property="updateTime"          column="update_time"/>
+        <result property="remark"              column="remark"/>
     </resultMap>
 
     <sql id="selectSupplierVo">
-        SELECT supplier_id, supplier_code, supplier_name, contact_person, contact_phone, address,
-               status, del_flag, create_by, create_time, update_by, update_time, remark
+        SELECT supplier_id, supplier_code, supplier_name, supplier_short_name, supplier_type, supplier_level,
+               unified_credit_code, contact_person, contact_phone, email, fax, website, postcode, address,
+               legal_person, registered_capital, enterprise_nature, business_scope, established_date,
+               bank_name, bank_branch, bank_account, tax_number, invoice_title, invoice_address, invoice_phone,
+               payment_method, payment_days, settlement_type, currency, delivery_cycle, min_order_amount,
+               cooperation_date, qualification_status, status, del_flag, create_by, create_time, update_by, update_time, remark
         FROM wms_supplier
     </sql>
 
@@ -30,6 +62,17 @@
             del_flag = '0'
             <if test="supplierCode != null and supplierCode != ''"> AND supplier_code LIKE CONCAT('%', #{supplierCode}, '%')</if>
             <if test="supplierName != null and supplierName != ''"> AND supplier_name LIKE CONCAT('%', #{supplierName}, '%')</if>
+            <if test="supplierShortName != null and supplierShortName != ''"> AND supplier_short_name LIKE CONCAT('%', #{supplierShortName}, '%')</if>
+            <if test="supplierType != null and supplierType != ''"> AND supplier_type = #{supplierType}</if>
+            <if test="supplierLevel != null and supplierLevel != ''"> AND supplier_level = #{supplierLevel}</if>
+            <if test="unifiedCreditCode != null and unifiedCreditCode != ''"> AND unified_credit_code LIKE CONCAT('%', #{unifiedCreditCode}, '%')</if>
+            <if test="contactPerson != null and contactPerson != ''"> AND contact_person LIKE CONCAT('%', #{contactPerson}, '%')</if>
+            <if test="contactPhone != null and contactPhone != ''"> AND contact_phone LIKE CONCAT('%', #{contactPhone}, '%')</if>
+            <if test="legalPerson != null and legalPerson != ''"> AND legal_person LIKE CONCAT('%', #{legalPerson}, '%')</if>
+            <if test="enterpriseNature != null and enterpriseNature != ''"> AND enterprise_nature = #{enterpriseNature}</if>
+            <if test="paymentMethod != null and paymentMethod != ''"> AND payment_method = #{paymentMethod}</if>
+            <if test="settlementType != null and settlementType != ''"> AND settlement_type = #{settlementType}</if>
+            <if test="qualificationStatus != null and qualificationStatus != ''"> AND qualification_status = #{qualificationStatus}</if>
             <if test="status != null and status != ''"> AND status = #{status}</if>
         </where>
         ORDER BY supplier_id DESC
@@ -40,10 +83,21 @@
     </select>
 
     <insert id="insertSupplier" parameterType="WmsSupplier" useGeneratedKeys="true" keyProperty="supplierId">
-        INSERT INTO wms_supplier (supplier_code, supplier_name, contact_person, contact_phone, address,
-            status, create_by, create_time, remark)
-        VALUES (#{supplierCode}, #{supplierName}, #{contactPerson}, #{contactPhone}, #{address},
-            #{status}, #{createBy}, sysdate(), #{remark})
+        INSERT INTO wms_supplier (
+            supplier_code, supplier_name, supplier_short_name, supplier_type, supplier_level, unified_credit_code,
+            contact_person, contact_phone, email, fax, website, postcode, address,
+            legal_person, registered_capital, enterprise_nature, business_scope, established_date,
+            bank_name, bank_branch, bank_account, tax_number, invoice_title, invoice_address, invoice_phone,
+            payment_method, payment_days, settlement_type, currency, delivery_cycle, min_order_amount,
+            cooperation_date, qualification_status, status, del_flag, create_by, create_time, remark
+        ) VALUES (
+            #{supplierCode}, #{supplierName}, #{supplierShortName}, #{supplierType}, #{supplierLevel}, #{unifiedCreditCode},
+            #{contactPerson}, #{contactPhone}, #{email}, #{fax}, #{website}, #{postcode}, #{address},
+            #{legalPerson}, #{registeredCapital}, #{enterpriseNature}, #{businessScope}, #{establishedDate},
+            #{bankName}, #{bankBranch}, #{bankAccount}, #{taxNumber}, #{invoiceTitle}, #{invoiceAddress}, #{invoicePhone},
+            #{paymentMethod}, #{paymentDays}, #{settlementType}, #{currency}, #{deliveryCycle}, #{minOrderAmount},
+            #{cooperationDate}, #{qualificationStatus}, #{status}, #{delFlag}, #{createBy}, sysdate(), #{remark}
+        )
     </insert>
 
     <update id="updateSupplier" parameterType="WmsSupplier">
@@ -51,9 +105,37 @@
         <set>
             <if test="supplierCode != null and supplierCode != ''">supplier_code = #{supplierCode},</if>
             <if test="supplierName != null and supplierName != ''">supplier_name = #{supplierName},</if>
+            <if test="supplierShortName != null">supplier_short_name = #{supplierShortName},</if>
+            <if test="supplierType != null">supplier_type = #{supplierType},</if>
+            <if test="supplierLevel != null">supplier_level = #{supplierLevel},</if>
+            <if test="unifiedCreditCode != null">unified_credit_code = #{unifiedCreditCode},</if>
             <if test="contactPerson != null">contact_person = #{contactPerson},</if>
             <if test="contactPhone != null">contact_phone = #{contactPhone},</if>
+            <if test="email != null">email = #{email},</if>
+            <if test="fax != null">fax = #{fax},</if>
+            <if test="website != null">website = #{website},</if>
+            <if test="postcode != null">postcode = #{postcode},</if>
             <if test="address != null">address = #{address},</if>
+            <if test="legalPerson != null">legal_person = #{legalPerson},</if>
+            <if test="registeredCapital != null">registered_capital = #{registeredCapital},</if>
+            <if test="enterpriseNature != null">enterprise_nature = #{enterpriseNature},</if>
+            <if test="businessScope != null">business_scope = #{businessScope},</if>
+            <if test="establishedDate != null">established_date = #{establishedDate},</if>
+            <if test="bankName != null">bank_name = #{bankName},</if>
+            <if test="bankBranch != null">bank_branch = #{bankBranch},</if>
+            <if test="bankAccount != null">bank_account = #{bankAccount},</if>
+            <if test="taxNumber != null">tax_number = #{taxNumber},</if>
+            <if test="invoiceTitle != null">invoice_title = #{invoiceTitle},</if>
+            <if test="invoiceAddress != null">invoice_address = #{invoiceAddress},</if>
+            <if test="invoicePhone != null">invoice_phone = #{invoicePhone},</if>
+            <if test="paymentMethod != null">payment_method = #{paymentMethod},</if>
+            <if test="paymentDays != null">payment_days = #{paymentDays},</if>
+            <if test="settlementType != null">settlement_type = #{settlementType},</if>
+            <if test="currency != null">currency = #{currency},</if>
+            <if test="deliveryCycle != null">delivery_cycle = #{deliveryCycle},</if>
+            <if test="minOrderAmount != null">min_order_amount = #{minOrderAmount},</if>
+            <if test="cooperationDate != null">cooperation_date = #{cooperationDate},</if>
+            <if test="qualificationStatus != null">qualification_status = #{qualificationStatus},</if>
             <if test="status != null and status != ''">status = #{status},</if>
             <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
             <if test="remark != null">remark = #{remark},</if>

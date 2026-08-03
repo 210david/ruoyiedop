@@ -152,4 +152,15 @@ xss:
   # 排除链接（多个用逗号分隔）
   excludes: /system/notice,/mk/invoice/recognize
   # 匹配链接
-  urlPatterns: /system/*,/monitor/*,/tool/*,/wms/*,/dms/*,/mk/*
+  urlPatterns: /system/*,/monitor/*,/tool/*,/wms/*,/dms/*,/mk/*,/pms/*
+
+# 采购管理模块配置
+pms:
+  # 企业信息查询
+  enterprise-lookup:
+    # 查询模式：simulation(模拟，默认) 或 api(调用第三方接口)
+    mode: simulation
+    # 第三方API地址（如天眼查/企查查），mode=api时需配置
+    api-url: https://api.tianyancha.com/cloud-originapi/companyinfo
+    # 第三方API密钥，mode=api时需配置
+    api-key:

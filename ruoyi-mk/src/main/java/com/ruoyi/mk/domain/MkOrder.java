@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.ruoyi.common.annotation.Excel;
 import com.ruoyi.common.core.domain.BaseEntity;
 import java.util.List;
+import com.ruoyi.mk.domain.MkOrderAuditLog;
 
 /**
  * 订单 mk_order
@@ -87,11 +88,24 @@ private String deptName;
     /** 取消原因 */
     private String cancelReason;
 
+    /** 审核人 */
+    private String auditBy;
+
+    /** 审核时间 */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date auditTime;
+
+    /** 审核意见 */
+    private String auditOpinion;
+
     /** 删除标志 */
     private String delFlag;
 
     /** 订单明细列表 */
     private List<MkOrderItem> itemList;
+
+    /** 审核记录列表 */
+    private List<MkOrderAuditLog> auditLogList;
 
     public Long getOrderId() { return orderId; }
     public void setOrderId(Long orderId) { this.orderId = orderId; }
@@ -133,8 +147,16 @@ public void setDeptName(String deptName) { this.deptName = deptName; }
     public void setReceivePerson(String receivePerson) { this.receivePerson = receivePerson; }
     public String getCancelReason() { return cancelReason; }
     public void setCancelReason(String cancelReason) { this.cancelReason = cancelReason; }
+    public String getAuditBy() { return auditBy; }
+    public void setAuditBy(String auditBy) { this.auditBy = auditBy; }
+    public Date getAuditTime() { return auditTime; }
+    public void setAuditTime(Date auditTime) { this.auditTime = auditTime; }
+    public String getAuditOpinion() { return auditOpinion; }
+    public void setAuditOpinion(String auditOpinion) { this.auditOpinion = auditOpinion; }
     public String getDelFlag() { return delFlag; }
     public void setDelFlag(String delFlag) { this.delFlag = delFlag; }
     public List<MkOrderItem> getItemList() { return itemList; }
     public void setItemList(List<MkOrderItem> itemList) { this.itemList = itemList; }
+    public List<MkOrderAuditLog> getAuditLogList() { return auditLogList; }
+    public void setAuditLogList(List<MkOrderAuditLog> auditLogList) { this.auditLogList = auditLogList; }
 }

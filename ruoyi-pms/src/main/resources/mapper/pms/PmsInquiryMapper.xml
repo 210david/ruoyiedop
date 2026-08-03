@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.pms.mapper.PmsInquiryMapper">
+
+    <resultMap type="com.ruoyi.pms.domain.PmsInquiry" id="PmsInquiryResult">
+        <id property="inquiryId" column="inquiry_id"/>
+        <result property="inquiryNo" column="inquiry_no"/>
+        <result property="title" column="title"/>
+        <result property="status" column="status"/>
+        <result property="inquiryType" column="inquiry_type"/>
+        <result property="purchaseType" column="purchase_type"/>
+        <result property="deadline" column="deadline"/>
+        <result property="estimateAmount" column="estimate_amount"/>
+        <result property="awardAmount" column="award_amount"/>
+        <result property="awardSupplierId" column="award_supplier_id"/>
+        <result property="awardSupplierName" column="award_supplier_name"/>
+        <result property="description" column="description"/>
+        <result property="inquirerId" column="inquirer_id"/>
+        <result property="inquirerName" column="inquirer_name"/>
+        <result property="deptId" column="dept_id"/>
+        <result property="deptName" column="dept_name"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="auditBy" column="audit_by"/>
+        <result property="auditTime" column="audit_time"/>
+        <result property="auditOpinion" column="audit_opinion"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+        <result property="quotationCount" column="quotation_count"/>
+        <collection property="detailList" ofType="com.ruoyi.pms.domain.PmsInquiryDetail" column="inquiry_id" select="selectPmsInquiryDetailByInquiryId"/>
+    </resultMap>
+
+    <resultMap type="com.ruoyi.pms.domain.PmsInquiryDetail" id="PmsInquiryDetailResult">
+        <id property="detailId" column="detail_id"/>
+        <result property="inquiryId" column="inquiry_id"/>
+        <result property="materialId" column="material_id"/>
+        <result property="materialCode" column="material_code"/>
+        <result property="materialName" column="material_name"/>
+        <result property="specification" column="specification"/>
+        <result property="unit" column="unit"/>
+        <result property="quantity" column="quantity"/>
+        <result property="maxPrice" column="max_price"/>
+        <result property="remark" column="remark"/>
+        <result property="delFlag" column="del_flag"/>
+    </resultMap>
+
+    <sql id="selectPmsInquiryVo">
+        select i.inquiry_id, i.inquiry_no, i.title, i.status, i.inquiry_type, i.purchase_type, i.deadline,
+               i.estimate_amount, i.award_amount, i.award_supplier_id, i.award_supplier_name,
+               i.description, i.inquirer_id, i.inquirer_name, i.dept_id, i.dept_name,
+               i.del_flag, i.audit_by, i.audit_time, i.audit_opinion,
+               i.create_by, i.create_time, i.update_by, i.update_time, i.remark,
+               (select count(*) from pms_quotation q where q.inquiry_id = i.inquiry_id and q.del_flag = '0') as quotation_count
+        from pms_inquiry i
+    </sql>
+
+    <select id="selectPmsInquiryList" parameterType="com.ruoyi.pms.domain.PmsInquiry" resultMap="PmsInquiryResult">
+        <include refid="selectPmsInquiryVo"/>
+        <where>
+            <if test="inquiryNo != null and inquiryNo != ''">
+                AND i.inquiry_no like concat('%', #{inquiryNo}, '%')
+            </if>
+            <if test="title != null and title != ''">
+                AND i.title like concat('%', #{title}, '%')
+            </if>
+            <if test="status != null and status != ''">
+                AND i.status = #{status}
+            </if>
+            <if test="inquiryType != null and inquiryType != ''">
+                AND i.inquiry_type = #{inquiryType}
+            </if>
+            <if test="purchaseType != null and purchaseType != ''">
+                AND i.purchase_type = #{purchaseType}
+            </if>
+            <if test="awardSupplierName != null and awardSupplierName != ''">
+                AND i.award_supplier_name like concat('%', #{awardSupplierName}, '%')
+            </if>
+            AND i.del_flag = '0'
+        </where>
+        order by i.create_time desc
+    </select>
+
+    <select id="selectPmsInquiryById" parameterType="Long" resultMap="PmsInquiryResult">
+        <include refid="selectPmsInquiryVo"/>
+        where i.inquiry_id = #{inquiryId} AND i.del_flag = '0'
+    </select>
+
+    <select id="selectPmsInquiryDetailByInquiryId" parameterType="Long" resultMap="PmsInquiryDetailResult">
+        select detail_id, inquiry_id, material_id, material_code, material_name,
+               specification, unit, quantity, max_price, remark, del_flag
+        from pms_inquiry_detail
+        where inquiry_id = #{inquiryId} and del_flag = '0'
+    </select>
+
+    <insert id="insertPmsInquiry" parameterType="com.ruoyi.pms.domain.PmsInquiry" useGeneratedKeys="true" keyProperty="inquiryId">
+        insert into pms_inquiry
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="inquiryNo != null">inquiry_no,</if>
+            <if test="title != null">title,</if>
+            <if test="status != null">status,</if>
+            <if test="inquiryType != null">inquiry_type,</if>
+            <if test="purchaseType != null">purchase_type,</if>
+            <if test="deadline != null">deadline,</if>
+            <if test="estimateAmount != null">estimate_amount,</if>
+            <if test="awardAmount != null">award_amount,</if>
+            <if test="awardSupplierId != null">award_supplier_id,</if>
+            <if test="awardSupplierName != null">award_supplier_name,</if>
+            <if test="description != null">description,</if>
+            <if test="inquirerId != null">inquirer_id,</if>
+            <if test="inquirerName != null">inquirer_name,</if>
+            <if test="deptId != null">dept_id,</if>
+            <if test="deptName != null">dept_name,</if>
+            <if test="delFlag != null">del_flag,</if>
+            <if test="auditBy != null">audit_by,</if>
+            <if test="auditTime != null">audit_time,</if>
+            <if test="auditOpinion != null">audit_opinion,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="remark != null">remark,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="inquiryNo != null">#{inquiryNo},</if>
+            <if test="title != null">#{title},</if>
+            <if test="status != null">#{status},</if>
+            <if test="inquiryType != null">#{inquiryType},</if>
+            <if test="purchaseType != null">#{purchaseType},</if>
+            <if test="deadline != null">#{deadline},</if>
+            <if test="estimateAmount != null">#{estimateAmount},</if>
+            <if test="awardAmount != null">#{awardAmount},</if>
+            <if test="awardSupplierId != null">#{awardSupplierId},</if>
+            <if test="awardSupplierName != null">#{awardSupplierName},</if>
+            <if test="description != null">#{description},</if>
+            <if test="inquirerId != null">#{inquirerId},</if>
+            <if test="inquirerName != null">#{inquirerName},</if>
+            <if test="deptId != null">#{deptId},</if>
+            <if test="deptName != null">#{deptName},</if>
+            <if test="delFlag != null">#{delFlag},</if>
+            <if test="auditBy != null">#{auditBy},</if>
+            <if test="auditTime != null">#{auditTime},</if>
+            <if test="auditOpinion != null">#{auditOpinion},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="remark != null">#{remark},</if>
+        </trim>
+    </insert>
+
+    <update id="updatePmsInquiry" parameterType="com.ruoyi.pms.domain.PmsInquiry">
+        update pms_inquiry
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="inquiryNo != null">inquiry_no = #{inquiryNo},</if>
+            <if test="title != null">title = #{title},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="inquiryType != null">inquiry_type = #{inquiryType},</if>
+            <if test="purchaseType != null">purchase_type = #{purchaseType},</if>
+            <if test="deadline != null">deadline = #{deadline},</if>
+            <if test="estimateAmount != null">estimate_amount = #{estimateAmount},</if>
+            <if test="awardAmount != null">award_amount = #{awardAmount},</if>
+            <if test="awardSupplierId != null">award_supplier_id = #{awardSupplierId},</if>
+            <if test="awardSupplierName != null">award_supplier_name = #{awardSupplierName},</if>
+            <if test="description != null">description = #{description},</if>
+            <if test="inquirerId != null">inquirer_id = #{inquirerId},</if>
+            <if test="inquirerName != null">inquirer_name = #{inquirerName},</if>
+            <if test="deptId != null">dept_id = #{deptId},</if>
+            <if test="deptName != null">dept_name = #{deptName},</if>
+            <if test="delFlag != null">del_flag = #{delFlag},</if>
+            <if test="auditBy != null">audit_by = #{auditBy},</if>
+            <if test="auditTime != null">audit_time = #{auditTime},</if>
+            <if test="auditOpinion != null">audit_opinion = #{auditOpinion},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </trim>
+        where inquiry_id = #{inquiryId}
+    </update>
+
+    <delete id="deletePmsInquiryById" parameterType="Long">
+        update pms_inquiry set del_flag = '2' where inquiry_id = #{inquiryId}
+    </delete>
+
+    <delete id="deletePmsInquiryByIds" parameterType="String">
+        update pms_inquiry set del_flag = '2' where inquiry_id in
+        <foreach collection="array" item="inquiryId" open="(" separator="," close=")">
+            #{inquiryId}
+        </foreach>
+    </delete>
+
+    <delete id="deletePmsInquiryDetailByInquiryIds" parameterType="String">
+        update pms_inquiry_detail set del_flag = '2' where inquiry_id in
+        <foreach collection="array" item="inquiryId" open="(" separator="," close=")">
+            #{inquiryId}
+        </foreach>
+    </delete>
+
+    <delete id="deletePmsInquiryDetailByInquiryId" parameterType="Long">
+        update pms_inquiry_detail set del_flag = '2' where inquiry_id = #{inquiryId}
+    </delete>
+
+    <insert id="batchPmsInquiryDetail">
+        insert into pms_inquiry_detail (inquiry_id, material_id, material_code, material_name,
+            specification, unit, quantity, max_price, remark, del_flag)
+        values
+        <foreach collection="list" item="item" index="index" separator=",">
+            (#{item.inquiryId}, #{item.materialId}, #{item.materialCode}, #{item.materialName},
+            #{item.specification}, #{item.unit}, #{item.quantity}, #{item.maxPrice},
+            #{item.remark}, #{item.delFlag})
+        </foreach>
+    </insert>
+
+</mapper>

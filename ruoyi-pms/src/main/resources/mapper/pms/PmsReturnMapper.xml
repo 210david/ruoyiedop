@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.pms.mapper.PmsReturnMapper">
+
+    <resultMap type="PmsReturn" id="PmsReturnResult">
+        <result property="returnId"       column="return_id"/>
+        <result property="returnNo"       column="return_no"/>
+        <result property="orderId"        column="order_id"/>
+        <result property="orderNo"        column="order_no"/>
+        <result property="receiveId"      column="receive_id"/>
+        <result property="receiveNo"      column="receive_no"/>
+        <result property="supplierId"     column="supplier_id"/>
+        <result property="supplierName"   column="supplier_name"/>
+        <result property="status"         column="status"/>
+        <result property="returnType"     column="return_type"/>
+        <result property="returnDate"     column="return_date"/>
+        <result property="totalQty"       column="total_qty"/>
+        <result property="totalAmount"    column="total_amount"/>
+        <result property="reason"         column="reason"/>
+        <result property="handlerId"      column="handler_id"/>
+        <result property="handlerName"    column="handler_name"/>
+        <result property="auditBy"         column="audit_by"/>
+        <result property="auditTime"       column="audit_time"/>
+        <result property="auditOpinion"    column="audit_opinion"/>
+        <result property="outboundOrderId" column="outbound_order_id"/>
+        <result property="delFlag"        column="del_flag"/>
+        <result property="createBy"       column="create_by"/>
+        <result property="createTime"     column="create_time"/>
+        <result property="updateBy"       column="update_by"/>
+        <result property="updateTime"     column="update_time"/>
+        <result property="remark"         column="remark"/>
+    </resultMap>
+
+    <resultMap type="PmsReturnDetail" id="PmsReturnDetailResult">
+        <result property="detailId"       column="detail_id"/>
+        <result property="returnId"       column="return_id"/>
+        <result property="materialId"     column="material_id"/>
+        <result property="materialCode"   column="material_code"/>
+        <result property="materialName"   column="material_name"/>
+        <result property="specModel"      column="spec_model"/>
+        <result property="unit"           column="unit"/>
+        <result property="qty"            column="qty"/>
+        <result property="unitPrice"      column="unit_price"/>
+        <result property="amount"         column="amount"/>
+        <result property="returnReason"   column="return_reason"/>
+        <result property="delFlag"        column="del_flag"/>
+        <result property="createBy"       column="create_by"/>
+        <result property="createTime"     column="create_time"/>
+        <result property="updateBy"       column="update_by"/>
+        <result property="updateTime"     column="update_time"/>
+        <result property="remark"         column="remark"/>
+    </resultMap>
+
+    <sql id="selectReturnVo">
+        SELECT return_id, return_no, order_id, order_no, receive_id, receive_no, supplier_id, supplier_name,
+               status, return_type, return_date, total_qty, total_amount, reason, handler_id, handler_name,
+               audit_by, audit_time, audit_opinion, outbound_order_id,
+               del_flag, create_by, create_time, update_by, update_time, remark
+        FROM pms_return
+    </sql>
+
+    <select id="selectReturnList" parameterType="PmsReturn" resultMap="PmsReturnResult">
+        <include refid="selectReturnVo"/>
+        <where>
+            del_flag = '0'
+            <if test="returnNo != null and returnNo != ''"> AND return_no LIKE CONCAT('%', #{returnNo}, '%')</if>
+            <if test="orderNo != null and orderNo != ''"> AND order_no LIKE CONCAT('%', #{orderNo}, '%')</if>
+            <if test="supplierName != null and supplierName != ''"> AND supplier_name LIKE CONCAT('%', #{supplierName}, '%')</if>
+            <if test="supplierId != null"> AND supplier_id = #{supplierId}</if>
+            <if test="status != null and status != ''"> AND status = #{status}</if>
+            <if test="returnType != null and returnType != ''"> AND return_type = #{returnType}</if>
+            <if test="handlerName != null and handlerName != ''"> AND handler_name LIKE CONCAT('%', #{handlerName}, '%')</if>
+            <if test="params.beginDate != null and params.beginDate != ''"> AND date(return_date) &gt;= #{params.beginDate}</if>
+            <if test="params.endDate != null and params.endDate != ''"> AND date(return_date) &lt;= #{params.endDate}</if>
+        </where>
+        ORDER BY return_id DESC
+    </select>
+
+    <select id="selectReturnById" parameterType="Long" resultMap="PmsReturnResult">
+        <include refid="selectReturnVo"/>
+        WHERE return_id = #{returnId}
+    </select>
+
+    <insert id="insertReturn" parameterType="PmsReturn" useGeneratedKeys="true" keyProperty="returnId">
+        INSERT INTO pms_return (
+            return_no, order_id, order_no, receive_id, receive_no, supplier_id, supplier_name,
+            status, return_type, return_date, total_qty, total_amount, reason, handler_id, handler_name,
+            audit_by, audit_time, audit_opinion, outbound_order_id,
+            del_flag, create_by, create_time, remark
+        ) VALUES (
+            #{returnNo}, #{orderId}, #{orderNo}, #{receiveId}, #{receiveNo}, #{supplierId}, #{supplierName},
+            #{status}, #{returnType}, #{returnDate}, #{totalQty}, #{totalAmount}, #{reason}, #{handlerId}, #{handlerName},
+            #{auditBy}, #{auditTime}, #{auditOpinion}, #{outboundOrderId},
+            #{delFlag}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateReturn" parameterType="PmsReturn">
+        UPDATE pms_return
+        <set>
+            <if test="returnNo != null and returnNo != ''">return_no = #{returnNo},</if>
+            <if test="orderId != null">order_id = #{orderId},</if>
+            <if test="orderNo != null">order_no = #{orderNo},</if>
+            <if test="receiveId != null">receive_id = #{receiveId},</if>
+            <if test="receiveNo != null">receive_no = #{receiveNo},</if>
+            <if test="supplierId != null">supplier_id = #{supplierId},</if>
+            <if test="supplierName != null">supplier_name = #{supplierName},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="returnType != null">return_type = #{returnType},</if>
+            <if test="returnDate != null">return_date = #{returnDate},</if>
+            <if test="totalQty != null">total_qty = #{totalQty},</if>
+            <if test="totalAmount != null">total_amount = #{totalAmount},</if>
+            <if test="reason != null">reason = #{reason},</if>
+            <if test="handlerId != null">handler_id = #{handlerId},</if>
+            <if test="handlerName != null">handler_name = #{handlerName},</if>
+            <if test="auditBy != null">audit_by = #{auditBy},</if>
+            <if test="auditTime != null">audit_time = #{auditTime},</if>
+            <if test="auditOpinion != null">audit_opinion = #{auditOpinion},</if>
+            <if test="outboundOrderId != null">outbound_order_id = #{outboundOrderId},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE return_id = #{returnId}
+    </update>
+
+    <delete id="deleteReturnByIds" parameterType="Long">
+        UPDATE pms_return SET del_flag = '2' WHERE return_id IN
+        <foreach item="returnId" collection="array" open="(" separator="," close=")">#{returnId}</foreach>
+    </delete>
+
+    <!-- 明细 -->
+    <select id="selectReturnDetailByReturnId" parameterType="Long" resultMap="PmsReturnDetailResult">
+        SELECT detail_id, return_id, material_id, material_code, material_name, spec_model, unit,
+               qty, unit_price, amount, return_reason,
+               del_flag, create_by, create_time, update_by, update_time, remark
+        FROM pms_return_detail
+        WHERE return_id = #{returnId} AND del_flag = '0'
+        ORDER BY detail_id ASC
+    </select>
+
+    <insert id="insertReturnDetail" parameterType="PmsReturnDetail" useGeneratedKeys="true" keyProperty="detailId">
+        INSERT INTO pms_return_detail (
+            return_id, material_id, material_code, material_name, spec_model, unit,
+            qty, unit_price, amount, return_reason, del_flag, create_by, create_time, remark
+        ) VALUES (
+            #{returnId}, #{materialId}, #{materialCode}, #{materialName}, #{specModel}, #{unit},
+            #{qty}, #{unitPrice}, #{amount}, #{returnReason}, #{delFlag}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <delete id="deleteReturnDetailByReturnId" parameterType="Long">
+        UPDATE pms_return_detail SET del_flag = '2' WHERE return_id = #{returnId}
+    </delete>
+
+</mapper>

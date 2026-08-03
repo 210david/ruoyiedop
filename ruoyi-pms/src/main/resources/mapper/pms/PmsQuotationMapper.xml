@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.pms.mapper.PmsQuotationMapper">
+
+    <resultMap type="com.ruoyi.pms.domain.PmsQuotation" id="PmsQuotationResult">
+        <id property="quotationId" column="quotation_id"/>
+        <result property="inquiryId" column="inquiry_id"/>
+        <result property="supplierId" column="supplier_id"/>
+        <result property="supplierName" column="supplier_name"/>
+        <result property="contactName" column="contact_name"/>
+        <result property="contactPhone" column="contact_phone"/>
+        <result property="totalAmount" column="total_amount"/>
+        <result property="taxRate" column="tax_rate"/>
+        <result property="deliveryDays" column="delivery_days"/>
+        <result property="paymentTerms" column="payment_terms"/>
+        <result property="validDate" column="valid_date"/>
+        <result property="status" column="status"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+        <collection property="detailList" ofType="com.ruoyi.pms.domain.PmsQuotationDetail" column="quotation_id" select="selectQuotationDetailByQuotationId"/>
+    </resultMap>
+
+    <resultMap type="com.ruoyi.pms.domain.PmsQuotationDetail" id="PmsQuotationDetailResult">
+        <id property="detailId" column="detail_id"/>
+        <result property="quotationId" column="quotation_id"/>
+        <result property="inquiryDetailId" column="inquiry_detail_id"/>
+        <result property="materialId" column="material_id"/>
+        <result property="materialCode" column="material_code"/>
+        <result property="materialName" column="material_name"/>
+        <result property="specification" column="specification"/>
+        <result property="unit" column="unit"/>
+        <result property="quantity" column="quantity"/>
+        <result property="price" column="price"/>
+        <result property="amount" column="amount"/>
+        <result property="taxRate" column="tax_rate"/>
+        <result property="taxPrice" column="tax_price"/>
+        <result property="taxAmount" column="tax_amount"/>
+        <result property="deliveryDate" column="delivery_date"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <sql id="selectQuotationVo">
+        select quotation_id, inquiry_id, supplier_id, supplier_name, contact_name, contact_phone,
+               total_amount, tax_rate, delivery_days, payment_terms, valid_date, status,
+               del_flag, create_by, create_time, update_by, update_time, remark
+        from pms_quotation
+    </sql>
+
+    <select id="selectQuotationByInquiryId" parameterType="Long" resultMap="PmsQuotationResult">
+        <include refid="selectQuotationVo"/>
+        where inquiry_id = #{inquiryId} and del_flag = '0'
+        order by total_amount asc
+    </select>
+
+    <select id="selectQuotationById" parameterType="Long" resultMap="PmsQuotationResult">
+        <include refid="selectQuotationVo"/>
+        where quotation_id = #{quotationId} and del_flag = '0'
+    </select>
+
+    <select id="countByInquiryIdAndSupplierId" resultType="int">
+        select count(*) from pms_quotation
+        where inquiry_id = #{inquiryId} and supplier_id = #{supplierId} and del_flag = '0'
+    </select>
+
+    <select id="selectQuotationDetailByQuotationId" parameterType="Long" resultMap="PmsQuotationDetailResult">
+        select detail_id, quotation_id, inquiry_detail_id, material_id, material_code, material_name,
+               specification, unit, quantity, price, amount, tax_rate, tax_price, tax_amount,
+               delivery_date, del_flag, remark
+        from pms_quotation_detail
+        where quotation_id = #{quotationId} and del_flag = '0'
+    </select>
+
+    <insert id="insertQuotation" parameterType="com.ruoyi.pms.domain.PmsQuotation" useGeneratedKeys="true" keyProperty="quotationId">
+        insert into pms_quotation
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="inquiryId != null">inquiry_id,</if>
+            <if test="supplierId != null">supplier_id,</if>
+            <if test="supplierName != null">supplier_name,</if>
+            <if test="contactName != null">contact_name,</if>
+            <if test="contactPhone != null">contact_phone,</if>
+            <if test="totalAmount != null">total_amount,</if>
+            <if test="taxRate != null">tax_rate,</if>
+            <if test="deliveryDays != null">delivery_days,</if>
+            <if test="paymentTerms != null">payment_terms,</if>
+            <if test="validDate != null">valid_date,</if>
+            <if test="status != null">status,</if>
+            <if test="delFlag != null">del_flag,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="remark != null">remark,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="inquiryId != null">#{inquiryId},</if>
+            <if test="supplierId != null">#{supplierId},</if>
+            <if test="supplierName != null">#{supplierName},</if>
+            <if test="contactName != null">#{contactName},</if>
+            <if test="contactPhone != null">#{contactPhone},</if>
+            <if test="totalAmount != null">#{totalAmount},</if>
+            <if test="taxRate != null">#{taxRate},</if>
+            <if test="deliveryDays != null">#{deliveryDays},</if>
+            <if test="paymentTerms != null">#{paymentTerms},</if>
+            <if test="validDate != null">#{validDate},</if>
+            <if test="status != null">#{status},</if>
+            <if test="delFlag != null">#{delFlag},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="remark != null">#{remark},</if>
+        </trim>
+    </insert>
+
+    <insert id="batchQuotationDetail">
+        insert into pms_quotation_detail (quotation_id, inquiry_detail_id, material_id, material_code,
+            material_name, specification, unit, quantity, price, amount, tax_rate, tax_price,
+            tax_amount, delivery_date, remark, del_flag)
+        values
+        <foreach collection="list" item="item" index="index" separator=",">
+            (#{item.quotationId}, #{item.inquiryDetailId}, #{item.materialId}, #{item.materialCode},
+            #{item.materialName}, #{item.specification}, #{item.unit}, #{item.quantity}, #{item.price},
+            #{item.amount}, #{item.taxRate}, #{item.taxPrice}, #{item.taxAmount},
+            #{item.deliveryDate}, #{item.remark}, #{item.delFlag})
+        </foreach>
+    </insert>
+
+    <update id="deleteQuotationById" parameterType="Long">
+        update pms_quotation set del_flag = '2' where quotation_id = #{quotationId}
+    </update>
+
+    <update id="deleteQuotationDetailByQuotationId" parameterType="Long">
+        update pms_quotation_detail set del_flag = '2' where quotation_id = #{quotationId}
+    </update>
+
+</mapper>

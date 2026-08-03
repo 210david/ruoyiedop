@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.pms.mapper.PmsReceiveMapper">
+
+    <resultMap type="PmsReceive" id="PmsReceiveResult">
+        <result property="receiveId"       column="receive_id"/>
+        <result property="receiveNo"       column="receive_no"/>
+        <result property="orderId"         column="order_id"/>
+        <result property="orderNo"         column="order_no"/>
+        <result property="supplierId"      column="supplier_id"/>
+        <result property="supplierName"    column="supplier_name"/>
+        <result property="warehouseId"     column="warehouse_id"/>
+        <result property="status"          column="status"/>
+        <result property="receiveDate"     column="receive_date"/>
+        <result property="totalQty"        column="total_qty"/>
+        <result property="qualifiedQty"    column="qualified_qty"/>
+        <result property="unqualifiedQty"  column="unqualified_qty"/>
+        <result property="inspectorId"     column="inspector_id"/>
+        <result property="inspectorName"   column="inspector_name"/>
+        <result property="inboundOrderId"  column="inbound_order_id"/>
+        <result property="auditBy"          column="audit_by"/>
+        <result property="auditTime"        column="audit_time"/>
+        <result property="auditOpinion"      column="audit_opinion"/>
+        <result property="delFlag"         column="del_flag"/>
+        <result property="createBy"        column="create_by"/>
+        <result property="createTime"      column="create_time"/>
+        <result property="updateBy"        column="update_by"/>
+        <result property="updateTime"      column="update_time"/>
+        <result property="remark"          column="remark"/>
+    </resultMap>
+
+    <!-- 详情查询ResultMap，自动加载明细列表和审核日志列表 -->
+    <resultMap type="PmsReceive" id="PmsReceiveWithDetailsResult" extends="PmsReceiveResult">
+        <collection property="detailList" ofType="PmsReceiveDetail"
+                    column="receive_id"
+                    select="selectReceiveDetailByReceiveId"/>
+        <collection property="auditLogList" ofType="PmsReceiveAuditLog"
+                    column="receive_id"
+                    select="com.ruoyi.pms.mapper.PmsReceiveAuditLogMapper.selectAuditLogByReceiveId"/>
+    </resultMap>
+
+    <resultMap type="PmsReceiveDetail" id="PmsReceiveDetailResult">
+        <result property="detailId"         column="detail_id"/>
+        <result property="receiveId"        column="receive_id"/>
+        <result property="orderDetailId"    column="order_detail_id"/>
+        <result property="materialId"       column="material_id"/>
+        <result property="materialCode"     column="material_code"/>
+        <result property="materialName"     column="material_name"/>
+        <result property="specModel"        column="spec_model"/>
+        <result property="unit"             column="unit"/>
+        <result property="receiveQty"       column="receive_qty"/>
+        <result property="qualifiedQty"     column="qualified_qty"/>
+        <result property="unqualifiedQty"   column="unqualified_qty"/>
+        <result property="unitPrice"        column="unit_price"/>
+        <result property="amount"           column="amount"/>
+        <result property="batchNo"          column="batch_no"/>
+        <result property="productionDate"   column="production_date"/>
+        <result property="expiryDate"       column="expiry_date"/>
+        <result property="delFlag"          column="del_flag"/>
+        <result property="createBy"         column="create_by"/>
+        <result property="createTime"       column="create_time"/>
+        <result property="updateBy"         column="update_by"/>
+        <result property="updateTime"       column="update_time"/>
+        <result property="remark"           column="remark"/>
+    </resultMap>
+
+    <sql id="selectReceiveVo">
+        SELECT receive_id, receive_no, order_id, order_no, supplier_id, supplier_name, warehouse_id,
+               status, receive_date, total_qty, qualified_qty, unqualified_qty, inspector_id, inspector_name,
+               inbound_order_id, audit_by, audit_time, audit_opinion,
+               del_flag, create_by, create_time, update_by, update_time, remark
+        FROM pms_receive
+    </sql>
+
+    <select id="selectReceiveList" parameterType="PmsReceive" resultMap="PmsReceiveResult">
+        <include refid="selectReceiveVo"/>
+        <where>
+            del_flag = '0'
+            <if test="receiveNo != null and receiveNo != ''"> AND receive_no LIKE CONCAT('%', #{receiveNo}, '%')</if>
+            <if test="orderNo != null and orderNo != ''"> AND order_no LIKE CONCAT('%', #{orderNo}, '%')</if>
+            <if test="orderId != null"> AND order_id = #{orderId}</if>
+            <if test="supplierName != null and supplierName != ''"> AND supplier_name LIKE CONCAT('%', #{supplierName}, '%')</if>
+            <if test="supplierId != null"> AND supplier_id = #{supplierId}</if>
+            <if test="status != null and status != ''"> AND status = #{status}</if>
+            <if test="inspectorName != null and inspectorName != ''"> AND inspector_name LIKE CONCAT('%', #{inspectorName}, '%')</if>
+            <if test="params.beginDate != null and params.beginDate != ''"> AND date(receive_date) &gt;= #{params.beginDate}</if>
+            <if test="params.endDate != null and params.endDate != ''"> AND date(receive_date) &lt;= #{params.endDate}</if>
+        </where>
+        ORDER BY receive_id DESC
+    </select>
+
+    <select id="selectReceiveById" parameterType="Long" resultMap="PmsReceiveResult">
+        <include refid="selectReceiveVo"/>
+        WHERE receive_id = #{receiveId} AND del_flag = '0'
+    </select>
+
+    <insert id="insertReceive" parameterType="PmsReceive" useGeneratedKeys="true" keyProperty="receiveId">
+        INSERT INTO pms_receive (
+            receive_no, order_id, order_no, supplier_id, supplier_name, warehouse_id,
+            status, receive_date, total_qty, qualified_qty, unqualified_qty, inspector_id, inspector_name,
+            inbound_order_id, audit_by, audit_time, audit_opinion,
+            del_flag, create_by, create_time, remark
+        ) VALUES (
+            #{receiveNo}, #{orderId}, #{orderNo}, #{supplierId}, #{supplierName}, #{warehouseId},
+            #{status}, #{receiveDate}, #{totalQty}, #{qualifiedQty}, #{unqualifiedQty}, #{inspectorId}, #{inspectorName},
+            #{inboundOrderId}, #{auditBy}, #{auditTime}, #{auditOpinion},
+            #{delFlag}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateReceive" parameterType="PmsReceive">
+        UPDATE pms_receive
+        <set>
+            <if test="receiveNo != null and receiveNo != ''">receive_no = #{receiveNo},</if>
+            <if test="orderId != null">order_id = #{orderId},</if>
+            <if test="orderNo != null">order_no = #{orderNo},</if>
+            <if test="supplierId != null">supplier_id = #{supplierId},</if>
+            <if test="supplierName != null">supplier_name = #{supplierName},</if>
+            <if test="warehouseId != null">warehouse_id = #{warehouseId},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="receiveDate != null">receive_date = #{receiveDate},</if>
+            <if test="totalQty != null">total_qty = #{totalQty},</if>
+            <if test="qualifiedQty != null">qualified_qty = #{qualifiedQty},</if>
+            <if test="unqualifiedQty != null">unqualified_qty = #{unqualifiedQty},</if>
+            <if test="inspectorId != null">inspector_id = #{inspectorId},</if>
+            <if test="inspectorName != null">inspector_name = #{inspectorName},</if>
+            <if test="inboundOrderId != null">inbound_order_id = #{inboundOrderId},</if>
+            <if test="auditBy != null">audit_by = #{auditBy},</if>
+            <if test="auditTime != null">audit_time = #{auditTime},</if>
+            <if test="auditOpinion != null">audit_opinion = #{auditOpinion},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE receive_id = #{receiveId}
+    </update>
+
+    <delete id="deleteReceiveByIds" parameterType="Long">
+        UPDATE pms_receive SET del_flag = '2' WHERE receive_id IN
+        <foreach item="receiveId" collection="array" open="(" separator="," close=")">#{receiveId}</foreach>
+    </delete>
+
+    <!-- 明细 -->
+    <select id="selectReceiveDetailByReceiveId" parameterType="Long" resultMap="PmsReceiveDetailResult">
+        SELECT detail_id, receive_id, order_detail_id, material_id, material_code, material_name,
+               spec_model, unit, receive_qty, qualified_qty, unqualified_qty, unit_price, amount,
+               batch_no, production_date, expiry_date,
+               del_flag, create_by, create_time, update_by, update_time, remark
+        FROM pms_receive_detail
+        WHERE receive_id = #{receiveId} AND del_flag = '0'
+        ORDER BY detail_id ASC
+    </select>
+
+    <insert id="insertReceiveDetail" parameterType="PmsReceiveDetail" useGeneratedKeys="true" keyProperty="detailId">
+        INSERT INTO pms_receive_detail (
+            receive_id, order_detail_id, material_id, material_code, material_name, spec_model, unit,
+            receive_qty, qualified_qty, unqualified_qty, unit_price, amount, batch_no, production_date, expiry_date,
+            del_flag, create_by, create_time, remark
+        ) VALUES (
+            #{receiveId}, #{orderDetailId}, #{materialId}, #{materialCode}, #{materialName}, #{specModel}, #{unit},
+            #{receiveQty}, #{qualifiedQty}, #{unqualifiedQty}, #{unitPrice}, #{amount}, #{batchNo}, #{productionDate}, #{expiryDate},
+            #{delFlag}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateReceiveDetail" parameterType="PmsReceiveDetail">
+        UPDATE pms_receive_detail
+        <set>
+            <if test="qualifiedQty != null">qualified_qty = #{qualifiedQty},</if>
+            <if test="unqualifiedQty != null">unqualified_qty = #{unqualifiedQty},</if>
+            <if test="amount != null">amount = #{amount},</if>
+            <if test="batchNo != null">batch_no = #{batchNo},</if>
+            <if test="productionDate != null">production_date = #{productionDate},</if>
+            <if test="expiryDate != null">expiry_date = #{expiryDate},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE detail_id = #{detailId}
+    </update>
+
+    <delete id="deleteReceiveDetailByReceiveId" parameterType="Long">
+        UPDATE pms_receive_detail SET del_flag = '2' WHERE receive_id = #{receiveId}
+    </delete>
+
+    <!-- 查询已有有效收货记录的采购订单ID列表（未删除且未作废） -->
+    <select id="selectReceivedOrderIds" resultType="Long">
+        SELECT DISTINCT order_id FROM pms_receive
+        WHERE del_flag = '0' AND status != '4' AND order_id IS NOT NULL
+    </select>
+
+    <!-- 查询存在进行中收货单的采购订单ID列表（状态为待验收0、待审核5、已驳回6） -->
+    <select id="selectInProgressReceiveOrderIds" resultType="Long">
+        SELECT DISTINCT order_id FROM pms_receive
+        WHERE del_flag = '0' AND status IN ('0', '5', '6') AND order_id IS NOT NULL
+    </select>
+
+</mapper>

@@ -36,25 +36,56 @@ CREATE TABLE wms_material (
     KEY idx_material_name (material_name)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='物料主数据表';
 
--- 2. 供应商
+-- 2. 供应商（WMS/PMS共用）
 DROP TABLE IF EXISTS wms_supplier;
 CREATE TABLE wms_supplier (
-    supplier_id      BIGINT       NOT NULL AUTO_INCREMENT  COMMENT '供应商ID',
-    supplier_code    VARCHAR(64)  NOT NULL                 COMMENT '供应商编码',
-    supplier_name    VARCHAR(255) NOT NULL                 COMMENT '供应商名称',
-    contact_person   VARCHAR(64)                           COMMENT '联系人',
-    contact_phone    VARCHAR(20)                           COMMENT '联系电话',
-    address          VARCHAR(500)                          COMMENT '地址',
-    status           CHAR(1)      DEFAULT '0'              COMMENT '状态（0正常 1停用）',
-    del_flag         CHAR(1)      DEFAULT '0'              COMMENT '删除标志',
-    create_by        VARCHAR(64)  DEFAULT ''               COMMENT '创建者',
-    create_time      DATETIME                              COMMENT '创建时间',
-    update_by        VARCHAR(64)  DEFAULT ''               COMMENT '更新者',
-    update_time      DATETIME                              COMMENT '更新时间',
-    remark           VARCHAR(500)                          COMMENT '备注',
+    supplier_id          BIGINT       NOT NULL AUTO_INCREMENT  COMMENT '供应商ID',
+    supplier_code        VARCHAR(64)  NOT NULL                 COMMENT '供应商编码',
+    supplier_name        VARCHAR(255) NOT NULL                 COMMENT '供应商名称',
+    supplier_short_name  VARCHAR(128)                          COMMENT '供应商简称',
+    supplier_type        VARCHAR(20)  DEFAULT '0'              COMMENT '供应商类型（字典 wms_supplier_type）',
+    supplier_level       VARCHAR(10)                           COMMENT '供应商等级（字典 wms_supplier_level）',
+    unified_credit_code  VARCHAR(64)                           COMMENT '统一社会信用代码',
+    contact_person       VARCHAR(64)                           COMMENT '联系人',
+    contact_phone        VARCHAR(20)                           COMMENT '联系电话',
+    email                VARCHAR(128)                          COMMENT '邮箱',
+    fax                  VARCHAR(20)                           COMMENT '传真',
+    website              VARCHAR(255)                          COMMENT '网址',
+    postcode             VARCHAR(10)                           COMMENT '邮政编码',
+    address              VARCHAR(500)                          COMMENT '地址',
+    legal_person         VARCHAR(64)                           COMMENT '法人代表',
+    registered_capital   DECIMAL(18,2) DEFAULT 0               COMMENT '注册资本（万元）',
+    enterprise_nature    VARCHAR(20)                           COMMENT '企业性质（字典 wms_enterprise_nature）',
+    business_scope       VARCHAR(1000)                         COMMENT '经营范围',
+    established_date     DATE                                  COMMENT '成立日期',
+    bank_name            VARCHAR(128)                          COMMENT '开户银行',
+    bank_branch          VARCHAR(128)                          COMMENT '开户支行',
+    bank_account         VARCHAR(64)                           COMMENT '银行账号',
+    tax_number           VARCHAR(64)                           COMMENT '税号',
+    invoice_title        VARCHAR(255)                          COMMENT '发票抬头',
+    invoice_address      VARCHAR(500)                          COMMENT '发票地址',
+    invoice_phone        VARCHAR(20)                           COMMENT '发票联系电话',
+    payment_method       VARCHAR(20)  DEFAULT '0'              COMMENT '付款方式（字典 wms_payment_method）',
+    payment_days         INT          DEFAULT 0                COMMENT '账期天数',
+    settlement_type      VARCHAR(20)  DEFAULT '0'              COMMENT '结算方式（字典 wms_settlement_type）',
+    currency             VARCHAR(10)  DEFAULT 'CNY'            COMMENT '结算币种（字典 wms_currency）',
+    delivery_cycle       INT                                   COMMENT '交货周期（天）',
+    min_order_amount     DECIMAL(18,2) DEFAULT 0               COMMENT '最小订单金额',
+    cooperation_date     DATE                                  COMMENT '合作开始日期',
+    qualification_status CHAR(1)      DEFAULT '0'              COMMENT '资质状态（0未审核 1已审核 2审核不通过）',
+    status               CHAR(1)      DEFAULT '0'              COMMENT '状态（0正常 1停用）',
+    del_flag             CHAR(1)      DEFAULT '0'              COMMENT '删除标志',
+    create_by            VARCHAR(64)  DEFAULT ''               COMMENT '创建者',
+    create_time          DATETIME                              COMMENT '创建时间',
+    update_by            VARCHAR(64)  DEFAULT ''               COMMENT '更新者',
+    update_time          DATETIME                              COMMENT '更新时间',
+    remark               VARCHAR(500)                          COMMENT '备注',
     PRIMARY KEY (supplier_id),
-    UNIQUE KEY uk_supplier_code (supplier_code)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='供应商表';
+    UNIQUE KEY uk_supplier_code (supplier_code),
+    KEY idx_supplier_type (supplier_type),
+    KEY idx_supplier_level (supplier_level),
+    KEY idx_unified_credit_code (unified_credit_code)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='供应商表（WMS/PMS共用）';
 
 -- 3. 仓库结构表（仓库/仓区/仓位 树形结构）
 DROP TABLE IF EXISTS wms_warehouse;
@@ -346,7 +377,7 @@ CREATE TABLE wms_move_order (
 
 
 -- =============================================
--- 二、字典数据（14个字典类型）
+-- 二、字典数据（21个字典类型）
 -- =============================================
 
 -- 字典类型
@@ -364,7 +395,14 @@ INSERT INTO sys_dict_type (dict_name, dict_type, status, create_by, create_time,
 ('库存变动类型', 'wms_change_type', '0', 'admin', sysdate(), '库存变动类型字典'),
 ('盘点类型', 'wms_take_type', '0', 'admin', sysdate(), '盘点类型字典'),
 ('盘点状态', 'wms_take_status', '0', 'admin', sysdate(), '盘点状态字典'),
-('移库状态', 'wms_move_status', '0', 'admin', sysdate(), '移库状态字典');
+('移库状态', 'wms_move_status', '0', 'admin', sysdate(), '移库状态字典'),
+('供应商类型', 'wms_supplier_type', '0', 'admin', sysdate(), '供应商类型字典'),
+('供应商等级', 'wms_supplier_level', '0', 'admin', sysdate(), '供应商等级字典'),
+('企业性质', 'wms_enterprise_nature', '0', 'admin', sysdate(), '企业性质字典'),
+('付款方式', 'wms_payment_method', '0', 'admin', sysdate(), '付款方式字典'),
+('结算方式', 'wms_settlement_type', '0', 'admin', sysdate(), '结算方式字典'),
+('结算币种', 'wms_currency', '0', 'admin', sysdate(), '结算币种字典'),
+('资质状态', 'wms_qualification_status', '0', 'admin', sysdate(), '供应商资质状态字典');
 
 -- 字典数据
 INSERT INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, css_class, list_class, is_default, status, create_by, create_time, remark) VALUES
@@ -443,7 +481,39 @@ INSERT INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, css_cla
 (1, '待审批', '0', 'wms_move_status', '', 'info', 'Y', '0', 'admin', sysdate(), ''),
 (2, '已批准', '1', 'wms_move_status', '', 'primary', 'N', '0', 'admin', sysdate(), ''),
 (3, '已完成', '2', 'wms_move_status', '', 'success', 'N', '0', 'admin', sysdate(), ''),
-(4, '已作废', '3', 'wms_move_status', '', 'danger', 'N', '0', 'admin', sysdate(), '');
+(4, '已作废', '3', 'wms_move_status', '', 'danger', 'N', '0', 'admin', sysdate(), ''),
+
+(1, '厂商', '0', 'wms_supplier_type', '', 'primary', 'Y', '0', 'admin', sysdate(), ''),
+(2, '经销商', '1', 'wms_supplier_type', '', 'success', 'N', '0', 'admin', sysdate(), ''),
+(3, '代理商', '2', 'wms_supplier_type', '', 'warning', 'N', '0', 'admin', sysdate(), ''),
+(4, '服务商', '3', 'wms_supplier_type', '', 'info', 'N', '0', 'admin', sysdate(), ''),
+
+(1, 'A级（战略）', 'A', 'wms_supplier_level', '', 'success', 'N', '0', 'admin', sysdate(), ''),
+(2, 'B级（优秀）', 'B', 'wms_supplier_level', '', 'primary', 'N', '0', 'admin', sysdate(), ''),
+(3, 'C级（合格）', 'C', 'wms_supplier_level', '', 'warning', 'N', '0', 'admin', sysdate(), ''),
+(4, 'D级（待改进）', 'D', 'wms_supplier_level', '', 'danger', 'N', '0', 'admin', sysdate(), ''),
+
+(1, '国有企业', '0', 'wms_enterprise_nature', '', 'primary', 'N', '0', 'admin', sysdate(), ''),
+(2, '民营企业', '1', 'wms_enterprise_nature', '', 'success', 'N', '0', 'admin', sysdate(), ''),
+(3, '外资企业', '2', 'wms_enterprise_nature', '', 'warning', 'N', '0', 'admin', sysdate(), ''),
+(4, '合资企业', '3', 'wms_enterprise_nature', '', 'info', 'N', '0', 'admin', sysdate(), ''),
+(5, '个体工商户', '4', 'wms_enterprise_nature', '', 'danger', 'N', '0', 'admin', sysdate(), ''),
+
+(1, '现结', '0', 'wms_payment_method', '', 'success', 'Y', '0', 'admin', sysdate(), ''),
+(2, '月结', '1', 'wms_payment_method', '', 'primary', 'N', '0', 'admin', sysdate(), ''),
+(3, '预付', '2', 'wms_payment_method', '', 'warning', 'N', '0', 'admin', sysdate(), ''),
+
+(1, '银行转账', '0', 'wms_settlement_type', '', 'primary', 'Y', '0', 'admin', sysdate(), ''),
+(2, '承兑汇票', '1', 'wms_settlement_type', '', 'success', 'N', '0', 'admin', sysdate(), ''),
+(3, '现金', '2', 'wms_settlement_type', '', 'warning', 'N', '0', 'admin', sysdate(), ''),
+
+(1, '人民币', 'CNY', 'wms_currency', '', 'primary', 'Y', '0', 'admin', sysdate(), ''),
+(2, '美元', 'USD', 'wms_currency', '', 'success', 'N', '0', 'admin', sysdate(), ''),
+(3, '欧元', 'EUR', 'wms_currency', '', 'warning', 'N', '0', 'admin', sysdate(), ''),
+
+(1, '未审核', '0', 'wms_qualification_status', '', 'info', 'Y', '0', 'admin', sysdate(), ''),
+(2, '已审核', '1', 'wms_qualification_status', '', 'success', 'N', '0', 'admin', sysdate(), ''),
+(3, '审核不通过', '2', 'wms_qualification_status', '', 'danger', 'N', '0', 'admin', sysdate(), '');
 
 
 -- =============================================

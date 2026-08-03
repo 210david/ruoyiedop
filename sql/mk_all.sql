@@ -538,14 +538,16 @@ INSERT INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, css_cla
 (3, '已驳回', '2', 'marketing_contract_change_status', '', 'danger', 'N', '0', 'admin', sysdate(), ''),
 (4, '已执行', '3', 'marketing_contract_change_status', '', 'info', 'N', '0', 'admin', sysdate(), ''),
 
-(1, '待确认', '0', 'marketing_order_status', '', 'info', 'Y', '0', 'admin', sysdate(), ''),
-(2, '已确认', '1', 'marketing_order_status', '', 'primary', 'N', '0', 'admin', sysdate(), ''),
+(1, '草稿', '0', 'marketing_order_status', '', 'info', 'Y', '0', 'admin', sysdate(), ''),
+(2, '待审核', '1', 'marketing_order_status', '', 'warning', 'N', '0', 'admin', sysdate(), ''),
 (3, '已发货', '2', 'marketing_order_status', '', 'warning', 'N', '0', 'admin', sysdate(), ''),
 (4, '已签收', '3', 'marketing_order_status', '', 'success', 'N', '0', 'admin', sysdate(), ''),
 (5, '已完成', '4', 'marketing_order_status', '', 'success', 'N', '0', 'admin', sysdate(), ''),
 (6, '已取消', '5', 'marketing_order_status', '', 'danger', 'N', '0', 'admin', sysdate(), ''),
 (7, '退货中', '6', 'marketing_order_status', '', 'warning', 'N', '0', 'admin', sysdate(), ''),
 (8, '已退货', '7', 'marketing_order_status', '', 'danger', 'N', '0', 'admin', sysdate(), ''),
+(9, '已确认', '8', 'marketing_order_status', '', 'primary', 'N', '0', 'admin', sysdate(), ''),
+(10, '已驳回', '9', 'marketing_order_status', '', 'danger', 'N', '0', 'admin', sysdate(), ''),
 
 (1, '待回款', '0', 'marketing_payment_status', '', 'info', 'Y', '0', 'admin', sysdate(), ''),
 (2, '已回款', '1', 'marketing_payment_status', '', 'success', 'N', '0', 'admin', sysdate(), ''),

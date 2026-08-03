@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.pms.mapper.PmsPurchasePlanMapper">
+
+    <resultMap type="com.ruoyi.pms.domain.PmsPurchasePlan" id="PmsPurchasePlanResult">
+        <id property="planId" column="plan_id"/>
+        <result property="planNo" column="plan_no"/>
+        <result property="title" column="title"/>
+        <result property="status" column="status"/>
+        <result property="planType" column="plan_type"/>
+        <result property="startDate" column="start_date"/>
+        <result property="endDate" column="end_date"/>
+        <result property="budgetAmount" column="budget_amount"/>
+        <result property="actualAmount" column="actual_amount"/>
+        <result property="description" column="description"/>
+        <result property="plannerId" column="planner_id"/>
+        <result property="plannerName" column="planner_name"/>
+        <result property="deptId" column="dept_id"/>
+        <result property="deptName" column="dept_name"/>
+        <result property="auditBy" column="audit_by"/>
+        <result property="auditTime" column="audit_time"/>
+        <result property="auditOpinion" column="audit_opinion"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+        <collection property="detailList" ofType="com.ruoyi.pms.domain.PmsPurchasePlanDetail" column="plan_id" select="selectPmsPurchasePlanDetailByPlanId"/>
+    </resultMap>
+
+    <resultMap type="com.ruoyi.pms.domain.PmsPurchasePlanDetail" id="PmsPurchasePlanDetailResult">
+        <id property="detailId" column="detail_id"/>
+        <result property="planId" column="plan_id"/>
+        <result property="materialId" column="material_id"/>
+        <result property="materialCode" column="material_code"/>
+        <result property="materialName" column="material_name"/>
+        <result property="specification" column="specification"/>
+        <result property="unit" column="unit"/>
+        <result property="planQuantity" column="plan_quantity"/>
+        <result property="budgetPrice" column="budget_price"/>
+        <result property="budgetAmount" column="budget_amount"/>
+        <result property="actualQuantity" column="actual_quantity"/>
+        <result property="actualAmount" column="actual_amount"/>
+        <result property="requireDate" column="require_date"/>
+        <result property="remark" column="remark"/>
+        <result property="delFlag" column="del_flag"/>
+    </resultMap>
+
+    <sql id="selectPmsPurchasePlanVo">
+        select plan_id, plan_no, title, status, plan_type, start_date, end_date,
+               budget_amount, actual_amount, description, planner_id, planner_name,
+               dept_id, dept_name, audit_by, audit_time, audit_opinion,
+               del_flag, create_by, create_time, update_by, update_time, remark
+        from pms_purchase_plan
+    </sql>
+
+    <select id="selectPmsPurchasePlanList" parameterType="com.ruoyi.pms.domain.PmsPurchasePlan" resultMap="PmsPurchasePlanResult">
+        <include refid="selectPmsPurchasePlanVo"/>
+        <where>
+            <if test="planNo != null and planNo != ''">
+                AND plan_no like concat('%', #{planNo}, '%')
+            </if>
+            <if test="title != null and title != ''">
+                AND title like concat('%', #{title}, '%')
+            </if>
+            <if test="status != null and status != ''">
+                AND status = #{status}
+            </if>
+            <if test="planType != null and planType != ''">
+                AND plan_type = #{planType}
+            </if>
+            <if test="params.beginStartDate != null and params.beginStartDate != ''">
+                AND start_date &gt;= #{params.beginStartDate}
+            </if>
+            <if test="params.endStartDate != null and params.endStartDate != ''">
+                AND start_date &lt;= #{params.endStartDate}
+            </if>
+            <if test="params.beginEndDate != null and params.beginEndDate != ''">
+                AND end_date &gt;= #{params.beginEndDate}
+            </if>
+            <if test="params.endEndDate != null and params.endEndDate != ''">
+                AND end_date &lt;= #{params.endEndDate}
+            </if>
+            <if test="plannerName != null and plannerName != ''">
+                AND planner_name like concat('%', #{plannerName}, '%')
+            </if>
+            <if test="deptId != null">
+                AND dept_id = #{deptId}
+            </if>
+            AND del_flag = '0'
+        </where>
+        order by create_time desc
+    </select>
+
+    <select id="selectPmsPurchasePlanById" parameterType="Long" resultMap="PmsPurchasePlanResult">
+        <include refid="selectPmsPurchasePlanVo"/>
+        where plan_id = #{planId}
+    </select>
+
+    <select id="selectPmsPurchasePlanDetailByPlanId" parameterType="Long" resultMap="PmsPurchasePlanDetailResult">
+        select detail_id, plan_id, material_id, material_code, material_name,
+               specification, unit, plan_quantity, budget_price, budget_amount,
+               actual_quantity, actual_amount, require_date, remark, del_flag
+        from pms_purchase_plan_detail
+        where plan_id = #{planId} and del_flag = '0'
+    </select>
+
+    <insert id="insertPmsPurchasePlan" parameterType="com.ruoyi.pms.domain.PmsPurchasePlan" useGeneratedKeys="true" keyProperty="planId">
+        insert into pms_purchase_plan
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="planNo != null">plan_no,</if>
+            <if test="title != null">title,</if>
+            <if test="status != null">status,</if>
+            <if test="planType != null">plan_type,</if>
+            <if test="startDate != null">start_date,</if>
+            <if test="endDate != null">end_date,</if>
+            <if test="budgetAmount != null">budget_amount,</if>
+            <if test="actualAmount != null">actual_amount,</if>
+            <if test="description != null">description,</if>
+            <if test="plannerId != null">planner_id,</if>
+            <if test="plannerName != null">planner_name,</if>
+            <if test="deptId != null">dept_id,</if>
+            <if test="deptName != null">dept_name,</if>
+            <if test="auditBy != null">audit_by,</if>
+            <if test="auditTime != null">audit_time,</if>
+            <if test="auditOpinion != null">audit_opinion,</if>
+            <if test="delFlag != null">del_flag,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="remark != null">remark,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="planNo != null">#{planNo},</if>
+            <if test="title != null">#{title},</if>
+            <if test="status != null">#{status},</if>
+            <if test="planType != null">#{planType},</if>
+            <if test="startDate != null">#{startDate},</if>
+            <if test="endDate != null">#{endDate},</if>
+            <if test="budgetAmount != null">#{budgetAmount},</if>
+            <if test="actualAmount != null">#{actualAmount},</if>
+            <if test="description != null">#{description},</if>
+            <if test="plannerId != null">#{plannerId},</if>
+            <if test="plannerName != null">#{plannerName},</if>
+            <if test="deptId != null">#{deptId},</if>
+            <if test="deptName != null">#{deptName},</if>
+            <if test="auditBy != null">#{auditBy},</if>
+            <if test="auditTime != null">#{auditTime},</if>
+            <if test="auditOpinion != null">#{auditOpinion},</if>
+            <if test="delFlag != null">#{delFlag},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="remark != null">#{remark},</if>
+        </trim>
+    </insert>
+
+    <update id="updatePmsPurchasePlan" parameterType="com.ruoyi.pms.domain.PmsPurchasePlan">
+        update pms_purchase_plan
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="planNo != null">plan_no = #{planNo},</if>
+            <if test="title != null">title = #{title},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="planType != null">plan_type = #{planType},</if>
+            <if test="startDate != null">start_date = #{startDate},</if>
+            <if test="endDate != null">end_date = #{endDate},</if>
+            <if test="budgetAmount != null">budget_amount = #{budgetAmount},</if>
+            <if test="actualAmount != null">actual_amount = #{actualAmount},</if>
+            <if test="description != null">description = #{description},</if>
+            <if test="plannerId != null">planner_id = #{plannerId},</if>
+            <if test="plannerName != null">planner_name = #{plannerName},</if>
+            <if test="deptId != null">dept_id = #{deptId},</if>
+            <if test="deptName != null">dept_name = #{deptName},</if>
+            <if test="auditBy != null">audit_by = #{auditBy},</if>
+            <if test="auditTime != null">audit_time = #{auditTime},</if>
+            <if test="auditOpinion != null">audit_opinion = #{auditOpinion},</if>
+            <if test="delFlag != null">del_flag = #{delFlag},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </trim>
+        where plan_id = #{planId}
+    </update>
+
+    <delete id="deletePmsPurchasePlanById" parameterType="Long">
+        update pms_purchase_plan set del_flag = '2' where plan_id = #{planId}
+    </delete>
+
+    <delete id="deletePmsPurchasePlanByIds" parameterType="String">
+        update pms_purchase_plan set del_flag = '2' where plan_id in
+        <foreach collection="array" item="planId" open="(" separator="," close=")">
+            #{planId}
+        </foreach>
+    </delete>
+
+    <delete id="deletePmsPurchasePlanDetailByPlanIds" parameterType="String">
+        update pms_purchase_plan_detail set del_flag = '2' where plan_id in
+        <foreach collection="array" item="planId" open="(" separator="," close=")">
+            #{planId}
+        </foreach>
+    </delete>
+
+    <delete id="deletePmsPurchasePlanDetailByPlanId" parameterType="Long">
+        update pms_purchase_plan_detail set del_flag = '2' where plan_id = #{planId}
+    </delete>
+
+    <insert id="batchPmsPurchasePlanDetail">
+        insert into pms_purchase_plan_detail (plan_id, material_id, material_code, material_name,
+            specification, unit, plan_quantity, budget_price, budget_amount, actual_quantity,
+            actual_amount, require_date, remark, del_flag)
+        values
+        <foreach collection="list" item="item" index="index" separator=",">
+            (#{item.planId}, #{item.materialId}, #{item.materialCode}, #{item.materialName},
+            #{item.specification}, #{item.unit}, #{item.planQuantity}, #{item.budgetPrice},
+            #{item.budgetAmount}, #{item.actualQuantity}, #{item.actualAmount}, #{item.requireDate},
+            #{item.remark}, #{item.delFlag})
+        </foreach>
+    </insert>
+
+    <update id="updatePlanActualAmount" parameterType="Long">
+        update pms_purchase_plan p
+        set p.actual_amount = (
+            select COALESCE(sum(d.actual_amount), 0)
+            from pms_purchase_plan_detail d
+            where d.plan_id = p.plan_id and d.del_flag = '0'
+        )
+        where p.plan_id = #{planId}
+    </update>
+
+</mapper>

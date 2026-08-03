@@ -27,7 +27,7 @@ public class MkNumberRuleController extends BaseController
     @Autowired
     private IMkNumberRuleService mkNumberRuleService;
 
-    @PreAuthorize("@ss.hasPermi('marketing:numberRule:list')")
+    @PreAuthorize("@ss.hasAnyPermi({'marketing:numberRule:list','pms:numberRule:list'})")
     @GetMapping("/list")
     public TableDataInfo list(MkNumberRule rule)
     {
@@ -37,7 +37,7 @@ public class MkNumberRuleController extends BaseController
     }
 
     @Log(title = "编号规则", businessType = BusinessType.EXPORT)
-    @PreAuthorize("@ss.hasPermi('marketing:numberRule:export')")
+    @PreAuthorize("@ss.hasAnyPermi({'marketing:numberRule:export','pms:numberRule:export'})")
     @PostMapping("/export")
     public void export(HttpServletResponse response, MkNumberRule rule)
     {
@@ -46,7 +46,7 @@ public class MkNumberRuleController extends BaseController
         util.exportExcel(response, list, "编号规则数据");
     }
 
-    @PreAuthorize("@ss.hasPermi('marketing:numberRule:query')")
+    @PreAuthorize("@ss.hasAnyPermi({'marketing:numberRule:query','pms:numberRule:query'})")
     @GetMapping(value = "/{ruleId}")
     public AjaxResult getInfo(@PathVariable("ruleId") Long ruleId)
     {
@@ -56,7 +56,7 @@ public class MkNumberRuleController extends BaseController
     /**
      * 根据规则编码获取预览编号（不消耗序列号）
      */
-    @PreAuthorize("@ss.hasPermi('marketing:numberRule:query')")
+    @PreAuthorize("@ss.hasAnyPermi({'marketing:numberRule:query','pms:numberRule:query'})")
     @GetMapping(value = "/preview/{ruleCode}")
     public AjaxResult preview(@PathVariable("ruleCode") String ruleCode)
     {
@@ -69,7 +69,7 @@ public class MkNumberRuleController extends BaseController
     }
 
     @Log(title = "编号规则", businessType = BusinessType.INSERT)
-    @PreAuthorize("@ss.hasPermi('marketing:numberRule:add')")
+    @PreAuthorize("@ss.hasAnyPermi({'marketing:numberRule:add','pms:numberRule:add'})")
     @PostMapping
     public AjaxResult add(@Validated @RequestBody MkNumberRule rule)
     {
@@ -81,7 +81,7 @@ public class MkNumberRuleController extends BaseController
     }
 
     @Log(title = "编号规则", businessType = BusinessType.UPDATE)
-    @PreAuthorize("@ss.hasPermi('marketing:numberRule:edit')")
+    @PreAuthorize("@ss.hasAnyPermi({'marketing:numberRule:edit','pms:numberRule:edit'})")
     @PutMapping
     public AjaxResult edit(@Validated @RequestBody MkNumberRule rule)
     {
@@ -89,7 +89,7 @@ public class MkNumberRuleController extends BaseController
     }
 
     @Log(title = "编号规则", businessType = BusinessType.DELETE)
-    @PreAuthorize("@ss.hasPermi('marketing:numberRule:remove')")
+    @PreAuthorize("@ss.hasAnyPermi({'marketing:numberRule:remove','pms:numberRule:remove'})")
     @DeleteMapping("/{ruleIds}")
     public AjaxResult remove(@PathVariable Long[] ruleIds)
     {

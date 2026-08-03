@@ -2869,7 +2869,7 @@ const MK_MODULES = [
           { name: 'orderCode', type: 'String', required: false, desc: '订单编号' },
           { name: 'customerId', type: 'Long', required: false, desc: '客户ID' },
           { name: 'contractId', type: 'Long', required: false, desc: '合同ID' },
-          { name: 'orderStatus', type: 'String', required: false, desc: '状态：0=待确认 1=已确认 2=已发货 3=已签收 4=已完成 5=已取消' }
+          { name: 'orderStatus', type: 'String', required: false, desc: '状态：0=草稿 1=已确认 2=已发货 3=已签收 4=已完成 5=已取消' }
         ],
         bodyFields: [
           { name: 'orderId', type: 'Long', required: false, desc: '订单ID' },
@@ -2885,13 +2885,13 @@ const MK_MODULES = [
       }),
       {
         method: 'PUT',
-        path: '/mk/order/confirm/{orderId}',
-        summary: '订单确认',
-        permission: 'marketing:order:confirm',
+        path: '/mk/order/submit/{orderId}',
+        summary: '订单提交',
+        permission: 'marketing:order:edit',
         params: [{ name: 'orderId', type: 'Long', required: true, desc: '订单ID', in: 'path' }],
-        requestExample: 'PUT /mk/order/confirm/1',
+        requestExample: 'PUT /mk/order/submit/1',
         responseExample: COMMON_RESPONSE.success,
-        remark: '确认订单，状态从待确认变为已确认。'
+        remark: '提交订单，状态从草稿变为已确认。'
       },
       {
         method: 'PUT',

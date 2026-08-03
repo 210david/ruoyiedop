@@ -184,7 +184,7 @@ INSERT IGNORE INTO `sys_dict_data` (`dict_sort`, `dict_label`, `dict_value`, `di
 -- 更新订单状态字典
 DELETE FROM `sys_dict_data` WHERE `dict_type` = 'marketing_order_status';
 INSERT INTO `sys_dict_data` (`dict_sort`, `dict_label`, `dict_value`, `dict_type`, `list_class`, `is_default`, `status`, `create_by`, `create_time`, `remark`) VALUES
-(1, '待确认', '0', 'marketing_order_status', 'info', 'Y', '0', 'admin', NOW(), ''),
+(1, '草稿', '0', 'marketing_order_status', 'info', 'Y', '0', 'admin', NOW(), ''),
 (2, '已确认', '1', 'marketing_order_status', 'primary', 'N', '0', 'admin', NOW(), ''),
 (3, '已发货', '2', 'marketing_order_status', 'warning', 'N', '0', 'admin', NOW(), ''),
 (4, '已签收', '3', 'marketing_order_status', 'success', 'N', '0', 'admin', NOW(), ''),

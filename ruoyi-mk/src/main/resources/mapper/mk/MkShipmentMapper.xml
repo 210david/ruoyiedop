@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mk.mapper.MkShipmentMapper">
+
+    <resultMap type="MkShipment" id="MkShipmentResult">
+        <result property="shipmentId"        column="shipment_id"/>
+        <result property="shipmentNo"        column="shipment_no"/>
+        <result property="orderId"           column="order_id"/>
+        <result property="orderNo"           column="order_no"/>
+        <result property="contractId"        column="contract_id"/>
+        <result property="contractNo"        column="contract_no"/>
+        <result property="customerId"        column="customer_id"/>
+        <result property="customerName"      column="customer_name"/>
+        <result property="status"            column="status"/>
+        <result property="shipmentDate"      column="shipment_date"/>
+        <result property="logisticsCompany"  column="logistics_company"/>
+        <result property="trackingNo"        column="tracking_no"/>
+        <result property="totalQty"          column="total_qty"/>
+        <result property="totalAmount"       column="total_amount"/>
+        <result property="receiverName"      column="receiver_name"/>
+        <result property="receiverPhone"     column="receiver_phone"/>
+        <result property="receiverAddress"   column="receiver_address"/>
+        <result property="shipperId"         column="shipper_id"/>
+        <result property="shipperName"       column="shipper_name"/>
+        <result property="delFlag"           column="del_flag"/>
+        <result property="createBy"          column="create_by"/>
+        <result property="createTime"        column="create_time"/>
+        <result property="updateBy"          column="update_by"/>
+        <result property="updateTime"        column="update_time"/>
+        <result property="remark"            column="remark"/>
+    </resultMap>
+
+    <resultMap type="MkShipmentDetail" id="MkShipmentDetailResult">
+        <result property="detailId"          column="detail_id"/>
+        <result property="shipmentId"        column="shipment_id"/>
+        <result property="orderItemId"       column="order_item_id"/>
+        <result property="productName"       column="product_name"/>
+        <result property="productSpec"       column="product_spec"/>
+        <result property="unit"              column="unit"/>
+        <result property="shipQty"           column="ship_qty"/>
+        <result property="unitPrice"         column="unit_price"/>
+        <result property="amount"            column="amount"/>
+        <result property="delFlag"           column="del_flag"/>
+        <result property="createBy"          column="create_by"/>
+        <result property="createTime"        column="create_time"/>
+        <result property="updateBy"          column="update_by"/>
+        <result property="updateTime"        column="update_time"/>
+        <result property="remark"            column="remark"/>
+    </resultMap>
+
+    <sql id="selectShipmentVo">
+        SELECT shipment_id, shipment_no, order_id, order_no, contract_id, contract_no,
+               customer_id, customer_name, status, shipment_date,
+               logistics_company, tracking_no, total_qty, total_amount,
+               receiver_name, receiver_phone, receiver_address,
+               shipper_id, shipper_name,
+               del_flag, create_by, create_time, update_by, update_time, remark
+        FROM mk_shipment
+    </sql>
+
+    <select id="selectShipmentList" parameterType="MkShipment" resultMap="MkShipmentResult">
+        <include refid="selectShipmentVo"/>
+        <where>
+            del_flag = '0'
+            <if test="shipmentNo != null and shipmentNo != ''"> AND shipment_no LIKE CONCAT('%', #{shipmentNo}, '%')</if>
+            <if test="orderNo != null and orderNo != ''"> AND order_no LIKE CONCAT('%', #{orderNo}, '%')</if>
+            <if test="orderId != null"> AND order_id = #{orderId}</if>
+            <if test="contractId != null"> AND contract_id = #{contractId}</if>
+            <if test="customerId != null"> AND customer_id = #{customerId}</if>
+            <if test="customerName != null and customerName != ''"> AND customer_name LIKE CONCAT('%', #{customerName}, '%')</if>
+            <if test="status != null and status != ''"> AND status = #{status}</if>
+            <if test="shipperName != null and shipperName != ''"> AND shipper_name LIKE CONCAT('%', #{shipperName}, '%')</if>
+            <if test="params.beginDate != null and params.beginDate != ''"> AND date(shipment_date) &gt;= #{params.beginDate}</if>
+            <if test="params.endDate != null and params.endDate != ''"> AND date(shipment_date) &lt;= #{params.endDate}</if>
+        </where>
+        ORDER BY shipment_id DESC
+    </select>
+
+    <select id="selectShipmentById" parameterType="Long" resultMap="MkShipmentResult">
+        <include refid="selectShipmentVo"/>
+        WHERE shipment_id = #{shipmentId} AND del_flag = '0'
+    </select>
+
+    <insert id="insertShipment" parameterType="MkShipment" useGeneratedKeys="true" keyProperty="shipmentId">
+        INSERT INTO mk_shipment (
+            shipment_no, order_id, order_no, contract_id, contract_no,
+            customer_id, customer_name, status, shipment_date,
+            logistics_company, tracking_no, total_qty, total_amount,
+            receiver_name, receiver_phone, receiver_address,
+            shipper_id, shipper_name,
+            del_flag, create_by, create_time, remark
+        ) VALUES (
+            #{shipmentNo}, #{orderId}, #{orderNo}, #{contractId}, #{contractNo},
+            #{customerId}, #{customerName}, #{status}, #{shipmentDate},
+            #{logisticsCompany}, #{trackingNo}, #{totalQty}, #{totalAmount},
+            #{receiverName}, #{receiverPhone}, #{receiverAddress},
+            #{shipperId}, #{shipperName},
+            #{delFlag}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateShipment" parameterType="MkShipment">
+        UPDATE mk_shipment
+        <set>
+            <if test="shipmentNo != null and shipmentNo != ''">shipment_no = #{shipmentNo},</if>
+            <if test="orderId != null">order_id = #{orderId},</if>
+            <if test="orderNo != null">order_no = #{orderNo},</if>
+            <if test="contractId != null">contract_id = #{contractId},</if>
+            <if test="contractNo != null">contract_no = #{contractNo},</if>
+            <if test="customerId != null">customer_id = #{customerId},</if>
+            <if test="customerName != null">customer_name = #{customerName},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="shipmentDate != null">shipment_date = #{shipmentDate},</if>
+            <if test="logisticsCompany != null">logistics_company = #{logisticsCompany},</if>
+            <if test="trackingNo != null">tracking_no = #{trackingNo},</if>
+            <if test="totalQty != null">total_qty = #{totalQty},</if>
+            <if test="totalAmount != null">total_amount = #{totalAmount},</if>
+            <if test="receiverName != null">receiver_name = #{receiverName},</if>
+            <if test="receiverPhone != null">receiver_phone = #{receiverPhone},</if>
+            <if test="receiverAddress != null">receiver_address = #{receiverAddress},</if>
+            <if test="shipperId != null">shipper_id = #{shipperId},</if>
+            <if test="shipperName != null">shipper_name = #{shipperName},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE shipment_id = #{shipmentId}
+    </update>
+
+    <delete id="deleteShipmentByIds" parameterType="Long">
+        UPDATE mk_shipment SET del_flag = '2' WHERE shipment_id IN
+        <foreach item="shipmentId" collection="array" open="(" separator="," close=")">#{shipmentId}</foreach>
+    </delete>
+
+    <!-- 明细 -->
+    <select id="selectShipmentDetailByShipmentId" parameterType="Long" resultMap="MkShipmentDetailResult">
+        SELECT detail_id, shipment_id, order_item_id, product_name, product_spec, unit,
+               ship_qty, unit_price, amount,
+               del_flag, create_by, create_time, update_by, update_time, remark
+        FROM mk_shipment_detail
+        WHERE shipment_id = #{shipmentId} AND del_flag = '0'
+        ORDER BY detail_id ASC
+    </select>
+
+    <insert id="insertShipmentDetail" parameterType="MkShipmentDetail" useGeneratedKeys="true" keyProperty="detailId">
+        INSERT INTO mk_shipment_detail (
+            shipment_id, order_item_id, product_name, product_spec, unit,
+            ship_qty, unit_price, amount,
+            del_flag, create_by, create_time, remark
+        ) VALUES (
+            #{shipmentId}, #{orderItemId}, #{productName}, #{productSpec}, #{unit},
+            #{shipQty}, #{unitPrice}, #{amount},
+            #{delFlag}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <delete id="deleteShipmentDetailByShipmentId" parameterType="Long">
+        UPDATE mk_shipment_detail SET del_flag = '2' WHERE shipment_id = #{shipmentId}
+    </delete>
+
+    <!-- 确认发货 -->
+    <update id="confirmShipment" parameterType="MkShipment">
+        UPDATE mk_shipment
+        SET status = #{status},
+            shipment_date = #{shipmentDate},
+            logistics_company = #{logisticsCompany},
+            tracking_no = #{trackingNo},
+            shipper_id = #{shipperId},
+            shipper_name = #{shipperName},
+            update_by = #{updateBy},
+            update_time = sysdate()
+        WHERE shipment_id = #{shipmentId}
+    </update>
+
+    <!-- 签收 -->
+    <update id="receiveShipment" parameterType="MkShipment">
+        UPDATE mk_shipment
+        SET status = #{status},
+            update_by = #{updateBy},
+            update_time = sysdate()
+        WHERE shipment_id = #{shipmentId}
+    </update>
+
+    <!-- 更新订单明细已发货数量 -->
+    <update id="updateOrderItemShippedQty">
+        UPDATE mk_order_item
+        SET shipped_qty = #{shippedQty}
+        WHERE item_id = #{orderItemId}
+    </update>
+
+    <!-- 查询存在进行中发货单的订单ID列表（待发货0、已发货1） -->
+    <select id="selectInProgressShipmentOrderIds" resultType="Long">
+        SELECT DISTINCT order_id FROM mk_shipment
+        WHERE del_flag = '0' AND status IN ('0', '1') AND order_id IS NOT NULL
+    </select>
+
+</mapper>

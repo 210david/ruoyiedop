@@ -15,6 +15,9 @@ public interface MkOrderMapper
     public List<MkOrderItem> selectOrderItems(Long orderId);
     public int insertOrderItem(MkOrderItem item);
     public int deleteOrderItemsByOrderId(Long orderId);
-    /** 订单发货 */
+    /** 订单发货（更新订单物流信息和状态） */
     public int deliverOrder(MkOrder order);
+
+    /** 更新明细已发货数量 */
+    public int updateItemShippedQty(MkOrderItem item);
 }

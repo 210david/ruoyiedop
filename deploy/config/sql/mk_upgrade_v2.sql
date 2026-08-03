@@ -56,7 +56,7 @@ ALTER TABLE `mk_order`
   ADD COLUMN `receive_person` varchar(64) DEFAULT NULL COMMENT '签收人' AFTER `receive_time`,
   ADD COLUMN `cancel_reason` varchar(500) DEFAULT NULL COMMENT '取消原因' AFTER `receive_person`;
 
--- 订单状态扩展：0待确认 1已确认 2已发货 3已签收 4已完成 5已取消 6退货中 7已退货
+-- 订单状态扩展：0草稿 1已确认 2已发货 3已签收 4已完成 5已取消 6退货中 7已退货
 -- 需迁移已有数据
 UPDATE `mk_order` SET `order_status` = '1' WHERE `order_status` = '0'; -- 旧"待发货"->"已确认"
 UPDATE `mk_order` SET `order_status` = '2' WHERE `order_status` = '1'; -- 旧"已发货"->"已发货"(新)
@@ -214,7 +214,7 @@ INSERT IGNORE INTO `sys_dict_data` (`dict_sort`, `dict_label`, `dict_value`, `di
 -- 更新订单状态字典（扩展为7个状态）
 DELETE FROM `sys_dict_data` WHERE `dict_type` = 'marketing_order_status';
 INSERT IGNORE INTO `sys_dict_data` (`dict_sort`, `dict_label`, `dict_value`, `dict_type`, `list_class`, `is_default`, `status`, `create_by`, `create_time`, `remark`) VALUES
-(1, '待确认', '0', 'marketing_order_status', 'info', 'Y', '0', 'admin', NOW(), ''),
+(1, '草稿', '0', 'marketing_order_status', 'info', 'Y', '0', 'admin', NOW(), ''),
 (2, '已确认', '1', 'marketing_order_status', 'primary', 'N', '0', 'admin', NOW(), ''),
 (3, '已发货', '2', 'marketing_order_status', 'warning', 'N', '0', 'admin', NOW(), ''),
 (4, '已签收', '3', 'marketing_order_status', 'success', 'N', '0', 'admin', NOW(), ''),

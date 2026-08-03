@@ -26,3 +26,11 @@ export function formatAmount(val) {
   if (val == null || val === '') return '-'
   return Number(val).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
+
+/**
+ * 货币格式化：￥前缀 + 千分位 + 两位小数
+ */
+export function formatMoney(val) {
+  if (val == null || val === '') return '-'
+  return '￥' + Number(val).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}

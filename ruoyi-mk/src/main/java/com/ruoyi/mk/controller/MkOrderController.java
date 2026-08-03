@@ -78,7 +78,7 @@ public class MkOrderController extends BaseController
     }
 
     /**
-     * 订单发货
+     * 订单发货（支持多次发货）
      */
     @Log(title = "订单管理", businessType = BusinessType.UPDATE)
     @PreAuthorize("@ss.hasPermi('marketing:order:deliver')")
@@ -89,46 +89,36 @@ public class MkOrderController extends BaseController
     }
 
     /**
-     * 订单确认
-     */
-    @Log(title = "订单管理", businessType = BusinessType.UPDATE)
-    @PreAuthorize("@ss.hasPermi('marketing:order:confirm')")
-    @PutMapping("/confirm/{orderId}")
-    public AjaxResult confirm(@PathVariable("orderId") Long orderId)
-    {
-        return toAjax(mkOrderService.confirmOrder(orderId));
-    }
-
-    /**
-     * 订单签收
-     */
-    @Log(title = "订单管理", businessType = BusinessType.UPDATE)
-    @PreAuthorize("@ss.hasPermi('marketing:order:receive')")
-    @PutMapping("/receive/{orderId}")
-    public AjaxResult receive(@PathVariable("orderId") Long orderId, @RequestParam(required = false) String receivePerson)
-    {
-        return toAjax(mkOrderService.receiveOrder(orderId, receivePerson));
-    }
-
-    /**
-     * 订单完成
+     * 订单提交（草稿/已驳回 → 待审核）
      */
     @Log(title = "订单管理", businessType = BusinessType.UPDATE)
     @PreAuthorize("@ss.hasPermi('marketing:order:edit')")
-    @PutMapping("/complete/{orderId}")
-    public AjaxResult complete(@PathVariable("orderId") Long orderId)
+    @PutMapping("/submit/{orderId}")
+    public AjaxResult submit(@PathVariable("orderId") Long orderId)
     {
-        return toAjax(mkOrderService.completeOrder(orderId));
+        return toAjax(mkOrderService.submitOrder(orderId));
     }
 
     /**
-     * 订单取消
+     * 订单作废（草稿/待审核/已审核/部分发货 → 已作废）
      */
     @Log(title = "订单管理", businessType = BusinessType.UPDATE)
     @PreAuthorize("@ss.hasPermi('marketing:order:cancel')")
-    @PutMapping("/cancel/{orderId}")
-    public AjaxResult cancel(@PathVariable("orderId") Long orderId, @RequestParam(required = false) String cancelReason)
+    @PutMapping("/void/{orderId}")
+    public AjaxResult voidOrder(@PathVariable("orderId") Long orderId, @RequestParam(required = false) String voidReason)
     {
-        return toAjax(mkOrderService.cancelOrder(orderId, cancelReason));
+        return toAjax(mkOrderService.voidOrder(orderId, voidReason));
+    }
+
+    /**
+     * 订单审核（待审核 → 已审核/已驳回）
+     */
+    @Log(title = "订单管理", businessType = BusinessType.UPDATE)
+    @PreAuthorize("@ss.hasPermi('marketing:order:approve')")
+    @PutMapping("/audit/{orderId}")
+    public AjaxResult audit(@PathVariable("orderId") Long orderId, @RequestParam String status,
+                            @RequestParam(required = false) String auditOpinion)
+    {
+        return toAjax(mkOrderService.auditOrder(orderId, status, auditOpinion));
     }
 }

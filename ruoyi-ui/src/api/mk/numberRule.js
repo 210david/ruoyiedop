@@ -25,6 +25,14 @@ export function previewNumberRule(ruleCode) {
   })
 }
 
+// 根据规则编码生成编号（复用preview接口）
+export function generateNumber(ruleCode) {
+  return request({
+    url: '/mk/numberRule/preview/' + ruleCode,
+    method: 'get'
+  })
+}
+
 // 新增编号规则
 export function addNumberRule(data) {
   return request({

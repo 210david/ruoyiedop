@@ -115,6 +115,12 @@
             <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c3 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
           </div>
           <div class="rd-card-body" v-show="!collapsedCards.c3">
+        <el-alert v-if="isServiceOrEngineering" type="info" :closable="false" show-icon style="margin-bottom: 16px">
+          <template #title>
+            <span v-if="form.materialType === '4'">当前为「服务」类型物料，适用于IT运维、保洁服务、咨询服务等非物资类采购。「效期管理」和「库存控制」不适用于此类物料。</span>
+            <span v-else-if="form.materialType === '5'">当前为「工程」类型物料，适用于装修工程、安装工程、施工项目等。「效期管理」和「库存控制」不适用于此类物料。</span>
+          </template>
+        </el-alert>
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="物料编码" prop="materialCode">
@@ -145,8 +151,8 @@
         </el-row>
         <el-row :gutter="20">
           <el-col :span="12">
-            <el-form-item label="规格型号" prop="specModel">
-              <el-input v-model="form.specModel" placeholder="请输入规格型号" />
+            <el-form-item :label="isServiceOrEngineering ? '规格描述' : '规格型号'" prop="specModel">
+              <el-input v-model="form.specModel" :placeholder="isServiceOrEngineering ? '请输入规格描述' : '请输入规格型号'" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -154,7 +160,7 @@
         <!-- 分组二：效期管理 -->
                   </div>
         </section>
-        <section class="rd-card">
+        <section class="rd-card" v-show="!isServiceOrEngineering">
           <div class="rd-card-header" @click="toggleCard('c2')">
             <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg></span>效期管理</div>
             <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
@@ -194,7 +200,7 @@
         <!-- 分组三：库存控制 -->
                   </div>
         </section>
-        <section class="rd-card">
+        <section class="rd-card" v-show="!isServiceOrEngineering">
           <div class="rd-card-header" @click="toggleCard('c1')">
             <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="16 18 23 18 23 11"/></svg></span>库存控制</div>
             <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
@@ -276,7 +282,7 @@
           </div>
         </section>
         <!-- 效期管理 -->
-        <section class="rd-card">
+        <section class="rd-card" v-show="!isViewServiceOrEngineering">
           <div class="rd-card-header" @click="toggleCard('v2')">
             <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg></span>效期管理</div>
             <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
@@ -291,7 +297,7 @@
           </div>
         </section>
         <!-- 库存控制 -->
-        <section class="rd-card">
+        <section class="rd-card" v-show="!isViewServiceOrEngineering">
           <div class="rd-card-header" @click="toggleCard('v1')">
             <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="16 18 23 18 23 11"/></svg></span>库存控制</div>
             <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
@@ -361,6 +367,16 @@ materialName: [{ required: true, message: '物料名称不能为空', trigger: '
 })
 
 const { queryParams, form, rules } = toRefs(data)
+
+/** 是否为服务或工程类型 */
+const isServiceOrEngineering = computed(() => {
+  return form.value.materialType === '4' || form.value.materialType === '5'
+})
+
+/** 查看详情-是否为服务或工程类型 */
+const isViewServiceOrEngineering = computed(() => {
+  return viewData.value.materialType === '4' || viewData.value.materialType === '5'
+})
 
 function getList() {
   loading.value = true

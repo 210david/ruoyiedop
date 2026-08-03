@@ -105,6 +105,13 @@
         <foreach item="orderId" collection="array" open="(" separator="," close=")">#{orderId}</foreach>
     </delete>
 
+    <!-- 入库单完成后，更新关联的收货单状态为已入库 -->
+    <update id="updateReceiveStatusByInboundOrderId" parameterType="Long">
+        UPDATE pms_receive 
+        SET status = '3', update_time = sysdate()
+        WHERE inbound_order_id = #{orderId} AND status = '2'
+    </update>
+
     <select id="selectInboundDetailByOrderId" parameterType="Long" resultMap="WmsInboundOrderDetailResult">
         SELECT d.detail_id, d.order_id, d.material_id, m.material_code, m.material_name, m.spec_model, m.unit,
                d.plan_qty, d.received_qty, d.putaway_qty, d.batch_no, d.production_date, d.expiry_date,

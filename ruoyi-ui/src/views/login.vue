@@ -546,6 +546,7 @@ copyright {
 .custom-input-wrapper {
   display: flex;
   align-items: center;
+  width: 100%;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
@@ -574,6 +575,7 @@ copyright {
 // 深色输入框 - 强制覆盖 Element Plus 样式
 :deep(.dark-input) {
   flex: 1;
+  min-width: 0;
 
   .el-input__wrapper {
     background-color: transparent !important;
@@ -598,6 +600,15 @@ copyright {
     .el-input__wrapper {
       background-color: transparent !important;
       background: transparent !important;
+    }
+
+    .el-input__suffix {
+      color: rgba(255, 255, 255, 0.4);
+      margin-left: 8px;
+
+      &:hover {
+        color: rgba(255, 255, 255, 0.7);
+      }
     }
   }
 }

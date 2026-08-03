@@ -50,9 +50,9 @@ curl -s http://localhost:8081/mk/order/list -H "Authorization: Bearer %TOKEN%"
 echo.
 echo.
 
-echo [8] 测试订单管理 - 订单确认 (订单ID=5,状态=0待确认)
-echo --- PUT /mk/order/confirm/5 ---
-curl -s -X PUT http://localhost:8081/mk/order/confirm/5 -H "Authorization: Bearer %TOKEN%"
+echo [8] 测试订单管理 - 订单提交 (订单ID=5,状态=0草稿)
+echo --- PUT /mk/order/submit/5 ---
+curl -s -X PUT http://localhost:8081/mk/order/submit/5 -H "Authorization: Bearer %TOKEN%"
 echo.
 echo.
 

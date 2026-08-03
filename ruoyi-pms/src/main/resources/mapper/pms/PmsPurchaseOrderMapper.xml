@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.pms.mapper.PmsPurchaseOrderMapper">
+
+    <resultMap type="PmsPurchaseOrder" id="PmsPurchaseOrderResult">
+        <result property="orderId"            column="order_id"/>
+        <result property="orderNo"            column="order_no"/>
+        <result property="requestId"          column="request_id"/>
+        <result property="requestNo"          column="request_no"/>
+        <result property="contractId"         column="contract_id"/>
+        <result property="contractNo"         column="contract_no"/>
+        <result property="supplierId"         column="supplier_id"/>
+        <result property="supplierName"       column="supplier_name"/>
+        <result property="warehouseId"        column="warehouse_id"/>
+        <result property="status"             column="status"/>
+        <result property="orderDate"          column="order_date"/>
+        <result property="expectDeliveryDate" column="expect_delivery_date"/>
+        <result property="actualDeliveryDate" column="actual_delivery_date"/>
+        <result property="totalQty"           column="total_qty"/>
+        <result property="totalAmount"        column="total_amount"/>
+        <result property="receivedAmount"     column="received_amount"/>
+        <result property="paidAmount"          column="paid_amount"/>
+        <result property="buyerId"            column="buyer_id"/>
+        <result property="buyerName"          column="buyer_name"/>
+        <result property="deptId"             column="dept_id"/>
+        <result property="deptName"           column="dept_name"/>
+        <result property="paymentMethod"      column="payment_method"/>
+        <result property="paymentDays"        column="payment_days"/>
+        <result property="settlementType"     column="settlement_type"/>
+        <result property="currency"           column="currency"/>
+        <result property="deliveryAddress"    column="delivery_address"/>
+        <result property="auditBy"            column="audit_by"/>
+        <result property="auditTime"          column="audit_time"/>
+        <result property="auditOpinion"       column="audit_opinion"/>
+        <result property="delFlag"            column="del_flag"/>
+        <result property="createBy"           column="create_by"/>
+        <result property="createTime"         column="create_time"/>
+        <result property="updateBy"           column="update_by"/>
+        <result property="updateTime"         column="update_time"/>
+        <result property="remark"             column="remark"/>
+    </resultMap>
+
+    <resultMap type="PmsPurchaseOrderDetail" id="PmsPurchaseOrderDetailResult">
+        <result property="detailId"         column="detail_id"/>
+        <result property="orderId"          column="order_id"/>
+        <result property="requestDetailId"  column="request_detail_id"/>
+        <result property="materialId"       column="material_id"/>
+        <result property="materialCode"     column="material_code"/>
+        <result property="materialName"     column="material_name"/>
+        <result property="specModel"        column="spec_model"/>
+        <result property="unit"             column="unit"/>
+        <result property="qty"              column="qty"/>
+        <result property="unitPrice"        column="unit_price"/>
+        <result property="amount"           column="amount"/>
+        <result property="receivedQty"      column="received_qty"/>
+        <result property="delFlag"          column="del_flag"/>
+        <result property="createBy"         column="create_by"/>
+        <result property="createTime"       column="create_time"/>
+        <result property="updateBy"         column="update_by"/>
+        <result property="updateTime"       column="update_time"/>
+        <result property="remark"           column="remark"/>
+    </resultMap>
+
+    <sql id="selectOrderVo">
+        SELECT order_id, order_no, request_id, request_no, contract_id, contract_no, supplier_id, supplier_name, warehouse_id,
+               status, order_date, expect_delivery_date, actual_delivery_date, total_qty, total_amount,
+               received_amount, paid_amount, buyer_id, buyer_name, dept_id, dept_name, payment_method, payment_days,
+               settlement_type, currency, delivery_address, audit_by, audit_time, audit_opinion,
+               del_flag, create_by, create_time, update_by, update_time, remark
+        FROM pms_purchase_order
+    </sql>
+
+    <select id="selectPurchaseOrderList" parameterType="PmsPurchaseOrder" resultMap="PmsPurchaseOrderResult">
+        <include refid="selectOrderVo"/>
+        <where>
+            del_flag = '0'
+            <if test="orderNo != null and orderNo != ''"> AND order_no LIKE CONCAT('%', #{orderNo}, '%')</if>
+            <if test="requestNo != null and requestNo != ''"> AND request_no LIKE CONCAT('%', #{requestNo}, '%')</if>
+            <if test="contractNo != null and contractNo != ''"> AND contract_no LIKE CONCAT('%', #{contractNo}, '%')</if>
+            <if test="supplierName != null and supplierName != ''"> AND supplier_name LIKE CONCAT('%', #{supplierName}, '%')</if>
+            <if test="supplierId != null"> AND supplier_id = #{supplierId}</if>
+            <if test="status != null and status != ''"> AND status = #{status}</if>
+            <if test="buyerName != null and buyerName != ''"> AND buyer_name LIKE CONCAT('%', #{buyerName}, '%')</if>
+            <if test="deptId != null"> AND dept_id = #{deptId}</if>
+            <if test="paymentMethod != null and paymentMethod != ''"> AND payment_method = #{paymentMethod}</if>
+            <if test="params.beginDate != null and params.beginDate != ''"> AND date(order_date) &gt;= #{params.beginDate}</if>
+            <if test="params.endDate != null and params.endDate != ''"> AND date(order_date) &lt;= #{params.endDate}</if>
+        </where>
+        ORDER BY order_id DESC
+    </select>
+
+    <select id="selectPurchaseOrderById" parameterType="Long" resultMap="PmsPurchaseOrderResult">
+        <include refid="selectOrderVo"/>
+        WHERE order_id = #{orderId}
+    </select>
+
+    <insert id="insertPurchaseOrder" parameterType="PmsPurchaseOrder" useGeneratedKeys="true" keyProperty="orderId">
+        INSERT INTO pms_purchase_order (
+            order_no, request_id, request_no, contract_id, contract_no, supplier_id, supplier_name, warehouse_id,
+            status, order_date, expect_delivery_date, actual_delivery_date, total_qty, total_amount,
+            received_amount, buyer_id, buyer_name, dept_id, dept_name, payment_method, payment_days,
+            settlement_type, currency, delivery_address, audit_by, audit_time, audit_opinion,
+            del_flag, create_by, create_time, remark
+        ) VALUES (
+            #{orderNo}, #{requestId}, #{requestNo}, #{contractId}, #{contractNo}, #{supplierId}, #{supplierName}, #{warehouseId},
+            #{status}, #{orderDate}, #{expectDeliveryDate}, #{actualDeliveryDate}, #{totalQty}, #{totalAmount},
+            #{receivedAmount}, #{buyerId}, #{buyerName}, #{deptId}, #{deptName}, #{paymentMethod}, #{paymentDays},
+            #{settlementType}, #{currency}, #{deliveryAddress}, #{auditBy}, #{auditTime}, #{auditOpinion},
+            #{delFlag}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updatePurchaseOrder" parameterType="PmsPurchaseOrder">
+        UPDATE pms_purchase_order
+        <set>
+            <if test="orderNo != null and orderNo != ''">order_no = #{orderNo},</if>
+            <if test="requestId != null">request_id = #{requestId},</if>
+            <if test="requestNo != null">request_no = #{requestNo},</if>
+            <if test="contractId != null">contract_id = #{contractId},</if>
+            <if test="contractNo != null">contract_no = #{contractNo},</if>
+            <if test="supplierId != null">supplier_id = #{supplierId},</if>
+            <if test="supplierName != null">supplier_name = #{supplierName},</if>
+            <if test="warehouseId != null">warehouse_id = #{warehouseId},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="orderDate != null">order_date = #{orderDate},</if>
+            <if test="expectDeliveryDate != null">expect_delivery_date = #{expectDeliveryDate},</if>
+            <if test="actualDeliveryDate != null">actual_delivery_date = #{actualDeliveryDate},</if>
+            <if test="totalQty != null">total_qty = #{totalQty},</if>
+            <if test="totalAmount != null">total_amount = #{totalAmount},</if>
+            <if test="receivedAmount != null">received_amount = #{receivedAmount},</if>
+            <if test="paidAmount != null">paid_amount = #{paidAmount},</if>
+            <if test="buyerId != null">buyer_id = #{buyerId},</if>
+            <if test="buyerName != null">buyer_name = #{buyerName},</if>
+            <if test="deptId != null">dept_id = #{deptId},</if>
+            <if test="deptName != null">dept_name = #{deptName},</if>
+            <if test="paymentMethod != null">payment_method = #{paymentMethod},</if>
+            <if test="paymentDays != null">payment_days = #{paymentDays},</if>
+            <if test="settlementType != null">settlement_type = #{settlementType},</if>
+            <if test="currency != null">currency = #{currency},</if>
+            <if test="deliveryAddress != null">delivery_address = #{deliveryAddress},</if>
+            <if test="auditBy != null">audit_by = #{auditBy},</if>
+            <if test="auditTime != null">audit_time = #{auditTime},</if>
+            <if test="auditOpinion != null">audit_opinion = #{auditOpinion},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE order_id = #{orderId}
+    </update>
+
+    <delete id="deletePurchaseOrderByIds" parameterType="Long">
+        UPDATE pms_purchase_order SET del_flag = '2' WHERE order_id IN
+        <foreach item="orderId" collection="array" open="(" separator="," close=")">#{orderId}</foreach>
+    </delete>
+
+    <!-- 明细 -->
+    <select id="selectOrderDetailByOrderId" parameterType="Long" resultMap="PmsPurchaseOrderDetailResult">
+        SELECT detail_id, order_id, request_detail_id, material_id, material_code, material_name,
+               spec_model, unit, qty, unit_price, amount, received_qty,
+               del_flag, create_by, create_time, update_by, update_time, remark
+        FROM pms_purchase_order_detail
+        WHERE order_id = #{orderId} AND del_flag = '0'
+        ORDER BY detail_id ASC
+    </select>
+
+    <select id="selectOrderDetailById" parameterType="Long" resultMap="PmsPurchaseOrderDetailResult">
+        SELECT detail_id, order_id, request_detail_id, material_id, material_code, material_name,
+               spec_model, unit, qty, unit_price, amount, received_qty,
+               del_flag, create_by, create_time, update_by, update_time, remark
+        FROM pms_purchase_order_detail
+        WHERE detail_id = #{detailId} AND del_flag = '0'
+    </select>
+
+    <insert id="insertOrderDetail" parameterType="PmsPurchaseOrderDetail" useGeneratedKeys="true" keyProperty="detailId">
+        INSERT INTO pms_purchase_order_detail (
+            order_id, request_detail_id, material_id, material_code, material_name, spec_model, unit,
+            qty, unit_price, amount, received_qty, del_flag, create_by, create_time, remark
+        ) VALUES (
+            #{orderId}, #{requestDetailId}, #{materialId}, #{materialCode}, #{materialName}, #{specModel}, #{unit},
+            #{qty}, #{unitPrice}, #{amount}, #{receivedQty}, #{delFlag}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateOrderDetail" parameterType="PmsPurchaseOrderDetail">
+        UPDATE pms_purchase_order_detail
+        <set>
+            <if test="receivedQty != null">received_qty = #{receivedQty},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE detail_id = #{detailId}
+    </update>
+
+    <delete id="deleteOrderDetailByOrderId" parameterType="Long">
+        UPDATE pms_purchase_order_detail SET del_flag = '2' WHERE order_id = #{orderId}
+    </delete>
+
+</mapper>

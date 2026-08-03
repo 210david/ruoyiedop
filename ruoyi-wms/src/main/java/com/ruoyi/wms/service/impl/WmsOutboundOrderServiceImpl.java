@@ -165,8 +165,44 @@ public class WmsOutboundOrderServiceImpl implements IWmsOutboundOrderService
         String username = SecurityUtils.getUsername();
         for (WmsOutboundOrderDetail d : details)
         {
-            wmsInventoryService.lockInventory(d.getMaterialId(), order.getWarehouseId(),
-                    d.getLocationId(), d.getBatchNo(), d.getPlanQty(), "outbound", order.getOrderNo(), username);
+            try
+            {
+                wmsInventoryService.lockInventory(d.getMaterialId(), order.getWarehouseId(),
+                        d.getLocationId(), d.getBatchNo(), d.getPlanQty(), "outbound", order.getOrderNo(), username);
+            }
+            catch (ServiceException e)
+            {
+                // 库存不足，可能是关联的入库单尚未完成上架
+                String materialDesc = d.getMaterialName() != null ? d.getMaterialName() : "物料ID:" + d.getMaterialId();
+                StringBuilder errorMsg = new StringBuilder();
+                errorMsg.append("物料【").append(materialDesc).append("】库存不足");
+                // 退货出库单从备注中提取关联入库单号
+                if ("3".equals(order.getOrderType()) && order.getRemark() != null)
+                {
+                    String remark = order.getRemark();
+                    int idx = remark.indexOf("关联入库单号：");
+                    if (idx >= 0)
+                    {
+                        String inboundOrderNo = remark.substring(idx + "关联入库单号：".length());
+                        // 截取到逗号或字符串末尾
+                        int commaIdx = inboundOrderNo.indexOf("，");
+                        if (commaIdx >= 0)
+                        {
+                            inboundOrderNo = inboundOrderNo.substring(0, commaIdx);
+                        }
+                        errorMsg.append("，关联入库单号：").append(inboundOrderNo).append("，请先在WMS入库管理中完成该入库单的上架操作后重试");
+                    }
+                    else
+                    {
+                        errorMsg.append("，关联入库单可能尚未完成上架，请先完成入库操作后重试");
+                    }
+                }
+                else
+                {
+                    errorMsg.append("，关联入库单可能尚未完成上架，请先完成入库操作后重试");
+                }
+                throw new ServiceException(errorMsg.toString());
+            }
         }
         order.setStatus("1");
         return wmsOutboundOrderMapper.updateOutboundOrder(order);

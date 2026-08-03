@@ -798,7 +798,7 @@ export const API_MODULES = [
         params: [
           ...PP,
           { name: 'orderCode', type: 'String', required: false, desc: '订单编号' },
-          { name: 'orderStatus', type: 'String', required: false, desc: '状态：0=待确认 1=已确认 2=已发货 3=已签收 4=已完成 5=已取消' },
+          { name: 'orderStatus', type: 'String', required: false, desc: '状态：0=草稿 1=已确认 2=已发货 3=已签收 4=已完成 5=已取消' },
           { name: 'customerId', type: 'Long', required: false, desc: '客户ID' }
         ],
         responseFields: [
@@ -806,7 +806,7 @@ export const API_MODULES = [
           { name: 'orderCode', type: 'String', desc: '订单编号' },
           { name: 'customerId', type: 'Long', desc: '客户ID' },
           { name: 'customerName', type: 'String', desc: '客户名称' },
-          { name: 'orderStatus', type: 'String', desc: '状态：0=待确认 1=已确认 2=已发货 3=已签收 4=已完成 5=已取消' },
+          { name: 'orderStatus', type: 'String', desc: '状态：0=草稿 1=已确认 2=已发货 3=已签收 4=已完成 5=已取消' },
           { name: 'totalAmount', type: 'BigDecimal', desc: '订单总额' },
           { name: 'orderDate', type: 'Date', desc: '下单日期' }
         ],

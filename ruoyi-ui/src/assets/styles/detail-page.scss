@@ -23,6 +23,10 @@
   padding: 12px 16px 16px;
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
 }
+/* 对话框内 rd-page 取消 max-width 限制，由对话框宽度自然约束卡片宽度 */
+.rd-dialog .rd-page {
+  max-width: none;
+}
 
 /* ---- 标题横幅 ---- */
 .rd-detail-header {
