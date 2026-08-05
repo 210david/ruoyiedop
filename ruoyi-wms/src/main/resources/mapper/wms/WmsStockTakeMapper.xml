@@ -78,6 +78,8 @@
             <if test="warehouseId != null"> AND t.warehouse_id = #{warehouseId}</if>
             <if test="takeType != null and takeType != ''"> AND t.take_type = #{takeType}</if>
             <if test="status != null and status != ''"> AND t.status = #{status}</if>
+            <if test="params.beginPlanDate != null and params.beginPlanDate != ''"> AND t.plan_date &gt;= #{params.beginPlanDate}</if>
+            <if test="params.endPlanDate != null and params.endPlanDate != ''"> AND t.plan_date &lt;= #{params.endPlanDate}</if>
         </where>
         ORDER BY t.take_id DESC
     </select>

@@ -78,9 +78,24 @@ public class PmsReturnServiceImpl implements IPmsReturnService
     }
 
     @Override
+    public List<Long> selectInProgressReturnOrderIds()
+    {
+        return pmsReturnMapper.selectInProgressReturnOrderIds();
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertReturn(PmsReturn pmsReturn)
     {
+        // 校验：同一采购订单是否存在进行中的退货单（草稿0、待审批1、已审批2、已驳回5）
+        if (pmsReturn.getOrderId() != null)
+        {
+            List<Long> inProgressOrderIds = pmsReturnMapper.selectInProgressReturnOrderIds();
+            if (inProgressOrderIds != null && inProgressOrderIds.contains(pmsReturn.getOrderId()))
+            {
+                throw new ServiceException("该采购订单已有进行中的退货单（草稿/待审批/已审批/已驳回），请先完成或作废该退货单后再发起新的退货");
+            }
+        }
         if (StringUtils.isEmpty(pmsReturn.getReturnNo()))
         {
             pmsReturn.setReturnNo(mkNumberRuleService.generateNumber("pms_return"));

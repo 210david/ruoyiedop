@@ -23,7 +23,7 @@ function getBreadcrumb() {
   const pathNum = findPathNum(route.path)
   // multi-level menu
   if (pathNum > 2) {
-    const reg = /\/\w+/gi
+    const reg = /\/[^/]+/gi
     const pathList = route.path.match(reg).map((item, index) => {
       if (index !== 0) item = item.slice(1)
       return item

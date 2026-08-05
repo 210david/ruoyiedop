@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.SysTableConfigMapper">
+
+    <resultMap type="SysTableConfig" id="SysTableConfigResult">
+        <id     property="configId"     column="config_id"     />
+        <result property="tableKey"     column="table_key"     />
+        <result property="colProp"      column="col_prop"      />
+        <result property="colWidth"     column="col_width"     />
+        <result property="colVisible"   column="col_visible"   />
+        <result property="configType"   column="config_type"   />
+        <result property="userId"       column="user_id"       />
+        <result property="createBy"     column="create_by"     />
+        <result property="createTime"   column="create_time"   />
+        <result property="updateBy"     column="update_by"     />
+        <result property="updateTime"   column="update_time"   />
+    </resultMap>
+
+    <sql id="selectConfigVo">
+        select config_id, table_key, col_prop, col_width, col_visible, config_type, user_id, create_by, create_time, update_by, update_time
+        from sys_table_config
+    </sql>
+
+    <!-- 查询某页面的全局列宽配置 -->
+    <select id="selectGlobalConfigByTableKey" resultMap="SysTableConfigResult">
+        <include refid="selectConfigVo"/>
+        where table_key = #{tableKey} and config_type = 'G'
+    </select>
+
+    <!-- 查询某用户在某页面的个人列宽配置 -->
+    <select id="selectPersonalConfig" resultMap="SysTableConfigResult">
+        <include refid="selectConfigVo"/>
+        where table_key = #{tableKey} and config_type = 'U' and user_id = #{userId}
+    </select>
+
+    <!-- 查询具体配置（用于判断是否存在） -->
+    <select id="selectConfig" parameterType="SysTableConfig" resultMap="SysTableConfigResult">
+        <include refid="selectConfigVo"/>
+        <where>
+            <if test="tableKey != null and tableKey != ''">and table_key = #{tableKey}</if>
+            <if test="colProp != null and colProp != ''">and col_prop = #{colProp}</if>
+            <if test="configType != null and configType != ''">and config_type = #{configType}</if>
+            <if test="userId != null">and user_id = #{userId}</if>
+        </where>
+        limit 1
+    </select>
+
+    <!-- 新增 -->
+    <insert id="insertConfig" parameterType="SysTableConfig" useGeneratedKeys="true" keyProperty="configId">
+        insert into sys_table_config (
+            <if test="tableKey != null and tableKey != ''">table_key,</if>
+            <if test="colProp != null and colProp != ''">col_prop,</if>
+            <if test="colWidth != null">col_width,</if>
+            <if test="colVisible != null">col_visible,</if>
+            <if test="configType != null and configType != ''">config_type,</if>
+            <if test="userId != null">user_id,</if>
+            <if test="createBy != null and createBy != ''">create_by,</if>
+            create_time
+        ) values (
+            <if test="tableKey != null and tableKey != ''">#{tableKey},</if>
+            <if test="colProp != null and colProp != ''">#{colProp},</if>
+            <if test="colWidth != null">#{colWidth},</if>
+            <if test="colVisible != null">#{colVisible},</if>
+            <if test="configType != null and configType != ''">#{configType},</if>
+            <if test="userId != null">#{userId},</if>
+            <if test="createBy != null and createBy != ''">#{createBy},</if>
+            sysdate()
+        )
+    </insert>
+
+    <!-- 修改 -->
+    <update id="updateConfig" parameterType="SysTableConfig">
+        update sys_table_config
+        <set>
+            <if test="colWidth != null">col_width = #{colWidth},</if>
+            <if test="colVisible != null">col_visible = #{colVisible},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            update_time = sysdate()
+        </set>
+        where config_id = #{configId}
+    </update>
+
+    <!-- 根据主键删除 -->
+    <delete id="deleteConfigById" parameterType="Long">
+        delete from sys_table_config where config_id = #{configId}
+    </delete>
+
+    <!-- 批量删除 -->
+    <delete id="deleteConfigByIds" parameterType="Long">
+        delete from sys_table_config where config_id in
+        <foreach item="configId" collection="array" open="(" separator="," close=")">
+            #{configId}
+        </foreach>
+    </delete>
+
+</mapper>

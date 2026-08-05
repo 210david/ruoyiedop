@@ -1,12 +1,24 @@
 import axios from 'axios'
 import { ElLoading, ElMessage } from 'element-plus'
-import { saveAs } from 'file-saver'
 import { getToken } from '@/utils/auth'
 import errorCode from '@/utils/errorCode'
 import { blobValidate } from '@/utils/ruoyi'
+import { saveAs } from 'file-saver'
 
 const baseURL = import.meta.env.VITE_APP_BASE_API
 let downloadLoadingInstance
+
+/**
+ * 通用文件下载方法（兼容 Chrome/Firefox/Edge/Safari）
+ * 使用 file-saver 库处理下载，避免 Chrome 的 user gesture 安全限制
+ * @param {Blob} blob - 文件 Blob 对象
+ * @param {string} filename - 下载文件名
+ * @param {string} mimeType - MIME 类型
+ */
+function downloadBlob(blob, filename, mimeType = 'application/octet-stream') {
+  const finalBlob = blob.type ? blob : new Blob([blob], { type: mimeType })
+  saveAs(finalBlob, filename)
+}
 
 export default {
   name(name, isDelete = true) {
@@ -19,8 +31,8 @@ export default {
     }).then((res) => {
       const isBlob = blobValidate(res.data)
       if (isBlob) {
-        const blob = new Blob([res.data], { type: 'application/octet-stream' })
-        this.saveAs(blob, decodeURIComponent(res.headers['download-filename']))
+        const filename = decodeURIComponent(res.headers['download-filename'] || name)
+        downloadBlob(res.data, filename)
       } else {
         this.printErrMsg(res.data)
       }
@@ -36,8 +48,8 @@ export default {
     }).then((res) => {
       const isBlob = blobValidate(res.data)
       if (isBlob) {
-        const blob = new Blob([res.data], { type: 'application/octet-stream' })
-        this.saveAs(blob, decodeURIComponent(res.headers['download-filename']))
+        const filename = decodeURIComponent(res.headers['download-filename'] || 'resource')
+        downloadBlob(res.data, filename)
       } else {
         this.printErrMsg(res.data)
       }
@@ -54,8 +66,7 @@ export default {
     }).then((res) => {
       const isBlob = blobValidate(res.data)
       if (isBlob) {
-        const blob = new Blob([res.data], { type: 'application/zip' })
-        this.saveAs(blob, name)
+        downloadBlob(res.data, name, 'application/zip')
       } else {
         this.printErrMsg(res.data)
       }
@@ -66,8 +77,8 @@ export default {
       downloadLoadingInstance.close()
     })
   },
-  saveAs(text, name, opts) {
-    saveAs(text, name, opts)
+  saveAs(blob, name, mimeType) {
+    downloadBlob(blob, name, mimeType)
   },
   async printErrMsg(data) {
     const resText = await data.text()
@@ -76,4 +87,3 @@ export default {
     ElMessage.error(errMsg)
   }
 }
-

@@ -62,7 +62,10 @@
             <if test="orderType != null and orderType != ''"> AND o.order_type = #{orderType}</if>
             <if test="warehouseId != null"> AND o.warehouse_id = #{warehouseId}</if>
             <if test="status != null and status != ''"> AND o.status = #{status}</if>
+            <if test="params.excludeStatus != null and params.excludeStatus != ''"> AND o.status != #{params.excludeStatus}</if>
             <if test="waveId != null"> AND o.wave_id = #{waveId}</if>
+            <if test="params.beginOutboundDate != null and params.beginOutboundDate != ''"> AND o.outbound_date &gt;= #{params.beginOutboundDate}</if>
+            <if test="params.endOutboundDate != null and params.endOutboundDate != ''"> AND o.outbound_date &lt;= #{params.endOutboundDate}</if>
         </where>
         ORDER BY o.order_id DESC
     </select>

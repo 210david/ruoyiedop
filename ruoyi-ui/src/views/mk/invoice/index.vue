@@ -1,50 +1,118 @@
 <template>
-  <div class="app-container">
-    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch">
-      <el-form-item label="发票编号" prop="invoiceNo">
-        <el-input v-model="queryParams.invoiceNo" placeholder="请输入" clearable style="width: 200px" @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="客户名称" prop="customerName">
-        <el-input v-model="queryParams.customerName" placeholder="请输入" clearable style="width: 200px" @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="发票类型" prop="invoiceType">
-        <el-select v-model="queryParams.invoiceType" placeholder="请选择" clearable style="width: 200px">
-          <el-option v-for="d in marketing_invoice_type" :key="d.value" :label="d.label" :value="d.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="发票状态" prop="invoiceStatus">
-        <el-select v-model="queryParams.invoiceStatus" placeholder="请选择" clearable style="width: 200px">
-          <el-option v-for="d in marketing_invoice_status" :key="d.value" :label="d.label" :value="d.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-        <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-      </el-form-item>
-    </el-form>
+  <div class="app-container mk-list-page">
+    <!-- ===== Filter Card ===== -->
+    <div class="surface filter-card" v-show="showSearch">
+      <div class="filter-head">
+        <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+      </div>
+      <div class="filter-bar">
+        <div class="field">
+          <label>发票编号</label>
+          <div class="control">
+            <el-input v-model="queryParams.invoiceNo" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field">
+          <label>客户名称</label>
+          <div class="control">
+            <el-input v-model="queryParams.customerName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field">
+          <label>发票类型</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.invoiceType" placeholder="全部" clearable @change="handleQuery">
+              <template #prefix><el-icon><Filter /></el-icon></template>
+              <el-option v-for="d in marketing_invoice_type" :key="d.value" :label="d.label" :value="d.value" />
+            </el-select>
+          </div>
+        </div>
+        <div class="field">
+          <label>发票状态</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.invoiceStatus" placeholder="全部" clearable @change="handleQuery">
+              <template #prefix><el-icon><Filter /></el-icon></template>
+              <el-option v-for="d in marketing_invoice_status" :key="d.value" :label="d.label" :value="d.value" />
+            </el-select>
+          </div>
+        </div>
+      </div>
+      <div class="filter-actions">
+        <div class="filter-info">
+          <el-icon><Filter /></el-icon> 已选 {{ activeFilterCount }} 个条件，支持回车快速搜索
+        </div>
+        <div class="filter-buttons">
+          <el-button icon="RefreshLeft" @click="resetQuery">重置</el-button>
+          <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+        </div>
+      </div>
+    </div>
 
-    <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5"><el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['marketing:invoice:add']">新增</el-button></el-col>
-      <el-col :span="1.5"><el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['marketing:invoice:remove']">删除</el-button></el-col>
-      <el-col :span="1.5"><el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['marketing:invoice:export']">导出</el-button></el-col>
-      <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
-    </el-row>
+    <!-- ===== Table Section ===== -->
+    <div class="surface">
+      <!-- Status Tabs -->
+      <div class="status-tabs">
+        <div class="tabs-track">
+          <button class="status-tab" :class="{ 'is-active': activeStatusTab === 'all' }" @click="handleStatusTabClick('all')">
+            <span class="dot"></span><span>全部</span><span class="count">{{ statusCounts.all }}</span>
+          </button>
+          <button v-for="s in statusTabList" :key="s.value"
+            class="status-tab"
+            :class="[statusTabClass(s.value), { 'is-active': activeStatusTab === s.value }]"
+            @click="handleStatusTabClick(s.value)">
+            <span class="dot"></span><span>{{ s.label }}</span><span class="count">{{ statusCounts[s.value] || 0 }}</span>
+          </button>
+        </div>
+      </div>
 
-    <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
-      <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="发票编号" prop="invoiceNo" :width="colWidth('invoiceNo', 150)" resizable />
-      <el-table-column label="客户名称" prop="customerName" :width="colWidth('customerName', 180)" resizable show-overflow-tooltip />
-      <el-table-column label="发票类型" prop="invoiceType" :width="colWidth('invoiceType', 130)" resizable align="center">
-        <template #default="scope"><dict-tag :options="marketing_invoice_type" :value="scope.row.invoiceType" /></template>
-      </el-table-column>
-      <el-table-column label="开票金额" prop="invoiceAmount" :width="colWidth('invoiceAmount', 120)" resizable align="right" />
-      <el-table-column label="税额" prop="taxAmount" :width="colWidth('taxAmount', 100)" resizable align="right" />
-      <el-table-column label="发票抬头" prop="invoiceTitle" :width="colWidth('invoiceTitle', 200)" resizable show-overflow-tooltip />
-      <el-table-column label="开票日期" prop="invoiceDate" :width="colWidth('invoiceDate', 120)" resizable />
-      <el-table-column label="状态" prop="invoiceStatus" :width="colWidth('invoiceStatus', 100)" resizable align="center">
-        <template #default="scope"><dict-tag :options="marketing_invoice_status" :value="scope.row.invoiceStatus" /></template>
-      </el-table-column>
-      <el-table-column label="操作" width="250" align="center" fixed="right">
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <div class="left">
+          <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['marketing:invoice:add']">新增</el-button>
+          <button type="button" class="btn-soft is-danger-outline" :disabled="multiple" @click="handleDelete" v-hasPermi="['marketing:invoice:remove']">
+            <el-icon><Delete /></el-icon> 删除
+          </button>
+          <div class="toolbar-divider"></div>
+          <button type="button" class="btn-soft is-outline" @click="handleExport" v-hasPermi="['marketing:invoice:export']">
+            <el-icon><Download /></el-icon> 导出
+          </button>
+        </div>
+        <div class="right">
+          <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="mk_invoice_columns" />
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="table-wrap">
+        <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
+          <el-table-column type="selection" width="55" align="center" />
+          <el-table-column label="发票编号" prop="invoiceNo" key="invoiceNo" :width="colWidth('invoiceNo', 150)" resizable v-if="columns.invoiceNo.visible" />
+          <el-table-column label="客户名称" prop="customerName" key="customerName" :width="colWidth('customerName', 180)" resizable show-overflow-tooltip v-if="columns.customerName.visible" />
+          <el-table-column label="发票类型" prop="invoiceType" key="invoiceType" :width="colWidth('invoiceType', 130)" resizable align="center" v-if="columns.invoiceType.visible">
+            <template #default="scope">
+              <span class="badge" :class="typeBadgeClass(scope.row.invoiceType)">
+                <span class="dot"></span>{{ typeLabel(scope.row.invoiceType) }}
+              </span>
+            </template>
+          </el-table-column>
+          <el-table-column label="开票金额" prop="invoiceAmount" key="invoiceAmount" :width="colWidth('invoiceAmount', 120)" resizable align="right" v-if="columns.invoiceAmount.visible">
+            <template #default="scope"><span class="rd-amount">￥{{ formatAmount(scope.row.invoiceAmount) }}</span></template>
+          </el-table-column>
+          <el-table-column label="税额" prop="taxAmount" key="taxAmount" :width="colWidth('taxAmount', 100)" resizable align="right" v-if="columns.taxAmount.visible" />
+          <el-table-column label="发票抬头" prop="invoiceTitle" key="invoiceTitle" :width="colWidth('invoiceTitle', 200)" resizable show-overflow-tooltip v-if="columns.invoiceTitle.visible" />
+          <el-table-column label="开票日期" prop="invoiceDate" key="invoiceDate" :width="colWidth('invoiceDate', 120)" resizable v-if="columns.invoiceDate.visible" />
+          <el-table-column label="状态" prop="invoiceStatus" key="invoiceStatus" :width="colWidth('invoiceStatus', 100)" resizable align="center" v-if="columns.invoiceStatus.visible">
+            <template #default="scope">
+              <span class="badge" :class="badgeClass(scope.row.invoiceStatus)">
+                <span class="dot"></span>{{ statusLabel(scope.row.invoiceStatus) }}
+              </span>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="250" align="center" fixed="right">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">详情</el-button>
           <el-button v-if="scope.row.invoiceStatus === '1'" link type="danger" icon="CircleClose" @click="handleVoid(scope.row)" v-hasPermi="['marketing:invoice:void']">作废</el-button>
@@ -52,7 +120,11 @@
         </template>
       </el-table-column>
     </el-table>
-    <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+      </div>
+
+      <!-- Pagination -->
+      <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+    </div>
 
     <!-- 新增/修改对话框 -->
     <el-dialog v-model="open" width="1000px" append-to-body draggable class="rd-dialog">
@@ -412,7 +484,7 @@ function formatAmount(val) { if (val == null || val === '') return '-'; return N
 
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, invoiceNo: undefined, customerName: undefined, invoiceType: undefined, invoiceStatus: undefined },
+  queryParams: { pageNum: 1, pageSize: 10, invoiceNo: undefined, customerName: undefined, invoiceType: undefined, invoiceStatus: undefined, params: {} },
   rules: {
     customerId: [{ required: true, message: '请选择关联客户', trigger: 'change' }],
     invoiceAmount: [{ required: true, message: '开票金额不能为空', trigger: 'blur' }],
@@ -422,14 +494,77 @@ const data = reactive({
 })
 const { queryParams, form, rules } = toRefs(data)
 
-function getList() { loading.value = true; listInvoice(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false; applySavedWidths() }) }
+// 列显隐配置 - 从 localStorage 恢复保存的设置
+const defaultColumns = {
+  invoiceNo: { label: '发票编号', visible: true },
+  customerName: { label: '客户名称', visible: true },
+  invoiceType: { label: '发票类型', visible: true },
+  invoiceAmount: { label: '开票金额', visible: true },
+  taxAmount: { label: '税额', visible: true },
+  invoiceTitle: { label: '发票抬头', visible: true },
+  invoiceDate: { label: '开票日期', visible: true },
+  invoiceStatus: { label: '状态', visible: true }
+}
+
+function loadColumnVisibility() {
+  try {
+    const saved = localStorage.getItem('mk_invoice_columns')
+    if (saved) {
+      const parsed = JSON.parse(saved)
+      const result = {}
+      Object.keys(defaultColumns).forEach(key => {
+        result[key] = {
+          label: defaultColumns[key].label,
+          visible: parsed[key] !== undefined ? parsed[key] : defaultColumns[key].visible
+        }
+      })
+      return result
+    }
+  } catch (e) {}
+  return { ...defaultColumns }
+}
+
+const columns = ref(loadColumnVisibility())
+
+const activeFilterCount = computed(() => {
+  let count = 0
+  if (queryParams.value.invoiceNo) count++
+  if (queryParams.value.customerName) count++
+  if (queryParams.value.invoiceType) count++
+  if (queryParams.value.invoiceStatus) count++
+  return count
+})
+
+const showAdvanced = ref(false)
+const activeStatusTab = ref('all')
+const statusCounts = ref({ all: 0, '0': 0, '1': 0, '2': 0 })
+const statusTabList = computed(() => marketing_invoice_status.value)
+function loadStatusCounts() {
+  const counts = { all: 0, '0': 0, '1': 0, '2': 0 }
+  list.value.forEach(row => {
+    const s = row.invoiceStatus
+    if (counts[s] !== undefined) counts[s]++
+  })
+  counts.all = total.value
+  statusCounts.value = counts
+}
+function handleStatusTabClick(status) { activeStatusTab.value = status; queryParams.value.invoiceStatus = status === 'all' ? undefined : status; handleQuery() }
+function badgeClass(status) { const map = { '0': 'amber', '1': 'green', '2': 'gray' }; return map[status] || 'gray' }
+function statusLabel(status) { const item = marketing_invoice_status.value.find(d => d.value == status); return item ? item.label : '-' }
+function statusTabClass(value) { const map = { '0': 'tab-draft', '1': 'tab-done', '2': 'tab-void' }; return map[value] || '' }
+function typeBadgeClass(type) { const map = { '0': 'blue', '1': 'violet', '2': 'amber' }; return map[type] || 'gray' }
+function typeLabel(type) { const item = marketing_invoice_type.value.find(d => d.value == type); return item ? item.label : '-' }
+
+function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
+
+function getList() { loading.value = true; listInvoice(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false; loadStatusCounts(); applySavedWidths() }).catch(() => { loading.value = false }) }
 function getCustomerOptions() { listCustomer({ pageNum: 1, pageSize: 9999 }).then(res => { customerOptions.value = res.rows }) }
 function getContractOptions() { listContract({ pageNum: 1, pageSize: 9999 }).then(res => { contractOptions.value = res.rows }) }
 function getOrderOptions() { listOrder({ pageNum: 1, pageSize: 9999 }).then(res => { orderOptions.value = res.rows }) }
 function onCustomerChange(customerId) { if (customerId) { const customer = customerOptions.value.find(c => c.customerId === customerId); if (customer) { form.value.customerName = customer.customerName; form.value.invoiceTitle = customer.customerName } } }
 function onOrderChange(orderId) { if (orderId) { const order = orderOptions.value.find(o => o.orderId === orderId); if (order) { form.value.orderNo = order.orderNo; form.value.customerId = order.customerId; form.value.customerName = order.customerName; form.value.invoiceAmount = order.orderAmount; form.value.invoiceTitle = order.customerName } } }
-function handleQuery() { queryParams.value.pageNum = 1; getList() }
-function resetQuery() { proxy.resetForm('queryRef'); handleQuery() }
+function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
+function resetQuery() { queryParams.value.invoiceNo = undefined; queryParams.value.customerName = undefined; queryParams.value.invoiceType = undefined; queryParams.value.invoiceStatus = undefined; queryParams.value.params = {}; activeStatusTab.value = 'all'; handleQuery() }
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.invoiceId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function reset() { form.value = { invoiceNo: undefined, orderId: undefined, contractId: undefined, customerId: undefined, customerName: undefined, invoiceType: '0', invoiceStatus: '1', invoiceAmount: 0, taxRate: 13.00, taxAmount: 0, invoiceTitle: undefined, taxNo: undefined, invoiceDate: undefined, invoiceAttachment: undefined, remark: undefined }; proxy.resetForm('invoiceRef'); recognizedFields.value = []; collapsedCards.recognize = false; collapsedCards.basic = false; collapsedCards.relation = false; collapsedCards.title = false; collapsedCards.attachment = false }
 function handleAdd() { reset(); open.value = true; title.value = '新增发票' }

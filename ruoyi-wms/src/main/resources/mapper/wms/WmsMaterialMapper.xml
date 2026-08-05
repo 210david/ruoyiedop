@@ -40,6 +40,10 @@
             <if test="materialName != null and materialName != ''"> AND material_name LIKE CONCAT('%', #{materialName}, '%')</if>
             <if test="materialType != null and materialType != ''"> AND material_type = #{materialType}</if>
             <if test="status != null and status != ''"> AND status = #{status}</if>
+            <if test="isBatchManage != null and isBatchManage != ''"> AND is_batch_manage = #{isBatchManage}</if>
+            <if test="isExpiryManage != null and isExpiryManage != ''"> AND is_expiry_manage = #{isExpiryManage}</if>
+            <if test="params.beginTime != null and params.beginTime != ''"> AND create_time &gt;= #{params.beginTime}</if>
+            <if test="params.endTime != null and params.endTime != ''"> AND create_time &lt;= #{params.endTime}</if>
         </where>
         ORDER BY material_id DESC
     </select>

@@ -1,46 +1,100 @@
 <template>
-  <div class="app-container">
-    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch">
-      <el-form-item label="客户名称" prop="customerName"><el-input v-model="queryParams.customerName" placeholder="请输入" clearable style="width: 200px" @keyup.enter="handleQuery" /></el-form-item>
-      <el-form-item label="互动类型" prop="interactType">
-        <el-select v-model="queryParams.interactType" placeholder="请选择" clearable style="width: 200px">
-          <el-option v-for="d in marketing_interaction_type" :key="d.value" :label="d.label" :value="d.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item><el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button><el-button icon="Refresh" @click="resetQuery">重置</el-button></el-form-item>
-    </el-form>
+  <div class="app-container mk-list-page">
+    <!-- ===== Filter Card ===== -->
+    <div class="surface filter-card" v-show="showSearch">
+      <div class="filter-head">
+        <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+      </div>
+      <div class="filter-bar">
+        <div class="field">
+          <label>客户名称</label>
+          <div class="control">
+            <el-input v-model="queryParams.customerName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field">
+          <label>互动类型</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.interactType" placeholder="请选择" clearable>
+              <template #prefix><el-icon><Filter /></el-icon></template>
+              <el-option v-for="d in marketing_interaction_type" :key="d.value" :label="d.label" :value="d.value" />
+            </el-select>
+          </div>
+        </div>
+        <div class="field">
+          <label>跟进人</label>
+          <div class="control">
+            <el-input v-model="queryParams.userName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+      </div>
+      <div class="filter-actions">
+        <div class="filter-info">
+          <el-icon><Filter /></el-icon> 已选 {{ activeFilterCount }} 个条件，支持回车快速搜索
+        </div>
+        <div class="filter-buttons">
+          <el-button icon="RefreshLeft" @click="resetQuery">重置</el-button>
+          <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+        </div>
+      </div>
+    </div>
 
-    <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5"><el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['marketing:interaction:add']">新增</el-button></el-col>
-      <el-col :span="1.5"><el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['marketing:interaction:edit']">修改</el-button></el-col>
-      <el-col :span="1.5"><el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['marketing:interaction:remove']">删除</el-button></el-col>
-      <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
-    </el-row>
+    <!-- ===== Table Section ===== -->
+    <div class="surface">
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <div class="left">
+          <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['marketing:interaction:add']">新增</el-button>
+          <button type="button" class="btn-soft is-outline" :disabled="single" @click="handleUpdate" v-hasPermi="['marketing:interaction:edit']">
+            <el-icon><Edit /></el-icon> 修改
+          </button>
+          <button type="button" class="btn-soft is-danger-outline" :disabled="multiple" @click="handleDelete" v-hasPermi="['marketing:interaction:remove']">
+            <el-icon><Delete /></el-icon> 删除
+          </button>
+        </div>
+        <div class="right">
+          <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="mk_interaction_columns" />
+        </div>
+      </div>
 
-    <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
-      <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="客户名称" prop="customerName" show-overflow-tooltip>
-        <template #default="scope">
-          <el-button link type="primary" @click="handleView(scope.row)">{{ scope.row.customerName }}</el-button>
-        </template>
-      </el-table-column>
-      <el-table-column label="联系人" prop="contactName" :width="colWidth('contactName', 100)" resizable />
-      <el-table-column label="互动类型" prop="interactType" :width="colWidth('interactType', 100)" resizable align="center">
-        <template #default="scope"><dict-tag :options="marketing_interaction_type" :value="scope.row.interactType" /></template>
-      </el-table-column>
-      <el-table-column label="互动时间" prop="interactTime" :width="colWidth('interactTime', 160)" resizable />
-      <el-table-column label="互动内容" prop="content" show-overflow-tooltip />
-      <el-table-column label="跟进人" prop="userName" :width="colWidth('userName', 100)" resizable />
-      <el-table-column label="下次跟进" prop="nextTime" :width="colWidth('nextTime', 160)" resizable />
-      <el-table-column label="操作" width="200" align="center" fixed="right">
-        <template #default="scope">
-          <el-button link type="primary" icon="View" @click="handleView(scope.row)">详情</el-button>
-          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['marketing:interaction:edit']">修改</el-button>
-          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['marketing:interaction:remove']">删除</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
-    <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+      <!-- Table -->
+      <div class="table-wrap">
+        <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
+          <el-table-column type="selection" width="55" align="center" />
+          <el-table-column label="客户名称" prop="customerName" key="customerName" show-overflow-tooltip v-if="columns.customerName.visible">
+            <template #default="scope">
+              <el-button link type="primary" @click="handleView(scope.row)">{{ scope.row.customerName }}</el-button>
+            </template>
+          </el-table-column>
+          <el-table-column label="联系人" prop="contactName" key="contactName" :width="colWidth('contactName', 100)" resizable v-if="columns.contactName.visible" />
+          <el-table-column label="互动类型" prop="interactType" key="interactType" :width="colWidth('interactType', 100)" resizable align="center" v-if="columns.interactType.visible">
+            <template #default="scope">
+              <span class="badge" :class="typeBadgeClass(scope.row.interactType)">
+                <span class="dot"></span>{{ typeLabel(scope.row.interactType) }}
+              </span>
+            </template>
+          </el-table-column>
+          <el-table-column label="互动时间" prop="interactTime" key="interactTime" :width="colWidth('interactTime', 160)" resizable sortable="custom" v-if="columns.interactTime.visible" />
+          <el-table-column label="互动内容" prop="content" key="content" show-overflow-tooltip v-if="columns.content.visible" />
+          <el-table-column label="跟进人" prop="userName" key="userName" :width="colWidth('userName', 100)" resizable v-if="columns.userName.visible" />
+          <el-table-column label="下次跟进" prop="nextTime" key="nextTime" :width="colWidth('nextTime', 160)" resizable sortable="custom" v-if="columns.nextTime.visible" />
+          <el-table-column label="操作" width="200" align="center" fixed="right">
+            <template #default="scope">
+              <el-button link type="primary" icon="View" @click="handleView(scope.row)">详情</el-button>
+              <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['marketing:interaction:edit']">修改</el-button>
+              <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['marketing:interaction:remove']">删除</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+
+      <!-- Pagination -->
+      <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+    </div>
 
     <!-- 新增/修改对话框 -->
     <el-dialog v-model="open" width="850px" append-to-body draggable class="rd-dialog">
@@ -196,6 +250,7 @@ const open = ref(false)
 const viewOpen = ref(false)
 const loading = ref(true)
 const showSearch = ref(true)
+const showAdvanced = ref(false)
 const ids = ref([])
 const single = ref(true)
 const multiple = ref(true)
@@ -207,7 +262,7 @@ const viewForm = ref({})
 
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, customerName: undefined, interactType: undefined },
+  queryParams: { pageNum: 1, pageSize: 10, customerName: undefined, interactType: undefined, userName: undefined, params: {} },
   rules: {
     customerId: [{ required: true, message: '请选择客户', trigger: 'change' }],
     interactType: [{ required: true, message: '请选择互动类型', trigger: 'change' }],
@@ -216,8 +271,57 @@ const data = reactive({
 })
 const { queryParams, form, rules } = toRefs(data)
 
-function getList() { loading.value = true; listInteraction(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false }) }
+// 列显隐配置 - 从 localStorage 恢复保存的设置
+const defaultColumns = {
+  customerName: { label: '客户名称', visible: true },
+  contactName: { label: '联系人', visible: true },
+  interactType: { label: '互动类型', visible: true },
+  interactTime: { label: '互动时间', visible: true },
+  content: { label: '互动内容', visible: true },
+  userName: { label: '跟进人', visible: true },
+  nextTime: { label: '下次跟进', visible: true }
+}
+
+function loadColumnVisibility() {
+  try {
+    const saved = localStorage.getItem('mk_interaction_columns')
+    if (saved) {
+      const parsed = JSON.parse(saved)
+      const result = {}
+      Object.keys(defaultColumns).forEach(key => {
+        result[key] = {
+          label: defaultColumns[key].label,
+          visible: parsed[key] !== undefined ? parsed[key] : defaultColumns[key].visible
+        }
+      })
+      return result
+    }
+  } catch (e) {}
+  return { ...defaultColumns }
+}
+
+const columns = ref(loadColumnVisibility())
+
+const activeFilterCount = computed(() => {
+  let count = 0
+  if (queryParams.value.customerName) count++
+  if (queryParams.value.interactType) count++
+  if (queryParams.value.userName) count++
+  return count
+})
+
+function getList() { loading.value = true; listInteraction(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false; applySavedWidths() }).catch(() => { loading.value = false }) }
 function getCustomerOptions() { listCustomer({ pageNum: 1, pageSize: 9999 }).then(res => { customerOptions.value = res.rows }) }
+
+// badge样式方法
+function typeBadgeClass(type) {
+  const map = { '0': 'blue', '1': 'green', '2': 'violet', '3': 'amber', '4': 'red' }
+  return map[type] || 'gray'
+}
+function typeLabel(type) {
+  const item = marketing_interaction_type.value.find(d => d.value == type)
+  return item ? item.label : '-'
+}
 function onCustomerChange(customerId) {
   form.value.contactId = undefined
   if (customerId) { listContact({ customerId: customerId, pageNum: 1, pageSize: 9999 }).then(res => { contactOptions.value = res.rows }) }
@@ -237,8 +341,9 @@ function clearUser() {
   form.value.userId = undefined
   form.value.userName = undefined
 }
-function handleQuery() { queryParams.value.pageNum = 1; getList() }
-function resetQuery() { proxy.resetForm('queryRef'); handleQuery() }
+function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
+function resetQuery() { queryParams.value.customerName = undefined; queryParams.value.interactType = undefined; queryParams.value.userName = undefined; queryParams.value.params = {}; handleQuery() }
+function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.recordId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function reset() {
   form.value = { customerId: undefined, contactId: undefined, opportunityId: undefined, leadId: undefined, interactType: undefined, interactTime: undefined, content: undefined, userId: undefined, userName: undefined, nextTime: undefined, nextContent: undefined, remark: undefined }

@@ -1,52 +1,95 @@
 <template>
-  <div class="app-container">
-    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch">
-      <el-form-item label="设备名称" prop="equipmentName">
-        <el-input v-model="queryParams.equipmentName" placeholder="请输入" clearable style="width: 160px" @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="运行状态" prop="runStatus">
-        <el-select v-model="queryParams.runStatus" placeholder="全部" clearable style="width: 120px">
-          <el-option v-for="d in dms_run_status" :key="d.value" :label="d.label" :value="d.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-        <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-      </el-form-item>
-    </el-form>
+  <div class="app-container dms-data-record-page">
+    <!-- ===== Filter Card ===== -->
+    <div class="surface filter-card" v-show="showSearch">
+      <div class="filter-head">
+        <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+      </div>
+      <div class="filter-bar">
+        <div class="field">
+          <label>设备名称</label>
+          <div class="control">
+            <el-input v-model="queryParams.equipmentName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field">
+          <label>运行状态</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.runStatus" placeholder="全部" clearable @change="handleQuery">
+              <el-option v-for="d in dms_run_status" :key="d.value" :label="d.label" :value="d.value" />
+            </el-select>
+          </div>
+        </div>
+        <div class="field">
+          <label>采集方式</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.collectMode" placeholder="全部" clearable @change="handleQuery">
+              <el-option v-for="d in dms_collect_mode" :key="d.value" :label="d.label" :value="d.value" />
+            </el-select>
+          </div>
+        </div>
+      </div>
+      <div class="filter-actions">
+        <div class="filter-info">
+          <el-icon><Filter /></el-icon> 已选 {{ activeFilterCount }} 个条件，支持回车快速搜索
+        </div>
+        <div class="filter-buttons">
+          <el-button icon="RefreshLeft" @click="resetQuery">重置</el-button>
+          <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+        </div>
+      </div>
+    </div>
 
-    <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5"><el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['dms:data:record:add']">录入</el-button></el-col>
-      <el-col :span="1.5"><el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['dms:data:record:edit']">修改</el-button></el-col>
-      <el-col :span="1.5"><el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['dms:data:record:remove']">删除</el-button></el-col>
-      <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
-    </el-row>
-
-    <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
-      <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="设备编码" prop="equipmentCode" min-width="140" show-overflow-tooltip />
-      <el-table-column label="设备名称" prop="equipmentName" min-width="140" show-overflow-tooltip />
-      <el-table-column label="运行状态" prop="runStatus" :width="colWidth('runStatus', 90)" resizable align="center">
-        <template #default="scope"><dict-tag :options="dms_run_status" :value="scope.row.runStatus" /></template>
-      </el-table-column>
-      <el-table-column label="运行小时" prop="runHours" :width="colWidth('runHours', 90)" resizable align="center" />
-      <el-table-column label="加工件数" prop="productCount" :width="colWidth('productCount', 90)" resizable align="center" />
-      <el-table-column label="参数1" prop="param1Value" :width="colWidth('param1Value', 80)" resizable align="center" />
-      <el-table-column label="参数2" prop="param2Value" :width="colWidth('param2Value', 80)" resizable align="center" />
-      <el-table-column label="参数3" prop="param3Value" :width="colWidth('param3Value', 80)" resizable align="center" />
-      <el-table-column label="采集方式" prop="collectMode" :width="colWidth('collectMode', 90)" resizable align="center">
-        <template #default="scope"><dict-tag :options="dms_collect_mode" :value="scope.row.collectMode" /></template>
-      </el-table-column>
-      <el-table-column label="采集时间" prop="collectTime" :width="colWidth('collectTime', 160)" resizable align="center" />
-      <el-table-column label="操作" width="180" align="center">
-        <template #default="scope">
-          <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
-          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['dms:data:record:edit']">修改</el-button>
-          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['dms:data:record:remove']">删除</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
-    <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+    <!-- ===== Table Section ===== -->
+    <div class="surface">
+      <div class="toolbar">
+        <div class="left">
+          <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['dms:data:record:add']">录入</el-button>
+          <button type="button" class="btn-soft is-outline" :disabled="single" @click="handleUpdate" v-hasPermi="['dms:data:record:edit']">
+            <el-icon><Edit /></el-icon> 修改
+          </button>
+          <button type="button" class="btn-soft is-danger-outline" :disabled="multiple" @click="handleDelete" v-hasPermi="['dms:data:record:remove']">
+            <el-icon><Delete /></el-icon> 删除
+          </button>
+        </div>
+        <div class="right">
+          <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="dms_data_record_columns" />
+        </div>
+      </div>
+      <div class="table-wrap">
+        <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" class="app-table">
+          <el-table-column type="selection" width="55" align="center" />
+          <el-table-column label="设备编码" prop="equipmentCode" key="equipmentCode" :width="colWidth('equipmentCode', 140)" resizable show-overflow-tooltip v-if="columns.equipmentCode.visible" />
+          <el-table-column label="设备名称" prop="equipmentName" key="equipmentName" :width="colWidth('equipmentName', 160)" resizable show-overflow-tooltip v-if="columns.equipmentName.visible" />
+          <el-table-column label="运行状态" prop="runStatus" key="runStatus" :width="colWidth('runStatus', 100)" resizable align="center" v-if="columns.runStatus.visible">
+            <template #default="scope">
+              <span class="badge" :class="runStatusBadge(scope.row.runStatus)"><span class="dot"></span>{{ runStatusLabel(scope.row.runStatus) }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="运行小时" prop="runHours" key="runHours" :width="colWidth('runHours', 100)" resizable align="center" v-if="columns.runHours.visible" />
+          <el-table-column label="加工件数" prop="productCount" key="productCount" :width="colWidth('productCount', 100)" resizable align="center" v-if="columns.productCount.visible" />
+          <el-table-column label="参数1" prop="param1Value" key="param1Value" :width="colWidth('param1Value', 90)" resizable align="center" v-if="columns.param1Value.visible" />
+          <el-table-column label="参数2" prop="param2Value" key="param2Value" :width="colWidth('param2Value', 90)" resizable align="center" v-if="columns.param2Value.visible" />
+          <el-table-column label="参数3" prop="param3Value" key="param3Value" :width="colWidth('param3Value', 90)" resizable align="center" v-if="columns.param3Value.visible" />
+          <el-table-column label="采集方式" prop="collectMode" key="collectMode" :width="colWidth('collectMode', 100)" resizable align="center" v-if="columns.collectMode.visible">
+            <template #default="scope">
+              <span class="badge violet">{{ collectModeLabel(scope.row.collectMode) }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="采集时间" prop="collectTime" key="collectTime" :width="colWidth('collectTime', 180)" resizable align="center" v-if="columns.collectTime.visible" />
+          <el-table-column label="操作" width="200" align="center" fixed="right">
+            <template #default="scope">
+              <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
+              <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['dms:data:record:edit']">修改</el-button>
+              <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['dms:data:record:remove']">删除</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+      <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+    </div>
 
         <!-- 录入/修改弹窗 -->
     <el-dialog v-model="open" width="936px" append-to-body draggable class="rd-dialog data-record-dialog" top="5vh">
@@ -222,9 +265,58 @@ const total = ref(0)
 const title = ref('')
 const viewForm = ref({})
 
+const defaultColumns = {
+  equipmentCode: { label: '设备编码', visible: true },
+  equipmentName: { label: '设备名称', visible: true },
+  runStatus: { label: '运行状态', visible: true },
+  runHours: { label: '运行小时', visible: true },
+  productCount: { label: '加工件数', visible: true },
+  param1Value: { label: '参数1', visible: true },
+  param2Value: { label: '参数2', visible: true },
+  param3Value: { label: '参数3', visible: true },
+  collectMode: { label: '采集方式', visible: true },
+  collectTime: { label: '采集时间', visible: true }
+}
+function loadColumnVisibility() {
+  try {
+    const saved = localStorage.getItem('dms_data_record_columns')
+    if (saved) {
+      const parsed = JSON.parse(saved)
+      const result = {}
+      Object.keys(defaultColumns).forEach(key => {
+        result[key] = { label: defaultColumns[key].label, visible: parsed[key] !== undefined ? parsed[key] : defaultColumns[key].visible }
+      })
+      return result
+    }
+  } catch (e) {}
+  return { ...defaultColumns }
+}
+const columns = ref(loadColumnVisibility())
+
+const activeFilterCount = computed(() => {
+  let count = 0
+  if (queryParams.value.equipmentName) count++
+  if (queryParams.value.runStatus !== undefined && queryParams.value.runStatus !== null && queryParams.value.runStatus !== '') count++
+  if (queryParams.value.collectMode !== undefined && queryParams.value.collectMode !== null && queryParams.value.collectMode !== '') count++
+  return count
+})
+
+function runStatusLabel(val) {
+  const item = dms_run_status.value.find(d => d.value == val)
+  return item ? item.label : '-'
+}
+function runStatusBadge(val) {
+  const map = { '0': 'green', '1': 'amber', '2': 'red', '3': 'gray' }
+  return map[val] || 'gray'
+}
+function collectModeLabel(val) {
+  const item = dms_collect_mode.value.find(d => d.value == val)
+  return item ? item.label : '-'
+}
+
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, equipmentName: undefined, runStatus: undefined },
+  queryParams: { pageNum: 1, pageSize: 10, equipmentName: undefined, runStatus: undefined, collectMode: undefined },
   rules: {
     equipmentName: [{ required: true, message: '设备名称不能为空', trigger: 'blur' }],
     runStatus: [{ required: true, message: '运行状态不能为空', trigger: 'change' }]
@@ -232,7 +324,7 @@ const data = reactive({
 })
 const { queryParams, form, rules } = toRefs(data)
 
-function getList() { loading.value = true; listRecord(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false }) }
+function getList() { loading.value = true; listRecord(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false; applySavedWidths() }) }
 function getEquipmentOptions() { listEquipment({ pageNum: 1, pageSize: 9999 }).then(res => { equipmentOptions.value = res.rows }) }
 function onEquipmentChange(equipmentId) {
   if (equipmentId) {
@@ -266,3 +358,77 @@ function handleView(row) { getRecord(row.recordId).then(res => { viewForm.value 
 getEquipmentOptions()
 getList()
 </script>
+
+<style scoped>
+.dms-data-record-page {
+  padding-top: 10px;
+  --brand-50:#eef2ff; --brand-100:#e0e7ff; --brand-200:#c7d2fe; --brand-500:#6366f1; --brand-600:#4f46e5; --brand-700:#4338ca;
+  --ink-900:#0f172a; --ink-700:#334155; --ink-500:#64748b; --ink-400:#94a3b8; --ink-300:#cbd5e1; --ink-200:#e2e8f0; --ink-100:#f1f5f9; --ink-50:#f8fafc;
+  --amber-50:#fffbeb; --amber-500:#f59e0b; --amber-700:#b45309;
+  --blue-50:#eff6ff; --blue-500:#3b82f6; --blue-700:#1d4ed8;
+  --green-50:#ecfdf5; --green-500:#10b981; --green-700:#047857;
+  --red-50:#fef2f2; --red-500:#ef4444; --red-700:#b91c1c;
+  --violet-50:#f5f3ff;
+  --r-sm:6px; --r-md:10px; --r-lg:14px;
+  --shadow-card:0 1px 0 rgba(15,23,42,.04), 0 1px 2px rgba(15,23,42,.04);
+  --ease-out:cubic-bezier(.16,.84,.44,1);
+  font-feature-settings:"tnum" 1;
+  color: var(--ink-900);
+}
+.dms-data-record-page .surface { background:#fff; border:1px solid var(--ink-200); border-radius:var(--r-lg); box-shadow:var(--shadow-card); overflow:hidden; margin-bottom:8px; }
+.dms-data-record-page .filter-card { padding:14px 20px 16px; }
+.dms-data-record-page .filter-card .filter-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+.dms-data-record-page .filter-card .filter-title { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--ink-700); }
+.dms-data-record-page .filter-card .filter-title .glyph { width:4px; height:14px; background:var(--brand-600); border-radius:2px; }
+.dms-data-record-page .filter-card .filter-bar { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px 16px; }
+.dms-data-record-page .filter-card .field { display:flex; flex-direction:column; gap:4px; }
+.dms-data-record-page .filter-card .field > label { font-size:13px; font-weight:500; color:var(--ink-500); }
+.dms-data-record-page .filter-card .field .control { width:100%; }
+.dms-data-record-page .filter-card .field .control .el-input, .dms-data-record-page .filter-card .field .control .el-select { width:100%; }
+.dms-data-record-page .filter-card .filter-actions { display:flex; align-items:center; justify-content:space-between; margin-top:14px; padding-top:14px; border-top:1px dashed var(--ink-200); }
+.dms-data-record-page .filter-card .filter-info { font-size:13px; color:var(--ink-500); display:flex; align-items:center; gap:6px; }
+.dms-data-record-page .filter-card .filter-buttons { display:flex; gap:8px; }
+.dms-data-record-page .toolbar { display:flex; align-items:center; justify-content:space-between; padding:10px 16px; border-bottom:1px solid var(--ink-200); }
+.dms-data-record-page .toolbar .left { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.dms-data-record-page .toolbar .right { display:flex; align-items:center; gap:8px; }
+.dms-data-record-page .toolbar-divider { width:1px; height:20px; background:var(--ink-200); margin:0 4px; }
+.dms-data-record-page .btn-soft { display:inline-flex; align-items:center; gap:4px; height:32px; padding:0 12px; border-radius:var(--r-sm); font-size:14px; cursor:pointer; transition:all .15s var(--ease-out); border:1px solid transparent; background:transparent; color:var(--ink-700); }
+.dms-data-record-page .btn-soft.is-outline { border-color:var(--ink-300); background:#fff; }
+.dms-data-record-page .btn-soft.is-outline:hover { border-color:var(--brand-400); color:var(--brand-600); background:var(--brand-50); }
+.dms-data-record-page .btn-soft.is-danger-outline { border-color:#fecaca; background:var(--red-50); color:var(--red-700); }
+.dms-data-record-page .btn-soft.is-danger-outline:hover { background:var(--red-500); color:#fff; border-color:var(--red-500); }
+.dms-data-record-page .btn-soft:disabled { opacity:.5; cursor:not-allowed; }
+.dms-data-record-page .table-wrap { overflow-x:auto; }
+.dms-data-record-page .app-table { --el-table-bg-color:#fff; --el-table-header-bg-color:var(--ink-50); --el-table-row-hover-bg-color:#fafbff; --el-table-border-color:transparent; --el-table-text-color:var(--ink-700); --el-table-header-text-color:var(--ink-500); }
+.dms-data-record-page .app-table :deep(.el-table__body td) { border-right-color:transparent !important; }
+.dms-data-record-page .app-table :deep(.el-table__header th) { border-right-color:transparent !important; }
+.dms-data-record-page .app-table :deep(.el-table__header th:hover) { border-right-color:var(--ink-200) !important; }
+.dms-data-record-page .app-table :deep(.el-table__header th) { background:var(--ink-50) !important; color:var(--ink-500); font-weight:600; font-size:14px; letter-spacing:.02em; padding:12px 16px; border-bottom:1px solid var(--ink-200); }
+.dms-data-record-page .app-table :deep(.el-table__header th .cell) { text-transform:uppercase; }
+.dms-data-record-page .app-table :deep(.el-table__body td) { padding:14px 16px; border-bottom:1px solid var(--ink-100); color:var(--ink-700); }
+.dms-data-record-page .app-table :deep(.el-table__row:hover > td) { background:#fafbff !important; }
+.dms-data-record-page .app-table :deep(.el-table__inner-wrapper::before) { display:none; }
+.dms-data-record-page .app-table :deep(.el-table__border-left-patch) { display:none; }
+.dms-data-record-page .badge { display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:999px; font-size:13px; font-weight:600; line-height:1; border:1px solid transparent; }
+.dms-data-record-page .badge .dot { width:6px; height:6px; border-radius:50%; }
+.dms-data-record-page .badge.amber { background:var(--amber-50); color:var(--amber-700); border-color:#fde68a; }
+.dms-data-record-page .badge.amber .dot { background:var(--amber-500); }
+.dms-data-record-page .badge.blue { background:var(--blue-50); color:var(--blue-700); border-color:#bfdbfe; }
+.dms-data-record-page .badge.blue .dot { background:var(--blue-500); }
+.dms-data-record-page .badge.green { background:var(--green-50); color:var(--green-700); border-color:#a7f3d0; }
+.dms-data-record-page .badge.green .dot { background:var(--green-500); }
+.dms-data-record-page .badge.red { background:var(--red-50); color:var(--red-700); border-color:#fecaca; }
+.dms-data-record-page .badge.red .dot { background:var(--red-500); }
+.dms-data-record-page .badge.violet { background:var(--violet-50); color:var(--brand-700); border-color:var(--brand-200); }
+.dms-data-record-page .badge.gray { background:var(--ink-100); color:var(--ink-500); border-color:var(--ink-200); }
+.dms-data-record-page .badge.gray .dot { background:var(--ink-400); }
+@media (max-width:1100px) { .dms-data-record-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }
+@media (max-width:720px) { .dms-data-record-page .filter-card .filter-bar { grid-template-columns:1fr; } .dms-data-record-page .toolbar { flex-wrap:wrap; gap:10px; } }
+.dms-data-record-page .pagination-container { display:flex; align-items:center; justify-content:flex-end; padding:14px 20px; font-size:14px; color:var(--ink-500); background:#fff; border-top:1px solid transparent; }
+.dms-data-record-page .pagination-container :deep(.el-pagination) { justify-content:flex-end; }
+.dms-data-record-page .pagination-container :deep(.el-pagination .el-pager li) { border-radius:6px; border:1px solid var(--ink-200); background:#fff; min-width:32px; height:32px; line-height:32px; font-size:14px; color:var(--ink-700); margin:0 2px; }
+.dms-data-record-page .pagination-container :deep(.el-pagination .el-pager li.is-active) { background:var(--brand-600); border-color:var(--brand-600); color:#fff; font-weight:600; box-shadow:0 4px 10px -2px rgba(79,70,229,.4); }
+.dms-data-record-page .pagination-container :deep(.el-pagination .btn-prev), .dms-data-record-page .pagination-container :deep(.el-pagination .btn-next) { border-radius:6px; border:1px solid var(--ink-200); background:#fff; min-width:32px; height:32px; }
+.dms-data-record-page .pagination-container :deep(.el-pagination .btn-prev:hover), .dms-data-record-page .pagination-container :deep(.el-pagination .btn-next:hover) { border-color:var(--brand-200); color:var(--brand-700); }
+.dms-data-record-page .pagination-container :deep(.el-pagination .el-pagination__sizes .el-select__wrapper) { border-radius:6px; box-shadow:0 0 0 1px var(--ink-200) inset; }
+</style>

@@ -1,70 +1,155 @@
 <template>
-  <div class="app-container">
-    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch">
-      <el-form-item label="客户编号" prop="customerNo">
-        <el-input v-model="queryParams.customerNo" placeholder="请输入" clearable style="width: 200px" @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="企业名称" prop="customerName">
-        <el-input v-model="queryParams.customerName" placeholder="请输入" clearable style="width: 200px" @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="客户等级" prop="customerLevel">
-        <el-select v-model="queryParams.customerLevel" placeholder="请选择" clearable style="width: 200px">
-          <el-option v-for="d in marketing_customer_level" :key="d.value" :label="d.label" :value="d.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="客户状态" prop="customerStatus">
-        <el-select v-model="queryParams.customerStatus" placeholder="请选择" clearable style="width: 200px">
-          <el-option v-for="d in marketing_customer_status" :key="d.value" :label="d.label" :value="d.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-        <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-      </el-form-item>
-    </el-form>
+  <div class="app-container mk-list-page">
+    <!-- ===== Filter Card ===== -->
+    <div class="surface filter-card" v-show="showSearch">
+      <div class="filter-head">
+        <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+      </div>
+      <div class="filter-bar">
+        <div class="field">
+          <label>客户编号</label>
+          <div class="control">
+            <el-input v-model="queryParams.customerNo" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field">
+          <label>企业名称</label>
+          <div class="control">
+            <el-input v-model="queryParams.customerName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field">
+          <label>客户等级</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.customerLevel" placeholder="全部" clearable @change="handleQuery">
+              <template #prefix><el-icon><Filter /></el-icon></template>
+              <el-option v-for="d in marketing_customer_level" :key="d.value" :label="d.label" :value="d.value" />
+            </el-select>
+          </div>
+        </div>
+        <div class="field">
+          <label>客户状态</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.customerStatus" placeholder="全部" clearable @change="handleQuery">
+              <template #prefix><el-icon><Filter /></el-icon></template>
+              <el-option v-for="d in marketing_customer_status" :key="d.value" :label="d.label" :value="d.value" />
+            </el-select>
+          </div>
+        </div>
+      </div>
+      <div class="filter-actions">
+        <div class="filter-info">
+          <el-icon><Filter /></el-icon> 已选 {{ activeFilterCount }} 个条件，支持回车快速搜索
+        </div>
+        <div class="filter-buttons">
+          <el-button icon="RefreshLeft" @click="resetQuery">重置</el-button>
+          <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+        </div>
+      </div>
+    </div>
 
-    <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5"><el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['marketing:customer:add']">新增</el-button></el-col>
-      <el-col :span="1.5"><el-button type="info" plain icon="Upload" @click="handleImport" v-hasPermi="['marketing:customer:import']">导入</el-button></el-col>
-      <el-col :span="1.5"><el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['marketing:customer:edit']">修改</el-button></el-col>
-      <el-col :span="1.5"><el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['marketing:customer:remove']">删除</el-button></el-col>
-      <el-col :span="1.5"><el-button type="primary" plain icon="User" :disabled="multiple" @click="handleBatchAssign" v-hasPermi="['marketing:customer:assign']">批量分配</el-button></el-col>
-      <el-col :span="1.5"><el-button type="warning" plain icon="RefreshRight" :disabled="multiple" @click="handleBatchStatus" v-hasPermi="['marketing:customer:edit']">批量改状态</el-button></el-col>
-      <el-col :span="1.5"><el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['marketing:customer:export']">导出</el-button></el-col>
-      <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
-    </el-row>
+    <!-- ===== Table Section ===== -->
+    <div class="surface">
+      <!-- Status Tabs -->
+      <div class="status-tabs">
+        <div class="tabs-track">
+          <button class="status-tab" :class="{ 'is-active': activeStatusTab === 'all' }" @click="handleStatusTabClick('all')">
+            <span class="dot"></span><span>全部</span><span class="count">{{ statusCounts.all }}</span>
+          </button>
+          <button v-for="s in statusTabList" :key="s.value"
+            class="status-tab"
+            :class="[statusTabClass(s.value), { 'is-active': activeStatusTab === s.value }]"
+            @click="handleStatusTabClick(s.value)">
+            <span class="dot"></span><span>{{ s.label }}</span><span class="count">{{ statusCounts[s.value] || 0 }}</span>
+          </button>
+        </div>
+        <button class="tip-pill" @click="showStatusHelp = true">
+          <el-icon><WarningFilled /></el-icon>
+          <span>业务操作说明</span>
+        </button>
+      </div>
 
-    <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
-      <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="客户编号" prop="customerNo" :width="colWidth('customerNo', 150)" resizable />
-      <el-table-column label="企业名称" prop="customerName" show-overflow-tooltip>
-        <template #default="scope">
-          <el-button link type="primary" @click="handleView(scope.row)">{{ scope.row.customerName }}</el-button>
-        </template>
-      </el-table-column>
-      <el-table-column label="客户标签" prop="tagNames" :width="colWidth('tagNames', 150)" resizable show-overflow-tooltip>
-        <template #default="scope">
-          <span v-if="scope.row.tagNames">{{ scope.row.tagNames }}</span>
-          <span v-else>-</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="客户等级" prop="customerLevel" :width="colWidth('customerLevel', 100)" resizable align="center">
-        <template #default="scope"><dict-tag :options="marketing_customer_level" :value="scope.row.customerLevel" /></template>
-      </el-table-column>
-      <el-table-column label="所属行业" prop="industry" :width="colWidth('industry', 120)" resizable align="center">
-        <template #default="scope"><dict-tag :options="marketing_industry" :value="scope.row.industry" /></template>
-      </el-table-column>
-      <el-table-column label="客户状态" prop="customerStatus" :width="colWidth('customerStatus', 100)" resizable align="center">
-        <template #default="scope"><dict-tag :options="marketing_customer_status" :value="scope.row.customerStatus" /></template>
-      </el-table-column>
-      <el-table-column label="累计交易额" prop="totalAmount" :width="colWidth('totalAmount', 120)" resizable align="right"><template #default="scope"><span class="rd-amount rd-amount--negative">￥{{ formatAmount(scope.row.totalAmount) }}</span></template></el-table-column>
-      <el-table-column label="负责人" prop="userName" :width="colWidth('userName', 100)" resizable>
-        <template #default="scope">
-          <span v-if="scope.row.userName">{{ scope.row.userName }}</span>
-          <el-tag v-else type="warning" size="small">公海</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="部门" prop="deptName" :width="colWidth('deptName', 120)" resizable />
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <div class="left">
+          <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['marketing:customer:add']">新增</el-button>
+          <button type="button" class="btn-soft is-outline" @click="handleImport" v-hasPermi="['marketing:customer:import']">
+            <el-icon><Upload /></el-icon> 导入
+          </button>
+          <button type="button" class="btn-soft is-outline" :disabled="single" @click="handleUpdate" v-hasPermi="['marketing:customer:edit']">
+            <el-icon><Edit /></el-icon> 修改
+          </button>
+          <button type="button" class="btn-soft is-danger-outline" :disabled="multiple" @click="handleDelete" v-hasPermi="['marketing:customer:remove']">
+            <el-icon><Delete /></el-icon> 删除
+          </button>
+          <div class="toolbar-divider"></div>
+          <button type="button" class="btn-soft is-outline" :disabled="multiple" @click="handleBatchAssign" v-hasPermi="['marketing:customer:assign']">
+            <el-icon><User /></el-icon> 批量分配
+          </button>
+          <button type="button" class="btn-soft is-outline" :disabled="multiple" @click="handleBatchStatus" v-hasPermi="['marketing:customer:edit']">
+            <el-icon><RefreshRight /></el-icon> 批量改状态
+          </button>
+          <div class="toolbar-divider"></div>
+          <button type="button" class="btn-soft is-outline" @click="handleExport" v-hasPermi="['marketing:customer:export']">
+            <el-icon><Download /></el-icon> 导出
+          </button>
+        </div>
+        <div class="right">
+          <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="mk_customer_columns" />
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="table-wrap">
+        <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
+          <el-table-column type="selection" width="55" align="center" />
+          <el-table-column label="客户编号" prop="customerNo" key="customerNo" :width="colWidth('customerNo', 150)" resizable sortable="custom" v-if="columns.customerNo.visible">
+            <template #default="scope"><span class="col-mono">{{ scope.row.customerNo }}</span></template>
+          </el-table-column>
+          <el-table-column label="企业名称" prop="customerName" key="customerName" :width="colWidth('customerName', 200)" resizable show-overflow-tooltip v-if="columns.customerName.visible">
+            <template #default="scope">
+              <el-button link type="primary" @click="handleView(scope.row)">{{ scope.row.customerName }}</el-button>
+            </template>
+          </el-table-column>
+          <el-table-column label="客户标签" prop="tagNames" key="tagNames" :width="colWidth('tagNames', 150)" resizable show-overflow-tooltip v-if="columns.tagNames.visible">
+            <template #default="scope">
+              <span v-if="scope.row.tagNames">{{ scope.row.tagNames }}</span>
+              <span v-else>-</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="客户等级" prop="customerLevel" key="customerLevel" :width="colWidth('customerLevel', 100)" resizable align="center" v-if="columns.customerLevel.visible">
+            <template #default="scope">
+              <span class="badge" :class="levelBadgeClass(scope.row.customerLevel)">
+                <span class="dot"></span>{{ levelLabel(scope.row.customerLevel) }}
+              </span>
+            </template>
+          </el-table-column>
+          <el-table-column label="所属行业" prop="industry" key="industry" :width="colWidth('industry', 120)" resizable align="center" v-if="columns.industry.visible">
+            <template #default="scope">
+              <span class="badge" :class="industryBadgeClass(scope.row.industry)">
+                <span class="dot"></span>{{ industryLabel(scope.row.industry) }}
+              </span>
+            </template>
+          </el-table-column>
+          <el-table-column label="客户状态" prop="customerStatus" key="customerStatus" :width="colWidth('customerStatus', 100)" resizable align="center" sortable="custom" v-if="columns.customerStatus.visible">
+            <template #default="scope">
+              <span class="badge" :class="badgeClass(scope.row.customerStatus)">
+                <span class="dot"></span>{{ statusLabel(scope.row.customerStatus) }}
+              </span>
+            </template>
+          </el-table-column>
+          <el-table-column label="累计交易额" prop="totalAmount" key="totalAmount" :width="colWidth('totalAmount', 120)" resizable align="right" sortable="custom" class-name="col-num" v-if="columns.totalAmount.visible"><template #default="scope"><span class="rd-amount">￥{{ formatAmount(scope.row.totalAmount) }}</span></template></el-table-column>
+          <el-table-column label="负责人" prop="userName" key="userName" :width="colWidth('userName', 100)" resizable v-if="columns.userName.visible">
+            <template #default="scope">
+              <span v-if="scope.row.userName">{{ scope.row.userName }}</span>
+              <el-tag v-else type="warning" size="small">公海</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="部门" prop="deptName" key="deptName" :width="colWidth('deptName', 120)" resizable v-if="columns.deptName.visible" />
       <el-table-column label="操作" width="200" align="center" fixed="right">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">详情</el-button>
@@ -84,7 +169,11 @@
         </template>
       </el-table-column>
     </el-table>
-    <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+      </div>
+
+      <!-- Pagination -->
+      <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+    </div>
 
     <!-- 新增/修改对话框 -->
     <el-dialog v-model="open" width="800px" append-to-body draggable class="rd-dialog">
@@ -463,7 +552,7 @@
                   <el-table-column label="商机名称" prop="opportunityName" show-overflow-tooltip />
                   <el-table-column label="销售阶段" prop="stageName" width="100" align="center" />
                   <el-table-column label="预计金额" prop="expectedAmount" width="120" align="right"><template #default="scope">￥{{ formatAmount(scope.row.expectedAmount) }}</template></el-table-column>
-                  <el-table-column label="商机状态" prop="opportunityStatus" width="100" align="center"><template #default="scope"><dict-tag :options="marketing_opportunity_status" :value="scope.row.opportunityStatus" /></template></el-table-column>
+                  <el-table-column label="商机状态" prop="opportunityStatus" width="100" align="center"><template #default="scope"><span class="badge" :class="oppBadgeClass(scope.row.opportunityStatus)"><span class="dot"></span>{{ oppStatusLabel(scope.row.opportunityStatus) }}</span></template></el-table-column>
                 </el-table>
                 <div class="rd-empty" v-else><svg class="rd-empty-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/></svg><p class="rd-empty-text">暂无商机</p></div>
               </div>
@@ -481,7 +570,7 @@
                   <el-table-column label="合同名称" prop="contractName" show-overflow-tooltip />
                   <el-table-column label="合同金额" prop="contractAmount" width="120" align="right"><template #default="scope">￥{{ formatAmount(scope.row.contractAmount) }}</template></el-table-column>
                   <el-table-column label="签订日期" prop="signDate" width="120" />
-                  <el-table-column label="合同状态" prop="contractStatus" width="100" align="center"><template #default="scope"><dict-tag :options="marketing_contract_status" :value="scope.row.contractStatus" /></template></el-table-column>
+                  <el-table-column label="合同状态" prop="contractStatus" width="100" align="center"><template #default="scope"><span class="badge" :class="contractBadgeClass(scope.row.contractStatus)"><span class="dot"></span>{{ contractStatusLabel(scope.row.contractStatus) }}</span></template></el-table-column>
                 </el-table>
                 <div class="rd-empty" v-else><svg class="rd-empty-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><p class="rd-empty-text">暂无合同</p></div>
               </div>
@@ -499,7 +588,7 @@
                   <el-table-column label="订单名称" prop="orderName" show-overflow-tooltip />
                   <el-table-column label="订单金额" prop="orderAmount" width="120" align="right"><template #default="scope">￥{{ formatAmount(scope.row.orderAmount) }}</template></el-table-column>
                   <el-table-column label="下单日期" prop="orderDate" width="120" />
-                  <el-table-column label="订单状态" prop="orderStatus" width="100" align="center"><template #default="scope"><dict-tag :options="marketing_order_status" :value="scope.row.orderStatus" /></template></el-table-column>
+                  <el-table-column label="订单状态" prop="orderStatus" width="100" align="center"><template #default="scope"><span class="badge" :class="orderBadgeClass(scope.row.orderStatus)"><span class="dot"></span>{{ orderStatusLabel(scope.row.orderStatus) }}</span></template></el-table-column>
                 </el-table>
                 <div class="rd-empty" v-else><svg class="rd-empty-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/></svg><p class="rd-empty-text">暂无订单</p></div>
               </div>
@@ -540,7 +629,7 @@
                   <el-table-column label="活动名称" prop="activityName" show-overflow-tooltip />
                   <el-table-column label="联系人" prop="contactName" width="100" />
                   <el-table-column label="企业名称" prop="companyName" width="180" show-overflow-tooltip />
-                  <el-table-column label="参与状态" prop="participateStatus" width="100" align="center"><template #default="scope"><dict-tag :options="marketing_participate_status" :value="scope.row.participateStatus" /></template></el-table-column>
+                  <el-table-column label="参与状态" prop="participateStatus" width="100" align="center"><template #default="scope"><span class="badge" :class="partBadgeClass(scope.row.participateStatus)"><span class="dot"></span>{{ partStatusLabel(scope.row.participateStatus) }}</span></template></el-table-column>
                   <el-table-column label="签到时间" prop="signTime" width="160" />
                 </el-table>
                 <div class="rd-empty" v-else><svg class="rd-empty-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg><p class="rd-empty-text">暂无活动参与记录</p></div>
@@ -551,37 +640,73 @@
       </div>
     </el-dialog>
 
-    <!-- 导入弹窗 -->
-    <el-dialog v-model="importOpen" width="500px" append-to-body draggable class="rd-dialog">
-      <template #header>
-        <div class="rd-detail-header">
-          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
-          <span class="rd-detail-header-title">客户导入</span>
-        </div>
-      </template>
-      <el-upload ref="uploadRef" :limit="1" accept=".xlsx, .xls" :auto-upload="false" :action="importUrl" :headers="headers" :data="{ updateSupport: importUpdateSupport }" :on-success="handleImportSuccess" :on-error="handleImportError" drag>
-        <el-icon class="el-icon--upload"><upload-filled /></el-icon>
-        <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
-        <template #tip>
-          <div class="el-upload__tip text-center">
-            <span>仅允许导入xls、xlsx格式文件。</span>
-            <el-button type="primary" link @click="handleDownloadTemplate">下载模板</el-button>
+    <!-- ===== 导入对话框 ===== -->
+    <excel-import-dialog
+      ref="importRef"
+      title="客户导入"
+      action="/mk/customer/importData"
+      template-action="/mk/customer/importTemplate"
+      template-file-name="customer_template"
+      update-support-label="是否更新已经存在的客户数据"
+      :tips="importTips"
+      :update-key-options="updateKeyOptions"
+      default-update-key="customerName"
+      @success="getList"
+    />
+
+    <!-- 状态流转帮助对话框 -->
+    <el-dialog v-model="showStatusHelp" title="客户管理业务操作说明" width="720px" append-to-body>
+      <div class="status-help-content">
+        <h4>一、业务状态流转图</h4>
+        <div class="status-flow">
+          <div class="flow-item">
+            <el-tag type="primary">意向客户</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
           </div>
-        </template>
-      </el-upload>
-      <div class="mt16">
-        <el-checkbox v-model="importUpdateSupport">如果已存在相同企业名称，则更新数据</el-checkbox>
+          <div class="flow-item">
+            <el-tag type="success">签约客户</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="success">合作中</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="warning">暂停合作</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="info">流失客户</el-tag>
+          </div>
+        </div>
+
+        <h4>二、各状态说明</h4>
+        <el-descriptions :column="1" border>
+          <el-descriptions-item label="意向客户">新增客户的初始状态，表示有合作意向但尚未签约</el-descriptions-item>
+          <el-descriptions-item label="签约客户">已签订合同，正式建立合作关系</el-descriptions-item>
+          <el-descriptions-item label="合作中">合作进行中，有持续的订单和业务往来</el-descriptions-item>
+          <el-descriptions-item label="暂停合作">暂时停止合作，可恢复为合作中</el-descriptions-item>
+          <el-descriptions-item label="流失客户">客户已流失，可重新激活为意向客户</el-descriptions-item>
+        </el-descriptions>
+
+        <h4>三、重点业务规则</h4>
+        <div class="highlight-card">
+          <p>• <strong>公海机制：</strong>释放到公海的客户无负责人，其他销售人员可领取</p>
+          <p>• <strong>批量操作：</strong>支持批量分配负责人、批量变更客户状态</p>
+          <p>• <strong>客户导入：</strong>支持通过Excel批量导入客户数据</p>
+          <p>• <strong>客户查重：</strong>新增时系统自动检测重复企业名称</p>
+          <p>• <strong>详情关联：</strong>客户详情页展示联系人、商机、合同、订单、互动记录等关联数据</p>
+        </div>
       </div>
       <template #footer>
-        <el-button type="primary" @click="submitImport">确 定</el-button>
-        <el-button @click="importOpen = false">取 消</el-button>
+        <el-button type="primary" @click="showStatusHelp = false">我知道了</el-button>
       </template>
     </el-dialog>
   </div>
 </template>
 
 <script setup name="MkCustomer">
-import { UploadFilled, CircleClose } from '@element-plus/icons-vue'
+import { UploadFilled, CircleClose, ArrowRight, ArrowDown, QuestionFilled, WarningFilled, Search, Filter, Edit, Delete, Download, User, Upload, RefreshRight } from '@element-plus/icons-vue'
 import { listCustomer, getCustomer, addCustomer, updateCustomer, delCustomer, changeCustomerStatus, assignCustomer, releaseToPool, claimCustomer, batchAssignCustomer, batchUpdateStatus } from '@/api/mk/customer'
 import { listTag } from '@/api/mk/tag'
 import { listContact } from '@/api/mk/contact'
@@ -593,10 +718,10 @@ import { listParticipant } from '@/api/mk/participant'
 import { listUser } from '@/api/system/user'
 import UserPicker from '@/components/UserPicker/index.vue'
 import DeptPicker from '@/components/DeptPicker/index.vue'
+import ExcelImportDialog from '@/components/ExcelImportDialog'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
 const { collapsedCards, toggleCard } = useDetailCard(["c_basic", "c_company", "c_address", "c_business", "c_owner", "c_other", "v_basic", "v_company", "v_business", "v_owner", "v_other", "v_action", "v_contacts", "v_opportunities", "v_contracts", "v_orders", "v_interactions", "v_activities"])
-import { getToken } from '@/utils/auth'
 
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('mk_customer_index')
@@ -609,6 +734,9 @@ const viewForm = ref({})
 const detailTab = ref('basic')
 const loading = ref(true)
 const showSearch = ref(true)
+const showAdvanced = ref(false)
+const activeStatusTab = ref('all')
+const statusCounts = ref({ all: 0, '0': 0, '1': 0, '2': 0, '3': 0, '4': 0 })
 const ids = ref([])
 const single = ref(true)
 const multiple = ref(true)
@@ -645,24 +773,75 @@ const statusOpen = ref(false)
 const statusValue = ref(null)
 const statusCustomerId = ref(null)
 
-// 导入相关
-const importOpen = ref(false)
-const importUpdateSupport = ref(false)
-const importUrl = ref(import.meta.env.VITE_APP_BASE_API + '/mk/customer/importData')
-const headers = ref({ Authorization: 'Bearer ' + getToken() })
+// ===== 导入功能配置 =====
+const importTips = [
+  '企业名称为必填字段，不能为空',
+  '客户编号由系统自动生成，无需填写',
+  '客户等级、客户状态等字典字段请参考系统中已有数据填写',
+  '如勾选「更新已存在数据」，需选择匹配字段：按企业名称、统一信用代码或客户编号匹配',
+  '导入结果将显示每条数据的处理情况，失败数据可修正后重新导入'
+]
+const updateKeyOptions = [
+  { value: 'customerName', label: '企业名称' },
+  { value: 'creditCode', label: '统一社会信用代码' },
+  { value: 'customerNo', label: '客户编号' }
+]
 
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, customerNo: undefined, customerName: undefined, customerLevel: undefined, customerStatus: undefined },
+  queryParams: { pageNum: 1, pageSize: 10, customerNo: undefined, customerName: undefined, customerLevel: undefined, customerStatus: undefined, params: {} },
   rules: {
     customerName: [{ required: true, message: '企业名称不能为空', trigger: 'blur' }]
   }
 })
 const { queryParams, form, rules } = toRefs(data)
 
+// 列显隐配置 - 从 localStorage 恢复保存的设置
+const defaultColumns = {
+  customerNo: { label: '客户编号', visible: true },
+  customerName: { label: '企业名称', visible: true },
+  tagNames: { label: '客户标签', visible: true },
+  customerLevel: { label: '客户等级', visible: true },
+  industry: { label: '所属行业', visible: true },
+  customerStatus: { label: '客户状态', visible: true },
+  totalAmount: { label: '累计交易额', visible: true },
+  userName: { label: '负责人', visible: true },
+  deptName: { label: '部门', visible: true }
+}
+
+function loadColumnVisibility() {
+  try {
+    const saved = localStorage.getItem('mk_customer_columns')
+    if (saved) {
+      const parsed = JSON.parse(saved)
+      const result = {}
+      Object.keys(defaultColumns).forEach(key => {
+        result[key] = {
+          label: defaultColumns[key].label,
+          visible: parsed[key] !== undefined ? parsed[key] : defaultColumns[key].visible
+        }
+      })
+      return result
+    }
+  } catch (e) {}
+  return { ...defaultColumns }
+}
+
+const columns = ref(loadColumnVisibility())
+
+const statusTabList = computed(() => marketing_customer_status.value)
+const activeFilterCount = computed(() => {
+  let count = 0
+  if (queryParams.value.customerNo) count++
+  if (queryParams.value.customerName) count++
+  if (queryParams.value.customerLevel) count++
+  if (queryParams.value.customerStatus) count++
+  return count
+})
+
 function getList() {
   loading.value = true
-  listCustomer(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false })
+  listCustomer(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false; loadStatusCounts(); applySavedWidths() }).catch(() => { loading.value = false })
 }
 function getTagOptions() {
   listTag({ pageNum: 1, pageSize: 9999, status: '0' }).then(res => { tagOptions.value = res.rows })
@@ -701,8 +880,26 @@ function clearDept() {
   form.value.deptName = undefined
 }
 
-function handleQuery() { queryParams.value.pageNum = 1; getList() }
-function resetQuery() { proxy.resetForm('queryRef'); handleQuery() }
+function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
+function resetQuery() {
+  queryParams.value.customerNo = undefined; queryParams.value.customerName = undefined; queryParams.value.customerLevel = undefined; queryParams.value.customerStatus = undefined; queryParams.value.params = {}; activeStatusTab.value = 'all'; handleQuery()
+}
+function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
+function handleStatusTabClick(status) { activeStatusTab.value = status; queryParams.value.customerStatus = status === 'all' ? undefined : status; handleQuery() }
+function loadStatusCounts() {
+  listCustomer({ pageNum: 1, pageSize: 999 }, { suppressError: true }).then(res => {
+    const counts = { all: res.total, '0': 0, '1': 0, '2': 0, '3': 0, '4': 0 }
+    ;(res.rows || []).forEach(r => { if (counts[r.customerStatus] !== undefined) counts[r.customerStatus]++ })
+    statusCounts.value = counts
+  }).catch(() => {})
+}
+function statusTabClass(value) { const map = { '0': 'tab-audit', '1': 'tab-approved', '2': 'tab-done', '3': 'tab-draft', '4': 'tab-void' }; return map[value] || '' }
+function badgeClass(status) { const map = { '0': 'blue', '1': 'green', '2': 'green', '3': 'amber', '4': 'gray' }; return map[status] || 'gray' }
+function statusLabel(status) { const item = marketing_customer_status.value.find(d => d.value == status); return item ? item.label : '-' }
+function levelBadgeClass(level) { const map = { '1': 'violet', '2': 'blue', '3': 'green', '4': 'amber', '5': 'gray' }; return map[level] || 'gray' }
+function levelLabel(level) { const item = marketing_customer_level.value.find(d => d.value == level); return item ? item.label : '-' }
+function industryBadgeClass(industry) { const map = { '1': 'blue', '2': 'green', '3': 'violet', '4': 'amber', '5': 'cyan', '6': 'red', '7': 'gray', '8': 'orange', '9': 'pink', '10': 'indigo' }; return map[industry] || 'gray' }
+function industryLabel(industry) { const item = marketing_industry.value.find(d => d.value == industry); return item ? item.label : '-' }
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.customerId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function reset() {
   form.value = { customerNo: undefined, customerName: undefined, creditCode: undefined, customerLevel: '3', customerSource: undefined, industry: undefined, companySize: undefined, address: undefined, website: undefined, customerStatus: '0', firstContactDate: undefined, cooperationDate: undefined, totalAmount: 0, userId: undefined, userName: undefined, deptId: undefined, deptName: undefined, tagIds: [], remark: undefined }
@@ -775,9 +972,7 @@ function handleViewClaim() {
   }).catch(() => {})
 }
 function levelTagType(val) { return { '1': 'danger', '2': 'warning', '3': '', '4': 'info' }[val] || '' }
-function levelLabel(val) { return { '1': '关键大客户', '2': '重要客户', '3': '普通客户', '4': '潜在客户' }[val] || '' }
 function statusTagType(val) { return { '0': 'primary', '1': 'success', '2': 'success', '3': 'warning', '4': 'info' }[val] || '' }
-function statusLabel(val) { return { '0': '意向客户', '1': '签约客户', '2': '合作中', '3': '暂停合作', '4': '流失客户' }[val] || '' }
 function submitForm() {
   proxy.$refs['customerRef'].validate(valid => {
     if (valid) {
@@ -925,27 +1120,13 @@ function confirmBatchStatus() {
 }
 
 // 导入
-function handleImport() { importOpen.value = true }
-function handleDownloadTemplate() { proxy.download('mk/customer/importTemplate', {}, `customer_template_${new Date().getTime()}.xlsx`) }
-function submitImport() {
-  proxy.$refs['uploadRef'].submit()
-}
-function handleImportSuccess(res) {
-  if (res.code === 200) {
-    proxy.$modal.msgSuccess(res.msg)
-    importOpen.value = false
-    getList()
-  } else {
-    proxy.$modal.msgError(res.msg)
-  }
-}
-function handleImportError() {
-  proxy.$modal.msgError('导入失败')
-}
+function handleImport() { proxy.$refs['importRef'].open() }
 
 listUser({ pageNum: 1, pageSize: 9999 }).then(res => { userOptions.value = res.rows.filter(u => u.userId !== 1) })
 getTagOptions()
 getList()
+
+const showStatusHelp = ref(false)
 </script>
 
 <style scoped>
@@ -962,6 +1143,51 @@ getList()
 :deep(.el-input.is-disabled .el-input__inner) {
   cursor: pointer;
 }
-.mt16 { margin-top: 16px; }
-.text-center { text-align: center; }
+
+.status-help-content {
+  max-height: 500px;
+  overflow-y: auto;
+  padding-right: 10px;
+}
+.status-help-content h4 {
+  margin: 20px 0 12px 0;
+  color: #303133;
+  font-weight: 600;
+  border-left: 4px solid #409eff;
+  padding-left: 10px;
+}
+.status-help-content h4:first-child {
+  margin-top: 0;
+}
+.status-help-content .status-flow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 16px;
+  background-color: #f5f7fa;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+.status-help-content .flow-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.status-help-content .flow-arrow {
+  color: #909399;
+  font-size: 16px;
+}
+.status-help-content .highlight-card {
+  background-color: #ecf5ff;
+  border-radius: 8px;
+  padding: 16px;
+  border-left: 4px solid #409eff;
+}
+.status-help-content .highlight-card p {
+  margin: 6px 0;
+  line-height: 1.6;
+  font-size: 13px;
+  color: #606266;
+}
 </style>

@@ -1,8 +1,8 @@
 import request from '@/utils/request'
 
 // 查询联系人列表
-export function listContact(query) {
-  return request({ url: '/mk/contact/list', method: 'get', params: query })
+export function listContact(query, config = {}) {
+return request({ url: '/mk/contact/list', method: 'get', params: query, ...config })
 }
 
 // 查询联系人详细

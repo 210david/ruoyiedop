@@ -2,6 +2,7 @@ package com.ruoyi.mk.domain;
 
 import java.math.BigDecimal;
 import java.util.Date;
+import java.util.List;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.ruoyi.common.annotation.Excel;
 import com.ruoyi.common.core.domain.BaseEntity;
@@ -73,6 +74,12 @@ public class MkOrderReturn extends BaseEntity
     /** 删除标志 */
     private String delFlag;
 
+    /** 退货明细列表 */
+    private List<MkOrderReturnItem> detailList;
+
+    /** 审批记录列表 */
+    private List<MkOrderReturnApproveLog> approveLogList;
+
     public Long getReturnId() { return returnId; }
     public void setReturnId(Long returnId) { this.returnId = returnId; }
     public String getReturnNo() { return returnNo; }
@@ -103,4 +110,8 @@ public class MkOrderReturn extends BaseEntity
     public void setApproveTime(Date approveTime) { this.approveTime = approveTime; }
     public String getDelFlag() { return delFlag; }
     public void setDelFlag(String delFlag) { this.delFlag = delFlag; }
+    public List<MkOrderReturnItem> getDetailList() { return detailList; }
+    public void setDetailList(List<MkOrderReturnItem> detailList) { this.detailList = detailList; }
+    public List<MkOrderReturnApproveLog> getApproveLogList() { return approveLogList; }
+    public void setApproveLogList(List<MkOrderReturnApproveLog> approveLogList) { this.approveLogList = approveLogList; }
 }

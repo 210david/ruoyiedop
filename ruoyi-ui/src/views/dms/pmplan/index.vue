@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container">
+  <div class="app-container dms-pmplan-page">
     <!-- 视图切换 -->
     <el-radio-group v-model="viewMode" style="margin-bottom: 12px">
       <el-radio-button value="list">列表视图</el-radio-button>
@@ -9,58 +9,90 @@
 
     <!-- ===== 列表视图 ===== -->
     <template v-if="viewMode === 'list'">
-    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch">
-      <el-form-item label="计划名称" prop="planName">
-        <el-input v-model="queryParams.planName" placeholder="请输入" clearable style="width: 160px" @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="触发类型" prop="triggerType">
-        <el-select v-model="queryParams.triggerType" placeholder="全部" clearable style="width: 140px">
-          <el-option v-for="d in dms_pm_trigger_type" :key="d.value" :label="d.label" :value="d.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-        <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-      </el-form-item>
-    </el-form>
+    <!-- ===== Filter Card ===== -->
+    <div class="surface filter-card" v-show="showSearch">
+      <div class="filter-head">
+        <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+      </div>
+      <div class="filter-bar">
+        <div class="field">
+          <label>计划名称</label>
+          <div class="control">
+            <el-input v-model="queryParams.planName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field">
+          <label>触发类型</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.triggerType" placeholder="全部" clearable @change="handleQuery">
+              <el-option v-for="d in dms_pm_trigger_type" :key="d.value" :label="d.label" :value="d.value" />
+            </el-select>
+          </div>
+        </div>
+      </div>
+      <div class="filter-actions">
+        <div class="filter-info">
+          <el-icon><Filter /></el-icon> 已选 {{ activeFilterCount }} 个条件，支持回车快速搜索
+        </div>
+        <div class="filter-buttons">
+          <el-button icon="RefreshLeft" @click="resetQuery">重置</el-button>
+          <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+        </div>
+      </div>
+    </div>
 
-    <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5"><el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['dms:pmplan:add']">新增</el-button></el-col>
-      <el-col :span="1.5"><el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['dms:pmplan:edit']">修改</el-button></el-col>
-      <el-col :span="1.5"><el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['dms:pmplan:remove']">删除</el-button></el-col>
-      <el-col :span="1.5"><el-button type="warning" plain icon="Refresh" @click="handleAutoGenerate" v-hasPermi="['dms:pmplan:edit']">执行自动生成</el-button></el-col>
-      <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
-    </el-row>
-
-    <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
-      <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="计划名称" prop="planName" min-width="180" show-overflow-tooltip />
-      <el-table-column label="关联设备" prop="equipmentName" :width="colWidth('equipmentName', 160)" resizable show-overflow-tooltip />
-      <el-table-column label="触发类型" prop="triggerType" :width="colWidth('triggerType', 130)" resizable align="center">
-        <template #default="scope"><dict-tag :options="dms_pm_trigger_type" :value="scope.row.triggerType" /></template>
-      </el-table-column>
-      <el-table-column label="周期" width="100" align="center">
-        <template #default="scope">{{ scope.row.cycleValue }} {{ scope.row.cycleUnit }}</template>
-      </el-table-column>
-      <el-table-column label="预估工时" prop="estimatedHours" :width="colWidth('estimatedHours', 90)" resizable align="center" />
-      <el-table-column label="提前天数" prop="advanceDays" :width="colWidth('advanceDays', 80)" resizable align="center" />
-      <el-table-column label="自动派工" width="90" align="center">
-        <template #default="scope">
-          <el-tag :type="scope.row.autoAssign === '1' ? 'success' : 'info'" size="small">{{ scope.row.autoAssign === '1' ? '是' : '否' }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="上次执行" prop="lastExecuteTime" :width="colWidth('lastExecuteTime', 160)" resizable align="center" />
-      <el-table-column label="下次执行" prop="nextExecuteTime" :width="colWidth('nextExecuteTime', 160)" resizable align="center">
-        <template #default="scope">
-          <span :style="isExpired(scope.row) ? 'color: #f56c6c; font-weight: bold' : ''">{{ scope.row.nextExecuteTime }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="状态" prop="status" :width="colWidth('status', 80)" resizable align="center">
-        <template #default="scope">
-          <el-tag :type="scope.row.status === '0' ? 'success' : 'danger'">{{ scope.row.status === '0' ? '正常' : '停用' }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" width="220" align="center" fixed="right">
+    <!-- ===== Table Section ===== -->
+    <div class="surface">
+      <div class="toolbar">
+        <div class="left">
+          <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['dms:pmplan:add']">新增</el-button>
+          <button type="button" class="btn-soft is-outline" :disabled="single" @click="handleUpdate" v-hasPermi="['dms:pmplan:edit']">
+            <el-icon><Edit /></el-icon> 修改
+          </button>
+          <button type="button" class="btn-soft is-danger-outline" :disabled="multiple" @click="handleDelete" v-hasPermi="['dms:pmplan:remove']">
+            <el-icon><Delete /></el-icon> 删除
+          </button>
+          <div class="toolbar-divider"></div>
+          <button type="button" class="btn-soft is-outline" @click="handleAutoGenerate" v-hasPermi="['dms:pmplan:edit']">
+            <el-icon><Refresh /></el-icon> 执行自动生成
+          </button>
+        </div>
+        <div class="right">
+          <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="dms_pmplan_columns" />
+        </div>
+      </div>
+      <div class="table-wrap">
+        <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" class="app-table">
+          <el-table-column type="selection" width="55" align="center" />
+          <el-table-column label="计划名称" prop="planName" key="planName" :width="colWidth('planName', 180)" resizable show-overflow-tooltip v-if="columns.planName.visible" />
+          <el-table-column label="关联设备" prop="equipmentName" key="equipmentName" :width="colWidth('equipmentName', 160)" resizable show-overflow-tooltip v-if="columns.equipmentName.visible" />
+          <el-table-column label="触发类型" prop="triggerType" key="triggerType" :width="colWidth('triggerType', 130)" resizable align="center" v-if="columns.triggerType.visible">
+            <template #default="scope"><span class="badge violet">{{ triggerTypeLabel(scope.row.triggerType) }}</span></template>
+          </el-table-column>
+          <el-table-column label="周期" width="100" align="center" v-if="columns.cycle.visible">
+            <template #default="scope">{{ scope.row.cycleValue }} {{ scope.row.cycleUnit }}</template>
+          </el-table-column>
+          <el-table-column label="预估工时" prop="estimatedHours" key="estimatedHours" :width="colWidth('estimatedHours', 90)" resizable align="center" v-if="columns.estimatedHours.visible" />
+          <el-table-column label="提前天数" prop="advanceDays" key="advanceDays" :width="colWidth('advanceDays', 90)" resizable align="center" v-if="columns.advanceDays.visible" />
+          <el-table-column label="自动派工" width="90" align="center" v-if="columns.autoAssign.visible">
+            <template #default="scope">
+              <span class="badge" :class="scope.row.autoAssign === '1' ? 'green' : 'gray'"><span class="dot"></span>{{ scope.row.autoAssign === '1' ? '是' : '否' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="上次执行" prop="lastExecuteTime" key="lastExecuteTime" :width="colWidth('lastExecuteTime', 160)" resizable align="center" v-if="columns.lastExecuteTime.visible" />
+          <el-table-column label="下次执行" prop="nextExecuteTime" key="nextExecuteTime" :width="colWidth('nextExecuteTime', 160)" resizable align="center" v-if="columns.nextExecuteTime.visible">
+            <template #default="scope">
+              <span :style="isExpired(scope.row) ? 'color: #f56c6c; font-weight: bold' : ''">{{ scope.row.nextExecuteTime }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="状态" prop="status" key="status" :width="colWidth('status', 100)" resizable align="center" v-if="columns.status.visible">
+            <template #default="scope">
+              <span class="badge" :class="scope.row.status === '0' ? 'green' : 'gray'"><span class="dot"></span>{{ scope.row.status === '0' ? '正常' : '停用' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="220" align="center" fixed="right">
         <template #default="scope">
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['dms:pmplan:edit']">修改</el-button>
           <el-button link type="success" @click="handleGenerate(scope.row)" v-if="scope.row.status === '0'">生成工单</el-button>
@@ -68,7 +100,9 @@
         </template>
       </el-table-column>
     </el-table>
-    <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+      </div>
+      <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+    </div>
     </template>
 
     <!-- ===== 日历视图 ===== -->
@@ -251,6 +285,86 @@
     </el-dialog>
 
     <user-picker ref="userPickerRef" title="选择派工人员" @confirm="onUserPickerConfirm" />
+
+    <!-- 业务操作说明对话框 -->
+    <el-dialog v-model="showStatusHelp" title="PM计划业务操作说明" width="720px" append-to-body>
+      <div class="status-help-content">
+        <h4>一、业务流程图</h4>
+        <div class="status-flow">
+          <div class="flow-item">
+            <el-tag type="primary">创建PM计划</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="warning">配置触发规则</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="info">配置任务清单与备件</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="success">到期生成工单</el-tag>
+          </div>
+        </div>
+
+        <h4>二、触发规则说明</h4>
+        <el-descriptions :column="1" border>
+          <el-descriptions-item label="手动触发">由人工点击「生成工单」按钮手动生成维护工单</el-descriptions-item>
+          <el-descriptions-item label="周期触发">系统按设定的周期值和单位（天/月/小时）自动计算下次执行时间，到期后自动生成工单</el-descriptions-item>
+          <el-descriptions-item label="提前天数">在到期日前N天提前生成工单，便于提前准备备件和安排人员</el-descriptions-item>
+          <el-descriptions-item label="自动派工">开启后，生成的工单自动指派给配置的维修人；关闭则需手动派工</el-descriptions-item>
+        </el-descriptions>
+
+        <h4>三、重点业务规则</h4>
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <div class="highlight-card highlight-primary">
+              <div class="highlight-card-title">任务清单</div>
+              <div class="highlight-card-body">配置标准作业步骤，生成工单后维修人员在完工时<strong>逐项打勾确认</strong>，确保维护质量可追溯</div>
+            </div>
+          </el-col>
+          <el-col :span="12">
+            <div class="highlight-card highlight-warning">
+              <div class="highlight-card-title">备件预配置</div>
+              <div class="highlight-card-body">预先配置维护所需备件及数量，生成工单时<strong>自动带入工单</strong>，维修人员无需重复选择</div>
+            </div>
+          </el-col>
+        </el-row>
+        <el-row :gutter="16" style="margin-top: 12px;">
+          <el-col :span="12">
+            <div class="highlight-card highlight-success">
+              <div class="highlight-card-title">多视图管理</div>
+              <div class="highlight-card-body">支持<strong>列表、日历、时间线</strong>三种视图。日历视图可直观查看每日计划分布，时间线视图按时间排序展示</div>
+            </div>
+          </el-col>
+          <el-col :span="12">
+            <div class="highlight-card highlight-danger">
+              <div class="highlight-card-title">逾期预警</div>
+              <div class="highlight-card-body">下次执行时间超过当前时间的计划以<strong>红色高亮</strong>显示，提醒及时执行或检查计划配置</div>
+            </div>
+          </el-col>
+        </el-row>
+
+        <h4>四、业务操作流程</h4>
+        <el-timeline>
+          <el-timeline-item type="primary" :hollow="true">
+            <strong>新建PM计划：</strong>填写计划名称、选择关联设备（自动带出设备分类），设置触发类型和周期
+          </el-timeline-item>
+          <el-timeline-item type="warning" :hollow="true">
+            <strong>配置任务与备件：</strong>编辑维护任务清单（标准作业步骤）和备件清单（所需备件及数量）
+          </el-timeline-item>
+          <el-timeline-item type="success" :hollow="true">
+            <strong>生成工单：</strong>手动点击「生成工单」或系统到期自动生成。工单自动带入任务清单和备件清单
+          </el-timeline-item>
+          <el-timeline-item type="info" :hollow="true">
+            <strong>批量执行：</strong>点击「执行自动生成」按钮，系统扫描所有到期计划并批量生成工单</el-timeline-item>
+        </el-timeline>
+      </div>
+      <template #footer>
+        <el-button type="primary" @click="showStatusHelp = false">我知道了</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -262,6 +376,7 @@ import { listSparepart } from '@/api/dms/sparepart'
 import UserPicker from '@/components/UserPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
+import { Search, Filter, RefreshLeft, Edit, Delete, Refresh } from '@element-plus/icons-vue'
 const { collapsedCards, toggleCard } = useDetailCard(["c3","c2","c1","c0"])
 
 const { proxy } = getCurrentInstance()
@@ -284,7 +399,43 @@ const calendarDate = ref(new Date())
 const calendarData = ref([])
 const taskItems = ref([])
 const sparePartItems = ref([])
+const showStatusHelp = ref(false)
 const sparePartOptions = ref([])
+
+const defaultColumns = {
+  planName: { label: '计划名称', visible: true },
+  equipmentName: { label: '关联设备', visible: true },
+  triggerType: { label: '触发类型', visible: true },
+  cycle: { label: '周期', visible: true },
+  estimatedHours: { label: '预估工时', visible: true },
+  advanceDays: { label: '提前天数', visible: true },
+  autoAssign: { label: '自动派工', visible: true },
+  lastExecuteTime: { label: '上次执行', visible: true },
+  nextExecuteTime: { label: '下次执行', visible: true },
+  status: { label: '状态', visible: true }
+}
+function loadColumnVisibility() {
+  try {
+    const saved = localStorage.getItem('dms_pmplan_columns')
+    if (saved) {
+      const parsed = JSON.parse(saved)
+      const result = {}
+      Object.keys(defaultColumns).forEach(key => {
+        result[key] = { label: defaultColumns[key].label, visible: parsed[key] !== undefined ? parsed[key] : defaultColumns[key].visible }
+      })
+      return result
+    }
+  } catch (e) {}
+  return { ...defaultColumns }
+}
+const columns = ref(loadColumnVisibility())
+const activeFilterCount = computed(() => {
+  let count = 0
+  if (queryParams.value.planName) count++
+  if (queryParams.value.triggerType) count++
+  return count
+})
+function triggerTypeLabel(val) { const item = dms_pm_trigger_type.value.find(d => d.value == val); return item ? item.label : '-' }
 
 const data = reactive({
   form: {},
@@ -300,7 +451,7 @@ const { queryParams, form, rules } = toRefs(data)
 
 function getList() {
   loading.value = true
-  listPmplan(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false })
+  listPmplan(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false; applySavedWidths() })
 }
 function getEquipmentOptions() {
   listEquipment({ pageNum: 1, pageSize: 9999 }).then(res => { equipmentOptions.value = res.rows })
@@ -362,7 +513,7 @@ function onRemoveEquipment() {
   form.value.assigneeName = undefined
 }
 function handleQuery() { queryParams.value.pageNum = 1; getList() }
-function resetQuery() { proxy.resetForm('queryRef'); handleQuery() }
+function resetQuery() { queryParams.value.planName = undefined; queryParams.value.triggerType = undefined; proxy.resetForm('queryRef'); handleQuery() }
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.planId); single.value = selection.length !== 1; multiple.value = !selection.length }
 
 /** 任务清单JSON与数组互转 */
@@ -499,10 +650,139 @@ getList()
 </script>
 
 <style scoped>
+/* ===== Design Tokens ===== */
+.dms-pmplan-page {
+  padding-top: 10px;
+  --brand-50:#eef2ff; --brand-100:#e0e7ff; --brand-200:#c7d2fe; --brand-500:#6366f1; --brand-600:#4f46e5; --brand-700:#4338ca;
+  --ink-900:#0f172a; --ink-700:#334155; --ink-500:#64748b; --ink-400:#94a3b8; --ink-300:#cbd5e1; --ink-200:#e2e8f0; --ink-100:#f1f5f9; --ink-50:#f8fafc;
+  --amber-50:#fffbeb; --amber-500:#f59e0b; --amber-700:#b45309;
+  --blue-50:#eff6ff; --blue-500:#3b82f6; --blue-700:#1d4ed8;
+  --green-50:#ecfdf5; --green-500:#10b981; --green-700:#047857;
+  --red-50:#fef2f2; --red-500:#ef4444; --red-700:#b91c1c;
+  --violet-50:#f5f3ff;
+  --r-sm:6px; --r-md:10px; --r-lg:14px;
+  --shadow-card:0 1px 0 rgba(15,23,42,.04), 0 1px 2px rgba(15,23,42,.04);
+  --ease-out:cubic-bezier(.16,.84,.44,1);
+  font-feature-settings:"tnum" 1;
+  color: var(--ink-900);
+}
+.dms-pmplan-page .surface { background:#fff; border:1px solid var(--ink-200); border-radius:var(--r-lg); box-shadow:var(--shadow-card); overflow:hidden; margin-bottom:8px; }
+.dms-pmplan-page .filter-card { padding:14px 20px 16px; }
+.dms-pmplan-page .filter-card .filter-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+.dms-pmplan-page .filter-card .filter-title { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--ink-700); }
+.dms-pmplan-page .filter-card .filter-title .glyph { width:4px; height:14px; background:var(--brand-600); border-radius:2px; }
+.dms-pmplan-page .filter-card .filter-bar { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px 16px; }
+.dms-pmplan-page .filter-card .filter-actions { display:flex; align-items:center; justify-content:space-between; margin-top:14px; padding-top:14px; border-top:1px dashed var(--ink-200); }
+.dms-pmplan-page .filter-card .filter-info { font-size:13px; color:var(--ink-500); display:flex; align-items:center; gap:6px; }
+.dms-pmplan-page .filter-card .filter-buttons { display:flex; gap:8px; }
+.dms-pmplan-page .field { display:flex; flex-direction:column; gap:6px; }
+.dms-pmplan-page .field label { font-size:14px; font-weight:500; color:var(--ink-700); display:flex; align-items:center; gap:6px; }
+.dms-pmplan-page .field .control { display:flex; align-items:center; height:36px; padding:0 12px; background:#fff; border:1px solid var(--ink-200); border-radius:var(--r-sm); transition:border-color .15s var(--ease-out), box-shadow .15s var(--ease-out); }
+.dms-pmplan-page .field .control:focus-within { border-color:var(--brand-500); box-shadow:0 0 0 3px rgba(99,102,241,.15); }
+.dms-pmplan-page .field .control :deep(.el-input__wrapper) { box-shadow:none !important; background:transparent !important; padding:0; height:34px; }
+.dms-pmplan-page .field .control :deep(.el-input__inner) { border:0; background:transparent; font-size:14px; color:var(--ink-900); height:34px; line-height:34px; }
+.dms-pmplan-page .field .control :deep(.el-input__inner::placeholder) { color:var(--ink-400); }
+.dms-pmplan-page .field .control :deep(.el-input__prefix) { color:var(--ink-400); margin-right:4px; }
+.dms-pmplan-page .field .control :deep(.el-input__prefix .el-icon) { font-size:14px; }
+.dms-pmplan-page .field .control :deep(.el-select) { width:100%; }
+.dms-pmplan-page .field .control :deep(.el-select .el-select__wrapper) { box-shadow:none !important; background:transparent !important; padding:0; min-height:34px; height:34px; }
+.dms-pmplan-page .field .control :deep(.el-select .el-select__wrapper .el-select__placeholder) { font-size:14px; color:var(--ink-900); }
+.dms-pmplan-page .field .control :deep(.el-select .el-select__wrapper.is-focused) { box-shadow:none !important; }
+.dms-pmplan-page .toolbar { display:flex; align-items:center; justify-content:space-between; padding:12px 20px; border-bottom:1px solid var(--ink-200); background:var(--ink-50); }
+.dms-pmplan-page .toolbar .left { display:flex; gap:8px; align-items:center; }
+.dms-pmplan-page .toolbar .right { display:flex; gap:8px; align-items:center; }
+.dms-pmplan-page .toolbar-divider { width:1px; height:18px; background:var(--ink-200); margin:0 4px; }
+.dms-pmplan-page .btn-soft { display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 12px; font-size:14px; font-weight:500; border-radius:var(--r-sm); border:1px solid transparent; cursor:pointer; user-select:none; transition:all .15s var(--ease-out); }
+.dms-pmplan-page .btn-soft .el-icon { font-size:14px; }
+.dms-pmplan-page .btn-soft.is-outline { background:#fff; color:var(--ink-700); border-color:var(--ink-200); }
+.dms-pmplan-page .btn-soft.is-outline:hover { background:var(--ink-50); border-color:var(--ink-300); color:var(--ink-900); }
+.dms-pmplan-page .btn-soft.is-danger-outline { background:#fff; color:var(--red-700); border-color:#fecaca; }
+.dms-pmplan-page .btn-soft.is-danger-outline:hover { background:var(--red-50); border-color:var(--red-500); }
+.dms-pmplan-page .btn-soft:disabled { opacity:.5; cursor:not-allowed; }
+.dms-pmplan-page .btn-soft:disabled:hover { transform:none; box-shadow:none; }
+.dms-pmplan-page .btn-soft:focus-visible { outline:2px solid var(--brand-500); outline-offset:2px; }
+.dms-pmplan-page .table-wrap { overflow-x:auto; }
+.dms-pmplan-page .app-table { --el-table-bg-color:#fff; --el-table-header-bg-color:var(--ink-50); --el-table-row-hover-bg-color:#fafbff; --el-table-border-color:transparent; --el-table-text-color:var(--ink-700); --el-table-header-text-color:var(--ink-500); }
+.dms-pmplan-page .app-table :deep(.el-table__body td) { border-right-color:transparent !important; }
+.dms-pmplan-page .app-table :deep(.el-table__header th) { border-right-color:transparent !important; }
+.dms-pmplan-page .app-table :deep(.el-table__header th:hover) { border-right-color:var(--ink-200) !important; }
+.dms-pmplan-page .app-table :deep(.el-table__header th) { background:var(--ink-50) !important; color:var(--ink-500); font-weight:600; font-size:14px; letter-spacing:.02em; padding:12px 16px; border-bottom:1px solid var(--ink-200); }
+.dms-pmplan-page .app-table :deep(.el-table__header th .cell) { text-transform:uppercase; }
+.dms-pmplan-page .app-table :deep(.el-table__body td) { padding:14px 16px; border-bottom:1px solid var(--ink-100); color:var(--ink-700); }
+.dms-pmplan-page .app-table :deep(.el-table__row:hover > td) { background:#fafbff !important; }
+.dms-pmplan-page .app-table :deep(.el-table__inner-wrapper::before) { display:none; }
+.dms-pmplan-page .app-table :deep(.el-table__border-left-patch) { display:none; }
+.dms-pmplan-page .badge { display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:999px; font-size:13px; font-weight:600; line-height:1; border:1px solid transparent; }
+.dms-pmplan-page .badge .dot { width:6px; height:6px; border-radius:50%; }
+.dms-pmplan-page .badge.violet { background:var(--violet-50); color:var(--brand-700); border-color:var(--brand-200); }
+.dms-pmplan-page .badge.violet .dot { background:var(--brand-500); }
+.dms-pmplan-page .badge.green { background:var(--green-50); color:var(--green-700); border-color:#a7f3d0; }
+.dms-pmplan-page .badge.green .dot { background:var(--green-500); }
+.dms-pmplan-page .badge.gray { background:var(--ink-100); color:var(--ink-500); border-color:var(--ink-200); }
+.dms-pmplan-page .badge.gray .dot { background:var(--ink-400); }
+.dms-pmplan-page .pagination-container { display:flex; align-items:center; justify-content:flex-end; padding:14px 20px; font-size:14px; color:var(--ink-500); background:#fff; border-top:1px solid transparent; }
+.dms-pmplan-page .pagination-container :deep(.el-pagination) { justify-content:flex-end; }
+.dms-pmplan-page .pagination-container :deep(.el-pagination .el-pager li) { border-radius:6px; border:1px solid var(--ink-200); background:#fff; min-width:32px; height:32px; line-height:32px; font-size:14px; color:var(--ink-700); margin:0 2px; }
+.dms-pmplan-page .pagination-container :deep(.el-pagination .el-pager li.is-active) { background:var(--brand-600); border-color:var(--brand-600); color:#fff; font-weight:600; box-shadow:0 4px 10px -2px rgba(79,70,229,.4); }
+.dms-pmplan-page .pagination-container :deep(.el-pagination .btn-prev), .dms-pmplan-page .pagination-container :deep(.el-pagination .btn-next) { border-radius:6px; border:1px solid var(--ink-200); background:#fff; min-width:32px; height:32px; }
+.dms-pmplan-page .pagination-container :deep(.el-pagination .btn-prev:hover), .dms-pmplan-page .pagination-container :deep(.el-pagination .btn-next:hover) { border-color:var(--brand-200); color:var(--brand-700); }
+.dms-pmplan-page .pagination-container :deep(.el-pagination .el-pagination__sizes .el-select__wrapper) { border-radius:6px; box-shadow:0 0 0 1px var(--ink-200) inset; }
+@media (max-width:1100px) { .dms-pmplan-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }
+@media (max-width:720px) { .dms-pmplan-page .filter-card .filter-bar { grid-template-columns:1fr; } .dms-pmplan-page .toolbar { flex-wrap:wrap; gap:10px; } }
+
 .is-selected {
   color: #1989fa;
   font-weight: bold;
 }
+.status-help-content {
+  max-height: 500px;
+  overflow-y: auto;
+  padding-right: 10px;
+}
+.status-help-content h4 {
+  margin: 20px 0 12px 0;
+  color: #303133;
+  font-weight: 600;
+  border-left: 4px solid #409eff;
+  padding-left: 10px;
+}
+.status-help-content h4:first-child {
+  margin-top: 0;
+}
+.status-help-content .status-flow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 16px;
+  background-color: #f5f7fa;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+.status-help-content .flow-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.status-help-content .flow-arrow {
+  color: #909399;
+  font-size: 16px;
+}
+.highlight-card {
+  border-radius: 8px;
+  padding: 16px;
+  border: 1px solid;
+}
+.highlight-success { background-color: #f0f9ff; border-color: #b3e19d; }
+.highlight-danger { background-color: #fef0f0; border-color: #fbc4c4; }
+.highlight-primary { background-color: #ecf5ff; border-color: #a0cfff; }
+.highlight-warning { background-color: #fdf6ec; border-color: #f5dab1; }
+.highlight-card-title { font-size: 14px; font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; }
+.highlight-success .highlight-card-title { color: #67c23a; }
+.highlight-danger .highlight-card-title { color: #f56c6c; }
+.highlight-primary .highlight-card-title { color: #409eff; }
+.highlight-warning .highlight-card-title { color: #e6a23c; }
+.highlight-card-body { font-size: 13px; color: #606266; line-height: 1.6; }
 </style>
 
 <style scoped>

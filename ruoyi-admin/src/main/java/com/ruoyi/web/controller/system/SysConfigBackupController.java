@@ -440,6 +440,7 @@ public class SysConfigBackupController extends BaseController
                 role.setRoleName(roleName);
                 role.setRoleKey(roleKey);
                 role.setRoleSort(getIntValue(item, "roleSort", 0));
+                role.setRoleCategory((String) item.get("roleCategory"));
                 role.setDataScope((String) item.get("dataScope"));
                 role.setMenuCheckStrictly(getBooleanValue(item, "menuCheckStrictly", false));
                 role.setDeptCheckStrictly(getBooleanValue(item, "deptCheckStrictly", false));

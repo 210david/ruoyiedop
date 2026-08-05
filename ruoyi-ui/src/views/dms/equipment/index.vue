@@ -1,66 +1,115 @@
 <template>
-  <div class="app-container">
-    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch">
-      <el-form-item label="设备编号" prop="equipmentCode">
-        <el-input v-model="queryParams.equipmentCode" placeholder="请输入" clearable style="width: 160px" @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="设备名称" prop="equipmentName">
-        <el-input v-model="queryParams.equipmentName" placeholder="请输入" clearable style="width: 160px" @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="设备状态" prop="equipmentStatus">
-        <el-select v-model="queryParams.equipmentStatus" placeholder="全部" clearable style="width: 120px">
-          <el-option v-for="d in dms_equipment_status" :key="d.value" :label="d.label" :value="d.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="设备等级" prop="equipmentLevel">
-        <el-select v-model="queryParams.equipmentLevel" placeholder="全部" clearable style="width: 120px">
-          <el-option v-for="d in dms_equipment_level" :key="d.value" :label="d.label" :value="d.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-        <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-      </el-form-item>
-    </el-form>
+  <div class="app-container dms-equipment-page">
+    <!-- ===== Filter Card ===== -->
+    <div class="surface filter-card" v-show="showSearch">
+      <div class="filter-head">
+        <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+      </div>
+      <div class="filter-bar">
+        <div class="field">
+          <label>设备编号</label>
+          <div class="control">
+            <el-input v-model="queryParams.equipmentCode" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field">
+          <label>设备名称</label>
+          <div class="control">
+            <el-input v-model="queryParams.equipmentName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field">
+          <label>设备状态</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.equipmentStatus" placeholder="全部" clearable @change="handleQuery">
+              <el-option v-for="d in dms_equipment_status" :key="d.value" :label="d.label" :value="d.value" />
+            </el-select>
+          </div>
+        </div>
+        <div class="field">
+          <label>设备等级</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.equipmentLevel" placeholder="全部" clearable @change="handleQuery">
+              <el-option v-for="d in dms_equipment_level" :key="d.value" :label="d.label" :value="d.value" />
+            </el-select>
+          </div>
+        </div>
+      </div>
+      <div class="filter-actions">
+        <div class="filter-info">
+          <el-icon><Filter /></el-icon> 已选 {{ activeFilterCount }} 个条件，支持回车快速搜索
+        </div>
+        <div class="filter-buttons">
+          <el-button icon="RefreshLeft" @click="resetQuery">重置</el-button>
+          <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+        </div>
+      </div>
+    </div>
 
-    <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5"><el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['dms:equipment:add']">新增</el-button></el-col>
-      <el-col :span="1.5"><el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['dms:equipment:edit']">修改</el-button></el-col>
-      <el-col :span="1.5"><el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['dms:equipment:remove']">删除</el-button></el-col>
-      <el-col :span="1.5"><el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['dms:equipment:export']">导出</el-button></el-col>
-      <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
-    </el-row>
-
-    <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
-      <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="设备编号" prop="equipmentCode" :width="colWidth('equipmentCode', 130)" resizable />
-      <el-table-column label="资产编号" prop="assetCode" :width="colWidth('assetCode', 130)" resizable />
-      <el-table-column label="设备名称" prop="equipmentName" show-overflow-tooltip />
-      <el-table-column label="分类" prop="categoryName" :width="colWidth('categoryName', 120)" resizable />
-      <el-table-column label="型号" prop="model" :width="colWidth('model', 120)" resizable />
-      <el-table-column label="设备等级" prop="equipmentLevel" :width="colWidth('equipmentLevel', 90)" resizable align="center">
-        <template #default="scope">
-          <dict-tag :options="dms_equipment_level" :value="scope.row.equipmentLevel" />
-        </template>
-      </el-table-column>
-      <el-table-column label="使用部门" prop="deptName" :width="colWidth('deptName', 120)" resizable />
-      <el-table-column label="安装位置" prop="installLocation" :width="colWidth('installLocation', 120)" resizable show-overflow-tooltip />
-      <el-table-column label="责任人" prop="responsibleName" :width="colWidth('responsibleName', 80)" resizable />
-      <el-table-column label="设备状态" prop="equipmentStatus" :width="colWidth('equipmentStatus', 90)" resizable align="center">
-        <template #default="scope">
-          <dict-tag :options="dms_equipment_status" :value="scope.row.equipmentStatus" />
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" width="260" align="center" fixed="right">
-        <template #default="scope">
-          <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['dms:equipment:query']">查看</el-button>
-          <el-button link type="primary" @click="handleScreen(scope.row)" v-hasPermi="['dms:equipment:query']">大屏</el-button>
-          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['dms:equipment:edit']">修改</el-button>
-          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['dms:equipment:remove']">删除</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
-    <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+    <!-- ===== Table Section ===== -->
+    <div class="surface">
+      <div class="toolbar">
+        <div class="left">
+          <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['dms:equipment:add']">新增</el-button>
+          <button type="button" class="btn-soft is-outline" :disabled="single" @click="handleUpdate" v-hasPermi="['dms:equipment:edit']">
+            <el-icon><Edit /></el-icon> 修改
+          </button>
+          <button type="button" class="btn-soft is-danger-outline" :disabled="multiple" @click="handleDelete" v-hasPermi="['dms:equipment:remove']">
+            <el-icon><Delete /></el-icon> 删除
+          </button>
+          <div class="toolbar-divider"></div>
+          <button type="button" class="btn-soft is-outline" @click="handleExport" v-hasPermi="['dms:equipment:export']">
+            <el-icon><Download /></el-icon> 导出
+          </button>
+          <button type="button" class="btn-soft is-outline" @click="handleImport" v-hasPermi="['dms:equipment:import']">
+            <el-icon><Upload /></el-icon> 导入
+          </button>
+        </div>
+        <div class="right">
+          <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="dms_equipment_columns" />
+        </div>
+      </div>
+      <div class="table-wrap">
+        <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" class="app-table">
+          <el-table-column type="selection" width="55" align="center" />
+          <el-table-column label="设备编号" prop="equipmentCode" key="equipmentCode" :width="colWidth('equipmentCode', 130)" resizable v-if="columns.equipmentCode.visible">
+            <template #default="scope"><span class="col-mono">{{ scope.row.equipmentCode }}</span></template>
+          </el-table-column>
+          <el-table-column label="资产编号" prop="assetCode" key="assetCode" :width="colWidth('assetCode', 130)" resizable v-if="columns.assetCode.visible">
+            <template #default="scope"><span class="col-mono">{{ scope.row.assetCode }}</span></template>
+          </el-table-column>
+          <el-table-column label="设备名称" prop="equipmentName" key="equipmentName" :width="colWidth('equipmentName', 200)" resizable show-overflow-tooltip v-if="columns.equipmentName.visible" />
+          <el-table-column label="分类" prop="categoryName" key="categoryName" :width="colWidth('categoryName', 120)" resizable v-if="columns.categoryName.visible" />
+          <el-table-column label="型号" prop="model" key="model" :width="colWidth('model', 120)" resizable v-if="columns.model.visible" />
+          <el-table-column label="设备等级" prop="equipmentLevel" key="equipmentLevel" :width="colWidth('equipmentLevel', 100)" resizable align="center" v-if="columns.equipmentLevel.visible">
+            <template #default="scope">
+              <span class="badge blue">{{ equipmentLevelLabel(scope.row.equipmentLevel) }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="使用部门" prop="deptName" key="deptName" :width="colWidth('deptName', 120)" resizable v-if="columns.deptName.visible" />
+          <el-table-column label="安装位置" prop="installLocation" key="installLocation" :width="colWidth('installLocation', 120)" resizable show-overflow-tooltip v-if="columns.installLocation.visible" />
+          <el-table-column label="责任人" prop="responsibleName" key="responsibleName" :width="colWidth('responsibleName', 100)" resizable v-if="columns.responsibleName.visible" />
+          <el-table-column label="设备状态" prop="equipmentStatus" key="equipmentStatus" :width="colWidth('equipmentStatus', 100)" resizable align="center" v-if="columns.equipmentStatus.visible">
+            <template #default="scope">
+              <span class="badge" :class="scope.row.equipmentStatus === '0' ? 'green' : 'gray'"><span class="dot"></span>{{ equipmentStatusLabel(scope.row.equipmentStatus) }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="260" align="center" fixed="right">
+            <template #default="scope">
+              <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['dms:equipment:query']">查看</el-button>
+              <el-button link type="primary" @click="handleScreen(scope.row)" v-hasPermi="['dms:equipment:query']">大屏</el-button>
+              <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['dms:equipment:edit']">修改</el-button>
+              <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['dms:equipment:remove']">删除</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+      <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+    </div>
 
     <el-dialog v-model="open" width="800px" append-to-body draggable class="rd-dialog">
       <template #header>
@@ -209,6 +258,20 @@
     <!-- 设备详情弹窗 -->
     <dms-equipment-view-drawer ref="equipmentViewRef" />
 
+    <!-- ===== 导入对话框 ===== -->
+    <excel-import-dialog
+      ref="importRef"
+      title="设备台账导入"
+      action="/dms/equipment/importData"
+      template-action="/dms/equipment/importTemplate"
+      template-file-name="equipment_template"
+      update-support-label="是否更新已经存在的设备数据"
+      :tips="importTips"
+      :update-key-options="updateKeyOptions"
+      default-update-key="equipmentName"
+      @success="getList"
+    />
+
     <!-- 责任人选择弹窗 -->
     <user-picker ref="userPickerRef" title="选择设备责任人" @confirm="onUserPickerConfirm" />
 
@@ -223,8 +286,10 @@ import { listCategory } from '@/api/dms/category'
 import DmsEquipmentViewDrawer from './view.vue'
 import UserPicker from '@/components/UserPicker/index.vue'
 import DeptPicker from '@/components/DeptPicker/index.vue'
+import ExcelImportDialog from '@/components/ExcelImportDialog/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
+import { Search, Filter, RefreshLeft, Edit, Delete, Download, Upload } from '@element-plus/icons-vue'
 const { collapsedCards, toggleCard } = useDetailCard(["c4","c3","c2","c1","c0"])
 
 const { proxy } = getCurrentInstance()
@@ -241,6 +306,60 @@ const single = ref(true)
 const multiple = ref(true)
 const total = ref(0)
 const title = ref('')
+
+const defaultColumns = {
+  equipmentCode: { label: '设备编号', visible: true },
+  assetCode: { label: '资产编号', visible: true },
+  equipmentName: { label: '设备名称', visible: true },
+  categoryName: { label: '分类', visible: true },
+  model: { label: '型号', visible: true },
+  equipmentLevel: { label: '设备等级', visible: true },
+  deptName: { label: '使用部门', visible: true },
+  installLocation: { label: '安装位置', visible: true },
+  responsibleName: { label: '责任人', visible: true },
+  equipmentStatus: { label: '设备状态', visible: true }
+}
+function loadColumnVisibility() {
+  try {
+    const saved = localStorage.getItem('dms_equipment_columns')
+    if (saved) {
+      const parsed = JSON.parse(saved)
+      const result = {}
+      Object.keys(defaultColumns).forEach(key => {
+        result[key] = { label: defaultColumns[key].label, visible: parsed[key] !== undefined ? parsed[key] : defaultColumns[key].visible }
+      })
+      return result
+    }
+  } catch (e) {}
+  return { ...defaultColumns }
+}
+const columns = ref(loadColumnVisibility())
+const activeFilterCount = computed(() => {
+  let count = 0
+  if (queryParams.value.equipmentCode) count++
+  if (queryParams.value.equipmentName) count++
+  if (queryParams.value.equipmentStatus) count++
+  if (queryParams.value.equipmentLevel) count++
+  return count
+})
+function equipmentLevelLabel(val) { const item = dms_equipment_level.value.find(d => d.value == val); return item ? item.label : '-' }
+function equipmentStatusLabel(val) { const item = dms_equipment_status.value.find(d => d.value == val); return item ? item.label : '-' }
+
+// ===== 导入功能配置 =====
+const importTips = [
+  '设备名称为必填字段，不能为空',
+  '设备编号由系统自动生成，无需填写',
+  '设备状态填：运行/空闲/维修/故障/报废（或留空，默认为运行）',
+  '设备等级、设备状态等字典字段请参考系统中已有数据填写',
+  '如勾选「更新已存在数据」，需选择匹配字段：按设备名称、设备编号、资产编号或序列号匹配',
+  '导入结果将显示每条数据的处理情况，失败数据可修正后重新导入'
+]
+const updateKeyOptions = [
+  { value: 'equipmentName', label: '设备名称' },
+  { value: 'equipmentCode', label: '设备编号' },
+  { value: 'assetCode', label: '资产编号' },
+  { value: 'serialNumber', label: '序列号' }
+]
 const data = reactive({
   form: {},
   queryParams: { pageNum: 1, pageSize: 10, equipmentCode: undefined, equipmentName: undefined, equipmentStatus: undefined, equipmentLevel: undefined },
@@ -252,7 +371,7 @@ const { queryParams, form, rules } = toRefs(data)
 
 function getList() {
   loading.value = true
-  listEquipment(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false })
+  listEquipment(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false; applySavedWidths() })
 }
 function getCategoryTree() {
   listCategory().then(res => { categoryOptions.value = proxy.handleTree(res.data, 'categoryId') })
@@ -290,7 +409,7 @@ function clearDept() {
   form.value.deptName = undefined
 }
 function handleQuery() { queryParams.value.pageNum = 1; getList() }
-function resetQuery() { proxy.resetForm('queryRef'); handleQuery() }
+function resetQuery() { queryParams.value.equipmentCode = undefined; queryParams.value.equipmentName = undefined; queryParams.value.equipmentStatus = undefined; queryParams.value.equipmentLevel = undefined; proxy.resetForm('queryRef'); handleQuery() }
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.equipmentId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function reset() {
   form.value = {
@@ -318,6 +437,9 @@ function submitForm() {
 }
 function handleDelete(row) { const equipmentIds = row.equipmentId || ids.value; proxy.$modal.confirm('确认删除编号为"' + equipmentIds + '"的数据？').then(() => delEquipment(equipmentIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
 function handleExport() { proxy.download('dms/equipment/export', { ...queryParams.value }, `equipment_${new Date().getTime()}.xlsx`) }
+function handleImport() {
+  proxy.$refs['importRef'].open()
+}
 function cancel() { open.value = false; reset() }
 /** 查看设备详情 */
 function handleView(row) {
@@ -333,15 +455,107 @@ getList()
 </script>
 
 <style scoped>
-.clear-icon {
-  cursor: pointer;
-  color: #c0c4cc;
-  font-size: 14px;
+/* ===== Design Tokens ===== */
+.dms-equipment-page {
+  padding-top: 10px;
+  --brand-50:#eef2ff; --brand-100:#e0e7ff; --brand-200:#c7d2fe; --brand-500:#6366f1; --brand-600:#4f46e5; --brand-700:#4338ca;
+  --ink-900:#0f172a; --ink-700:#334155; --ink-500:#64748b; --ink-400:#94a3b8; --ink-300:#cbd5e1; --ink-200:#e2e8f0; --ink-100:#f1f5f9; --ink-50:#f8fafc;
+  --amber-50:#fffbeb; --amber-500:#f59e0b; --amber-700:#b45309;
+  --blue-50:#eff6ff; --blue-500:#3b82f6; --blue-700:#1d4ed8;
+  --green-50:#ecfdf5; --green-500:#10b981; --green-700:#047857;
+  --red-50:#fef2f2; --red-500:#ef4444; --red-700:#b91c1c;
+  --violet-50:#f5f3ff;
+  --r-sm:6px; --r-md:10px; --r-lg:14px;
+  --shadow-card:0 1px 0 rgba(15,23,42,.04), 0 1px 2px rgba(15,23,42,.04);
+  --ease-out:cubic-bezier(.16,.84,.44,1);
+  font-feature-settings:"tnum" 1;
+  color: var(--ink-900);
 }
-.clear-icon:hover {
-  color: #909399;
-}
-:deep(.el-input.is-disabled .el-input__inner) {
-  cursor: pointer;
-}
+
+/* ===== Surface Card ===== */
+.dms-equipment-page .surface { background:#fff; border:1px solid var(--ink-200); border-radius:var(--r-lg); box-shadow:var(--shadow-card); overflow:hidden; margin-bottom:8px; }
+
+/* ===== Filter Card ===== */
+.dms-equipment-page .filter-card { padding:14px 20px 16px; }
+.dms-equipment-page .filter-card .filter-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+.dms-equipment-page .filter-card .filter-title { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--ink-700); }
+.dms-equipment-page .filter-card .filter-title .glyph { width:4px; height:14px; background:var(--brand-600); border-radius:2px; }
+.dms-equipment-page .filter-card .filter-bar { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px 16px; }
+.dms-equipment-page .filter-card .filter-actions { display:flex; align-items:center; justify-content:space-between; margin-top:14px; padding-top:14px; border-top:1px dashed var(--ink-200); }
+.dms-equipment-page .filter-card .filter-info { font-size:13px; color:var(--ink-500); display:flex; align-items:center; gap:6px; }
+.dms-equipment-page .filter-card .filter-buttons { display:flex; gap:8px; }
+
+/* ===== Field / Control ===== */
+.dms-equipment-page .field { display:flex; flex-direction:column; gap:6px; }
+.dms-equipment-page .field label { font-size:14px; font-weight:500; color:var(--ink-700); display:flex; align-items:center; gap:6px; }
+.dms-equipment-page .field .control { display:flex; align-items:center; height:36px; padding:0 12px; background:#fff; border:1px solid var(--ink-200); border-radius:var(--r-sm); transition:border-color .15s var(--ease-out), box-shadow .15s var(--ease-out); }
+.dms-equipment-page .field .control:focus-within { border-color:var(--brand-500); box-shadow:0 0 0 3px rgba(99,102,241,.15); }
+/* el-input transparent inside .control */
+.dms-equipment-page .field .control :deep(.el-input__wrapper) { box-shadow:none !important; background:transparent !important; padding:0; height:34px; }
+.dms-equipment-page .field .control :deep(.el-input__inner) { border:0; background:transparent; font-size:14px; color:var(--ink-900); height:34px; line-height:34px; }
+.dms-equipment-page .field .control :deep(.el-input__inner::placeholder) { color:var(--ink-400); }
+.dms-equipment-page .field .control :deep(.el-input__prefix) { color:var(--ink-400); margin-right:4px; }
+.dms-equipment-page .field .control :deep(.el-input__prefix .el-icon) { font-size:14px; }
+/* el-select transparent inside .control */
+.dms-equipment-page .field .control :deep(.el-select) { width:100%; }
+.dms-equipment-page .field .control :deep(.el-select .el-select__wrapper) { box-shadow:none !important; background:transparent !important; padding:0; min-height:34px; height:34px; }
+.dms-equipment-page .field .control :deep(.el-select .el-select__wrapper .el-select__placeholder) { font-size:14px; color:var(--ink-900); }
+.dms-equipment-page .field .control :deep(.el-select .el-select__wrapper.is-focused) { box-shadow:none !important; }
+
+/* ===== Toolbar ===== */
+.dms-equipment-page .toolbar { display:flex; align-items:center; justify-content:space-between; padding:12px 20px; border-bottom:1px solid var(--ink-200); background:var(--ink-50); }
+.dms-equipment-page .toolbar .left { display:flex; gap:8px; align-items:center; }
+.dms-equipment-page .toolbar .right { display:flex; gap:8px; align-items:center; }
+.dms-equipment-page .toolbar-divider { width:1px; height:18px; background:var(--ink-200); margin:0 4px; }
+.dms-equipment-page .btn-soft { display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 12px; font-size:14px; font-weight:500; border-radius:var(--r-sm); border:1px solid transparent; cursor:pointer; user-select:none; transition:all .15s var(--ease-out); }
+.dms-equipment-page .btn-soft .el-icon { font-size:14px; }
+.dms-equipment-page .btn-soft.is-outline { background:#fff; color:var(--ink-700); border-color:var(--ink-200); }
+.dms-equipment-page .btn-soft.is-outline:hover { background:var(--ink-50); border-color:var(--ink-300); color:var(--ink-900); }
+.dms-equipment-page .btn-soft.is-danger-outline { background:#fff; color:var(--red-700); border-color:#fecaca; }
+.dms-equipment-page .btn-soft.is-danger-outline:hover { background:var(--red-50); border-color:var(--red-500); }
+.dms-equipment-page .btn-soft:disabled { opacity:.5; cursor:not-allowed; }
+.dms-equipment-page .btn-soft:disabled:hover { transform:none; box-shadow:none; }
+.dms-equipment-page .btn-soft:focus-visible { outline:2px solid var(--brand-500); outline-offset:2px; }
+
+/* ===== Table ===== */
+.dms-equipment-page .table-wrap { overflow-x:auto; }
+.dms-equipment-page .app-table { --el-table-bg-color:#fff; --el-table-header-bg-color:var(--ink-50); --el-table-row-hover-bg-color:#fafbff; --el-table-border-color:transparent; --el-table-text-color:var(--ink-700); --el-table-header-text-color:var(--ink-500); }
+.dms-equipment-page .app-table :deep(.el-table__body td) { border-right-color:transparent !important; }
+.dms-equipment-page .app-table :deep(.el-table__header th) { border-right-color:transparent !important; }
+.dms-equipment-page .app-table :deep(.el-table__header th:hover) { border-right-color:var(--ink-200) !important; }
+.dms-equipment-page .app-table :deep(.el-table__header th) { background:var(--ink-50) !important; color:var(--ink-500); font-weight:600; font-size:14px; letter-spacing:.02em; padding:12px 16px; border-bottom:1px solid var(--ink-200); }
+.dms-equipment-page .app-table :deep(.el-table__header th .cell) { text-transform:uppercase; }
+.dms-equipment-page .app-table :deep(.el-table__body td) { padding:14px 16px; border-bottom:1px solid var(--ink-100); color:var(--ink-700); }
+.dms-equipment-page .app-table :deep(.el-table__row:hover > td) { background:#fafbff !important; }
+.dms-equipment-page .app-table :deep(.el-table__inner-wrapper::before) { display:none; }
+.dms-equipment-page .app-table :deep(.el-table__border-left-patch) { display:none; }
+.dms-equipment-page .app-table .col-mono { font-family:ui-monospace,"JetBrains Mono","SF Mono",Menlo,monospace; font-size:14px; color:var(--ink-700); letter-spacing:-.01em; }
+
+/* ===== Badge ===== */
+.dms-equipment-page .badge { display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:999px; font-size:13px; font-weight:600; line-height:1; border:1px solid transparent; }
+.dms-equipment-page .badge .dot { width:6px; height:6px; border-radius:50%; }
+.dms-equipment-page .badge.blue { background:var(--blue-50); color:var(--blue-700); border-color:#bfdbfe; }
+.dms-equipment-page .badge.blue .dot { background:var(--blue-500); }
+.dms-equipment-page .badge.green { background:var(--green-50); color:var(--green-700); border-color:#a7f3d0; }
+.dms-equipment-page .badge.green .dot { background:var(--green-500); }
+.dms-equipment-page .badge.gray { background:var(--ink-100); color:var(--ink-500); border-color:var(--ink-200); }
+.dms-equipment-page .badge.gray .dot { background:var(--ink-400); }
+
+/* ===== Pagination ===== */
+.dms-equipment-page .pagination-container { display:flex; align-items:center; justify-content:flex-end; padding:14px 20px; font-size:14px; color:var(--ink-500); background:#fff; border-top:1px solid transparent; }
+.dms-equipment-page .pagination-container :deep(.el-pagination) { justify-content:flex-end; }
+.dms-equipment-page .pagination-container :deep(.el-pagination .el-pager li) { border-radius:6px; border:1px solid var(--ink-200); background:#fff; min-width:32px; height:32px; line-height:32px; font-size:14px; color:var(--ink-700); margin:0 2px; }
+.dms-equipment-page .pagination-container :deep(.el-pagination .el-pager li.is-active) { background:var(--brand-600); border-color:var(--brand-600); color:#fff; font-weight:600; box-shadow:0 4px 10px -2px rgba(79,70,229,.4); }
+.dms-equipment-page .pagination-container :deep(.el-pagination .btn-prev), .dms-equipment-page .pagination-container :deep(.el-pagination .btn-next) { border-radius:6px; border:1px solid var(--ink-200); background:#fff; min-width:32px; height:32px; }
+.dms-equipment-page .pagination-container :deep(.el-pagination .btn-prev:hover), .dms-equipment-page .pagination-container :deep(.el-pagination .btn-next:hover) { border-color:var(--brand-200); color:var(--brand-700); }
+.dms-equipment-page .pagination-container :deep(.el-pagination .el-pagination__sizes .el-select__wrapper) { border-radius:6px; box-shadow:0 0 0 1px var(--ink-200) inset; }
+
+/* ===== Dialog (existing) ===== */
+.dms-equipment-page .clear-icon { cursor:pointer; color:#c0c4cc; font-size:14px; }
+.dms-equipment-page .clear-icon:hover { color:#909399; }
+.dms-equipment-page :deep(.el-input.is-disabled .el-input__inner) { cursor:pointer; }
+
+/* ===== Responsive ===== */
+@media (max-width:1100px) { .dms-equipment-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }
+@media (max-width:720px) { .dms-equipment-page .filter-card .filter-bar { grid-template-columns:1fr; } .dms-equipment-page .toolbar { flex-wrap:wrap; gap:10px; } }
 </style>

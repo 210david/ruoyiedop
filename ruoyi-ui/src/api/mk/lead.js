@@ -1,8 +1,8 @@
 import request from '@/utils/request'
 
 // 查询线索列表
-export function listLead(query) {
-  return request({ url: '/mk/lead/list', method: 'get', params: query })
+export function listLead(query, config = {}) {
+return request({ url: '/mk/lead/list', method: 'get', params: query, ...config })
 }
 
 // 查询线索详细

@@ -72,7 +72,7 @@ public class MkPaymentRecord extends BaseEntity
     private Integer periodNo;
 
     /** 备注（显式声明，确保 MyBatis 正确映射） */
-    @Excel(name = "备注")
+    @Excel(name = "备注", sort = Integer.MAX_VALUE)
     private String remark;
 
     public Long getRecordId() { return recordId; }

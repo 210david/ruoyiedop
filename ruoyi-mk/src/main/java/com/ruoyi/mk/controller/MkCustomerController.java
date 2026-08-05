@@ -61,19 +61,21 @@ public class MkCustomerController extends BaseController
     @Log(title = "企业客户", businessType = BusinessType.IMPORT)
     @PreAuthorize("@ss.hasPermi('marketing:customer:import')")
     @PostMapping("/importData")
-    public AjaxResult importData(MultipartFile file, boolean updateSupport) throws Exception
+    public AjaxResult importData(MultipartFile file, boolean updateSupport,
+            @RequestParam(value = "updateKey", required = false, defaultValue = "customerName") String updateKey) throws Exception
     {
         ExcelUtil<MkCustomer> util = new ExcelUtil<>(MkCustomer.class);
         List<MkCustomer> customerList = util.importExcel(file.getInputStream());
         String operName = SecurityUtils.getUsername();
-        String message = mkCustomerService.importCustomer(customerList, updateSupport, operName);
-        return AjaxResult.success(message);
+        return mkCustomerService.importCustomer(customerList, updateSupport, updateKey, operName);
     }
 
     @PostMapping("/importTemplate")
     public void importTemplate(HttpServletResponse response)
     {
         ExcelUtil<MkCustomer> util = new ExcelUtil<>(MkCustomer.class);
+        // 排除自动生成的客户编号字段，使导入模板与新建表单一致
+        util.excludeFields = new String[]{"customerNo"};
         util.importTemplateExcel(response, "企业客户数据");
     }
 

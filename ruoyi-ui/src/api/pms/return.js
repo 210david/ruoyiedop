@@ -10,7 +10,7 @@ export function listReturn(query) {
 
 export function getReturn(returnId) {
   return request({
-    url: '/pms/return/' + returnId,
+    url: '/pms/return/info/' + returnId,
     method: 'get'
   })
 }
@@ -50,5 +50,13 @@ export function auditReturn(returnId, status, auditOpinion) {
     url: '/pms/return/audit/' + returnId,
     method: 'put',
     params: { status, auditOpinion }
+  })
+}
+
+// 获取存在进行中退货单的采购订单ID列表（草稿/待审批/已审批/已驳回）
+export function getInProgressReturnOrderIds() {
+  return request({
+    url: '/pms/return/query/inProgressOrderIds',
+    method: 'get'
   })
 }

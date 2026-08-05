@@ -1,8 +1,12 @@
 <template>
-  <div class="app-container">
+  <div class="app-container mk-list-page">
     <div class="kanban-toolbar">
-      <div>
+      <div class="kanban-toolbar__left">
         <el-button type="primary" icon="Refresh" @click="loadData" :loading="loading">刷新</el-button>
+        <button class="tip-pill" @click="showStatusHelp = true">
+          <el-icon><QuestionFilled /></el-icon>
+          <span>业务操作说明</span>
+        </button>
       </div>
       <div>
         <span style="font-size: 13px; color: #909399; margin-right: 8px">负责人筛选:</span>
@@ -303,6 +307,39 @@
         </el-tabs>
       </div>
     </el-dialog>
+
+    <!-- 业务操作说明对话框 -->
+    <el-dialog v-model="showStatusHelp" title="商机看板业务操作说明" width="720px" append-to-body>
+      <div class="status-help-content">
+        <h4>一、看板操作流程</h4>
+        <div class="status-flow">
+          <div class="flow-item">
+            <el-tag type="info">拖拽卡片</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="primary">推进阶段</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="success">赢单/输单</el-tag>
+          </div>
+        </div>
+
+        <h4>二、重点业务规则</h4>
+        <div class="highlight-card">
+          <p>• <strong>拖拽推进：</strong>拖动商机卡片到下一阶段列即可推进销售阶段</p>
+          <p>• <strong>退回阶段：</strong>可拖动卡片退回到前一阶段</p>
+          <p>• <strong>停滞预警：</strong>商机在某阶段停留超过15天会标记为"停滞"，提醒及时跟进</p>
+          <p>• <strong>赢单标记：</strong>赢单的商机显示绿色标签，可点击卡片查看详情并创建合同</p>
+          <p>• <strong>负责人筛选：</strong>可通过负责人下拉框筛选查看特定销售的商机</p>
+          <p>• <strong>金额汇总：</strong>每列顶部显示该阶段的商机数量和预计金额汇总</p>
+        </div>
+      </div>
+      <template #footer>
+        <el-button type="primary" @click="showStatusHelp = false">我知道了</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -310,7 +347,7 @@
 import { listOpportunity, getOpportunity, advanceOpportunity, retreatOpportunity, getOpportunityRelations } from '@/api/mk/opportunity'
 import { listStage } from '@/api/mk/stage'
 import { listUser } from '@/api/system/user'
-import { WarningFilled, Plus } from '@element-plus/icons-vue'
+import { WarningFilled, Plus, ArrowRight, QuestionFilled } from '@element-plus/icons-vue'
 import { useDetailCard } from '@/composables/useDetailCard'
 
 const { proxy } = getCurrentInstance()
@@ -459,6 +496,8 @@ function getLogTagType(type) {
 
 getUserOptions()
 loadData()
+
+const showStatusHelp = ref(false)
 </script>
 
 <style scoped>
@@ -467,6 +506,11 @@ loadData()
   justify-content: space-between;
   align-items: center;
   margin-bottom: 15px;
+}
+.kanban-toolbar__left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 .kanban-container { display: flex; gap: 15px; overflow-x: auto; padding-bottom: 10px; }
 .kanban-column { min-width: 280px; background: #f5f7fa; border-radius: 8px; display: flex; flex-direction: column; }
@@ -493,4 +537,51 @@ html.dark .kanban-column { background: var(--el-bg-color-overlay); }
 html.dark .kanban-card { background: var(--el-bg-color); }
 html.dark .card-title { color: var(--el-text-color-primary); }
 html.dark .kanban-body.drag-over { background: rgba(64, 158, 255, 0.1); }
+
+.status-help-content {
+  max-height: 500px;
+  overflow-y: auto;
+  padding-right: 10px;
+}
+.status-help-content h4 {
+  margin: 20px 0 12px 0;
+  color: #303133;
+  font-weight: 600;
+  border-left: 4px solid #409eff;
+  padding-left: 10px;
+}
+.status-help-content h4:first-child {
+  margin-top: 0;
+}
+.status-help-content .status-flow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 16px;
+  background-color: #f5f7fa;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+.status-help-content .flow-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.status-help-content .flow-arrow {
+  color: #909399;
+  font-size: 16px;
+}
+.status-help-content .highlight-card {
+  background-color: #ecf5ff;
+  border-radius: 8px;
+  padding: 16px;
+  border-left: 4px solid #409eff;
+}
+.status-help-content .highlight-card p {
+  margin: 6px 0;
+  line-height: 1.6;
+  font-size: 13px;
+  color: #606266;
+}
 </style>

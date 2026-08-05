@@ -1,53 +1,106 @@
 <template>
-  <div class="app-container">
-    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch">
-      <el-form-item label="盘点单号" prop="takeNo">
-        <el-input v-model="queryParams.takeNo" placeholder="请输入" clearable style="width: 200px" @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="盘点类型" prop="takeType">
-        <el-select v-model="queryParams.takeType" placeholder="请选择" clearable style="width: 200px">
-          <el-option v-for="d in wms_take_type" :key="d.value" :label="d.label" :value="d.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="状态" prop="status">
-        <el-select v-model="queryParams.status" placeholder="请选择" clearable style="width: 200px">
-          <el-option v-for="d in wms_take_status" :key="d.value" :label="d.label" :value="d.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-        <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-      </el-form-item>
-    </el-form>
+  <div class="app-container wms-list-page">
+    <!-- ===== Filter Card ===== -->
+    <div class="surface filter-card" v-show="showSearch">
+      <div class="filter-head">
+        <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+        <a class="adv-link" :class="{ 'is-open': showAdvanced }" @click.prevent="showAdvanced = !showAdvanced">
+          <span>{{ showAdvanced ? '收起' : '高级筛选' }}</span>
+          <el-icon class="chev"><ArrowDown /></el-icon>
+        </a>
+      </div>
+      <div class="filter-bar">
+        <div class="field">
+          <label>盘点单号</label>
+          <div class="control">
+            <el-input v-model="queryParams.takeNo" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field">
+          <label>盘点类型</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.takeType" placeholder="全部" clearable @change="handleQuery">
+              <el-option v-for="d in wms_take_type" :key="d.value" :label="d.label" :value="d.value" />
+            </el-select>
+          </div>
+        </div>
+        <div class="field">
+          <label>状态</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
+              <el-option v-for="d in wms_take_status" :key="d.value" :label="d.label" :value="d.value" />
+            </el-select>
+          </div>
+        </div>
+      </div>
+      <div class="filter-actions">
+        <div class="filter-info">
+          <el-icon><Filter /></el-icon> 已选 {{ activeFilterCount }} 个条件，支持回车快速搜索
+        </div>
+        <div class="filter-buttons">
+          <el-button icon="RefreshLeft" @click="resetQuery">重置</el-button>
+          <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+        </div>
+      </div>
+    </div>
 
-    <el-row :gutter="10" class="mb8">
-      <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
-    </el-row>
+    <!-- ===== Table Section ===== -->
+    <div class="surface">
+      <!-- Status Tabs -->
+      <div class="status-tabs">
+        <div class="tabs-track">
+          <button class="status-tab" :class="{ 'is-active': activeStatusTab === 'all' }" @click="handleStatusTabClick('all')">
+            <span class="dot"></span><span>全部</span><span class="count">{{ statusCounts.all || 0 }}</span>
+          </button>
+          <button v-for="s in statusTabList" :key="s.value" class="status-tab" :class="[statusTabClass(s.value), { 'is-active': activeStatusTab === s.value }]" @click="handleStatusTabClick(s.value)">
+            <span class="dot"></span><span>{{ s.label }}</span><span class="count">{{ statusCounts[s.value] || 0 }}</span>
+          </button>
+        </div>
+        <button class="tip-pill" @click="showStatusHelp = true">
+          <el-icon><WarningFilled /></el-icon><span>业务操作说明</span>
+        </button>
+      </div>
 
-    <el-table ref="tableRef" border v-loading="loading" :data="list" @row-click="handleRowClick" highlight-current-row @header-dragend="onHeaderDragEnd">
-      <el-table-column label="盘点单号" prop="takeNo" :width="colWidth('takeNo', 180)" resizable />
-      <el-table-column label="仓库" prop="warehouseName" :width="colWidth('warehouseName', 120)" resizable />
-      <el-table-column label="库区" prop="areaName" :width="colWidth('areaName', 120)" resizable />
-      <el-table-column label="盘点类型" prop="takeType" :width="colWidth('takeType', 100)" resizable align="center">
-        <template #default="scope"><dict-tag :options="wms_take_type" :value="scope.row.takeType" /></template>
-      </el-table-column>
-      <el-table-column label="状态" prop="status" :width="colWidth('status', 100)" resizable align="center">
-        <template #default="scope"><dict-tag :options="wms_take_status" :value="scope.row.status" /></template>
-      </el-table-column>
-      <el-table-column label="计划日期" prop="planDate" :width="colWidth('planDate', 120)" resizable align="center" />
-      <el-table-column label="开始时间" prop="startTime" :width="colWidth('startTime', 160)" resizable align="center" />
-      <el-table-column label="结束时间" prop="endTime" :width="colWidth('endTime', 160)" resizable align="center" />
-      <el-table-column label="备注" prop="remark" min-width="200" show-overflow-tooltip />
-      <el-table-column label="创建时间" prop="createTime" :width="colWidth('createTime', 160)" resizable align="center" />
-      <el-table-column label="操作" width="200" align="center" fixed="right">
-        <template #default="scope">
-          <el-button link type="primary" icon="View" @click.stop="handleRowClick(scope.row)">详情</el-button>
-          <el-button link type="primary" icon="Edit" @click.stop="handleRowClick(scope.row)" v-if="scope.row.status === '1'" v-hasPermi="['wms:stocktake:input']">录入</el-button>
-          <el-button link type="primary" icon="Check" @click.stop="handleApprove(scope.row)" v-if="scope.row.status === '2'" v-hasPermi="['wms:stocktake:approve']">审批</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
-    <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <div class="left"></div>
+        <div class="right">
+          <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="wms_stocktake_detail_columns" />
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="table-wrap">
+        <el-table ref="tableRef" border v-loading="loading" :data="list" @row-click="handleRowClick" highlight-current-row @header-dragend="onHeaderDragEnd" class="app-table">
+          <el-table-column label="盘点单号" prop="takeNo" key="takeNo" :width="colWidth('takeNo', 180)" resizable v-if="columns.takeNo.visible" />
+          <el-table-column label="仓库" prop="warehouseName" key="warehouseName" :width="colWidth('warehouseName', 120)" resizable v-if="columns.warehouseName.visible" />
+          <el-table-column label="库区" prop="areaName" key="areaName" :width="colWidth('areaName', 120)" resizable v-if="columns.areaName.visible" />
+          <el-table-column label="盘点类型" prop="takeType" key="takeType" :width="colWidth('takeType', 100)" resizable align="center" v-if="columns.takeType.visible">
+            <template #default="scope"><span class="badge violet">{{ takeTypeLabel(scope.row.takeType) }}</span></template>
+          </el-table-column>
+          <el-table-column label="状态" prop="status" key="status" :width="colWidth('status', 120)" resizable align="center" v-if="columns.status.visible">
+            <template #default="scope"><span class="badge" :class="badgeClass(scope.row.status)"><span class="dot"></span>{{ statusLabel(scope.row.status) }}</span></template>
+          </el-table-column>
+          <el-table-column label="计划日期" prop="planDate" key="planDate" :width="colWidth('planDate', 120)" resizable align="center" v-if="columns.planDate.visible" />
+          <el-table-column label="开始时间" prop="startTime" key="startTime" :width="colWidth('startTime', 160)" resizable align="center" v-if="columns.startTime.visible" />
+          <el-table-column label="结束时间" prop="endTime" key="endTime" :width="colWidth('endTime', 160)" resizable align="center" v-if="columns.endTime.visible" />
+          <el-table-column label="备注" prop="remark" key="remark" :width="colWidth('remark', 200)" resizable :show-overflow-tooltip="true" v-if="columns.remark.visible" />
+          <el-table-column label="创建时间" prop="createTime" key="createTime" :width="colWidth('createTime', 160)" resizable align="center" v-if="columns.createTime.visible" />
+          <el-table-column label="操作" width="200" align="center" fixed="right">
+            <template #default="scope">
+              <el-button link type="primary" icon="View" @click.stop="handleRowClick(scope.row)">详情</el-button>
+              <el-button link type="primary" icon="Edit" @click.stop="handleRowClick(scope.row)" v-if="scope.row.status === '1'" v-hasPermi="['wms:stocktake:input']">录入</el-button>
+              <el-button link type="primary" icon="Check" @click.stop="handleApprove(scope.row)" v-if="scope.row.status === '2'" v-hasPermi="['wms:stocktake:approve']">审批</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+      <div class="pagination-container">
+        <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+      </div>
+    </div>
 
     <!-- 盘点作业详情面板 -->
     <el-dialog v-model="detailOpen" width="1320px" append-to-body draggable class="rd-dialog">
@@ -320,6 +373,84 @@
 
     <!-- 批量导入 -->
     <ExcelImportDialog ref="importRef" title="批量导入盘点明细" width="460px" :action="importAction" :template-action="templateAction" template-file-name="盘点明细模板" update-support-label="" @success="handleImportSuccess" />
+
+    <!-- 业务操作说明对话框 -->
+    <el-dialog v-model="showStatusHelp" title="盘点作业业务操作说明" width="720px" append-to-body>
+      <div class="status-help-content">
+        <h4>一、作业流程图</h4>
+        <div class="status-flow">
+          <div class="flow-item">
+            <el-tag type="primary">盘点中</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="warning">待审批</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="success">已完成</el-tag>
+          </div>
+        </div>
+
+        <h4>二、操作说明</h4>
+        <el-descriptions :column="1" border>
+          <el-descriptions-item label="录入实盘">在盘点明细列表中逐条录入实际盘点数量。点击「录入」按钮打录入对话框，填写实盘数量和差异原因</el-descriptions-item>
+          <el-descriptions-item label="批量录入">点击「批量录入」按钮，在表格中一次性填写所有明细的实盘数量和差异原因，提交后批量保存</el-descriptions-item>
+          <el-descriptions-item label="批量导入">下载模板填写实盘数据后批量导入，适用于明细较多的场景</el-descriptions-item>
+          <el-descriptions-item label="提交审批">所有明细录入完成后点击「提交审批」按钮，盘点单进入「待审批」状态</el-descriptions-item>
+          <el-descriptions-item label="审批操作">审批人查看盘点明细和差异，填写审批意见后通过或驳回</el-descriptions-item>
+        </el-descriptions>
+
+        <h4>三、重点业务规则</h4>
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <div class="highlight-card highlight-primary">
+              <div class="highlight-card-title">差异自动计算</div>
+              <div class="highlight-card-body">系统自动计算<strong>差异 = 实盘数量 - 账面数量</strong>。差异为正表示盘盈，为负表示盘亏，差异为绿色表示盘盈，红色表示盘亏</div>
+            </div>
+          </el-col>
+          <el-col :span="12">
+            <div class="highlight-card highlight-warning">
+              <div class="highlight-card-title">差异原因必填</div>
+              <div class="highlight-card-body">当实盘数量与账面数量<strong>存在差异时，差异原因必填</strong>。无差异时可不填</div>
+            </div>
+          </el-col>
+        </el-row>
+        <el-row :gutter="16" style="margin-top: 12px;">
+          <el-col :span="12">
+            <div class="highlight-card highlight-success">
+              <div class="highlight-card-title">库存自动调整</div>
+              <div class="highlight-card-body">审批通过后系统根据差异自动调整库存：<strong>盘盈增加库存，盘亏减少库存</strong>，无需手动维护</div>
+            </div>
+          </el-col>
+          <el-col :span="12">
+            <div class="highlight-card highlight-danger">
+              <div class="highlight-card-title">驳回退回</div>
+              <div class="highlight-card-body">审批驳回后盘点单退回到「盘点中」状态，盘点人员需重新核实并修改实盘数量后再次提交审批</div>
+            </div>
+          </el-col>
+        </el-row>
+
+        <h4>四、业务操作流程</h4>
+        <el-timeline>
+          <el-timeline-item type="primary" :hollow="true">
+            <strong>查看盘点单：</strong>点击列表行或「详情」按钮查看盘点单信息和明细列表，包含账面数量、实盘数量、差异等
+          </el-timeline-item>
+          <el-timeline-item type="warning" :hollow="true">
+            <strong>录入实盘：</strong>逐条录入或批量录入/导入实盘数量。实盘数量默认等于账面数量，有差异时需填写差异原因
+          </el-timeline-item>
+          <el-timeline-item type="success" :hollow="true">
+            <strong>提交审批：</strong>所有明细录入完成后点击「提交审批」按钮，盘点单进入「待审批」状态
+          </el-timeline-item>
+          <el-timeline-item type="info" :hollow="true">
+            <strong>审批完成：</strong>审批通过后系统自动调整库存差异，盘点单进入「已完成」状态；驳回则退回重新盘点
+          </el-timeline-item>
+        </el-timeline>
+      </div>
+      <template #footer>
+        <el-button type="primary" @click="showStatusHelp = false">我知道了</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -329,6 +460,7 @@ import { importDetailUrl, exportTemplateUrl } from '@/api/wms/stocktake'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
 import ExcelImportDialog from '@/components/ExcelImportDialog'
+import { ArrowRight, ArrowDown, QuestionFilled, WarningFilled, Filter, Search } from '@element-plus/icons-vue'
 const { collapsedCards, toggleCard } = useDetailCard(['dBasic', 'dDetail', 'dApprove', 'aBasic', 'aDetail', 'aOpinion', 'sMaterial', 'sInput'])
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('wms_stocktake_detail')
@@ -336,6 +468,7 @@ const { wms_take_type, wms_take_status } = proxy.useDict('wms_take_type', 'wms_t
 const list = ref([])
 const loading = ref(true)
 const showSearch = ref(true)
+const showAdvanced = ref(false)
 const total = ref(0)
 const detailOpen = ref(false)
 const currentTake = ref({})
@@ -345,6 +478,14 @@ const approveOpen = ref(false)
 const approveFormData = ref({})
 const batchOpen = ref(false)
 const batchForm = ref({ takeId: null, detailList: [] })
+const showStatusHelp = ref(false)
+const activeStatusTab = ref('all')
+const statusCounts = ref({ all: 0 })
+const defaultColumns = { takeNo: { label: '盘点单号', visible: true }, warehouseName: { label: '仓库', visible: true }, areaName: { label: '库区', visible: true }, takeType: { label: '盘点类型', visible: true }, status: { label: '状态', visible: true }, planDate: { label: '计划日期', visible: true }, startTime: { label: '开始时间', visible: true }, endTime: { label: '结束时间', visible: true }, remark: { label: '备注', visible: true }, createTime: { label: '创建时间', visible: true } }
+function loadColumnVisibility() { try { const saved = localStorage.getItem('wms_stocktake_detail_columns'); if (saved) { const parsed = JSON.parse(saved); const result = {}; Object.keys(defaultColumns).forEach(key => { result[key] = { label: defaultColumns[key].label, visible: parsed[key] !== undefined ? parsed[key] : defaultColumns[key].visible } }); return result } } catch (e) {} return { ...defaultColumns } }
+const columns = ref(loadColumnVisibility())
+const activeFilterCount = computed(() => { let count = 0; if (queryParams.value.takeNo) count++; if (queryParams.value.takeType) count++; if (queryParams.value.status) count++; return count })
+const statusTabList = computed(() => wms_take_status.value)
 // 批量录入前端分页
 const batchPage = reactive({ pageNum: 1, pageSize: 10 })
 const batchPageList = computed(() => {
@@ -382,10 +523,11 @@ function getList() {
     list.value = res.rows
     total.value = res.total
     loading.value = false
+    applySavedWidths()
   })
 }
 function handleQuery() { queryParams.value.pageNum = 1; getList() }
-function resetQuery() { proxy.resetForm('queryRef'); handleQuery() }
+function resetQuery() { queryParams.value.takeNo = undefined; queryParams.value.takeType = undefined; queryParams.value.status = undefined; activeStatusTab.value = 'all'; handleQuery() }
 function handleRowClick(row) {
   getStockTake(row.takeId).then(res => {
     currentTake.value = res.data
@@ -507,6 +649,35 @@ function confirmApprove(passed) {
     })
   }
 }
+function badgeClass(status) { const map = { '0': 'amber', '1': 'blue', '2': 'violet', '3': 'green', '4': 'gray' }; return map[status] || 'gray' }
+function statusLabel(status) { const item = wms_take_status.value.find(d => d.value == status); return item ? item.label : '-' }
+function takeTypeLabel(type) { const item = wms_take_type.value.find(d => d.value == type); return item ? item.label : '-' }
+function statusTabClass(value) { const map = { '0': 'tab-draft', '1': 'tab-audit', '2': 'tab-partial', '3': 'tab-done', '4': 'tab-void' }; return map[value] || '' }
+function handleStatusTabClick(status) { activeStatusTab.value = status; queryParams.value.status = status === 'all' ? undefined : status; handleQuery() }
+function loadStatusCounts() { listStockTake({ pageNum: 1, pageSize: 999 }).then(res => { const counts = { all: res.total }; (res.rows || []).forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++ }); statusCounts.value = counts }).catch(() => {}) }
+
 // 初始化
 getList()
+loadStatusCounts()
 </script>
+
+<style scoped>
+/* 页面特定样式 - 列表页面共享样式见 wms-list-page.scss */
+.status-help-content { max-height: 500px; overflow-y: auto; padding-right: 10px; }
+.status-help-content h4 { margin: 20px 0 12px 0; color: #303133; font-weight: 600; border-left: 4px solid #409eff; padding-left: 10px; }
+.status-help-content h4:first-child { margin-top: 0; }
+.status-flow { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 16px; background-color: #f5f7fa; border-radius: 8px; margin-bottom: 8px; }
+.flow-item { display: flex; align-items: center; gap: 8px; }
+.flow-arrow { color: #909399; font-size: 16px; }
+.highlight-card { border-radius: 8px; padding: 16px; border: 1px solid; }
+.highlight-success { background-color: #f0f9ff; border-color: #b3e19d; }
+.highlight-danger { background-color: #fef0f0; border-color: #fbc4c4; }
+.highlight-primary { background-color: #ecf5ff; border-color: #a0cfff; }
+.highlight-warning { background-color: #fdf6ec; border-color: #f5dab1; }
+.highlight-card-title { font-size: 14px; font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; }
+.highlight-success .highlight-card-title { color: #67c23a; }
+.highlight-danger .highlight-card-title { color: #f56c6c; }
+.highlight-primary .highlight-card-title { color: #409eff; }
+.highlight-warning .highlight-card-title { color: #e6a23c; }
+.highlight-card-body { font-size: 13px; color: #606266; line-height: 1.6; }
+</style>

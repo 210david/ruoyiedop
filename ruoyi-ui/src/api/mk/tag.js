@@ -1,8 +1,8 @@
 import request from '@/utils/request'
 
 // 查询客户标签列表
-export function listTag(query) {
-  return request({ url: '/mk/tag/list', method: 'get', params: query })
+export function listTag(query, config = {}) {
+return request({ url: '/mk/tag/list', method: 'get', params: query, ...config })
 }
 
 // 查询客户标签详细

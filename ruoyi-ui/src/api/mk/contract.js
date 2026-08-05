@@ -1,11 +1,12 @@
 import request from '@/utils/request'
 
 // 查询合同列表
-export function listContract(query) {
+export function listContract(query, config = {}) {
   return request({
     url: '/mk/contract/list',
     method: 'get',
-    params: query
+    params: query,
+    ...config
   })
 }
 

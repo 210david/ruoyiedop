@@ -2,6 +2,7 @@ package com.ruoyi.mk.mapper;
 
 import java.util.List;
 import com.ruoyi.mk.domain.MkOrderReturn;
+import com.ruoyi.mk.domain.MkOrderReturnItem;
 
 /**
  * 订单退货 Mapper
@@ -15,4 +16,9 @@ public interface MkOrderReturnMapper
     int insertReturn(MkOrderReturn orderReturn);
     int updateReturn(MkOrderReturn orderReturn);
     int deleteReturnByIds(Long[] returnIds);
+
+    /** 退货明细 */
+    List<MkOrderReturnItem> selectReturnItemsByReturnId(Long returnId);
+    int insertReturnItem(MkOrderReturnItem item);
+    int deleteReturnItemsByReturnId(Long returnId);
 }

@@ -47,6 +47,7 @@
             <if test="warehouseId != null"> AND l.warehouse_id = #{warehouseId}</if>
             <if test="changeType != null and changeType != ''"> AND l.change_type = #{changeType}</if>
             <if test="refOrderNo != null and refOrderNo != ''"> AND l.ref_order_no LIKE CONCAT('%', #{refOrderNo}, '%')</if>
+            <if test="batchNo != null and batchNo != ''"> AND l.batch_no LIKE CONCAT('%', #{batchNo}, '%')</if>
             <if test="params.beginTime != null and params.beginTime != ''"><![CDATA[ AND l.create_time >= #{params.beginTime}]]></if>
             <if test="params.endTime != null and params.endTime != ''"><![CDATA[ AND l.create_time <= #{params.endTime}]]></if>
         </where>

@@ -1,28 +1,43 @@
 <template>
-  <div class="app-container">
-    <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5"><el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['marketing:stage:add']">新增</el-button></el-col>
-      <right-toolbar @queryTable="getList"></right-toolbar>
-    </el-row>
+  <div class="app-container mk-list-page">
+    <!-- ===== Table Section ===== -->
+    <div class="surface">
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <div class="left">
+          <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['marketing:stage:add']">新增</el-button>
+        </div>
+        <div class="right">
+          <right-toolbar @queryTable="getList" :columns="columns" storageKey="mk_stage_columns" />
+        </div>
+      </div>
 
-    <el-table ref="tableRef" border v-loading="loading" :data="list" @header-dragend="onHeaderDragEnd">
-      <el-table-column label="阶段编码" prop="stageCode" :width="colWidth('stageCode', 120)" resizable />
-      <el-table-column label="阶段名称" prop="stageName" :width="colWidth('stageName', 120)" resizable />
-      <el-table-column label="排序" prop="sort" :width="colWidth('sort', 80)" resizable align="center" />
-      <el-table-column label="赢率(%)" prop="winRate" :width="colWidth('winRate', 100)" resizable align="center" />
-      <el-table-column label="最大停留天数" prop="maxDays" :width="colWidth('maxDays', 120)" resizable align="center" />
-      <el-table-column label="状态" prop="status" :width="colWidth('status', 80)" resizable align="center">
-        <template #default="scope"><el-tag :type="scope.row.status === '0' ? 'success' : 'danger'">{{ scope.row.status === '0' ? '正常' : '停用' }}</el-tag></template>
-      </el-table-column>
-      <el-table-column label="备注" prop="remark" show-overflow-tooltip />
-      <el-table-column label="操作" width="200" align="center">
-        <template #default="scope">
-          <el-button link type="primary" icon="View" @click="handleView(scope.row)">详情</el-button>
-          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['marketing:stage:edit']">修改</el-button>
-          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['marketing:stage:remove']">删除</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
+      <!-- Table -->
+      <div class="table-wrap">
+        <el-table ref="tableRef" border v-loading="loading" :data="list" @header-dragend="onHeaderDragEnd" class="app-table">
+          <el-table-column label="阶段编码" prop="stageCode" key="stageCode" :width="colWidth('stageCode', 120)" resizable v-if="columns.stageCode.visible" />
+          <el-table-column label="阶段名称" prop="stageName" key="stageName" :width="colWidth('stageName', 120)" resizable v-if="columns.stageName.visible" />
+          <el-table-column label="排序" prop="sort" key="sort" :width="colWidth('sort', 80)" resizable align="center" v-if="columns.sort.visible" />
+          <el-table-column label="赢率(%)" prop="winRate" key="winRate" :width="colWidth('winRate', 100)" resizable align="center" v-if="columns.winRate.visible" />
+          <el-table-column label="最大停留天数" prop="maxDays" key="maxDays" :width="colWidth('maxDays', 120)" resizable align="center" v-if="columns.maxDays.visible" />
+          <el-table-column label="状态" prop="status" key="status" :width="colWidth('status', 80)" resizable align="center" v-if="columns.status.visible">
+            <template #default="scope">
+              <span class="badge" :class="badgeClass(scope.row.status)">
+                <span class="dot"></span>{{ statusLabel(scope.row.status) }}
+              </span>
+            </template>
+          </el-table-column>
+          <el-table-column label="备注" prop="remark" key="remark" show-overflow-tooltip v-if="columns.remark.visible" />
+          <el-table-column label="操作" width="200" align="center" fixed="right">
+            <template #default="scope">
+              <el-button link type="primary" icon="View" @click="handleView(scope.row)">详情</el-button>
+              <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['marketing:stage:edit']">修改</el-button>
+              <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['marketing:stage:remove']">删除</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+    </div>
 
     <el-dialog v-model="open" width="600px" append-to-body draggable class="rd-dialog">
       <template #header>
@@ -70,6 +85,7 @@ import { useDetailCard } from '@/composables/useDetailCard'
 const { collapsedCards, toggleCard } = useDetailCard([])
 
 const { proxy } = getCurrentInstance()
+const { sys_normal_disable } = proxy.useDict('sys_normal_disable')
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('mk_opportunity_stage')
 
 const list = ref([])
@@ -91,7 +107,41 @@ const data = reactive({
 })
 const { queryParams, form, rules } = toRefs(data)
 
-function getList() { loading.value = true; listStage(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false }) }
+// 列显隐配置 - 从 localStorage 恢复保存的设置
+const defaultColumns = {
+  stageCode: { label: '阶段编码', visible: true },
+  stageName: { label: '阶段名称', visible: true },
+  sort: { label: '排序', visible: true },
+  winRate: { label: '赢率(%)', visible: true },
+  maxDays: { label: '最大停留天数', visible: true },
+  status: { label: '状态', visible: true },
+  remark: { label: '备注', visible: true }
+}
+
+function loadColumnVisibility() {
+  try {
+    const saved = localStorage.getItem('mk_stage_columns')
+    if (saved) {
+      const parsed = JSON.parse(saved)
+      const result = {}
+      Object.keys(defaultColumns).forEach(key => {
+        result[key] = {
+          label: defaultColumns[key].label,
+          visible: parsed[key] !== undefined ? parsed[key] : defaultColumns[key].visible
+        }
+      })
+      return result
+    }
+  } catch (e) {}
+  return { ...defaultColumns }
+}
+
+const columns = ref(loadColumnVisibility())
+
+function badgeClass(status) { return status === '0' ? 'green' : 'gray' }
+function statusLabel(status) { return status === '0' ? '正常' : '停用' }
+
+function getList() { loading.value = true; listStage(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false; applySavedWidths() }).catch(() => { loading.value = false }) }
 function handleQuery() { getList() }
 function resetQuery() { handleQuery() }
 function reset() { form.value = { stageCode: undefined, stageName: undefined, sort: 1, winRate: 0, maxDays: 30, status: '0', remark: undefined }; proxy.resetForm('stageRef') }

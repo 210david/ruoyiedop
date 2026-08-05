@@ -61,7 +61,11 @@
             <if test="moveNo != null and moveNo != ''"> AND mo.move_no LIKE CONCAT('%', #{moveNo}, '%')</if>
             <if test="warehouseId != null"> AND mo.warehouse_id = #{warehouseId}</if>
             <if test="materialId != null"> AND mo.material_id = #{materialId}</if>
+            <if test="materialCode != null and materialCode != ''"> AND m.material_code LIKE CONCAT('%', #{materialCode}, '%')</if>
+            <if test="materialName != null and materialName != ''"> AND m.material_name LIKE CONCAT('%', #{materialName}, '%')</if>
             <if test="status != null and status != ''"> AND mo.status = #{status}</if>
+            <if test="params.beginTime != null and params.beginTime != ''"> AND mo.create_time &gt;= #{params.beginTime}</if>
+            <if test="params.endTime != null and params.endTime != ''"> AND mo.create_time &lt;= #{params.endTime}</if>
         </where>
         ORDER BY mo.move_id DESC
     </select>

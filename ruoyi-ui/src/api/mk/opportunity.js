@@ -1,8 +1,8 @@
 import request from '@/utils/request'
 
 // 查询商机列表
-export function listOpportunity(query) {
-  return request({ url: '/mk/opportunity/list', method: 'get', params: query })
+export function listOpportunity(query, config = {}) {
+return request({ url: '/mk/opportunity/list', method: 'get', params: query, ...config })
 }
 
 // 查询商机详细

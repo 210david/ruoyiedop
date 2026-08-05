@@ -232,7 +232,7 @@ function handleClean() {
 /** 导出按钮操作 */
 function handleExport() {
   proxy.download("monitor/jobLog/export", {
-    ...queryParams.value,
+    ...proxy.addDateRange(queryParams.value, dateRange.value),
   }, `job_log_${new Date().getTime()}.xlsx`)
 }
 

@@ -1,8 +1,8 @@
 import request from '@/utils/request'
 
 // 查询发票列表
-export function listInvoice(query) {
-  return request({ url: '/mk/invoice/list', method: 'get', params: query })
+export function listInvoice(query, config = {}) {
+return request({ url: '/mk/invoice/list', method: 'get', params: query, ...config })
 }
 
 // 查询发票详细

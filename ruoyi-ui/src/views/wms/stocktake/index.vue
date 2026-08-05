@@ -1,37 +1,124 @@
 <template>
-  <div class="app-container">
-    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch">
-      <el-form-item label="盘点单号" prop="takeNo"><el-input v-model="queryParams.takeNo" placeholder="请输入" clearable style="width: 200px" @keyup.enter="handleQuery" /></el-form-item>
-      <el-form-item label="盘点类型" prop="takeType"><el-select v-model="queryParams.takeType" placeholder="请选择" clearable style="width: 200px"><el-option v-for="d in wms_take_type" :key="d.value" :label="d.label" :value="d.value" /></el-select></el-form-item>
-      <el-form-item label="状态" prop="status"><el-select v-model="queryParams.status" placeholder="请选择" clearable style="width: 200px"><el-option v-for="d in wms_take_status" :key="d.value" :label="d.label" :value="d.value" /></el-select></el-form-item>
-      <el-form-item><el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button><el-button icon="Refresh" @click="resetQuery">重置</el-button></el-form-item>
-    </el-form>
-    <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5"><el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['wms:stocktake:add']">新增</el-button></el-col>
-      <el-col :span="1.5"><el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['wms:stocktake:remove']">删除</el-button></el-col>
-      <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
-    </el-row>
-    <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
-      <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="盘点单号" prop="takeNo" :width="colWidth('takeNo', 160)" resizable />
-      <el-table-column label="仓库" prop="warehouseName" :width="colWidth('warehouseName', 120)" resizable />
-      <el-table-column label="库区" prop="areaName" :width="colWidth('areaName', 120)" resizable />
-      <el-table-column label="盘点类型" prop="takeType" :width="colWidth('takeType', 100)" resizable align="center"><template #default="scope"><dict-tag :options="wms_take_type" :value="scope.row.takeType" /></template></el-table-column>
-      <el-table-column label="状态" prop="status" :width="colWidth('status', 100)" resizable align="center"><template #default="scope"><dict-tag :options="wms_take_status" :value="scope.row.status" /></template></el-table-column>
-      <el-table-column label="计划日期" prop="planDate" :width="colWidth('planDate', 120)" resizable align="center" />
-      <el-table-column label="备注" prop="remark" min-width="200" show-overflow-tooltip />
-      <el-table-column label="创建时间" prop="createTime" :width="colWidth('createTime', 160)" resizable align="center" />
-      <el-table-column label="操作" width="300" align="center" fixed="right">
-        <template #default="scope">
-          <el-button link type="primary" icon="View" @click="handleDetail(scope.row)">详情</el-button>
-          <el-button link type="primary" icon="VideoPlay" @click="handleStart(scope.row)" v-if="scope.row.status === '0'" v-hasPermi="['wms:stocktake:start']">开始</el-button>
-          <el-button link type="primary" icon="Check" @click="handleApprove(scope.row)" v-if="scope.row.status === '2'" v-hasPermi="['wms:stocktake:approve']">审批</el-button>
-          <el-button link type="danger" icon="CircleClose" @click="handleVoid(scope.row)" v-if="scope.row.status === '0' || scope.row.status === '1'" v-hasPermi="['wms:stocktake:void']">作废</el-button>
-          <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['wms:stocktake:remove']">删除</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
-    <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+  <div class="app-container wms-list-page">
+    <!-- ===== Filter Card ===== -->
+    <div class="surface filter-card" v-show="showSearch">
+      <div class="filter-head">
+        <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+        <a class="adv-link" :class="{ 'is-open': showAdvanced }" @click.prevent="showAdvanced = !showAdvanced">
+          <span>{{ showAdvanced ? '收起' : '高级筛选' }}</span>
+          <el-icon class="chev"><ArrowDown /></el-icon>
+        </a>
+      </div>
+      <div class="filter-bar">
+        <div class="field">
+          <label>盘点单号</label>
+          <div class="control">
+            <el-input v-model="queryParams.takeNo" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field">
+          <label>仓库</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.warehouseId" placeholder="全部" clearable filterable @change="handleQuery">
+              <el-option v-for="w in warehouseOptions" :key="w.warehouseId" :label="w.warehouseName" :value="w.warehouseId" />
+            </el-select>
+          </div>
+        </div>
+        <div class="field">
+          <label>盘点类型</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.takeType" placeholder="全部" clearable @change="handleQuery">
+              <el-option v-for="d in wms_take_type" :key="d.value" :label="d.label" :value="d.value" />
+            </el-select>
+          </div>
+        </div>
+        <div class="field">
+          <label>状态</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleStatusChange">
+              <el-option v-for="d in wms_take_status" :key="d.value" :label="d.label" :value="d.value" />
+            </el-select>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced" style="grid-column: span 2">
+          <label>计划日期</label>
+          <div class="control">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" @change="handleQuery" />
+          </div>
+        </div>
+      </div>
+      <div class="filter-actions">
+        <div class="filter-info">
+          <el-icon><Filter /></el-icon> 已选 {{ activeFilterCount }} 个条件，支持回车快速搜索
+        </div>
+        <div class="filter-buttons">
+          <el-button icon="RefreshLeft" @click="resetQuery">重置</el-button>
+          <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== Table Section ===== -->
+    <div class="surface">
+      <!-- Status Tabs -->
+      <div class="status-tabs">
+        <div class="tabs-track">
+          <button class="status-tab" :class="{ 'is-active': activeStatusTab === 'all' }" @click="handleStatusTabClick('all')">
+            <span class="dot"></span><span>全部</span><span class="count">{{ statusCounts.all || 0 }}</span>
+          </button>
+          <button v-for="s in statusTabList" :key="s.value" class="status-tab" :class="[statusTabClass(s.value), { 'is-active': activeStatusTab === s.value }]" @click="handleStatusTabClick(s.value)">
+            <span class="dot"></span><span>{{ s.label }}</span><span class="count">{{ statusCounts[s.value] || 0 }}</span>
+          </button>
+        </div>
+        <button class="tip-pill" @click="showStatusHelp = true">
+          <el-icon><WarningFilled /></el-icon><span>业务操作说明</span>
+        </button>
+      </div>
+
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <div class="left">
+          <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['wms:stocktake:add']">新增</el-button>
+          <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['wms:stocktake:remove']">删除</el-button>
+        </div>
+        <div class="right">
+          <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="wms_stocktake_columns" />
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="table-wrap">
+        <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" class="app-table">
+          <el-table-column type="selection" width="55" align="center" />
+          <el-table-column label="盘点单号" prop="takeNo" key="takeNo" :width="colWidth('takeNo', 160)" resizable v-if="columns.takeNo.visible" />
+          <el-table-column label="仓库" prop="warehouseName" key="warehouseName" :width="colWidth('warehouseName', 120)" resizable v-if="columns.warehouseName.visible" />
+          <el-table-column label="库区" prop="areaName" key="areaName" :width="colWidth('areaName', 120)" resizable v-if="columns.areaName.visible" />
+          <el-table-column label="盘点类型" prop="takeType" key="takeType" :width="colWidth('takeType', 100)" resizable align="center" v-if="columns.takeType.visible">
+            <template #default="scope"><span class="badge violet">{{ takeTypeLabel(scope.row.takeType) }}</span></template>
+          </el-table-column>
+          <el-table-column label="状态" prop="status" key="status" :width="colWidth('status', 120)" resizable align="center" v-if="columns.status.visible">
+            <template #default="scope"><span class="badge" :class="badgeClass(scope.row.status)"><span class="dot"></span>{{ statusLabel(scope.row.status) }}</span></template>
+          </el-table-column>
+          <el-table-column label="计划日期" prop="planDate" key="planDate" :width="colWidth('planDate', 120)" resizable align="center" v-if="columns.planDate.visible" />
+          <el-table-column label="备注" prop="remark" key="remark" :width="colWidth('remark', 200)" resizable :show-overflow-tooltip="true" v-if="columns.remark.visible" />
+          <el-table-column label="创建时间" prop="createTime" key="createTime" :width="colWidth('createTime', 160)" resizable align="center" v-if="columns.createTime.visible" />
+          <el-table-column label="操作" width="300" align="center" fixed="right">
+            <template #default="scope">
+              <el-button link type="primary" icon="View" @click="handleDetail(scope.row)">详情</el-button>
+              <el-button link type="primary" icon="VideoPlay" @click="handleStart(scope.row)" v-if="scope.row.status === '0'" v-hasPermi="['wms:stocktake:start']">开始</el-button>
+              <el-button link type="primary" icon="Check" @click="handleApprove(scope.row)" v-if="scope.row.status === '2'" v-hasPermi="['wms:stocktake:approve']">审批</el-button>
+              <el-button link type="danger" icon="CircleClose" @click="handleVoid(scope.row)" v-if="scope.row.status === '0' || scope.row.status === '1'" v-hasPermi="['wms:stocktake:void']">作废</el-button>
+              <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['wms:stocktake:remove']">删除</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+      <div class="pagination-container">
+        <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+      </div>
+    </div>
 
     <!-- 新增/编辑对话框 -->
     <el-dialog v-model="open" width="840px" append-to-body draggable class="rd-dialog">
@@ -287,6 +374,100 @@
       </el-form>
       <template #footer><el-button type="primary" @click="submitDetailForm">确 定</el-button><el-button @click="submitOpen = false">取 消</el-button></template>
     </el-dialog>
+
+    <!-- 业务操作说明对话框 -->
+    <el-dialog v-model="showStatusHelp" title="盘点任务业务操作说明" width="720px" append-to-body>
+      <div class="status-help-content">
+        <h4>一、状态流转图</h4>
+        <div class="status-flow">
+          <div class="flow-item">
+            <el-tag type="info">待开始</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="primary">盘点中</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="warning">待审批</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="success">已完成</el-tag>
+          </div>
+        </div>
+        <div class="status-flow" style="margin-top: 8px;">
+          <div class="flow-item">
+            <el-tag type="danger">已作废</el-tag>
+            <el-tag size="small" type="info">待开始/盘点中可作废</el-tag>
+          </div>
+          <div class="flow-item">
+            <el-tag type="warning">待审批</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+            <el-tag type="danger">驳回</el-tag>
+            <el-tag size="small" type="info">退回重新盘点</el-tag>
+          </div>
+        </div>
+
+        <h4>二、各状态说明</h4>
+        <el-descriptions :column="1" border>
+          <el-descriptions-item label="待开始">新建盘点单后的初始状态，可编辑、删除、开始盘点、作废。开始后进入「盘点中」状态</el-descriptions-item>
+          <el-descriptions-item label="盘点中">盘点进行中，仓库人员在「盘点作业」页面录入实盘数量，可作废</el-descriptions-item>
+          <el-descriptions-item label="待审批">盘点完成后提交审批，等待审批人审核。可审批通过或驳回（驳回回退为盘点中）</el-descriptions-item>
+          <el-descriptions-item label="已完成">审批通过后完成，系统自动调整库存差异</el-descriptions-item>
+          <el-descriptions-item label="已作废">盘点单已作废，不再有效</el-descriptions-item>
+        </el-descriptions>
+
+        <h4>三、重点业务规则</h4>
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <div class="highlight-card highlight-primary">
+              <div class="highlight-card-title">盘点类型说明</div>
+              <div class="highlight-card-body">支持<strong>全盘、抽样盘点、循环盘点</strong>三种类型。抽样盘点需设置抽样比例，循环盘点需选择循环批次</div>
+            </div>
+          </el-col>
+          <el-col :span="12">
+            <div class="highlight-card highlight-warning">
+              <div class="highlight-card-title">盘点范围</div>
+              <div class="highlight-card-body">可选择<strong>指定仓库或指定库区</strong>进行盘点。选择仓库后自动加载该仓库的库区列表</div>
+            </div>
+          </el-col>
+        </el-row>
+        <el-row :gutter="16" style="margin-top: 12px;">
+          <el-col :span="12">
+            <div class="highlight-card highlight-success">
+              <div class="highlight-card-title">库存自动调整</div>
+              <div class="highlight-card-body">审批通过后系统根据<strong>实盘数量与账面数量的差异</strong>自动调整库存，差异为正增加库存，差异为负减少库存</div>
+            </div>
+          </el-col>
+          <el-col :span="12">
+            <div class="highlight-card highlight-danger">
+              <div class="highlight-card-title">审批驳回退回</div>
+              <div class="highlight-card-body">审批驳回后盘点单退回到「盘点中」状态，盘点人员需重新核实并录入实盘数量后再次提交</div>
+            </div>
+          </el-col>
+        </el-row>
+
+        <h4>四、业务操作流程</h4>
+        <el-timeline>
+          <el-timeline-item type="primary" :hollow="true">
+            <strong>新建盘点单：</strong>选择仓库和库区（可选），设置盘点类型和计划日期，保存后进入「待开始」状态
+          </el-timeline-item>
+          <el-timeline-item type="warning" :hollow="true">
+            <strong>开始盘点：</strong>点击「开始」按钮，系统自动生成盘点明细（基于当前库存快照），进入「盘点中」状态
+          </el-timeline-item>
+          <el-timeline-item type="success" :hollow="true">
+            <strong>录入与提交：</strong>在「盘点作业」页面录入实盘数量后提交审批，进入「待审批」状态
+          </el-timeline-item>
+          <el-timeline-item type="info" :hollow="true">
+            <strong>审批完成：</strong>审批通过后系统自动调整库存差异，盘点单进入「已完成」状态
+          </el-timeline-item>
+        </el-timeline>
+      </div>
+      <template #footer>
+        <el-button type="primary" @click="showStatusHelp = false">我知道了</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -295,11 +476,12 @@ import { listStockTake, getStockTake, addStockTake, delStockTake, startStockTake
 import { listWarehouse, listArea } from '@/api/wms/warehouse'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
+import { ArrowRight, ArrowDown, QuestionFilled, WarningFilled, Filter, Search } from '@element-plus/icons-vue'
 const { collapsedCards, toggleCard } = useDetailCard(['basic', 'setting', 'other', 'dBasic', 'dDetail', 'dApprove', 'aBasic', 'aDetail', 'aOpinion', 'sMaterial', 'sBasic'])
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('wms_stocktake_index')
 const { wms_take_type, wms_take_status } = proxy.useDict('wms_take_type', 'wms_take_status')
-const list = ref([]); const open = ref(false); const loading = ref(true); const showSearch = ref(true); const ids = ref([]); const multiple = ref(true); const total = ref(0); const title = ref(''); const detailOpen = ref(false); const detailData = ref({}); const submitOpen = ref(false); const approveOpen = ref(false)
+const list = ref([]); const open = ref(false); const loading = ref(true); const showSearch = ref(true); const showAdvanced = ref(false); const ids = ref([]); const multiple = ref(true); const total = ref(0); const title = ref(''); const detailOpen = ref(false); const detailData = ref({}); const submitOpen = ref(false); const approveOpen = ref(false); const activeStatusTab = ref('all'); const statusCounts = ref({ all: 0 }); const dateRange = ref([])
 const inputForm = ref({})
 const approveForm = ref({})
 // 盘点明细前端分页
@@ -315,12 +497,17 @@ const approvePageList = computed(() => {
   const start = (approvePage.pageNum - 1) * approvePage.pageSize
   return list.slice(start, start + approvePage.pageSize)
 })
-const warehouseOptions = ref([]); const areaOptions = ref([])
-const data = reactive({ form: {}, queryParams: { pageNum: 1, pageSize: 10, takeNo: undefined, takeType: undefined, status: undefined }, rules: { warehouseId: [{ required: true, message: '仓库不能为空', trigger: 'change' }], takeType: [{ required: true, message: '盘点类型不能为空', trigger: 'change' }], planDate: [{ required: true, message: '计划日期不能为空', trigger: 'change' }] } })
+const warehouseOptions = ref([]); const areaOptions = ref([]); const showStatusHelp = ref(false)
+const defaultColumns = { takeNo: { label: '盘点单号', visible: true }, warehouseName: { label: '仓库', visible: true }, areaName: { label: '库区', visible: true }, takeType: { label: '盘点类型', visible: true }, status: { label: '状态', visible: true }, planDate: { label: '计划日期', visible: true }, remark: { label: '备注', visible: true }, createTime: { label: '创建时间', visible: true } }
+function loadColumnVisibility() { try { const saved = localStorage.getItem('wms_stocktake_columns'); if (saved) { const parsed = JSON.parse(saved); const result = {}; Object.keys(defaultColumns).forEach(key => { result[key] = { label: defaultColumns[key].label, visible: parsed[key] !== undefined ? parsed[key] : defaultColumns[key].visible } }); return result } } catch (e) {} return { ...defaultColumns } }
+const columns = ref(loadColumnVisibility())
+const activeFilterCount = computed(() => { let count = 0; if (queryParams.value.takeNo) count++; if (queryParams.value.warehouseId) count++; if (queryParams.value.takeType) count++; if (queryParams.value.status) count++; if (dateRange.value && dateRange.value.length > 0) count++; return count })
+const statusTabList = computed(() => wms_take_status.value)
+const data = reactive({ form: {}, queryParams: { pageNum: 1, pageSize: 10, takeNo: undefined, warehouseId: undefined, takeType: undefined, status: undefined }, rules: { warehouseId: [{ required: true, message: '仓库不能为空', trigger: 'change' }], takeType: [{ required: true, message: '盘点类型不能为空', trigger: 'change' }], planDate: [{ required: true, message: '计划日期不能为空', trigger: 'change' }] } })
 const { queryParams, form, rules } = toRefs(data)
-function getList() { loading.value = true; listStockTake(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false }) }
+function getList() { loading.value = true; listStockTake(proxy.addDateRange(queryParams.value, dateRange.value, 'PlanDate')).then(res => { list.value = res.rows; total.value = res.total; loading.value = false; applySavedWidths() }) }
 function handleQuery() { queryParams.value.pageNum = 1; getList() }
-function resetQuery() { proxy.resetForm('queryRef'); handleQuery() }
+function resetQuery() { queryParams.value.takeNo = undefined; queryParams.value.warehouseId = undefined; queryParams.value.takeType = undefined; queryParams.value.status = undefined; queryParams.value.params = {}; dateRange.value = []; activeStatusTab.value = 'all'; handleQuery() }
 function handleSelectionChange(sel) { ids.value = sel.map(i => i.takeId); multiple.value = !sel.length }
 function reset() { form.value = { warehouseId: undefined, areaId: undefined, takeType: '0', sampleRatio: 30, cycleNo: 1, planDate: undefined, remark: undefined }; areaOptions.value = []; proxy.resetForm('takeRef') }
 function handleAdd() { reset(); open.value = true; title.value = '添加盘点单' }
@@ -346,6 +533,13 @@ function submitDetailForm() { submitStockTakeDetail(inputForm.value.takeId, inpu
 function handleSubmitForApproval() { proxy.$modal.confirm('确认提交审批？提交后将等待审批人审批。').then(() => submitForApproval(detailData.value.takeId)).then(() => { proxy.$modal.msgSuccess('已提交审批'); getStockTake(detailData.value.takeId).then(res => { detailData.value = res.data }); getList() }).catch(() => {}) }
 function handleDelete(row) { const takeIds = row.takeId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delStockTake(takeIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
 function cancel() { open.value = false; reset() }
+function badgeClass(status) { const map = { '0': 'amber', '1': 'blue', '2': 'violet', '3': 'green', '4': 'gray' }; return map[status] || 'gray' }
+function statusLabel(status) { const item = wms_take_status.value.find(d => d.value == status); return item ? item.label : '-' }
+function takeTypeLabel(type) { const item = wms_take_type.value.find(d => d.value == type); return item ? item.label : '-' }
+function statusTabClass(value) { const map = { '0': 'tab-draft', '1': 'tab-audit', '2': 'tab-partial', '3': 'tab-done', '4': 'tab-void' }; return map[value] || '' }
+function handleStatusTabClick(status) { activeStatusTab.value = status; queryParams.value.status = status === 'all' ? undefined : status; handleQuery() }
+function handleStatusChange(val) { activeStatusTab.value = val ? val : 'all'; handleQuery() }
+function loadStatusCounts() { listStockTake({ pageNum: 1, pageSize: 999 }).then(res => { const counts = { all: res.total }; (res.rows || []).forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++ }); statusCounts.value = counts }).catch(() => {}) }
 function onTakeTypeChange() {
   if (form.value.takeType === '1' && !form.value.sampleRatio) { form.value.sampleRatio = 30 }
   if (form.value.takeType === '2' && !form.value.cycleNo) { form.value.cycleNo = 1 }
@@ -360,4 +554,26 @@ function onWarehouseChange(warehouseId) {
 }
 listWarehouse({ status: '0', pageSize: 999 }).then(res => { warehouseOptions.value = res.rows })
 getList()
+loadStatusCounts()
 </script>
+
+<style scoped>
+/* 页面特定样式 - 列表页面共享样式见 wms-list-page.scss */
+.status-help-content { max-height: 500px; overflow-y: auto; padding-right: 10px; }
+.status-help-content h4 { margin: 20px 0 12px 0; color: #303133; font-weight: 600; border-left: 4px solid #409eff; padding-left: 10px; }
+.status-help-content h4:first-child { margin-top: 0; }
+.status-flow { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 16px; background-color: #f5f7fa; border-radius: 8px; margin-bottom: 8px; }
+.flow-item { display: flex; align-items: center; gap: 8px; }
+.flow-arrow { color: #909399; font-size: 16px; }
+.highlight-card { border-radius: 8px; padding: 16px; border: 1px solid; }
+.highlight-success { background-color: #f0f9ff; border-color: #b3e19d; }
+.highlight-danger { background-color: #fef0f0; border-color: #fbc4c4; }
+.highlight-primary { background-color: #ecf5ff; border-color: #a0cfff; }
+.highlight-warning { background-color: #fdf6ec; border-color: #f5dab1; }
+.highlight-card-title { font-size: 14px; font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; }
+.highlight-success .highlight-card-title { color: #67c23a; }
+.highlight-danger .highlight-card-title { color: #f56c6c; }
+.highlight-primary .highlight-card-title { color: #409eff; }
+.highlight-warning .highlight-card-title { color: #e6a23c; }
+.highlight-card-body { font-size: 13px; color: #606266; line-height: 1.6; }
+</style>

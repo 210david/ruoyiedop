@@ -250,15 +250,96 @@ public class MkShipmentServiceImpl implements IMkShipmentService
             {
                 continue;
             }
-            // 只有待发货(0)或已取消(3)状态才能删除
-            if (!"0".equals(shipment.getStatus()) && !"3".equals(shipment.getStatus()))
+            // 已发货(1)或已签收(2)状态的发货单，需要回滚订单明细的已发货数量
+            if ("1".equals(shipment.getStatus()) || "2".equals(shipment.getStatus()))
             {
-                throw new ServiceException("发货单「" + shipment.getShipmentNo() + "」非待发货/已取消状态，不能删除");
+                rollbackOrderShippedQty(shipment);
             }
             // 删除明细
             mkShipmentMapper.deleteShipmentDetailByShipmentId(shipmentId);
         }
         return mkShipmentMapper.deleteShipmentByIds(shipmentIds);
+    }
+
+    /**
+     * 删除已确认发货单时，回滚订单明细的已发货数量和订单状态
+     */
+    private void rollbackOrderShippedQty(MkShipment shipment)
+    {
+        if (shipment.getOrderId() == null)
+        {
+            return;
+        }
+        List<MkShipmentDetail> details = mkShipmentMapper.selectShipmentDetailByShipmentId(shipment.getShipmentId());
+        if (details == null || details.isEmpty())
+        {
+            return;
+        }
+        MkOrder order = mkOrderService.selectOrderById(shipment.getOrderId());
+        if (order == null || order.getItemList() == null)
+        {
+            return;
+        }
+        // 回滚每条明细的已发货数量
+        for (MkShipmentDetail d : details)
+        {
+            if (d.getOrderItemId() != null && d.getShipQty() != null)
+            {
+                for (MkOrderItem oi : order.getItemList())
+                {
+                    if (d.getOrderItemId().equals(oi.getItemId()))
+                    {
+                        BigDecimal currentShipped = oi.getShippedQty() != null ? oi.getShippedQty() : BigDecimal.ZERO;
+                        BigDecimal newShipped = currentShipped.subtract(d.getShipQty());
+                        if (newShipped.compareTo(BigDecimal.ZERO) < 0)
+                        {
+                            newShipped = BigDecimal.ZERO;
+                        }
+                        mkShipmentMapper.updateOrderItemShippedQty(d.getOrderItemId(), newShipped);
+                        break;
+                    }
+                }
+            }
+        }
+        // 重新查询订单以获取最新的已发货数量
+        MkOrder freshOrder = mkOrderService.selectOrderById(shipment.getOrderId());
+        boolean hasShipped = false;
+        boolean allShipped = true;
+        if (freshOrder != null && freshOrder.getItemList() != null)
+        {
+            for (MkOrderItem oi : freshOrder.getItemList())
+            {
+                BigDecimal orderQty = new BigDecimal(oi.getQuantity() != null ? oi.getQuantity() : 0);
+                BigDecimal shippedQty = oi.getShippedQty() != null ? oi.getShippedQty() : BigDecimal.ZERO;
+                if (shippedQty.compareTo(BigDecimal.ZERO) > 0)
+                {
+                    hasShipped = true;
+                }
+                if (shippedQty.compareTo(orderQty) < 0)
+                {
+                    allShipped = false;
+                }
+            }
+        }
+        // 更新订单状态
+        String newOrderStatus;
+        if (allShipped && hasShipped)
+        {
+            newOrderStatus = "4"; // 已完成
+        }
+        else if (hasShipped)
+        {
+            newOrderStatus = "3"; // 部分发货
+        }
+        else
+        {
+            newOrderStatus = "2"; // 已审核（恢复到未发货状态）
+        }
+        MkOrder updateOrder = new MkOrder();
+        updateOrder.setOrderId(order.getOrderId());
+        updateOrder.setOrderStatus(newOrderStatus);
+        updateOrder.setUpdateBy(SecurityUtils.getUsername());
+        mkOrderMapper.updateOrder(updateOrder);
     }
 
     @Override
@@ -274,11 +355,17 @@ public class MkShipmentServiceImpl implements IMkShipmentService
         {
             throw new ServiceException("只有待发货状态的发货单才能确认发货");
         }
+        // 校验：出库单号必填（必须先在仓库管理完成出库）
+        if (StringUtils.isEmpty(shipment.getOutboundOrderNo()))
+        {
+            throw new ServiceException("请填写出库单号，必须先在仓库管理完成出库后才能发货");
+        }
         // 设置发货信息
         existing.setStatus("1"); // 已发货
         existing.setShipmentDate(shipment.getShipmentDate() != null ? shipment.getShipmentDate() : new Date());
         existing.setLogisticsCompany(shipment.getLogisticsCompany());
         existing.setTrackingNo(shipment.getTrackingNo());
+        existing.setOutboundOrderNo(shipment.getOutboundOrderNo());
         existing.setShipperId(SecurityUtils.getUserId());
         existing.setShipperName(SecurityUtils.getUsername());
         existing.setUpdateBy(SecurityUtils.getUsername());

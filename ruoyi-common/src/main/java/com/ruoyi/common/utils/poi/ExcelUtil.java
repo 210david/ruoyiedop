@@ -581,6 +581,14 @@ public class ExcelUtil<T>
     {
         response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
         response.setCharacterEncoding("utf-8");
+        try
+        {
+            FileUtils.setAttachmentResponseHeader(response, sheetName + ".xlsx");
+        }
+        catch (Exception e)
+        {
+            log.error("设置Content-Disposition头失败{}", e.getMessage());
+        }
         this.init(list, sheetName, title, Type.EXPORT);
         exportExcel(response);
     }
@@ -602,6 +610,7 @@ public class ExcelUtil<T>
         {
             response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
             response.setCharacterEncoding("utf-8");
+            FileUtils.setAttachmentResponseHeader(response, sheets.get(0).getSheetName() + ".xlsx");
             wb.write(response.getOutputStream());
         }
         catch (Exception e)
@@ -742,6 +751,14 @@ public class ExcelUtil<T>
     {
         response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
         response.setCharacterEncoding("utf-8");
+        try
+        {
+            FileUtils.setAttachmentResponseHeader(response, sheetName + ".xlsx");
+        }
+        catch (Exception e)
+        {
+            log.error("设置Content-Disposition头失败{}", e.getMessage());
+        }
         this.init(null, sheetName, title, Type.IMPORT);
         exportExcel(response);
     }
@@ -1688,7 +1705,18 @@ public class ExcelUtil<T>
     private void createExcelField()
     {
         this.fields = getFields();
-        this.fields = this.fields.stream().sorted(Comparator.comparing(objects -> ((Excel) objects[1]).sort())).collect(Collectors.toList());
+        this.fields = this.fields.stream().sorted((o1, o2) -> {
+            int sortCompare = Integer.compare(((Excel) o1[1]).sort(), ((Excel) o2[1]).sort());
+            if (sortCompare != 0) {
+                return sortCompare;
+            }
+            // 当sort值相同时，确保父类字段排在子类字段之后
+            Field field1 = (Field) o1[0];
+            Field field2 = (Field) o2[0];
+            boolean isField1FromParent = !field1.getDeclaringClass().equals(this.clazz);
+            boolean isField2FromParent = !field2.getDeclaringClass().equals(this.clazz);
+            return Boolean.compare(isField1FromParent, isField2FromParent);
+        }).collect(Collectors.toList());
         this.maxHeight = getRowHeight();
     }
 

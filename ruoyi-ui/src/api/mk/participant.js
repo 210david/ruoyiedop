@@ -1,8 +1,8 @@
 import request from '@/utils/request'
 
 // 查询活动参与人列表
-export function listParticipant(query) {
-  return request({ url: '/mk/participant/list', method: 'get', params: query })
+export function listParticipant(query, config = {}) {
+return request({ url: '/mk/participant/list', method: 'get', params: query, ...config })
 }
 
 // 查询活动参与人详细

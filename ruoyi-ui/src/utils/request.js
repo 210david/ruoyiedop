@@ -96,10 +96,15 @@ service.interceptors.response.use(res => {
     }
       return Promise.reject('无效的会话，或者会话已过期，请重新登录。')
     } else if (code === 500) {
-      ElMessage({ message: msg, type: 'error' })
+      // suppressError: 非关键请求（如列宽配置、状态计数）失败时不弹错误提示
+      if (!res.config?.suppressError) {
+        ElMessage({ message: msg, type: 'error' })
+      }
       return Promise.reject(new Error(msg))
     } else if (code === 601) {
-      ElMessage({ message: msg, type: 'warning' })
+      if (!res.config?.suppressError) {
+        ElMessage({ message: msg, type: 'warning' })
+      }
       return Promise.reject(new Error(msg))
     } else if (code !== 200) {
       ElNotification.error({ title: msg })
@@ -110,15 +115,18 @@ service.interceptors.response.use(res => {
   },
   error => {
     console.log('err' + error)
-    let { message } = error
-    if (message == "Network Error") {
-      message = "后端接口连接异常"
-    } else if (message.includes("timeout")) {
-      message = "系统接口请求超时"
-    } else if (message.includes("Request failed with status code")) {
-      message = "系统接口" + message.slice(-3) + "异常"
+    // suppressError: 非关键请求失败时不弹错误提示
+    if (!error.config?.suppressError) {
+      let { message } = error
+      if (message == "Network Error") {
+        message = "后端接口连接异常"
+      } else if (message.includes("timeout")) {
+        message = "系统接口请求超时"
+      } else if (message.includes("Request failed with status code")) {
+        message = "系统接口" + message.slice(-3) + "异常"
+      }
+      ElMessage({ message: message, type: 'error', duration: 5 * 1000 })
     }
-    ElMessage({ message: message, type: 'error', duration: 5 * 1000 })
     return Promise.reject(error)
   }
 )
@@ -134,7 +142,9 @@ export function download(url, params, filename, config) {
   }).then(async (data) => {
     const isBlob = blobValidate(data)
     if (isBlob) {
-      const blob = new Blob([data], { type: 'application/octet-stream' })
+      // 使用 file-saver 库处理下载，兼容 Chrome/Firefox/Edge/Safari
+      // file-saver 内部处理了 Chrome 的 user gesture 安全限制
+      const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
       saveAs(blob, filename)
     } else {
       const resText = await data.text()

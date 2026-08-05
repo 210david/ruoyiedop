@@ -62,6 +62,11 @@
     <update id="updateReturn" parameterType="com.ruoyi.mk.domain.MkOrderReturn">
         UPDATE mk_order_return
         <set>
+            <if test="returnNo != null and returnNo != ''">return_no = #{returnNo},</if>
+            <if test="orderId != null">order_id = #{orderId},</if>
+            <if test="customerId != null">customer_id = #{customerId},</if>
+            <if test="returnAmount != null">return_amount = #{returnAmount},</if>
+            <if test="returnReason != null">return_reason = #{returnReason},</if>
             <if test="returnStatus != null">return_status = #{returnStatus},</if>
             <if test="refundAmount != null">refund_amount = #{refundAmount},</if>
             <if test="refundDate != null">refund_date = #{refundDate},</if>
@@ -78,6 +83,53 @@
     <delete id="deleteReturnByIds" parameterType="Long">
         UPDATE mk_order_return SET del_flag = '2' WHERE return_id IN
         <foreach item="returnId" collection="array" open="(" separator="," close=")">#{returnId}</foreach>
+    </delete>
+
+    <!-- 退货明细 -->
+    <resultMap type="com.ruoyi.mk.domain.MkOrderReturnItem" id="MkOrderReturnItemResult">
+        <result property="itemId"        column="item_id"/>
+        <result property="returnId"      column="return_id"/>
+        <result property="orderItemId"   column="order_item_id"/>
+        <result property="productName"   column="product_name"/>
+        <result property="productSpec"   column="product_spec"/>
+        <result property="unit"          column="unit"/>
+        <result property="orderQty"      column="order_qty"/>
+        <result property="shipQty"       column="ship_qty"/>
+        <result property="returnQty"     column="return_qty"/>
+        <result property="unitPrice"     column="unit_price"/>
+        <result property="returnAmount"  column="return_amount"/>
+        <result property="returnReason"  column="return_reason"/>
+        <result property="delFlag"       column="del_flag"/>
+        <result property="createBy"      column="create_by"/>
+        <result property="createTime"    column="create_time"/>
+        <result property="updateBy"      column="update_by"/>
+        <result property="updateTime"    column="update_time"/>
+        <result property="remark"        column="remark"/>
+    </resultMap>
+
+    <select id="selectReturnItemsByReturnId" parameterType="Long" resultMap="MkOrderReturnItemResult">
+        SELECT item_id, return_id, order_item_id, product_name, product_spec, unit,
+               order_qty, ship_qty, return_qty, unit_price, return_amount, return_reason,
+               del_flag, create_by, create_time, update_by, update_time, remark
+        FROM mk_order_return_item
+        WHERE return_id = #{returnId} AND del_flag = '0'
+        ORDER BY item_id ASC
+    </select>
+
+    <insert id="insertReturnItem" parameterType="com.ruoyi.mk.domain.MkOrderReturnItem" useGeneratedKeys="true" keyProperty="itemId">
+        INSERT INTO mk_order_return_item (
+            return_id, order_item_id, product_name, product_spec, unit,
+            order_qty, ship_qty, return_qty, unit_price, return_amount, return_reason,
+            del_flag, create_by, create_time, remark
+        ) VALUES (
+            #{returnId}, #{orderItemId}, #{productName}, #{productSpec}, #{unit},
+            #{orderQty}, #{shipQty}, #{returnQty}, #{unitPrice}, #{returnAmount}, #{returnReason},
+            '0', #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <delete id="deleteReturnItemsByReturnId" parameterType="Long">
+        UPDATE mk_order_return_item SET del_flag = '2' WHERE return_id = #{returnId}
     </delete>
 
 </mapper>

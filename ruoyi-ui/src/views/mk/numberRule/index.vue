@@ -1,68 +1,112 @@
 <template>
-  <div class="app-container">
-    <el-alert v-if="presetRuleCode" :title="presetAlertText" type="info" :closable="false" show-icon style="margin-bottom: 12px" />
-    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch">
-      <el-form-item label="规则编码" prop="ruleCode"><el-input v-model="queryParams.ruleCode" placeholder="请输入" clearable style="width: 200px" @keyup.enter="handleQuery" /></el-form-item>
-      <el-form-item label="规则名称" prop="ruleName"><el-input v-model="queryParams.ruleName" placeholder="请输入" clearable style="width: 200px" @keyup.enter="handleQuery" /></el-form-item>
-      <el-form-item label="状态" prop="status"><el-select v-model="queryParams.status" placeholder="请选择" clearable style="width: 200px"><el-option v-for="d in sys_normal_disable" :key="d.value" :label="d.label" :value="d.value" /></el-select></el-form-item>
-      <el-form-item><el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button><el-button icon="Refresh" @click="resetQuery">重置</el-button></el-form-item>
-    </el-form>
+  <div class="app-container mk-number-rule-page">
+    <el-alert v-if="presetRuleCode" :title="presetAlertText" type="info" :closable="false" show-icon style="margin-bottom: 8px" />
+    <!-- ===== Filter Card ===== -->
+    <div class="surface filter-card" v-show="showSearch">
+      <div class="filter-head">
+        <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+      </div>
+      <div class="filter-bar">
+        <div class="field">
+          <label>规则编码</label>
+          <div class="control">
+            <el-input v-model="queryParams.ruleCode" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field">
+          <label>规则名称</label>
+          <div class="control">
+            <el-input v-model="queryParams.ruleName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field">
+          <label>状态</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
+              <template #prefix><el-icon><Filter /></el-icon></template>
+              <el-option v-for="d in sys_normal_disable" :key="d.value" :label="d.label" :value="d.value" />
+            </el-select>
+          </div>
+        </div>
+      </div>
+      <div class="filter-actions">
+        <div class="filter-info">
+          <el-icon><Filter /></el-icon> 已选 {{ activeFilterCount }} 个条件，支持回车快速搜索
+        </div>
+        <div class="filter-buttons">
+          <el-button icon="RefreshLeft" @click="resetQuery">重置</el-button>
+          <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+        </div>
+      </div>
+    </div>
 
-    <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5"><el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['marketing:numberRule:add']">新增</el-button></el-col>
-      <el-col :span="1.5"><el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['marketing:numberRule:edit']">修改</el-button></el-col>
-      <el-col :span="1.5"><el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['marketing:numberRule:export']">导出</el-button></el-col>
-      <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
-    </el-row>
-
-    <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange">
-      <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="规则编码" prop="ruleCode" width="160" />
-      <el-table-column label="所属模块" prop="module" width="100" align="center">
-        <template #default="scope">
-          <el-tag v-if="scope.row.module === 'mk'" type="primary" size="small">营销管理</el-tag>
-          <el-tag v-else-if="scope.row.module === 'dms'" type="warning" size="small">设备管理</el-tag>
-          <el-tag v-else-if="scope.row.module === 'wms'" type="success" size="small">仓储管理</el-tag>
-          <el-tag v-else-if="scope.row.module === 'pms'" type="info" size="small">采购管理</el-tag>
-          <span v-else>{{ scope.row.module }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="规则名称" prop="ruleName" width="140" />
-      <el-table-column label="前缀" prop="prefix" width="80" align="center">
-        <template #default="scope">
-          <span v-if="scope.row.prefix">{{ scope.row.prefix }}</span>
-          <el-tag v-else-if="scope.row.prefixFieldEnabled === '1'" type="success" size="small">动态</el-tag>
-          <span v-else>-</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="日期格式" prop="dateFormat" width="120" align="center">
-        <template #default="scope">
-          <span v-if="scope.row.dateFormat">{{ scope.row.dateFormat }}</span>
-          <span v-else>-</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="重置类型" prop="resetType" width="100" align="center">
-        <template #default="scope"><dict-tag :options="mk_number_reset_type" :value="scope.row.resetType" /></template>
-      </el-table-column>
-      <el-table-column label="序列号长度" prop="seqLength" width="100" align="center" />
-      <el-table-column label="当前序列号" prop="currentSeq" width="100" align="center" />
-      <el-table-column label="预览编号" prop="preview" width="200">
-        <template #default="scope">
-          <el-tag type="primary">{{ scope.row.preview }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="状态" prop="status" width="80" align="center">
-        <template #default="scope"><dict-tag :options="sys_normal_disable" :value="scope.row.status" /></template>
-      </el-table-column>
-      <el-table-column label="备注" prop="remark" show-overflow-tooltip />
-      <el-table-column label="操作" width="180" align="center" fixed="right">
-        <template #default="scope">
-          <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['marketing:numberRule:query']">查看</el-button>
-          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['marketing:numberRule:edit']">修改</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
-    <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+    <!-- ===== Table Section ===== -->
+    <div class="surface">
+      <div class="toolbar">
+        <div class="left">
+          <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['marketing:numberRule:add']">新增</el-button>
+          <button type="button" class="btn-soft is-outline" :disabled="single" @click="handleUpdate" v-hasPermi="['marketing:numberRule:edit']">
+            <el-icon><Edit /></el-icon> 修改
+          </button>
+          <div class="toolbar-divider"></div>
+          <button type="button" class="btn-soft is-outline" @click="handleExport" v-hasPermi="['marketing:numberRule:export']">
+            <el-icon><Download /></el-icon> 导出
+          </button>
+        </div>
+        <div class="right">
+          <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="mk_number_rule_columns" />
+        </div>
+      </div>
+      <div class="table-wrap">
+        <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" class="app-table">
+          <el-table-column type="selection" width="55" align="center" />
+          <el-table-column label="规则编码" prop="ruleCode" key="ruleCode" :width="colWidth('ruleCode', 160)" resizable v-if="columns.ruleCode.visible" />
+          <el-table-column label="所属模块" prop="module" key="module" :width="colWidth('module', 100)" resizable align="center" v-if="columns.module.visible">
+            <template #default="scope">
+              <span class="badge violet">{{ moduleLabel(scope.row.module) }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="规则名称" prop="ruleName" key="ruleName" :width="colWidth('ruleName', 140)" resizable v-if="columns.ruleName.visible" />
+          <el-table-column label="前缀" prop="prefix" key="prefix" :width="colWidth('prefix', 80)" resizable align="center" v-if="columns.prefix.visible">
+            <template #default="scope">
+              <span v-if="scope.row.prefix">{{ scope.row.prefix }}</span>
+              <span class="badge green" v-else-if="scope.row.prefixFieldEnabled === '1'">动态</span>
+              <span v-else>-</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="日期格式" prop="dateFormat" key="dateFormat" :width="colWidth('dateFormat', 120)" resizable align="center" v-if="columns.dateFormat.visible">
+            <template #default="scope">{{ scope.row.dateFormat || '-' }}</template>
+          </el-table-column>
+          <el-table-column label="重置类型" prop="resetType" key="resetType" :width="colWidth('resetType', 100)" resizable align="center" v-if="columns.resetType.visible">
+            <template #default="scope">
+              <span class="badge amber">{{ resetTypeLabel(scope.row.resetType) }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="序列号长度" prop="seqLength" key="seqLength" :width="colWidth('seqLength', 100)" resizable align="center" v-if="columns.seqLength.visible" />
+          <el-table-column label="当前序列号" prop="currentSeq" key="currentSeq" :width="colWidth('currentSeq', 100)" resizable align="center" v-if="columns.currentSeq.visible" />
+          <el-table-column label="预览编号" prop="preview" key="preview" :width="colWidth('preview', 200)" resizable v-if="columns.preview.visible">
+            <template #default="scope">{{ scope.row.preview }}</template>
+          </el-table-column>
+          <el-table-column label="状态" prop="status" key="status" :width="colWidth('status', 100)" resizable align="center" v-if="columns.status.visible">
+            <template #default="scope">
+              <span class="badge" :class="scope.row.status === '0' ? 'green' : 'gray'"><span class="dot"></span>{{ statusLabel(scope.row.status) }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="备注" prop="remark" key="remark" :width="colWidth('remark', 180)" resizable show-overflow-tooltip v-if="columns.remark.visible" />
+          <el-table-column label="操作" width="180" align="center" fixed="right">
+            <template #default="scope">
+              <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['marketing:numberRule:query']">查看</el-button>
+              <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['marketing:numberRule:edit']">修改</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+      <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+    </div>
 
     <!-- 新增/修改/查看 对话框 -->
     <el-dialog v-model="open" width="900px" append-to-body draggable class="rd-dialog">
@@ -282,11 +326,13 @@
 import { useRoute } from 'vue-router'
 import { listNumberRule, getNumberRule, addNumberRule, updateNumberRule } from '@/api/mk/numberRule'
 import { getDicts } from '@/api/system/dict/data'
+import { useColumnResize } from '@/composables/useColumnResize'
 
 const route = useRoute()
 import { useDetailCard } from '@/composables/useDetailCard'
 const { collapsedCards, toggleCard } = useDetailCard(["basic","format","prefix","seq","preview"])
 const { proxy } = getCurrentInstance()
+const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('mk_number_rule_index')
 const { mk_number_reset_type, sys_normal_disable } = proxy.useDict('mk_number_reset_type', 'sys_normal_disable')
 
 /** 从路由参数获取当前模块（mk/dms/wms），默认为 mk */
@@ -316,6 +362,56 @@ const total = ref(0)
 const title = ref('')
 const previewText = ref('')
 const isView = ref(false)
+
+const defaultColumns = {
+  ruleCode: { label: '规则编码', visible: true },
+  module: { label: '所属模块', visible: true },
+  ruleName: { label: '规则名称', visible: true },
+  prefix: { label: '前缀', visible: true },
+  dateFormat: { label: '日期格式', visible: true },
+  resetType: { label: '重置类型', visible: true },
+  seqLength: { label: '序列号长度', visible: true },
+  currentSeq: { label: '当前序列号', visible: true },
+  preview: { label: '预览编号', visible: true },
+  status: { label: '状态', visible: true },
+  remark: { label: '备注', visible: true }
+}
+function loadColumnVisibility() {
+  try {
+    const saved = localStorage.getItem('mk_number_rule_columns')
+    if (saved) {
+      const parsed = JSON.parse(saved)
+      const result = {}
+      Object.keys(defaultColumns).forEach(key => {
+        result[key] = { label: defaultColumns[key].label, visible: parsed[key] !== undefined ? parsed[key] : defaultColumns[key].visible }
+      })
+      return result
+    }
+  } catch (e) {}
+  return { ...defaultColumns }
+}
+const columns = ref(loadColumnVisibility())
+
+const activeFilterCount = computed(() => {
+  let count = 0
+  if (queryParams.value.ruleCode) count++
+  if (queryParams.value.ruleName) count++
+  if (queryParams.value.status !== undefined && queryParams.value.status !== null && queryParams.value.status !== '') count++
+  return count
+})
+
+function moduleLabel(val) {
+  const map = { mk: '营销管理', dms: '设备管理', wms: '仓储管理', pms: '采购管理' }
+  return map[val] || val || '-'
+}
+function resetTypeLabel(val) {
+  const item = mk_number_reset_type.value.find(d => d.value == val)
+  return item ? item.label : '-'
+}
+function statusLabel(val) {
+  const item = sys_normal_disable.value.find(d => d.value == val)
+  return item ? item.label : '-'
+}
 const data = reactive({
   form: {},
   queryParams: { pageNum: 1, pageSize: 10, ruleCode: undefined, ruleName: undefined, status: undefined },
@@ -339,7 +435,7 @@ function getList() {
   if (presetRuleCode.value) {
     queryParams.value.ruleCode = presetRuleCode.value
   }
-  listNumberRule(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false })
+  listNumberRule(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false; applySavedWidths() }).catch(() => { loading.value = false })
 }
 function handleQuery() { queryParams.value.pageNum = 1; getList() }
 function resetQuery() {
@@ -581,3 +677,76 @@ watch([() => route.query.module, () => route.query.ruleCode], () => { getList() 
 
 getList()
 </script>
+
+<style scoped>
+.mk-number-rule-page {
+  padding-top: 10px;
+  --brand-50:#eef2ff; --brand-100:#e0e7ff; --brand-200:#c7d2fe; --brand-500:#6366f1; --brand-600:#4f46e5; --brand-700:#4338ca;
+  --ink-900:#0f172a; --ink-700:#334155; --ink-500:#64748b; --ink-400:#94a3b8; --ink-300:#cbd5e1; --ink-200:#e2e8f0; --ink-100:#f1f5f9; --ink-50:#f8fafc;
+  --amber-50:#fffbeb; --amber-500:#f59e0b; --amber-700:#b45309;
+  --blue-50:#eff6ff; --blue-500:#3b82f6; --blue-700:#1d4ed8;
+  --green-50:#ecfdf5; --green-500:#10b981; --green-700:#047857;
+  --red-50:#fef2f2; --red-500:#ef4444; --red-700:#b91c1c;
+  --violet-50:#f5f3ff;
+  --r-sm:6px; --r-md:10px; --r-lg:14px;
+  --shadow-card:0 1px 0 rgba(15,23,42,.04), 0 1px 2px rgba(15,23,42,.04);
+  --ease-out:cubic-bezier(.16,.84,.44,1);
+  font-feature-settings:"tnum" 1;
+  color: var(--ink-900);
+}
+.mk-number-rule-page .surface { background:#fff; border:1px solid var(--ink-200); border-radius:var(--r-lg); box-shadow:var(--shadow-card); overflow:hidden; margin-bottom:8px; }
+.mk-number-rule-page .filter-card { padding:14px 20px 16px; }
+.mk-number-rule-page .filter-card .filter-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+.mk-number-rule-page .filter-card .filter-title { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--ink-700); }
+.mk-number-rule-page .filter-card .filter-title .glyph { width:4px; height:14px; background:var(--brand-600); border-radius:2px; }
+.mk-number-rule-page .filter-card .filter-bar { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px 16px; }
+.mk-number-rule-page .filter-card .field { display:flex; flex-direction:column; gap:4px; }
+.mk-number-rule-page .filter-card .field > label { font-size:13px; font-weight:500; color:var(--ink-500); }
+.mk-number-rule-page .filter-card .field .control { width:100%; }
+.mk-number-rule-page .filter-card .field .control .el-input, .mk-number-rule-page .filter-card .field .control .el-select { width:100%; }
+.mk-number-rule-page .filter-card .filter-actions { display:flex; align-items:center; justify-content:space-between; margin-top:14px; padding-top:14px; border-top:1px dashed var(--ink-200); }
+.mk-number-rule-page .filter-card .filter-info { font-size:13px; color:var(--ink-500); display:flex; align-items:center; gap:6px; }
+.mk-number-rule-page .filter-card .filter-buttons { display:flex; gap:8px; }
+.mk-number-rule-page .toolbar { display:flex; align-items:center; justify-content:space-between; padding:10px 16px; border-bottom:1px solid var(--ink-200); }
+.mk-number-rule-page .toolbar .left { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.mk-number-rule-page .toolbar .right { display:flex; align-items:center; gap:8px; }
+.mk-number-rule-page .toolbar-divider { width:1px; height:20px; background:var(--ink-200); margin:0 4px; }
+.mk-number-rule-page .btn-soft { display:inline-flex; align-items:center; gap:4px; height:32px; padding:0 12px; border-radius:var(--r-sm); font-size:14px; cursor:pointer; transition:all .15s var(--ease-out); border:1px solid transparent; background:transparent; color:var(--ink-700); }
+.mk-number-rule-page .btn-soft.is-outline { border-color:var(--ink-300); background:#fff; }
+.mk-number-rule-page .btn-soft.is-outline:hover { border-color:var(--brand-400); color:var(--brand-600); background:var(--brand-50); }
+.mk-number-rule-page .btn-soft:disabled:hover { transform:none; box-shadow:none; }
+.mk-number-rule-page .btn-soft:focus-visible { outline:2px solid var(--brand-500); outline-offset:2px; }
+.mk-number-rule-page .table-wrap { overflow-x:auto; }
+.mk-number-rule-page .app-table { --el-table-bg-color:#fff; --el-table-header-bg-color:var(--ink-50); --el-table-row-hover-bg-color:#fafbff; --el-table-border-color:transparent; --el-table-text-color:var(--ink-700); --el-table-header-text-color:var(--ink-500); }
+.mk-number-rule-page .app-table :deep(.el-table__body td) { border-right-color:transparent !important; }
+.mk-number-rule-page .app-table :deep(.el-table__header th) { border-right-color:transparent !important; }
+.mk-number-rule-page .app-table :deep(.el-table__header th:hover) { border-right-color:var(--ink-200) !important; }
+.mk-number-rule-page .app-table :deep(.el-table__header th) { background:var(--ink-50) !important; color:var(--ink-500); font-weight:600; font-size:14px; letter-spacing:.02em; padding:12px 16px; border-bottom:1px solid var(--ink-200); }
+.mk-number-rule-page .app-table :deep(.el-table__header th .cell) { text-transform:uppercase; }
+.mk-number-rule-page .app-table :deep(.el-table__body td) { padding:14px 16px; border-bottom:1px solid var(--ink-100); color:var(--ink-700); }
+.mk-number-rule-page .app-table :deep(.el-table__row:hover > td) { background:#fafbff !important; }
+.mk-number-rule-page .app-table :deep(.el-table__inner-wrapper::before) { display:none; }
+.mk-number-rule-page .app-table :deep(.el-table__border-left-patch) { display:none; }
+.mk-number-rule-page .badge { display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:999px; font-size:13px; font-weight:600; line-height:1; border:1px solid transparent; }
+.mk-number-rule-page .badge .dot { width:6px; height:6px; border-radius:50%; }
+.mk-number-rule-page .badge.amber { background:var(--amber-50); color:var(--amber-700); border-color:#fde68a; }
+.mk-number-rule-page .badge.amber .dot { background:var(--amber-500); }
+.mk-number-rule-page .badge.blue { background:var(--blue-50); color:var(--blue-700); border-color:#bfdbfe; }
+.mk-number-rule-page .badge.blue .dot { background:var(--blue-500); }
+.mk-number-rule-page .badge.green { background:var(--green-50); color:var(--green-700); border-color:#a7f3d0; }
+.mk-number-rule-page .badge.green .dot { background:var(--green-500); }
+.mk-number-rule-page .badge.red { background:var(--red-50); color:var(--red-700); border-color:#fecaca; }
+.mk-number-rule-page .badge.red .dot { background:var(--red-500); }
+.mk-number-rule-page .badge.violet { background:var(--violet-50); color:var(--brand-700); border-color:var(--brand-200); }
+.mk-number-rule-page .badge.gray { background:var(--ink-100); color:var(--ink-500); border-color:var(--ink-200); }
+.mk-number-rule-page .badge.gray .dot { background:var(--ink-400); }
+@media (max-width:1100px) { .mk-number-rule-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }
+@media (max-width:720px) { .mk-number-rule-page .filter-card .filter-bar { grid-template-columns:1fr; } .mk-number-rule-page .toolbar { flex-wrap:wrap; gap:10px; } }
+.mk-number-rule-page .pagination-container { display:flex; align-items:center; justify-content:flex-end; padding:14px 20px; font-size:14px; color:var(--ink-500); background:#fff; border-top:1px solid transparent; }
+.mk-number-rule-page .pagination-container :deep(.el-pagination) { justify-content:flex-end; }
+.mk-number-rule-page .pagination-container :deep(.el-pagination .el-pager li) { border-radius:6px; border:1px solid var(--ink-200); background:#fff; min-width:32px; height:32px; line-height:32px; font-size:14px; color:var(--ink-700); margin:0 2px; }
+.mk-number-rule-page .pagination-container :deep(.el-pagination .el-pager li.is-active) { background:var(--brand-600); border-color:var(--brand-600); color:#fff; font-weight:600; box-shadow:0 4px 10px -2px rgba(79,70,229,.4); }
+.mk-number-rule-page .pagination-container :deep(.el-pagination .btn-prev), .mk-number-rule-page .pagination-container :deep(.el-pagination .btn-next) { border-radius:6px; border:1px solid var(--ink-200); background:#fff; min-width:32px; height:32px; }
+.mk-number-rule-page .pagination-container :deep(.el-pagination .btn-prev:hover), .mk-number-rule-page .pagination-container :deep(.el-pagination .btn-next:hover) { border-color:var(--brand-200); color:var(--brand-700); }
+.mk-number-rule-page .pagination-container :deep(.el-pagination .el-pagination__sizes .el-select__wrapper) { border-radius:6px; box-shadow:0 0 0 1px var(--ink-200) inset; }
+</style>

@@ -1,6 +1,7 @@
 package com.ruoyi.mk.service;
 
 import java.util.List;
+import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.mk.domain.MkCustomer;
 
 /**
@@ -38,5 +39,5 @@ public interface IMkCustomerService
     public int batchUpdateStatus(Long[] customerIds, String customerStatus);
 
     /** 导入客户数据 */
-    public String importCustomer(List<MkCustomer> customerList, Boolean isUpdateSupport, String operName);
+    public AjaxResult importCustomer(List<MkCustomer> customerList, Boolean isUpdateSupport, String updateKey, String operName);
 }

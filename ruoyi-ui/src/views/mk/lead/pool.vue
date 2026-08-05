@@ -1,62 +1,121 @@
-﻿<template>
-  <div class="app-container">
-    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch">
-      <el-form-item label="企业名称" prop="companyName"><el-input v-model="queryParams.companyName" placeholder="请输入" clearable style="width: 200px" @keyup.enter="handleQuery" /></el-form-item>
-      <el-form-item label="线索等级" prop="leadGrade">
-        <el-select v-model="queryParams.leadGrade" placeholder="请选择" clearable style="width: 200px">
-          <el-option v-for="d in marketing_lead_grade" :key="d.value" :label="d.label" :value="d.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="审批状态" prop="receiveStatus">
-        <el-select v-model="queryParams.receiveStatus" placeholder="请选择" clearable style="width: 200px">
-          <el-option v-for="d in marketing_lead_receive_status" :key="d.value" :label="d.label" :value="d.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item><el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button><el-button icon="Refresh" @click="resetQuery">重置</el-button></el-form-item>
-    </el-form>
-
-    <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5"><el-button type="info" plain icon="Guide" @click="showHelp = !showHelp">公海池说明</el-button></el-col>
-      <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
-    </el-row>
-
-    <el-alert v-if="showHelp" type="info" :closable="false" style="margin-bottom: 12px">
-      <template #title>
-        <div style="line-height: 1.8">
-          <strong>公海池业务说明：</strong><br/>
-          1. <strong>数据来源：</strong>新增线索时未指定负责人（默认 isPublic=1），或管理员手动将线索退回公海；<br/>
-          2. <strong>领取流程：</strong>点击「申请领取」提交审批申请 → 管理员审批通过后线索自动分配给申请人；<br/>
-          3. <strong>审批状态：</strong>未申请（可申请）、待审批（等待管理员处理）、已批准（已分配）、已拒绝（退回公海可重新申请）。
+﻿﻿﻿﻿﻿﻿﻿﻿<template>
+  <div class="app-container mk-list-page">
+    <!-- ===== Filter Card ===== -->
+    <div class="surface filter-card" v-show="showSearch">
+      <div class="filter-head">
+        <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+      </div>
+      <div class="filter-bar">
+        <div class="field">
+          <label>企业名称</label>
+          <div class="control">
+            <el-input v-model="queryParams.companyName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
         </div>
-      </template>
-    </el-alert>
+        <div class="field">
+          <label>线索等级</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.leadGrade" placeholder="全部" clearable @change="handleQuery">
+              <template #prefix><el-icon><Filter /></el-icon></template>
+              <el-option v-for="d in marketing_lead_grade" :key="d.value" :label="d.label" :value="d.value" />
+            </el-select>
+          </div>
+        </div>
+        <div class="field">
+          <label>审批状态</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.receiveStatus" placeholder="全部" clearable @change="handleQuery">
+              <template #prefix><el-icon><Filter /></el-icon></template>
+              <el-option v-for="d in marketing_lead_receive_status" :key="d.value" :label="d.label" :value="d.value" />
+            </el-select>
+          </div>
+        </div>
+      </div>
+      <div class="filter-actions">
+        <div class="filter-info">
+          <el-icon><Filter /></el-icon> 已选 {{ activeFilterCount }} 个条件，支持回车快速搜索
+        </div>
+        <div class="filter-buttons">
+          <el-button icon="RefreshLeft" @click="resetQuery">重置</el-button>
+          <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+        </div>
+      </div>
+    </div>
 
-    <el-table ref="tableRef" border v-loading="loading" :data="list" @header-dragend="onHeaderDragEnd">
-      <el-table-column label="线索编号" prop="leadNo" :width="colWidth('leadNo', 150)" resizable />
-      <el-table-column label="企业名称" prop="companyName" :width="colWidth('companyName', 200)" resizable show-overflow-tooltip />
-      <el-table-column label="联系人" prop="contactName" :width="colWidth('contactName', 100)" resizable />
-      <el-table-column label="手机号" prop="contactPhone" :width="colWidth('contactPhone', 130)" resizable />
-      <el-table-column label="线索来源" prop="leadSource" :width="colWidth('leadSource', 100)" resizable align="center">
-        <template #default="scope"><dict-tag :options="marketing_customer_source" :value="scope.row.leadSource" /></template>
-      </el-table-column>
-      <el-table-column label="等级" prop="leadGrade" :width="colWidth('leadGrade', 80)" resizable align="center">
-        <template #default="scope"><dict-tag :options="marketing_lead_grade" :value="scope.row.leadGrade" /></template>
-      </el-table-column>
-      <el-table-column label="评分" prop="leadScore" :width="colWidth('leadScore', 80)" resizable align="center" />
-      <el-table-column label="审批状态" prop="receiveStatus" :width="colWidth('receiveStatus', 100)" resizable align="center">
-        <template #default="scope"><dict-tag :options="marketing_lead_receive_status" :value="scope.row.receiveStatus || '0'" /></template>
-      </el-table-column>
-      <el-table-column label="申请人" prop="receiveApplyUserName" :width="colWidth('receiveApplyUserName', 100)" resizable />
-      <el-table-column label="申请时间" prop="receiveApplyTime" :width="colWidth('receiveApplyTime', 160)" resizable />
-      <el-table-column label="操作" width="200" align="center" fixed="right">
-        <template #default="scope">
-          <el-button link type="primary" icon="View" @click="handleView(scope.row)">详情</el-button>
-          <el-button link type="success" icon="Pointer" @click="handleReceive(scope.row)" v-hasPermi="['marketing:lead:pool:receive']" v-if="!scope.row.receiveStatus || scope.row.receiveStatus === '0' || scope.row.receiveStatus === '3'">申请领取</el-button>
-          <el-button link type="warning" icon="Check" @click="handleApprove(scope.row)" v-hasPermi="['marketing:lead:pool:approve']" v-if="scope.row.receiveStatus === '1'">审批</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
-    <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+    <!-- ===== Table Section ===== -->
+    <div class="surface">
+      <!-- Status Tabs + Tip Pill -->
+      <div class="status-tabs">
+        <div class="tabs-track">
+          <button class="status-tab" :class="{ 'is-active': activeStatusTab === 'all' }" @click="handleStatusTabClick('all')">
+            <span class="dot"></span><span>全部</span><span class="count">{{ statusCounts.all }}</span>
+          </button>
+          <button v-for="s in statusTabList" :key="s.value"
+            class="status-tab"
+            :class="[statusTabClass(s.value), { 'is-active': activeStatusTab === s.value }]"
+            @click="handleStatusTabClick(s.value)">
+            <span class="dot"></span><span>{{ s.label }}</span><span class="count">{{ statusCounts[s.value] || 0 }}</span>
+          </button>
+        </div>
+        <button class="tip-pill" @click="showStatusHelp = true">
+          <el-icon><QuestionFilled /></el-icon>
+          <span>业务操作说明</span>
+        </button>
+      </div>
+
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <div class="left">
+        </div>
+        <div class="right">
+          <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="mk_lead_pool_columns" />
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="table-wrap">
+        <el-table ref="tableRef" border v-loading="loading" :data="list" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
+          <el-table-column label="线索编号" prop="leadNo" key="leadNo" :width="colWidth('leadNo', 150)" resizable v-if="columns.leadNo.visible" />
+          <el-table-column label="企业名称" prop="companyName" key="companyName" :width="colWidth('companyName', 200)" resizable show-overflow-tooltip v-if="columns.companyName.visible" />
+          <el-table-column label="联系人" prop="contactName" key="contactName" :width="colWidth('contactName', 100)" resizable v-if="columns.contactName.visible" />
+          <el-table-column label="手机号" prop="contactPhone" key="contactPhone" :width="colWidth('contactPhone', 130)" resizable v-if="columns.contactPhone.visible">
+            <template #default="scope"><span class="col-mono">{{ scope.row.contactPhone }}</span></template>
+          </el-table-column>
+          <el-table-column label="线索来源" prop="leadSource" key="leadSource" :width="colWidth('leadSource', 100)" resizable align="center" v-if="columns.leadSource.visible">
+            <template #default="scope">
+              <span class="badge" :class="sourceBadgeClass(scope.row.leadSource)">
+                <span class="dot"></span>{{ sourceLabel(scope.row.leadSource) }}
+              </span>
+            </template>
+          </el-table-column>
+          <el-table-column label="等级" prop="leadGrade" key="leadGrade" :width="colWidth('leadGrade', 80)" resizable align="center" v-if="columns.leadGrade.visible">
+            <template #default="scope">
+              <span class="badge" :class="gradeBadgeClass(scope.row.leadGrade)">
+                <span class="dot"></span>{{ gradeLabel(scope.row.leadGrade) }}
+              </span>
+            </template>
+          </el-table-column>
+          <el-table-column label="评分" prop="leadScore" key="leadScore" :width="colWidth('leadScore', 80)" resizable align="center" v-if="columns.leadScore.visible" />
+          <el-table-column label="审批状态" prop="receiveStatus" key="receiveStatus" :width="colWidth('receiveStatus', 100)" resizable align="center" v-if="columns.receiveStatus.visible">
+            <template #default="scope"><span class="badge" :class="badgeClass(scope.row.receiveStatus || '0')"><span class="dot"></span>{{ statusLabel(scope.row.receiveStatus || '0') }}</span></template>
+          </el-table-column>
+          <el-table-column label="申请人" prop="receiveApplyUserName" key="receiveApplyUserName" :width="colWidth('receiveApplyUserName', 100)" resizable v-if="columns.receiveApplyUserName.visible" />
+          <el-table-column label="申请时间" prop="receiveApplyTime" key="receiveApplyTime" :width="colWidth('receiveApplyTime', 160)" resizable sortable="custom" v-if="columns.receiveApplyTime.visible" />
+          <el-table-column label="操作" width="200" align="center" fixed="right">
+            <template #default="scope">
+              <el-button link type="primary" icon="View" @click="handleView(scope.row)">详情</el-button>
+              <el-button link type="success" icon="Pointer" @click="handleReceive(scope.row)" v-hasPermi="['marketing:lead:pool:receive']" v-if="!scope.row.receiveStatus || scope.row.receiveStatus === '0' || scope.row.receiveStatus === '3'">申请领取</el-button>
+              <el-button link type="warning" icon="Check" @click="handleApprove(scope.row)" v-hasPermi="['marketing:lead:pool:approve']" v-if="scope.row.receiveStatus === '1'">审批</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+
+      <!-- Pagination -->
+      <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+    </div>
 
         <!-- 线索详情弹窗 -->
     <el-dialog v-model="viewOpen" width="900px" append-to-body draggable class="rd-dialog" @open="loadViewRelations">
@@ -294,11 +353,65 @@
         <el-button @click="approveOpen = false">取 消</el-button>
       </template>
     </el-dialog>
+
+    <!-- 业务操作说明对话框 -->
+    <el-dialog v-model="showStatusHelp" title="线索公海业务操作说明" width="720px" append-to-body>
+      <div class="status-help-content">
+        <h4>一、业务流程图</h4>
+        <div class="status-flow">
+          <div class="flow-item">
+            <el-tag type="info">退回公海</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="warning">申请领取</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="primary">待审批</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="success">已批准</el-tag>
+          </div>
+        </div>
+        <div class="status-flow" style="margin-top: 8px;">
+          <div class="flow-item">
+            <el-tag type="primary">待审批</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="danger">已拒绝</el-tag>
+            <el-tag size="small" type="info">退回公海可重新申请</el-tag>
+          </div>
+        </div>
+
+        <h4>二、各状态说明</h4>
+        <el-descriptions :column="1" border>
+          <el-descriptions-item label="未申请">线索在公海池中，未被任何人申请领取</el-descriptions-item>
+          <el-descriptions-item label="待审批">已有销售人员申请领取，等待管理员审批</el-descriptions-item>
+          <el-descriptions-item label="已批准">审批通过，线索已分配给申请人</el-descriptions-item>
+          <el-descriptions-item label="已拒绝">审批被拒绝，线索退回公海，可重新申请</el-descriptions-item>
+        </el-descriptions>
+
+        <h4>三、重点业务规则</h4>
+        <div class="highlight-card">
+          <p>• <strong>申请领取：</strong>点击"申请领取"提交审批申请，等待管理员审批</p>
+          <p>• <strong>审批流程：</strong>管理员可查看线索详情后决定通过或拒绝</p>
+          <p>• <strong>自动分配：</strong>审批通过后线索自动分配给申请人，成为跟进中状态</p>
+          <p>• <strong>重新申请：</strong>被拒绝的线索退回公海，可重新申请领取</p>
+        </div>
+      </div>
+      <template #footer>
+        <el-button type="primary" @click="showStatusHelp = false">我知道了</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup name="MkLeadPool">
 import { listLead, getLead, receiveLead, approveReceive, rejectReceive, getLeadLog } from '@/api/mk/lead'
+import { ArrowRight, QuestionFilled } from '@element-plus/icons-vue'
 import { listInteraction } from '@/api/mk/interaction'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
@@ -314,6 +427,28 @@ const approveOpen = ref(false)
 const loading = ref(true)
 const showSearch = ref(true)
 const showHelp = ref(false)
+const showStatusHelp = ref(false)
+const showAdvanced = ref(false)
+const activeStatusTab = ref('all')
+const statusCounts = ref({ all: 0, '0': 0, '1': 0, '2': 0, '3': 0 })
+const statusTabList = computed(() => marketing_lead_receive_status.value)
+function loadStatusCounts() {
+  const counts = { all: 0, '0': 0, '1': 0, '2': 0, '3': 0 }
+  list.value.forEach(row => {
+    const s = row.receiveStatus || '0'
+    if (counts[s] !== undefined) counts[s]++
+  })
+  counts.all = total.value
+  statusCounts.value = counts
+}
+function handleStatusTabClick(status) { activeStatusTab.value = status; queryParams.value.receiveStatus = status === 'all' ? undefined : status; handleQuery() }
+function badgeClass(status) { const map = { '0': 'amber', '1': 'blue', '2': 'green', '3': 'red' }; return map[status] || 'gray' }
+function statusLabel(status) { const item = marketing_lead_receive_status.value.find(d => d.value == status); return item ? item.label : '-' }
+function sourceBadgeClass(source) { const map = { '1': 'blue', '2': 'green', '3': 'violet', '4': 'amber', '5': 'cyan', '6': 'red', '7': 'gray' }; return map[source] || 'gray' }
+function sourceLabel(source) { const item = marketing_customer_source.value.find(d => d.value == source); return item ? item.label : '-' }
+function gradeBadgeClass(grade) { const map = { '1': 'red', '2': 'amber', '3': 'blue', '4': 'green' }; return map[grade] || 'gray' }
+function gradeLabel(grade) { const item = marketing_lead_grade.value.find(d => d.value == grade); return item ? item.label : '-' }
+function statusTabClass(value) { const map = { '0': 'tab-draft', '1': 'tab-audit', '2': 'tab-done', '3': 'tab-reject' }; return map[value] || '' }
 const total = ref(0)
 const viewForm = ref({})
 const approveForm = ref({})
@@ -322,13 +457,56 @@ const interactionList = ref([])
 const timelineList = ref([])
 
 const data = reactive({
-  queryParams: { pageNum: 1, pageSize: 10, companyName: undefined, leadGrade: undefined, receiveStatus: undefined, isPublic: '1' }
+  queryParams: { pageNum: 1, pageSize: 10, companyName: undefined, leadGrade: undefined, receiveStatus: undefined, isPublic: '1', params: {} }
 })
 const { queryParams } = toRefs(data)
 
-function getList() { loading.value = true; listLead(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false; applySavedWidths() }) }
-function handleQuery() { queryParams.value.pageNum = 1; getList() }
-function resetQuery() { proxy.resetForm('queryRef'); queryParams.value.isPublic = '1'; handleQuery() }
+// 列显隐配置 - 从 localStorage 恢复保存的设置
+const defaultColumns = {
+  leadNo: { label: '线索编号', visible: true },
+  companyName: { label: '企业名称', visible: true },
+  contactName: { label: '联系人', visible: true },
+  contactPhone: { label: '手机号', visible: true },
+  leadSource: { label: '线索来源', visible: true },
+  leadGrade: { label: '等级', visible: true },
+  leadScore: { label: '评分', visible: true },
+  receiveStatus: { label: '审批状态', visible: true },
+  receiveApplyUserName: { label: '申请人', visible: true },
+  receiveApplyTime: { label: '申请时间', visible: true }
+}
+
+function loadColumnVisibility() {
+  try {
+    const saved = localStorage.getItem('mk_lead_pool_columns')
+    if (saved) {
+      const parsed = JSON.parse(saved)
+      const result = {}
+      Object.keys(defaultColumns).forEach(key => {
+        result[key] = {
+          label: defaultColumns[key].label,
+          visible: parsed[key] !== undefined ? parsed[key] : defaultColumns[key].visible
+        }
+      })
+      return result
+    }
+  } catch (e) {}
+  return { ...defaultColumns }
+}
+
+const columns = ref(loadColumnVisibility())
+
+const activeFilterCount = computed(() => {
+  let count = 0
+  if (queryParams.value.companyName) count++
+  if (queryParams.value.leadGrade) count++
+  if (queryParams.value.receiveStatus) count++
+  return count
+})
+
+function getList() { loading.value = true; listLead(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false; loadStatusCounts(); applySavedWidths() }).catch(() => { loading.value = false }) }
+function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
+function resetQuery() { queryParams.value.companyName = undefined; queryParams.value.leadGrade = undefined; queryParams.value.receiveStatus = undefined; queryParams.value.isPublic = '1'; queryParams.value.params = {}; activeStatusTab.value = 'all'; handleQuery() }
+function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleView(row) {
   getLead(row.leadId).then(res => {
     viewForm.value = res.data
@@ -489,4 +667,51 @@ getList()
 
 <style scoped>
 .mb8 { margin-bottom: 8px; }
+
+.status-help-content {
+  max-height: 500px;
+  overflow-y: auto;
+  padding-right: 10px;
+}
+.status-help-content h4 {
+  margin: 20px 0 12px 0;
+  color: #303133;
+  font-weight: 600;
+  border-left: 4px solid #409eff;
+  padding-left: 10px;
+}
+.status-help-content h4:first-child {
+  margin-top: 0;
+}
+.status-help-content .status-flow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 16px;
+  background-color: #f5f7fa;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+.status-help-content .flow-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.status-help-content .flow-arrow {
+  color: #909399;
+  font-size: 16px;
+}
+.status-help-content .highlight-card {
+  background-color: #ecf5ff;
+  border-radius: 8px;
+  padding: 16px;
+  border-left: 4px solid #409eff;
+}
+.status-help-content .highlight-card p {
+  margin: 6px 0;
+  line-height: 1.6;
+  font-size: 13px;
+  color: #606266;
+}
 </style>

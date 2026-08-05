@@ -1,52 +1,93 @@
 <template>
-  <div class="app-container">
-    <el-row :gutter="20">
-      <el-col :span="24" :xs="24">
-        <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch">
-          <el-form-item label="规则编码" prop="ruleCode"><el-input v-model="queryParams.ruleCode" placeholder="请输入" clearable style="width: 200px" @keyup.enter="handleQuery" /></el-form-item>
-          <el-form-item label="规则名称" prop="ruleName"><el-input v-model="queryParams.ruleName" placeholder="请输入" clearable style="width: 200px" @keyup.enter="handleQuery" /></el-form-item>
-          <el-form-item label="状态" prop="status"><el-select v-model="queryParams.status" placeholder="请选择" clearable style="width: 200px"><el-option v-for="d in sys_normal_disable" :key="d.value" :label="d.label" :value="d.value" /></el-select></el-form-item>
-          <el-form-item><el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button><el-button icon="Refresh" @click="resetQuery">重置</el-button></el-form-item>
-        </el-form>
+  <div class="app-container wms-list-page">
+    <!-- ===== Filter Card ===== -->
+    <div class="surface filter-card" v-show="showSearch">
+      <div class="filter-head">
+        <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+        <a class="adv-link" :class="{ 'is-open': showAdvanced }" @click.prevent="showAdvanced = !showAdvanced">
+          <span>{{ showAdvanced ? '收起' : '高级筛选' }}</span>
+          <el-icon class="chev"><ArrowDown /></el-icon>
+        </a>
+      </div>
+      <div class="filter-bar">
+        <div class="field">
+          <label>规则编码</label>
+          <div class="control">
+            <el-input v-model="queryParams.ruleCode" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field">
+          <label>规则名称</label>
+          <div class="control">
+            <el-input v-model="queryParams.ruleName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field">
+          <label>状态</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
+              <el-option v-for="d in sys_normal_disable" :key="d.value" :label="d.label" :value="d.value" />
+            </el-select>
+          </div>
+        </div>
+      </div>
+      <div class="filter-actions">
+        <div class="filter-info">
+          <el-icon><Filter /></el-icon> 已选 {{ activeFilterCount }} 个条件，支持回车快速搜索
+        </div>
+        <div class="filter-buttons">
+          <el-button icon="RefreshLeft" @click="resetQuery">重置</el-button>
+          <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+        </div>
+      </div>
+    </div>
 
-        <el-row :gutter="10" class="mb8">
-          <el-col :span="1.5"><el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['pms:numberRule:add']">新增</el-button></el-col>
-          <el-col :span="1.5"><el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['pms:numberRule:edit']">修改</el-button></el-col>
-          <el-col :span="1.5"><el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['pms:numberRule:export']">导出</el-button></el-col>
-          <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
-        </el-row>
+    <!-- ===== Table Section ===== -->
+    <div class="surface">
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <div class="left">
+          <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['pms:numberRule:add']">新增</el-button>
+          <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['pms:numberRule:edit']">修改</el-button>
+          <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['pms:numberRule:export']">导出</el-button>
+        </div>
+        <div class="right">
+          <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="pms_numberRule_columns" />
+        </div>
+      </div>
 
-        <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
+      <!-- Table -->
+      <div class="table-wrap">
+        <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
-          <el-table-column label="规则编码" prop="ruleCode" :width="colWidth('ruleCode', 160)" resizable />
-          <el-table-column label="规则名称" prop="ruleName" :width="colWidth('ruleName', 140)" resizable />
-          <el-table-column label="前缀" prop="prefix" :width="colWidth('prefix', 80)" resizable align="center">
+          <el-table-column label="规则编码" prop="ruleCode" key="ruleCode" :width="colWidth('ruleCode', 160)" resizable v-if="columns.ruleCode.visible" />
+          <el-table-column label="规则名称" prop="ruleName" key="ruleName" :width="colWidth('ruleName', 140)" resizable v-if="columns.ruleName.visible" />
+          <el-table-column label="前缀" prop="prefix" key="prefix" :width="colWidth('prefix', 80)" resizable align="center" v-if="columns.prefix.visible">
             <template #default="scope">
-              <span v-if="scope.row.prefix">{{ scope.row.prefix }}</span>
-              <el-tag v-else-if="scope.row.prefixFieldEnabled === '1'" type="success" size="small">动态</el-tag>
+              <span v-if="scope.row.prefix" class="col-mono">{{ scope.row.prefix }}</span>
+              <span class="badge green" v-else-if="scope.row.prefixFieldEnabled === '1'">动态</span>
               <span v-else>-</span>
             </template>
           </el-table-column>
-          <el-table-column label="日期格式" prop="dateFormat" width="120" align="center">
-            <template #default="scope">
-              <span v-if="scope.row.dateFormat">{{ scope.row.dateFormat }}</span>
-              <span v-else>-</span>
-            </template>
+          <el-table-column label="日期格式" prop="dateFormat" key="dateFormat" width="120" align="center" v-if="columns.dateFormat.visible">
+            <template #default="scope"><span v-if="scope.row.dateFormat" class="col-mono">{{ scope.row.dateFormat }}</span><span v-else>-</span></template>
           </el-table-column>
-          <el-table-column label="重置类型" prop="resetType" width="100" align="center">
-            <template #default="scope"><dict-tag :options="mk_number_reset_type" :value="scope.row.resetType" /></template>
+          <el-table-column label="重置类型" prop="resetType" key="resetType" width="100" align="center" v-if="columns.resetType.visible">
+            <template #default="scope"><span class="badge violet">{{ resetTypeLabel(scope.row.resetType) }}</span></template>
           </el-table-column>
-          <el-table-column label="序列号长度" prop="seqLength" width="100" align="center" />
-          <el-table-column label="当前序列号" prop="currentSeq" width="100" align="center" />
-          <el-table-column label="预览编号" prop="preview" width="200">
-            <template #default="scope">
-              <el-tag type="primary">{{ scope.row.preview }}</el-tag>
-            </template>
+          <el-table-column label="序列号长度" prop="seqLength" key="seqLength" width="100" align="center" v-if="columns.seqLength.visible" />
+          <el-table-column label="当前序列号" prop="currentSeq" key="currentSeq" width="100" align="center" v-if="columns.currentSeq.visible" />
+          <el-table-column label="预览编号" prop="preview" key="preview" width="200" v-if="columns.preview.visible">
+            <template #default="scope"><span class="col-mono" style="color: var(--brand-600); font-weight: 600;">{{ scope.row.preview }}</span></template>
           </el-table-column>
-          <el-table-column label="状态" prop="status" width="80" align="center">
-            <template #default="scope"><dict-tag :options="sys_normal_disable" :value="scope.row.status" /></template>
+          <el-table-column label="状态" prop="status" key="status" width="100" align="center" v-if="columns.status.visible">
+            <template #default="scope"><span class="badge" :class="badgeClass(scope.row.status)"><span class="dot"></span>{{ statusLabel(scope.row.status) }}</span></template>
           </el-table-column>
-          <el-table-column label="备注" prop="remark" show-overflow-tooltip />
+          <el-table-column label="备注" prop="remark" key="remark" :width="colWidth('remark', 200)" resizable :show-overflow-tooltip="true" v-if="columns.remark.visible" />
           <el-table-column label="操作" width="180" align="center" fixed="right">
             <template #default="scope">
               <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['pms:numberRule:query']">查看</el-button>
@@ -54,9 +95,11 @@
             </template>
           </el-table-column>
         </el-table>
+      </div>
+      <div class="pagination-container">
         <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
-      </el-col>
-    </el-row>
+      </div>
+    </div>
 
     <!-- 新增/修改/查看 对话框 -->
     <el-dialog v-model="open" width="860px" append-to-body draggable class="rd-dialog">
@@ -211,9 +254,10 @@
 import { listNumberRule, getNumberRule, addNumberRule, updateNumberRule } from '@/api/mk/numberRule'
 import { useDetailCard } from '@/composables/useDetailCard'
 import { useColumnResize } from '@/composables/useColumnResize'
+import { ArrowDown, Filter, Search } from '@element-plus/icons-vue'
 
 const { collapsedCards, toggleCard } = useDetailCard(["basic","format","seq","preview"])
-const { colWidth, onHeaderDragEnd, tableRef } = useColumnResize('pms_numberRule_index')
+const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('pms_numberRule_index')
 const { proxy } = getCurrentInstance()
 const { mk_number_reset_type, sys_normal_disable } = proxy.useDict('mk_number_reset_type', 'sys_normal_disable')
 
@@ -224,12 +268,17 @@ const list = ref([])
 const open = ref(false)
 const loading = ref(true)
 const showSearch = ref(true)
+const showAdvanced = ref(false)
 const ids = ref([])
 const single = ref(true)
 const total = ref(0)
 const title = ref('')
 const previewText = ref('')
 const isView = ref(false)
+const defaultColumns = { ruleCode: { label: '规则编码', visible: true }, ruleName: { label: '规则名称', visible: true }, prefix: { label: '前缀', visible: true }, dateFormat: { label: '日期格式', visible: true }, resetType: { label: '重置类型', visible: true }, seqLength: { label: '序列号长度', visible: true }, currentSeq: { label: '当前序列号', visible: true }, preview: { label: '预览编号', visible: true }, status: { label: '状态', visible: true }, remark: { label: '备注', visible: true } }
+function loadColumnVisibility() { try { const saved = localStorage.getItem('pms_numberRule_columns'); if (saved) { const parsed = JSON.parse(saved); const result = {}; Object.keys(defaultColumns).forEach(key => { result[key] = { label: defaultColumns[key].label, visible: parsed[key] !== undefined ? parsed[key] : defaultColumns[key].visible } }); return result } } catch (e) {} return { ...defaultColumns } }
+const columns = ref(loadColumnVisibility())
+const activeFilterCount = computed(() => { let count = 0; if (queryParams.value.ruleCode) count++; if (queryParams.value.ruleName) count++; if (queryParams.value.status) count++; return count })
 const data = reactive({
   form: {},
   queryParams: { pageNum: 1, pageSize: 10, module: MODULE, ruleCode: undefined, ruleName: undefined, status: undefined },
@@ -245,14 +294,13 @@ const { queryParams, form, rules } = toRefs(data)
 
 function getList() {
   loading.value = true
-  listNumberRule(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false })
+  listNumberRule(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false; applySavedWidths() })
 }
 function handleQuery() { queryParams.value.pageNum = 1; getList() }
-function resetQuery() {
-  proxy.resetForm('queryRef')
-  queryParams.value.module = MODULE
-  handleQuery()
-}
+function resetQuery() { queryParams.value.ruleCode = undefined; queryParams.value.ruleName = undefined; queryParams.value.status = undefined; queryParams.value.module = MODULE; handleQuery() }
+function badgeClass(status) { return status === '0' ? 'green' : 'gray' }
+function statusLabel(status) { const item = sys_normal_disable.value.find(d => d.value == status); return item ? item.label : '-' }
+function resetTypeLabel(type) { const item = mk_number_reset_type.value.find(d => d.value == type); return item ? item.label : '-' }
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.ruleId); single.value = selection.length !== 1 }
 
 /** 根据表单数据生成本地预览编号 */

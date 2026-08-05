@@ -1,8 +1,8 @@
 import request from '@/utils/request'
 
 // 查询发货列表
-export function listShipment(query) {
-  return request({ url: '/mk/shipment/list', method: 'get', params: query })
+export function listShipment(query, config = {}) {
+return request({ url: '/mk/shipment/list', method: 'get', params: query, ...config })
 }
 
 // 查询发货详细

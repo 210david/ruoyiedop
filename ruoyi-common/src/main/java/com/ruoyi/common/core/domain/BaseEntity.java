@@ -37,7 +37,7 @@ public class BaseEntity implements Serializable
     private Date updateTime;
 
     /** 备注 */
-    @Excel(name = "备注")
+    @Excel(name = "备注", sort = Integer.MAX_VALUE)
     private String remark;
 
     /** 请求参数 */

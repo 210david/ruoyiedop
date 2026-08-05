@@ -85,6 +85,9 @@
             <if test="supplierName != null and supplierName != ''"> AND supplier_name LIKE CONCAT('%', #{supplierName}, '%')</if>
             <if test="status != null and status != ''"> AND status = #{status}</if>
             <if test="contractType != null and contractType != ''"> AND contract_type = #{contractType}</if>
+            <if test="signBy != null and signBy != ''"> AND sign_by LIKE CONCAT('%', #{signBy}, '%')</if>
+            <if test="params.beginSignDate != null and params.beginSignDate != ''"> AND sign_date &gt;= #{params.beginSignDate}</if>
+            <if test="params.endSignDate != null and params.endSignDate != ''"> AND sign_date &lt;= #{params.endSignDate}</if>
         </where>
         ORDER BY contract_id DESC
     </select>

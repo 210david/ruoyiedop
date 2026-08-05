@@ -1,5 +1,5 @@
 <template>
-   <div class="app-container tree-sidebar-manage-wrap">
+   <div class="app-container tree-sidebar-manage-wrap sys-dept-page">
       <!-- 左侧组织机构树 -->
       <tree-panel
          title="组织机构"
@@ -17,94 +17,116 @@
       <!-- 右侧内容区 -->
       <div class="tree-sidebar-content">
          <div class="content-inner">
-            <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch">
-               <el-form-item label="部门名称" prop="deptName">
-                  <el-input
-                     v-model="queryParams.deptName"
-                     placeholder="请输入部门名称"
-                     clearable
-                     style="width: 200px"
-                     @keyup.enter="handleQuery"
-                  />
-               </el-form-item>
-               <el-form-item label="状态" prop="status">
-                  <el-select v-model="queryParams.status" placeholder="部门状态" clearable style="width: 200px">
-                     <el-option
-                        v-for="dict in sys_normal_disable"
-                        :key="dict.value"
-                        :label="dict.label"
-                        :value="dict.value"
-                     />
-                  </el-select>
-               </el-form-item>
-               <el-form-item>
-                  <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-                  <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-               </el-form-item>
-            </el-form>
+            <!-- Filter Card -->
+            <div class="surface filter-card" v-show="showSearch">
+               <div class="filter-head">
+                  <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+               </div>
+               <div class="filter-bar">
+                  <div class="field">
+                     <label>部门名称</label>
+                     <div class="control">
+                        <el-input
+                           v-model="queryParams.deptName"
+                           placeholder="请输入"
+                           clearable
+                           @keyup.enter="handleQuery"
+                        >
+                           <template #prefix><el-icon><Search /></el-icon></template>
+                        </el-input>
+                     </div>
+                  </div>
+                  <div class="field">
+                     <label>状态</label>
+                     <div class="control is-select">
+                        <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
+                           <el-option
+                              v-for="dict in sys_normal_disable"
+                              :key="dict.value"
+                              :label="dict.label"
+                              :value="dict.value"
+                           />
+                        </el-select>
+                     </div>
+                  </div>
+               </div>
+               <div class="filter-actions">
+                  <div class="filter-info">
+                     <el-icon><Filter /></el-icon> 已选 {{ activeFilterCount }} 个条件，支持回车快速搜索
+                  </div>
+                  <div class="filter-buttons">
+                     <el-button icon="RefreshLeft" @click="resetQuery">重置</el-button>
+                     <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+                  </div>
+               </div>
+            </div>
 
-            <el-row :gutter="10" class="mb8">
-               <el-col :span="1.5">
-                  <el-button
-                     type="primary"
-                     plain
-                     icon="Plus"
-                     @click="handleAdd"
-                     v-hasPermi="['system:dept:add']"
-                  >新增</el-button>
-               </el-col>
-               <el-col :span="1.5">
-                  <el-button
-                     type="warning"
-                     plain
-                     icon="Check"
-                     @click="handleSaveSort"
-                     v-hasPermi="['system:dept:edit']"
-                  >保存排序</el-button>
-               </el-col>
-               <el-col :span="1.5">
-                  <el-button
-                     type="info"
-                     plain
-                     icon="Sort"
-                     @click="toggleExpandAll"
-                  >展开/折叠</el-button>
-               </el-col>
-               <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
-            </el-row>
+            <!-- Table Section -->
+            <div class="surface">
+               <div class="toolbar">
+                  <div class="left">
+                     <el-button
+                        type="primary"
+                        plain
+                        icon="Plus"
+                        @click="handleAdd"
+                        v-hasPermi="['system:dept:add']"
+                     >新增</el-button>
+                     <el-button
+                        type="warning"
+                        plain
+                        icon="Check"
+                        @click="handleSaveSort"
+                        v-hasPermi="['system:dept:edit']"
+                     >保存排序</el-button>
+                     <el-button
+                        type="info"
+                        plain
+                        icon="Sort"
+                        @click="toggleExpandAll"
+                     >展开/折叠</el-button>
+                  </div>
+                  <div class="right">
+                     <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="sys_dept_columns"></right-toolbar>
+                  </div>
+               </div>
 
-            <el-table
-               v-if="refreshTable"
-               v-loading="loading"
-               :data="deptList"
-               row-key="deptId"
-               :default-expand-all="isExpandAll"
-               :tree-props="{ children: 'children', hasChildren: 'hasChildren' }"
-            >
-               <el-table-column prop="deptName" label="部门名称" width="260"></el-table-column>
-               <el-table-column prop="orderNum" label="排序" width="200">
-                  <template #default="scope">
-                     <el-input-number v-model="scope.row.orderNum" controls-position="right" :min="0" style="width: 88px" />
-                  </template>
-               </el-table-column>
-               <el-table-column prop="status" label="状态" width="100">
-                  <template #default="scope">
-                     <dict-tag :options="sys_normal_disable" :value="scope.row.status" />
-                  </template>
-               </el-table-column>
-               <el-table-column label="创建时间" align="center" prop="createTime" width="200">
-                  <template #default="scope">
-                     <span>{{ parseTime(scope.row.createTime) }}</span>
-                  </template>
-               </el-table-column>
-               <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
-                  <template #default="scope">
-                     <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['system:dept:edit']">修改</el-button>
-                     <el-button link type="primary" icon="Plus" @click="handleAdd(scope.row)" v-hasPermi="['system:dept:add']">新增</el-button>
-                     <el-button v-if="scope.row.parentId != 0" link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['system:dept:remove']">删除</el-button>
-                  </template>
-               </el-table-column>
-            </el-table>
+               <div class="table-wrap">
+                  <el-table
+                     v-if="refreshTable"
+                     v-loading="loading"
+                     :data="deptList"
+                     row-key="deptId"
+                     :default-expand-all="isExpandAll"
+                     :tree-props="{ children: 'children', hasChildren: 'hasChildren' }"
+                     class="app-table"
+                  >
+                     <el-table-column prop="deptName" label="部门名称" width="260" v-if="columns.deptName.visible"></el-table-column>
+                     <el-table-column prop="orderNum" label="排序" width="200" v-if="columns.orderNum.visible">
+                        <template #default="scope">
+                           <el-input-number v-model="scope.row.orderNum" controls-position="right" :min="0" style="width: 88px" />
+                        </template>
+                     </el-table-column>
+                     <el-table-column prop="status" label="状态" width="100" v-if="columns.status.visible">
+                        <template #default="scope">
+                           <dict-tag :options="sys_normal_disable" :value="scope.row.status" />
+                        </template>
+                     </el-table-column>
+                     <el-table-column label="创建时间" align="center" prop="createTime" width="200" v-if="columns.createTime.visible">
+                        <template #default="scope">
+                           <span>{{ parseTime(scope.row.createTime) }}</span>
+                        </template>
+                     </el-table-column>
+                     <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+                        <template #default="scope">
+                           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['system:dept:edit']">修改</el-button>
+                           <el-button link type="primary" icon="Plus" @click="handleAdd(scope.row)" v-hasPermi="['system:dept:add']">新增</el-button>
+                           <el-button v-if="scope.row.parentId != 0" link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['system:dept:remove']">删除</el-button>
+                        </template>
+                     </el-table-column>
+                  </el-table>
+               </div>
+            </div>
          </div>
       </div>
 
@@ -176,6 +198,7 @@
 import TreePanel from "@/components/TreePanel"
 import { listDept, getDept, delDept, addDept, updateDept, updateDeptSort, listDeptExcludeChild } from "@/api/system/dept"
 import { deptTreeSelect } from "@/api/system/user"
+import { Search, Filter } from '@element-plus/icons-vue'
 
 const { proxy } = getCurrentInstance()
 const { sys_normal_disable } = useDict("sys_normal_disable")
@@ -191,6 +214,14 @@ const refreshTable = ref(true)
 const originalOrders = ref({})
 const deptTreeData = ref([])
 const currentDeptId = ref(undefined)
+
+// 列显隐信息
+const columns = ref({
+  deptName: { label: '部门名称', visible: true },
+  orderNum: { label: '排序', visible: true },
+  status: { label: '状态', visible: true },
+  createTime: { label: '创建时间', visible: true }
+})
 
 const data = reactive({
   form: {},
@@ -208,6 +239,13 @@ const data = reactive({
 })
 
 const { queryParams, form, rules } = toRefs(data)
+
+const activeFilterCount = computed(() => {
+  let count = 0
+  if (queryParams.value.deptName) count++
+  if (queryParams.value.status) count++
+  return count
+})
 
 /** 查询部门列表 */
 function getList() {
@@ -400,3 +438,76 @@ onMounted(() => {
   getList()
 })
 </script>
+
+<style scoped>
+/* ===== Design Tokens ===== */
+.sys-dept-page {
+  --brand-50:#eef2ff; --brand-100:#e0e7ff; --brand-200:#c7d2fe; --brand-500:#6366f1; --brand-600:#4f46e5; --brand-700:#4338ca;
+  --ink-900:#0f172a; --ink-700:#334155; --ink-500:#64748b; --ink-400:#94a3b8; --ink-300:#cbd5e1; --ink-200:#e2e8f0; --ink-100:#f1f5f9; --ink-50:#f8fafc;
+  --amber-50:#fffbeb; --amber-500:#f59e0b; --amber-700:#b45309;
+  --blue-50:#eff6ff; --blue-500:#3b82f6; --blue-700:#1d4ed8;
+  --green-50:#ecfdf5; --green-500:#10b981; --green-700:#047857;
+  --red-50:#fef2f2; --red-500:#ef4444; --red-700:#b91c1c;
+  --violet-50:#f5f3ff;
+  --r-sm:6px; --r-md:10px; --r-lg:14px;
+  --shadow-card:0 1px 0 rgba(15,23,42,.04), 0 1px 2px rgba(15,23,42,.04);
+  --ease-out:cubic-bezier(.16,.84,.44,1);
+  font-feature-settings:"tnum" 1;
+  color: var(--ink-900);
+}
+
+/* ===== Surface Card ===== */
+.sys-dept-page .surface { background:#fff; border:1px solid var(--ink-200); border-radius:var(--r-lg); box-shadow:var(--shadow-card); overflow:hidden; margin-bottom:8px; }
+
+/* ===== Filter Card ===== */
+.sys-dept-page .filter-card { padding:14px 20px 16px; }
+.sys-dept-page .filter-card .filter-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+.sys-dept-page .filter-card .filter-title { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--ink-700); }
+.sys-dept-page .filter-card .filter-title .glyph { width:4px; height:14px; background:var(--brand-600); border-radius:2px; }
+.sys-dept-page .filter-card .filter-bar { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px 16px; }
+.sys-dept-page .filter-card .filter-actions { display:flex; align-items:center; justify-content:space-between; margin-top:14px; padding-top:14px; border-top:1px dashed var(--ink-200); }
+.sys-dept-page .filter-card .filter-info { font-size:13px; color:var(--ink-500); display:flex; align-items:center; gap:6px; }
+.sys-dept-page .filter-card .filter-buttons { display:flex; gap:8px; }
+
+/* ===== Form Field ===== */
+.sys-dept-page .field { display:flex; flex-direction:column; gap:6px; }
+.sys-dept-page .field label { font-size:14px; font-weight:500; color:var(--ink-700); display:flex; align-items:center; gap:6px; }
+.sys-dept-page .field .control { display:flex; align-items:center; height:36px; padding:0 12px; background:#fff; border:1px solid var(--ink-200); border-radius:var(--r-sm); transition:border-color .15s var(--ease-out), box-shadow .15s var(--ease-out); }
+.sys-dept-page .field .control:focus-within { border-color:var(--brand-500); box-shadow:0 0 0 3px rgba(99,102,241,.15); }
+
+/* el-input transparent inside .control */
+.sys-dept-page .field .control :deep(.el-input__wrapper) { box-shadow:none !important; background:transparent !important; padding:0; height:34px; }
+.sys-dept-page .field .control :deep(.el-input__inner) { border:0; background:transparent; font-size:14px; color:var(--ink-900); height:34px; line-height:34px; }
+.sys-dept-page .field .control :deep(.el-input__inner::placeholder) { color:var(--ink-400); }
+.sys-dept-page .field .control :deep(.el-input__prefix) { color:var(--ink-400); margin-right:4px; }
+.sys-dept-page .field .control :deep(.el-input__prefix .el-icon) { font-size:14px; }
+
+/* el-select transparent inside .control */
+.sys-dept-page .field .control :deep(.el-select) { width:100%; }
+.sys-dept-page .field .control :deep(.el-select .el-select__wrapper) { box-shadow:none !important; background:transparent !important; padding:0; min-height:34px; height:34px; }
+.sys-dept-page .field .control :deep(.el-select .el-select__wrapper .el-select__placeholder) { font-size:14px; color:var(--ink-900); }
+.sys-dept-page .field .control :deep(.el-select .el-select__wrapper.is-focused) { box-shadow:none !important; }
+
+/* ===== Toolbar ===== */
+.sys-dept-page .toolbar { display:flex; align-items:center; justify-content:space-between; padding:12px 20px; border-bottom:1px solid var(--ink-200); background:var(--ink-50); }
+.sys-dept-page .toolbar .left { display:flex; gap:8px; align-items:center; }
+.sys-dept-page .toolbar .right { display:flex; gap:8px; align-items:center; }
+.sys-dept-page .toolbar-divider { width:1px; height:18px; background:var(--ink-200); margin:0 4px; }
+
+/* ===== Table ===== */
+.sys-dept-page .table-wrap { overflow-x:auto; }
+.sys-dept-page .app-table { --el-table-bg-color:#fff; --el-table-header-bg-color:var(--ink-50); --el-table-row-hover-bg-color:#fafbff; --el-table-border-color:transparent; --el-table-text-color:var(--ink-700); --el-table-header-text-color:var(--ink-500); }
+.sys-dept-page .app-table :deep(.el-table__body td) { border-right-color:transparent !important; }
+.sys-dept-page .app-table :deep(.el-table__header th) { border-right-color:transparent !important; }
+.sys-dept-page .app-table :deep(.el-table__header th:hover) { border-right-color:var(--ink-200) !important; }
+.sys-dept-page .app-table :deep(.el-table__header th) { background:var(--ink-50) !important; color:var(--ink-500); font-weight:600; font-size:14px; letter-spacing:.02em; padding:12px 16px; border-bottom:1px solid var(--ink-200); }
+.sys-dept-page .app-table :deep(.el-table__header th .cell) { text-transform:uppercase; }
+.sys-dept-page .app-table :deep(.el-table__body td) { padding:14px 16px; border-bottom:1px solid var(--ink-100); color:var(--ink-700); }
+.sys-dept-page .app-table :deep(.el-table__row:hover > td) { background:#fafbff !important; }
+.sys-dept-page .app-table :deep(.el-table__inner-wrapper::before) { display:none; }
+.sys-dept-page .app-table :deep(.el-table__border-left-patch) { display:none; }
+
+/* ===== Responsive ===== */
+@media (max-width:1100px) { .sys-dept-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }
+@media (max-width:720px) { .sys-dept-page .filter-card .filter-bar { grid-template-columns:1fr; } .sys-dept-page .toolbar { flex-wrap:wrap; gap:10px; } }
+</style>

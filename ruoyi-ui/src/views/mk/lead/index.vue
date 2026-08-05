@@ -1,85 +1,185 @@
 <template>
-  <div class="app-container">
-    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch">
-      <el-form-item label="线索编号" prop="leadNo"><el-input v-model="queryParams.leadNo" placeholder="请输入" clearable style="width: 200px" @keyup.enter="handleQuery" /></el-form-item>
-      <el-form-item label="企业名称" prop="companyName"><el-input v-model="queryParams.companyName" placeholder="请输入" clearable style="width: 200px" @keyup.enter="handleQuery" /></el-form-item>
-      <el-form-item label="线索状态" prop="leadStatus">
-        <el-select v-model="queryParams.leadStatus" placeholder="请选择" clearable style="width: 200px">
-          <el-option v-for="d in marketing_lead_status" :key="d.value" :label="d.label" :value="d.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="线索等级" prop="leadGrade">
-        <el-select v-model="queryParams.leadGrade" placeholder="请选择" clearable style="width: 200px">
-          <el-option v-for="d in marketing_lead_grade" :key="d.value" :label="d.label" :value="d.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="线索来源" prop="leadSource">
-        <el-select v-model="queryParams.leadSource" placeholder="请选择" clearable style="width: 200px">
-          <el-option v-for="d in marketing_customer_source" :key="d.value" :label="d.label" :value="d.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item><el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button><el-button icon="Refresh" @click="resetQuery">重置</el-button></el-form-item>
-    </el-form>
+  <div class="app-container mk-list-page">
+    <!-- ===== Filter Card ===== -->
+    <div class="surface filter-card" v-show="showSearch">
+      <div class="filter-head">
+        <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+        <a class="adv-link" :class="{ 'is-open': showAdvanced }" @click.prevent="showAdvanced = !showAdvanced">
+          <span>{{ showAdvanced ? '收起' : '高级筛选' }}</span>
+          <el-icon class="chev"><ArrowDown /></el-icon>
+        </a>
+      </div>
+      <div class="filter-bar">
+        <div class="field">
+          <label>线索编号</label>
+          <div class="control">
+            <el-input v-model="queryParams.leadNo" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field">
+          <label>企业名称</label>
+          <div class="control">
+            <el-input v-model="queryParams.companyName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field">
+          <label>线索状态</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.leadStatus" placeholder="请选择" clearable>
+              <template #prefix><el-icon><Filter /></el-icon></template>
+              <el-option v-for="d in marketing_lead_status" :key="d.value" :label="d.label" :value="d.value" />
+            </el-select>
+          </div>
+        </div>
+        <div class="field">
+          <label>线索等级</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.leadGrade" placeholder="请选择" clearable>
+              <template #prefix><el-icon><Filter /></el-icon></template>
+              <el-option v-for="d in marketing_lead_grade" :key="d.value" :label="d.label" :value="d.value" />
+            </el-select>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>线索来源</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.leadSource" placeholder="请选择" clearable>
+              <template #prefix><el-icon><Filter /></el-icon></template>
+              <el-option v-for="d in marketing_customer_source" :key="d.value" :label="d.label" :value="d.value" />
+            </el-select>
+          </div>
+        </div>
+      </div>
+      <div class="filter-actions">
+        <div class="filter-info">
+          <el-icon><Filter /></el-icon> 已选 {{ activeFilterCount }} 个条件，支持回车快速搜索
+        </div>
+        <div class="filter-buttons">
+          <el-button icon="RefreshLeft" @click="resetQuery">重置</el-button>
+          <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+        </div>
+      </div>
+    </div>
 
-    <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5"><el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['marketing:lead:add']">新增</el-button></el-col>
-      <el-col :span="1.5"><el-button type="info" plain icon="Upload" @click="handleImport" v-hasPermi="['marketing:lead:add']">导入</el-button></el-col>
-      <el-col :span="1.5"><el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['marketing:lead:edit']">修改</el-button></el-col>
-      <el-col :span="1.5"><el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['marketing:lead:remove']">删除</el-button></el-col>
-      <el-col :span="1.5"><el-button type="primary" plain icon="User" :disabled="multiple" @click="handleBatchAssign" v-hasPermi="['marketing:lead:assign']">批量分配</el-button></el-col>
-      <el-col :span="1.5"><el-button type="warning" plain icon="RefreshRight" :disabled="multiple" @click="handleBatchStatus" v-hasPermi="['marketing:lead:edit']">批量改状态</el-button></el-col>
-      <el-col :span="1.5"><el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['marketing:lead:export']">导出</el-button></el-col>
-      <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
-    </el-row>
+    <!-- ===== Table Section ===== -->
+    <div class="surface">
+      <!-- Status Tabs -->
+      <div class="status-tabs">
+        <div class="tabs-track">
+          <button class="status-tab" :class="{ 'is-active': activeStatusTab === 'all' }" @click="handleStatusTabClick('all')">
+            <span class="dot"></span><span>全部</span><span class="count">{{ statusCounts.all }}</span>
+          </button>
+          <button v-for="s in statusTabList" :key="s.value"
+            class="status-tab"
+            :class="[statusTabClass(s.value), { 'is-active': activeStatusTab === s.value }]"
+            @click="handleStatusTabClick(s.value)">
+            <span class="dot"></span><span>{{ s.label }}</span><span class="count">{{ statusCounts[s.value] || 0 }}</span>
+          </button>
+        </div>
+        <button class="tip-pill" @click="showStatusHelp = true">
+          <el-icon><QuestionFilled /></el-icon>
+          <span>业务操作说明</span>
+        </button>
+      </div>
 
-    <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
-      <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="线索编号" prop="leadNo" :width="colWidth('leadNo', 150)" resizable />
-      <el-table-column label="企业名称" prop="companyName" :width="colWidth('companyName', 200)" resizable show-overflow-tooltip>
-        <template #default="scope">
-          <el-button link type="primary" @click="handleView(scope.row)">{{ scope.row.companyName }}</el-button>
-        </template>
-      </el-table-column>
-      <el-table-column label="联系人" prop="contactName" :width="colWidth('contactName', 100)" resizable />
-      <el-table-column label="手机号" prop="contactPhone" :width="colWidth('contactPhone', 130)" resizable />
-      <el-table-column label="线索来源" prop="leadSource" :width="colWidth('leadSource', 100)" resizable align="center">
-        <template #default="scope"><dict-tag :options="marketing_customer_source" :value="scope.row.leadSource" /></template>
-      </el-table-column>
-      <el-table-column label="等级" prop="leadGrade" :width="colWidth('leadGrade', 80)" resizable align="center">
-        <template #default="scope"><dict-tag :options="marketing_lead_grade" :value="scope.row.leadGrade" /></template>
-      </el-table-column>
-      <el-table-column label="评分" prop="leadScore" :width="colWidth('leadScore', 80)" resizable align="center" />
-      <el-table-column label="状态" prop="leadStatus" :width="colWidth('leadStatus', 100)" resizable align="center">
-        <template #default="scope"><dict-tag :options="marketing_lead_status" :value="scope.row.leadStatus" /></template>
-      </el-table-column>
-      <el-table-column label="负责人" prop="userName" :width="colWidth('userName', 100)" resizable>
-        <template #default="scope">
-          <span v-if="scope.row.userName">{{ scope.row.userName }}</span>
-          <el-tag v-else type="warning" size="small">公海</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="最后跟进" prop="lastFollowTime" :width="colWidth('lastFollowTime', 160)" resizable />
-      <el-table-column label="操作" width="320" align="center" fixed="right">
-        <template #default="scope">
-          <el-button link type="primary" icon="View" @click="handleView(scope.row)">详情</el-button>
-          <el-button link type="primary" icon="ChatDotRound" @click="handleFollowUp(scope.row)" v-if="scope.row.leadStatus !== '4' && scope.row.leadStatus !== '5'" v-hasPermi="['marketing:lead:edit']">跟进</el-button>
-          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['marketing:lead:edit']">修改</el-button>
-          <el-dropdown @command="(cmd) => handleCommand(cmd, scope.row)" trigger="click" v-hasPermi="['marketing:lead:edit']">
-            <el-button link type="primary" icon="ArrowDown">更多</el-button>
-            <template #dropdown>
-              <el-dropdown-menu>
-                <el-dropdown-item command="convert" icon="Promotion" v-if="scope.row.leadStatus !== '4' && scope.row.leadStatus !== '5'" v-hasPermi="['marketing:lead:edit']">转化为客户</el-dropdown-item>
-                <el-dropdown-item command="assign" icon="User" v-if="scope.row.userId && scope.row.leadStatus !== '4' && scope.row.leadStatus !== '5'" v-hasPermi="['marketing:lead:assign']">转移分配</el-dropdown-item>
-                <el-dropdown-item command="release" icon="Coin" v-if="scope.row.userId && scope.row.leadStatus !== '4' && scope.row.leadStatus !== '5'">退回公海</el-dropdown-item>
-                <el-dropdown-item command="invalidate" icon="CircleClose" v-if="scope.row.leadStatus !== '4' && scope.row.leadStatus !== '5'" divided>标记无效</el-dropdown-item>
-                <el-dropdown-item command="delete" icon="Delete" v-hasPermi="['marketing:lead:remove']" divided>删除</el-dropdown-item>
-              </el-dropdown-menu>
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <div class="left">
+          <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['marketing:lead:add']">新增</el-button>
+          <button type="button" class="btn-soft is-outline" @click="handleImport" v-hasPermi="['marketing:lead:add']">
+            <el-icon><Upload /></el-icon> 导入
+          </button>
+          <button type="button" class="btn-soft is-outline" :disabled="single" @click="handleUpdate" v-hasPermi="['marketing:lead:edit']">
+            <el-icon><Edit /></el-icon> 修改
+          </button>
+          <button type="button" class="btn-soft is-danger-outline" :disabled="multiple" @click="handleDelete" v-hasPermi="['marketing:lead:remove']">
+            <el-icon><Delete /></el-icon> 删除
+          </button>
+          <div class="toolbar-divider"></div>
+          <button type="button" class="btn-soft is-outline" :disabled="multiple" @click="handleBatchAssign" v-hasPermi="['marketing:lead:assign']">
+            <el-icon><User /></el-icon> 批量分配
+          </button>
+          <button type="button" class="btn-soft is-outline" :disabled="multiple" @click="handleBatchStatus" v-hasPermi="['marketing:lead:edit']">
+            <el-icon><RefreshRight /></el-icon> 批量改状态
+          </button>
+          <div class="toolbar-divider"></div>
+          <button type="button" class="btn-soft is-outline" @click="handleExport" v-hasPermi="['marketing:lead:export']">
+            <el-icon><Download /></el-icon> 导出
+          </button>
+        </div>
+        <div class="right">
+          <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="mk_lead_columns" />
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="table-wrap">
+        <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
+          <el-table-column type="selection" width="55" align="center" />
+          <el-table-column label="线索编号" prop="leadNo" key="leadNo" :width="colWidth('leadNo', 150)" resizable v-if="columns.leadNo.visible" />
+          <el-table-column label="企业名称" prop="companyName" key="companyName" :width="colWidth('companyName', 200)" resizable show-overflow-tooltip v-if="columns.companyName.visible">
+            <template #default="scope">
+              <el-button link type="primary" @click="handleView(scope.row)">{{ scope.row.companyName }}</el-button>
             </template>
-          </el-dropdown>
-        </template>
-      </el-table-column>
-    </el-table>
-    <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+          </el-table-column>
+          <el-table-column label="联系人" prop="contactName" key="contactName" :width="colWidth('contactName', 100)" resizable v-if="columns.contactName.visible" />
+          <el-table-column label="手机号" prop="contactPhone" key="contactPhone" :width="colWidth('contactPhone', 130)" resizable v-if="columns.contactPhone.visible">
+            <template #default="scope"><span class="col-mono">{{ scope.row.contactPhone }}</span></template>
+          </el-table-column>
+          <el-table-column label="线索来源" prop="leadSource" key="leadSource" :width="colWidth('leadSource', 100)" resizable align="center" v-if="columns.leadSource.visible">
+            <template #default="scope">
+              <span class="badge" :class="sourceBadgeClass(scope.row.leadSource)">
+                <span class="dot"></span>{{ sourceLabel(scope.row.leadSource) }}
+              </span>
+            </template>
+          </el-table-column>
+          <el-table-column label="等级" prop="leadGrade" key="leadGrade" :width="colWidth('leadGrade', 80)" resizable align="center" v-if="columns.leadGrade.visible">
+            <template #default="scope">
+              <span class="badge" :class="gradeBadgeClass(scope.row.leadGrade)">
+                <span class="dot"></span>{{ gradeLabel(scope.row.leadGrade) }}
+              </span>
+            </template>
+          </el-table-column>
+          <el-table-column label="评分" prop="leadScore" key="leadScore" :width="colWidth('leadScore', 80)" resizable align="center" v-if="columns.leadScore.visible" />
+          <el-table-column label="状态" prop="leadStatus" key="leadStatus" :width="colWidth('leadStatus', 100)" resizable align="center" v-if="columns.leadStatus.visible">
+            <template #default="scope"><span class="badge" :class="badgeClass(scope.row.leadStatus)"><span class="dot"></span>{{ statusLabel(scope.row.leadStatus) }}</span></template>
+          </el-table-column>
+          <el-table-column label="负责人" prop="userName" key="userName" :width="colWidth('userName', 100)" resizable v-if="columns.userName.visible">
+            <template #default="scope">
+              <span v-if="scope.row.userName">{{ scope.row.userName }}</span>
+              <el-tag v-else type="warning" size="small">公海</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="最后跟进" prop="lastFollowTime" key="lastFollowTime" :width="colWidth('lastFollowTime', 160)" resizable sortable="custom" v-if="columns.lastFollowTime.visible" />
+          <el-table-column label="操作" width="320" align="center" fixed="right">
+            <template #default="scope">
+              <el-button link type="primary" icon="View" @click="handleView(scope.row)">详情</el-button>
+              <el-button link type="primary" icon="ChatDotRound" @click="handleFollowUp(scope.row)" v-if="scope.row.leadStatus !== '4' && scope.row.leadStatus !== '5'" v-hasPermi="['marketing:lead:edit']">跟进</el-button>
+              <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['marketing:lead:edit']">修改</el-button>
+              <el-dropdown @command="(cmd) => handleCommand(cmd, scope.row)" trigger="click" v-hasPermi="['marketing:lead:edit']">
+                <el-button link type="primary" icon="ArrowDown">更多</el-button>
+                <template #dropdown>
+                  <el-dropdown-menu>
+                    <el-dropdown-item command="convert" icon="Promotion" v-if="scope.row.leadStatus !== '4' && scope.row.leadStatus !== '5'" v-hasPermi="['marketing:lead:edit']">转化为客户</el-dropdown-item>
+                    <el-dropdown-item command="assign" icon="User" v-if="scope.row.userId && scope.row.leadStatus !== '4' && scope.row.leadStatus !== '5'" v-hasPermi="['marketing:lead:assign']">转移分配</el-dropdown-item>
+                    <el-dropdown-item command="release" icon="Coin" v-if="scope.row.userId && scope.row.leadStatus !== '4' && scope.row.leadStatus !== '5'">退回公海</el-dropdown-item>
+                    <el-dropdown-item command="invalidate" icon="CircleClose" v-if="scope.row.leadStatus !== '4' && scope.row.leadStatus !== '5'" divided>标记无效</el-dropdown-item>
+                    <el-dropdown-item command="delete" icon="Delete" v-hasPermi="['marketing:lead:remove']" divided>删除</el-dropdown-item>
+                  </el-dropdown-menu>
+                </template>
+              </el-dropdown>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+
+      <!-- Pagination -->
+      <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+    </div>
 
     <!-- 新增/修改对话框 -->
     <el-dialog v-model="open" width="800px" append-to-body draggable class="rd-dialog">
@@ -604,7 +704,7 @@
         <el-table-column label="联系人" prop="contactName" width="100" />
         <el-table-column label="手机号" prop="contactPhone" width="130" />
         <el-table-column label="状态" prop="leadStatus" width="80" align="center">
-          <template #default="scope"><dict-tag :options="marketing_lead_status" :value="scope.row.leadStatus" /></template>
+          <template #default="scope"><span class="badge" :class="badgeClass(scope.row.leadStatus)"><span class="dot"></span>{{ statusLabel(scope.row.leadStatus) }}</span></template>
         </el-table-column>
       </el-table>
       <el-empty v-if="dupList.length === 0" description="未检测到重复线索" />
@@ -615,12 +715,63 @@
 
     <!-- 客户详情弹窗 -->
     <CustomerDetailDialog v-model="customerDetailVisible" :customer-id="customerDetailId" />
+
+    <!-- 状态流转帮助对话框 -->
+    <el-dialog v-model="showStatusHelp" title="线索管理业务操作说明" width="720px" append-to-body>
+      <div class="status-help-content">
+        <h4>一、业务状态流转图</h4>
+        <div class="status-flow">
+          <div class="flow-item">
+            <el-tag type="info">新线索</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="primary">跟进中</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="success">已转化</el-tag>
+          </div>
+        </div>
+        <div class="status-flow" style="margin-top: 8px;">
+          <div class="flow-item">
+            <el-tag type="primary">跟进中</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="danger">无效</el-tag>
+            <el-tag size="small" type="info">无法再跟进</el-tag>
+          </div>
+        </div>
+
+        <h4>二、各状态说明</h4>
+        <el-descriptions :column="1" border>
+          <el-descriptions-item label="新线索">线索创建后的初始状态，等待分配或跟进</el-descriptions-item>
+          <el-descriptions-item label="跟进中">线索已分配负责人，正在进行跟进沟通</el-descriptions-item>
+          <el-descriptions-item label="已转化">线索已成功转化为客户，自动创建客户档案和联系人</el-descriptions-item>
+          <el-descriptions-item label="无效">线索被标记为无效（电话空号、客户拒绝等），不可再跟进</el-descriptions-item>
+        </el-descriptions>
+
+        <h4>三、重点业务规则</h4>
+        <div class="highlight-card">
+          <p>• <strong>快速跟进：</strong>点击"跟进"按钮可快速录入跟进记录，系统自动更新最后跟进时间</p>
+          <p>• <strong>转化为客户：</strong>线索转化后自动创建客户档案和联系人，不可逆操作</p>
+          <p>• <strong>公海机制：</strong>可退回公海，其他销售人员可申请领取</p>
+          <p>• <strong>查重功能：</strong>新增时自动检测重复企业名称和手机号</p>
+          <p>• <strong>批量操作：</strong>支持批量分配负责人、批量变更状态</p>
+          <p>• <strong>线索导入：</strong>支持通过Excel批量导入线索数据</p>
+        </div>
+      </div>
+      <template #footer>
+        <el-button type="primary" @click="showStatusHelp = false">我知道了</el-button>
+      </template>
+    </el-dialog>
 </div>
 </template>
 
 <script setup name="MkLead">
 import { useRouter } from 'vue-router'
-import { UploadFilled, CircleClose } from '@element-plus/icons-vue'
+import { UploadFilled, CircleClose, ArrowRight, QuestionFilled } from '@element-plus/icons-vue'
 import { listLead, getLead, addLead, updateLead, delLead, convertLead, assignLead, releaseLeadToPool, batchAssignLead, batchUpdateLeadStatus, invalidateLead, updateFollowTime, checkLeadDuplicate, getLeadLog } from '@/api/mk/lead'
 import { listInteraction, addInteraction } from '@/api/mk/interaction'
 import UserPicker from '@/components/UserPicker/index.vue'
@@ -641,6 +792,28 @@ const open = ref(false)
 const viewOpen = ref(false)
 const loading = ref(true)
 const showSearch = ref(true)
+const showAdvanced = ref(false)
+const activeStatusTab = ref('all')
+const statusCounts = ref({ all: 0 })
+const statusTabList = computed(() => marketing_lead_status.value)
+function loadStatusCounts() {
+  const counts = { all: 0 }
+  marketing_lead_status.value.forEach(d => { counts[d.value] = 0 })
+  list.value.forEach(row => {
+    const s = row.leadStatus
+    if (counts[s] !== undefined) counts[s]++
+  })
+  counts.all = total.value
+  statusCounts.value = counts
+}
+function handleStatusTabClick(status) { activeStatusTab.value = status; queryParams.value.leadStatus = status === 'all' ? undefined : status; handleQuery() }
+function badgeClass(status) { const map = { '0': 'amber', '1': 'blue', '2': 'green', '3': 'violet', '4': 'gray', '5': 'red' }; return map[status] || 'gray' }
+function statusLabel(status) { const item = marketing_lead_status.value.find(d => d.value == status); return item ? item.label : '-' }
+function sourceBadgeClass(source) { const map = { '1': 'blue', '2': 'green', '3': 'violet', '4': 'amber', '5': 'cyan', '6': 'red', '7': 'gray' }; return map[source] || 'gray' }
+function sourceLabel(source) { const item = marketing_customer_source.value.find(d => d.value == source); return item ? item.label : '-' }
+function gradeBadgeClass(grade) { const map = { '1': 'red', '2': 'amber', '3': 'blue', '4': 'green' }; return map[grade] || 'gray' }
+function gradeLabel(grade) { const item = marketing_lead_grade.value.find(d => d.value == grade); return item ? item.label : '-' }
+function statusTabClass(value) { const map = { '0': 'tab-draft', '1': 'tab-audit', '2': 'tab-done', '3': 'tab-partial', '4': 'tab-void', '5': 'tab-reject' }; return map[value] || '' }
 const ids = ref([])
 const single = ref(true)
 const multiple = ref(true)
@@ -698,7 +871,7 @@ const dupList = ref([])
 
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, leadNo: undefined, companyName: undefined, leadStatus: undefined, leadGrade: undefined, leadSource: undefined, isPublic: '0' },
+  queryParams: { pageNum: 1, pageSize: 10, leadNo: undefined, companyName: undefined, leadStatus: undefined, leadGrade: undefined, leadSource: undefined, isPublic: '0', params: {} },
   rules: {
     companyName: [{ required: true, message: '企业名称不能为空', trigger: 'blur' }],
     contactName: [{ required: true, message: '联系人不能为空', trigger: 'blur' }],
@@ -707,7 +880,51 @@ const data = reactive({
 })
 const { queryParams, form, rules } = toRefs(data)
 
-function getList() { loading.value = true; listLead(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false }) }
+// 列显隐配置 - 从 localStorage 恢复保存的设置
+const defaultColumns = {
+  leadNo: { label: '线索编号', visible: true },
+  companyName: { label: '企业名称', visible: true },
+  contactName: { label: '联系人', visible: true },
+  contactPhone: { label: '手机号', visible: true },
+  leadSource: { label: '线索来源', visible: true },
+  leadGrade: { label: '等级', visible: true },
+  leadScore: { label: '评分', visible: true },
+  leadStatus: { label: '状态', visible: true },
+  userName: { label: '负责人', visible: true },
+  lastFollowTime: { label: '最后跟进', visible: true }
+}
+
+function loadColumnVisibility() {
+  try {
+    const saved = localStorage.getItem('mk_lead_columns')
+    if (saved) {
+      const parsed = JSON.parse(saved)
+      const result = {}
+      Object.keys(defaultColumns).forEach(key => {
+        result[key] = {
+          label: defaultColumns[key].label,
+          visible: parsed[key] !== undefined ? parsed[key] : defaultColumns[key].visible
+        }
+      })
+      return result
+    }
+  } catch (e) {}
+  return { ...defaultColumns }
+}
+
+const columns = ref(loadColumnVisibility())
+
+const activeFilterCount = computed(() => {
+  let count = 0
+  if (queryParams.value.leadNo) count++
+  if (queryParams.value.companyName) count++
+  if (queryParams.value.leadStatus) count++
+  if (queryParams.value.leadGrade) count++
+  if (queryParams.value.leadSource) count++
+  return count
+})
+
+function getList() { loading.value = true; listLead(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false; loadStatusCounts(); applySavedWidths() }).catch(() => { loading.value = false }) }
 
 /** 打开负责人选择弹窗 */
 function openUserPicker() {
@@ -742,8 +959,9 @@ function clearDept() {
   form.value.deptName = undefined
 }
 
-function handleQuery() { queryParams.value.pageNum = 1; getList() }
-function resetQuery() { proxy.resetForm('queryRef'); handleQuery() }
+function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
+function resetQuery() { queryParams.value.leadNo = undefined; queryParams.value.companyName = undefined; queryParams.value.leadStatus = undefined; queryParams.value.leadGrade = undefined; queryParams.value.leadSource = undefined; queryParams.value.params = {}; activeStatusTab.value = 'all'; handleQuery() }
+function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.leadId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function reset() {
   form.value = { leadNo: undefined, companyName: undefined, contactName: undefined, contactPhone: undefined, contactEmail: undefined, position: undefined, industry: undefined, companySize: undefined, address: undefined, leadSource: undefined, activityId: undefined, requirementDesc: undefined, leadScore: 0, leadGrade: 'D', leadStatus: '0', isPublic: '1', userId: undefined, userName: undefined, deptId: undefined, deptName: undefined, remark: undefined }
@@ -1051,6 +1269,8 @@ watch(detailTab, (val) => {
 
 handleQuery()
 getList()
+
+const showStatusHelp = ref(false)
 </script>
 
 <style scoped>
@@ -1069,4 +1289,51 @@ getList()
 }
 .mt16 { margin-top: 16px; }
 .text-center { text-align: center; }
+
+.status-help-content {
+  max-height: 500px;
+  overflow-y: auto;
+  padding-right: 10px;
+}
+.status-help-content h4 {
+  margin: 20px 0 12px 0;
+  color: #303133;
+  font-weight: 600;
+  border-left: 4px solid #409eff;
+  padding-left: 10px;
+}
+.status-help-content h4:first-child {
+  margin-top: 0;
+}
+.status-help-content .status-flow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 16px;
+  background-color: #f5f7fa;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+.status-help-content .flow-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.status-help-content .flow-arrow {
+  color: #909399;
+  font-size: 16px;
+}
+.status-help-content .highlight-card {
+  background-color: #ecf5ff;
+  border-radius: 8px;
+  padding: 16px;
+  border-left: 4px solid #409eff;
+}
+.status-help-content .highlight-card p {
+  margin: 6px 0;
+  line-height: 1.6;
+  font-size: 13px;
+  color: #606266;
+}
 </style>

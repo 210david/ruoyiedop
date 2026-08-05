@@ -1,0 +1,184 @@
+/* ===== 仓库管理列表页面共享样式（遵循 list-page-style-guide 规范） ===== */
+/* 全局共享样式，各页面只需在根容器添加 class="app-container wms-list-page" 即可生效 */
+/* 页面特定样式可通过 .wms-list-page.{page-class} 进行覆盖 */
+
+/* ===== Design Tokens ===== */
+.wms-list-page {
+  padding-top: 10px;
+  --brand-50:#eef2ff; --brand-100:#e0e7ff; --brand-200:#c7d2fe; --brand-500:#6366f1; --brand-600:#4f46e5; --brand-700:#4338ca;
+  --ink-900:#0f172a; --ink-700:#334155; --ink-500:#64748b; --ink-400:#94a3b8; --ink-300:#cbd5e1; --ink-200:#e2e8f0; --ink-100:#f1f5f9; --ink-50:#f8fafc;
+  --amber-50:#fffbeb; --amber-500:#f59e0b; --amber-700:#b45309;
+  --blue-50:#eff6ff; --blue-500:#3b82f6; --blue-700:#1d4ed8;
+  --green-50:#ecfdf5; --green-500:#10b981; --green-700:#047857;
+  --red-50:#fef2f2; --red-500:#ef4444; --red-700:#b91c1c;
+  --violet-50:#f5f3ff; --violet-500:#8b5cf6;
+  --r-sm:6px; --r-md:10px; --r-lg:14px;
+  --shadow-card:0 1px 0 rgba(15,23,42,.04), 0 1px 2px rgba(15,23,42,.04);
+  --ease-out:cubic-bezier(.16,.84,.44,1);
+  font-feature-settings:"tnum" 1;
+  color: var(--ink-900);
+}
+
+/* ===== Surface Card ===== */
+.wms-list-page .surface {
+  background:#fff;
+  border:1px solid var(--ink-200);
+  border-radius:var(--r-lg);
+  box-shadow:var(--shadow-card);
+  overflow:hidden;
+  margin-bottom:8px;
+}
+
+/* ===== Filter Card ===== */
+.wms-list-page .filter-card { padding:14px 20px 16px; }
+.wms-list-page .filter-card .filter-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+.wms-list-page .filter-card .filter-title { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--ink-700); }
+.wms-list-page .filter-card .filter-title .glyph { width:4px; height:14px; background:var(--brand-600); border-radius:2px; }
+.wms-list-page .filter-card .adv-link { font-size:14px; color:var(--ink-500); text-decoration:none; display:flex; align-items:center; gap:4px; transition:color .15s; cursor:pointer; }
+.wms-list-page .filter-card .adv-link:hover { color:var(--brand-600); }
+.wms-list-page .filter-card .adv-link .chev { transition:transform .2s var(--ease-out); }
+.wms-list-page .filter-card .adv-link.is-open .chev { transform:rotate(180deg); }
+.wms-list-page .filter-card .filter-bar { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px 16px; }
+.wms-list-page .filter-card .filter-actions { display:flex; align-items:center; justify-content:space-between; margin-top:14px; padding-top:14px; border-top:1px dashed var(--ink-200); }
+.wms-list-page .filter-card .filter-info { font-size:13px; color:var(--ink-500); display:flex; align-items:center; gap:6px; }
+.wms-list-page .filter-card .filter-buttons { display:flex; gap:8px; }
+
+/* ===== Form Field ===== */
+.wms-list-page .field { display:flex; flex-direction:column; gap:6px; }
+.wms-list-page .field label { font-size:14px; font-weight:500; color:var(--ink-700); display:flex; align-items:center; gap:6px; }
+.wms-list-page .field .control { display:flex; align-items:center; height:36px; padding:0 12px; background:#fff; border:1px solid var(--ink-200); border-radius:var(--r-sm); transition:border-color .15s var(--ease-out), box-shadow .15s var(--ease-out); }
+.wms-list-page .field .control.is-select { padding:0 8px; }
+.wms-list-page .field .control:focus-within { border-color:var(--brand-500); box-shadow:0 0 0 3px rgba(99,102,241,.15); }
+
+/* el-input transparent inside .control */
+.wms-list-page .field .control .el-input__wrapper { box-shadow:none !important; background:transparent !important; padding:0; height:34px; }
+.wms-list-page .field .control .el-input__inner { border:0; background:transparent; font-size:14px; color:var(--ink-900); height:34px; line-height:34px; }
+.wms-list-page .field .control .el-input__inner::placeholder { color:var(--ink-400); }
+.wms-list-page .field .control .el-input__prefix { color:var(--ink-400); margin-right:4px; }
+.wms-list-page .field .control .el-input__prefix .el-icon { font-size:14px; }
+
+/* el-select transparent inside .control */
+.wms-list-page .field .control .el-select { width:100%; }
+.wms-list-page .field .control .el-select .el-select__wrapper { box-shadow:none !important; background:transparent !important; padding:0; min-height:34px; height:34px; }
+.wms-list-page .field .control .el-select .el-select__wrapper .el-select__placeholder { font-size:14px; color:var(--ink-900); }
+.wms-list-page .field .control .el-select .el-select__wrapper.is-focused { box-shadow:none !important; }
+
+/* el-date-picker transparent inside .control */
+.wms-list-page .field .control .el-date-editor { width:100%; }
+.wms-list-page .field .control .el-date-editor .el-range-input { background:transparent; border:0; font-size:14px; color:var(--ink-900); }
+.wms-list-page .field .control .el-date-editor .el-range-separator { color:var(--ink-400); }
+.wms-list-page .field .control .el-date-editor .el-range__icon { color:var(--ink-400); }
+
+/* ===== Status Tabs ===== */
+.wms-list-page .status-tabs { display:flex; align-items:center; gap:12px; padding:6px 10px 6px 12px; border-bottom:1px solid var(--ink-200); background:#fff; }
+.wms-list-page .tabs-track { display:flex; align-items:center; gap:4px; flex:1; min-width:0; overflow-x:auto; scrollbar-width:none; }
+.wms-list-page .tabs-track::-webkit-scrollbar { display:none; }
+.wms-list-page .status-tab { display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 12px; border-radius:var(--r-sm); font-size:14px; color:var(--ink-500); cursor:pointer; user-select:none; transition:all .15s var(--ease-out); white-space:nowrap; border:1px solid transparent; background:transparent; }
+.wms-list-page .status-tab .dot { width:6px; height:6px; border-radius:50%; background:var(--ink-300); }
+.wms-list-page .status-tab .count { font-size:12px; font-weight:600; padding:1px 6px; border-radius:999px; background:var(--ink-100); color:var(--ink-500); min-width:18px; text-align:center; line-height:1.4; font-feature-settings:"tnum" 1; }
+.wms-list-page .status-tab:hover { background:var(--ink-50); color:var(--ink-700); }
+.wms-list-page .status-tab.is-active { background:var(--brand-50); color:var(--brand-700); font-weight:600; border-color:var(--brand-200); }
+.wms-list-page .status-tab.is-active .count { background:var(--brand-600); color:#fff; }
+.wms-list-page .status-tab.is-active .dot { background:var(--brand-500); }
+
+/* 状态颜色映射 - 草稿/待处理 */
+.wms-list-page .status-tab.tab-draft .dot { background:var(--amber-500); }
+.wms-list-page .status-tab.tab-draft .count { background:var(--amber-50); color:var(--amber-700); }
+.wms-list-page .status-tab.is-active.tab-draft .count { background:var(--amber-500); color:#fff; }
+
+/* 审核中 */
+.wms-list-page .status-tab.tab-audit .dot { background:var(--blue-500); }
+.wms-list-page .status-tab.tab-audit .count { background:var(--blue-50); color:var(--blue-700); }
+.wms-list-page .status-tab.is-active.tab-audit .count { background:var(--blue-500); color:#fff; }
+
+/* 已通过/已完成 */
+.wms-list-page .status-tab.tab-approved .dot,
+.wms-list-page .status-tab.tab-done .dot { background:var(--green-500); }
+.wms-list-page .status-tab.tab-approved .count,
+.wms-list-page .status-tab.tab-done .count { background:var(--green-50); color:var(--green-700); }
+.wms-list-page .status-tab.is-active.tab-approved .count,
+.wms-list-page .status-tab.is-active.tab-done .count { background:var(--green-500); color:#fff; }
+
+/* 已驳回 */
+.wms-list-page .status-tab.tab-reject .dot { background:var(--red-500); }
+.wms-list-page .status-tab.tab-reject .count { background:var(--red-50); color:var(--red-700); }
+.wms-list-page .status-tab.is-active.tab-reject .count { background:var(--red-500); color:#fff; }
+
+/* 已作废 */
+.wms-list-page .status-tab.tab-void .dot { background:var(--ink-400); }
+
+/* 部分处理 */
+.wms-list-page .status-tab.tab-partial .dot { background:var(--violet-500); }
+.wms-list-page .status-tab.tab-partial .count { background:var(--violet-50); color:#7c3aed; }
+.wms-list-page .status-tab.is-active.tab-partial .count { background:var(--violet-500); color:#fff; }
+
+/* ===== Tip Pill ===== */
+.wms-list-page .tip-pill { display:inline-flex; align-items:center; gap:5px; height:30px; padding:0 10px; background:#fffaf0; border:1px solid #fde68a; color:#92400e; border-radius:999px; font-size:13px; font-weight:500; cursor:pointer; transition:all .15s var(--ease-out); flex-shrink:0; white-space:nowrap; }
+.wms-list-page .tip-pill:hover { background:var(--amber-50); border-color:var(--amber-500); color:#7c2d12; }
+.wms-list-page .tip-pill .el-icon { font-size:14px; color:var(--amber-700); }
+
+/* ===== Toolbar ===== */
+.wms-list-page .toolbar { display:flex; align-items:center; justify-content:space-between; padding:12px 20px; border-bottom:1px solid var(--ink-200); background:var(--ink-50); }
+.wms-list-page .toolbar .left { display:flex; gap:8px; align-items:center; }
+.wms-list-page .toolbar .right { display:flex; gap:8px; align-items:center; }
+.wms-list-page .toolbar-divider { width:1px; height:18px; background:var(--ink-200); margin:0 4px; }
+
+/* ===== Buttons ===== */
+.wms-list-page .btn-soft { display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 12px; font-size:14px; font-weight:500; border-radius:var(--r-sm); border:1px solid transparent; cursor:pointer; user-select:none; transition:all .15s var(--ease-out); }
+.wms-list-page .btn-soft .el-icon { font-size:14px; }
+.wms-list-page .btn-soft.is-primary { background:var(--brand-600); color:#fff; box-shadow:0 1px 0 rgba(255,255,255,.15) inset, 0 4px 12px -4px rgba(79,70,229,.5); }
+.wms-list-page .btn-soft.is-primary:hover { background:var(--brand-700); transform:translateY(-1px); box-shadow:0 1px 0 rgba(255,255,255,.15) inset, 0 6px 16px -4px rgba(79,70,229,.55); }
+.wms-list-page .btn-soft.is-outline { background:#fff; color:var(--ink-700); border-color:var(--ink-200); }
+.wms-list-page .btn-soft.is-outline:hover { background:var(--ink-50); border-color:var(--ink-300); color:var(--ink-900); }
+.wms-list-page .btn-soft.is-ghost { background:transparent; color:var(--ink-700); }
+.wms-list-page .btn-soft.is-ghost:hover { background:var(--ink-100); }
+.wms-list-page .btn-soft.is-danger-outline { background:#fff; color:var(--red-700); border-color:#fecaca; }
+.wms-list-page .btn-soft.is-danger-outline:hover { background:var(--red-50); border-color:var(--red-500); }
+.wms-list-page .btn-soft:disabled { opacity:.5; cursor:not-allowed; }
+.wms-list-page .btn-soft:disabled:hover { transform:none; box-shadow:none; }
+.wms-list-page .btn-soft:focus-visible { outline:2px solid var(--brand-500); outline-offset:2px; }
+
+/* ===== Table ===== */
+.wms-list-page .table-wrap { overflow-x:auto; }
+.wms-list-page .app-table { --el-table-bg-color:#fff; --el-table-header-bg-color:var(--ink-50); --el-table-row-hover-bg-color:#fafbff; --el-table-border-color:transparent; --el-table-text-color:var(--ink-700); --el-table-header-text-color:var(--ink-500); }
+.wms-list-page .app-table .el-table__body td { border-right-color:transparent !important; }
+.wms-list-page .app-table .el-table__header th { border-right-color:transparent !important; }
+.wms-list-page .app-table .el-table__header th:hover { border-right-color:var(--ink-200) !important; }
+.wms-list-page .app-table .el-table__header th { background:var(--ink-50) !important; color:var(--ink-500); font-weight:600; font-size:14px; letter-spacing:.02em; padding:12px 16px; border-bottom:1px solid var(--ink-200); }
+.wms-list-page .app-table .el-table__header th .cell { text-transform:uppercase; }
+.wms-list-page .app-table .el-table__body td { padding:14px 16px; border-bottom:1px solid var(--ink-100); color:var(--ink-700); }
+.wms-list-page .app-table .el-table__row:hover > td { background:#fafbff !important; }
+.wms-list-page .app-table .el-table__inner-wrapper::before { display:none; }
+.wms-list-page .app-table .el-table__border-left-patch { display:none; }
+.wms-list-page .app-table .col-mono { font-family:ui-monospace,"JetBrains Mono","SF Mono",Menlo,monospace; font-size:14px; color:var(--ink-700); letter-spacing:-.01em; }
+.wms-list-page .app-table .col-num { text-align:right; font-feature-settings:"tnum" 1; font-variant-numeric:tabular-nums; }
+.wms-list-page .app-table .rd-amount { font-feature-settings:"tnum" 1; font-variant-numeric:tabular-nums; color:var(--ink-900); font-weight:500; }
+
+/* ===== Badges ===== */
+.wms-list-page .badge { display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:999px; font-size:13px; font-weight:600; line-height:1; border:1px solid transparent; }
+.wms-list-page .badge .dot { width:6px; height:6px; border-radius:50%; }
+.wms-list-page .badge.amber { background:var(--amber-50); color:var(--amber-700); border-color:#fde68a; }
+.wms-list-page .badge.amber .dot { background:var(--amber-500); }
+.wms-list-page .badge.blue { background:var(--blue-50); color:var(--blue-700); border-color:#bfdbfe; }
+.wms-list-page .badge.blue .dot { background:var(--blue-500); }
+.wms-list-page .badge.green { background:var(--green-50); color:var(--green-700); border-color:#a7f3d0; }
+.wms-list-page .badge.green .dot { background:var(--green-500); }
+.wms-list-page .badge.red { background:var(--red-50); color:var(--red-700); border-color:#fecaca; }
+.wms-list-page .badge.red .dot { background:var(--red-500); }
+.wms-list-page .badge.violet { background:var(--violet-50); color:var(--brand-700); border-color:var(--brand-200); }
+.wms-list-page .badge.violet .dot { background:var(--violet-500); }
+.wms-list-page .badge.gray { background:var(--ink-100); color:var(--ink-500); border-color:var(--ink-200); }
+.wms-list-page .badge.gray .dot { background:var(--ink-400); }
+
+/* ===== Pagination ===== */
+.wms-list-page .pagination-container { display:flex; align-items:center; justify-content:flex-end; padding:14px 20px; font-size:14px; color:var(--ink-500); background:#fff; border-top:1px solid transparent; }
+.wms-list-page .pagination-container .el-pagination { justify-content:flex-end; }
+.wms-list-page .pagination-container .el-pagination .el-pager li { border-radius:6px; border:1px solid var(--ink-200); background:#fff; min-width:32px; height:32px; line-height:32px; font-size:14px; color:var(--ink-700); margin:0 2px; }
+.wms-list-page .pagination-container .el-pagination .el-pager li.is-active { background:var(--brand-600); border-color:var(--brand-600); color:#fff; font-weight:600; box-shadow:0 4px 10px -2px rgba(79,70,229,.4); }
+.wms-list-page .pagination-container .el-pagination .btn-prev, .wms-list-page .pagination-container .el-pagination .btn-next { border-radius:6px; border:1px solid var(--ink-200); background:#fff; min-width:32px; height:32px; }
+.wms-list-page .pagination-container .el-pagination .btn-prev:hover, .wms-list-page .pagination-container .el-pagination .btn-next:hover { border-color:var(--brand-200); color:var(--brand-700); }
+.wms-list-page .pagination-container .el-pagination .el-pagination__sizes .el-select__wrapper { border-radius:6px; box-shadow:0 0 0 1px var(--ink-200) inset; }
+
+/* ===== Responsive ===== */
+@media (max-width:1100px) { .wms-list-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }
+@media (max-width:720px) { .wms-list-page .filter-card .filter-bar { grid-template-columns:1fr; } .wms-list-page .toolbar { flex-wrap:wrap; gap:10px; } .wms-list-page .status-tabs { padding:6px 8px; } }

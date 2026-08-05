@@ -88,6 +88,10 @@ public class MkShipment extends BaseEntity
     @Excel(name = "发货人")
     private String shipperName;
 
+    /** 出库单号（手动填写，关联仓库出库单） */
+    @Excel(name = "出库单号")
+    private String outboundOrderNo;
+
     /** 删除标志 */
     private String delFlag;
 
@@ -141,6 +145,8 @@ public class MkShipment extends BaseEntity
     public void setShipperId(Long shipperId) { this.shipperId = shipperId; }
     public String getShipperName() { return shipperName; }
     public void setShipperName(String shipperName) { this.shipperName = shipperName; }
+    public String getOutboundOrderNo() { return outboundOrderNo; }
+    public void setOutboundOrderNo(String outboundOrderNo) { this.outboundOrderNo = outboundOrderNo; }
     public String getDelFlag() { return delFlag; }
     public void setDelFlag(String delFlag) { this.delFlag = delFlag; }
     public List<MkShipmentDetail> getDetailList() { return detailList; }

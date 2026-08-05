@@ -1,8 +1,8 @@
 import request from '@/utils/request'
 
 // 查询订单列表
-export function listOrder(query) {
-  return request({ url: '/mk/order/list', method: 'get', params: query })
+export function listOrder(query, config = {}) {
+return request({ url: '/mk/order/list', method: 'get', params: query, ...config })
 }
 
 // 查询订单详细

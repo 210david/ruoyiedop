@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import com.ruoyi.common.annotation.Log;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
@@ -49,6 +50,27 @@ public class DmsEquipmentController extends BaseController
         List<DmsEquipment> list = dmsEquipmentService.selectEquipmentList(equipment);
         ExcelUtil<DmsEquipment> util = new ExcelUtil<>(DmsEquipment.class);
         util.exportExcel(response, list, "设备台账数据");
+    }
+
+    @Log(title = "设备台账管理", businessType = BusinessType.IMPORT)
+    @PreAuthorize("@ss.hasPermi('dms:equipment:import')")
+    @PostMapping("/importData")
+    public AjaxResult importData(MultipartFile file, boolean updateSupport,
+            @RequestParam(value = "updateKey", required = false, defaultValue = "equipmentName") String updateKey) throws Exception
+    {
+        ExcelUtil<DmsEquipment> util = new ExcelUtil<>(DmsEquipment.class);
+        List<DmsEquipment> list = util.importExcel(file.getInputStream());
+        String operName = getUsername();
+        return dmsEquipmentService.importEquipment(list, updateSupport, updateKey, operName);
+    }
+
+    @PostMapping("/importTemplate")
+    public void importTemplate(HttpServletResponse response)
+    {
+        ExcelUtil<DmsEquipment> util = new ExcelUtil<>(DmsEquipment.class);
+        // 排除自动生成的设备编号字段，使导入模板与新建表单一致
+        util.excludeFields = new String[]{"equipmentCode"};
+        util.importTemplateExcel(response, "设备台账数据");
     }
 
     @PreAuthorize("@ss.hasPermi('dms:equipment:query')")

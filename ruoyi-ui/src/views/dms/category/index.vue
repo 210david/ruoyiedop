@@ -1,35 +1,68 @@
 <template>
-  <div class="app-container">
-    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch">
-      <el-form-item label="分类名称" prop="categoryName"><el-input v-model="queryParams.categoryName" placeholder="请输入" clearable style="width: 200px" @keyup.enter="handleQuery" /></el-form-item>
-      <el-form-item><el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button><el-button icon="Refresh" @click="resetQuery">重置</el-button></el-form-item>
-    </el-form>
+  <div class="app-container dms-category-page">
+    <!-- ===== Filter Card ===== -->
+    <div class="surface filter-card" v-show="showSearch">
+      <div class="filter-head">
+        <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+      </div>
+      <div class="filter-bar">
+        <div class="field">
+          <label>分类名称</label>
+          <div class="control">
+            <el-input v-model="queryParams.categoryName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+      </div>
+      <div class="filter-actions">
+        <div class="filter-info">
+          <el-icon><Filter /></el-icon> 已选 {{ activeFilterCount }} 个条件，支持回车快速搜索
+        </div>
+        <div class="filter-buttons">
+          <el-button icon="RefreshLeft" @click="resetQuery">重置</el-button>
+          <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+        </div>
+      </div>
+    </div>
 
-    <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5"><el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['dms:category:add']">新增</el-button></el-col>
-      <el-col :span="1.5"><el-button type="info" plain icon="Sort" @click="toggleExpandAll">展开/折叠</el-button></el-col>
-      <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
-    </el-row>
-
-    <el-table ref="tableRef" border v-if="refreshTable" v-loading="loading" :data="categoryList" row-key="categoryId" :default-expand-all="isExpandAll" :tree-props="{ children: 'children', hasChildren: 'hasChildren' }" @header-dragend="onHeaderDragEnd">
-      <el-table-column label="分类名称" prop="categoryName" :width="colWidth('categoryName', 260)" resizable />
-      <el-table-column label="分类编码" prop="categoryCode" :width="colWidth('categoryCode', 160)" resizable align="center" />
-      <el-table-column label="层级" prop="categoryLevel" :width="colWidth('categoryLevel', 80)" resizable align="center" />
-      <el-table-column label="排序" prop="orderNum" :width="colWidth('orderNum', 80)" resizable align="center" />
-      <el-table-column label="状态" prop="status" :width="colWidth('status', 80)" resizable align="center">
-        <template #default="scope">
-          <el-tag :type="scope.row.status === '0' ? 'success' : 'danger'">{{ scope.row.status === '0' ? '正常' : '停用' }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="创建时间" prop="createTime" :width="colWidth('createTime', 180)" resizable align="center" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
-        <template #default="scope">
-          <el-button link type="primary" icon="Plus" @click="handleAdd(scope.row)" v-hasPermi="['dms:category:add']">新增</el-button>
-          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['dms:category:edit']">修改</el-button>
-          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['dms:category:remove']">删除</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
+    <!-- ===== Table Section ===== -->
+    <div class="surface">
+      <div class="toolbar">
+        <div class="left">
+          <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['dms:category:add']">新增</el-button>
+          <button type="button" class="btn-soft is-outline" @click="toggleExpandAll">
+            <el-icon><Sort /></el-icon> 展开/折叠
+          </button>
+        </div>
+        <div class="right">
+          <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="dms_category_columns" />
+        </div>
+      </div>
+      <div class="table-wrap">
+        <el-table ref="tableRef" border v-if="refreshTable" v-loading="loading" :data="categoryList" row-key="categoryId" :default-expand-all="isExpandAll" :tree-props="{ children: 'children', hasChildren: 'hasChildren' }" @header-dragend="onHeaderDragEnd" class="app-table">
+          <el-table-column label="分类名称" prop="categoryName" key="categoryName" :width="colWidth('categoryName', 260)" resizable v-if="columns.categoryName.visible" />
+          <el-table-column label="分类编码" prop="categoryCode" key="categoryCode" :width="colWidth('categoryCode', 160)" resizable align="center" v-if="columns.categoryCode.visible">
+            <template #default="scope"><span class="col-mono">{{ scope.row.categoryCode }}</span></template>
+          </el-table-column>
+          <el-table-column label="层级" prop="categoryLevel" key="categoryLevel" :width="colWidth('categoryLevel', 80)" resizable align="center" v-if="columns.categoryLevel.visible" />
+          <el-table-column label="排序" prop="orderNum" key="orderNum" :width="colWidth('orderNum', 80)" resizable align="center" v-if="columns.orderNum.visible" />
+          <el-table-column label="状态" prop="status" key="status" :width="colWidth('status', 100)" resizable align="center" v-if="columns.status.visible">
+            <template #default="scope">
+              <span class="badge" :class="scope.row.status === '0' ? 'green' : 'gray'"><span class="dot"></span>{{ scope.row.status === '0' ? '正常' : '停用' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="创建时间" prop="createTime" key="createTime" :width="colWidth('createTime', 180)" resizable align="center" v-if="columns.createTime.visible" />
+          <el-table-column label="操作" width="200" align="center" fixed="right">
+            <template #default="scope">
+              <el-button link type="primary" icon="Plus" @click="handleAdd(scope.row)" v-hasPermi="['dms:category:add']">新增</el-button>
+              <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['dms:category:edit']">修改</el-button>
+              <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['dms:category:remove']">删除</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+    </div>
 
         <el-dialog v-model="open" width="720px" append-to-body draggable class="rd-dialog">
       <template #header>
@@ -94,6 +127,7 @@
 import { listCategory, getCategory, addCategory, updateCategory, delCategory } from '@/api/dms/category'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
+import { Search, Filter, RefreshLeft, Sort } from '@element-plus/icons-vue'
 const { collapsedCards, toggleCard } = useDetailCard(["basic","other"])
 
 const { proxy } = getCurrentInstance()
@@ -107,6 +141,35 @@ const showSearch = ref(true)
 const isExpandAll = ref(true)
 const refreshTable = ref(true)
 const title = ref('')
+
+const defaultColumns = {
+  categoryName: { label: '分类名称', visible: true },
+  categoryCode: { label: '分类编码', visible: true },
+  categoryLevel: { label: '层级', visible: true },
+  orderNum: { label: '排序', visible: true },
+  status: { label: '状态', visible: true },
+  createTime: { label: '创建时间', visible: true }
+}
+function loadColumnVisibility() {
+  try {
+    const saved = localStorage.getItem('dms_category_columns')
+    if (saved) {
+      const parsed = JSON.parse(saved)
+      const result = {}
+      Object.keys(defaultColumns).forEach(key => {
+        result[key] = { label: defaultColumns[key].label, visible: parsed[key] !== undefined ? parsed[key] : defaultColumns[key].visible }
+      })
+      return result
+    }
+  } catch (e) {}
+  return { ...defaultColumns }
+}
+const columns = ref(loadColumnVisibility())
+const activeFilterCount = computed(() => {
+  let count = 0
+  if (queryParams.value.categoryName) count++
+  return count
+})
 
 const data = reactive({
   form: {},
@@ -124,10 +187,11 @@ function getList() {
   listCategory(queryParams.value).then(res => {
     categoryList.value = proxy.handleTree(res.data, 'categoryId')
     loading.value = false
+    applySavedWidths()
   })
 }
 function handleQuery() { getList() }
-function resetQuery() { proxy.resetForm('queryRef'); handleQuery() }
+function resetQuery() { queryParams.value.categoryName = undefined; proxy.resetForm('queryRef'); handleQuery() }
 function toggleExpandAll() {
   refreshTable.value = false
   isExpandAll.value = !isExpandAll.value
@@ -160,3 +224,66 @@ function handleDelete(row) { proxy.$modal.confirm('确认删除"' + row.category
 function cancel() { open.value = false; reset() }
 getList()
 </script>
+
+<style scoped>
+.dms-category-page {
+  padding-top: 10px;
+  --brand-50:#eef2ff; --brand-100:#e0e7ff; --brand-200:#c7d2fe; --brand-500:#6366f1; --brand-600:#4f46e5; --brand-700:#4338ca;
+  --ink-900:#0f172a; --ink-700:#334155; --ink-500:#64748b; --ink-400:#94a3b8; --ink-300:#cbd5e1; --ink-200:#e2e8f0; --ink-100:#f1f5f9; --ink-50:#f8fafc;
+  --amber-50:#fffbeb; --amber-500:#f59e0b; --amber-700:#b45309;
+  --blue-50:#eff6ff; --blue-500:#3b82f6; --blue-700:#1d4ed8;
+  --green-50:#ecfdf5; --green-500:#10b981; --green-700:#047857;
+  --red-50:#fef2f2; --red-500:#ef4444; --red-700:#b91c1c;
+  --violet-50:#f5f3ff;
+  --r-sm:6px; --r-md:10px; --r-lg:14px;
+  --shadow-card:0 1px 0 rgba(15,23,42,.04), 0 1px 2px rgba(15,23,42,.04);
+  --ease-out:cubic-bezier(.16,.84,.44,1);
+  font-feature-settings:"tnum" 1;
+  color: var(--ink-900);
+}
+.dms-category-page .surface { background:#fff; border:1px solid var(--ink-200); border-radius:var(--r-lg); box-shadow:var(--shadow-card); overflow:hidden; margin-bottom:8px; }
+.dms-category-page .filter-card { padding:14px 20px 16px; }
+.dms-category-page .filter-card .filter-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+.dms-category-page .filter-card .filter-title { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--ink-700); }
+.dms-category-page .filter-card .filter-title .glyph { width:4px; height:14px; background:var(--brand-600); border-radius:2px; }
+.dms-category-page .filter-card .filter-bar { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px 16px; }
+.dms-category-page .filter-card .filter-actions { display:flex; align-items:center; justify-content:space-between; margin-top:14px; padding-top:14px; border-top:1px dashed var(--ink-200); }
+.dms-category-page .filter-card .filter-info { font-size:13px; color:var(--ink-500); display:flex; align-items:center; gap:6px; }
+.dms-category-page .filter-card .filter-buttons { display:flex; gap:8px; }
+.dms-category-page .field { display:flex; flex-direction:column; gap:6px; }
+.dms-category-page .field label { font-size:14px; font-weight:500; color:var(--ink-700); }
+.dms-category-page .field .control { display:flex; align-items:center; height:36px; padding:0 12px; background:#fff; border:1px solid var(--ink-200); border-radius:var(--r-sm); transition:border-color .15s var(--ease-out), box-shadow .15s var(--ease-out); }
+.dms-category-page .field .control:focus-within { border-color:var(--brand-500); box-shadow:0 0 0 3px rgba(99,102,241,.15); }
+.dms-category-page .field .control :deep(.el-input__wrapper) { box-shadow:none !important; background:transparent !important; padding:0; height:34px; }
+.dms-category-page .field .control :deep(.el-input__inner) { border:0; background:transparent; font-size:14px; color:var(--ink-900); height:34px; line-height:34px; }
+.dms-category-page .field .control :deep(.el-input__inner::placeholder) { color:var(--ink-400); }
+.dms-category-page .field .control :deep(.el-input__prefix) { color:var(--ink-400); margin-right:4px; }
+.dms-category-page .toolbar { display:flex; align-items:center; justify-content:space-between; padding:12px 20px; border-bottom:1px solid var(--ink-200); background:var(--ink-50); }
+.dms-category-page .toolbar .left { display:flex; gap:8px; align-items:center; }
+.dms-category-page .toolbar .right { display:flex; gap:8px; align-items:center; }
+.dms-category-page .btn-soft { display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 12px; font-size:14px; font-weight:500; border-radius:var(--r-sm); border:1px solid transparent; cursor:pointer; user-select:none; transition:all .15s var(--ease-out); }
+.dms-category-page .btn-soft .el-icon { font-size:14px; }
+.dms-category-page .btn-soft.is-outline { background:#fff; color:var(--ink-700); border-color:var(--ink-200); }
+.dms-category-page .btn-soft.is-outline:hover { background:var(--ink-50); border-color:var(--ink-300); color:var(--ink-900); }
+.dms-category-page .btn-soft:disabled { opacity:.5; cursor:not-allowed; }
+.dms-category-page .btn-soft:disabled:hover { transform:none; box-shadow:none; }
+.dms-category-page .btn-soft:focus-visible { outline:2px solid var(--brand-500); outline-offset:2px; }
+.dms-category-page .table-wrap { overflow-x:auto; }
+.dms-category-page .app-table { --el-table-bg-color:#fff; --el-table-header-bg-color:var(--ink-50); --el-table-row-hover-bg-color:#fafbff; --el-table-border-color:transparent; --el-table-text-color:var(--ink-700); --el-table-header-text-color:var(--ink-500); }
+.dms-category-page .app-table :deep(.el-table__body td) { border-right-color:transparent !important; }
+.dms-category-page .app-table :deep(.el-table__header th) { border-right-color:transparent !important; }
+.dms-category-page .app-table :deep(.el-table__header th:hover) { border-right-color:var(--ink-200) !important; }
+.dms-category-page .app-table :deep(.el-table__header th) { background:var(--ink-50) !important; color:var(--ink-500); font-weight:600; font-size:14px; padding:12px 16px; border-bottom:1px solid var(--ink-200); }
+.dms-category-page .app-table :deep(.el-table__body td) { padding:14px 16px; border-bottom:1px solid var(--ink-100); color:var(--ink-700); }
+.dms-category-page .app-table :deep(.el-table__row:hover > td) { background:#fafbff !important; }
+.dms-category-page .app-table :deep(.el-table__inner-wrapper::before) { display:none; }
+.dms-category-page .app-table .col-mono { font-family:ui-monospace,"JetBrains Mono","SF Mono",Menlo,monospace; font-size:14px; color:var(--ink-700); }
+.dms-category-page .badge { display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:999px; font-size:13px; font-weight:600; line-height:1; border:1px solid transparent; }
+.dms-category-page .badge .dot { width:6px; height:6px; border-radius:50%; }
+.dms-category-page .badge.green { background:var(--green-50); color:var(--green-700); border-color:#a7f3d0; }
+.dms-category-page .badge.green .dot { background:var(--green-500); }
+.dms-category-page .badge.gray { background:var(--ink-100); color:var(--ink-500); border-color:var(--ink-200); }
+.dms-category-page .badge.gray .dot { background:var(--ink-400); }
+@media (max-width:1100px) { .dms-category-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }
+@media (max-width:720px) { .dms-category-page .filter-card .filter-bar { grid-template-columns:1fr; } }
+</style>

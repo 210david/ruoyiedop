@@ -1,48 +1,89 @@
 <template>
-  <div class="app-container">
-    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch">
-      <el-form-item label="任务编号" prop="taskNo">
-        <el-input v-model="queryParams.taskNo" placeholder="请输入" clearable style="width: 160px" @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="任务状态" prop="taskStatus">
-        <el-select v-model="queryParams.taskStatus" placeholder="全部" clearable style="width: 120px">
-          <el-option v-for="d in dms_inspection_status" :key="d.value" :label="d.label" :value="d.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-        <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-      </el-form-item>
-    </el-form>
+  <div class="app-container dms-inspection-task-page">
+    <!-- ===== Filter Card ===== -->
+    <div class="surface filter-card" v-show="showSearch">
+      <div class="filter-head">
+        <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+      </div>
+      <div class="filter-bar">
+        <div class="field">
+          <label>任务编号</label>
+          <div class="control">
+            <el-input v-model="queryParams.taskNo" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field">
+          <label>任务状态</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.taskStatus" placeholder="全部" clearable @change="handleQuery">
+              <el-option v-for="d in dms_inspection_status" :key="d.value" :label="d.label" :value="d.value" />
+            </el-select>
+          </div>
+        </div>
+      </div>
+      <div class="filter-actions">
+        <div class="filter-info">
+          <el-icon><Filter /></el-icon> 已选 {{ activeFilterCount }} 个条件，支持回车快速搜索
+        </div>
+        <div class="filter-buttons">
+          <el-button icon="RefreshLeft" @click="resetQuery">重置</el-button>
+          <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+        </div>
+      </div>
+    </div>
 
-    <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5"><el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['dms:inspection:task:add']">新增</el-button></el-col>
-      <el-col :span="1.5"><el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['dms:inspection:task:remove']">删除</el-button></el-col>
-      <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
-    </el-row>
+    <!-- ===== Table Section ===== -->
+    <div class="surface">
+      <!-- Status Tabs + Tip Pill -->
+      <div class="status-tabs">
+        <div class="tabs-track"></div>
+        <button class="tip-pill" @click="showStatusHelp = true">
+          <el-icon><WarningFilled /></el-icon>
+          <span>业务操作说明</span>
+        </button>
+      </div>
 
-    <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
-      <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="任务编号" prop="taskNo" :width="colWidth('taskNo', 180)" resizable />
-      <el-table-column label="路线名称" prop="routeName" show-overflow-tooltip />
-      <el-table-column label="计划日期" prop="planDate" :width="colWidth('planDate', 120)" resizable align="center" />
-      <el-table-column label="点检人" prop="inspectorName" :width="colWidth('inspectorName', 80)" resizable />
-      <el-table-column label="异常项" prop="abnormalCount" :width="colWidth('abnormalCount', 70)" resizable align="center">
-        <template #default="scope"><el-tag :type="scope.row.abnormalCount > 0 ? 'danger' : 'success'">{{ scope.row.abnormalCount || 0 }}</el-tag></template>
-      </el-table-column>
-      <el-table-column label="状态" prop="taskStatus" :width="colWidth('taskStatus', 90)" resizable align="center">
-        <template #default="scope"><dict-tag :options="dms_inspection_status" :value="scope.row.taskStatus" /></template>
-      </el-table-column>
-      <el-table-column label="完成时间" prop="completeTime" :width="colWidth('completeTime', 160)" resizable align="center" />
-      <el-table-column label="操作" width="220" align="center">
-        <template #default="scope">
-          <el-button v-if="scope.row.taskStatus === '0' || scope.row.taskStatus === '1'" link type="primary" icon="VideoPlay" @click="handleExecute(scope.row)">执行点检</el-button>
-          <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
-          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['dms:inspection:task:remove']">删除</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
-    <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <div class="left">
+          <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['dms:inspection:task:add']">新增</el-button>
+          <button type="button" class="btn-soft is-danger-outline" :disabled="multiple" @click="handleDelete" v-hasPermi="['dms:inspection:task:remove']">
+            <el-icon><Delete /></el-icon> 删除
+          </button>
+        </div>
+        <div class="right">
+          <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="dms_inspection_task_columns" />
+        </div>
+      </div>
+      <div class="table-wrap">
+        <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" class="app-table">
+          <el-table-column type="selection" width="55" align="center" />
+          <el-table-column label="任务编号" prop="taskNo" key="taskNo" :width="colWidth('taskNo', 180)" resizable v-if="columns.taskNo.visible" />
+          <el-table-column label="路线名称" prop="routeName" key="routeName" :width="colWidth('routeName', 200)" resizable show-overflow-tooltip v-if="columns.routeName.visible" />
+          <el-table-column label="计划日期" prop="planDate" key="planDate" :width="colWidth('planDate', 130)" resizable align="center" v-if="columns.planDate.visible" />
+          <el-table-column label="点检人" prop="inspectorName" key="inspectorName" :width="colWidth('inspectorName', 100)" resizable v-if="columns.inspectorName.visible" />
+          <el-table-column label="异常项" prop="abnormalCount" key="abnormalCount" :width="colWidth('abnormalCount', 80)" resizable align="center" v-if="columns.abnormalCount.visible">
+            <template #default="scope"><span class="badge" :class="scope.row.abnormalCount > 0 ? 'red' : 'green'">{{ scope.row.abnormalCount || 0 }}</span></template>
+          </el-table-column>
+          <el-table-column label="状态" prop="taskStatus" key="taskStatus" :width="colWidth('taskStatus', 100)" resizable align="center" v-if="columns.taskStatus.visible">
+            <template #default="scope">
+              <span class="badge" :class="taskStatusBadge(scope.row.taskStatus)"><span class="dot"></span>{{ taskStatusLabel(scope.row.taskStatus) }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="完成时间" prop="completeTime" key="completeTime" :width="colWidth('completeTime', 180)" resizable align="center" v-if="columns.completeTime.visible" />
+          <el-table-column label="操作" width="220" align="center" fixed="right">
+            <template #default="scope">
+              <el-button v-if="scope.row.taskStatus === '0' || scope.row.taskStatus === '1'" link type="primary" icon="VideoPlay" @click="handleExecute(scope.row)">执行点检</el-button>
+              <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
+              <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['dms:inspection:task:remove']">删除</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+      <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+    </div>
 
     <!-- 新增/修改弹窗 -->
     <el-dialog v-model="open" width="936px" append-to-body draggable class="rd-dialog inspection-add-dialog" top="5vh">
@@ -365,6 +406,79 @@
 
     <!-- 点检人选择弹窗 -->
     <user-picker ref="userPickerRef" title="选择点检人" @confirm="onInspectorPickerConfirm" />
+
+    <!-- 业务操作说明对话框 -->
+    <el-dialog v-model="showStatusHelp" title="点检任务业务操作说明" width="720px" append-to-body>
+      <div class="status-help-content">
+        <h4>一、状态流转图</h4>
+        <div class="status-flow">
+          <div class="flow-item">
+            <el-tag type="info">待执行</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="warning">执行中</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="success">已完成</el-tag>
+          </div>
+        </div>
+
+        <h4>二、各状态说明</h4>
+        <el-descriptions :column="1" border>
+          <el-descriptions-item label="待执行">任务已创建，等待点检人执行。可新增、删除</el-descriptions-item>
+          <el-descriptions-item label="执行中">点检人已开始执行点检，系统记录开始时间。可继续填写检查结果</el-descriptions-item>
+          <el-descriptions-item label="已完成">点检完成，提交检查结果后自动完成。若有异常项，系统自动生成整改工单</el-descriptions-item>
+        </el-descriptions>
+
+        <h4>三、重点业务规则</h4>
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <div class="highlight-card highlight-danger">
+              <div class="highlight-card-title">异常自动生成工单</div>
+              <div class="highlight-card-body">点检结果中标记为异常的检查项，提交后系统<strong>自动生成整改工单</strong>，无需手动创建</div>
+            </div>
+          </el-col>
+          <el-col :span="12">
+            <div class="highlight-card highlight-primary">
+              <div class="highlight-card-title">点检项模板</div>
+              <div class="highlight-card-body">点检项从关联的巡检路线<strong>自动带入</strong>，包括通用项和设备专属项，无需手动配置</div>
+            </div>
+          </el-col>
+        </el-row>
+        <el-row :gutter="16" style="margin-top: 12px;">
+          <el-col :span="12">
+            <div class="highlight-card highlight-warning">
+              <div class="highlight-card-title">异常说明必填</div>
+              <div class="highlight-card-body">标记为异常的检查项<strong>必须填写异常说明</strong>，确保异常情况可追溯</div>
+            </div>
+          </el-col>
+          <el-col :span="12">
+            <div class="highlight-card highlight-success">
+              <div class="highlight-card-title">现场照片</div>
+              <div class="highlight-card-body">执行点检时可上传最多6张现场照片，便于记录设备状态和异常情况</div>
+            </div>
+          </el-col>
+        </el-row>
+
+        <h4>四、业务操作流程</h4>
+        <el-timeline>
+          <el-timeline-item type="primary" :hollow="true">
+            <strong>创建任务：</strong>选择巡检路线、设置计划日期和点检人
+          </el-timeline-item>
+          <el-timeline-item type="warning" :hollow="true">
+            <strong>执行点检：</strong>点击「执行点检」开始，系统记录开始时间并加载点检项模板</el-timeline-item>
+          <el-timeline-item type="info" :hollow="true">
+            <strong>填写结果：</strong>逐项填写检查结果（正常/异常/数值/文本），异常项填写说明，可上传现场照片</el-timeline-item>
+          <el-timeline-item type="success" :hollow="true">
+            <strong>提交完成：</strong>提交后任务完成。若有异常项，系统自动生成整改工单转入工单管理</el-timeline-item>
+        </el-timeline>
+      </div>
+      <template #footer>
+        <el-button type="primary" @click="showStatusHelp = false">我知道了</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -395,6 +509,48 @@ const total = ref(0)
 const title = ref('')
 const routeOptions = ref([])
 const execSaving = ref(false)
+const showStatusHelp = ref(false)
+
+const defaultColumns = {
+  taskNo: { label: '任务编号', visible: true },
+  routeName: { label: '路线名称', visible: true },
+  planDate: { label: '计划日期', visible: true },
+  inspectorName: { label: '点检人', visible: true },
+  abnormalCount: { label: '异常项', visible: true },
+  taskStatus: { label: '状态', visible: true },
+  completeTime: { label: '完成时间', visible: true }
+}
+function loadColumnVisibility() {
+  try {
+    const saved = localStorage.getItem('dms_inspection_task_columns')
+    if (saved) {
+      const parsed = JSON.parse(saved)
+      const result = {}
+      Object.keys(defaultColumns).forEach(key => {
+        result[key] = { label: defaultColumns[key].label, visible: parsed[key] !== undefined ? parsed[key] : defaultColumns[key].visible }
+      })
+      return result
+    }
+  } catch (e) {}
+  return { ...defaultColumns }
+}
+const columns = ref(loadColumnVisibility())
+
+const activeFilterCount = computed(() => {
+  let count = 0
+  if (queryParams.value.taskNo) count++
+  if (queryParams.value.taskStatus !== undefined && queryParams.value.taskStatus !== null && queryParams.value.taskStatus !== '') count++
+  return count
+})
+
+function taskStatusLabel(val) {
+  const item = dms_inspection_status.value.find(d => d.value == val)
+  return item ? item.label : '-'
+}
+function taskStatusBadge(val) {
+  const map = { '0': 'amber', '1': 'blue', '2': 'green' }
+  return map[val] || 'gray'
+}
 
 const viewForm = ref({})
 const viewGroups = ref({ common: [], devices: [] })
@@ -414,7 +570,7 @@ const data = reactive({
 })
 const { queryParams, form, rules } = toRefs(data)
 
-function getList() { loading.value = true; listTask(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false }) }
+function getList() { loading.value = true; listTask(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false; applySavedWidths() }) }
 function getRouteOptions() { listRoute({ pageNum: 1, pageSize: 9999, status: '0' }).then(res => { routeOptions.value = res.rows }) }
 function handleQuery() { queryParams.value.pageNum = 1; getList() }
 function resetQuery() { proxy.resetForm('queryRef'); handleQuery() }
@@ -654,6 +810,84 @@ getList()
 </script>
 
 <style scoped>
+.dms-inspection-task-page {
+  padding-top: 10px;
+  --brand-50:#eef2ff; --brand-100:#e0e7ff; --brand-200:#c7d2fe; --brand-500:#6366f1; --brand-600:#4f46e5; --brand-700:#4338ca;
+  --ink-900:#0f172a; --ink-700:#334155; --ink-500:#64748b; --ink-400:#94a3b8; --ink-300:#cbd5e1; --ink-200:#e2e8f0; --ink-100:#f1f5f9; --ink-50:#f8fafc;
+  --amber-50:#fffbeb; --amber-500:#f59e0b; --amber-700:#b45309;
+  --blue-50:#eff6ff; --blue-500:#3b82f6; --blue-700:#1d4ed8;
+  --green-50:#ecfdf5; --green-500:#10b981; --green-700:#047857;
+  --red-50:#fef2f2; --red-500:#ef4444; --red-700:#b91c1c;
+  --violet-50:#f5f3ff;
+  --r-sm:6px; --r-md:10px; --r-lg:14px;
+  --shadow-card:0 1px 0 rgba(15,23,42,.04), 0 1px 2px rgba(15,23,42,.04);
+  --ease-out:cubic-bezier(.16,.84,.44,1);
+  font-feature-settings:"tnum" 1;
+  color: var(--ink-900);
+}
+.dms-inspection-task-page .surface { background:#fff; border:1px solid var(--ink-200); border-radius:var(--r-lg); box-shadow:var(--shadow-card); overflow:hidden; margin-bottom:8px; }
+.dms-inspection-task-page .filter-card { padding:14px 20px 16px; }
+.dms-inspection-task-page .filter-card .filter-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+.dms-inspection-task-page .filter-card .filter-title { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--ink-700); }
+.dms-inspection-task-page .filter-card .filter-title .glyph { width:4px; height:14px; background:var(--brand-600); border-radius:2px; }
+.dms-inspection-task-page .filter-card .filter-bar { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px 16px; }
+.dms-inspection-task-page .filter-card .field { display:flex; flex-direction:column; gap:4px; }
+.dms-inspection-task-page .filter-card .field > label { font-size:13px; font-weight:500; color:var(--ink-500); }
+.dms-inspection-task-page .filter-card .field .control { width:100%; }
+.dms-inspection-task-page .filter-card .field .control .el-input, .dms-inspection-task-page .filter-card .field .control .el-select { width:100%; }
+.dms-inspection-task-page .filter-card .filter-actions { display:flex; align-items:center; justify-content:space-between; margin-top:14px; padding-top:14px; border-top:1px dashed var(--ink-200); }
+.dms-inspection-task-page .filter-card .filter-info { font-size:13px; color:var(--ink-500); display:flex; align-items:center; gap:6px; }
+.dms-inspection-task-page .filter-card .filter-buttons { display:flex; gap:8px; }
+.dms-inspection-task-page .status-tabs { display:flex; align-items:center; gap:12px; padding:6px 10px 6px 12px; border-bottom:1px solid var(--ink-200); background:#fff; }
+.dms-inspection-task-page .tabs-track { display:flex; align-items:center; gap:4px; flex:1; min-width:0; overflow-x:auto; scrollbar-width:none; }
+.dms-inspection-task-page .tabs-track::-webkit-scrollbar { display:none; }
+.dms-inspection-task-page .tip-pill { display:inline-flex; align-items:center; gap:5px; height:30px; padding:0 10px; background:#fffaf0; border:1px solid #fde68a; color:#92400e; border-radius:999px; font-size:13px; font-weight:500; cursor:pointer; transition:all .15s var(--ease-out); flex-shrink:0; white-space:nowrap; }
+.dms-inspection-task-page .tip-pill:hover { background:var(--amber-50); border-color:var(--amber-500); color:#7c2d12; }
+.dms-inspection-task-page .tip-pill .el-icon { font-size:14px; color:var(--amber-700); }
+.dms-inspection-task-page .toolbar { display:flex; align-items:center; justify-content:space-between; padding:10px 16px; border-bottom:1px solid var(--ink-200); }
+.dms-inspection-task-page .toolbar .left { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.dms-inspection-task-page .toolbar .right { display:flex; align-items:center; gap:8px; }
+.dms-inspection-task-page .toolbar-divider { width:1px; height:20px; background:var(--ink-200); margin:0 4px; }
+.dms-inspection-task-page .btn-soft { display:inline-flex; align-items:center; gap:4px; height:32px; padding:0 12px; border-radius:var(--r-sm); font-size:14px; cursor:pointer; transition:all .15s var(--ease-out); border:1px solid transparent; background:transparent; color:var(--ink-700); }
+.dms-inspection-task-page .btn-soft.is-outline { border-color:var(--ink-300); background:#fff; }
+.dms-inspection-task-page .btn-soft.is-outline:hover { border-color:var(--brand-400); color:var(--brand-600); background:var(--brand-50); }
+.dms-inspection-task-page .btn-soft.is-danger-outline { border-color:#fecaca; background:var(--red-50); color:var(--red-700); }
+.dms-inspection-task-page .btn-soft.is-danger-outline:hover { background:var(--red-500); color:#fff; border-color:var(--red-500); }
+.dms-inspection-task-page .btn-soft:disabled { opacity:.5; cursor:not-allowed; }
+.dms-inspection-task-page .table-wrap { overflow-x:auto; }
+.dms-inspection-task-page .app-table { --el-table-bg-color:#fff; --el-table-header-bg-color:var(--ink-50); --el-table-row-hover-bg-color:#fafbff; --el-table-border-color:transparent; --el-table-text-color:var(--ink-700); --el-table-header-text-color:var(--ink-500); }
+.dms-inspection-task-page .app-table :deep(.el-table__body td) { border-right-color:transparent !important; }
+.dms-inspection-task-page .app-table :deep(.el-table__header th) { border-right-color:transparent !important; }
+.dms-inspection-task-page .app-table :deep(.el-table__header th:hover) { border-right-color:var(--ink-200) !important; }
+.dms-inspection-task-page .app-table :deep(.el-table__header th) { background:var(--ink-50) !important; color:var(--ink-500); font-weight:600; font-size:14px; letter-spacing:.02em; padding:12px 16px; border-bottom:1px solid var(--ink-200); }
+.dms-inspection-task-page .app-table :deep(.el-table__header th .cell) { text-transform:uppercase; }
+.dms-inspection-task-page .app-table :deep(.el-table__body td) { padding:14px 16px; border-bottom:1px solid var(--ink-100); color:var(--ink-700); }
+.dms-inspection-task-page .app-table :deep(.el-table__row:hover > td) { background:#fafbff !important; }
+.dms-inspection-task-page .app-table :deep(.el-table__inner-wrapper::before) { display:none; }
+.dms-inspection-task-page .app-table :deep(.el-table__border-left-patch) { display:none; }
+.dms-inspection-task-page .badge { display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:999px; font-size:13px; font-weight:600; line-height:1; border:1px solid transparent; }
+.dms-inspection-task-page .badge .dot { width:6px; height:6px; border-radius:50%; }
+.dms-inspection-task-page .badge.amber { background:var(--amber-50); color:var(--amber-700); border-color:#fde68a; }
+.dms-inspection-task-page .badge.amber .dot { background:var(--amber-500); }
+.dms-inspection-task-page .badge.blue { background:var(--blue-50); color:var(--blue-700); border-color:#bfdbfe; }
+.dms-inspection-task-page .badge.blue .dot { background:var(--blue-500); }
+.dms-inspection-task-page .badge.green { background:var(--green-50); color:var(--green-700); border-color:#a7f3d0; }
+.dms-inspection-task-page .badge.green .dot { background:var(--green-500); }
+.dms-inspection-task-page .badge.red { background:var(--red-50); color:var(--red-700); border-color:#fecaca; }
+.dms-inspection-task-page .badge.red .dot { background:var(--red-500); }
+.dms-inspection-task-page .badge.violet { background:var(--violet-50); color:var(--brand-700); border-color:var(--brand-200); }
+.dms-inspection-task-page .badge.gray { background:var(--ink-100); color:var(--ink-500); border-color:var(--ink-200); }
+.dms-inspection-task-page .badge.gray .dot { background:var(--ink-400); }
+@media (max-width:1100px) { .dms-inspection-task-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }
+@media (max-width:720px) { .dms-inspection-task-page .filter-card .filter-bar { grid-template-columns:1fr; } .dms-inspection-task-page .toolbar { flex-wrap:wrap; gap:10px; } }
+.dms-inspection-task-page .pagination-container { display:flex; align-items:center; justify-content:flex-end; padding:14px 20px; font-size:14px; color:var(--ink-500); background:#fff; border-top:1px solid transparent; }
+.dms-inspection-task-page .pagination-container :deep(.el-pagination) { justify-content:flex-end; }
+.dms-inspection-task-page .pagination-container :deep(.el-pagination .el-pager li) { border-radius:6px; border:1px solid var(--ink-200); background:#fff; min-width:32px; height:32px; line-height:32px; font-size:14px; color:var(--ink-700); margin:0 2px; }
+.dms-inspection-task-page .pagination-container :deep(.el-pagination .el-pager li.is-active) { background:var(--brand-600); border-color:var(--brand-600); color:#fff; font-weight:600; box-shadow:0 4px 10px -2px rgba(79,70,229,.4); }
+.dms-inspection-task-page .pagination-container :deep(.el-pagination .btn-prev), .dms-inspection-task-page .pagination-container :deep(.el-pagination .btn-next) { border-radius:6px; border:1px solid var(--ink-200); background:#fff; min-width:32px; height:32px; }
+.dms-inspection-task-page .pagination-container :deep(.el-pagination .btn-prev:hover), .dms-inspection-task-page .pagination-container :deep(.el-pagination .btn-next:hover) { border-color:var(--brand-200); color:var(--brand-700); }
+.dms-inspection-task-page .pagination-container :deep(.el-pagination .el-pagination__sizes .el-select__wrapper) { border-radius:6px; box-shadow:0 0 0 1px var(--ink-200) inset; }
+
 .clear-icon {
   cursor: pointer;
   color: #c0c4cc;
@@ -662,6 +896,55 @@ getList()
 .clear-icon:hover {
   color: #909399;
 }
+.status-help-content {
+  max-height: 500px;
+  overflow-y: auto;
+  padding-right: 10px;
+}
+.status-help-content h4 {
+  margin: 20px 0 12px 0;
+  color: #303133;
+  font-weight: 600;
+  border-left: 4px solid #409eff;
+  padding-left: 10px;
+}
+.status-help-content h4:first-child {
+  margin-top: 0;
+}
+.status-help-content .status-flow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 16px;
+  background-color: #f5f7fa;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+.status-help-content .flow-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.status-help-content .flow-arrow {
+  color: #909399;
+  font-size: 16px;
+}
+.highlight-card {
+  border-radius: 8px;
+  padding: 16px;
+  border: 1px solid;
+}
+.highlight-success { background-color: #f0f9ff; border-color: #b3e19d; }
+.highlight-danger { background-color: #fef0f0; border-color: #fbc4c4; }
+.highlight-primary { background-color: #ecf5ff; border-color: #a0cfff; }
+.highlight-warning { background-color: #fdf6ec; border-color: #f5dab1; }
+.highlight-card-title { font-size: 14px; font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; }
+.highlight-success .highlight-card-title { color: #67c23a; }
+.highlight-danger .highlight-card-title { color: #f56c6c; }
+.highlight-primary .highlight-card-title { color: #409eff; }
+.highlight-warning .highlight-card-title { color: #e6a23c; }
+.highlight-card-body { font-size: 13px; color: #606266; line-height: 1.6; }
 :deep(.el-input.is-disabled .el-input__inner) {
   cursor: pointer;
 }

@@ -67,6 +67,9 @@
             <if test="warehouseId != null"> AND o.warehouse_id = #{warehouseId}</if>
             <if test="supplierId != null"> AND o.supplier_id = #{supplierId}</if>
             <if test="status != null and status != ''"> AND o.status = #{status}</if>
+            <if test="params.excludeStatus != null and params.excludeStatus != ''"> AND o.status != #{params.excludeStatus}</if>
+            <if test="params.beginInboundDate != null and params.beginInboundDate != ''"> AND o.inbound_date &gt;= #{params.beginInboundDate}</if>
+            <if test="params.endInboundDate != null and params.endInboundDate != ''"> AND o.inbound_date &lt;= #{params.endInboundDate}</if>
         </where>
         ORDER BY o.order_id DESC
     </select>

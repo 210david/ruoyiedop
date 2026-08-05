@@ -1,96 +1,160 @@
 <template>
-  <div class="app-container">
-    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch">
-      <el-form-item label="编码" prop="warehouseCode">
-        <el-input v-model="queryParams.warehouseCode" placeholder="请输入" clearable style="width: 200px" @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="名称" prop="warehouseName">
-        <el-input v-model="queryParams.warehouseName" placeholder="请输入" clearable style="width: 200px" @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="节点类型" prop="nodeType">
-        <el-select v-model="queryParams.nodeType" placeholder="请选择" clearable style="width: 160px">
-          <el-option label="仓库" value="1" />
-          <el-option label="仓区" value="2" />
-          <el-option label="仓位" value="3" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="状态" prop="status">
-        <el-select v-model="queryParams.status" placeholder="请选择" clearable style="width: 160px">
-          <el-option label="正常" value="0" />
-          <el-option label="停用" value="1" />
-        </el-select>
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-        <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-      </el-form-item>
-    </el-form>
+  <div class="app-container wms-warehouse-page">
+    <!-- ===== Filter Card ===== -->
+    <div class="surface filter-card" v-show="showSearch">
+      <div class="filter-head">
+        <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+        <a class="adv-link" :class="{ 'is-open': showAdvanced }" @click.prevent="showAdvanced = !showAdvanced">
+          <span>{{ showAdvanced ? '收起' : '高级筛选' }}</span>
+          <el-icon class="chev"><ArrowDown /></el-icon>
+        </a>
+      </div>
+      <div class="filter-bar">
+        <div class="field">
+          <label>编码</label>
+          <div class="control">
+            <el-input v-model="queryParams.warehouseCode" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field">
+          <label>名称</label>
+          <div class="control">
+            <el-input v-model="queryParams.warehouseName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field">
+          <label>节点类型</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.nodeType" placeholder="全部" clearable @change="handleQuery">
+              <el-option label="仓库" value="1" />
+              <el-option label="仓区" value="2" />
+              <el-option label="仓位" value="3" />
+            </el-select>
+          </div>
+        </div>
+        <div class="field">
+          <label>状态</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
+              <el-option label="正常" value="0" />
+              <el-option label="停用" value="1" />
+            </el-select>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>库区类型</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.areaType" placeholder="全部" clearable @change="handleQuery">
+              <el-option v-for="d in wms_area_type" :key="d.value" :label="d.label" :value="d.value" />
+            </el-select>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>库位类型</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.locationType" placeholder="全部" clearable @change="handleQuery">
+              <el-option v-for="d in wms_location_type" :key="d.value" :label="d.label" :value="d.value" />
+            </el-select>
+          </div>
+        </div>
+      </div>
+      <div class="filter-actions">
+        <div class="filter-info">
+          <el-icon><Filter /></el-icon> 已选 {{ activeFilterCount }} 个条件，支持回车快速搜索
+        </div>
+        <div class="filter-buttons">
+          <el-button icon="RefreshLeft" @click="resetQuery">重置</el-button>
+          <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+        </div>
+      </div>
+    </div>
 
-    <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5"><el-button type="primary" plain icon="Plus" @click="handleAdd()" v-hasPermi="['wms:warehouse:add']">新增仓库</el-button></el-col>
-      <el-col :span="1.5"><el-button type="info" plain icon="Sort" @click="toggleExpandAll">展开/折叠</el-button></el-col>
-      <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
-    </el-row>
+    <!-- ===== Table Section ===== -->
+    <div class="surface">
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <div class="left">
+          <el-button type="primary" plain icon="Plus" @click="handleAdd()" v-hasPermi="['wms:warehouse:add']">新增仓库</el-button>
+          <button type="button" class="btn-soft is-outline" @click="toggleExpandAll">
+            <el-icon><Sort /></el-icon> 展开/折叠
+          </button>
+        </div>
+        <div class="right">
+          <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="wms_warehouse_columns" />
+        </div>
+      </div>
 
-    <el-table ref="tableRef" border v-if="refreshTable" v-loading="loading" :data="warehouseList" row-key="warehouseId" :default-expand-all="isExpandAll" :tree-props="{ children: 'children', hasChildren: 'hasChildren' }" @header-dragend="onHeaderDragEnd">
-      <el-table-column prop="warehouseCode" label="编码" :width="colWidth('warehouseCode', 200)" resizable />
-      <el-table-column prop="warehouseName" label="名称" :show-overflow-tooltip="true" />
-      <el-table-column prop="nodeType" label="类型" :width="colWidth('nodeType', 90)" resizable align="center">
-        <template #default="scope">
-          <el-tag v-if="scope.row.nodeType === '1'" type="primary" size="small">仓库</el-tag>
-          <el-tag v-else-if="scope.row.nodeType === '2'" type="success" size="small">仓区</el-tag>
-          <el-tag v-else-if="scope.row.nodeType === '3'" type="warning" size="small">仓位</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column prop="areaType" label="库区类型" :width="colWidth('areaType', 100)" resizable align="center">
-        <template #default="scope">
-          <dict-tag v-if="scope.row.nodeType === '2'" :options="wms_area_type" :value="scope.row.areaType" />
-          <span v-else>-</span>
-        </template>
-      </el-table-column>
-      <el-table-column prop="locationType" label="库位类型" :width="colWidth('locationType', 100)" resizable align="center">
-        <template #default="scope">
-          <dict-tag v-if="scope.row.nodeType === '3'" :options="wms_location_type" :value="scope.row.locationType" />
-          <span v-else>-</span>
-        </template>
-      </el-table-column>
-      <el-table-column prop="capacity" label="容量" :width="colWidth('capacity', 90)" resizable align="right">
-        <template #default="scope">
-          <span v-if="scope.row.nodeType === '3'">{{ scope.row.capacity }}</span>
-          <span v-else>-</span>
-        </template>
-      </el-table-column>
-      <el-table-column prop="locationStatus" label="库位状态" :width="colWidth('locationStatus', 90)" resizable align="center">
-        <template #default="scope">
-          <el-tag v-if="scope.row.nodeType === '3'" :type="locationStatusType(scope.row.locationStatus)" size="small">{{ locationStatusText(scope.row.locationStatus) }}</el-tag>
-          <span v-else>-</span>
-        </template>
-      </el-table-column>
-      <el-table-column prop="managerName" label="负责人" :width="colWidth('managerName', 90)" resizable align="center">
-        <template #default="scope">
-          <span v-if="scope.row.nodeType === '1'">{{ scope.row.managerName || '-' }}</span>
-          <span v-else>-</span>
-        </template>
-      </el-table-column>
-      <el-table-column prop="deptName" label="管理部门" :width="colWidth('deptName', 110)" resizable align="center">
-        <template #default="scope">
-          <span v-if="scope.row.nodeType === '1'">{{ scope.row.deptName || '-' }}</span>
-          <span v-else>-</span>
-        </template>
-      </el-table-column>
-      <el-table-column prop="status" label="状态" :width="colWidth('status', 80)" resizable align="center">
-        <template #default="scope">
-          <el-tag :type="scope.row.status === '0' ? 'success' : 'danger'" size="small">{{ scope.row.status === '0' ? '正常' : '停用' }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" width="220" align="center">
-        <template #default="scope">
-          <el-button v-if="scope.row.nodeType !== '3'" link type="primary" icon="Plus" @click="handleAdd(scope.row)" v-hasPermi="['wms:warehouse:add']">新增</el-button>
-          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['wms:warehouse:edit']">修改</el-button>
-          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['wms:warehouse:remove']">删除</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
+      <!-- Table -->
+      <div class="table-wrap">
+        <el-table ref="tableRef" border v-if="refreshTable" v-loading="loading" :data="warehouseList" row-key="warehouseId" :default-expand-all="isExpandAll" :tree-props="{ children: 'children', hasChildren: 'hasChildren' }" @header-dragend="onHeaderDragEnd" class="app-table">
+          <el-table-column prop="warehouseCode" label="编码" key="warehouseCode" :width="colWidth('warehouseCode', 200)" resizable v-if="columns.warehouseCode.visible" />
+          <el-table-column prop="warehouseName" label="名称" key="warehouseName" :show-overflow-tooltip="true" v-if="columns.warehouseName.visible" />
+          <el-table-column prop="nodeType" label="类型" key="nodeType" :width="colWidth('nodeType', 90)" resizable align="center" v-if="columns.nodeType.visible">
+            <template #default="scope">
+              <span class="badge violet" v-if="scope.row.nodeType === '1'">仓库</span>
+              <span class="badge blue" v-else-if="scope.row.nodeType === '2'">仓区</span>
+              <span class="badge amber" v-else-if="scope.row.nodeType === '3'">仓位</span>
+            </template>
+          </el-table-column>
+          <el-table-column prop="areaType" label="库区类型" key="areaType" :width="colWidth('areaType', 100)" resizable align="center" v-if="columns.areaType.visible">
+            <template #default="scope">
+              <span class="badge blue" v-if="scope.row.nodeType === '2'">{{ areaTypeLabel(scope.row.areaType) }}</span>
+              <span v-else>-</span>
+            </template>
+          </el-table-column>
+          <el-table-column prop="locationType" label="库位类型" key="locationType" :width="colWidth('locationType', 100)" resizable align="center" v-if="columns.locationType.visible">
+            <template #default="scope">
+              <span class="badge blue" v-if="scope.row.nodeType === '3'">{{ locationTypeLabel(scope.row.locationType) }}</span>
+              <span v-else>-</span>
+            </template>
+          </el-table-column>
+          <el-table-column prop="capacity" label="容量" key="capacity" :width="colWidth('capacity', 90)" resizable align="right" class-name="col-num" v-if="columns.capacity.visible">
+            <template #default="scope">
+              <span v-if="scope.row.nodeType === '3'">{{ scope.row.capacity }}</span>
+              <span v-else>-</span>
+            </template>
+          </el-table-column>
+          <el-table-column prop="locationStatus" label="库位状态" key="locationStatus" :width="colWidth('locationStatus', 90)" resizable align="center" v-if="columns.locationStatus.visible">
+            <template #default="scope">
+              <span class="badge" :class="locationStatusBadgeClass(scope.row.locationStatus)" v-if="scope.row.nodeType === '3'">
+                <span class="dot"></span>{{ locationStatusText(scope.row.locationStatus) }}
+              </span>
+              <span v-else>-</span>
+            </template>
+          </el-table-column>
+          <el-table-column prop="managerName" label="负责人" key="managerName" :width="colWidth('managerName', 120)" resizable align="center" v-if="columns.managerName.visible">
+            <template #default="scope">
+              <span v-if="scope.row.nodeType === '1'">{{ scope.row.managerName || '-' }}</span>
+              <span v-else>-</span>
+            </template>
+          </el-table-column>
+          <el-table-column prop="deptName" label="管理部门" key="deptName" :width="colWidth('deptName', 120)" resizable align="center" v-if="columns.deptName.visible">
+            <template #default="scope">
+              <span v-if="scope.row.nodeType === '1'">{{ scope.row.deptName || '-' }}</span>
+              <span v-else>-</span>
+            </template>
+          </el-table-column>
+          <el-table-column prop="status" label="状态" key="status" :width="colWidth('status', 100)" resizable align="center" v-if="columns.status.visible">
+            <template #default="scope">
+              <span class="badge" :class="scope.row.status === '0' ? 'green' : 'gray'">
+                <span class="dot"></span>{{ scope.row.status === '0' ? '正常' : '停用' }}
+              </span>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="220" align="center">
+            <template #default="scope">
+              <el-button v-if="scope.row.nodeType !== '3'" link type="primary" icon="Plus" @click="handleAdd(scope.row)" v-hasPermi="['wms:warehouse:add']">新增</el-button>
+              <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['wms:warehouse:edit']">修改</el-button>
+              <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['wms:warehouse:remove']">删除</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+    </div>
 
     <!-- 添加/修改对话框 -->
     <el-dialog v-model="open" width="816px" append-to-body draggable class="rd-dialog">
@@ -276,6 +340,48 @@ const showSearch = ref(true)
 const title = ref('')
 const isExpandAll = ref(true)
 const refreshTable = ref(true)
+const showAdvanced = ref(false)
+
+const defaultColumns = {
+  warehouseCode: { label: '编码', visible: true },
+  warehouseName: { label: '名称', visible: true },
+  nodeType: { label: '类型', visible: true },
+  areaType: { label: '库区类型', visible: true },
+  locationType: { label: '库位类型', visible: true },
+  capacity: { label: '容量', visible: true },
+  locationStatus: { label: '库位状态', visible: true },
+  managerName: { label: '负责人', visible: true },
+  deptName: { label: '管理部门', visible: true },
+  status: { label: '状态', visible: true }
+}
+function loadColumnVisibility() {
+  try {
+    const saved = localStorage.getItem('wms_warehouse_columns')
+    if (saved) {
+      const parsed = JSON.parse(saved)
+      const result = {}
+      Object.keys(defaultColumns).forEach(key => {
+        result[key] = {
+          label: defaultColumns[key].label,
+          visible: parsed[key] !== undefined ? parsed[key] : defaultColumns[key].visible
+        }
+      })
+      return result
+    }
+  } catch (e) {}
+  return { ...defaultColumns }
+}
+const columns = ref(loadColumnVisibility())
+const activeFilterCount = computed(() => {
+  let count = 0
+  if (queryParams.value.warehouseCode) count++
+  if (queryParams.value.warehouseName) count++
+  if (queryParams.value.nodeType) count++
+  if (queryParams.value.areaType) count++
+  if (queryParams.value.locationType) count++
+  if (queryParams.value.status) count++
+  return count
+})
 
 const data = reactive({
   form: {},
@@ -283,6 +389,8 @@ const data = reactive({
     warehouseCode: undefined,
     warehouseName: undefined,
     nodeType: undefined,
+    areaType: undefined,
+    locationType: undefined,
     status: undefined
   },
   rules: {
@@ -298,6 +406,7 @@ function getList() {
   listWarehouseTree(queryParams.value).then(response => {
     warehouseList.value = proxy.handleTree(response.data, 'warehouseId', 'parentId')
     loading.value = false
+    applySavedWidths()
   })
 }
 
@@ -306,7 +415,12 @@ function handleQuery() {
 }
 
 function resetQuery() {
-  proxy.resetForm('queryRef')
+  queryParams.value.warehouseCode = undefined
+  queryParams.value.warehouseName = undefined
+  queryParams.value.nodeType = undefined
+  queryParams.value.areaType = undefined
+  queryParams.value.locationType = undefined
+  queryParams.value.status = undefined
   handleQuery()
 }
 
@@ -318,11 +432,11 @@ function toggleExpandAll() {
   })
 }
 
-function locationStatusType(status) {
-  if (status === '0') return 'success'
-  if (status === '1') return 'warning'
-  if (status === '2') return 'danger'
-  return 'info'
+function locationStatusBadgeClass(status) {
+  if (status === '0') return 'green'
+  if (status === '1') return 'amber'
+  if (status === '2') return 'red'
+  return 'gray'
 }
 
 function locationStatusText(status) {
@@ -330,6 +444,14 @@ function locationStatusText(status) {
   if (status === '1') return '占用'
   if (status === '2') return '锁定'
   return '-'
+}
+function areaTypeLabel(type) {
+  const item = wms_area_type.value.find(d => d.value == type)
+  return item ? item.label : '-'
+}
+function locationTypeLabel(type) {
+  const item = wms_location_type.value.find(d => d.value == type)
+  return item ? item.label : '-'
 }
 
 function reset() {
@@ -474,19 +596,102 @@ getList()
 </script>
 
 <style scoped>
-/* 仓库新增/修改页面：对话框及页内卡片宽度增加 20% */
-.rd-page {
-  max-width: 1008px;
+/* ===== Design Tokens ===== */
+.wms-warehouse-page {
+  padding-top: 10px;
+  --brand-50:#eef2ff; --brand-100:#e0e7ff; --brand-200:#c7d2fe; --brand-500:#6366f1; --brand-600:#4f46e5; --brand-700:#4338ca;
+  --ink-900:#0f172a; --ink-700:#334155; --ink-500:#64748b; --ink-400:#94a3b8; --ink-300:#cbd5e1; --ink-200:#e2e8f0; --ink-100:#f1f5f9; --ink-50:#f8fafc;
+  --amber-50:#fffbeb; --amber-500:#f59e0b; --amber-700:#b45309;
+  --blue-50:#eff6ff; --blue-500:#3b82f6; --blue-700:#1d4ed8;
+  --green-50:#ecfdf5; --green-500:#10b981; --green-700:#047857;
+  --red-50:#fef2f2; --red-500:#ef4444; --red-700:#b91c1c;
+  --violet-50:#f5f3ff;
+  --r-sm:6px; --r-md:10px; --r-lg:14px;
+  --shadow-card:0 1px 0 rgba(15,23,42,.04), 0 1px 2px rgba(15,23,42,.04);
+  --ease-out:cubic-bezier(.16,.84,.44,1);
+  font-feature-settings:"tnum" 1;
+  color: var(--ink-900);
 }
-.clear-icon {
-  cursor: pointer;
-  color: #c0c4cc;
-  font-size: 14px;
-}
-.clear-icon:hover {
-  color: #909399;
-}
-:deep(.el-input.is-disabled .el-input__inner) {
-  cursor: pointer;
-}
+
+/* ===== Surface Card ===== */
+.wms-warehouse-page .surface { background:#fff; border:1px solid var(--ink-200); border-radius:var(--r-lg); box-shadow:var(--shadow-card); overflow:hidden; margin-bottom:8px; }
+
+/* ===== Filter Card ===== */
+.wms-warehouse-page .filter-card { padding:14px 20px 16px; }
+.wms-warehouse-page .filter-card .filter-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+.wms-warehouse-page .filter-card .filter-title { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--ink-700); }
+.wms-warehouse-page .filter-card .filter-title .glyph { width:4px; height:14px; background:var(--brand-600); border-radius:2px; }
+.wms-warehouse-page .filter-card .adv-link { font-size:14px; color:var(--ink-500); text-decoration:none; display:flex; align-items:center; gap:4px; transition:color .15s; cursor:pointer; }
+.wms-warehouse-page .filter-card .adv-link:hover { color:var(--brand-600); }
+.wms-warehouse-page .filter-card .adv-link .chev { transition:transform .2s var(--ease-out); }
+.wms-warehouse-page .filter-card .adv-link.is-open .chev { transform:rotate(180deg); }
+.wms-warehouse-page .filter-card .filter-bar { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px 16px; }
+.wms-warehouse-page .filter-card .filter-actions { display:flex; align-items:center; justify-content:space-between; margin-top:14px; padding-top:14px; border-top:1px dashed var(--ink-200); }
+.wms-warehouse-page .filter-card .filter-info { font-size:13px; color:var(--ink-500); display:flex; align-items:center; gap:6px; }
+.wms-warehouse-page .filter-card .filter-buttons { display:flex; gap:8px; }
+
+/* ===== Form Field ===== */
+.wms-warehouse-page .field { display:flex; flex-direction:column; gap:6px; }
+.wms-warehouse-page .field label { font-size:14px; font-weight:500; color:var(--ink-700); display:flex; align-items:center; gap:6px; }
+.wms-warehouse-page .field .control { display:flex; align-items:center; height:36px; padding:0 12px; background:#fff; border:1px solid var(--ink-200); border-radius:var(--r-sm); transition:border-color .15s var(--ease-out), box-shadow .15s var(--ease-out); }
+.wms-warehouse-page .field .control:focus-within { border-color:var(--brand-500); box-shadow:0 0 0 3px rgba(99,102,241,.15); }
+.wms-warehouse-page .field .control :deep(.el-input__wrapper) { box-shadow:none !important; background:transparent !important; padding:0; height:34px; }
+.wms-warehouse-page .field .control :deep(.el-input__inner) { border:0; background:transparent; font-size:14px; color:var(--ink-900); height:34px; line-height:34px; }
+.wms-warehouse-page .field .control :deep(.el-input__inner::placeholder) { color:var(--ink-400); }
+.wms-warehouse-page .field .control :deep(.el-input__prefix) { color:var(--ink-400); margin-right:4px; }
+.wms-warehouse-page .field .control :deep(.el-input__prefix .el-icon) { font-size:14px; }
+.wms-warehouse-page .field .control :deep(.el-select) { width:100%; }
+.wms-warehouse-page .field .control :deep(.el-select .el-select__wrapper) { box-shadow:none !important; background:transparent !important; padding:0; min-height:34px; height:34px; }
+.wms-warehouse-page .field .control :deep(.el-select .el-select__wrapper .el-select__placeholder) { font-size:14px; color:var(--ink-900); }
+.wms-warehouse-page .field .control :deep(.el-select .el-select__wrapper.is-focused) { box-shadow:none !important; }
+
+/* ===== Toolbar ===== */
+.wms-warehouse-page .toolbar { display:flex; align-items:center; justify-content:space-between; padding:12px 20px; border-bottom:1px solid var(--ink-200); background:var(--ink-50); }
+.wms-warehouse-page .toolbar .left { display:flex; gap:8px; align-items:center; }
+.wms-warehouse-page .toolbar .right { display:flex; gap:8px; align-items:center; }
+
+/* ===== Buttons ===== */
+.wms-warehouse-page .btn-soft { display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 12px; font-size:14px; font-weight:500; border-radius:var(--r-sm); border:1px solid transparent; cursor:pointer; user-select:none; transition:all .15s var(--ease-out); }
+.wms-warehouse-page .btn-soft .el-icon { font-size:14px; }
+.wms-warehouse-page .btn-soft.is-outline { background:#fff; color:var(--ink-700); border-color:var(--ink-200); }
+.wms-warehouse-page .btn-soft.is-outline:hover { background:var(--ink-50); border-color:var(--ink-300); color:var(--ink-900); }
+
+/* ===== Table ===== */
+.wms-warehouse-page .table-wrap { overflow-x:auto; }
+.wms-warehouse-page .app-table { --el-table-bg-color:#fff; --el-table-header-bg-color:var(--ink-50); --el-table-row-hover-bg-color:#fafbff; --el-table-border-color:transparent; --el-table-text-color:var(--ink-700); --el-table-header-text-color:var(--ink-500); }
+.wms-warehouse-page .app-table :deep(.el-table__body td) { border-right-color:transparent !important; }
+.wms-warehouse-page .app-table :deep(.el-table__header th) { border-right-color:transparent !important; }
+.wms-warehouse-page .app-table :deep(.el-table__header th:hover) { border-right-color:var(--ink-200) !important; }
+.wms-warehouse-page .app-table :deep(.el-table__header th) { background:var(--ink-50) !important; color:var(--ink-500); font-weight:600; font-size:14px; letter-spacing:.02em; padding:12px 16px; border-bottom:1px solid var(--ink-200); }
+.wms-warehouse-page .app-table :deep(.el-table__header th .cell) { text-transform:uppercase; }
+.wms-warehouse-page .app-table :deep(.el-table__body td) { padding:14px 16px; border-bottom:1px solid var(--ink-100); color:var(--ink-700); }
+.wms-warehouse-page .app-table :deep(.el-table__row:hover > td) { background:#fafbff !important; }
+.wms-warehouse-page .app-table :deep(.el-table__inner-wrapper::before) { display:none; }
+.wms-warehouse-page .app-table :deep(.el-table__border-left-patch) { display:none; }
+.wms-warehouse-page .app-table :deep(.col-num) { text-align:right; font-feature-settings:"tnum" 1; font-variant-numeric:tabular-nums; }
+
+/* ===== Badges ===== */
+.wms-warehouse-page .badge { display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:999px; font-size:13px; font-weight:600; line-height:1; border:1px solid transparent; }
+.wms-warehouse-page .badge .dot { width:6px; height:6px; border-radius:50%; }
+.wms-warehouse-page .badge.amber { background:var(--amber-50); color:var(--amber-700); border-color:#fde68a; }
+.wms-warehouse-page .badge.amber .dot { background:var(--amber-500); }
+.wms-warehouse-page .badge.blue { background:var(--blue-50); color:var(--blue-700); border-color:#bfdbfe; }
+.wms-warehouse-page .badge.blue .dot { background:var(--blue-500); }
+.wms-warehouse-page .badge.green { background:var(--green-50); color:var(--green-700); border-color:#a7f3d0; }
+.wms-warehouse-page .badge.green .dot { background:var(--green-500); }
+.wms-warehouse-page .badge.red { background:var(--red-50); color:var(--red-700); border-color:#fecaca; }
+.wms-warehouse-page .badge.red .dot { background:var(--red-500); }
+.wms-warehouse-page .badge.violet { background:var(--violet-50); color:var(--brand-700); border-color:var(--brand-200); }
+.wms-warehouse-page .badge.gray { background:var(--ink-100); color:var(--ink-500); border-color:var(--ink-200); }
+.wms-warehouse-page .badge.gray .dot { background:var(--ink-400); }
+
+/* ===== Responsive ===== */
+@media (max-width:1100px) { .wms-warehouse-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }
+@media (max-width:720px) { .wms-warehouse-page .filter-card .filter-bar { grid-template-columns:1fr; } .wms-warehouse-page .toolbar { flex-wrap:wrap; gap:10px; } }
+
+/* ===== Dialog (scoped overrides) ===== */
+.wms-warehouse-page .rd-page { max-width: 1008px; }
+.wms-warehouse-page .clear-icon { cursor: pointer; color: #c0c4cc; font-size: 14px; }
+.wms-warehouse-page .clear-icon:hover { color: #909399; }
+.wms-warehouse-page :deep(.el-input.is-disabled .el-input__inner) { cursor: pointer; }
 </style>

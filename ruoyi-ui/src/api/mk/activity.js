@@ -1,8 +1,8 @@
 import request from '@/utils/request'
 
 // 查询营销活动列表
-export function listActivity(query) {
-  return request({ url: '/mk/activity/list', method: 'get', params: query })
+export function listActivity(query, config = {}) {
+return request({ url: '/mk/activity/list', method: 'get', params: query, ...config })
 }
 
 // 查询营销活动详细

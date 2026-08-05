@@ -1,51 +1,120 @@
 <template>
-  <div class="app-container">
-    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch">
-      <el-form-item label="合同编号" prop="contractNo">
-        <el-input v-model="queryParams.contractNo" placeholder="请输入" clearable style="width: 200px" @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="合同名称" prop="contractName">
-        <el-input v-model="queryParams.contractName" placeholder="请输入" clearable style="width: 200px" @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="客户名称" prop="customerName">
-        <el-input v-model="queryParams.customerName" placeholder="请输入" clearable style="width: 200px" @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="合同状态" prop="contractStatus">
-        <el-select v-model="queryParams.contractStatus" placeholder="请选择" clearable style="width: 200px">
-          <el-option v-for="d in marketing_contract_status" :key="d.value" :label="d.label" :value="d.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-        <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-      </el-form-item>
-    </el-form>
+  <div class="app-container mk-list-page">
+    <!-- ===== Filter Card ===== -->
+    <div class="surface filter-card" v-show="showSearch">
+      <div class="filter-head">
+        <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+      </div>
+      <div class="filter-bar">
+        <div class="field">
+          <label>合同编号</label>
+          <div class="control">
+            <el-input v-model="queryParams.contractNo" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field">
+          <label>合同名称</label>
+          <div class="control">
+            <el-input v-model="queryParams.contractName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field">
+          <label>客户名称</label>
+          <div class="control">
+            <el-input v-model="queryParams.customerName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field">
+          <label>合同状态</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.contractStatus" placeholder="全部" clearable @change="handleQuery">
+              <template #prefix><el-icon><Filter /></el-icon></template>
+              <el-option v-for="d in marketing_contract_status" :key="d.value" :label="d.label" :value="d.value" />
+            </el-select>
+          </div>
+        </div>
+      </div>
+      <div class="filter-actions">
+        <div class="filter-info">
+          <el-icon><Filter /></el-icon> 已选 {{ activeFilterCount }} 个条件，支持回车快速搜索
+        </div>
+        <div class="filter-buttons">
+          <el-button icon="RefreshLeft" @click="resetQuery">重置</el-button>
+          <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+        </div>
+      </div>
+    </div>
 
-    <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5"><el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['marketing:contract:add']">新增</el-button></el-col>
-      <el-col :span="1.5"><el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['marketing:contract:remove']">删除</el-button></el-col>
-      <el-col :span="1.5"><el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['marketing:contract:export']">导出</el-button></el-col>
-      <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
-    </el-row>
+    <!-- ===== Table Section ===== -->
+    <div class="surface">
+      <!-- Status Tabs + Tip Pill -->
+      <div class="status-tabs">
+        <div class="tabs-track">
+          <button class="status-tab" :class="{ 'is-active': activeStatusTab === 'all' }" @click="handleStatusTabClick('all')">
+            <span class="dot"></span><span>全部</span><span class="count">{{ statusCounts.all }}</span>
+          </button>
+          <button v-for="s in statusTabList" :key="s.value"
+            class="status-tab"
+            :class="[statusTabClass(s.value), { 'is-active': activeStatusTab === s.value }]"
+            @click="handleStatusTabClick(s.value)">
+            <span class="dot"></span><span>{{ s.label }}</span><span class="count">{{ statusCounts[s.value] || 0 }}</span>
+          </button>
+        </div>
+        <button class="tip-pill" @click="showStatusHelp = true">
+          <el-icon><QuestionFilled /></el-icon>
+          <span>业务操作说明</span>
+        </button>
+      </div>
 
-    <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
-      <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="合同编号" prop="contractNo" :width="colWidth('contractNo', 150)" resizable />
-      <el-table-column label="合同名称" prop="contractName" show-overflow-tooltip />
-      <el-table-column label="客户名称" prop="customerName" :width="colWidth('customerName', 180)" resizable show-overflow-tooltip />
-      <el-table-column label="合同类型" prop="contractType" :width="colWidth('contractType', 100)" resizable align="center">
-        <template #default="scope"><dict-tag :options="marketing_contract_type" :value="scope.row.contractType" /></template>
-      </el-table-column>
-      <el-table-column label="合同金额" prop="contractAmount" :width="colWidth('contractAmount', 120)" resizable align="right" />
-      <el-table-column label="签约日期" prop="signDate" :width="colWidth('signDate', 120)" resizable />
-      <el-table-column label="付款方式" prop="paymentMethod" :width="colWidth('paymentMethod', 100)" resizable align="center">
-        <template #default="scope"><dict-tag :options="marketing_payment_method" :value="scope.row.paymentMethod" /></template>
-      </el-table-column>
-      <el-table-column label="状态" prop="contractStatus" :width="colWidth('contractStatus', 100)" resizable align="center">
-        <template #default="scope"><dict-tag :options="marketing_contract_status" :value="scope.row.contractStatus" /></template>
-      </el-table-column>
-      <el-table-column label="负责人" prop="userName" :width="colWidth('userName', 100)" resizable />
-      <el-table-column label="操作" width="320" align="center" fixed="right">
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <div class="left">
+          <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['marketing:contract:add']">新增</el-button>
+          <button type="button" class="btn-soft is-danger-outline" :disabled="multiple" @click="handleDelete" v-hasPermi="['marketing:contract:remove']">
+            <el-icon><Delete /></el-icon> 删除
+          </button>
+          <div class="toolbar-divider"></div>
+          <button type="button" class="btn-soft is-outline" @click="handleExport" v-hasPermi="['marketing:contract:export']">
+            <el-icon><Download /></el-icon> 导出
+          </button>
+        </div>
+        <div class="right">
+          <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="mk_contract_columns" />
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="table-wrap">
+        <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
+          <el-table-column type="selection" width="55" align="center" />
+          <el-table-column label="合同编号" prop="contractNo" key="contractNo" :width="colWidth('contractNo', 150)" resizable v-if="columns.contractNo.visible" />
+          <el-table-column label="合同名称" prop="contractName" key="contractName" show-overflow-tooltip v-if="columns.contractName.visible" />
+          <el-table-column label="客户名称" prop="customerName" key="customerName" :width="colWidth('customerName', 180)" resizable show-overflow-tooltip v-if="columns.customerName.visible" />
+          <el-table-column label="合同类型" prop="contractType" key="contractType" :width="colWidth('contractType', 100)" resizable align="center" v-if="columns.contractType.visible">
+            <template #default="scope"><span class="badge" :class="contractTypeBadgeClass(scope.row.contractType)"><span class="dot"></span>{{ contractTypeLabel(scope.row.contractType) }}</span></template>
+          </el-table-column>
+          <el-table-column label="合同金额" prop="contractAmount" key="contractAmount" :width="colWidth('contractAmount', 120)" resizable align="right" v-if="columns.contractAmount.visible">
+            <template #default="scope"><span class="rd-amount">￥{{ scope.row.contractAmount }}</span></template>
+          </el-table-column>
+          <el-table-column label="签约日期" prop="signDate" key="signDate" :width="colWidth('signDate', 120)" resizable v-if="columns.signDate.visible" />
+          <el-table-column label="付款方式" prop="paymentMethod" key="paymentMethod" :width="colWidth('paymentMethod', 100)" resizable align="center" v-if="columns.paymentMethod.visible">
+            <template #default="scope"><span class="badge" :class="paymentMethodBadgeClass(scope.row.paymentMethod)"><span class="dot"></span>{{ paymentMethodLabel(scope.row.paymentMethod) }}</span></template>
+          </el-table-column>
+          <el-table-column label="状态" prop="contractStatus" key="contractStatus" :width="colWidth('contractStatus', 100)" resizable align="center" v-if="columns.contractStatus.visible">
+            <template #default="scope">
+              <span class="badge" :class="badgeClass(scope.row.contractStatus)">
+                <span class="dot"></span>{{ statusLabel(scope.row.contractStatus) }}
+              </span>
+            </template>
+          </el-table-column>
+          <el-table-column label="负责人" prop="userName" key="userName" :width="colWidth('userName', 100)" resizable v-if="columns.userName.visible" />
+          <el-table-column label="操作" width="320" align="center" fixed="right">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">详情</el-button>
           <!-- 草稿：可修改 -->
@@ -64,8 +133,12 @@
           <el-button v-if="scope.row.contractStatus === '2'" link type="danger" icon="CircleClose" @click="handleTerminate(scope.row)" v-hasPermi="['marketing:contract:edit']">终止</el-button>
         </template>
       </el-table-column>
-    </el-table>
-    <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+        </el-table>
+      </div>
+
+      <!-- Pagination -->
+      <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+    </div>
 
     <!-- 新增/修改对话框 -->
     <el-dialog v-model="open" width="1200px" append-to-body draggable class="contract-form-dialog">
@@ -1074,6 +1147,74 @@
           </div>
         </section>
 
+        <!-- 合同附件 -->
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('approveAttach')">
+            <div class="rd-card-title">
+              <span class="rd-card-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+                </svg>
+              </span>
+              合同附件
+            </div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.approveAttach }" aria-label="折叠">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+            </button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.approveAttach">
+            <template v-if="approveForm.attachment">
+              <div class="rd-grid">
+                <div class="rd-item rd-item--full" v-for="(file, idx) in approveForm.attachment.split(',')" :key="idx">
+                  <span class="rd-label">附件{{ idx + 1 }}</span>
+                  <div class="rd-value">
+                    <el-link :href="baseUrl + file" :underline="false" target="_blank" type="primary"><el-icon><Download /></el-icon> {{ getFileName(file) }}</el-link>
+                    <el-button link type="success" icon="View" size="small" style="margin-left: 12px" @click="handlePreview(file)">预览</el-button>
+                  </div>
+                </div>
+              </div>
+            </template>
+            <div class="rd-empty" v-else>
+              <svg class="rd-empty-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+              <p class="rd-empty-text">暂无附件</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- 回款计划 -->
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('approvePaymentPlans')">
+            <div class="rd-card-title">
+              <span class="rd-card-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="12" y1="1" x2="12" y2="23"/>
+                  <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                </svg>
+              </span>
+              回款计划
+            </div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.approvePaymentPlans }" aria-label="折叠">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+            </button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.approvePaymentPlans">
+            <el-table border :data="approveForm.paymentPlanList" size="small">
+              <el-table-column label="期次" prop="periodNo" width="80" align="center" />
+              <el-table-column label="计划回款金额" width="140" align="center"><template #default="scope">{{ formatAmount(scope.row.planAmount) }}</template></el-table-column>
+              <el-table-column label="计划回款日期" prop="planDate" width="130" align="center" />
+              <el-table-column label="实际回款金额" width="140" align="center"><template #default="scope">{{ formatAmount(scope.row.actualAmount) }}</template></el-table-column>
+              <el-table-column label="实际回款日期" prop="actualDate" width="130" align="center" />
+              <el-table-column label="状态" align="center">
+                <template #default="scope"><dict-tag :options="marketing_payment_status" :value="scope.row.paymentStatus" /></template>
+              </el-table-column>
+            </el-table>
+            <div class="rd-empty" v-if="!approveForm.paymentPlanList || approveForm.paymentPlanList.length === 0">
+              <svg class="rd-empty-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+              <p class="rd-empty-text">暂无回款计划</p>
+            </div>
+          </div>
+        </section>
+
         <!-- 审批意见 -->
         <section class="rd-card">
           <div class="rd-card-header" @click="toggleCard('approveOpinion')">
@@ -1115,11 +1256,71 @@
 
     <!-- 部门选择弹窗 -->
     <dept-picker ref="deptPickerRef" title="选择所属部门" :disabled-ids="[100]" @confirm="onDeptPickerConfirm" />
+
+    <!-- 状态流转帮助对话框 -->
+    <el-dialog v-model="showStatusHelp" title="合同管理业务操作说明" width="720px" append-to-body>
+      <div class="status-help-content">
+        <h4>一、业务状态流转图</h4>
+        <div class="status-flow">
+          <div class="flow-item">
+            <el-tag type="info">草稿</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="warning">待审核</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="primary">已审核</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="success">执行中</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="success">已完成</el-tag>
+          </div>
+        </div>
+        <div class="status-flow" style="margin-top: 8px;">
+          <div class="flow-item">
+            <el-tag type="warning">待审核</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="danger">已驳回</el-tag>
+            <el-tag size="small" type="info">修改后重提</el-tag>
+          </div>
+        </div>
+
+        <h4>二、各状态说明</h4>
+        <el-descriptions :column="1" border>
+          <el-descriptions-item label="草稿">新建合同后的初始状态，可编辑、删除、提交审核</el-descriptions-item>
+          <el-descriptions-item label="待审核">已提交审核，等待审核人处理。可通过或驳回</el-descriptions-item>
+          <el-descriptions-item label="已驳回">审核未通过，可修改后重新提交</el-descriptions-item>
+          <el-descriptions-item label="已审核">审核通过，合同正式生效，可发货/创建订单</el-descriptions-item>
+          <el-descriptions-item label="执行中">合同正在执行中，可创建订单、发货、续签</el-descriptions-item>
+          <el-descriptions-item label="已完成">合同已履行完毕，可续签新合同</el-descriptions-item>
+          <el-descriptions-item label="已终止">合同被终止，不再执行</el-descriptions-item>
+        </el-descriptions>
+
+        <h4>三、重点业务规则</h4>
+        <div class="highlight-card">
+          <p>• <strong>合同变更：</strong>已审核/执行中的合同可发起变更申请，需审批通过后生效</p>
+          <p>• <strong>合同续签：</strong>已完成的合同可发起续签，自动创建新合同</p>
+          <p>• <strong>关联商机：</strong>赢单商机可自动创建合同，带入客户和金额信息</p>
+          <p>• <strong>合同终止：</strong>已审核或执行中的合同可终止，终止后不可恢复</p>
+        </div>
+      </div>
+      <template #footer>
+        <el-button type="primary" @click="showStatusHelp = false">我知道了</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup name="MkContract">
-import { CircleClose } from '@element-plus/icons-vue'
+import { CircleClose, ArrowRight, ArrowDown, QuestionFilled } from '@element-plus/icons-vue'
 import { listContract, getContract, addContract, updateContract, delContract, submitContract, approveContract, rejectContract, terminateContract, renewContract, submitContractChangeBatch, approveContractChangeByContractId } from '@/api/mk/contract'
 import { listCustomer } from '@/api/mk/customer'
 import UserPicker from '@/components/UserPicker/index.vue'
@@ -1138,6 +1339,9 @@ const changeApproveOpinion = ref('')
 const terminateOpen = ref(false)
 const loading = ref(true)
 const showSearch = ref(true)
+const showAdvanced = ref(false)
+const activeStatusTab = ref('all')
+const statusCounts = ref({ all: 0, '0': 0, '1': 0, '2': 0, '3': 0, '4': 0, '5': 0 })
 const ids = ref([])
 const single = ref(true)
 const multiple = ref(true)
@@ -1160,13 +1364,13 @@ const isExpired = computed(() => {
   if (!renewForm.value.originalExpireDate) return false
   return new Date(renewForm.value.originalExpireDate) < new Date()
 })
-const collapsedCards = reactive({ basic: false, attachment: false, dates: false, owner: false, paymentPlans: false, approve: false, changes: false, other: false, approveBasic: false, approveDates: false, approveOwner: false, approveOpinion: false, renewOriginal: false, renewTerms: false, renewAttachment: false, renewRemark: false, changeOriginal: false, changeContent: false, changeApprove: false })
+const collapsedCards = reactive({ basic: false, attachment: false, dates: false, owner: false, paymentPlans: false, approve: false, changes: false, other: false, approveBasic: false, approveDates: false, approveOwner: false, approveAttach: false, approvePaymentPlans: false, approveOpinion: false, renewOriginal: false, renewTerms: false, renewAttachment: false, renewRemark: false, changeOriginal: false, changeContent: false, changeApprove: false })
 function toggleCard(name) { collapsedCards[name] = !collapsedCards[name] }
 const baseUrl = import.meta.env.VITE_APP_BASE_API
 
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, contractNo: undefined, contractName: undefined, customerName: undefined, contractStatus: undefined },
+  queryParams: { pageNum: 1, pageSize: 10, contractNo: undefined, contractName: undefined, customerName: undefined, contractStatus: undefined, params: {} },
 rules: {
 contractName: [{ required: true, message: '合同名称不能为空', trigger: 'blur' }],
     customerId: [{ required: true, message: '请选择关联客户', trigger: 'change' }],
@@ -1178,9 +1382,53 @@ contractName: [{ required: true, message: '合同名称不能为空', trigger: '
 })
 const { queryParams, form, rules } = toRefs(data)
 
+// 列显隐配置 - 从 localStorage 恢复保存的设置
+const defaultColumns = {
+  contractNo: { label: '合同编号', visible: true },
+  contractName: { label: '合同名称', visible: true },
+  customerName: { label: '客户名称', visible: true },
+  contractType: { label: '合同类型', visible: true },
+  contractAmount: { label: '合同金额', visible: true },
+  signDate: { label: '签约日期', visible: true },
+  paymentMethod: { label: '付款方式', visible: true },
+  contractStatus: { label: '状态', visible: true },
+  userName: { label: '负责人', visible: true }
+}
+
+function loadColumnVisibility() {
+  try {
+    const saved = localStorage.getItem('mk_contract_columns')
+    if (saved) {
+      const parsed = JSON.parse(saved)
+      const result = {}
+      Object.keys(defaultColumns).forEach(key => {
+        result[key] = {
+          label: defaultColumns[key].label,
+          visible: parsed[key] !== undefined ? parsed[key] : defaultColumns[key].visible
+        }
+      })
+      return result
+    }
+  } catch (e) {}
+  return { ...defaultColumns }
+}
+
+const columns = ref(loadColumnVisibility())
+
+const activeFilterCount = computed(() => {
+  let count = 0
+  if (queryParams.value.contractNo) count++
+  if (queryParams.value.contractName) count++
+  if (queryParams.value.customerName) count++
+  if (queryParams.value.contractStatus) count++
+  return count
+})
+
+function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
+
 function getList() {
   loading.value = true
-  listContract(queryParams.value).then(res => { list.value = res.rows; total.value = res.total }).finally(() => { loading.value = false })
+  listContract(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loadStatusCounts(); applySavedWidths() }).finally(() => { loading.value = false })
 }
 function getCustomerOptions() {
   listCustomer({ pageNum: 1, pageSize: 9999 }).then(res => { customerOptions.value = res.rows })
@@ -1233,8 +1481,8 @@ function handleAddPlan() {
 function handleDeletePlan(index) {
   form.value.paymentPlanList.splice(index, 1)
 }
-function handleQuery() { queryParams.value.pageNum = 1; getList() }
-function resetQuery() { proxy.resetForm('queryRef'); handleQuery() }
+function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
+function resetQuery() { queryParams.value.contractNo = undefined; queryParams.value.contractName = undefined; queryParams.value.customerName = undefined; queryParams.value.contractStatus = undefined; queryParams.value.params = {}; activeStatusTab.value = 'all'; handleQuery() }
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.contractId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function reset() {
   form.value = { contractNo: undefined, contractName: undefined, contractType: '0', customerId: undefined, customerName: undefined, opportunityId: undefined, contractAmount: 0, signDate: undefined, effectiveDate: undefined, expireDate: undefined, paymentMethod: '0', contractStatus: '0', userId: undefined, userName: undefined, deptId: undefined, deptName: undefined, attachment: undefined, paymentPlanList: [], remark: undefined }
@@ -1312,6 +1560,8 @@ function handleSubmit(row) {
 function handleApprove(row) {
   getContract(row.contractId).then(res => {
     approveForm.value = { ...res.data, approveOpinion: '' }
+    collapsedCards.approveAttach = !res.data.attachment
+    collapsedCards.approvePaymentPlans = !res.data.paymentPlanList || res.data.paymentPlanList.length === 0
     approveOpen.value = true
   }).catch(() => {})
 }
@@ -1571,6 +1821,27 @@ function handleExport() { proxy.download('mk/contract/export', { ...queryParams.
 function cancel() { open.value = false; reset() }
 getCustomerOptions()
 getList()
+
+const statusTabList = computed(() => marketing_contract_status.value)
+function loadStatusCounts() {
+  const counts = { all: 0, '0': 0, '1': 0, '2': 0, '3': 0, '4': 0, '5': 0 }
+  list.value.forEach(row => {
+    const s = row.contractStatus
+    if (counts[s] !== undefined) counts[s]++
+  })
+  counts.all = total.value
+  statusCounts.value = counts
+}
+function handleStatusTabClick(status) { activeStatusTab.value = status; queryParams.value.contractStatus = status === 'all' ? undefined : status; handleQuery() }
+function badgeClass(status) { const map = { '0': 'amber', '1': 'blue', '2': 'green', '3': 'gray', '4': 'red', '5': 'blue' }; return map[status] || 'gray' }
+function statusLabel(status) { const item = marketing_contract_status.value.find(d => d.value == status); return item ? item.label : '-' }
+function contractTypeLabel(type) { const item = marketing_contract_type.value.find(d => d.value == type); return item ? item.label : '-' }
+function contractTypeBadgeClass(type) { const map = { '0': 'blue', '1': 'green', '2': 'amber', '3': 'gray' }; return map[type] || 'gray' }
+function paymentMethodLabel(method) { const item = marketing_payment_method.value.find(d => d.value == method); return item ? item.label : '-' }
+function paymentMethodBadgeClass(method) { const map = { '0': 'blue', '1': 'amber', '2': 'green', '3': 'gray' }; return map[method] || 'gray' }
+function statusTabClass(value) { const map = { '0': 'tab-draft', '1': 'tab-audit', '2': 'tab-approved', '3': 'tab-void', '4': 'tab-reject', '5': 'tab-audit' }; return map[value] || '' }
+
+const showStatusHelp = ref(false)
 </script>
 
 <style scoped>
@@ -1705,4 +1976,51 @@ getList()
 .change-tabs :deep(.el-tabs__item) { font-size: 14px; font-weight: 600; }
 
 @media (max-width: 768px) { .rd-grid, .rd-timeline-body { grid-template-columns: 1fr; } .rd-card-header { padding: 8px 12px; } .rd-card-body { padding: 12px; } .change-approve-footer { padding: 12px; } .change-approve-actions { flex-wrap: wrap; } }
+
+.status-help-content {
+  max-height: 500px;
+  overflow-y: auto;
+  padding-right: 10px;
+}
+.status-help-content h4 {
+  margin: 20px 0 12px 0;
+  color: #303133;
+  font-weight: 600;
+  border-left: 4px solid #409eff;
+  padding-left: 10px;
+}
+.status-help-content h4:first-child {
+  margin-top: 0;
+}
+.status-help-content .status-flow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 16px;
+  background-color: #f5f7fa;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+.status-help-content .flow-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.status-help-content .flow-arrow {
+  color: #909399;
+  font-size: 16px;
+}
+.status-help-content .highlight-card {
+  background-color: #ecf5ff;
+  border-radius: 8px;
+  padding: 16px;
+  border-left: 4px solid #409eff;
+}
+.status-help-content .highlight-card p {
+  margin: 6px 0;
+  line-height: 1.6;
+  font-size: 13px;
+  color: #606266;
+}
 </style>

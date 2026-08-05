@@ -1,46 +1,85 @@
 <template>
-  <div class="app-container">
-    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch">
-      <el-form-item label="单据号" prop="documentCode">
-        <el-input v-model="queryParams.documentCode" placeholder="请输入" clearable style="width: 160px" @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="出库类型" prop="targetType">
-        <el-select v-model="queryParams.targetType" placeholder="请选择" clearable style="width: 140px">
-          <el-option v-for="dict in dms_partout_type" :key="dict.value" :label="dict.label" :value="dict.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="领用部门" prop="supplierOrDept">
-        <el-input v-model="queryParams.supplierOrDept" placeholder="请输入" clearable style="width: 160px" @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-        <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-      </el-form-item>
-    </el-form>
+  <div class="app-container dms-partout-page">
+    <!-- ===== Filter Card ===== -->
+    <div class="surface filter-card" v-show="showSearch">
+      <div class="filter-head">
+        <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+      </div>
+      <div class="filter-bar">
+        <div class="field">
+          <label>单据号</label>
+          <div class="control">
+            <el-input v-model="queryParams.documentCode" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field">
+          <label>出库类型</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.targetType" placeholder="全部" clearable @change="handleQuery">
+              <el-option v-for="dict in dms_partout_type" :key="dict.value" :label="dict.label" :value="dict.value" />
+            </el-select>
+          </div>
+        </div>
+        <div class="field">
+          <label>领用部门</label>
+          <div class="control">
+            <el-input v-model="queryParams.supplierOrDept" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+      </div>
+      <div class="filter-actions">
+        <div class="filter-info">
+          <el-icon><Filter /></el-icon> 已选 {{ activeFilterCount }} 个条件，支持回车快速搜索
+        </div>
+        <div class="filter-buttons">
+          <el-button icon="RefreshLeft" @click="resetQuery">重置</el-button>
+          <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+        </div>
+      </div>
+    </div>
 
-    <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5"><el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['dms:partout:add']">新增出库</el-button></el-col>
-      <el-col :span="1.5"><el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['dms:partstock:remove']">删除</el-button></el-col>
-      <el-col :span="1.5"><el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['dms:partout:export']">导出</el-button></el-col>
-      <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
-    </el-row>
-
-    <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
-      <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="单据号" prop="documentCode" :width="colWidth('documentCode', 140)" resizable />
-      <el-table-column label="备件编号" prop="partCode" :width="colWidth('partCode', 120)" resizable />
-      <el-table-column label="备件名称" prop="partName" :width="colWidth('partName', 150)" resizable show-overflow-tooltip />
-      <el-table-column label="单位" prop="unit" :width="colWidth('unit', 70)" resizable align="center"><template #default="scope"><dict-tag :options="wms_unit" :value="scope.row.unit" /></template></el-table-column>
-      <el-table-column label="出库类型" prop="targetType" :width="colWidth('targetType', 100)" resizable align="center">
-        <template #default="scope">
-          <dict-tag :options="dms_partout_type" :value="scope.row.targetType" />
-        </template>
-      </el-table-column>
-      <el-table-column label="领用部门" prop="supplierOrDept" :width="colWidth('supplierOrDept', 150)" resizable show-overflow-tooltip />
-      <el-table-column label="领用人" prop="receiver" :width="colWidth('receiver', 80)" resizable />
-      <el-table-column label="出库数量" prop="quantity" :width="colWidth('quantity', 90)" resizable align="center" />
-      <el-table-column label="出库日期" prop="operateDate" :width="colWidth('operateDate', 110)" resizable align="center" />
-      <el-table-column label="操作" width="180" align="center" fixed="right">
+    <!-- ===== Table Section ===== -->
+    <div class="surface">
+      <div class="toolbar">
+        <div class="left">
+          <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['dms:partout:add']">新增出库</el-button>
+          <button type="button" class="btn-soft is-danger-outline" :disabled="multiple" @click="handleDelete" v-hasPermi="['dms:partstock:remove']">
+            <el-icon><Delete /></el-icon> 删除
+          </button>
+          <div class="toolbar-divider"></div>
+          <button type="button" class="btn-soft is-outline" @click="handleExport" v-hasPermi="['dms:partout:export']">
+            <el-icon><Download /></el-icon> 导出
+          </button>
+        </div>
+        <div class="right">
+          <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="dms_partout_columns" />
+        </div>
+      </div>
+      <div class="table-wrap">
+        <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" class="app-table">
+          <el-table-column type="selection" width="55" align="center" />
+          <el-table-column label="单据号" prop="documentCode" key="documentCode" :width="colWidth('documentCode', 140)" resizable v-if="columns.documentCode.visible">
+            <template #default="scope"><span class="col-mono">{{ scope.row.documentCode }}</span></template>
+          </el-table-column>
+          <el-table-column label="备件编号" prop="partCode" key="partCode" :width="colWidth('partCode', 120)" resizable v-if="columns.partCode.visible">
+            <template #default="scope"><span class="col-mono">{{ scope.row.partCode }}</span></template>
+          </el-table-column>
+          <el-table-column label="备件名称" prop="partName" key="partName" :width="colWidth('partName', 150)" resizable show-overflow-tooltip v-if="columns.partName.visible" />
+          <el-table-column label="单位" prop="unit" key="unit" :width="colWidth('unit', 80)" resizable align="center" v-if="columns.unit.visible">
+            <template #default="scope"><span class="badge amber">{{ unitLabel(scope.row.unit) }}</span></template>
+          </el-table-column>
+          <el-table-column label="出库类型" prop="targetType" key="targetType" :width="colWidth('targetType', 100)" resizable align="center" v-if="columns.targetType.visible">
+            <template #default="scope"><span class="badge violet">{{ targetTypeLabel(scope.row.targetType) }}</span></template>
+          </el-table-column>
+          <el-table-column label="领用部门" prop="supplierOrDept" key="supplierOrDept" :width="colWidth('supplierOrDept', 150)" resizable show-overflow-tooltip v-if="columns.supplierOrDept.visible" />
+          <el-table-column label="领用人" prop="receiver" key="receiver" :width="colWidth('receiver', 100)" resizable v-if="columns.receiver.visible" />
+          <el-table-column label="出库数量" prop="quantity" key="quantity" :width="colWidth('quantity', 90)" resizable align="center" v-if="columns.quantity.visible" />
+          <el-table-column label="出库日期" prop="operateDate" key="operateDate" :width="colWidth('operateDate', 120)" resizable align="center" v-if="columns.operateDate.visible" />
+          <el-table-column label="操作" width="180" align="center" fixed="right">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['dms:partout:query']">查看</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['dms:partout:edit']">修改</el-button>
@@ -48,7 +87,9 @@
         </template>
       </el-table-column>
     </el-table>
-    <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+      </div>
+      <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+    </div>
 
     <!-- 新增出库弹窗 -->
     <el-dialog v-model="open" width="600px" append-to-body draggable class="rd-dialog">
@@ -175,11 +216,90 @@
 
     <!-- 领用部门选择弹窗 -->
     <dept-picker ref="deptPickerRef" title="选择领用部门" :disabled-ids="[100]" @confirm="onDeptPickerConfirm" />
+
+    <!-- 业务操作说明对话框 -->
+    <el-dialog v-model="showStatusHelp" title="备件出库业务操作说明" width="720px" append-to-body>
+      <div class="status-help-content">
+        <h4>一、业务流程图</h4>
+        <div class="status-flow">
+          <div class="flow-item">
+            <el-tag type="primary">选择出库类型</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="info">选择备件</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="warning">填写领用信息</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="success">库存自动扣减</el-tag>
+          </div>
+        </div>
+
+        <h4>二、出库类型说明</h4>
+        <el-descriptions :column="1" border>
+          <el-descriptions-item label="维修领用">工单维修时领用备件，工单验收后系统自动生成出库单</el-descriptions-item>
+          <el-descriptions-item label="报废出库">备件损坏或过期，直接报废出库</el-descriptions-item>
+          <el-descriptions-item label="调拨出库">调拨至其他仓库或部门</el-descriptions-item>
+          <el-descriptions-item label="其他出库">盘亏出库等其他场景</el-descriptions-item>
+        </el-descriptions>
+
+        <h4>三、重点业务规则</h4>
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <div class="highlight-card highlight-primary">
+              <div class="highlight-card-title">库存校验</div>
+              <div class="highlight-card-body">出库数量<strong>不能超过当前库存</strong>，系统自动校验并限制最大可出数量</div>
+            </div>
+          </el-col>
+          <el-col :span="12">
+            <div class="highlight-card highlight-warning">
+              <div class="highlight-card-title">仅显示有库存备件</div>
+              <div class="highlight-card-body">备件选择列表<strong>仅显示库存大于0的备件</strong>，避免无库存出库</div>
+            </div>
+          </el-col>
+        </el-row>
+        <el-row :gutter="16" style="margin-top: 12px;">
+          <el-col :span="12">
+            <div class="highlight-card highlight-success">
+              <div class="highlight-card-title">工单自动出库</div>
+              <div class="highlight-card-body">工单验收通过后，若使用了备件，系统<strong>自动创建出库单</strong>并扣减库存，无需手动操作</div>
+            </div>
+          </el-col>
+          <el-col :span="12">
+            <div class="highlight-card highlight-danger">
+              <div class="highlight-card-title">领用信息必填</div>
+              <div class="highlight-card-body">出库必须填写<strong>领用人和领用部门</strong>，确保备件去向可追溯</div>
+            </div>
+          </el-col>
+        </el-row>
+
+        <h4>四、业务操作流程</h4>
+        <el-timeline>
+          <el-timeline-item type="primary" :hollow="true">
+            <strong>选择出库类型：</strong>根据实际场景选择对应的出库类型
+          </el-timeline-item>
+          <el-timeline-item type="info" :hollow="true">
+            <strong>选择备件：</strong>从有库存的备件中选择，系统显示当前库存数量
+          </el-timeline-item>
+          <el-timeline-item type="warning" :hollow="true">
+            <strong>填写领用信息：</strong>输入出库数量（不超过库存）、选择领用人和领用部门</el-timeline-item>
+          <el-timeline-item type="success" :hollow="true">
+            <strong>保存出库：</strong>保存后库存自动扣减，可在备件台账中查看最新库存</el-timeline-item>
+        </el-timeline>
+      </div>
+      <template #footer>
+        <el-button type="primary" @click="showStatusHelp = false">我知道了</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup name="DmsPartOut">
-import { CircleClose } from '@element-plus/icons-vue'
+import { CircleClose, Search, Filter, RefreshLeft, Delete, Download } from '@element-plus/icons-vue'
 import { listPartOut, addPartOut, delPartOut, getPartOut, updatePartOut } from '@/api/dms/partout'
 import { listPartLedger } from '@/api/dms/partledger'
 import UserPicker from '@/components/UserPicker/index.vue'
@@ -202,6 +322,43 @@ const multiple = ref(true)
 const total = ref(0)
 const title = ref('')
 const formDisabled = ref(false)
+const showStatusHelp = ref(false)
+
+const defaultColumns = {
+  documentCode: { label: '单据号', visible: true },
+  partCode: { label: '备件编号', visible: true },
+  partName: { label: '备件名称', visible: true },
+  unit: { label: '单位', visible: true },
+  targetType: { label: '出库类型', visible: true },
+  supplierOrDept: { label: '领用部门', visible: true },
+  receiver: { label: '领用人', visible: true },
+  quantity: { label: '出库数量', visible: true },
+  operateDate: { label: '出库日期', visible: true }
+}
+function loadColumnVisibility() {
+  try {
+    const saved = localStorage.getItem('dms_partout_columns')
+    if (saved) {
+      const parsed = JSON.parse(saved)
+      const result = {}
+      Object.keys(defaultColumns).forEach(key => {
+        result[key] = { label: defaultColumns[key].label, visible: parsed[key] !== undefined ? parsed[key] : defaultColumns[key].visible }
+      })
+      return result
+    }
+  } catch (e) {}
+  return { ...defaultColumns }
+}
+const columns = ref(loadColumnVisibility())
+const activeFilterCount = computed(() => {
+  let count = 0
+  if (queryParams.value.documentCode) count++
+  if (queryParams.value.targetType) count++
+  if (queryParams.value.supplierOrDept) count++
+  return count
+})
+function unitLabel(val) { const item = wms_unit.value.find(d => d.value == val); return item ? item.label : '-' }
+function targetTypeLabel(val) { const item = dms_partout_type.value.find(d => d.value == val); return item ? item.label : '-' }
 
 /** 获取当天日期 YYYY-MM-DD */
 function today() {
@@ -239,10 +396,10 @@ const { queryParams, form, rules } = toRefs(data)
 
 function getList() {
   loading.value = true
-  listPartOut(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false })
+  listPartOut(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false; applySavedWidths() })
 }
 function handleQuery() { queryParams.value.pageNum = 1; getList() }
-function resetQuery() { proxy.resetForm('queryRef'); handleQuery() }
+function resetQuery() { queryParams.value.documentCode = undefined; queryParams.value.targetType = undefined; queryParams.value.supplierOrDept = undefined; proxy.resetForm('queryRef'); handleQuery() }
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.recordId); multiple.value = !selection.length }
 function handleAdd() {
   reset(); open.value = true
@@ -340,14 +497,137 @@ getSpareOptions()
 </script>
 
 <style scoped>
-.clear-icon {
-  cursor: pointer;
-  color: #c0c4cc;
-  font-size: 14px;
+/* ===== Design Tokens ===== */
+.dms-partout-page {
+  padding-top: 10px;
+  --brand-50:#eef2ff; --brand-100:#e0e7ff; --brand-200:#c7d2fe; --brand-500:#6366f1; --brand-600:#4f46e5; --brand-700:#4338ca;
+  --ink-900:#0f172a; --ink-700:#334155; --ink-500:#64748b; --ink-400:#94a3b8; --ink-300:#cbd5e1; --ink-200:#e2e8f0; --ink-100:#f1f5f9; --ink-50:#f8fafc;
+  --amber-50:#fffbeb; --amber-500:#f59e0b; --amber-700:#b45309;
+  --blue-50:#eff6ff; --blue-500:#3b82f6; --blue-700:#1d4ed8;
+  --green-50:#ecfdf5; --green-500:#10b981; --green-700:#047857;
+  --red-50:#fef2f2; --red-500:#ef4444; --red-700:#b91c1c;
+  --violet-50:#f5f3ff;
+  --r-sm:6px; --r-md:10px; --r-lg:14px;
+  --shadow-card:0 1px 0 rgba(15,23,42,.04), 0 1px 2px rgba(15,23,42,.04);
+  --ease-out:cubic-bezier(.16,.84,.44,1);
+  font-feature-settings:"tnum" 1;
+  color: var(--ink-900);
 }
-.clear-icon:hover {
+.dms-partout-page .surface { background:#fff; border:1px solid var(--ink-200); border-radius:var(--r-lg); box-shadow:var(--shadow-card); overflow:hidden; margin-bottom:8px; }
+.dms-partout-page .filter-card { padding:14px 20px 16px; }
+.dms-partout-page .filter-card .filter-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+.dms-partout-page .filter-card .filter-title { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--ink-700); }
+.dms-partout-page .filter-card .filter-title .glyph { width:4px; height:14px; background:var(--brand-600); border-radius:2px; }
+.dms-partout-page .filter-card .filter-bar { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px 16px; }
+.dms-partout-page .filter-card .filter-actions { display:flex; align-items:center; justify-content:space-between; margin-top:14px; padding-top:14px; border-top:1px dashed var(--ink-200); }
+.dms-partout-page .filter-card .filter-info { font-size:13px; color:var(--ink-500); display:flex; align-items:center; gap:6px; }
+.dms-partout-page .filter-card .filter-buttons { display:flex; gap:8px; }
+.dms-partout-page .field { display:flex; flex-direction:column; gap:6px; }
+.dms-partout-page .field label { font-size:14px; font-weight:500; color:var(--ink-700); display:flex; align-items:center; gap:6px; }
+.dms-partout-page .field .control { display:flex; align-items:center; height:36px; padding:0 12px; background:#fff; border:1px solid var(--ink-200); border-radius:var(--r-sm); transition:border-color .15s var(--ease-out), box-shadow .15s var(--ease-out); }
+.dms-partout-page .field .control:focus-within { border-color:var(--brand-500); box-shadow:0 0 0 3px rgba(99,102,241,.15); }
+.dms-partout-page .field .control :deep(.el-input__wrapper) { box-shadow:none !important; background:transparent !important; padding:0; height:34px; }
+.dms-partout-page .field .control :deep(.el-input__inner) { border:0; background:transparent; font-size:14px; color:var(--ink-900); height:34px; line-height:34px; }
+.dms-partout-page .field .control :deep(.el-input__inner::placeholder) { color:var(--ink-400); }
+.dms-partout-page .field .control :deep(.el-input__prefix) { color:var(--ink-400); margin-right:4px; }
+.dms-partout-page .field .control :deep(.el-input__prefix .el-icon) { font-size:14px; }
+.dms-partout-page .field .control :deep(.el-select) { width:100%; }
+.dms-partout-page .field .control :deep(.el-select .el-select__wrapper) { box-shadow:none !important; background:transparent !important; padding:0; min-height:34px; height:34px; }
+.dms-partout-page .field .control :deep(.el-select .el-select__wrapper .el-select__placeholder) { font-size:14px; color:var(--ink-900); }
+.dms-partout-page .field .control :deep(.el-select .el-select__wrapper.is-focused) { box-shadow:none !important; }
+.dms-partout-page .toolbar { display:flex; align-items:center; justify-content:space-between; padding:12px 20px; border-bottom:1px solid var(--ink-200); background:var(--ink-50); }
+.dms-partout-page .toolbar .left { display:flex; gap:8px; align-items:center; }
+.dms-partout-page .toolbar .right { display:flex; gap:8px; align-items:center; }
+.dms-partout-page .toolbar-divider { width:1px; height:18px; background:var(--ink-200); margin:0 4px; }
+.dms-partout-page .btn-soft { display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 12px; font-size:14px; font-weight:500; border-radius:var(--r-sm); border:1px solid transparent; cursor:pointer; user-select:none; transition:all .15s var(--ease-out); }
+.dms-partout-page .btn-soft .el-icon { font-size:14px; }
+.dms-partout-page .btn-soft.is-outline { background:#fff; color:var(--ink-700); border-color:var(--ink-200); }
+.dms-partout-page .btn-soft.is-outline:hover { background:var(--ink-50); border-color:var(--ink-300); color:var(--ink-900); }
+.dms-partout-page .btn-soft.is-danger-outline { background:#fff; color:var(--red-700); border-color:#fecaca; }
+.dms-partout-page .btn-soft.is-danger-outline:hover { background:var(--red-50); border-color:var(--red-500); }
+.dms-partout-page .btn-soft:disabled { opacity:.5; cursor:not-allowed; }
+.dms-partout-page .btn-soft:disabled:hover { transform:none; box-shadow:none; }
+.dms-partout-page .btn-soft:focus-visible { outline:2px solid var(--brand-500); outline-offset:2px; }
+.dms-partout-page .table-wrap { overflow-x:auto; }
+.dms-partout-page .app-table { --el-table-bg-color:#fff; --el-table-header-bg-color:var(--ink-50); --el-table-row-hover-bg-color:#fafbff; --el-table-border-color:transparent; --el-table-text-color:var(--ink-700); --el-table-header-text-color:var(--ink-500); }
+.dms-partout-page .app-table :deep(.el-table__body td) { border-right-color:transparent !important; }
+.dms-partout-page .app-table :deep(.el-table__header th) { border-right-color:transparent !important; }
+.dms-partout-page .app-table :deep(.el-table__header th:hover) { border-right-color:var(--ink-200) !important; }
+.dms-partout-page .app-table :deep(.el-table__header th) { background:var(--ink-50) !important; color:var(--ink-500); font-weight:600; font-size:14px; letter-spacing:.02em; padding:12px 16px; border-bottom:1px solid var(--ink-200); }
+.dms-partout-page .app-table :deep(.el-table__header th .cell) { text-transform:uppercase; }
+.dms-partout-page .app-table :deep(.el-table__body td) { padding:14px 16px; border-bottom:1px solid var(--ink-100); color:var(--ink-700); }
+.dms-partout-page .app-table :deep(.el-table__row:hover > td) { background:#fafbff !important; }
+.dms-partout-page .app-table :deep(.el-table__inner-wrapper::before) { display:none; }
+.dms-partout-page .app-table :deep(.el-table__border-left-patch) { display:none; }
+.dms-partout-page .app-table .col-mono { font-family:ui-monospace,"JetBrains Mono","SF Mono",Menlo,monospace; font-size:14px; color:var(--ink-700); letter-spacing:-.01em; }
+.dms-partout-page .badge { display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:999px; font-size:13px; font-weight:600; line-height:1; border:1px solid transparent; }
+.dms-partout-page .badge .dot { width:6px; height:6px; border-radius:50%; }
+.dms-partout-page .badge.amber { background:var(--amber-50); color:var(--amber-700); border-color:#fde68a; }
+.dms-partout-page .badge.amber .dot { background:var(--amber-500); }
+.dms-partout-page .badge.violet { background:var(--violet-50); color:var(--brand-700); border-color:var(--brand-200); }
+.dms-partout-page .badge.violet .dot { background:var(--brand-500); }
+.dms-partout-page .pagination-container { display:flex; align-items:center; justify-content:flex-end; padding:14px 20px; font-size:14px; color:var(--ink-500); background:#fff; border-top:1px solid transparent; }
+.dms-partout-page .pagination-container :deep(.el-pagination) { justify-content:flex-end; }
+.dms-partout-page .pagination-container :deep(.el-pagination .el-pager li) { border-radius:6px; border:1px solid var(--ink-200); background:#fff; min-width:32px; height:32px; line-height:32px; font-size:14px; color:var(--ink-700); margin:0 2px; }
+.dms-partout-page .pagination-container :deep(.el-pagination .el-pager li.is-active) { background:var(--brand-600); border-color:var(--brand-600); color:#fff; font-weight:600; box-shadow:0 4px 10px -2px rgba(79,70,229,.4); }
+.dms-partout-page .pagination-container :deep(.el-pagination .btn-prev), .dms-partout-page .pagination-container :deep(.el-pagination .btn-next) { border-radius:6px; border:1px solid var(--ink-200); background:#fff; min-width:32px; height:32px; }
+.dms-partout-page .pagination-container :deep(.el-pagination .btn-prev:hover), .dms-partout-page .pagination-container :deep(.el-pagination .btn-next:hover) { border-color:var(--brand-200); color:var(--brand-700); }
+.dms-partout-page .pagination-container :deep(.el-pagination .el-pagination__sizes .el-select__wrapper) { border-radius:6px; box-shadow:0 0 0 1px var(--ink-200) inset; }
+.dms-partout-page .clear-icon { cursor:pointer; color:#c0c4cc; font-size:14px; }
+.dms-partout-page .clear-icon:hover { color:#909399; }
+.dms-partout-page :deep(.el-input.is-disabled .el-input__inner) { cursor:pointer; }
+@media (max-width:1100px) { .dms-partout-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }
+@media (max-width:720px) { .dms-partout-page .filter-card .filter-bar { grid-template-columns:1fr; } .dms-partout-page .toolbar { flex-wrap:wrap; gap:10px; } }
+
+.status-help-content {
+  max-height: 500px;
+  overflow-y: auto;
+  padding-right: 10px;
+}
+.status-help-content h4 {
+  margin: 20px 0 12px 0;
+  color: #303133;
+  font-weight: 600;
+  border-left: 4px solid #409eff;
+  padding-left: 10px;
+}
+.status-help-content h4:first-child {
+  margin-top: 0;
+}
+.status-help-content .status-flow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 16px;
+  background-color: #f5f7fa;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+.status-help-content .flow-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.status-help-content .flow-arrow {
   color: #909399;
+  font-size: 16px;
 }
+.highlight-card {
+  border-radius: 8px;
+  padding: 16px;
+  border: 1px solid;
+}
+.highlight-success { background-color: #f0f9ff; border-color: #b3e19d; }
+.highlight-danger { background-color: #fef0f0; border-color: #fbc4c4; }
+.highlight-primary { background-color: #ecf5ff; border-color: #a0cfff; }
+.highlight-warning { background-color: #fdf6ec; border-color: #f5dab1; }
+.highlight-card-title { font-size: 14px; font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; }
+.highlight-success .highlight-card-title { color: #67c23a; }
+.highlight-danger .highlight-card-title { color: #f56c6c; }
+.highlight-primary .highlight-card-title { color: #409eff; }
+.highlight-warning .highlight-card-title { color: #e6a23c; }
+.highlight-card-body { font-size: 13px; color: #606266; line-height: 1.6; }
 :deep(.el-input.is-disabled .el-input__inner) {
   cursor: pointer;
 }

@@ -41,6 +41,7 @@
 
 <script setup>
 import cache from '@/plugins/cache'
+import { getTableWidths, saveColumnVisible } from '@/api/system/tableConfig'
 
 const props = defineProps({
   /* 是否显示检索条件 */
@@ -142,11 +143,15 @@ function dataChange(data) {
   if (Array.isArray(props.columns)) {
     for (let item in props.columns) {
       const key = props.columns[item].key
-      props.columns[item].visible = !data.includes(key)
+      const visible = !data.includes(key)
+      props.columns[item].visible = visible
+      saveBackend(item, visible)
     }
   } else {
     Object.keys(props.columns).forEach((key, index) => {
-      props.columns[key].visible = !data.includes(index)
+      const visible = !data.includes(index)
+      props.columns[key].visible = visible
+      saveBackend(key, visible)
     })
   }
   saveStorage()
@@ -191,6 +196,34 @@ if (props.showColumnsType == "transfer") {
   }
 }
 
+// 从后端加载列显隐配置（个人覆盖全局），加载后更新本地缓存并应用
+function loadFromBackend() {
+  if (!props.storageKey) return
+  getTableWidths(props.storageKey).then(res => {
+    const saved = res.columns
+    if (saved && typeof saved === 'object') {
+      if (Array.isArray(props.columns)) {
+        props.columns.forEach((col, index) => {
+          if (saved[index] !== undefined) col.visible = saved[index]
+        })
+      } else {
+        Object.keys(props.columns).forEach(key => {
+          if (saved[key] !== undefined) props.columns[key].visible = saved[key]
+        })
+      }
+      // 同步更新 localStorage 作为缓存
+      saveStorage()
+    }
+  }).catch(() => {
+    // 后端加载失败时静默处理，使用 localStorage 中的数据
+  })
+}
+
+// 组件挂载后从后端加载列显隐配置
+onMounted(() => {
+  loadFromBackend()
+})
+
 // 单勾选
 function checkboxChange(event, key) {
   if (Array.isArray(props.columns)) {
@@ -199,6 +232,7 @@ function checkboxChange(event, key) {
     props.columns[key].visible = event
   }
   saveStorage()
+  saveBackend(key, event)
 }
 
 // 切换全选/反选
@@ -210,6 +244,17 @@ function toggleCheckAll() {
     Object.values(props.columns).forEach((col) => (col.visible = newValue))
   }
   saveStorage()
+  // 全选/反选时批量保存到后端
+  if (Array.isArray(props.columns)) {
+    props.columns.forEach((col) => {
+      const key = col.key || props.columns.indexOf(col)
+      saveBackend(key, newValue)
+    })
+  } else {
+    Object.keys(props.columns).forEach(key => {
+      saveBackend(key, newValue)
+    })
+  }
 }
 
 // 将当前列显隐状态持久化到 localStorage
@@ -224,6 +269,14 @@ function saveStorage() {
     }
     cache.local.setJSON(props.storageKey, state)
   } catch (e) {}
+}
+
+// 将单列显隐状态异步保存到后端
+function saveBackend(key, visible) {
+  if (!props.storageKey) return
+  saveColumnVisible(props.storageKey, key, visible).catch(() => {
+    // 后端保存失败时静默处理，localStorage 已有备份
+  })
 }
 </script>
 

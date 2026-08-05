@@ -16,7 +16,7 @@
     </div>
 
     <!-- ===== 上传区域 ===== -->
-    <el-upload ref="uploadRef" :limit="1" accept=".xlsx, .xls" :headers="headers" :action="uploadUrl" :disabled="isUploading" :on-progress="handleProgress" :on-change="handleFileChange" :on-remove="handleFileRemove" :on-success="handleSuccess" :auto-upload="false" drag>
+    <el-upload ref="uploadRef" :limit="1" accept=".xlsx, .xls" :headers="uploadHeaders" :action="uploadUrl" :disabled="isUploading" :on-progress="handleProgress" :on-change="handleFileChange" :on-remove="handleFileRemove" :on-success="handleSuccess" :on-error="handleError" :on-exceed="handleExceed" :auto-upload="false" drag>
       <el-icon class="el-icon--upload"><upload-filled /></el-icon>
       <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
       <template #tip>
@@ -123,7 +123,8 @@ const isUploading = ref(false)
 const updateSupport = ref(false)
 const updateKey = ref(props.defaultUpdateKey)
 const importResult = ref(null)
-const headers = { Authorization: 'Bearer ' + getToken() }
+// 动态获取 token，避免长时间停留在页面后 token 过期导致上传失败无提示
+const uploadHeaders = computed(() => ({ Authorization: 'Bearer ' + getToken() }))
 
 // 有提示或更新选项时加宽对话框
 const dialogWidth = computed(() => {
@@ -176,6 +177,7 @@ function open() {
   nextTick(() => {
     selectedFile.value = null
     uploadRef.value?.clearFiles()
+    clearInputValue()
   })
 }
 
@@ -185,6 +187,7 @@ function handleReset() {
   isUploading.value = false
   selectedFile.value = null
   uploadRef.value?.clearFiles()
+  clearInputValue()
 }
 
 // 关闭时清理
@@ -193,6 +196,7 @@ function handleClose() {
   selectedFile.value = null
   importResult.value = null
   uploadRef.value?.clearFiles()
+  clearInputValue()
 }
 
 // 下载模板
@@ -207,9 +211,35 @@ function handleProgress() {
 
 /** 文件选择处理 */
 const handleFileChange = (file, fileList) => {
-  selectedFile.value = file
-  // 选择新文件时清除上次的结果
-  importResult.value = null
+  // 只在选择新文件时（status=ready）更新选中状态并清除上次结果
+  // 上传完成时（status=success/fail）不清除，否则会覆盖 handleSuccess/handleError 设置的结果
+  if (file.status === 'ready') {
+    selectedFile.value = file
+    importResult.value = null
+    clearInputValue()
+  }
+}
+
+/** 超出文件数量限制时，替换旧文件 */
+function handleExceed(files) {
+  uploadRef.value?.clearFiles()
+  const file = files[0]
+  if (file) {
+    uploadRef.value?.handleStart(file)
+    selectedFile.value = { name: file.name, size: file.size, raw: file }
+    importResult.value = null
+  }
+  clearInputValue()
+}
+
+/** 清除原生 file input 的 value，确保相同文件可再次选择 */
+function clearInputValue() {
+  nextTick(() => {
+    const input = uploadRef.value?.$el?.querySelector('input[type="file"]')
+    if (input) {
+      input.value = ''
+    }
+  })
 }
 
 /** 文件删除处理 */
@@ -217,7 +247,7 @@ const handleFileRemove = (file, fileList) => {
   selectedFile.value = null
 }
 
-// 上传成功
+// 上传成功（HTTP 200，不论业务 code 是 200 还是 500）
 function handleSuccess(response) {
   isUploading.value = false
 
@@ -226,12 +256,11 @@ function handleSuccess(response) {
   // code=500: 全部失败或系统错误
   const code = response.code || 200
   const msg = response.msg || ''
+  const successNum = response.successNum || 0
+  const failureNum = response.failureNum || 0
 
-  if (code === 200) {
-    // 成功（含部分成功）
-    const successNum = response.successNum || 0
-    const failureNum = response.failureNum || 0
-
+  // 统一构建结果展示（不论 code 是 200 还是 500，只要有明细都展示）
+  if (successNum > 0 || failureNum > 0) {
     importResult.value = {
       successNum,
       failureNum,
@@ -248,14 +277,37 @@ function handleSuccess(response) {
       proxy.$modal.msgSuccess('导入成功')
       visible.value = false
     }
-    // 部分成功或全部失败，保持对话框打开，显示结果，用户可点击"重新导入"
+    // 部分成功或全部失败，保持对话框打开，显示结果
   } else {
-    // 系统错误
+    // 没有明细数据，按系统错误处理
     importResult.value = {
       successNum: 0,
       failureNum: 1,
       msg: msg || '导入失败，请检查文件格式或网络后重试'
     }
+  }
+}
+
+// 上传失败（HTTP 非 2xx，如 401/403/500 等）
+function handleError(error) {
+  isUploading.value = false
+  let errMsg = '导入失败，请检查文件格式或网络后重试'
+  // 尝试从错误响应中解析后端返回的消息
+  try {
+    const response = JSON.parse(error.message)
+    if (response.msg) {
+      errMsg = response.msg
+    }
+  } catch (e) {
+    // 非 JSON 响应，使用默认错误信息
+    if (error.message) {
+      errMsg = error.message
+    }
+  }
+  importResult.value = {
+    successNum: 0,
+    failureNum: 1,
+    msg: errMsg
   }
 }
 

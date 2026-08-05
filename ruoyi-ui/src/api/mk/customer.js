@@ -1,20 +1,22 @@
 import request from '@/utils/request'
 
 // 查询企业客户列表
-export function listCustomer(query) {
+export function listCustomer(query, config = {}) {
   return request({
     url: '/mk/customer/list',
     method: 'get',
-    params: query
+    params: query,
+    ...config
   })
 }
 
 // 查询公海客户列表
-export function listPublicPool(query) {
+export function listPublicPool(query, config = {}) {
   return request({
     url: '/mk/customer/publicPool',
     method: 'get',
-    params: query
+    params: query,
+    ...config
   })
 }
 

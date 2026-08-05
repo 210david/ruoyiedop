@@ -1,77 +1,155 @@
 <template>
-  <div class="app-container">
-    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch">
-      <el-form-item label="合同编号" prop="contractNo"><el-input v-model="queryParams.contractNo" placeholder="请输入" clearable style="width: 200px" @keyup.enter="handleQuery" /></el-form-item>
-      <el-form-item label="合同名称" prop="contractName"><el-input v-model="queryParams.contractName" placeholder="请输入" clearable style="width: 200px" @keyup.enter="handleQuery" /></el-form-item>
-      <el-form-item label="供应商" prop="supplierName"><el-input v-model="queryParams.supplierName" placeholder="请输入" clearable style="width: 200px" @keyup.enter="handleQuery" /></el-form-item>
-      <el-form-item label="状态" prop="status"><el-select v-model="queryParams.status" placeholder="全部" clearable style="width: 120px"><el-option v-for="d in pms_contract_status" :key="d.value" :label="d.label" :value="d.value" /></el-select></el-form-item>
-      <el-form-item><el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button><el-button icon="Refresh" @click="resetQuery">重置</el-button><el-button type="info" plain icon="More" @click="showAdvanced = !showAdvanced">{{ showAdvanced ? '收起' : '更多' }}</el-button></el-form-item>
-      <template v-if="showAdvanced">
-        <el-form-item label="合同类型" prop="contractType"><el-select v-model="queryParams.contractType" placeholder="全部" clearable style="width: 140px"><el-option v-for="d in pms_contract_type" :key="d.value" :label="d.label" :value="d.value" /></el-select></el-form-item>
-        <el-form-item label="签订人" prop="signBy"><el-input v-model="queryParams.signBy" placeholder="请输入" clearable style="width: 200px" @keyup.enter="handleQuery" /></el-form-item>
-        <el-form-item label="签订日期"><el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 240px" /></el-form-item>
-      </template>
-    </el-form>
-
-    <!-- 业务状态流转说明 -->
-    <el-alert type="info" :closable="false" show-icon class="mb8">
-      <template #title>
-        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-          <span>业务状态流转：</span>
-          <el-tag size="small" type="info">草稿</el-tag>
-          <el-icon><ArrowRight /></el-icon>
-          <el-tag size="small" type="warning">待审核</el-tag>
-          <el-icon><ArrowRight /></el-icon>
-          <el-tag size="small" type="success">已签订</el-tag>
-          <el-icon><ArrowRight /></el-icon>
-          <el-tag size="small" type="primary">变更审批中</el-tag>
-          <el-icon><ArrowRight /></el-icon>
-          <el-tag size="small" type="info">已到期</el-tag>
-          <span style="color: #909399; margin: 0 4px;">/</span>
-          <el-tag size="small" type="danger">已终止</el-tag>
-          <el-button link type="primary" size="small" @click="showStatusHelp = true" style="margin-left: 8px;">
-            <el-icon><QuestionFilled /></el-icon> 查看详情
-          </el-button>
+  <div class="app-container pms-contract-page">
+    <!-- ===== Filter Card ===== -->
+    <div class="surface filter-card" v-show="showSearch">
+      <div class="filter-head">
+        <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+        <a class="adv-link" :class="{ 'is-open': showAdvanced }" @click.prevent="showAdvanced = !showAdvanced">
+          <span>{{ showAdvanced ? '收起' : '高级筛选' }}</span>
+          <el-icon class="chev"><ArrowDown /></el-icon>
+        </a>
+      </div>
+      <div class="filter-bar">
+        <div class="field">
+          <label>合同编号</label>
+          <div class="control">
+            <el-input v-model="queryParams.contractNo" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
         </div>
-      </template>
-    </el-alert>
+        <div class="field">
+          <label>合同名称</label>
+          <div class="control">
+            <el-input v-model="queryParams.contractName" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+          </div>
+        </div>
+        <div class="field">
+          <label>供应商</label>
+          <div class="control">
+            <el-input v-model="queryParams.supplierName" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+          </div>
+        </div>
+        <div class="field">
+          <label>状态</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
+              <el-option v-for="d in pms_contract_status" :key="d.value" :label="d.label" :value="d.value" />
+            </el-select>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>合同类型</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.contractType" placeholder="全部" clearable @change="handleQuery">
+              <el-option v-for="d in pms_contract_type" :key="d.value" :label="d.label" :value="d.value" />
+            </el-select>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>签订人</label>
+          <div class="control">
+            <el-input v-model="queryParams.signBy" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>签订日期</label>
+          <div class="control">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
+          </div>
+        </div>
+      </div>
+      <div class="filter-actions">
+        <div class="filter-info">
+          <el-icon><Filter /></el-icon> 已选 {{ activeFilterCount }} 个条件，支持回车快速搜索
+        </div>
+        <div class="filter-buttons">
+          <el-button icon="RefreshLeft" @click="resetQuery">重置</el-button>
+          <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+        </div>
+      </div>
+    </div>
 
-    <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5"><el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['pms:contract:add']">新增</el-button></el-col>
-      <el-col :span="1.5"><el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['pms:contract:edit']">修改</el-button></el-col>
-      <el-col :span="1.5"><el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['pms:contract:remove']">删除</el-button></el-col>
-      <el-col :span="1.5"><el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['pms:contract:export']">导出</el-button></el-col>
-      <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
-    </el-row>
-    <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange">
-      <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="合同编号" prop="contractNo" :width="colWidth('contractNo', 160)" resizable sortable="custom" />
-      <el-table-column label="合同名称" prop="contractName" :width="colWidth('contractName', 200)" resizable show-overflow-tooltip />
-      <el-table-column label="供应商" prop="supplierName" :width="colWidth('supplierName', 200)" resizable show-overflow-tooltip />
-      <el-table-column label="合同类型" prop="contractType" :width="colWidth('contractType', 100)" resizable align="center"><template #default="scope"><dict-tag :options="pms_contract_type" :value="scope.row.contractType" /></template></el-table-column>
-      <el-table-column label="状态" prop="status" :width="colWidth('status', 100)" resizable align="center" sortable="custom"><template #default="scope"><dict-tag :options="pms_contract_status" :value="scope.row.status" /></template></el-table-column>
-      <el-table-column label="签订日期" prop="signDate" :width="colWidth('signDate', 110)" resizable align="center" />
-      <el-table-column label="到期日期" prop="expireDate" :width="colWidth('expireDate', 110)" resizable align="center" />
-      <el-table-column label="合同金额" prop="contractAmount" :width="colWidth('contractAmount', 120)" resizable align="right" sortable="custom"><template #default="scope"><span class="rd-amount">{{ formatMoney(scope.row.contractAmount) }}</span></template></el-table-column>
-      <el-table-column label="已付金额" prop="paidAmount" :width="colWidth('paidAmount', 120)" resizable align="right"><template #default="scope"><span class="rd-amount" :style="{ color: scope.row.paidAmount > 0 ? '#67c23a' : '' }">{{ formatMoney(scope.row.paidAmount) }}</span></template></el-table-column>
-      <el-table-column label="未付金额" :width="colWidth('unpaidAmount', 120)" resizable align="right"><template #default="scope"><span class="rd-amount" :style="{ color: (scope.row.contractAmount - scope.row.paidAmount) > 0 ? '#f56c6c' : '#67c23a' }">{{ formatMoney((scope.row.contractAmount || 0) - (scope.row.paidAmount || 0)) }}</span></template></el-table-column>
-      <el-table-column label="签订人" prop="signBy" :width="colWidth('signBy', 100)" resizable />
-      <el-table-column label="变更次数" prop="changeCount" :width="colWidth('changeCount', 90)" resizable align="center" />
-      <el-table-column label="创建时间" prop="createTime" :width="colWidth('createTime', 160)" resizable align="center" sortable="custom" />
-      <el-table-column label="操作" width="280" align="center" fixed="right">
-        <template #default="scope">
-          <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
-          <el-button v-if="scope.row.status === '0' || scope.row.status === '6'" link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['pms:contract:edit']">修改</el-button>
-          <el-button v-if="scope.row.status === '0'" link type="warning" icon="Promotion" @click="handleSubmit(scope.row)" v-hasPermi="['pms:contract:edit']">提交审批</el-button>
-          <el-button v-if="scope.row.status === '5'" link type="warning" icon="DocumentChecked" @click="handleApprove(scope.row)" v-hasPermi="['pms:contract:audit']">审批</el-button>
-          <el-button v-if="scope.row.status === '1'" link type="primary" icon="Switch" @click="handleChange(scope.row)" v-hasPermi="['pms:contract:change']">变更</el-button>
-          <el-button v-if="scope.row.status === '1'" link type="danger" icon="CircleClose" @click="handleTerminate(scope.row)" v-hasPermi="['pms:contract:edit']">终止</el-button>
-          <el-button v-if="scope.row.status === '2'" link type="warning" icon="DocumentChecked" @click="handleView(scope.row, true)" v-hasPermi="['pms:contract:audit']">审核</el-button>
-          <el-button v-if="scope.row.status === '0' || scope.row.status === '6'" link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['pms:contract:remove']">删除</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
-    <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+    <!-- ===== Table Section ===== -->
+    <div class="surface">
+      <!-- 状态标签栏 -->
+      <div class="status-tabs">
+        <div class="tabs-track">
+          <button class="status-tab" :class="{ 'is-active': activeStatusTab === 'all' }" @click="handleStatusTabClick('all')">
+            <span class="dot"></span>
+            <span>全部</span>
+            <span class="count">{{ statusCounts.all }}</span>
+          </button>
+          <button v-for="s in statusTabList" :key="s.value"
+            class="status-tab"
+            :class="[statusTabClass(s.value), { 'is-active': activeStatusTab === s.value }]"
+            @click="handleStatusTabClick(s.value)">
+            <span class="dot"></span>
+            <span>{{ s.label }}</span>
+            <span class="count">{{ statusCounts[s.value] || 0 }}</span>
+          </button>
+        </div>
+        <button class="tip-pill" @click="showStatusHelp = true">
+          <el-icon><WarningFilled /></el-icon>
+          <span>业务操作说明</span>
+        </button>
+      </div>
+
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <div class="left">
+          <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['pms:contract:add']">新增</el-button>
+          <button type="button" class="btn-soft is-outline" :disabled="single" @click="handleUpdate" v-hasPermi="['pms:contract:edit']">
+            <el-icon><Edit /></el-icon> 修改
+          </button>
+          <button type="button" class="btn-soft is-danger-outline" :disabled="multiple" @click="handleDelete" v-hasPermi="['pms:contract:remove']">
+            <el-icon><Delete /></el-icon> 删除
+          </button>
+          <div class="toolbar-divider"></div>
+          <button type="button" class="btn-soft is-outline" @click="handleExport" v-hasPermi="['pms:contract:export']">
+            <el-icon><Download /></el-icon> 导出
+          </button>
+        </div>
+        <div class="right">
+          <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="pms_contract_columns" />
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="table-wrap">
+        <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
+          <el-table-column type="selection" width="55" align="center" />
+          <el-table-column label="合同编号" prop="contractNo" key="contractNo" :width="colWidth('contractNo', 180)" resizable sortable="custom" v-if="columns.contractNo.visible" />
+          <el-table-column label="合同名称" prop="contractName" key="contractName" :width="colWidth('contractName', 240)" resizable show-overflow-tooltip v-if="columns.contractName.visible" />
+          <el-table-column label="供应商" prop="supplierName" key="supplierName" :width="colWidth('supplierName', 240)" resizable show-overflow-tooltip v-if="columns.supplierName.visible" />
+          <el-table-column label="合同类型" prop="contractType" key="contractType" :width="colWidth('contractType', 120)" resizable align="center" v-if="columns.contractType.visible"><template #default="scope"><span class="badge violet">{{ contractTypeLabel(scope.row.contractType) }}</span></template></el-table-column>
+          <el-table-column label="状态" prop="status" key="status" :width="colWidth('status', 120)" resizable align="center" sortable="custom" v-if="columns.status.visible"><template #default="scope"><span class="badge" :class="badgeClass(scope.row.status)"><span class="dot"></span>{{ statusLabel(scope.row.status) }}</span></template></el-table-column>
+          <el-table-column label="签订日期" prop="signDate" key="signDate" :width="colWidth('signDate', 130)" resizable align="center" v-if="columns.signDate.visible" />
+          <el-table-column label="到期日期" prop="expireDate" key="expireDate" :width="colWidth('expireDate', 130)" resizable align="center" v-if="columns.expireDate.visible" />
+          <el-table-column label="合同金额" prop="contractAmount" key="contractAmount" :width="colWidth('contractAmount', 130)" resizable align="right" sortable="custom" v-if="columns.contractAmount.visible"><template #default="scope"><span class="rd-amount">{{ formatMoney(scope.row.contractAmount) }}</span></template></el-table-column>
+          <el-table-column label="已付金额" prop="paidAmount" key="paidAmount" :width="colWidth('paidAmount', 130)" resizable align="right" v-if="columns.paidAmount.visible"><template #default="scope"><span class="rd-amount" :style="{ color: scope.row.paidAmount > 0 ? '#67c23a' : '' }">{{ formatMoney(scope.row.paidAmount) }}</span></template></el-table-column>
+          <el-table-column label="未付金额" prop="unpaidAmount" key="unpaidAmount" :width="colWidth('unpaidAmount', 130)" resizable align="right" v-if="columns.unpaidAmount.visible"><template #default="scope"><span class="rd-amount" :style="{ color: (scope.row.contractAmount - scope.row.paidAmount) > 0 ? '#f56c6c' : '#67c23a' }">{{ formatMoney((scope.row.contractAmount || 0) - (scope.row.paidAmount || 0)) }}</span></template></el-table-column>
+          <el-table-column label="签订人" prop="signBy" key="signBy" :width="colWidth('signBy', 120)" resizable v-if="columns.signBy.visible" />
+          <el-table-column label="变更次数" prop="changeCount" key="changeCount" :width="colWidth('changeCount', 90)" resizable align="center" v-if="columns.changeCount.visible" />
+          <el-table-column label="创建时间" prop="createTime" key="createTime" :width="colWidth('createTime', 180)" resizable align="center" sortable="custom" v-if="columns.createTime.visible" />
+          <el-table-column label="操作" width="280" align="center" fixed="right">
+            <template #default="scope">
+              <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
+              <el-button v-if="scope.row.status === '0' || scope.row.status === '6'" link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['pms:contract:edit']">修改</el-button>
+              <el-button v-if="scope.row.status === '0'" link type="warning" icon="Promotion" @click="handleSubmit(scope.row)" v-hasPermi="['pms:contract:edit']">提交审批</el-button>
+              <el-button v-if="scope.row.status === '5'" link type="warning" icon="DocumentChecked" @click="handleApprove(scope.row)" v-hasPermi="['pms:contract:audit']">审批</el-button>
+              <el-button v-if="scope.row.status === '1'" link type="primary" icon="Switch" @click="handleChange(scope.row)" v-hasPermi="['pms:contract:change']">变更</el-button>
+              <el-button v-if="scope.row.status === '1'" link type="danger" icon="CircleClose" @click="handleTerminate(scope.row)" v-hasPermi="['pms:contract:edit']">终止</el-button>
+              <el-button v-if="scope.row.status === '2'" link type="warning" icon="DocumentChecked" @click="handleView(scope.row, true)" v-hasPermi="['pms:contract:audit']">审核</el-button>
+              <el-button v-if="scope.row.status === '0' || scope.row.status === '6'" link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['pms:contract:remove']">删除</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+
+      <!-- Pagination -->
+      <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+    </div>
 
     <el-dialog v-model="open" width="1136px" append-to-body draggable class="rd-dialog">
       <template #header><div class="rd-detail-header"><div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><span class="rd-detail-header-title">{{ title }}</span><div class="rd-detail-header-sub" v-if="form.contractNo"><div class="rd-detail-header-divider"></div><span class="rd-detail-header-no">编号：{{ form.contractNo }}</span></div></div></template>
@@ -509,12 +587,87 @@ import { listRequest } from '@/api/pms/request'
 import { listSupplier } from '@/api/wms/supplier'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard, formatMoney } from '@/composables/useDetailCard'
-import { ArrowRight, QuestionFilled } from '@element-plus/icons-vue'
+import { ArrowRight, ArrowDown, QuestionFilled, Search, Filter, WarningFilled, Edit, Delete, Download } from '@element-plus/icons-vue'
 
 const { proxy } = getCurrentInstance()
 const { pms_contract_status, pms_contract_type, pms_contract_change_type, pms_contract_change_status } = proxy.useDict('pms_contract_status', 'pms_contract_type', 'pms_contract_change_type', 'pms_contract_change_status')
-const { colWidth, onHeaderDragEnd, tableRef } = useColumnResize('pms_contract_index')
+const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('pms_contract_index')
 const { collapsedCards, toggleCard } = useDetailCard(['basic', 'date', 'party', 'attach', 'approveBasic', 'date_approve', 'approveTerms', 'approveParty', 'approveAttach', 'approveChange', 'approveLog', 'changeApprove'])
+
+// 列显隐配置 - 从 localStorage 恢复保存的设置
+const defaultColumns = {
+  contractNo: { label: '合同编号', visible: true },
+  contractName: { label: '合同名称', visible: true },
+  supplierName: { label: '供应商', visible: true },
+  contractType: { label: '合同类型', visible: true },
+  status: { label: '状态', visible: true },
+  signDate: { label: '签订日期', visible: true },
+  expireDate: { label: '到期日期', visible: true },
+  contractAmount: { label: '合同金额', visible: true },
+  paidAmount: { label: '已付金额', visible: true },
+  unpaidAmount: { label: '未付金额', visible: true },
+  signBy: { label: '签订人', visible: true },
+  changeCount: { label: '变更次数', visible: true },
+  createTime: { label: '创建时间', visible: true }
+}
+function loadColumnVisibility() {
+  try {
+    const saved = localStorage.getItem('pms_contract_columns')
+    if (saved) {
+      const parsed = JSON.parse(saved)
+      const result = {}
+      Object.keys(defaultColumns).forEach(key => {
+        result[key] = { label: defaultColumns[key].label, visible: parsed[key] !== undefined ? parsed[key] : defaultColumns[key].visible }
+      })
+      return result
+    }
+  } catch (e) {}
+  return { ...defaultColumns }
+}
+const columns = ref(loadColumnVisibility())
+const activeStatusTab = ref('all')
+const statusTabList = computed(() => pms_contract_status.value.map(d => ({ label: d.label, value: d.value })))
+const statusCounts = ref({ all: 0 })
+function loadStatusCounts() {
+  listContract({ pageNum: 1, pageSize: 999 }).then(res => {
+    const counts = { all: res.total }
+    pms_contract_status.value.forEach(d => { counts[d.value] = 0 })
+    ;(res.rows || []).forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++ })
+    statusCounts.value = counts
+  }).catch(() => {})
+}
+function statusTabClass(value) {
+  const map = { '0': 'tab-draft', '5': 'tab-audit', '1': 'tab-approved', '6': 'tab-reject', '3': 'tab-partial', '2': 'tab-done', '4': 'tab-void' }
+  return map[value] || ''
+}
+function badgeClass(status) {
+  const map = { '0': 'amber', '5': 'blue', '1': 'green', '6': 'red', '3': 'violet', '2': 'green', '4': 'gray' }
+  return map[status] || 'gray'
+}
+function statusLabel(status) {
+  const item = pms_contract_status.value.find(d => d.value == status)
+  return item ? item.label : '-'
+}
+function contractTypeLabel(type) {
+  const item = pms_contract_type.value.find(d => d.value == type)
+  return item ? item.label : '-'
+}
+function handleStatusTabClick(tab) {
+  activeStatusTab.value = tab
+  queryParams.value.status = tab === 'all' ? undefined : tab
+  handleQuery()
+}
+const activeFilterCount = computed(() => {
+  let count = 0
+  if (queryParams.value.contractNo) count++
+  if (queryParams.value.contractName) count++
+  if (queryParams.value.supplierName) count++
+  if (queryParams.value.status) count++
+  if (queryParams.value.contractType) count++
+  if (queryParams.value.signBy) count++
+  if (dateRange.value && dateRange.value.length > 0) count++
+  return count
+})
 
 const list = ref([])
 const open = ref(false)
@@ -545,7 +698,7 @@ const baseUrl = import.meta.env.VITE_APP_BASE_API
 
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, contractNo: undefined, contractName: undefined, supplierName: undefined, status: undefined, params: {} },
+  queryParams: { pageNum: 1, pageSize: 10, contractNo: undefined, contractName: undefined, supplierName: undefined, status: undefined, contractType: undefined, signBy: undefined, params: {} },
   rules: { contractName: [{ required: true, message: '合同名称不能为空', trigger: 'blur' }], supplierId: [{ required: true, message: '供应商不能为空', trigger: 'change' }] }
 })
 const { queryParams, form, rules } = toRefs(data)
@@ -566,9 +719,9 @@ const pendingChangeList = computed(() => {
   return viewData.value.changeList.filter(c => c.auditStatus === '0')
 })
 
-function getList() { loading.value = true; listContract(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false }) }
-function handleQuery() { queryParams.value.pageNum = 1; getList() }
-function resetQuery() { proxy.resetForm('queryRef'); queryParams.value.params = {}; handleQuery() }
+function getList() { loading.value = true; listContract(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false; loadStatusCounts(); applySavedWidths() }) }
+function handleQuery() { queryParams.value.pageNum = 1; proxy.addDateRange(queryParams.value, dateRange.value, 'SignDate'); getList() }
+function resetQuery() { queryParams.value.contractNo = undefined; queryParams.value.contractName = undefined; queryParams.value.supplierName = undefined; queryParams.value.status = undefined; queryParams.value.contractType = undefined; queryParams.value.signBy = undefined; queryParams.value.params = {}; dateRange.value = []; activeStatusTab.value = 'all'; if (tableRef.value) tableRef.value.clearSort(); handleQuery() }
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.contractId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function reset() { form.value = { contractId: undefined, contractNo: undefined, contractName: undefined, orderId: undefined, orderNo: undefined, supplierId: undefined, supplierName: undefined, status: '0', contractType: '0', signDate: undefined, effectiveDate: undefined, expireDate: undefined, contractAmount: 0, paymentTerms: undefined, deliveryTerms: undefined, signBy: undefined, signDepartment: undefined, partyA: undefined, partyB: undefined, fileUrl: undefined, fileName: undefined, remark: undefined }; proxy.resetForm('contractRef') }
@@ -595,7 +748,7 @@ function handleTerminate(row) { terminateForm.value = { contractId: row.contract
 function confirmTerminate() { if (!terminateForm.value.terminateReason) { proxy.$modal.msgWarning('请输入终止原因'); return } terminateContract(terminateForm.value.contractId, terminateForm.value.terminateReason).then(() => { proxy.$modal.msgSuccess('合同已终止'); terminateOpen.value = false; getList() }).catch(() => {}) }
 function submitForm() { proxy.$refs['contractRef'].validate(valid => { if (valid) { if (form.value.contractId != undefined) { updateContract(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList() }) } else { addContract(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList() }) } } }) }
 function handleDelete(row) { const contractIds = row.contractId || ids.value; proxy.$modal.confirm('确认删除编号为"' + contractIds + '"的数据？').then(() => delContract(contractIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
-function handleExport() { proxy.download('pms/contract/export', { ...queryParams.value }, `contract_${new Date().getTime()}.xlsx`) }
+function handleExport() { proxy.download('pms/contract/export', { ...proxy.addDateRange(queryParams.value, dateRange.value, 'SignDate') }, `contract_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 
 loadSupplierOptions()
@@ -605,6 +758,123 @@ onActivated(() => { getList() })
 </script>
 
 <style scoped>
+/* ===== Design Tokens ===== */
+.pms-contract-page {
+  padding-top: 10px;
+  --brand-50:#eef2ff; --brand-100:#e0e7ff; --brand-200:#c7d2fe; --brand-500:#6366f1; --brand-600:#4f46e5; --brand-700:#4338ca;
+  --ink-900:#0f172a; --ink-700:#334155; --ink-500:#64748b; --ink-400:#94a3b8; --ink-300:#cbd5e1; --ink-200:#e2e8f0; --ink-100:#f1f5f9; --ink-50:#f8fafc;
+  --amber-50:#fffbeb; --amber-500:#f59e0b; --amber-700:#b45309;
+  --blue-50:#eff6ff; --blue-500:#3b82f6; --blue-700:#1d4ed8;
+  --green-50:#ecfdf5; --green-500:#10b981; --green-700:#047857;
+  --red-50:#fef2f2; --red-500:#ef4444; --red-700:#b91c1c;
+  --violet-50:#f5f3ff;
+  --r-sm:6px; --r-md:10px; --r-lg:14px;
+  --shadow-card:0 1px 0 rgba(15,23,42,.04), 0 1px 2px rgba(15,23,42,.04);
+  --ease-out:cubic-bezier(.16,.84,.44,1);
+  font-feature-settings:"tnum" 1;
+  color: var(--ink-900);
+}
+.pms-contract-page .surface { background:#fff; border:1px solid var(--ink-200); border-radius:var(--r-lg); box-shadow:var(--shadow-card); overflow:hidden; margin-bottom:8px; }
+.pms-contract-page .filter-card { padding:14px 20px 16px; }
+.pms-contract-page .filter-card .filter-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+.pms-contract-page .filter-card .filter-title { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--ink-700); }
+.pms-contract-page .filter-card .filter-title .glyph { width:4px; height:14px; background:var(--brand-600); border-radius:2px; }
+.pms-contract-page .filter-card .adv-link { font-size:14px; color:var(--ink-500); text-decoration:none; display:flex; align-items:center; gap:4px; transition:color .15s; cursor:pointer; }
+.pms-contract-page .filter-card .adv-link:hover { color:var(--brand-600); }
+.pms-contract-page .filter-card .adv-link .chev { transition:transform .2s var(--ease-out); }
+.pms-contract-page .filter-card .adv-link.is-open .chev { transform:rotate(180deg); }
+.pms-contract-page .filter-card .filter-bar { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px 16px; }
+.pms-contract-page .filter-card .filter-actions { display:flex; align-items:center; justify-content:space-between; margin-top:14px; padding-top:14px; border-top:1px dashed var(--ink-200); }
+.pms-contract-page .filter-card .filter-info { font-size:13px; color:var(--ink-500); display:flex; align-items:center; gap:6px; }
+.pms-contract-page .filter-card .filter-buttons { display:flex; gap:8px; }
+.pms-contract-page .field { display:flex; flex-direction:column; gap:6px; }
+.pms-contract-page .field label { font-size:14px; font-weight:500; color:var(--ink-700); display:flex; align-items:center; gap:6px; }
+.pms-contract-page .field .control { display:flex; align-items:center; height:36px; padding:0 12px; background:#fff; border:1px solid var(--ink-200); border-radius:var(--r-sm); transition:border-color .15s var(--ease-out), box-shadow .15s var(--ease-out); }
+.pms-contract-page .field .control:focus-within { border-color:var(--brand-500); box-shadow:0 0 0 3px rgba(99,102,241,.15); }
+.pms-contract-page .field .control :deep(.el-input__wrapper) { box-shadow:none !important; background:transparent !important; padding:0; height:34px; }
+.pms-contract-page .field .control :deep(.el-input__inner) { border:0; background:transparent; font-size:14px; color:var(--ink-900); height:34px; line-height:34px; }
+.pms-contract-page .field .control :deep(.el-input__inner::placeholder) { color:var(--ink-400); }
+.pms-contract-page .field .control :deep(.el-input__prefix) { color:var(--ink-400); margin-right:4px; }
+.pms-contract-page .field .control :deep(.el-input__prefix .el-icon) { font-size:14px; }
+.pms-contract-page .field .control :deep(.el-select) { width:100%; }
+.pms-contract-page .field .control :deep(.el-select .el-select__wrapper) { box-shadow:none !important; background:transparent !important; padding:0; min-height:34px; height:34px; }
+.pms-contract-page .field .control :deep(.el-select .el-select__wrapper .el-select__placeholder) { font-size:14px; color:var(--ink-900); }
+.pms-contract-page .field .control :deep(.el-select .el-select__wrapper.is-focused) { box-shadow:none !important; }
+.pms-contract-page .status-tabs { display:flex; align-items:center; gap:12px; padding:6px 10px 6px 12px; border-bottom:1px solid var(--ink-200); background:#fff; }
+.pms-contract-page .tabs-track { display:flex; align-items:center; gap:4px; flex:1; min-width:0; overflow-x:auto; scrollbar-width:none; }
+.pms-contract-page .tabs-track::-webkit-scrollbar { display:none; }
+.pms-contract-page .status-tab { display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 12px; border-radius:var(--r-sm); font-size:14px; color:var(--ink-500); cursor:pointer; user-select:none; transition:all .15s var(--ease-out); white-space:nowrap; border:1px solid transparent; background:transparent; }
+.pms-contract-page .status-tab .dot { width:6px; height:6px; border-radius:50%; background:var(--ink-300); }
+.pms-contract-page .status-tab .count { font-size:12px; font-weight:600; padding:1px 6px; border-radius:999px; background:var(--ink-100); color:var(--ink-500); min-width:18px; text-align:center; line-height:1.4; font-feature-settings:"tnum" 1; }
+.pms-contract-page .status-tab:hover { background:var(--ink-50); color:var(--ink-700); }
+.pms-contract-page .status-tab.is-active { background:var(--brand-50); color:var(--brand-700); font-weight:600; border-color:var(--brand-200); }
+.pms-contract-page .status-tab.is-active .count { background:var(--brand-600); color:#fff; }
+.pms-contract-page .status-tab.is-active .dot { background:var(--brand-500); }
+.pms-contract-page .status-tab.tab-draft .dot { background:var(--amber-500); }
+.pms-contract-page .status-tab.tab-draft .count { background:var(--amber-50); color:var(--amber-700); }
+.pms-contract-page .status-tab.is-active.tab-draft .count { background:var(--amber-500); color:#fff; }
+.pms-contract-page .status-tab.tab-audit .dot { background:var(--blue-500); }
+.pms-contract-page .status-tab.tab-audit .count { background:var(--blue-50); color:var(--blue-700); }
+.pms-contract-page .status-tab.is-active.tab-audit .count { background:var(--blue-500); color:#fff; }
+.pms-contract-page .status-tab.tab-approved .dot, .pms-contract-page .status-tab.tab-done .dot { background:var(--green-500); }
+.pms-contract-page .status-tab.tab-approved .count, .pms-contract-page .status-tab.tab-done .count { background:var(--green-50); color:var(--green-700); }
+.pms-contract-page .status-tab.is-active.tab-approved .count, .pms-contract-page .status-tab.is-active.tab-done .count { background:var(--green-500); color:#fff; }
+.pms-contract-page .status-tab.tab-reject .dot { background:var(--red-500); }
+.pms-contract-page .status-tab.tab-reject .count { background:var(--red-50); color:var(--red-700); }
+.pms-contract-page .status-tab.is-active.tab-reject .count { background:var(--red-500); color:#fff; }
+.pms-contract-page .status-tab.tab-void .dot { background:var(--ink-400); }
+.pms-contract-page .status-tab.tab-partial .dot { background:var(--violet-500, #8b5cf6); }
+.pms-contract-page .status-tab.tab-partial .count { background:var(--violet-50); color:#7c3aed; }
+.pms-contract-page .status-tab.is-active.tab-partial .count { background:var(--violet-500, #8b5cf6); color:#fff; }
+.pms-contract-page .tip-pill { display:inline-flex; align-items:center; gap:6px; height:30px; padding:0 12px; border-radius:999px; border:1px solid var(--ink-200); background:#fff; font-size:13px; color:var(--ink-500); cursor:pointer; transition:all .15s var(--ease-out); white-space:nowrap; }
+.pms-contract-page .tip-pill:hover { border-color:var(--brand-200); color:var(--brand-700); background:var(--brand-50); }
+.pms-contract-page .toolbar { display:flex; align-items:center; justify-content:space-between; padding:12px 20px; border-bottom:1px solid var(--ink-200); background:var(--ink-50); }
+.pms-contract-page .toolbar .left { display:flex; gap:8px; align-items:center; }
+.pms-contract-page .toolbar .right { display:flex; gap:8px; align-items:center; }
+.pms-contract-page .toolbar-divider { width:1px; height:18px; background:var(--ink-200); margin:0 4px; }
+.pms-contract-page .btn-soft { display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 12px; font-size:14px; font-weight:500; border-radius:var(--r-sm); border:1px solid transparent; cursor:pointer; user-select:none; transition:all .15s var(--ease-out); }
+.pms-contract-page .btn-soft .el-icon { font-size:14px; }
+.pms-contract-page .btn-soft.is-outline { background:#fff; color:var(--ink-700); border-color:var(--ink-200); }
+.pms-contract-page .btn-soft.is-outline:hover { background:var(--ink-50); border-color:var(--ink-300); color:var(--ink-900); }
+.pms-contract-page .btn-soft.is-danger-outline { background:#fff; color:var(--red-700); border-color:#fecaca; }
+.pms-contract-page .btn-soft.is-danger-outline:hover { background:var(--red-50); border-color:var(--red-500); }
+.pms-contract-page .btn-soft:disabled { opacity:.5; cursor:not-allowed; }
+.pms-contract-page .btn-soft:disabled:hover { transform:none; box-shadow:none; }
+.pms-contract-page .table-wrap { overflow-x:auto; }
+.pms-contract-page .app-table { --el-table-bg-color:#fff; --el-table-header-bg-color:var(--ink-50); --el-table-row-hover-bg-color:#fafbff; --el-table-border-color:transparent; --el-table-text-color:var(--ink-700); --el-table-header-text-color:var(--ink-500); }
+.pms-contract-page .app-table :deep(.el-table__body td) { border-right-color:transparent !important; }
+.pms-contract-page .app-table :deep(.el-table__header th) { border-right-color:transparent !important; }
+.pms-contract-page .app-table :deep(.el-table__header th:hover) { border-right-color:var(--ink-200) !important; }
+.pms-contract-page .app-table :deep(.el-table__header th) { background:var(--ink-50) !important; color:var(--ink-500); font-weight:600; font-size:14px; letter-spacing:.02em; padding:12px 16px; border-bottom:1px solid var(--ink-200); }
+.pms-contract-page .app-table :deep(.el-table__body td) { padding:14px 16px; border-bottom:1px solid var(--ink-100); color:var(--ink-700); }
+.pms-contract-page .app-table :deep(.el-table__row:hover > td) { background:#fafbff !important; }
+.pms-contract-page .app-table :deep(.el-table__inner-wrapper::before) { display:none; }
+.pms-contract-page .app-table :deep(.el-table__border-left-patch) { display:none; }
+.pms-contract-page .app-table .rd-amount { font-feature-settings:"tnum" 1; font-variant-numeric:tabular-nums; color:var(--ink-900); font-weight:500; }
+/* ===== Badges ===== */
+.pms-contract-page .badge { display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:999px; font-size:13px; font-weight:600; line-height:1; border:1px solid transparent; }
+.pms-contract-page .badge .dot { width:6px; height:6px; border-radius:50%; }
+.pms-contract-page .badge.amber { background:var(--amber-50); color:var(--amber-700); border-color:#fde68a; }
+.pms-contract-page .badge.amber .dot { background:var(--amber-500); }
+.pms-contract-page .badge.blue { background:var(--blue-50); color:var(--blue-700); border-color:#bfdbfe; }
+.pms-contract-page .badge.blue .dot { background:var(--blue-500); }
+.pms-contract-page .badge.green { background:var(--green-50); color:var(--green-700); border-color:#a7f3d0; }
+.pms-contract-page .badge.green .dot { background:var(--green-500); }
+.pms-contract-page .badge.red { background:var(--red-50); color:var(--red-700); border-color:#fecaca; }
+.pms-contract-page .badge.red .dot { background:var(--red-500); }
+.pms-contract-page .badge.violet { background:var(--violet-50); color:var(--brand-700); border-color:var(--brand-200); }
+.pms-contract-page .badge.gray { background:var(--ink-100); color:var(--ink-500); border-color:var(--ink-200); }
+.pms-contract-page .badge.gray .dot { background:var(--ink-400); }
+.pms-contract-page .pagination-container { display:flex; align-items:center; justify-content:flex-end; padding:14px 20px; font-size:14px; color:var(--ink-500); background:#fff; border-top:1px solid transparent; }
+.pms-contract-page .pagination-container :deep(.el-pagination) { justify-content:flex-end; }
+.pms-contract-page .pagination-container :deep(.el-pagination .el-pager li) { border-radius:6px; border:1px solid var(--ink-200); background:#fff; min-width:32px; height:32px; line-height:32px; font-size:14px; color:var(--ink-700); margin:0 2px; }
+.pms-contract-page .pagination-container :deep(.el-pagination .el-pager li.is-active) { background:var(--brand-600); border-color:var(--brand-600); color:#fff; font-weight:600; box-shadow:0 4px 10px -2px rgba(79,70,229,.4); }
+.pms-contract-page .pagination-container :deep(.el-pagination .btn-prev), .pms-contract-page .pagination-container :deep(.el-pagination .btn-next) { border-radius:6px; border:1px solid var(--ink-200); background:#fff; min-width:32px; height:32px; }
+.pms-contract-page .pagination-container :deep(.el-pagination .btn-prev:hover), .pms-contract-page .pagination-container :deep(.el-pagination .btn-next:hover) { border-color:var(--brand-200); color:var(--brand-700); }
+.pms-contract-page .pagination-container :deep(.el-pagination .el-pagination__sizes .el-select__wrapper) { border-radius:6px; box-shadow:0 0 0 1px var(--ink-200) inset; }
+@media (max-width:1100px) { .pms-contract-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }
+@media (max-width:720px) { .pms-contract-page .filter-card .filter-bar { grid-template-columns:1fr; } .pms-contract-page .toolbar { flex-wrap:wrap; gap:10px; } }
+
 .change-approve-list { display: flex; flex-direction: column; gap: 10px; }
 .change-approve-item { padding: 12px 14px; background: #fef3c7; border-radius: 10px; border: 1px solid #fde68a; border-left: 3px solid #f59e0b; }
 .change-approve-item-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }

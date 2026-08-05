@@ -1,6 +1,9 @@
 package com.ruoyi.common.core.domain.entity;
 
 import java.util.Set;
+import java.util.List;
+import java.util.Arrays;
+import java.util.stream.Collectors;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -34,6 +37,10 @@ public class SysRole extends BaseEntity
     /** 角色排序 */
     @Excel(name = "角色排序")
     private Integer roleSort;
+
+    /** 角色分类（业务模块：system系统管理 dms设备管理 pms采购管理 mk营销管理 wms仓储管理，支持多选用逗号分隔） */
+    @Excel(name = "角色分类", readConverterExp = "system=系统管理,dms=设备管理,pms=采购管理,mk=营销管理,wms=仓储管理")
+    private String roleCategory;
 
     /** 数据范围（1：所有数据权限；2：自定义数据权限；3：本部门数据权限；4：本部门及以下数据权限；5：仅本人数据权限） */
     @Excel(name = "数据范围", readConverterExp = "1=所有数据权限,2=自定义数据权限,3=本部门数据权限,4=本部门及以下数据权限,5=仅本人数据权限")
@@ -127,6 +134,46 @@ public class SysRole extends BaseEntity
     public void setRoleSort(Integer roleSort)
     {
         this.roleSort = roleSort;
+    }
+
+    public String getRoleCategory()
+    {
+        return roleCategory;
+    }
+
+    public void setRoleCategory(String roleCategory)
+    {
+        this.roleCategory = roleCategory;
+    }
+
+    /**
+     * 获取角色分类列表（支持多选）
+     */
+    public List<String> getRoleCategoryList()
+    {
+        if (roleCategory == null || roleCategory.isEmpty())
+        {
+            return Arrays.asList("system");
+        }
+        return Arrays.stream(roleCategory.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 设置角色分类列表（支持多选）
+     */
+    public void setRoleCategoryList(List<String> roleCategoryList)
+    {
+        if (roleCategoryList == null || roleCategoryList.isEmpty())
+        {
+            this.roleCategory = "system";
+        }
+        else
+        {
+            this.roleCategory = String.join(",", roleCategoryList);
+        }
     }
 
     public String getDataScope()
@@ -226,6 +273,7 @@ public class SysRole extends BaseEntity
             .append("roleName", getRoleName())
             .append("roleKey", getRoleKey())
             .append("roleSort", getRoleSort())
+            .append("roleCategory", getRoleCategory())
             .append("dataScope", getDataScope())
             .append("menuCheckStrictly", isMenuCheckStrictly())
             .append("deptCheckStrictly", isDeptCheckStrictly())

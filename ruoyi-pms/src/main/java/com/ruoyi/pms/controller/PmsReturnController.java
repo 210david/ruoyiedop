@@ -36,6 +36,18 @@ public class PmsReturnController extends BaseController
         return getDataTable(list);
     }
 
+    /**
+     * 获取存在进行中退货单的采购订单ID列表
+     * 进行中 = 状态为草稿(0)、待审批(1)、已审批(2)、已驳回(5)
+     * 前端用于过滤，避免同一订单同时存在多个进行中的退货单
+     */
+    @PreAuthorize("@ss.hasPermi('pms:return:list')")
+    @GetMapping("/query/inProgressOrderIds")
+    public AjaxResult getInProgressOrderIds()
+    {
+        return AjaxResult.success(pmsReturnService.selectInProgressReturnOrderIds());
+    }
+
     @Log(title = "退货管理", businessType = BusinessType.EXPORT)
     @PreAuthorize("@ss.hasPermi('pms:return:export')")
     @PostMapping("/export")
@@ -47,7 +59,7 @@ public class PmsReturnController extends BaseController
     }
 
     @PreAuthorize("@ss.hasPermi('pms:return:query')")
-    @GetMapping(value = "/{returnId}")
+    @GetMapping(value = "/info/{returnId:\\d+}")
     public AjaxResult getInfo(@PathVariable("returnId") Long returnId)
     {
         return AjaxResult.success(pmsReturnService.selectReturnById(returnId));

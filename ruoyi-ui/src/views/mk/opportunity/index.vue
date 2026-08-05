@@ -1,64 +1,147 @@
 <template>
-  <div class="app-container">
-    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch">
-      <el-form-item label="商机编号" prop="opportunityNo"><el-input v-model="queryParams.opportunityNo" placeholder="请输入" clearable style="width: 200px" @keyup.enter="handleQuery" /></el-form-item>
-      <el-form-item label="商机名称" prop="opportunityName"><el-input v-model="queryParams.opportunityName" placeholder="请输入" clearable style="width: 200px" @keyup.enter="handleQuery" /></el-form-item>
-      <el-form-item label="销售阶段" prop="stageCode">
-        <el-select v-model="queryParams.stageCode" placeholder="请选择" clearable style="width: 200px">
-          <el-option v-for="s in stageOptions" :key="s.stageCode" :label="s.stageName" :value="s.stageCode" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="商机状态" prop="opportunityStatus">
-        <el-select v-model="queryParams.opportunityStatus" placeholder="请选择" clearable style="width: 200px">
-          <el-option v-for="d in marketing_opportunity_status" :key="d.value" :label="d.label" :value="d.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item><el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button><el-button icon="Refresh" @click="resetQuery">重置</el-button></el-form-item>
-    </el-form>
+  <div class="app-container mk-list-page">
+    <!-- ===== Filter Card ===== -->
+    <div class="surface filter-card" v-show="showSearch">
+      <div class="filter-head">
+        <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+      </div>
+      <div class="filter-bar">
+        <div class="field">
+          <label>商机编号</label>
+          <div class="control">
+            <el-input v-model="queryParams.opportunityNo" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field">
+          <label>商机名称</label>
+          <div class="control">
+            <el-input v-model="queryParams.opportunityName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field">
+          <label>销售阶段</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.stageCode" placeholder="请选择" clearable>
+              <template #prefix><el-icon><Filter /></el-icon></template>
+              <el-option v-for="s in stageOptions" :key="s.stageCode" :label="s.stageName" :value="s.stageCode" />
+            </el-select>
+          </div>
+        </div>
+        <div class="field">
+          <label>商机状态</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.opportunityStatus" placeholder="全部" clearable @change="handleQuery">
+              <template #prefix><el-icon><Filter /></el-icon></template>
+              <el-option v-for="d in marketing_opportunity_status" :key="d.value" :label="d.label" :value="d.value" />
+            </el-select>
+          </div>
+        </div>
+      </div>
+      <div class="filter-actions">
+        <div class="filter-info">
+          <el-icon><Filter /></el-icon> 已选 {{ activeFilterCount }} 个条件，支持回车快速搜索
+        </div>
+        <div class="filter-buttons">
+          <el-button icon="RefreshLeft" @click="resetQuery">重置</el-button>
+          <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+        </div>
+      </div>
+    </div>
 
-    <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5"><el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['marketing:opportunity:add']">新增</el-button></el-col>
-      <el-col :span="1.5"><el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['marketing:opportunity:edit']">修改</el-button></el-col>
-      <el-col :span="1.5"><el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['marketing:opportunity:remove']">删除</el-button></el-col>
-      <el-col :span="1.5"><el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['marketing:opportunity:export']">导出</el-button></el-col>
-      <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
-    </el-row>
+    <!-- ===== Table Section ===== -->
+    <div class="surface">
+      <!-- Status Tabs + Tip Pill -->
+      <div class="status-tabs">
+        <div class="tabs-track">
+          <button class="status-tab" :class="{ 'is-active': activeStatusTab === 'all' }" @click="handleStatusTabClick('all')">
+            <span class="dot"></span><span>全部</span><span class="count">{{ statusCounts.all }}</span>
+          </button>
+          <button v-for="s in statusTabList" :key="s.value"
+            class="status-tab"
+            :class="[statusTabClass(s.value), { 'is-active': activeStatusTab === s.value }]"
+            @click="handleStatusTabClick(s.value)">
+            <span class="dot"></span><span>{{ s.label }}</span><span class="count">{{ statusCounts[s.value] || 0 }}</span>
+          </button>
+        </div>
+        <button class="tip-pill" @click="showStatusHelp = true">
+          <el-icon><QuestionFilled /></el-icon>
+          <span>业务操作说明</span>
+        </button>
+      </div>
 
-    <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
-      <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="商机编号" prop="opportunityNo" :width="colWidth('opportunityNo', 150)" resizable />
-      <el-table-column label="商机名称" prop="opportunityName" show-overflow-tooltip />
-      <el-table-column label="客户名称" prop="customerName" show-overflow-tooltip />
-      <el-table-column label="销售阶段" prop="stageName" :width="colWidth('stageName', 100)" resizable align="center" />
-      <el-table-column label="预计金额" prop="expectedAmount" :width="colWidth('expectedAmount', 120)" resizable align="right" />
-      <el-table-column label="赢率" prop="winRate" :width="colWidth('winRate', 80)" resizable align="center">
-        <template #default="scope">{{ scope.row.winRate }}%</template>
-      </el-table-column>
-      <el-table-column label="加权金额" prop="weightedAmount" :width="colWidth('weightedAmount', 120)" resizable align="right" />
-      <el-table-column label="商机状态" prop="opportunityStatus" :width="colWidth('opportunityStatus', 100)" resizable align="center">
-        <template #default="scope"><dict-tag :options="marketing_opportunity_status" :value="scope.row.opportunityStatus" /></template>
-      </el-table-column>
-      <el-table-column label="负责人" prop="userName" :width="colWidth('userName', 100)" resizable />
-      <el-table-column label="操作" width="320" align="center" fixed="right">
-        <template #default="scope">
-          <el-button link type="primary" icon="View" @click="handleView(scope.row)">详情</el-button>
-          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['marketing:opportunity:edit']">修改</el-button>
-          <el-dropdown v-if="scope.row.opportunityStatus === '0'" @command="(cmd) => handleAction(cmd, scope.row)" style="margin-left: 8px">
-            <el-button link type="primary">更多<el-icon class="el-icon--right"><ArrowDown /></el-icon></el-button>
-            <template #dropdown>
-              <el-dropdown-menu>
-                <el-dropdown-item command="advance">推进阶段</el-dropdown-item>
-                <el-dropdown-item command="retreat">退回阶段</el-dropdown-item>
-                <el-dropdown-item command="win" divided style="color: #67c23a">赢单关单</el-dropdown-item>
-                <el-dropdown-item command="lose" style="color: #f56c6c">输单关单</el-dropdown-item>
-              </el-dropdown-menu>
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <div class="left">
+          <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['marketing:opportunity:add']">新增</el-button>
+          <button type="button" class="btn-soft is-outline" :disabled="single" @click="handleUpdate" v-hasPermi="['marketing:opportunity:edit']">
+            <el-icon><Edit /></el-icon> 修改
+          </button>
+          <button type="button" class="btn-soft is-danger-outline" :disabled="multiple" @click="handleDelete" v-hasPermi="['marketing:opportunity:remove']">
+            <el-icon><Delete /></el-icon> 删除
+          </button>
+          <div class="toolbar-divider"></div>
+          <button type="button" class="btn-soft is-outline" @click="handleExport" v-hasPermi="['marketing:opportunity:export']">
+            <el-icon><Download /></el-icon> 导出
+          </button>
+        </div>
+        <div class="right">
+          <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="mk_opportunity_columns" />
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="table-wrap">
+        <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
+          <el-table-column type="selection" width="55" align="center" />
+          <el-table-column label="商机编号" prop="opportunityNo" key="opportunityNo" :width="colWidth('opportunityNo', 150)" resizable v-if="columns.opportunityNo.visible" />
+          <el-table-column label="商机名称" prop="opportunityName" key="opportunityName" show-overflow-tooltip v-if="columns.opportunityName.visible" />
+          <el-table-column label="客户名称" prop="customerName" key="customerName" show-overflow-tooltip v-if="columns.customerName.visible" />
+          <el-table-column label="销售阶段" prop="stageName" key="stageName" :width="colWidth('stageName', 100)" resizable align="center" v-if="columns.stageName.visible" />
+          <el-table-column label="预计金额" prop="expectedAmount" key="expectedAmount" :width="colWidth('expectedAmount', 120)" resizable align="right" v-if="columns.expectedAmount.visible">
+            <template #default="scope"><span class="rd-amount">￥{{ scope.row.expectedAmount }}</span></template>
+          </el-table-column>
+          <el-table-column label="赢率" prop="winRate" key="winRate" :width="colWidth('winRate', 80)" resizable align="center" v-if="columns.winRate.visible">
+            <template #default="scope">{{ scope.row.winRate }}%</template>
+          </el-table-column>
+          <el-table-column label="加权金额" prop="weightedAmount" key="weightedAmount" :width="colWidth('weightedAmount', 120)" resizable align="right" v-if="columns.weightedAmount.visible">
+            <template #default="scope"><span class="rd-amount">￥{{ scope.row.weightedAmount }}</span></template>
+          </el-table-column>
+          <el-table-column label="商机状态" prop="opportunityStatus" key="opportunityStatus" :width="colWidth('opportunityStatus', 100)" resizable align="center" v-if="columns.opportunityStatus.visible">
+            <template #default="scope">
+              <span class="badge" :class="badgeClass(scope.row.opportunityStatus)">
+                <span class="dot"></span>{{ statusLabel(scope.row.opportunityStatus) }}
+              </span>
             </template>
-          </el-dropdown>
-          <el-button v-if="scope.row.opportunityStatus !== '0'" link type="warning" @click="handleReopen(scope.row)">重开</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
-    <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+          </el-table-column>
+          <el-table-column label="负责人" prop="userName" key="userName" :width="colWidth('userName', 100)" resizable v-if="columns.userName.visible" />
+          <el-table-column label="操作" width="320" align="center" fixed="right">
+            <template #default="scope">
+              <el-button link type="primary" icon="View" @click="handleView(scope.row)">详情</el-button>
+              <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['marketing:opportunity:edit']">修改</el-button>
+              <el-dropdown v-if="scope.row.opportunityStatus === '0'" @command="(cmd) => handleAction(cmd, scope.row)" style="margin-left: 8px">
+                <el-button link type="primary">更多<el-icon class="el-icon--right"><ArrowDown /></el-icon></el-button>
+                <template #dropdown>
+                  <el-dropdown-menu>
+                    <el-dropdown-item command="advance">推进阶段</el-dropdown-item>
+                    <el-dropdown-item command="retreat">退回阶段</el-dropdown-item>
+                    <el-dropdown-item command="win" divided style="color: #67c23a">赢单关单</el-dropdown-item>
+                    <el-dropdown-item command="lose" style="color: #f56c6c">输单关单</el-dropdown-item>
+                  </el-dropdown-menu>
+                </template>
+              </el-dropdown>
+              <el-button v-if="scope.row.opportunityStatus !== '0'" link type="warning" @click="handleReopen(scope.row)">重开</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+
+      <!-- Pagination -->
+      <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+    </div>
 
     <!-- 新增/修改弹窗 -->
     <el-dialog v-model="open" width="850px" append-to-body draggable class="rd-dialog">
@@ -557,11 +640,58 @@
 
     <!-- 部门选择弹窗 -->
     <dept-picker ref="deptPickerRef" title="选择所属部门" :disabled-ids="[100]" @confirm="onDeptPickerConfirm" />
+
+    <!-- 状态流转帮助对话框 -->
+    <el-dialog v-model="showStatusHelp" title="商机管理业务操作说明" width="720px" append-to-body>
+      <div class="status-help-content">
+        <h4>一、业务流程图</h4>
+        <div class="status-flow">
+          <div class="flow-item">
+            <el-tag type="info">初步接触</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="primary">需求确认</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="warning">方案报价</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="warning">谈判</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="success">赢单</el-tag>
+          </div>
+        </div>
+
+        <h4>二、各状态说明</h4>
+        <el-descriptions :column="1" border>
+          <el-descriptions-item label="进行中">商机正在推进中，可推进/退回阶段</el-descriptions-item>
+          <el-descriptions-item label="赢单">商机成功成交，可关联创建合同和订单</el-descriptions-item>
+          <el-descriptions-item label="输单">商机失败，可重新打开继续跟进</el-descriptions-item>
+        </el-descriptions>
+
+        <h4>三、重点业务规则</h4>
+        <div class="highlight-card">
+          <p>• <strong>阶段推进：</strong>通过"推进阶段"按钮将商机推进到下一销售阶段</p>
+          <p>• <strong>阶段退回：</strong>可退回到上一阶段重新推进</p>
+          <p>• <strong>赢单/输单：</strong>最终阶段可标记赢单或输单，赢单后可创建合同</p>
+          <p>• <strong>加权金额：</strong>加权金额 = 预计金额 × 赢率，用于销售预测</p>
+          <p>• <strong>看板视图：</strong>可在商机看板页面拖拽卡片快速推进阶段</p>
+        </div>
+      </div>
+      <template #footer>
+        <el-button type="primary" @click="showStatusHelp = false">我知道了</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup name="MkOpportunity">
-import { CircleClose } from '@element-plus/icons-vue'
+import { CircleClose, ArrowRight, QuestionFilled } from '@element-plus/icons-vue'
 import { listOpportunity, getOpportunity, addOpportunity, updateOpportunity, delOpportunity, advanceOpportunity, retreatOpportunity, winOpportunity, loseOpportunity, reopenOpportunity, getOpportunityRelations } from '@/api/mk/opportunity'
 import { listStage } from '@/api/mk/stage'
 import { listCustomer } from '@/api/mk/customer'
@@ -582,6 +712,24 @@ const open = ref(false)
 const viewOpen = ref(false)
 const loading = ref(true)
 const showSearch = ref(true)
+const showAdvanced = ref(false)
+const activeStatusTab = ref('all')
+const statusCounts = ref({ all: 0 })
+const statusTabList = computed(() => marketing_opportunity_status.value)
+function loadStatusCounts() {
+  const counts = { all: 0 }
+  marketing_opportunity_status.value.forEach(d => { counts[d.value] = 0 })
+  list.value.forEach(row => {
+    const s = row.opportunityStatus
+    if (counts[s] !== undefined) counts[s]++
+  })
+  counts.all = total.value
+  statusCounts.value = counts
+}
+function handleStatusTabClick(status) { activeStatusTab.value = status; queryParams.value.opportunityStatus = status === 'all' ? undefined : status; handleQuery() }
+function badgeClass(status) { const map = { '0': 'blue', '1': 'green', '2': 'red', '3': 'amber' }; return map[status] || 'gray' }
+function statusLabel(status) { const item = marketing_opportunity_status.value.find(d => d.value == status); return item ? item.label : '-' }
+function statusTabClass(value) { const map = { '0': 'tab-audit', '1': 'tab-done', '2': 'tab-reject', '3': 'tab-draft' }; return map[value] || '' }
 const ids = ref([])
 const single = ref(true)
 const multiple = ref(true)
@@ -604,7 +752,7 @@ const targetStageOptions = ref([])
 
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, opportunityNo: undefined, opportunityName: undefined, stageCode: undefined, opportunityStatus: undefined },
+  queryParams: { pageNum: 1, pageSize: 10, opportunityNo: undefined, opportunityName: undefined, stageCode: undefined, opportunityStatus: undefined, params: {} },
   rules: {
     opportunityName: [{ required: true, message: '商机名称不能为空', trigger: 'blur' }],
     customerId: [{ required: true, message: '请选择客户', trigger: 'change' }],
@@ -614,7 +762,49 @@ const data = reactive({
 })
 const { queryParams, form, rules } = toRefs(data)
 
-function getList() { loading.value = true; listOpportunity(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false }) }
+// 列显隐配置 - 从 localStorage 恢复保存的设置
+const defaultColumns = {
+  opportunityNo: { label: '商机编号', visible: true },
+  opportunityName: { label: '商机名称', visible: true },
+  customerName: { label: '客户名称', visible: true },
+  stageName: { label: '销售阶段', visible: true },
+  expectedAmount: { label: '预计金额', visible: true },
+  winRate: { label: '赢率', visible: true },
+  weightedAmount: { label: '加权金额', visible: true },
+  opportunityStatus: { label: '商机状态', visible: true },
+  userName: { label: '负责人', visible: true }
+}
+
+function loadColumnVisibility() {
+  try {
+    const saved = localStorage.getItem('mk_opportunity_columns')
+    if (saved) {
+      const parsed = JSON.parse(saved)
+      const result = {}
+      Object.keys(defaultColumns).forEach(key => {
+        result[key] = {
+          label: defaultColumns[key].label,
+          visible: parsed[key] !== undefined ? parsed[key] : defaultColumns[key].visible
+        }
+      })
+      return result
+    }
+  } catch (e) {}
+  return { ...defaultColumns }
+}
+
+const columns = ref(loadColumnVisibility())
+
+const activeFilterCount = computed(() => {
+  let count = 0
+  if (queryParams.value.opportunityNo) count++
+  if (queryParams.value.opportunityName) count++
+  if (queryParams.value.stageCode) count++
+  if (queryParams.value.opportunityStatus) count++
+  return count
+})
+
+function getList() { loading.value = true; listOpportunity(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false; loadStatusCounts(); applySavedWidths() }).catch(() => { loading.value = false }) }
 function getCustomerOptions() { listCustomer({ pageNum: 1, pageSize: 9999 }).then(res => { customerOptions.value = res.rows }) }
 function getStageOptions() { listStage({ pageNum: 1, pageSize: 9999, status: '0' }).then(res => { stageOptions.value = res.rows }) }
 
@@ -660,8 +850,9 @@ function onStageChange(stageCode) {
   const stage = stageOptions.value.find(s => s.stageCode === stageCode)
   if (stage) { form.value.stageName = stage.stageName; form.value.winRate = stage.winRate }
 }
-function handleQuery() { queryParams.value.pageNum = 1; getList() }
-function resetQuery() { proxy.resetForm('queryRef'); handleQuery() }
+function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
+function resetQuery() { queryParams.value.opportunityNo = undefined; queryParams.value.opportunityName = undefined; queryParams.value.stageCode = undefined; queryParams.value.opportunityStatus = undefined; queryParams.value.params = {}; activeStatusTab.value = 'all'; handleQuery() }
+function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.opportunityId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function reset() {
   form.value = { opportunityNo: undefined, opportunityName: undefined, customerId: undefined, contactId: undefined, leadId: undefined, opportunitySource: undefined, expectedAmount: 0, expectedDate: undefined, stageCode: 'stage1', stageName: '初步接触', winRate: 10, weightedAmount: 0, opportunityStatus: '0', competitor: undefined, painPoint: undefined, solution: undefined, userId: undefined, userName: undefined, deptId: undefined, deptName: undefined, nextAction: undefined, nextTime: undefined, remark: undefined }
@@ -767,6 +958,8 @@ function formatAmount(val) { if (val == null || val === '') return '-'; return N
 getCustomerOptions()
 getStageOptions()
 getList()
+
+const showStatusHelp = ref(false)
 </script>
 
 <style scoped>
@@ -780,5 +973,52 @@ getList()
 }
 :deep(.el-input.is-disabled .el-input__inner) {
   cursor: pointer;
+}
+
+.status-help-content {
+  max-height: 500px;
+  overflow-y: auto;
+  padding-right: 10px;
+}
+.status-help-content h4 {
+  margin: 20px 0 12px 0;
+  color: #303133;
+  font-weight: 600;
+  border-left: 4px solid #409eff;
+  padding-left: 10px;
+}
+.status-help-content h4:first-child {
+  margin-top: 0;
+}
+.status-help-content .status-flow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 16px;
+  background-color: #f5f7fa;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+.status-help-content .flow-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.status-help-content .flow-arrow {
+  color: #909399;
+  font-size: 16px;
+}
+.status-help-content .highlight-card {
+  background-color: #ecf5ff;
+  border-radius: 8px;
+  padding: 16px;
+  border-left: 4px solid #409eff;
+}
+.status-help-content .highlight-card p {
+  margin: 6px 0;
+  line-height: 1.6;
+  font-size: 13px;
+  color: #606266;
 }
 </style>

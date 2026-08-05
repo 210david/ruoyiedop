@@ -257,7 +257,8 @@ INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component,
 (3022, '设备新增', 3020, 2, '', '', '', '', 1, 0, 'F', '0', '0', 'dms:equipment:add', '#', 'admin', sysdate(), ''),
 (3023, '设备修改', 3020, 3, '', '', '', '', 1, 0, 'F', '0', '0', 'dms:equipment:edit', '#', 'admin', sysdate(), ''),
 (3024, '设备删除', 3020, 4, '', '', '', '', 1, 0, 'F', '0', '0', 'dms:equipment:remove', '#', 'admin', sysdate(), ''),
-(3025, '设备导出', 3020, 5, '', '', '', '', 1, 0, 'F', '0', '0', 'dms:equipment:export', '#', 'admin', sysdate(), '');
+(3025, '设备导出', 3020, 5, '', '', '', '', 1, 0, 'F', '0', '0', 'dms:equipment:export', '#', 'admin', sysdate(), ''),
+(3026, '设备导入', 3020, 6, '', '', '', '', 1, 0, 'F', '0', '0', 'dms:equipment:import', '#', 'admin', sysdate(), '');
 
 -- 备件管理按钮
 INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark) VALUES

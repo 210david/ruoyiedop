@@ -123,6 +123,7 @@ create table sys_role (
   role_name            varchar(30)     not null                   comment '角色名称',
   role_key             varchar(100)    not null                   comment '角色权限字符串',
   role_sort            int(4)          not null                   comment '显示顺序',
+  role_category        varchar(50)     default 'system'          comment '角色分类（业务模块：system系统管理 dms经销商管理 pms采购管理 mk营销管理 wms仓储管理）',
   data_scope           char(1)         default '1'                comment '数据范围（1：全部数据权限 2：自定数据权限 3：本部门数据权限 4：本部门及以下数据权限）',
   menu_check_strictly  tinyint(1)      default 1                  comment '菜单树选择项是否关联显示',
   dept_check_strictly  tinyint(1)      default 1                  comment '部门树选择项是否关联显示',
@@ -139,8 +140,8 @@ create table sys_role (
 -- ----------------------------
 -- 初始化-角色信息表数据
 -- ----------------------------
-insert into sys_role values('1', '超级管理员',  'admin',  1, 1, 1, 1, '0', '0', 'admin', sysdate(), '', null, '超级管理员');
-insert into sys_role values('2', '普通角色',    'common', 2, 2, 1, 1, '0', '0', 'admin', sysdate(), '', null, '普通角色');
+insert into sys_role values('1', '超级管理员',  'admin',  1, 'system', 1, 1, 1, '0', '0', 'admin', sysdate(), '', null, '超级管理员');
+insert into sys_role values('2', '普通角色',    'common', 2, 'system', 2, 1, 1, '0', '0', 'admin', sysdate(), '', null, '普通角色');
 
 
 -- ----------------------------
@@ -487,6 +488,7 @@ insert into sys_dict_type values(7,  '通知类型', 'sys_notice_type',     '0',
 insert into sys_dict_type values(8,  '通知状态', 'sys_notice_status',   '0', 'admin', sysdate(), '', null, '通知状态列表');
 insert into sys_dict_type values(9,  '操作类型', 'sys_oper_type',       '0', 'admin', sysdate(), '', null, '操作类型列表');
 insert into sys_dict_type values(10, '系统状态', 'sys_common_status',   '0', 'admin', sysdate(), '', null, '登录状态列表');
+insert into sys_dict_type values(11, '角色分类', 'sys_role_category',    '0', 'admin', sysdate(), '', null, '角色所属业务模块分类');
 
 
 -- ----------------------------
@@ -541,6 +543,11 @@ insert into sys_dict_data values(26, 8,  '生成代码', '8',       'sys_oper_ty
 insert into sys_dict_data values(27, 9,  '清空数据', '9',       'sys_oper_type',       '',   'danger',  'N', '0', 'admin', sysdate(), '', null, '清空操作');
 insert into sys_dict_data values(28, 1,  '成功',     '0',       'sys_common_status',   '',   'primary', 'N', '0', 'admin', sysdate(), '', null, '正常状态');
 insert into sys_dict_data values(29, 2,  '失败',     '1',       'sys_common_status',   '',   'danger',  'N', '0', 'admin', sysdate(), '', null, '停用状态');
+insert into sys_dict_data values(30, 1,  '系统管理', 'system',  'sys_role_category',    '',   'primary', 'Y', '0', 'admin', sysdate(), '', null, '系统管理模块角色');
+insert into sys_dict_data values(31, 2,  '经销商管理', 'dms',   'sys_role_category',    '',   'success', 'N', '0', 'admin', sysdate(), '', null, '经销商管理模块角色');
+insert into sys_dict_data values(32, 3,  '采购管理', 'pms',    'sys_role_category',    '',   'warning', 'N', '0', 'admin', sysdate(), '', null, '采购管理模块角色');
+insert into sys_dict_data values(33, 4,  '营销管理', 'mk',     'sys_role_category',    '',   'danger',  'N', '0', 'admin', sysdate(), '', null, '营销管理模块角色');
+insert into sys_dict_data values(34, 5,  '仓储管理', 'wms',    'sys_role_category',    '',   'info',    'N', '0', 'admin', sysdate(), '', null, '仓储管理模块角色');
 
 
 -- ----------------------------
@@ -2117,7 +2124,8 @@ INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component,
 (3022, '设备新增', 3020, 2, '', '', '', '', 1, 0, 'F', '0', '0', 'dms:equipment:add', '#', 'admin', sysdate(), ''),
 (3023, '设备修改', 3020, 3, '', '', '', '', 1, 0, 'F', '0', '0', 'dms:equipment:edit', '#', 'admin', sysdate(), ''),
 (3024, '设备删除', 3020, 4, '', '', '', '', 1, 0, 'F', '0', '0', 'dms:equipment:remove', '#', 'admin', sysdate(), ''),
-(3025, '设备导出', 3020, 5, '', '', '', '', 1, 0, 'F', '0', '0', 'dms:equipment:export', '#', 'admin', sysdate(), '');
+(3025, '设备导出', 3020, 5, '', '', '', '', 1, 0, 'F', '0', '0', 'dms:equipment:export', '#', 'admin', sysdate(), ''),
+(3026, '设备导入', 3020, 6, '', '', '', '', 1, 0, 'F', '0', '0', 'dms:equipment:import', '#', 'admin', sysdate(), '');
 
 -- 备件管理按钮
 INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark) VALUES

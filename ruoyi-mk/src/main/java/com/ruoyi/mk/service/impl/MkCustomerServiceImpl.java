@@ -4,6 +4,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.mk.domain.MkCustomer;
 import com.ruoyi.mk.mapper.MkCustomerMapper;
@@ -149,11 +150,16 @@ public class MkCustomerServiceImpl implements IMkCustomerService
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public String importCustomer(List<MkCustomer> customerList, Boolean isUpdateSupport, String operName)
+    public AjaxResult importCustomer(List<MkCustomer> customerList, Boolean isUpdateSupport, String updateKey, String operName)
     {
         if (StringUtils.isNull(customerList) || customerList.size() == 0)
         {
-            throw new RuntimeException("导入客户数据不能为空！");
+            return AjaxResult.error("导入客户数据不能为空！");
+        }
+        // 默认按企业名称匹配
+        if (StringUtils.isEmpty(updateKey))
+        {
+            updateKey = "customerName";
         }
         int successNum = 0;
         int failureNum = 0;
@@ -163,46 +169,55 @@ public class MkCustomerServiceImpl implements IMkCustomerService
         {
             try
             {
-                // 验证企业名称不为空
+                // 1. 基础校验：企业名称不能为空
                 if (StringUtils.isEmpty(row.getCustomerName()))
                 {
                     throw new RuntimeException("企业名称不能为空");
                 }
-                // 检查是否已存在（按企业名称匹配）
-                MkCustomer query = new MkCustomer();
-                query.setCustomerName(row.getCustomerName());
-                List<MkCustomer> existing = mkCustomerMapper.selectCustomerAllList(query);
-                if (existing.size() > 0)
+                // 2. 根据匹配字段校验并查找已存在的客户
+                String matchValue = getMatchValue(row, updateKey);
+                if (StringUtils.isEmpty(matchValue))
+                {
+                    String fieldLabel = getMatchFieldLabel(updateKey);
+                    throw new RuntimeException("匹配字段「" + fieldLabel + "」不能为空");
+                }
+                MkCustomer matchedCustomer = findCustomerByMatchKey(updateKey, matchValue);
+
+                if (matchedCustomer != null)
                 {
                     if (isUpdateSupport)
                     {
-                        MkCustomer existingCustomer = existing.get(0);
-                        row.setCustomerId(existingCustomer.getCustomerId());
+                        row.setCustomerId(matchedCustomer.getCustomerId());
+                        // 保留原编号不被覆盖
+                        if (StringUtils.isEmpty(row.getCustomerNo()))
+                        {
+                            row.setCustomerNo(matchedCustomer.getCustomerNo());
+                        }
+                        row.setUpdateBy(operName);
                         mkCustomerMapper.updateCustomer(row);
                         successNum++;
-                        successMsg.append("<br/>" + successNum + "、企业名称 " + row.getCustomerName() + " 更新成功");
+                        successMsg.append("<br/>" + successNum + "、企业名称 " + row.getCustomerName() + "（" + getMatchFieldLabel(updateKey) + ": " + matchValue + "）更新成功");
                     }
                     else
                     {
                         failureNum++;
-                        failureMsg.append("<br/>" + failureNum + "、企业名称 " + row.getCustomerName() + " 已存在");
+                        failureMsg.append("<br/>" + failureNum + "、企业名称 " + row.getCustomerName() + " 已存在（" + getMatchFieldLabel(updateKey) + ": " + matchValue + "）");
                     }
                 }
                 else
                 {
+                    // 新增：自动生成编号，设置默认值
+                    row.setCustomerNo(mkNumberRuleService.generateNumber("customer"));
                     row.setDelFlag("0");
-                    if (row.getCustomerStatus() == null)
+                    if (StringUtils.isEmpty(row.getCustomerStatus()))
                     {
                         row.setCustomerStatus("0");
                     }
-                    if (row.getCustomerLevel() == null)
+                    if (StringUtils.isEmpty(row.getCustomerLevel()))
                     {
                         row.setCustomerLevel("3");
                     }
-                    if (StringUtils.isEmpty(row.getCustomerNo()))
-                    {
-                        row.setCustomerNo(mkNumberRuleService.generateNumber("customer"));
-                    }
+                    row.setCreateBy(operName);
                     mkCustomerMapper.insertCustomer(row);
                     successNum++;
                     successMsg.append("<br/>" + successNum + "、企业名称 " + row.getCustomerName() + " 导入成功");
@@ -211,18 +226,95 @@ public class MkCustomerServiceImpl implements IMkCustomerService
             catch (Exception e)
             {
                 failureNum++;
-                failureMsg.append("<br/>" + failureNum + "、企业名称 " + row.getCustomerName() + " 导入失败：" + e.getMessage());
+                failureMsg.append("<br/>" + failureNum + "、企业名称 " + (StringUtils.isNotEmpty(row.getCustomerName()) ? row.getCustomerName() : "(名称为空)") + " 导入失败：" + e.getMessage());
             }
+        }
+
+        // 构建返回结果（不抛异常，返回成功和失败的明细）
+        StringBuilder resultMsg = new StringBuilder();
+        if (successNum > 0)
+        {
+            resultMsg.append(successMsg.toString());
         }
         if (failureNum > 0)
         {
-            failureMsg.insert(0, "导入失败！共 " + failureNum + " 条数据格式不正确，错误如下：");
-            throw new RuntimeException(failureMsg.toString());
+            resultMsg.append(failureMsg.toString());
         }
-        else
+
+        AjaxResult ajax = AjaxResult.success(resultMsg.toString());
+        ajax.put("successNum", successNum);
+        ajax.put("failureNum", failureNum);
+        if (failureNum > 0 && successNum == 0)
         {
-            successMsg.insert(0, "恭喜您，数据已全部导入成功！共 " + successNum + " 条，数据如下：");
+            // 全部失败时标记 code
+            ajax.put("code", 500);
         }
-        return successMsg.toString();
+        return ajax;
+    }
+
+    /**
+     * 获取匹配字段的值
+     */
+    private String getMatchValue(MkCustomer row, String updateKey)
+    {
+        switch (updateKey)
+        {
+            case "creditCode":
+                return row.getCreditCode();
+            case "customerNo":
+                return row.getCustomerNo();
+            case "customerName":
+            default:
+                return row.getCustomerName();
+        }
+    }
+
+    /**
+     * 获取匹配字段的中文标签
+     */
+    private String getMatchFieldLabel(String updateKey)
+    {
+        switch (updateKey)
+        {
+            case "creditCode":
+                return "统一社会信用代码";
+            case "customerNo":
+                return "客户编号";
+            case "customerName":
+            default:
+                return "企业名称";
+        }
+    }
+
+    /**
+     * 根据匹配字段查找已存在的客户
+     */
+    private MkCustomer findCustomerByMatchKey(String updateKey, String matchValue)
+    {
+        MkCustomer query = new MkCustomer();
+        switch (updateKey)
+        {
+            case "creditCode":
+                query.setCreditCode(matchValue);
+                break;
+            case "customerNo":
+                query.setCustomerNo(matchValue);
+                break;
+            case "customerName":
+            default:
+                query.setCustomerName(matchValue);
+                break;
+        }
+        List<MkCustomer> candidates = mkCustomerMapper.selectCustomerAllList(query);
+        // 精确匹配（selectCustomerAllList 用 LIKE，这里筛选精确匹配）
+        for (MkCustomer c : candidates)
+        {
+            String val = getMatchValue(c, updateKey);
+            if (val != null && val.equals(matchValue))
+            {
+                return c;
+            }
+        }
+        return null;
     }
 }

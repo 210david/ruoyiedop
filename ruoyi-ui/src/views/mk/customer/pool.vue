@@ -1,58 +1,129 @@
 <template>
-  <div class="app-container">
-    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch">
-      <el-form-item label="客户编号" prop="customerNo">
-        <el-input v-model="queryParams.customerNo" placeholder="请输入" clearable style="width: 200px" @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="企业名称" prop="customerName">
-        <el-input v-model="queryParams.customerName" placeholder="请输入" clearable style="width: 200px" @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="客户等级" prop="customerLevel">
-        <el-select v-model="queryParams.customerLevel" placeholder="请选择" clearable style="width: 200px">
-          <el-option v-for="d in marketing_customer_level" :key="d.value" :label="d.label" :value="d.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-        <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-      </el-form-item>
-    </el-form>
+  <div class="app-container mk-list-page">
+    <!-- ===== Filter Card ===== -->
+    <div class="surface filter-card" v-show="showSearch">
+      <div class="filter-head">
+        <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+      </div>
+      <div class="filter-bar">
+        <div class="field">
+          <label>客户编号</label>
+          <div class="control">
+            <el-input v-model="queryParams.customerNo" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field">
+          <label>企业名称</label>
+          <div class="control">
+            <el-input v-model="queryParams.customerName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field">
+          <label>客户等级</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.customerLevel" placeholder="全部" clearable @change="handleQuery">
+              <template #prefix><el-icon><Filter /></el-icon></template>
+              <el-option v-for="d in marketing_customer_level" :key="d.value" :label="d.label" :value="d.value" />
+            </el-select>
+          </div>
+        </div>
+        <div class="field">
+          <label>客户状态</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.customerStatus" placeholder="全部" clearable @change="handleQuery">
+              <template #prefix><el-icon><Filter /></el-icon></template>
+              <el-option v-for="d in marketing_customer_status" :key="d.value" :label="d.label" :value="d.value" />
+            </el-select>
+          </div>
+        </div>
+      </div>
+      <div class="filter-actions">
+        <div class="filter-info">
+          <el-icon><Filter /></el-icon> 已选 {{ activeFilterCount }} 个条件，支持回车快速搜索
+        </div>
+        <div class="filter-buttons">
+          <el-button icon="RefreshLeft" @click="resetQuery">重置</el-button>
+          <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+        </div>
+      </div>
+    </div>
 
-    <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5"><el-button type="success" plain icon="Pointer" :disabled="multiple" @click="handleBatchClaim" v-hasPermi="['marketing:customer:claim']">批量领取</el-button></el-col>
-      <el-col :span="1.5"><el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['marketing:customer:export']">导出</el-button></el-col>
-      <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
-    </el-row>
+    <!-- ===== Table Section ===== -->
+    <div class="surface">
+      <!-- Status Tabs -->
+      <div class="status-tabs">
+        <div class="tabs-track">
+          <button class="status-tab" :class="{ 'is-active': activeStatusTab === 'all' }" @click="handleStatusTabClick('all')">
+            <span class="dot"></span><span>全部</span><span class="count">{{ statusCounts.all }}</span>
+          </button>
+          <button v-for="s in statusTabList" :key="s.value"
+            class="status-tab"
+            :class="[statusTabClass(s.value), { 'is-active': activeStatusTab === s.value }]"
+            @click="handleStatusTabClick(s.value)">
+            <span class="dot"></span><span>{{ s.label }}</span><span class="count">{{ statusCounts[s.value] || 0 }}</span>
+          </button>
+        </div>
+      </div>
 
-    <el-alert title="公海池中的客户暂无负责人，有权限的销售人员均可领取。领取后客户将自动分配给您。" type="info" :closable="false" class="mb8" />
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <div class="left">
+          <button type="button" class="btn-soft is-outline" :disabled="multiple" @click="handleBatchClaim" v-hasPermi="['marketing:customer:claim']">
+            <el-icon><Pointer /></el-icon> 批量领取
+          </button>
+          <div class="toolbar-divider"></div>
+          <button type="button" class="btn-soft is-outline" @click="handleExport" v-hasPermi="['marketing:customer:export']">
+            <el-icon><Download /></el-icon> 导出
+          </button>
+        </div>
+        <div class="right">
+          <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="mk_customer_pool_columns" />
+        </div>
+      </div>
 
-    <el-table border v-loading="loading" :data="list" @selection-change="handleSelectionChange">
-      <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="客户编号" prop="customerNo" width="150" />
-      <el-table-column label="企业名称" prop="customerName" show-overflow-tooltip>
-        <template #default="scope">
-          <el-button link type="primary" @click="handleView(scope.row)">{{ scope.row.customerName }}</el-button>
-        </template>
-      </el-table-column>
-      <el-table-column label="客户等级" prop="customerLevel" width="100" align="center">
-        <template #default="scope"><dict-tag :options="marketing_customer_level" :value="scope.row.customerLevel" /></template>
-      </el-table-column>
-      <el-table-column label="所属行业" prop="industry" width="120" align="center">
-        <template #default="scope"><dict-tag :options="marketing_industry" :value="scope.row.industry" /></template>
-      </el-table-column>
-      <el-table-column label="客户状态" prop="customerStatus" width="100" align="center">
-        <template #default="scope"><dict-tag :options="marketing_customer_status" :value="scope.row.customerStatus" /></template>
-      </el-table-column>
-      <el-table-column label="累计交易额" prop="totalAmount" width="120" align="right" />
-      <el-table-column label="最后更新" prop="updateTime" width="160" />
-      <el-table-column label="操作" width="180" align="center" fixed="right">
-        <template #default="scope">
-          <el-button link type="primary" icon="View" @click="handleView(scope.row)">详情</el-button>
-          <el-button link type="success" icon="Pointer" @click="handleClaim(scope.row)" v-hasPermi="['marketing:customer:claim']">领取</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
-    <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+      <!-- Table -->
+      <div class="table-wrap">
+        <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
+          <el-table-column type="selection" width="55" align="center" />
+          <el-table-column label="客户编号" prop="customerNo" key="customerNo" :width="colWidth('customerNo', 150)" resizable v-if="columns.customerNo.visible" />
+          <el-table-column label="企业名称" prop="customerName" key="customerName" show-overflow-tooltip v-if="columns.customerName.visible">
+            <template #default="scope">
+              <el-button link type="primary" @click="handleView(scope.row)">{{ scope.row.customerName }}</el-button>
+            </template>
+          </el-table-column>
+          <el-table-column label="客户等级" prop="customerLevel" key="customerLevel" :width="colWidth('customerLevel', 100)" resizable align="center" v-if="columns.customerLevel.visible">
+            <template #default="scope"><dict-tag :options="marketing_customer_level" :value="scope.row.customerLevel" /></template>
+          </el-table-column>
+          <el-table-column label="所属行业" prop="industry" key="industry" :width="colWidth('industry', 120)" resizable align="center" v-if="columns.industry.visible">
+            <template #default="scope"><dict-tag :options="marketing_industry" :value="scope.row.industry" /></template>
+          </el-table-column>
+          <el-table-column label="客户状态" prop="customerStatus" key="customerStatus" :width="colWidth('customerStatus', 100)" resizable align="center" v-if="columns.customerStatus.visible">
+            <template #default="scope">
+              <span class="badge" :class="badgeClass(scope.row.customerStatus)">
+                <span class="dot"></span>{{ statusLabel(scope.row.customerStatus) }}
+              </span>
+            </template>
+          </el-table-column>
+          <el-table-column label="累计交易额" prop="totalAmount" key="totalAmount" :width="colWidth('totalAmount', 120)" resizable align="right" v-if="columns.totalAmount.visible">
+            <template #default="scope"><span class="rd-amount">￥{{ formatAmount(scope.row.totalAmount) }}</span></template>
+          </el-table-column>
+          <el-table-column label="最后更新" prop="updateTime" key="updateTime" :width="colWidth('updateTime', 160)" resizable sortable="custom" v-if="columns.updateTime.visible" />
+          <el-table-column label="操作" width="180" align="center" fixed="right">
+            <template #default="scope">
+              <el-button link type="primary" icon="View" @click="handleView(scope.row)">详情</el-button>
+              <el-button link type="success" icon="Pointer" @click="handleClaim(scope.row)" v-hasPermi="['marketing:customer:claim']">领取</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+
+      <!-- Pagination -->
+      <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+    </div>
 
     <!-- 详情弹窗 -->
     <el-dialog v-model="viewOpen" width="900px" append-to-body draggable class="rd-dialog" @open="loadRelations">
@@ -181,7 +252,7 @@
                   <el-table-column label="商机名称" prop="opportunityName" show-overflow-tooltip />
                   <el-table-column label="销售阶段" prop="stageName" width="100" align="center" />
                   <el-table-column label="预计金额" prop="expectedAmount" width="120" align="right"><template #default="scope">￥{{ formatAmount(scope.row.expectedAmount) }}</template></el-table-column>
-                  <el-table-column label="商机状态" prop="opportunityStatus" width="100" align="center"><template #default="scope"><dict-tag :options="marketing_opportunity_status" :value="scope.row.opportunityStatus" /></template></el-table-column>
+                  <el-table-column label="商机状态" prop="opportunityStatus" width="100" align="center"><template #default="scope"><span class="badge" :class="oppBadgeClass(scope.row.opportunityStatus)"><span class="dot"></span>{{ oppStatusLabel(scope.row.opportunityStatus) }}</span></template></el-table-column>
                 </el-table>
                 <div class="rd-empty" v-else><svg class="rd-empty-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/></svg><p class="rd-empty-text">暂无商机</p></div>
               </div>
@@ -199,7 +270,7 @@
                   <el-table-column label="合同名称" prop="contractName" show-overflow-tooltip />
                   <el-table-column label="合同金额" prop="contractAmount" width="120" align="right"><template #default="scope">￥{{ formatAmount(scope.row.contractAmount) }}</template></el-table-column>
                   <el-table-column label="签订日期" prop="signDate" width="120" />
-                  <el-table-column label="合同状态" prop="contractStatus" width="100" align="center"><template #default="scope"><dict-tag :options="marketing_contract_status" :value="scope.row.contractStatus" /></template></el-table-column>
+                  <el-table-column label="合同状态" prop="contractStatus" width="100" align="center"><template #default="scope"><span class="badge" :class="contractBadgeClass(scope.row.contractStatus)"><span class="dot"></span>{{ contractStatusLabel(scope.row.contractStatus) }}</span></template></el-table-column>
                 </el-table>
                 <div class="rd-empty" v-else><svg class="rd-empty-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><p class="rd-empty-text">暂无合同</p></div>
               </div>
@@ -217,7 +288,7 @@
                   <el-table-column label="订单名称" prop="orderName" show-overflow-tooltip />
                   <el-table-column label="订单金额" prop="orderAmount" width="120" align="right"><template #default="scope">￥{{ formatAmount(scope.row.orderAmount) }}</template></el-table-column>
                   <el-table-column label="下单日期" prop="orderDate" width="120" />
-                  <el-table-column label="订单状态" prop="orderStatus" width="100" align="center"><template #default="scope"><dict-tag :options="marketing_order_status" :value="scope.row.orderStatus" /></template></el-table-column>
+                  <el-table-column label="订单状态" prop="orderStatus" width="100" align="center"><template #default="scope"><span class="badge" :class="orderBadgeClass(scope.row.orderStatus)"><span class="dot"></span>{{ orderStatusLabel(scope.row.orderStatus) }}</span></template></el-table-column>
                 </el-table>
                 <div class="rd-empty" v-else><svg class="rd-empty-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/></svg><p class="rd-empty-text">暂无订单</p></div>
               </div>
@@ -258,7 +329,7 @@
                   <el-table-column label="活动名称" prop="activityName" show-overflow-tooltip />
                   <el-table-column label="联系人" prop="contactName" width="100" />
                   <el-table-column label="企业名称" prop="companyName" width="180" show-overflow-tooltip />
-                  <el-table-column label="参与状态" prop="participateStatus" width="100" align="center"><template #default="scope"><dict-tag :options="marketing_participate_status" :value="scope.row.participateStatus" /></template></el-table-column>
+                  <el-table-column label="参与状态" prop="participateStatus" width="100" align="center"><template #default="scope"><span class="badge" :class="partBadgeClass(scope.row.participateStatus)"><span class="dot"></span>{{ partStatusLabel(scope.row.participateStatus) }}</span></template></el-table-column>
                   <el-table-column label="签到时间" prop="signTime" width="160" />
                 </el-table>
                 <div class="rd-empty" v-else><svg class="rd-empty-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg><p class="rd-empty-text">暂无活动参与记录</p></div>
@@ -268,11 +339,47 @@
         </el-tabs>
       </div>
     </el-dialog>
+
+    <!-- 业务操作说明对话框 -->
+    <el-dialog v-model="showStatusHelp" title="客户公海业务操作说明" width="720px" append-to-body>
+      <div class="status-help-content">
+        <h4>一、业务流程图</h4>
+        <div class="status-flow">
+          <div class="flow-item">
+            <el-tag type="info">负责人释放</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="warning">公海池</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="primary">销售领取</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="success">自动分配</el-tag>
+          </div>
+        </div>
+
+        <h4>二、重点业务规则</h4>
+        <div class="highlight-card">
+          <p>• <strong>数据来源：</strong>客户管理中负责人主动释放客户到公海，或新增客户时未指定负责人</p>
+          <p>• <strong>领取机制：</strong>有权限的销售人员均可领取公海客户，领取后客户自动分配给领取人</p>
+          <p>• <strong>批量领取：</strong>支持批量选择多个公海客户一次性领取</p>
+          <p>• <strong>详情查看：</strong>点击客户名称可查看完整客户信息及关联数据（联系人、商机、合同等）</p>
+        </div>
+      </div>
+      <template #footer>
+        <el-button type="primary" @click="showStatusHelp = false">我知道了</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup name="MkCustomerPool">
 import { listPublicPool, getCustomer, claimCustomer } from '@/api/mk/customer'
+import { ArrowRight, QuestionFilled } from '@element-plus/icons-vue'
 import { listContact } from '@/api/mk/contact'
 import { listOpportunity } from '@/api/mk/opportunity'
 import { listContract } from '@/api/mk/contract'
@@ -280,9 +387,11 @@ import { listOrder } from '@/api/mk/order'
 import { listInteraction } from '@/api/mk/interaction'
 import { listParticipant } from '@/api/mk/participant'
 import { useDetailCard } from '@/composables/useDetailCard'
+import { useColumnResize } from '@/composables/useColumnResize'
 const { collapsedCards, toggleCard } = useDetailCard(["v_basic", "v_company", "v_business", "v_owner", "v_other", "v_action", "v_contacts", "v_opportunities", "v_contracts", "v_orders", "v_interactions", "v_activities"])
 
 const { proxy } = getCurrentInstance()
+const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('mk_customer_pool')
 const { marketing_customer_level, marketing_customer_source, marketing_industry, marketing_company_size, marketing_customer_status, marketing_opportunity_status, marketing_contract_status, marketing_order_status, marketing_interaction_type, marketing_participate_status } = proxy.useDict('marketing_customer_level', 'marketing_customer_source', 'marketing_industry', 'marketing_company_size', 'marketing_customer_status', 'marketing_opportunity_status', 'marketing_contract_status', 'marketing_order_status', 'marketing_interaction_type', 'marketing_participate_status')
 
 const list = ref([])
@@ -305,9 +414,76 @@ const interactions = ref([])
 const activities = ref([])
 
 const data = reactive({
-  queryParams: { pageNum: 1, pageSize: 10, customerNo: undefined, customerName: undefined, customerLevel: undefined }
+  queryParams: { pageNum: 1, pageSize: 10, customerNo: undefined, customerName: undefined, customerLevel: undefined, customerStatus: undefined, params: {} }
 })
 const { queryParams } = toRefs(data)
+
+// 列显隐配置 - 从 localStorage 恢复保存的设置
+const defaultColumns = {
+  customerNo: { label: '客户编号', visible: true },
+  customerName: { label: '企业名称', visible: true },
+  customerLevel: { label: '客户等级', visible: true },
+  industry: { label: '所属行业', visible: true },
+  customerStatus: { label: '客户状态', visible: true },
+  totalAmount: { label: '累计交易额', visible: true },
+  updateTime: { label: '最后更新', visible: true }
+}
+
+function loadColumnVisibility() {
+  try {
+    const saved = localStorage.getItem('mk_customer_pool_columns')
+    if (saved) {
+      const parsed = JSON.parse(saved)
+      const result = {}
+      Object.keys(defaultColumns).forEach(key => {
+        result[key] = {
+          label: defaultColumns[key].label,
+          visible: parsed[key] !== undefined ? parsed[key] : defaultColumns[key].visible
+        }
+      })
+      return result
+    }
+  } catch (e) {}
+  return { ...defaultColumns }
+}
+
+const columns = ref(loadColumnVisibility())
+
+const activeFilterCount = computed(() => {
+  let count = 0
+  if (queryParams.value.customerNo) count++
+  if (queryParams.value.customerName) count++
+  if (queryParams.value.customerLevel) count++
+  if (queryParams.value.customerStatus) count++
+  return count
+})
+
+const showAdvanced = ref(false)
+const activeStatusTab = ref('all')
+const statusCounts = ref({ all: 0 })
+const statusTabList = computed(() => marketing_customer_status.value)
+function loadStatusCounts() {
+  const counts = { all: 0 }
+  marketing_customer_status.value.forEach(d => { counts[d.value] = 0 })
+  list.value.forEach(row => {
+    const s = row.customerStatus
+    if (counts[s] !== undefined) counts[s]++
+  })
+  counts.all = total.value
+  statusCounts.value = counts
+}
+function handleStatusTabClick(status) { activeStatusTab.value = status; queryParams.value.customerStatus = status === 'all' ? undefined : status; handleQuery() }
+function badgeClass(status) { const map = { '0': 'green', '1': 'amber', '2': 'red', '3': 'blue', '4': 'gray' }; return map[status] || 'gray' }
+function statusLabel(status) { const item = marketing_customer_status.value.find(d => d.value == status); return item ? item.label : '-' }
+function oppBadgeClass(status) { const map = { '0': 'amber', '1': 'blue', '2': 'green', '3': 'violet', '4': 'gray', '5': 'red' }; return map[status] || 'gray' }
+function oppStatusLabel(status) { const item = marketing_opportunity_status.value.find(d => d.value == status); return item ? item.label : '-' }
+function contractBadgeClass(status) { const map = { '0': 'amber', '1': 'blue', '2': 'green', '3': 'green', '4': 'gray', '5': 'red', '6': 'violet' }; return map[status] || 'gray' }
+function contractStatusLabel(status) { const item = marketing_contract_status.value.find(d => d.value == status); return item ? item.label : '-' }
+function orderBadgeClass(status) { const map = { '0': 'amber', '1': 'blue', '2': 'green', '3': 'green', '4': 'gray', '5': 'red' }; return map[status] || 'gray' }
+function orderStatusLabel(status) { const item = marketing_order_status.value.find(d => d.value == status); return item ? item.label : '-' }
+function partBadgeClass(status) { const map = { '0': 'amber', '1': 'green', '2': 'gray' }; return map[status] || 'gray' }
+function partStatusLabel(status) { const item = marketing_participate_status.value.find(d => d.value == status); return item ? item.label : '-' }
+function statusTabClass(value) { const map = { '0': 'tab-approved', '1': 'tab-draft', '2': 'tab-reject', '3': 'tab-audit', '4': 'tab-void' }; return map[value] || '' }
 
 function getList() {
   loading.value = true
@@ -315,12 +491,15 @@ function getList() {
     list.value = res.rows
     total.value = res.total
     loading.value = false
+    loadStatusCounts()
+    applySavedWidths()
   }).catch(() => {
     loading.value = false
   })
 }
-function handleQuery() { queryParams.value.pageNum = 1; getList() }
-function resetQuery() { proxy.resetForm('queryRef'); handleQuery() }
+function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
+function resetQuery() { queryParams.value.customerNo = undefined; queryParams.value.customerName = undefined; queryParams.value.customerLevel = undefined; queryParams.value.customerStatus = undefined; queryParams.value.params = {}; activeStatusTab.value = 'all'; handleQuery() }
+function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.customerId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function handleExport() { proxy.download('mk/customer/export', { ...queryParams.value }, `public_pool_${new Date().getTime()}.xlsx`) }
 
@@ -380,9 +559,58 @@ function handleBatchClaim() {
   }).catch(() => {})
 }
 
+const showStatusHelp = ref(false)
+
 getList()
 </script>
 
 <style scoped>
 .mb8 { margin-bottom: 8px; }
+
+.status-help-content {
+  max-height: 500px;
+  overflow-y: auto;
+  padding-right: 10px;
+}
+.status-help-content h4 {
+  margin: 20px 0 12px 0;
+  color: #303133;
+  font-weight: 600;
+  border-left: 4px solid #409eff;
+  padding-left: 10px;
+}
+.status-help-content h4:first-child {
+  margin-top: 0;
+}
+.status-help-content .status-flow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 16px;
+  background-color: #f5f7fa;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+.status-help-content .flow-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.status-help-content .flow-arrow {
+  color: #909399;
+  font-size: 16px;
+}
+.status-help-content .highlight-card {
+  background-color: #ecf5ff;
+  border-radius: 8px;
+  padding: 16px;
+  border-left: 4px solid #409eff;
+}
+.status-help-content .highlight-card p {
+  margin: 6px 0;
+  line-height: 1.6;
+  font-size: 13px;
+  color: #606266;
+}
 </style>

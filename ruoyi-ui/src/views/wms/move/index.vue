@@ -1,39 +1,133 @@
 <template>
-  <div class="app-container">
-    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch">
-      <el-form-item label="移库单号" prop="moveNo"><el-input v-model="queryParams.moveNo" placeholder="请输入" clearable style="width: 200px" @keyup.enter="handleQuery" /></el-form-item>
-      <el-form-item label="状态" prop="status"><el-select v-model="queryParams.status" placeholder="请选择" clearable style="width: 200px"><el-option v-for="d in wms_move_status" :key="d.value" :label="d.label" :value="d.value" /></el-select></el-form-item>
-      <el-form-item><el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button><el-button icon="Refresh" @click="resetQuery">重置</el-button></el-form-item>
-    </el-form>
-    <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5"><el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['wms:move:add']">新增</el-button></el-col>
-      <el-col :span="1.5"><el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['wms:move:remove']">删除</el-button></el-col>
-      <el-col :span="1.5"><el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['wms:move:export']">导出</el-button></el-col>
-      <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
-    </el-row>
-    <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
-      <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="移库单号" prop="moveNo" :width="colWidth('moveNo', 160)" resizable />
-      <el-table-column label="仓库" prop="warehouseName" :width="colWidth('warehouseName', 120)" resizable />
-      <el-table-column label="物料编码" prop="materialCode" :width="colWidth('materialCode', 120)" resizable />
-      <el-table-column label="物料名称" prop="materialName" :width="colWidth('materialName', 200)" resizable show-overflow-tooltip />
-      <el-table-column label="单位" prop="unit" :width="colWidth('unit', 70)" resizable align="center"><template #default="scope"><dict-tag :options="wms_unit" :value="scope.row.unit" /></template></el-table-column>
-      <el-table-column label="批次号" prop="batchNo" :width="colWidth('batchNo', 100)" resizable />
-      <el-table-column label="源库位" prop="fromLocationName" :width="colWidth('fromLocationName', 180)" resizable show-overflow-tooltip />
-      <el-table-column label="目标库位" prop="toLocationName" :width="colWidth('toLocationName', 180)" resizable show-overflow-tooltip />
-      <el-table-column label="移库数量" prop="moveQty" :width="colWidth('moveQty', 100)" resizable align="right" />
-      <el-table-column label="状态" prop="status" :width="colWidth('status', 100)" resizable align="center"><template #default="scope"><dict-tag :options="wms_move_status" :value="scope.row.status" /></template></el-table-column>
-      <el-table-column label="操作" width="300" align="center" fixed="right">
-        <template #default="scope">
-          <el-button link type="primary" icon="View" @click="handleDetail(scope.row)" v-hasPermi="['wms:move:query']">详情</el-button>
-          <el-button link type="primary" icon="Check" @click="handleApprove(scope.row)" v-if="scope.row.status === '0'" v-hasPermi="['wms:move:edit']">审批</el-button>
-          <el-button link type="primary" icon="Sort" @click="handleExecute(scope.row)" v-if="scope.row.status === '1'" v-hasPermi="['wms:move:edit']">执行</el-button>
-          <el-button link type="warning" icon="CircleClose" @click="handleVoid(scope.row)" v-if="scope.row.status === '0' || scope.row.status === '1'" v-hasPermi="['wms:move:edit']">作废</el-button>
-          <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-if="scope.row.status === '0' || scope.row.status === '3' || scope.row.status === '4'" v-hasPermi="['wms:move:remove']">删除</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
-    <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+  <div class="app-container wms-list-page">
+    <!-- ===== Filter Card ===== -->
+    <div class="surface filter-card" v-show="showSearch">
+      <div class="filter-head">
+        <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+        <a class="adv-link" :class="{ 'is-open': showAdvanced }" @click.prevent="showAdvanced = !showAdvanced">
+          <span>{{ showAdvanced ? '收起' : '高级筛选' }}</span>
+          <el-icon class="chev"><ArrowDown /></el-icon>
+        </a>
+      </div>
+      <div class="filter-bar">
+        <div class="field">
+          <label>移库单号</label>
+          <div class="control">
+            <el-input v-model="queryParams.moveNo" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field">
+          <label>目标仓库</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.warehouseId" placeholder="全部" clearable filterable @change="handleQuery">
+              <el-option v-for="w in warehouseOptions" :key="w.warehouseId" :label="w.warehouseName" :value="w.warehouseId" />
+            </el-select>
+          </div>
+        </div>
+        <div class="field">
+          <label>物料编码</label>
+          <div class="control">
+            <el-input v-model="queryParams.materialCode" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field">
+          <label>状态</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleStatusChange">
+              <el-option v-for="d in wms_move_status" :key="d.value" :label="d.label" :value="d.value" />
+            </el-select>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>物料名称</label>
+          <div class="control">
+            <el-input v-model="queryParams.materialName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced" style="grid-column: span 2">
+          <label>创建时间</label>
+          <div class="control">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" @change="handleQuery" />
+          </div>
+        </div>
+      </div>
+      <div class="filter-actions">
+        <div class="filter-info">
+          <el-icon><Filter /></el-icon> 已选 {{ activeFilterCount }} 个条件，支持回车快速搜索
+        </div>
+        <div class="filter-buttons">
+          <el-button icon="RefreshLeft" @click="resetQuery">重置</el-button>
+          <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== Table Section ===== -->
+    <div class="surface">
+      <!-- Status Tabs -->
+      <div class="status-tabs">
+        <div class="tabs-track">
+          <button class="status-tab" :class="{ 'is-active': activeStatusTab === 'all' }" @click="handleStatusTabClick('all')">
+            <span class="dot"></span><span>全部</span><span class="count">{{ statusCounts.all || 0 }}</span>
+          </button>
+          <button v-for="s in statusTabList" :key="s.value" class="status-tab" :class="[statusTabClass(s.value), { 'is-active': activeStatusTab === s.value }]" @click="handleStatusTabClick(s.value)">
+            <span class="dot"></span><span>{{ s.label }}</span><span class="count">{{ statusCounts[s.value] || 0 }}</span>
+          </button>
+        </div>
+        <button class="tip-pill" @click="showStatusHelp = true">
+          <el-icon><WarningFilled /></el-icon><span>业务操作说明</span>
+        </button>
+      </div>
+
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <div class="left">
+          <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['wms:move:add']">新增</el-button>
+          <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['wms:move:remove']">删除</el-button>
+          <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['wms:move:export']">导出</el-button>
+        </div>
+        <div class="right">
+          <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="wms_move_columns" />
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="table-wrap">
+        <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" class="app-table">
+          <el-table-column type="selection" width="55" align="center" />
+          <el-table-column label="移库单号" prop="moveNo" key="moveNo" :width="colWidth('moveNo', 160)" resizable v-if="columns.moveNo.visible" />
+          <el-table-column label="仓库" prop="warehouseName" key="warehouseName" :width="colWidth('warehouseName', 120)" resizable v-if="columns.warehouseName.visible" />
+          <el-table-column label="物料编码" prop="materialCode" key="materialCode" :width="colWidth('materialCode', 120)" resizable v-if="columns.materialCode.visible" />
+          <el-table-column label="物料名称" prop="materialName" key="materialName" :width="colWidth('materialName', 200)" resizable :show-overflow-tooltip="true" v-if="columns.materialName.visible" />
+          <el-table-column label="单位" prop="unit" key="unit" :width="colWidth('unit', 70)" resizable align="center" v-if="columns.unit.visible"><template #default="scope"><dict-tag :options="wms_unit" :value="scope.row.unit" /></template></el-table-column>
+          <el-table-column label="批次号" prop="batchNo" key="batchNo" :width="colWidth('batchNo', 100)" resizable v-if="columns.batchNo.visible" />
+          <el-table-column label="源库位" prop="fromLocationName" key="fromLocationName" :width="colWidth('fromLocationName', 180)" resizable :show-overflow-tooltip="true" v-if="columns.fromLocationName.visible" />
+          <el-table-column label="目标库位" prop="toLocationName" key="toLocationName" :width="colWidth('toLocationName', 180)" resizable :show-overflow-tooltip="true" v-if="columns.toLocationName.visible" />
+          <el-table-column label="移库数量" prop="moveQty" key="moveQty" :width="colWidth('moveQty', 100)" resizable align="right" class-name="col-num" v-if="columns.moveQty.visible" />
+          <el-table-column label="状态" prop="status" key="status" :width="colWidth('status', 120)" resizable align="center" v-if="columns.status.visible">
+            <template #default="scope"><span class="badge" :class="badgeClass(scope.row.status)"><span class="dot"></span>{{ statusLabel(scope.row.status) }}</span></template>
+          </el-table-column>
+          <el-table-column label="操作" width="300" align="center" fixed="right">
+            <template #default="scope">
+              <el-button link type="primary" icon="View" @click="handleDetail(scope.row)" v-hasPermi="['wms:move:query']">详情</el-button>
+              <el-button link type="primary" icon="Check" @click="handleApprove(scope.row)" v-if="scope.row.status === '0'" v-hasPermi="['wms:move:edit']">审批</el-button>
+              <el-button link type="primary" icon="Sort" @click="handleExecute(scope.row)" v-if="scope.row.status === '1'" v-hasPermi="['wms:move:edit']">执行</el-button>
+              <el-button link type="warning" icon="CircleClose" @click="handleVoid(scope.row)" v-if="scope.row.status === '0' || scope.row.status === '1'" v-hasPermi="['wms:move:edit']">作废</el-button>
+              <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-if="scope.row.status === '0' || scope.row.status === '3' || scope.row.status === '4'" v-hasPermi="['wms:move:remove']">删除</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+      <div class="pagination-container">
+        <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+      </div>
+    </div>
 
     <!-- 新增/编辑弹窗 -->
     <el-dialog v-model="open" width="720px" append-to-body draggable class="rd-dialog">
@@ -335,6 +429,96 @@
         <el-button @click="approveOpen = false">取 消</el-button>
       </template>
     </el-dialog>
+
+    <!-- 业务操作说明对话框 -->
+    <el-dialog v-model="showStatusHelp" title="移库管理业务操作说明" width="720px" append-to-body>
+      <div class="status-help-content">
+        <h4>一、状态流转图</h4>
+        <div class="status-flow">
+          <div class="flow-item">
+            <el-tag type="info">待审批</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="primary">已批准</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="success">已完成</el-tag>
+          </div>
+        </div>
+        <div class="status-flow" style="margin-top: 8px;">
+          <div class="flow-item">
+            <el-tag type="info">待审批</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+            <el-tag type="danger">已驳回</el-tag>
+            <el-tag size="small" type="info">退回重新提交</el-tag>
+          </div>
+          <div class="flow-item">
+            <el-tag type="danger">已作废</el-tag>
+            <el-tag size="small" type="info">待审批/已批准可作废</el-tag>
+          </div>
+        </div>
+
+        <h4>二、各状态说明</h4>
+        <el-descriptions :column="1" border>
+          <el-descriptions-item label="待审批">新建移库单后的初始状态，可编辑、删除、审批、作废。审批通过后进入「已批准」状态</el-descriptions-item>
+          <el-descriptions-item label="已批准">审批通过的移库单，可执行移库操作或作废</el-descriptions-item>
+          <el-descriptions-item label="已完成">执行移库后完成，系统自动更新源库位和目标库位的库存</el-descriptions-item>
+          <el-descriptions-item label="已驳回">审批驳回后回退为待审批状态，可修改后重新提交</el-descriptions-item>
+          <el-descriptions-item label="已作废">移库单已作废，不再有效</el-descriptions-item>
+        </el-descriptions>
+
+        <h4>三、重点业务规则</h4>
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <div class="highlight-card highlight-primary">
+              <div class="highlight-card-title">库存物料选择</div>
+              <div class="highlight-card-body">选择仓库后自动加载该仓库可用库存，选择库存物料后自动带出<strong>物料编码、名称、批次号、源库位、可用数量</strong>等信息</div>
+            </div>
+          </el-col>
+          <el-col :span="12">
+            <div class="highlight-card highlight-warning">
+              <div class="highlight-card-title">目标库位限制</div>
+              <div class="highlight-card-body">目标库位<strong>不能与源库位相同</strong>，移库数量不能超过可用库存数量。系统自动排除源库位</div>
+            </div>
+          </el-col>
+        </el-row>
+        <el-row :gutter="16" style="margin-top: 12px;">
+          <el-col :span="12">
+            <div class="highlight-card highlight-success">
+              <div class="highlight-card-title">审批流程</div>
+              <div class="highlight-card-body">移库单需经过<strong>审批通过</strong>后才能执行。审批时可填写审批意见，支持通过和驳回</div>
+            </div>
+          </el-col>
+          <el-col :span="12">
+            <div class="highlight-card highlight-danger">
+              <div class="highlight-card-title">库存自动更新</div>
+              <div class="highlight-card-body">执行移库后系统自动<strong>减少源库位库存、增加目标库位库存</strong>，无需手动维护库存</div>
+            </div>
+          </el-col>
+        </el-row>
+
+        <h4>四、业务操作流程</h4>
+        <el-timeline>
+          <el-timeline-item type="primary" :hollow="true">
+            <strong>新建移库单：</strong>选择仓库和库存物料，系统自动带出源库位和可用数量，填写移库数量和目标库位
+          </el-timeline-item>
+          <el-timeline-item type="warning" :hollow="true">
+            <strong>审批移库单：</strong>在列表中点击「审批」按钮，查看移库详情并填写审批意见，通过或驳回
+          </el-timeline-item>
+          <el-timeline-item type="success" :hollow="true">
+            <strong>执行移库：</strong>审批通过后点击「执行」按钮，系统自动完成库位间库存转移
+          </el-timeline-item>
+          <el-timeline-item type="info" :hollow="true">
+            <strong>作废移库单：</strong>待审批或已批准状态的移库单可作废，作废后不可恢复
+          </el-timeline-item>
+        </el-timeline>
+      </div>
+      <template #footer>
+        <el-button type="primary" @click="showStatusHelp = false">我知道了</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -344,15 +528,21 @@ import { listWarehouse, listLocation } from '@/api/wms/warehouse'
 import { listInventory } from '@/api/wms/inventory'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
+import { ArrowRight, ArrowDown, QuestionFilled, WarningFilled, Filter, Search } from '@element-plus/icons-vue'
 const { collapsedCards, toggleCard } = useDetailCard(['basic', 'move', 'other', 'dBasic', 'dMaterial', 'dLocation', 'dApprove', 'dOther', 'aBasic', 'aMaterial', 'aLocation', 'aOpinion'])
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('wms_move_index')
 const { wms_move_status, wms_unit } = proxy.useDict('wms_move_status', 'wms_unit')
-const list = ref([]); const open = ref(false); const loading = ref(true); const showSearch = ref(true); const ids = ref([]); const multiple = ref(true); const total = ref(0); const title = ref('')
-const warehouseOptions = ref([]); const inventoryOptions = ref([]); const allLocationOptions = ref([]); const detailOpen = ref(false); const detailData = ref({}); const approveOpen = ref(false); const approveForm = ref({})
+const list = ref([]); const open = ref(false); const loading = ref(true); const showSearch = ref(true); const showAdvanced = ref(false); const ids = ref([]); const multiple = ref(true); const total = ref(0); const title = ref(''); const activeStatusTab = ref('all'); const statusCounts = ref({ all: 0 }); const dateRange = ref([])
+const warehouseOptions = ref([]); const inventoryOptions = ref([]); const allLocationOptions = ref([]); const detailOpen = ref(false); const detailData = ref({}); const approveOpen = ref(false); const approveForm = ref({}); const showStatusHelp = ref(false)
+const defaultColumns = { moveNo: { label: '移库单号', visible: true }, warehouseName: { label: '仓库', visible: true }, materialCode: { label: '物料编码', visible: true }, materialName: { label: '物料名称', visible: true }, unit: { label: '单位', visible: true }, batchNo: { label: '批次号', visible: true }, fromLocationName: { label: '源库位', visible: true }, toLocationName: { label: '目标库位', visible: true }, moveQty: { label: '移库数量', visible: true }, status: { label: '状态', visible: true } }
+function loadColumnVisibility() { try { const saved = localStorage.getItem('wms_move_columns'); if (saved) { const parsed = JSON.parse(saved); const result = {}; Object.keys(defaultColumns).forEach(key => { result[key] = { label: defaultColumns[key].label, visible: parsed[key] !== undefined ? parsed[key] : defaultColumns[key].visible } }); return result } } catch (e) {} return { ...defaultColumns } }
+const columns = ref(loadColumnVisibility())
+const activeFilterCount = computed(() => { let count = 0; if (queryParams.value.moveNo) count++; if (queryParams.value.warehouseId) count++; if (queryParams.value.materialCode) count++; if (queryParams.value.materialName) count++; if (queryParams.value.status) count++; if (dateRange.value && dateRange.value.length > 0) count++; return count })
+const statusTabList = computed(() => wms_move_status.value)
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, moveNo: undefined, status: undefined },
+  queryParams: { pageNum: 1, pageSize: 10, moveNo: undefined, warehouseId: undefined, materialCode: undefined, materialName: undefined, status: undefined },
   rules: {
     warehouseId: [{ required: true, message: '仓库不能为空', trigger: 'change' }],
     inventoryId: [{ required: true, message: '请选择库存物料', trigger: 'change' }],
@@ -368,9 +558,9 @@ const targetLocationOptions = computed(() => {
   return allLocationOptions.value.filter(l => l.warehouseId !== form.value.fromLocationId)
 })
 
-function getList() { loading.value = true; listMove(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false }) }
+function getList() { loading.value = true; listMove(proxy.addDateRange(queryParams.value, dateRange.value)).then(res => { list.value = res.rows; total.value = res.total; loading.value = false; applySavedWidths() }) }
 function handleQuery() { queryParams.value.pageNum = 1; getList() }
-function resetQuery() { proxy.resetForm('queryRef'); handleQuery() }
+function resetQuery() { queryParams.value.moveNo = undefined; queryParams.value.warehouseId = undefined; queryParams.value.materialCode = undefined; queryParams.value.materialName = undefined; queryParams.value.status = undefined; queryParams.value.params = {}; dateRange.value = []; activeStatusTab.value = 'all'; handleQuery() }
 function handleSelectionChange(sel) { ids.value = sel.map(i => i.moveId); multiple.value = !sel.length }
 function reset() {
   form.value = { warehouseId: undefined, inventoryId: undefined, materialId: undefined, unit: undefined, batchNo: undefined, fromLocationId: undefined, fromLocationCode: undefined, fromLocationName: undefined, toLocationId: undefined, toLocationCode: undefined, toLocationName: undefined, moveQty: 0, availableQty: 0, remark: undefined }
@@ -414,7 +604,13 @@ function confirmApprove(passed) {
 }
 function handleExecute(row) { proxy.$modal.confirm('确认执行移库？').then(() => executeMove(row.moveId)).then(() => { getList(); proxy.$modal.msgSuccess('执行完成') }).catch(() => {}) }
 function handleVoid(row) { proxy.$modal.confirm('确认作废该移库单？作废后不可恢复').then(() => voidMove(row.moveId)).then(() => { getList(); proxy.$modal.msgSuccess('已作废') }).catch(() => {}) }
-function handleExport() { proxy.download('wms/move/export', { ...queryParams.value }, `move_${new Date().getTime()}.xlsx`) }
+function handleExport() { proxy.download('wms/move/export', { ...proxy.addDateRange(queryParams.value, dateRange.value) }, `move_${new Date().getTime()}.xlsx`) }
+function badgeClass(status) { const map = { '0': 'amber', '1': 'blue', '2': 'green', '3': 'red', '4': 'gray' }; return map[status] || 'gray' }
+function statusLabel(status) { const item = wms_move_status.value.find(d => d.value == status); return item ? item.label : '-' }
+function statusTabClass(value) { const map = { '0': 'tab-draft', '1': 'tab-audit', '2': 'tab-done', '3': 'tab-reject', '4': 'tab-void' }; return map[value] || '' }
+function handleStatusTabClick(status) { activeStatusTab.value = status; queryParams.value.status = status === 'all' ? undefined : status; handleQuery() }
+function handleStatusChange(val) { activeStatusTab.value = val ? val : 'all'; handleQuery() }
+function loadStatusCounts() { listMove({ pageNum: 1, pageSize: 999 }).then(res => { const counts = { all: res.total }; (res.rows || []).forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++ }); statusCounts.value = counts }).catch(() => {}) }
 function handleDelete(row) { const moveIds = row.moveId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delMove(moveIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
 function cancel() { open.value = false; reset() }
 function handleDetail(row) { getMove(row.moveId).then(res => { detailData.value = res.data; detailOpen.value = true }) }
@@ -473,4 +669,26 @@ function onInventoryChange(inventoryId) {
 
 listWarehouse({ status: '0', pageSize: 999 }).then(res => { warehouseOptions.value = res.rows })
 getList()
+loadStatusCounts()
 </script>
+
+<style scoped>
+/* 页面特定样式 - 列表页面共享样式见 wms-list-page.scss */
+.status-help-content { max-height: 500px; overflow-y: auto; padding-right: 10px; }
+.status-help-content h4 { margin: 20px 0 12px 0; color: #303133; font-weight: 600; border-left: 4px solid #409eff; padding-left: 10px; }
+.status-help-content h4:first-child { margin-top: 0; }
+.status-flow { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 16px; background-color: #f5f7fa; border-radius: 8px; margin-bottom: 8px; }
+.flow-item { display: flex; align-items: center; gap: 8px; }
+.flow-arrow { color: #909399; font-size: 16px; }
+.highlight-card { border-radius: 8px; padding: 16px; border: 1px solid; }
+.highlight-success { background-color: #f0f9ff; border-color: #b3e19d; }
+.highlight-danger { background-color: #fef0f0; border-color: #fbc4c4; }
+.highlight-primary { background-color: #ecf5ff; border-color: #a0cfff; }
+.highlight-warning { background-color: #fdf6ec; border-color: #f5dab1; }
+.highlight-card-title { font-size: 14px; font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; }
+.highlight-success .highlight-card-title { color: #67c23a; }
+.highlight-danger .highlight-card-title { color: #f56c6c; }
+.highlight-primary .highlight-card-title { color: #409eff; }
+.highlight-warning .highlight-card-title { color: #e6a23c; }
+.highlight-card-body { font-size: 13px; color: #606266; line-height: 1.6; }
+</style>

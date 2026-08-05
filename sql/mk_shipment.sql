@@ -26,8 +26,9 @@ CREATE TABLE `mk_shipment` (
   `receiver_phone`    VARCHAR(50)   DEFAULT NULL             COMMENT '收货电话',
   `receiver_address`  VARCHAR(500)  DEFAULT NULL             COMMENT '收货地址',
   `shipper_id`        BIGINT(20)    DEFAULT NULL             COMMENT '发货人ID',
-  `shipper_name`      VARCHAR(50)   DEFAULT NULL             COMMENT '发货人姓名',
-  `del_flag`          CHAR(1)       DEFAULT '0'              COMMENT '删除标志（0存在 2删除）',
+  `shipper_name`       VARCHAR(50)   DEFAULT NULL             COMMENT '发货人姓名',
+  `outbound_order_no` VARCHAR(50)   DEFAULT NULL             COMMENT '出库单号（手动填写，关联仓库出库单）',
+  `del_flag`           CHAR(1)       DEFAULT '0'              COMMENT '删除标志（0存在 2删除）',
   `create_by`         VARCHAR(64)   DEFAULT ''               COMMENT '创建者',
   `create_time`       DATETIME                               COMMENT '创建时间',
   `update_by`         VARCHAR(64)   DEFAULT ''               COMMENT '更新者',
@@ -118,3 +119,10 @@ INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component,
 -- =============================================
 INSERT INTO sys_role_menu (role_id, menu_id) VALUES
 (1, 4107), (1, 4171), (1, 4172), (1, 4173), (1, 4174), (1, 4175), (1, 4176), (1, 4177);
+
+-- =============================================
+-- 八、增量更新：给发货主表增加出库单号字段（适用于已有数据库）
+-- =============================================
+SET @col_exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'mk_shipment' AND COLUMN_NAME = 'outbound_order_no');
+SET @sql = IF(@col_exists = 0, 'ALTER TABLE `mk_shipment` ADD COLUMN `outbound_order_no` VARCHAR(50) DEFAULT NULL COMMENT ''出库单号（手动填写，关联仓库出库单）'' AFTER `shipper_name`', 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;

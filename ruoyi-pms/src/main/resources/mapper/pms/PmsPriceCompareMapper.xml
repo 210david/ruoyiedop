@@ -66,6 +66,16 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="inquiryNo != null and inquiryNo != ''">
             AND i.inquiry_no like concat('%', #{inquiryNo}, '%')
         </if>
+        <if test="params.awardFlag != null and params.awardFlag != ''">
+            <choose>
+                <when test="params.awardFlag == '1'.toString()">
+                    AND i.award_supplier_id IS NOT NULL AND q.supplier_id = i.award_supplier_id
+                </when>
+                <otherwise>
+                    AND (i.award_supplier_id IS NULL OR q.supplier_id != i.award_supplier_id)
+                </otherwise>
+            </choose>
+        </if>
         order by qd.material_code, qd.price asc, q.create_time desc
     </select>
 

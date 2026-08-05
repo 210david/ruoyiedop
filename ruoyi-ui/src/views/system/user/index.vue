@@ -1,49 +1,82 @@
 <template>
-  <div class="app-container tree-sidebar-manage-wrap">
+  <div class="app-container tree-sidebar-manage-wrap sys-user-page">
     <tree-panel title="组织机构" :tree-data="deptOptions" search-placeholder="请输入部门名称" storage-key="dept-sidebar-width" :defaultExpandAll="true" @node-click="handleNodeClick" @refresh="getDeptTree" ref="deptTreeRef" />
     <div class="tree-sidebar-content">
       <div class="content-inner">
-        <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="68px">
-          <el-form-item label="用户名称" prop="userName">
-            <el-input v-model="queryParams.userName" placeholder="请输入用户名称" clearable style="width: 240px" @keyup.enter="handleQuery" />
-          </el-form-item>
-          <el-form-item label="手机号码" prop="phonenumber">
-            <el-input v-model="queryParams.phonenumber" placeholder="请输入手机号码" clearable style="width: 240px" @keyup.enter="handleQuery" />
-          </el-form-item>
-          <el-form-item label="状态" prop="status">
-            <el-select v-model="queryParams.status" placeholder="用户状态" clearable style="width: 240px">
-              <el-option v-for="dict in sys_normal_disable" :key="dict.value" :label="dict.label" :value="dict.value" />
-            </el-select>
-          </el-form-item>
-          <el-form-item label="创建时间" style="width: 308px">
-            <el-date-picker v-model="dateRange" value-format="YYYY-MM-DD" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期"></el-date-picker>
-          </el-form-item>
-          <el-form-item>
-            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-          </el-form-item>
-        </el-form>
+        <!-- Filter Card -->
+        <div class="surface filter-card" v-show="showSearch">
+          <div class="filter-head">
+            <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+          </div>
+          <div class="filter-bar">
+            <div class="field">
+              <label>用户名称</label>
+              <div class="control">
+                <el-input v-model="queryParams.userName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+                  <template #prefix><el-icon><Search /></el-icon></template>
+                </el-input>
+              </div>
+            </div>
+            <div class="field">
+              <label>手机号码</label>
+              <div class="control">
+                <el-input v-model="queryParams.phonenumber" placeholder="请输入" clearable @keyup.enter="handleQuery">
+                  <template #prefix><el-icon><Iphone /></el-icon></template>
+                </el-input>
+              </div>
+            </div>
+            <div class="field">
+              <label>状态</label>
+              <div class="control is-select">
+                <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
+                  <el-option v-for="dict in sys_normal_disable" :key="dict.value" :label="dict.label" :value="dict.value" />
+                </el-select>
+              </div>
+            </div>
+            <div class="field">
+              <label>创建时间</label>
+              <div class="control">
+                <el-date-picker v-model="dateRange" value-format="YYYY-MM-DD" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" style="width: 100%" />
+              </div>
+            </div>
+          </div>
+          <div class="filter-actions">
+            <div class="filter-info">
+              <el-icon><Filter /></el-icon> 已选 {{ activeFilterCount }} 个条件，支持回车快速搜索
+            </div>
+            <div class="filter-buttons">
+              <el-button icon="RefreshLeft" @click="resetQuery">重置</el-button>
+              <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+            </div>
+          </div>
+        </div>
 
-        <el-row :gutter="10" class="mb8">
-          <el-col :span="1.5">
-            <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['system:user:add']">新增</el-button>
-          </el-col>
-          <el-col :span="1.5">
-            <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['system:user:edit']">修改</el-button>
-          </el-col>
-          <el-col :span="1.5">
-            <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['system:user:remove']">删除</el-button>
-          </el-col>
-          <el-col :span="1.5">
-            <el-button type="info" plain icon="Upload" @click="handleImport" v-hasPermi="['system:user:import']">导入</el-button>
-          </el-col>
-          <el-col :span="1.5">
-            <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['system:user:export']">导出</el-button>
-          </el-col>
-          <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="xxxxxxxx"></right-toolbar>
-        </el-row>
+        <!-- Table Section -->
+        <div class="surface">
+          <div class="toolbar">
+            <div class="left">
+              <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['system:user:add']">新增</el-button>
+              <button type="button" class="btn-soft is-outline" :disabled="single" @click="handleUpdate" v-hasPermi="['system:user:edit']">
+                <el-icon><Edit /></el-icon> 修改
+              </button>
+              <button type="button" class="btn-soft is-danger-outline" :disabled="multiple" @click="handleDelete" v-hasPermi="['system:user:remove']">
+                <el-icon><Delete /></el-icon> 删除
+              </button>
+              <div class="toolbar-divider"></div>
+              <button type="button" class="btn-soft is-outline" @click="handleImport" v-hasPermi="['system:user:import']">
+                <el-icon><Upload /></el-icon> 导入
+              </button>
+              <button type="button" class="btn-soft is-outline" @click="handleExport" v-hasPermi="['system:user:export']">
+                <el-icon><Download /></el-icon> 导出
+              </button>
+            </div>
+            <div class="right">
+              <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="sys_user_columns" />
+            </div>
+          </div>
 
-        <el-table v-loading="loading" :data="userList" @selection-change="handleSelectionChange">
+          <div class="table-wrap">
+          <el-table v-loading="loading" :data="userList" @selection-change="handleSelectionChange" class="app-table">
           <el-table-column type="selection" width="50" align="center" />
           <el-table-column label="用户编号" align="center" key="userId" prop="userId" v-if="columns.userId.visible" />
           <el-table-column label="用户名称" align="center" key="userName" v-if="columns.userName.visible" :show-overflow-tooltip="true">
@@ -87,8 +120,11 @@
               </el-tooltip>
             </template>
           </el-table-column>
-        </el-table>
-        <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+          </el-table>
+          </div>
+
+          <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+        </div>
       </div>
     </div>
 
@@ -192,6 +228,7 @@ import ExcelImportDialog from "@/components/ExcelImportDialog"
 import UserViewDrawer from "./view"
 import { usePasswordRule } from "@/utils/passwordRule"
 import { changeUserStatus, listUser, resetUserPwd, delUser, getUser, updateUser, addUser, deptTreeSelect } from "@/api/system/user"
+import { Search, Iphone, Filter, Edit, Delete, Upload, Download, RefreshLeft } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const { proxy } = getCurrentInstance()
@@ -245,6 +282,15 @@ const data = reactive({
 
 const { queryParams, form, rules } = toRefs(data)
 
+const activeFilterCount = computed(() => {
+  let count = 0
+  if (queryParams.value.userName) count++
+  if (queryParams.value.phonenumber) count++
+  if (queryParams.value.status) count++
+  if (dateRange.value && dateRange.value.length > 0) count++
+  return count
+})
+
 /** 查询用户列表 */
 function getList() {
   loading.value = true
@@ -291,7 +337,9 @@ function handleQuery() {
 /** 重置按钮操作 */
 function resetQuery() {
   dateRange.value = []
-  proxy.resetForm("queryRef")
+  queryParams.value.userName = undefined
+  queryParams.value.phonenumber = undefined
+  queryParams.value.status = undefined
   queryParams.value.deptId = undefined
   proxy.$refs.deptTreeRef.setCurrentKey(null)
   handleQuery()
@@ -311,7 +359,7 @@ function handleDelete(row) {
 /** 导出按钮操作 */
 function handleExport() {
   proxy.download("system/user/export", {
-    ...queryParams.value,
+    ...proxy.addDateRange(queryParams.value, dateRange.value),
   },`user_${new Date().getTime()}.xlsx`)
 }
 
@@ -460,3 +508,102 @@ onMounted(() => {
   })
 })
 </script>
+
+<style scoped>
+/* ===== Design Tokens ===== */
+.sys-user-page {
+  --brand-50:#eef2ff; --brand-100:#e0e7ff; --brand-200:#c7d2fe; --brand-500:#6366f1; --brand-600:#4f46e5; --brand-700:#4338ca;
+  --ink-900:#0f172a; --ink-700:#334155; --ink-500:#64748b; --ink-400:#94a3b8; --ink-300:#cbd5e1; --ink-200:#e2e8f0; --ink-100:#f1f5f9; --ink-50:#f8fafc;
+  --amber-50:#fffbeb; --amber-500:#f59e0b; --amber-700:#b45309;
+  --blue-50:#eff6ff; --blue-500:#3b82f6; --blue-700:#1d4ed8;
+  --green-50:#ecfdf5; --green-500:#10b981; --green-700:#047857;
+  --red-50:#fef2f2; --red-500:#ef4444; --red-700:#b91c1c;
+  --violet-50:#f5f3ff;
+  --r-sm:6px; --r-md:10px; --r-lg:14px;
+  --shadow-card:0 1px 0 rgba(15,23,42,.04), 0 1px 2px rgba(15,23,42,.04);
+  --ease-out:cubic-bezier(.16,.84,.44,1);
+  font-feature-settings:"tnum" 1;
+  color: var(--ink-900);
+}
+
+/* ===== Surface Card ===== */
+.sys-user-page .surface { background:#fff; border:1px solid var(--ink-200); border-radius:var(--r-lg); box-shadow:var(--shadow-card); overflow:hidden; margin-bottom:8px; }
+
+/* ===== Filter Card ===== */
+.sys-user-page .filter-card { padding:14px 20px 16px; }
+.sys-user-page .filter-card .filter-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+.sys-user-page .filter-card .filter-title { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--ink-700); }
+.sys-user-page .filter-card .filter-title .glyph { width:4px; height:14px; background:var(--brand-600); border-radius:2px; }
+.sys-user-page .filter-card .filter-bar { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px 16px; }
+.sys-user-page .filter-card .filter-actions { display:flex; align-items:center; justify-content:space-between; margin-top:14px; padding-top:14px; border-top:1px dashed var(--ink-200); }
+.sys-user-page .filter-card .filter-info { font-size:13px; color:var(--ink-500); display:flex; align-items:center; gap:6px; }
+.sys-user-page .filter-card .filter-buttons { display:flex; gap:8px; }
+
+/* ===== Form Field ===== */
+.sys-user-page .field { display:flex; flex-direction:column; gap:6px; }
+.sys-user-page .field label { font-size:14px; font-weight:500; color:var(--ink-700); display:flex; align-items:center; gap:6px; }
+.sys-user-page .field .control { display:flex; align-items:center; height:36px; padding:0 12px; background:#fff; border:1px solid var(--ink-200); border-radius:var(--r-sm); transition:border-color .15s var(--ease-out), box-shadow .15s var(--ease-out); }
+.sys-user-page .field .control:focus-within { border-color:var(--brand-500); box-shadow:0 0 0 3px rgba(99,102,241,.15); }
+
+/* el-input transparent inside .control */
+.sys-user-page .field .control :deep(.el-input__wrapper) { box-shadow:none !important; background:transparent !important; padding:0; height:34px; }
+.sys-user-page .field .control :deep(.el-input__inner) { border:0; background:transparent; font-size:14px; color:var(--ink-900); height:34px; line-height:34px; }
+.sys-user-page .field .control :deep(.el-input__inner::placeholder) { color:var(--ink-400); }
+.sys-user-page .field .control :deep(.el-input__prefix) { color:var(--ink-400); margin-right:4px; }
+.sys-user-page .field .control :deep(.el-input__prefix .el-icon) { font-size:14px; }
+
+/* el-select transparent inside .control */
+.sys-user-page .field .control :deep(.el-select) { width:100%; }
+.sys-user-page .field .control :deep(.el-select .el-select__wrapper) { box-shadow:none !important; background:transparent !important; padding:0; min-height:34px; height:34px; }
+.sys-user-page .field .control :deep(.el-select .el-select__wrapper .el-select__placeholder) { font-size:14px; color:var(--ink-900); }
+.sys-user-page .field .control :deep(.el-select .el-select__wrapper.is-focused) { box-shadow:none !important; }
+
+/* el-date-picker transparent inside .control */
+.sys-user-page .field .control :deep(.el-date-editor) { width:100%; }
+.sys-user-page .field .control :deep(.el-date-editor .el-range-input) { background:transparent; border:0; font-size:14px; color:var(--ink-900); }
+.sys-user-page .field .control :deep(.el-date-editor .el-range-separator) { color:var(--ink-400); }
+.sys-user-page .field .control :deep(.el-date-editor .el-range__icon) { color:var(--ink-400); }
+
+/* ===== Toolbar ===== */
+.sys-user-page .toolbar { display:flex; align-items:center; justify-content:space-between; padding:12px 20px; border-bottom:1px solid var(--ink-200); background:var(--ink-50); }
+.sys-user-page .toolbar .left { display:flex; gap:8px; align-items:center; }
+.sys-user-page .toolbar .right { display:flex; gap:8px; align-items:center; }
+.sys-user-page .toolbar-divider { width:1px; height:18px; background:var(--ink-200); margin:0 4px; }
+
+/* ===== Buttons ===== */
+.sys-user-page .btn-soft { display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 12px; font-size:14px; font-weight:500; border-radius:var(--r-sm); border:1px solid transparent; cursor:pointer; user-select:none; transition:all .15s var(--ease-out); }
+.sys-user-page .btn-soft .el-icon { font-size:14px; }
+.sys-user-page .btn-soft.is-outline { background:#fff; color:var(--ink-700); border-color:var(--ink-200); }
+.sys-user-page .btn-soft.is-outline:hover { background:var(--ink-50); border-color:var(--ink-300); color:var(--ink-900); }
+.sys-user-page .btn-soft.is-danger-outline { background:#fff; color:var(--red-700); border-color:#fecaca; }
+.sys-user-page .btn-soft.is-danger-outline:hover { background:var(--red-50); border-color:var(--red-500); }
+.sys-user-page .btn-soft:disabled { opacity:.5; cursor:not-allowed; }
+.sys-user-page .btn-soft:disabled:hover { transform:none; box-shadow:none; }
+.sys-user-page .btn-soft:focus-visible { outline:2px solid var(--brand-500); outline-offset:2px; }
+
+/* ===== Table ===== */
+.sys-user-page .table-wrap { overflow-x:auto; }
+.sys-user-page .app-table { --el-table-bg-color:#fff; --el-table-header-bg-color:var(--ink-50); --el-table-row-hover-bg-color:#fafbff; --el-table-border-color:transparent; --el-table-text-color:var(--ink-700); --el-table-header-text-color:var(--ink-500); }
+.sys-user-page .app-table :deep(.el-table__body td) { border-right-color:transparent !important; }
+.sys-user-page .app-table :deep(.el-table__header th) { border-right-color:transparent !important; }
+.sys-user-page .app-table :deep(.el-table__header th:hover) { border-right-color:var(--ink-200) !important; }
+.sys-user-page .app-table :deep(.el-table__header th) { background:var(--ink-50) !important; color:var(--ink-500); font-weight:600; font-size:14px; letter-spacing:.02em; padding:12px 16px; border-bottom:1px solid var(--ink-200); }
+.sys-user-page .app-table :deep(.el-table__header th .cell) { text-transform:uppercase; }
+.sys-user-page .app-table :deep(.el-table__body td) { padding:14px 16px; border-bottom:1px solid var(--ink-100); color:var(--ink-700); }
+.sys-user-page .app-table :deep(.el-table__row:hover > td) { background:#fafbff !important; }
+.sys-user-page .app-table :deep(.el-table__inner-wrapper::before) { display:none; }
+.sys-user-page .app-table :deep(.el-table__border-left-patch) { display:none; }
+
+/* ===== Pagination ===== */
+.sys-user-page .pagination-container { display:flex; align-items:center; justify-content:flex-end; padding:14px 20px; font-size:14px; color:var(--ink-500); background:#fff; border-top:1px solid transparent; }
+.sys-user-page .pagination-container :deep(.el-pagination) { justify-content:flex-end; }
+.sys-user-page .pagination-container :deep(.el-pagination .el-pager li) { border-radius:6px; border:1px solid var(--ink-200); background:#fff; min-width:32px; height:32px; line-height:32px; font-size:14px; color:var(--ink-700); margin:0 2px; }
+.sys-user-page .pagination-container :deep(.el-pagination .el-pager li.is-active) { background:var(--brand-600); border-color:var(--brand-600); color:#fff; font-weight:600; box-shadow:0 4px 10px -2px rgba(79,70,229,.4); }
+.sys-user-page .pagination-container :deep(.el-pagination .btn-prev), .sys-user-page .pagination-container :deep(.el-pagination .btn-next) { border-radius:6px; border:1px solid var(--ink-200); background:#fff; min-width:32px; height:32px; }
+.sys-user-page .pagination-container :deep(.el-pagination .btn-prev:hover), .sys-user-page .pagination-container :deep(.el-pagination .btn-next:hover) { border-color:var(--brand-200); color:var(--brand-700); }
+.sys-user-page .pagination-container :deep(.el-pagination .el-pagination__sizes .el-select__wrapper) { border-radius:6px; box-shadow:0 0 0 1px var(--ink-200) inset; }
+
+/* ===== Responsive ===== */
+@media (max-width:1100px) { .sys-user-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }
+@media (max-width:720px) { .sys-user-page .filter-card .filter-bar { grid-template-columns:1fr; } .sys-user-page .toolbar { flex-wrap:wrap; gap:10px; } }
+</style>

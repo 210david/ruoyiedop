@@ -54,7 +54,7 @@
             <if test="areaId != null"> AND l.parent_id = #{areaId}</if>
             <if test="locationId != null"> AND i.location_id = #{locationId}</if>
             <if test="locationKeyword != null and locationKeyword != ''"> AND (w.warehouse_name LIKE CONCAT('%', #{locationKeyword}, '%') OR a.warehouse_name LIKE CONCAT('%', #{locationKeyword}, '%') OR l.warehouse_name LIKE CONCAT('%', #{locationKeyword}, '%'))</if>
-            <if test="batchNo != null and batchNo != ''"> AND i.batch_no = #{batchNo}</if>
+            <if test="batchNo != null and batchNo != ''"> AND i.batch_no LIKE CONCAT('%', #{batchNo}, '%')</if>
             <if test="params.beginUpdateTime != null and params.beginUpdateTime != ''"> AND DATE(i.update_time) &gt;= #{params.beginUpdateTime}</if>
             <if test="params.endUpdateTime != null and params.endUpdateTime != ''"> AND DATE(i.update_time) &lt;= #{params.endUpdateTime}</if>
         </where>

@@ -1,63 +1,114 @@
 <template>
-  <div class="app-container">
-    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch">
-      <el-form-item label="姓名" prop="name">
-        <el-input v-model="queryParams.name" placeholder="请输入" clearable style="width: 200px" @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="手机号" prop="phone">
-        <el-input v-model="queryParams.phone" placeholder="请输入" clearable style="width: 200px" @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="所属客户" prop="customerName">
-        <el-input v-model="queryParams.customerName" placeholder="请输入" clearable style="width: 200px" @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-        <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-      </el-form-item>
-    </el-form>
+  <div class="app-container mk-list-page">
+    <!-- ===== Filter Card ===== -->
+    <div class="surface filter-card" v-show="showSearch">
+      <div class="filter-head">
+        <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+      </div>
+      <div class="filter-bar">
+        <div class="field">
+          <label>姓名</label>
+          <div class="control">
+            <el-input v-model="queryParams.name" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field">
+          <label>手机号</label>
+          <div class="control">
+            <el-input v-model="queryParams.phone" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field">
+          <label>所属客户</label>
+          <div class="control">
+            <el-input v-model="queryParams.customerName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+      </div>
+      <div class="filter-actions">
+        <div class="filter-info">
+          <el-icon><Filter /></el-icon> 已选 {{ activeFilterCount }} 个条件，支持回车快速搜索
+        </div>
+        <div class="filter-buttons">
+          <el-button icon="RefreshLeft" @click="resetQuery">重置</el-button>
+          <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+        </div>
+      </div>
+    </div>
 
-    <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5"><el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['marketing:contact:add']">新增</el-button></el-col>
-      <el-col :span="1.5"><el-button type="info" plain icon="Upload" @click="handleImport" v-hasPermi="['marketing:contact:import']">导入</el-button></el-col>
-      <el-col :span="1.5"><el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['marketing:contact:edit']">修改</el-button></el-col>
-      <el-col :span="1.5"><el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['marketing:contact:remove']">删除</el-button></el-col>
-      <el-col :span="1.5"><el-button type="warning" plain icon="Connection" :disabled="multiple" @click="handleBatchSetKey" v-hasPermi="['marketing:contact:edit']">批量设为关键</el-button></el-col>
-      <el-col :span="1.5"><el-button type="info" plain icon="User" :disabled="single" @click="handleAssign" v-hasPermi="['marketing:contact:assign']">分配</el-button></el-col>
-      <el-col :span="1.5"><el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['marketing:contact:export']">导出</el-button></el-col>
-      <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
-    </el-row>
+    <!-- ===== Table Section ===== -->
+    <div class="surface">
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <div class="left">
+          <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['marketing:contact:add']">新增</el-button>
+          <button type="button" class="btn-soft is-outline" @click="handleImport" v-hasPermi="['marketing:contact:import']">
+            <el-icon><Upload /></el-icon> 导入
+          </button>
+          <button type="button" class="btn-soft is-outline" :disabled="single" @click="handleUpdate" v-hasPermi="['marketing:contact:edit']">
+            <el-icon><Edit /></el-icon> 修改
+          </button>
+          <button type="button" class="btn-soft is-danger-outline" :disabled="multiple" @click="handleDelete" v-hasPermi="['marketing:contact:remove']">
+            <el-icon><Delete /></el-icon> 删除
+          </button>
+          <div class="toolbar-divider"></div>
+          <button type="button" class="btn-soft is-outline" :disabled="multiple" @click="handleBatchSetKey" v-hasPermi="['marketing:contact:edit']">
+            <el-icon><Connection /></el-icon> 批量设为关键
+          </button>
+          <button type="button" class="btn-soft is-outline" :disabled="single" @click="handleAssign" v-hasPermi="['marketing:contact:assign']">
+            <el-icon><User /></el-icon> 分配
+          </button>
+          <div class="toolbar-divider"></div>
+          <button type="button" class="btn-soft is-outline" @click="handleExport" v-hasPermi="['marketing:contact:export']">
+            <el-icon><Download /></el-icon> 导出
+          </button>
+        </div>
+        <div class="right">
+          <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="mk_contact_columns" />
+        </div>
+      </div>
 
-    <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
-      <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="所属客户" prop="customerName" show-overflow-tooltip>
-        <template #default="scope">
-          <span>{{ scope.row.customerName }}</span>
-          <el-badge v-if="isOverdue(scope.row)" is-dot type="danger" class="ml5" />
-        </template>
-      </el-table-column>
-      <el-table-column label="姓名" prop="name" :width="colWidth('name', 100)" resizable>
-        <template #default="scope">
-          <el-button link type="primary" @click="handleDetail(scope.row)">{{ scope.row.name }}</el-button>
-        </template>
-      </el-table-column>
-      <el-table-column label="性别" prop="gender" :width="colWidth('gender', 80)" resizable align="center">
-        <template #default="scope">{{ scope.row.gender === '0' ? '男' : '女' }}</template>
-      </el-table-column>
-      <el-table-column label="职位" prop="position" :width="colWidth('position', 120)" resizable />
-      <el-table-column label="手机号" prop="phone" :width="colWidth('phone', 130)" resizable />
-      <el-table-column label="邮箱" prop="email" :width="colWidth('email', 180)" resizable show-overflow-tooltip />
-      <el-table-column label="关键联系人" prop="isKey" :width="colWidth('isKey', 100)" resizable align="center">
-        <template #default="scope"><el-tag :type="scope.row.isKey === '1' ? 'danger' : 'info'">{{ scope.row.isKey === '1' ? '是' : '否' }}</el-tag></template>
-      </el-table-column>
-      <el-table-column label="主要联系人" prop="isPrimary" :width="colWidth('isPrimary', 100)" resizable align="center">
-        <template #default="scope"><el-tag :type="scope.row.isPrimary === '1' ? 'success' : 'info'" size="small">{{ scope.row.isPrimary === '1' ? '是' : '否' }}</el-tag></template>
-      </el-table-column>
-      <el-table-column label="归属销售" prop="ownerUserName" :width="colWidth('ownerUserName', 100)" resizable />
-      <el-table-column label="下次联系时间" prop="nextContactTime" :width="colWidth('nextContactTime', 160)" resizable>
-        <template #default="scope">
-          <span :class="{ 'text-danger': isOverdue(scope.row) }">{{ scope.row.nextContactTime }}</span>
-        </template>
-      </el-table-column>
+      <!-- Table -->
+      <div class="table-wrap">
+        <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
+          <el-table-column type="selection" width="55" align="center" />
+          <el-table-column label="所属客户" prop="customerName" key="customerName" :width="colWidth('customerName', 180)" resizable show-overflow-tooltip v-if="columns.customerName.visible">
+            <template #default="scope">
+              <span>{{ scope.row.customerName }}</span>
+              <el-badge v-if="isOverdue(scope.row)" is-dot type="danger" class="ml5" />
+            </template>
+          </el-table-column>
+          <el-table-column label="姓名" prop="name" key="name" :width="colWidth('name', 100)" resizable v-if="columns.name.visible">
+            <template #default="scope">
+              <el-button link type="primary" @click="handleDetail(scope.row)">{{ scope.row.name }}</el-button>
+            </template>
+          </el-table-column>
+          <el-table-column label="性别" prop="gender" key="gender" :width="colWidth('gender', 80)" resizable align="center" v-if="columns.gender.visible">
+            <template #default="scope">{{ scope.row.gender === '0' ? '男' : '女' }}</template>
+          </el-table-column>
+          <el-table-column label="职位" prop="position" key="position" :width="colWidth('position', 120)" resizable v-if="columns.position.visible" />
+          <el-table-column label="手机号" prop="phone" key="phone" :width="colWidth('phone', 130)" resizable v-if="columns.phone.visible">
+            <template #default="scope"><span class="col-mono">{{ scope.row.phone }}</span></template>
+          </el-table-column>
+          <el-table-column label="邮箱" prop="email" key="email" :width="colWidth('email', 180)" resizable show-overflow-tooltip v-if="columns.email.visible" />
+          <el-table-column label="关键联系人" prop="isKey" key="isKey" :width="colWidth('isKey', 100)" resizable align="center" v-if="columns.isKey.visible">
+            <template #default="scope"><el-tag :type="scope.row.isKey === '1' ? 'danger' : 'info'">{{ scope.row.isKey === '1' ? '是' : '否' }}</el-tag></template>
+          </el-table-column>
+          <el-table-column label="主要联系人" prop="isPrimary" key="isPrimary" :width="colWidth('isPrimary', 100)" resizable align="center" v-if="columns.isPrimary.visible">
+            <template #default="scope"><el-tag :type="scope.row.isPrimary === '1' ? 'success' : 'info'" size="small">{{ scope.row.isPrimary === '1' ? '是' : '否' }}</el-tag></template>
+          </el-table-column>
+          <el-table-column label="归属销售" prop="ownerUserName" key="ownerUserName" :width="colWidth('ownerUserName', 100)" resizable v-if="columns.ownerUserName.visible" />
+          <el-table-column label="下次联系时间" prop="nextContactTime" key="nextContactTime" :width="colWidth('nextContactTime', 160)" resizable sortable="custom" v-if="columns.nextContactTime.visible">
+            <template #default="scope">
+              <span :class="{ 'text-danger': isOverdue(scope.row) }">{{ scope.row.nextContactTime }}</span>
+            </template>
+          </el-table-column>
       <el-table-column label="操作" width="180" align="center" fixed="right">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleDetail(scope.row)">详情</el-button>
@@ -75,7 +126,11 @@
         </template>
       </el-table-column>
     </el-table>
-    <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+      </div>
+
+      <!-- Pagination -->
+      <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+    </div>
 
     <!-- 新增/修改对话框 -->
     <el-dialog v-model="open" width="750px" append-to-body draggable class="rd-dialog">
@@ -436,11 +491,49 @@
         <el-button @click="interactionOpen = false">取 消</el-button>
       </template>
     </el-dialog>
+
+    <!-- 业务操作说明对话框 -->
+    <el-dialog v-model="showStatusHelp" title="联系人管理业务操作说明" width="720px" append-to-body>
+      <div class="status-help-content">
+        <h4>一、业务流程图</h4>
+        <div class="status-flow">
+          <div class="flow-item">
+            <el-tag type="info">新增联系人</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="warning">设为关键/主要</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="primary">分配归属销售</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="success">跟进记录</el-tag>
+          </div>
+        </div>
+
+        <h4>二、重点业务规则</h4>
+        <div class="highlight-card">
+          <p>• <strong>关键联系人：</strong>标记为客户的重要决策人，同客户可多个</p>
+          <p>• <strong>主要联系人：</strong>每个客户仅一个主要联系人，设置时自动替换原主要联系人</p>
+          <p>• <strong>查重功能：</strong>新增时系统自动检测重复手机号/邮箱，可合并重复记录</p>
+          <p>• <strong>分配归属：</strong>可将联系人分配给指定销售人员跟进</p>
+          <p>• <strong>跟进提醒：</strong>下次联系时间到期会红标提醒，避免遗漏跟进</p>
+          <p>• <strong>批量操作：</strong>支持批量设为关键联系人、批量分配</p>
+          <p>• <strong>联系人导入：</strong>支持通过Excel批量导入联系人数据</p>
+        </div>
+      </div>
+      <template #footer>
+        <el-button type="primary" @click="showStatusHelp = false">我知道了</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup name="MkContact">
-import { UploadFilled, CircleClose } from '@element-plus/icons-vue'
+import { UploadFilled, CircleClose, ArrowRight, ArrowDown, QuestionFilled, Search, Filter, Edit, Delete, Download, User, Upload, Connection } from '@element-plus/icons-vue'
 import { listContact, getContact, addContact, updateContact, delContact, checkDuplicate, mergeContacts, setPrimary, batchSetKey, assignContact } from '@/api/mk/contact'
 import { listInteraction, addInteraction } from '@/api/mk/interaction'
 import { listParticipant } from '@/api/mk/participant'
@@ -460,6 +553,7 @@ const list = ref([])
 const open = ref(false)
 const loading = ref(true)
 const showSearch = ref(true)
+const showAdvanced = ref(false)
 const ids = ref([])
 const single = ref(true)
 const multiple = ref(true)
@@ -494,7 +588,7 @@ const interactionRules = {
 
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, name: undefined, phone: undefined, customerName: undefined },
+  queryParams: { pageNum: 1, pageSize: 10, name: undefined, phone: undefined, customerName: undefined, params: {} },
   rules: {
     customerId: [{ required: true, message: '请选择客户', trigger: 'change' }],
     name: [{ required: true, message: '姓名不能为空', trigger: 'blur' }],
@@ -503,11 +597,56 @@ const data = reactive({
 })
 const { queryParams, form, rules } = toRefs(data)
 
-function getList() { loading.value = true; listContact(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false }) }
+// 列显隐配置 - 从 localStorage 恢复保存的设置
+const defaultColumns = {
+  customerName: { label: '所属客户', visible: true },
+  name: { label: '姓名', visible: true },
+  gender: { label: '性别', visible: true },
+  position: { label: '职位', visible: true },
+  phone: { label: '手机号', visible: true },
+  email: { label: '邮箱', visible: true },
+  isKey: { label: '关键联系人', visible: true },
+  isPrimary: { label: '主要联系人', visible: true },
+  ownerUserName: { label: '归属销售', visible: true },
+  nextContactTime: { label: '下次联系时间', visible: true }
+}
+
+function loadColumnVisibility() {
+  try {
+    const saved = localStorage.getItem('mk_contact_columns')
+    if (saved) {
+      const parsed = JSON.parse(saved)
+      const result = {}
+      Object.keys(defaultColumns).forEach(key => {
+        result[key] = {
+          label: defaultColumns[key].label,
+          visible: parsed[key] !== undefined ? parsed[key] : defaultColumns[key].visible
+        }
+      })
+      return result
+    }
+  } catch (e) {}
+  return { ...defaultColumns }
+}
+
+const columns = ref(loadColumnVisibility())
+
+const activeFilterCount = computed(() => {
+  let count = 0
+  if (queryParams.value.name) count++
+  if (queryParams.value.phone) count++
+  if (queryParams.value.customerName) count++
+  return count
+})
+
+function getList() { loading.value = true; listContact(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false; applySavedWidths() }).catch(() => { loading.value = false }) }
 function getCustomerOptions() { listCustomer({ pageNum: 1, pageSize: 9999 }).then(res => { customerOptions.value = res.rows }) }
 function getUserOptions() { listUser({ pageNum: 1, pageSize: 9999 }).then(res => { userOptions.value = res.rows.filter(u => u.userId !== 1) }) }
-function handleQuery() { queryParams.value.pageNum = 1; getList() }
-function resetQuery() { proxy.resetForm('queryRef'); handleQuery() }
+function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
+function resetQuery() {
+  queryParams.value.name = undefined; queryParams.value.phone = undefined; queryParams.value.customerName = undefined; queryParams.value.params = {}; handleQuery()
+}
+function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.contactId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function isOverdue(row) { return row.nextContactTime && new Date(row.nextContactTime) <= new Date(Date.now() + 86400000) }
 function reset() {
@@ -685,6 +824,8 @@ function handleImportError() {
 getCustomerOptions()
 getUserOptions()
 getList()
+
+const showStatusHelp = ref(false)
 </script>
 
 <style scoped>
@@ -703,5 +844,52 @@ getList()
 }
 :deep(.el-input.is-disabled .el-input__inner) {
   cursor: pointer;
+}
+
+.status-help-content {
+  max-height: 500px;
+  overflow-y: auto;
+  padding-right: 10px;
+}
+.status-help-content h4 {
+  margin: 20px 0 12px 0;
+  color: #303133;
+  font-weight: 600;
+  border-left: 4px solid #409eff;
+  padding-left: 10px;
+}
+.status-help-content h4:first-child {
+  margin-top: 0;
+}
+.status-help-content .status-flow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 16px;
+  background-color: #f5f7fa;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+.status-help-content .flow-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.status-help-content .flow-arrow {
+  color: #909399;
+  font-size: 16px;
+}
+.status-help-content .highlight-card {
+  background-color: #ecf5ff;
+  border-radius: 8px;
+  padding: 16px;
+  border-left: 4px solid #409eff;
+}
+.status-help-content .highlight-card p {
+  margin: 6px 0;
+  line-height: 1.6;
+  font-size: 13px;
+  color: #606266;
 }
 </style>

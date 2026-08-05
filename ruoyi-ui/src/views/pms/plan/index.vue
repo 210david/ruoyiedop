@@ -1,86 +1,145 @@
 <template>
-  <div class="app-container">
-    <el-row :gutter="20">
-      <el-col :span="24" :xs="24">
-        <!-- 搜索区域 -->
-        <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch">
-          <el-form-item label="计划单号" prop="planNo">
-            <el-input v-model="queryParams.planNo" placeholder="请输入" clearable style="width: 200px" @keyup.enter="handleQuery" />
-          </el-form-item>
-          <el-form-item label="计划标题" prop="title">
-            <el-input v-model="queryParams.title" placeholder="请输入" clearable style="width: 200px" @keyup.enter="handleQuery" />
-          </el-form-item>
-          <el-form-item label="状态" prop="status">
-            <el-select v-model="queryParams.status" placeholder="全部" clearable style="width: 140px">
+  <div class="app-container pms-plan-page">
+    <!-- ===== Filter Card ===== -->
+    <div class="surface filter-card" v-show="showSearch">
+      <div class="filter-head">
+        <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+        <a class="adv-link" :class="{ 'is-open': showAdvanced }" @click.prevent="showAdvanced = !showAdvanced">
+          <span>{{ showAdvanced ? '收起' : '高级筛选' }}</span>
+          <el-icon class="chev"><ArrowDown /></el-icon>
+        </a>
+      </div>
+      <div class="filter-bar">
+        <div class="field">
+          <label>计划单号</label>
+          <div class="control">
+            <el-input v-model="queryParams.planNo" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field">
+          <label>计划标题</label>
+          <div class="control">
+            <el-input v-model="queryParams.title" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+          </div>
+        </div>
+        <div class="field">
+          <label>状态</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
               <el-option v-for="dict in pms_plan_status" :key="dict.value" :label="dict.label" :value="dict.value" />
             </el-select>
-          </el-form-item>
-          <el-form-item label="计划类型" prop="planType">
-            <el-select v-model="queryParams.planType" placeholder="全部" clearable style="width: 140px">
+          </div>
+        </div>
+        <div class="field">
+          <label>计划类型</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.planType" placeholder="全部" clearable @change="handleQuery">
               <el-option v-for="dict in pms_plan_type" :key="dict.value" :label="dict.label" :value="dict.value" />
             </el-select>
-          </el-form-item>
-<el-form-item>
-<el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-<el-button icon="Refresh" @click="resetQuery">重置</el-button>
-</el-form-item>
-</el-form>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>编制人</label>
+          <div class="control">
+            <el-input v-model="queryParams.plannerName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><User /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>编制部门</label>
+          <div class="control">
+            <el-input v-model="queryParams.deptName" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>创建时间</label>
+          <div class="control">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
+          </div>
+        </div>
+      </div>
+      <div class="filter-actions">
+        <div class="filter-info">
+          <el-icon><Filter /></el-icon> 已选 {{ activeFilterCount }} 个条件，支持回车快速搜索
+        </div>
+        <div class="filter-buttons">
+          <el-button icon="RefreshLeft" @click="resetQuery">重置</el-button>
+          <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+        </div>
+      </div>
+    </div>
 
-        <!-- 业务说明提示 -->
-        <el-alert type="info" :closable="false" show-icon class="mb8">
-          <template #title>
-            <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-              <span style="font-weight: bold;">采购计划业务说明：</span>
-              <el-tag size="small" type="primary" effect="dark">草稿 → 待审核 → 已审批</el-tag>
-              <el-tag size="small" type="success" effect="dark">审批通过后可生成采购申请</el-tag>
-              <el-tag size="small" type="warning" effect="dark">已关闭后不可修改</el-tag>
-              <span style="color: #909399; font-size: 12px;">全流程：新建计划 → 提交审核 → 审批通过 → 生成采购申请</span>
-              <el-button link type="primary" size="small" @click="showStatusHelp = true">
-                <el-icon><QuestionFilled /></el-icon> 查看详情
-              </el-button>
-            </div>
-          </template>
-        </el-alert>
+    <!-- ===== Table Section ===== -->
+    <div class="surface">
+      <!-- 状态标签栏 -->
+      <div class="status-tabs">
+        <div class="tabs-track">
+          <button class="status-tab" :class="{ 'is-active': activeStatusTab === 'all' }" @click="handleStatusTabClick('all')">
+            <span class="dot"></span>
+            <span>全部</span>
+            <span class="count">{{ statusCounts.all }}</span>
+          </button>
+          <button v-for="s in statusTabList" :key="s.value"
+            class="status-tab"
+            :class="[statusTabClass(s.value), { 'is-active': activeStatusTab === s.value }]"
+            @click="handleStatusTabClick(s.value)">
+            <span class="dot"></span>
+            <span>{{ s.label }}</span>
+            <span class="count">{{ statusCounts[s.value] || 0 }}</span>
+          </button>
+        </div>
+        <button class="tip-pill" @click="showStatusHelp = true">
+          <el-icon><WarningFilled /></el-icon>
+          <span>业务操作说明</span>
+        </button>
+      </div>
 
-        <!-- 操作按钮区域 -->
-        <el-row :gutter="10" class="mb8">
-          <el-col :span="1.5">
-            <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['pms:plan:add']">新增</el-button>
-          </el-col>
-          <el-col :span="1.5">
-            <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['pms:plan:edit']">修改</el-button>
-          </el-col>
-          <el-col :span="1.5">
-            <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['pms:plan:remove']">删除</el-button>
-          </el-col>
-          <el-col :span="1.5">
-            <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['pms:plan:export']">导出</el-button>
-          </el-col>
-          <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
-        </el-row>
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <div class="left">
+          <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['pms:plan:add']">新增</el-button>
+          <button type="button" class="btn-soft is-outline" :disabled="single" @click="handleUpdate" v-hasPermi="['pms:plan:edit']">
+            <el-icon><Edit /></el-icon> 修改
+          </button>
+          <button type="button" class="btn-soft is-danger-outline" :disabled="multiple" @click="handleDelete" v-hasPermi="['pms:plan:remove']">
+            <el-icon><Delete /></el-icon> 删除
+          </button>
+          <div class="toolbar-divider"></div>
+          <button type="button" class="btn-soft is-outline" @click="handleExport" v-hasPermi="['pms:plan:export']">
+            <el-icon><Download /></el-icon> 导出
+          </button>
+        </div>
+        <div class="right">
+          <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="pms_plan_columns" />
+        </div>
+      </div>
 
-        <!-- 表格区域 -->
-        <el-table ref="tableRef" border v-loading="loading" :data="planList" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange">
+      <!-- Table -->
+      <div class="table-wrap">
+        <el-table ref="tableRef" border v-loading="loading" :data="planList" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
-          <el-table-column label="计划单号" prop="planNo" :width="colWidth('planNo', 160)" resizable sortable="custom" />
-          <el-table-column label="计划标题" prop="title" :width="colWidth('title', 200)" resizable show-overflow-tooltip />
-          <el-table-column label="计划类型" prop="planType" :width="colWidth('planType', 100)" resizable align="center">
-            <template #default="scope"><dict-tag :options="pms_plan_type" :value="scope.row.planType" /></template>
+          <el-table-column label="计划单号" prop="planNo" key="planNo" :width="colWidth('planNo', 180)" resizable sortable="custom" v-if="columns.planNo.visible" />
+          <el-table-column label="计划标题" prop="title" key="title" :width="colWidth('title', 240)" resizable show-overflow-tooltip v-if="columns.title.visible" />
+          <el-table-column label="计划类型" prop="planType" key="planType" :width="colWidth('planType', 120)" resizable align="center" v-if="columns.planType.visible">
+            <template #default="scope"><span class="badge violet">{{ planTypeLabel(scope.row.planType) }}</span></template>
           </el-table-column>
-          <el-table-column label="状态" prop="status" :width="colWidth('status', 100)" resizable align="center" sortable="custom">
-            <template #default="scope"><dict-tag :options="pms_plan_status" :value="scope.row.status" /></template>
+          <el-table-column label="状态" prop="status" key="status" :width="colWidth('status', 120)" resizable align="center" sortable="custom" v-if="columns.status.visible">
+            <template #default="scope"><span class="badge" :class="badgeClass(scope.row.status)"><span class="dot"></span>{{ statusLabel(scope.row.status) }}</span></template>
           </el-table-column>
-          <el-table-column label="预算金额" prop="budgetAmount" :width="colWidth('budgetAmount', 120)" resizable align="right" sortable="custom">
+          <el-table-column label="预算金额" prop="budgetAmount" key="budgetAmount" :width="colWidth('budgetAmount', 130)" resizable align="right" sortable="custom" v-if="columns.budgetAmount.visible">
             <template #default="scope"><span class="rd-amount">{{ formatMoney(scope.row.budgetAmount) }}</span></template>
           </el-table-column>
-          <el-table-column label="实际金额" prop="actualAmount" :width="colWidth('actualAmount', 120)" resizable align="right">
+          <el-table-column label="实际金额" prop="actualAmount" key="actualAmount" :width="colWidth('actualAmount', 130)" resizable align="right" v-if="columns.actualAmount.visible">
             <template #default="scope"><span class="rd-amount">{{ formatMoney(scope.row.actualAmount) }}</span></template>
           </el-table-column>
-          <el-table-column label="编制人" prop="plannerName" :width="colWidth('plannerName', 100)" resizable />
-          <el-table-column label="编制部门" prop="deptName" :width="colWidth('deptName', 120)" resizable show-overflow-tooltip />
-          <el-table-column label="开始日期" prop="startDate" :width="colWidth('startDate', 120)" resizable align="center" />
-          <el-table-column label="结束日期" prop="endDate" :width="colWidth('endDate', 120)" resizable align="center" />
-          <el-table-column label="创建时间" prop="createTime" :width="colWidth('createTime', 160)" resizable align="center" sortable="custom" />
+          <el-table-column label="编制人" prop="plannerName" key="plannerName" :width="colWidth('plannerName', 120)" resizable v-if="columns.plannerName.visible" />
+          <el-table-column label="编制部门" prop="deptName" key="deptName" :width="colWidth('deptName', 140)" resizable show-overflow-tooltip v-if="columns.deptName.visible" />
+          <el-table-column label="开始日期" prop="startDate" key="startDate" :width="colWidth('startDate', 130)" resizable align="center" v-if="columns.startDate.visible" />
+          <el-table-column label="结束日期" prop="endDate" key="endDate" :width="colWidth('endDate', 130)" resizable align="center" v-if="columns.endDate.visible" />
+          <el-table-column label="创建时间" prop="createTime" key="createTime" :width="colWidth('createTime', 180)" resizable align="center" sortable="custom" v-if="columns.createTime.visible" />
           <el-table-column label="操作" width="330" align="center" fixed="right">
             <template #default="scope">
               <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['pms:plan:query']">查看</el-button>
@@ -91,11 +150,11 @@
             </template>
           </el-table-column>
         </el-table>
+      </div>
 
-        <!-- 分页区域 -->
-        <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
-      </el-col>
-    </el-row>
+      <!-- Pagination -->
+      <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+    </div>
 
     <!-- 添加/修改对话框 -->
     <el-dialog v-model="open" width="1296px" append-to-body draggable class="rd-dialog">
@@ -583,7 +642,93 @@ const router = useRouter()
 const { proxy } = getCurrentInstance();
 const { pms_plan_status, pms_plan_type, wms_unit } = proxy.useDict('pms_plan_status', 'pms_plan_type', 'wms_unit');
 const { collapsedCards, toggleCard } = useDetailCard(["c1","c2","c0","c3","v1","v2","v3"])
-const { colWidth, onHeaderDragEnd, tableRef } = useColumnResize('pms_plan_index')
+const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('pms_plan_index')
+
+// 列显隐配置 - 从 localStorage 恢复保存的设置
+const defaultColumns = {
+  planNo: { label: '计划单号', visible: true },
+  title: { label: '计划标题', visible: true },
+  planType: { label: '计划类型', visible: true },
+  status: { label: '状态', visible: true },
+  budgetAmount: { label: '预算金额', visible: true },
+  actualAmount: { label: '实际金额', visible: true },
+  plannerName: { label: '编制人', visible: true },
+  deptName: { label: '编制部门', visible: true },
+  startDate: { label: '开始日期', visible: true },
+  endDate: { label: '结束日期', visible: true },
+  createTime: { label: '创建时间', visible: true }
+}
+function loadColumnVisibility() {
+  try {
+    const saved = localStorage.getItem('pms_plan_columns')
+    if (saved) {
+      const parsed = JSON.parse(saved)
+      const result = {}
+      Object.keys(defaultColumns).forEach(key => {
+        result[key] = {
+          label: defaultColumns[key].label,
+          visible: parsed[key] !== undefined ? parsed[key] : defaultColumns[key].visible
+        }
+      })
+      return result
+    }
+  } catch (e) {}
+  return { ...defaultColumns }
+}
+const columns = ref(loadColumnVisibility())
+
+const showAdvanced = ref(false)
+const dateRange = ref([])
+const activeStatusTab = ref('all')
+const statusTabList = computed(() => {
+  return pms_plan_status.value.map(d => ({ label: d.label, value: d.value }))
+})
+const statusCounts = ref({ all: 0 })
+function loadStatusCounts() {
+  listPlan({ pageNum: 1, pageSize: 999 }).then(res => {
+    const counts = { all: res.total }
+    pms_plan_status.value.forEach(d => { counts[d.value] = 0 })
+    ;(res.rows || []).forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++ })
+    statusCounts.value = counts
+  }).catch(() => {})
+}
+function statusTabClass(value) {
+  const map = { '0': 'tab-draft', '1': 'tab-audit', '2': 'tab-approved', '3': 'tab-done', '4': 'tab-done', '5': 'tab-void', '6': 'tab-reject' }
+  return map[value] || ''
+}
+function badgeClass(status) {
+  const map = { '0': 'amber', '1': 'blue', '2': 'green', '3': 'green', '4': 'green', '5': 'gray', '6': 'red' }
+  return map[status] || 'gray'
+}
+function statusLabel(status) {
+  const item = pms_plan_status.value.find(d => d.value == status)
+  return item ? item.label : '-'
+}
+function planTypeLabel(type) {
+  const item = pms_plan_type.value.find(d => d.value == type)
+  return item ? item.label : '-'
+}
+function handleStatusTabClick(tab) {
+  activeStatusTab.value = tab
+  if (tab === 'all') {
+    queryParams.value.status = undefined
+  } else {
+    queryParams.value.status = tab
+  }
+  handleQuery()
+}
+
+const activeFilterCount = computed(() => {
+  let count = 0
+  if (queryParams.value.planNo) count++
+  if (queryParams.value.title) count++
+  if (queryParams.value.status) count++
+  if (queryParams.value.planType) count++
+  if (queryParams.value.plannerName) count++
+  if (queryParams.value.deptName) count++
+  if (dateRange.value && dateRange.value.length > 0) count++
+  return count
+})
 
 const planList = ref([]);
 const showStatusHelp = ref(false);
@@ -625,8 +770,10 @@ const data = reactive({
     planNo: null,
     title: null,
     status: null,
-planType: null,
-params: {}
+    planType: null,
+    plannerName: null,
+    deptName: null,
+    params: {}
   },
   auditForm: {
     planId: null,
@@ -659,10 +806,13 @@ const totalBudgetAmount = computed(() => {
 /** 查询采购计划列表 */
 function getList() {
   loading.value = true;
+  proxy.addDateRange(queryParams.value, dateRange.value, 'CreateTime');
   listPlan(queryParams.value).then(response => {
     planList.value = response.rows;
     total.value = response.total;
     loading.value = false;
+    loadStatusCounts();
+    applySavedWidths();
   });
 }
 
@@ -702,8 +852,16 @@ getList();
 
 /** 重置按钮操作 */
 function resetQuery() {
-  proxy.resetForm("queryRef");
+  queryParams.value.planNo = null;
+  queryParams.value.title = null;
+  queryParams.value.status = null;
+  queryParams.value.planType = null;
+  queryParams.value.plannerName = null;
+  queryParams.value.deptName = null;
   queryParams.value.params = {};
+  dateRange.value = [];
+  activeStatusTab.value = 'all';
+  if (tableRef.value) tableRef.value.clearSort();
   handleQuery();
 }
 
@@ -839,7 +997,7 @@ function handleGenerateRequest(row) {
 /** 导出按钮操作 */
 function handleExport() {
   proxy.download("pms/plan/export", {
-    ...queryParams.value
+    ...proxy.addDateRange(queryParams.value, dateRange.value, 'CreateTime')
   }, `plan_${new Date().getTime()}.xlsx`);
 }
 
@@ -944,6 +1102,125 @@ onActivated(() => { getList(); })
 </script>
 
 <style scoped>
+/* ===== Design Tokens ===== */
+.pms-plan-page {
+  padding-top: 10px;
+  --brand-50:#eef2ff; --brand-100:#e0e7ff; --brand-200:#c7d2fe; --brand-500:#6366f1; --brand-600:#4f46e5; --brand-700:#4338ca;
+  --ink-900:#0f172a; --ink-700:#334155; --ink-500:#64748b; --ink-400:#94a3b8; --ink-300:#cbd5e1; --ink-200:#e2e8f0; --ink-100:#f1f5f9; --ink-50:#f8fafc;
+  --amber-50:#fffbeb; --amber-500:#f59e0b; --amber-700:#b45309;
+  --blue-50:#eff6ff; --blue-500:#3b82f6; --blue-700:#1d4ed8;
+  --green-50:#ecfdf5; --green-500:#10b981; --green-700:#047857;
+  --red-50:#fef2f2; --red-500:#ef4444; --red-700:#b91c1c;
+  --violet-50:#f5f3ff;
+  --r-sm:6px; --r-md:10px; --r-lg:14px;
+  --shadow-card:0 1px 0 rgba(15,23,42,.04), 0 1px 2px rgba(15,23,42,.04);
+  --ease-out:cubic-bezier(.16,.84,.44,1);
+  font-feature-settings:"tnum" 1;
+  color: var(--ink-900);
+}
+.pms-plan-page .surface { background:#fff; border:1px solid var(--ink-200); border-radius:var(--r-lg); box-shadow:var(--shadow-card); overflow:hidden; margin-bottom:8px; }
+.pms-plan-page .filter-card { padding:14px 20px 16px; }
+.pms-plan-page .filter-card .filter-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+.pms-plan-page .filter-card .filter-title { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--ink-700); }
+.pms-plan-page .filter-card .filter-title .glyph { width:4px; height:14px; background:var(--brand-600); border-radius:2px; }
+.pms-plan-page .filter-card .adv-link { font-size:14px; color:var(--ink-500); text-decoration:none; display:flex; align-items:center; gap:4px; transition:color .15s; cursor:pointer; }
+.pms-plan-page .filter-card .adv-link:hover { color:var(--brand-600); }
+.pms-plan-page .filter-card .adv-link .chev { transition:transform .2s var(--ease-out); }
+.pms-plan-page .filter-card .adv-link.is-open .chev { transform:rotate(180deg); }
+.pms-plan-page .filter-card .filter-bar { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px 16px; }
+.pms-plan-page .filter-card .filter-actions { display:flex; align-items:center; justify-content:space-between; margin-top:14px; padding-top:14px; border-top:1px dashed var(--ink-200); }
+.pms-plan-page .filter-card .filter-info { font-size:13px; color:var(--ink-500); display:flex; align-items:center; gap:6px; }
+.pms-plan-page .filter-card .filter-buttons { display:flex; gap:8px; }
+.pms-plan-page .field { display:flex; flex-direction:column; gap:6px; }
+.pms-plan-page .field label { font-size:14px; font-weight:500; color:var(--ink-700); display:flex; align-items:center; gap:6px; }
+.pms-plan-page .field .control { display:flex; align-items:center; height:36px; padding:0 12px; background:#fff; border:1px solid var(--ink-200); border-radius:var(--r-sm); transition:border-color .15s var(--ease-out), box-shadow .15s var(--ease-out); }
+.pms-plan-page .field .control:focus-within { border-color:var(--brand-500); box-shadow:0 0 0 3px rgba(99,102,241,.15); }
+.pms-plan-page .field .control :deep(.el-input__wrapper) { box-shadow:none !important; background:transparent !important; padding:0; height:34px; }
+.pms-plan-page .field .control :deep(.el-input__inner) { border:0; background:transparent; font-size:14px; color:var(--ink-900); height:34px; line-height:34px; }
+.pms-plan-page .field .control :deep(.el-input__inner::placeholder) { color:var(--ink-400); }
+.pms-plan-page .field .control :deep(.el-input__prefix) { color:var(--ink-400); margin-right:4px; }
+.pms-plan-page .field .control :deep(.el-input__prefix .el-icon) { font-size:14px; }
+.pms-plan-page .field .control :deep(.el-select) { width:100%; }
+.pms-plan-page .field .control :deep(.el-select .el-select__wrapper) { box-shadow:none !important; background:transparent !important; padding:0; min-height:34px; height:34px; }
+.pms-plan-page .field .control :deep(.el-select .el-select__wrapper .el-select__placeholder) { font-size:14px; color:var(--ink-900); }
+.pms-plan-page .field .control :deep(.el-select .el-select__wrapper.is-focused) { box-shadow:none !important; }
+.pms-plan-page .field .control :deep(.el-date-editor) { width:100%; }
+.pms-plan-page .field .control :deep(.el-date-editor .el-range-input) { background:transparent; border:0; font-size:14px; color:var(--ink-900); }
+.pms-plan-page .field .control :deep(.el-date-editor .el-range-separator) { color:var(--ink-400); }
+.pms-plan-page .field .control :deep(.el-date-editor .el-range__icon) { color:var(--ink-400); }
+.pms-plan-page .status-tabs { display:flex; align-items:center; gap:12px; padding:6px 10px 6px 12px; border-bottom:1px solid var(--ink-200); background:#fff; }
+.pms-plan-page .tabs-track { display:flex; align-items:center; gap:4px; flex:1; min-width:0; overflow-x:auto; scrollbar-width:none; }
+.pms-plan-page .tabs-track::-webkit-scrollbar { display:none; }
+.pms-plan-page .status-tab { display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 12px; border-radius:var(--r-sm); font-size:14px; color:var(--ink-500); cursor:pointer; user-select:none; transition:all .15s var(--ease-out); white-space:nowrap; border:1px solid transparent; background:transparent; }
+.pms-plan-page .status-tab .dot { width:6px; height:6px; border-radius:50%; background:var(--ink-300); }
+.pms-plan-page .status-tab .count { font-size:12px; font-weight:600; padding:1px 6px; border-radius:999px; background:var(--ink-100); color:var(--ink-500); min-width:18px; text-align:center; line-height:1.4; font-feature-settings:"tnum" 1; }
+.pms-plan-page .status-tab:hover { background:var(--ink-50); color:var(--ink-700); }
+.pms-plan-page .status-tab.is-active { background:var(--brand-50); color:var(--brand-700); font-weight:600; border-color:var(--brand-200); }
+.pms-plan-page .status-tab.is-active .count { background:var(--brand-600); color:#fff; }
+.pms-plan-page .status-tab.is-active .dot { background:var(--brand-500); }
+.pms-plan-page .status-tab.tab-draft .dot { background:var(--amber-500); }
+.pms-plan-page .status-tab.tab-draft .count { background:var(--amber-50); color:var(--amber-700); }
+.pms-plan-page .status-tab.is-active.tab-draft .count { background:var(--amber-500); color:#fff; }
+.pms-plan-page .status-tab.tab-audit .dot { background:var(--blue-500); }
+.pms-plan-page .status-tab.tab-audit .count { background:var(--blue-50); color:var(--blue-700); }
+.pms-plan-page .status-tab.is-active.tab-audit .count { background:var(--blue-500); color:#fff; }
+.pms-plan-page .status-tab.tab-approved .dot, .pms-plan-page .status-tab.tab-done .dot { background:var(--green-500); }
+.pms-plan-page .status-tab.tab-approved .count, .pms-plan-page .status-tab.tab-done .count { background:var(--green-50); color:var(--green-700); }
+.pms-plan-page .status-tab.is-active.tab-approved .count, .pms-plan-page .status-tab.is-active.tab-done .count { background:var(--green-500); color:#fff; }
+.pms-plan-page .status-tab.tab-reject .dot { background:var(--red-500); }
+.pms-plan-page .status-tab.tab-reject .count { background:var(--red-50); color:var(--red-700); }
+.pms-plan-page .status-tab.is-active.tab-reject .count { background:var(--red-500); color:#fff; }
+.pms-plan-page .status-tab.tab-void .dot { background:var(--ink-400); }
+.pms-plan-page .tip-pill { display:inline-flex; align-items:center; gap:6px; height:30px; padding:0 12px; border-radius:999px; border:1px solid var(--ink-200); background:#fff; font-size:13px; color:var(--ink-500); cursor:pointer; transition:all .15s var(--ease-out); white-space:nowrap; }
+.pms-plan-page .tip-pill:hover { border-color:var(--brand-200); color:var(--brand-700); background:var(--brand-50); }
+.pms-plan-page .toolbar { display:flex; align-items:center; justify-content:space-between; padding:12px 20px; border-bottom:1px solid var(--ink-200); background:var(--ink-50); }
+.pms-plan-page .toolbar .left { display:flex; gap:8px; align-items:center; }
+.pms-plan-page .toolbar .right { display:flex; gap:8px; align-items:center; }
+.pms-plan-page .toolbar-divider { width:1px; height:18px; background:var(--ink-200); margin:0 4px; }
+.pms-plan-page .btn-soft { display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 12px; font-size:14px; font-weight:500; border-radius:var(--r-sm); border:1px solid transparent; cursor:pointer; user-select:none; transition:all .15s var(--ease-out); }
+.pms-plan-page .btn-soft .el-icon { font-size:14px; }
+.pms-plan-page .btn-soft.is-outline { background:#fff; color:var(--ink-700); border-color:var(--ink-200); }
+.pms-plan-page .btn-soft.is-outline:hover { background:var(--ink-50); border-color:var(--ink-300); color:var(--ink-900); }
+.pms-plan-page .btn-soft.is-danger-outline { background:#fff; color:var(--red-700); border-color:#fecaca; }
+.pms-plan-page .btn-soft.is-danger-outline:hover { background:var(--red-50); border-color:var(--red-500); }
+.pms-plan-page .btn-soft:disabled { opacity:.5; cursor:not-allowed; }
+.pms-plan-page .btn-soft:disabled:hover { transform:none; box-shadow:none; }
+.pms-plan-page .table-wrap { overflow-x:auto; }
+.pms-plan-page .app-table { --el-table-bg-color:#fff; --el-table-header-bg-color:var(--ink-50); --el-table-row-hover-bg-color:#fafbff; --el-table-border-color:transparent; --el-table-text-color:var(--ink-700); --el-table-header-text-color:var(--ink-500); }
+.pms-plan-page .app-table :deep(.el-table__body td) { border-right-color:transparent !important; }
+.pms-plan-page .app-table :deep(.el-table__header th) { border-right-color:transparent !important; }
+.pms-plan-page .app-table :deep(.el-table__header th:hover) { border-right-color:var(--ink-200) !important; }
+.pms-plan-page .app-table :deep(.el-table__header th) { background:var(--ink-50) !important; color:var(--ink-500); font-weight:600; font-size:14px; letter-spacing:.02em; padding:12px 16px; border-bottom:1px solid var(--ink-200); }
+.pms-plan-page .app-table :deep(.el-table__header th .cell) { text-transform:uppercase; }
+.pms-plan-page .app-table :deep(.el-table__body td) { padding:14px 16px; border-bottom:1px solid var(--ink-100); color:var(--ink-700); }
+.pms-plan-page .app-table :deep(.el-table__row:hover > td) { background:#fafbff !important; }
+.pms-plan-page .app-table :deep(.el-table__inner-wrapper::before) { display:none; }
+.pms-plan-page .app-table :deep(.el-table__border-left-patch) { display:none; }
+.pms-plan-page .app-table .rd-amount { font-feature-settings:"tnum" 1; font-variant-numeric:tabular-nums; color:var(--ink-900); font-weight:500; }
+/* ===== Badges ===== */
+.pms-plan-page .badge { display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:999px; font-size:13px; font-weight:600; line-height:1; border:1px solid transparent; }
+.pms-plan-page .badge .dot { width:6px; height:6px; border-radius:50%; }
+.pms-plan-page .badge.amber { background:var(--amber-50); color:var(--amber-700); border-color:#fde68a; }
+.pms-plan-page .badge.amber .dot { background:var(--amber-500); }
+.pms-plan-page .badge.blue { background:var(--blue-50); color:var(--blue-700); border-color:#bfdbfe; }
+.pms-plan-page .badge.blue .dot { background:var(--blue-500); }
+.pms-plan-page .badge.green { background:var(--green-50); color:var(--green-700); border-color:#a7f3d0; }
+.pms-plan-page .badge.green .dot { background:var(--green-500); }
+.pms-plan-page .badge.red { background:var(--red-50); color:var(--red-700); border-color:#fecaca; }
+.pms-plan-page .badge.red .dot { background:var(--red-500); }
+.pms-plan-page .badge.violet { background:var(--violet-50); color:var(--brand-700); border-color:var(--brand-200); }
+.pms-plan-page .badge.gray { background:var(--ink-100); color:var(--ink-500); border-color:var(--ink-200); }
+.pms-plan-page .badge.gray .dot { background:var(--ink-400); }
+.pms-plan-page .pagination-container { display:flex; align-items:center; justify-content:flex-end; padding:14px 20px; font-size:14px; color:var(--ink-500); background:#fff; border-top:1px solid transparent; }
+.pms-plan-page .pagination-container :deep(.el-pagination) { justify-content:flex-end; }
+.pms-plan-page .pagination-container :deep(.el-pagination .el-pager li) { border-radius:6px; border:1px solid var(--ink-200); background:#fff; min-width:32px; height:32px; line-height:32px; font-size:14px; color:var(--ink-700); margin:0 2px; }
+.pms-plan-page .pagination-container :deep(.el-pagination .el-pager li.is-active) { background:var(--brand-600); border-color:var(--brand-600); color:#fff; font-weight:600; box-shadow:0 4px 10px -2px rgba(79,70,229,.4); }
+.pms-plan-page .pagination-container :deep(.el-pagination .btn-prev), .pms-plan-page .pagination-container :deep(.el-pagination .btn-next) { border-radius:6px; border:1px solid var(--ink-200); background:#fff; min-width:32px; height:32px; }
+.pms-plan-page .pagination-container :deep(.el-pagination .btn-prev:hover), .pms-plan-page .pagination-container :deep(.el-pagination .btn-next:hover) { border-color:var(--brand-200); color:var(--brand-700); }
+.pms-plan-page .pagination-container :deep(.el-pagination .el-pagination__sizes .el-select__wrapper) { border-radius:6px; box-shadow:0 0 0 1px var(--ink-200) inset; }
+@media (max-width:1100px) { .pms-plan-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }
+@media (max-width:720px) { .pms-plan-page .filter-card .filter-bar { grid-template-columns:1fr; } .pms-plan-page .toolbar { flex-wrap:wrap; gap:10px; } }
+
 .detail-summary {
   text-align: right;
   padding: 10px;

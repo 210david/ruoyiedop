@@ -1,68 +1,151 @@
 <template>
-  <div class="app-container">
-    <el-row :gutter="20">
-      <el-col :span="24" :xs="24">
-        <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch">
-      <el-form-item label="收货单号" prop="receiveNo"><el-input v-model="queryParams.receiveNo" placeholder="请输入" clearable style="width: 200px" @keyup.enter="handleQuery" /></el-form-item>
-      <el-form-item label="采购单号" prop="orderNo"><el-input v-model="queryParams.orderNo" placeholder="请输入" clearable style="width: 200px" @keyup.enter="handleQuery" /></el-form-item>
-      <el-form-item label="供应商" prop="supplierName"><el-input v-model="queryParams.supplierName" placeholder="请输入" clearable style="width: 200px" @keyup.enter="handleQuery" /></el-form-item>
-      <el-form-item label="状态" prop="status"><el-select v-model="queryParams.status" placeholder="全部" clearable style="width: 140px"><el-option v-for="d in pms_receive_status" :key="d.value" :label="d.label" :value="d.value" /></el-select></el-form-item>
-      <el-form-item><el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button><el-button icon="Refresh" @click="resetQuery">重置</el-button><el-button type="info" plain icon="More" @click="showAdvanced = !showAdvanced">{{ showAdvanced ? '收起' : '更多' }}</el-button></el-form-item>
-      <template v-if="showAdvanced">
-        <el-form-item label="验收人" prop="inspectorName"><el-input v-model="queryParams.inspectorName" placeholder="请输入" clearable style="width: 200px" @keyup.enter="handleQuery" /></el-form-item>
-        <el-form-item label="收货日期"><el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 240px" /></el-form-item>
-      </template>
-    </el-form>
-
-    <!-- 重点业务提示 -->
-    <el-alert type="warning" :closable="false" show-icon class="mb8">
-      <template #title>
-        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-          <span style="font-weight: bold;">验收规则提示：</span>
-          <el-tag size="small" type="success" effect="dark">合格品 → 自动入库</el-tag>
-          <el-tag size="small" type="danger" effect="dark">不合格品 → 入库后发起退货</el-tag>
-          <el-tag size="small" type="warning" effect="dark">同一订单不可同时存在多个进行中收货单</el-tag>
-          <span style="color: #909399; font-size: 12px;">收货明细由采购订单自动带出，应收数量不能超过未收数量且必须大于0；同一采购订单存在待验收/待审核/已驳回收货单时不可发起新收货</span>
-          <el-button link type="primary" size="small" @click="showStatusHelp = true">
-            <el-icon><QuestionFilled /></el-icon> 查看详情
-          </el-button>
+  <div class="app-container pms-receive-page">
+    <!-- ===== Filter Card ===== -->
+    <div class="surface filter-card" v-show="showSearch">
+      <div class="filter-head">
+        <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+        <a class="adv-link" :class="{ 'is-open': showAdvanced }" @click.prevent="showAdvanced = !showAdvanced">
+          <span>{{ showAdvanced ? '收起' : '高级筛选' }}</span>
+          <el-icon class="chev"><ArrowDown /></el-icon>
+        </a>
+      </div>
+      <div class="filter-bar">
+        <div class="field">
+          <label>收货单号</label>
+          <div class="control">
+            <el-input v-model="queryParams.receiveNo" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
         </div>
-      </template>
-    </el-alert>
+        <div class="field">
+          <label>采购单号</label>
+          <div class="control">
+            <el-input v-model="queryParams.orderNo" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Document /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field">
+          <label>供应商</label>
+          <div class="control">
+            <el-input v-model="queryParams.supplierName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><OfficeBuilding /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field">
+          <label>状态</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
+              <el-option v-for="d in pms_receive_status" :key="d.value" :label="d.label" :value="d.value" />
+            </el-select>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>验收人</label>
+          <div class="control">
+            <el-input v-model="queryParams.inspectorName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><User /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>收货日期</label>
+          <div class="control">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
+          </div>
+        </div>
+      </div>
+      <div class="filter-actions">
+        <div class="filter-info">
+          <el-icon><Filter /></el-icon> 已选 {{ activeFilterCount }} 个条件，支持回车快速搜索
+        </div>
+        <div class="filter-buttons">
+          <el-button icon="RefreshLeft" @click="resetQuery">重置</el-button>
+          <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+        </div>
+      </div>
+    </div>
 
-    <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5"><el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['pms:receive:add']">新增</el-button></el-col>
-      <el-col :span="1.5"><el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['pms:receive:edit']">修改</el-button></el-col>
-      <el-col :span="1.5"><el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['pms:receive:remove']">删除</el-button></el-col>
-      <el-col :span="1.5"><el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['pms:receive:export']">导出</el-button></el-col>
-      <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
-    </el-row>
-    <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange">
-      <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="收货单号" prop="receiveNo" :width="colWidth('receiveNo', 160)" resizable sortable="custom" />
-      <el-table-column label="采购单号" prop="orderNo" :width="colWidth('orderNo', 160)" resizable />
-      <el-table-column label="供应商" prop="supplierName" :width="colWidth('supplierName', 200)" resizable show-overflow-tooltip />
-      <el-table-column label="状态" prop="status" :width="colWidth('status', 100)" resizable align="center" sortable="custom"><template #default="scope"><dict-tag :options="pms_receive_status" :value="scope.row.status" /></template></el-table-column>
-      <el-table-column label="收货日期" prop="receiveDate" :width="colWidth('receiveDate', 120)" resizable align="center" sortable="custom" />
-      <el-table-column label="应收数量" prop="totalQty" :width="colWidth('totalQty', 100)" resizable align="right" />
-      <el-table-column label="合格数量" prop="qualifiedQty" :width="colWidth('qualifiedQty', 100)" resizable align="right" />
-      <el-table-column label="不合格数量" prop="unqualifiedQty" :width="colWidth('unqualifiedQty', 110)" resizable align="right" />
-      <el-table-column label="验收人" prop="inspectorName" :width="colWidth('inspectorName', 100)" resizable />
-      <el-table-column label="创建时间" prop="createTime" :width="colWidth('createTime', 160)" resizable align="center" sortable="custom" />
-          <el-table-column label="操作" width="290" align="center" fixed="right">
-        <template #default="scope">
-          <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
-          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['pms:receive:edit']" v-if="scope.row.status === '0' || scope.row.status === '6'">修改</el-button>
-          <el-button link type="primary" icon="Check" @click="handleInspect(scope.row)" v-hasPermi="['pms:receive:edit']" v-if="scope.row.status === '0'">验收</el-button>
-          <el-button link type="success" icon="Checked" @click="handleAudit(scope.row)" v-hasPermi="['pms:receive:audit']" v-if="scope.row.status === '5'">审核</el-button>
-          <el-button link type="warning" icon="RefreshLeft" @click="handleReturn(scope.row)" v-hasPermi="['pms:return:add']" v-if="(scope.row.status === '1' || scope.row.status === '2') && scope.row.unqualifiedQty > 0">发起退货</el-button>
-          <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['pms:receive:remove']" v-if="scope.row.status === '0'">删除</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
-        <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
-      </el-col>
-    </el-row>
+    <!-- ===== Table Section ===== -->
+    <div class="surface">
+      <!-- Status Tabs + Tip Pill -->
+      <div class="status-tabs">
+        <div class="tabs-track">
+          <button class="status-tab" :class="{ 'is-active': activeStatusTab === 'all' }" @click="handleStatusTabClick('all')">
+            <span class="dot"></span><span>全部</span><span class="count">{{ statusCounts.all }}</span>
+          </button>
+          <button v-for="s in statusTabList" :key="s.value"
+            class="status-tab"
+            :class="[statusTabClass(s.value), { 'is-active': activeStatusTab === s.value }]"
+            @click="handleStatusTabClick(s.value)">
+            <span class="dot"></span><span>{{ s.label }}</span><span class="count">{{ statusCounts[s.value] || 0 }}</span>
+          </button>
+        </div>
+        <button class="tip-pill" @click="showStatusHelp = true">
+          <el-icon><WarningFilled /></el-icon>
+          <span>业务操作说明</span>
+        </button>
+      </div>
+
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <div class="left">
+          <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['pms:receive:add']">新增</el-button>
+          <button type="button" class="btn-soft is-outline" :disabled="single" @click="handleUpdate" v-hasPermi="['pms:receive:edit']">
+            <el-icon><Edit /></el-icon> 修改
+          </button>
+          <button type="button" class="btn-soft is-danger-outline" :disabled="multiple" @click="handleDelete" v-hasPermi="['pms:receive:remove']">
+            <el-icon><Delete /></el-icon> 删除
+          </button>
+          <button type="button" class="btn-soft is-outline" @click="handleExport" v-hasPermi="['pms:receive:export']">
+            <el-icon><Download /></el-icon> 导出
+          </button>
+        </div>
+        <div class="right">
+          <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="pms_receive_columns" />
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="table-wrap">
+        <el-table ref="tableRef" v-loading="loading" :data="list" border @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
+          <el-table-column type="selection" width="55" align="center" />
+          <el-table-column label="收货单号" prop="receiveNo" key="receiveNo" :width="colWidth('receiveNo', 180)" resizable sortable="custom" v-if="columns.receiveNo.visible" />
+          <el-table-column label="采购单号" prop="orderNo" key="orderNo" :width="colWidth('orderNo', 180)" resizable v-if="columns.orderNo.visible" />
+          <el-table-column label="供应商" prop="supplierName" key="supplierName" :width="colWidth('supplierName', 240)" resizable show-overflow-tooltip v-if="columns.supplierName.visible" />
+          <el-table-column label="状态" prop="status" key="status" :width="colWidth('status', 120)" resizable align="center" sortable="custom" v-if="columns.status.visible">
+            <template #default="scope">
+              <span class="badge" :class="badgeClass(scope.row.status)">
+                <span class="dot"></span>{{ statusLabel(scope.row.status) }}
+              </span>
+            </template>
+          </el-table-column>
+          <el-table-column label="收货日期" prop="receiveDate" key="receiveDate" :width="colWidth('receiveDate', 130)" resizable align="center" sortable="custom" v-if="columns.receiveDate.visible" />
+          <el-table-column label="应收数量" prop="totalQty" key="totalQty" :width="colWidth('totalQty', 110)" resizable align="right" class-name="col-num" v-if="columns.totalQty.visible" />
+          <el-table-column label="合格数量" prop="qualifiedQty" key="qualifiedQty" :width="colWidth('qualifiedQty', 110)" resizable align="right" class-name="col-num" v-if="columns.qualifiedQty.visible" />
+          <el-table-column label="不合格数量" prop="unqualifiedQty" key="unqualifiedQty" :width="colWidth('unqualifiedQty', 120)" resizable align="right" class-name="col-num" v-if="columns.unqualifiedQty.visible" />
+          <el-table-column label="验收人" prop="inspectorName" key="inspectorName" :width="colWidth('inspectorName', 120)" resizable v-if="columns.inspectorName.visible" />
+          <el-table-column label="创建时间" prop="createTime" key="createTime" :width="colWidth('createTime', 180)" resizable align="center" sortable="custom" v-if="columns.createTime.visible" />
+          <el-table-column label="操作" width="220" align="center" fixed="right">
+            <template #default="scope">
+<el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
+<el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['pms:receive:edit']" v-if="scope.row.status === '0' || scope.row.status === '6'">修改</el-button>
+<el-button link type="primary" icon="Check" @click="handleInspect(scope.row)" v-hasPermi="['pms:receive:edit']" v-if="scope.row.status === '0'">验收</el-button>
+<el-button link type="success" icon="Checked" @click="handleAudit(scope.row)" v-hasPermi="['pms:receive:audit']" v-if="scope.row.status === '5'">审核</el-button>
+<el-button link type="warning" icon="RefreshLeft" @click="handleReturn(scope.row)" v-hasPermi="['pms:return:add']" v-if="(scope.row.status === '1' || scope.row.status === '2') && scope.row.unqualifiedQty > 0">退货</el-button>
+<el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['pms:receive:remove']" v-if="scope.row.status === '0'">删除</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+
+      <!-- Pagination -->
+      <div class="pagination-container">
+        <el-pagination v-show="total > 0" :total="total" v-model:current-page="queryParams.pageNum" v-model:page-size="queryParams.pageSize" :page-sizes="[10, 20, 50, 100]" layout="total, sizes, prev, pager, next, jumper" @change="getList" />
+      </div>
+    </div>
 
     <el-dialog v-model="open" width="1166px" append-to-body draggable class="rd-dialog">
       <template #header><div class="rd-detail-header"><div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div><span class="rd-detail-header-title">{{ title }}</span><div class="rd-detail-header-sub" v-if="form.receiveNo"><div class="rd-detail-header-divider"></div><span class="rd-detail-header-no">编号：{{ form.receiveNo }}</span></div></div></template>
@@ -140,6 +223,9 @@
           <section class="rd-card">
             <div class="rd-card-header" @click="toggleCard('c2')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></span>收货明细</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
             <div class="rd-card-body" v-show="!collapsedCards.c2">
+              <el-row :gutter="10" class="mb8">
+                <el-col :span="1.5"><el-button type="primary" plain icon="Plus" size="small" @click="handleAddDetail">添加明细</el-button></el-col>
+              </el-row>
               <el-table :data="form.detailList" border size="small" :header-cell-style="{ textAlign: 'center' }">
                 <el-table-column label="序号" type="index" width="55" align="center" />
                 <el-table-column label="物料" prop="materialId" min-width="200">
@@ -175,6 +261,7 @@
                   <template #default="scope"><span class="rd-amount">{{ formatMoney(scope.row.amount) }}</span></template>
                 </el-table-column>
                 <el-table-column label="批次号" prop="batchNo" width="100"><template #default="scope"><el-input v-model="scope.row.batchNo" placeholder="批次" size="small" /></template></el-table-column>
+                <el-table-column label="操作" width="80" align="center"><template #default="scope"><el-button link type="danger" icon="Delete" size="small" @click="handleDeleteDetail(scope.$index)">删除</el-button></template></el-table-column>
               </el-table>
               <div class="detail-summary" v-if="form.detailList && form.detailList.length > 0">
                 <span>合计：应收总数量 {{ totalReceiveQty }} | 合格数量 {{ totalQualifiedQty }} | 不合格数量 {{ totalUnqualifiedQty }}</span>
@@ -640,14 +727,28 @@
             </div>
           </el-col>
         </el-row>
+        <el-row :gutter="16" style="margin-top: 16px;">
+          <el-col :span="24">
+            <div class="highlight-card" style="border-color: #a0cfff; background-color: #ecf5ff;">
+              <div class="highlight-card-title" style="color: #409eff;">
+                <el-icon style="margin-right: 4px;"><QuestionFilled /></el-icon>物料自动过滤规则
+              </div>
+              <div class="highlight-card-body">
+                <div style="margin-bottom: 8px;"><strong>新建收货时：</strong>选择采购订单后，系统仅带出<strong>未收数量大于0</strong>的物料明细。已经全部收完的物料（订单数量 = 已收数量）会自动过滤掉，不在收货明细中显示。因此当一笔订单包含多种物料、部分物料已收完时，下次对该订单剩余物料收货只会带出尚未收完的行，无需手动跳过已收完的物料</div>
+                <div style="margin-bottom: 8px;"><strong>验收提交时：</strong>如果某行物料的合格数量和不合格数量<strong>均为0</strong>（即本次未实际收货），提交验收时系统会自动删除该行并提示，仅保留有实际收货数量的明细行</div>
+                <div><strong>订单完成时：</strong>当所有物料的累计合格收货数量均达到采购数量时，订单自动变为"已完成"状态，不再出现在可收货订单列表中</div>
+              </div>
+            </div>
+          </el-col>
+        </el-row>
 
         <h4>四、业务触发说明</h4>
         <el-timeline>
           <el-timeline-item type="primary" :hollow="true">
-            <strong>新建收货：</strong>选择采购订单，自动带出供应商和物料明细（不可增删行），应收数量默认为未收数量，可修改但不能超过未收数量且必须大于0。同一订单存在进行中收货单时不可新建
+            <strong>新建收货：</strong>选择采购订单，自动带出供应商和物料明细（不可增删行）。系统仅带出<strong>未收数量大于0</strong>的物料，已全部收完的物料自动过滤不显示。应收数量默认为未收数量，可修改但不能超过未收数量且必须大于0。同一订单存在进行中收货单时不可新建
           </el-timeline-item>
           <el-timeline-item type="warning" :hollow="true">
-            <strong>验收操作：</strong>点击"验收"按钮，填写每行物料的合格数量，不合格数量自动计算（应收数量 - 合格数量）。提交后进入待审核状态
+            <strong>验收操作：</strong>点击"验收"按钮，填写每行物料的合格数量，不合格数量自动计算（应收数量 - 合格数量）。提交后进入待审核状态。如果某行物料合格数量和不合格数量<strong>均为0</strong>（即本次未实际收货），提交时系统会自动删除该行并提示
           </el-timeline-item>
           <el-timeline-item type="success" :hollow="true">
             <strong>审核操作：</strong>审核通过后，系统<strong style="color: #67c23a;">自动生成采购入库单</strong>（合格品和不合格品均入库，不合格品标记待退）。全部合格→已验收；存在不合格→部分验收
@@ -676,13 +777,53 @@ import { listWarehouse } from '@/api/wms/warehouse'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard, formatAmount, formatMoney } from '@/composables/useDetailCard'
 import UserPicker from '@/components/UserPicker/index.vue'
-import { CircleClose, ArrowRight, QuestionFilled, CircleCheck } from '@element-plus/icons-vue'
+import { CircleClose, ArrowRight, QuestionFilled, CircleCheck, ArrowDown, Search, Document, OfficeBuilding, User, Filter, Edit, Delete, Download, WarningFilled, MoreFilled } from '@element-plus/icons-vue'
+import { ElMessageBox } from 'element-plus'
 
 const { proxy } = getCurrentInstance()
 const { pms_receive_status, wms_unit } = proxy.useDict('pms_receive_status', 'wms_unit')
 
 const { collapsedCards, toggleCard } = useDetailCard(["c1", "c2", "c0", "c3", "v1", "v2", "v3", "a1"])
-const { colWidth, onHeaderDragEnd, tableRef } = useColumnResize('pms_receive_index')
+const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('pms_receive_index')
+
+// 列显隐配置 - 从 localStorage 恢复保存的设置
+const defaultColumns = {
+  receiveNo: { label: '收货单号', visible: true },
+  orderNo: { label: '采购单号', visible: true },
+  supplierName: { label: '供应商', visible: true },
+  status: { label: '状态', visible: true },
+  receiveDate: { label: '收货日期', visible: true },
+  totalQty: { label: '应收数量', visible: true },
+  qualifiedQty: { label: '合格数量', visible: true },
+  unqualifiedQty: { label: '不合格数量', visible: true },
+  inspectorName: { label: '验收人', visible: true },
+  createTime: { label: '创建时间', visible: true }
+}
+
+// 从 localStorage 读取保存的列显隐配置
+function loadColumnVisibility() {
+  try {
+    const saved = localStorage.getItem('pms_receive_columns')
+    if (saved) {
+      const parsed = JSON.parse(saved)
+      const result = {}
+      Object.keys(defaultColumns).forEach(key => {
+        result[key] = {
+          label: defaultColumns[key].label,
+          visible: parsed[key] !== undefined ? parsed[key] : defaultColumns[key].visible
+        }
+      })
+      return result
+    }
+  } catch (e) {}
+  return { ...defaultColumns }
+}
+
+const columns = ref(loadColumnVisibility())
+
+// 状态标签
+const activeStatusTab = ref('all')
+const statusCounts = ref({ all: 0, '0': 0, '1': 0, '2': 0, '3': 0, '4': 0, '5': 0, '6': 0 })
 
 const list = ref([])
 const open = ref(false)
@@ -705,6 +846,8 @@ const dateRange = ref([])
 const orderOptions = ref([])
 const materialOptions = ref([])
 const warehouseOptions = ref([])
+/** 保存自动带出时的物料明细快照，用于提交时检测是否有修改 */
+const originalDetailList = ref([])
 const ids = ref([])
 const single = ref(true)
 const multiple = ref(true)
@@ -713,7 +856,7 @@ const title = ref('')
 
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, receiveNo: undefined, orderNo: undefined, supplierName: undefined, status: undefined, params: {} },
+  queryParams: { pageNum: 1, pageSize: 10, receiveNo: undefined, orderNo: undefined, supplierName: undefined, status: undefined, inspectorName: undefined, params: {} },
   rules: {
     orderId: [{ required: true, message: '请选择采购订单', trigger: 'change' }],
     receiveDate: [{ required: true, message: '收货日期不能为空', trigger: 'change' }],
@@ -721,6 +864,21 @@ const data = reactive({
   }
 })
 const { queryParams, form, rules } = toRefs(data)
+
+// 状态标签列表
+const statusTabList = computed(() => pms_receive_status.value)
+
+// 筛选条件计数
+const activeFilterCount = computed(() => {
+  let count = 0
+  if (queryParams.value.receiveNo) count++
+  if (queryParams.value.orderNo) count++
+  if (queryParams.value.supplierName) count++
+  if (queryParams.value.status) count++
+  if (queryParams.value.inspectorName) count++
+  if (dateRange.value && dateRange.value.length > 0) count++
+  return count
+})
 
 /** 是否处于验收模式（已存在记录且状态为待验收/部分验收时，可填写合格/不合格数量） */
 const isInspectMode = computed(() => {
@@ -763,7 +921,43 @@ function getList() {
     list.value = res.rows
     total.value = res.total
     loading.value = false
+    loadStatusCounts()
+    applySavedWidths()
   })
+}
+
+// 加载状态统计
+function loadStatusCounts() {
+  listReceive({ pageNum: 1, pageSize: 999 }).then(res => {
+    const counts = { all: res.total, '0': 0, '1': 0, '2': 0, '3': 0, '4': 0, '5': 0, '6': 0 }
+    ;(res.rows || []).forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++ })
+    statusCounts.value = counts
+  }).catch(() => {})
+}
+
+// 状态标签点击
+function handleStatusTabClick(status) {
+  activeStatusTab.value = status
+  queryParams.value.status = status === 'all' ? undefined : status
+  handleQuery()
+}
+
+// 状态标签样式
+function statusTabClass(value) {
+  const map = { '0': 'tab-draft', '5': 'tab-audit', '1': 'tab-approved', '2': 'tab-done', '3': 'tab-void', '4': 'tab-reject', '6': 'tab-partial' }
+  return map[value] || ''
+}
+
+// 状态标签文字
+function statusLabel(status) {
+  const item = pms_receive_status.value.find(d => d.value == status)
+  return item ? item.label : '-'
+}
+
+// 状态徽章样式
+function badgeClass(status) {
+  const map = { '0': 'amber', '5': 'blue', '1': 'green', '2': 'green', '3': 'gray', '4': 'red', '6': 'violet' }
+  return map[status] || 'gray'
 }
 
 function handleQuery() {
@@ -774,8 +968,13 @@ function handleQuery() {
 }
 
 function resetQuery() {
-  proxy.resetForm('queryRef')
+  queryParams.value.receiveNo = undefined
+  queryParams.value.orderNo = undefined
+  queryParams.value.supplierName = undefined
+  queryParams.value.status = undefined
+  queryParams.value.inspectorName = undefined
   queryParams.value.params = {}
+  activeStatusTab.value = 'all'
   handleQuery()
 }
 
@@ -818,6 +1017,7 @@ function reset() {
     remark: undefined,
     detailList: []
   }
+  originalDetailList.value = []
   proxy.resetForm('receiveRef')
 }
 
@@ -854,8 +1054,11 @@ function onOrderChange(val) {
     form.value.orderReceivedQty = parseFloat(orderReceived.toFixed(2))
     form.value.orderUnreceivedQty = parseFloat((orderTotal - orderReceived).toFixed(2))
     // 从采购订单明细带出收货明细，应收数量 = 订单数量 - 已收数量（未收数量）
+    // 仅带出未收数量大于0的物料，已全部收完的不再带入
     if (order.detailList && order.detailList.length > 0) {
-      form.value.detailList = order.detailList.map(d => ({
+      form.value.detailList = order.detailList
+        .filter(d => parseFloat((d.qty || 0) - (d.receivedQty || 0)).toFixed(2) > 0)
+        .map(d => ({
         orderDetailId: d.detailId,
         materialId: d.materialId,
         materialCode: d.materialCode,
@@ -874,6 +1077,8 @@ function onOrderChange(val) {
       form.value.detailList = []
     }
     calcDetail({})
+    // 保存自动带出时的物料明细快照，用于提交时检测是否有修改
+    originalDetailList.value = JSON.parse(JSON.stringify(form.value.detailList || []))
   })
 }
 
@@ -942,10 +1147,12 @@ function handleUpdate(row) {
             }
           })
         }
+        originalDetailList.value = JSON.parse(JSON.stringify(form.value.detailList || []))
         open.value = true
         title.value = '修改收货验收'
       })
     } else {
+      originalDetailList.value = JSON.parse(JSON.stringify(form.value.detailList || []))
       open.value = true
       title.value = '修改收货验收'
     }
@@ -1010,6 +1217,69 @@ function handleDeleteDetail(index) {
   calcDetail({})
 }
 
+/** 检测物料明细数据是否被修改，返回变更描述列表 */
+function getDetailChanges() {
+  const current = form.value.detailList || []
+  const original = originalDetailList.value || []
+  const changes = []
+
+  // 检测行数变化（新增/删除明细行）
+  if (current.length !== original.length) {
+    if (current.length > original.length) {
+      changes.push(`新增了${current.length - original.length}行物料明细`)
+    } else {
+      changes.push(`删除了${original.length - current.length}行物料明细`)
+    }
+  }
+
+  // 逐行比对物料相关数据
+  const minLen = Math.min(current.length, original.length)
+  for (let i = 0; i < minLen; i++) {
+    const cur = current[i]
+    const orig = original[i]
+    const rowChanges = []
+    const materialLabel = orig.materialCode || orig.materialName || `第${i + 1}行`
+
+    if (cur.materialId !== orig.materialId) {
+      const origLabel = orig.materialCode || orig.materialName || '空'
+      const curLabel = cur.materialCode || cur.materialName || '空'
+      rowChanges.push(`物料由"${origLabel}"改为"${curLabel}"`)
+    }
+    if (cur.unit !== orig.unit) {
+      rowChanges.push(`单位由"${orig.unit || '空'}"改为"${cur.unit || '空'}"`)
+    }
+    if (parseFloat(cur.receiveQty || 0) !== parseFloat(orig.receiveQty || 0)) {
+      rowChanges.push(`应收数量由"${orig.receiveQty}"改为"${cur.receiveQty}"`)
+    }
+    if (parseFloat(cur.unitPrice || 0) !== parseFloat(orig.unitPrice || 0)) {
+      rowChanges.push(`单价由"${orig.unitPrice}"改为"${cur.unitPrice}"`)
+    }
+
+    if (rowChanges.length > 0) {
+      changes.push(`第${i + 1}行（${materialLabel}）：${rowChanges.join('，')}`)
+    }
+  }
+
+  return changes
+}
+
+/** 执行实际的提交操作 */
+function doSubmit() {
+  if (form.value.receiveId != undefined) {
+    updateReceive(form.value).then(() => {
+      proxy.$modal.msgSuccess('修改成功')
+      open.value = false
+      getList()
+    })
+  } else {
+    addReceive(form.value).then(() => {
+      proxy.$modal.msgSuccess('新增成功')
+      open.value = false
+      getList()
+    })
+  }
+}
+
 function submitForm() {
   proxy.$refs['receiveRef'].validate(valid => {
     if (valid) {
@@ -1029,19 +1299,27 @@ function submitForm() {
           }
         }
       }
-      if (form.value.receiveId != undefined) {
-        updateReceive(form.value).then(() => {
-          proxy.$modal.msgSuccess('修改成功')
-          open.value = false
-          getList()
-        })
-      } else {
-        addReceive(form.value).then(() => {
-          proxy.$modal.msgSuccess('新增成功')
-          open.value = false
-          getList()
-        })
+      // 检测物料相关数据是否被修改，若有修改则提示用户确认
+      const changes = getDetailChanges()
+      if (changes.length > 0) {
+        const htmlMsg = `<div style="line-height: 1.8; max-height: 320px; overflow-y: auto;">
+          <p style="color: #e6a23c; font-weight: bold; margin-bottom: 10px;">检测到以下物料数据已被修改，请确认无误后提交：</p>
+          <div style="background: #fdf6ec; padding: 10px 14px; border-radius: 4px; margin: 8px 0; border-left: 3px solid #e6a23c;">
+            ${changes.map(c => `<div style="padding: 3px 0; color: #606266;">• ${c}</div>`).join('')}
+          </div>
+          <p style="color: #909399; font-size: 12px; margin-top: 10px;">如确认修改无误，请点击「确认提交」继续。</p>
+        </div>`
+        ElMessageBox.confirm(htmlMsg, '物料数据变更确认', {
+          confirmButtonText: '确认提交',
+          cancelButtonText: '再检查一下',
+          type: 'warning',
+          dangerouslyUseHTMLString: true,
+        }).then(() => {
+          doSubmit()
+        }).catch(() => {})
+        return
       }
+      doSubmit()
     }
   })
 }
@@ -1131,6 +1409,36 @@ function submitInspect() {
   }).catch(() => {})
 }
 
+/** 获取更多操作列表 */
+function getMoreActions(row) {
+  const actions = []
+  // 根据状态判断哪些操作需要显示在"更多"中
+  // 状态为待验收(0)时：修改、验收、删除已显示在前面，无需更多
+  // 状态为待审核(5)时：审核操作显示在前面
+  // 状态为已验收(1)或部分验收(2)且有不合格数量时：发起退货显示在前面
+
+  // 如果当前状态没有显示删除按钮，但用户有权限，可以放在更多中
+  if (row.status !== '0' && row.status !== '6') {
+    // 其他状态下不显示删除
+  }
+
+  return actions
+}
+
+/** 处理更多操作 */
+function handleMoreAction(cmd, row) {
+  switch (cmd) {
+    case 'delete':
+      handleDelete(row)
+      break
+    case 'return':
+      handleReturn(row)
+      break
+    default:
+      break
+  }
+}
+
 /** 发起退货 — 根据不合格物料自动创建退货单 */
 function handleReturn(row) {
   getReceive(row.receiveId).then(res => {
@@ -1211,7 +1519,7 @@ function submitAudit(passed) {
 }
 
 function handleExport() {
-  proxy.download('pms/receive/export', { ...queryParams.value }, `receive_${new Date().getTime()}.xlsx`)
+  proxy.download('pms/receive/export', { ...proxy.addDateRange(queryParams.value, dateRange.value) }, `receive_${new Date().getTime()}.xlsx`)
 }
 
 function cancel() {
@@ -1244,6 +1552,148 @@ onActivated(() => { getList() })
 </script>
 
 <style scoped>
+/* ===== Design Tokens ===== */
+.pms-receive-page {
+  padding-top: 10px;
+  --brand-50:#eef2ff; --brand-100:#e0e7ff; --brand-200:#c7d2fe; --brand-500:#6366f1; --brand-600:#4f46e5; --brand-700:#4338ca;
+  --ink-900:#0f172a; --ink-700:#334155; --ink-500:#64748b; --ink-400:#94a3b8; --ink-300:#cbd5e1; --ink-200:#e2e8f0; --ink-100:#f1f5f9; --ink-50:#f8fafc;
+  --amber-50:#fffbeb; --amber-500:#f59e0b; --amber-700:#b45309;
+  --blue-50:#eff6ff; --blue-500:#3b82f6; --blue-700:#1d4ed8;
+  --green-50:#ecfdf5; --green-500:#10b981; --green-700:#047857;
+  --red-50:#fef2f2; --red-500:#ef4444; --red-700:#b91c1c;
+  --violet-50:#f5f3ff;
+  --r-sm:6px; --r-md:10px; --r-lg:14px;
+  --shadow-card:0 1px 0 rgba(15,23,42,.04), 0 1px 2px rgba(15,23,42,.04);
+  --ease-out:cubic-bezier(.16,.84,.44,1);
+  font-feature-settings:"tnum" 1;
+  color: var(--ink-900);
+}
+
+/* ===== Surface Card ===== */
+.pms-receive-page .surface { background:#fff; border:1px solid var(--ink-200); border-radius:var(--r-lg); box-shadow:var(--shadow-card); overflow:hidden; margin-bottom:8px; }
+
+/* ===== Filter Card ===== */
+.pms-receive-page .filter-card { padding:14px 20px 16px; }
+.pms-receive-page .filter-card .filter-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+.pms-receive-page .filter-card .filter-title { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--ink-700); }
+.pms-receive-page .filter-card .filter-title .glyph { width:4px; height:14px; background:var(--brand-600); border-radius:2px; }
+.pms-receive-page .filter-card .adv-link { font-size:14px; color:var(--ink-500); text-decoration:none; display:flex; align-items:center; gap:4px; transition:color .15s; cursor:pointer; }
+.pms-receive-page .filter-card .adv-link:hover { color:var(--brand-600); }
+.pms-receive-page .filter-card .adv-link .chev { transition:transform .2s var(--ease-out); }
+.pms-receive-page .filter-card .adv-link.is-open .chev { transform:rotate(180deg); }
+.pms-receive-page .filter-card .filter-bar { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px 16px; }
+.pms-receive-page .filter-card .filter-actions { display:flex; align-items:center; justify-content:space-between; margin-top:14px; padding-top:14px; border-top:1px dashed var(--ink-200); }
+.pms-receive-page .filter-card .filter-info { font-size:13px; color:var(--ink-500); display:flex; align-items:center; gap:6px; }
+.pms-receive-page .filter-card .filter-buttons { display:flex; gap:8px; }
+
+/* ===== Form Field ===== */
+.pms-receive-page .field { display:flex; flex-direction:column; gap:6px; }
+.pms-receive-page .field label { font-size:14px; font-weight:500; color:var(--ink-700); display:flex; align-items:center; gap:6px; }
+.pms-receive-page .field .control { display:flex; align-items:center; height:36px; padding:0 12px; background:#fff; border:1px solid var(--ink-200); border-radius:var(--r-sm); transition:border-color .15s var(--ease-out), box-shadow .15s var(--ease-out); }
+.pms-receive-page .field .control:focus-within { border-color:var(--brand-500); box-shadow:0 0 0 3px rgba(99,102,241,.15); }
+
+/* el-input transparent inside .control */
+.pms-receive-page .field .control :deep(.el-input__wrapper) { box-shadow:none !important; background:transparent !important; padding:0; height:34px; }
+.pms-receive-page .field .control :deep(.el-input__inner) { border:0; background:transparent; font-size:14px; color:var(--ink-900); height:34px; line-height:34px; }
+.pms-receive-page .field .control :deep(.el-input__inner::placeholder) { color:var(--ink-400); }
+.pms-receive-page .field .control :deep(.el-input__prefix) { color:var(--ink-400); margin-right:4px; }
+.pms-receive-page .field .control :deep(.el-input__prefix .el-icon) { font-size:14px; }
+
+/* el-select transparent inside .control */
+.pms-receive-page .field .control :deep(.el-select) { width:100%; }
+.pms-receive-page .field .control :deep(.el-select .el-select__wrapper) { box-shadow:none !important; background:transparent !important; padding:0; min-height:34px; height:34px; }
+.pms-receive-page .field .control :deep(.el-select .el-select__wrapper .el-select__placeholder) { font-size:14px; color:var(--ink-900); }
+.pms-receive-page .field .control :deep(.el-select .el-select__wrapper.is-focused) { box-shadow:none !important; }
+
+/* el-date-picker inside .control */
+.pms-receive-page .field .control :deep(.el-date-editor) { width:100%; box-shadow:none !important; background:transparent !important; }
+.pms-receive-page .field .control :deep(.el-date-editor .el-input__wrapper) { box-shadow:none !important; background:transparent !important; padding:0; }
+.pms-receive-page .field .control :deep(.el-date-editor .el-input__inner) { border:0; background:transparent; font-size:14px; color:var(--ink-900); }
+
+/* ===== Status Tabs ===== */
+.pms-receive-page .status-tabs { display:flex; align-items:center; gap:12px; padding:6px 10px 6px 12px; border-bottom:1px solid var(--ink-200); background:#fff; }
+.pms-receive-page .tabs-track { display:flex; align-items:center; gap:4px; flex:1; min-width:0; overflow-x:auto; scrollbar-width:none; }
+.pms-receive-page .tabs-track::-webkit-scrollbar { display:none; }
+.pms-receive-page .status-tab { display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 12px; border-radius:var(--r-sm); font-size:14px; color:var(--ink-500); cursor:pointer; user-select:none; transition:all .15s var(--ease-out); white-space:nowrap; border:1px solid transparent; background:transparent; }
+.pms-receive-page .status-tab .dot { width:6px; height:6px; border-radius:50%; background:var(--ink-300); }
+.pms-receive-page .status-tab .count { font-size:12px; font-weight:600; padding:1px 6px; border-radius:999px; background:var(--ink-100); color:var(--ink-500); min-width:18px; text-align:center; line-height:1.4; font-feature-settings:"tnum" 1; }
+.pms-receive-page .status-tab:hover { background:var(--ink-50); color:var(--ink-700); }
+.pms-receive-page .status-tab.is-active { background:var(--brand-50); color:var(--brand-700); font-weight:600; border-color:var(--brand-200); }
+.pms-receive-page .status-tab.is-active .count { background:var(--brand-600); color:#fff; }
+.pms-receive-page .status-tab.is-active .dot { background:var(--brand-500); }
+.pms-receive-page .status-tab.tab-draft .dot { background:var(--amber-500); }
+.pms-receive-page .status-tab.tab-draft .count { background:var(--amber-50); color:var(--amber-700); }
+.pms-receive-page .status-tab.is-active.tab-draft .count { background:var(--amber-500); color:#fff; }
+.pms-receive-page .status-tab.tab-audit .dot { background:var(--blue-500); }
+.pms-receive-page .status-tab.tab-audit .count { background:var(--blue-50); color:var(--blue-700); }
+.pms-receive-page .status-tab.is-active.tab-audit .count { background:var(--blue-500); color:#fff; }
+.pms-receive-page .status-tab.tab-approved .dot, .pms-receive-page .status-tab.tab-done .dot { background:var(--green-500); }
+.pms-receive-page .status-tab.tab-approved .count, .pms-receive-page .status-tab.tab-done .count { background:var(--green-50); color:var(--green-700); }
+.pms-receive-page .status-tab.is-active.tab-approved .count, .pms-receive-page .status-tab.is-active.tab-done .count { background:var(--green-500); color:#fff; }
+.pms-receive-page .status-tab.tab-void .dot { background:var(--ink-400); }
+.pms-receive-page .status-tab.tab-reject .dot { background:var(--red-500); }
+.pms-receive-page .status-tab.tab-reject .count { background:var(--red-50); color:var(--red-700); }
+.pms-receive-page .status-tab.is-active.tab-reject .count { background:var(--red-500); color:#fff; }
+.pms-receive-page .status-tab.tab-partial .dot { background:var(--violet-500); }
+.pms-receive-page .status-tab.tab-partial .count { background:var(--violet-50); color:#7c3aed; }
+.pms-receive-page .status-tab.is-active.tab-partial .count { background:var(--violet-500); color:#fff; }
+
+/* Tip Pill */
+.pms-receive-page .tip-pill { display:flex; align-items:center; gap:6px; padding:6px 12px; border-radius:var(--r-md); font-size:13px; font-weight:500; color:var(--amber-700); background:var(--amber-50); border:1px solid var(--amber-500); cursor:pointer; transition:all .15s; }
+.pms-receive-page .tip-pill:hover { background:var(--amber-500); color:#fff; }
+
+/* ===== Toolbar ===== */
+.pms-receive-page .toolbar { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border-bottom:1px solid var(--ink-200); }
+.pms-receive-page .toolbar .left { display:flex; align-items:center; gap:8px; }
+.pms-receive-page .toolbar .right { display:flex; align-items:center; gap:8px; }
+
+/* Soft Button */
+.pms-receive-page .btn-soft { display:flex; align-items:center; gap:6px; padding:0 14px; height:32px; border-radius:var(--r-sm); font-size:13px; font-weight:500; cursor:pointer; transition:all .15s; border:1px solid transparent; }
+.pms-receive-page .btn-soft.is-outline { background:#fff; border-color:var(--ink-200); color:var(--ink-700); }
+.pms-receive-page .btn-soft.is-outline:hover:not(:disabled) { border-color:var(--brand-500); color:var(--brand-600); }
+.pms-receive-page .btn-soft.is-danger-outline { background:#fff; border-color:var(--red-200); color:var(--red-600); }
+.pms-receive-page .btn-soft.is-danger-outline:hover:not(:disabled) { border-color:var(--red-500); background:var(--red-50); }
+.pms-receive-page .btn-soft:disabled { opacity:0.5; cursor:not-allowed; }
+
+/* ===== Table ===== */
+.pms-receive-page .table-wrap { overflow-x:auto; }
+.pms-receive-page .app-table { --el-table-bg-color:#fff; --el-table-header-bg-color:var(--ink-50); --el-table-row-hover-bg-color:#fafbff; --el-table-border-color:transparent; --el-table-text-color:var(--ink-700); --el-table-header-text-color:var(--ink-500); }
+.pms-receive-page .app-table :deep(.el-table__body td) { border-right-color:transparent !important; }
+.pms-receive-page .app-table :deep(.el-table__header th) { border-right-color:transparent !important; }
+.pms-receive-page .app-table :deep(.el-table__header th:hover) { border-right-color:var(--ink-200) !important; }
+.pms-receive-page .app-table :deep(.el-table__header th) { background:var(--ink-50) !important; color:var(--ink-500); font-weight:600; font-size:14px; letter-spacing:.02em; padding:12px 16px; border-bottom:1px solid var(--ink-200); }
+.pms-receive-page .app-table :deep(.el-table__header th .cell) { text-transform:uppercase; }
+.pms-receive-page .app-table :deep(.el-table__row td) { padding:12px 16px; border-bottom:1px solid var(--ink-100); }
+.pms-receive-page .app-table :deep(.el-table__row:hover td) { background:#fafbff !important; }
+
+/* Badge */
+.pms-receive-page .badge { display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:999px; font-size:13px; font-weight:600; line-height:1; border:1px solid transparent; }
+.pms-receive-page .badge .dot { width:6px; height:6px; border-radius:50%; }
+.pms-receive-page .badge.amber { background:var(--amber-50); color:var(--amber-700); border-color:#fde68a; }
+.pms-receive-page .badge.amber .dot { background:var(--amber-500); }
+.pms-receive-page .badge.blue { background:var(--blue-50); color:var(--blue-700); border-color:#bfdbfe; }
+.pms-receive-page .badge.blue .dot { background:var(--blue-500); }
+.pms-receive-page .badge.green { background:var(--green-50); color:var(--green-700); border-color:#a7f3d0; }
+.pms-receive-page .badge.green .dot { background:var(--green-500); }
+.pms-receive-page .badge.red { background:var(--red-50); color:var(--red-700); border-color:#fecaca; }
+.pms-receive-page .badge.red .dot { background:var(--red-500); }
+.pms-receive-page .badge.violet { background:var(--violet-50); color:var(--brand-700); border-color:var(--brand-200); }
+.pms-receive-page .badge.gray { background:var(--ink-100); color:var(--ink-500); border-color:var(--ink-200); }
+.pms-receive-page .badge.gray .dot { background:var(--ink-400); }
+
+/* Col Num */
+.pms-receive-page .col-num { font-variant-numeric:tabular-nums; font-weight:600; }
+
+/* ===== Pagination ===== */
+.pms-receive-page .pagination-container { display:flex; justify-content:flex-end; padding:12px 16px; border-top:1px solid var(--ink-200); }
+.pms-receive-page .pagination-container :deep(.el-pagination) { font-weight:500; }
+.pms-receive-page .pagination-container :deep(.el-pagination .el-pager li) { border-radius:6px; font-weight:500; }
+.pms-receive-page .pagination-container :deep(.el-pagination .el-pager li.is-active) { background:var(--brand-600); color:#fff; }
+
+/* ===== Responsive ===== */
+@media (max-width:1100px) { .pms-receive-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }
+@media (max-width:720px) { .pms-receive-page .filter-card .filter-bar { grid-template-columns:1fr; } .pms-receive-page .toolbar { flex-wrap:wrap; gap:10px; } .pms-receive-page .status-tabs { padding:6px 8px; } }
+
 .detail-summary {
   text-align: right;
   padding: 10px;

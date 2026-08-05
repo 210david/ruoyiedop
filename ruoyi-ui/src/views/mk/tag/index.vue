@@ -1,65 +1,132 @@
 <template>
-  <div class="app-container">
-    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch">
-      <el-form-item label="标签名称" prop="tagName">
-        <el-input v-model="queryParams.tagName" placeholder="请输入" clearable style="width: 200px" @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="标签类型" prop="tagType">
-        <el-select v-model="queryParams.tagType" placeholder="请选择" clearable style="width: 200px">
-          <el-option v-for="d in marketing_tag_type" :key="d.value" :label="d.label" :value="d.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="状态" prop="status">
-        <el-select v-model="queryParams.status" placeholder="请选择" clearable style="width: 200px">
-          <el-option v-for="d in sys_normal_disable" :key="d.value" :label="d.label" :value="d.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-        <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-      </el-form-item>
-    </el-form>
+  <div class="app-container mk-list-page">
+    <!-- ===== Filter Card ===== -->
+    <div class="surface filter-card" v-show="showSearch">
+      <div class="filter-head">
+        <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+      </div>
+      <div class="filter-bar">
+        <div class="field">
+          <label>标签名称</label>
+          <div class="control">
+            <el-input v-model="queryParams.tagName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field">
+          <label>标签类型</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.tagType" placeholder="全部" clearable @change="handleQuery">
+              <template #prefix><el-icon><Filter /></el-icon></template>
+              <el-option v-for="d in marketing_tag_type" :key="d.value" :label="d.label" :value="d.value" />
+            </el-select>
+          </div>
+        </div>
+        <div class="field">
+          <label>状态</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
+              <template #prefix><el-icon><Filter /></el-icon></template>
+              <el-option v-for="d in sys_normal_disable" :key="d.value" :label="d.label" :value="d.value" />
+            </el-select>
+          </div>
+        </div>
+      </div>
+      <div class="filter-actions">
+        <div class="filter-info">
+          <el-icon><Filter /></el-icon> 已选 {{ activeFilterCount }} 个条件，支持回车快速搜索
+        </div>
+        <div class="filter-buttons">
+          <el-button icon="RefreshLeft" @click="resetQuery">重置</el-button>
+          <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+        </div>
+      </div>
+    </div>
 
-    <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5"><el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['marketing:tag:add']">新增</el-button></el-col>
-      <el-col :span="1.5"><el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['marketing:tag:edit']">修改</el-button></el-col>
-      <el-col :span="1.5"><el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['marketing:tag:remove']">删除</el-button></el-col>
-      <el-col :span="1.5"><el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['marketing:tag:export']">导出</el-button></el-col>
-      <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
-    </el-row>
+    <!-- ===== Table Section ===== -->
+    <div class="surface">
+      <!-- Status Tabs -->
+      <div class="status-tabs">
+        <div class="tabs-track">
+          <button class="status-tab" :class="{ 'is-active': activeStatusTab === 'all' }" @click="handleStatusTabClick('all')">
+            <span class="dot"></span><span>全部</span><span class="count">{{ statusCounts.all }}</span>
+          </button>
+          <button v-for="s in statusTabList" :key="s.value"
+            class="status-tab"
+            :class="[statusTabClass(s.value), { 'is-active': activeStatusTab === s.value }]"
+            @click="handleStatusTabClick(s.value)">
+            <span class="dot"></span><span>{{ s.label }}</span><span class="count">{{ statusCounts[s.value] || 0 }}</span>
+          </button>
+        </div>
+      </div>
 
-    <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
-      <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="标签名称" prop="tagName" :width="colWidth('tagName', 180)" resizable>
-        <template #default="scope">
-          <el-tag :color="scope.row.tagColor" effect="dark" v-if="scope.row.tagColor">{{ scope.row.tagName }}</el-tag>
-          <span v-else>{{ scope.row.tagName }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="标签类型" prop="tagType" :width="colWidth('tagType', 100)" resizable align="center">
-        <template #default="scope"><dict-tag :options="marketing_tag_type" :value="scope.row.tagType" /></template>
-      </el-table-column>
-      <el-table-column label="颜色" prop="tagColor" :width="colWidth('tagColor', 100)" resizable align="center">
-        <template #default="scope">
-          <div v-if="scope.row.tagColor" :style="{ background: scope.row.tagColor, width: '30px', height: '20px', borderRadius: '4px', display: 'inline-block' }"></div>
-          <span v-else>-</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="排序" prop="sort" :width="colWidth('sort', 80)" resizable align="center" />
-      <el-table-column label="状态" prop="status" :width="colWidth('status', 100)" resizable align="center">
-        <template #default="scope"><dict-tag :options="sys_normal_disable" :value="scope.row.status" /></template>
-      </el-table-column>
-      <el-table-column label="创建时间" prop="createTime" :width="colWidth('createTime', 160)" resizable />
-      <el-table-column label="备注" prop="remark" show-overflow-tooltip />
-      <el-table-column label="操作" width="200" align="center" fixed="right">
-        <template #default="scope">
-          <el-button link type="primary" icon="View" @click="handleView(scope.row)">详情</el-button>
-          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['marketing:tag:edit']">修改</el-button>
-          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['marketing:tag:remove']">删除</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
-    <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <div class="left">
+          <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['marketing:tag:add']">新增</el-button>
+          <button type="button" class="btn-soft is-outline" :disabled="single" @click="handleUpdate" v-hasPermi="['marketing:tag:edit']">
+            <el-icon><Edit /></el-icon> 修改
+          </button>
+          <button type="button" class="btn-soft is-danger-outline" :disabled="multiple" @click="handleDelete" v-hasPermi="['marketing:tag:remove']">
+            <el-icon><Delete /></el-icon> 删除
+          </button>
+          <div class="toolbar-divider"></div>
+          <button type="button" class="btn-soft is-outline" @click="handleExport" v-hasPermi="['marketing:tag:export']">
+            <el-icon><Download /></el-icon> 导出
+          </button>
+        </div>
+        <div class="right">
+          <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="mk_tag_columns" />
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="table-wrap">
+        <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
+          <el-table-column type="selection" width="55" align="center" />
+          <el-table-column label="标签名称" prop="tagName" key="tagName" :width="colWidth('tagName', 180)" resizable v-if="columns.tagName.visible">
+            <template #default="scope">
+              <el-tag :color="scope.row.tagColor" effect="dark" v-if="scope.row.tagColor">{{ scope.row.tagName }}</el-tag>
+              <span v-else>{{ scope.row.tagName }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="标签类型" prop="tagType" key="tagType" :width="colWidth('tagType', 100)" resizable align="center" v-if="columns.tagType.visible">
+            <template #default="scope">
+              <span class="badge" :class="typeBadgeClass(scope.row.tagType)">
+                <span class="dot"></span>{{ typeLabel(scope.row.tagType) }}
+              </span>
+            </template>
+          </el-table-column>
+          <el-table-column label="颜色" prop="tagColor" key="tagColor" :width="colWidth('tagColor', 100)" resizable align="center" v-if="columns.tagColor.visible">
+            <template #default="scope">
+              <div v-if="scope.row.tagColor" :style="{ background: scope.row.tagColor, width: '30px', height: '20px', borderRadius: '4px', display: 'inline-block' }"></div>
+              <span v-else>-</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="排序" prop="sort" key="sort" :width="colWidth('sort', 80)" resizable align="center" v-if="columns.sort.visible" />
+          <el-table-column label="状态" prop="status" key="status" :width="colWidth('status', 100)" resizable align="center" v-if="columns.status.visible">
+            <template #default="scope">
+              <span class="badge" :class="badgeClass(scope.row.status)">
+                <span class="dot"></span>{{ statusLabel(scope.row.status) }}
+              </span>
+            </template>
+          </el-table-column>
+          <el-table-column label="创建时间" prop="createTime" key="createTime" :width="colWidth('createTime', 160)" resizable sortable="custom" v-if="columns.createTime.visible" />
+          <el-table-column label="备注" prop="remark" key="remark" show-overflow-tooltip v-if="columns.remark.visible" />
+          <el-table-column label="操作" width="200" align="center" fixed="right">
+            <template #default="scope">
+              <el-button link type="primary" icon="View" @click="handleView(scope.row)">详情</el-button>
+              <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['marketing:tag:edit']">修改</el-button>
+              <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['marketing:tag:remove']">删除</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+
+      <!-- Pagination -->
+      <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+    </div>
 
     <!-- 新增/修改对话框 -->
     <el-dialog v-model="open" width="700px" append-to-body draggable class="rd-dialog">
@@ -186,7 +253,7 @@ const viewForm = ref({})
 
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, tagName: undefined, tagType: undefined, status: undefined },
+  queryParams: { pageNum: 1, pageSize: 10, tagName: undefined, tagType: undefined, status: undefined, params: {} },
   rules: {
     tagName: [{ required: true, message: '标签名称不能为空', trigger: 'blur' }],
     tagType: [{ required: true, message: '请选择标签类型', trigger: 'change' }]
@@ -194,12 +261,72 @@ const data = reactive({
 })
 const { queryParams, form, rules } = toRefs(data)
 
+// 列显隐配置 - 从 localStorage 恢复保存的设置
+const defaultColumns = {
+  tagName: { label: '标签名称', visible: true },
+  tagType: { label: '标签类型', visible: true },
+  tagColor: { label: '颜色', visible: true },
+  sort: { label: '排序', visible: true },
+  status: { label: '状态', visible: true },
+  createTime: { label: '创建时间', visible: true },
+  remark: { label: '备注', visible: true }
+}
+
+function loadColumnVisibility() {
+  try {
+    const saved = localStorage.getItem('mk_tag_columns')
+    if (saved) {
+      const parsed = JSON.parse(saved)
+      const result = {}
+      Object.keys(defaultColumns).forEach(key => {
+        result[key] = {
+          label: defaultColumns[key].label,
+          visible: parsed[key] !== undefined ? parsed[key] : defaultColumns[key].visible
+        }
+      })
+      return result
+    }
+  } catch (e) {}
+  return { ...defaultColumns }
+}
+
+const columns = ref(loadColumnVisibility())
+
+const activeFilterCount = computed(() => {
+  let count = 0
+  if (queryParams.value.tagName) count++
+  if (queryParams.value.tagType) count++
+  if (queryParams.value.status) count++
+  return count
+})
+
+const showAdvanced = ref(false)
+const activeStatusTab = ref('all')
+const statusCounts = ref({ all: 0, '0': 0, '1': 0 })
+const statusTabList = computed(() => sys_normal_disable.value)
+function loadStatusCounts() {
+  const counts = { all: 0, '0': 0, '1': 0 }
+  list.value.forEach(row => {
+    const s = row.status
+    if (counts[s] !== undefined) counts[s]++
+  })
+  counts.all = total.value
+  statusCounts.value = counts
+}
+function handleStatusTabClick(status) { activeStatusTab.value = status; queryParams.value.status = status === 'all' ? undefined : status; handleQuery() }
+function badgeClass(status) { const map = { '0': 'green', '1': 'gray' }; return map[status] || 'gray' }
+function statusLabel(status) { const item = sys_normal_disable.value.find(d => d.value == status); return item ? item.label : '-' }
+function typeBadgeClass(type) { const map = { '1': 'blue', '2': 'green', '3': 'violet', '4': 'amber' }; return map[type] || 'gray' }
+function typeLabel(type) { const item = marketing_tag_type.value.find(d => d.value == type); return item ? item.label : '-' }
+function statusTabClass(value) { const map = { '0': 'tab-approved', '1': 'tab-void' }; return map[value] || '' }
+
 function getList() {
   loading.value = true
-  listTag(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false })
+  listTag(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false; loadStatusCounts(); applySavedWidths() }).catch(() => { loading.value = false })
 }
-function handleQuery() { queryParams.value.pageNum = 1; getList() }
-function resetQuery() { proxy.resetForm('queryRef'); handleQuery() }
+function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
+function resetQuery() { queryParams.value.tagName = undefined; queryParams.value.tagType = undefined; queryParams.value.status = undefined; queryParams.value.params = {}; activeStatusTab.value = 'all'; handleQuery() }
+function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.tagId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function reset() {
   form.value = { tagName: undefined, tagType: '0', tagColor: undefined, sort: 0, status: '0', remark: undefined }

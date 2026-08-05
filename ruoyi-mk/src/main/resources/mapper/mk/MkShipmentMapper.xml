@@ -21,7 +21,8 @@
         <result property="receiverPhone"     column="receiver_phone"/>
         <result property="receiverAddress"   column="receiver_address"/>
         <result property="shipperId"         column="shipper_id"/>
-        <result property="shipperName"       column="shipper_name"/>
+        <result property="shipperName"        column="shipper_name"/>
+        <result property="outboundOrderNo"   column="outbound_order_no"/>
         <result property="delFlag"           column="del_flag"/>
         <result property="createBy"          column="create_by"/>
         <result property="createTime"        column="create_time"/>
@@ -53,7 +54,7 @@
                customer_id, customer_name, status, shipment_date,
                logistics_company, tracking_no, total_qty, total_amount,
                receiver_name, receiver_phone, receiver_address,
-               shipper_id, shipper_name,
+               shipper_id, shipper_name, outbound_order_no,
                del_flag, create_by, create_time, update_by, update_time, remark
         FROM mk_shipment
     </sql>
@@ -87,14 +88,14 @@
             customer_id, customer_name, status, shipment_date,
             logistics_company, tracking_no, total_qty, total_amount,
             receiver_name, receiver_phone, receiver_address,
-            shipper_id, shipper_name,
+            shipper_id, shipper_name, outbound_order_no,
             del_flag, create_by, create_time, remark
         ) VALUES (
             #{shipmentNo}, #{orderId}, #{orderNo}, #{contractId}, #{contractNo},
             #{customerId}, #{customerName}, #{status}, #{shipmentDate},
             #{logisticsCompany}, #{trackingNo}, #{totalQty}, #{totalAmount},
             #{receiverName}, #{receiverPhone}, #{receiverAddress},
-            #{shipperId}, #{shipperName},
+            #{shipperId}, #{shipperName}, #{outboundOrderNo},
             #{delFlag}, #{createBy}, sysdate(), #{remark}
         )
     </insert>
@@ -120,6 +121,7 @@
             <if test="receiverAddress != null">receiver_address = #{receiverAddress},</if>
             <if test="shipperId != null">shipper_id = #{shipperId},</if>
             <if test="shipperName != null">shipper_name = #{shipperName},</if>
+            <if test="outboundOrderNo != null">outbound_order_no = #{outboundOrderNo},</if>
             <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
             <if test="remark != null">remark = #{remark},</if>
             update_time = sysdate()
@@ -167,6 +169,7 @@
             tracking_no = #{trackingNo},
             shipper_id = #{shipperId},
             shipper_name = #{shipperName},
+            outbound_order_no = #{outboundOrderNo},
             update_by = #{updateBy},
             update_time = sysdate()
         WHERE shipment_id = #{shipmentId}

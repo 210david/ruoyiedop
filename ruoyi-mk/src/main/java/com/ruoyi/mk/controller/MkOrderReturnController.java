@@ -63,12 +63,34 @@ public class MkOrderReturnController extends BaseController
         return toAjax(mkOrderReturnService.insertReturn(orderReturn));
     }
 
+    /**
+     * 修改退货（驳回后修改）
+     */
+    @Log(title = "订单退货", businessType = BusinessType.UPDATE)
+    @PreAuthorize("@ss.hasPermi('marketing:return:edit')")
+    @PutMapping
+    public AjaxResult edit(@Validated @RequestBody MkOrderReturn orderReturn)
+    {
+        return toAjax(mkOrderReturnService.updateReturn(orderReturn));
+    }
+
     @Log(title = "订单退货", businessType = BusinessType.DELETE)
     @PreAuthorize("@ss.hasPermi('marketing:return:remove')")
     @DeleteMapping("/{returnIds}")
     public AjaxResult remove(@PathVariable Long[] returnIds)
     {
         return toAjax(mkOrderReturnService.deleteReturnByIds(returnIds));
+    }
+
+    /**
+     * 提交审批（草稿→待审批）
+     */
+    @Log(title = "订单退货", businessType = BusinessType.UPDATE)
+    @PreAuthorize("@ss.hasPermi('marketing:return:edit')")
+    @PutMapping("/submit/{returnId}")
+    public AjaxResult submit(@PathVariable("returnId") Long returnId)
+    {
+        return toAjax(mkOrderReturnService.submitReturn(returnId));
     }
 
     /**
