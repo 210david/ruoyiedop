@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.safety.mapper.SafetyRectifyMapper">
+
+    <resultMap type="SafetyRectify" id="SafetyRectifyResult">
+        <result property="rectifyId"        column="rectify_id"/>
+        <result property="hazardId"         column="hazard_id"/>
+        <result property="rectifyType"      column="rectify_type"/>
+        <result property="rectifyPlan"      column="rectify_plan"/>
+        <result property="solutionDesc"     column="solution_desc"/>
+        <result property="beforePhotos"     column="before_photos"/>
+        <result property="afterPhotos"      column="after_photos"/>
+        <result property="rectifyPersonId"  column="rectify_person_id"/>
+        <result property="rectifyPerson"    column="rectify_person"/>
+        <result property="rectifyTime"      column="rectify_time"/>
+        <result property="verifyPersonId"   column="verify_person_id"/>
+        <result property="verifyPerson"     column="verify_person"/>
+        <result property="verifyTime"       column="verify_time"/>
+        <result property="verifyResult"     column="verify_result"/>
+        <result property="verifyComment"    column="verify_comment"/>
+        <result property="delFlag"          column="del_flag"/>
+        <result property="createBy"         column="create_by"/>
+        <result property="createTime"       column="create_time"/>
+        <result property="updateBy"         column="update_by"/>
+        <result property="updateTime"       column="update_time"/>
+        <result property="remark"           column="remark"/>
+    </resultMap>
+
+    <sql id="selectVo">
+        SELECT rectify_id, hazard_id, rectify_type, rectify_plan, solution_desc, before_photos, after_photos,
+               rectify_person_id, rectify_person, rectify_time, verify_person_id, verify_person, verify_time,
+               verify_result, verify_comment, del_flag, create_by, create_time, update_by, update_time, remark
+        FROM biz_safety_rectify
+    </sql>
+
+    <select id="selectSafetyRectifyList" parameterType="SafetyRectify" resultMap="SafetyRectifyResult">
+        <include refid="selectVo"/>
+        <where>
+            del_flag = '0'
+            <if test="hazardId != null"> AND hazard_id = #{hazardId}</if>
+            <if test="rectifyType != null and rectifyType != ''"> AND rectify_type = #{rectifyType}</if>
+            <if test="verifyResult != null and verifyResult != ''"> AND verify_result = #{verifyResult}</if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+
+    <select id="selectSafetyRectifyById" parameterType="Long" resultMap="SafetyRectifyResult">
+        <include refid="selectVo"/> WHERE rectify_id = #{rectifyId}
+    </select>
+
+    <insert id="insertSafetyRectify" parameterType="SafetyRectify" useGeneratedKeys="true" keyProperty="rectifyId">
+        INSERT INTO biz_safety_rectify (
+            hazard_id, rectify_type, rectify_plan, solution_desc, before_photos, after_photos,
+            rectify_person_id, rectify_person, rectify_time, verify_person_id, verify_person,
+            verify_time, verify_result, verify_comment, create_by, create_time, remark
+        ) VALUES (
+            #{hazardId}, #{rectifyType}, #{rectifyPlan}, #{solutionDesc}, #{beforePhotos}, #{afterPhotos},
+            #{rectifyPersonId}, #{rectifyPerson}, #{rectifyTime}, #{verifyPersonId}, #{verifyPerson},
+            #{verifyTime}, #{verifyResult}, #{verifyComment}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateSafetyRectify" parameterType="SafetyRectify">
+        UPDATE biz_safety_rectify
+        <set>
+            <if test="hazardId != null">hazard_id = #{hazardId},</if>
+            <if test="rectifyType != null">rectify_type = #{rectifyType},</if>
+            <if test="rectifyPlan != null">rectify_plan = #{rectifyPlan},</if>
+            <if test="solutionDesc != null">solution_desc = #{solutionDesc},</if>
+            <if test="beforePhotos != null">before_photos = #{beforePhotos},</if>
+            <if test="afterPhotos != null">after_photos = #{afterPhotos},</if>
+            <if test="rectifyPersonId != null">rectify_person_id = #{rectifyPersonId},</if>
+            <if test="rectifyPerson != null">rectify_person = #{rectifyPerson},</if>
+            <if test="rectifyTime != null">rectify_time = #{rectifyTime},</if>
+            <if test="verifyPersonId != null">verify_person_id = #{verifyPersonId},</if>
+            <if test="verifyPerson != null">verify_person = #{verifyPerson},</if>
+            <if test="verifyTime != null">verify_time = #{verifyTime},</if>
+            <if test="verifyResult != null">verify_result = #{verifyResult},</if>
+            <if test="verifyComment != null">verify_comment = #{verifyComment},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE rectify_id = #{rectifyId}
+    </update>
+
+    <delete id="deleteSafetyRectifyById" parameterType="Long">
+        UPDATE biz_safety_rectify SET del_flag = '2' WHERE rectify_id = #{rectifyId}
+    </delete>
+
+    <delete id="deleteSafetyRectifyByIds" parameterType="Long">
+        UPDATE biz_safety_rectify SET del_flag = '2' WHERE rectify_id IN
+        <foreach item="rectifyId" collection="array" open="(" separator="," close=")">#{rectifyId}</foreach>
+    </delete>
+
+</mapper>

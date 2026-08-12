@@ -135,6 +135,8 @@
                     <el-option label="设备管理" value="dms" />
                     <el-option label="仓储管理" value="wms" />
                     <el-option label="采购管理" value="pms" />
+                    <el-option label="安全生产管理" value="safety" />
+                    <el-option label="质量管理" value="qms" />
                   </el-select>
                 </el-form-item>
               </el-col>
@@ -342,7 +344,7 @@ const currentModule = computed(() => route.query.module || 'mk')
 const presetRuleCode = computed(() => route.query.ruleCode || '')
 
 /** 模块名称映射 */
-const moduleNames = { mk: '营销管理', dms: '设备管理', wms: '仓储管理', pms: '采购管理' }
+const moduleNames = { mk: '营销管理', dms: '设备管理', wms: '仓储管理', pms: '采购管理', safety: '安全生产管理', qms: '质量管理' }
 const currentModuleName = computed(() => moduleNames[currentModule.value] || '编号规则')
 
 /** 预设规则提示文案 */
@@ -401,7 +403,7 @@ const activeFilterCount = computed(() => {
 })
 
 function moduleLabel(val) {
-  const map = { mk: '营销管理', dms: '设备管理', wms: '仓储管理', pms: '采购管理' }
+  const map = { mk: '营销管理', dms: '设备管理', wms: '仓储管理', pms: '采购管理', safety: '安全生产管理' }
   return map[val] || val || '-'
 }
 function resetTypeLabel(val) {
@@ -603,6 +605,43 @@ const ruleFieldMap = {
   // 巡检路线：巡检周期
   dms_inspection_route: [
     { field: 'cycle', label: '巡检周期', dictType: 'dms_inspection_cycle' }
+  ],
+  // 安全区域：区域类型
+  safety_area: [
+    { field: 'areaType', label: '区域类型', dictType: 'safety_area_type' }
+  ],
+  // 特种设备：设备类别
+  safety_equipment: [
+    { field: 'equipmentCategory', label: '设备类别', dictType: 'safety_equipment_category' }
+  ],
+  // 风险点：风险等级
+  safety_risk_point: [
+    { field: 'riskLevel', label: '风险等级', dictType: 'safety_risk_level' }
+  ],
+  // 隐患：隐患等级
+  safety_hazard: [
+    { field: 'hazardLevel', label: '隐患等级', dictType: 'safety_hazard_level' },
+    { field: 'hazardType', label: '隐患类型', dictType: 'safety_hazard_type' }
+  ],
+  // 应急演练：演练类型
+  safety_drill: [
+    { field: 'drillType', label: '演练类型', dictType: 'safety_drill_type' }
+  ],
+  // 事故：事故等级
+  safety_incident: [
+    { field: 'incidentLevel', label: '事故等级', dictType: 'safety_incident_level' }
+  ],
+  // 应急物资：物资类型
+  safety_emergency_material: [
+    { field: 'materialType', label: '物资类型', dictType: 'safety_material_type' }
+  ],
+  // 应急预案：预案类型
+  safety_emergency_plan: [
+    { field: 'planType', label: '预案类型', dictType: 'safety_plan_type' }
+  ],
+  // 培训计划：培训类型
+  safety_training_plan: [
+    { field: 'planType', label: '培训类型', dictType: 'safety_training_type' }
   ]
 }
 

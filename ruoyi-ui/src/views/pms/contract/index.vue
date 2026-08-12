@@ -266,8 +266,8 @@
           </div>
         </section>
         <section class="rd-card" v-if="viewData.auditLogList && viewData.auditLogList.length">
-          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>审核记录</div></div>
-          <div class="rd-card-body" style="display:block">
+          <div class="rd-card-header" @click="toggleCard('viewLog')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>审核记录</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.viewLog }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.viewLog" style="display:block">
             <div class="rd-timeline">
               <div class="rd-timeline-item" v-for="log in viewData.auditLogList" :key="log.logId">
                 <div class="rd-timeline-dot" :class="{ 'rd-timeline-dot--success': log.auditAction === '1', 'rd-timeline-dot--error': log.auditAction === '2' }"></div>
@@ -438,8 +438,8 @@
           </div>
         </section>
         <section class="rd-card" v-if="approveForm.auditLogList && approveForm.auditLogList.length">
-          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>审核记录</div></div>
-          <div class="rd-card-body" style="display:block">
+          <div class="rd-card-header" @click="toggleCard('approveLog')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>审核记录</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.approveLog }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.approveLog" style="display:block">
             <div class="rd-timeline">
               <div class="rd-timeline-item" v-for="log in approveForm.auditLogList" :key="log.logId">
                 <div class="rd-timeline-dot" :class="{ 'rd-timeline-dot--success': log.auditAction === '1', 'rd-timeline-dot--error': log.auditAction === '2' }"></div>
@@ -592,7 +592,7 @@ import { ArrowRight, ArrowDown, QuestionFilled, Search, Filter, WarningFilled, E
 const { proxy } = getCurrentInstance()
 const { pms_contract_status, pms_contract_type, pms_contract_change_type, pms_contract_change_status } = proxy.useDict('pms_contract_status', 'pms_contract_type', 'pms_contract_change_type', 'pms_contract_change_status')
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('pms_contract_index')
-const { collapsedCards, toggleCard } = useDetailCard(['basic', 'date', 'party', 'attach', 'approveBasic', 'date_approve', 'approveTerms', 'approveParty', 'approveAttach', 'approveChange', 'approveLog', 'changeApprove'])
+const { collapsedCards, toggleCard } = useDetailCard(['basic', 'date', 'party', 'attach', 'approveBasic', 'date_approve', 'approveTerms', 'approveParty', 'approveAttach', 'approveChange', 'approveLog', 'changeApprove', 'viewLog'])
 
 // 列显隐配置 - 从 localStorage 恢复保存的设置
 const defaultColumns = {

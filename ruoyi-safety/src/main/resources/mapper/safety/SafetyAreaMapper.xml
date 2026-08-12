@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.safety.mapper.SafetyAreaMapper">
+
+    <resultMap type="SafetyArea" id="SafetyAreaResult">
+        <result property="areaId"           column="area_id"/>
+        <result property="parentId"         column="parent_id"/>
+        <result property="ancestors"        column="ancestors"/>
+        <result property="areaCode"         column="area_code"/>
+        <result property="areaName"         column="area_name"/>
+        <result property="nodeType"         column="node_type"/>
+        <result property="enterpriseId"     column="enterprise_id"/>
+        <result property="areaType"         column="area_type"/>
+        <result property="safetyPersonId"   column="safety_person_id"/>
+        <result property="safetyPersonName" column="safety_person_name"/>
+        <result property="status"           column="status"/>
+        <result property="delFlag"          column="del_flag"/>
+        <result property="createBy"         column="create_by"/>
+        <result property="createTime"       column="create_time"/>
+        <result property="updateBy"         column="update_by"/>
+        <result property="updateTime"       column="update_time"/>
+        <result property="remark"           column="remark"/>
+    </resultMap>
+
+    <sql id="selectVo">
+        SELECT area_id, parent_id, ancestors, area_code, area_name, node_type, enterprise_id,
+               area_type, safety_person_id, safety_person_name, status, del_flag,
+               create_by, create_time, update_by, update_time, remark
+        FROM biz_safety_area
+    </sql>
+
+    <select id="selectSafetyAreaList" parameterType="SafetyArea" resultMap="SafetyAreaResult">
+        <include refid="selectVo"/>
+        <where>
+            del_flag = '0'
+            <if test="areaCode != null and areaCode != ''"> AND area_code LIKE CONCAT('%', #{areaCode}, '%')</if>
+            <if test="areaName != null and areaName != ''"> AND area_name LIKE CONCAT('%', #{areaName}, '%')</if>
+            <if test="nodeType != null and nodeType != ''"> AND node_type = #{nodeType}</if>
+            <if test="enterpriseId != null"> AND enterprise_id = #{enterpriseId}</if>
+            <if test="parentId != null"> AND parent_id = #{parentId}</if>
+            <if test="status != null and status != ''"> AND status = #{status}</if>
+        </where>
+        ORDER BY area_code
+    </select>
+
+    <select id="selectSafetyAreaById" parameterType="Long" resultMap="SafetyAreaResult">
+        <include refid="selectVo"/> WHERE area_id = #{areaId}
+    </select>
+
+    <select id="countChildByParentId" parameterType="Long" resultType="int">
+        SELECT COUNT(1) FROM biz_safety_area WHERE parent_id = #{parentId} AND del_flag = '0'
+    </select>
+
+    <insert id="insertSafetyArea" parameterType="SafetyArea" useGeneratedKeys="true" keyProperty="areaId">
+        INSERT INTO biz_safety_area (
+            parent_id, ancestors, area_code, area_name, node_type, enterprise_id,
+            area_type, safety_person_id, safety_person_name, status, create_by, create_time, remark
+        ) VALUES (
+            #{parentId}, #{ancestors}, #{areaCode}, #{areaName}, #{nodeType}, #{enterpriseId},
+            #{areaType}, #{safetyPersonId}, #{safetyPersonName}, #{status}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateSafetyArea" parameterType="SafetyArea">
+        UPDATE biz_safety_area
+        <set>
+            <if test="parentId != null">parent_id = #{parentId},</if>
+            <if test="ancestors != null">ancestors = #{ancestors},</if>
+            <if test="areaCode != null and areaCode != ''">area_code = #{areaCode},</if>
+            <if test="areaName != null and areaName != ''">area_name = #{areaName},</if>
+            <if test="nodeType != null and nodeType != ''">node_type = #{nodeType},</if>
+            <if test="enterpriseId != null">enterprise_id = #{enterpriseId},</if>
+            <if test="areaType != null">area_type = #{areaType},</if>
+            <if test="safetyPersonId != null">safety_person_id = #{safetyPersonId},</if>
+            <if test="safetyPersonName != null">safety_person_name = #{safetyPersonName},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE area_id = #{areaId}
+    </update>
+
+    <delete id="deleteSafetyAreaById" parameterType="Long">
+        UPDATE biz_safety_area SET del_flag = '2' WHERE area_id = #{areaId}
+    </delete>
+
+    <delete id="deleteSafetyAreaByIds" parameterType="Long">
+        UPDATE biz_safety_area SET del_flag = '2' WHERE area_id IN
+        <foreach item="areaId" collection="array" open="(" separator="," close=")">#{areaId}</foreach>
+    </delete>
+
+</mapper>

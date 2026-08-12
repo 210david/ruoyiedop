@@ -543,9 +543,12 @@
                 </template>
               </el-table-column>
               <el-table-column label="确认人" prop="confirmBy" min-width="100" align="center" />
-              <el-table-column label="凭证" min-width="80" align="center">
+              <el-table-column label="凭证" min-width="120" align="center">
                 <template #default="scope">
-                  <el-link v-if="scope.row.receiptAttachment" :href="baseUrl + scope.row.receiptAttachment" target="_blank" type="primary"><el-icon><View /></el-icon></el-link>
+                  <div v-if="scope.row.receiptAttachment" style="display:flex;gap:4px;justify-content:center;align-items:center">
+                    <el-link :href="baseUrl + scope.row.receiptAttachment" target="_blank" type="primary"><el-icon><View /></el-icon></el-link>
+                    <el-link type="success" :underline="false" @click="handlePreview(scope.row.receiptAttachment)">预览</el-link>
+                  </div>
                   <span v-else style="color: #c0c4cc">-</span>
                 </template>
               </el-table-column>
@@ -695,9 +698,12 @@
                 </template>
               </el-table-column>
               <el-table-column label="确认人" prop="confirmBy" width="100" align="center" />
-              <el-table-column label="凭证" width="80" align="center">
+              <el-table-column label="凭证" width="120" align="center">
                 <template #default="scope">
-                  <el-link v-if="scope.row.receiptAttachment" :href="baseUrl + scope.row.receiptAttachment" target="_blank" type="primary"><el-icon><View /></el-icon></el-link>
+                  <div v-if="scope.row.receiptAttachment" style="display:flex;gap:4px;justify-content:center;align-items:center">
+                    <el-link :href="baseUrl + scope.row.receiptAttachment" target="_blank" type="primary"><el-icon><View /></el-icon></el-link>
+                    <el-link type="success" :underline="false" @click="handlePreview(scope.row.receiptAttachment)">预览</el-link>
+                  </div>
                   <span v-else style="color: #c0c4cc">-</span>
                 </template>
               </el-table-column>
@@ -809,7 +815,7 @@
               <div class="rd-item"><span class="rd-label">回款日期</span><div class="rd-value">{{ confirmRecordForm.paymentDate }}</div></div>
               <div class="rd-item"><span class="rd-label">回款方式</span><div class="rd-value"><dict-tag :options="marketing_payment_method" :value="confirmRecordForm.paymentMethod" /></div></div>
               <div class="rd-item"><span class="rd-label">银行账户</span><div class="rd-value">{{ confirmRecordForm.bankAccount }}</div></div>
-              <div class="rd-item rd-item--full"><span class="rd-label">收款凭证</span><div class="rd-value"><el-link v-if="confirmRecordForm.receiptAttachment" :href="baseUrl + confirmRecordForm.receiptAttachment" target="_blank" type="primary">查看凭证</el-link><span v-else style="color: #c0c4cc">-</span></div></div>
+              <div class="rd-item rd-item--full"><span class="rd-label">收款凭证</span><div class="rd-value"><template v-if="confirmRecordForm.receiptAttachment"><el-link :href="baseUrl + confirmRecordForm.receiptAttachment" target="_blank" type="primary">查看凭证</el-link><el-button link type="success" icon="View" size="small" style="margin-left: 12px" @click="handlePreview(confirmRecordForm.receiptAttachment)">预览</el-button></template><span v-else style="color: #c0c4cc">-</span></div></div>
               <div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value" :class="{ 'rd-value--muted': !confirmRecordForm.remark }">{{ confirmRecordForm.remark || '暂无' }}</div></div>
             </div>
           </div>
@@ -821,6 +827,8 @@
         <el-button @click="confirmOpen = false">关 闭</el-button>
       </template>
     </el-dialog>
+    <!-- 文件预览 -->
+    <file-preview ref="filePreviewRef" />
   </div>
 </template>
 
@@ -863,6 +871,8 @@ const confirmRecordForm = ref({})
 const activeStatusTab = ref('all')
 const statusCounts = ref({ all: 0, '0': 0, '1': 0, '2': 0 })
 const baseUrl = import.meta.env.VITE_APP_BASE_API
+function getFileName(name) { if (name && name.lastIndexOf('/') > -1) { return name.slice(name.lastIndexOf('/') + 1) } return name || '' }
+function handlePreview(fileUrl) { proxy.$refs.filePreviewRef.open(fileUrl, getFileName(fileUrl)) }
 
 // 列显隐配置 - 从 localStorage 恢复保存的设置
 const defaultColumns = {

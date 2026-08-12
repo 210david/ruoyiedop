@@ -567,14 +567,12 @@
         </section>
 
         <!-- 历史审核记录卡片 -->
-        <section class="rd-card" v-if="auditData.auditLogList && auditData.auditLogList.length">
-          <div class="rd-card-header">
-            <div class="rd-card-title">
-              <span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>
-              历史审核记录
-            </div>
-          </div>
-          <div class="rd-card-body" style="display:block">
+<section class="rd-card" v-if="auditData.auditLogList && auditData.auditLogList.length">
+<div class="rd-card-header" @click="toggleCard('a2')"><div class="rd-card-title">
+<span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>
+历史审核记录
+</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.a2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+<div class="rd-card-body" v-show="!collapsedCards.a2" style="display:block">
             <div class="rd-timeline">
               <div class="rd-timeline-item" v-for="log in auditData.auditLogList" :key="log.logId">
                 <div class="rd-timeline-dot" :class="{ 'rd-timeline-dot--success': log.auditAction === '1', 'rd-timeline-dot--error': log.auditAction === '2' }"></div>
@@ -783,7 +781,7 @@ import { ElMessageBox } from 'element-plus'
 const { proxy } = getCurrentInstance()
 const { pms_receive_status, wms_unit } = proxy.useDict('pms_receive_status', 'wms_unit')
 
-const { collapsedCards, toggleCard } = useDetailCard(["c1", "c2", "c0", "c3", "v1", "v2", "v3", "a1"])
+const { collapsedCards, toggleCard } = useDetailCard(["c1", "c2", "c0", "c3", "v1", "v2", "v3", "a1", "a2"])
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('pms_receive_index')
 
 // 列显隐配置 - 从 localStorage 恢复保存的设置

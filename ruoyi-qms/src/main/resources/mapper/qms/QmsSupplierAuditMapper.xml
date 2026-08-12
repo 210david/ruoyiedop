@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.qms.mapper.QmsSupplierAuditMapper">
+    <resultMap type="QmsSupplierAudit" id="QmsSupplierAuditResult">
+        <result property="auditId" column="audit_id"/>
+        <result property="auditNo" column="audit_no"/>
+        <result property="supplierId" column="supplier_id"/>
+        <result property="supplierName" column="supplier_name"/>
+        <result property="auditType" column="audit_type"/>
+        <result property="auditDate" column="audit_date"/>
+        <result property="auditor" column="auditor"/>
+        <result property="auditScope" column="audit_scope"/>
+        <result property="auditResult" column="audit_result"/>
+        <result property="nonconformity" column="nonconformity"/>
+        <result property="auditStatus" column="audit_status"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="status" column="status"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+    <sql id="selectAuditVo">
+        SELECT audit_id, audit_no, supplier_id, supplier_name, audit_type, audit_date, auditor,
+               audit_scope, audit_result, nonconformity, audit_status, del_flag, status,
+               create_by, create_time, update_by, update_time, remark
+        FROM qms_supplier_audit
+    </sql>
+    <select id="selectAuditList" parameterType="QmsSupplierAudit" resultMap="QmsSupplierAuditResult">
+        <include refid="selectAuditVo"/>
+        <where>
+            del_flag = '0'
+            <if test="auditNo != null and auditNo != ''"> AND audit_no LIKE CONCAT('%', #{auditNo}, '%')</if>
+            <if test="supplierName != null and supplierName != ''"> AND supplier_name LIKE CONCAT('%', #{supplierName}, '%')</if>
+            <if test="auditType != null and auditType != ''"> AND audit_type = #{auditType}</if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+    <select id="selectAuditById" parameterType="Long" resultMap="QmsSupplierAuditResult">
+        <include refid="selectAuditVo"/> WHERE audit_id = #{auditId}
+    </select>
+    <insert id="insertAudit" parameterType="QmsSupplierAudit" useGeneratedKeys="true" keyProperty="auditId">
+        INSERT INTO qms_supplier_audit (
+            audit_no, supplier_id, supplier_name, audit_type, audit_date, auditor,
+            audit_scope, audit_result, nonconformity, audit_status, del_flag, status, create_by, create_time, remark
+        ) VALUES (
+            #{auditNo}, #{supplierId}, #{supplierName}, #{auditType}, #{auditDate}, #{auditor},
+            #{auditScope}, #{auditResult}, #{nonconformity}, #{auditStatus}, #{delFlag}, #{status}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+    <update id="updateAudit" parameterType="QmsSupplierAudit">
+        UPDATE qms_supplier_audit
+        <set>
+            <if test="auditNo != null"> audit_no = #{auditNo},</if>
+            <if test="supplierId != null"> supplier_id = #{supplierId},</if>
+            <if test="supplierName != null"> supplier_name = #{supplierName},</if>
+            <if test="auditType != null"> audit_type = #{auditType},</if>
+            <if test="auditDate != null"> audit_date = #{auditDate},</if>
+            <if test="auditor != null"> auditor = #{auditor},</if>
+            <if test="auditScope != null"> audit_scope = #{auditScope},</if>
+            <if test="auditResult != null"> audit_result = #{auditResult},</if>
+            <if test="nonconformity != null"> nonconformity = #{nonconformity},</if>
+            <if test="auditStatus != null"> audit_status = #{auditStatus},</if>
+            <if test="status != null"> status = #{status},</if>
+            <if test="updateBy != null"> update_by = #{updateBy},</if>
+            update_time = sysdate(),
+            <if test="remark != null"> remark = #{remark},</if>
+        </set>
+        WHERE audit_id = #{auditId}
+    </update>
+    <delete id="deleteAuditByIds" parameterType="Long">
+        UPDATE qms_supplier_audit SET del_flag = '2' WHERE audit_id IN
+        <foreach item="auditId" collection="array" open="(" separator="," close=")">#{auditId}</foreach>
+    </delete>
+</mapper>

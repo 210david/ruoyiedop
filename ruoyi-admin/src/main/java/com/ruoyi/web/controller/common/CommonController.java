@@ -16,6 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.ruoyi.common.annotation.RateLimiter;
 import com.ruoyi.common.config.RuoYiConfig;
 import com.ruoyi.common.core.domain.AjaxResult;
+import com.ruoyi.common.enums.LimitType;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.common.utils.file.FileUploadUtils;
 import com.ruoyi.common.utils.file.FileUtils;
@@ -72,7 +73,7 @@ public class CommonController
     /**
      * 通用上传请求（单个）
      */
-    @RateLimiter(time = 60, count = 10)
+    @RateLimiter(time = 60, count = 100, limitType = LimitType.IP)
     @PostMapping("/upload")
     public AjaxResult uploadFile(MultipartFile file) throws Exception
     {

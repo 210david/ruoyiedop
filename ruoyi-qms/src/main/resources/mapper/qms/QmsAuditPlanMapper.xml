@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.qms.mapper.QmsAuditPlanMapper">
+    <resultMap type="QmsAuditPlan" id="QmsAuditPlanResult">
+        <result property="auditPlanId" column="audit_plan_id"/>
+        <result property="auditPlanNo" column="audit_plan_no"/>
+        <result property="auditTitle" column="audit_title"/>
+        <result property="auditYear" column="audit_year"/>
+        <result property="auditType" column="audit_type"/>
+        <result property="auditScope" column="audit_scope"/>
+        <result property="leadAuditor" column="lead_auditor"/>
+        <result property="auditDateFrom" column="audit_date_from"/>
+        <result property="auditDateTo" column="audit_date_to"/>
+        <result property="auditConclusion" column="audit_conclusion"/>
+        <result property="planStatus" column="plan_status"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="status" column="status"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+    <sql id="selectVo">
+        SELECT audit_plan_id, audit_plan_no, audit_title, audit_year, audit_type, audit_scope,
+               lead_auditor, audit_date_from, audit_date_to, audit_conclusion, plan_status,
+               del_flag, status, create_by, create_time, update_by, update_time, remark
+        FROM qms_audit_plan
+    </sql>
+    <select id="selectAuditPlanList" parameterType="QmsAuditPlan" resultMap="QmsAuditPlanResult">
+        <include refid="selectVo"/>
+        <where> del_flag = '0'
+            <if test="auditPlanNo != null and auditPlanNo != ''"> AND audit_plan_no LIKE CONCAT('%', #{auditPlanNo}, '%')</if>
+            <if test="auditTitle != null and auditTitle != ''"> AND audit_title LIKE CONCAT('%', #{auditTitle}, '%')</if>
+            <if test="auditYear != null"> AND audit_year = #{auditYear}</if>
+            <if test="planStatus != null and planStatus != ''"> AND plan_status = #{planStatus}</if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+    <select id="selectAuditPlanById" parameterType="Long" resultMap="QmsAuditPlanResult">
+        <include refid="selectVo"/> WHERE audit_plan_id = #{auditPlanId}
+    </select>
+    <insert id="insertAuditPlan" parameterType="QmsAuditPlan" useGeneratedKeys="true" keyProperty="auditPlanId">
+        INSERT INTO qms_audit_plan (audit_plan_no, audit_title, audit_year, audit_type, audit_scope,
+            lead_auditor, audit_date_from, audit_date_to, audit_conclusion, plan_status,
+            del_flag, status, create_by, create_time, remark)
+        VALUES (#{auditPlanNo}, #{auditTitle}, #{auditYear}, #{auditType}, #{auditScope},
+            #{leadAuditor}, #{auditDateFrom}, #{auditDateTo}, #{auditConclusion}, #{planStatus},
+            #{delFlag}, #{status}, #{createBy}, sysdate(), #{remark})
+    </insert>
+    <update id="updateAuditPlan" parameterType="QmsAuditPlan">
+        UPDATE qms_audit_plan <set>
+            <if test="auditPlanNo != null"> audit_plan_no = #{auditPlanNo},</if>
+            <if test="auditTitle != null"> audit_title = #{auditTitle},</if>
+            <if test="auditYear != null"> audit_year = #{auditYear},</if>
+            <if test="auditType != null"> audit_type = #{auditType},</if>
+            <if test="auditScope != null"> audit_scope = #{auditScope},</if>
+            <if test="leadAuditor != null"> lead_auditor = #{leadAuditor},</if>
+            <if test="auditDateFrom != null"> audit_date_from = #{auditDateFrom},</if>
+            <if test="auditDateTo != null"> audit_date_to = #{auditDateTo},</if>
+            <if test="auditConclusion != null"> audit_conclusion = #{auditConclusion},</if>
+            <if test="planStatus != null"> plan_status = #{planStatus},</if>
+            <if test="status != null"> status = #{status},</if>
+            <if test="updateBy != null"> update_by = #{updateBy},</if>
+            update_time = sysdate(),
+            <if test="remark != null"> remark = #{remark},</if>
+        </set>
+        WHERE audit_plan_id = #{auditPlanId}
+    </update>
+    <delete id="deleteAuditPlanByIds" parameterType="Long">
+        UPDATE qms_audit_plan SET del_flag = '2' WHERE audit_plan_id IN
+        <foreach item="auditPlanId" collection="array" open="(" separator="," close=")">#{auditPlanId}</foreach>
+    </delete>
+</mapper>

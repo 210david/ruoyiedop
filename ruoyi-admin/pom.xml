@@ -78,6 +78,18 @@
             <artifactId>ruoyi-pms</artifactId>
         </dependency>
 
+        <!-- QMS质量管理 -->
+        <dependency>
+            <groupId>com.ruoyi</groupId>
+            <artifactId>ruoyi-qms</artifactId>
+        </dependency>
+
+        <!-- Safety安全生产管理 -->
+        <dependency>
+            <groupId>com.ruoyi</groupId>
+            <artifactId>ruoyi-safety</artifactId>
+        </dependency>
+
     </dependencies>
 
     <build>

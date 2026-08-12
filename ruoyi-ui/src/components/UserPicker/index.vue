@@ -57,7 +57,10 @@
           </el-input>
           <el-button type="primary" plain icon="Search" size="small" @click="loadUsers">查询</el-button>
           <el-button icon="Refresh" size="small" @click="resetSearch">重置</el-button>
-          <div class="picker-right-info" v-if="selectedUser">
+          <div class="picker-right-info" v-if="multiple && selectedUserIds.length">
+            <el-tag type="success" effect="light" size="small" closable @close="clearAllSelection">已选 {{ selectedUserIds.length }} 人</el-tag>
+          </div>
+          <div class="picker-right-info" v-if="!multiple && selectedUser">
             <el-tag type="success" effect="light" size="small" closable @close="clearSelection">
               {{ selectedUser.nickName }}
               <span class="tag-dept" v-if="selectedUser.dept && selectedUser.dept.deptName"> | {{ selectedUser.dept.deptName }}</span>
@@ -76,8 +79,12 @@
           @current-change="onCurrentChange"
         >
           <el-table-column width="40" align="center">
+            <template #header>
+              <el-checkbox v-if="multiple" :model-value="allChecked" :indeterminate="someChecked" @change="toggleSelectAll" />
+            </template>
             <template #default="scope">
-              <el-radio v-model="selectedUserId" :value="scope.row.userId" @click.stop>&nbsp;</el-radio>
+              <el-checkbox v-if="multiple" v-model="selectedUserIds" :value="scope.row.userId" @click.stop />
+              <el-radio v-else v-model="selectedUserId" :value="scope.row.userId" @click.stop>&nbsp;</el-radio>
             </template>
           </el-table-column>
           <el-table-column label="姓名" prop="nickName" min-width="90" show-overflow-tooltip />
@@ -93,13 +100,14 @@
         </el-table>
         <div class="picker-right-tip">
           <el-icon><InfoFilled /></el-icon>
-          <span>点击行选中，双击行确认选择</span>
+          <span v-if="multiple">勾选行或点击表头全选当前列表，可跨部门多选，点击「确定」完成</span>
+          <span v-else>点击行选中，双击行确认选择</span>
         </div>
       </div>
     </div>
     <template #footer>
       <el-button @click="visible = false">取 消</el-button>
-      <el-button type="primary" @click="handleConfirm" :disabled="!selectedUserId">确 定</el-button>
+      <el-button type="primary" @click="handleConfirm" :disabled="confirmDisabled">确 定</el-button>
     </template>
   </el-dialog>
 </template>
@@ -111,6 +119,10 @@ const props = defineProps({
   title: {
     type: String,
     default: '选择人员'
+  },
+  multiple: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -125,17 +137,37 @@ const selectedDeptId = ref(undefined)
 const allUsers = ref([])
 const selectedUserId = ref(null)
 const selectedUser = ref(null)
+/** 多选模式：选中的用户ID数组 */
+const selectedUserIds = ref([])
 
 const deptTreeRef = ref()
+
+/** 确认按钮是否禁用 */
+const confirmDisabled = computed(() => {
+  if (props.multiple) {
+    return !selectedUserIds.value || selectedUserIds.value.length === 0
+  }
+  return !selectedUserId.value
+})
+
+/** 多选模式下，已选用户对象列表 */
+const selectedUsers = computed(() => {
+  if (!props.multiple) return []
+  return allUsers.value.filter(u => selectedUserIds.value.includes(u.userId))
+})
 
 /** 前端过滤后的用户列表 */
 const filteredUsers = computed(() => {
   let result = allUsers.value
   // 过滤掉系统管理员（不属于正常组织用户）
   result = result.filter(u => u.userId !== 1 && u.userName !== 'admin')
-  // 按部门过滤
+  // 按部门过滤（含子部门）
   if (selectedDeptId.value) {
-    result = result.filter(u => u.deptId === selectedDeptId.value)
+    const node = findDeptNode(deptOptions.value, selectedDeptId.value)
+    if (node) {
+      const deptIds = collectDeptIds(node)
+      result = result.filter(u => deptIds.includes(u.deptId))
+    }
   }
   // 按姓名搜索
   if (userName.value) {
@@ -146,6 +178,60 @@ const filteredUsers = computed(() => {
   }
   return result
 })
+
+/** 递归收集部门子树所有ID（含自身） */
+function collectDeptIds(node) {
+  const ids = [node.id]
+  if (node.children && node.children.length) {
+    node.children.forEach(child => {
+      ids.push(...collectDeptIds(child))
+    })
+  }
+  return ids
+}
+
+/** 在部门树中查找指定ID的节点 */
+function findDeptNode(tree, id) {
+  for (const node of tree) {
+    if (node.id === id) return node
+    if (node.children && node.children.length) {
+      const found = findDeptNode(node.children, id)
+      if (found) return found
+    }
+  }
+  return null
+}
+
+/** 当前可见用户是否全选 */
+const allChecked = computed(() => {
+  if (!props.multiple || filteredUsers.value.length === 0) return false
+  return filteredUsers.value.every(u => selectedUserIds.value.includes(u.userId))
+})
+
+/** 当前可见用户是否部分选中（用于 indeterminate 状态） */
+const someChecked = computed(() => {
+  if (!props.multiple || filteredUsers.value.length === 0) return false
+  return filteredUsers.value.some(u => selectedUserIds.value.includes(u.userId)) && !allChecked.value
+})
+
+/** 全选/取消全选当前可见用户 */
+function toggleSelectAll(val) {
+  if (val) {
+    // 选中所有当前可见用户（去重合并）
+    const existingSet = new Set(selectedUserIds.value)
+    filteredUsers.value.forEach(u => existingSet.add(u.userId))
+    selectedUserIds.value = Array.from(existingSet)
+  } else {
+    // 取消选中所有当前可见用户（保留其他部门已选）
+    const visibleIds = new Set(filteredUsers.value.map(u => u.userId))
+    selectedUserIds.value = selectedUserIds.value.filter(id => !visibleIds.has(id))
+  }
+}
+
+/** 清空所有已选 */
+function clearAllSelection() {
+  selectedUserIds.value = []
+}
 
 /** 过滤部门节点 */
 function filterDeptNode(value, data) {
@@ -166,6 +252,9 @@ function onOpen() {
   selectedDeptId.value = undefined
   selectedUserId.value = null
   selectedUser.value = null
+  if (!props.multiple) {
+    selectedUserIds.value = []
+  }
   deptKeyword.value = ''
   loadDeptTree()
   loadUsers()
@@ -202,20 +291,31 @@ function onDeptClick(data) {
   selectedDeptId.value = data.id
 }
 
-/** 行点击 - 选中 */
+/** 行点击 - 选中（多选模式下为勾选/取消勾选） */
 function onRowClick(row) {
-  selectedUserId.value = row.userId
+  if (props.multiple) {
+    const idx = selectedUserIds.value.indexOf(row.userId)
+    if (idx > -1) {
+      selectedUserIds.value.splice(idx, 1)
+    } else {
+      selectedUserIds.value.push(row.userId)
+    }
+  } else {
+    selectedUserId.value = row.userId
+  }
 }
 
-/** 行双击 - 确认 */
+/** 行双击 - 确认（仅单选模式生效） */
 function onRowDblClick(row) {
+  if (props.multiple) return
   selectedUserId.value = row.userId
   selectedUser.value = row
   handleConfirm()
 }
 
-/** 当前行变化 */
+/** 当前行变化（仅单选模式生效） */
 function onCurrentChange(row) {
+  if (props.multiple) return
   if (row) {
     selectedUser.value = row
   }
@@ -225,10 +325,31 @@ function onCurrentChange(row) {
 function clearSelection() {
   selectedUserId.value = null
   selectedUser.value = null
+  if (props.multiple) {
+    selectedUserIds.value = []
+  }
 }
 
 /** 确认选择 */
 function handleConfirm() {
+  if (props.multiple) {
+    if (!selectedUserIds.value || selectedUserIds.value.length === 0) return
+    // 从 allUsers 中找到所有选中的用户
+    const users = allUsers.value
+      .filter(u => selectedUserIds.value.includes(u.userId))
+      .map(u => ({
+        userId: u.userId,
+        nickName: u.nickName,
+        userName: u.userName,
+        postName: u.postName,
+        deptId: u.dept ? u.dept.deptId : undefined,
+        deptName: u.dept ? u.dept.deptName : undefined,
+        phonenumber: u.phonenumber
+      }))
+    emit('confirm', users)
+    visible.value = false
+    return
+  }
   if (!selectedUserId.value) return
   // 从 filteredUsers 中找到选中的用户
   const user = filteredUsers.value.find(u => u.userId === selectedUserId.value)
@@ -246,11 +367,16 @@ function handleConfirm() {
   visible.value = false
 }
 
-/** 打开弹窗 */
+/** 打开弹窗
+ *  @param currentUserId 单选模式传入当前选中用户ID；多选模式传入当前已选用户ID数组
+ */
 function open(currentUserId) {
   visible.value = true
-  // 如果传入了当前选中的用户ID，在加载后回显
-  if (currentUserId) {
+  if (props.multiple) {
+    // 多选模式：回显已选用户ID数组
+    selectedUserIds.value = Array.isArray(currentUserId) ? [...currentUserId] : []
+  } else if (currentUserId) {
+    // 单选模式：回显当前选中用户ID
     nextTick(() => {
       selectedUserId.value = currentUserId
     })

@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.safety.mapper.SafetyTrainingRecordMapper">
+
+    <resultMap type="SafetyTrainingRecord" id="SafetyTrainingRecordResult">
+        <result property="recordId"          column="record_id"/>
+        <result property="planId"            column="plan_id"/>
+        <result property="courseId"           column="course_id"/>
+        <result property="trainerId"         column="trainer_id"/>
+        <result property="courseName"        column="course_name"/>
+        <result property="courseType"        column="course_type"/>
+        <result property="trainingDate"      column="training_date"/>
+        <result property="trainingLocation"  column="training_location"/>
+        <result property="hours"             column="hours"/>
+        <result property="trainer"            column="trainer"/>
+        <result property="attachment"        column="attachment"/>
+        <result property="enterpriseId"      column="enterprise_id"/>
+        <result property="delFlag"            column="del_flag"/>
+        <result property="createBy"           column="create_by"/>
+        <result property="createTime"         column="create_time"/>
+        <result property="updateBy"           column="update_by"/>
+        <result property="updateTime"         column="update_time"/>
+        <result property="remark"             column="remark"/>
+        <result property="attendeeCount"     column="attendee_count"/>
+    </resultMap>
+
+    <resultMap type="SafetyTrainingRecord" id="SafetyTrainingRecordDetailResult" extends="SafetyTrainingRecordResult">
+        <collection property="attendeeList" ofType="SafetyTrainingAttendee" column="record_id" select="selectAttendeeListByRecordId"/>
+    </resultMap>
+
+    <sql id="selectVo">
+        SELECT r.record_id, r.plan_id, r.course_id, r.trainer_id, r.course_name, r.course_type, r.training_date, r.training_location,
+               r.hours, r.trainer, r.attachment, r.enterprise_id, r.del_flag,
+               r.create_by, r.create_time, r.update_by, r.update_time, r.remark,
+               (SELECT COUNT(*) FROM biz_safety_training_attendee a WHERE a.record_id = r.record_id AND a.del_flag = '0') AS attendee_count
+        FROM biz_safety_training_record r
+    </sql>
+
+    <select id="selectSafetyTrainingRecordList" parameterType="SafetyTrainingRecord" resultMap="SafetyTrainingRecordResult">
+        <include refid="selectVo"/>
+        <where>
+            r.del_flag = '0'
+            <if test="courseName != null and courseName != ''"> AND r.course_name LIKE CONCAT('%', #{courseName}, '%')</if>
+            <if test="courseType != null and courseType != ''"> AND r.course_type = #{courseType}</if>
+            <if test="planId != null"> AND r.plan_id = #{planId}</if>
+            <if test="courseId != null"> AND r.course_id = #{courseId}</if>
+            <if test="params.beginTime != null and params.beginTime != ''"> AND r.training_date &gt;= #{params.beginTime}</if>
+            <if test="params.endTime != null and params.endTime != ''"> AND r.training_date &lt;= #{params.endTime}</if>
+        </where>
+        ORDER BY r.training_date DESC
+    </select>
+
+    <select id="selectSafetyTrainingRecordById" parameterType="Long" resultMap="SafetyTrainingRecordDetailResult">
+        SELECT record_id, plan_id, course_id, trainer_id, course_name, course_type, training_date, training_location,
+               hours, trainer, attachment, enterprise_id, del_flag,
+               create_by, create_time, update_by, update_time, remark
+        FROM biz_safety_training_record WHERE record_id = #{recordId}
+    </select>
+
+    <!-- 关联查询参训人员列表 -->
+    <select id="selectAttendeeListByRecordId" parameterType="Long" resultType="SafetyTrainingAttendee">
+        SELECT attendee_id, record_id, user_id, user_name, dept_id, dept_name,
+               sign_in_status, sign_in_time, sign_in_method, exam_score, is_pass, exam_time,
+               enterprise_id, del_flag, create_by, create_time, update_by, update_time, remark
+        FROM biz_safety_training_attendee
+        WHERE record_id = #{recordId} AND del_flag = '0'
+        ORDER BY create_time ASC
+    </select>
+
+    <insert id="insertSafetyTrainingRecord" parameterType="SafetyTrainingRecord" useGeneratedKeys="true" keyProperty="recordId">
+        INSERT INTO biz_safety_training_record (
+            plan_id, course_id, trainer_id, course_name, course_type, training_date, training_location,
+            hours, trainer, attachment, enterprise_id, create_by, create_time, remark
+        ) VALUES (
+            #{planId}, #{courseId}, #{trainerId}, #{courseName}, #{courseType}, #{trainingDate}, #{trainingLocation},
+            #{hours}, #{trainer}, #{attachment}, #{enterpriseId}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateSafetyTrainingRecord" parameterType="SafetyTrainingRecord">
+        UPDATE biz_safety_training_record
+        <set>
+            <if test="planId != null">plan_id = #{planId},</if>
+            <if test="courseId != null">course_id = #{courseId},</if>
+            <if test="trainerId != null">trainer_id = #{trainerId},</if>
+            <if test="courseName != null">course_name = #{courseName},</if>
+            <if test="courseType != null">course_type = #{courseType},</if>
+            <if test="trainingDate != null">training_date = #{trainingDate},</if>
+            <if test="trainingLocation != null">training_location = #{trainingLocation},</if>
+            <if test="hours != null">hours = #{hours},</if>
+            <if test="trainer != null">trainer = #{trainer},</if>
+            <if test="attachment != null">attachment = #{attachment},</if>
+            <if test="enterpriseId != null">enterprise_id = #{enterpriseId},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE record_id = #{recordId}
+    </update>
+
+    <delete id="deleteSafetyTrainingRecordById" parameterType="Long">
+        UPDATE biz_safety_training_record SET del_flag = '2' WHERE record_id = #{recordId}
+    </delete>
+
+    <delete id="deleteSafetyTrainingRecordByIds" parameterType="Long">
+        UPDATE biz_safety_training_record SET del_flag = '2' WHERE record_id IN
+        <foreach item="recordId" collection="array" open="(" separator="," close=")">#{recordId}</foreach>
+    </delete>
+
+</mapper>

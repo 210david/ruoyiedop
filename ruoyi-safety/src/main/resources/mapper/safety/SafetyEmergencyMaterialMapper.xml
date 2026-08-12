@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.safety.mapper.SafetyEmergencyMaterialMapper">
+
+    <resultMap type="SafetyEmergencyMaterial" id="SafetyEmergencyMaterialResult">
+        <result property="materialId"      column="material_id"/>
+        <result property="materialCode"    column="material_code"/>
+        <result property="materialName"    column="material_name"/>
+        <result property="materialType"    column="material_type"/>
+        <result property="specModel"       column="spec_model"/>
+        <result property="quantity"        column="quantity"/>
+        <result property="unit"            column="unit"/>
+        <result property="storageLocation" column="storage_location"/>
+        <result property="personId"        column="person_id"/>
+        <result property="personName"      column="person_name"/>
+        <result property="effectiveDate"   column="effective_date"/>
+        <result property="remindStatus"    column="remind_status"/>
+        <result property="enterpriseId"    column="enterprise_id"/>
+        <result property="status"          column="status"/>
+        <result property="delFlag"         column="del_flag"/>
+        <result property="createBy"        column="create_by"/>
+        <result property="createTime"      column="create_time"/>
+        <result property="updateBy"        column="update_by"/>
+        <result property="updateTime"      column="update_time"/>
+        <result property="remark"          column="remark"/>
+    </resultMap>
+
+    <sql id="selectVo">
+        SELECT material_id, material_code, material_name, material_type, spec_model, quantity, unit,
+               storage_location, person_id, person_name, effective_date, remind_status,
+               enterprise_id, status, del_flag, create_by, create_time, update_by, update_time, remark
+        FROM biz_safety_emergency_material
+    </sql>
+
+    <select id="selectSafetyEmergencyMaterialList" parameterType="SafetyEmergencyMaterial" resultMap="SafetyEmergencyMaterialResult">
+        <include refid="selectVo"/>
+        <where>
+            del_flag = '0'
+            <if test="materialCode != null and materialCode != ''"> AND material_code LIKE CONCAT('%', #{materialCode}, '%')</if>
+            <if test="materialName != null and materialName != ''"> AND material_name LIKE CONCAT('%', #{materialName}, '%')</if>
+            <if test="materialType != null and materialType != ''"> AND material_type = #{materialType}</if>
+            <if test="status != null and status != ''"> AND status = #{status}</if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+
+    <select id="selectSafetyEmergencyMaterialById" parameterType="Long" resultMap="SafetyEmergencyMaterialResult">
+        <include refid="selectVo"/> WHERE material_id = #{materialId}
+    </select>
+
+    <insert id="insertSafetyEmergencyMaterial" parameterType="SafetyEmergencyMaterial" useGeneratedKeys="true" keyProperty="materialId">
+        INSERT INTO biz_safety_emergency_material (
+            material_code, material_name, material_type, spec_model, quantity, unit, storage_location,
+            person_id, person_name, effective_date, remind_status, enterprise_id, status, create_by, create_time, remark
+        ) VALUES (
+            #{materialCode}, #{materialName}, #{materialType}, #{specModel}, #{quantity}, #{unit}, #{storageLocation},
+            #{personId}, #{personName}, #{effectiveDate}, #{remindStatus}, #{enterpriseId}, #{status}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateSafetyEmergencyMaterial" parameterType="SafetyEmergencyMaterial">
+        UPDATE biz_safety_emergency_material
+        <set>
+            <if test="materialCode != null and materialCode != ''">material_code = #{materialCode},</if>
+            <if test="materialName != null and materialName != ''">material_name = #{materialName},</if>
+            <if test="materialType != null">material_type = #{materialType},</if>
+            <if test="specModel != null">spec_model = #{specModel},</if>
+            <if test="quantity != null">quantity = #{quantity},</if>
+            <if test="unit != null">unit = #{unit},</if>
+            <if test="storageLocation != null">storage_location = #{storageLocation},</if>
+            <if test="personId != null">person_id = #{personId},</if>
+            <if test="personName != null">person_name = #{personName},</if>
+            <if test="effectiveDate != null">effective_date = #{effectiveDate},</if>
+            <if test="remindStatus != null">remind_status = #{remindStatus},</if>
+            <if test="enterpriseId != null">enterprise_id = #{enterpriseId},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE material_id = #{materialId}
+    </update>
+
+    <delete id="deleteSafetyEmergencyMaterialById" parameterType="Long">
+        UPDATE biz_safety_emergency_material SET del_flag = '2' WHERE material_id = #{materialId}
+    </delete>
+
+    <delete id="deleteSafetyEmergencyMaterialByIds" parameterType="Long">
+        UPDATE biz_safety_emergency_material SET del_flag = '2' WHERE material_id IN
+        <foreach item="materialId" collection="array" open="(" separator="," close=")">#{materialId}</foreach>
+    </delete>
+
+</mapper>

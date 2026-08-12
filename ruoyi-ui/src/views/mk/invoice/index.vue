@@ -428,10 +428,11 @@
                 <span class="rd-label">发票附件</span>
                 <div class="rd-value">
                   <template v-if="viewForm.invoiceAttachment">
-                    <div v-for="(file, idx) in viewForm.invoiceAttachment.split(',')" :key="idx">
+                    <div v-for="(file, idx) in viewForm.invoiceAttachment.split(',')" :key="idx" style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
                       <el-link :href="baseUrl + file" :underline="false" target="_blank" type="primary">
                         <el-icon><Download /></el-icon> {{ getFileName(file) }}
                       </el-link>
+                      <el-button link type="success" icon="View" size="small" @click="handlePreview(file)">预览</el-button>
                     </div>
                   </template>
                   <span v-else class="rd-value--muted">暂无附件</span>
@@ -446,6 +447,8 @@
         </section>
       </div>
     </el-dialog>
+    <!-- 文件预览 -->
+    <file-preview ref="filePreviewRef" />
   </div>
 </template>
 
@@ -627,6 +630,7 @@ function uploadAttachment(file) {
 }
 
 function getFileName(name) { if (name.lastIndexOf('/') > -1) { return name.slice(name.lastIndexOf('/') + 1) } return name }
+function handlePreview(fileUrl) { proxy.$refs.filePreviewRef.open(fileUrl, getFileName(fileUrl)) }
 
 getCustomerOptions(); getContractOptions(); getOrderOptions(); getList()
 </script>

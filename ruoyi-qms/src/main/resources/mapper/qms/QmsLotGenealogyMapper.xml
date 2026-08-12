@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.qms.mapper.QmsLotGenealogyMapper">
+    <resultMap type="QmsLotGenealogy" id="QmsLotGenealogyResult">
+        <result property="id" column="id"/>
+        <result property="parentBatchNo" column="parent_batch_no"/>
+        <result property="childBatchNo" column="child_batch_no"/>
+        <result property="workOrderNo" column="work_order_no"/>
+        <result property="opId" column="op_id"/>
+        <result property="opName" column="op_name"/>
+        <result property="materialId" column="material_id"/>
+        <result property="materialCode" column="material_code"/>
+        <result property="materialName" column="material_name"/>
+        <result property="qtyIn" column="qty_in"/>
+        <result property="qtyOut" column="qty_out"/>
+        <result property="lineId" column="line_id"/>
+        <result property="lineName" column="line_name"/>
+        <result property="operator" column="operator"/>
+        <result property="supplierId" column="supplier_id"/>
+        <result property="supplierName" column="supplier_name"/>
+        <result property="sourceType" column="source_type"/>
+        <result property="traceTime" column="trace_time"/>
+        <result property="breakFlag" column="break_flag"/>
+        <result property="breakReason" column="break_reason"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="status" column="status"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <sql id="selectGenealogyVo">
+        SELECT id, parent_batch_no, child_batch_no, work_order_no, op_id, op_name,
+               material_id, material_code, material_name, qty_in, qty_out,
+               line_id, line_name, operator, supplier_id, supplier_name,
+               source_type, trace_time, break_flag, break_reason,
+               del_flag, status, create_by, create_time, update_by, update_time, remark
+        FROM qms_lot_genealogy
+    </sql>
+
+    <select id="selectGenealogyList" parameterType="QmsLotGenealogy" resultMap="QmsLotGenealogyResult">
+        <include refid="selectGenealogyVo"/>
+        <where>
+            del_flag = '0'
+            <if test="parentBatchNo != null and parentBatchNo != ''"> AND parent_batch_no LIKE CONCAT('%', #{parentBatchNo}, '%')</if>
+            <if test="childBatchNo != null and childBatchNo != ''"> AND child_batch_no LIKE CONCAT('%', #{childBatchNo}, '%')</if>
+            <if test="workOrderNo != null and workOrderNo != ''"> AND work_order_no LIKE CONCAT('%', #{workOrderNo}, '%')</if>
+            <if test="materialCode != null and materialCode != ''"> AND material_code LIKE CONCAT('%', #{materialCode}, '%')</if>
+            <if test="materialName != null and materialName != ''"> AND material_name LIKE CONCAT('%', #{materialName}, '%')</if>
+            <if test="supplierName != null and supplierName != ''"> AND supplier_name LIKE CONCAT('%', #{supplierName}, '%')</if>
+            <if test="sourceType != null and sourceType != ''"> AND source_type = #{sourceType}</if>
+            <if test="breakFlag != null"> AND break_flag = #{breakFlag}</if>
+        </where>
+        ORDER BY trace_time DESC
+    </select>
+
+    <select id="selectGenealogyById" parameterType="Long" resultMap="QmsLotGenealogyResult">
+        <include refid="selectGenealogyVo"/> WHERE id = #{id} AND del_flag = '0'
+    </select>
+
+    <select id="selectByParentBatchNo" parameterType="String" resultMap="QmsLotGenealogyResult">
+        <include refid="selectGenealogyVo"/>
+        WHERE del_flag = '0' AND parent_batch_no = #{parentBatchNo}
+        ORDER BY trace_time
+    </select>
+
+    <select id="selectByChildBatchNo" parameterType="String" resultMap="QmsLotGenealogyResult">
+        <include refid="selectGenealogyVo"/>
+        WHERE del_flag = '0' AND child_batch_no = #{childBatchNo}
+        ORDER BY trace_time
+    </select>
+
+    <select id="selectBreakList" resultMap="QmsLotGenealogyResult">
+        <include refid="selectGenealogyVo"/>
+        WHERE del_flag = '0' AND break_flag = 1
+        ORDER BY create_time DESC
+    </select>
+
+    <select id="countLinkedOrders" resultType="int">
+        SELECT COUNT(DISTINCT work_order_no) FROM qms_lot_genealogy WHERE del_flag = '0' AND work_order_no IS NOT NULL AND work_order_no != '' AND break_flag = 0
+    </select>
+
+    <select id="countBreakOrders" resultType="int">
+        SELECT COUNT(DISTINCT work_order_no) FROM qms_lot_genealogy WHERE del_flag = '0' AND break_flag = 1
+    </select>
+
+    <insert id="insertGenealogy" parameterType="QmsLotGenealogy" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO qms_lot_genealogy (
+            parent_batch_no, child_batch_no, work_order_no, op_id, op_name,
+            material_id, material_code, material_name, qty_in, qty_out,
+            line_id, line_name, operator, supplier_id, supplier_name,
+            source_type, trace_time, break_flag, break_reason,
+            del_flag, status, create_by, create_time, remark
+        ) VALUES (
+            #{parentBatchNo}, #{childBatchNo}, #{workOrderNo}, #{opId}, #{opName},
+            #{materialId}, #{materialCode}, #{materialName}, #{qtyIn}, #{qtyOut},
+            #{lineId}, #{lineName}, #{operator}, #{supplierId}, #{supplierName},
+            #{sourceType}, #{traceTime}, #{breakFlag}, #{breakReason},
+            '0', #{status}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <insert id="batchInsertGenealogy" parameterType="java.util.List">
+        INSERT INTO qms_lot_genealogy (
+            parent_batch_no, child_batch_no, work_order_no, op_id, op_name,
+            material_id, material_code, material_name, qty_in, qty_out,
+            line_id, line_name, operator, supplier_id, supplier_name,
+            source_type, trace_time, break_flag, break_reason,
+            del_flag, status, create_by, create_time, remark
+        ) VALUES
+        <foreach item="item" collection="list" separator=",">
+        (
+            #{item.parentBatchNo}, #{item.childBatchNo}, #{item.workOrderNo}, #{item.opId}, #{item.opName},
+            #{item.materialId}, #{item.materialCode}, #{item.materialName}, #{item.qtyIn}, #{item.qtyOut},
+            #{item.lineId}, #{item.lineName}, #{item.operator}, #{item.supplierId}, #{item.supplierName},
+            #{item.sourceType}, #{item.traceTime}, #{item.breakFlag}, #{item.breakReason},
+            '0', '0', #{item.createBy}, sysdate(), #{item.remark}
+        )
+        </foreach>
+    </insert>
+
+    <update id="updateGenealogy" parameterType="QmsLotGenealogy">
+        UPDATE qms_lot_genealogy
+        <set>
+            <if test="parentBatchNo != null"> parent_batch_no = #{parentBatchNo},</if>
+            <if test="childBatchNo != null"> child_batch_no = #{childBatchNo},</if>
+            <if test="workOrderNo != null"> work_order_no = #{workOrderNo},</if>
+            <if test="opId != null"> op_id = #{opId},</if>
+            <if test="opName != null"> op_name = #{opName},</if>
+            <if test="materialId != null"> material_id = #{materialId},</if>
+            <if test="materialCode != null"> material_code = #{materialCode},</if>
+            <if test="materialName != null"> material_name = #{materialName},</if>
+            <if test="qtyIn != null"> qty_in = #{qtyIn},</if>
+            <if test="qtyOut != null"> qty_out = #{qtyOut},</if>
+            <if test="lineId != null"> line_id = #{lineId},</if>
+            <if test="lineName != null"> line_name = #{lineName},</if>
+            <if test="operator != null"> operator = #{operator},</if>
+            <if test="supplierId != null"> supplier_id = #{supplierId},</if>
+            <if test="supplierName != null"> supplier_name = #{supplierName},</if>
+            <if test="sourceType != null"> source_type = #{sourceType},</if>
+            <if test="traceTime != null"> trace_time = #{traceTime},</if>
+            <if test="breakFlag != null"> break_flag = #{breakFlag},</if>
+            <if test="breakReason != null"> break_reason = #{breakReason},</if>
+            <if test="status != null"> status = #{status},</if>
+            <if test="updateBy != null"> update_by = #{updateBy},</if>
+            update_time = sysdate(),
+            <if test="remark != null"> remark = #{remark},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteGenealogyByIds" parameterType="Long">
+        UPDATE qms_lot_genealogy SET del_flag = '2' WHERE id IN
+        <foreach item="id" collection="array" open="(" separator="," close=")">#{id}</foreach>
+    </delete>
+
+    <select id="checkCycle" resultType="int">
+        SELECT COUNT(1) FROM qms_lot_genealogy
+        WHERE del_flag = '0' AND parent_batch_no = #{childBatchNo} AND child_batch_no = #{parentBatchNo}
+    </select>
+</mapper>

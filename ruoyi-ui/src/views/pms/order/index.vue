@@ -390,8 +390,8 @@
           </section>
           <!-- 审核记录（含驳回提示） -->
           <section class="rd-card" v-if="form.auditLogList && form.auditLogList.length">
-            <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>审核记录</div></div>
-            <div class="rd-card-body" style="display:block">
+            <div class="rd-card-header" @click="toggleCard('c7')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>审核记录</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c7 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+            <div class="rd-card-body" v-show="!collapsedCards.c7" style="display:block">
               <el-alert v-if="form.status === '7'" type="warning" :closable="false" show-icon class="reject-alert">
                 <template #title>该订单已被驳回，请根据审核意见修改后重新提交</template>
               </el-alert>
@@ -590,8 +590,8 @@
         </section>
         <!-- 审核记录 -->
         <section class="rd-card" v-if="viewData.auditLogList && viewData.auditLogList.length">
-          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>审核记录</div></div>
-          <div class="rd-card-body" style="display:block">
+          <div class="rd-card-header" @click="toggleCard('v9')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>审核记录</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v9 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.v9" style="display:block">
             <div class="rd-timeline">
               <div class="rd-timeline-item" v-for="log in viewData.auditLogList" :key="log.logId">
                 <div class="rd-timeline-dot" :class="{ 'rd-timeline-dot--success': log.auditAction === '1', 'rd-timeline-dot--error': log.auditAction === '2' }"></div>
@@ -670,8 +670,8 @@
         </section>
         <!-- 历史审核记录 -->
         <section class="rd-card" v-if="auditData.auditLogList && auditData.auditLogList.length">
-          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>审核记录</div></div>
-          <div class="rd-card-body" style="display:block">
+          <div class="rd-card-header" @click="toggleCard('a1')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>审核记录</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.a1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.a1" style="display:block">
             <div class="rd-timeline">
               <div class="rd-timeline-item" v-for="log in auditData.auditLogList" :key="log.logId">
                 <div class="rd-timeline-dot" :class="{ 'rd-timeline-dot--success': log.auditAction === '1', 'rd-timeline-dot--error': log.auditAction === '2' }"></div>
@@ -825,7 +825,7 @@ import { CircleClose, ArrowRight, ArrowDown, QuestionFilled, Search, Filter, War
 const { proxy } = getCurrentInstance()
 const { pms_order_status, pms_receive_status, pms_invoice_status, wms_payment_method, wms_settlement_type, wms_unit } = proxy.useDict('pms_order_status', 'pms_receive_status', 'pms_invoice_status', 'wms_payment_method', 'wms_settlement_type', 'wms_unit')
 
-const { collapsedCards, toggleCard } = useDetailCard(["c1", "c4", "c5", "c6", "c2", "c0", "c3", "v1", "v3", "v4", "v5", "v6", "v8", "v7", "v2"])
+const { collapsedCards, toggleCard } = useDetailCard(["c1", "c4", "c5", "c6", "c2", "c0", "c3", "c7", "v1", "v3", "v4", "v5", "v6", "v8", "v7", "v2", "v9", "a1"])
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('pms_order_index')
 
 // 列显隐配置 - 从 localStorage 恢复保存的设置

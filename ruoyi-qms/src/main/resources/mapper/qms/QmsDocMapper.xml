@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.qms.mapper.QmsDocMapper">
+    <resultMap type="QmsDoc" id="QmsDocResult">
+        <result property="docId" column="doc_id"/>
+        <result property="docNo" column="doc_no"/>
+        <result property="docTitle" column="doc_title"/>
+        <result property="docCategory" column="doc_category"/>
+        <result property="versionNo" column="version_no"/>
+        <result property="docStatus" column="doc_status"/>
+        <result property="deptId" column="dept_id"/>
+        <result property="deptName" column="dept_name"/>
+        <result property="tplId" column="tpl_id"/>
+        <result property="fileUrl" column="file_url"/>
+        <result property="publishDate" column="publish_date"/>
+        <result property="obsoleteDate" column="obsolete_date"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="status" column="status"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+    <sql id="selectVo">
+        SELECT doc_id, doc_no, doc_title, doc_category, version_no, doc_status, dept_id, dept_name,
+               tpl_id, file_url, publish_date, obsolete_date, del_flag, status,
+               create_by, create_time, update_by, update_time, remark
+        FROM qms_doc
+    </sql>
+    <select id="selectDocList" parameterType="QmsDoc" resultMap="QmsDocResult">
+        <include refid="selectVo"/>
+        <where> del_flag = '0'
+            <if test="docNo != null and docNo != ''"> AND doc_no LIKE CONCAT('%', #{docNo}, '%')</if>
+            <if test="docTitle != null and docTitle != ''"> AND doc_title LIKE CONCAT('%', #{docTitle}, '%')</if>
+            <if test="docCategory != null and docCategory != ''"> AND doc_category = #{docCategory}</if>
+            <if test="docStatus != null and docStatus != ''"> AND doc_status = #{docStatus}</if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+    <select id="selectDocById" parameterType="Long" resultMap="QmsDocResult">
+        <include refid="selectVo"/> WHERE doc_id = #{docId}
+    </select>
+    <insert id="insertDoc" parameterType="QmsDoc" useGeneratedKeys="true" keyProperty="docId">
+        INSERT INTO qms_doc (doc_no, doc_title, doc_category, version_no, doc_status, dept_id, dept_name,
+            tpl_id, file_url, publish_date, obsolete_date, del_flag, status, create_by, create_time, remark)
+        VALUES (#{docNo}, #{docTitle}, #{docCategory}, #{versionNo}, #{docStatus}, #{deptId}, #{deptName},
+            #{tplId}, #{fileUrl}, #{publishDate}, #{obsoleteDate}, #{delFlag}, #{status}, #{createBy}, sysdate(), #{remark})
+    </insert>
+    <update id="updateDoc" parameterType="QmsDoc">
+        UPDATE qms_doc <set>
+            <if test="docNo != null"> doc_no = #{docNo},</if>
+            <if test="docTitle != null"> doc_title = #{docTitle},</if>
+            <if test="docCategory != null"> doc_category = #{docCategory},</if>
+            <if test="versionNo != null"> version_no = #{versionNo},</if>
+            <if test="docStatus != null"> doc_status = #{docStatus},</if>
+            <if test="deptId != null"> dept_id = #{deptId},</if>
+            <if test="deptName != null"> dept_name = #{deptName},</if>
+            <if test="tplId != null"> tpl_id = #{tplId},</if>
+            <if test="fileUrl != null"> file_url = #{fileUrl},</if>
+            <if test="publishDate != null"> publish_date = #{publishDate},</if>
+            <if test="obsoleteDate != null"> obsolete_date = #{obsoleteDate},</if>
+            <if test="status != null"> status = #{status},</if>
+            <if test="updateBy != null"> update_by = #{updateBy},</if>
+            update_time = sysdate(),
+            <if test="remark != null"> remark = #{remark},</if>
+        </set>
+        WHERE doc_id = #{docId}
+    </update>
+    <delete id="deleteDocByIds" parameterType="Long">
+        UPDATE qms_doc SET del_flag = '2' WHERE doc_id IN
+        <foreach item="docId" collection="array" open="(" separator="," close=")">#{docId}</foreach>
+    </delete>
+</mapper>

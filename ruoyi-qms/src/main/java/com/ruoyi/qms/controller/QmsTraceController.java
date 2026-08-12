@@ -1,0 +1,130 @@
+package com.ruoyi.qms.controller;
+
+import java.util.List;
+import java.util.Map;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
+import com.ruoyi.common.annotation.Log;
+import com.ruoyi.common.core.controller.BaseController;
+import com.ruoyi.common.core.domain.AjaxResult;
+import com.ruoyi.common.core.page.TableDataInfo;
+import com.ruoyi.common.enums.BusinessType;
+import com.ruoyi.common.utils.poi.ExcelUtil;
+import com.ruoyi.qms.domain.QmsLotGenealogy;
+import com.ruoyi.qms.service.IQmsTraceService;
+import jakarta.servlet.http.HttpServletResponse;
+
+/**
+ * 质量追溯 Controller
+ *
+ * 提供：谱系CRUD、正向追溯、反向追溯、完整度看板、断点清单、批量补录
+ *
+ * @author ruoyi
+ */
+@RestController
+@RequestMapping("/qms/trace")
+public class QmsTraceController extends BaseController
+{
+    @Autowired
+    private IQmsTraceService qmsTraceService;
+
+    // ==================== 谱系管理 CRUD ====================
+
+    @PreAuthorize("@ss.hasPermi('qms:genealogy:list')")
+    @GetMapping("/genealogy/list")
+    public TableDataInfo genealogyList(QmsLotGenealogy genealogy)
+    {
+        startPage();
+        List<QmsLotGenealogy> list = qmsTraceService.selectGenealogyList(genealogy);
+        return getDataTable(list);
+    }
+
+    @Log(title = "谱系管理", businessType = BusinessType.EXPORT)
+    @PreAuthorize("@ss.hasPermi('qms:genealogy:export')")
+    @PostMapping("/genealogy/export")
+    public void genealogyExport(HttpServletResponse response, QmsLotGenealogy genealogy)
+    {
+        List<QmsLotGenealogy> list = qmsTraceService.selectGenealogyList(genealogy);
+        ExcelUtil<QmsLotGenealogy> util = new ExcelUtil<>(QmsLotGenealogy.class);
+        util.exportExcel(response, list, "批次谱系数据");
+    }
+
+    @PreAuthorize("@ss.hasPermi('qms:genealogy:query')")
+    @GetMapping("/genealogy/{id}")
+    public AjaxResult getGenealogy(@PathVariable Long id)
+    {
+        return AjaxResult.success(qmsTraceService.selectGenealogyById(id));
+    }
+
+    @Log(title = "谱系补录", businessType = BusinessType.INSERT)
+    @PreAuthorize("@ss.hasPermi('qms:genealogy:add')")
+    @PostMapping("/genealogy")
+    public AjaxResult addGenealogy(@Validated @RequestBody QmsLotGenealogy genealogy)
+    {
+        return toAjax(qmsTraceService.insertGenealogy(genealogy));
+    }
+
+    @Log(title = "谱系修改", businessType = BusinessType.UPDATE)
+    @PreAuthorize("@ss.hasPermi('qms:genealogy:edit')")
+    @PutMapping("/genealogy")
+    public AjaxResult editGenealogy(@Validated @RequestBody QmsLotGenealogy genealogy)
+    {
+        return toAjax(qmsTraceService.updateGenealogy(genealogy));
+    }
+
+    @Log(title = "谱系删除", businessType = BusinessType.DELETE)
+    @PreAuthorize("@ss.hasPermi('qms:genealogy:remove')")
+    @DeleteMapping("/genealogy/{ids}")
+    public AjaxResult removeGenealogy(@PathVariable Long[] ids)
+    {
+        return toAjax(qmsTraceService.deleteGenealogyByIds(ids));
+    }
+
+    @Log(title = "谱系批量补录", businessType = BusinessType.INSERT)
+    @PreAuthorize("@ss.hasPermi('qms:genealogy:add')")
+    @PostMapping("/genealogy/batch")
+    public AjaxResult batchAddGenealogy(@RequestBody List<QmsLotGenealogy> list)
+    {
+        return toAjax(qmsTraceService.batchInsertGenealogy(list));
+    }
+
+    // ==================== 追溯引擎 ====================
+
+    /**
+     * 正向追溯：原料批次 → 成品批次 → 客户/订单
+     */
+    @PreAuthorize("@ss.hasPermi('qms:trace:forward')")
+    @GetMapping("/forward/{batchNo}")
+    public AjaxResult forwardTrace(@PathVariable String batchNo)
+    {
+        return AjaxResult.success(qmsTraceService.forwardTrace(batchNo));
+    }
+
+    /**
+     * 反向追溯：成品批次 → 原料/供应商/检验记录/NCR
+     */
+    @PreAuthorize("@ss.hasPermi('qms:trace:backward')")
+    @GetMapping("/backward/{batchNo}")
+    public AjaxResult backwardTrace(@PathVariable String batchNo)
+    {
+        return AjaxResult.success(qmsTraceService.backwardTrace(batchNo));
+    }
+
+    // ==================== 完整度看板 ====================
+
+    @PreAuthorize("@ss.hasPermi('qms:trace:dashboard')")
+    @GetMapping("/completeness")
+    public AjaxResult completeness()
+    {
+        return AjaxResult.success(qmsTraceService.traceCompleteness());
+    }
+
+    @PreAuthorize("@ss.hasPermi('qms:trace:dashboard')")
+    @GetMapping("/breakList")
+    public AjaxResult breakList()
+    {
+        return AjaxResult.success(qmsTraceService.selectBreakList());
+    }
+}

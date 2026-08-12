@@ -71,6 +71,13 @@
   letter-spacing: -0.02em;
   white-space: nowrap;
 }
+.rd-detail-header-main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  padding-right: 36px;
+}
 .rd-detail-header-sub {
   display: flex;
   align-items: center;
@@ -204,6 +211,53 @@
 .rd-value--muted {
   color: #9ca3af;
   font-style: italic;
+}
+
+/* ---- 文件链接列表（查看弹窗中附件展示） ---- */
+.rd-file-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.rd-file-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 13px;
+  transition: all 0.15s ease;
+  max-width: 100%;
+}
+.rd-file-link:hover {
+  background: #eef2ff;
+  border-color: #c7d2fe;
+}
+.rd-file-link svg {
+  flex-shrink: 0;
+  color: #6366f1;
+}
+.rd-file-link .rd-file-name {
+  color: #4f46e5;
+  font-weight: 500;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rd-file-link .rd-file-name:hover {
+  text-decoration: underline;
+}
+.rd-file-link .rd-file-dl {
+  color: #9ca3af;
+  font-size: 12px;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+.rd-file-link .rd-file-dl:hover {
+  color: #4f46e5;
 }
 
 /* ---- 折叠按钮 ---- */
@@ -377,6 +431,26 @@
 /* el-row 内部换行间距 —— 解决多个 el-col 在同一 el-row 中换行后行间距过小 */
 .rd-dialog .rd-card-body .el-row {
   row-gap: 22px !important;
+}
+
+/* ---- 表单只读值文本（查看模式下替代 el-input-number 等控件展示） ---- */
+.form-value-text {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #111827;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+}
+.form-value-text--muted {
+  color: #9ca3af;
+  font-style: italic;
+}
+.form-value-text--amount {
+  font-weight: 700;
+  color: #dc2626;
 }
 
 /* ---- 进入动画 ---- */

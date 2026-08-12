@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.safety.mapper.SafetyRemindMapper">
+
+    <resultMap type="SafetyRemind" id="SafetyRemindResult">
+        <result property="remindId"       column="remind_id"/>
+        <result property="remindType"     column="remind_type"/>
+        <result property="relatedId"      column="related_id"/>
+        <result property="relatedName"    column="related_name"/>
+        <result property="remindContent"  column="remind_content"/>
+        <result property="expireDate"     column="expire_date"/>
+        <result property="remindDays"     column="remind_days"/>
+        <result property="remindStatus"   column="remind_status"/>
+        <result property="notifyLevel"    column="notify_level"/>
+        <result property="toPersonId"     column="to_person_id"/>
+        <result property="toPersonName"   column="to_person_name"/>
+        <result property="readTime"       column="read_time"/>
+        <result property="handleBy"       column="handle_by"/>
+        <result property="handleTime"       column="handle_time"/>
+        <result property="handleResult"   column="handle_result"/>
+        <result property="enterpriseId"   column="enterprise_id"/>
+        <result property="delFlag"        column="del_flag"/>
+        <result property="createBy"       column="create_by"/>
+        <result property="createTime"     column="create_time"/>
+        <result property="updateBy"       column="update_by"/>
+        <result property="updateTime"     column="update_time"/>
+        <result property="remark"         column="remark"/>
+    </resultMap>
+
+    <sql id="selectVo">
+        SELECT remind_id, remind_type, related_id, related_name, remind_content, expire_date,
+               remind_days, remind_status, notify_level, to_person_id, to_person_name,
+               read_time, handle_by, handle_time, handle_result, enterprise_id, del_flag,
+               create_by, create_time, update_by, update_time, remark
+        FROM biz_safety_remind
+    </sql>
+
+    <select id="selectSafetyRemindList" parameterType="SafetyRemind" resultMap="SafetyRemindResult">
+        <include refid="selectVo"/>
+        <where>
+            del_flag = '0'
+            <if test="remindType != null and remindType != ''"> AND remind_type = #{remindType}</if>
+            <if test="remindStatus != null and remindStatus != ''"> AND remind_status = #{remindStatus}</if>
+            <if test="relatedName != null and relatedName != ''"> AND related_name LIKE CONCAT('%', #{relatedName}, '%')</if>
+            <if test="notifyLevel != null and notifyLevel != ''"> AND notify_level = #{notifyLevel}</if>
+        </where>
+        ORDER BY expire_date ASC
+    </select>
+
+    <select id="selectSafetyRemindById" parameterType="Long" resultMap="SafetyRemindResult">
+        <include refid="selectVo"/> WHERE remind_id = #{remindId}
+    </select>
+
+    <select id="countByStatus" parameterType="String" resultType="int">
+        SELECT COUNT(1) FROM biz_safety_remind WHERE del_flag = '0'
+        <if test="remindStatus != null and remindStatus != ''"> AND remind_status = #{remindStatus}</if>
+    </select>
+
+    <!-- 到期提醒按类型统计 -->
+    <select id="selectRemindCountByType" resultType="java.util.Map">
+        SELECT remind_type as remindType, COUNT(1) as count
+        FROM biz_safety_remind
+        WHERE del_flag = '0'
+        GROUP BY remind_type
+    </select>
+
+    <!-- 即将到期提醒列表（未来30天） -->
+    <select id="selectUpcomingReminds" resultType="java.util.Map">
+        SELECT remind_id as remindId, remind_type as remindType, related_name as relatedName,
+               remind_content as remindContent, expire_date as expireDate,
+               remind_status as remindStatus, to_person_name as toPersonName
+        FROM biz_safety_remind
+        WHERE del_flag = '0'
+          AND remind_status IN ('0', '1')
+          AND expire_date &gt;= CURDATE()
+          AND expire_date &lt;= DATE_ADD(CURDATE(), INTERVAL 30 DAY)
+        ORDER BY expire_date ASC
+        LIMIT 10
+    </select>
+
+    <insert id="insertSafetyRemind" parameterType="SafetyRemind" useGeneratedKeys="true" keyProperty="remindId">
+        INSERT INTO biz_safety_remind (
+            remind_type, related_id, related_name, remind_content, expire_date, remind_days,
+            remind_status, notify_level, to_person_id, to_person_name, enterprise_id,
+            create_by, create_time, remark
+        ) VALUES (
+            #{remindType}, #{relatedId}, #{relatedName}, #{remindContent}, #{expireDate}, #{remindDays},
+            #{remindStatus}, #{notifyLevel}, #{toPersonId}, #{toPersonName}, #{enterpriseId},
+            #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateSafetyRemind" parameterType="SafetyRemind">
+        UPDATE biz_safety_remind
+        <set>
+            <if test="remindType != null">remind_type = #{remindType},</if>
+            <if test="relatedId != null">related_id = #{relatedId},</if>
+            <if test="relatedName != null">related_name = #{relatedName},</if>
+            <if test="remindContent != null">remind_content = #{remindContent},</if>
+            <if test="expireDate != null">expire_date = #{expireDate},</if>
+            <if test="remindDays != null">remind_days = #{remindDays},</if>
+            <if test="remindStatus != null">remind_status = #{remindStatus},</if>
+            <if test="notifyLevel != null">notify_level = #{notifyLevel},</if>
+            <if test="toPersonId != null">to_person_id = #{toPersonId},</if>
+            <if test="toPersonName != null">to_person_name = #{toPersonName},</if>
+            <if test="readTime != null">read_time = #{readTime},</if>
+            <if test="handleBy != null and handleBy != ''">handle_by = #{handleBy},</if>
+            <if test="handleTime != null">handle_time = #{handleTime},</if>
+            <if test="handleResult != null">handle_result = #{handleResult},</if>
+            <if test="enterpriseId != null">enterprise_id = #{enterpriseId},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE remind_id = #{remindId}
+    </update>
+
+    <delete id="deleteSafetyRemindById" parameterType="Long">
+        UPDATE biz_safety_remind SET del_flag = '2' WHERE remind_id = #{remindId}
+    </delete>
+
+    <delete id="deleteSafetyRemindByIds" parameterType="Long">
+        UPDATE biz_safety_remind SET del_flag = '2' WHERE remind_id IN
+        <foreach item="remindId" collection="array" open="(" separator="," close=")">#{remindId}</foreach>
+    </delete>
+
+</mapper>

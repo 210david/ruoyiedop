@@ -10,16 +10,20 @@ DROP TABLE IF EXISTS `mk_number_rule`;
 CREATE TABLE `mk_number_rule` (
   `rule_id`         BIGINT(20)    NOT NULL AUTO_INCREMENT  COMMENT '规则ID',
   `rule_code`       VARCHAR(50)   NOT NULL                 COMMENT '规则编码（业务标识，如 activity/customer/lead/opportunity/order）',
+  `module`          VARCHAR(20)   DEFAULT 'mk'             COMMENT '所属模块(mk=营销,dms=设备,wms=仓储,pms=采购,safety=安全生产)',
   `rule_name`       VARCHAR(100)  NOT NULL                 COMMENT '规则名称',
   `prefix`          VARCHAR(20)   DEFAULT ''               COMMENT '编号前缀',
   `date_format`     VARCHAR(20)   DEFAULT ''               COMMENT '日期格式（yyyyMMdd=按天,yyyyMM=按月,yyyy=按年,空=不包含日期）',
-  `reset_type`      CHAR(1)       DEFAULT '0'              COMMENT '序号重置类型（0=不重置,1=按天,2=按月,3=按年）',
+  `reset_type`      CHAR(1)       DEFAULT '0'              COMMENT '序号重置类型（0=不重置,1=按天,2=按月,3=按年,4=按动态前缀）',
   `seq_length`      INT(11)       DEFAULT 4                COMMENT '序列号长度（不足前补零）',
   `seq_start`       BIGINT(20)    DEFAULT 1                COMMENT '序列号起始值',
   `step`            INT(11)       DEFAULT 1                COMMENT '每次增长步长',
   `current_seq`     BIGINT(20)    DEFAULT 0                COMMENT '当前序列号',
   `current_date_str` VARCHAR(20)  DEFAULT ''               COMMENT '当前日期串（用于判断是否需要重置序列号）',
   `connector`       VARCHAR(5)    DEFAULT ''               COMMENT '前缀与日期之间的连接符',
+  `prefix_field`    VARCHAR(50)   DEFAULT NULL             COMMENT '动态前缀关联字段名',
+  `prefix_field_dict_type` VARCHAR(100) DEFAULT NULL        COMMENT '动态前缀关联字典类型',
+  `prefix_field_enabled` CHAR(1)  DEFAULT '0'              COMMENT '是否启用动态前缀(0=否,1=是)',
   `status`          CHAR(1)       DEFAULT '0'              COMMENT '状态（0=正常,1=停用）',
   `create_by`       VARCHAR(64)   DEFAULT ''               COMMENT '创建者',
   `create_time`     DATETIME                               COMMENT '创建时间',
@@ -30,16 +34,34 @@ CREATE TABLE `mk_number_rule` (
   UNIQUE KEY `uk_rule_code` (`rule_code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='编号规则表';
 
+-- 编号规则动态前缀映射表
+CREATE TABLE IF NOT EXISTS `mk_number_rule_prefix` (
+  `prefix_id`     BIGINT(20)    NOT NULL AUTO_INCREMENT  COMMENT '主键ID',
+  `rule_id`       BIGINT(20)    NOT NULL                 COMMENT '规则ID',
+  `field_value`   VARCHAR(50)   NOT NULL                 COMMENT '字段值（字典值）',
+  `field_label`   VARCHAR(100)  DEFAULT ''               COMMENT '字段标签（字典标签）',
+  `prefix`        VARCHAR(20)   DEFAULT ''               COMMENT '对应前缀',
+  `enabled`       CHAR(1)       DEFAULT '1'              COMMENT '是否启用（0=否,1=是）',
+  `current_seq`   BIGINT(20)    DEFAULT 0                COMMENT '当前序列号（按动态前缀重置时使用）',
+  `current_date_str` VARCHAR(20) DEFAULT ''              COMMENT '当前日期串',
+  `create_by`     VARCHAR(64)   DEFAULT ''               COMMENT '创建者',
+  `create_time`   DATETIME                               COMMENT '创建时间',
+  `update_by`     VARCHAR(64)   DEFAULT ''               COMMENT '更新者',
+  `update_time`   DATETIME                               COMMENT '更新时间',
+  PRIMARY KEY (`prefix_id`),
+  KEY `idx_rule_id` (`rule_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='编号规则动态前缀映射表';
+
 -- =============================================
 -- 二、初始化默认编号规则
 -- =============================================
-INSERT INTO `mk_number_rule` (`rule_code`, `rule_name`, `prefix`, `date_format`, `reset_type`, `seq_length`, `seq_start`, `step`, `current_seq`, `current_date_str`, `connector`, `status`, `create_by`, `create_time`, `remark`) VALUES
-('activity',   '活动编号', 'HD',  'yyyyMMdd', '1', 4, 1, 1, 0, '', '', '0', 'admin', sysdate(), '营销活动编号，每日重置'),
-('customer',   '客户编号', 'CUS', 'yyyyMMdd', '1', 5, 1, 1, 0, '', '', '0', 'admin', sysdate(), '企业客户编号，每日重置'),
-('lead',       '线索编号', 'XS',  'yyyyMMdd', '1', 5, 1, 1, 0, '', '', '0', 'admin', sysdate(), '线索编号，每日重置'),
-('opportunity','商机编号', 'SJ',  'yyyyMMdd', '1', 5, 1, 1, 0, '', '', '0', 'admin', sysdate(), '商机编号，每日重置'),
-('order',      '订单编号', 'DD',  'yyyyMMdd', '1', 5, 1, 1, 0, '', '', '0', 'admin', sysdate(), '订单编号，每日重置'),
-('contract',   '合同编号', 'HT',  'yyyyMMdd', '1', 5, 1, 1, 0, '', '', '0', 'admin', sysdate(), '合同编号，每日重置');
+INSERT INTO `mk_number_rule` (`rule_code`, `module`, `rule_name`, `prefix`, `date_format`, `reset_type`, `seq_length`, `seq_start`, `step`, `current_seq`, `current_date_str`, `connector`, `prefix_field_enabled`, `status`, `create_by`, `create_time`, `remark`) VALUES
+('activity',   'mk', '活动编号', 'HD',  'yyyyMMdd', '1', 4, 1, 1, 0, '', '', '0', '0', 'admin', sysdate(), '营销活动编号，每日重置'),
+('customer',   'mk', '客户编号', 'CUS', 'yyyyMMdd', '1', 5, 1, 1, 0, '', '', '0', '0', 'admin', sysdate(), '企业客户编号，每日重置'),
+('lead',       'mk', '线索编号', 'XS',  'yyyyMMdd', '1', 5, 1, 1, 0, '', '', '0', '0', 'admin', sysdate(), '线索编号，每日重置'),
+('opportunity','mk', '商机编号', 'SJ',  'yyyyMMdd', '1', 5, 1, 1, 0, '', '', '0', '0', 'admin', sysdate(), '商机编号，每日重置'),
+('order',      'mk', '订单编号', 'DD',  'yyyyMMdd', '1', 5, 1, 1, 0, '', '', '0', '0', 'admin', sysdate(), '订单编号，每日重置'),
+('contract',   'mk', '合同编号', 'HT',  'yyyyMMdd', '1', 5, 1, 1, 0, '', '', '0', '0', 'admin', sysdate(), '合同编号，每日重置');
 
 -- =============================================
 -- 三、编号规则重置类型字典

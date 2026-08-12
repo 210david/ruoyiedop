@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.qms.mapper.QmsCapaMapper">
+    <resultMap type="QmsCapa" id="QmsCapaResult">
+        <result property="capaId" column="capa_id"/>
+        <result property="capaNo" column="capa_no"/>
+        <result property="sourceType" column="source_type"/>
+        <result property="sourceNo" column="source_no"/>
+        <result property="title" column="title"/>
+        <result property="problemDesc" column="problem_desc"/>
+        <result property="teamMembers" column="team_members"/>
+        <result property="interimAction" column="interim_action"/>
+        <result property="rootCause" column="root_cause"/>
+        <result property="permanentAction" column="permanent_action"/>
+        <result property="verifyResult" column="verify_result"/>
+        <result property="preventAction" column="prevent_action"/>
+        <result property="closeRemark" column="close_remark"/>
+        <result property="capaStatus" column="capa_status"/>
+        <result property="responsiblePerson" column="responsible_person"/>
+        <result property="planCloseTime" column="plan_close_time"/>
+        <result property="closeTime" column="close_time"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="status" column="status"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+    <sql id="selectCapaVo">
+        SELECT capa_id, capa_no, source_type, source_no, title, problem_desc, team_members,
+               interim_action, root_cause, permanent_action, verify_result, prevent_action, close_remark,
+               capa_status, responsible_person, plan_close_time, close_time,
+               del_flag, status, create_by, create_time, update_by, update_time, remark
+        FROM qms_capa
+    </sql>
+    <select id="selectCapaList" parameterType="QmsCapa" resultMap="QmsCapaResult">
+        <include refid="selectCapaVo"/>
+        <where>
+            del_flag = '0'
+            <if test="capaNo != null and capaNo != ''"> AND capa_no LIKE CONCAT('%', #{capaNo}, '%')</if>
+            <if test="sourceType != null and sourceType != ''"> AND source_type = #{sourceType}</if>
+            <if test="sourceNo != null and sourceNo != ''"> AND source_no LIKE CONCAT('%', #{sourceNo}, '%')</if>
+            <if test="title != null and title != ''"> AND title LIKE CONCAT('%', #{title}, '%')</if>
+            <if test="capaStatus != null and capaStatus != ''"> AND capa_status = #{capaStatus}</if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+    <select id="selectCapaById" parameterType="Long" resultMap="QmsCapaResult">
+        <include refid="selectCapaVo"/> WHERE capa_id = #{capaId}
+    </select>
+    <insert id="insertCapa" parameterType="QmsCapa" useGeneratedKeys="true" keyProperty="capaId">
+        INSERT INTO qms_capa (
+            capa_no, source_type, source_no, title, problem_desc, team_members,
+            interim_action, root_cause, permanent_action, verify_result, prevent_action, close_remark,
+            capa_status, responsible_person, plan_close_time, close_time,
+            del_flag, status, create_by, create_time, remark
+        ) VALUES (
+            #{capaNo}, #{sourceType}, #{sourceNo}, #{title}, #{problemDesc}, #{teamMembers},
+            #{interimAction}, #{rootCause}, #{permanentAction}, #{verifyResult}, #{preventAction}, #{closeRemark},
+            #{capaStatus}, #{responsiblePerson}, #{planCloseTime}, #{closeTime},
+            #{delFlag}, #{status}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+    <update id="updateCapa" parameterType="QmsCapa">
+        UPDATE qms_capa
+        <set>
+            <if test="capaNo != null"> capa_no = #{capaNo},</if>
+            <if test="sourceType != null"> source_type = #{sourceType},</if>
+            <if test="sourceNo != null"> source_no = #{sourceNo},</if>
+            <if test="title != null"> title = #{title},</if>
+            <if test="problemDesc != null"> problem_desc = #{problemDesc},</if>
+            <if test="teamMembers != null"> team_members = #{teamMembers},</if>
+            <if test="interimAction != null"> interim_action = #{interimAction},</if>
+            <if test="rootCause != null"> root_cause = #{rootCause},</if>
+            <if test="permanentAction != null"> permanent_action = #{permanentAction},</if>
+            <if test="verifyResult != null"> verify_result = #{verifyResult},</if>
+            <if test="preventAction != null"> prevent_action = #{preventAction},</if>
+            <if test="closeRemark != null"> close_remark = #{closeRemark},</if>
+            <if test="capaStatus != null"> capa_status = #{capaStatus},</if>
+            <if test="responsiblePerson != null"> responsible_person = #{responsiblePerson},</if>
+            <if test="planCloseTime != null"> plan_close_time = #{planCloseTime},</if>
+            <if test="closeTime != null"> close_time = #{closeTime},</if>
+            <if test="status != null"> status = #{status},</if>
+            <if test="updateBy != null"> update_by = #{updateBy},</if>
+            update_time = sysdate(),
+            <if test="remark != null"> remark = #{remark},</if>
+        </set>
+        WHERE capa_id = #{capaId}
+    </update>
+    <delete id="deleteCapaByIds" parameterType="Long">
+        UPDATE qms_capa SET del_flag = '2' WHERE capa_id IN
+        <foreach item="capaId" collection="array" open="(" separator="," close=")">#{capaId}</foreach>
+    </delete>
+</mapper>

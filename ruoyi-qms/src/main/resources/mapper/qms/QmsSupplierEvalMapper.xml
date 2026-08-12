@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.qms.mapper.QmsSupplierEvalMapper">
+    <resultMap type="QmsSupplierEval" id="QmsSupplierEvalResult">
+        <result property="evalId" column="eval_id"/>
+        <result property="supplierId" column="supplier_id"/>
+        <result property="supplierName" column="supplier_name"/>
+        <result property="evalPeriod" column="eval_period"/>
+        <result property="evalType" column="eval_type"/>
+        <result property="incomingTotal" column="incoming_total"/>
+        <result property="incomingPass" column="incoming_pass"/>
+        <result property="ppm" column="ppm"/>
+        <result property="passRate" column="pass_rate"/>
+        <result property="qualityScore" column="quality_score"/>
+        <result property="deliveryScore" column="delivery_score"/>
+        <result property="serviceScore" column="service_score"/>
+        <result property="totalScore" column="total_score"/>
+        <result property="grade" column="grade"/>
+        <result property="evalStatus" column="eval_status"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="status" column="status"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+    <sql id="selectEvalVo">
+        SELECT eval_id, supplier_id, supplier_name, eval_period, eval_type, incoming_total, incoming_pass,
+               ppm, pass_rate, quality_score, delivery_score, service_score, total_score, grade,
+               eval_status, del_flag, status, create_by, create_time, update_by, update_time, remark
+        FROM qms_supplier_eval
+    </sql>
+    <select id="selectEvalList" parameterType="QmsSupplierEval" resultMap="QmsSupplierEvalResult">
+        <include refid="selectEvalVo"/>
+        <where>
+            del_flag = '0'
+            <if test="supplierName != null and supplierName != ''"> AND supplier_name LIKE CONCAT('%', #{supplierName}, '%')</if>
+            <if test="evalPeriod != null and evalPeriod != ''"> AND eval_period = #{evalPeriod}</if>
+            <if test="evalType != null and evalType != ''"> AND eval_type = #{evalType}</if>
+            <if test="grade != null and grade != ''"> AND grade = #{grade}</if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+    <select id="selectEvalById" parameterType="Long" resultMap="QmsSupplierEvalResult">
+        <include refid="selectEvalVo"/> WHERE eval_id = #{evalId}
+    </select>
+    <insert id="insertEval" parameterType="QmsSupplierEval" useGeneratedKeys="true" keyProperty="evalId">
+        INSERT INTO qms_supplier_eval (
+            supplier_id, supplier_name, eval_period, eval_type, incoming_total, incoming_pass,
+            ppm, pass_rate, quality_score, delivery_score, service_score, total_score, grade,
+            eval_status, del_flag, status, create_by, create_time, remark
+        ) VALUES (
+            #{supplierId}, #{supplierName}, #{evalPeriod}, #{evalType}, #{incomingTotal}, #{incomingPass},
+            #{ppm}, #{passRate}, #{qualityScore}, #{deliveryScore}, #{serviceScore}, #{totalScore}, #{grade},
+            #{evalStatus}, #{delFlag}, #{status}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+    <update id="updateEval" parameterType="QmsSupplierEval">
+        UPDATE qms_supplier_eval
+        <set>
+            <if test="supplierId != null"> supplier_id = #{supplierId},</if>
+            <if test="supplierName != null"> supplier_name = #{supplierName},</if>
+            <if test="evalPeriod != null"> eval_period = #{evalPeriod},</if>
+            <if test="evalType != null"> eval_type = #{evalType},</if>
+            <if test="incomingTotal != null"> incoming_total = #{incomingTotal},</if>
+            <if test="incomingPass != null"> incoming_pass = #{incomingPass},</if>
+            <if test="ppm != null"> ppm = #{ppm},</if>
+            <if test="passRate != null"> pass_rate = #{passRate},</if>
+            <if test="qualityScore != null"> quality_score = #{qualityScore},</if>
+            <if test="deliveryScore != null"> delivery_score = #{deliveryScore},</if>
+            <if test="serviceScore != null"> service_score = #{serviceScore},</if>
+            <if test="totalScore != null"> total_score = #{totalScore},</if>
+            <if test="grade != null"> grade = #{grade},</if>
+            <if test="evalStatus != null"> eval_status = #{evalStatus},</if>
+            <if test="status != null"> status = #{status},</if>
+            <if test="updateBy != null"> update_by = #{updateBy},</if>
+            update_time = sysdate(),
+            <if test="remark != null"> remark = #{remark},</if>
+        </set>
+        WHERE eval_id = #{evalId}
+    </update>
+    <delete id="deleteEvalByIds" parameterType="Long">
+        UPDATE qms_supplier_eval SET del_flag = '2' WHERE eval_id IN
+        <foreach item="evalId" collection="array" open="(" separator="," close=")">#{evalId}</foreach>
+    </delete>
+</mapper>

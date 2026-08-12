@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.safety.mapper.SafetyIncidentMapper">
+
+    <resultMap type="SafetyIncident" id="SafetyIncidentResult">
+        <result property="incidentId"      column="incident_id"/>
+        <result property="incidentCode"    column="incident_code"/>
+        <result property="incidentLevel"   column="incident_level"/>
+        <result property="incidentDate"    column="incident_date"/>
+        <result property="incidentLocation" column="incident_location"/>
+        <result property="incidentDesc"    column="incident_desc"/>
+        <result property="casualties"      column="casualties"/>
+        <result property="economicLoss"    column="economic_loss"/>
+        <result property="causeAnalysis"   column="cause_analysis"/>
+        <result property="fourNotLetGo"    column="four_not_let_go"/>
+        <result property="rectifyMeasures" column="rectify_measures"/>
+        <result property="reportPersonId"  column="report_person_id"/>
+        <result property="reportPerson"    column="report_person"/>
+        <result property="reportTime"      column="report_time"/>
+        <result property="enterpriseId"    column="enterprise_id"/>
+        <result property="delFlag"         column="del_flag"/>
+        <result property="createBy"        column="create_by"/>
+        <result property="createTime"      column="create_time"/>
+        <result property="updateBy"        column="update_by"/>
+        <result property="updateTime"      column="update_time"/>
+        <result property="remark"          column="remark"/>
+    </resultMap>
+
+    <sql id="selectVo">
+        SELECT incident_id, incident_code, incident_level, incident_date, incident_location, incident_desc,
+               casualties, economic_loss, cause_analysis, four_not_let_go, rectify_measures,
+               report_person_id, report_person, report_time, enterprise_id, del_flag,
+               create_by, create_time, update_by, update_time, remark
+        FROM biz_safety_incident
+    </sql>
+
+    <select id="selectSafetyIncidentList" parameterType="SafetyIncident" resultMap="SafetyIncidentResult">
+        <include refid="selectVo"/>
+        <where>
+            del_flag = '0'
+            <if test="incidentCode != null and incidentCode != ''"> AND incident_code LIKE CONCAT('%', #{incidentCode}, '%')</if>
+            <if test="incidentLevel != null and incidentLevel != ''"> AND incident_level = #{incidentLevel}</if>
+            <if test="incidentLocation != null and incidentLocation != ''"> AND incident_location LIKE CONCAT('%', #{incidentLocation}, '%')</if>
+        </where>
+        ORDER BY incident_date DESC
+    </select>
+
+    <select id="selectSafetyIncidentById" parameterType="Long" resultMap="SafetyIncidentResult">
+        <include refid="selectVo"/> WHERE incident_id = #{incidentId}
+    </select>
+
+    <insert id="insertSafetyIncident" parameterType="SafetyIncident" useGeneratedKeys="true" keyProperty="incidentId">
+        INSERT INTO biz_safety_incident (
+            incident_code, incident_level, incident_date, incident_location, incident_desc,
+            casualties, economic_loss, cause_analysis, four_not_let_go, rectify_measures,
+            report_person_id, report_person, report_time, enterprise_id, create_by, create_time, remark
+        ) VALUES (
+            #{incidentCode}, #{incidentLevel}, #{incidentDate}, #{incidentLocation}, #{incidentDesc},
+            #{casualties}, #{economicLoss}, #{causeAnalysis}, #{fourNotLetGo}, #{rectifyMeasures},
+            #{reportPersonId}, #{reportPerson}, #{reportTime}, #{enterpriseId}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateSafetyIncident" parameterType="SafetyIncident">
+        UPDATE biz_safety_incident
+        <set>
+            <if test="incidentCode != null and incidentCode != ''">incident_code = #{incidentCode},</if>
+            <if test="incidentLevel != null">incident_level = #{incidentLevel},</if>
+            <if test="incidentDate != null">incident_date = #{incidentDate},</if>
+            <if test="incidentLocation != null">incident_location = #{incidentLocation},</if>
+            <if test="incidentDesc != null">incident_desc = #{incidentDesc},</if>
+            <if test="casualties != null">casualties = #{casualties},</if>
+            <if test="economicLoss != null">economic_loss = #{economicLoss},</if>
+            <if test="causeAnalysis != null">cause_analysis = #{causeAnalysis},</if>
+            <if test="fourNotLetGo != null">four_not_let_go = #{fourNotLetGo},</if>
+            <if test="rectifyMeasures != null">rectify_measures = #{rectifyMeasures},</if>
+            <if test="reportPersonId != null">report_person_id = #{reportPersonId},</if>
+            <if test="reportPerson != null">report_person = #{reportPerson},</if>
+            <if test="reportTime != null">report_time = #{reportTime},</if>
+            <if test="enterpriseId != null">enterprise_id = #{enterpriseId},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE incident_id = #{incidentId}
+    </update>
+
+    <delete id="deleteSafetyIncidentById" parameterType="Long">
+        UPDATE biz_safety_incident SET del_flag = '2' WHERE incident_id = #{incidentId}
+    </delete>
+
+    <delete id="deleteSafetyIncidentByIds" parameterType="Long">
+        UPDATE biz_safety_incident SET del_flag = '2' WHERE incident_id IN
+        <foreach item="incidentId" collection="array" open="(" separator="," close=")">#{incidentId}</foreach>
+    </delete>
+
+</mapper>

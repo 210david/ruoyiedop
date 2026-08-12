@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.qms.mapper.QmsGaugeMapper">
+
+    <resultMap type="QmsGauge" id="QmsGaugeResult">
+        <result property="gaugeId"        column="gauge_id"/>
+        <result property="gaugeNo"        column="gauge_no"/>
+        <result property="gaugeName"      column="gauge_name"/>
+        <result property="gaugeType"      column="gauge_type"/>
+        <result property="precisionVal"   column="precision_val"/>
+        <result property="measureRange"   column="measure_range"/>
+        <result property="calibCycle"     column="calib_cycle"/>
+        <result property="lastCalibDate"  column="last_calib_date"/>
+        <result property="nextCalibDate"  column="next_calib_date"/>
+        <result property="gaugeStatus"    column="gauge_status"/>
+        <result property="deptId"         column="dept_id"/>
+        <result property="status"         column="status"/>
+        <result property="delFlag"        column="del_flag"/>
+        <result property="createBy"       column="create_by"/>
+        <result property="createTime"     column="create_time"/>
+        <result property="updateBy"       column="update_by"/>
+        <result property="updateTime"     column="update_time"/>
+        <result property="remark"         column="remark"/>
+    </resultMap>
+
+    <sql id="selectGaugeVo">
+        SELECT gauge_id, gauge_no, gauge_name, gauge_type, precision_val, measure_range,
+               calib_cycle, last_calib_date, next_calib_date, gauge_status, dept_id,
+               status, del_flag, create_by, create_time, update_by, update_time, remark
+        FROM qms_gauge
+    </sql>
+
+    <select id="selectGaugeList" parameterType="QmsGauge" resultMap="QmsGaugeResult">
+        <include refid="selectGaugeVo"/>
+        <where>
+            del_flag = '0'
+            <if test="gaugeNo != null and gaugeNo != ''"> AND gauge_no LIKE CONCAT('%', #{gaugeNo}, '%')</if>
+            <if test="gaugeName != null and gaugeName != ''"> AND gauge_name LIKE CONCAT('%', #{gaugeName}, '%')</if>
+            <if test="gaugeType != null and gaugeType != ''"> AND gauge_type LIKE CONCAT('%', #{gaugeType}, '%')</if>
+            <if test="gaugeStatus != null and gaugeStatus != ''"> AND gauge_status = #{gaugeStatus}</if>
+            <if test="status != null and status != ''"> AND status = #{status}</if>
+        </where>
+        ORDER BY gauge_id DESC
+    </select>
+
+    <select id="selectGaugeById" parameterType="Long" resultMap="QmsGaugeResult">
+        <include refid="selectGaugeVo"/>
+        WHERE gauge_id = #{gaugeId}
+    </select>
+
+    <select id="selectGaugeByNo" parameterType="String" resultMap="QmsGaugeResult">
+        <include refid="selectGaugeVo"/>
+        WHERE del_flag = '0' AND gauge_no = #{gaugeNo} LIMIT 1
+    </select>
+
+    <insert id="insertGauge" parameterType="QmsGauge" useGeneratedKeys="true" keyProperty="gaugeId">
+        INSERT INTO qms_gauge (
+            gauge_no, gauge_name, gauge_type, precision_val, measure_range, calib_cycle,
+            last_calib_date, next_calib_date, gauge_status, dept_id, status, del_flag,
+            create_by, create_time, remark
+        ) VALUES (
+            #{gaugeNo}, #{gaugeName}, #{gaugeType}, #{precisionVal}, #{measureRange}, #{calibCycle},
+            #{lastCalibDate}, #{nextCalibDate}, #{gaugeStatus}, #{deptId}, #{status}, #{delFlag},
+            #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateGauge" parameterType="QmsGauge">
+        UPDATE qms_gauge
+        <set>
+            <if test="gaugeNo != null and gaugeNo != ''">gauge_no = #{gaugeNo},</if>
+            <if test="gaugeName != null and gaugeName != ''">gauge_name = #{gaugeName},</if>
+            <if test="gaugeType != null">gauge_type = #{gaugeType},</if>
+            <if test="precisionVal != null">precision_val = #{precisionVal},</if>
+            <if test="measureRange != null">measure_range = #{measureRange},</if>
+            <if test="calibCycle != null">calib_cycle = #{calibCycle},</if>
+            <if test="lastCalibDate != null">last_calib_date = #{lastCalibDate},</if>
+            <if test="nextCalibDate != null">next_calib_date = #{nextCalibDate},</if>
+            <if test="gaugeStatus != null and gaugeStatus != ''">gauge_status = #{gaugeStatus},</if>
+            <if test="deptId != null">dept_id = #{deptId},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE gauge_id = #{gaugeId}
+    </update>
+
+    <delete id="deleteGaugeByIds" parameterType="Long">
+        UPDATE qms_gauge SET del_flag = '2' WHERE gauge_id IN
+        <foreach item="gaugeId" collection="array" open="(" separator="," close=")">#{gaugeId}</foreach>
+    </delete>
+
+</mapper>

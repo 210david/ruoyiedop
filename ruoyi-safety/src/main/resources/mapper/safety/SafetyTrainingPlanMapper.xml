@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.safety.mapper.SafetyTrainingPlanMapper">
+
+    <resultMap type="SafetyTrainingPlan" id="SafetyTrainingPlanResult">
+        <result property="planId"         column="plan_id"/>
+        <result property="planCode"       column="plan_code"/>
+        <result property="planName"       column="plan_name"/>
+        <result property="planType"       column="plan_type"/>
+        <result property="planYear"       column="plan_year"/>
+        <result property="targetPersons"  column="target_persons"/>
+        <result property="totalHours"     column="total_hours"/>
+        <result property="planStatus"     column="plan_status"/>
+        <result property="enterpriseId"   column="enterprise_id"/>
+        <result property="status"         column="status"/>
+        <result property="delFlag"        column="del_flag"/>
+        <result property="createBy"       column="create_by"/>
+        <result property="createTime"     column="create_time"/>
+        <result property="updateBy"       column="update_by"/>
+        <result property="updateTime"     column="update_time"/>
+        <result property="remark"         column="remark"/>
+        <!-- 进度统计字段 -->
+        <result property="recordCount"    column="record_count"/>
+        <result property="attendeeCount"  column="attendee_count"/>
+        <result property="completedHours" column="completed_hours"/>
+        <result property="passRate"       column="pass_rate"/>
+    </resultMap>
+
+    <sql id="selectVo">
+        SELECT p.plan_id, p.plan_code, p.plan_name, p.plan_type, p.plan_year, p.target_persons, p.total_hours,
+               p.plan_status, p.enterprise_id, p.status, p.del_flag, p.create_by, p.create_time, p.update_by, p.update_time, p.remark,
+               (SELECT COUNT(*) FROM biz_safety_training_record r WHERE r.plan_id = p.plan_id AND r.del_flag = '0') AS record_count,
+               (SELECT COUNT(*) FROM biz_safety_training_attendee a
+                INNER JOIN biz_safety_training_record r ON a.record_id = r.record_id
+                WHERE r.plan_id = p.plan_id AND r.del_flag = '0' AND a.del_flag = '0') AS attendee_count,
+               (SELECT COALESCE(SUM(r.hours), 0) FROM biz_safety_training_record r WHERE r.plan_id = p.plan_id AND r.del_flag = '0') AS completed_hours,
+               (SELECT CASE WHEN COUNT(*) = 0 THEN NULL
+                        ELSE ROUND(COUNT(CASE WHEN a.is_pass = '1' THEN 1 END) * 100.0 / COUNT(*), 1)
+                        END
+                FROM biz_safety_training_attendee a
+                INNER JOIN biz_safety_training_record r ON a.record_id = r.record_id
+                WHERE r.plan_id = p.plan_id AND r.del_flag = '0' AND a.del_flag = '0') AS pass_rate
+        FROM biz_safety_training_plan p
+    </sql>
+
+    <select id="selectSafetyTrainingPlanList" parameterType="SafetyTrainingPlan" resultMap="SafetyTrainingPlanResult">
+        <include refid="selectVo"/>
+        <where>
+            p.del_flag = '0'
+            <if test="planCode != null and planCode != ''"> AND p.plan_code LIKE CONCAT('%', #{planCode}, '%')</if>
+            <if test="planName != null and planName != ''"> AND p.plan_name LIKE CONCAT('%', #{planName}, '%')</if>
+            <if test="planType != null and planType != ''"> AND p.plan_type = #{planType}</if>
+            <if test="planYear != null and planYear != ''"> AND p.plan_year = #{planYear}</if>
+            <if test="planStatus != null and planStatus != ''"> AND p.plan_status = #{planStatus}</if>
+            <if test="status != null and status != ''"> AND p.status = #{status}</if>
+        </where>
+        ORDER BY p.create_time DESC
+    </select>
+
+    <select id="selectSafetyTrainingPlanById" parameterType="Long" resultMap="SafetyTrainingPlanResult">
+        <include refid="selectVo"/> WHERE p.plan_id = #{planId}
+    </select>
+
+    <insert id="insertSafetyTrainingPlan" parameterType="SafetyTrainingPlan" useGeneratedKeys="true" keyProperty="planId">
+        INSERT INTO biz_safety_training_plan (
+            plan_code, plan_name, plan_type, plan_year, target_persons, total_hours,
+            plan_status, enterprise_id, status, create_by, create_time, remark
+        ) VALUES (
+            #{planCode}, #{planName}, #{planType}, #{planYear}, #{targetPersons}, #{totalHours},
+            #{planStatus}, #{enterpriseId}, #{status}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateSafetyTrainingPlan" parameterType="SafetyTrainingPlan">
+        UPDATE biz_safety_training_plan
+        <set>
+            <if test="planCode != null and planCode != ''">plan_code = #{planCode},</if>
+            <if test="planName != null and planName != ''">plan_name = #{planName},</if>
+            <if test="planType != null">plan_type = #{planType},</if>
+            <if test="planYear != null">plan_year = #{planYear},</if>
+            <if test="targetPersons != null">target_persons = #{targetPersons},</if>
+            <if test="totalHours != null">total_hours = #{totalHours},</if>
+            <if test="planStatus != null">plan_status = #{planStatus},</if>
+            <if test="enterpriseId != null">enterprise_id = #{enterpriseId},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE plan_id = #{planId}
+    </update>
+
+    <delete id="deleteSafetyTrainingPlanById" parameterType="Long">
+        UPDATE biz_safety_training_plan SET del_flag = '2' WHERE plan_id = #{planId}
+    </delete>
+
+    <delete id="deleteSafetyTrainingPlanByIds" parameterType="Long">
+        UPDATE biz_safety_training_plan SET del_flag = '2' WHERE plan_id IN
+        <foreach item="planId" collection="array" open="(" separator="," close=")">#{planId}</foreach>
+    </delete>
+
+    <update id="updatePlanStatus">
+        UPDATE biz_safety_training_plan SET plan_status = #{planStatus}, update_by = #{updateBy}, update_time = sysdate()
+        WHERE plan_id = #{planId}
+    </update>
+
+    <!-- 统计计划关联的培训记录数 -->
+    <select id="countRecordsByPlanId" parameterType="Long" resultType="int">
+        SELECT COUNT(*) FROM biz_safety_training_record WHERE plan_id = #{planId} AND del_flag = '0'
+    </select>
+
+    <!-- 统计计划关联的参训人员数 -->
+    <select id="countAttendeesByPlanId" parameterType="Long" resultType="int">
+        SELECT COUNT(*) FROM biz_safety_training_attendee a
+        INNER JOIN biz_safety_training_record r ON a.record_id = r.record_id
+        WHERE r.plan_id = #{planId} AND r.del_flag = '0' AND a.del_flag = '0'
+    </select>
+
+</mapper>

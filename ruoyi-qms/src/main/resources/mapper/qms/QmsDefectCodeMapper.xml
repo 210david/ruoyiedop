@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.qms.mapper.QmsDefectCodeMapper">
+
+    <resultMap type="QmsDefectCode" id="QmsDefectCodeResult">
+        <result property="defectId"        column="defect_id"/>
+        <result property="defectCode"      column="defect_code"/>
+        <result property="defectName"      column="defect_name"/>
+        <result property="defectLevel"     column="defect_level"/>
+        <result property="defectCategory"  column="defect_category"/>
+        <result property="status"          column="status"/>
+        <result property="delFlag"         column="del_flag"/>
+        <result property="createBy"        column="create_by"/>
+        <result property="createTime"      column="create_time"/>
+        <result property="updateBy"        column="update_by"/>
+        <result property="updateTime"      column="update_time"/>
+        <result property="remark"          column="remark"/>
+    </resultMap>
+
+    <sql id="selectDefectCodeVo">
+        SELECT defect_id, defect_code, defect_name, defect_level, defect_category, status,
+               del_flag, create_by, create_time, update_by, update_time, remark
+        FROM qms_defect_code
+    </sql>
+
+    <select id="selectDefectCodeList" parameterType="QmsDefectCode" resultMap="QmsDefectCodeResult">
+        <include refid="selectDefectCodeVo"/>
+        <where>
+            del_flag = '0'
+            <if test="defectCode != null and defectCode != ''"> AND defect_code LIKE CONCAT('%', #{defectCode}, '%')</if>
+            <if test="defectName != null and defectName != ''"> AND defect_name LIKE CONCAT('%', #{defectName}, '%')</if>
+            <if test="defectLevel != null and defectLevel != ''"> AND defect_level = #{defectLevel}</if>
+            <if test="defectCategory != null and defectCategory != ''"> AND defect_category LIKE CONCAT('%', #{defectCategory}, '%')</if>
+            <if test="status != null and status != ''"> AND status = #{status}</if>
+        </where>
+        ORDER BY defect_id DESC
+    </select>
+
+    <select id="selectDefectCodeById" parameterType="Long" resultMap="QmsDefectCodeResult">
+        <include refid="selectDefectCodeVo"/>
+        WHERE defect_id = #{defectId}
+    </select>
+
+    <select id="selectDefectCodeByCode" parameterType="String" resultMap="QmsDefectCodeResult">
+        <include refid="selectDefectCodeVo"/>
+        WHERE del_flag = '0' AND defect_code = #{defectCode} LIMIT 1
+    </select>
+
+    <insert id="insertDefectCode" parameterType="QmsDefectCode" useGeneratedKeys="true" keyProperty="defectId">
+        INSERT INTO qms_defect_code (
+            defect_code, defect_name, defect_level, defect_category, status, del_flag, create_by, create_time, remark
+        ) VALUES (
+            #{defectCode}, #{defectName}, #{defectLevel}, #{defectCategory}, #{status}, #{delFlag}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateDefectCode" parameterType="QmsDefectCode">
+        UPDATE qms_defect_code
+        <set>
+            <if test="defectCode != null and defectCode != ''">defect_code = #{defectCode},</if>
+            <if test="defectName != null and defectName != ''">defect_name = #{defectName},</if>
+            <if test="defectLevel != null and defectLevel != ''">defect_level = #{defectLevel},</if>
+            <if test="defectCategory != null">defect_category = #{defectCategory},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE defect_id = #{defectId}
+    </update>
+
+    <delete id="deleteDefectCodeByIds" parameterType="Long">
+        UPDATE qms_defect_code SET del_flag = '2' WHERE defect_id IN
+        <foreach item="defectId" collection="array" open="(" separator="," close=")">#{defectId}</foreach>
+    </delete>
+
+</mapper>

@@ -1,0 +1,208 @@
+<template>
+  <el-dialog v-model="visible" width="720px" append-to-body draggable class="rd-dialog" @open="onOpen">
+    <template #header>
+      <div class="rd-detail-header">
+        <div class="rd-detail-header-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+            <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+            <line x1="12" y1="22.08" x2="12" y2="12"/>
+          </svg>
+        </div>
+        <span class="rd-detail-header-title">{{ title }}</span>
+      </div>
+    </template>
+    <div class="material-picker">
+      <!-- 搜索栏 -->
+      <div class="material-picker-search">
+        <el-input v-model="queryParams.materialCode" placeholder="物料编码" clearable size="small" style="width: 180px" @keyup.enter="handleQuery">
+          <template #prefix><el-icon><Search /></el-icon></template>
+        </el-input>
+        <el-input v-model="queryParams.materialName" placeholder="物料名称" clearable size="small" style="width: 180px; margin-left: 8px" @keyup.enter="handleQuery" />
+        <el-button type="primary" plain icon="Search" size="small" style="margin-left: 8px" @click="handleQuery">查询</el-button>
+        <el-button icon="RefreshLeft" size="small" @click="resetQuery">重置</el-button>
+      </div>
+
+      <!-- 物料表格 -->
+      <div class="material-picker-table">
+        <el-table
+          ref="tableRef"
+          v-loading="loading"
+          :data="list"
+          highlight-current-row
+          @row-click="onRowClick"
+          @row-dblclick="onRowDblClick"
+          height="360"
+          size="small"
+        >
+          <el-table-column width="45" align="center">
+            <template #default="{ row }">
+              <el-radio :model-value="selectedId" :value="row.materialId" @click.stop><span /></el-radio>
+            </template>
+          </el-table-column>
+          <el-table-column label="物料编码" prop="materialCode" width="140" show-overflow-tooltip />
+          <el-table-column label="物料名称" prop="materialName" min-width="180" show-overflow-tooltip />
+          <el-table-column label="规格型号" prop="specModel" width="140" show-overflow-tooltip />
+          <el-table-column label="单位" prop="unit" width="70" align="center" />
+        </el-table>
+      </div>
+
+      <!-- 分页 -->
+      <div class="material-picker-pager">
+        <el-pagination
+          v-model:current-page="queryParams.pageNum"
+          v-model:page-size="queryParams.pageSize"
+          :total="total"
+          layout="total, prev, pager, next"
+          small
+          @current-change="getList"
+        />
+      </div>
+    </div>
+    <template #footer>
+      <el-button @click="visible = false">取 消</el-button>
+      <el-button type="primary" @click="handleConfirm" :disabled="!selectedId">确 定</el-button>
+    </template>
+  </el-dialog>
+</template>
+
+<script setup>
+import { listMaterial } from '@/api/wms/material'
+
+const props = defineProps({
+  title: {
+    type: String,
+    default: '选择物料'
+  }
+})
+
+const emit = defineEmits(['confirm'])
+
+const visible = ref(false)
+const loading = ref(false)
+const list = ref([])
+const total = ref(0)
+const selectedId = ref(null)
+const selectedRow = ref(null)
+const tableRef = ref()
+
+const queryParams = reactive({
+  pageNum: 1,
+  pageSize: 10,
+  materialCode: undefined,
+  materialName: undefined,
+  status: '0'
+})
+
+/** 弹窗打开时初始化 */
+function onOpen() {
+  queryParams.materialCode = undefined
+  queryParams.materialName = undefined
+  queryParams.pageNum = 1
+  selectedId.value = null
+  selectedRow.value = null
+  getList()
+}
+
+/** 加载物料列表 */
+function getList() {
+  loading.value = true
+  listMaterial(queryParams).then(res => {
+    list.value = res.rows
+    total.value = res.total
+    loading.value = false
+    // 回显选中行
+    if (selectedId.value) {
+      nextTick(() => {
+        if (tableRef.value) {
+          tableRef.value.setCurrentRow(list.value.find(r => r.materialId === selectedId.value))
+        }
+      })
+    }
+  })
+}
+
+/** 查询 */
+function handleQuery() {
+  queryParams.pageNum = 1
+  getList()
+}
+
+/** 重置 */
+function resetQuery() {
+  queryParams.materialCode = undefined
+  queryParams.materialName = undefined
+  handleQuery()
+}
+
+/** 行点击 - 选中 */
+function onRowClick(row) {
+  selectedId.value = row.materialId
+  selectedRow.value = row
+}
+
+/** 行双击 - 确认 */
+function onRowDblClick(row) {
+  selectedId.value = row.materialId
+  selectedRow.value = row
+  handleConfirm()
+}
+
+/** 确认选择 */
+function handleConfirm() {
+  if (!selectedId.value) return
+  emit('confirm', {
+    materialId: selectedRow.value.materialId,
+    materialCode: selectedRow.value.materialCode,
+    materialName: selectedRow.value.materialName
+  })
+  visible.value = false
+}
+
+/** 打开弹窗 */
+function open(currentMaterialId) {
+  visible.value = true
+  if (currentMaterialId) {
+    selectedId.value = currentMaterialId
+  }
+}
+
+defineExpose({ open })
+</script>
+
+<style scoped lang="scss">
+.material-picker {
+  display: flex;
+  flex-direction: column;
+}
+
+.material-picker-search {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.material-picker-table {
+  border: 1px solid #ebeef5;
+  border-radius: 8px;
+  overflow: hidden;
+
+  :deep(.el-table__row) {
+    cursor: pointer;
+
+    &:hover > td {
+      background: #f0f7ff;
+    }
+  }
+
+  :deep(.el-table__row.is-current > td) {
+    background: #e6f0fd;
+  }
+}
+
+.material-picker-pager {
+  margin-top: 8px;
+  display: flex;
+  justify-content: flex-end;
+}
+</style>

@@ -15,8 +15,8 @@ ruoyi:
 
 # 开发环境配置
 server:
-  # 服务器的HTTP端口（改为8081，避免与JeecgBoot的8080冲突）
-  port: 8081
+  # 服务器的HTTP端口
+  port: 8080
   servlet:
     # 应用的访问路径
     context-path: /
@@ -65,9 +65,9 @@ spring:
   servlet:
     multipart:
       # 单个文件大小
-      max-file-size: 50MB
+      max-file-size: 100MB
       # 设置总上传的文件大小
-      max-request-size: 100MB
+      max-request-size: 200MB
   jackson:
     time-zone: GMT+8
     date-format: yyyy-MM-dd HH:mm:ss
@@ -152,7 +152,7 @@ xss:
   # 排除链接（多个用逗号分隔）
   excludes: /system/notice,/mk/invoice/recognize
   # 匹配链接
-  urlPatterns: /system/*,/monitor/*,/tool/*,/wms/*,/dms/*,/mk/*,/pms/*
+  urlPatterns: /system/*,/monitor/*,/tool/*,/wms/*,/dms/*,/mk/*,/pms/*,/safety/*
 
 # 采购管理模块配置
 pms:

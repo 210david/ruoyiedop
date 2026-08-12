@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.qms.mapper.QmsComplaintMapper">
+    <resultMap type="QmsComplaint" id="QmsComplaintResult">
+        <result property="complaintId" column="complaint_id"/>
+        <result property="complaintNo" column="complaint_no"/>
+        <result property="customerName" column="customer_name"/>
+        <result property="customerCode" column="customer_code"/>
+        <result property="materialName" column="material_name"/>
+        <result property="materialCode" column="material_code"/>
+        <result property="batchNo" column="batch_no"/>
+        <result property="complaintDate" column="complaint_date"/>
+        <result property="complaintType" column="complaint_type"/>
+        <result property="defectDesc" column="defect_desc"/>
+        <result property="severity" column="severity"/>
+        <result property="returnQty" column="return_qty"/>
+        <result property="returnAmt" column="return_amt"/>
+        <result property="claimAmt" column="claim_amt"/>
+        <result property="handleDesc" column="handle_desc"/>
+        <result property="handleResult" column="handle_result"/>
+        <result property="complaintStatus" column="complaint_status"/>
+        <result property="closeTime" column="close_time"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="status" column="status"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+    <sql id="selectVo">
+        SELECT complaint_id, complaint_no, customer_name, customer_code, material_name, material_code, batch_no,
+               complaint_date, complaint_type, defect_desc, severity, return_qty, return_amt, claim_amt,
+               handle_desc, handle_result, complaint_status, close_time, del_flag, status,
+               create_by, create_time, update_by, update_time, remark
+        FROM qms_complaint
+    </sql>
+    <select id="selectComplaintList" parameterType="QmsComplaint" resultMap="QmsComplaintResult">
+        <include refid="selectVo"/>
+        <where> del_flag = '0'
+            <if test="complaintNo != null and complaintNo != ''"> AND complaint_no LIKE CONCAT('%', #{complaintNo}, '%')</if>
+            <if test="customerName != null and customerName != ''"> AND customer_name LIKE CONCAT('%', #{customerName}, '%')</if>
+            <if test="complaintType != null and complaintType != ''"> AND complaint_type = #{complaintType}</if>
+            <if test="complaintStatus != null and complaintStatus != ''"> AND complaint_status = #{complaintStatus}</if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+    <select id="selectComplaintById" parameterType="Long" resultMap="QmsComplaintResult">
+        <include refid="selectVo"/> WHERE complaint_id = #{complaintId}
+    </select>
+    <insert id="insertComplaint" parameterType="QmsComplaint" useGeneratedKeys="true" keyProperty="complaintId">
+        INSERT INTO qms_complaint (complaint_no, customer_name, customer_code, material_name, material_code, batch_no,
+            complaint_date, complaint_type, defect_desc, severity, return_qty, return_amt, claim_amt,
+            handle_desc, handle_result, complaint_status, close_time, del_flag, status, create_by, create_time, remark)
+        VALUES (#{complaintNo}, #{customerName}, #{customerCode}, #{materialName}, #{materialCode}, #{batchNo},
+            #{complaintDate}, #{complaintType}, #{defectDesc}, #{severity}, #{returnQty}, #{returnAmt}, #{claimAmt},
+            #{handleDesc}, #{handleResult}, #{complaintStatus}, #{closeTime}, #{delFlag}, #{status}, #{createBy}, sysdate(), #{remark})
+    </insert>
+    <update id="updateComplaint" parameterType="QmsComplaint">
+        UPDATE qms_complaint <set>
+            <if test="complaintNo != null"> complaint_no = #{complaintNo},</if>
+            <if test="customerName != null"> customer_name = #{customerName},</if>
+            <if test="customerCode != null"> customer_code = #{customerCode},</if>
+            <if test="materialName != null"> material_name = #{materialName},</if>
+            <if test="materialCode != null"> material_code = #{materialCode},</if>
+            <if test="batchNo != null"> batch_no = #{batchNo},</if>
+            <if test="complaintDate != null"> complaint_date = #{complaintDate},</if>
+            <if test="complaintType != null"> complaint_type = #{complaintType},</if>
+            <if test="defectDesc != null"> defect_desc = #{defectDesc},</if>
+            <if test="severity != null"> severity = #{severity},</if>
+            <if test="returnQty != null"> return_qty = #{returnQty},</if>
+            <if test="returnAmt != null"> return_amt = #{returnAmt},</if>
+            <if test="claimAmt != null"> claim_amt = #{claimAmt},</if>
+            <if test="handleDesc != null"> handle_desc = #{handleDesc},</if>
+            <if test="handleResult != null"> handle_result = #{handleResult},</if>
+            <if test="complaintStatus != null"> complaint_status = #{complaintStatus},</if>
+            <if test="closeTime != null"> close_time = #{closeTime},</if>
+            <if test="status != null"> status = #{status},</if>
+            <if test="updateBy != null"> update_by = #{updateBy},</if>
+            update_time = sysdate(),
+            <if test="remark != null"> remark = #{remark},</if>
+        </set>
+        WHERE complaint_id = #{complaintId}
+    </update>
+    <delete id="deleteComplaintByIds" parameterType="Long">
+        UPDATE qms_complaint SET del_flag = '2' WHERE complaint_id IN
+        <foreach item="complaintId" collection="array" open="(" separator="," close=")">#{complaintId}</foreach>
+    </delete>
+</mapper>

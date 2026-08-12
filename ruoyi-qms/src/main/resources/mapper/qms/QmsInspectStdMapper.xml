@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.qms.mapper.QmsInspectStdMapper">
+
+    <resultMap type="QmsInspectStd" id="QmsInspectStdResult">
+        <result property="stdId"          column="std_id"/>
+        <result property="stdCode"        column="std_code"/>
+        <result property="stdName"        column="std_name"/>
+        <result property="inspectMethod"  column="inspect_method"/>
+        <result property="unit"           column="unit"/>
+        <result property="valMin"         column="val_min"/>
+        <result property="valMax"         column="val_max"/>
+        <result property="targetVal"      column="target_val"/>
+        <result property="judgeRule"      column="judge_rule"/>
+        <result property="tplId"          column="tpl_id"/>
+        <result property="tplName"        column="tpl_name"/>
+        <result property="status"         column="status"/>
+        <result property="delFlag"        column="del_flag"/>
+        <result property="createBy"       column="create_by"/>
+        <result property="createTime"     column="create_time"/>
+        <result property="updateBy"       column="update_by"/>
+        <result property="updateTime"     column="update_time"/>
+        <result property="remark"         column="remark"/>
+    </resultMap>
+
+    <sql id="selectInspectStdVo">
+        SELECT s.std_id, s.std_code, s.std_name, s.inspect_method, s.unit, s.val_min, s.val_max,
+               s.target_val, s.judge_rule, s.tpl_id, t.tpl_name, s.status,
+               s.del_flag, s.create_by, s.create_time, s.update_by, s.update_time, s.remark
+        FROM qms_inspect_std s
+        LEFT JOIN qms_industry_tpl t ON s.tpl_id = t.tpl_id
+    </sql>
+
+    <select id="selectInspectStdList" parameterType="QmsInspectStd" resultMap="QmsInspectStdResult">
+        <include refid="selectInspectStdVo"/>
+        <where>
+            s.del_flag = '0'
+            <if test="stdCode != null and stdCode != ''"> AND s.std_code LIKE CONCAT('%', #{stdCode}, '%')</if>
+            <if test="stdName != null and stdName != ''"> AND s.std_name LIKE CONCAT('%', #{stdName}, '%')</if>
+            <if test="inspectMethod != null and inspectMethod != ''"> AND s.inspect_method LIKE CONCAT('%', #{inspectMethod}, '%')</if>
+            <if test="judgeRule != null and judgeRule != ''"> AND s.judge_rule = #{judgeRule}</if>
+            <if test="tplId != null"> AND s.tpl_id = #{tplId}</if>
+            <if test="status != null and status != ''"> AND s.status = #{status}</if>
+        </where>
+        ORDER BY s.std_id DESC
+    </select>
+
+    <select id="selectInspectStdById" parameterType="Long" resultMap="QmsInspectStdResult">
+        <include refid="selectInspectStdVo"/>
+        WHERE s.std_id = #{stdId}
+    </select>
+
+    <select id="selectInspectStdByCode" parameterType="String" resultMap="QmsInspectStdResult">
+        <include refid="selectInspectStdVo"/>
+        WHERE s.del_flag = '0' AND s.std_code = #{stdCode} LIMIT 1
+    </select>
+
+    <insert id="insertInspectStd" parameterType="QmsInspectStd" useGeneratedKeys="true" keyProperty="stdId">
+        INSERT INTO qms_inspect_std (
+            std_code, std_name, inspect_method, unit, val_min, val_max, target_val,
+            judge_rule, tpl_id, status, del_flag, create_by, create_time, remark
+        ) VALUES (
+            #{stdCode}, #{stdName}, #{inspectMethod}, #{unit}, #{valMin}, #{valMax}, #{targetVal},
+            #{judgeRule}, #{tplId}, #{status}, #{delFlag}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateInspectStd" parameterType="QmsInspectStd">
+        UPDATE qms_inspect_std
+        <set>
+            <if test="stdCode != null and stdCode != ''">std_code = #{stdCode},</if>
+            <if test="stdName != null and stdName != ''">std_name = #{stdName},</if>
+            <if test="inspectMethod != null">inspect_method = #{inspectMethod},</if>
+            <if test="unit != null">unit = #{unit},</if>
+            <if test="valMin != null">val_min = #{valMin},</if>
+            <if test="valMax != null">val_max = #{valMax},</if>
+            <if test="targetVal != null">target_val = #{targetVal},</if>
+            <if test="judgeRule != null and judgeRule != ''">judge_rule = #{judgeRule},</if>
+            <if test="tplId != null">tpl_id = #{tplId},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE std_id = #{stdId}
+    </update>
+
+    <delete id="deleteInspectStdByIds" parameterType="Long">
+        UPDATE qms_inspect_std SET del_flag = '2' WHERE std_id IN
+        <foreach item="stdId" collection="array" open="(" separator="," close=")">#{stdId}</foreach>
+    </delete>
+
+</mapper>

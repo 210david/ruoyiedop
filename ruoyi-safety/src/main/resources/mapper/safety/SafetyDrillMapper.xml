@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.safety.mapper.SafetyDrillMapper">
+
+    <resultMap type="SafetyDrill" id="SafetyDrillResult">
+        <result property="drillId"       column="drill_id"/>
+        <result property="drillCode"     column="drill_code"/>
+        <result property="planId"        column="plan_id"/>
+        <result property="drillType"     column="drill_type"/>
+        <result property="drillName"     column="drill_name"/>
+        <result property="drillDate"       column="drill_date"/>
+        <result property="drillLocation"  column="drill_location"/>
+        <result property="drillCommander" column="drill_commander"/>
+        <result property="drillObjective" column="drill_objective"/>
+        <result property="participants"  column="participants"/>
+        <result property="participantCount" column="participant_count"/>
+        <result property="drillDesc"     column="drill_desc"/>
+        <result property="evalResult"    column="eval_result"/>
+        <result property="problems"      column="problems"/>
+        <result property="improvements"  column="improvements"/>
+        <result property="attachments"   column="attachments"/>
+        <result property="enterpriseId"  column="enterprise_id"/>
+        <result property="delFlag"       column="del_flag"/>
+        <result property="createBy"      column="create_by"/>
+        <result property="createTime"    column="create_time"/>
+        <result property="updateBy"      column="update_by"/>
+        <result property="updateTime"    column="update_time"/>
+        <result property="remark"        column="remark"/>
+    </resultMap>
+
+    <sql id="selectVo">
+        SELECT drill_id, drill_code, plan_id, drill_type, drill_name, drill_date,
+               drill_location, drill_commander, drill_objective,
+               participants, participant_count,
+               drill_desc, eval_result, problems, improvements, attachments, enterprise_id,
+               del_flag, create_by, create_time, update_by, update_time, remark
+        FROM biz_safety_drill
+    </sql>
+
+    <select id="selectSafetyDrillList" parameterType="SafetyDrill" resultMap="SafetyDrillResult">
+        <include refid="selectVo"/>
+        <where>
+            del_flag = '0'
+            <if test="drillCode != null and drillCode != ''"> AND drill_code LIKE CONCAT('%', #{drillCode}, '%')</if>
+            <if test="drillName != null and drillName != ''"> AND drill_name LIKE CONCAT('%', #{drillName}, '%')</if>
+            <if test="drillType != null and drillType != ''"> AND drill_type = #{drillType}</if>
+            <if test="planId != null"> AND plan_id = #{planId}</if>
+        </where>
+        ORDER BY drill_date DESC
+    </select>
+
+    <select id="selectSafetyDrillById" parameterType="Long" resultMap="SafetyDrillResult">
+        <include refid="selectVo"/> WHERE drill_id = #{drillId}
+    </select>
+
+    <insert id="insertSafetyDrill" parameterType="SafetyDrill" useGeneratedKeys="true" keyProperty="drillId">
+        INSERT INTO biz_safety_drill (
+            drill_code, plan_id, drill_type, drill_name, drill_date,
+            drill_location, drill_commander, drill_objective,
+            participants, participant_count,
+            drill_desc, eval_result, problems, improvements, attachments, enterprise_id, create_by, create_time, remark
+        ) VALUES (
+            #{drillCode}, #{planId}, #{drillType}, #{drillName}, #{drillDate},
+            #{drillLocation}, #{drillCommander}, #{drillObjective},
+            #{participants}, #{participantCount},
+            #{drillDesc}, #{evalResult}, #{problems}, #{improvements}, #{attachments}, #{enterpriseId}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateSafetyDrill" parameterType="SafetyDrill">
+        UPDATE biz_safety_drill
+        <set>
+            <if test="drillCode != null and drillCode != ''">drill_code = #{drillCode},</if>
+            <if test="planId != null">plan_id = #{planId},</if>
+            <if test="drillType != null">drill_type = #{drillType},</if>
+            <if test="drillName != null">drill_name = #{drillName},</if>
+            <if test="drillDate != null">drill_date = #{drillDate},</if>
+            <if test="drillLocation != null and drillLocation != ''">drill_location = #{drillLocation},</if>
+            <if test="drillCommander != null and drillCommander != ''">drill_commander = #{drillCommander},</if>
+            <if test="drillObjective != null">drill_objective = #{drillObjective},</if>
+            <if test="participants != null">participants = #{participants},</if>
+            <if test="participantCount != null">participant_count = #{participantCount},</if>
+            <if test="drillDesc != null">drill_desc = #{drillDesc},</if>
+            <if test="evalResult != null">eval_result = #{evalResult},</if>
+            <if test="problems != null">problems = #{problems},</if>
+            <if test="improvements != null">improvements = #{improvements},</if>
+            <if test="attachments != null">attachments = #{attachments},</if>
+            <if test="enterpriseId != null">enterprise_id = #{enterpriseId},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE drill_id = #{drillId}
+    </update>
+
+    <delete id="deleteSafetyDrillById" parameterType="Long">
+        UPDATE biz_safety_drill SET del_flag = '2' WHERE drill_id = #{drillId}
+    </delete>
+
+    <delete id="deleteSafetyDrillByIds" parameterType="Long">
+        UPDATE biz_safety_drill SET del_flag = '2' WHERE drill_id IN
+        <foreach item="drillId" collection="array" open="(" separator="," close=")">#{drillId}</foreach>
+    </delete>
+
+</mapper>

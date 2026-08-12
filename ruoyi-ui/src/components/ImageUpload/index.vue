@@ -17,7 +17,7 @@
       :headers="headers"
       :file-list="fileList"
       :on-preview="handlePictureCardPreview"
-      :class="{ hide: fileList.length >= limit }"
+      :class="{ hide: fileList.length >= limit || disabled }"
     >
       <el-icon class="avatar-uploader-icon"><plus /></el-icon>
     </el-upload>
@@ -52,6 +52,8 @@ import { getToken } from "@/utils/auth"
 import { isExternal } from "@/utils/validate"
 import Sortable from 'sortablejs'
 
+// Token 可能会过期，使用 computed 每次上传时动态获取最新 Token
+
 const props = defineProps({
   modelValue: [String, Object, Array],
   // 上传接口地址
@@ -71,7 +73,7 @@ const props = defineProps({
   // 大小限制(MB)
   fileSize: {
     type: Number,
-    default: 5
+    default: 50
   },
   // 文件类型, 例如['png', 'jpg', 'jpeg']
   fileType: {
@@ -103,7 +105,7 @@ const dialogImageUrl = ref("")
 const dialogVisible = ref(false)
 const baseUrl = import.meta.env.VITE_APP_BASE_API
 const uploadImgUrl = ref(import.meta.env.VITE_APP_BASE_API + props.action) // 上传的图片服务器地址
-const headers = ref({ Authorization: "Bearer " + getToken() })
+const headers = computed(() => ({ Authorization: "Bearer " + getToken() }))
 const fileList = ref([])
 const showTip = computed(
   () => props.isShowTip && (props.fileType || props.fileSize)
@@ -252,7 +254,5 @@ onMounted(() => {
     display: none;
 }
 
-:deep(.el-upload.el-upload--picture-card.is-disabled) {
-  display: none !important;
-} 
+/* 移除禁用状态的隐藏样式，让组件始终可见，禁用状态由 disabled 属性控制 */ 
 </style>

@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.qms.mapper.QmsMrMapper">
+    <resultMap type="QmsMr" id="QmsMrResult">
+        <result property="mrId" column="mr_id"/>
+        <result property="mrNo" column="mr_no"/>
+        <result property="mrTitle" column="mr_title"/>
+        <result property="mrYear" column="mr_year"/>
+        <result property="mrDate" column="mr_date"/>
+        <result property="chairperson" column="chairperson"/>
+        <result property="participants" column="participants"/>
+        <result property="inputSummary" column="input_summary"/>
+        <result property="resolution" column="resolution"/>
+        <result property="actionItems" column="action_items"/>
+        <result property="mrStatus" column="mr_status"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="status" column="status"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+    <sql id="selectVo">
+        SELECT mr_id, mr_no, mr_title, mr_year, mr_date, chairperson, participants,
+               input_summary, resolution, action_items, mr_status, del_flag, status,
+               create_by, create_time, update_by, update_time, remark
+        FROM qms_mr
+    </sql>
+    <select id="selectMrList" parameterType="QmsMr" resultMap="QmsMrResult">
+        <include refid="selectVo"/>
+        <where> del_flag = '0'
+            <if test="mrNo != null and mrNo != ''"> AND mr_no LIKE CONCAT('%', #{mrNo}, '%')</if>
+            <if test="mrTitle != null and mrTitle != ''"> AND mr_title LIKE CONCAT('%', #{mrTitle}, '%')</if>
+            <if test="mrYear != null"> AND mr_year = #{mrYear}</if>
+            <if test="mrStatus != null and mrStatus != ''"> AND mr_status = #{mrStatus}</if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+    <select id="selectMrById" parameterType="Long" resultMap="QmsMrResult">
+        <include refid="selectVo"/> WHERE mr_id = #{mrId}
+    </select>
+    <insert id="insertMr" parameterType="QmsMr" useGeneratedKeys="true" keyProperty="mrId">
+        INSERT INTO qms_mr (mr_no, mr_title, mr_year, mr_date, chairperson, participants,
+            input_summary, resolution, action_items, mr_status, del_flag, status, create_by, create_time, remark)
+        VALUES (#{mrNo}, #{mrTitle}, #{mrYear}, #{mrDate}, #{chairperson}, #{participants},
+            #{inputSummary}, #{resolution}, #{actionItems}, #{mrStatus}, #{delFlag}, #{status}, #{createBy}, sysdate(), #{remark})
+    </insert>
+    <update id="updateMr" parameterType="QmsMr">
+        UPDATE qms_mr <set>
+            <if test="mrNo != null"> mr_no = #{mrNo},</if>
+            <if test="mrTitle != null"> mr_title = #{mrTitle},</if>
+            <if test="mrYear != null"> mr_year = #{mrYear},</if>
+            <if test="mrDate != null"> mr_date = #{mrDate},</if>
+            <if test="chairperson != null"> chairperson = #{chairperson},</if>
+            <if test="participants != null"> participants = #{participants},</if>
+            <if test="inputSummary != null"> input_summary = #{inputSummary},</if>
+            <if test="resolution != null"> resolution = #{resolution},</if>
+            <if test="actionItems != null"> action_items = #{actionItems},</if>
+            <if test="mrStatus != null"> mr_status = #{mrStatus},</if>
+            <if test="status != null"> status = #{status},</if>
+            <if test="updateBy != null"> update_by = #{updateBy},</if>
+            update_time = sysdate(),
+            <if test="remark != null"> remark = #{remark},</if>
+        </set>
+        WHERE mr_id = #{mrId}
+    </update>
+    <delete id="deleteMrByIds" parameterType="Long">
+        UPDATE qms_mr SET del_flag = '2' WHERE mr_id IN
+        <foreach item="mrId" collection="array" open="(" separator="," close=")">#{mrId}</foreach>
+    </delete>
+</mapper>

@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.safety.mapper.SafetyCertMapper">
+
+    <resultMap type="SafetyCert" id="SafetyCertResult">
+        <result property="certId"        column="cert_id"/>
+        <result property="certName"      column="cert_name"/>
+        <result property="certNo"        column="cert_no"/>
+        <result property="certType"      column="cert_type"/>
+        <result property="issueOrg"      column="issue_org"/>
+        <result property="issueDate"     column="issue_date"/>
+        <result property="expireDate"    column="expire_date"/>
+        <result property="remindStatus"  column="remind_status"/>
+        <result property="enterpriseId"  column="enterprise_id"/>
+        <result property="attachment"    column="attachment"/>
+        <result property="status"        column="status"/>
+        <result property="delFlag"       column="del_flag"/>
+        <result property="createBy"      column="create_by"/>
+        <result property="createTime"    column="create_time"/>
+        <result property="updateBy"      column="update_by"/>
+        <result property="updateTime"    column="update_time"/>
+        <result property="remark"        column="remark"/>
+    </resultMap>
+
+    <sql id="selectVo">
+        SELECT cert_id, cert_name, cert_no, cert_type, issue_org, issue_date, expire_date,
+               remind_status, enterprise_id, attachment, status, del_flag,
+               create_by, create_time, update_by, update_time, remark
+        FROM biz_safety_cert
+    </sql>
+
+    <select id="selectSafetyCertList" parameterType="SafetyCert" resultMap="SafetyCertResult">
+        <include refid="selectVo"/>
+        <where>
+            del_flag = '0'
+            <if test="certName != null and certName != ''"> AND cert_name LIKE CONCAT('%', #{certName}, '%')</if>
+            <if test="certNo != null and certNo != ''"> AND cert_no LIKE CONCAT('%', #{certNo}, '%')</if>
+            <if test="certType != null and certType != ''"> AND cert_type = #{certType}</if>
+            <if test="status != null and status != ''"> AND status = #{status}</if>
+        </where>
+        ORDER BY expire_date ASC
+    </select>
+
+    <select id="selectSafetyCertById" parameterType="Long" resultMap="SafetyCertResult">
+        <include refid="selectVo"/> WHERE cert_id = #{certId}
+    </select>
+
+    <insert id="insertSafetyCert" parameterType="SafetyCert" useGeneratedKeys="true" keyProperty="certId">
+        INSERT INTO biz_safety_cert (
+            cert_name, cert_no, cert_type, issue_org, issue_date, expire_date,
+            remind_status, enterprise_id, attachment, status, create_by, create_time, remark
+        ) VALUES (
+            #{certName}, #{certNo}, #{certType}, #{issueOrg}, #{issueDate}, #{expireDate},
+            #{remindStatus}, #{enterpriseId}, #{attachment}, #{status}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateSafetyCert" parameterType="SafetyCert">
+        UPDATE biz_safety_cert
+        <set>
+            <if test="certName != null and certName != ''">cert_name = #{certName},</if>
+            <if test="certNo != null and certNo != ''">cert_no = #{certNo},</if>
+            <if test="certType != null">cert_type = #{certType},</if>
+            <if test="issueOrg != null">issue_org = #{issueOrg},</if>
+            <if test="issueDate != null">issue_date = #{issueDate},</if>
+            <if test="expireDate != null">expire_date = #{expireDate},</if>
+            <if test="remindStatus != null">remind_status = #{remindStatus},</if>
+            <if test="enterpriseId != null">enterprise_id = #{enterpriseId},</if>
+            <if test="attachment != null">attachment = #{attachment},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE cert_id = #{certId}
+    </update>
+
+    <delete id="deleteSafetyCertById" parameterType="Long">
+        UPDATE biz_safety_cert SET del_flag = '2' WHERE cert_id = #{certId}
+    </delete>
+
+    <delete id="deleteSafetyCertByIds" parameterType="Long">
+        UPDATE biz_safety_cert SET del_flag = '2' WHERE cert_id IN
+        <foreach item="certId" collection="array" open="(" separator="," close=")">#{certId}</foreach>
+    </delete>
+
+</mapper>

@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.qms.mapper.QmsMaterialAttrMapper">
+
+    <resultMap type="QmsMaterialAttr" id="QmsMaterialAttrResult">
+        <result property="attrId"         column="attr_id"/>
+        <result property="materialId"     column="material_id"/>
+        <result property="materialCode"   column="material_code"/>
+        <result property="materialName"   column="material_name"/>
+        <result property="inspectTypes"   column="inspect_types"/>
+        <result property="tplId"          column="tpl_id"/>
+        <result property="tplName"        column="tpl_name"/>
+        <result property="isExempt"       column="is_exempt"/>
+        <result property="status"         column="status"/>
+        <result property="delFlag"        column="del_flag"/>
+        <result property="createBy"       column="create_by"/>
+        <result property="createTime"     column="create_time"/>
+        <result property="updateBy"       column="update_by"/>
+        <result property="updateTime"     column="update_time"/>
+        <result property="remark"         column="remark"/>
+    </resultMap>
+
+    <sql id="selectMaterialAttrVo">
+        SELECT a.attr_id, a.material_id, a.material_code, a.material_name, a.inspect_types,
+               a.tpl_id, t.tpl_name, a.is_exempt, a.status,
+               a.del_flag, a.create_by, a.create_time, a.update_by, a.update_time, a.remark
+        FROM qms_material_attr a
+        LEFT JOIN qms_industry_tpl t ON a.tpl_id = t.tpl_id
+    </sql>
+
+    <select id="selectMaterialAttrList" parameterType="QmsMaterialAttr" resultMap="QmsMaterialAttrResult">
+        <include refid="selectMaterialAttrVo"/>
+        <where>
+            a.del_flag = '0'
+            <if test="materialCode != null and materialCode != ''"> AND a.material_code LIKE CONCAT('%', #{materialCode}, '%')</if>
+            <if test="materialName != null and materialName != ''"> AND a.material_name LIKE CONCAT('%', #{materialName}, '%')</if>
+            <if test="inspectTypes != null and inspectTypes != ''"> AND a.inspect_types LIKE CONCAT('%', #{inspectTypes}, '%')</if>
+            <if test="tplId != null"> AND a.tpl_id = #{tplId}</if>
+            <if test="isExempt != null and isExempt != ''"> AND a.is_exempt = #{isExempt}</if>
+            <if test="status != null and status != ''"> AND a.status = #{status}</if>
+        </where>
+        ORDER BY a.attr_id DESC
+    </select>
+
+    <select id="selectMaterialAttrById" parameterType="Long" resultMap="QmsMaterialAttrResult">
+        <include refid="selectMaterialAttrVo"/>
+        WHERE a.attr_id = #{attrId}
+    </select>
+
+    <select id="selectMaterialAttrByMaterialId" parameterType="Long" resultMap="QmsMaterialAttrResult">
+        <include refid="selectMaterialAttrVo"/>
+        WHERE a.del_flag = '0' AND a.material_id = #{materialId} LIMIT 1
+    </select>
+
+    <insert id="insertMaterialAttr" parameterType="QmsMaterialAttr" useGeneratedKeys="true" keyProperty="attrId">
+        INSERT INTO qms_material_attr (
+            material_id, material_code, material_name, inspect_types, tpl_id, is_exempt,
+            status, del_flag, create_by, create_time, remark
+        ) VALUES (
+            #{materialId}, #{materialCode}, #{materialName}, #{inspectTypes}, #{tplId}, #{isExempt},
+            #{status}, #{delFlag}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateMaterialAttr" parameterType="QmsMaterialAttr">
+        UPDATE qms_material_attr
+        <set>
+            <if test="materialId != null">material_id = #{materialId},</if>
+            <if test="materialCode != null">material_code = #{materialCode},</if>
+            <if test="materialName != null">material_name = #{materialName},</if>
+            <if test="inspectTypes != null">inspect_types = #{inspectTypes},</if>
+            <if test="tplId != null">tpl_id = #{tplId},</if>
+            <if test="isExempt != null and isExempt != ''">is_exempt = #{isExempt},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE attr_id = #{attrId}
+    </update>
+
+    <delete id="deleteMaterialAttrByIds" parameterType="Long">
+        UPDATE qms_material_attr SET del_flag = '2' WHERE attr_id IN
+        <foreach item="attrId" collection="array" open="(" separator="," close=")">#{attrId}</foreach>
+    </delete>
+
+</mapper>

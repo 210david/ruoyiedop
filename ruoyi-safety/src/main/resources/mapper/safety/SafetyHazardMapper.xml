@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.safety.mapper.SafetyHazardMapper">
+
+    <resultMap type="SafetyHazard" id="SafetyHazardResult">
+        <result property="hazardId"        column="hazard_id"/>
+        <result property="hazardCode"      column="hazard_code"/>
+        <result property="riskPointId"     column="risk_point_id"/>
+        <result property="hazardDesc"      column="hazard_desc"/>
+        <result property="hazardType"      column="hazard_type"/>
+        <result property="hazardLevel"     column="hazard_level"/>
+        <result property="photos"          column="photos"/>
+        <result property="discoverPersonId" column="discover_person_id"/>
+        <result property="discoverPerson"  column="discover_person"/>
+        <result property="discoverTime"    column="discover_time"/>
+        <result property="sourceType"      column="source_type"/>
+        <result property="taskId"          column="task_id"/>
+        <result property="deptId"          column="dept_id"/>
+        <result property="deptName"        column="dept_name"/>
+        <result property="personId"        column="person_id"/>
+        <result property="personName"      column="person_name"/>
+        <result property="rectifyReq"      column="rectify_req"/>
+        <result property="rectifyDeadline" column="rectify_deadline"/>
+        <result property="hazardStatus"    column="hazard_status"/>
+        <result property="rectifyDesc"     column="rectify_desc"/>
+        <result property="rectifyPhotos"   column="rectify_photos"/>
+        <result property="rectifyTime"     column="rectify_time"/>
+        <result property="verifyPersonId"  column="verify_person_id"/>
+        <result property="verifyPerson"    column="verify_person"/>
+        <result property="verifyTime"      column="verify_time"/>
+        <result property="verifyResult"    column="verify_result"/>
+        <result property="verifyComment"   column="verify_comment"/>
+        <result property="approvePersonId" column="approve_person_id"/>
+        <result property="approvePerson"   column="approve_person"/>
+        <result property="approveTime"     column="approve_time"/>
+        <result property="approveResult"   column="approve_result"/>
+        <result property="approveComment"  column="approve_comment"/>
+        <result property="enterpriseId"    column="enterprise_id"/>
+        <result property="delFlag"         column="del_flag"/>
+        <result property="createBy"        column="create_by"/>
+        <result property="createTime"      column="create_time"/>
+        <result property="updateBy"        column="update_by"/>
+        <result property="updateTime"      column="update_time"/>
+        <result property="remark"          column="remark"/>
+    </resultMap>
+
+    <sql id="selectSafetyHazardVo">
+        SELECT h.hazard_id, h.hazard_code, h.risk_point_id, h.hazard_desc, h.hazard_type, h.hazard_level,
+               h.photos, h.discover_person_id, h.discover_person, h.discover_time, h.source_type, h.task_id,
+               h.dept_id, h.dept_name, h.person_id, h.person_name, h.rectify_req, h.rectify_deadline,
+               h.hazard_status, h.rectify_desc, h.rectify_photos, h.rectify_time,
+               h.verify_person_id, h.verify_person, h.verify_time, h.verify_result, h.verify_comment,
+               h.approve_person_id, h.approve_person, h.approve_time, h.approve_result, h.approve_comment,
+               h.enterprise_id, h.del_flag, h.create_by, h.create_time, h.update_by, h.update_time, h.remark
+        FROM biz_safety_hazard h
+    </sql>
+
+    <select id="selectSafetyHazardList" parameterType="SafetyHazard" resultMap="SafetyHazardResult">
+        <include refid="selectSafetyHazardVo"/>
+        <where>
+            h.del_flag = '0'
+            <if test="hazardCode != null and hazardCode != ''"> AND h.hazard_code LIKE CONCAT('%', #{hazardCode}, '%')</if>
+            <if test="hazardDesc != null and hazardDesc != ''"> AND h.hazard_desc LIKE CONCAT('%', #{hazardDesc}, '%')</if>
+            <if test="hazardType != null and hazardType != ''"> AND h.hazard_type = #{hazardType}</if>
+            <if test="hazardLevel != null and hazardLevel != ''"> AND h.hazard_level = #{hazardLevel}</if>
+            <if test="hazardStatus != null and hazardStatus != ''"> AND h.hazard_status = #{hazardStatus}</if>
+            <if test="sourceType != null and sourceType != ''"> AND h.source_type = #{sourceType}</if>
+            <if test="taskId != null"> AND h.task_id = #{taskId}</if>
+            <if test="deptId != null"> AND h.dept_id = #{deptId}</if>
+            <if test="personId != null"> AND h.person_id = #{personId}</if>
+            <if test="params.beginTime != null and params.beginTime != ''">
+                AND date_format(h.discover_time,'%y%m%d') &gt;= date_format(#{params.beginTime},'%y%m%d')
+            </if>
+            <if test="params.endTime != null and params.endTime != ''">
+                AND date_format(h.discover_time,'%y%m%d') &lt;= date_format(#{params.endTime},'%y%m%d')
+            </if>
+        </where>
+        ORDER BY h.discover_time DESC
+    </select>
+
+    <select id="selectSafetyHazardById" parameterType="Long" resultMap="SafetyHazardResult">
+        <include refid="selectSafetyHazardVo"/> WHERE h.hazard_id = #{hazardId}
+    </select>
+
+    <select id="countHazardsByStatus" parameterType="String" resultType="int">
+        SELECT COUNT(1) FROM biz_safety_hazard WHERE del_flag = '0'
+        <if test="hazardStatus != null and hazardStatus != ''"> AND hazard_status = #{hazardStatus}</if>
+    </select>
+
+    <!-- 隐患按月趋势统计（近6个月） -->
+    <select id="selectHazardTrendByMonth" resultType="java.util.Map">
+        SELECT DATE_FORMAT(discover_time, '%Y-%m') as month,
+               COUNT(1) as total,
+               SUM(CASE WHEN hazard_level = '1' THEN 1 ELSE 0 END) as general,
+               SUM(CASE WHEN hazard_level = '2' THEN 1 ELSE 0 END) as major,
+               SUM(CASE WHEN hazard_status = '4' THEN 1 ELSE 0 END) as closed
+        FROM biz_safety_hazard
+        WHERE del_flag = '0'
+          AND discover_time &gt;= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
+        GROUP BY DATE_FORMAT(discover_time, '%Y-%m')
+        ORDER BY month ASC
+    </select>
+
+    <!-- 隐患按类型统计 -->
+    <select id="selectHazardCountByType" resultType="java.util.Map">
+        SELECT hazard_type as hazardType, COUNT(1) as count
+        FROM biz_safety_hazard
+        WHERE del_flag = '0'
+        GROUP BY hazard_type
+    </select>
+
+    <!-- 隐患按等级统计 -->
+    <select id="selectHazardCountByLevel" resultType="java.util.Map">
+        SELECT hazard_level as hazardLevel, COUNT(1) as count
+        FROM biz_safety_hazard
+        WHERE del_flag = '0'
+        GROUP BY hazard_level
+    </select>
+
+    <!-- 隐患按来源统计 -->
+    <select id="selectHazardCountBySource" resultType="java.util.Map">
+        SELECT source_type as sourceType, COUNT(1) as count
+        FROM biz_safety_hazard
+        WHERE del_flag = '0'
+        GROUP BY source_type
+    </select>
+
+    <!-- 隐患按部门统计（Top 5） -->
+    <select id="selectHazardCountByDept" resultType="java.util.Map">
+        SELECT dept_name as deptName, COUNT(1) as count
+        FROM biz_safety_hazard
+        WHERE del_flag = '0' AND dept_name IS NOT NULL AND dept_name != ''
+        GROUP BY dept_name
+        ORDER BY count DESC
+        LIMIT 5
+    </select>
+
+    <insert id="insertSafetyHazard" parameterType="SafetyHazard" useGeneratedKeys="true" keyProperty="hazardId">
+        INSERT INTO biz_safety_hazard (
+            hazard_code, risk_point_id, hazard_desc, hazard_type, hazard_level,
+            photos, discover_person_id, discover_person, discover_time, source_type, task_id,
+            dept_id, dept_name, person_id, person_name, rectify_req, rectify_deadline,
+            hazard_status, create_by, create_time, remark
+        ) VALUES (
+            #{hazardCode}, #{riskPointId}, #{hazardDesc}, #{hazardType}, #{hazardLevel},
+            #{photos}, #{discoverPersonId}, #{discoverPerson}, #{discoverTime}, #{sourceType}, #{taskId},
+            #{deptId}, #{deptName}, #{personId}, #{personName}, #{rectifyReq}, #{rectifyDeadline},
+            #{hazardStatus}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateSafetyHazard" parameterType="SafetyHazard">
+        UPDATE biz_safety_hazard
+        <set>
+            <if test="hazardCode != null and hazardCode != ''">hazard_code = #{hazardCode},</if>
+            <if test="riskPointId != null">risk_point_id = #{riskPointId},</if>
+            <if test="hazardDesc != null and hazardDesc != ''">hazard_desc = #{hazardDesc},</if>
+            <if test="hazardType != null and hazardType != ''">hazard_type = #{hazardType},</if>
+            <if test="hazardLevel != null and hazardLevel != ''">hazard_level = #{hazardLevel},</if>
+            <if test="photos != null">photos = #{photos},</if>
+            <if test="taskId != null">task_id = #{taskId},</if>
+            <if test="deptId != null">dept_id = #{deptId},</if>
+            <if test="deptName != null">dept_name = #{deptName},</if>
+            <if test="personId != null">person_id = #{personId},</if>
+            <if test="personName != null">person_name = #{personName},</if>
+            <if test="rectifyReq != null">rectify_req = #{rectifyReq},</if>
+            <if test="rectifyDeadline != null">rectify_deadline = #{rectifyDeadline},</if>
+            <if test="hazardStatus != null and hazardStatus != ''">hazard_status = #{hazardStatus},</if>
+            <if test="rectifyDesc != null">rectify_desc = #{rectifyDesc},</if>
+            <if test="rectifyPhotos != null">rectify_photos = #{rectifyPhotos},</if>
+            <if test="rectifyTime != null">rectify_time = #{rectifyTime},</if>
+            <if test="verifyPersonId != null">verify_person_id = #{verifyPersonId},</if>
+            <if test="verifyPerson != null">verify_person = #{verifyPerson},</if>
+            <if test="verifyTime != null">verify_time = #{verifyTime},</if>
+            <if test="verifyResult != null">verify_result = #{verifyResult},</if>
+            <if test="verifyComment != null">verify_comment = #{verifyComment},</if>
+            <if test="approvePersonId != null">approve_person_id = #{approvePersonId},</if>
+            <if test="approvePerson != null">approve_person = #{approvePerson},</if>
+            <if test="approveTime != null">approve_time = #{approveTime},</if>
+            <if test="approveResult != null">approve_result = #{approveResult},</if>
+            <if test="approveComment != null">approve_comment = #{approveComment},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE hazard_id = #{hazardId}
+    </update>
+
+    <update id="updateHazardStatus" parameterType="SafetyHazard">
+        UPDATE biz_safety_hazard SET hazard_status = #{hazardStatus},
+        <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+        update_time = sysdate()
+        WHERE hazard_id = #{hazardId}
+    </update>
+
+    <delete id="deleteSafetyHazardById" parameterType="Long">
+        UPDATE biz_safety_hazard SET del_flag = '2' WHERE hazard_id = #{hazardId}
+    </delete>
+
+    <delete id="deleteSafetyHazardByIds" parameterType="Long">
+        UPDATE biz_safety_hazard SET del_flag = '2' WHERE hazard_id IN
+        <foreach item="hazardId" collection="array" open="(" separator="," close=")">#{hazardId}</foreach>
+    </delete>
+
+</mapper>

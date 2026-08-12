@@ -2,9 +2,29 @@
 -- 执行前请确保 mk_number_rule 表已存在
 
 -- =============================================
--- 0. 增加 module 字段（按模块分离编号规则）
+-- 0. 增加 module 及动态前缀相关字段（兼容旧版数据库）
 -- =============================================
-ALTER TABLE `mk_number_rule` ADD COLUMN IF NOT EXISTS `module` VARCHAR(20) DEFAULT 'mk' COMMENT '所属模块(mk=营销,dms=设备,wms=仓储)' AFTER `rule_code`;
+ALTER TABLE `mk_number_rule` ADD COLUMN IF NOT EXISTS `module` VARCHAR(20) DEFAULT 'mk' COMMENT '所属模块(mk=营销,dms=设备,wms=仓储,pms=采购,safety=安全生产)' AFTER `rule_code`;
+ALTER TABLE `mk_number_rule` ADD COLUMN IF NOT EXISTS `prefix_field` VARCHAR(50) DEFAULT NULL COMMENT '动态前缀关联字段名' AFTER `connector`;
+ALTER TABLE `mk_number_rule` ADD COLUMN IF NOT EXISTS `prefix_field_dict_type` VARCHAR(100) DEFAULT NULL COMMENT '动态前缀关联字典类型' AFTER `prefix_field`;
+ALTER TABLE `mk_number_rule` ADD COLUMN IF NOT EXISTS `prefix_field_enabled` CHAR(1) DEFAULT '0' COMMENT '是否启用动态前缀(0=否,1=是)' AFTER `prefix_field_dict_type`;
+
+CREATE TABLE IF NOT EXISTS `mk_number_rule_prefix` (
+  `prefix_id`     BIGINT(20)    NOT NULL AUTO_INCREMENT  COMMENT '主键ID',
+  `rule_id`       BIGINT(20)    NOT NULL                 COMMENT '规则ID',
+  `field_value`   VARCHAR(50)   NOT NULL                 COMMENT '字段值（字典值）',
+  `field_label`   VARCHAR(100)  DEFAULT ''               COMMENT '字段标签（字典标签）',
+  `prefix`        VARCHAR(20)   DEFAULT ''               COMMENT '对应前缀',
+  `enabled`       CHAR(1)       DEFAULT '1'              COMMENT '是否启用（0=否,1=是）',
+  `current_seq`   BIGINT(20)    DEFAULT 0                COMMENT '当前序列号（按动态前缀重置时使用）',
+  `current_date_str` VARCHAR(20) DEFAULT ''              COMMENT '当前日期串',
+  `create_by`     VARCHAR(64)   DEFAULT ''               COMMENT '创建者',
+  `create_time`   DATETIME                               COMMENT '创建时间',
+  `update_by`     VARCHAR(64)   DEFAULT ''               COMMENT '更新者',
+  `update_time`   DATETIME                               COMMENT '更新时间',
+  PRIMARY KEY (`prefix_id`),
+  KEY `idx_rule_id` (`rule_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='编号规则动态前缀映射表';
 
 -- 更新已有规则的模块归属
 UPDATE `mk_number_rule` SET module='mk' WHERE rule_code IN ('activity','customer','lead','opportunity','order','contract');

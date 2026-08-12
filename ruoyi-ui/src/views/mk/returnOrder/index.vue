@@ -367,7 +367,7 @@
 
           <!-- 审核记录（仅修改时显示） -->
           <section class="rd-card" v-if="isEdit && addForm.approveLogList && addForm.approveLogList.length">
-            <div class="rd-card-header">
+            <div class="rd-card-header" @click="toggleCard('editAudit')">
               <div class="rd-card-title">
                 <span class="rd-card-icon">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -377,8 +377,9 @@
                 </span>
                 审核记录
               </div>
+              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.editAudit }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
             </div>
-            <div class="rd-card-body" style="display:block">
+            <div class="rd-card-body" v-show="!collapsedCards.editAudit" style="display:block">
               <el-alert v-if="addForm.returnStatus === '2'" type="warning" :closable="false" show-icon class="reject-alert">
                 <template #title>该退货单已被驳回，请根据审核意见修改后重新提交</template>
               </el-alert>
@@ -499,7 +500,7 @@
 
           <!-- 审核记录 -->
           <section class="rd-card" v-if="approveForm.approveLogList && approveForm.approveLogList.length">
-            <div class="rd-card-header">
+            <div class="rd-card-header" @click="toggleCard('approveAudit')">
               <div class="rd-card-title">
                 <span class="rd-card-icon">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -509,8 +510,9 @@
                 </span>
                 审核记录
               </div>
+              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.approveAudit }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
             </div>
-            <div class="rd-card-body" style="display:block">
+            <div class="rd-card-body" v-show="!collapsedCards.approveAudit" style="display:block">
               <div class="rd-timeline">
                 <div class="rd-timeline-item" v-for="log in approveForm.approveLogList" :key="log.logId">
                   <div class="rd-timeline-dot" :class="{ 'rd-timeline-dot--success': log.actionType === '2', 'rd-timeline-dot--error': log.actionType === '3' }"></div>
@@ -832,7 +834,7 @@
 
         <!-- 审核记录 -->
         <section class="rd-card">
-          <div class="rd-card-header">
+          <div class="rd-card-header" @click="toggleCard('viewAudit')">
             <div class="rd-card-title">
               <span class="rd-card-icon">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -842,8 +844,9 @@
               </span>
               审核记录
             </div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.viewAudit }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
           </div>
-          <div class="rd-card-body" style="display:block">
+          <div class="rd-card-body" v-show="!collapsedCards.viewAudit" style="display:block">
             <div class="rd-timeline" v-if="viewForm.approveLogList && viewForm.approveLogList.length">
               <div class="rd-timeline-item" v-for="log in viewForm.approveLogList" :key="log.logId">
                 <div class="rd-timeline-dot" :class="{ 'rd-timeline-dot--success': log.actionType === '2', 'rd-timeline-dot--error': log.actionType === '3' }"></div>
@@ -925,7 +928,7 @@ const addForm = ref({})
 const addTitle = ref('新增退货')
 const isEdit = ref(false)
 const orderOptions = ref([])
-const collapsedCards = reactive({ basic: false, reason: false, approve: false, refund: false, approveReturn: false, approveItems: false, approveReview: false, refundReturn: false, refundInfo: false, addOrder: false, addItems: false, addReturn: false, viewItems: false })
+const collapsedCards = reactive({ basic: false, reason: false, approve: false, refund: false, approveReturn: false, approveItems: false, approveReview: false, refundReturn: false, refundInfo: false, addOrder: false, addItems: false, addReturn: false, viewItems: false, editAudit: false, approveAudit: false, viewAudit: false })
 function toggleCard(name) { collapsedCards[name] = !collapsedCards[name] }
 
 const data = reactive({

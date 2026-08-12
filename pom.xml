@@ -198,6 +198,20 @@
                 <version>${ruoyi.version}</version>
             </dependency>
 
+            <!-- QMS质量管理模块-->
+            <dependency>
+                <groupId>com.ruoyi</groupId>
+                <artifactId>ruoyi-qms</artifactId>
+                <version>${ruoyi.version}</version>
+            </dependency>
+
+            <!-- Safety安全生产管理模块-->
+            <dependency>
+                <groupId>com.ruoyi</groupId>
+                <artifactId>ruoyi-safety</artifactId>
+                <version>${ruoyi.version}</version>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
 
@@ -212,6 +226,8 @@
         <module>ruoyi-dms</module>
         <module>ruoyi-mk</module>
         <module>ruoyi-pms</module>
+        <module>ruoyi-qms</module>
+        <module>ruoyi-safety</module>
     </modules>
     <packaging>pom</packaging>
 

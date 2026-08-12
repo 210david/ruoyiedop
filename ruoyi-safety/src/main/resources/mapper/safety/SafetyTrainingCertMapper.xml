@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.safety.mapper.SafetyTrainingCertMapper">
+
+    <resultMap type="SafetyTrainingCert" id="SafetyTrainingCertResult">
+        <result property="certId"        column="cert_id"/>
+        <result property="certNo"         column="cert_no"/>
+        <result property="certName"       column="cert_name"/>
+        <result property="certType"       column="cert_type"/>
+        <result property="userId"         column="user_id"/>
+        <result property="userName"       column="user_name"/>
+        <result property="deptId"         column="dept_id"/>
+        <result property="deptName"       column="dept_name"/>
+        <result property="recordId"       column="record_id"/>
+        <result property="courseId"       column="course_id"/>
+        <result property="issueDate"      column="issue_date"/>
+        <result property="expireDate"     column="expire_date"/>
+        <result property="issueOrg"       column="issue_org"/>
+        <result property="attachment"     column="attachment"/>
+        <result property="remindStatus"  column="remind_status"/>
+        <result property="enterpriseId"  column="enterprise_id"/>
+        <result property="status"         column="status"/>
+        <result property="delFlag"        column="del_flag"/>
+        <result property="createBy"       column="create_by"/>
+        <result property="createTime"     column="create_time"/>
+        <result property="updateBy"       column="update_by"/>
+        <result property="updateTime"     column="update_time"/>
+        <result property="remark"         column="remark"/>
+    </resultMap>
+
+    <sql id="selectVo">
+        SELECT cert_id, cert_no, cert_name, cert_type, user_id, user_name, dept_id, dept_name,
+               record_id, course_id, issue_date, expire_date, issue_org, attachment, remind_status,
+               enterprise_id, status, del_flag, create_by, create_time, update_by, update_time, remark
+        FROM biz_safety_training_cert
+    </sql>
+
+    <select id="selectSafetyTrainingCertList" parameterType="SafetyTrainingCert" resultMap="SafetyTrainingCertResult">
+        <include refid="selectVo"/>
+        <where>
+            del_flag = '0'
+            <if test="certNo != null and certNo != ''"> AND cert_no LIKE CONCAT('%', #{certNo}, '%')</if>
+            <if test="certName != null and certName != ''"> AND cert_name LIKE CONCAT('%', #{certName}, '%')</if>
+            <if test="certType != null and certType != ''"> AND cert_type = #{certType}</if>
+            <if test="userName != null and userName != ''"> AND user_name LIKE CONCAT('%', #{userName}, '%')</if>
+            <if test="userId != null"> AND user_id = #{userId}</if>
+            <if test="status != null and status != ''"> AND status = #{status}</if>
+        </where>
+        ORDER BY issue_date DESC
+    </select>
+
+    <select id="selectSafetyTrainingCertById" parameterType="Long" resultMap="SafetyTrainingCertResult">
+        <include refid="selectVo"/> WHERE cert_id = #{certId}
+    </select>
+
+    <insert id="insertSafetyTrainingCert" parameterType="SafetyTrainingCert" useGeneratedKeys="true" keyProperty="certId">
+        INSERT INTO biz_safety_training_cert (
+            cert_no, cert_name, cert_type, user_id, user_name, dept_id, dept_name,
+            record_id, course_id, issue_date, expire_date, issue_org, attachment, remind_status,
+            enterprise_id, status, create_by, create_time, remark
+        ) VALUES (
+            #{certNo}, #{certName}, #{certType}, #{userId}, #{userName}, #{deptId}, #{deptName},
+            #{recordId}, #{courseId}, #{issueDate}, #{expireDate}, #{issueOrg}, #{attachment}, #{remindStatus},
+            #{enterpriseId}, #{status}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateSafetyTrainingCert" parameterType="SafetyTrainingCert">
+        UPDATE biz_safety_training_cert
+        <set>
+            <if test="certNo != null">cert_no = #{certNo},</if>
+            <if test="certName != null">cert_name = #{certName},</if>
+            <if test="certType != null">cert_type = #{certType},</if>
+            <if test="userId != null">user_id = #{userId},</if>
+            <if test="userName != null">user_name = #{userName},</if>
+            <if test="deptId != null">dept_id = #{deptId},</if>
+            <if test="deptName != null">dept_name = #{deptName},</if>
+            <if test="recordId != null">record_id = #{recordId},</if>
+            <if test="courseId != null">course_id = #{courseId},</if>
+            <if test="issueDate != null">issue_date = #{issueDate},</if>
+            <if test="expireDate != null">expire_date = #{expireDate},</if>
+            <if test="issueOrg != null">issue_org = #{issueOrg},</if>
+            <if test="attachment != null">attachment = #{attachment},</if>
+            <if test="remindStatus != null">remind_status = #{remindStatus},</if>
+            <if test="enterpriseId != null">enterprise_id = #{enterpriseId},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE cert_id = #{certId}
+    </update>
+
+    <delete id="deleteSafetyTrainingCertById" parameterType="Long">
+        UPDATE biz_safety_training_cert SET del_flag = '2' WHERE cert_id = #{certId}
+    </delete>
+
+    <!-- 查询是否已存在相同培训记录+用户的证书 -->
+    <select id="selectByRecordIdAndUserId" resultMap="SafetyTrainingCertResult">
+        <include refid="selectVo"/> WHERE record_id = #{recordId} AND user_id = #{userId} AND del_flag = '0' LIMIT 1
+    </select>
+
+    <delete id="deleteSafetyTrainingCertByIds" parameterType="Long">
+        UPDATE biz_safety_training_cert SET del_flag = '2' WHERE cert_id IN
+        <foreach item="certId" collection="array" open="(" separator="," close=")">#{certId}</foreach>
+    </delete>
+
+</mapper>

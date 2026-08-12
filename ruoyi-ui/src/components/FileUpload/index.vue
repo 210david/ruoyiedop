@@ -1,6 +1,7 @@
 <template>
   <div class="upload-file">
     <el-upload
+      v-if="!disabled"
       multiple
       :action="uploadFileUrl"
       :before-upload="handleBeforeUpload"
@@ -14,7 +15,6 @@
       :headers="headers"
       class="upload-file-uploader"
       ref="fileUpload"
-      v-if="!disabled"
     >
       <!-- 上传按钮 -->
       <el-button type="primary">选取文件</el-button>
@@ -33,16 +33,21 @@
           <span class="el-icon-document"> {{ getFileName(file.name) }} </span>
         </el-link>
         <div class="ele-upload-list__item-content-action">
+          <el-link underline="never" @click="handlePreview(file)" type="success">&nbsp;预览</el-link>
           <el-link underline="never" @click="handleDelete(index)" type="danger" v-if="!disabled">&nbsp;删除</el-link>
         </div>
       </li>
     </transition-group>
+    <!-- 文件预览 -->
+    <file-preview ref="filePreviewRef" />
   </div>
 </template>
 
 <script setup>
 import { getToken } from "@/utils/auth"
 import Sortable from 'sortablejs'
+
+// Token 可能会过期，使用 computed 每次上传时动态获取最新 Token
 
 const props = defineProps({
   modelValue: [String, Object, Array],
@@ -63,7 +68,7 @@ const props = defineProps({
   // 大小限制(MB)
   fileSize: {
     type: Number,
-    default: 5
+    default: 50
   },
   // 文件类型, 例如['png', 'jpg', 'jpeg']
   fileType: {
@@ -93,7 +98,7 @@ const number = ref(0)
 const uploadList = ref([])
 const baseUrl = import.meta.env.VITE_APP_BASE_API
 const uploadFileUrl = ref(import.meta.env.VITE_APP_BASE_API + props.action) // 上传文件服务器地址
-const headers = ref({ Authorization: "Bearer " + getToken() })
+const headers = computed(() => ({ Authorization: "Bearer " + getToken() }))
 const fileList = ref([])
 const showTip = computed(
   () => props.isShowTip && (props.fileType || props.fileSize)
@@ -171,6 +176,11 @@ function handleUploadSuccess(res, file) {
     proxy.$refs.fileUpload.handleRemove(file)
     uploadedSuccessfully()
   }
+}
+
+// 预览文件
+function handlePreview(file) {
+  proxy.$refs.filePreviewRef.open(file.url, getFileName(file.name))
 }
 
 // 删除文件

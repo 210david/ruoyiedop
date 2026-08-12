@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.qms.mapper.QmsIndustryTplMapper">
+
+    <resultMap type="QmsIndustryTpl" id="QmsIndustryTplResult">
+        <result property="tplId"          column="tpl_id"/>
+        <result property="tplCode"        column="tpl_code"/>
+        <result property="tplName"        column="tpl_name"/>
+        <result property="industryType"   column="industry_type"/>
+        <result property="auditForce"     column="audit_force"/>
+        <result property="status"         column="status"/>
+        <result property="delFlag"        column="del_flag"/>
+        <result property="createBy"       column="create_by"/>
+        <result property="createTime"     column="create_time"/>
+        <result property="updateBy"       column="update_by"/>
+        <result property="updateTime"     column="update_time"/>
+        <result property="remark"         column="remark"/>
+    </resultMap>
+
+    <sql id="selectIndustryTplVo">
+        SELECT tpl_id, tpl_code, tpl_name, industry_type, audit_force, status,
+               del_flag, create_by, create_time, update_by, update_time, remark
+        FROM qms_industry_tpl
+    </sql>
+
+    <select id="selectIndustryTplList" parameterType="QmsIndustryTpl" resultMap="QmsIndustryTplResult">
+        <include refid="selectIndustryTplVo"/>
+        <where>
+            del_flag = '0'
+            <if test="tplCode != null and tplCode != ''"> AND tpl_code LIKE CONCAT('%', #{tplCode}, '%')</if>
+            <if test="tplName != null and tplName != ''"> AND tpl_name LIKE CONCAT('%', #{tplName}, '%')</if>
+            <if test="industryType != null and industryType != ''"> AND industry_type = #{industryType}</if>
+            <if test="status != null and status != ''"> AND status = #{status}</if>
+        </where>
+        ORDER BY tpl_id DESC
+    </select>
+
+    <select id="selectIndustryTplById" parameterType="Long" resultMap="QmsIndustryTplResult">
+        <include refid="selectIndustryTplVo"/>
+        WHERE tpl_id = #{tplId}
+    </select>
+
+    <select id="selectIndustryTplByCode" parameterType="String" resultMap="QmsIndustryTplResult">
+        <include refid="selectIndustryTplVo"/>
+        WHERE del_flag = '0' AND tpl_code = #{tplCode} LIMIT 1
+    </select>
+
+    <insert id="insertIndustryTpl" parameterType="QmsIndustryTpl" useGeneratedKeys="true" keyProperty="tplId">
+        INSERT INTO qms_industry_tpl (
+            tpl_code, tpl_name, industry_type, audit_force, status, del_flag, create_by, create_time, remark
+        ) VALUES (
+            #{tplCode}, #{tplName}, #{industryType}, #{auditForce}, #{status}, #{delFlag}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateIndustryTpl" parameterType="QmsIndustryTpl">
+        UPDATE qms_industry_tpl
+        <set>
+            <if test="tplCode != null and tplCode != ''">tpl_code = #{tplCode},</if>
+            <if test="tplName != null and tplName != ''">tpl_name = #{tplName},</if>
+            <if test="industryType != null">industry_type = #{industryType},</if>
+            <if test="auditForce != null and auditForce != ''">audit_force = #{auditForce},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE tpl_id = #{tplId}
+    </update>
+
+    <delete id="deleteIndustryTplByIds" parameterType="Long">
+        UPDATE qms_industry_tpl SET del_flag = '2' WHERE tpl_id IN
+        <foreach item="tplId" collection="array" open="(" separator="," close=")">#{tplId}</foreach>
+    </delete>
+
+</mapper>

@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.safety.mapper.SafetyInspectionTaskMapper">
+
+    <resultMap type="SafetyInspectionTask" id="SafetyInspectionTaskResult">
+        <result property="taskId"         column="task_id"/>
+        <result property="taskCode"       column="task_code"/>
+        <result property="taskType"       column="task_type"/>
+        <result property="taskName"       column="task_name"/>
+        <result property="riskPointId"    column="risk_point_id"/>
+        <result property="planDate"       column="plan_date"/>
+        <result property="executorId"     column="executor_id"/>
+        <result property="executorName"   column="executor_name"/>
+        <result property="taskStatus"     column="task_status"/>
+        <result property="inspectResult"  column="inspect_result"/>
+        <result property="hazardCount"    column="hazard_count"/>
+        <result property="inspectTime"    column="inspect_time"/>
+        <result property="enterpriseId"   column="enterprise_id"/>
+        <result property="delFlag"        column="del_flag"/>
+        <result property="createBy"       column="create_by"/>
+        <result property="createTime"     column="create_time"/>
+        <result property="updateBy"       column="update_by"/>
+        <result property="updateTime"     column="update_time"/>
+        <result property="remark"         column="remark"/>
+    </resultMap>
+
+    <sql id="selectVo">
+        SELECT task_id, task_code, task_type, task_name, risk_point_id, plan_date, executor_id, executor_name,
+               task_status, inspect_result, hazard_count, inspect_time, enterprise_id, del_flag,
+               create_by, create_time, update_by, update_time, remark
+        FROM biz_safety_inspection_task
+    </sql>
+
+    <select id="selectSafetyInspectionTaskList" parameterType="SafetyInspectionTask" resultMap="SafetyInspectionTaskResult">
+        <include refid="selectVo"/>
+        <where>
+            del_flag = '0'
+            <if test="taskCode != null and taskCode != ''"> AND task_code LIKE CONCAT('%', #{taskCode}, '%')</if>
+            <if test="taskName != null and taskName != ''"> AND task_name LIKE CONCAT('%', #{taskName}, '%')</if>
+            <if test="taskType != null and taskType != ''"> AND task_type = #{taskType}</if>
+            <if test="taskStatus != null and taskStatus != ''"> AND task_status = #{taskStatus}</if>
+            <if test="executorId != null"> AND executor_id = #{executorId}</if>
+        </where>
+        ORDER BY plan_date DESC
+    </select>
+
+    <select id="selectSafetyInspectionTaskById" parameterType="Long" resultMap="SafetyInspectionTaskResult">
+        <include refid="selectVo"/> WHERE task_id = #{taskId}
+    </select>
+
+    <insert id="insertSafetyInspectionTask" parameterType="SafetyInspectionTask" useGeneratedKeys="true" keyProperty="taskId">
+        INSERT INTO biz_safety_inspection_task (
+            task_code, task_type, task_name, risk_point_id, plan_date, executor_id, executor_name,
+            task_status, inspect_result, hazard_count, inspect_time, enterprise_id, del_flag, create_by, create_time, remark
+        ) VALUES (
+            #{taskCode}, #{taskType}, #{taskName}, #{riskPointId}, #{planDate}, #{executorId}, #{executorName},
+            #{taskStatus}, #{inspectResult}, #{hazardCount}, #{inspectTime}, #{enterpriseId}, #{delFlag}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateSafetyInspectionTask" parameterType="SafetyInspectionTask">
+        UPDATE biz_safety_inspection_task
+        <set>
+            <if test="taskCode != null and taskCode != ''">task_code = #{taskCode},</if>
+            <if test="taskType != null">task_type = #{taskType},</if>
+            <if test="taskName != null">task_name = #{taskName},</if>
+            <if test="riskPointId != null">risk_point_id = #{riskPointId},</if>
+            <if test="planDate != null">plan_date = #{planDate},</if>
+            <if test="executorId != null">executor_id = #{executorId},</if>
+            <if test="executorName != null">executor_name = #{executorName},</if>
+            <if test="taskStatus != null">task_status = #{taskStatus},</if>
+            <if test="inspectResult != null">inspect_result = #{inspectResult},</if>
+            <if test="hazardCount != null">hazard_count = #{hazardCount},</if>
+            <if test="inspectTime != null">inspect_time = #{inspectTime},</if>
+            <if test="enterpriseId != null">enterprise_id = #{enterpriseId},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE task_id = #{taskId}
+    </update>
+
+    <delete id="deleteSafetyInspectionTaskById" parameterType="Long">
+        UPDATE biz_safety_inspection_task SET del_flag = '2' WHERE task_id = #{taskId}
+    </delete>
+
+    <delete id="deleteSafetyInspectionTaskByIds" parameterType="Long">
+        UPDATE biz_safety_inspection_task SET del_flag = '2' WHERE task_id IN
+        <foreach item="taskId" collection="array" open="(" separator="," close=")">#{taskId}</foreach>
+    </delete>
+
+</mapper>

@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.safety.mapper.SafetyTrainingAttendeeMapper">
+
+    <resultMap type="SafetyTrainingAttendee" id="SafetyTrainingAttendeeResult">
+        <result property="attendeeId"    column="attendee_id"/>
+        <result property="recordId"      column="record_id"/>
+        <result property="userId"        column="user_id"/>
+        <result property="userName"      column="user_name"/>
+        <result property="deptId"        column="dept_id"/>
+        <result property="deptName"      column="dept_name"/>
+        <result property="signInStatus"  column="sign_in_status"/>
+        <result property="signInTime"    column="sign_in_time"/>
+        <result property="signInMethod"  column="sign_in_method"/>
+        <result property="examScore"     column="exam_score"/>
+        <result property="isPass"        column="is_pass"/>
+        <result property="examTime"      column="exam_time"/>
+        <result property="enterpriseId"  column="enterprise_id"/>
+        <result property="delFlag"       column="del_flag"/>
+        <result property="createBy"      column="create_by"/>
+        <result property="createTime"    column="create_time"/>
+        <result property="updateBy"      column="update_by"/>
+        <result property="updateTime"    column="update_time"/>
+        <result property="remark"        column="remark"/>
+    </resultMap>
+
+    <resultMap type="SafetyTrainingAttendee" id="SafetyTrainingAttendeeWithCourseResult" extends="SafetyTrainingAttendeeResult">
+        <result property="courseName"    column="course_name"/>
+        <result property="trainingDate"  column="training_date"/>
+    </resultMap>
+
+    <resultMap type="SafetyTrainingAttendee" id="SafetyTrainingHoursResult">
+        <result property="attendeeId"    column="attendee_id"/>
+        <result property="userId"        column="user_id"/>
+        <result property="userName"      column="user_name"/>
+        <result property="deptId"        column="dept_id"/>
+        <result property="deptName"      column="dept_name"/>
+        <result property="totalHours"    column="total_hours"/>
+        <result property="attendCount"    column="attend_count"/>
+        <result property="passCount"     column="pass_count"/>
+    </resultMap>
+
+    <sql id="selectVo">
+        SELECT attendee_id, record_id, user_id, user_name, dept_id, dept_name,
+               sign_in_status, sign_in_time, sign_in_method, exam_score, is_pass, exam_time,
+               enterprise_id, del_flag, create_by, create_time, update_by, update_time, remark
+        FROM biz_safety_training_attendee
+    </sql>
+
+    <sql id="selectWithCourseVo">
+        SELECT a.attendee_id, a.record_id, a.user_id, a.user_name, a.dept_id, a.dept_name,
+               a.sign_in_status, a.sign_in_time, a.sign_in_method, a.exam_score, a.is_pass, a.exam_time,
+               a.enterprise_id, a.del_flag, a.create_by, a.create_time, a.update_by, a.update_time, a.remark,
+               r.course_name, r.training_date
+        FROM biz_safety_training_attendee a
+        LEFT JOIN biz_safety_training_record r ON a.record_id = r.record_id
+    </sql>
+
+    <select id="selectSafetyTrainingAttendeeList" parameterType="SafetyTrainingAttendee" resultMap="SafetyTrainingAttendeeWithCourseResult">
+        <include refid="selectWithCourseVo"/>
+        <where>
+            a.del_flag = '0'
+            <if test="recordId != null"> AND a.record_id = #{recordId}</if>
+            <if test="userName != null and userName != ''"> AND a.user_name LIKE CONCAT('%', #{userName}, '%')</if>
+            <if test="deptId != null"> AND a.dept_id = #{deptId}</if>
+            <if test="signInStatus != null and signInStatus != ''"> AND a.sign_in_status = #{signInStatus}</if>
+            <if test="isPass != null and isPass != ''"> AND a.is_pass = #{isPass}</if>
+        </where>
+        ORDER BY a.create_time DESC
+    </select>
+
+    <select id="selectSafetyTrainingAttendeeById" parameterType="Long" resultMap="SafetyTrainingAttendeeResult">
+        <include refid="selectVo"/> WHERE attendee_id = #{attendeeId}
+    </select>
+
+    <insert id="insertSafetyTrainingAttendee" parameterType="SafetyTrainingAttendee" useGeneratedKeys="true" keyProperty="attendeeId">
+        INSERT INTO biz_safety_training_attendee (
+            record_id, user_id, user_name, dept_id, dept_name,
+            sign_in_status, sign_in_time, sign_in_method, exam_score, is_pass, exam_time,
+            enterprise_id, create_by, create_time, remark
+        ) VALUES (
+            #{recordId}, #{userId}, #{userName}, #{deptId}, #{deptName},
+            #{signInStatus}, #{signInTime}, #{signInMethod}, #{examScore}, #{isPass}, #{examTime},
+            #{enterpriseId}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <insert id="batchInsertAttendee" parameterType="java.util.List">
+        INSERT INTO biz_safety_training_attendee (
+            record_id, user_id, user_name, dept_id, dept_name,
+            sign_in_status, sign_in_method, exam_score, is_pass,
+            enterprise_id, create_by, create_time, remark
+        ) VALUES
+        <foreach item="item" collection="list" separator=",">
+            (#{item.recordId}, #{item.userId}, #{item.userName}, #{item.deptId}, #{item.deptName},
+             #{item.signInStatus}, #{item.signInMethod}, #{item.examScore}, #{item.isPass},
+             #{item.enterpriseId}, #{item.createBy}, sysdate(), #{item.remark})
+        </foreach>
+    </insert>
+
+    <update id="updateSafetyTrainingAttendee" parameterType="SafetyTrainingAttendee">
+        UPDATE biz_safety_training_attendee
+        <set>
+            <if test="recordId != null">record_id = #{recordId},</if>
+            <if test="userId != null">user_id = #{userId},</if>
+            <if test="userName != null">user_name = #{userName},</if>
+            <if test="deptId != null">dept_id = #{deptId},</if>
+            <if test="deptName != null">dept_name = #{deptName},</if>
+            <if test="signInStatus != null">sign_in_status = #{signInStatus},</if>
+            <if test="signInTime != null">sign_in_time = #{signInTime},</if>
+            <if test="signInMethod != null">sign_in_method = #{signInMethod},</if>
+            <if test="examScore != null">exam_score = #{examScore},</if>
+            <if test="isPass != null">is_pass = #{isPass},</if>
+            <if test="examTime != null">exam_time = #{examTime},</if>
+            <if test="enterpriseId != null">enterprise_id = #{enterpriseId},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE attendee_id = #{attendeeId}
+    </update>
+
+    <delete id="deleteSafetyTrainingAttendeeById" parameterType="Long">
+        UPDATE biz_safety_training_attendee SET del_flag = '2' WHERE attendee_id = #{attendeeId}
+    </delete>
+
+    <delete id="deleteSafetyTrainingAttendeeByIds" parameterType="Long">
+        UPDATE biz_safety_training_attendee SET del_flag = '2' WHERE attendee_id IN
+        <foreach item="attendeeId" collection="array" open="(" separator="," close=")">#{attendeeId}</foreach>
+    </delete>
+
+    <!-- 检查同一培训记录下是否已存在该用户 -->
+    <select id="checkDuplicate" resultMap="SafetyTrainingAttendeeResult">
+        <include refid="selectVo"/> WHERE record_id = #{recordId} AND user_id = #{userId} AND del_flag = '0' LIMIT 1
+    </select>
+
+    <!-- 查询培训记录下已存在的用户ID列表 -->
+    <select id="selectExistingUserIdsByRecordId" resultType="java.lang.Long">
+        SELECT user_id FROM biz_safety_training_attendee WHERE record_id = #{recordId} AND del_flag = '0'
+    </select>
+
+    <!-- 学时统计：按用户聚合查询 -->
+    <select id="selectHoursStatistics" parameterType="SafetyTrainingAttendee" resultMap="SafetyTrainingHoursResult">
+        SELECT
+            MIN(a.attendee_id) AS attendee_id,
+            a.user_id,
+            a.user_name,
+            a.dept_id,
+            a.dept_name,
+            SUM(CASE WHEN r.hours IS NOT NULL THEN r.hours ELSE 0 END) AS total_hours,
+            COUNT(a.attendee_id) AS attend_count,
+            SUM(CASE WHEN a.is_pass = '1' THEN 1 ELSE 0 END) AS pass_count
+        FROM biz_safety_training_attendee a
+        LEFT JOIN biz_safety_training_record r ON a.record_id = r.record_id AND r.del_flag = '0'
+        WHERE a.del_flag = '0'
+        <if test="userName != null and userName != ''"> AND a.user_name LIKE CONCAT('%', #{userName}, '%')</if>
+        <if test="deptId != null"> AND a.dept_id = #{deptId}</if>
+        GROUP BY a.user_id, a.user_name, a.dept_id, a.dept_name
+        ORDER BY total_hours DESC
+    </select>
+
+    <!-- 批量更新考试成绩 -->
+    <update id="batchUpdateExamScore">
+        UPDATE biz_safety_training_attendee
+        SET is_pass = #{isPass},
+            <if test="examScore != null">exam_score = #{examScore},</if>
+            <if test="examTime != null">exam_time = #{examTime},</if>
+            update_time = sysdate()
+        WHERE attendee_id IN
+        <foreach item="attendeeId" collection="attendeeIds" open="(" separator="," close=")">#{attendeeId}</foreach>
+        AND del_flag = '0'
+    </update>
+
+</mapper>
