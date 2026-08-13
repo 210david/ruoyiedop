@@ -1,4 +1,6 @@
-package com.ruoyi.safety.service.impl;
+package com.ruoyi.safety.service.impl;
+import java.util.HashMap;
+
 
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
@@ -35,7 +37,9 @@ public class SafetyRiskPointServiceImpl implements ISafetyRiskPointService
     {
         if (StringUtils.isEmpty(safetyRiskPoint.getRiskCode()))
         {
-            safetyRiskPoint.setRiskCode(mkNumberRuleService.generateNumber("safety_risk_point"));
+            Map<String, String> params = new HashMap<>();
+        if (StringUtils.isNotEmpty(safetyRiskPoint.getRiskLevel())) { params.put("riskLevel", safetyRiskPoint.getRiskLevel()); }
+        safetyRiskPoint.setRiskCode(mkNumberRuleService.generateNumber("safety_risk_point", params));
         }
         calcRiskLevel(safetyRiskPoint);
         return safetyRiskPointMapper.insertSafetyRiskPoint(safetyRiskPoint);

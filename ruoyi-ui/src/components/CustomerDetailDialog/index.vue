@@ -133,7 +133,7 @@
                 <el-table-column label="商机编号" prop="opportunityNo" width="150" />
                 <el-table-column label="商机名称" prop="opportunityName" show-overflow-tooltip />
                 <el-table-column label="销售阶段" prop="stageName" width="100" align="center" />
-                <el-table-column label="预计金额" prop="expectedAmount" width="120" align="right"><template #default="scope">￥{{ formatAmount(scope.row.expectedAmount) }}</template></el-table-column>
+                <el-table-column label="预计金额" prop="expectedAmount" width="120" align="center"><template #default="scope">￥{{ formatAmount(scope.row.expectedAmount) }}</template></el-table-column>
                 <el-table-column label="商机状态" prop="opportunityStatus" width="100" align="center"><template #default="scope"><dict-tag :options="marketing_opportunity_status" :value="scope.row.opportunityStatus" /></template></el-table-column>
               </el-table>
               <div class="rd-empty" v-else><svg class="rd-empty-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/></svg><p class="rd-empty-text">暂无商机</p></div>
@@ -150,7 +150,7 @@
               <el-table :data="contracts" border size="small" v-if="contracts.length > 0">
                 <el-table-column label="合同编号" prop="contractNo" width="150" />
                 <el-table-column label="合同名称" prop="contractName" show-overflow-tooltip />
-                <el-table-column label="合同金额" prop="contractAmount" width="120" align="right"><template #default="scope">￥{{ formatAmount(scope.row.contractAmount) }}</template></el-table-column>
+                <el-table-column label="合同金额" prop="contractAmount" width="120" align="center"><template #default="scope">￥{{ formatAmount(scope.row.contractAmount) }}</template></el-table-column>
                 <el-table-column label="签订日期" prop="signDate" width="120" />
                 <el-table-column label="合同状态" prop="contractStatus" width="100" align="center"><template #default="scope"><dict-tag :options="marketing_contract_status" :value="scope.row.contractStatus" /></template></el-table-column>
               </el-table>
@@ -168,7 +168,7 @@
               <el-table :data="orders" border size="small" v-if="orders.length > 0">
                 <el-table-column label="订单编号" prop="orderNo" width="150" />
                 <el-table-column label="订单名称" prop="orderName" show-overflow-tooltip />
-                <el-table-column label="订单金额" prop="orderAmount" width="120" align="right"><template #default="scope">￥{{ formatAmount(scope.row.orderAmount) }}</template></el-table-column>
+                <el-table-column label="订单金额" prop="orderAmount" width="120" align="center"><template #default="scope">￥{{ formatAmount(scope.row.orderAmount) }}</template></el-table-column>
                 <el-table-column label="下单日期" prop="orderDate" width="120" />
                 <el-table-column label="订单状态" prop="orderStatus" width="100" align="center"><template #default="scope"><dict-tag :options="marketing_order_status" :value="scope.row.orderStatus" /></template></el-table-column>
               </el-table>

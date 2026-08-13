@@ -38,9 +38,17 @@
             </el-select>
           </div>
         </div>
+        <div class="field" v-show="showAdvanced">
+          <label>备注</label>
+          <div class="control"><el-input v-model="queryParams.remark" placeholder="请输入" clearable @keyup.enter="handleQuery" /></div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>创建时间</label>
+          <div class="control"><el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" /></div>
+        </div>
       </div>
       <div class="filter-actions">
-        <div class="filter-info"><el-icon><Filter /></el-icon> 已选 {{ activeFilterCount }} 个条件</div>
+        <div class="filter-info"><el-icon><Filter /></el-icon> 已选 {{ activeFilterCount }} 个条件，支持回车快速搜索</div>
         <div class="filter-buttons">
           <el-button icon="RefreshLeft" @click="resetQuery">重置</el-button>
           <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
@@ -65,22 +73,23 @@
           </button>
         </div>
         <div class="right">
-          <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" />
+          <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="qms_audit_columns" />
         </div>
       </div>
 
       <div class="table-wrap">
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
-          <el-table-column label="审核编号" prop="auditPlanNo" :width="colWidth('auditPlanNo', 160)" resizable show-overflow-tooltip />
-          <el-table-column label="审核标题" prop="auditTitle" :width="colWidth('auditTitle', 220)" resizable show-overflow-tooltip />
-          <el-table-column label="年度" prop="auditYear" :width="colWidth('auditYear', 80)" resizable align="center" />
-          <el-table-column label="主审" prop="leadAuditor" :width="colWidth('leadAuditor', 100)" resizable show-overflow-tooltip />
-          <el-table-column label="开始日期" prop="auditDateFrom" :width="colWidth('auditDateFrom', 120)" resizable align="center"><template #default="scope"><span>{{ parseTime(scope.row.auditDateFrom, '{y}-{m}-{d}') }}</span></template></el-table-column>
-          <el-table-column label="结束日期" prop="auditDateTo" :width="colWidth('auditDateTo', 120)" resizable align="center"><template #default="scope"><span>{{ parseTime(scope.row.auditDateTo, '{y}-{m}-{d}') }}</span></template></el-table-column>
-          <el-table-column label="状态" prop="planStatus" :width="colWidth('planStatus', 100)" resizable align="center"><template #default="scope"><dict-tag :options="statusOptions" :value="scope.row.planStatus" /></template></el-table-column>
-          <el-table-column label="操作" width="160" align="center">
+          <el-table-column label="审核编号" prop="auditPlanNo" key="auditPlanNo" :width="colWidth('auditPlanNo', 160)" resizable show-overflow-tooltip v-if="columns.auditPlanNo.visible" />
+          <el-table-column label="审核标题" prop="auditTitle" key="auditTitle" :width="colWidth('auditTitle', 220)" resizable show-overflow-tooltip v-if="columns.auditTitle.visible" />
+          <el-table-column label="年度" prop="auditYear" key="auditYear" :width="colWidth('auditYear', 80)" resizable align="center" v-if="columns.auditYear.visible" />
+          <el-table-column label="主审" prop="leadAuditor" key="leadAuditor" :width="colWidth('leadAuditor', 100)" resizable show-overflow-tooltip v-if="columns.leadAuditor.visible" />
+          <el-table-column label="开始日期" prop="auditDateFrom" key="auditDateFrom" :width="colWidth('auditDateFrom', 120)" resizable align="center" v-if="columns.auditDateFrom.visible"><template #default="scope"><span>{{ parseTime(scope.row.auditDateFrom, '{y}-{m}-{d}') }}</span></template></el-table-column>
+          <el-table-column label="结束日期" prop="auditDateTo" key="auditDateTo" :width="colWidth('auditDateTo', 120)" resizable align="center" v-if="columns.auditDateTo.visible"><template #default="scope"><span>{{ parseTime(scope.row.auditDateTo, '{y}-{m}-{d}') }}</span></template></el-table-column>
+          <el-table-column label="状态" prop="planStatus" key="planStatus" :width="colWidth('planStatus', 100)" resizable align="center" v-if="columns.planStatus.visible"><template #default="scope"><span class="badge" :class="planStatusBadgeClass(scope.row.planStatus)"><span class="dot"></span>{{ planStatusLabel(scope.row.planStatus) }}</span></template></el-table-column>
+          <el-table-column label="操作" width="200" align="center">
             <template #default="scope">
+              <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
               <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['qms:audit:edit']">修改</el-button>
               <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['qms:audit:remove']">删除</el-button>
             </template>
@@ -90,8 +99,42 @@
       <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
     </div>
 
+    <!-- View Dialog -->
+    <el-dialog v-model="viewOpen" width="936px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div>
+          <span class="rd-detail-header-title">内审计划详情</span>
+        </div>
+      </template>
+      <div class="rd-page" v-if="viewData">
+        <section class="rd-card">
+          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="6" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>基本信息</div></div>
+          <div class="rd-card-body" style="display:block"><div class="rd-grid">
+            <div class="rd-item"><span class="rd-label">审核编号</span><div class="rd-value">{{ viewData.auditPlanNo || '-' }}</div></div>
+            <div class="rd-item"><span class="rd-label">审核标题</span><div class="rd-value">{{ viewData.auditTitle || '-' }}</div></div>
+            <div class="rd-item"><span class="rd-label">审核年度</span><div class="rd-value">{{ viewData.auditYear || '-' }}</div></div>
+            <div class="rd-item"><span class="rd-label">类型</span><div class="rd-value">{{ viewData.auditType === 'annual' ? '年度计划' : viewData.auditType === 'adhoc' ? '临时审核' : '-' }}</div></div>
+            <div class="rd-item"><span class="rd-label">主审</span><div class="rd-value">{{ viewData.leadAuditor || '-' }}</div></div>
+            <div class="rd-item"><span class="rd-label">状态</span><div class="rd-value"><span class="badge" :class="planStatusBadgeClass(viewData.planStatus)"><span class="dot"></span>{{ planStatusLabel(viewData.planStatus) }}</span></div></div>
+            <div class="rd-item"><span class="rd-label">开始日期</span><div class="rd-value">{{ parseTime(viewData.auditDateFrom, '{y}-{m}-{d}') || '-' }}</div></div>
+            <div class="rd-item"><span class="rd-label">结束日期</span><div class="rd-value">{{ parseTime(viewData.auditDateTo, '{y}-{m}-{d}') || '-' }}</div></div>
+          </div></div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>审核内容</div></div>
+          <div class="rd-card-body" style="display:block"><div class="rd-grid">
+            <div class="rd-item rd-item--full"><span class="rd-label">审核范围</span><div class="rd-value">{{ viewData.auditScope || '-' }}</div></div>
+            <div class="rd-item rd-item--full"><span class="rd-label">审核结论</span><div class="rd-value">{{ viewData.auditConclusion || '-' }}</div></div>
+            <div class="rd-item rd-item--full" v-if="viewData.remark"><span class="rd-label">备注</span><div class="rd-value">{{ viewData.remark || '-' }}</div></div>
+          </div></div>
+        </section>
+      </div>
+      <template #footer><el-button @click="viewOpen = false">关 闭</el-button></template>
+    </el-dialog>
+
     <!-- Add/Edit Dialog -->
-    <el-dialog v-model="open" width="780px" append-to-body draggable class="rd-dialog">
+    <el-dialog v-model="open" width="936px" append-to-body draggable class="rd-dialog">
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
@@ -144,12 +187,18 @@ const list = ref([])
 const loading = ref(true)
 const showSearch = ref(true)
 const showAdvanced = ref(false)
+const dateRange = ref([])
 const total = ref(0)
 const open = ref(false)
 const title = ref('')
 const selectedId = ref(null)
 const selectedIds = ref([])
-const data = reactive({ form: {}, queryParams: { pageNum: 1, pageSize: 10, auditYear: new Date().getFullYear() } })
+const viewOpen = ref(false)
+const viewData = ref(null)
+const defaultColumns = { auditPlanNo: { label: '审核编号', visible: true }, auditTitle: { label: '审核标题', visible: true }, auditYear: { label: '年度', visible: true }, leadAuditor: { label: '主审', visible: true }, auditDateFrom: { label: '开始日期', visible: true }, auditDateTo: { label: '结束日期', visible: true }, planStatus: { label: '状态', visible: true } }
+function loadColumnVisibility() { try { const saved = localStorage.getItem('qms_audit_columns'); if (saved) { const parsed = JSON.parse(saved); const result = {}; Object.keys(defaultColumns).forEach(key => { result[key] = { label: defaultColumns[key].label, visible: parsed[key] !== undefined ? parsed[key] : defaultColumns[key].visible } }); return result } } catch (e) {} return { ...defaultColumns } }
+const columns = ref(loadColumnVisibility())
+const data = reactive({ form: {}, queryParams: { pageNum: 1, pageSize: 10, auditPlanNo: undefined, auditTitle: undefined, auditYear: new Date().getFullYear(), planStatus: undefined, remark: undefined, params: {} } })
 const { queryParams, form } = toRefs(data)
 const rules = { auditTitle: [{ required: true, message: '请输入审核标题', trigger: 'blur' }] }
 
@@ -159,17 +208,20 @@ const activeFilterCount = computed(() => {
   if (queryParams.value.auditTitle) count++
   if (queryParams.value.auditYear) count++
   if (queryParams.value.planStatus) count++
+  if (queryParams.value.remark) count++
+  if (dateRange.value && dateRange.value.length > 0) count++
   return count
 })
 
 function getList() { loading.value = true; listAudit(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false; applySavedWidths() }) }
-function handleQuery() { queryParams.value.pageNum = 1; getList() }
-function resetQuery() { proxy.resetForm('queryRef'); queryParams.value.auditYear = new Date().getFullYear(); handleQuery() }
+function handleQuery() { showAdvanced.value = false; proxy.addDateRange(queryParams.value, dateRange.value); queryParams.value.pageNum = 1; getList() }
+function resetQuery() { queryParams.value.auditPlanNo = undefined; queryParams.value.auditTitle = undefined; queryParams.value.planStatus = undefined; queryParams.value.remark = undefined; dateRange.value = []; queryParams.value.auditYear = new Date().getFullYear(); queryParams.value.params = {}; handleQuery() }
 function handleAdd() { reset(); open.value = true; title.value = '新增内审计划' }
 function handleUpdate(row) {
   const id = row?.auditPlanId || selectedId.value
   getAudit(id).then(res => { data.form = res.data; open.value = true; title.value = '修改内审计划' })
 }
+function handleView(row) { getAudit(row.auditPlanId).then(res => { viewData.value = res.data; viewOpen.value = true }) }
 function handleSelectionChange(selection) { selectedIds.value = selection.map(item => item.auditPlanId); selectedId.value = selectedIds.value[0] }
 function submitForm() {
   proxy.$refs['auditRef'].validate(valid => {
@@ -183,14 +235,16 @@ function handleDelete(row) {
   const ids = row?.auditPlanId ? [row.auditPlanId] : selectedIds.value
   proxy.$modal.confirm('确认删除？').then(() => delAudit(ids.join(','))).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {})
 }
-function handleExport() { proxy.download('qms/audit/export', { ...queryParams.value }, `audit_${new Date().getTime()}.xlsx`) }
+function handleExport() { proxy.download('qms/audit/export', { ...proxy.addDateRange(queryParams.value, dateRange.value) }, `audit_${new Date().getTime()}.xlsx`) }
 function reset() { form.value = { auditPlanId: null, auditTitle: undefined, auditYear: new Date().getFullYear(), auditType: 'annual', leadAuditor: undefined, planStatus: '0' }; proxy.resetForm('auditRef') }
 function cancel() { open.value = false; reset() }
+function planStatusLabel(val) { const item = statusOptions.value.find(d => d.value == val); return item ? item.label : '-' }
+function planStatusBadgeClass(val) { if (val == '0') return 'gray'; if (val == '1') return 'blue'; if (val == '2') return 'green'; if (val == '3') return 'orange'; return 'gray' }
 getList()
 </script>
 
 <style scoped>
-.qms-audit-page { padding-top: 10px; --brand-50:#eef2ff; --brand-100:#e0e7ff; --brand-200:#c7d2fe; --brand-500:#6366f1; --brand-600:#4f46e5; --brand-700:#4338ca; --ink-900:#0f172a; --ink-700:#334155; --ink-500:#64748b; --ink-400:#94a3b8; --ink-300:#cbd5e1; --ink-200:#e2e8f0; --ink-100:#f1f5f9; --ink-50:#f8fafc; --green-50:#ecfdf5; --green-500:#10b981; --green-700:#047857; --red-50:#fef2f2; --red-500:#ef4444; --red-700:#b91c1c; --r-sm:6px; --r-md:10px; --r-lg:14px; --shadow-card:0 1px 0 rgba(15,23,42,.04), 0 1px 2px rgba(15,23,42,.04); --ease-out:cubic-bezier(.16,.84,.44,1); color: var(--ink-900); }
+.qms-audit-page { padding-top: 10px; --violet-50:#f5f3ff; --brand-50:#eef2ff; --brand-100:#e0e7ff; --brand-200:#c7d2fe; --brand-500:#6366f1; --brand-600:#4f46e5; --brand-700:#4338ca; --ink-900:#0f172a; --ink-700:#334155; --ink-500:#64748b; --ink-400:#94a3b8; --ink-300:#cbd5e1; --ink-200:#e2e8f0; --ink-100:#f1f5f9; --ink-50:#f8fafc; --green-50:#ecfdf5; --green-500:#10b981; --green-700:#047857; --red-50:#fef2f2; --red-500:#ef4444; --red-700:#b91c1c; --r-sm:6px; --r-md:10px; --r-lg:14px; --shadow-card:0 1px 0 rgba(15,23,42,.04), 0 1px 2px rgba(15,23,42,.04); --ease-out:cubic-bezier(.16,.84,.44,1); color: var(--ink-900); }
 .qms-audit-page .surface { background:#fff; border:1px solid var(--ink-200); border-radius:var(--r-lg); box-shadow:var(--shadow-card); overflow:hidden; margin-bottom:8px; }
 .qms-audit-page .filter-card { padding:14px 20px 16px; }
 .qms-audit-page .filter-card .filter-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
@@ -205,15 +259,17 @@ getList()
 .qms-audit-page .filter-card .filter-info { font-size:13px; color:var(--ink-500); display:flex; align-items:center; gap:6px; }
 .qms-audit-page .filter-card .filter-buttons { display:flex; gap:8px; }
 .qms-audit-page .field { display:flex; flex-direction:column; gap:6px; }
-.qms-audit-page .field label { font-size:14px; font-weight:500; color:var(--ink-700); }
+.qms-audit-page .field label { font-size:14px; font-weight:500; color:var(--ink-700); display:flex; align-items:center; gap:6px; }
 .qms-audit-page .field .control { display:flex; align-items:center; height:36px; padding:0 12px; background:#fff; border:1px solid var(--ink-200); border-radius:var(--r-sm); transition:border-color .15s var(--ease-out), box-shadow .15s var(--ease-out); }
 .qms-audit-page .field .control:focus-within { border-color:var(--brand-500); box-shadow:0 0 0 3px rgba(99,102,241,.15); }
 .qms-audit-page .field .control :deep(.el-input__wrapper) { box-shadow:none !important; background:transparent !important; padding:0; height:34px; }
 .qms-audit-page .field .control :deep(.el-input__inner) { border:0; background:transparent; font-size:14px; color:var(--ink-900); height:34px; line-height:34px; }
 .qms-audit-page .field .control :deep(.el-input__inner::placeholder) { color:var(--ink-400); }
 .qms-audit-page .field .control :deep(.el-input__prefix) { color:var(--ink-400); margin-right:4px; }
+.qms-audit-page .field .control :deep(.el-input__prefix .el-icon) { font-size:14px; }
 .qms-audit-page .field .control :deep(.el-select) { width:100%; }
 .qms-audit-page .field .control :deep(.el-select .el-select__wrapper) { box-shadow:none !important; background:transparent !important; padding:0; min-height:34px; height:34px; }
+.qms-audit-page .field .control :deep(.el-select .el-select__wrapper .el-select__placeholder) { font-size:14px; color:var(--ink-900); }
 .qms-audit-page .field .control :deep(.el-select .el-select__wrapper.is-focused) { box-shadow:none !important; }
 .qms-audit-page .toolbar { display:flex; align-items:center; justify-content:space-between; padding:12px 20px; border-bottom:1px solid var(--ink-200); background:var(--ink-50); }
 .qms-audit-page .toolbar .left { display:flex; gap:8px; align-items:center; }
@@ -233,7 +289,21 @@ getList()
 .qms-audit-page .app-table :deep(.el-table__body td) { padding:14px 16px; border-bottom:1px solid var(--ink-100); color:var(--ink-700); }
 .qms-audit-page .app-table :deep(.el-table__row:hover > td) { background:#fafbff !important; }
 .qms-audit-page .app-table :deep(.el-table__inner-wrapper::before) { display:none; }
+.qms-audit-page .badge { display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:999px; font-size:13px; font-weight:600; line-height:1; border:1px solid transparent; }
+.qms-audit-page .badge .dot { width:6px; height:6px; border-radius:50%; }
+.qms-audit-page .badge.green { background:var(--green-50); color:var(--green-700); border-color:#a7f3d0; }
+.qms-audit-page .badge.green .dot { background:var(--green-500); }
+.qms-audit-page .badge.gray { background:var(--ink-100); color:var(--ink-500); border-color:var(--ink-200); }
+.qms-audit-page .badge.gray .dot { background:var(--ink-400); }
+.qms-audit-page .badge.orange { background:#fffbeb; color:#b45309; border-color:#fde68a; }
+.qms-audit-page .badge.orange .dot { background:#f59e0b; }
+.qms-audit-page .badge.blue { background:var(--brand-50); color:var(--brand-700); border-color:var(--brand-200); }
+.qms-audit-page .badge.blue .dot { background:var(--brand-500); }
 .qms-audit-page .pagination-container { display:flex; align-items:center; justify-content:flex-end; padding:14px 20px; font-size:14px; color:var(--ink-500); background:#fff; }
+.qms-audit-page .field .control :deep(.el-date-editor) { width:100%; }
+.qms-audit-page .field .control :deep(.el-date-editor .el-range-input) { background:transparent; border:0; font-size:14px; color:var(--ink-900); }
+.qms-audit-page .field .control :deep(.el-date-editor .el-range-separator) { color:var(--ink-400); }
+.qms-audit-page .field .control :deep(.el-date-editor .el-range__icon) { color:var(--ink-400); }
 @media (max-width:1100px) { .qms-audit-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }
 @media (max-width:720px) { .qms-audit-page .filter-card .filter-bar { grid-template-columns:1fr; } .qms-audit-page .toolbar { flex-wrap:wrap; gap:10px; } }
 </style>

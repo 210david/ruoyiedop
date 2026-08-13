@@ -1,6 +1,7 @@
 package com.ruoyi.qms.mapper;
 
 import java.util.List;
+import java.util.Map;
 import com.ruoyi.qms.domain.QmsInspTask;
 
 /**
@@ -22,4 +23,7 @@ public interface QmsInspTaskMapper
 
     /** 查询待检状态且超过指定时间的任务（逾期标记用） */
     public List<QmsInspTask> selectOverdueTasks(int overdueDays);
+
+    /** 查询各状态任务数量（状态标签栏计数） */
+    public List<Map<String, Object>> selectStatusCounts();
 }

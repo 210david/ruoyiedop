@@ -15,6 +15,19 @@ export function updateCapa(data) {
 export function delCapa(capaIds) {
   return request({ url: '/qms/capa/' + capaIds, method: 'delete' })
 }
-export function closeCapa(capaId) {
-  return request({ url: '/qms/capa/close/' + capaId, method: 'put' })
+// 草稿/已驳回 → 进行中
+export function submitCapa(capaId) {
+  return request({ url: '/qms/capa/submit/' + capaId, method: 'put' })
+}
+// 进行中 → 验证中（填写D6验证结果）
+export function submitVerifyCapa(data) {
+  return request({ url: '/qms/capa/submitVerify', method: 'put', data: data })
+}
+// 验证中 → 已关闭（填写D7/D8）
+export function closeCapa(data) {
+  return request({ url: '/qms/capa/close', method: 'put', data: data })
+}
+// 验证中 → 已驳回
+export function rejectCapa(capaId, rejectReason) {
+  return request({ url: '/qms/capa/reject/' + capaId, method: 'put', params: { rejectReason } })
 }

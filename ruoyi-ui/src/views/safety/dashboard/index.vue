@@ -42,9 +42,9 @@
         <div class="kpi-card__icon"><el-icon><Bell /></el-icon></div>
         <div class="kpi-card__body">
           <div class="kpi-card__label">到期提醒</div>
-          <div class="kpi-card__value">{{ stats.remindUnread || 0 }}</div>
+          <div class="kpi-card__value">{{ stats.remindPending || 0 }}</div>
           <div class="kpi-card__sub">
-            待处理 <b class="text-danger">{{ stats.remindUnread || 0 }}</b> · 已处理 <b class="text-success">{{ stats.remindHandled || 0 }}</b>
+            待处理 <b class="text-danger">{{ stats.remindPending || 0 }}</b> · 已处理 <b class="text-success">{{ stats.remindHandled || 0 }}</b>
           </div>
         </div>
       </div>
@@ -173,7 +173,7 @@
           <template #header>
             <div class="chart-card__header">
               <span class="chart-card__title">
-                <el-icon><WarningFilled /></el-icon> 即将到期提醒（未来30天）
+                <el-icon><WarningFilled /></el-icon> 到期提醒（待处理）
                 <el-badge :value="upcomingReminds.length" :hidden="upcomingReminds.length === 0" class="header-badge" />
               </span>
               <router-link to="/safety/remind" class="chart-card__link">查看全部 &rarr;</router-link>

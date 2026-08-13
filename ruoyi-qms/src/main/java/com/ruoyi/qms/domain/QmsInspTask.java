@@ -131,6 +131,9 @@ public class QmsInspTask extends BaseEntity
     /** 检验明细列表（非数据库字段） */
     private List<QmsInspItem> itemList;
 
+    /** 电子签名记录列表（非数据库字段） */
+    private List<QmsEsigRecord> esigList;
+
     public Long getTaskId() { return taskId; }
     public void setTaskId(Long taskId) { this.taskId = taskId; }
     public String getTaskNo() { return taskNo; }
@@ -193,4 +196,6 @@ public class QmsInspTask extends BaseEntity
     public void setDelFlag(String delFlag) { this.delFlag = delFlag; }
     public List<QmsInspItem> getItemList() { return itemList; }
     public void setItemList(List<QmsInspItem> itemList) { this.itemList = itemList; }
+    public List<QmsEsigRecord> getEsigList() { return esigList; }
+    public void setEsigList(List<QmsEsigRecord> esigList) { this.esigList = esigList; }
 }

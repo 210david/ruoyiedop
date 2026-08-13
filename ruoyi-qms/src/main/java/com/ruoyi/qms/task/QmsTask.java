@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import com.ruoyi.qms.service.IQmsInspTaskService;
+import com.ruoyi.qms.service.ISqmScorePushService;
 
 /**
  * 质量管理定时任务
@@ -13,6 +14,7 @@ import com.ruoyi.qms.service.IQmsInspTaskService;
  * - Bean名称: qmsTask
  * - 方法1: autoGenerateIqcTasks（IQC自动生成）
  * - 方法2: checkOverdueTasks（逾期检查）
+ * - 方法3: retrySqmPush（SQM推送重试）
  *
  * @author ruoyi
  */
@@ -23,6 +25,9 @@ public class QmsTask
 
     @Autowired
     private IQmsInspTaskService qmsInspTaskService;
+
+    @Autowired
+    private ISqmScorePushService sqmScorePushService;
 
     /**
      * IQC检验任务自动生成
@@ -59,6 +64,25 @@ public class QmsTask
         catch (Exception e)
         {
             log.error("QMS检验任务逾期检查执行失败", e);
+        }
+    }
+
+    /**
+     * SQM→PMS 质量评分推送重试
+     * 每小时执行一次，重试失败的推送（最多3次）
+     * invokeTarget: qmsTask.retrySqmPush
+     */
+    public void retrySqmPush()
+    {
+        log.info("===== 开始执行SQM推送重试定时任务 =====");
+        try
+        {
+            sqmScorePushService.retryFailedPush();
+            log.info("===== SQM推送重试完成 =====");
+        }
+        catch (Exception e)
+        {
+            log.error("SQM推送重试执行失败", e);
         }
     }
 }

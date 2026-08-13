@@ -4,6 +4,10 @@
     <div class="surface filter-card" v-show="showSearch">
       <div class="filter-head">
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+        <a class="adv-link" :class="{ 'is-open': showAdvanced }" @click.prevent="showAdvanced = !showAdvanced">
+          <span>{{ showAdvanced ? '收起' : '高级筛选' }}</span>
+          <el-icon class="chev"><ArrowDown /></el-icon>
+        </a>
       </div>
       <div class="filter-bar">
         <div class="field">
@@ -18,6 +22,31 @@
           <label>区域编码</label>
           <div class="control">
             <el-input v-model="queryParams.areaCode" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>节点类型</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.nodeType" placeholder="全部" clearable @change="handleQuery">
+              <el-option v-for="dict in safety_area_node_type" :key="dict.value" :label="dict.label" :value="dict.value" />
+            </el-select>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>区域类型</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.areaType" placeholder="全部" clearable @change="handleQuery">
+              <el-option v-for="dict in safety_area_type" :key="dict.value" :label="dict.label" :value="dict.value" />
+            </el-select>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>状态</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
+              <el-option label="正常" value="0" />
+              <el-option label="停用" value="1" />
+            </el-select>
           </div>
         </div>
       </div>
@@ -38,6 +67,8 @@
         <div class="left">
           <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['safety:area:add']">新增</el-button>
           <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['safety:area:remove']">删除</el-button>
+          <div class="toolbar-divider"></div>
+          <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['safety:area:export']">导出</el-button>
         </div>
         <div class="right">
           <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="safety_area_columns" />
@@ -170,7 +201,7 @@ import { listArea, getArea, addArea, updateArea, delArea } from '@/api/safety/ar
 import UserPicker from '@/components/UserPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
-import { Search, Filter, RefreshLeft, CircleClose } from '@element-plus/icons-vue'
+import { Search, Filter, RefreshLeft, CircleClose, ArrowDown } from '@element-plus/icons-vue'
 
 const { proxy } = getCurrentInstance()
 const { safety_area_node_type, safety_area_type } = proxy.useDict('safety_area_node_type', 'safety_area_type')
@@ -183,6 +214,7 @@ const viewOpen = ref(false)
 const viewData = ref({})
 const loading = ref(true)
 const showSearch = ref(true)
+const showAdvanced = ref(false)
 const ids = ref([])
 const single = ref(true)
 const multiple = ref(true)
@@ -217,7 +249,7 @@ const columns = ref(loadColumnVisibility())
 
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, areaName: undefined, areaCode: undefined, params: {} },
+  queryParams: { pageNum: 1, pageSize: 10, areaName: undefined, areaCode: undefined, nodeType: undefined, areaType: undefined, status: undefined, params: {} },
   rules: {
     areaName: [{ required: true, message: '区域名称不能为空', trigger: 'blur' }]
   }
@@ -229,12 +261,15 @@ const activeFilterCount = computed(() => {
   let count = 0
   if (queryParams.value.areaName) count++
   if (queryParams.value.areaCode) count++
+  if (queryParams.value.nodeType) count++
+  if (queryParams.value.areaType) count++
+  if (queryParams.value.status) count++
   return count
 })
 
 function getList() { loading.value = true; listArea(queryParams.value).then(response => { areaList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths() }) }
-function handleQuery() { queryParams.value.pageNum = 1; getList() }
-function resetQuery() { queryParams.value.areaName = undefined; queryParams.value.areaCode = undefined; queryParams.value.params = {}; handleQuery() }
+function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
+function resetQuery() { queryParams.value.areaName = undefined; queryParams.value.areaCode = undefined; queryParams.value.nodeType = undefined; queryParams.value.areaType = undefined; queryParams.value.status = undefined; queryParams.value.params = {}; handleQuery() }
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleSelectionChange(selection) { ids.value = selection.map(item => item.areaId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function handleAdd() { reset(); collapsedCards.c0 = false; collapsedCards.c1 = false; collapsedCards.c2 = false; open.value = true; title.value = '添加区域' }
@@ -249,6 +284,7 @@ function submitForm() {
   })
 }
 function handleDelete(row) { const areaIds = row.areaId || ids.value; proxy.$modal.confirm('是否确认删除区域？').then(function() { return delArea(areaIds) }).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleExport() { proxy.download('safety/area/export', { ...queryParams.value }, `area_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 function reset() {
   form.value = { areaId: undefined, areaCode: undefined, areaName: undefined, nodeType: '1', areaType: undefined, safetyPersonId: undefined, safetyPersonName: undefined, remark: undefined }
@@ -274,6 +310,10 @@ getList()
 .safety-area-page .filter-card .filter-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
 .safety-area-page .filter-card .filter-title { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--ink-700); }
 .safety-area-page .filter-card .filter-title .glyph { width:4px; height:14px; background:var(--brand-600); border-radius:2px; }
+.safety-area-page .filter-card .adv-link { font-size:14px; color:var(--ink-500); text-decoration:none; display:flex; align-items:center; gap:4px; transition:color .15s; cursor:pointer; }
+.safety-area-page .filter-card .adv-link:hover { color:var(--brand-600); }
+.safety-area-page .filter-card .adv-link .chev { transition:transform .2s var(--ease-out); }
+.safety-area-page .filter-card .adv-link.is-open .chev { transform:rotate(180deg); }
 .safety-area-page .filter-card .filter-bar { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px 16px; }
 .safety-area-page .filter-card .filter-actions { display:flex; align-items:center; justify-content:space-between; margin-top:14px; padding-top:14px; border-top:1px dashed var(--ink-200); }
 .safety-area-page .filter-card .filter-info { font-size:13px; color:var(--ink-500); display:flex; align-items:center; gap:6px; }

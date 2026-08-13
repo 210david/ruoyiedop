@@ -102,7 +102,7 @@
           <el-table-column label="状态" prop="status" key="status" :width="colWidth('status', 120)" resizable align="center" v-if="columns.status.visible">
             <template #default="scope"><span class="badge" :class="badgeClass(scope.row.status)"><span class="dot"></span>{{ statusLabel(scope.row.status) }}</span></template>
           </el-table-column>
-          <el-table-column label="总数量" prop="totalQty" key="totalQty" :width="colWidth('totalQty', 110)" resizable align="right" class-name="col-num" v-if="columns.totalQty.visible" />
+          <el-table-column label="总数量" prop="totalQty" key="totalQty" :width="colWidth('totalQty', 110)" resizable align="center" class-name="col-num" v-if="columns.totalQty.visible" />
           <el-table-column label="入库日期" prop="inboundDate" key="inboundDate" :width="colWidth('inboundDate', 130)" resizable align="center" v-if="columns.inboundDate.visible" />
           <el-table-column label="操作" width="200" align="center" fixed="right">
             <template #default="scope">

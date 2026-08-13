@@ -41,6 +41,14 @@ public class SafetyMaterialController extends BaseController
         util.exportExcel(response, list, "安全物料");
     }
 
+    /** 库存预警查询 - 必须放在/{materialId}之前，避免路径变量优先匹配 */
+    @PreAuthorize("@ss.hasPermi('safety:material:list')")
+    @GetMapping("/stockAlert")
+    public AjaxResult stockAlert()
+    {
+        return AjaxResult.success(safetyMaterialService.selectStockAlertList());
+    }
+
     @PreAuthorize("@ss.hasPermi('safety:material:query')")
     @GetMapping(value = "/{materialId}")
     public AjaxResult getInfo(@PathVariable("materialId") Long materialId)

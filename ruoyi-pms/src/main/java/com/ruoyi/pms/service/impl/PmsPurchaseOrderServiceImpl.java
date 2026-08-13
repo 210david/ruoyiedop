@@ -1,4 +1,7 @@
-package com.ruoyi.pms.service.impl;
+package com.ruoyi.pms.service.impl;
+import java.util.HashMap;
+import java.util.Map;
+
 
 import java.math.BigDecimal;
 import java.util.Date;
@@ -58,7 +61,8 @@ public class PmsPurchaseOrderServiceImpl implements IPmsPurchaseOrderService
     {
         if (StringUtils.isEmpty(order.getOrderNo()))
         {
-            order.setOrderNo(mkNumberRuleService.generateNumber("pms_purchase"));
+            Map<String, String> params = new HashMap<>();
+        order.setOrderNo(mkNumberRuleService.generateNumber("pms_purchase", params));
         }
         order.setDelFlag("0");
         if (order.getStatus() == null)

@@ -85,6 +85,14 @@ export const constantRoutes = [
     hidden: true,
     meta: { title: '设备全生命周期监控大屏' }
   },
+  // 质量检验报告打印页（独立全屏页面，不走Layout，需登录）
+  {
+    path: '/qms/task-report/index',
+    component: () => import('@/views/qms/task/report'),
+    name: 'QmsTaskReport',
+    hidden: true,
+    meta: { title: '检验报告打印' }
+  },
   {
     path: "/:pathMatch(.*)*",
     component: () => import('@/views/error/404'),

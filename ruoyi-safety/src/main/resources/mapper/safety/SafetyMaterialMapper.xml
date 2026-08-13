@@ -15,6 +15,23 @@
         <result property="sdsAttachment"   column="sds_attachment"/>
         <result property="toxicFlag"       column="toxic_flag"/>
         <result property="currentStock"    column="current_stock"/>
+        <result property="safetyStockMin"  column="safety_stock_min"/>
+        <result property="safetyStockMax"  column="safety_stock_max"/>
+        <result property="defaultSupplierId" column="default_supplier_id"/>
+        <result property="flashPoint"     column="flash_point"/>
+        <result property="explosionLimit" column="explosion_limit"/>
+        <result property="physicalProperties" column="physical_properties"/>
+        <result property="hazardSummary"  column="hazard_summary"/>
+        <result property="firstAidMeasures" column="first_aid_measures"/>
+        <result property="fireFighting"   column="fire_fighting"/>
+        <result property="leakHandling"   column="leak_handling"/>
+        <result property="storagePrecaution" column="storage_precaution"/>
+        <result property="exposureControl" column="exposure_control"/>
+        <result property="stabilityReactivity" column="stability_reactivity"/>
+        <result property="toxicologicalInfo" column="toxicological_info"/>
+        <result property="ecologicalInfo" column="ecological_info"/>
+        <result property="disposalInfo"   column="disposal_info"/>
+        <result property="transportInfo"  column="transport_info"/>
         <result property="enterpriseId"    column="enterprise_id"/>
         <result property="status"          column="status"/>
         <result property="delFlag"         column="del_flag"/>
@@ -28,6 +45,10 @@
     <sql id="selectVo">
         SELECT material_id, material_code, material_name, hazard_class, cas_no, max_storage, storage_unit,
                storage_area_id, storage_area_name, sds_attachment, toxic_flag, current_stock,
+               safety_stock_min, safety_stock_max, default_supplier_id,
+               flash_point, explosion_limit, physical_properties, hazard_summary, first_aid_measures,
+               fire_fighting, leak_handling, storage_precaution, exposure_control,
+               stability_reactivity, toxicological_info, ecological_info, disposal_info, transport_info,
                enterprise_id, status, del_flag, create_by, create_time, update_by, update_time, remark
         FROM biz_safety_material
     </sql>
@@ -41,6 +62,11 @@
             <if test="hazardClass != null and hazardClass != ''"> AND hazard_class = #{hazardClass}</if>
             <if test="toxicFlag != null and toxicFlag != ''"> AND toxic_flag = #{toxicFlag}</if>
             <if test="status != null and status != ''"> AND status = #{status}</if>
+            <if test="casNo != null and casNo != ''"> AND cas_no LIKE CONCAT('%', #{casNo}, '%')</if>
+            <if test="storageAreaName != null and storageAreaName != ''"> AND storage_area_name LIKE CONCAT('%', #{storageAreaName}, '%')</if>
+            <if test="storageAreaId != null"> AND storage_area_id = #{storageAreaId}</if>
+            <if test="params.beginTime != null and params.beginTime != ''"> AND date_format(create_time,'%y%m%d') &gt;= date_format(#{params.beginTime},'%y%m%d')</if>
+            <if test="params.endTime != null and params.endTime != ''"> AND date_format(create_time,'%y%m%d') &lt;= date_format(#{params.endTime},'%y%m%d')</if>
         </where>
         ORDER BY create_time DESC
     </select>
@@ -57,10 +83,18 @@
         INSERT INTO biz_safety_material (
             material_code, material_name, hazard_class, cas_no, max_storage, storage_unit,
             storage_area_id, storage_area_name, sds_attachment, toxic_flag, current_stock,
+            safety_stock_min, safety_stock_max, default_supplier_id,
+            flash_point, explosion_limit, physical_properties, hazard_summary, first_aid_measures,
+            fire_fighting, leak_handling, storage_precaution, exposure_control,
+            stability_reactivity, toxicological_info, ecological_info, disposal_info, transport_info,
             enterprise_id, status, create_by, create_time, remark
         ) VALUES (
             #{materialCode}, #{materialName}, #{hazardClass}, #{casNo}, #{maxStorage}, #{storageUnit},
             #{storageAreaId}, #{storageAreaName}, #{sdsAttachment}, #{toxicFlag}, #{currentStock},
+            #{safetyStockMin}, #{safetyStockMax}, #{defaultSupplierId},
+            #{flashPoint}, #{explosionLimit}, #{physicalProperties}, #{hazardSummary}, #{firstAidMeasures},
+            #{fireFighting}, #{leakHandling}, #{storagePrecaution}, #{exposureControl},
+            #{stabilityReactivity}, #{toxicologicalInfo}, #{ecologicalInfo}, #{disposalInfo}, #{transportInfo},
             #{enterpriseId}, #{status}, #{createBy}, sysdate(), #{remark}
         )
     </insert>
@@ -79,6 +113,23 @@
             <if test="sdsAttachment != null">sds_attachment = #{sdsAttachment},</if>
             <if test="toxicFlag != null">toxic_flag = #{toxicFlag},</if>
             <if test="currentStock != null">current_stock = #{currentStock},</if>
+            <if test="safetyStockMin != null">safety_stock_min = #{safetyStockMin},</if>
+            <if test="safetyStockMax != null">safety_stock_max = #{safetyStockMax},</if>
+            <if test="defaultSupplierId != null">default_supplier_id = #{defaultSupplierId},</if>
+            <if test="flashPoint != null">flash_point = #{flashPoint},</if>
+            <if test="explosionLimit != null">explosion_limit = #{explosionLimit},</if>
+            <if test="physicalProperties != null">physical_properties = #{physicalProperties},</if>
+            <if test="hazardSummary != null">hazard_summary = #{hazardSummary},</if>
+            <if test="firstAidMeasures != null">first_aid_measures = #{firstAidMeasures},</if>
+            <if test="fireFighting != null">fire_fighting = #{fireFighting},</if>
+            <if test="leakHandling != null">leak_handling = #{leakHandling},</if>
+            <if test="storagePrecaution != null">storage_precaution = #{storagePrecaution},</if>
+            <if test="exposureControl != null">exposure_control = #{exposureControl},</if>
+            <if test="stabilityReactivity != null">stability_reactivity = #{stabilityReactivity},</if>
+            <if test="toxicologicalInfo != null">toxicological_info = #{toxicologicalInfo},</if>
+            <if test="ecologicalInfo != null">ecological_info = #{ecologicalInfo},</if>
+            <if test="disposalInfo != null">disposal_info = #{disposalInfo},</if>
+            <if test="transportInfo != null">transport_info = #{transportInfo},</if>
             <if test="enterpriseId != null">enterprise_id = #{enterpriseId},</if>
             <if test="status != null and status != ''">status = #{status},</if>
             <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
@@ -96,5 +147,25 @@
         UPDATE biz_safety_material SET del_flag = '2' WHERE material_id IN
         <foreach item="materialId" collection="array" open="(" separator="," close=")">#{materialId}</foreach>
     </delete>
+
+    <!-- 库存预警查询：超过最大储存量或低于安全库存下限 -->
+    <select id="selectStockAlertList" resultMap="SafetyMaterialResult">
+        SELECT m.* FROM biz_safety_material m
+        WHERE m.del_flag = '0' AND m.status = '0'
+        AND (
+            (m.safety_stock_max IS NOT NULL AND m.safety_stock_max > 0 AND m.current_stock IS NOT NULL AND m.current_stock > m.safety_stock_max)
+            OR
+            (m.safety_stock_min IS NOT NULL AND m.safety_stock_min > 0 AND m.current_stock IS NOT NULL AND m.current_stock &lt; m.safety_stock_min)
+            OR
+            (m.max_storage IS NOT NULL AND m.current_stock IS NOT NULL AND m.current_stock > m.max_storage)
+        )
+        ORDER BY m.material_name
+    </select>
+
+    <!-- 更新库存（供出入库模块调用） -->
+    <update id="updateCurrentStock" parameterType="java.util.Map">
+        UPDATE biz_safety_material SET current_stock = #{afterStock}, update_by = #{updateBy}, update_time = sysdate()
+        WHERE material_id = #{materialId}
+    </update>
 
 </mapper>

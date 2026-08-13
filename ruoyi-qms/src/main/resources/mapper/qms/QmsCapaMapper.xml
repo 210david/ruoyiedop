@@ -17,6 +17,7 @@
         <result property="closeRemark" column="close_remark"/>
         <result property="capaStatus" column="capa_status"/>
         <result property="responsiblePerson" column="responsible_person"/>
+        <result property="responsiblePersonId" column="responsible_person_id"/>
         <result property="planCloseTime" column="plan_close_time"/>
         <result property="closeTime" column="close_time"/>
         <result property="delFlag" column="del_flag"/>
@@ -30,7 +31,7 @@
     <sql id="selectCapaVo">
         SELECT capa_id, capa_no, source_type, source_no, title, problem_desc, team_members,
                interim_action, root_cause, permanent_action, verify_result, prevent_action, close_remark,
-               capa_status, responsible_person, plan_close_time, close_time,
+               capa_status, responsible_person, responsible_person_id, plan_close_time, close_time,
                del_flag, status, create_by, create_time, update_by, update_time, remark
         FROM qms_capa
     </sql>
@@ -53,12 +54,12 @@
         INSERT INTO qms_capa (
             capa_no, source_type, source_no, title, problem_desc, team_members,
             interim_action, root_cause, permanent_action, verify_result, prevent_action, close_remark,
-            capa_status, responsible_person, plan_close_time, close_time,
+            capa_status, responsible_person, responsible_person_id, plan_close_time, close_time,
             del_flag, status, create_by, create_time, remark
         ) VALUES (
             #{capaNo}, #{sourceType}, #{sourceNo}, #{title}, #{problemDesc}, #{teamMembers},
             #{interimAction}, #{rootCause}, #{permanentAction}, #{verifyResult}, #{preventAction}, #{closeRemark},
-            #{capaStatus}, #{responsiblePerson}, #{planCloseTime}, #{closeTime},
+            #{capaStatus}, #{responsiblePerson}, #{responsiblePersonId}, #{planCloseTime}, #{closeTime},
             #{delFlag}, #{status}, #{createBy}, sysdate(), #{remark}
         )
     </insert>
@@ -79,6 +80,7 @@
             <if test="closeRemark != null"> close_remark = #{closeRemark},</if>
             <if test="capaStatus != null"> capa_status = #{capaStatus},</if>
             <if test="responsiblePerson != null"> responsible_person = #{responsiblePerson},</if>
+            <if test="responsiblePersonId != null"> responsible_person_id = #{responsiblePersonId},</if>
             <if test="planCloseTime != null"> plan_close_time = #{planCloseTime},</if>
             <if test="closeTime != null"> close_time = #{closeTime},</if>
             <if test="status != null"> status = #{status},</if>

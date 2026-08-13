@@ -18,6 +18,7 @@ import com.ruoyi.safety.domain.SafetyHazard;
 import com.ruoyi.safety.domain.SafetyRemind;
 import com.ruoyi.safety.domain.SafetyRiskPoint;
 import com.ruoyi.safety.domain.SafetyWorker;
+import com.ruoyi.safety.domain.SafetyMaterial;
 import com.ruoyi.safety.service.ISafetyCertService;
 import com.ruoyi.safety.service.ISafetyEmergencyMaterialService;
 import com.ruoyi.safety.service.ISafetyEmergencyPlanService;
@@ -26,6 +27,7 @@ import com.ruoyi.safety.service.ISafetyHazardService;
 import com.ruoyi.safety.service.ISafetyRemindService;
 import com.ruoyi.safety.service.ISafetyRiskPointService;
 import com.ruoyi.safety.service.ISafetyWorkerService;
+import com.ruoyi.safety.service.ISafetyMaterialService;
 
 /**
  * 安全生产到期提醒定时任务
@@ -61,6 +63,8 @@ public class SafetyRemindTask
     private ISafetyRiskPointService safetyRiskPointService;
     @Autowired
     private ISafetyRemindService safetyRemindService;
+    @Autowired
+    private ISafetyMaterialService safetyMaterialService;
 
     /**
      * 扫描所有到期提醒
@@ -76,6 +80,7 @@ public class SafetyRemindTask
         total += scanEmergencyMaterialExpiry();
         total += scanHazardOverdue();
         total += scanRiskReEvaluateExpiry();
+        total += scanMaterialStockAlert();
         log.info("===== 到期提醒扫描完成，共生成{}条提醒 =====", total);
     }
 
@@ -286,6 +291,38 @@ public class SafetyRemindTask
             }
         }
         log.info("风险复评到期提醒：{}条", count);
+        return count;
+    }
+
+    /**
+     * 危化品库存预警扫描
+     */
+    private int scanMaterialStockAlert()
+    {
+        List<SafetyMaterial> list = safetyMaterialService.selectStockAlertList();
+        int count = 0;
+        Date now = DateUtils.getNowDate();
+        for (SafetyMaterial m : list)
+        {
+            String alertType = "";
+            if (m.getSafetyStockMax() != null && m.getSafetyStockMax().compareTo(java.math.BigDecimal.ZERO) > 0
+                && m.getCurrentStock() != null && m.getCurrentStock().compareTo(m.getSafetyStockMax()) > 0) {
+                alertType = "超过安全库存上限";
+            } else if (m.getMaxStorage() != null && m.getCurrentStock() != null
+                       && m.getCurrentStock().compareTo(m.getMaxStorage()) > 0) {
+                alertType = "超过最大储存量";
+            } else if (m.getSafetyStockMin() != null && m.getSafetyStockMin().compareTo(java.math.BigDecimal.ZERO) > 0
+                       && m.getCurrentStock() != null && m.getCurrentStock().compareTo(m.getSafetyStockMin()) < 0) {
+                alertType = "低于安全库存下限";
+            }
+            if (StringUtils.isNotEmpty(alertType)) {
+                createRemind("8", m.getMaterialId(), m.getMaterialName(),
+                        "危化品「" + m.getMaterialName() + "」库存" + alertType + "（当前库存：" + m.getCurrentStock() + m.getStorageUnit() + "）",
+                        now, 0);
+                count++;
+            }
+        }
+        log.info("危化品库存预警提醒：{}条", count);
         return count;
     }
 

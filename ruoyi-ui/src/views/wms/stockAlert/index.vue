@@ -84,13 +84,13 @@
       <el-table-column label="仓库" prop="warehouseName" :width="colWidth('warehouseName', 130)" resizable show-overflow-tooltip>
         <template #default="scope">{{ scope.row.warehouseName || '—（汇总）' }}</template>
       </el-table-column>
-      <el-table-column label="当前库存" prop="qty" :width="colWidth('qty', 100)" resizable align="right">
+      <el-table-column label="当前库存" prop="qty" :width="colWidth('qty', 100)" resizable align="center">
         <template #default="scope">
           <span :style="{ color: scope.row.alertType === 'low_stock' ? '#f56c6c' : scope.row.alertType === 'overstock' ? '#e6a23c' : '#409eff', fontWeight: 'bold' }">{{ scope.row.qty }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="安全下限" prop="safetyStockMin" :width="colWidth('safetyStockMin', 100)" resizable align="right" />
-      <el-table-column label="安全上限" prop="safetyStockMax" :width="colWidth('safetyStockMax', 100)" resizable align="right" />
+      <el-table-column label="安全下限" prop="safetyStockMin" :width="colWidth('safetyStockMin', 100)" resizable align="center" />
+      <el-table-column label="安全上限" prop="safetyStockMax" :width="colWidth('safetyStockMax', 100)" resizable align="center" />
       <el-table-column label="生产日期" prop="productionDate" :width="colWidth('productionDate', 110)" resizable align="center">
         <template #default="scope">{{ scope.row.productionDate || '—' }}</template>
       </el-table-column>

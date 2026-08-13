@@ -59,7 +59,7 @@ public class PmsReturnController extends BaseController
     }
 
     @PreAuthorize("@ss.hasPermi('pms:return:query')")
-    @GetMapping(value = "/info/{returnId:\\d+}")
+    @GetMapping("/info/{returnId}")
     public AjaxResult getInfo(@PathVariable("returnId") Long returnId)
     {
         return AjaxResult.success(pmsReturnService.selectReturnById(returnId));

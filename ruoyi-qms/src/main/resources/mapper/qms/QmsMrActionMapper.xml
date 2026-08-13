@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.qms.mapper.QmsMrActionMapper">
+    <resultMap type="QmsMrAction" id="QmsMrActionResult">
+        <id property="actionId" column="action_id"/>
+        <result property="mrId" column="mr_id"/>
+        <result property="mrNo" column="mr_no"/>
+        <result property="actionDesc" column="action_desc"/>
+        <result property="actionType" column="action_type"/>
+        <result property="refId" column="ref_id"/>
+        <result property="refNo" column="ref_no"/>
+        <result property="respDeptId" column="resp_dept_id"/>
+        <result property="respDeptName" column="resp_dept_name"/>
+        <result property="responsiblePerson" column="responsible_person"/>
+        <result property="planCloseDate" column="plan_close_date"/>
+        <result property="actualCloseDate" column="actual_close_date"/>
+        <result property="actionResult" column="action_result"/>
+        <result property="actionStatus" column="action_status"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <sql id="selectVo">select action_id, mr_id, mr_no, action_desc, action_type, ref_id, ref_no, resp_dept_id, resp_dept_name, responsible_person, plan_close_date, actual_close_date, action_result, action_status, del_flag, create_by, create_time, update_by, update_time, remark from qms_mr_action</sql>
+
+    <select id="selectMrActionList" parameterType="QmsMrAction" resultMap="QmsMrActionResult">
+        <include refid="selectVo"/>
+        <where>
+            del_flag = '0'
+            <if test="mrId != null">and mr_id = #{mrId}</if>
+            <if test="actionStatus != null and actionStatus != ''">and action_status = #{actionStatus}</if>
+        </where>
+        order by action_id asc
+    </select>
+
+    <select id="selectByMrId" parameterType="Long" resultMap="QmsMrActionResult">
+        <include refid="selectVo"/> where mr_id = #{mrId} and del_flag = '0' order by action_id asc
+    </select>
+
+    <select id="selectMrActionById" parameterType="Long" resultMap="QmsMrActionResult">
+        <include refid="selectVo"/> where action_id = #{actionId} and del_flag = '0'
+    </select>
+
+    <select id="countByMrIdAndStatus" resultType="int">
+        select count(1) from qms_mr_action where mr_id = #{mrId} and del_flag = '0' and action_status != #{excludeStatus}
+    </select>
+
+    <insert id="insertMrAction" parameterType="QmsMrAction" useGeneratedKeys="true" keyProperty="actionId">
+        insert into qms_mr_action(mr_id, mr_no, action_desc, action_type, ref_id, ref_no, resp_dept_id, resp_dept_name, responsible_person, plan_close_date, action_result, action_status, del_flag, create_by, create_time, remark)
+        values(#{mrId}, #{mrNo}, #{actionDesc}, #{actionType}, #{refId}, #{refNo}, #{respDeptId}, #{respDeptName}, #{responsiblePerson}, #{planCloseDate}, #{actionResult}, #{actionStatus}, '0', #{createBy}, sysdate(), #{remark})
+    </insert>
+
+    <update id="updateMrAction" parameterType="QmsMrAction">
+        update qms_mr_action
+        <set>
+            <if test="actionDesc != null">action_desc = #{actionDesc},</if>
+            <if test="actionType != null">action_type = #{actionType},</if>
+            <if test="refId != null">ref_id = #{refId},</if>
+            <if test="refNo != null">ref_no = #{refNo},</if>
+            <if test="respDeptId != null">resp_dept_id = #{respDeptId},</if>
+            <if test="respDeptName != null">resp_dept_name = #{respDeptName},</if>
+            <if test="responsiblePerson != null">responsible_person = #{responsiblePerson},</if>
+            <if test="planCloseDate != null">plan_close_date = #{planCloseDate},</if>
+            <if test="actualCloseDate != null">actual_close_date = #{actualCloseDate},</if>
+            <if test="actionResult != null">action_result = #{actionResult},</if>
+            <if test="actionStatus != null">action_status = #{actionStatus},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_by = #{updateBy}, update_time = sysdate()
+        </set>
+        where action_id = #{actionId}
+    </update>
+
+    <delete id="deleteMrActionByIds" parameterType="Long">
+        update qms_mr_action set del_flag = '1' where action_id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">#{id}</foreach>
+    </delete>
+</mapper>

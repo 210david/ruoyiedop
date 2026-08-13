@@ -4,6 +4,10 @@
     <div class="surface filter-card" v-show="showSearch">
       <div class="filter-head">
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+        <a class="adv-link" :class="{ 'is-open': showAdvanced }" @click.prevent="showAdvanced = !showAdvanced">
+          <span>{{ showAdvanced ? '收起' : '高级筛选' }}</span>
+          <el-icon class="chev"><ArrowDown /></el-icon>
+        </a>
       </div>
       <div class="filter-bar">
         <div class="field">
@@ -18,6 +22,23 @@
           <label>物资编码</label>
           <div class="control">
             <el-input v-model="queryParams.materialCode" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>物资类型</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.materialType" placeholder="全部" clearable @change="handleQuery">
+              <el-option v-for="dict in safety_material_type" :key="dict.value" :label="dict.label" :value="dict.value" />
+            </el-select>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>状态</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
+              <el-option label="正常" value="0" />
+              <el-option label="停用" value="1" />
+            </el-select>
           </div>
         </div>
       </div>
@@ -38,6 +59,8 @@
         <div class="left">
           <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['safety:emergency:material:add']">新增</el-button>
           <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['safety:emergency:material:remove']">删除</el-button>
+          <div class="toolbar-divider"></div>
+          <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['safety:emergency:material:export']">导出</el-button>
         </div>
         <div class="right">
           <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="safety_emergency_material_columns" />
@@ -142,7 +165,7 @@
       </template>
       <div class="rd-page">
         <section class="rd-card">
-          <div class="rd-card-header" @click="toggleCard('vc0')"><div class="rd-card-title">物资信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc0 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-header" @click="toggleCard('vc0')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></span>物资信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc0 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
           <div class="rd-card-body" v-show="!collapsedCards.vc0" style="display:block">
             <div class="rd-grid">
               <div class="rd-item"><span class="rd-label">物资编码</span><div class="rd-value">{{ viewData.materialCode || '-' }}</div></div>
@@ -153,7 +176,7 @@
           </div>
         </section>
         <section class="rd-card" v-if="viewData.quantity != null || viewData.unit || viewData.effectiveDate || viewData.storageLocation || viewData.personName">
-          <div class="rd-card-header" @click="toggleCard('vc1')"><div class="rd-card-title">储存信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-header" @click="toggleCard('vc1')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>储存信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
           <div class="rd-card-body" v-show="!collapsedCards.vc1" style="display:block">
             <div class="rd-grid">
               <div class="rd-item"><span class="rd-label">数量</span><div class="rd-value">{{ viewData.quantity || '-' }}</div></div>
@@ -165,7 +188,7 @@
           </div>
         </section>
         <section class="rd-card" v-if="viewData.remark">
-          <div class="rd-card-header" @click="toggleCard('vc2')"><div class="rd-card-title">其他信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-header" @click="toggleCard('vc2')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>其他信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
           <div class="rd-card-body" v-show="!collapsedCards.vc2" style="display:block">
             <div class="rd-grid">
               <div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value">{{ viewData.remark || '-' }}</div></div>
@@ -187,7 +210,7 @@ import { listEmergencyMaterial, getEmergencyMaterial, addEmergencyMaterial, upda
 import UserPicker from '@/components/UserPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
-import { Search, Filter, RefreshLeft, CircleClose } from '@element-plus/icons-vue'
+import { Search, Filter, RefreshLeft, CircleClose, ArrowDown } from '@element-plus/icons-vue'
 
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('safety_emergency_material_index')
@@ -198,6 +221,7 @@ const materialList = ref([])
 const open = ref(false)
 const loading = ref(true)
 const showSearch = ref(true)
+const showAdvanced = ref(false)
 const ids = ref([])
 const single = ref(true)
 const multiple = ref(true)
@@ -237,7 +261,7 @@ const columns = ref(loadColumnVisibility())
 
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, materialName: undefined, materialCode: undefined, params: {} },
+  queryParams: { pageNum: 1, pageSize: 10, materialName: undefined, materialCode: undefined, materialType: undefined, status: undefined, params: {} },
   rules: {
     materialName: [{ required: true, message: '物资名称不能为空', trigger: 'blur' }],
     materialType: [{ required: true, message: '物资类别不能为空', trigger: 'change' }],
@@ -254,12 +278,14 @@ const activeFilterCount = computed(() => {
   let count = 0
   if (queryParams.value.materialName) count++
   if (queryParams.value.materialCode) count++
+  if (queryParams.value.materialType) count++
+  if (queryParams.value.status) count++
   return count
 })
 
 function getList() { loading.value = true; listEmergencyMaterial(queryParams.value).then(response => { materialList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths() }) }
-function handleQuery() { queryParams.value.pageNum = 1; getList() }
-function resetQuery() { queryParams.value.materialName = undefined; queryParams.value.materialCode = undefined; queryParams.value.params = {}; handleQuery() }
+function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
+function resetQuery() { queryParams.value.materialName = undefined; queryParams.value.materialCode = undefined; queryParams.value.materialType = undefined; queryParams.value.status = undefined; queryParams.value.params = {}; handleQuery() }
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleSelectionChange(selection) { ids.value = selection.map(item => item.materialId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function handleAdd() { reset(); collapsedCards.c0 = false; collapsedCards.c1 = false; collapsedCards.c2 = false; open.value = true; title.value = '添加应急物资' }
@@ -274,6 +300,7 @@ function submitForm() {
   })
 }
 function handleDelete(row) { const materialIds = row.materialId || ids.value; proxy.$modal.confirm('是否确认删除应急物资？').then(function() { return delEmergencyMaterial(materialIds) }).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleExport() { proxy.download('safety/emergency/material/export', { ...queryParams.value }, `emergency_material_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 function reset() {
   form.value = { materialId: undefined, materialCode: undefined, materialName: undefined, materialType: undefined, specModel: undefined, quantity: undefined, unit: undefined, storageLocation: undefined, personId: undefined, personName: undefined, effectiveDate: undefined, remark: undefined }
@@ -305,6 +332,10 @@ getList()
 .safety-emergency-material-page .filter-card .filter-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
 .safety-emergency-material-page .filter-card .filter-title { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--ink-700); }
 .safety-emergency-material-page .filter-card .filter-title .glyph { width:4px; height:14px; background:var(--brand-600); border-radius:2px; }
+.safety-emergency-material-page .filter-card .adv-link { font-size:14px; color:var(--ink-500); text-decoration:none; display:flex; align-items:center; gap:4px; transition:color .15s; cursor:pointer; }
+.safety-emergency-material-page .filter-card .adv-link:hover { color:var(--brand-600); }
+.safety-emergency-material-page .filter-card .adv-link .chev { transition:transform .2s var(--ease-out); }
+.safety-emergency-material-page .filter-card .adv-link.is-open .chev { transform:rotate(180deg); }
 .safety-emergency-material-page .filter-card .filter-bar { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px 16px; }
 .safety-emergency-material-page .filter-card .filter-actions { display:flex; align-items:center; justify-content:space-between; margin-top:14px; padding-top:14px; border-top:1px dashed var(--ink-200); }
 .safety-emergency-material-page .filter-card .filter-info { font-size:13px; color:var(--ink-500); display:flex; align-items:center; gap:6px; }

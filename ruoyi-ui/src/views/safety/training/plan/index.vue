@@ -4,6 +4,10 @@
     <div class="surface filter-card" v-show="showSearch">
       <div class="filter-head">
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+        <a class="adv-link" :class="{ 'is-open': showAdvanced }" @click.prevent="showAdvanced = !showAdvanced">
+          <span>{{ showAdvanced ? '收起' : '高级筛选' }}</span>
+          <el-icon class="chev"><ArrowDown /></el-icon>
+        </a>
       </div>
       <div class="filter-bar">
         <div class="field">
@@ -26,6 +30,12 @@
             <el-select v-model="queryParams.planType" placeholder="全部" clearable @change="handleQuery">
               <el-option v-for="dict in safety_training_plan_type" :key="dict.value" :label="dict.label" :value="dict.value" />
             </el-select>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>培训年份</label>
+          <div class="control">
+            <el-date-picker v-model="queryParams.planYear" type="year" placeholder="选择年份" value-format="YYYY" style="width: 100%" @change="handleQuery" />
           </div>
         </div>
       </div>
@@ -74,6 +84,8 @@
         <div class="left">
           <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['safety:training:plan:add']">新增</el-button>
           <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['safety:training:plan:remove']">删除</el-button>
+          <div class="toolbar-divider"></div>
+          <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['safety:training:plan:export']">导出</el-button>
         </div>
         <div class="right">
           <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="safety_training_plan_columns" />
@@ -335,7 +347,7 @@ import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
 import { useRouter } from 'vue-router'
 import UserPicker from '@/components/UserPicker/index.vue'
-import { Search, Filter, RefreshLeft, CircleClose, Calendar, Clock, Location, User } from '@element-plus/icons-vue'
+import { Search, Filter, RefreshLeft, CircleClose, Calendar, Clock, Location, User, ArrowDown } from '@element-plus/icons-vue'
 
 const router = useRouter()
 
@@ -348,6 +360,7 @@ const planList = ref([])
 const open = ref(false)
 const loading = ref(true)
 const showSearch = ref(true)
+const showAdvanced = ref(false)
 const ids = ref([])
 const single = ref(true)
 const multiple = ref(true)
@@ -389,7 +402,7 @@ const columns = ref(loadColumnVisibility())
 
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, planName: undefined, planCode: undefined, planType: undefined, planStatus: undefined, params: {} },
+  queryParams: { pageNum: 1, pageSize: 10, planName: undefined, planCode: undefined, planType: undefined, planStatus: undefined, planYear: undefined, params: {} },
   rules: {
     planName: [{ required: true, message: '计划名称不能为空', trigger: 'blur' }],
     planType: [{ required: true, message: '请选择计划类型', trigger: 'change' }],
@@ -420,6 +433,7 @@ const activeFilterCount = computed(() => {
   if (queryParams.value.planName) count++
   if (queryParams.value.planCode) count++
   if (queryParams.value.planType) count++
+  if (queryParams.value.planYear) count++
   return count
 })
 
@@ -433,8 +447,8 @@ const statusCounts = computed(() => {
 })
 
 function getList() { loading.value = true; listTrainingPlan(queryParams.value).then(response => { planList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths() }) }
-function handleQuery() { queryParams.value.pageNum = 1; getList() }
-function resetQuery() { queryParams.value.planName = undefined; queryParams.value.planCode = undefined; queryParams.value.planType = undefined; queryParams.value.planStatus = undefined; queryParams.value.params = {}; handleQuery() }
+function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
+function resetQuery() { queryParams.value.planName = undefined; queryParams.value.planCode = undefined; queryParams.value.planType = undefined; queryParams.value.planStatus = undefined; queryParams.value.planYear = undefined; queryParams.value.params = {}; handleQuery() }
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleStatusTab(status) { queryParams.value.planStatus = status; queryParams.value.pageNum = 1; getList() }
 function handleSelectionChange(selection) { ids.value = selection.map(item => item.planId); single.value = selection.length !== 1; multiple.value = !selection.length }
@@ -460,6 +474,7 @@ function submitForm() {
   })
 }
 function handleDelete(row) { const planIds = row.planId || ids.value; proxy.$modal.confirm('是否确认删除培训计划？').then(function() { return delTrainingPlan(planIds) }).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleExport() { proxy.download('safety/training/plan/export', { ...queryParams.value }, `training_plan_${new Date().getTime()}.xlsx`) }
 function handleStart(row) { proxy.$modal.confirm('确认开始执行该培训计划吗？').then(function() { return startTrainingPlan(row.planId) }).then(() => { proxy.$modal.msgSuccess('已开始执行'); getList() }).catch(() => {}) }
 function handleComplete(row) {
   const recordCount = row.recordCount || 0
@@ -555,6 +570,10 @@ getList()
 .safety-training-plan-page .filter-card .filter-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
 .safety-training-plan-page .filter-card .filter-title { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--ink-700); }
 .safety-training-plan-page .filter-card .filter-title .glyph { width:4px; height:14px; background:var(--brand-600); border-radius:2px; }
+.safety-training-plan-page .filter-card .adv-link { font-size:14px; color:var(--ink-500); text-decoration:none; display:flex; align-items:center; gap:4px; transition:color .15s; cursor:pointer; }
+.safety-training-plan-page .filter-card .adv-link:hover { color:var(--brand-600); }
+.safety-training-plan-page .filter-card .adv-link .chev { transition:transform .2s var(--ease-out); }
+.safety-training-plan-page .filter-card .adv-link.is-open .chev { transform:rotate(180deg); }
 .safety-training-plan-page .filter-card .filter-bar { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px 16px; }
 .safety-training-plan-page .filter-card .filter-actions { display:flex; align-items:center; justify-content:space-between; margin-top:14px; padding-top:14px; border-top:1px dashed var(--ink-200); }
 .safety-training-plan-page .filter-card .filter-info { font-size:13px; color:var(--ink-500); display:flex; align-items:center; gap:6px; }

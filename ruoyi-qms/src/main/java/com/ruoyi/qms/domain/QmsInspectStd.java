@@ -48,13 +48,6 @@ public class QmsInspectStd extends BaseEntity
     @Excel(name = "判定规则", readConverterExp = "1=区间判定,2=单值判定,3=定性判定")
     private String judgeRule;
 
-    /** 行业模板ID */
-    private Long tplId;
-
-    /** 行业模板名称（冗余） */
-    @Excel(name = "行业模板", type = Excel.Type.EXPORT)
-    private String tplName;
-
     /** 状态（0正常 1停用） */
     @Excel(name = "状态", readConverterExp = "0=正常,1=停用")
     private String status;
@@ -80,10 +73,6 @@ public class QmsInspectStd extends BaseEntity
     public void setTargetVal(BigDecimal targetVal) { this.targetVal = targetVal; }
     public String getJudgeRule() { return judgeRule; }
     public void setJudgeRule(String judgeRule) { this.judgeRule = judgeRule; }
-    public Long getTplId() { return tplId; }
-    public void setTplId(Long tplId) { this.tplId = tplId; }
-    public String getTplName() { return tplName; }
-    public void setTplName(String tplName) { this.tplName = tplName; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
     public String getDelFlag() { return delFlag; }

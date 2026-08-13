@@ -98,8 +98,8 @@
           <el-table-column label="批次号" prop="batchNo" key="batchNo" :width="colWidth('batchNo', 120)" resizable v-if="columns.batchNo.visible" />
           <el-table-column label="生产日期" prop="productionDate" key="productionDate" :width="colWidth('productionDate', 130)" resizable align="center" v-if="columns.productionDate.visible" />
           <el-table-column label="有效期" prop="expiryDate" key="expiryDate" :width="colWidth('expiryDate', 130)" resizable align="center" v-if="columns.expiryDate.visible" />
-          <el-table-column label="可用数量" prop="qty" key="qty" :width="colWidth('qty', 110)" resizable align="right" class-name="col-num" v-if="columns.qty.visible" />
-          <el-table-column label="锁定数量" prop="lockQty" key="lockQty" :width="colWidth('lockQty', 110)" resizable align="right" class-name="col-num" v-if="columns.lockQty.visible" />
+          <el-table-column label="可用数量" prop="qty" key="qty" :width="colWidth('qty', 110)" resizable align="center" class-name="col-num" v-if="columns.qty.visible" />
+          <el-table-column label="锁定数量" prop="lockQty" key="lockQty" :width="colWidth('lockQty', 110)" resizable align="center" class-name="col-num" v-if="columns.lockQty.visible" />
           <el-table-column label="更新时间" prop="updateTime" key="updateTime" :width="colWidth('updateTime', 180)" resizable align="center" sortable="custom" v-if="columns.updateTime.visible" />
           <el-table-column label="操作" width="80" align="center">
             <template #default="scope">
@@ -260,7 +260,7 @@ getList()
 .wms-inventory-page .app-table :deep(.el-table__inner-wrapper::before) { display:none; }
 .wms-inventory-page .app-table :deep(.el-table__border-left-patch) { display:none; }
 .wms-inventory-page .app-table .col-mono { font-family:ui-monospace,"JetBrains Mono","SF Mono",Menlo,monospace; font-size:14px; color:var(--ink-700); letter-spacing:-.01em; }
-.wms-inventory-page .app-table :deep(.col-num) { text-align:right; font-feature-settings:"tnum" 1; font-variant-numeric:tabular-nums; }
+.wms-inventory-page .app-table :deep(.col-num) { text-align:center; font-feature-settings:"tnum" 1; font-variant-numeric:tabular-nums; }
 .wms-inventory-page .badge { display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:999px; font-size:13px; font-weight:600; line-height:1; border:1px solid transparent; }
 .wms-inventory-page .badge .dot { width:6px; height:6px; border-radius:50%; }
 .wms-inventory-page .badge.amber { background:var(--amber-50); color:var(--amber-700); border-color:#fde68a; }

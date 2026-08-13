@@ -70,7 +70,7 @@ public class PmsReceiveController extends BaseController
     }
 
     @PreAuthorize("@ss.hasPermi('pms:receive:query')")
-    @GetMapping(value = "/{receiveId:\\d+}")
+    @GetMapping("/{receiveId}")
     public AjaxResult getInfo(@PathVariable("receiveId") Long receiveId)
     {
         return AjaxResult.success(pmsReceiveService.selectReceiveById(receiveId));

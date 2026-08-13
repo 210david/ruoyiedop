@@ -13,7 +13,9 @@ import com.ruoyi.common.core.page.TableDataInfo;
 import com.ruoyi.common.enums.BusinessType;
 import com.ruoyi.common.utils.poi.ExcelUtil;
 import com.ruoyi.qms.domain.QmsLotGenealogy;
+import com.ruoyi.qms.domain.QmsTraceSn;
 import com.ruoyi.qms.service.IQmsTraceService;
+import com.ruoyi.qms.service.IQmsTraceSnService;
 import jakarta.servlet.http.HttpServletResponse;
 
 /**
@@ -29,6 +31,9 @@ public class QmsTraceController extends BaseController
 {
     @Autowired
     private IQmsTraceService qmsTraceService;
+
+    @Autowired
+    private IQmsTraceSnService snService;
 
     // ==================== 谱系管理 CRUD ====================
 
@@ -126,5 +131,60 @@ public class QmsTraceController extends BaseController
     public AjaxResult breakList()
     {
         return AjaxResult.success(qmsTraceService.selectBreakList());
+    }
+
+    // ==================== SN级追溯 ====================
+
+    @PreAuthorize("@ss.hasPermi('qms:trace:sn:list')")
+    @GetMapping("/sn/list")
+    public TableDataInfo snList(QmsTraceSn sn)
+    {
+        startPage();
+        return getDataTable(snService.selectSnList(sn));
+    }
+
+    @PreAuthorize("@ss.hasPermi('qms:trace:sn:query')")
+    @GetMapping("/sn/{id}")
+    public AjaxResult getSn(@PathVariable Long id)
+    {
+        return AjaxResult.success(snService.selectSnById(id));
+    }
+
+    @PreAuthorize("@ss.hasPermi('qms:trace:sn:query')")
+    @GetMapping("/sn/code/{snCode}")
+    public AjaxResult snByCode(@PathVariable String snCode)
+    {
+        return AjaxResult.success(snService.selectBySnCode(snCode));
+    }
+
+    @PreAuthorize("@ss.hasPermi('qms:trace:sn:query')")
+    @GetMapping("/sn/batch/{batchNo}")
+    public AjaxResult snByBatch(@PathVariable String batchNo)
+    {
+        return AjaxResult.success(snService.selectByBatchNo(batchNo));
+    }
+
+    @Log(title = "SN追溯", businessType = BusinessType.INSERT)
+    @PreAuthorize("@ss.hasPermi('qms:trace:sn:add')")
+    @PostMapping("/sn")
+    public AjaxResult addSn(@RequestBody QmsTraceSn sn)
+    {
+        return toAjax(snService.insertSn(sn));
+    }
+
+    @Log(title = "SN追溯", businessType = BusinessType.UPDATE)
+    @PreAuthorize("@ss.hasPermi('qms:trace:sn:edit')")
+    @PutMapping("/sn")
+    public AjaxResult editSn(@RequestBody QmsTraceSn sn)
+    {
+        return toAjax(snService.updateSn(sn));
+    }
+
+    @Log(title = "SN追溯", businessType = BusinessType.DELETE)
+    @PreAuthorize("@ss.hasPermi('qms:trace:sn:remove')")
+    @DeleteMapping("/sn/{ids}")
+    public AjaxResult removeSn(@PathVariable Long[] ids)
+    {
+        return toAjax(snService.deleteSnByIds(ids));
     }
 }

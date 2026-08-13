@@ -4,6 +4,10 @@
     <div class="surface filter-card" v-show="showSearch">
       <div class="filter-head">
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+        <a class="adv-link" :class="{ 'is-open': showAdvanced }" @click.prevent="showAdvanced = !showAdvanced">
+          <span>{{ showAdvanced ? '收起' : '高级筛选' }}</span>
+          <el-icon class="chev"><ArrowDown /></el-icon>
+        </a>
       </div>
       <div class="filter-bar">
         <div class="field">
@@ -19,6 +23,23 @@
           <div class="control is-select">
             <el-select v-model="queryParams.planType" placeholder="全部" clearable @change="handleQuery">
               <el-option v-for="dict in safety_plan_type" :key="dict.value" :label="dict.label" :value="dict.value" />
+            </el-select>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>预案等级</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.planLevel" placeholder="全部" clearable @change="handleQuery">
+              <el-option v-for="dict in safety_plan_level" :key="dict.value" :label="dict.label" :value="dict.value" />
+            </el-select>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>状态</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
+              <el-option label="正常" value="0" />
+              <el-option label="停用" value="1" />
             </el-select>
           </div>
         </div>
@@ -40,6 +61,8 @@
         <div class="left">
           <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['safety:emergency:plan:add']">新增</el-button>
           <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['safety:emergency:plan:remove']">删除</el-button>
+          <div class="toolbar-divider"></div>
+          <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['safety:emergency:plan:export']">导出</el-button>
         </div>
         <div class="right">
           <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="safety_emergency_plan_columns" />
@@ -144,7 +167,7 @@
       </template>
       <div class="rd-page">
         <section class="rd-card">
-          <div class="rd-card-header" @click="toggleCard('vc0')"><div class="rd-card-title">预案信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc0 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-header" @click="toggleCard('vc0')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>预案信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc0 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
           <div class="rd-card-body" v-show="!collapsedCards.vc0" style="display:block">
             <div class="rd-grid">
               <div class="rd-item"><span class="rd-label">预案编号</span><div class="rd-value">{{ viewData.planCode || '-' }}</div></div>
@@ -155,7 +178,7 @@
           </div>
         </section>
         <section class="rd-card" v-if="viewData.version || viewData.regNo || viewData.regDate || viewData.effectiveDate || viewData.expireDate">
-          <div class="rd-card-header" @click="toggleCard('vc1')"><div class="rd-card-title">备案与版本</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-header" @click="toggleCard('vc1')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><rect x="3" y="4" width="18" height="16" rx="2"/></svg></span>备案与版本</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
           <div class="rd-card-body" v-show="!collapsedCards.vc1" style="display:block">
             <div class="rd-grid">
               <div class="rd-item"><span class="rd-label">版本号</span><div class="rd-value">{{ viewData.version || '-' }}</div></div>
@@ -167,16 +190,21 @@
           </div>
         </section>
         <section class="rd-card" v-if="viewData.content || viewData.attachment || viewData.remark">
-          <div class="rd-card-header" @click="toggleCard('vc2')"><div class="rd-card-title">内容与附件</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-header" @click="toggleCard('vc2')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>内容与附件</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
           <div class="rd-card-body" v-show="!collapsedCards.vc2" style="display:block">
             <div class="rd-grid">
               <div class="rd-item rd-item--full"><span class="rd-label">预案内容</span><div class="rd-value">{{ viewData.content || '-' }}</div></div>
               <div class="rd-item rd-item--full" v-if="viewData.attachment"><span class="rd-label">附件</span><div class="rd-value"><div class="rd-file-links" v-if="viewData.attachment">
-              <div class="rd-file-link" v-for="(url, idx) in String(viewData.attachment).split(',')" :key="idx">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                <span class="rd-file-name" @click="handleFilePreview(url)">{{ url.includes('/') ? url.substring(url.lastIndexOf('/') + 1) : url }}</span>
-                <a :href="baseUrl + url" target="_blank" class="rd-file-dl">下载</a>
-              </div>
+<div class="rd-file-item" v-for="(url, idx) in String(viewData.attachment).split(',')" :key="idx">
+<div class="rd-file-link" @click="handleFilePreview(url)">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+<span class="rd-file-name">{{ url.includes('/') ? url.substring(url.lastIndexOf('/') + 1) : url }}</span>
+</div>
+<span class="rd-file-dl" @click="handleFileDownload(url)">
+<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+下载
+</span>
+</div>
             </div></div></div>
               <div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value">{{ viewData.remark || '-' }}</div></div>
             </div>
@@ -194,8 +222,9 @@
 import { listEmergencyPlan, getEmergencyPlan, addEmergencyPlan, updateEmergencyPlan, delEmergencyPlan } from '@/api/safety/emergencyPlan'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
-import { Search, Filter, RefreshLeft } from '@element-plus/icons-vue'
+import { Search, Filter, RefreshLeft, ArrowDown } from '@element-plus/icons-vue'
 import FilePreview from '@/components/FilePreview/index.vue'
+import { downloadFile } from '@/utils/downloadFile'
 
 const { proxy } = getCurrentInstance()
 const { safety_plan_type, safety_plan_level } = proxy.useDict('safety_plan_type', 'safety_plan_level')
@@ -206,6 +235,7 @@ const planList = ref([])
 const open = ref(false)
 const loading = ref(true)
 const showSearch = ref(true)
+const showAdvanced = ref(false)
 const ids = ref([])
 const single = ref(true)
 const multiple = ref(true)
@@ -245,7 +275,7 @@ const columns = ref(loadColumnVisibility())
 
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, planName: undefined, planType: undefined, params: {} },
+  queryParams: { pageNum: 1, pageSize: 10, planName: undefined, planType: undefined, planLevel: undefined, status: undefined, params: {} },
   rules: {
     planName: [{ required: true, message: '预案名称不能为空', trigger: 'blur' }],
     planType: [{ required: true, message: '预案类型不能为空', trigger: 'change' }],
@@ -261,17 +291,22 @@ const activeFilterCount = computed(() => {
   let count = 0
   if (queryParams.value.planName) count++
   if (queryParams.value.planType) count++
+  if (queryParams.value.planLevel) count++
+  if (queryParams.value.status) count++
   return count
 })
 
 function handleFilePreview(url) {
-  const name = url.includes('/') ? url.substring(url.lastIndexOf('/') + 1) : url
-  proxy.$refs.filePreviewRef.open(url, name)
+const name = url.includes('/') ? url.substring(url.lastIndexOf('/') + 1) : url
+proxy.$refs.filePreviewRef.open(url, name)
+}
+function handleFileDownload(url) {
+downloadFile(url)
 }
 
 function getList() { loading.value = true; listEmergencyPlan(queryParams.value).then(response => { planList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths() }) }
-function handleQuery() { queryParams.value.pageNum = 1; getList() }
-function resetQuery() { queryParams.value.planName = undefined; queryParams.value.planType = undefined; queryParams.value.params = {}; handleQuery() }
+function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
+function resetQuery() { queryParams.value.planName = undefined; queryParams.value.planType = undefined; queryParams.value.planLevel = undefined; queryParams.value.status = undefined; queryParams.value.params = {}; handleQuery() }
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleSelectionChange(selection) { ids.value = selection.map(item => item.planId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function handleAdd() { reset(); collapsedCards.c0 = false; collapsedCards.c1 = false; collapsedCards.c2 = false; open.value = true; title.value = '添加应急预案' }
@@ -286,6 +321,7 @@ function submitForm() {
   })
 }
 function handleDelete(row) { const planIds = row.planId || ids.value; proxy.$modal.confirm('是否确认删除应急预案？').then(function() { return delEmergencyPlan(planIds) }).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleExport() { proxy.download('safety/emergency/plan/export', { ...queryParams.value }, `emergency_plan_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 function reset() {
   form.value = { planId: undefined, planCode: undefined, planName: undefined, planType: undefined, planLevel: undefined, version: undefined, regNo: undefined, regDate: undefined, effectiveDate: undefined, expireDate: undefined, content: undefined, attachment: undefined, remark: undefined }
@@ -310,6 +346,10 @@ getList()
 .safety-emergency-plan-page .filter-card .filter-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
 .safety-emergency-plan-page .filter-card .filter-title { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--ink-700); }
 .safety-emergency-plan-page .filter-card .filter-title .glyph { width:4px; height:14px; background:var(--brand-600); border-radius:2px; }
+.safety-emergency-plan-page .filter-card .adv-link { font-size:14px; color:var(--ink-500); text-decoration:none; display:flex; align-items:center; gap:4px; transition:color .15s; cursor:pointer; }
+.safety-emergency-plan-page .filter-card .adv-link:hover { color:var(--brand-600); }
+.safety-emergency-plan-page .filter-card .adv-link .chev { transition:transform .2s var(--ease-out); }
+.safety-emergency-plan-page .filter-card .adv-link.is-open .chev { transform:rotate(180deg); }
 .safety-emergency-plan-page .filter-card .filter-bar { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px 16px; }
 .safety-emergency-plan-page .filter-card .filter-actions { display:flex; align-items:center; justify-content:space-between; margin-top:14px; padding-top:14px; border-top:1px dashed var(--ink-200); }
 .safety-emergency-plan-page .filter-card .filter-info { font-size:13px; color:var(--ink-500); display:flex; align-items:center; gap:6px; }

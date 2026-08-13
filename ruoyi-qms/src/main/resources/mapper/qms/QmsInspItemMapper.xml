@@ -10,16 +10,18 @@
         <result property="sampleSeq"     column="sample_seq"/>
         <result property="measuredVal"   column="measured_val"/>
         <result property="itemResult"    column="item_result"/>
+        <result property="defectId"      column="defect_id"/>
         <result property="defectCode"    column="defect_code"/>
         <result property="defectName"    column="defect_name"/>
         <result property="defectLevel"   column="defect_level"/>
+        <result property="defectQty"     column="defect_qty"/>
         <result property="createBy"      column="create_by"/>
         <result property="createTime"    column="create_time"/>
     </resultMap>
 
     <sql id="selectInspItemVo">
         SELECT item_id, task_id, std_id, std_name, sample_seq, measured_val, item_result,
-               defect_code, defect_name, defect_level, create_by, create_time
+               defect_id, defect_code, defect_name, defect_level, defect_qty, create_by, create_time
         FROM qms_insp_item
     </sql>
 
@@ -32,22 +34,22 @@
     <insert id="insertInspItem" parameterType="QmsInspItem" useGeneratedKeys="true" keyProperty="itemId">
         INSERT INTO qms_insp_item (
             task_id, std_id, std_name, sample_seq, measured_val, item_result,
-            defect_code, defect_name, defect_level, create_by, create_time
+            defect_id, defect_code, defect_name, defect_level, defect_qty, create_by, create_time
         ) VALUES (
             #{taskId}, #{stdId}, #{stdName}, #{sampleSeq}, #{measuredVal}, #{itemResult},
-            #{defectCode}, #{defectName}, #{defectLevel}, #{createBy}, sysdate()
+            #{defectId}, #{defectCode}, #{defectName}, #{defectLevel}, #{defectQty}, #{createBy}, sysdate()
         )
     </insert>
 
     <insert id="batchInsertInspItem" parameterType="java.util.List">
         INSERT INTO qms_insp_item (
             task_id, std_id, std_name, sample_seq, measured_val, item_result,
-            defect_code, defect_name, defect_level, create_by, create_time
+            defect_id, defect_code, defect_name, defect_level, defect_qty, create_by, create_time
         ) VALUES
         <foreach item="item" collection="list" separator=",">
             (#{item.taskId}, #{item.stdId}, #{item.stdName}, #{item.sampleSeq}, #{item.measuredVal},
-             #{item.itemResult}, #{item.defectCode}, #{item.defectName}, #{item.defectLevel},
-             #{item.createBy}, sysdate())
+             #{item.itemResult}, #{item.defectId}, #{item.defectCode}, #{item.defectName}, #{item.defectLevel},
+             #{item.defectQty}, #{item.createBy}, sysdate())
         </foreach>
     </insert>
 

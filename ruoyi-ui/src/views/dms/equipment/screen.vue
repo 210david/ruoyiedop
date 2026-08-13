@@ -1,5 +1,5 @@
 <template>
-  <div class="dashboard-container">
+  <div class="dashboard-container" ref="dashboardRef">
     <!-- 顶部标题栏 -->
     <header class="top-bar">
       <div class="top-bar-left">
@@ -13,6 +13,9 @@
         <span class="main-title glow-amber">设备全生命周期监控大屏</span>
       </div>
       <div class="top-bar-right">
+        <div class="fullscreen-btn" @click="toggleFullscreen" :title="isFullscreen ? '退出全屏' : '全屏'">
+          <svg-icon :icon-class="isFullscreen ? 'exit-fullscreen' : 'fullscreen'" />
+        </div>
         <div class="datetime">
           <span class="date-text">{{ currentDate }}</span>
           <span class="time-text">{{ currentTime }}</span>
@@ -633,7 +636,7 @@
               </div>
               <div class="info-row">
                 <span class="info-row-label">设备等级</span>
-                <span class="info-row-value" style="color: var(--state-success);">{{ deviceInfo.equipmentLevel }}</span>
+                <span class="info-row-value" :style="{ color: equipmentLevelColor }">{{ equipmentLevelText }}</span>
               </div>
               <div class="info-row">
                 <span class="info-row-label">质保期限</span>
@@ -828,13 +831,18 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { useFullscreen } from '@vueuse/core'
 import * as echarts from 'echarts'
 import deviceImg from '@/assets/images/dms/device.jpg'
 import { listDashboardEquipment, getEquipmentDashboard } from '@/api/dms/dashboard'
 
 const route = useRoute()
+
+// ========== 全屏控制 ==========
+const dashboardRef = ref(null)
+const { isFullscreen, toggle: toggleFullscreen } = useFullscreen(dashboardRef)
 
 // ========== 响应式数据 ==========
 const selectedDevice = ref(null)
@@ -871,6 +879,9 @@ const deviceInfo = reactive({
   warrantyDate: '',
   responsibleName: ''
 })
+
+// 设备等级字典
+const { dms_equipment_level } = useDict('dms_equipment_level')
 
 // 设备状态
 const deviceStatusText = ref('加载中')
@@ -944,6 +955,19 @@ const completionRate = ref(0)
 const nextPmDate = ref('--')
 
 // ========== 计算属性 ==========
+// 设备等级标签
+const equipmentLevelText = computed(() => {
+  if (deviceInfo.equipmentLevel === '' || deviceInfo.equipmentLevel == null) return '--'
+  const item = dms_equipment_level.value.find(d => d.value == deviceInfo.equipmentLevel)
+  return item ? item.label : deviceInfo.equipmentLevel
+})
+
+// 设备等级颜色
+const equipmentLevelColor = computed(() => {
+  const map = { '0': 'var(--state-error)', '1': 'var(--state-warning)', '2': 'var(--state-success)', '3': 'var(--state-info)' }
+  return map[deviceInfo.equipmentLevel] || 'var(--state-success)'
+})
+
 const statusDotClass = computed(() => {
   const map = { running: 'status-green', stopped: 'status-amber', fault: 'status-red' }
   return map[deviceStatusType.value] || 'status-amber'
@@ -1314,6 +1338,15 @@ function handleResize() {
   energyChart?.resize()
 }
 
+// ========== 全屏状态变化时自适应图表 ==========
+watch(isFullscreen, () => {
+  nextTick(() => {
+    setTimeout(() => {
+      handleResize()
+    }, 200)
+  })
+})
+
 // ========== 生命周期 ==========
 onMounted(() => {
   updateDateTime()
@@ -1436,6 +1469,32 @@ onUnmounted(() => {
     flex-shrink: 0;
     min-width: 280px;
     justify-content: flex-end;
+    
+    .fullscreen-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: all 0.3s ease;
+
+      .svg-icon {
+        width: 18px;
+        height: 18px;
+        color: var(--eq-primary);
+        opacity: 0.8;
+      }
+
+      &:hover {
+        background: rgba(245, 158, 11, 0.12);
+
+        .svg-icon {
+          opacity: 1;
+        }
+      }
+    }
     
     .datetime {
       display: flex;

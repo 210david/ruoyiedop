@@ -222,28 +222,14 @@ INSERT INTO biz_safety_std_library (industry_type, area_type, risk_point_name, h
 -- =============================================
 
 -- -----------------------------------------------
--- 1. 行业模板配置表 qms_industry_tpl
+-- 1. 检验标准库表 qms_inspect_std
 -- -----------------------------------------------
-INSERT INTO qms_industry_tpl (tpl_code, tpl_name, industry_type, audit_force, status, del_flag, create_by, create_time, remark) VALUES
-('TEST-TPL-001', '新能源材料行业质量模板', '1', '1', '0', '0', 'admin', NOW(), '测试数据-新能源材料行业模板'),
-('TEST-TPL-002', '绿色铝加工行业质量模板', '2', '1', '0', '0', 'admin', NOW(), '测试数据-铝加工行业模板'),
-('TEST-TPL-003', '精细化工行业质量模板', '3', '1', '0', '0', 'admin', NOW(), '测试数据-精细化工行业模板'),
-('TEST-TPL-004', '先进装备行业质量模板', '4', '0', '0', '0', 'admin', NOW(), '测试数据-装备制造行业模板'),
-('TEST-TPL-005', '高原食品行业质量模板', '5', '0', '0', '0', 'admin', NOW(), '测试数据-食品加工行业模板');
-
-SET @tplId1 = (SELECT tpl_id FROM qms_industry_tpl WHERE tpl_code = 'TEST-TPL-001' LIMIT 1);
-SET @tplId2 = (SELECT tpl_id FROM qms_industry_tpl WHERE tpl_code = 'TEST-TPL-002' LIMIT 1);
-SET @tplId3 = (SELECT tpl_id FROM qms_industry_tpl WHERE tpl_code = 'TEST-TPL-003' LIMIT 1);
-
--- -----------------------------------------------
--- 2. 检验标准库表 qms_inspect_std
--- -----------------------------------------------
-INSERT INTO qms_inspect_std (std_code, std_name, inspect_method, unit, val_min, val_max, target_val, judge_rule, tpl_id, status, del_flag, create_by, create_time, remark) VALUES
-('TEST-STD-001', '氢氧化锂主含量', '酸碱滴定法', '%', 56.5000, 57.5000, 57.0000, '1', @tplId1, '0', '0', 'admin', NOW(), '测试数据-氢氧化锂含量检验标准'),
-('TEST-STD-002', '电解液水分含量', '卡尔费休法', 'ppm', NULL, 20.0000, 10.0000, '2', @tplId1, '0', '0', 'admin', NOW(), '测试数据-电解液水分上限标准'),
-('TEST-STD-003', '铝锭化学成分Si', '光谱分析法', '%', NULL, 0.0800, 0.0500, '2', @tplId2, '0', '0', 'admin', NOW(), '测试数据-铝锭硅含量标准'),
-('TEST-STD-004', '反应釜温度控制', '温度记录仪', '℃', 80.0000, 120.0000, 100.0000, '1', @tplId3, '0', '0', 'admin', NOW(), '测试数据-反应釜温度区间标准'),
-('TEST-STD-005', '外观检验', '目视检查', NULL, NULL, NULL, NULL, '3', @tplId1, '0', '0', 'admin', NOW(), '测试数据-定性外观检验标准');
+INSERT INTO qms_inspect_std (std_code, std_name, inspect_method, unit, val_min, val_max, target_val, judge_rule, industry_type, status, del_flag, create_by, create_time, remark) VALUES
+('TEST-STD-001', '氢氧化锂主含量', '酸碱滴定法', '%', 56.5000, 57.5000, 57.0000, '1', '1', '0', '0', 'admin', NOW(), '测试数据-氢氧化锂含量检验标准'),
+('TEST-STD-002', '电解液水分含量', '卡尔费休法', 'ppm', NULL, 20.0000, 10.0000, '2', '1', '0', '0', 'admin', NOW(), '测试数据-电解液水分上限标准'),
+('TEST-STD-003', '铝锭化学成分Si', '光谱分析法', '%', NULL, 0.0800, 0.0500, '2', '2', '0', '0', 'admin', NOW(), '测试数据-铝锭硅含量标准'),
+('TEST-STD-004', '反应釜温度控制', '温度记录仪', '℃', 80.0000, 120.0000, 100.0000, '1', '3', '0', '0', 'admin', NOW(), '测试数据-反应釜温度区间标准'),
+('TEST-STD-005', '外观检验', '目视检查', NULL, NULL, NULL, NULL, '3', '1', '0', '0', 'admin', NOW(), '测试数据-定性外观检验标准');
 
 SET @stdId1 = (SELECT std_id FROM qms_inspect_std WHERE std_code = 'TEST-STD-001' LIMIT 1);
 SET @stdId2 = (SELECT std_id FROM qms_inspect_std WHERE std_code = 'TEST-STD-002' LIMIT 1);
@@ -275,12 +261,12 @@ SET @gaugeId2 = (SELECT gauge_id FROM qms_gauge WHERE gauge_no = 'TEST-GG-002' L
 -- -----------------------------------------------
 -- 5. 物料质量属性表 qms_material_attr
 -- -----------------------------------------------
-INSERT INTO qms_material_attr (material_id, material_code, material_name, inspect_types, tpl_id, is_exempt, status, del_flag, create_by, create_time, remark) VALUES
-(9001, 'TEST-MAT-Q001', '氢氧化锂(电池级)', 'IQC,IPQC,FQC,OQC', @tplId1, '0', '0', '0', 'admin', NOW(), '测试数据-电池级氢氧化锂质量属性'),
-(9002, 'TEST-MAT-Q002', '六氟磷酸锂', 'IQC,IPQC', @tplId1, '0', '0', '0', 'admin', NOW(), '测试数据-六氟磷酸锂质量属性'),
-(9003, 'TEST-MAT-Q003', 'N-甲基吡咯烷酮', 'IQC', @tplId1, '0', '0', '0', 'admin', NOW(), '测试数据-NMP溶剂来料检验'),
-(9004, 'TEST-MAT-Q004', '铝锭(A356)', 'IQC,IPQC,FQC', @tplId2, '0', '0', '0', 'admin', NOW(), '测试数据-铝锭质量属性'),
-(9005, 'TEST-MAT-Q005', '包装材料(纸箱)', 'IQC', @tplId1, '1', '0', '0', 'admin', NOW(), '测试数据-免检包装材料');
+INSERT INTO qms_material_attr (material_id, material_code, material_name, inspect_types, industry_type, is_exempt, status, del_flag, create_by, create_time, remark) VALUES
+(9001, 'TEST-MAT-Q001', '氢氧化锂(电池级)', 'IQC,IPQC,FQC,OQC', '1', '0', '0', '0', 'admin', NOW(), '测试数据-电池级氢氧化锂质量属性'),
+(9002, 'TEST-MAT-Q002', '六氟磷酸锂', 'IQC,IPQC', '1', '0', '0', '0', 'admin', NOW(), '测试数据-六氟磷酸锂质量属性'),
+(9003, 'TEST-MAT-Q003', 'N-甲基吡咯烷酮', 'IQC', '1', '0', '0', '0', 'admin', NOW(), '测试数据-NMP溶剂来料检验'),
+(9004, 'TEST-MAT-Q004', '铝锭(A356)', 'IQC,IPQC,FQC', '2', '0', '0', '0', 'admin', NOW(), '测试数据-铝锭质量属性'),
+(9005, 'TEST-MAT-Q005', '包装材料(纸箱)', 'IQC', '1', '1', '0', '0', 'admin', NOW(), '测试数据-免检包装材料');
 
 -- -----------------------------------------------
 -- 6. 检验任务表 qms_insp_task
@@ -326,17 +312,7 @@ INSERT INTO qms_supplier_eval (supplier_id, supplier_name, eval_period, eval_typ
 (1004, '测试供应商D', '2026-Q2', 'quarterly', 40, 30, 25000.00, 75.00, 65.00, 70.00, 68.00, 67.33, 'D', '1', '0', '0', 'admin', NOW(), '测试数据-供应商D季度评价D级');
 
 -- -----------------------------------------------
--- 10. 供应商审核表 qms_supplier_audit
--- -----------------------------------------------
-INSERT INTO qms_supplier_audit (audit_no, supplier_id, supplier_name, audit_type, audit_date, auditor, audit_scope, audit_result, nonconformity, audit_status, del_flag, status, create_by, create_time, remark) VALUES
-('TEST-SA-001', 1001, '测试供应商A', 'initial', '2026-01-15', '审核员张', '质量管理体系、生产过程控制、检验能力', 'pass', '无不符合项，建议持续改进检验记录追溯性', '2', '0', '0', 'admin', NOW(), '测试数据-供应商A初审通过'),
-('TEST-SA-002', 1002, '测试供应商B', 'routine', '2026-04-20', '审核员李', '质量管理体系、仓储管理、运输防护', 'conditional', '包装密封性不足，干燥剂配置不合理(一般不符合)', '2', '0', '0', 'admin', NOW(), '测试数据-供应商B例行审核有条件通过'),
-('TEST-SA-003', 1002, '测试供应商B', 'follow', '2026-08-10', '审核员李', '包装改进措施验证', 'pass', '包装已更换为防潮双层包装，干燥剂增加至3包', '1', '0', '0', 'admin', NOW(), '测试数据-供应商B跟踪审核通过'),
-('TEST-SA-004', 1003, '测试供应商C', 'initial', '2026-03-10', '审核员王', '质量管理体系、生产环境、检测设备', 'pass', '质量体系运行有效，检测设备校准齐全', '2', '0', '0', 'admin', NOW(), '测试数据-供应商C初审通过'),
-('TEST-SA-005', 1004, '测试供应商D', 'routine', '2026-05-15', '审核员张', '质量管理体系、过程控制、不合格品管理', 'fail', '过程控制不充分，不合格品隔离措施不到位，检验记录不完整(严重不符合)', '2', '0', '0', 'admin', NOW(), '测试数据-供应商D审核不通过');
-
--- -----------------------------------------------
--- 11. 客诉表 qms_complaint
+-- 10. 客诉表 qms_complaint
 -- -----------------------------------------------
 INSERT INTO qms_complaint (complaint_no, customer_name, customer_code, material_name, material_code, batch_no, complaint_date, complaint_type, defect_desc, severity, return_qty, return_amt, claim_amt, handle_desc, handle_result, complaint_status, close_time, del_flag, status, create_by, create_time, remark) VALUES
 ('TEST-CS-001', '宁德时代新能源', 'CUST001', '氢氧化锂(电池级)', 'TEST-MAT-Q001', 'BH20260615-01', '2026-07-01', 'quality', '客户反馈产品主含量56.2%，低于标准下限56.5%，影响电池性能', '2', 20.0000, 8000.00, 5000.00, '已启动8D分析，确认为生产过程温度控制偏差，已调整工艺参数，召回并更换合格产品', 'exchange', '3', '2026-08-12 10:00:00', '0', '0', 'admin', NOW(), '测试数据-质量投诉已关闭'),
@@ -358,12 +334,12 @@ INSERT INTO qms_quality_target (target_year, target_month, dimension, dimension_
 -- -----------------------------------------------
 -- 13. 质量文档表 qms_doc
 -- -----------------------------------------------
-INSERT INTO qms_doc (doc_no, doc_title, doc_category, version_no, doc_status, dept_name, tpl_id, file_url, publish_date, obsolete_date, del_flag, status, create_by, create_time, remark) VALUES
-('TEST-DOC-001', '质量管理手册(2026版)', 'manual', 'V4.0', '2', '品质部', @tplId1, '/upload/qms/质量手册V4.0.pdf', '2026-01-15', NULL, '0', '0', 'admin', NOW(), '测试数据-质量管理手册已生效'),
-('TEST-DOC-002', '来料检验控制程序', 'procedure', 'V2.1', '2', '品质部', @tplId1, '/upload/qms/IQC程序V2.1.pdf', '2026-02-01', NULL, '0', '0', 'admin', NOW(), '测试数据-IQC检验程序文件'),
-('TEST-DOC-003', '氢氧化锂检验作业指导书', 'sop', 'V1.5', '2', '品质部', @tplId1, '/upload/qms/SOP-LiOH-V1.5.pdf', '2026-03-10', NULL, '0', '0', 'admin', NOW(), '测试数据-氢氧化锂检验SOP'),
+INSERT INTO qms_doc (doc_no, doc_title, doc_category, version_no, doc_status, dept_name, industry_type, file_url, publish_date, obsolete_date, del_flag, status, create_by, create_time, remark) VALUES
+('TEST-DOC-001', '质量管理手册(2026版)', 'manual', 'V4.0', '2', '品质部', '1', '/upload/qms/质量手册V4.0.pdf', '2026-01-15', NULL, '0', '0', 'admin', NOW(), '测试数据-质量管理手册已生效'),
+('TEST-DOC-002', '来料检验控制程序', 'procedure', 'V2.1', '2', '品质部', '1', '/upload/qms/IQC程序V2.1.pdf', '2026-02-01', NULL, '0', '0', 'admin', NOW(), '测试数据-IQC检验程序文件'),
+('TEST-DOC-003', '氢氧化锂检验作业指导书', 'sop', 'V1.5', '2', '品质部', '1', '/upload/qms/SOP-LiOH-V1.5.pdf', '2026-03-10', NULL, '0', '0', 'admin', NOW(), '测试数据-氢氧化锂检验SOP'),
 ('TEST-DOC-004', '不合格品处理记录表', 'form', 'V1.0', '2', '品质部', NULL, '/upload/qms/NCR记录表V1.0.xlsx', '2026-01-01', NULL, '0', '0', 'admin', NOW(), '测试数据-NCR记录表单'),
-('TEST-DOC-005', '过程检验控制程序(修订版)', 'procedure', 'V3.0', '1', '品质部', @tplId2, '/upload/qms/IPQC程序V3.0草案.pdf', NULL, NULL, '0', '0', 'admin', NOW(), '测试数据-IPQC程序文件审批中');
+('TEST-DOC-005', '过程检验控制程序(修订版)', 'procedure', 'V3.0', '1', '品质部', '2', '/upload/qms/IPQC程序V3.0草案.pdf', NULL, NULL, '0', '0', 'admin', NOW(), '测试数据-IPQC程序文件审批中');
 
 -- -----------------------------------------------
 -- 14. 内审计划表 qms_audit_plan
@@ -371,7 +347,7 @@ INSERT INTO qms_doc (doc_no, doc_title, doc_category, version_no, doc_status, de
 INSERT INTO qms_audit_plan (audit_plan_no, audit_title, audit_year, audit_type, audit_scope, lead_auditor, audit_date_from, audit_date_to, audit_conclusion, plan_status, del_flag, status, create_by, create_time, remark) VALUES
 ('TEST-AP-001', '2026年上半年质量管理体系内审', 2026, 'annual', '全公司各部门质量管理体系运行情况', '主审张', '2026-06-15', '2026-06-17', '质量体系运行基本有效，发现3个一般不符合项，已制定整改计划', '2', '0', '0', 'admin', NOW(), '测试数据-上半年内审已完成'),
 ('TEST-AP-002', '2026年QMS文件专项审核', 2026, 'adhoc', '文件控制、记录管理、标识追溯', '主审李', '2026-07-10', '2026-07-10', '文件控制规范，部分记录表单需要更新版本', '2', '0', '0', 'admin', NOW(), '测试数据-文件专项审核完成'),
-('TEST-AP-003', '2026年供应商质量管理专项审核', 2026, 'adhoc', '供应商评价、来料检验、不合格品处理', '主审王', '2026-08-15', '2026-08-16', NULL, '1', '0', '0', 'admin', NOW(), '测试数据-供应商专项审核执行中'),
+('TEST-AP-003', '2026年供应商质量管控专项审核', 2026, 'adhoc', '供应商评价、来料检验、不合格品处理', '主审王', '2026-08-15', '2026-08-16', NULL, '1', '0', '0', 'admin', NOW(), '测试数据-供应商专项审核执行中'),
 ('TEST-AP-004', '2026年下半年质量管理体系内审', 2026, 'annual', '全公司各部门质量管理体系运行情况', '主审张', '2026-12-10', '2026-12-12', NULL, '0', '0', '0', 'admin', NOW(), '测试数据-下半年内审计划中'),
 ('TEST-AP-005', '生产过程控制专项审核', 2026, 'adhoc', '生产工艺控制、过程检验、设备校准', '主审李', '2026-09-01', '2026-09-02', NULL, '0', '0', '0', 'admin', NOW(), '测试数据-生产过程审核计划中');
 
@@ -439,7 +415,6 @@ UNION ALL SELECT '安全管理-演练记录', COUNT(*) FROM biz_safety_drill WHE
 UNION ALL SELECT '安全管理-事故管理', COUNT(*) FROM biz_safety_incident WHERE incident_code LIKE 'TEST-INC%'
 UNION ALL SELECT '安全管理-到期提醒', COUNT(*) FROM biz_safety_remind WHERE create_by = 'admin' AND remark LIKE '测试数据%'
 UNION ALL SELECT '安全管理-检查标准库', COUNT(*) FROM biz_safety_std_library WHERE create_by = 'admin' AND remark LIKE '测试数据%'
-UNION ALL SELECT '质量管理-行业模板', COUNT(*) FROM qms_industry_tpl WHERE tpl_code LIKE 'TEST-TPL%'
 UNION ALL SELECT '质量管理-检验标准库', COUNT(*) FROM qms_inspect_std WHERE std_code LIKE 'TEST-STD%'
 UNION ALL SELECT '质量管理-缺陷代码', COUNT(*) FROM qms_defect_code WHERE defect_code LIKE 'TEST-DF%'
 UNION ALL SELECT '质量管理-量检具台账', COUNT(*) FROM qms_gauge WHERE gauge_no LIKE 'TEST-GG%'
@@ -448,7 +423,6 @@ UNION ALL SELECT '质量管理-检验任务', COUNT(*) FROM qms_insp_task WHERE 
 UNION ALL SELECT '质量管理-NCR台账', COUNT(*) FROM qms_ncr WHERE ncr_no LIKE 'TEST-NCR%'
 UNION ALL SELECT '质量管理-CAPA台账', COUNT(*) FROM qms_capa WHERE capa_no LIKE 'TEST-CAPA%'
 UNION ALL SELECT '质量管理-供应商评价', COUNT(*) FROM qms_supplier_eval WHERE supplier_name LIKE '测试供应商%'
-UNION ALL SELECT '质量管理-供应商审核', COUNT(*) FROM qms_supplier_audit WHERE audit_no LIKE 'TEST-SA%'
 UNION ALL SELECT '质量管理-客诉台账', COUNT(*) FROM qms_complaint WHERE complaint_no LIKE 'TEST-CS%'
 UNION ALL SELECT '质量管理-质量目标', COUNT(*) FROM qms_quality_target WHERE create_by = 'admin' AND remark LIKE '测试数据%'
 UNION ALL SELECT '质量管理-质量文档', COUNT(*) FROM qms_doc WHERE doc_no LIKE 'TEST-DOC%'

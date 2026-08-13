@@ -1,4 +1,7 @@
-package com.ruoyi.wms.service.impl;
+package com.ruoyi.wms.service.impl;
+import java.util.HashMap;
+import java.util.Map;
+
 
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,7 +41,9 @@ public class WmsSupplierServiceImpl implements IWmsSupplierService
         supplier.setDelFlag("0");
         if (StringUtils.isEmpty(supplier.getSupplierCode()))
         {
-            supplier.setSupplierCode(mkNumberRuleService.generateNumber("wms_supplier"));
+            Map<String, String> params = new HashMap<>();
+        if (StringUtils.isNotEmpty(supplier.getSupplierType())) { params.put("supplierType", supplier.getSupplierType()); }
+        supplier.setSupplierCode(mkNumberRuleService.generateNumber("wms_supplier", params));
         }
         return wmsSupplierMapper.insertSupplier(supplier);
     }
@@ -114,7 +119,9 @@ public class WmsSupplierServiceImpl implements IWmsSupplierService
                 else
                 {
                     // 新增：自动生成编码，设置默认值
-                    row.setSupplierCode(mkNumberRuleService.generateNumber("wms_supplier"));
+                    Map<String, String> params = new HashMap<>();
+        if (StringUtils.isNotEmpty(row.getSupplierType())) { params.put("supplierType", row.getSupplierType()); }
+        row.setSupplierCode(mkNumberRuleService.generateNumber("wms_supplier", params));
                     row.setDelFlag("0");
                     if (StringUtils.isEmpty(row.getStatus()))
                     {

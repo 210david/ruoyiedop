@@ -23,6 +23,9 @@
         <result property="measureEmergency" column="measure_emergency"/>
         <result property="checkStandard"   column="check_standard"/>
         <result property="checkFrequency"  column="check_frequency"/>
+        <result property="isMajorHazard"   column="is_major_hazard"/>
+        <result property="majorHazardRule" column="major_hazard_rule"/>
+        <result property="complianceFile"  column="compliance_file"/>
         <result property="xCoord"          column="x_coord"/>
         <result property="yCoord"          column="y_coord"/>
         <result property="personId"        column="person_id"/>
@@ -43,7 +46,8 @@
         SELECT risk_point_id, risk_code, risk_name, area_id, area_name, hazard_desc, accident_type,
                l_value, e_value, c_value, d_value, risk_level, control_level,
                measure_engine, measure_manage, measure_training, measure_ppe, measure_emergency,
-               check_standard, check_frequency, x_coord, y_coord, person_id, person_name,
+               check_standard, check_frequency, is_major_hazard, major_hazard_rule, compliance_file,
+               x_coord, y_coord, person_id, person_name,
                evaluate_date, re_evaluate_date, enterprise_id, status, del_flag,
                create_by, create_time, update_by, update_time, remark
         FROM biz_safety_risk_point
@@ -58,6 +62,8 @@
             <if test="areaId != null"> AND area_id = #{areaId}</if>
             <if test="riskLevel != null and riskLevel != ''"> AND risk_level = #{riskLevel}</if>
             <if test="controlLevel != null and controlLevel != ''"> AND control_level = #{controlLevel}</if>
+            <if test="accidentType != null and accidentType != ''"> AND accident_type = #{accidentType}</if>
+            <if test="isMajorHazard != null and isMajorHazard != ''"> AND is_major_hazard = #{isMajorHazard}</if>
             <if test="status != null and status != ''"> AND status = #{status}</if>
         </where>
         ORDER BY d_value DESC
@@ -84,13 +90,15 @@
             risk_code, risk_name, area_id, area_name, hazard_desc, accident_type,
             l_value, e_value, c_value, d_value, risk_level, control_level,
             measure_engine, measure_manage, measure_training, measure_ppe, measure_emergency,
-            check_standard, check_frequency, x_coord, y_coord, person_id, person_name,
+            check_standard, check_frequency, is_major_hazard, major_hazard_rule, compliance_file,
+            x_coord, y_coord, person_id, person_name,
             evaluate_date, re_evaluate_date, enterprise_id, status, create_by, create_time, remark
         ) VALUES (
             #{riskCode}, #{riskName}, #{areaId}, #{areaName}, #{hazardDesc}, #{accidentType},
             #{lValue}, #{eValue}, #{cValue}, #{dValue}, #{riskLevel}, #{controlLevel},
             #{measureEngine}, #{measureManage}, #{measureTraining}, #{measurePpe}, #{measureEmergency},
-            #{checkStandard}, #{checkFrequency}, #{xCoord}, #{yCoord}, #{personId}, #{personName},
+            #{checkStandard}, #{checkFrequency}, #{isMajorHazard}, #{majorHazardRule}, #{complianceFile},
+            #{xCoord}, #{yCoord}, #{personId}, #{personName},
             #{evaluateDate}, #{reEvaluateDate}, #{enterpriseId}, #{status}, #{createBy}, sysdate(), #{remark}
         )
     </insert>
@@ -117,6 +125,9 @@
             <if test="measureEmergency != null">measure_emergency = #{measureEmergency},</if>
             <if test="checkStandard != null">check_standard = #{checkStandard},</if>
             <if test="checkFrequency != null">check_frequency = #{checkFrequency},</if>
+            <if test="isMajorHazard != null">is_major_hazard = #{isMajorHazard},</if>
+            <if test="majorHazardRule != null">major_hazard_rule = #{majorHazardRule},</if>
+            <if test="complianceFile != null">compliance_file = #{complianceFile},</if>
             <if test="xCoord != null">x_coord = #{xCoord},</if>
             <if test="yCoord != null">y_coord = #{yCoord},</if>
             <if test="personId != null">person_id = #{personId},</if>

@@ -4,6 +4,10 @@
     <div class="surface filter-card" v-show="showSearch">
       <div class="filter-head">
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+        <a class="adv-link" :class="{ 'is-open': showAdvanced }" @click.prevent="showAdvanced = !showAdvanced">
+          <span>{{ showAdvanced ? '收起' : '高级筛选' }}</span>
+          <el-icon class="chev"><ArrowDown /></el-icon>
+        </a>
       </div>
       <div class="filter-bar">
         <div class="field">
@@ -30,6 +34,31 @@
             </el-select>
           </div>
         </div>
+        <div class="field" v-show="showAdvanced">
+          <label>CAS号</label>
+          <div class="control">
+            <el-input v-model="queryParams.casNo" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>剧毒/易制爆</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.toxicFlag" placeholder="全部" clearable @change="handleQuery">
+              <el-option label="无" value="0" />
+              <el-option label="剧毒" value="1" />
+              <el-option label="易制爆" value="2" />
+            </el-select>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>状态</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
+              <el-option label="正常" value="0" />
+              <el-option label="停用" value="1" />
+            </el-select>
+          </div>
+        </div>
       </div>
       <div class="filter-actions">
         <div class="filter-info">
@@ -48,6 +77,8 @@
         <div class="left">
           <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['safety:material:add']">新增</el-button>
           <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['safety:material:remove']">删除</el-button>
+          <div class="toolbar-divider"></div>
+          <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['safety:material:export']">导出</el-button>
         </div>
         <div class="right">
           <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="safety_archmaterial_columns" />
@@ -73,7 +104,12 @@
           <el-table-column label="最大储存量" prop="maxStorage" key="maxStorage" :width="colWidth('maxStorage', 110)" resizable align="center" v-if="columns.maxStorage.visible" />
           <el-table-column label="单位" prop="storageUnit" key="storageUnit" :width="colWidth('storageUnit', 80)" resizable align="center" v-if="columns.storageUnit.visible" />
           <el-table-column label="储存位置" prop="storageAreaName" key="storageAreaName" :width="colWidth('storageAreaName', 130)" resizable show-overflow-tooltip v-if="columns.storageAreaName.visible" />
-          <el-table-column label="当前库存" prop="currentStock" key="currentStock" :width="colWidth('currentStock', 100)" resizable align="center" v-if="columns.currentStock.visible" />
+          <el-table-column label="当前库存" prop="currentStock" key="currentStock" :width="colWidth('currentStock', 120)" resizable align="center" v-if="columns.currentStock.visible">
+            <template #default="scope">
+              <span :style="{ color: isStockAlert(scope.row) ? '#ef4444' : '', fontWeight: isStockAlert(scope.row) ? '700' : '400' }">{{ scope.row.currentStock != null ? scope.row.currentStock : '-' }}</span>
+              <el-tooltip v-if="isStockAlert(scope.row)" content="库存预警" placement="top"><el-icon style="margin-left:4px;color:#ef4444"><Warning /></el-icon></el-tooltip>
+            </template>
+          </el-table-column>
           <el-table-column label="剧毒/易制爆" prop="toxicFlag" key="toxicFlag" :width="colWidth('toxicFlag', 110)" resizable align="center" v-if="columns.toxicFlag.visible">
             <template #header><span>剧毒/易制爆</span><el-tooltip content="标识该危化品是否属于剧毒化学品或易制爆危险化学品。剧毒化学品指具有非常剧烈毒性作用的化学品；易制爆化学品指可用于制造爆炸物的化学品" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></template>
             <template #default="scope">
@@ -125,8 +161,12 @@
                 <el-col :span="12"><el-form-item label="最大储存量" prop="maxStorage"><el-input-number v-model="form.maxStorage" :min="0" style="width: 100%" /></el-form-item></el-col>
                 <el-col :span="12"><el-form-item label="当前库存" prop="currentStock"><el-input-number v-model="form.currentStock" :min="0" style="width: 100%" /></el-form-item></el-col>
               </el-row>
+              <el-row :gutter="20">
+                <el-col :span="12"><el-form-item label="安全库存下限" prop="safetyStockMin"><el-input-number v-model="form.safetyStockMin" :min="0" style="width: 100%" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="安全库存上限" prop="safetyStockMax"><el-input-number v-model="form.safetyStockMax" :min="0" style="width: 100%" /></el-form-item></el-col>
+              </el-row>
               <el-form-item label="单位" prop="storageUnit"><el-select v-model="form.storageUnit" placeholder="请选择单位" style="width: 100%"><el-option v-for="dict in wms_unit" :key="dict.value" :label="dict.label" :value="dict.value" /></el-select></el-form-item>
-              <el-form-item label="储存位置" prop="storageAreaName"><el-input v-model="form.storageAreaName" placeholder="请输入储存位置" /></el-form-item>
+              <el-form-item label="储存位置" prop="storageAreaId"><el-tree-select v-model="form.storageAreaId" :data="areaOptions" :props="{ value: 'areaId', label: 'areaName', children: 'children' }" value-key="areaId" placeholder="请选择储存位置" check-strictly style="width: 100%" @change="onAreaChange" /></el-form-item>
             </div>
           </section>
           <section class="rd-card">
@@ -134,6 +174,32 @@
             <div class="rd-card-body" v-show="!collapsedCards.c2">
               <el-form-item prop="sdsAttachment"><template #label><span>SDS附件</span><el-tooltip content="SDS（Safety Data Sheet）即化学品安全技术说明书，是化学品生产商和进口商用来阐明化学品的理化特性、危险性以及对使用者健康可能产生危害的综合性文件" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></template><file-upload v-model="form.sdsAttachment" /></el-form-item>
               <el-form-item label="备注" prop="remark"><el-input v-model="form.remark" type="textarea" :rows="2" placeholder="请输入备注" /></el-form-item>
+            </div>
+          </section>
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('c3')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>SDS关键参数</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c3 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+            <div class="rd-card-body" v-show="!collapsedCards.c3">
+              <el-row :gutter="20">
+                <el-col :span="12"><el-form-item label="闪点(℃)" prop="flashPoint"><el-input v-model="form.flashPoint" placeholder="如：-40" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="爆炸极限(%V/V)" prop="explosionLimit"><el-input v-model="form.explosionLimit" placeholder="如：2.5-12.7" /></el-form-item></el-col>
+              </el-row>
+              <el-form-item label="危险性概述" prop="hazardSummary"><el-input v-model="form.hazardSummary" type="textarea" :rows="2" placeholder="请输入危险性概述" /></el-form-item>
+            </div>
+          </section>
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('c4')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.29 1.51 4.04 3 5.5l7 7Z"/></svg></span>SDS详细信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c4 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+            <div class="rd-card-body" v-show="!collapsedCards.c4">
+              <el-form-item label="理化特性" prop="physicalProperties"><el-input v-model="form.physicalProperties" type="textarea" :rows="2" placeholder="外观、气味、密度、熔沸点等" /></el-form-item>
+              <el-form-item label="急救措施" prop="firstAidMeasures"><el-input v-model="form.firstAidMeasures" type="textarea" :rows="2" placeholder="请输入急救措施" /></el-form-item>
+              <el-form-item label="灭火方法" prop="fireFighting"><el-input v-model="form.fireFighting" type="textarea" :rows="2" placeholder="请输入灭火方法与灭火剂" /></el-form-item>
+              <el-form-item label="泄漏应急处理" prop="leakHandling"><el-input v-model="form.leakHandling" type="textarea" :rows="2" placeholder="请输入泄漏应急处理" /></el-form-item>
+              <el-form-item label="储存注意事项" prop="storagePrecaution"><el-input v-model="form.storagePrecaution" type="textarea" :rows="2" placeholder="请输入储存注意事项" /></el-form-item>
+              <el-form-item label="个人防护(PPE)" prop="exposureControl"><el-input v-model="form.exposureControl" type="textarea" :rows="2" placeholder="请输入接触控制/个人防护装备" /></el-form-item>
+              <el-form-item label="稳定性和反应性" prop="stabilityReactivity"><el-input v-model="form.stabilityReactivity" type="textarea" :rows="2" placeholder="请输入稳定性和反应性" /></el-form-item>
+              <el-form-item label="毒理学信息" prop="toxicologicalInfo"><el-input v-model="form.toxicologicalInfo" type="textarea" :rows="2" placeholder="请输入毒理学信息" /></el-form-item>
+              <el-form-item label="生态学信息" prop="ecologicalInfo"><el-input v-model="form.ecologicalInfo" type="textarea" :rows="2" placeholder="请输入生态学信息" /></el-form-item>
+              <el-form-item label="废弃处置" prop="disposalInfo"><el-input v-model="form.disposalInfo" type="textarea" :rows="2" placeholder="请输入废弃处置" /></el-form-item>
+              <el-form-item label="运输信息" prop="transportInfo"><el-input v-model="form.transportInfo" type="textarea" :rows="2" placeholder="请输入运输信息" /></el-form-item>
             </div>
           </section>
         </div>
@@ -179,11 +245,16 @@
           <div class="rd-card-body" v-show="!collapsedCards.vc2" style="display:block">
             <div class="rd-grid">
               <div class="rd-item rd-item--full"><span class="rd-label">SDS附件</span><div class="rd-value"><div class="rd-file-links" v-if="viewData.sdsAttachment">
-              <div class="rd-file-link" v-for="(url, idx) in String(viewData.sdsAttachment).split(',')" :key="idx">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                <span class="rd-file-name" @click="handleFilePreview(url)">{{ url.includes('/') ? url.substring(url.lastIndexOf('/') + 1) : url }}</span>
-                <a :href="baseUrl + url" target="_blank" class="rd-file-dl">下载</a>
-              </div>
+<div class="rd-file-item" v-for="(url, idx) in String(viewData.sdsAttachment).split(',')" :key="idx">
+<div class="rd-file-link" @click="handleFilePreview(url)">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+<span class="rd-file-name">{{ url.includes('/') ? url.substring(url.lastIndexOf('/') + 1) : url }}</span>
+</div>
+<span class="rd-file-dl" @click="handleFileDownload(url)">
+<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+下载
+</span>
+</div>
             </div></div></div>
               <div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value">{{ viewData.remark || '-' }}</div></div>
             </div>
@@ -197,24 +268,29 @@
 </template>
 
 <script setup name="SafetyMaterial">
-import { listMaterial, getMaterial, addMaterial, updateMaterial, delMaterial } from '@/api/safety/material'
+import { listMaterial, getMaterial, addMaterial, updateMaterial, delMaterial, getStockAlert } from '@/api/safety/material'
+import { listArea } from '@/api/safety/area'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
-import { Search, Filter, RefreshLeft, QuestionFilled } from '@element-plus/icons-vue'
+import { Search, Filter, RefreshLeft, QuestionFilled, ArrowDown, Warning } from '@element-plus/icons-vue'
 import FilePreview from '@/components/FilePreview/index.vue'
+import { downloadFile } from '@/utils/downloadFile'
 
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('safety_archmaterial_index')
-const { collapsedCards, toggleCard } = useDetailCard(["c0","c1","c2","vc0","vc1","vc2"])
+const { collapsedCards, toggleCard } = useDetailCard(["c0","c1","c2","c3","c4","vc0","vc1","vc2","vc3","vc4"])
 const { safety_hazard_class, wms_unit } = proxy.useDict('safety_hazard_class', 'wms_unit')
 
 const materialList = ref([])
+const areaOptions = ref([])
+const stockAlertIds = ref([])
 const baseUrl = import.meta.env.VITE_APP_BASE_API
 const open = ref(false)
 const viewOpen = ref(false)
 const viewData = ref({})
 const loading = ref(true)
 const showSearch = ref(true)
+const showAdvanced = ref(false)
 const ids = ref([])
 const single = ref(true)
 const multiple = ref(true)
@@ -252,7 +328,7 @@ const columns = ref(loadColumnVisibility())
 
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, materialCode: undefined, materialName: undefined, hazardClass: undefined, params: {} },
+  queryParams: { pageNum: 1, pageSize: 10, materialCode: undefined, materialName: undefined, hazardClass: undefined, casNo: undefined, toxicFlag: undefined, status: undefined, params: {} },
   rules: { materialName: [{ required: true, message: '危化品名称不能为空', trigger: 'blur' }] }
 })
 const { queryParams, form, rules } = toRefs(data)
@@ -262,22 +338,33 @@ const activeFilterCount = computed(() => {
   if (queryParams.value.materialCode) count++
   if (queryParams.value.materialName) count++
   if (queryParams.value.hazardClass) count++
+  if (queryParams.value.casNo) count++
+  if (queryParams.value.toxicFlag) count++
+  if (queryParams.value.status) count++
   return count
 })
 
 function handleFilePreview(url) {
-  const name = url.includes('/') ? url.substring(url.lastIndexOf('/') + 1) : url
-  proxy.$refs.filePreviewRef.open(url, name)
+const name = url.includes('/') ? url.substring(url.lastIndexOf('/') + 1) : url
+proxy.$refs.filePreviewRef.open(url, name)
+}
+function handleFileDownload(url) {
+downloadFile(url)
 }
 
-function getList() { loading.value = true; listMaterial(queryParams.value).then(response => { materialList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths() }) }
-function handleQuery() { queryParams.value.pageNum = 1; getList() }
-function resetQuery() { queryParams.value.materialCode = undefined; queryParams.value.materialName = undefined; queryParams.value.hazardClass = undefined; queryParams.value.params = {}; handleQuery() }
+function getList() { loading.value = true; listMaterial(queryParams.value).then(response => { materialList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths(); loadStockAlerts() }) }
+function loadStockAlerts() { getStockAlert().then(response => { stockAlertIds.value = (response.data || []).map(m => m.materialId) }) }
+function isStockAlert(row) { return stockAlertIds.value.includes(row.materialId) }
+function getAreaTree() { listArea({ pageNum: 1, pageSize: 9999 }).then(response => { areaOptions.value = proxy.handleTree(response.rows, 'areaId') }) }
+function onAreaChange(areaId) { const node = findAreaNode(areaOptions.value, areaId); form.value.storageAreaName = node ? node.areaName : undefined }
+function findAreaNode(nodes, id) { for (const n of nodes) { if (n.areaId === id) return n; if (n.children && n.children.length) { const found = findAreaNode(n.children, id); if (found) return found } } return null }
+function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
+function resetQuery() { queryParams.value.materialCode = undefined; queryParams.value.materialName = undefined; queryParams.value.hazardClass = undefined; queryParams.value.casNo = undefined; queryParams.value.toxicFlag = undefined; queryParams.value.status = undefined; queryParams.value.params = {}; handleQuery() }
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleSelectionChange(selection) { ids.value = selection.map(item => item.materialId); single.value = selection.length !== 1; multiple.value = !selection.length }
-function handleAdd() { reset(); collapsedCards.c0 = false; collapsedCards.c1 = false; collapsedCards.c2 = false; open.value = true; title.value = '添加危化品' }
+function handleAdd() { reset(); collapsedCards.c0 = false; collapsedCards.c1 = false; collapsedCards.c2 = false; collapsedCards.c3 = false; collapsedCards.c4 = false; open.value = true; title.value = '添加危化品' }
 function handleView(row) { const materialId = row.materialId || ids.value[0]; getMaterial(materialId).then(response => { viewData.value = response.data; viewOpen.value = true }) }
-function handleUpdate(row) { reset(); getMaterial(row.materialId || ids.value[0]).then(response => { form.value = response.data; collapsedCards.c1 = !response.data.maxStorage && !response.data.storageAreaName; collapsedCards.c2 = !response.data.sdsAttachment && !response.data.remark; open.value = true; title.value = '修改危化品' }) }
+function handleUpdate(row) { reset(); getMaterial(row.materialId || ids.value[0]).then(response => { form.value = response.data; collapsedCards.c1 = !response.data.maxStorage && !response.data.storageAreaName; collapsedCards.c2 = !response.data.sdsAttachment && !response.data.remark; collapsedCards.c3 = !response.data.flashPoint && !response.data.hazardSummary; collapsedCards.c4 = !response.data.physicalProperties && !response.data.firstAidMeasures; open.value = true; title.value = '修改危化品' }) }
 function submitForm() {
   proxy.$refs['materialRef'].validate(valid => {
     if (valid) {
@@ -287,9 +374,10 @@ function submitForm() {
   })
 }
 function handleDelete(row) { const materialIds = row.materialId || ids.value; proxy.$modal.confirm('是否确认删除危化品？').then(function() { return delMaterial(materialIds) }).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleExport() { proxy.download('safety/material/export', { ...queryParams.value }, `material_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 function reset() {
-  form.value = { materialId: undefined, materialCode: undefined, materialName: undefined, hazardClass: undefined, casNo: undefined, maxStorage: undefined, storageUnit: undefined, storageAreaName: undefined, sdsAttachment: undefined, toxicFlag: '0', currentStock: undefined, remark: undefined }
+  form.value = { materialId: undefined, materialCode: undefined, materialName: undefined, hazardClass: undefined, casNo: undefined, maxStorage: undefined, storageUnit: undefined, storageAreaId: undefined, storageAreaName: undefined, sdsAttachment: undefined, toxicFlag: '0', currentStock: undefined, safetyStockMin: undefined, safetyStockMax: undefined, flashPoint: undefined, explosionLimit: undefined, physicalProperties: undefined, hazardSummary: undefined, firstAidMeasures: undefined, fireFighting: undefined, leakHandling: undefined, storagePrecaution: undefined, exposureControl: undefined, stabilityReactivity: undefined, toxicologicalInfo: undefined, ecologicalInfo: undefined, disposalInfo: undefined, transportInfo: undefined, remark: undefined }
   proxy.resetForm('materialRef')
 }
 
@@ -302,6 +390,7 @@ function hazardClassBadgeClass(value) {
   return map[tagType] || 'gray'
 }
 
+getAreaTree()
 getList()
 </script>
 
@@ -312,6 +401,10 @@ getList()
 .safety-archmaterial-page .filter-card .filter-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
 .safety-archmaterial-page .filter-card .filter-title { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--ink-700); }
 .safety-archmaterial-page .filter-card .filter-title .glyph { width:4px; height:14px; background:var(--brand-600); border-radius:2px; }
+.safety-archmaterial-page .filter-card .adv-link { font-size:14px; color:var(--ink-500); text-decoration:none; display:flex; align-items:center; gap:4px; transition:color .15s; cursor:pointer; }
+.safety-archmaterial-page .filter-card .adv-link:hover { color:var(--brand-600); }
+.safety-archmaterial-page .filter-card .adv-link .chev { transition:transform .2s var(--ease-out); }
+.safety-archmaterial-page .filter-card .adv-link.is-open .chev { transform:rotate(180deg); }
 .safety-archmaterial-page .filter-card .filter-bar { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px 16px; }
 .safety-archmaterial-page .filter-card .filter-actions { display:flex; align-items:center; justify-content:space-between; margin-top:14px; padding-top:14px; border-top:1px dashed var(--ink-200); }
 .safety-archmaterial-page .filter-card .filter-info { font-size:13px; color:var(--ink-500); display:flex; align-items:center; gap:6px; }

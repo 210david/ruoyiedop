@@ -1,4 +1,7 @@
-package com.ruoyi.dms.service.impl;
+package com.ruoyi.dms.service.impl;
+import java.util.HashMap;
+import java.util.Map;
+
 
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
@@ -54,7 +57,9 @@ public class DmsSparePartServiceImpl implements IDmsSparePartService
         sparePart.setDelFlag("0");
         if (StringUtils.isEmpty(sparePart.getPartCode()))
         {
-            sparePart.setPartCode(mkNumberRuleService.generateNumber("dms_spare_part"));
+            Map<String, String> params = new HashMap<>();
+        if (StringUtils.isNotEmpty(sparePart.getPartType())) { params.put("partType", sparePart.getPartType()); }
+        sparePart.setPartCode(mkNumberRuleService.generateNumber("dms_spare_part", params));
         }
         return dmsSparePartMapper.insertSparePart(sparePart);
     }

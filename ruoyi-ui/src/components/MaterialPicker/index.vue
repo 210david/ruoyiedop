@@ -43,7 +43,9 @@
           <el-table-column label="物料编码" prop="materialCode" width="140" show-overflow-tooltip />
           <el-table-column label="物料名称" prop="materialName" min-width="180" show-overflow-tooltip />
           <el-table-column label="规格型号" prop="specModel" width="140" show-overflow-tooltip />
-          <el-table-column label="单位" prop="unit" width="70" align="center" />
+          <el-table-column label="单位" prop="unit" width="70" align="center">
+            <template #default="scope"><span class="badge blue">{{ unitLabel(scope.row.unit) }}</span></template>
+          </el-table-column>
         </el-table>
       </div>
 
@@ -68,6 +70,9 @@
 
 <script setup>
 import { listMaterial } from '@/api/wms/material'
+
+const { proxy } = getCurrentInstance()
+const { wms_unit } = proxy.useDict('wms_unit')
 
 const props = defineProps({
   title: {
@@ -165,6 +170,12 @@ function open(currentMaterialId) {
   if (currentMaterialId) {
     selectedId.value = currentMaterialId
   }
+}
+
+/** 单位标签 */
+function unitLabel(unit) {
+  const item = wms_unit.value.find(d => d.value == unit)
+  return item ? item.label : '-'
 }
 
 defineExpose({ open })

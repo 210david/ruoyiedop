@@ -1,6 +1,7 @@
 package com.ruoyi.qms.service;
 
 import java.util.List;
+import java.util.Map;
 import com.ruoyi.qms.domain.QmsInspTask;
 
 /**
@@ -29,4 +30,16 @@ public interface IQmsInspTaskService
 
     /** 获取检验报告数据（含明细、电子签名） */
     public QmsInspTask getReportData(Long taskId);
+
+    /** 开始检验：待检(0) → 检验中(1) */
+    public int startInspect(Long taskId);
+
+    /** 作废检验任务 */
+    public int voidTask(Long taskId, String reason, String voidType);
+
+    /** 批量分配检验员 */
+    public int assignInspector(Long[] taskIds, Long inspectorId, String inspectorName);
+
+    /** 查询各状态任务数量（状态标签栏计数） */
+    public Map<String, Integer> selectStatusCounts();
 }

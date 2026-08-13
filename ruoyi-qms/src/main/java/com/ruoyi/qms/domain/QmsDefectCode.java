@@ -1,5 +1,6 @@
 package com.ruoyi.qms.domain;
 
+import jakarta.validation.constraints.NotBlank;
 import com.ruoyi.common.annotation.Excel;
 import com.ruoyi.common.core.domain.BaseEntity;
 
@@ -16,6 +17,7 @@ public class QmsDefectCode extends BaseEntity
     private Long defectId;
 
     /** 缺陷代码 */
+    @NotBlank(message = "缺陷代码不能为空")
     @Excel(name = "缺陷代码")
     private String defectCode;
 
@@ -28,6 +30,7 @@ public class QmsDefectCode extends BaseEntity
     private String defectLevel;
 
     /** 缺陷分类 */
+    @NotBlank(message = "缺陷分类不能为空")
     @Excel(name = "缺陷分类")
     private String defectCategory;
 

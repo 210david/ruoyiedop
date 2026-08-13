@@ -1,8 +1,9 @@
 package com.ruoyi.qms.util;
 
 import java.math.BigDecimal;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * AQL抽样计算工具（GB/T 2828.1）
@@ -12,10 +13,10 @@ import java.util.Map;
  */
 public class AqlCalculator
 {
-    /** 样本量字码对应样本量 */
-    private static final Map<String, Integer> SAMPLE_SIZE_MAP = new HashMap<>();
-    /** AQL → (字码 → Ac/Re) 二维表 */
-    private static final Map<String, Map<String, int[]>> AQL_TABLE = new HashMap<>();
+    /** 样本量字码对应样本量（使用 LinkedHashMap 保持插入顺序） */
+    private static final Map<String, Integer> SAMPLE_SIZE_MAP = new LinkedHashMap<>();
+    /** AQL → (字码 → Ac/Re) 二维表，内层使用 TreeMap 保证字码按字母序遍历（即样本量升序） */
+    private static final Map<String, Map<String, int[]>> AQL_TABLE = new LinkedHashMap<>();
 
     static
     {
@@ -37,8 +38,8 @@ public class AqlCalculator
         SAMPLE_SIZE_MAP.put("Q", 1250);
         SAMPLE_SIZE_MAP.put("R", 2000);
 
-        // AQL 0.65
-        Map<String, int[]> aql065 = new HashMap<>();
+        // AQL 0.65（TreeMap 保证字码按字母序遍历 = 样本量升序）
+        Map<String, int[]> aql065 = new TreeMap<>();
         aql065.put("G", new int[]{0, 1});
         aql065.put("H", new int[]{1, 2});
         aql065.put("J", new int[]{1, 2});
@@ -52,7 +53,7 @@ public class AqlCalculator
         AQL_TABLE.put("0.65", aql065);
 
         // AQL 1.0
-        Map<String, int[]> aql10 = new HashMap<>();
+        Map<String, int[]> aql10 = new TreeMap<>();
         aql10.put("G", new int[]{1, 2});
         aql10.put("H", new int[]{1, 2});
         aql10.put("J", new int[]{2, 3});
@@ -65,7 +66,7 @@ public class AqlCalculator
         AQL_TABLE.put("1.0", aql10);
 
         // AQL 1.5
-        Map<String, int[]> aql15 = new HashMap<>();
+        Map<String, int[]> aql15 = new TreeMap<>();
         aql15.put("F", new int[]{0, 1});
         aql15.put("G", new int[]{1, 2});
         aql15.put("H", new int[]{2, 3});
@@ -78,7 +79,7 @@ public class AqlCalculator
         AQL_TABLE.put("1.5", aql15);
 
         // AQL 2.5
-        Map<String, int[]> aql25 = new HashMap<>();
+        Map<String, int[]> aql25 = new TreeMap<>();
         aql25.put("E", new int[]{0, 1});
         aql25.put("F", new int[]{1, 2});
         aql25.put("G", new int[]{2, 3});
@@ -91,10 +92,11 @@ public class AqlCalculator
         AQL_TABLE.put("2.5", aql25);
 
         // AQL 4.0
-        Map<String, int[]> aql40 = new HashMap<>();
-        aql40.put("E", new int[]{0, 1});
-        aql40.put("F", new int[]{1, 2});
-        aql40.put("G", new int[]{2, 3});
+        Map<String, int[]> aql40 = new TreeMap<>();
+        aql40.put("D", new int[]{0, 1});
+        aql40.put("E", new int[]{1, 2});
+        aql40.put("F", new int[]{2, 3});
+        aql40.put("G", new int[]{3, 4});
         aql40.put("H", new int[]{5, 6});
         aql40.put("J", new int[]{7, 8});
         aql40.put("K", new int[]{10, 11});
@@ -104,27 +106,26 @@ public class AqlCalculator
     }
 
     /**
-     * 根据批量确定样本量字码（正常检验）
+     * 根据批量确定样本量字码（GB/T 2828.1 表1 — 一般检验水平 II，默认）
      */
     public static String getCodeLetter(BigDecimal batchQty)
     {
         int qty = batchQty.intValue();
-        if (qty <= 2) return "A";
-        if (qty <= 8) return "B";
-        if (qty <= 15) return "C";
-        if (qty <= 25) return "D";
-        if (qty <= 50) return "E";
-        if (qty <= 90) return "F";
-        if (qty <= 150) return "G";
-        if (qty <= 280) return "H";
-        if (qty <= 500) return "J";
-        if (qty <= 1200) return "K";
-        if (qty <= 3200) return "L";
-        if (qty <= 10000) return "M";
-        if (qty <= 35000) return "N";
-        if (qty <= 150000) return "P";
-        if (qty <= 500000) return "Q";
-        return "R";
+        if (qty <= 8) return "A";
+        if (qty <= 15) return "B";
+        if (qty <= 25) return "C";
+        if (qty <= 50) return "D";
+        if (qty <= 90) return "E";
+        if (qty <= 150) return "F";
+        if (qty <= 280) return "G";
+        if (qty <= 500) return "H";
+        if (qty <= 1200) return "J";
+        if (qty <= 3200) return "K";
+        if (qty <= 10000) return "L";
+        if (qty <= 35000) return "M";
+        if (qty <= 150000) return "N";
+        if (qty <= 500000) return "P";
+        return "Q";
     }
 
     /**
@@ -150,7 +151,8 @@ public class AqlCalculator
         int[] acRe = levelTable.get(codeLetter);
         if (acRe == null)
         {
-            // 该字码下无对应Ac/Re，向下查找到最近可用字码
+            // 先尝试向下查找（↓ 箭头）：找第一个 sampleSize >= n 的条目
+            // TreeMap 保证 entrySet 按字码字母序遍历（= 样本量升序）
             for (Map.Entry<String, int[]> entry : levelTable.entrySet())
             {
                 if (SAMPLE_SIZE_MAP.getOrDefault(entry.getKey(), 0) >= n)
@@ -160,12 +162,34 @@ public class AqlCalculator
                     break;
                 }
             }
+            // 向下查找未命中时，向上查找（↑ 箭头）：使用表中样本量最大的条目
+            if (acRe == null)
+            {
+                for (Map.Entry<String, int[]> entry : levelTable.entrySet())
+                {
+                    acRe = entry.getValue();
+                    n = SAMPLE_SIZE_MAP.get(entry.getKey());
+                }
+            }
         }
+        int ac, re;
         if (acRe == null)
         {
-            return new int[]{n, 0, 1};
+            ac = 0;
+            re = 1;
         }
-        return new int[]{n, acRe[0], acRe[1]};
+        else
+        {
+            ac = acRe[0];
+            re = acRe[1];
+        }
+        // GB/T 2828.1: 当样本量 ≥ 批量时，执行100%检验（n = 批量）
+        int batchN = batchQty.intValue();
+        if (n >= batchN)
+        {
+            n = batchN;
+        }
+        return new int[]{n, ac, re};
     }
 
     /**

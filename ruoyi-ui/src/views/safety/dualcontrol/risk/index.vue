@@ -4,6 +4,10 @@
     <div class="surface filter-card" v-show="showSearch">
       <div class="filter-head">
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+        <a class="adv-link" :class="{ 'is-open': showAdvanced }" @click.prevent="showAdvanced = !showAdvanced">
+          <span>{{ showAdvanced ? '收起' : '高级筛选' }}</span>
+          <el-icon class="chev"><ArrowDown /></el-icon>
+        </a>
       </div>
       <div class="filter-bar">
         <div class="field">
@@ -33,6 +37,23 @@
           <div class="control is-select">
             <el-select v-model="queryParams.controlLevel" placeholder="全部" clearable @change="handleQuery">
               <el-option v-for="dict in safety_control_level" :key="dict.value" :label="dict.label" :value="dict.value" />
+            </el-select>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>事故类别</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.accidentType" placeholder="全部" clearable @change="handleQuery">
+              <el-option v-for="dict in safety_accident_type" :key="dict.value" :label="dict.label" :value="dict.value" />
+            </el-select>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>状态</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
+              <el-option label="正常" value="0" />
+              <el-option label="停用" value="1" />
             </el-select>
           </div>
         </div>
@@ -100,6 +121,11 @@
           </el-table-column>
           <el-table-column label="责任人" prop="personName" key="personName" :width="colWidth('personName', 100)" resizable v-if="columns.personName.visible" />
           <el-table-column label="复评日期" prop="reEvaluateDate" key="reEvaluateDate" :width="colWidth('reEvaluateDate', 120)" resizable align="center" v-if="columns.reEvaluateDate.visible" />
+          <el-table-column label="重大隐患" prop="isMajorHazard" key="isMajorHazard" :width="colWidth('isMajorHazard', 90)" resizable align="center" v-if="columns.isMajorHazard.visible">
+            <template #default="scope">
+              <span class="badge" :class="scope.row.isMajorHazard === '1' ? 'red' : 'gray'"><span class="dot"></span>{{ scope.row.isMajorHazard === '1' ? '是' : '否' }}</span>
+            </template>
+          </el-table-column>
           <el-table-column label="操作" width="240" align="center" fixed="right">
             <template #default="scope">
               <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['safety:risk:query']">查看</el-button>
@@ -113,14 +139,14 @@
       <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
     </div>
 
-    <el-dialog v-model="open" width="900px" append-to-body draggable class="rd-dialog">
+    <el-dialog v-model="open" width="1080px" append-to-body draggable class="rd-dialog">
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
           <span class="rd-detail-header-title">{{ title }}</span>
         </div>
       </template>
-      <el-form ref="riskRef" :model="form" :rules="rules" label-width="100px">
+      <el-form ref="riskRef" :model="form" :rules="rules" label-width="110px">
         <div class="rd-page">
           <section class="rd-card">
             <div class="rd-card-header" @click="toggleCard('c0')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></span>基本信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c0 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
@@ -186,6 +212,11 @@
                 <el-col :span="8"><el-form-item prop="evaluateDate"><template #label><span>评价日期</span><el-tooltip content="LEC风险评价的执行日期，修改L/E/C值时自动更新为当天" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></template><el-date-picker v-model="form.evaluateDate" type="date" placeholder="选择日期" value-format="YYYY-MM-DD" style="width: 100%" @change="calcReEvaluateDate" /></el-form-item></el-col>
                 <el-col :span="8"><el-form-item prop="reEvaluateDate"><template #label><span>复评日期</span><el-tooltip content="根据风险等级自动计算：红橙级（重大/较大风险）为评价日期+1年，黄蓝级（一般/低风险）为评价日期+3年" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></template><el-date-picker v-model="form.reEvaluateDate" type="date" placeholder="自动计算" value-format="YYYY-MM-DD" style="width: 100%" disabled /></el-form-item></el-col>
               </el-row>
+              <el-row :gutter="20">
+                <el-col :span="12"><el-form-item prop="isMajorHazard"><template #label><span>是否重大隐患</span><el-tooltip content="标识该风险点是否可能构成重大生产安全事故隐患。选「是」时，重大隐患规则为必填项" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></template><el-radio-group v-model="form.isMajorHazard" @change="onMajorHazardChange"><el-radio value="0">否</el-radio><el-radio value="1">是</el-radio></el-radio-group></el-form-item></el-col>
+                <el-col :span="12"><el-form-item prop="complianceFile"><template #label><span>合规文件</span><el-tooltip content="该风险点对应的安全生产法规、国家标准或企业内部规范的引用或链接，如：GB 18218-2018 危险化学品重大危险源辨识" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></template><el-input v-model="form.complianceFile" placeholder="请输入合规文件链接" /></el-form-item></el-col>
+              </el-row>
+              <el-form-item prop="majorHazardRule"><template #label><span>重大隐患规则</span><el-tooltip content="描述该风险点被判定为重大隐患的具体条件/情形。仅在「是否重大隐患」选「是」时必填" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></template><el-input v-model="form.majorHazardRule" type="textarea" :rows="2" :placeholder="form.isMajorHazard === '1' ? '请输入重大隐患判定规则（必填）' : '请输入重大隐患判定规则'" /></el-form-item>
             </div>
           </section>
           <section class="rd-card">
@@ -200,7 +231,7 @@
     </el-dialog>
 
     <!-- ===== 查看详情弹窗 ===== -->
-    <el-dialog v-model="viewOpen" width="900px" append-to-body draggable class="rd-dialog">
+    <el-dialog v-model="viewOpen" width="1080px" append-to-body draggable class="rd-dialog">
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
@@ -246,7 +277,7 @@
             </div>
           </div>
         </section>
-        <section class="rd-card" v-if="viewData.checkFrequency || viewData.personName || viewData.checkStandard || viewData.evaluateDate">
+        <section class="rd-card" v-if="viewData.checkFrequency || viewData.personName || viewData.checkStandard || viewData.evaluateDate || viewData.isMajorHazard || viewData.majorHazardRule || viewData.complianceFile">
           <div class="rd-card-header" @click="toggleCard('vc3')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>排查信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc3 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
           <div class="rd-card-body" v-show="!collapsedCards.vc3" style="display:block">
             <div class="rd-grid">
@@ -255,6 +286,9 @@
               <div class="rd-item rd-item--full" v-if="viewData.checkStandard"><span class="rd-label">检查标准</span><div class="rd-value">{{ viewData.checkStandard }}</div></div>
               <div class="rd-item"><span class="rd-label">评价日期<el-tooltip content="LEC风险评价的执行日期，修改L/E/C值时自动更新为当天" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></span><div class="rd-value">{{ viewData.evaluateDate || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">复评日期<el-tooltip content="根据风险等级自动计算：红橙级（重大/较大风险）为评价日期+1年，黄蓝级（一般/低风险）为评价日期+3年" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></span><div class="rd-value">{{ viewData.reEvaluateDate || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">是否重大隐患</span><div class="rd-value"><span class="badge" :class="viewData.isMajorHazard === '1' ? 'red' : 'gray'"><span class="dot"></span>{{ viewData.isMajorHazard === '1' ? '是' : '否' }}</span></div></div>
+              <div class="rd-item rd-item--full"><span class="rd-label">重大隐患规则</span><div class="rd-value">{{ viewData.majorHazardRule || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">合规文件</span><div class="rd-value">{{ viewData.complianceFile || '-' }}</div></div>
             </div>
           </div>
         </section>
@@ -281,7 +315,7 @@ import { listArea } from '@/api/safety/area'
 import UserPicker from '@/components/UserPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
-import { Search, Filter, RefreshLeft, CircleClose, QuestionFilled } from '@element-plus/icons-vue'
+import { Search, Filter, RefreshLeft, CircleClose, QuestionFilled, ArrowDown } from '@element-plus/icons-vue'
 
 const { proxy } = getCurrentInstance()
 const { safety_risk_level, safety_control_level, safety_check_frequency, safety_accident_type } = proxy.useDict('safety_risk_level', 'safety_control_level', 'safety_check_frequency', 'safety_accident_type')
@@ -295,6 +329,7 @@ const viewOpen = ref(false)
 const viewData = ref({})
 const loading = ref(true)
 const showSearch = ref(true)
+const showAdvanced = ref(false)
 const ids = ref([])
 const single = ref(true)
 const multiple = ref(true)
@@ -313,7 +348,8 @@ const defaultColumns = {
   riskLevel: { label: '风险等级', visible: true },
   controlLevel: { label: '管控层级', visible: true },
   personName: { label: '责任人', visible: true },
-  reEvaluateDate: { label: '复评日期', visible: true }
+  reEvaluateDate: { label: '复评日期', visible: true },
+  isMajorHazard: { label: '重大隐患', visible: true }
 }
 
 function loadColumnVisibility() {
@@ -335,7 +371,7 @@ const columns = ref(loadColumnVisibility())
 
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, riskName: undefined, riskCode: undefined, riskLevel: undefined, controlLevel: undefined, params: {} },
+  queryParams: { pageNum: 1, pageSize: 10, riskName: undefined, riskCode: undefined, riskLevel: undefined, controlLevel: undefined, accidentType: undefined, status: undefined, params: {} },
   rules: {
     riskName: [{ required: true, message: '风险点名称不能为空', trigger: 'blur' }],
     hazardDesc: [{ required: true, message: '危险源描述不能为空', trigger: 'blur' }],
@@ -349,23 +385,37 @@ const data = reactive({
 })
 const { queryParams, form, rules } = toRefs(data)
 
+// 重大隐患规则动态校验：是否重大隐患选「是」时必填
+rules.value.majorHazardRule = [{
+  validator: (rule, value, callback) => {
+    if (form.value.isMajorHazard === '1' && (!value || value.trim() === '')) {
+      callback(new Error('是否重大隐患选「是」时，重大隐患规则不能为空'))
+    } else {
+      callback()
+    }
+  },
+  trigger: 'blur'
+}]
+
 const activeFilterCount = computed(() => {
   let count = 0
   if (queryParams.value.riskName) count++
   if (queryParams.value.riskCode) count++
   if (queryParams.value.riskLevel) count++
   if (queryParams.value.controlLevel) count++
+  if (queryParams.value.accidentType) count++
+  if (queryParams.value.status) count++
   return count
 })
 
 function getList() { loading.value = true; listRiskPoint(queryParams.value).then(response => { riskList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths() }) }
-function handleQuery() { queryParams.value.pageNum = 1; getList() }
-function resetQuery() { queryParams.value.riskName = undefined; queryParams.value.riskCode = undefined; queryParams.value.riskLevel = undefined; queryParams.value.controlLevel = undefined; queryParams.value.params = {}; handleQuery() }
+function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
+function resetQuery() { queryParams.value.riskName = undefined; queryParams.value.riskCode = undefined; queryParams.value.riskLevel = undefined; queryParams.value.controlLevel = undefined; queryParams.value.accidentType = undefined; queryParams.value.status = undefined; queryParams.value.params = {}; handleQuery() }
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleSelectionChange(selection) { ids.value = selection.map(item => item.riskPointId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function handleAdd() { reset(); collapsedCards.c0 = false; collapsedCards.c1 = false; collapsedCards.c2 = false; collapsedCards.c3 = false; collapsedCards.c4 = false; const today = new Date(); const y = today.getFullYear(); const m = String(today.getMonth() + 1).padStart(2, '0'); const d = String(today.getDate()).padStart(2, '0'); form.value.evaluateDate = `${y}-${m}-${d}`; open.value = true; title.value = '添加风险点' }
 function handleView(row) { const riskPointId = row.riskPointId || ids.value[0]; getRiskPoint(riskPointId).then(response => { viewData.value = response.data; viewOpen.value = true }) }
-function handleUpdate(row) { reset(); getRiskPoint(row.riskPointId || ids.value[0]).then(response => { form.value = response.data; collapsedCards.c2 = !response.data.measureEngine && !response.data.measureManage && !response.data.measureTraining && !response.data.measurePpe && !response.data.measureEmergency; collapsedCards.c3 = !response.data.checkFrequency && !response.data.personName && !response.data.checkStandard && !response.data.evaluateDate; collapsedCards.c4 = !response.data.remark; open.value = true; title.value = '修改风险点' }) }
+function handleUpdate(row) { reset(); getRiskPoint(row.riskPointId || ids.value[0]).then(response => { form.value = response.data; collapsedCards.c2 = !response.data.measureEngine && !response.data.measureManage && !response.data.measureTraining && !response.data.measurePpe && !response.data.measureEmergency; collapsedCards.c3 = !response.data.checkFrequency && !response.data.personName && !response.data.checkStandard && !response.data.evaluateDate && response.data.isMajorHazard !== '1' && !response.data.majorHazardRule && !response.data.complianceFile; collapsedCards.c4 = !response.data.remark; open.value = true; title.value = '修改风险点' }) }
 
 function calcD() {
   const l = parseFloat(form.value.lValue) || 0
@@ -405,6 +455,14 @@ function calcReEvaluateDate() {
   form.value.reEvaluateDate = `${y}-${m}-${day}`
 }
 
+/** 是否重大隐患变更联动：选「否」时清空规则，并触发校验 */
+function onMajorHazardChange(val) {
+  if (val === '0') {
+    form.value.majorHazardRule = undefined
+  }
+  proxy.$refs['riskRef']?.validateField('majorHazardRule')
+}
+
 function submitForm() {
   proxy.$refs['riskRef'].validate(valid => {
     if (valid) {
@@ -417,7 +475,7 @@ function handleDelete(row) { const riskPointIds = row.riskPointId || ids.value; 
 function handleExport() { proxy.download('safety/risk/export', { ...queryParams.value }, `risk_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 function reset() {
-  form.value = { riskPointId: undefined, riskCode: undefined, riskName: undefined, areaId: undefined, areaName: undefined, hazardDesc: undefined, accidentType: undefined, lValue: undefined, eValue: undefined, cValue: undefined, dValue: undefined, riskLevel: undefined, controlLevel: undefined, measureEngine: undefined, measureManage: undefined, measureTraining: undefined, measurePpe: undefined, measureEmergency: undefined, checkStandard: undefined, checkFrequency: undefined, personId: undefined, personName: undefined, evaluateDate: undefined, reEvaluateDate: undefined, remark: undefined }
+  form.value = { riskPointId: undefined, riskCode: undefined, riskName: undefined, areaId: undefined, areaName: undefined, hazardDesc: undefined, accidentType: undefined, lValue: undefined, eValue: undefined, cValue: undefined, dValue: undefined, riskLevel: undefined, controlLevel: undefined, measureEngine: undefined, measureManage: undefined, measureTraining: undefined, measurePpe: undefined, measureEmergency: undefined, checkStandard: undefined, checkFrequency: undefined, isMajorHazard: '0', majorHazardRule: undefined, complianceFile: undefined, personId: undefined, personName: undefined, evaluateDate: undefined, reEvaluateDate: undefined, remark: undefined }
   proxy.resetForm('riskRef')
 }
 /** 打开责任人选择弹窗 */
@@ -448,6 +506,10 @@ getList()
 .safety-risk-page .filter-card .filter-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
 .safety-risk-page .filter-card .filter-title { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--ink-700); }
 .safety-risk-page .filter-card .filter-title .glyph { width:4px; height:14px; background:var(--brand-600); border-radius:2px; }
+.safety-risk-page .filter-card .adv-link { font-size:14px; color:var(--ink-500); text-decoration:none; display:flex; align-items:center; gap:4px; transition:color .15s; cursor:pointer; }
+.safety-risk-page .filter-card .adv-link:hover { color:var(--brand-600); }
+.safety-risk-page .filter-card .adv-link .chev { transition:transform .2s var(--ease-out); }
+.safety-risk-page .filter-card .adv-link.is-open .chev { transform:rotate(180deg); }
 .safety-risk-page .filter-card .filter-bar { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px 16px; }
 .safety-risk-page .filter-card .filter-actions { display:flex; align-items:center; justify-content:space-between; margin-top:14px; padding-top:14px; border-top:1px dashed var(--ink-200); }
 .safety-risk-page .filter-card .filter-info { font-size:13px; color:var(--ink-500); display:flex; align-items:center; gap:6px; }

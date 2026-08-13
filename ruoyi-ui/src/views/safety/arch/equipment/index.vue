@@ -4,6 +4,10 @@
     <div class="surface filter-card" v-show="showSearch">
       <div class="filter-head">
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+        <a class="adv-link" :class="{ 'is-open': showAdvanced }" @click.prevent="showAdvanced = !showAdvanced">
+          <span>{{ showAdvanced ? '收起' : '高级筛选' }}</span>
+          <el-icon class="chev"><ArrowDown /></el-icon>
+        </a>
       </div>
       <div class="filter-bar">
         <div class="field">
@@ -28,6 +32,29 @@
             </el-select>
           </div>
         </div>
+        <div class="field" v-show="showAdvanced">
+          <label>特种子类</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.specialSubType" placeholder="全部" clearable @change="handleQuery">
+              <el-option v-for="dict in safety_special_equipment" :key="dict.value" :label="dict.label" :value="dict.value" />
+            </el-select>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>状态</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
+              <el-option label="正常" value="0" />
+              <el-option label="停用" value="1" />
+            </el-select>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>创建时间</label>
+          <div class="control">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
+          </div>
+        </div>
       </div>
       <div class="filter-actions">
         <div class="filter-info">
@@ -46,6 +73,8 @@
         <div class="left">
           <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['safety:equipment:add']">新增</el-button>
           <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['safety:equipment:remove']">删除</el-button>
+          <div class="toolbar-divider"></div>
+          <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['safety:equipment:export']">导出</el-button>
         </div>
         <div class="right">
           <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="safety_equipment_columns" />
@@ -195,7 +224,7 @@ import { listArea } from '@/api/safety/area'
 import UserPicker from '@/components/UserPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
-import { Search, Filter, RefreshLeft, CircleClose } from '@element-plus/icons-vue'
+import { Search, Filter, RefreshLeft, CircleClose, ArrowDown } from '@element-plus/icons-vue'
 
 const { proxy } = getCurrentInstance()
 const { safety_equipment_category, safety_special_equipment } = proxy.useDict('safety_equipment_category', 'safety_special_equipment')
@@ -209,6 +238,8 @@ const viewOpen = ref(false)
 const viewData = ref({})
 const loading = ref(true)
 const showSearch = ref(true)
+const showAdvanced = ref(false)
+const dateRange = ref([])
 const ids = ref([])
 const single = ref(true)
 const multiple = ref(true)
@@ -246,7 +277,7 @@ const columns = ref(loadColumnVisibility())
 
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, equipmentName: undefined, equipmentCode: undefined, equipmentCategory: undefined, params: {} },
+  queryParams: { pageNum: 1, pageSize: 10, equipmentName: undefined, equipmentCode: undefined, equipmentCategory: undefined, specialSubType: undefined, status: undefined, params: {} },
   rules: {
     equipmentName: [{ required: true, message: '设备名称不能为空', trigger: 'blur' }],
     equipmentCategory: [{ required: true, message: '设备类别不能为空', trigger: 'change' }]
@@ -259,12 +290,15 @@ const activeFilterCount = computed(() => {
   if (queryParams.value.equipmentName) count++
   if (queryParams.value.equipmentCode) count++
   if (queryParams.value.equipmentCategory) count++
+  if (queryParams.value.specialSubType) count++
+  if (queryParams.value.status) count++
+  if (dateRange.value && dateRange.value.length > 0) count++
   return count
 })
 
 function getList() { loading.value = true; listEquipment(queryParams.value).then(response => { equipmentList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths() }) }
-function handleQuery() { queryParams.value.pageNum = 1; getList() }
-function resetQuery() { queryParams.value.equipmentName = undefined; queryParams.value.equipmentCode = undefined; queryParams.value.equipmentCategory = undefined; queryParams.value.params = {}; handleQuery() }
+function handleQuery() { showAdvanced.value = false; proxy.addDateRange(queryParams.value, dateRange.value); queryParams.value.pageNum = 1; getList() }
+function resetQuery() { queryParams.value.equipmentName = undefined; queryParams.value.equipmentCode = undefined; queryParams.value.equipmentCategory = undefined; queryParams.value.specialSubType = undefined; queryParams.value.status = undefined; dateRange.value = []; queryParams.value.params = {}; handleQuery() }
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleSelectionChange(selection) { ids.value = selection.map(item => item.equipmentId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function handleAdd() { reset(); collapsedCards.c0 = false; collapsedCards.c1 = false; collapsedCards.c2 = false; open.value = true; title.value = '添加特种设备' }
@@ -279,6 +313,7 @@ function submitForm() {
   })
 }
 function handleDelete(row) { const equipmentIds = row.equipmentId || ids.value; proxy.$modal.confirm('是否确认删除特种设备？').then(function() { return delEquipment(equipmentIds) }).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleExport() { proxy.download('safety/equipment/export', { ...queryParams.value }, `equipment_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 function reset() {
   form.value = { equipmentId: undefined, equipmentCode: undefined, equipmentName: undefined, specModel: undefined, areaId: undefined, areaName: undefined, equipmentCategory: undefined, specialSubType: undefined, regCertNo: undefined, inspectExpire: undefined, personId: undefined, personName: undefined, remark: undefined }
@@ -328,6 +363,10 @@ getList()
 .safety-equipment-page .filter-card .filter-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
 .safety-equipment-page .filter-card .filter-title { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--ink-700); }
 .safety-equipment-page .filter-card .filter-title .glyph { width:4px; height:14px; background:var(--brand-600); border-radius:2px; }
+.safety-equipment-page .filter-card .adv-link { font-size:14px; color:var(--ink-500); text-decoration:none; display:flex; align-items:center; gap:4px; transition:color .15s; cursor:pointer; }
+.safety-equipment-page .filter-card .adv-link:hover { color:var(--brand-600); }
+.safety-equipment-page .filter-card .adv-link .chev { transition:transform .2s var(--ease-out); }
+.safety-equipment-page .filter-card .adv-link.is-open .chev { transform:rotate(180deg); }
 .safety-equipment-page .filter-card .filter-bar { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px 16px; }
 .safety-equipment-page .filter-card .filter-actions { display:flex; align-items:center; justify-content:space-between; margin-top:14px; padding-top:14px; border-top:1px dashed var(--ink-200); }
 .safety-equipment-page .filter-card .filter-info { font-size:13px; color:var(--ink-500); display:flex; align-items:center; gap:6px; }
@@ -342,6 +381,10 @@ getList()
 .safety-equipment-page .field .control :deep(.el-input__prefix) { color:var(--ink-400); margin-right:4px; }
 .safety-equipment-page .field .control :deep(.el-select) { width:100%; }
 .safety-equipment-page .field .control :deep(.el-select .el-select__wrapper) { box-shadow:none !important; background:transparent !important; padding:0; min-height:34px; height:34px; }
+.safety-equipment-page .field .control :deep(.el-date-editor) { width:100%; }
+.safety-equipment-page .field .control :deep(.el-date-editor .el-range-input) { background:transparent; border:0; font-size:14px; color:var(--ink-900); }
+.safety-equipment-page .field .control :deep(.el-date-editor .el-range-separator) { color:var(--ink-400); }
+.safety-equipment-page .field .control :deep(.el-date-editor .el-range__icon) { color:var(--ink-400); }
 .safety-equipment-page .toolbar { display:flex; align-items:center; justify-content:space-between; padding:12px 20px; border-bottom:1px solid var(--ink-200); background:var(--ink-50); }
 .safety-equipment-page .toolbar .left, .safety-equipment-page .toolbar .right { display:flex; gap:8px; align-items:center; }
 .safety-equipment-page .toolbar-divider { width:1px; height:18px; background:var(--ink-200); margin:0 4px; }

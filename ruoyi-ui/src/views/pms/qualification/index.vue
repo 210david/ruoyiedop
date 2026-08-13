@@ -179,8 +179,16 @@
                 <div class="rd-item rd-item--full" v-for="(file, idx) in viewData.fileUrl.split(',')" :key="idx">
                   <span class="rd-label">资质文件</span>
                   <div class="rd-value">
-                    <el-link :href="baseUrl + file" :underline="false" target="_blank" type="primary"><el-icon><Download /></el-icon> {{ getFileName(file) }}</el-link>
-                    <el-button link type="success" icon="View" size="small" style="margin-left: 12px" @click="handlePreview(file)">预览</el-button>
+                    <div class="rd-file-item">
+                      <div class="rd-file-link" @click="handlePreview(file)">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                        <span class="rd-file-name">{{ getFileName(file) }}</span>
+                      </div>
+                      <span class="rd-file-dl" @click="handleFileDownload(file)">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        下载
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -208,6 +216,7 @@ import { listSupplier } from '@/api/wms/supplier'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
 import useDictStore from '@/store/modules/dict'
+import { downloadFile } from '@/utils/downloadFile'
 
 const { proxy } = getCurrentInstance()
 useDictStore().removeDict('pms_qual_status')
@@ -302,6 +311,9 @@ function onSupplierChange(val) { const matched = supplierOptions.value.find(s =>
 function loadSupplierOptions() { listSupplier({ pageNum: 1, pageSize: 999 }).then(res => { supplierOptions.value = res.rows || [] }) }
 function getFileName(url) { if (url.lastIndexOf('/') > -1) { return url.slice(url.lastIndexOf('/') + 1) } return url }
 function handlePreview(fileUrl) { proxy.$refs.filePreviewRef.open(fileUrl, getFileName(fileUrl)) }
+function handleFileDownload(url) {
+downloadFile(url)
+}
 function handleAdd() { reset(); open.value = true; title.value = '添加资质' }
 function handleUpdate(row) { reset(); getQualification(row.qualId).then(res => { form.value = res.data; open.value = true; title.value = '修改资质' }) }
 function handleView(row) { getQualification(row.qualId).then(res => { viewData.value = res.data; viewOpen.value = true }) }

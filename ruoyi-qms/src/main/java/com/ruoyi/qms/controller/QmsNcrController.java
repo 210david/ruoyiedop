@@ -27,6 +27,9 @@ public class QmsNcrController extends BaseController
     @Autowired
     private IQmsNcrService qmsNcrService;
 
+    @Autowired
+    private com.ruoyi.qms.service.IQmsCapaService qmsCapaService;
+
     @PreAuthorize("@ss.hasPermi('qms:ncr:list')")
     @GetMapping("/list")
     public TableDataInfo list(QmsNcr ncr)
@@ -141,5 +144,17 @@ public class QmsNcrController extends BaseController
     public AjaxResult closeNcr(@PathVariable Long ncrId)
     {
         return toAjax(qmsNcrService.closeNcr(ncrId));
+    }
+
+    /**
+     * 一键从NCR发起CAPA
+     */
+    @Log(title = "NCR发起CAPA", businessType = BusinessType.INSERT)
+    @PreAuthorize("@ss.hasPermi('qms:ncr:edit')")
+    @PostMapping("/createCapa/{ncrId}")
+    public AjaxResult createCapaFromNcr(@PathVariable Long ncrId)
+    {
+        Long capaId = qmsCapaService.createCapaFromNcr(ncrId);
+        return AjaxResult.success(capaId);
     }
 }

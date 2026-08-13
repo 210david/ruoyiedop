@@ -18,6 +18,10 @@
         <div class="surface filter-card" v-show="showSearch">
           <div class="filter-head">
             <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+            <a class="adv-link" :class="{ 'is-open': showAdvanced }" @click.prevent="showAdvanced = !showAdvanced">
+              <span>{{ showAdvanced ? '收起' : '高级筛选' }}</span>
+              <el-icon class="chev"><ArrowDown /></el-icon>
+            </a>
           </div>
           <div class="filter-bar">
             <div class="field">
@@ -50,9 +54,21 @@
                 </el-select>
               </div>
             </div>
+            <div class="field" v-show="showAdvanced">
+              <label>备注</label>
+              <div class="control">
+                <el-input v-model="queryParams.remark" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+              </div>
+            </div>
+            <div class="field" v-show="showAdvanced">
+              <label>创建时间</label>
+              <div class="control">
+                <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
+              </div>
+            </div>
           </div>
           <div class="filter-actions">
-            <div class="filter-info"><el-icon><Filter /></el-icon> 已选 {{ activeFilterCount }} 个条件</div>
+            <div class="filter-info"><el-icon><Filter /></el-icon> 已选 {{ activeFilterCount }} 个条件，支持回车快速搜索</div>
             <div class="filter-buttons">
               <el-button icon="RefreshLeft" @click="resetQuery">重置</el-button>
               <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
@@ -70,26 +86,26 @@
               </button>
             </div>
             <div class="right">
-              <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" />
+              <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="qms_workshop_columns" />
             </div>
           </div>
 
           <div class="table-wrap">
             <el-table ref="tableRef" v-if="refreshTable" v-loading="loading" :data="workshopList" row-key="workshopId" :default-expand-all="isExpandAll" :tree-props="{ children: 'children', hasChildren: 'hasChildren' }" border @header-dragend="onHeaderDragEnd" class="app-table">
-              <el-table-column prop="workshopName" label="节点名称" :width="colWidth('workshopName', 220)" resizable />
-              <el-table-column prop="workshopCode" label="节点编码" :width="colWidth('workshopCode', 160)" resizable align="center" />
-              <el-table-column label="层级类型" align="center" :width="colWidth('nodeType', 120)" resizable>
+              <el-table-column prop="workshopName" label="节点名称" key="workshopName" :width="colWidth('workshopName', 220)" resizable v-if="columns.workshopName.visible" />
+              <el-table-column prop="workshopCode" label="节点编码" key="workshopCode" :width="colWidth('workshopCode', 160)" resizable align="center" v-if="columns.workshopCode.visible" />
+              <el-table-column label="层级类型" align="center" key="nodeType" :width="colWidth('nodeType', 120)" resizable v-if="columns.nodeType.visible">
                 <template #default="scope">
-                  <dict-tag :options="qms_workshop_node_type" :value="scope.row.nodeType" />
+                  <span class="badge violet"><span class="dot"></span>{{ nodeTypeLabel(scope.row.nodeType) }}</span>
                 </template>
               </el-table-column>
-              <el-table-column prop="orderNum" label="排序" align="center" :width="colWidth('orderNum', 80)" resizable />
-              <el-table-column label="状态" align="center" :width="colWidth('status', 100)" resizable>
+              <el-table-column prop="orderNum" label="排序" key="orderNum" align="center" :width="colWidth('orderNum', 80)" resizable v-if="columns.orderNum.visible" />
+              <el-table-column label="状态" align="center" key="status" :width="colWidth('status', 100)" resizable v-if="columns.status.visible">
                 <template #default="scope">
-                  <dict-tag :options="sys_normal_disable" :value="scope.row.status" />
+                  <span class="badge" :class="scope.row.status === '0' ? 'green' : 'gray'"><span class="dot"></span>{{ scope.row.status === '0' ? '正常' : '停用' }}</span>
                 </template>
               </el-table-column>
-              <el-table-column label="创建时间" align="center" prop="createTime" :width="colWidth('createTime', 180)" resizable>
+              <el-table-column label="创建时间" align="center" prop="createTime" key="createTime" :width="colWidth('createTime', 180)" resizable v-if="columns.createTime.visible">
                 <template #default="scope">
                   <span>{{ parseTime(scope.row.createTime) }}</span>
                 </template>
@@ -108,7 +124,7 @@
     </el-row>
 
     <!-- 添加或修改对话框 -->
-    <el-dialog v-model="open" width="680px" append-to-body draggable class="rd-dialog">
+    <el-dialog v-model="open" width="816px" append-to-body draggable class="rd-dialog">
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></div>
@@ -184,6 +200,7 @@
 <script setup name="QmsWorkshop">
 import { listWorkshop, workshopTree, getWorkshop, addWorkshop, updateWorkshop, delWorkshop } from '@/api/qms/workshop'
 import { useColumnResize } from '@/composables/useColumnResize'
+import { ArrowDown } from '@element-plus/icons-vue'
 
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('qms_workshop_index')
@@ -194,15 +211,21 @@ const workshopTreeOptions = ref([])
 const open = ref(false)
 const loading = ref(true)
 const showSearch = ref(true)
+const showAdvanced = ref(false)
+const dateRange = ref([])
 const title = ref('')
 const isExpandAll = ref(true)
 const refreshTable = ref(true)
 const deptName = ref(undefined)
+const currentWorkshopId = ref(undefined)
 const defaultProps = { children: 'children', label: 'workshopName' }
+const defaultColumns = { workshopName: { label: '节点名称', visible: true }, workshopCode: { label: '节点编码', visible: true }, nodeType: { label: '层级类型', visible: true }, orderNum: { label: '排序', visible: true }, status: { label: '状态', visible: true }, createTime: { label: '创建时间', visible: true } }
+function loadColumnVisibility() { try { const saved = localStorage.getItem('qms_workshop_columns'); if (saved) { const parsed = JSON.parse(saved); const result = {}; Object.keys(defaultColumns).forEach(key => { result[key] = { label: defaultColumns[key].label, visible: parsed[key] !== undefined ? parsed[key] : defaultColumns[key].visible } }); return result } } catch (e) {} return { ...defaultColumns } }
+const columns = ref(loadColumnVisibility())
 
 const data = reactive({
   form: {},
-  queryParams: { workshopCode: undefined, workshopName: undefined, nodeType: undefined, status: undefined },
+  queryParams: { workshopCode: undefined, workshopName: undefined, nodeType: undefined, status: undefined, remark: undefined, params: {} },
   rules: {
     workshopCode: [{ required: true, message: '节点编码不能为空', trigger: 'blur' }],
     workshopName: [{ required: true, message: '节点名称不能为空', trigger: 'blur' }],
@@ -212,23 +235,49 @@ const data = reactive({
 
 const { queryParams, form, rules } = toRefs(data)
 
+function nodeTypeLabel(val) { const item = qms_workshop_node_type.value.find(d => d.value == val); return item ? item.label : '-' }
+
 const activeFilterCount = computed(() => {
   let count = 0
   if (queryParams.value.workshopCode) count++
   if (queryParams.value.workshopName) count++
   if (queryParams.value.nodeType) count++
   if (queryParams.value.status) count++
+  if (queryParams.value.remark) count++
+  if (dateRange.value && dateRange.value.length > 0) count++
   return count
 })
 
 /** 查询列表 */
 function getList() {
   loading.value = true
-  workshopTree(queryParams.value).then(response => {
-    workshopList.value = response.data
+  const params = { ...queryParams.value }
+  delete params.parentId
+  workshopTree(params).then(response => {
+    let allTree = response.data
+    if (currentWorkshopId.value) {
+      // 左侧树选中了某个节点，只显示该节点及其子树
+      workshopList.value = filterTreeById(allTree, currentWorkshopId.value) || []
+    } else {
+      workshopList.value = allTree
+    }
     loading.value = false
     applySavedWidths()
   })
+}
+
+/** 从树中查找指定ID的节点及其子树 */
+function filterTreeById(tree, targetId) {
+  for (let node of tree) {
+    if (node.workshopId === targetId) {
+      return [node]
+    }
+    if (node.children && node.children.length) {
+      let result = filterTreeById(node.children, targetId)
+      if (result) return result
+    }
+  }
+  return null
 }
 
 /** 查询树 */
@@ -246,20 +295,28 @@ function filterNode(value, data) {
 
 /** 节点单击事件 */
 function handleNodeClick(data) {
-  queryParams.value.workshopName = undefined
-  queryParams.value.parentId = data.workshopId
+  currentWorkshopId.value = data.workshopId
   getList()
 }
 
 /** 搜索按钮 */
 function handleQuery() {
+  showAdvanced.value = false
+  proxy.addDateRange(queryParams.value, dateRange.value)
   getList()
 }
 
 /** 重置按钮 */
 function resetQuery() {
-  proxy.resetForm('queryRef')
-  queryParams.value.parentId = undefined
+  queryParams.value.workshopCode = undefined
+  queryParams.value.workshopName = undefined
+  queryParams.value.nodeType = undefined
+  queryParams.value.status = undefined
+  queryParams.value.remark = undefined
+  dateRange.value = []
+  queryParams.value.params = {}
+  currentWorkshopId.value = undefined
+  proxy.$refs['deptTreeRef'].setCurrentKey(null)
   handleQuery()
 }
 
@@ -269,6 +326,8 @@ function handleAdd(row) {
   getTreeselect()
   if (row != null && row.workshopId) {
     form.value.parentId = row.workshopId
+  } else if (currentWorkshopId.value) {
+    form.value.parentId = currentWorkshopId.value
   } else {
     form.value.parentId = 0
   }
@@ -358,7 +417,7 @@ getTreeselect()
 </script>
 
 <style scoped>
-.qms-workshop-page { padding-top: 10px; --brand-50:#eef2ff; --brand-100:#e0e7ff; --brand-200:#c7d2fe; --brand-500:#6366f1; --brand-600:#4f46e5; --brand-700:#4338ca; --ink-900:#0f172a; --ink-700:#334155; --ink-500:#64748b; --ink-400:#94a3b8; --ink-300:#cbd5e1; --ink-200:#e2e8f0; --ink-100:#f1f5f9; --ink-50:#f8fafc; --green-50:#ecfdf5; --green-500:#10b981; --green-700:#047857; --red-50:#fef2f2; --red-500:#ef4444; --red-700:#b91c1c; --r-sm:6px; --r-md:10px; --r-lg:14px; --shadow-card:0 1px 0 rgba(15,23,42,.04), 0 1px 2px rgba(15,23,42,.04); --ease-out:cubic-bezier(.16,.84,.44,1); color: var(--ink-900); }
+.qms-workshop-page { padding-top: 10px; --violet-50:#f5f3ff; --brand-50:#eef2ff; --brand-100:#e0e7ff; --brand-200:#c7d2fe; --brand-500:#6366f1; --brand-600:#4f46e5; --brand-700:#4338ca; --ink-900:#0f172a; --ink-700:#334155; --ink-500:#64748b; --ink-400:#94a3b8; --ink-300:#cbd5e1; --ink-200:#e2e8f0; --ink-100:#f1f5f9; --ink-50:#f8fafc; --green-50:#ecfdf5; --green-500:#10b981; --green-700:#047857; --red-50:#fef2f2; --red-500:#ef4444; --red-700:#b91c1c; --r-sm:6px; --r-md:10px; --r-lg:14px; --shadow-card:0 1px 0 rgba(15,23,42,.04), 0 1px 2px rgba(15,23,42,.04); --ease-out:cubic-bezier(.16,.84,.44,1); color: var(--ink-900); }
 .qms-workshop-page .surface { background:#fff; border:1px solid var(--ink-200); border-radius:var(--r-lg); box-shadow:var(--shadow-card); overflow:hidden; margin-bottom:8px; }
 .qms-workshop-page .tree-panel { position: sticky; top: 10px; }
 .qms-workshop-page .tree-panel .tree-head { padding:12px 16px; border-bottom:1px solid var(--ink-200); background:var(--ink-50); }
@@ -367,21 +426,31 @@ getTreeselect()
 .qms-workshop-page .filter-card .filter-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
 .qms-workshop-page .filter-card .filter-title { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--ink-700); }
 .qms-workshop-page .filter-card .filter-title .glyph { width:4px; height:14px; background:var(--brand-600); border-radius:2px; }
+.qms-workshop-page .filter-card .adv-link { font-size:14px; color:var(--ink-500); text-decoration:none; display:flex; align-items:center; gap:4px; transition:color .15s; cursor:pointer; }
+.qms-workshop-page .filter-card .adv-link:hover { color:var(--brand-600); }
+.qms-workshop-page .filter-card .adv-link .chev { transition:transform .2s var(--ease-out); }
+.qms-workshop-page .filter-card .adv-link.is-open .chev { transform:rotate(180deg); }
 .qms-workshop-page .filter-card .filter-bar { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px 16px; }
 .qms-workshop-page .filter-card .filter-actions { display:flex; align-items:center; justify-content:space-between; margin-top:14px; padding-top:14px; border-top:1px dashed var(--ink-200); }
 .qms-workshop-page .filter-card .filter-info { font-size:13px; color:var(--ink-500); display:flex; align-items:center; gap:6px; }
 .qms-workshop-page .filter-card .filter-buttons { display:flex; gap:8px; }
 .qms-workshop-page .field { display:flex; flex-direction:column; gap:6px; }
-.qms-workshop-page .field label { font-size:14px; font-weight:500; color:var(--ink-700); }
+.qms-workshop-page .field label { font-size:14px; font-weight:500; color:var(--ink-700); display:flex; align-items:center; gap:6px; }
 .qms-workshop-page .field .control { display:flex; align-items:center; height:36px; padding:0 12px; background:#fff; border:1px solid var(--ink-200); border-radius:var(--r-sm); transition:border-color .15s var(--ease-out), box-shadow .15s var(--ease-out); }
 .qms-workshop-page .field .control:focus-within { border-color:var(--brand-500); box-shadow:0 0 0 3px rgba(99,102,241,.15); }
 .qms-workshop-page .field .control :deep(.el-input__wrapper) { box-shadow:none !important; background:transparent !important; padding:0; height:34px; }
 .qms-workshop-page .field .control :deep(.el-input__inner) { border:0; background:transparent; font-size:14px; color:var(--ink-900); height:34px; line-height:34px; }
 .qms-workshop-page .field .control :deep(.el-input__inner::placeholder) { color:var(--ink-400); }
 .qms-workshop-page .field .control :deep(.el-input__prefix) { color:var(--ink-400); margin-right:4px; }
+.qms-workshop-page .field .control :deep(.el-input__prefix .el-icon) { font-size:14px; }
 .qms-workshop-page .field .control :deep(.el-select) { width:100%; }
 .qms-workshop-page .field .control :deep(.el-select .el-select__wrapper) { box-shadow:none !important; background:transparent !important; padding:0; min-height:34px; height:34px; }
+.qms-workshop-page .field .control :deep(.el-select .el-select__wrapper .el-select__placeholder) { font-size:14px; color:var(--ink-900); }
 .qms-workshop-page .field .control :deep(.el-select .el-select__wrapper.is-focused) { box-shadow:none !important; }
+.qms-workshop-page .field .control :deep(.el-date-editor) { width:100%; }
+.qms-workshop-page .field .control :deep(.el-date-editor .el-range-input) { background:transparent; border:0; font-size:14px; color:var(--ink-900); }
+.qms-workshop-page .field .control :deep(.el-date-editor .el-range-separator) { color:var(--ink-400); }
+.qms-workshop-page .field .control :deep(.el-date-editor .el-range__icon) { color:var(--ink-400); }
 .qms-workshop-page .toolbar { display:flex; align-items:center; justify-content:space-between; padding:12px 20px; border-bottom:1px solid var(--ink-200); background:var(--ink-50); }
 .qms-workshop-page .toolbar .left { display:flex; gap:8px; align-items:center; }
 .qms-workshop-page .toolbar .right { display:flex; gap:8px; align-items:center; }
@@ -396,6 +465,14 @@ getTreeselect()
 .qms-workshop-page .app-table :deep(.el-table__body td) { padding:14px 16px; border-bottom:1px solid var(--ink-100); color:var(--ink-700); }
 .qms-workshop-page .app-table :deep(.el-table__row:hover > td) { background:#fafbff !important; }
 .qms-workshop-page .app-table :deep(.el-table__inner-wrapper::before) { display:none; }
+.qms-workshop-page .badge { display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:999px; font-size:13px; font-weight:600; line-height:1; border:1px solid transparent; }
+.qms-workshop-page .badge .dot { width:6px; height:6px; border-radius:50%; }
+.qms-workshop-page .badge.green { background:var(--green-50); color:var(--green-700); border-color:#a7f3d0; }
+.qms-workshop-page .badge.green .dot { background:var(--green-500); }
+.qms-workshop-page .badge.gray { background:var(--ink-100); color:var(--ink-500); border-color:var(--ink-200); }
+.qms-workshop-page .badge.gray .dot { background:var(--ink-400); }
+.qms-workshop-page .badge.violet { background:var(--violet-50); color:#7c3aed; border-color:#ddd6fe; }
+.qms-workshop-page .badge.violet .dot { background:#8b5cf6; }
 @media (max-width:1100px) { .qms-workshop-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }
 @media (max-width:720px) { .qms-workshop-page .filter-card .filter-bar { grid-template-columns:1fr; } .qms-workshop-page .toolbar { flex-wrap:wrap; gap:10px; } }
 </style>

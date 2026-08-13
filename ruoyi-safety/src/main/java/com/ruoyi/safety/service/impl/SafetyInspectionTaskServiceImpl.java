@@ -1,4 +1,7 @@
-package com.ruoyi.safety.service.impl;
+package com.ruoyi.safety.service.impl;
+import java.util.HashMap;
+import java.util.Map;
+
 
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -132,7 +135,10 @@ public class SafetyInspectionTaskServiceImpl implements ISafetyInspectionTaskSer
                     throw new ServiceException("责任人不能为空");
                 }
                 // 自动填充隐患信息
-                hazard.setHazardCode(mkNumberRuleService.generateNumber("safety_hazard"));
+                Map<String, String> params = new HashMap<>();
+            if (StringUtils.isNotEmpty(hazard.getHazardLevel())) { params.put("hazardLevel", hazard.getHazardLevel()); }
+            if (StringUtils.isNotEmpty(hazard.getHazardType())) { params.put("hazardType", hazard.getHazardType()); }
+            hazard.setHazardCode(mkNumberRuleService.generateNumber("safety_hazard", params));
                 hazard.setSourceType("2"); // 计划排查
                 hazard.setTaskId(safetyInspectionTask.getTaskId());
                 hazard.setDiscoverPersonId(task.getExecutorId());

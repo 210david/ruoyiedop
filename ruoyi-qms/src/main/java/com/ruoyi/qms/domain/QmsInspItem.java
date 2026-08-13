@@ -1,11 +1,13 @@
 package com.ruoyi.qms.domain;
 
+import com.ruoyi.common.core.domain.BaseEntity;
+
 /**
  * 检验单项实测表 qms_insp_item
  *
  * @author ruoyi
  */
-public class QmsInspItem
+public class QmsInspItem extends BaseEntity
 {
     private static final long serialVersionUID = 1L;
 
@@ -30,6 +32,9 @@ public class QmsInspItem
     /** 单项判定（1合格 2不合格） */
     private String itemResult;
 
+    /** 缺陷代码库ID */
+    private Long defectId;
+
     /** 不良代码 */
     private String defectCode;
 
@@ -39,8 +44,8 @@ public class QmsInspItem
     /** 缺陷等级（1致命 2严重 3一般 4轻微） */
     private String defectLevel;
 
-    /** 创建者 */
-    private String createBy;
+    /** 缺陷数量（该缺陷出现的次数） */
+    private Integer defectQty;
 
     public Long getItemId() { return itemId; }
     public void setItemId(Long itemId) { this.itemId = itemId; }
@@ -56,12 +61,14 @@ public class QmsInspItem
     public void setMeasuredVal(String measuredVal) { this.measuredVal = measuredVal; }
     public String getItemResult() { return itemResult; }
     public void setItemResult(String itemResult) { this.itemResult = itemResult; }
+    public Long getDefectId() { return defectId; }
+    public void setDefectId(Long defectId) { this.defectId = defectId; }
     public String getDefectCode() { return defectCode; }
     public void setDefectCode(String defectCode) { this.defectCode = defectCode; }
     public String getDefectName() { return defectName; }
     public void setDefectName(String defectName) { this.defectName = defectName; }
     public String getDefectLevel() { return defectLevel; }
     public void setDefectLevel(String defectLevel) { this.defectLevel = defectLevel; }
-    public String getCreateBy() { return createBy; }
-    public void setCreateBy(String createBy) { this.createBy = createBy; }
+    public Integer getDefectQty() { return defectQty; }
+    public void setDefectQty(Integer defectQty) { this.defectQty = defectQty; }
 }

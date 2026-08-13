@@ -136,8 +136,8 @@
           <el-table-column label="保质期(天)" prop="shelfLifeDays" key="shelfLifeDays" :width="colWidth('shelfLifeDays', 110)" resizable align="center" v-if="columns.shelfLifeDays.visible">
             <template #default="scope">{{ scope.row.shelfLifeDays != null ? scope.row.shelfLifeDays : '-' }}</template>
           </el-table-column>
-          <el-table-column label="安全库存下限" prop="safetyStockMin" key="safetyStockMin" :width="colWidth('safetyStockMin', 130)" resizable align="right" class-name="col-num" v-if="columns.safetyStockMin.visible" />
-          <el-table-column label="安全库存上限" prop="safetyStockMax" key="safetyStockMax" :width="colWidth('safetyStockMax', 130)" resizable align="right" class-name="col-num" v-if="columns.safetyStockMax.visible" />
+          <el-table-column label="安全库存下限" prop="safetyStockMin" key="safetyStockMin" :width="colWidth('safetyStockMin', 130)" resizable align="center" class-name="col-num" v-if="columns.safetyStockMin.visible" />
+          <el-table-column label="安全库存上限" prop="safetyStockMax" key="safetyStockMax" :width="colWidth('safetyStockMax', 130)" resizable align="center" class-name="col-num" v-if="columns.safetyStockMax.visible" />
           <el-table-column label="状态" prop="status" key="status" :width="colWidth('status', 100)" resizable align="center" sortable="custom" v-if="columns.status.visible">
             <template #default="scope">
               <span class="badge" :class="scope.row.status === '0' ? 'green' : 'gray'">
@@ -717,7 +717,7 @@ getList()
 .wms-material-page .app-table :deep(.el-table__inner-wrapper::before) { display:none; }
 .wms-material-page .app-table :deep(.el-table__border-left-patch) { display:none; }
 .wms-material-page .app-table .col-mono { font-family:ui-monospace,"JetBrains Mono","SF Mono",Menlo,monospace; font-size:14px; color:var(--ink-700); letter-spacing:-.01em; }
-.wms-material-page .app-table :deep(.col-num) { text-align:right; font-feature-settings:"tnum" 1; font-variant-numeric:tabular-nums; }
+.wms-material-page .app-table :deep(.col-num) { text-align:center; font-feature-settings:"tnum" 1; font-variant-numeric:tabular-nums; }
 
 /* ===== Badges ===== */
 .wms-material-page .badge { display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:999px; font-size:13px; font-weight:600; line-height:1; border:1px solid transparent; }

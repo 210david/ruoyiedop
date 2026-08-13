@@ -23,6 +23,7 @@ public class QmsCapa extends BaseEntity {
     private String closeRemark;
     @Excel(name = "状态") private String capaStatus;
     @Excel(name = "责任人") private String responsiblePerson;
+    private Long responsiblePersonId;
     @JsonFormat(pattern = "yyyy-MM-dd") private Date planCloseTime;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss") private Date closeTime;
     private String delFlag;
@@ -58,6 +59,8 @@ public class QmsCapa extends BaseEntity {
     public void setCapaStatus(String capaStatus) { this.capaStatus = capaStatus; }
     public String getResponsiblePerson() { return responsiblePerson; }
     public void setResponsiblePerson(String responsiblePerson) { this.responsiblePerson = responsiblePerson; }
+    public Long getResponsiblePersonId() { return responsiblePersonId; }
+    public void setResponsiblePersonId(Long responsiblePersonId) { this.responsiblePersonId = responsiblePersonId; }
     public Date getPlanCloseTime() { return planCloseTime; }
     public void setPlanCloseTime(Date planCloseTime) { this.planCloseTime = planCloseTime; }
     public Date getCloseTime() { return closeTime; }

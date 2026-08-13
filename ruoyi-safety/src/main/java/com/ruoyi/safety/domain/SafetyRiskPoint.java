@@ -87,6 +87,16 @@ public class SafetyRiskPoint extends BaseEntity
     @Excel(name = "排查频次", readConverterExp = "1=每班,2=每日,3=每周,4=每月,5=每季")
     private String checkFrequency;
 
+    /** 是否重大隐患 */
+    @Excel(name = "是否重大隐患", readConverterExp = "0=否,1=是")
+    private String isMajorHazard;
+
+    /** 重大隐患判定规则 */
+    private String majorHazardRule;
+
+    /** 合规文件 */
+    private String complianceFile;
+
     /** X坐标 */
     private BigDecimal xCoord;
 
@@ -158,6 +168,12 @@ public class SafetyRiskPoint extends BaseEntity
     public void setCheckStandard(String checkStandard) { this.checkStandard = checkStandard; }
     public String getCheckFrequency() { return checkFrequency; }
     public void setCheckFrequency(String checkFrequency) { this.checkFrequency = checkFrequency; }
+    public String getIsMajorHazard() { return isMajorHazard; }
+    public void setIsMajorHazard(String isMajorHazard) { this.isMajorHazard = isMajorHazard; }
+    public String getMajorHazardRule() { return majorHazardRule; }
+    public void setMajorHazardRule(String majorHazardRule) { this.majorHazardRule = majorHazardRule; }
+    public String getComplianceFile() { return complianceFile; }
+    public void setComplianceFile(String complianceFile) { this.complianceFile = complianceFile; }
     public BigDecimal getXCoord() { return xCoord; }
     public void setXCoord(BigDecimal xCoord) { this.xCoord = xCoord; }
     public BigDecimal getYCoord() { return yCoord; }

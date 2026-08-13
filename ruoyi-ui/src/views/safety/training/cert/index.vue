@@ -52,6 +52,8 @@
         <div class="left">
           <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['safety:training:cert:add']">新增</el-button>
           <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['safety:training:cert:remove']">删除</el-button>
+          <div class="toolbar-divider"></div>
+          <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['safety:training:cert:export']">导出</el-button>
         </div>
         <div class="right">
           <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="safety_training_cert_columns" />
@@ -162,7 +164,7 @@
       </template>
       <div class="rd-page">
         <section class="rd-card">
-          <div class="rd-card-header" @click="toggleCard('vc0')"><div class="rd-card-title">证书信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc0 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-header" @click="toggleCard('vc0')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>证书信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc0 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
           <div class="rd-card-body" v-show="!collapsedCards.vc0" style="display:block">
             <div class="rd-grid">
               <div class="rd-item"><span class="rd-label">证书编号</span><div class="rd-value">{{ viewData.certNo || '-' }}</div></div>
@@ -173,7 +175,7 @@
           </div>
         </section>
         <section class="rd-card" v-if="viewData.userName || viewData.deptName">
-          <div class="rd-card-header" @click="toggleCard('vc1')"><div class="rd-card-title">获证人员</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-header" @click="toggleCard('vc1')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>获证人员</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
           <div class="rd-card-body" v-show="!collapsedCards.vc1" style="display:block">
             <div class="rd-grid">
               <div class="rd-item"><span class="rd-label">获证人员</span><div class="rd-value">{{ viewData.userName || '-' }}</div></div>
@@ -182,17 +184,22 @@
           </div>
         </section>
         <section class="rd-card" v-if="viewData.issueDate || viewData.expireDate || viewData.attachment || viewData.remark">
-          <div class="rd-card-header" @click="toggleCard('vc2')"><div class="rd-card-title">有效期与附件</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-header" @click="toggleCard('vc2')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>有效期与附件</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
           <div class="rd-card-body" v-show="!collapsedCards.vc2" style="display:block">
             <div class="rd-grid">
               <div class="rd-item"><span class="rd-label">发证日期</span><div class="rd-value">{{ viewData.issueDate || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">有效期至</span><div class="rd-value">{{ viewData.expireDate || '-' }}</div></div>
               <div class="rd-item rd-item--full" v-if="viewData.attachment"><span class="rd-label">附件</span><div class="rd-value"><div class="rd-file-links" v-if="viewData.attachment">
-              <div class="rd-file-link" v-for="(url, idx) in String(viewData.attachment).split(',')" :key="idx">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                <span class="rd-file-name" @click="handleFilePreview(url)">{{ url.includes('/') ? url.substring(url.lastIndexOf('/') + 1) : url }}</span>
-                <a :href="baseUrl + url" target="_blank" class="rd-file-dl">下载</a>
-              </div>
+<div class="rd-file-item" v-for="(url, idx) in String(viewData.attachment).split(',')" :key="idx">
+<div class="rd-file-link" @click="handleFilePreview(url)">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+<span class="rd-file-name">{{ url.includes('/') ? url.substring(url.lastIndexOf('/') + 1) : url }}</span>
+</div>
+<span class="rd-file-dl" @click="handleFileDownload(url)">
+<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+下载
+</span>
+</div>
             </div></div></div>
               <div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value">{{ viewData.remark || '-' }}</div></div>
             </div>
@@ -216,6 +223,7 @@ import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
 import { Search, Filter, RefreshLeft, CircleClose } from '@element-plus/icons-vue'
 import FilePreview from '@/components/FilePreview/index.vue'
+import { downloadFile } from '@/utils/downloadFile'
 
 const { proxy } = getCurrentInstance()
 const { safety_cert_type } = proxy.useDict('safety_cert_type')
@@ -289,8 +297,11 @@ const activeFilterCount = computed(() => {
 })
 
 function handleFilePreview(url) {
-  const name = url.includes('/') ? url.substring(url.lastIndexOf('/') + 1) : url
-  proxy.$refs.filePreviewRef.open(url, name)
+const name = url.includes('/') ? url.substring(url.lastIndexOf('/') + 1) : url
+proxy.$refs.filePreviewRef.open(url, name)
+}
+function handleFileDownload(url) {
+downloadFile(url)
 }
 
 function getList() { loading.value = true; listTrainingCert(queryParams.value).then(response => { certList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths() }) }
@@ -310,6 +321,7 @@ function submitForm() {
   })
 }
 function handleDelete(row) { const certIds = row.certId || ids.value; proxy.$modal.confirm('是否确认删除证书？').then(function() { return delTrainingCert(certIds) }).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleExport() { proxy.download('safety/training/cert/export', { ...queryParams.value }, `training_cert_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 function reset() {
   form.value = { certId: undefined, certNo: undefined, certName: undefined, certType: undefined, userId: undefined, userName: undefined, deptId: undefined, deptName: undefined, issueDate: undefined, expireDate: undefined, issueOrg: undefined, attachment: undefined, status: '0', remark: undefined }

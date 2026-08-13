@@ -4,6 +4,10 @@
     <div class="surface filter-card" v-show="showSearch">
       <div class="filter-head">
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+        <a class="adv-link" :class="{ 'is-open': showAdvanced }" @click.prevent="showAdvanced = !showAdvanced">
+          <span>{{ showAdvanced ? '收起' : '高级筛选' }}</span>
+          <el-icon class="chev"><ArrowDown /></el-icon>
+        </a>
       </div>
       <div class="filter-bar">
         <div class="field">
@@ -20,6 +24,12 @@
             <el-select v-model="queryParams.drillType" placeholder="全部" clearable @change="handleQuery">
               <el-option v-for="dict in safety_drill_type" :key="dict.value" :label="dict.label" :value="dict.value" />
             </el-select>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>演练编号</label>
+          <div class="control">
+            <el-input v-model="queryParams.drillCode" placeholder="请输入" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
       </div>
@@ -40,6 +50,8 @@
         <div class="left">
           <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['safety:emergency:drill:add']">新增</el-button>
           <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['safety:emergency:drill:remove']">删除</el-button>
+          <div class="toolbar-divider"></div>
+          <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['safety:emergency:drill:export']">导出</el-button>
         </div>
         <div class="right">
           <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="safety_drill_columns" />
@@ -94,11 +106,15 @@
                 <el-col :span="12"><el-form-item label="演练类型" prop="drillType"><el-select v-model="form.drillType" placeholder="请选择" style="width: 100%"><el-option v-for="dict in safety_drill_type" :key="dict.value" :label="dict.label" :value="dict.value" /></el-select></el-form-item></el-col>
                 <el-col :span="12"><el-form-item label="演练日期" prop="drillDate"><el-date-picker v-model="form.drillDate" type="date" placeholder="选择日期" value-format="YYYY-MM-DD" style="width: 100%" /></el-form-item></el-col>
               </el-row>
+            </div>
+          </section>
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('c1')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>演练组织</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+            <div class="rd-card-body" v-show="!collapsedCards.c1">
               <el-row :gutter="20">
                 <el-col :span="12"><el-form-item label="演练地点" prop="drillLocation"><el-input v-model="form.drillLocation" placeholder="请输入演练地点" /></el-form-item></el-col>
                 <el-col :span="12"><el-form-item label="演练指挥" prop="drillCommander"><el-input v-model="form.drillCommander" placeholder="请输入演练指挥人姓名" /></el-form-item></el-col>
               </el-row>
-              <el-form-item label="演练目的" prop="drillObjective"><el-input v-model="form.drillObjective" type="textarea" :rows="2" placeholder="请输入演练目的" /></el-form-item>
               <el-row :gutter="20">
                 <el-col :span="12"><el-form-item label="参与人数" prop="participantCount"><el-input-number v-model="form.participantCount" :min="0" :max="9999" placeholder="请输入" style="width: 100%" /></el-form-item></el-col>
                 <el-col :span="12"><el-form-item label="参与人员" prop="participants"><el-input v-model="form.participants" placeholder="请输入参与人员范围或分组" /></el-form-item></el-col>
@@ -106,17 +122,23 @@
             </div>
           </section>
           <section class="rd-card">
-            <div class="rd-card-header" @click="toggleCard('c1')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>演练详情</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
-            <div class="rd-card-body" v-show="!collapsedCards.c1">
+            <div class="rd-card-header" @click="toggleCard('c2')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span>演练目的与过程</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+            <div class="rd-card-body" v-show="!collapsedCards.c2">
+              <el-form-item label="演练目的" prop="drillObjective"><el-input v-model="form.drillObjective" type="textarea" :rows="2" placeholder="请输入演练目的" /></el-form-item>
               <el-form-item label="过程描述" prop="drillDesc"><el-input v-model="form.drillDesc" type="textarea" :rows="3" placeholder="请输入演练过程描述" /></el-form-item>
+            </div>
+          </section>
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('c3')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span>评估与改进</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c3 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+            <div class="rd-card-body" v-show="!collapsedCards.c3">
               <el-form-item label="演练评估" prop="evalResult"><el-input v-model="form.evalResult" type="textarea" :rows="2" placeholder="请输入演练评估" /></el-form-item>
               <el-form-item label="发现问题" prop="problems"><el-input v-model="form.problems" type="textarea" :rows="2" placeholder="请输入发现的问题" /></el-form-item>
               <el-form-item label="改进措施" prop="improvements"><el-input v-model="form.improvements" type="textarea" :rows="2" placeholder="请输入改进措施" /></el-form-item>
             </div>
           </section>
           <section class="rd-card">
-            <div class="rd-card-header" @click="toggleCard('c2')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>附件与备注</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
-            <div class="rd-card-body" v-show="!collapsedCards.c2">
+            <div class="rd-card-header" @click="toggleCard('c4')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></span>附件与备注</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c4 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+            <div class="rd-card-body" v-show="!collapsedCards.c4">
               <el-form-item label="附件" prop="attachments"><file-upload v-model="form.attachments" :file-size="50" /></el-form-item>
               <el-form-item label="备注" prop="remark"><el-input v-model="form.remark" type="textarea" :rows="2" placeholder="请输入备注" /></el-form-item>
             </div>
@@ -137,43 +159,62 @@
       </template>
       <div class="rd-page">
         <section class="rd-card">
-          <div class="rd-card-header" @click="toggleCard('vc0')"><div class="rd-card-title">基本信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc0 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-header" @click="toggleCard('vc0')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>基本信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc0 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
           <div class="rd-card-body" v-show="!collapsedCards.vc0" style="display:block">
             <div class="rd-grid">
               <div class="rd-item"><span class="rd-label">演练编号</span><div class="rd-value">{{ viewData.drillCode || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">演练名称</span><div class="rd-value">{{ viewData.drillName || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">演练类型</span><div class="rd-value"><dict-tag :options="safety_drill_type" :value="viewData.drillType" /></div></div>
               <div class="rd-item"><span class="rd-label">演练日期</span><div class="rd-value">{{ viewData.drillDate || '-' }}</div></div>
+            </div>
+          </div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('vc1')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>演练组织</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.vc1" style="display:block">
+            <div class="rd-grid">
               <div class="rd-item"><span class="rd-label">演练地点</span><div class="rd-value">{{ viewData.drillLocation || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">演练指挥</span><div class="rd-value">{{ viewData.drillCommander || '-' }}</div></div>
-              <div class="rd-item rd-item--full"><span class="rd-label">演练目的</span><div class="rd-value">{{ viewData.drillObjective || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">参与人数</span><div class="rd-value">{{ viewData.participantCount != null ? viewData.participantCount + ' 人' : '-' }}</div></div>
               <div class="rd-item rd-item--full"><span class="rd-label">参与人员</span><div class="rd-value">{{ viewData.participants || '-' }}</div></div>
             </div>
           </div>
         </section>
-        <section class="rd-card" v-if="viewData.drillDesc || viewData.evalResult || viewData.problems || viewData.improvements">
-          <div class="rd-card-header" @click="toggleCard('vc1')"><div class="rd-card-title">演练详情</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
-          <div class="rd-card-body" v-show="!collapsedCards.vc1" style="display:block">
+        <section class="rd-card" v-if="viewData.drillObjective || viewData.drillDesc">
+          <div class="rd-card-header" @click="toggleCard('vc2')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span>演练目的与过程</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.vc2" style="display:block">
             <div class="rd-grid">
+              <div class="rd-item rd-item--full"><span class="rd-label">演练目的</span><div class="rd-value">{{ viewData.drillObjective || '-' }}</div></div>
               <div class="rd-item rd-item--full"><span class="rd-label">过程描述</span><div class="rd-value">{{ viewData.drillDesc || '-' }}</div></div>
+            </div>
+          </div>
+        </section>
+        <section class="rd-card" v-if="viewData.evalResult || viewData.problems || viewData.improvements">
+          <div class="rd-card-header" @click="toggleCard('vc3')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span>评估与改进</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc3 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.vc3" style="display:block">
+            <div class="rd-grid">
               <div class="rd-item rd-item--full"><span class="rd-label">演练评估</span><div class="rd-value">{{ viewData.evalResult || '-' }}</div></div>
               <div class="rd-item rd-item--full"><span class="rd-label">发现问题</span><div class="rd-value">{{ viewData.problems || '-' }}</div></div>
               <div class="rd-item rd-item--full"><span class="rd-label">改进措施</span><div class="rd-value">{{ viewData.improvements || '-' }}</div></div>
             </div>
           </div>
         </section>
-        <section class="rd-card" v-if="viewData.attachments || viewData.remark">
-          <div class="rd-card-header" @click="toggleCard('vc2')"><div class="rd-card-title">附件与备注</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
-          <div class="rd-card-body" v-show="!collapsedCards.vc2" style="display:block">
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('vc4')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></span>附件与备注</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc4 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.vc4" style="display:block">
             <div class="rd-grid">
-              <div class="rd-item rd-item--full" v-if="viewData.attachments"><span class="rd-label">附件</span><div class="rd-value"><div class="rd-file-links" v-if="viewData.attachments">
-              <div class="rd-file-link" v-for="(url, idx) in String(viewData.attachments).split(',')" :key="idx">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                <span class="rd-file-name" @click="handleFilePreview(url)">{{ url.includes('/') ? url.substring(url.lastIndexOf('/') + 1) : url }}</span>
-                <a :href="baseUrl + url" target="_blank" class="rd-file-dl">下载</a>
-              </div>
-            </div></div></div>
+              <div class="rd-item rd-item--full"><span class="rd-label">附件</span><div class="rd-value"><div class="rd-file-links" v-if="viewData.attachments">
+<div class="rd-file-item" v-for="(url, idx) in String(viewData.attachments).split(',')" :key="idx">
+<div class="rd-file-link" @click="handleFilePreview(url)">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+<span class="rd-file-name">{{ url.includes('/') ? url.substring(url.lastIndexOf('/') + 1) : url }}</span>
+</div>
+<span class="rd-file-dl" @click="handleFileDownload(url)">
+<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+下载
+</span>
+</div>
+            </div><span v-if="!viewData.attachments">-</span></div></div>
               <div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value">{{ viewData.remark || '-' }}</div></div>
             </div>
           </div>
@@ -190,18 +231,20 @@
 import { listDrill, getDrill, addDrill, updateDrill, delDrill } from '@/api/safety/drill'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
-import { Search, Filter, RefreshLeft } from '@element-plus/icons-vue'
+import { Search, Filter, RefreshLeft, ArrowDown } from '@element-plus/icons-vue'
 import FilePreview from '@/components/FilePreview/index.vue'
+import { downloadFile } from '@/utils/downloadFile'
 
 const { proxy } = getCurrentInstance()
 const { safety_drill_type } = proxy.useDict('safety_drill_type')
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('safety_drill_index')
-const { collapsedCards, toggleCard } = useDetailCard(["c0","c1","c2","vc0","vc1","vc2"])
+const { collapsedCards, toggleCard } = useDetailCard(["c0","c1","c2","c3","c4","vc0","vc1","vc2","vc3","vc4"])
 
 const drillList = ref([])
 const open = ref(false)
 const loading = ref(true)
 const showSearch = ref(true)
+const showAdvanced = ref(false)
 const ids = ref([])
 const single = ref(true)
 const multiple = ref(true)
@@ -243,7 +286,7 @@ const columns = ref(loadColumnVisibility())
 
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, drillName: undefined, drillType: undefined, params: {} },
+  queryParams: { pageNum: 1, pageSize: 10, drillName: undefined, drillType: undefined, drillCode: undefined, params: {} },
   rules: {
     drillName: [{ required: true, message: '演练名称不能为空', trigger: 'blur' }],
     drillType: [{ required: true, message: '演练类型不能为空', trigger: 'change' }],
@@ -261,22 +304,26 @@ const activeFilterCount = computed(() => {
   let count = 0
   if (queryParams.value.drillName) count++
   if (queryParams.value.drillType) count++
+  if (queryParams.value.drillCode) count++
   return count
 })
 
 function handleFilePreview(url) {
-  const name = url.includes('/') ? url.substring(url.lastIndexOf('/') + 1) : url
-  proxy.$refs.filePreviewRef.open(url, name)
+const name = url.includes('/') ? url.substring(url.lastIndexOf('/') + 1) : url
+proxy.$refs.filePreviewRef.open(url, name)
+}
+function handleFileDownload(url) {
+downloadFile(url)
 }
 
 function getList() { loading.value = true; listDrill(queryParams.value).then(response => { drillList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths() }) }
-function handleQuery() { queryParams.value.pageNum = 1; getList() }
-function resetQuery() { queryParams.value.drillName = undefined; queryParams.value.drillType = undefined; queryParams.value.params = {}; handleQuery() }
+function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
+function resetQuery() { queryParams.value.drillName = undefined; queryParams.value.drillType = undefined; queryParams.value.drillCode = undefined; queryParams.value.params = {}; handleQuery() }
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleSelectionChange(selection) { ids.value = selection.map(item => item.drillId); single.value = selection.length !== 1; multiple.value = !selection.length }
-function handleAdd() { reset(); collapsedCards.c0 = false; collapsedCards.c1 = false; collapsedCards.c2 = false; open.value = true; title.value = '添加演练记录' }
+function handleAdd() { reset(); collapsedCards.c0 = false; collapsedCards.c1 = false; collapsedCards.c2 = false; collapsedCards.c3 = false; collapsedCards.c4 = false; open.value = true; title.value = '添加演练记录' }
 function handleView(row) { const id = row.drillId || ids.value[0]; getDrill(id).then(response => { viewData.value = response.data; viewOpen.value = true }) }
-function handleUpdate(row) { reset(); getDrill(row.drillId || ids.value[0]).then(response => { form.value = response.data; collapsedCards.c1 = !response.data.drillDesc && !response.data.evalResult && !response.data.problems && !response.data.improvements; collapsedCards.c2 = !response.data.attachments && !response.data.remark; open.value = true; title.value = '修改演练记录' }) }
+function handleUpdate(row) { reset(); getDrill(row.drillId || ids.value[0]).then(response => { form.value = response.data; collapsedCards.c2 = !response.data.drillObjective && !response.data.drillDesc; collapsedCards.c3 = !response.data.evalResult && !response.data.problems && !response.data.improvements; collapsedCards.c4 = !response.data.attachments && !response.data.remark; open.value = true; title.value = '修改演练记录' }) }
 function submitForm() {
   proxy.$refs['drillRef'].validate(valid => {
     if (valid) {
@@ -286,6 +333,7 @@ function submitForm() {
   })
 }
 function handleDelete(row) { const drillIds = row.drillId || ids.value; proxy.$modal.confirm('是否确认删除演练记录？').then(function() { return delDrill(drillIds) }).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleExport() { proxy.download('safety/emergency/drill/export', { ...queryParams.value }, `emergency_drill_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 function reset() {
   form.value = { drillId: undefined, drillCode: undefined, drillName: undefined, drillType: undefined, drillDate: undefined, drillLocation: undefined, drillCommander: undefined, drillObjective: undefined, participants: undefined, participantCount: undefined, drillDesc: undefined, evalResult: undefined, problems: undefined, improvements: undefined, attachments: undefined, remark: undefined }
@@ -304,6 +352,10 @@ getList()
 .safety-drill-page .filter-card .filter-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
 .safety-drill-page .filter-card .filter-title { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--ink-700); }
 .safety-drill-page .filter-card .filter-title .glyph { width:4px; height:14px; background:var(--brand-600); border-radius:2px; }
+.safety-drill-page .filter-card .adv-link { font-size:14px; color:var(--ink-500); text-decoration:none; display:flex; align-items:center; gap:4px; transition:color .15s; cursor:pointer; }
+.safety-drill-page .filter-card .adv-link:hover { color:var(--brand-600); }
+.safety-drill-page .filter-card .adv-link .chev { transition:transform .2s var(--ease-out); }
+.safety-drill-page .filter-card .adv-link.is-open .chev { transform:rotate(180deg); }
 .safety-drill-page .filter-card .filter-bar { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px 16px; }
 .safety-drill-page .filter-card .filter-actions { display:flex; align-items:center; justify-content:space-between; margin-top:14px; padding-top:14px; border-top:1px dashed var(--ink-200); }
 .safety-drill-page .filter-card .filter-info { font-size:13px; color:var(--ink-500); display:flex; align-items:center; gap:6px; }

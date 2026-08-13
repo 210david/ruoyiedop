@@ -91,10 +91,6 @@ INSERT INTO `mk_number_rule` (`rule_code`, `module`, `rule_name`, `prefix`, `dat
 SELECT 'qms_mr', 'qms', '材料评审编号', 'MR', 'yyyyMMdd', '1', 4, 1, 1, 0, '', '-', '0', 'admin', sysdate(), '材料评审报告编号，每日重置'
 WHERE NOT EXISTS (SELECT 1 FROM mk_number_rule WHERE rule_code='qms_mr');
 
--- 供应商审核编号
-INSERT INTO `mk_number_rule` (`rule_code`, `module`, `rule_name`, `prefix`, `date_format`, `reset_type`, `seq_length`, `seq_start`, `step`, `current_seq`, `current_date_str`, `connector`, `status`, `create_by`, `create_time`, `remark`)
-SELECT 'qms_supplier_audit', 'qms', '供应商审核编号', 'SA', 'yyyyMMdd', '1', 4, 1, 1, 0, '', '-', '0', 'admin', sysdate(), '供应商审核编号，每日重置'
-WHERE NOT EXISTS (SELECT 1 FROM mk_number_rule WHERE rule_code='qms_supplier_audit');
 
 -- 检验任务编号
 INSERT INTO `mk_number_rule` (`rule_code`, `module`, `rule_name`, `prefix`, `date_format`, `reset_type`, `seq_length`, `seq_start`, `step`, `current_seq`, `current_date_str`, `connector`, `status`, `create_by`, `create_time`, `remark`)

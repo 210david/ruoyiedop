@@ -112,7 +112,7 @@
               <span v-else>-</span>
             </template>
           </el-table-column>
-          <el-table-column prop="capacity" label="容量" key="capacity" :width="colWidth('capacity', 90)" resizable align="right" class-name="col-num" v-if="columns.capacity.visible">
+          <el-table-column prop="capacity" label="容量" key="capacity" :width="colWidth('capacity', 90)" resizable align="center" class-name="col-num" v-if="columns.capacity.visible">
             <template #default="scope">
               <span v-if="scope.row.nodeType === '3'">{{ scope.row.capacity }}</span>
               <span v-else>-</span>
@@ -668,7 +668,7 @@ getList()
 .wms-warehouse-page .app-table :deep(.el-table__row:hover > td) { background:#fafbff !important; }
 .wms-warehouse-page .app-table :deep(.el-table__inner-wrapper::before) { display:none; }
 .wms-warehouse-page .app-table :deep(.el-table__border-left-patch) { display:none; }
-.wms-warehouse-page .app-table :deep(.col-num) { text-align:right; font-feature-settings:"tnum" 1; font-variant-numeric:tabular-nums; }
+.wms-warehouse-page .app-table :deep(.col-num) { text-align:center; font-feature-settings:"tnum" 1; font-variant-numeric:tabular-nums; }
 
 /* ===== Badges ===== */
 .wms-warehouse-page .badge { display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:999px; font-size:13px; font-weight:600; line-height:1; border:1px solid transparent; }

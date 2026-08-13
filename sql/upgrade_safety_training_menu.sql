@@ -1,4 +1,9 @@
--- 教育培训菜单权限补全
+-- =============================================================
+-- [已废弃] 本脚本内容已合并到 upgrade_safety_training.sql
+-- 请勿单独执行本脚本，否则会产生重复菜单记录
+-- 完整教育培训升级请使用 upgrade_safety_training.sql
+-- =============================================================
+-- 教育培训菜单权限补全（已废弃，请使用 upgrade_safety_training.sql）
 
 -- 获取教育培训目录ID
 SELECT @trainingMenuId := menu_id FROM sys_menu WHERE menu_name = '教育培训' AND parent_id IN (SELECT menu_id FROM sys_menu WHERE menu_name = '安全生产管理' AND parent_id = 0);

@@ -4,6 +4,10 @@
     <div class="surface filter-card" v-show="showSearch">
       <div class="filter-head">
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+        <a class="adv-link" :class="{ 'is-open': showAdvanced }" @click.prevent="showAdvanced = !showAdvanced">
+          <span>{{ showAdvanced ? '收起' : '高级筛选' }}</span>
+          <el-icon class="chev"><ArrowDown /></el-icon>
+        </a>
       </div>
       <div class="filter-bar">
         <div class="field">
@@ -35,6 +39,30 @@
               <el-option label="是" value="1" />
               <el-option label="否" value="0" />
             </el-select>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>法定代表人</label>
+          <div class="control">
+            <el-input v-model="queryParams.legalPerson" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>安全负责人</label>
+          <div class="control">
+            <el-input v-model="queryParams.safetyManager" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>安全管理机构</label>
+          <div class="control">
+            <el-input v-model="queryParams.safetyOrg" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>创建时间</label>
+          <div class="control">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
           </div>
         </div>
       </div>
@@ -202,7 +230,7 @@ import { listEnterprise, getEnterprise, addEnterprise, updateEnterprise, delEnte
 import UserPicker from '@/components/UserPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
-import { Search, Filter, RefreshLeft, CircleClose } from '@element-plus/icons-vue'
+import { Search, Filter, RefreshLeft, CircleClose, ArrowDown } from '@element-plus/icons-vue'
 
 const { proxy } = getCurrentInstance()
 const { safety_industry_type } = proxy.useDict('safety_industry_type')
@@ -215,6 +243,8 @@ const viewOpen = ref(false)
 const viewData = ref({})
 const loading = ref(true)
 const showSearch = ref(true)
+const showAdvanced = ref(false)
+const dateRange = ref([])
 const ids = ref([])
 const single = ref(true)
 const multiple = ref(true)
@@ -251,7 +281,7 @@ const columns = ref(loadColumnVisibility())
 
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, enterpriseName: undefined, creditCode: undefined, industryType: undefined, isHighRisk: undefined, params: {} },
+  queryParams: { pageNum: 1, pageSize: 10, enterpriseName: undefined, creditCode: undefined, industryType: undefined, isHighRisk: undefined, legalPerson: undefined, safetyManager: undefined, safetyOrg: undefined, params: {} },
   rules: {
     enterpriseName: [{ required: true, message: '企业名称不能为空', trigger: 'blur' }],
     creditCode: [{ required: true, message: '统一社会信用代码不能为空', trigger: 'blur' }],
@@ -267,6 +297,10 @@ const activeFilterCount = computed(() => {
   if (queryParams.value.creditCode) count++
   if (queryParams.value.industryType) count++
   if (queryParams.value.isHighRisk) count++
+  if (queryParams.value.legalPerson) count++
+  if (queryParams.value.safetyManager) count++
+  if (queryParams.value.safetyOrg) count++
+  if (dateRange.value && dateRange.value.length > 0) count++
   return count
 })
 
@@ -280,8 +314,8 @@ function getList() {
   })
 }
 
-function handleQuery() { queryParams.value.pageNum = 1; getList() }
-function resetQuery() { queryParams.value.enterpriseName = undefined; queryParams.value.creditCode = undefined; queryParams.value.industryType = undefined; queryParams.value.isHighRisk = undefined; queryParams.value.params = {}; handleQuery() }
+function handleQuery() { showAdvanced.value = false; proxy.addDateRange(queryParams.value, dateRange.value); queryParams.value.pageNum = 1; getList() }
+function resetQuery() { queryParams.value.enterpriseName = undefined; queryParams.value.creditCode = undefined; queryParams.value.industryType = undefined; queryParams.value.isHighRisk = undefined; queryParams.value.legalPerson = undefined; queryParams.value.safetyManager = undefined; queryParams.value.safetyOrg = undefined; dateRange.value = []; queryParams.value.params = {}; handleQuery() }
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleSelectionChange(selection) { ids.value = selection.map(item => item.enterpriseId); single.value = selection.length !== 1; multiple.value = !selection.length }
 
@@ -310,7 +344,7 @@ function handleDelete(row) {
   const enterpriseIds = row.enterpriseId || ids.value
   proxy.$modal.confirm('是否确认删除企业档案？').then(function() { return delEnterprise(enterpriseIds) }).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {})
 }
-function handleExport() { proxy.download('safety/arch/enterprise/export', { ...queryParams.value }, `enterprise_${new Date().getTime()}.xlsx`) }
+function handleExport() { proxy.download('safety/enterprise/export', { ...proxy.addDateRange(queryParams.value, dateRange.value) }, `enterprise_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 function reset() {
   form.value = { enterpriseId: undefined, enterpriseName: undefined, creditCode: undefined, industryType: undefined, isHighRisk: '0', legalPerson: undefined, safetyManagerId: undefined, safetyManager: undefined, safetyOrg: undefined, superviseDept: undefined, responsibility: undefined, remark: undefined }
@@ -352,6 +386,10 @@ getList()
 .safety-enterprise-page .filter-card .filter-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
 .safety-enterprise-page .filter-card .filter-title { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--ink-700); }
 .safety-enterprise-page .filter-card .filter-title .glyph { width:4px; height:14px; background:var(--brand-600); border-radius:2px; }
+.safety-enterprise-page .filter-card .adv-link { font-size:14px; color:var(--ink-500); text-decoration:none; display:flex; align-items:center; gap:4px; transition:color .15s; cursor:pointer; }
+.safety-enterprise-page .filter-card .adv-link:hover { color:var(--brand-600); }
+.safety-enterprise-page .filter-card .adv-link .chev { transition:transform .2s var(--ease-out); }
+.safety-enterprise-page .filter-card .adv-link.is-open .chev { transform:rotate(180deg); }
 .safety-enterprise-page .filter-card .filter-bar { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px 16px; }
 .safety-enterprise-page .filter-card .filter-actions { display:flex; align-items:center; justify-content:space-between; margin-top:14px; padding-top:14px; border-top:1px dashed var(--ink-200); }
 .safety-enterprise-page .filter-card .filter-info { font-size:13px; color:var(--ink-500); display:flex; align-items:center; gap:6px; }
@@ -370,6 +408,10 @@ getList()
 .safety-enterprise-page .field .control :deep(.el-select .el-select__wrapper) { box-shadow:none !important; background:transparent !important; padding:0; min-height:34px; height:34px; }
 .safety-enterprise-page .field .control :deep(.el-select .el-select__wrapper .el-select__placeholder) { font-size:14px; color:var(--ink-900); }
 .safety-enterprise-page .field .control :deep(.el-select .el-select__wrapper.is-focused) { box-shadow:none !important; }
+.safety-enterprise-page .field .control :deep(.el-date-editor) { width:100%; }
+.safety-enterprise-page .field .control :deep(.el-date-editor .el-range-input) { background:transparent; border:0; font-size:14px; color:var(--ink-900); }
+.safety-enterprise-page .field .control :deep(.el-date-editor .el-range-separator) { color:var(--ink-400); }
+.safety-enterprise-page .field .control :deep(.el-date-editor .el-range__icon) { color:var(--ink-400); }
 
 .safety-enterprise-page .toolbar { display:flex; align-items:center; justify-content:space-between; padding:12px 20px; border-bottom:1px solid var(--ink-200); background:var(--ink-50); }
 .safety-enterprise-page .toolbar .left { display:flex; gap:8px; align-items:center; }

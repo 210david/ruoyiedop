@@ -2,7 +2,9 @@ package com.ruoyi.qms.service.impl;
 
 import java.math.BigDecimal;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,11 +16,13 @@ import com.ruoyi.qms.domain.QmsInspTask;
 import com.ruoyi.qms.domain.QmsInspItem;
 import com.ruoyi.qms.domain.QmsMaterialAttr;
 import com.ruoyi.qms.domain.QmsEsigRecord;
+import com.ruoyi.qms.domain.QmsNcr;
 import com.ruoyi.qms.mapper.QmsInspTaskMapper;
 import com.ruoyi.qms.mapper.QmsInspItemMapper;
 import com.ruoyi.qms.mapper.QmsMaterialAttrMapper;
 import com.ruoyi.qms.service.IQmsInspTaskService;
 import com.ruoyi.qms.service.IQmsEsigRecordService;
+import com.ruoyi.qms.service.IQmsNcrService;
 import com.ruoyi.qms.util.AqlCalculator;
 import com.ruoyi.mk.service.IMkNumberRuleService;
 
@@ -43,6 +47,9 @@ public class QmsInspTaskServiceImpl implements IQmsInspTaskService
 
     @Autowired
     private IQmsEsigRecordService qmsEsigRecordService;
+
+    @Autowired
+    private IQmsNcrService qmsNcrService;
 
     @Autowired
     private IMkNumberRuleService mkNumberRuleService;
@@ -72,7 +79,17 @@ public class QmsInspTaskServiceImpl implements IQmsInspTaskService
         // 自动生成检验任务编号
         if (StringUtils.isEmpty(inspTask.getTaskNo()))
         {
-            inspTask.setTaskNo(mkNumberRuleService.generateNumber("qms_insp_task"));
+            // 传递动态前缀参数（检验类型），使动态前缀规则可生效
+            Map<String, String> params = new HashMap<>();
+            if (StringUtils.isNotEmpty(inspTask.getTaskType()))
+            {
+                params.put("taskType", inspTask.getTaskType());
+            }
+            if (StringUtils.isNotEmpty(inspTask.getSourceType()))
+            {
+                params.put("sourceType", inspTask.getSourceType());
+            }
+            inspTask.setTaskNo(mkNumberRuleService.generateNumber("qms_insp_task", params));
         }
         // 自动计算AQL抽样数
         if (inspTask.getInspectQty() != null && StringUtils.isNotEmpty(inspTask.getAqlLevel()))
@@ -106,6 +123,17 @@ public class QmsInspTaskServiceImpl implements IQmsInspTaskService
     @Transactional(rollbackFor = Exception.class)
     public int updateInspTask(QmsInspTask inspTask)
     {
+        // 送检数量或AQL等级变更时，重新计算抽样参数
+        if (inspTask.getInspectQty() != null && StringUtils.isNotEmpty(inspTask.getAqlLevel()))
+        {
+            int[] result = AqlCalculator.calculate(inspTask.getInspectQty(), inspTask.getAqlLevel());
+            if (result != null)
+            {
+                inspTask.setSampleSize(result[0]);
+                inspTask.setAcVal(result[1]);
+                inspTask.setReVal(result[2]);
+            }
+        }
         return qmsInspTaskMapper.updateInspTask(inspTask);
     }
 
@@ -145,7 +173,7 @@ public class QmsInspTaskServiceImpl implements IQmsInspTaskService
             }
             qmsInspItemMapper.batchInsertInspItem(items);
         }
-        // 自动判定
+        // 自动判定 - 按缺陷数量统计（不是按行数）
         int defectCount = 0;
         String highestDefectLevel = "4"; // 默认轻微
         if (items != null)
@@ -154,7 +182,9 @@ public class QmsInspTaskServiceImpl implements IQmsInspTaskService
             {
                 if ("2".equals(item.getItemResult()))
                 {
-                    defectCount++;
+                    // 使用缺陷数量字段，默认为1（兼容旧数据）
+                    int qty = item.getDefectQty() != null ? item.getDefectQty() : 1;
+                    defectCount += qty;
                     // 取最高缺陷等级（数值越小等级越高）
                     if (item.getDefectLevel() != null)
                     {
@@ -201,6 +231,12 @@ public class QmsInspTaskServiceImpl implements IQmsInspTaskService
         esig.setSigOpinion(batchResult ? "批量合格" : "批量不合格，最高缺陷等级：" + highestDefectLevel);
         esig.setSigResult(batchResult ? "pass" : "fail");
         qmsEsigRecordService.saveEsigRecord(esig);
+        // 检验不合格时自动创建NCR（不合格品报告）
+        if (!batchResult)
+        {
+            createNcrFromInspection(existing, inspTask, items, highestDefectLevel);
+            log.info("检验任务 {} 判定不合格，已自动创建NCR", inspTask.getTaskNo());
+        }
         return updateResult;
     }
 
@@ -235,6 +271,17 @@ public class QmsInspTaskServiceImpl implements IQmsInspTaskService
         recheck.setDelFlag("0");
         recheck.setStatus("0");
         recheck.setRemark("基于任务 " + original.getTaskNo() + " 的复检");
+                // 传递动态前缀参数（检验类型），使动态前缀规则可生效
+        Map<String, String> recheckParams = new HashMap<>();
+        if (StringUtils.isNotEmpty(recheck.getTaskType()))
+        {
+            recheckParams.put("taskType", recheck.getTaskType());
+        }
+        if (StringUtils.isNotEmpty(recheck.getSourceType()))
+        {
+            recheckParams.put("sourceType", recheck.getSourceType());
+        }
+        recheck.setTaskNo(mkNumberRuleService.generateNumber("qms_insp_task", recheckParams));
         qmsInspTaskMapper.insertInspTask(recheck);
         return recheck;
     }
@@ -322,6 +369,183 @@ public class QmsInspTaskServiceImpl implements IQmsInspTaskService
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int startInspect(Long taskId)
+    {
+        QmsInspTask existing = qmsInspTaskMapper.selectInspTaskById(taskId);
+        if (existing == null)
+        {
+            throw new ServiceException("检验任务不存在");
+        }
+        if (!"0".equals(existing.getTaskStatus()))
+        {
+            throw new ServiceException("只有待检状态的任务才能开始检验");
+        }
+        QmsInspTask update = new QmsInspTask();
+        update.setTaskId(taskId);
+        update.setTaskStatus("1");
+        update.setInspectTime(new Date());
+        return qmsInspTaskMapper.updateInspTask(update);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int voidTask(Long taskId, String reason, String voidType)
+    {
+        QmsInspTask existing = qmsInspTaskMapper.selectInspTaskById(taskId);
+        if (existing == null)
+        {
+            throw new ServiceException("检验任务不存在");
+        }
+        if ("2".equals(existing.getTaskStatus()))
+        {
+            throw new ServiceException("已判定的检验任务不可作废");
+        }
+        QmsInspTask update = new QmsInspTask();
+        update.setTaskId(taskId);
+        update.setTaskStatus("3");
+        update.setRemark(buildVoidRemark(reason, voidType));
+        return qmsInspTaskMapper.updateInspTask(update);
+    }
+
+    private String buildVoidRemark(String reason, String voidType)
+    {
+        String typeLabel = switchVoidTypeLabel(voidType);
+        StringBuilder sb = new StringBuilder();
+        if (typeLabel != null)
+        {
+            sb.append("作废类型：").append(typeLabel).append("；");
+        }
+        sb.append("作废原因：").append(reason != null ? reason : "-");
+        return sb.toString();
+    }
+
+    private String switchVoidTypeLabel(String voidType)
+    {
+        if (voidType == null || voidType.isEmpty())
+        {
+            return null;
+        }
+        switch (voidType)
+        {
+            case "1": return "重复创建";
+            case "2": return "信息填写错误";
+            case "3": return "物料/批次变更";
+            case "4": return "客户取消订单";
+            case "5": return "检验计划取消";
+            case "9": return "其他";
+            default: return "其他";
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int assignInspector(Long[] taskIds, Long inspectorId, String inspectorName)
+    {
+        int count = 0;
+        for (Long taskId : taskIds)
+        {
+            QmsInspTask existing = qmsInspTaskMapper.selectInspTaskById(taskId);
+            if (existing == null)
+            {
+                continue;
+            }
+            if ("2".equals(existing.getTaskStatus()) || "3".equals(existing.getTaskStatus()))
+            {
+                throw new ServiceException("任务" + existing.getTaskNo() + "已判定或已作废，不可分配检验员");
+            }
+            QmsInspTask update = new QmsInspTask();
+            update.setTaskId(taskId);
+            update.setInspectorId(inspectorId);
+            update.setInspectorName(inspectorName);
+            qmsInspTaskMapper.updateInspTask(update);
+            count++;
+        }
+        return count;
+    }
+
+    @Override
+    public Map<String, Integer> selectStatusCounts()
+    {
+        List<Map<String, Object>> rawList = qmsInspTaskMapper.selectStatusCounts();
+        Map<String, Integer> result = new HashMap<>();
+        result.put("all", 0);
+        result.put("0", 0); // 待检
+        result.put("1", 0); // 检验中
+        result.put("2", 0); // 已判定
+        result.put("3", 0); // 已作废
+        int total = 0;
+        for (Map<String, Object> row : rawList)
+        {
+            String status = String.valueOf(row.get("status"));
+            int cnt = ((Number) row.get("cnt")).intValue();
+            result.put(status, cnt);
+            total += cnt;
+        }
+        result.put("all", total);
+        return result;
+    }
+
+    /**
+     * 检验不合格时自动创建NCR（不合格品报告）
+     */
+    private void createNcrFromInspection(QmsInspTask existing, QmsInspTask inspTask, List<QmsInspItem> items, String highestDefectLevel)
+    {
+        QmsNcr ncr = new QmsNcr();
+        ncr.setSourceType("inspection");
+        ncr.setSourceId(inspTask.getTaskId());
+        ncr.setSourceNo(inspTask.getTaskNo());
+        ncr.setTaskId(inspTask.getTaskId());
+        ncr.setMaterialId(existing.getMaterialId());
+        ncr.setMaterialCode(existing.getMaterialCode());
+        ncr.setMaterialName(existing.getMaterialName());
+        ncr.setSupplierId(existing.getSupplierId());
+        ncr.setSupplierName(existing.getSupplierName());
+        ncr.setBatchNo(existing.getBatchNo());
+        ncr.setDefectLevel(highestDefectLevel);
+        // 构建缺陷描述
+        StringBuilder defectDesc = new StringBuilder();
+        if (items != null)
+        {
+            for (QmsInspItem item : items)
+            {
+                if ("2".equals(item.getItemResult()))
+                {
+                    if (defectDesc.length() > 0) defectDesc.append("；");
+                    defectDesc.append(item.getStdName());
+                    if (StringUtils.isNotEmpty(item.getDefectName()))
+                    {
+                        defectDesc.append("：").append(item.getDefectName());
+                    }
+                }
+            }
+        }
+        ncr.setDefectDesc(defectDesc.toString());
+        // 不合格数量 = 样本中不合格项的缺陷数量之和（与批量判定逻辑保持一致）
+        int defectCount = 0;
+        if (items != null)
+        {
+            for (QmsInspItem item : items)
+            {
+                if ("2".equals(item.getItemResult()))
+                {
+                    // 使用缺陷数量字段，默认为1（兼容旧数据）
+                    int qty = item.getDefectQty() != null ? item.getDefectQty() : 1;
+                    defectCount += qty;
+                }
+            }
+        }
+        ncr.setDefectQty(new BigDecimal(defectCount));
+        ncr.setNcrStatus("0"); // 已登记
+        ncr.setIsolateFlag("0");
+        ncr.setDiscovererId(inspTask.getInspectorId());
+        ncr.setDiscovererName(inspTask.getInspectorName());
+        ncr.setDiscoverTime(new Date());
+        ncr.setRemark("检验任务" + inspTask.getTaskNo() + "判定不合格，系统自动创建");
+        qmsNcrService.insertNcr(ncr);
+    }
+
+    @Override
     public QmsInspTask getReportData(Long taskId)
     {
         QmsInspTask task = selectInspTaskById(taskId);
@@ -329,8 +553,7 @@ public class QmsInspTaskServiceImpl implements IQmsInspTaskService
         {
             // 加载电子签名记录
             List<QmsEsigRecord> esigList = qmsEsigRecordService.selectEsigRecordByBiz("insp_judge", taskId);
-            // 设置到非数据库字段（需要扩展domain）
-            // task.setEsigList(esigList);
+            task.setEsigList(esigList);
         }
         return task;
     }

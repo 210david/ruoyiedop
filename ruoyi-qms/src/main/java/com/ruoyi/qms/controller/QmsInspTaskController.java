@@ -1,6 +1,7 @@
 package com.ruoyi.qms.controller;
 
 import java.util.List;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
@@ -103,5 +104,43 @@ public class QmsInspTaskController extends BaseController
     public AjaxResult createRecheckTask(@PathVariable Long taskId)
     {
         return AjaxResult.success(qmsInspTaskService.createRecheckTask(taskId));
+    }
+
+    @Log(title = "开始检验", businessType = BusinessType.UPDATE)
+    @PreAuthorize("@ss.hasPermi('qms:task:inspect')")
+    @PutMapping("/start/{taskId}")
+    public AjaxResult startInspect(@PathVariable Long taskId)
+    {
+        return toAjax(qmsInspTaskService.startInspect(taskId));
+    }
+
+    @Log(title = "作废检验任务", businessType = BusinessType.UPDATE)
+    @PreAuthorize("@ss.hasPermi('qms:task:edit')")
+    @PutMapping("/void/{taskId}")
+    public AjaxResult voidTask(@PathVariable Long taskId, @RequestBody(required = false) Map<String, String> body)
+    {
+        String reason = body != null ? body.get("reason") : null;
+        String voidType = body != null ? body.get("voidType") : null;
+        return toAjax(qmsInspTaskService.voidTask(taskId, reason, voidType));
+    }
+
+    @Log(title = "批量分配检验员", businessType = BusinessType.UPDATE)
+    @PreAuthorize("@ss.hasPermi('qms:task:edit')")
+    @PutMapping("/assignInspector")
+    @SuppressWarnings("unchecked")
+    public AjaxResult assignInspector(@RequestBody Map<String, Object> body)
+    {
+        List<Integer> rawIds = (List<Integer>) body.get("taskIds");
+        Long[] taskIds = rawIds.stream().map(Integer::longValue).toArray(Long[]::new);
+        Long inspectorId = body.get("inspectorId") != null ? Long.valueOf(body.get("inspectorId").toString()) : null;
+        String inspectorName = (String) body.get("inspectorName");
+        return AjaxResult.success(qmsInspTaskService.assignInspector(taskIds, inspectorId, inspectorName));
+    }
+
+    @PreAuthorize("@ss.hasPermi('qms:task:list')")
+    @GetMapping("/statusCounts")
+    public AjaxResult statusCounts()
+    {
+        return AjaxResult.success(qmsInspTaskService.selectStatusCounts());
     }
 }

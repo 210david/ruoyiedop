@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.qms.mapper.QmsDocVersionMapper">
+    <resultMap type="QmsDocVersion" id="QmsDocVersionResult">
+        <id property="versionId" column="version_id"/>
+        <result property="docId" column="doc_id"/>
+        <result property="docNo" column="doc_no"/>
+        <result property="versionNo" column="version_no"/>
+        <result property="fileUrl" column="file_url"/>
+        <result property="changeLog" column="change_log"/>
+        <result property="versionStatus" column="version_status"/>
+        <result property="publishBy" column="publish_by"/>
+        <result property="publishTime" column="publish_time"/>
+        <result property="obsoleteBy" column="obsolete_by"/>
+        <result property="obsoleteTime" column="obsolete_time"/>
+        <result property="esigUser" column="esig_user"/>
+        <result property="esigMeaning" column="esig_meaning"/>
+        <result property="esigTime" column="esig_time"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <sql id="selectVo">select version_id, doc_id, doc_no, version_no, file_url, change_log, version_status, publish_by, publish_time, obsolete_by, obsolete_time, esig_user, esig_meaning, esig_time, create_by, create_time, remark from qms_doc_version</sql>
+
+    <select id="selectDocVersionList" parameterType="QmsDocVersion" resultMap="QmsDocVersionResult">
+        <include refid="selectVo"/>
+        <where>
+            <if test="docId != null">and doc_id = #{docId}</if>
+            <if test="docNo != null and docNo != ''">and doc_no = #{docNo}</if>
+            <if test="versionStatus != null and versionStatus != ''">and version_status = #{versionStatus}</if>
+        </where>
+        order by version_id desc
+    </select>
+
+    <select id="selectByVersionDocId" parameterType="Long" resultMap="QmsDocVersionResult">
+        <include refid="selectVo"/> where doc_id = #{docId} order by version_id desc
+    </select>
+
+    <select id="selectDocVersionById" parameterType="Long" resultMap="QmsDocVersionResult">
+        <include refid="selectVo"/> where version_id = #{versionId}
+    </select>
+
+    <insert id="insertDocVersion" parameterType="QmsDocVersion" useGeneratedKeys="true" keyProperty="versionId">
+        insert into qms_doc_version(doc_id, doc_no, version_no, file_url, change_log, version_status, publish_by, publish_time, esig_user, esig_meaning, esig_time, create_by, create_time, remark)
+        values(#{docId}, #{docNo}, #{versionNo}, #{fileUrl}, #{changeLog}, #{versionStatus}, #{publishBy}, sysdate(), #{esigUser}, #{esigMeaning}, sysdate(), #{createBy}, sysdate(), #{remark})
+    </insert>
+
+    <update id="updateDocVersion" parameterType="QmsDocVersion">
+        update qms_doc_version
+        <set>
+            <if test="versionNo != null">version_no = #{versionNo},</if>
+            <if test="fileUrl != null">file_url = #{fileUrl},</if>
+            <if test="changeLog != null">change_log = #{changeLog},</if>
+            <if test="versionStatus != null">version_status = #{versionStatus},</if>
+            <if test="publishBy != null">publish_by = #{publishBy},</if>
+            <if test="publishTime != null">publish_time = #{publishTime},</if>
+            <if test="obsoleteBy != null">obsolete_by = #{obsoleteBy},</if>
+            <if test="obsoleteTime != null">obsolete_time = #{obsoleteTime},</if>
+            <if test="esigUser != null">esig_user = #{esigUser},</if>
+            <if test="esigMeaning != null">esig_meaning = #{esigMeaning},</if>
+            <if test="esigTime != null">esig_time = #{esigTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </set>
+        where version_id = #{versionId}
+    </update>
+
+    <delete id="deleteDocVersionByIds" parameterType="Long">
+        delete from qms_doc_version where version_id in
+        <foreach item="versionId" collection="array" open="(" separator="," close=")">#{versionId}</foreach>
+    </delete>
+</mapper>

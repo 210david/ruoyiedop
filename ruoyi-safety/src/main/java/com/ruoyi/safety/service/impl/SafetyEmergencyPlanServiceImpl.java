@@ -1,4 +1,7 @@
-package com.ruoyi.safety.service.impl;
+package com.ruoyi.safety.service.impl;
+import java.util.HashMap;
+import java.util.Map;
+
 
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,7 +30,9 @@ public class SafetyEmergencyPlanServiceImpl implements ISafetyEmergencyPlanServi
     @Override
     public int insertSafetyEmergencyPlan(SafetyEmergencyPlan safetyEmergencyPlan) {
         if (StringUtils.isEmpty(safetyEmergencyPlan.getPlanCode())) {
-            safetyEmergencyPlan.setPlanCode(mkNumberRuleService.generateNumber("safety_emergency_plan"));
+            Map<String, String> params = new HashMap<>();
+        if (StringUtils.isNotEmpty(safetyEmergencyPlan.getPlanType())) { params.put("planType", safetyEmergencyPlan.getPlanType()); }
+        safetyEmergencyPlan.setPlanCode(mkNumberRuleService.generateNumber("safety_emergency_plan", params));
         }
         return safetyEmergencyPlanMapper.insertSafetyEmergencyPlan(safetyEmergencyPlan); }
 

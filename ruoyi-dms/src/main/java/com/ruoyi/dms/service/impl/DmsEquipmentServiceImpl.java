@@ -1,4 +1,7 @@
-package com.ruoyi.dms.service.impl;
+package com.ruoyi.dms.service.impl;
+import java.util.HashMap;
+import java.util.Map;
+
 
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,7 +41,9 @@ public class DmsEquipmentServiceImpl implements IDmsEquipmentService
         equipment.setDelFlag("0");
         if (StringUtils.isEmpty(equipment.getEquipmentCode()))
         {
-            equipment.setEquipmentCode(mkNumberRuleService.generateNumber("dms_equipment"));
+            Map<String, String> params = new HashMap<>();
+        if (StringUtils.isNotEmpty(equipment.getEquipmentStatus())) { params.put("equipmentStatus", equipment.getEquipmentStatus()); }
+        equipment.setEquipmentCode(mkNumberRuleService.generateNumber("dms_equipment", params));
         }
         return dmsEquipmentMapper.insertEquipment(equipment);
     }
@@ -114,7 +119,9 @@ public class DmsEquipmentServiceImpl implements IDmsEquipmentService
                 else
                 {
                     // 新增：自动生成编码，设置默认值
-                    row.setEquipmentCode(mkNumberRuleService.generateNumber("dms_equipment"));
+                    Map<String, String> params = new HashMap<>();
+        if (StringUtils.isNotEmpty(row.getEquipmentStatus())) { params.put("equipmentStatus", row.getEquipmentStatus()); }
+        row.setEquipmentCode(mkNumberRuleService.generateNumber("dms_equipment", params));
                     row.setDelFlag("0");
                     if (StringUtils.isEmpty(row.getStatus()))
                     {

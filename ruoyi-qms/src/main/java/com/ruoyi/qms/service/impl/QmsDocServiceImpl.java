@@ -1,6 +1,8 @@
 package com.ruoyi.qms.service.impl;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,10 +27,15 @@ public class QmsDocServiceImpl implements IQmsDocService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertDoc(QmsDoc doc) {
-        if (StringUtils.isEmpty(doc.getDocNo())) {
-            doc.setDocNo(mkNumberRuleService.generateNumber("qms_doc"));
+        // 文档编号始终由系统自动生成（忽略前端传入的值）
+        Map<String, String> params = new HashMap<>();
+        if (StringUtils.isNotEmpty(doc.getDocCategory()))
+        {
+            params.put("docCategory", doc.getDocCategory());
         }
-        doc.setDelFlag("0"); doc.setStatus("0");
+        doc.setDocNo(mkNumberRuleService.generateNumber("qms_doc", params));
+        doc.setDelFlag("0");
+        doc.setStatus("0");
         if (doc.getDocStatus() == null) doc.setDocStatus("0");
         if (doc.getVersionNo() == null) doc.setVersionNo("v1.0");
         return mapper.insertDoc(doc);

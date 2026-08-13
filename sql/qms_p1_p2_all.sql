@@ -66,32 +66,7 @@ CREATE TABLE qms_supplier_eval (
     PRIMARY KEY (eval_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='供应商质量评价表';
 
--- 3. 供应商审核表
-DROP TABLE IF EXISTS qms_supplier_audit;
-CREATE TABLE qms_supplier_audit (
-    audit_id        BIGINT       NOT NULL AUTO_INCREMENT  COMMENT '审核ID',
-    audit_no        VARCHAR(64)  NOT NULL                 COMMENT '审核编号',
-    supplier_id     BIGINT                                COMMENT '供应商ID',
-    supplier_name   VARCHAR(200)                          COMMENT '供应商名称',
-    audit_type      VARCHAR(20)                           COMMENT '审核类型（initial=初审, routine=例行, follow=跟踪）',
-    audit_date      DATE                                  COMMENT '审核日期',
-    auditor         VARCHAR(64)                           COMMENT '审核员',
-    audit_scope     VARCHAR(500)                          COMMENT '审核范围',
-    audit_result    VARCHAR(20)                           COMMENT '审核结论（pass=通过, conditional=有条件通过, fail=不通过）',
-    nonconformity   TEXT                                  COMMENT '不符合项描述',
-    audit_status    CHAR(1)      DEFAULT '0'              COMMENT '状态（0计划中 1已完成 2已关闭）',
-    del_flag        CHAR(1)      DEFAULT '0'              COMMENT '删除标志',
-    status          CHAR(1)      DEFAULT '0'              COMMENT '状态',
-    create_by       VARCHAR(64)  DEFAULT ''               COMMENT '创建者',
-    create_time     DATETIME                              COMMENT '创建时间',
-    update_by       VARCHAR(64)  DEFAULT ''               COMMENT '更新者',
-    update_time     DATETIME                              COMMENT '更新时间',
-    remark          VARCHAR(500)                          COMMENT '备注',
-    PRIMARY KEY (audit_id),
-    UNIQUE KEY uk_audit_no (audit_no)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='供应商审核表';
-
--- 4. 客诉表
+-- 3. 客诉表
 DROP TABLE IF EXISTS qms_complaint;
 CREATE TABLE qms_complaint (
     complaint_id    BIGINT       NOT NULL AUTO_INCREMENT  COMMENT '客诉ID',
@@ -161,7 +136,7 @@ CREATE TABLE qms_doc (
     doc_status      Char(1)      DEFAULT '0'              COMMENT '状态（0草稿 1审批中 2生效 3作废）',
     dept_id         BIGINT                                COMMENT '归属部门ID',
     dept_name       VARCHAR(100)                          COMMENT '归属部门名称',
-    tpl_id          BIGINT                                COMMENT '行业模板ID',
+    industry_type   VARCHAR(32)                           COMMENT '行业类型（字典 qms_industry_type）',
     file_url        VARCHAR(500)                          COMMENT '文件地址',
     publish_date    DATE                                  COMMENT '生效日期',
     obsolete_date   DATE                                  COMMENT '作废日期',
@@ -280,13 +255,6 @@ INSERT INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, list_cl
 (3, 'C级(一般)', 'C', 'qms_supplier_grade', 'warning', 'N', '0', 'admin', sysdate()),
 (4, 'D级(较差)', 'D', 'qms_supplier_grade', 'danger', 'N', '0', 'admin', sysdate());
 
--- 供应商审核类型
-INSERT INTO sys_dict_type (dict_name, dict_type, status, create_by, create_time, remark) VALUES ('供应商审核类型', 'qms_supplier_audit_type', '0', 'admin', sysdate(), '供应商审核类型');
-INSERT INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, is_default, status, create_by, create_time) VALUES
-(1, '初审', 'initial', 'qms_supplier_audit_type', 'Y', '0', 'admin', sysdate()),
-(2, '例行审核', 'routine', 'qms_supplier_audit_type', 'N', '0', 'admin', sysdate()),
-(3, '跟踪审核', 'follow', 'qms_supplier_audit_type', 'N', '0', 'admin', sysdate());
-
 -- 客诉类型
 INSERT INTO sys_dict_type (dict_name, dict_type, status, create_by, create_time, remark) VALUES ('客诉类型', 'qms_complaint_type', '0', 'admin', sysdate(), '客诉类型');
 INSERT INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, is_default, status, create_by, create_time) VALUES
@@ -370,9 +338,9 @@ INSERT INTO sys_menu (menu_name, parent_id, order_num, path, menu_type, visible,
 ('CAPA导出', @qmsCapaId, 5, '', 'F', '0', '0', 'qms:capa:export', 'admin', sysdate()),
 ('CAPA关闭', @qmsCapaId, 6, '', 'F', '0', '0', 'qms:capa:close', 'admin', sysdate());
 
--- P1-2: 供应商质量管理目录
+-- P1-2: 供应商质量管控目录（只管质量维度，资质/商务由PMS负责）
 INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark)
-VALUES ('供应商质量管理', @qmsParentId, 6, 'sqm', NULL, '', 'QmsSqmDir', 1, 0, 'M', '0', '0', '', 'people', 'admin', sysdate(), '供应商质量管理目录');
+VALUES ('供应商质量管控', @qmsParentId, 6, 'sqm', NULL, '', 'QmsSqmDir', 1, 0, 'M', '0', '0', '', 'people', 'admin', sysdate(), '供应商质量管控目录');
 SET @qmsSqmDirId = LAST_INSERT_ID();
 
 INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark)
@@ -384,16 +352,6 @@ INSERT INTO sys_menu (menu_name, parent_id, order_num, path, menu_type, visible,
 ('评价修改', @qmsSupplierEvalId, 3, '', 'F', '0', '0', 'qms:supplierEval:edit', 'admin', sysdate()),
 ('评价删除', @qmsSupplierEvalId, 4, '', 'F', '0', '0', 'qms:supplierEval:remove', 'admin', sysdate()),
 ('评价导出', @qmsSupplierEvalId, 5, '', 'F', '0', '0', 'qms:supplierEval:export', 'admin', sysdate());
-
-INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark)
-VALUES ('供应商审核', @qmsSqmDirId, 2, 'audit', 'qms/supplierAudit/index', '', 'QmsSupplierAudit', 1, 0, 'C', '0', '0', 'qms:supplierAudit:list', 'view', 'admin', sysdate(), '供应商审核');
-SET @qmsSupplierAuditId = LAST_INSERT_ID();
-INSERT INTO sys_menu (menu_name, parent_id, order_num, path, menu_type, visible, status, perms, create_by, create_time) VALUES
-('审核查询', @qmsSupplierAuditId, 1, '', 'F', '0', '0', 'qms:supplierAudit:query', 'admin', sysdate()),
-('审核新增', @qmsSupplierAuditId, 2, '', 'F', '0', '0', 'qms:supplierAudit:add', 'admin', sysdate()),
-('审核修改', @qmsSupplierAuditId, 3, '', 'F', '0', '0', 'qms:supplierAudit:edit', 'admin', sysdate()),
-('审核删除', @qmsSupplierAuditId, 4, '', 'F', '0', '0', 'qms:supplierAudit:remove', 'admin', sysdate()),
-('审核导出', @qmsSupplierAuditId, 5, '', 'F', '0', '0', 'qms:supplierAudit:export', 'admin', sysdate());
 
 -- P1-3: 客诉管理
 INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark)
@@ -419,7 +377,8 @@ INSERT INTO sys_menu (menu_name, parent_id, order_num, path, menu_type, visible,
 ('目标查询', @qmsTargetId, 1, '', 'F', '0', '0', 'qms:target:query', 'admin', sysdate()),
 ('目标新增', @qmsTargetId, 2, '', 'F', '0', '0', 'qms:target:add', 'admin', sysdate()),
 ('目标修改', @qmsTargetId, 3, '', 'F', '0', '0', 'qms:target:edit', 'admin', sysdate()),
-('目标删除', @qmsTargetId, 4, '', 'F', '0', '0', 'qms:target:remove', 'admin', sysdate());
+('目标删除', @qmsTargetId, 4, '', 'F', '0', '0', 'qms:target:remove', 'admin', sysdate()),
+('目标导出', @qmsTargetId, 5, '', 'F', '0', '0', 'qms:target:export', 'admin', sysdate());
 
 -- P1-5: 报表中心
 INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark)
@@ -464,7 +423,7 @@ INSERT INTO sys_menu (menu_name, parent_id, order_num, path, menu_type, visible,
 
 -- 授权admin角色
 INSERT IGNORE INTO sys_role_menu (role_id, menu_id)
-SELECT 1, menu_id FROM sys_menu WHERE perms LIKE 'qms:capa%%' OR perms LIKE 'qms:supplierEval%%' OR perms LIKE 'qms:supplierAudit%%' OR perms LIKE 'qms:complaint%%' OR perms LIKE 'qms:target%%' OR perms LIKE 'qms:report%%' OR perms LIKE 'qms:doc%%' OR perms LIKE 'qms:audit%%' OR perms LIKE 'qms:mr%%';
+SELECT 1, menu_id FROM sys_menu WHERE perms LIKE 'qms:capa%%' OR perms LIKE 'qms:supplierEval%%' OR perms LIKE 'qms:complaint%%' OR perms LIKE 'qms:target%%' OR perms LIKE 'qms:report%%' OR perms LIKE 'qms:doc%%' OR perms LIKE 'qms:audit%%' OR perms LIKE 'qms:mr%%';
 -- 目录菜单也需要授权
 INSERT IGNORE INTO sys_role_menu (role_id, menu_id)
-SELECT 1, menu_id FROM sys_menu WHERE menu_name IN ('CAPA管理','供应商质量管理','客诉管理','体系管理') AND parent_id = (SELECT menu_id FROM sys_menu WHERE menu_name = '质量管理' AND parent_id = 0);
+SELECT 1, menu_id FROM sys_menu WHERE menu_name IN ('CAPA管理','供应商质量管控','客诉管理','体系管理') AND parent_id = (SELECT menu_id FROM sys_menu WHERE menu_name = '质量管理' AND parent_id = 0);

@@ -109,7 +109,7 @@
           <el-table-column label="批次号" prop="batchNo" key="batchNo" :width="colWidth('batchNo', 100)" resizable v-if="columns.batchNo.visible" />
           <el-table-column label="源库位" prop="fromLocationName" key="fromLocationName" :width="colWidth('fromLocationName', 180)" resizable :show-overflow-tooltip="true" v-if="columns.fromLocationName.visible" />
           <el-table-column label="目标库位" prop="toLocationName" key="toLocationName" :width="colWidth('toLocationName', 180)" resizable :show-overflow-tooltip="true" v-if="columns.toLocationName.visible" />
-          <el-table-column label="移库数量" prop="moveQty" key="moveQty" :width="colWidth('moveQty', 100)" resizable align="right" class-name="col-num" v-if="columns.moveQty.visible" />
+          <el-table-column label="移库数量" prop="moveQty" key="moveQty" :width="colWidth('moveQty', 100)" resizable align="center" class-name="col-num" v-if="columns.moveQty.visible" />
           <el-table-column label="状态" prop="status" key="status" :width="colWidth('status', 120)" resizable align="center" v-if="columns.status.visible">
             <template #default="scope"><span class="badge" :class="badgeClass(scope.row.status)"><span class="dot"></span>{{ statusLabel(scope.row.status) }}</span></template>
           </el-table-column>

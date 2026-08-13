@@ -219,6 +219,11 @@
   flex-wrap: wrap;
   gap: 8px;
 }
+.rd-file-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
 .rd-file-link {
   display: inline-flex;
   align-items: center;
@@ -230,6 +235,7 @@
   font-size: 13px;
   transition: all 0.15s ease;
   max-width: 100%;
+  cursor: pointer;
 }
 .rd-file-link:hover {
   background: #eef2ff;
@@ -242,22 +248,33 @@
 .rd-file-link .rd-file-name {
   color: #4f46e5;
   font-weight: 500;
-  cursor: pointer;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.rd-file-link .rd-file-name:hover {
+.rd-file-link:hover .rd-file-name {
   text-decoration: underline;
 }
-.rd-file-link .rd-file-dl {
-  color: #9ca3af;
-  font-size: 12px;
-  text-decoration: none;
+.rd-file-dl {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: #94a3b8;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
   flex-shrink: 0;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+  user-select: none;
 }
-.rd-file-link .rd-file-dl:hover {
-  color: #4f46e5;
+.rd-file-dl:hover {
+  background: #eef2ff;
+  color: #4338ca;
+}
+.rd-file-dl svg {
+  flex-shrink: 0;
 }
 
 /* ---- 折叠按钮 ---- */

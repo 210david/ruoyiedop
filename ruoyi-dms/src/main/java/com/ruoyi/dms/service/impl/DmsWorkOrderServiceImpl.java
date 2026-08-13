@@ -1,4 +1,7 @@
-package com.ruoyi.dms.service.impl;
+package com.ruoyi.dms.service.impl;
+import java.util.HashMap;
+import java.util.Map;
+
 
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
@@ -69,7 +72,10 @@ public class DmsWorkOrderServiceImpl implements IDmsWorkOrderService
         workOrder.setDelFlag("0");
         if (workOrder.getOrderNo() == null || workOrder.getOrderNo().isEmpty())
         {
-            workOrder.setOrderNo(mkNumberRuleService.generateNumber("dms_work_order"));
+            Map<String, String> params = new HashMap<>();
+        if (StringUtils.isNotEmpty(workOrder.getOrderType())) { params.put("orderType", workOrder.getOrderType()); }
+        if (StringUtils.isNotEmpty(workOrder.getPriority())) { params.put("priority", workOrder.getPriority()); }
+        workOrder.setOrderNo(mkNumberRuleService.generateNumber("dms_work_order", params));
         }
         if (workOrder.getOrderStatus() == null || workOrder.getOrderStatus().isEmpty())
         {

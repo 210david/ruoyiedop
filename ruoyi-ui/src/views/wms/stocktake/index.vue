@@ -214,9 +214,9 @@
                 <template #default="scope">{{ [scope.row.areaName, scope.row.locationName].filter(Boolean).join(' / ') || '-' }}</template>
               </el-table-column>
               <el-table-column label="批次号" prop="batchNo" :width="colWidth('batchNo', 100)" resizable />
-              <el-table-column label="账面数量" prop="bookQty" :width="colWidth('bookQty', 100)" resizable align="right" />
-              <el-table-column label="实盘数量" prop="actualQty" :width="colWidth('actualQty', 100)" resizable align="right" />
-              <el-table-column label="差异" prop="diffQty" :width="colWidth('diffQty', 100)" resizable align="right">
+              <el-table-column label="账面数量" prop="bookQty" :width="colWidth('bookQty', 100)" resizable align="center" />
+              <el-table-column label="实盘数量" prop="actualQty" :width="colWidth('actualQty', 100)" resizable align="center" />
+              <el-table-column label="差异" prop="diffQty" :width="colWidth('diffQty', 100)" resizable align="center">
                 <template #default="scope"><span :style="{color: scope.row.diffQty < 0 ? 'red' : scope.row.diffQty > 0 ? 'green' : ''}">{{ scope.row.diffQty }}</span></template>
               </el-table-column>
               <el-table-column label="差异原因" prop="diffReason" show-overflow-tooltip />
@@ -299,9 +299,9 @@
               <el-table-column label="物料编码" prop="materialCode" width="120" />
               <el-table-column label="物料名称" prop="materialName" min-width="180" show-overflow-tooltip />
               <el-table-column label="批次号" prop="batchNo" width="100" />
-              <el-table-column label="账面数量" prop="bookQty" width="100" align="right" />
-              <el-table-column label="实盘数量" prop="actualQty" width="100" align="right" />
-              <el-table-column label="差异" prop="diffQty" width="100" align="right">
+              <el-table-column label="账面数量" prop="bookQty" width="100" align="center" />
+              <el-table-column label="实盘数量" prop="actualQty" width="100" align="center" />
+              <el-table-column label="差异" prop="diffQty" width="100" align="center">
                 <template #default="scope"><span :style="{color: scope.row.diffQty < 0 ? 'red' : scope.row.diffQty > 0 ? 'green' : ''}">{{ scope.row.diffQty }}</span></template>
               </el-table-column>
               <el-table-column label="差异原因" prop="diffReason" min-width="150" show-overflow-tooltip />

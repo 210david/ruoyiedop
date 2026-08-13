@@ -34,6 +34,18 @@
             </el-select>
           </div>
         </div>
+        <div class="field">
+          <label>备注</label>
+          <div class="control">
+            <el-input v-model="queryParams.remark" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>创建时间</label>
+          <div class="control">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
+          </div>
+        </div>
       </div>
       <div class="filter-actions">
         <div class="filter-info">
@@ -102,7 +114,7 @@
     </div>
 
     <!-- 新增/修改/查看 对话框 -->
-    <el-dialog v-model="open" width="860px" append-to-body draggable class="rd-dialog">
+    <el-dialog v-model="open" width="1032px" append-to-body draggable class="rd-dialog">
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg></div>
@@ -180,9 +192,71 @@
                     <el-option label="yyyyMMdd (按天)" value="yyyyMMdd" />
                   </el-select>
                   <span v-if="form.resetType !== '0' && form.resetType !== '4'" style="color: #909399; font-size: 12px;">由重置类型自动决定，不可手动修改</span>
-                  <span v-if="form.resetType === '4'" style="color: #909399; font-size: 12px;">按动态前缀重置时可自由选择日期格式，每个前缀维护独立序号</span>
+                  <span v-if="form.resetType === '4'" style="color: #909399; font-size: 12px;">按动态前缀重置时可自由选择日期格式（默认按天），每个动态前缀维护独立序号并按日期重置</span>
                 </el-form-item>
               </el-col>
+            </el-row>
+          </div>
+        </section>
+
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('prefix')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></span>动态前缀配置</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.prefix }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.prefix">
+            <el-row>
+              <el-col :span="24">
+                <el-form-item label="启用动态前缀" prop="prefixFieldEnabled">
+                  <el-switch v-model="form.prefixFieldEnabled" active-value="1" inactive-value="0" />
+                  <span style="margin-left: 10px; color: #909399; font-size: 12px;">启用后可根据业务字段值（如检验类型）自动设置不同前缀</span>
+                </el-form-item>
+              </el-col>
+              <template v-if="form.prefixFieldEnabled === '1'">
+                <el-col :span="12">
+                  <el-form-item label="关联字段名" prop="prefixField">
+                    <el-select v-model="form.prefixField" placeholder="请选择关联字段" style="width: 100%" @change="onPrefixFieldChange">
+                      <el-option v-for="item in availablePrefixFields" :key="item.field" :label="`${item.label} (${item.field})`" :value="item.field" />
+                    </el-select>
+                  </el-form-item>
+                </el-col>
+                <el-col :span="12">
+                  <el-form-item label="关联字典类型" prop="prefixFieldDictType">
+                    <el-input v-model="form.prefixFieldDictType" placeholder="选择关联字段后自动带出" readonly />
+                  </el-form-item>
+                </el-col>
+                <el-col :span="24">
+                  <el-form-item label="前缀映射">
+                    <el-table :data="form.prefixList" border size="small" style="width: 100%">
+                      <el-table-column label="字段值" prop="fieldValue" width="100" align="center">
+                        <template #default="scope">
+                          <span>{{ scope.row.fieldValue }}</span>
+                        </template>
+                      </el-table-column>
+                      <el-table-column label="字段标签" prop="fieldLabel" width="120" align="center">
+                        <template #default="scope">
+                          <span>{{ scope.row.fieldLabel }}</span>
+                        </template>
+                      </el-table-column>
+                      <el-table-column label="前缀" prop="prefix" align="center">
+                        <template #default="scope">
+                          <el-input v-model="scope.row.prefix" placeholder="如：IQC" size="small" />
+                        </template>
+                      </el-table-column>
+                      <el-table-column label="当前序号" prop="currentSeq" width="90" align="center">
+                        <template #default="scope">
+                          <span>{{ scope.row.currentSeq || 0 }}</span>
+                        </template>
+                      </el-table-column>
+                      <el-table-column label="启用" prop="enabled" width="80" align="center">
+                        <template #default="scope">
+                          <el-switch v-model="scope.row.enabled" active-value="1" inactive-value="0" size="small" />
+                        </template>
+                      </el-table-column>
+                    </el-table>
+                  </el-form-item>
+                </el-col>
+              </template>
             </el-row>
           </div>
         </section>
@@ -252,11 +326,12 @@
 
 <script setup name="QmsNumberRule">
 import { listNumberRule, getNumberRule, addNumberRule, updateNumberRule } from '@/api/mk/numberRule'
+import { getDicts } from '@/api/system/dict/data'
 import { useDetailCard } from '@/composables/useDetailCard'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { ArrowDown, Filter, Search } from '@element-plus/icons-vue'
 
-const { collapsedCards, toggleCard } = useDetailCard(["basic","format","seq","preview"])
+const { collapsedCards, toggleCard } = useDetailCard(["basic","format","prefix","seq","preview"])
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('qms_numberRule_index')
 const { proxy } = getCurrentInstance()
 const { mk_number_reset_type, sys_normal_disable } = proxy.useDict('mk_number_reset_type', 'sys_normal_disable')
@@ -269,6 +344,7 @@ const open = ref(false)
 const loading = ref(true)
 const showSearch = ref(true)
 const showAdvanced = ref(false)
+const dateRange = ref([])
 const ids = ref([])
 const single = ref(true)
 const total = ref(0)
@@ -278,10 +354,10 @@ const isView = ref(false)
 const defaultColumns = { ruleCode: { label: '规则编码', visible: true }, ruleName: { label: '规则名称', visible: true }, prefix: { label: '前缀', visible: true }, dateFormat: { label: '日期格式', visible: true }, resetType: { label: '重置类型', visible: true }, seqLength: { label: '序列号长度', visible: true }, currentSeq: { label: '当前序列号', visible: true }, preview: { label: '预览编号', visible: true }, status: { label: '状态', visible: true }, remark: { label: '备注', visible: true } }
 function loadColumnVisibility() { try { const saved = localStorage.getItem('qms_numberRule_columns'); if (saved) { const parsed = JSON.parse(saved); const result = {}; Object.keys(defaultColumns).forEach(key => { result[key] = { label: defaultColumns[key].label, visible: parsed[key] !== undefined ? parsed[key] : defaultColumns[key].visible } }); return result } } catch (e) {} return { ...defaultColumns } }
 const columns = ref(loadColumnVisibility())
-const activeFilterCount = computed(() => { let count = 0; if (queryParams.value.ruleCode) count++; if (queryParams.value.ruleName) count++; if (queryParams.value.status) count++; return count })
+const activeFilterCount = computed(() => { let count = 0; if (queryParams.value.ruleCode) count++; if (queryParams.value.ruleName) count++; if (queryParams.value.status) count++; if (queryParams.value.remark) count++; if (dateRange.value && dateRange.value.length > 0) count++; return count })
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, module: MODULE, ruleCode: undefined, ruleName: undefined, status: undefined },
+  queryParams: { pageNum: 1, pageSize: 10, module: MODULE, ruleCode: undefined, ruleName: undefined, status: undefined, remark: undefined, params: {} },
   rules: {
     ruleCode: [{ required: true, message: '规则编码不能为空', trigger: 'blur' }],
     ruleName: [{ required: true, message: '规则名称不能为空', trigger: 'blur' }],
@@ -296,8 +372,8 @@ function getList() {
   loading.value = true
   listNumberRule(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false; applySavedWidths() })
 }
-function handleQuery() { queryParams.value.pageNum = 1; getList() }
-function resetQuery() { queryParams.value.ruleCode = undefined; queryParams.value.ruleName = undefined; queryParams.value.status = undefined; queryParams.value.module = MODULE; handleQuery() }
+function handleQuery() { showAdvanced.value = false; proxy.addDateRange(queryParams.value, dateRange.value); queryParams.value.pageNum = 1; getList() }
+function resetQuery() { queryParams.value.ruleCode = undefined; queryParams.value.ruleName = undefined; queryParams.value.status = undefined; queryParams.value.remark = undefined; dateRange.value = []; queryParams.value.module = MODULE; queryParams.value.params = {}; handleQuery() }
 function badgeClass(status) { return status === '0' ? 'green' : 'gray' }
 function statusLabel(status) { const item = sys_normal_disable.value.find(d => d.value == status); return item ? item.label : '-' }
 function resetTypeLabel(type) { const item = mk_number_reset_type.value.find(d => d.value == type); return item ? item.label : '-' }
@@ -306,9 +382,22 @@ function handleSelectionChange(selection) { ids.value = selection.map(i => i.rul
 /** 根据表单数据生成本地预览编号 */
 function buildLocalPreview() {
   const fixedPrefix = form.value.prefix || ''
+  // 启用动态前缀时，取第一个启用的前缀作为预览示例
+  let dynamicPrefix = ''
+  if (form.value.prefixFieldEnabled === '1' && form.value.prefixList && form.value.prefixList.length > 0) {
+    const firstEnabled = form.value.prefixList.find(p => p.enabled === '1' && p.prefix)
+    if (firstEnabled) {
+      dynamicPrefix = firstEnabled.prefix
+    }
+  }
   const connector = form.value.connector || ''
+  // 拼装编号：固定前缀 + 连接符 + 动态前缀 + 连接符 + 日期 + 序列号
   let str = ''
   if (fixedPrefix) str += fixedPrefix
+  if (dynamicPrefix) {
+    if (fixedPrefix && connector) str += connector
+    str += dynamicPrefix
+  }
   let dateStr = ''
   const resetType = form.value.resetType || '0'
   const dateFormat = form.value.dateFormat || ''
@@ -317,7 +406,7 @@ function buildLocalPreview() {
   else if (resetType === '3') dateStr = formatNow('yyyy')
   else if (dateFormat) dateStr = formatNow(dateFormat)
   if (dateStr) {
-    if (fixedPrefix && connector) str += connector
+    if ((fixedPrefix || dynamicPrefix) && connector) str += connector
     str += dateStr
   }
   const seqLen = form.value.seqLength || 4
@@ -338,7 +427,7 @@ function refreshPreview() {
 }
 
 function reset() {
-  form.value = { module: MODULE, ruleCode: undefined, ruleName: undefined, prefix: undefined, dateFormat: 'yyyyMMdd', resetType: '1', seqLength: 4, seqStart: 1, step: 1, connector: '', status: '0', remark: undefined }
+  form.value = { module: MODULE, ruleCode: undefined, ruleName: undefined, prefix: undefined, dateFormat: 'yyyyMMdd', resetType: '1', seqLength: 4, seqStart: 1, step: 1, connector: '', status: '0', prefixFieldEnabled: '0', prefixField: undefined, prefixFieldDictType: undefined, prefixList: [], remark: undefined }
   previewText.value = ''
   proxy.resetForm('ruleRef')
 }
@@ -369,6 +458,21 @@ function submitForm() {
     if (valid) {
       // 强制设置模块为质量管理
       form.value.module = MODULE
+      // 按动态前缀重置时，必须启用动态前缀并选择关联字段
+      if (form.value.resetType === '4') {
+        if (form.value.prefixFieldEnabled !== '1') {
+          proxy.$modal.msgError('序号重置类型为"按动态前缀"时，必须启用动态前缀配置')
+          return
+        }
+        if (!form.value.prefixField) {
+          proxy.$modal.msgError('请选择动态前缀的关联字段名')
+          return
+        }
+        if (!form.value.prefixList || form.value.prefixList.length === 0) {
+          proxy.$modal.msgError('按动态前缀重置时，至少需要配置一个前缀映射')
+          return
+        }
+      }
       if (form.value.ruleId != undefined) {
         updateNumberRule(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList() })
       } else {
@@ -378,7 +482,77 @@ function submitForm() {
   })
 }
 
-function handleExport() { proxy.download('mk/numberRule/export', { ...queryParams.value }, `numberRule_${MODULE}_${new Date().getTime()}.xlsx`) }
+/** 规则编码 → 该业务表可选的字典字段列表 */
+const ruleFieldMap = {
+  // 检验任务：检验类型、来源类型
+  qms_insp_task: [
+    { field: 'taskType', label: '检验类型', dictType: 'qms_insp_type' },
+    { field: 'sourceType', label: '来源类型', dictType: 'qms_source_type' }
+  ],
+  // 不合格品报告：缺陷等级、处置方式
+  qms_ncr: [
+    { field: 'defectLevel', label: '缺陷等级', dictType: 'qms_defect_level' },
+    { field: 'disposition', label: '处置方式', dictType: 'qms_disposition' }
+  ],
+  // CAPA：CAPA状态
+  qms_capa: [
+    { field: 'capaStatus', label: 'CAPA状态', dictType: 'qms_capa_status' }
+  ],
+  // 客诉：客诉类型
+  qms_complaint: [
+    { field: 'complaintType', label: '客诉类型', dictType: 'qms_complaint_type' }
+  ],
+  // 文档：文档分类
+  qms_doc: [
+    { field: 'docCategory', label: '文档分类', dictType: 'qms_doc_category' }
+  ]
+}
+
+/** 根据当前规则编码计算可选的关联字段 */
+const availablePrefixFields = computed(() => {
+  if (!form.value.ruleCode) return []
+  return ruleFieldMap[form.value.ruleCode] || []
+})
+
+/** 关联字段名变化时，自动设置字典类型并加载前缀映射 */
+function onPrefixFieldChange(val) {
+  // 根据选中的字段找到对应的字典类型
+  const fieldConfig = availablePrefixFields.value.find(f => f.field === val)
+  form.value.prefixFieldDictType = fieldConfig ? fieldConfig.dictType : ''
+  // 自动加载前缀映射
+  if (form.value.prefixFieldDictType) {
+    loadDictToPrefixList()
+  } else {
+    form.value.prefixList = []
+  }
+}
+
+/** 从字典加载选项到前缀映射列表 */
+function loadDictToPrefixList() {
+  if (!form.value.prefixFieldDictType) {
+    return
+  }
+  getDicts(form.value.prefixFieldDictType).then(res => {
+    const dictData = res.data || []
+    const existingMap = {}
+    if (form.value.prefixList) {
+      form.value.prefixList.forEach(item => {
+        existingMap[item.fieldValue] = item
+      })
+    }
+    form.value.prefixList = dictData.map(d => {
+      const existing = existingMap[d.dictValue]
+      return {
+        fieldValue: d.dictValue,
+        fieldLabel: d.dictLabel,
+        prefix: existing ? existing.prefix : '',
+        enabled: existing ? existing.enabled : '1'
+      }
+    })
+  })
+}
+
+function handleExport() { proxy.download('mk/numberRule/export', { ...proxy.addDateRange(queryParams.value, dateRange.value) }, `numberRule_${MODULE}_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset(); isView.value = false }
 
 // 监听重置类型变化，自动设置日期格式
@@ -392,7 +566,8 @@ watch(() => form.value.resetType, (newVal) => {
   } else if (newVal === '3') {
     form.value.dateFormat = 'yyyy'
   } else if (newVal === '4') {
-    form.value.dateFormat = ''
+    // 按动态前缀重置：默认包含日期（按天），用户可自行调整
+    form.value.dateFormat = 'yyyyMMdd'
   }
 })
 

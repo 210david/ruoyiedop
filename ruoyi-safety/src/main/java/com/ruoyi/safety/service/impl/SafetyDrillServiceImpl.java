@@ -1,4 +1,7 @@
-package com.ruoyi.safety.service.impl;
+package com.ruoyi.safety.service.impl;
+import java.util.HashMap;
+import java.util.Map;
+
 
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,7 +30,9 @@ public class SafetyDrillServiceImpl implements ISafetyDrillService
     @Override
     public int insertSafetyDrill(SafetyDrill safetyDrill) {
         if (StringUtils.isEmpty(safetyDrill.getDrillCode())) {
-            safetyDrill.setDrillCode(mkNumberRuleService.generateNumber("safety_drill"));
+            Map<String, String> params = new HashMap<>();
+        if (StringUtils.isNotEmpty(safetyDrill.getDrillType())) { params.put("drillType", safetyDrill.getDrillType()); }
+        safetyDrill.setDrillCode(mkNumberRuleService.generateNumber("safety_drill", params));
         }
         return safetyDrillMapper.insertSafetyDrill(safetyDrill); }
 

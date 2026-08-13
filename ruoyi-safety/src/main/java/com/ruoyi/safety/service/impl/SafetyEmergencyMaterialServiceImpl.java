@@ -1,4 +1,7 @@
-package com.ruoyi.safety.service.impl;
+package com.ruoyi.safety.service.impl;
+import java.util.HashMap;
+import java.util.Map;
+
 
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,7 +30,9 @@ public class SafetyEmergencyMaterialServiceImpl implements ISafetyEmergencyMater
     @Override
     public int insertSafetyEmergencyMaterial(SafetyEmergencyMaterial safetyEmergencyMaterial) {
         if (StringUtils.isEmpty(safetyEmergencyMaterial.getMaterialCode())) {
-            safetyEmergencyMaterial.setMaterialCode(mkNumberRuleService.generateNumber("safety_emergency_material"));
+            Map<String, String> params = new HashMap<>();
+        if (StringUtils.isNotEmpty(safetyEmergencyMaterial.getMaterialType())) { params.put("materialType", safetyEmergencyMaterial.getMaterialType()); }
+        safetyEmergencyMaterial.setMaterialCode(mkNumberRuleService.generateNumber("safety_emergency_material", params));
         }
         return safetyEmergencyMaterialMapper.insertSafetyEmergencyMaterial(safetyEmergencyMaterial); }
 

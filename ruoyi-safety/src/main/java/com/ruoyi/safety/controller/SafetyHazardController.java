@@ -88,7 +88,7 @@ public class SafetyHazardController extends BaseController
         return toAjax(safetyHazardService.approveHazard(hazard));
     }
 
-    @PreAuthorize("@ss.hasPermi('safety:hazard:submit')")
+    @PreAuthorize("@ss.hasPermi('safety:hazard:rectify')")
     @Log(title = "开始整改", businessType = BusinessType.UPDATE)
     @PutMapping("/start/{hazardId}")
     public AjaxResult start(@PathVariable Long hazardId)
@@ -96,7 +96,7 @@ public class SafetyHazardController extends BaseController
         return toAjax(safetyHazardService.startRectify(hazardId));
     }
 
-    @PreAuthorize("@ss.hasPermi('safety:hazard:submit')")
+    @PreAuthorize("@ss.hasPermi('safety:hazard:rectify')")
     @Log(title = "提交整改", businessType = BusinessType.UPDATE)
     @PutMapping("/rectify")
     public AjaxResult rectify(@Validated @RequestBody SafetyHazard hazard)

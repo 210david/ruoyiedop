@@ -15,3 +15,6 @@ export function updateMaterial(data) {
 export function delMaterial(materialId) {
   return request({ url: '/safety/material/' + materialId, method: 'delete' })
 }
+export function getStockAlert() {
+  return request({ url: '/safety/material/stockAlert', method: 'get' })
+}

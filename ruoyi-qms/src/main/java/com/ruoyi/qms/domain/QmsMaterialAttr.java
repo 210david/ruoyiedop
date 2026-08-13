@@ -30,12 +30,9 @@ public class QmsMaterialAttr extends BaseEntity
     @Excel(name = "检验类型")
     private String inspectTypes;
 
-    /** 行业模板ID */
-    private Long tplId;
-
-    /** 行业模板名称（冗余） */
-    @Excel(name = "行业模板", type = Excel.Type.EXPORT)
-    private String tplName;
+    /** 行业类型（字典 qms_industry_type） */
+    @Excel(name = "行业类型", readConverterExp = "1=新能源材料,2=绿色铝加工,3=精细化工,4=先进装备,5=高原食品")
+    private String industryType;
 
     /** 是否免检（0否 1是） */
     @Excel(name = "是否免检", readConverterExp = "0=否,1=是")
@@ -58,10 +55,8 @@ public class QmsMaterialAttr extends BaseEntity
     public void setMaterialName(String materialName) { this.materialName = materialName; }
     public String getInspectTypes() { return inspectTypes; }
     public void setInspectTypes(String inspectTypes) { this.inspectTypes = inspectTypes; }
-    public Long getTplId() { return tplId; }
-    public void setTplId(Long tplId) { this.tplId = tplId; }
-    public String getTplName() { return tplName; }
-    public void setTplName(String tplName) { this.tplName = tplName; }
+    public String getIndustryType() { return industryType; }
+    public void setIndustryType(String industryType) { this.industryType = industryType; }
     public String getIsExempt() { return isExempt; }
     public void setIsExempt(String isExempt) { this.isExempt = isExempt; }
     public String getStatus() { return status; }

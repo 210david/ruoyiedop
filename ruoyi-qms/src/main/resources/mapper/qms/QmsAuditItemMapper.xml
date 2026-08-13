@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.qms.mapper.QmsAuditItemMapper">
+    <resultMap type="QmsAuditItem" id="QmsAuditItemResult">
+        <id property="itemId" column="item_id"/>
+        <result property="auditPlanId" column="audit_plan_id"/>
+        <result property="auditPlanNo" column="audit_plan_no"/>
+        <result property="clauseRef" column="clause_ref"/>
+        <result property="ncDesc" column="nc_desc"/>
+        <result property="ncType" column="nc_type"/>
+        <result property="deptId" column="dept_id"/>
+        <result property="deptName" column="dept_name"/>
+        <result property="correctiveAction" column="corrective_action"/>
+        <result property="capaId" column="capa_id"/>
+        <result property="verifyResult" column="verify_result"/>
+        <result property="itemStatus" column="item_status"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="status" column="status"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <sql id="selectVo">select item_id, audit_plan_id, audit_plan_no, clause_ref, nc_desc, nc_type, dept_id, dept_name, corrective_action, capa_id, verify_result, item_status, del_flag, status, create_by, create_time, update_by, update_time from qms_audit_item</sql>
+
+    <select id="selectAuditItemList" parameterType="QmsAuditItem" resultMap="QmsAuditItemResult">
+        <include refid="selectVo"/>
+        <where>
+            del_flag = '0'
+            <if test="auditPlanId != null">and audit_plan_id = #{auditPlanId}</if>
+            <if test="ncType != null and ncType != ''">and nc_type = #{ncType}</if>
+            <if test="itemStatus != null and itemStatus != ''">and item_status = #{itemStatus}</if>
+            <if test="deptName != null and deptName != ''">and dept_name like concat('%', #{deptName}, '%')</if>
+        </where>
+        order by item_id asc
+    </select>
+
+    <select id="selectByAuditPlanId" parameterType="Long" resultMap="QmsAuditItemResult">
+        <include refid="selectVo"/> where audit_plan_id = #{auditPlanId} and del_flag = '0' order by item_id asc
+    </select>
+
+    <select id="selectAuditItemById" parameterType="Long" resultMap="QmsAuditItemResult">
+        <include refid="selectVo"/> where item_id = #{itemId} and del_flag = '0'
+    </select>
+
+    <select id="countByAuditPlanId" parameterType="Long" resultType="int">
+        select count(1) from qms_audit_item where audit_plan_id = #{auditPlanId} and del_flag = '0'
+    </select>
+
+    <insert id="insertAuditItem" parameterType="QmsAuditItem" useGeneratedKeys="true" keyProperty="itemId">
+        insert into qms_audit_item(audit_plan_id, audit_plan_no, clause_ref, nc_desc, nc_type, dept_id, dept_name, corrective_action, capa_id, verify_result, item_status, del_flag, status, create_by, create_time)
+        values(#{auditPlanId}, #{auditPlanNo}, #{clauseRef}, #{ncDesc}, #{ncType}, #{deptId}, #{deptName}, #{correctiveAction}, #{capaId}, #{verifyResult}, #{itemStatus}, '0', '0', #{createBy}, sysdate())
+    </insert>
+
+    <update id="updateAuditItem" parameterType="QmsAuditItem">
+        update qms_audit_item
+        <set>
+            <if test="clauseRef != null">clause_ref = #{clauseRef},</if>
+            <if test="ncDesc != null">nc_desc = #{ncDesc},</if>
+            <if test="ncType != null">nc_type = #{ncType},</if>
+            <if test="deptId != null">dept_id = #{deptId},</if>
+            <if test="deptName != null">dept_name = #{deptName},</if>
+            <if test="correctiveAction != null">corrective_action = #{correctiveAction},</if>
+            <if test="capaId != null">capa_id = #{capaId},</if>
+            <if test="verifyResult != null">verify_result = #{verifyResult},</if>
+            <if test="itemStatus != null">item_status = #{itemStatus},</if>
+            <if test="status != null">status = #{status},</if>
+            update_by = #{updateBy}, update_time = sysdate()
+        </set>
+        where item_id = #{itemId}
+    </update>
+
+    <delete id="deleteAuditItemByIds" parameterType="Long">
+        update qms_audit_item set del_flag = '1' where item_id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">#{id}</foreach>
+    </delete>
+</mapper>

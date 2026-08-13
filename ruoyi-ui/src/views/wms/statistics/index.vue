@@ -167,12 +167,12 @@
         <el-table-column label="单位" prop="unit" :width="colWidth('unit', 80)" resizable align="center">
           <template #default="scope"><dict-tag :options="wms_unit" :value="scope.row.unit" /></template>
         </el-table-column>
-        <el-table-column label="当前库存" prop="qty" :width="colWidth('qty', 110)" resizable align="right">
+        <el-table-column label="当前库存" prop="qty" :width="colWidth('qty', 110)" resizable align="center">
           <template #default="scope"><span style="color: #f56c6c; font-weight: bold">{{ scope.row.qty }}</span></template>
         </el-table-column>
-        <el-table-column label="安全下限" prop="safetyStockMin" :width="colWidth('safetyStockMin', 110)" resizable align="right" />
-        <el-table-column label="安全上限" prop="safetyStockMax" :width="colWidth('safetyStockMax', 110)" resizable align="right" />
-        <el-table-column label="缺口" width="100" align="right">
+        <el-table-column label="安全下限" prop="safetyStockMin" :width="colWidth('safetyStockMin', 110)" resizable align="center" />
+        <el-table-column label="安全上限" prop="safetyStockMax" :width="colWidth('safetyStockMax', 110)" resizable align="center" />
+        <el-table-column label="缺口" width="100" align="center">
           <template #default="scope">
             <span style="color: #f56c6c; font-weight: bold">{{ (Number(scope.row.safetyStockMin) - Number(scope.row.qty)).toFixed(2) }}</span>
           </template>

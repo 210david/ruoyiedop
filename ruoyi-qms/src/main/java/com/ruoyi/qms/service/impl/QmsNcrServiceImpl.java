@@ -1,7 +1,9 @@
 package com.ruoyi.qms.service.impl;
 
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -69,7 +71,17 @@ public class QmsNcrServiceImpl implements IQmsNcrService
     {
         if (StringUtils.isEmpty(ncr.getNcrNo()))
         {
-            ncr.setNcrNo(mkNumberRuleService.generateNumber("qms_ncr"));
+                        // 传递动态前缀参数（缺陷等级、处置方式），使动态前缀规则可生效
+            Map<String, String> params = new HashMap<>();
+            if (StringUtils.isNotEmpty(ncr.getDefectLevel()))
+            {
+                params.put("defectLevel", ncr.getDefectLevel());
+            }
+            if (StringUtils.isNotEmpty(ncr.getDisposition()))
+            {
+                params.put("disposition", ncr.getDisposition());
+            }
+            ncr.setNcrNo(mkNumberRuleService.generateNumber("qms_ncr", params));
         }
         ncr.setDelFlag("0");
         ncr.setStatus("0");
@@ -403,6 +415,7 @@ public class QmsNcrServiceImpl implements IQmsNcrService
      */
     private String generateNcrNo()
     {
-        return mkNumberRuleService.generateNumber("qms_ncr");
+                Map<String, String> params = new HashMap<>();
+        return mkNumberRuleService.generateNumber("qms_ncr", params);
     }
 }

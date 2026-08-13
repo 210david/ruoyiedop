@@ -1,4 +1,6 @@
-package com.ruoyi.safety.service.impl;
+package com.ruoyi.safety.service.impl;
+import java.util.HashMap;
+
 
 import java.util.List;
 import java.util.Map;
@@ -52,7 +54,10 @@ public class SafetyHazardServiceImpl implements ISafetyHazardService
     {
         if (StringUtils.isEmpty(safetyHazard.getHazardCode()))
         {
-            safetyHazard.setHazardCode(mkNumberRuleService.generateNumber("safety_hazard"));
+            Map<String, String> params = new HashMap<>();
+        if (StringUtils.isNotEmpty(safetyHazard.getHazardLevel())) { params.put("hazardLevel", safetyHazard.getHazardLevel()); }
+        if (StringUtils.isNotEmpty(safetyHazard.getHazardType())) { params.put("hazardType", safetyHazard.getHazardType()); }
+        safetyHazard.setHazardCode(mkNumberRuleService.generateNumber("safety_hazard", params));
         }
         if (safetyHazard.getHazardStatus() == null)
         {

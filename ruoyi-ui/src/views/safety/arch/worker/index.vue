@@ -4,6 +4,10 @@
     <div class="surface filter-card" v-show="showSearch">
       <div class="filter-head">
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+        <a class="adv-link" :class="{ 'is-open': showAdvanced }" @click.prevent="showAdvanced = !showAdvanced">
+          <span>{{ showAdvanced ? '收起' : '高级筛选' }}</span>
+          <el-icon class="chev"><ArrowDown /></el-icon>
+        </a>
       </div>
       <div class="filter-bar">
         <div class="field">
@@ -28,6 +32,21 @@
             </el-select>
           </div>
         </div>
+        <div class="field" v-show="showAdvanced">
+          <label>工号</label>
+          <div class="control">
+            <el-input v-model="queryParams.workerNo" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>状态</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
+              <el-option label="正常" value="0" />
+              <el-option label="停用" value="1" />
+            </el-select>
+          </div>
+        </div>
       </div>
       <div class="filter-actions">
         <div class="filter-info">
@@ -46,6 +65,8 @@
         <div class="left">
           <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['safety:worker:add']">新增</el-button>
           <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['safety:worker:remove']">删除</el-button>
+          <div class="toolbar-divider"></div>
+          <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['safety:worker:export']">导出</el-button>
         </div>
         <div class="right">
           <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="safety_worker_columns" />
@@ -195,7 +216,7 @@ import { listWorker, getWorker, addWorker, updateWorker, delWorker } from '@/api
 import DeptPicker from '@/components/DeptPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
-import { Search, Filter, RefreshLeft, CircleClose } from '@element-plus/icons-vue'
+import { Search, Filter, RefreshLeft, CircleClose, ArrowDown } from '@element-plus/icons-vue'
 
 const { proxy } = getCurrentInstance()
 const { safety_job_type } = proxy.useDict('safety_job_type')
@@ -208,6 +229,7 @@ const viewOpen = ref(false)
 const viewData = ref({})
 const loading = ref(true)
 const showSearch = ref(true)
+const showAdvanced = ref(false)
 const ids = ref([])
 const single = ref(true)
 const multiple = ref(true)
@@ -244,7 +266,7 @@ const columns = ref(loadColumnVisibility())
 
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, workerName: undefined, position: undefined, jobType: undefined, params: {} },
+  queryParams: { pageNum: 1, pageSize: 10, workerName: undefined, position: undefined, jobType: undefined, workerNo: undefined, status: undefined, params: {} },
   rules: {
     workerName: [{ required: true, message: '姓名不能为空', trigger: 'blur' }],
     deptId: [{ required: true, message: '所属部门不能为空', trigger: 'change' }],
@@ -261,12 +283,14 @@ const activeFilterCount = computed(() => {
   if (queryParams.value.workerName) count++
   if (queryParams.value.position) count++
   if (queryParams.value.jobType) count++
+  if (queryParams.value.workerNo) count++
+  if (queryParams.value.status) count++
   return count
 })
 
 function getList() { loading.value = true; listWorker(queryParams.value).then(response => { workerList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths() }) }
-function handleQuery() { queryParams.value.pageNum = 1; getList() }
-function resetQuery() { queryParams.value.workerName = undefined; queryParams.value.position = undefined; queryParams.value.jobType = undefined; queryParams.value.params = {}; handleQuery() }
+function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
+function resetQuery() { queryParams.value.workerName = undefined; queryParams.value.position = undefined; queryParams.value.jobType = undefined; queryParams.value.workerNo = undefined; queryParams.value.status = undefined; queryParams.value.params = {}; handleQuery() }
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleSelectionChange(selection) { ids.value = selection.map(item => item.workerId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function handleAdd() { reset(); collapsedCards.c0 = false; collapsedCards.c1 = false; collapsedCards.c2 = false; open.value = true; title.value = '添加特种人员' }
@@ -281,6 +305,7 @@ function submitForm() {
   })
 }
 function handleDelete(row) { const workerIds = row.workerId || ids.value; proxy.$modal.confirm('是否确认删除选中的特种人员？').then(function() { return delWorker(workerIds) }).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleExport() { proxy.download('safety/worker/export', { ...queryParams.value }, `worker_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 function reset() {
   form.value = { workerId: undefined, workerName: undefined, workerNo: undefined, deptId: undefined, deptName: undefined, position: undefined, phone: undefined, isSpecial: '1', jobType: undefined, certNo: undefined, certIssueDate: undefined, validTo: undefined, status: '0', remark: undefined }
@@ -305,6 +330,10 @@ getList()
 .safety-worker-page .filter-card .filter-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
 .safety-worker-page .filter-card .filter-title { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--ink-700); }
 .safety-worker-page .filter-card .filter-title .glyph { width:4px; height:14px; background:var(--brand-600); border-radius:2px; }
+.safety-worker-page .filter-card .adv-link { font-size:14px; color:var(--ink-500); text-decoration:none; display:flex; align-items:center; gap:4px; transition:color .15s; cursor:pointer; }
+.safety-worker-page .filter-card .adv-link:hover { color:var(--brand-600); }
+.safety-worker-page .filter-card .adv-link .chev { transition:transform .2s var(--ease-out); }
+.safety-worker-page .filter-card .adv-link.is-open .chev { transform:rotate(180deg); }
 .safety-worker-page .filter-card .filter-bar { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px 16px; }
 .safety-worker-page .filter-card .filter-actions { display:flex; align-items:center; justify-content:space-between; margin-top:14px; padding-top:14px; border-top:1px dashed var(--ink-200); }
 .safety-worker-page .filter-card .filter-info { font-size:13px; color:var(--ink-500); display:flex; align-items:center; gap:6px; }

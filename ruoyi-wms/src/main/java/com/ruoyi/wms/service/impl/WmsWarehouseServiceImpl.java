@@ -1,4 +1,7 @@
-package com.ruoyi.wms.service.impl;
+package com.ruoyi.wms.service.impl;
+import java.util.HashMap;
+import java.util.Map;
+
 
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,7 +44,10 @@ public class WmsWarehouseServiceImpl implements IWmsWarehouseService
             if ("1".equals(warehouse.getNodeType()))
             {
                 // 仓库级别使用编号规则
-                warehouse.setWarehouseCode(mkNumberRuleService.generateNumber("wms_warehouse"));
+                Map<String, String> params = new HashMap<>();
+            if (StringUtils.isNotEmpty(warehouse.getAreaType())) { params.put("areaType", warehouse.getAreaType()); }
+            if (StringUtils.isNotEmpty(warehouse.getLocationType())) { params.put("locationType", warehouse.getLocationType()); }
+            warehouse.setWarehouseCode(mkNumberRuleService.generateNumber("wms_warehouse", params));
             }
             else
             {

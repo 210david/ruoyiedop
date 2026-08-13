@@ -79,6 +79,10 @@
             <span class="dot"></span><span>{{ s.label }}</span><span class="count">{{ statusCounts[s.value] || 0 }}</span>
           </button>
         </div>
+        <button class="tip-pill" @click="showStatusHelp = true">
+          <el-icon><WarningFilled /></el-icon>
+          <span>业务操作说明</span>
+        </button>
       </div>
 
       <!-- Toolbar -->
@@ -127,8 +131,8 @@
               <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['safety:hazard:query']">查看</el-button>
               <el-button v-if="scope.row.hazardStatus === '0' || scope.row.hazardStatus === '2'" link type="primary" icon="Check" @click="handleSubmit(scope.row)" v-hasPermi="['safety:hazard:submit']">提交</el-button>
               <el-button v-if="scope.row.hazardStatus === '1'" link type="primary" icon="DocumentChecked" @click="handleApprove(scope.row)" v-hasPermi="['safety:hazard:approve']">审批</el-button>
-              <el-button v-if="scope.row.hazardStatus === '3'" link type="primary" icon="Edit" @click="handleStartRectify(scope.row)" v-hasPermi="['safety:hazard:submit']">整改</el-button>
-              <el-button v-if="scope.row.hazardStatus === '4'" link type="primary" icon="Upload" @click="handleStartRectify(scope.row)" v-hasPermi="['safety:hazard:submit']">提交整改</el-button>
+              <el-button v-if="scope.row.hazardStatus === '3'" link type="primary" icon="Edit" @click="handleStartRectify(scope.row)" v-hasPermi="['safety:hazard:rectify']">整改</el-button>
+              <el-button v-if="scope.row.hazardStatus === '4'" link type="primary" icon="Upload" @click="handleStartRectify(scope.row)" v-hasPermi="['safety:hazard:rectify']">提交整改</el-button>
               <el-button v-if="scope.row.hazardStatus === '5'" link type="primary" icon="CircleCheck" @click="handleVerify(scope.row)" v-hasPermi="['safety:hazard:verify']">验收</el-button>
               <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['safety:hazard:edit']">修改</el-button>
               <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['safety:hazard:remove']">删除</el-button>
@@ -447,6 +451,85 @@
 
     <!-- 责任人选择弹窗 -->
     <user-picker ref="userPickerRef" title="选择责任人" @confirm="onUserPickerConfirm" />
+
+    <!-- 业务操作说明对话框 -->
+    <el-dialog v-model="showStatusHelp" title="隐患管理业务操作说明" width="760px" append-to-body>
+      <div class="status-help-content">
+        <h4>一、隐患闭环业务流程图</h4>
+        <div class="status-flow">
+          <div class="flow-item">
+            <el-tag type="info">草稿</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="warning">待审批</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="primary">待整改</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="primary">整改中</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="primary">待验收</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="success">已闭环</el-tag>
+          </div>
+        </div>
+        <div class="status-flow" style="margin-top:8px">
+          <div class="flow-item">
+            <el-tag type="warning">待审批</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="danger">审批驳回</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="info">草稿（修改后重新提交）</el-tag>
+          </div>
+        </div>
+        <div class="status-flow" style="margin-top:8px">
+          <div class="flow-item">
+            <el-tag type="danger">超期未整改</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="primary">继续整改</el-tag>
+          </div>
+        </div>
+
+        <h4>二、各状态说明</h4>
+        <el-descriptions :column="1" border>
+          <el-descriptions-item label="草稿">隐患登记后的初始状态，可修改、提交审批或删除</el-descriptions-item>
+          <el-descriptions-item label="待审批">隐患已提交审批，等待审批人审批</el-descriptions-item>
+          <el-descriptions-item label="审批驳回">审批不通过，退回草稿状态，修改后可重新提交</el-descriptions-item>
+          <el-descriptions-item label="待整改">审批通过，等待责任人开始整改</el-descriptions-item>
+          <el-descriptions-item label="整改中">责任人正在进行整改，整改完成后提交整改说明</el-descriptions-item>
+          <el-descriptions-item label="待验收">整改已完成提交，等待验收人验收</el-descriptions-item>
+          <el-descriptions-item label="已闭环">验收通过，隐患完成闭环</el-descriptions-item>
+          <el-descriptions-item label="超期未整改">整改期限已过但未完成整改，需优先处理</el-descriptions-item>
+        </el-descriptions>
+
+        <h4>三、重点业务规则</h4>
+        <div class="highlight-card">
+          <p>• <strong>隐患来源：</strong>包括随手拍、计划排查、专项排查、举报、上级交办等多种来源</p>
+          <p>• <strong>隐患等级：</strong>分为一般隐患和重大隐患，重大隐患需重点跟踪</p>
+          <p>• <strong>闭环机制：</strong>隐患从登记、审批、整改到验收形成完整闭环，全程留痕</p>
+          <p>• <strong>超期预警：</strong>整改期限到期后未完成整改的隐患自动标记为超期未整改</p>
+          <p>• <strong>验收不通过：</strong>验收不通过时需重新整改，整改后重新提交验收</p>
+          <p>• <strong>审核记录：</strong>隐患详情页可查看完整的审核记录时间线</p>
+        </div>
+      </div>
+      <template #footer>
+        <el-button type="primary" @click="showStatusHelp = false">我知道了</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -455,7 +538,7 @@ import { listHazard, getHazard, addHazard, updateHazard, delHazard, submitHazard
 import UserPicker from '@/components/UserPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
-import { ArrowDown, Search, Filter, RefreshLeft, CircleClose } from '@element-plus/icons-vue'
+import { ArrowDown, Search, Filter, RefreshLeft, CircleClose, WarningFilled, ArrowRight } from '@element-plus/icons-vue'
 
 const { proxy } = getCurrentInstance()
 const { safety_hazard_type, safety_hazard_level, safety_hazard_source, safety_hazard_status } = proxy.useDict('safety_hazard_type', 'safety_hazard_level', 'safety_hazard_source', 'safety_hazard_status')
@@ -475,6 +558,7 @@ const approveHazardData = ref({})
 const loading = ref(true)
 const showSearch = ref(true)
 const showAdvanced = ref(false)
+const showStatusHelp = ref(false)
 const dateRange = ref([])
 const ids = ref([])
 const single = ref(true)
@@ -732,4 +816,15 @@ getList()
 .rd-timeline-body .rd-value { color: var(--ink-900); font-weight: 500; }
 .rd-timeline-comment { font-size: 14px; color: var(--ink-700); background: var(--ink-50); border-radius: 6px; padding: 8px 12px; margin-top: 6px; }
 .rd-timeline-comment strong { color: var(--ink-500); font-weight: 600; }
+.safety-hazard-page .tip-pill { display:inline-flex; align-items:center; gap:5px; height:30px; padding:0 10px; background:#fffaf0; border:1px solid #fde68a; color:#92400e; border-radius:999px; font-size:13px; font-weight:500; cursor:pointer; transition:all .15s var(--ease-out); flex-shrink:0; white-space:nowrap; }
+.safety-hazard-page .tip-pill:hover { background:var(--amber-50); border-color:var(--amber-500); color:#7c2d12; }
+.safety-hazard-page .tip-pill .el-icon { font-size:14px; color:var(--amber-700); }
+.status-help-content { max-height:500px; overflow-y:auto; padding-right:10px; }
+.status-help-content h4 { margin:20px 0 12px 0; color:#303133; font-weight:600; border-left:4px solid #409eff; padding-left:10px; }
+.status-help-content h4:first-child { margin-top:0; }
+.status-help-content .status-flow { display:flex; align-items:center; flex-wrap:wrap; gap:8px; padding:16px; background-color:#f5f7fa; border-radius:8px; margin-bottom:8px; }
+.status-help-content .flow-item { display:flex; align-items:center; gap:8px; }
+.status-help-content .flow-arrow { color:#909399; font-size:16px; }
+.status-help-content .highlight-card { background-color:#ecf5ff; border-radius:8px; padding:16px; border-left:4px solid #409eff; }
+.status-help-content .highlight-card p { margin:6px 0; line-height:1.6; font-size:13px; color:#606266; }
 </style>

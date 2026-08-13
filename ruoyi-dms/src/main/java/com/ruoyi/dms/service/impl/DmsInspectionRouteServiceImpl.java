@@ -1,4 +1,7 @@
-package com.ruoyi.dms.service.impl;
+package com.ruoyi.dms.service.impl;
+import java.util.HashMap;
+import java.util.Map;
+
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -31,7 +34,9 @@ public class DmsInspectionRouteServiceImpl implements IDmsInspectionRouteService
         // 自动生成路线编码
         if (StringUtils.isEmpty(route.getRouteCode()))
         {
-            route.setRouteCode(mkNumberRuleService.generateNumber("dms_inspection_route"));
+            Map<String, String> params = new HashMap<>();
+        if (StringUtils.isNotEmpty(route.getCycleType())) { params.put("cycle", route.getCycleType()); }
+        route.setRouteCode(mkNumberRuleService.generateNumber("dms_inspection_route", params));
         }
         return dmsInspectionRouteMapper.insertRoute(route);
     }

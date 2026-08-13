@@ -3,17 +3,22 @@ package com.ruoyi.qms.service.impl;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.ruoyi.qms.domain.QmsSupplierEval;
 import com.ruoyi.qms.mapper.QmsSupplierEvalMapper;
 import com.ruoyi.qms.service.IQmsSupplierEvalService;
+import com.ruoyi.qms.service.ISqmScorePushService;
 
 @Service
 public class QmsSupplierEvalServiceImpl implements IQmsSupplierEvalService {
     @Autowired
     private QmsSupplierEvalMapper mapper;
+
+    @Autowired
+    private ISqmScorePushService pushService;
 
     @Override
     public List<QmsSupplierEval> selectEvalList(QmsSupplierEval eval) { return mapper.selectEvalList(eval); }
@@ -28,19 +33,34 @@ public class QmsSupplierEvalServiceImpl implements IQmsSupplierEvalService {
         eval.setDelFlag("0");
         eval.setStatus("0");
         if (eval.getEvalStatus() == null) eval.setEvalStatus("0");
-        return mapper.insertEval(eval);
+        int rows = mapper.insertEval(eval);
+        // 评分完成后推送至 PMS（FR-SQM-06）
+        if (rows > 0 && eval.getTotalScore() != null) {
+            pushService.pushScoreToPms(eval);
+        }
+        return rows;
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateEval(QmsSupplierEval eval) {
         calcScore(eval);
-        return mapper.updateEval(eval);
+        int rows = mapper.updateEval(eval);
+        // 评分更新后推送至 PMS（FR-SQM-06）
+        if (rows > 0 && eval.getTotalScore() != null) {
+            pushService.pushScoreToPms(eval);
+        }
+        return rows;
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteEvalByIds(Long[] evalIds) { return mapper.deleteEvalByIds(evalIds); }
+
+    @Override
+    public Map<String, Object> selectBatchStats(Long supplierId, String period) {
+        return mapper.selectBatchStats(supplierId, period);
+    }
 
     private void calcScore(QmsSupplierEval eval) {
         // 自动计算合格率

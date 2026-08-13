@@ -22,32 +22,24 @@ WHERE NOT EXISTS (SELECT 1 FROM sys_dict_type WHERE dict_type = 'qms_gauge_type'
 
 -- 字典数据（幂等）
 INSERT INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, css_class, list_class, is_default, status, create_by, create_time, remark)
-SELECT 1, '游标卡尺', '1', 'qms_gauge_type', '', 'primary', 'N', '0', 'admin', sysdate(), '游标卡尺类量具'
-WHERE NOT EXISTS (SELECT 1 FROM sys_dict_data WHERE dict_type = 'qms_gauge_type' AND dict_value = '1');
+SELECT 1, '称量类', '称量类', 'qms_gauge_type', '', 'primary', 'N', '0', 'admin', sysdate(), '天平、水分仪等称量仪器'
+WHERE NOT EXISTS (SELECT 1 FROM sys_dict_data WHERE dict_type = 'qms_gauge_type' AND dict_value = '称量类');
 
 INSERT INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, css_class, list_class, is_default, status, create_by, create_time, remark)
-SELECT 2, '千分尺', '2', 'qms_gauge_type', '', 'success', 'N', '0', 'admin', sysdate(), '千分尺类量具'
-WHERE NOT EXISTS (SELECT 1 FROM sys_dict_data WHERE dict_type = 'qms_gauge_type' AND dict_value = '2');
+SELECT 2, '分析类', '分析类', 'qms_gauge_type', '', 'success', 'N', '0', 'admin', sysdate(), '光谱仪、色谱仪等分析仪器'
+WHERE NOT EXISTS (SELECT 1 FROM sys_dict_data WHERE dict_type = 'qms_gauge_type' AND dict_value = '分析类');
 
 INSERT INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, css_class, list_class, is_default, status, create_by, create_time, remark)
-SELECT 3, '百分表', '3', 'qms_gauge_type', '', 'info', 'N', '0', 'admin', sysdate(), '百分表/千分表类量具'
-WHERE NOT EXISTS (SELECT 1 FROM sys_dict_data WHERE dict_type = 'qms_gauge_type' AND dict_value = '3');
+SELECT 3, '量具类', '量具类', 'qms_gauge_type', '', 'info', 'N', '0', 'admin', sysdate(), '卡尺、千分尺、量块等量具'
+WHERE NOT EXISTS (SELECT 1 FROM sys_dict_data WHERE dict_type = 'qms_gauge_type' AND dict_value = '量具类');
 
 INSERT INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, css_class, list_class, is_default, status, create_by, create_time, remark)
-SELECT 4, '高度尺', '4', 'qms_gauge_type', '', 'warning', 'N', '0', 'admin', sysdate(), '高度尺/深度尺类量具'
-WHERE NOT EXISTS (SELECT 1 FROM sys_dict_data WHERE dict_type = 'qms_gauge_type' AND dict_value = '4');
+SELECT 4, '监测类', '监测类', 'qms_gauge_type', '', 'warning', 'N', '0', 'admin', sysdate(), '温度记录仪等监测仪器'
+WHERE NOT EXISTS (SELECT 1 FROM sys_dict_data WHERE dict_type = 'qms_gauge_type' AND dict_value = '监测类');
 
 INSERT INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, css_class, list_class, is_default, status, create_by, create_time, remark)
-SELECT 5, '量块', '5', 'qms_gauge_type', '', 'primary', 'N', '0', 'admin', sysdate(), '量块类标准量具'
-WHERE NOT EXISTS (SELECT 1 FROM sys_dict_data WHERE dict_type = 'qms_gauge_type' AND dict_value = '5');
-
-INSERT INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, css_class, list_class, is_default, status, create_by, create_time, remark)
-SELECT 6, '塞规', '6', 'qms_gauge_type', '', 'info', 'N', '0', 'admin', sysdate(), '塞规/环规类量具'
-WHERE NOT EXISTS (SELECT 1 FROM sys_dict_data WHERE dict_type = 'qms_gauge_type' AND dict_value = '6');
-
-INSERT INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, css_class, list_class, is_default, status, create_by, create_time, remark)
-SELECT 7, '其他', '9', 'qms_gauge_type', '', '', 'N', '0', 'admin', sysdate(), '其他类型量检具'
-WHERE NOT EXISTS (SELECT 1 FROM sys_dict_data WHERE dict_type = 'qms_gauge_type' AND dict_value = '9');
+SELECT 5, '其他', '其他', 'qms_gauge_type', '', '', 'N', '0', 'admin', sysdate(), '其他类型量检具'
+WHERE NOT EXISTS (SELECT 1 FROM sys_dict_data WHERE dict_type = 'qms_gauge_type' AND dict_value = '其他');
 
 -- =============================================
 -- 三、验证数据

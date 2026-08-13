@@ -1,12 +1,18 @@
 <template>
-  <div class="report-container">
-    <el-row :gutter="16" style="margin-bottom: 16px;">
-      <el-col :span="24" style="text-align: right;">
-        <el-button type="primary" icon="Printer" @click="handlePrint">打印报告</el-button>
+  <div class="report-standalone">
+    <!-- 工具栏（打印时隐藏） -->
+    <div class="report-toolbar no-print">
+      <div class="report-toolbar__left">
+        <span class="report-toolbar__title">质量检验报告</span>
+      </div>
+      <div class="report-toolbar__right">
+        <el-button type="primary" icon="Printer" @click="handlePrint" :disabled="!reportData">打印报告</el-button>
+        <el-button type="success" icon="Download" @click="handleDownloadPDF" :loading="pdfLoading" :disabled="!reportData">下载PDF</el-button>
         <el-button icon="Close" @click="handleClose">关闭</el-button>
-      </el-col>
-    </el-row>
+      </div>
+    </div>
 
+    <!-- 报告内容区域 -->
     <div v-loading="loading" class="report-content" id="printArea">
       <div v-if="reportData" class="report-paper">
         <!-- 报告标题 -->
@@ -20,7 +26,7 @@
           <tr><th colspan="4">任务信息</th></tr>
           <tr>
             <th width="15%">任务编号</th><td>{{ reportData.taskNo }}</td>
-            <th width="15%">检验类型</th><td><dict-tag :options="qms_insp_type" :value="reportData.taskType" /></td>
+            <th width="15%">检验类型</th><td>{{ dictLabel(qms_insp_type, reportData.taskType) }}</td>
           </tr>
           <tr>
             <th>来源单号</th><td>{{ reportData.sourceNo || '-' }}</td>
@@ -50,22 +56,24 @@
 
         <!-- 检验明细 -->
         <table class="report-table report-table--items">
-          <tr><th colspan="6">检验明细</th></tr>
+          <tr><th colspan="7">检验明细</th></tr>
           <tr>
             <th width="8%">序号</th>
-            <th width="25%">检验项目</th>
-            <th width="15%">规格要求</th>
-            <th width="15%">实测值</th>
-            <th width="12%">单项判定</th>
-            <th>缺陷代码</th>
+            <th width="22%">检验项目</th>
+            <th width="12%">规格要求</th>
+            <th width="12%">实测值</th>
+            <th width="10%">单项判定</th>
+            <th width="12%">缺陷代码</th>
+            <th width="10%">缺陷数量</th>
           </tr>
           <tr v-for="(item, index) in reportData.itemList" :key="index">
             <td>{{ index + 1 }}</td>
             <td>{{ item.stdName }}</td>
             <td>{{ item.specReq || '-' }}</td>
             <td>{{ item.measuredVal }}</td>
-            <td><dict-tag :options="qms_insp_result" :value="item.itemResult" /></td>
+            <td>{{ dictLabel(qms_insp_result, item.itemResult) }}</td>
             <td>{{ item.defectCode || '-' }}</td>
+            <td>{{ item.defectQty != null ? item.defectQty : '-' }}</td>
           </tr>
         </table>
 
@@ -74,13 +82,9 @@
           <tr><th colspan="4">判定结果</th></tr>
           <tr>
             <th width="20%">最高缺陷等级</th>
-            <td width="30%">
-              <dict-tag :options="qms_defect_level" :value="reportData.defectLevel" />
-            </td>
+            <td width="30%">{{ dictLabel(qms_defect_level, reportData.defectLevel) }}</td>
             <th width="20%">批量判定</th>
-            <td width="30%">
-              <dict-tag :options="qms_insp_result" :value="reportData.inspectResult" />
-            </td>
+            <td width="30%">{{ dictLabel(qms_insp_result, reportData.inspectResult) }}</td>
           </tr>
           <tr>
             <th>检验员</th><td>{{ reportData.inspectorName }}</td>
@@ -124,6 +128,8 @@
 <script setup name="QmsInspTaskReport">
 import { getTaskReport } from '@/api/qms/task'
 import { useRoute, useRouter } from 'vue-router'
+import html2canvas from 'html2canvas'
+import jsPDF from 'jspdf'
 
 const { proxy } = getCurrentInstance()
 const { qms_insp_type, qms_insp_result, qms_defect_level } = proxy.useDict('qms_insp_type', 'qms_insp_result', 'qms_defect_level')
@@ -133,6 +139,13 @@ const router = useRouter()
 
 const loading = ref(true)
 const reportData = ref(null)
+const pdfLoading = ref(false)
+
+function dictLabel(options, value) {
+  if (!options || value === null || value === undefined || value === '') return '-'
+  const item = options.find(d => d.value == value)
+  return item ? item.label : String(value)
+}
 
 function loadData() {
   const taskId = route.query.taskId
@@ -162,17 +175,80 @@ function handleClose()
   router.back()
 }
 
+async function handleDownloadPDF()
+{
+  if (!reportData.value) return
+  pdfLoading.value = true
+  try
+  {
+    const printArea = document.getElementById('printArea')
+    const canvas = await html2canvas(printArea, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#ffffff',
+      logging: false
+    })
+    const imgData = canvas.toDataURL('image/png')
+    const pdf = new jsPDF('p', 'mm', 'a4')
+    const pdfWidth = pdf.internal.pageSize.getWidth()
+    const pdfHeight = pdf.internal.pageSize.getHeight()
+    const imgWidth = pdfWidth
+    const imgHeight = (canvas.height * imgWidth) / canvas.width
+
+    let heightLeft = imgHeight
+    let position = 0
+
+    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
+    heightLeft -= pdfHeight
+
+    while (heightLeft >= 0)
+    {
+      position = heightLeft - imgHeight
+      pdf.addPage()
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
+      heightLeft -= pdfHeight
+    }
+
+    pdf.save(`质量检验报告_${reportData.value.taskNo}.pdf`)
+    proxy.$modal.msgSuccess('PDF下载成功')
+  }
+  catch (error)
+  {
+    console.error('PDF生成失败:', error)
+    proxy.$modal.msgError('PDF生成失败，请重试')
+  }
+  finally
+  {
+    pdfLoading.value = false
+  }
+}
+
 loadData()
 </script>
 
 <style scoped>
-.report-container { background: #f5f5f5; padding: 20px; min-height: 100vh; }
-.report-content { background: #fff; border-radius: 8px; padding: 40px; box-shadow: 0 2px 12px rgba(0,0,0,0.1); }
-.report-paper { max-width: 800px; margin: 0 auto; }
+/* ===== 独立页面容器 ===== */
+.report-standalone { background: #f0f2f5; min-height: 100vh; }
+
+/* ===== 工具栏 ===== */
+.report-toolbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 24px; background: #fff; border-bottom: 1px solid #e8e8e8;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04); position: sticky; top: 0; z-index: 10;
+}
+.report-toolbar__title { font-size: 18px; font-weight: 600; color: #1f1f1f; }
+.report-toolbar__right { display: flex; gap: 8px; }
+
+/* ===== 报告内容 ===== */
+.report-content { background: #fff; max-width: 960px; margin: 24px auto; padding: 40px; border-radius: 8px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+.report-paper { max-width: 100%; margin: 0 auto; }
+
+/* ===== 报告标题 ===== */
 .report-header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 20px; }
 .report-header h1 { font-size: 28px; font-weight: bold; margin: 0 0 8px 0; color: #333; }
 .report-subtitle { font-size: 14px; color: #666; letter-spacing: 2px; }
 
+/* ===== 报告表格 ===== */
 .report-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 14px; }
 .report-table th, .report-table td { border: 1px solid #ddd; padding: 10px; text-align: left; }
 .report-table th { background: #f5f7fa; font-weight: 600; color: #333; }
@@ -183,15 +259,22 @@ loadData()
 .report-table--items th { background: #fafafa; text-align: center; }
 .report-table--items td:first-child, .report-table--items td:nth-child(5), .report-table--items td:nth-child(6) { text-align: center; }
 
+/* ===== 电子签名 ===== */
 .report-esig { margin-top: 30px; }
 .report-esig h3 { font-size: 16px; font-weight: 600; color: #333; margin: 0 0 10px 0; }
 
+/* ===== 页脚 ===== */
 .report-footer { display: flex; justify-content: space-between; margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; color: #999; font-size: 12px; }
 
+/* ===== 打印样式 ===== */
 @media print {
-  .report-container { background: #fff; padding: 0; }
-  .report-content { padding: 20px; box-shadow: none; }
-  .el-button { display: none !important; }
-  .el-row[style*="margin-bottom"] { display: none; }
+  /* 隐藏工具栏 */
+  .no-print { display: none !important; }
+  /* 重置页面背景和布局 */
+  .report-standalone { background: #fff; }
+  .report-content { max-width: none; margin: 0; padding: 20px; box-shadow: none; border-radius: 0; }
+  /* 确保表格颜色在打印中可见 */
+  .report-table th { background: #f5f7fa !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .report-table--info th, .report-table--result th, .report-table--items th { background: #fafafa !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
 </style>

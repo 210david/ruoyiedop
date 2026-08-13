@@ -81,13 +81,15 @@
           <el-table-column label="计量单位" prop="unit" :width="colWidth('unit', 100)" resizable align="center">
             <template #default="scope"><dict-tag :options="wms_unit" :value="scope.row.unit" /></template>
           </el-table-column>
-          <el-table-column label="标准下限" prop="valMin" :width="colWidth('valMin', 100)" resizable align="right" />
-          <el-table-column label="标准上限" prop="valMax" :width="colWidth('valMax', 100)" resizable align="right" />
-          <el-table-column label="目标值" prop="targetVal" :width="colWidth('targetVal', 100)" resizable align="right" />
+          <el-table-column label="标准下限" prop="valMin" :width="colWidth('valMin', 100)" resizable align="center" />
+          <el-table-column label="标准上限" prop="valMax" :width="colWidth('valMax', 100)" resizable align="center" />
+          <el-table-column label="目标值" prop="targetVal" :width="colWidth('targetVal', 100)" resizable align="center" />
           <el-table-column label="判定规则" prop="judgeRule" :width="colWidth('judgeRule', 100)" resizable align="center">
             <template #default="scope"><dict-tag :options="qms_judge_rule" :value="scope.row.judgeRule" /></template>
           </el-table-column>
-          <el-table-column label="行业模板" prop="tplName" :width="colWidth('tplName', 120)" resizable align="center" />
+          <el-table-column label="行业类型" prop="industryType" :width="colWidth('industryType', 120)" resizable align="center">
+            <template #default="scope"><dict-tag :options="qms_industry_type" :value="scope.row.industryType" /></template>
+          </el-table-column>
           <el-table-column label="状态" prop="status" :width="colWidth('status', 80)" resizable align="center">
             <template #default="scope"><span class="badge" :class="scope.row.status === '0' ? 'green' : 'gray'"><span class="dot"></span>{{ scope.row.status === '0' ? '正常' : '停用' }}</span></template>
           </el-table-column>
@@ -142,7 +144,7 @@
             <div class="rd-card-body">
               <el-row :gutter="20">
                 <el-col :span="12"><el-form-item label="判定规则" prop="judgeRule"><el-select v-model="form.judgeRule" style="width: 100%"><el-option v-for="d in qms_judge_rule" :key="d.value" :label="d.label" :value="d.value" /></el-select></el-form-item></el-col>
-                <el-col :span="12"><el-form-item label="行业模板" prop="tplId"><el-select v-model="form.tplId" filterable clearable placeholder="请选择" style="width: 100%"><el-option v-for="t in tplOptions" :key="t.tplId" :label="t.tplName" :value="t.tplId" /></el-select></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="行业类型" prop="industryType"><el-select v-model="form.industryType" filterable clearable placeholder="请选择" style="width: 100%"><el-option v-for="d in qms_industry_type" :key="d.value" :label="d.label" :value="d.value" /></el-select></el-form-item></el-col>
               </el-row>
               <el-form-item label="状态" prop="status"><el-radio-group v-model="form.status"><el-radio value="0">正常</el-radio><el-radio value="1">停用</el-radio></el-radio-group></el-form-item>
             </div>
@@ -175,7 +177,7 @@
             <div class="rd-item"><span class="rd-label">检验方法</span><div class="rd-value">{{ viewData.inspectMethod || '-' }}</div></div>
             <div class="rd-item"><span class="rd-label">计量单位</span><div class="rd-value"><dict-tag :options="wms_unit" :value="viewData.unit" /></div></div>
             <div class="rd-item"><span class="rd-label">判定规则</span><div class="rd-value"><dict-tag :options="qms_judge_rule" :value="viewData.judgeRule" /></div></div>
-            <div class="rd-item"><span class="rd-label">行业模板</span><div class="rd-value">{{ viewData.tplName || '-' }}</div></div>
+            <div class="rd-item"><span class="rd-label">行业类型</span><div class="rd-value"><dict-tag :options="qms_industry_type" :value="viewData.industryType" /></div></div>
           </div></div>
         </section>
         <section class="rd-card">
@@ -198,12 +200,11 @@
 
 <script setup name="QmsStd">
 import { listStd, getStd, addStd, updateStd, delStd } from '@/api/qms/std'
-import { listTpl } from '@/api/qms/tpl'
 import { useColumnResize } from '@/composables/useColumnResize'
 
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('qms_std_index')
-const { qms_judge_rule, wms_unit } = proxy.useDict('qms_judge_rule', 'wms_unit')
+const { qms_judge_rule, wms_unit, qms_industry_type } = proxy.useDict('qms_judge_rule', 'wms_unit', 'qms_industry_type')
 
 const list = ref([])
 const open = ref(false)
@@ -217,8 +218,6 @@ const single = ref(true)
 const multiple = ref(true)
 const total = ref(0)
 const title = ref('')
-const tplOptions = ref([])
-
 const data = reactive({
   form: {},
   queryParams: { pageNum: 1, pageSize: 10, stdCode: undefined, stdName: undefined, judgeRule: undefined, status: undefined, params: {} },
@@ -241,8 +240,7 @@ function getList() { loading.value = true; listStd(queryParams.value).then(res =
 function handleQuery() { queryParams.value.pageNum = 1; getList() }
 function resetQuery() { queryParams.value.stdCode = undefined; queryParams.value.stdName = undefined; queryParams.value.judgeRule = undefined; queryParams.value.status = undefined; queryParams.value.params = {}; handleQuery() }
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.stdId); single.value = selection.length !== 1; multiple.value = !selection.length }
-function reset() { form.value = { stdId: undefined, stdCode: undefined, stdName: undefined, inspectMethod: undefined, unit: undefined, valMin: undefined, valMax: undefined, targetVal: undefined, judgeRule: '1', tplId: undefined, status: '0', remark: undefined }; proxy.resetForm('stdRef') }
-function loadTplOptions() { listTpl({ pageNum: 1, pageSize: 999 }).then(res => { tplOptions.value = res.rows || [] }) }
+function reset() { form.value = { stdId: undefined, stdCode: undefined, stdName: undefined, inspectMethod: undefined, unit: undefined, valMin: undefined, valMax: undefined, targetVal: undefined, judgeRule: '1', industryType: undefined, status: '0', remark: undefined }; proxy.resetForm('stdRef') }
 function handleAdd() { reset(); open.value = true; title.value = '添加检验标准' }
 function handleUpdate(row) { reset(); getStd(row.stdId || ids.value[0]).then(res => { form.value = res.data; open.value = true; title.value = '修改检验标准' }) }
 function handleView(row) { getStd(row.stdId).then(res => { viewData.value = res.data; viewOpen.value = true }) }
@@ -251,7 +249,6 @@ function handleDelete(row) { const stdIds = row.stdId || ids.value; proxy.$modal
 function handleExport() { proxy.download('qms/std/export', { ...queryParams.value }, `std_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 
-loadTplOptions()
 getList()
 onActivated(() => { getList() })
 </script>

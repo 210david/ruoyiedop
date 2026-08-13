@@ -1,4 +1,7 @@
-package com.ruoyi.pms.service.impl;
+package com.ruoyi.pms.service.impl;
+import java.util.HashMap;
+import java.util.Map;
+
 
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -79,7 +82,9 @@ public class PmsPurchasePlanServiceImpl implements IPmsPurchasePlanService
         // 后端生成真实计划单号（消耗序号，避免前端预览号重复）
         if (StringUtils.isEmpty(pmsPurchasePlan.getPlanNo()))
         {
-            pmsPurchasePlan.setPlanNo(mkNumberRuleService.generateNumber("PMS_PLAN"));
+            Map<String, String> params = new HashMap<>();
+        if (StringUtils.isNotEmpty(pmsPurchasePlan.getPlanType())) { params.put("planType", pmsPurchasePlan.getPlanType()); }
+        pmsPurchasePlan.setPlanNo(mkNumberRuleService.generateNumber("PMS_PLAN", params));
         }
 
         // 计算预算总金额

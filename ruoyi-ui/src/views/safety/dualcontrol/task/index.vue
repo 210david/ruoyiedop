@@ -4,6 +4,10 @@
     <div class="surface filter-card" v-show="showSearch">
       <div class="filter-head">
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+        <a class="adv-link" :class="{ 'is-open': showAdvanced }" @click.prevent="showAdvanced = !showAdvanced">
+          <span>{{ showAdvanced ? '收起' : '高级筛选' }}</span>
+          <el-icon class="chev"><ArrowDown /></el-icon>
+        </a>
       </div>
       <div class="filter-bar">
         <div class="field">
@@ -28,6 +32,14 @@
             </el-select>
           </div>
         </div>
+        <div class="field" v-show="showAdvanced">
+          <label>任务类型</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.taskType" placeholder="全部" clearable @change="handleQuery">
+              <el-option v-for="dict in safety_task_type" :key="dict.value" :label="dict.label" :value="dict.value" />
+            </el-select>
+          </div>
+        </div>
       </div>
       <div class="filter-actions">
         <div class="filter-info">
@@ -42,10 +54,31 @@
 
     <!-- ===== Table Section ===== -->
     <div class="surface">
+      <!-- Status Tabs -->
+      <div class="status-tabs">
+        <div class="tabs-track">
+          <button class="status-tab" :class="{ 'is-active': activeStatusTab === 'all' }" @click="handleStatusTabClick('all')">
+            <span class="dot"></span><span>全部</span><span class="count">{{ statusCounts.all }}</span>
+          </button>
+          <button v-for="s in safety_task_status" :key="s.value"
+            class="status-tab"
+            :class="[statusTabClass(s.value), { 'is-active': activeStatusTab === s.value }]"
+            @click="handleStatusTabClick(s.value)">
+            <span class="dot"></span><span>{{ s.label }}</span><span class="count">{{ statusCounts[s.value] || 0 }}</span>
+          </button>
+        </div>
+        <button class="tip-pill" @click="showStatusHelp = true">
+          <el-icon><WarningFilled /></el-icon>
+          <span>业务操作说明</span>
+        </button>
+      </div>
+
       <div class="toolbar">
         <div class="left">
           <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['safety:task:add']">新增</el-button>
           <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['safety:task:remove']">删除</el-button>
+          <div class="toolbar-divider"></div>
+          <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['safety:task:export']">导出</el-button>
         </div>
         <div class="right">
           <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="safety_task_columns" />
@@ -213,6 +246,55 @@
 
     <!-- 执行人选择弹窗 -->
     <user-picker ref="userPickerRef" title="选择执行人" @confirm="onUserPickerConfirm" />
+
+    <!-- 业务操作说明对话框 -->
+    <el-dialog v-model="showStatusHelp" title="排查任务业务操作说明" width="720px" append-to-body>
+      <div class="status-help-content">
+        <h4>一、业务状态流转图</h4>
+        <div class="status-flow">
+          <div class="flow-item">
+            <el-tag type="warning">待执行</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="primary">执行中</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="success">已完成</el-tag>
+          </div>
+        </div>
+        <div class="status-flow" style="margin-top:8px">
+          <div class="flow-item">
+            <el-tag type="warning">待执行/执行中</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="info">已作废</el-tag>
+          </div>
+        </div>
+
+        <h4>二、各状态说明</h4>
+        <el-descriptions :column="1" border>
+          <el-descriptions-item label="待执行">任务已创建但尚未开始执行，可修改、执行反馈或作废</el-descriptions-item>
+          <el-descriptions-item label="执行中">任务正在执行中，可进行执行反馈或作废</el-descriptions-item>
+          <el-descriptions-item label="已完成">任务已完成执行反馈，系统自动记录检查结果和隐患数量</el-descriptions-item>
+          <el-descriptions-item label="已作废">任务已作废，不可再进行操作</el-descriptions-item>
+        </el-descriptions>
+
+        <h4>三、重点业务规则</h4>
+        <div class="highlight-card">
+          <p>• <strong>任务类型：</strong>支持日常排查、综合排查、专项排查、季节性排查、节假日排查等多种类型</p>
+          <p>• <strong>执行反馈：</strong>执行人填写检查结果（正常/有隐患），如发现隐患可同时登记隐患明细</p>
+          <p>• <strong>隐患登记：</strong>检查结果为"有隐患"时，可添加多条隐患记录，包含描述、类型、等级、责任人、整改要求等</p>
+          <p>• <strong>任务作废：</strong>待执行或执行中状态的任务可作废，作废后不可恢复</p>
+          <p>• <strong>关联隐患：</strong>已完成的任务详情页可查看关联的隐患列表及整改状态</p>
+        </div>
+      </div>
+      <template #footer>
+        <el-button type="primary" @click="showStatusHelp = false">我知道了</el-button>
+      </template>
+    </el-dialog>
 
     <!-- 执行反馈弹窗 -->
     <el-dialog v-model="feedbackOpen" width="1080px" append-to-body draggable class="rd-dialog">
@@ -397,7 +479,7 @@ import UserPicker from '@/components/UserPicker/index.vue'
 import DeptPicker from '@/components/DeptPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
-import { Search, Filter, RefreshLeft, CircleClose } from '@element-plus/icons-vue'
+import { Search, Filter, RefreshLeft, CircleClose, WarningFilled, ArrowRight, ArrowDown } from '@element-plus/icons-vue'
 
 const { proxy } = getCurrentInstance()
 const { safety_task_type, safety_task_status, safety_hazard_type, safety_hazard_level } = proxy.useDict('safety_task_type', 'safety_task_status', 'safety_hazard_type', 'safety_hazard_level')
@@ -410,6 +492,10 @@ const viewOpen = ref(false)
 const viewData = ref({})
 const loading = ref(true)
 const showSearch = ref(true)
+const showAdvanced = ref(false)
+const showStatusHelp = ref(false)
+const activeStatusTab = ref('all')
+const statusCounts = ref({ all: 0 })
 const ids = ref([])
 const single = ref(true)
 const multiple = ref(true)
@@ -447,7 +533,7 @@ const columns = ref(loadColumnVisibility())
 
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, taskName: undefined, taskCode: undefined, taskStatus: undefined, params: {} },
+  queryParams: { pageNum: 1, pageSize: 10, taskName: undefined, taskCode: undefined, taskStatus: undefined, taskType: undefined, params: {} },
   rules: {
     taskName: [{ required: true, message: '任务名称不能为空', trigger: 'blur' }],
     taskType: [{ required: true, message: '任务类型不能为空', trigger: 'change' }],
@@ -462,12 +548,23 @@ const activeFilterCount = computed(() => {
   if (queryParams.value.taskName) count++
   if (queryParams.value.taskCode) count++
   if (queryParams.value.taskStatus) count++
+  if (queryParams.value.taskType) count++
   return count
 })
 
-function getList() { loading.value = true; listTask(queryParams.value).then(response => { taskList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths() }) }
-function handleQuery() { queryParams.value.pageNum = 1; getList() }
-function resetQuery() { queryParams.value.taskName = undefined; queryParams.value.taskCode = undefined; queryParams.value.taskStatus = undefined; queryParams.value.params = {}; handleQuery() }
+function handleStatusTabClick(status) { activeStatusTab.value = status; queryParams.value.taskStatus = status === 'all' ? undefined : status; handleQuery() }
+function loadStatusCounts() {
+  listTask({ pageNum: 1, pageSize: 999 }).then(res => {
+    const counts = { all: res.total }
+    ;(res.rows || []).forEach(r => { counts[r.taskStatus] = (counts[r.taskStatus] || 0) + 1 })
+    statusCounts.value = counts
+  }).catch(() => {})
+}
+function statusTabClass(value) { const map = { '0': 'tab-draft', '1': 'tab-audit', '2': 'tab-done', '3': 'tab-void' }; return map[value] || '' }
+
+function getList() { loading.value = true; listTask(queryParams.value).then(response => { taskList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths(); loadStatusCounts() }) }
+function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
+function resetQuery() { queryParams.value.taskName = undefined; queryParams.value.taskCode = undefined; queryParams.value.taskStatus = undefined; queryParams.value.taskType = undefined; queryParams.value.params = {}; activeStatusTab.value = 'all'; handleQuery() }
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleSelectionChange(selection) { ids.value = selection.map(item => item.taskId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function handleAdd() { reset(); collapsedCards.c0 = false; collapsedCards.c1 = false; open.value = true; title.value = '添加排查任务' }
@@ -488,6 +585,7 @@ function submitForm() {
   })
 }
 function handleDelete(row) { const taskIds = row.taskId || ids.value; proxy.$modal.confirm('是否确认删除排查任务？').then(function() { return delTask(taskIds) }).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleExport() { proxy.download('safety/task/export', { ...queryParams.value }, `task_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 function reset() {
   form.value = { taskId: undefined, taskCode: undefined, taskName: undefined, taskType: undefined, planDate: undefined, executorId: undefined, executorName: undefined, remark: undefined }
@@ -643,6 +741,10 @@ getList()
 .safety-task-page .filter-card .filter-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
 .safety-task-page .filter-card .filter-title { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--ink-700); }
 .safety-task-page .filter-card .filter-title .glyph { width:4px; height:14px; background:var(--brand-600); border-radius:2px; }
+.safety-task-page .filter-card .adv-link { font-size:14px; color:var(--ink-500); text-decoration:none; display:flex; align-items:center; gap:4px; transition:color .15s; cursor:pointer; }
+.safety-task-page .filter-card .adv-link:hover { color:var(--brand-600); }
+.safety-task-page .filter-card .adv-link .chev { transition:transform .2s var(--ease-out); }
+.safety-task-page .filter-card .adv-link.is-open .chev { transform:rotate(180deg); }
 .safety-task-page .filter-card .filter-bar { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px 16px; }
 .safety-task-page .filter-card .filter-actions { display:flex; align-items:center; justify-content:space-between; margin-top:14px; padding-top:14px; border-top:1px dashed var(--ink-200); }
 .safety-task-page .filter-card .filter-info { font-size:13px; color:var(--ink-500); display:flex; align-items:center; gap:6px; }
@@ -684,4 +786,29 @@ getList()
 .hazard-add-form { padding: 12px; background: var(--ink-50); border-top: 1px solid var(--ink-200); }
 .text-danger { color: var(--red-700); font-weight: 600; }
 .text-warning { color: var(--amber-700); font-weight: 600; }
+.safety-task-page .status-tabs { display:flex; align-items:center; gap:12px; padding:6px 10px 6px 12px; border-bottom:1px solid var(--ink-200); background:#fff; }
+.safety-task-page .tabs-track { display:flex; align-items:center; gap:4px; flex:1; min-width:0; overflow-x:auto; scrollbar-width:none; }
+.safety-task-page .tabs-track::-webkit-scrollbar { display:none; }
+.safety-task-page .status-tab { display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 12px; border-radius:var(--r-sm); font-size:14px; color:var(--ink-500); cursor:pointer; user-select:none; transition:all .15s var(--ease-out); white-space:nowrap; border:1px solid transparent; background:transparent; }
+.safety-task-page .status-tab .dot { width:6px; height:6px; border-radius:50%; background:var(--ink-300); }
+.safety-task-page .status-tab .count { font-size:12px; font-weight:600; padding:1px 6px; border-radius:999px; background:var(--ink-100); color:var(--ink-500); min-width:18px; text-align:center; line-height:1.4; }
+.safety-task-page .status-tab:hover { background:var(--ink-50); color:var(--ink-700); }
+.safety-task-page .status-tab.is-active { background:var(--brand-50); color:var(--brand-700); font-weight:600; border-color:var(--brand-200); }
+.safety-task-page .status-tab.is-active .count { background:var(--brand-600); color:#fff; }
+.safety-task-page .status-tab.is-active .dot { background:var(--brand-500); }
+.safety-task-page .status-tab.tab-draft .dot { background:var(--amber-500); } .safety-task-page .status-tab.tab-draft .count { background:var(--amber-50); color:var(--amber-700); } .safety-task-page .status-tab.is-active.tab-draft .count { background:var(--amber-500); color:#fff; }
+.safety-task-page .status-tab.tab-audit .dot { background:var(--blue-500); } .safety-task-page .status-tab.tab-audit .count { background:var(--blue-50); color:var(--blue-700); } .safety-task-page .status-tab.is-active.tab-audit .count { background:var(--blue-500); color:#fff; }
+.safety-task-page .status-tab.tab-done .dot { background:var(--green-500); } .safety-task-page .status-tab.tab-done .count { background:var(--green-50); color:var(--green-700); } .safety-task-page .status-tab.is-active.tab-done .count { background:var(--green-500); color:#fff; }
+.safety-task-page .status-tab.tab-void .dot { background:var(--ink-400); } .safety-task-page .status-tab.tab-void .count { background:var(--ink-100); color:var(--ink-500); } .safety-task-page .status-tab.is-active.tab-void .count { background:var(--ink-400); color:#fff; }
+.safety-task-page .tip-pill { display:inline-flex; align-items:center; gap:5px; height:30px; padding:0 10px; background:#fffaf0; border:1px solid #fde68a; color:#92400e; border-radius:999px; font-size:13px; font-weight:500; cursor:pointer; transition:all .15s var(--ease-out); flex-shrink:0; white-space:nowrap; }
+.safety-task-page .tip-pill:hover { background:var(--amber-50); border-color:var(--amber-500); color:#7c2d12; }
+.safety-task-page .tip-pill .el-icon { font-size:14px; color:var(--amber-700); }
+.status-help-content { max-height:500px; overflow-y:auto; padding-right:10px; }
+.status-help-content h4 { margin:20px 0 12px 0; color:#303133; font-weight:600; border-left:4px solid #409eff; padding-left:10px; }
+.status-help-content h4:first-child { margin-top:0; }
+.status-help-content .status-flow { display:flex; align-items:center; flex-wrap:wrap; gap:8px; padding:16px; background-color:#f5f7fa; border-radius:8px; margin-bottom:8px; }
+.status-help-content .flow-item { display:flex; align-items:center; gap:8px; }
+.status-help-content .flow-arrow { color:#909399; font-size:16px; }
+.status-help-content .highlight-card { background-color:#ecf5ff; border-radius:8px; padding:16px; border-left:4px solid #409eff; }
+.status-help-content .highlight-card p { margin:6px 0; line-height:1.6; font-size:13px; color:#606266; }
 </style>

@@ -16,7 +16,7 @@
       <el-table-column label="批次名称" prop="waveName" show-overflow-tooltip />
       <el-table-column label="仓库" prop="warehouseName" :width="colWidth('warehouseName', 120)" resizable />
       <el-table-column label="状态" prop="status" :width="colWidth('status', 100)" resizable align="center"><template #default="scope"><dict-tag :options="wms_wave_status" :value="scope.row.status" /></template></el-table-column>
-      <el-table-column label="总数量" prop="totalQty" :width="colWidth('totalQty', 100)" resizable align="right" />
+      <el-table-column label="总数量" prop="totalQty" :width="colWidth('totalQty', 100)" resizable align="center" />
       <el-table-column label="订单数" prop="orderCount" :width="colWidth('orderCount', 80)" resizable align="center" />
       <el-table-column label="操作" width="300" align="center">
         <template #default="scope">
@@ -72,7 +72,7 @@
         <el-table-column label="出库单号" prop="orderNo" :width="colWidth('orderNo', 160)" resizable />
         <el-table-column label="出库类型" prop="orderType" :width="colWidth('orderType', 100)" resizable align="center"><template #default="scope"><dict-tag :options="wms_outbound_type" :value="scope.row.orderType" /></template></el-table-column>
         <el-table-column label="状态" prop="status" :width="colWidth('status', 100)" resizable align="center"><template #default="scope"><dict-tag :options="wms_outbound_status" :value="scope.row.status" /></template></el-table-column>
-        <el-table-column label="总数量" prop="totalQty" :width="colWidth('totalQty', 100)" resizable align="right" />
+        <el-table-column label="总数量" prop="totalQty" :width="colWidth('totalQty', 100)" resizable align="center" />
         <el-table-column label="预计出库" prop="outboundDate" :width="colWidth('outboundDate', 120)" resizable align="center" />
       </el-table>
           </div>
@@ -92,7 +92,7 @@
         <el-table-column type="selection" width="55" align="center" />
         <el-table-column label="出库单号" prop="orderNo" :width="colWidth('orderNo', 160)" resizable />
         <el-table-column label="出库类型" prop="orderType" :width="colWidth('orderType', 100)" resizable align="center"><template #default="scope"><dict-tag :options="wms_outbound_type" :value="scope.row.orderType" /></template></el-table-column>
-        <el-table-column label="总数量" prop="totalQty" :width="colWidth('totalQty', 100)" resizable align="right" />
+        <el-table-column label="总数量" prop="totalQty" :width="colWidth('totalQty', 100)" resizable align="center" />
         <el-table-column label="预计出库" prop="outboundDate" :width="colWidth('outboundDate', 120)" resizable align="center" />
         <el-table-column label="创建时间" prop="createTime" :width="colWidth('createTime', 160)" resizable align="center" />
       </el-table>

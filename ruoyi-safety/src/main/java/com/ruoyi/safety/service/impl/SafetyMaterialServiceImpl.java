@@ -1,8 +1,12 @@
 package com.ruoyi.safety.service.impl;
 
+import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.safety.domain.SafetyMaterial;
@@ -54,6 +58,20 @@ public class SafetyMaterialServiceImpl implements ISafetyMaterialService
 
     @Override
     public int deleteSafetyMaterialById(Long materialId) { return safetyMaterialMapper.deleteSafetyMaterialById(materialId); }
+
+    @Override
+    public List<SafetyMaterial> selectStockAlertList() { return safetyMaterialMapper.selectStockAlertList(); }
+
+    @Override
+    @Transactional
+    public int updateCurrentStock(Long materialId, BigDecimal afterStock, String updateBy)
+    {
+        Map<String, Object> params = new HashMap<>();
+        params.put("materialId", materialId);
+        params.put("afterStock", afterStock);
+        params.put("updateBy", updateBy);
+        return safetyMaterialMapper.updateCurrentStock(params);
+    }
 
     private boolean checkMaterialCodeUnique(SafetyMaterial material)
     {

@@ -10,7 +10,7 @@
         <result property="docStatus" column="doc_status"/>
         <result property="deptId" column="dept_id"/>
         <result property="deptName" column="dept_name"/>
-        <result property="tplId" column="tpl_id"/>
+        <result property="industryType" column="industry_type"/>
         <result property="fileUrl" column="file_url"/>
         <result property="publishDate" column="publish_date"/>
         <result property="obsoleteDate" column="obsolete_date"/>
@@ -24,7 +24,7 @@
     </resultMap>
     <sql id="selectVo">
         SELECT doc_id, doc_no, doc_title, doc_category, version_no, doc_status, dept_id, dept_name,
-               tpl_id, file_url, publish_date, obsolete_date, del_flag, status,
+               industry_type, file_url, publish_date, obsolete_date, del_flag, status,
                create_by, create_time, update_by, update_time, remark
         FROM qms_doc
     </sql>
@@ -43,9 +43,9 @@
     </select>
     <insert id="insertDoc" parameterType="QmsDoc" useGeneratedKeys="true" keyProperty="docId">
         INSERT INTO qms_doc (doc_no, doc_title, doc_category, version_no, doc_status, dept_id, dept_name,
-            tpl_id, file_url, publish_date, obsolete_date, del_flag, status, create_by, create_time, remark)
+            industry_type, file_url, publish_date, obsolete_date, del_flag, status, create_by, create_time, remark)
         VALUES (#{docNo}, #{docTitle}, #{docCategory}, #{versionNo}, #{docStatus}, #{deptId}, #{deptName},
-            #{tplId}, #{fileUrl}, #{publishDate}, #{obsoleteDate}, #{delFlag}, #{status}, #{createBy}, sysdate(), #{remark})
+            #{industryType}, #{fileUrl}, #{publishDate}, #{obsoleteDate}, #{delFlag}, #{status}, #{createBy}, sysdate(), #{remark})
     </insert>
     <update id="updateDoc" parameterType="QmsDoc">
         UPDATE qms_doc <set>
@@ -56,7 +56,7 @@
             <if test="docStatus != null"> doc_status = #{docStatus},</if>
             <if test="deptId != null"> dept_id = #{deptId},</if>
             <if test="deptName != null"> dept_name = #{deptName},</if>
-            <if test="tplId != null"> tpl_id = #{tplId},</if>
+            <if test="industryType != null"> industry_type = #{industryType},</if>
             <if test="fileUrl != null"> file_url = #{fileUrl},</if>
             <if test="publishDate != null"> publish_date = #{publishDate},</if>
             <if test="obsoleteDate != null"> obsolete_date = #{obsoleteDate},</if>

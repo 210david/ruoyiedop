@@ -4,6 +4,10 @@
     <div class="surface filter-card" v-show="showSearch">
       <div class="filter-head">
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+        <a class="adv-link" :class="{ 'is-open': showAdvanced }" @click.prevent="showAdvanced = !showAdvanced">
+          <span>{{ showAdvanced ? '收起' : '高级筛选' }}</span>
+          <el-icon class="chev"><ArrowDown /></el-icon>
+        </a>
       </div>
       <div class="filter-bar">
         <div class="field">
@@ -30,6 +34,15 @@
             </el-select>
           </div>
         </div>
+        <div class="field" v-show="showAdvanced">
+          <label>状态</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
+              <el-option label="正常" value="0" />
+              <el-option label="停用" value="1" />
+            </el-select>
+          </div>
+        </div>
       </div>
       <div class="filter-actions">
         <div class="filter-info">
@@ -48,6 +61,8 @@
         <div class="left">
           <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['safety:training:course:add']">新增</el-button>
           <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['safety:training:course:remove']">删除</el-button>
+          <div class="toolbar-divider"></div>
+          <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['safety:training:course:export']">导出</el-button>
         </div>
         <div class="right">
           <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="safety_training_course_columns" />
@@ -141,7 +156,7 @@
       </template>
       <div class="rd-page">
         <section class="rd-card">
-          <div class="rd-card-header" @click="toggleCard('vc0')"><div class="rd-card-title">课程信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc0 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-header" @click="toggleCard('vc0')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>课程信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc0 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
           <div class="rd-card-body" v-show="!collapsedCards.vc0" style="display:block">
             <div class="rd-grid">
               <div class="rd-item"><span class="rd-label">课程编号</span><div class="rd-value">{{ viewData.courseCode || '-' }}</div></div>
@@ -154,15 +169,20 @@
           </div>
         </section>
         <section class="rd-card" v-if="viewData.materialUrl || viewData.description || viewData.remark">
-          <div class="rd-card-header" @click="toggleCard('vc1')"><div class="rd-card-title">课件与描述</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-header" @click="toggleCard('vc1')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>课件与描述</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
           <div class="rd-card-body" v-show="!collapsedCards.vc1" style="display:block">
             <div class="rd-grid">
               <div class="rd-item rd-item--full" v-if="viewData.materialUrl"><span class="rd-label">课件附件</span><div class="rd-value"><div class="rd-file-links" v-if="viewData.materialUrl">
-              <div class="rd-file-link" v-for="(url, idx) in String(viewData.materialUrl).split(',')" :key="idx">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                <span class="rd-file-name" @click="handleFilePreview(url)">{{ url.includes('/') ? url.substring(url.lastIndexOf('/') + 1) : url }}</span>
-                <a :href="baseUrl + url" target="_blank" class="rd-file-dl">下载</a>
-              </div>
+<div class="rd-file-item" v-for="(url, idx) in String(viewData.materialUrl).split(',')" :key="idx">
+<div class="rd-file-link" @click="handleFilePreview(url)">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+<span class="rd-file-name">{{ url.includes('/') ? url.substring(url.lastIndexOf('/') + 1) : url }}</span>
+</div>
+<span class="rd-file-dl" @click="handleFileDownload(url)">
+<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+下载
+</span>
+</div>
             </div></div></div>
               <div class="rd-item rd-item--full"><span class="rd-label">课程描述</span><div class="rd-value">{{ viewData.description || '-' }}</div></div>
               <div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value">{{ viewData.remark || '-' }}</div></div>
@@ -181,8 +201,9 @@
 import { listTrainingCourse, getTrainingCourse, addTrainingCourse, updateTrainingCourse, delTrainingCourse } from '@/api/safety/trainingCourse'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
-import { Search, Filter, RefreshLeft } from '@element-plus/icons-vue'
+import { Search, Filter, RefreshLeft, ArrowDown } from '@element-plus/icons-vue'
 import FilePreview from '@/components/FilePreview/index.vue'
+import { downloadFile } from '@/utils/downloadFile'
 
 const { proxy } = getCurrentInstance()
 const { safety_course_type, safety_course_form } = proxy.useDict('safety_course_type', 'safety_course_form')
@@ -194,6 +215,7 @@ const baseUrl = import.meta.env.VITE_APP_BASE_API
 const open = ref(false)
 const loading = ref(true)
 const showSearch = ref(true)
+const showAdvanced = ref(false)
 const ids = ref([])
 const single = ref(true)
 const multiple = ref(true)
@@ -231,7 +253,7 @@ const columns = ref(loadColumnVisibility())
 
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, courseName: undefined, courseType: undefined, courseForm: undefined, params: {} },
+  queryParams: { pageNum: 1, pageSize: 10, courseName: undefined, courseType: undefined, courseForm: undefined, status: undefined, params: {} },
   rules: {
     courseName: [{ required: true, message: '课程名称不能为空', trigger: 'blur' }],
     courseType: [{ required: true, message: '课程类别不能为空', trigger: 'change' }],
@@ -247,17 +269,21 @@ const activeFilterCount = computed(() => {
   if (queryParams.value.courseName) count++
   if (queryParams.value.courseType) count++
   if (queryParams.value.courseForm) count++
+  if (queryParams.value.status) count++
   return count
 })
 
 function handleFilePreview(url) {
-  const name = url.includes('/') ? url.substring(url.lastIndexOf('/') + 1) : url
-  proxy.$refs.filePreviewRef.open(url, name)
+const name = url.includes('/') ? url.substring(url.lastIndexOf('/') + 1) : url
+proxy.$refs.filePreviewRef.open(url, name)
+}
+function handleFileDownload(url) {
+downloadFile(url)
 }
 
 function getList() { loading.value = true; listTrainingCourse(queryParams.value).then(response => { courseList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths() }) }
-function handleQuery() { queryParams.value.pageNum = 1; getList() }
-function resetQuery() { queryParams.value.courseName = undefined; queryParams.value.courseType = undefined; queryParams.value.courseForm = undefined; queryParams.value.params = {}; handleQuery() }
+function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
+function resetQuery() { queryParams.value.courseName = undefined; queryParams.value.courseType = undefined; queryParams.value.courseForm = undefined; queryParams.value.status = undefined; queryParams.value.params = {}; handleQuery() }
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleSelectionChange(selection) { ids.value = selection.map(item => item.courseId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function handleAdd() { reset(); collapsedCards.c0 = false; collapsedCards.c1 = false; open.value = true; title.value = '添加课程' }
@@ -272,6 +298,7 @@ function submitForm() {
   })
 }
 function handleDelete(row) { const courseIds = row.courseId || ids.value; proxy.$modal.confirm('是否确认删除课程？').then(function() { return delTrainingCourse(courseIds) }).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleExport() { proxy.download('safety/training/course/export', { ...queryParams.value }, `training_course_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 function reset() {
   form.value = { courseId: undefined, courseCode: undefined, courseName: undefined, courseType: undefined, courseForm: undefined, hours: undefined, instructor: undefined, description: undefined, materialUrl: undefined, status: '0', remark: undefined }
@@ -292,6 +319,10 @@ getList()
 .safety-training-course-page .filter-card .filter-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
 .safety-training-course-page .filter-card .filter-title { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--ink-700); }
 .safety-training-course-page .filter-card .filter-title .glyph { width:4px; height:14px; background:var(--brand-600); border-radius:2px; }
+.safety-training-course-page .filter-card .adv-link { font-size:14px; color:var(--ink-500); text-decoration:none; display:flex; align-items:center; gap:4px; transition:color .15s; cursor:pointer; }
+.safety-training-course-page .filter-card .adv-link:hover { color:var(--brand-600); }
+.safety-training-course-page .filter-card .adv-link .chev { transition:transform .2s var(--ease-out); }
+.safety-training-course-page .filter-card .adv-link.is-open .chev { transform:rotate(180deg); }
 .safety-training-course-page .filter-card .filter-bar { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px 16px; }
 .safety-training-course-page .filter-card .filter-actions { display:flex; align-items:center; justify-content:space-between; margin-top:14px; padding-top:14px; border-top:1px dashed var(--ink-200); }
 .safety-training-course-page .filter-card .filter-info { font-size:13px; color:var(--ink-500); display:flex; align-items:center; gap:6px; }

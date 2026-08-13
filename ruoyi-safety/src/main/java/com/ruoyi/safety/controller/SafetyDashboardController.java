@@ -20,6 +20,8 @@ public class SafetyDashboardController extends BaseController
     private ISafetyRiskPointService safetyRiskPointService;
     @Autowired
     private ISafetyRemindService safetyRemindService;
+    @Autowired
+    private com.ruoyi.safety.service.ISafetyMaterialService safetyMaterialService;
 
     @PreAuthorize("@ss.hasPermi('safety:dashboard:list')")
     @GetMapping("/stats")
@@ -39,8 +41,16 @@ public class SafetyDashboardController extends BaseController
         data.put("riskYellow", safetyRiskPointService.countByRiskLevel("2"));
         data.put("riskBlue", safetyRiskPointService.countByRiskLevel("1"));
         // 到期提醒统计
-        data.put("remindUnread", safetyRemindService.countByStatus("0"));
+        int remindUnread = safetyRemindService.countByStatus("0");
+        int remindRead = safetyRemindService.countByStatus("1");
+        data.put("remindUnread", remindUnread);
+        data.put("remindRead", remindRead);
+        data.put("remindPending", remindUnread + remindRead);
         data.put("remindHandled", safetyRemindService.countByStatus("2"));
+        // 危化品库存预警统计
+        List<com.ruoyi.safety.domain.SafetyMaterial> stockAlertList = safetyMaterialService.selectStockAlertList();
+        data.put("materialStockAlert", stockAlertList.size());
+        data.put("materialStockAlertList", stockAlertList);
         return AjaxResult.success(data);
     }
 

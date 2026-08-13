@@ -180,7 +180,7 @@
                     <el-option label="yyyyMMdd (按天)" value="yyyyMMdd" />
                   </el-select>
                   <span v-if="form.resetType !== '0' && form.resetType !== '4'" style="color: #909399; font-size: 12px;">由重置类型自动决定，不可手动修改</span>
-                  <span v-if="form.resetType === '4'" style="color: #909399; font-size: 12px;">按动态前缀重置时可自由选择日期格式，每个前缀维护独立序号</span>
+                  <span v-if="form.resetType === '4'" style="color: #909399; font-size: 12px;">按动态前缀重置时可自由选择日期格式（默认按天），每个动态前缀维护独立序号并按日期重置</span>
                 </el-form-item>
               </el-col>
             </el-row>

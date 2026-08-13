@@ -111,9 +111,9 @@
           <el-table-column label="变动类型" prop="changeType" key="changeType" :width="colWidth('changeType', 120)" resizable align="center" v-if="columns.changeType.visible">
             <template #default="scope"><span class="badge violet">{{ changeTypeLabel(scope.row.changeType) }}</span></template>
           </el-table-column>
-          <el-table-column label="变动数量" prop="changeQty" key="changeQty" :width="colWidth('changeQty', 110)" resizable align="right" class-name="col-num" v-if="columns.changeQty.visible" />
-          <el-table-column label="变动前" prop="beforeQty" key="beforeQty" :width="colWidth('beforeQty', 110)" resizable align="right" class-name="col-num" v-if="columns.beforeQty.visible" />
-          <el-table-column label="变动后" prop="afterQty" key="afterQty" :width="colWidth('afterQty', 110)" resizable align="right" class-name="col-num" v-if="columns.afterQty.visible" />
+          <el-table-column label="变动数量" prop="changeQty" key="changeQty" :width="colWidth('changeQty', 110)" resizable align="center" class-name="col-num" v-if="columns.changeQty.visible" />
+          <el-table-column label="变动前" prop="beforeQty" key="beforeQty" :width="colWidth('beforeQty', 110)" resizable align="center" class-name="col-num" v-if="columns.beforeQty.visible" />
+          <el-table-column label="变动后" prop="afterQty" key="afterQty" :width="colWidth('afterQty', 110)" resizable align="center" class-name="col-num" v-if="columns.afterQty.visible" />
           <el-table-column label="关联单据" prop="refOrderNo" key="refOrderNo" :width="colWidth('refOrderNo', 180)" resizable v-if="columns.refOrderNo.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.refOrderNo }}</span></template>
           </el-table-column>
@@ -253,7 +253,7 @@ listWarehouse({ status: '0', pageSize: 999 }).then(res => { warehouseOptions.val
 .wms-log-page .app-table :deep(.el-table__inner-wrapper::before) { display:none; }
 .wms-log-page .app-table :deep(.el-table__border-left-patch) { display:none; }
 .wms-log-page .app-table .col-mono { font-family:ui-monospace,"JetBrains Mono","SF Mono",Menlo,monospace; font-size:14px; color:var(--ink-700); letter-spacing:-.01em; }
-.wms-log-page .app-table :deep(.col-num) { text-align:right; font-feature-settings:"tnum" 1; font-variant-numeric:tabular-nums; }
+.wms-log-page .app-table :deep(.col-num) { text-align:center; font-feature-settings:"tnum" 1; font-variant-numeric:tabular-nums; }
 .wms-log-page .badge { display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:999px; font-size:13px; font-weight:600; line-height:1; border:1px solid transparent; }
 .wms-log-page .badge .dot { width:6px; height:6px; border-radius:50%; }
 .wms-log-page .badge.amber { background:var(--amber-50); color:var(--amber-700); border-color:#fde68a; }

@@ -8,26 +8,7 @@
 -- 一、业务表 DDL
 -- =============================================
 
--- 1. 行业模板配置表
-DROP TABLE IF EXISTS qms_industry_tpl;
-CREATE TABLE qms_industry_tpl (
-    tpl_id         BIGINT       NOT NULL AUTO_INCREMENT  COMMENT '模板ID',
-    tpl_code       VARCHAR(64)  NOT NULL                 COMMENT '模板编码',
-    tpl_name       VARCHAR(128) NOT NULL                 COMMENT '模板名称',
-    industry_type  VARCHAR(32)                           COMMENT '行业类型（新能源材料/绿色铝加工/精细化工/先进装备/高原食品）',
-    audit_force    CHAR(1)      DEFAULT '0'              COMMENT '是否强制审计追踪（0否 1是）',
-    status         CHAR(1)      DEFAULT '0'              COMMENT '状态（0正常 1停用）',
-    del_flag       CHAR(1)      DEFAULT '0'              COMMENT '删除标志（0存在 2删除）',
-    create_by      VARCHAR(64)  DEFAULT ''               COMMENT '创建者',
-    create_time    DATETIME                              COMMENT '创建时间',
-    update_by      VARCHAR(64)  DEFAULT ''               COMMENT '更新者',
-    update_time    DATETIME                              COMMENT '更新时间',
-    remark         VARCHAR(500)                          COMMENT '备注',
-    PRIMARY KEY (tpl_id),
-    UNIQUE KEY uk_tpl_code (tpl_code)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='行业模板配置表';
-
--- 2. 检验标准库表
+-- 1. 检验标准库表
 DROP TABLE IF EXISTS qms_inspect_std;
 CREATE TABLE qms_inspect_std (
     std_id          BIGINT       NOT NULL AUTO_INCREMENT  COMMENT '标准ID',
@@ -39,17 +20,16 @@ CREATE TABLE qms_inspect_std (
     val_max         DECIMAL(18,4)                         COMMENT '标准上限',
     target_val      DECIMAL(18,4)                         COMMENT '目标值',
     judge_rule      VARCHAR(10)  DEFAULT '1'              COMMENT '判定规则（1区间 2单值 3定性）',
-    tpl_id          BIGINT                                COMMENT '行业模板ID',
+    industry_type   VARCHAR(32)                          COMMENT '行业类型（字典 qms_industry_type）',
     status          CHAR(1)      DEFAULT '0'              COMMENT '状态（0正常 1停用）',
-    del_flag        CHAR(1)      DEFAULT '0'              COMMENT '删除标志（0存在 2删除）',
+    del_flag       CHAR(1)      DEFAULT '0'              COMMENT '删除标志（0存在 2删除）',
     create_by       VARCHAR(64)  DEFAULT ''               COMMENT '创建者',
-    create_time     DATETIME                              COMMENT '创建时间',
+    create_time    DATETIME                              COMMENT '创建时间',
     update_by       VARCHAR(64)  DEFAULT ''               COMMENT '更新者',
-    update_time     DATETIME                              COMMENT '更新时间',
-    remark          VARCHAR(500)                          COMMENT '备注',
+    update_time    DATETIME                              COMMENT '更新时间',
+    remark         VARCHAR(500)                          COMMENT '备注',
     PRIMARY KEY (std_id),
-    UNIQUE KEY uk_std_code (std_code),
-    KEY idx_std_tpl (tpl_id)
+    UNIQUE KEY uk_std_code (std_code)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='检验标准库表';
 
 -- 3. 缺陷代码表
@@ -104,7 +84,7 @@ CREATE TABLE qms_material_attr (
     material_code   VARCHAR(64)                           COMMENT '物料编码（冗余）',
     material_name   VARCHAR(255)                          COMMENT '物料名称（冗余）',
     inspect_types   VARCHAR(64)                           COMMENT '检验类型（多选逗号分隔：IQC,IPQC,FQC,OQC）',
-    tpl_id          BIGINT                                COMMENT '行业模板ID',
+    industry_type   VARCHAR(32)                          COMMENT '行业类型（字典 qms_industry_type）',
     is_exempt       CHAR(1)      DEFAULT '0'              COMMENT '是否免检（0否 1是）',
     status          CHAR(1)      DEFAULT '0'              COMMENT '状态（0正常 1停用）',
     del_flag        CHAR(1)      DEFAULT '0'              COMMENT '删除标志（0存在 2删除）',
@@ -173,9 +153,11 @@ CREATE TABLE qms_insp_item (
     sample_seq      INT                                   COMMENT '抽样序号',
     measured_val    VARCHAR(255)                          COMMENT '实测值',
     item_result     VARCHAR(10)                           COMMENT '单项判定（1合格 2不合格）',
-    defect_code     VARCHAR(64)                           COMMENT '不良代码（不合格时）',
+    defect_id       BIGINT                                COMMENT '缺陷代码库ID（关联qms_defect_code）',
+    defect_code     VARCHAR(64)                           COMMENT '不良代码（冗余，不合格时）',
     defect_name     VARCHAR(128)                          COMMENT '不良名称（冗余）',
     defect_level    VARCHAR(10)                           COMMENT '缺陷等级（1致命 2严重 3一般 4轻微）',
+    defect_qty      INT          DEFAULT 0                COMMENT '缺陷数量（该缺陷出现的次数）',
     create_by       VARCHAR(64)  DEFAULT ''               COMMENT '创建者',
     create_time     DATETIME                              COMMENT '创建时间',
     PRIMARY KEY (item_id),
@@ -398,16 +380,6 @@ INSERT INTO sys_menu (menu_name, parent_id, order_num, path, menu_type, visible,
 ('量检具修改', @qmsGaugeId, 3, '', 'F', '0', '0', 'qms:gauge:edit', 'admin', sysdate()),
 ('量检具删除', @qmsGaugeId, 4, '', 'F', '0', '0', 'qms:gauge:remove', 'admin', sysdate()),
 ('量检具导出', @qmsGaugeId, 5, '', 'F', '0', '0', 'qms:gauge:export', 'admin', sysdate());
-
--- 行业模板配置
-INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark)
-VALUES ('行业模板', @qmsMasterDirId, 4, 'tpl', 'qms/tpl/index', '', 'QmsTpl', 1, 0, 'C', '0', '0', 'qms:tpl:list', 'dashboard', 'admin', sysdate(), '行业模板配置');
-SET @qmsTplId = LAST_INSERT_ID();
-INSERT INTO sys_menu (menu_name, parent_id, order_num, path, menu_type, visible, status, perms, create_by, create_time) VALUES
-('模板查询', @qmsTplId, 1, '', 'F', '0', '0', 'qms:tpl:query', 'admin', sysdate()),
-('模板新增', @qmsTplId, 2, '', 'F', '0', '0', 'qms:tpl:add', 'admin', sysdate()),
-('模板修改', @qmsTplId, 3, '', 'F', '0', '0', 'qms:tpl:edit', 'admin', sysdate()),
-('模板删除', @qmsTplId, 4, '', 'F', '0', '0', 'qms:tpl:remove', 'admin', sysdate());
 
 -- 物料质量属性
 INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark)

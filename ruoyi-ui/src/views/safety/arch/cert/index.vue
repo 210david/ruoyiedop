@@ -4,6 +4,10 @@
     <div class="surface filter-card" v-show="showSearch">
       <div class="filter-head">
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+        <a class="adv-link" :class="{ 'is-open': showAdvanced }" @click.prevent="showAdvanced = !showAdvanced">
+          <span>{{ showAdvanced ? '收起' : '高级筛选' }}</span>
+          <el-icon class="chev"><ArrowDown /></el-icon>
+        </a>
       </div>
       <div class="filter-bar">
         <div class="field">
@@ -28,6 +32,27 @@
             </el-select>
           </div>
         </div>
+        <div class="field" v-show="showAdvanced">
+          <label>发证机关</label>
+          <div class="control">
+            <el-input v-model="queryParams.issueOrg" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>状态</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
+              <el-option label="正常" value="0" />
+              <el-option label="停用" value="1" />
+            </el-select>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>创建时间</label>
+          <div class="control">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
+          </div>
+        </div>
       </div>
       <div class="filter-actions">
         <div class="filter-info">
@@ -46,6 +71,8 @@
         <div class="left">
           <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['safety:cert:add']">新增</el-button>
           <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['safety:cert:remove']">删除</el-button>
+          <div class="toolbar-divider"></div>
+          <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['safety:cert:export']">导出</el-button>
         </div>
         <div class="right">
           <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="safety_cert_columns" />
@@ -150,11 +177,16 @@
           <div class="rd-card-body" v-show="!collapsedCards.vc1" style="display:block">
             <div class="rd-grid">
               <div class="rd-item rd-item--full"><span class="rd-label">附件</span><div class="rd-value"><div class="rd-file-links" v-if="viewData.attachment">
-              <div class="rd-file-link" v-for="(url, idx) in String(viewData.attachment).split(',')" :key="idx">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                <span class="rd-file-name" @click="handleFilePreview(url)">{{ url.includes('/') ? url.substring(url.lastIndexOf('/') + 1) : url }}</span>
-                <a :href="baseUrl + url" target="_blank" class="rd-file-dl">下载</a>
-              </div>
+<div class="rd-file-item" v-for="(url, idx) in String(viewData.attachment).split(',')" :key="idx">
+<div class="rd-file-link" @click="handleFilePreview(url)">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+<span class="rd-file-name">{{ url.includes('/') ? url.substring(url.lastIndexOf('/') + 1) : url }}</span>
+</div>
+<span class="rd-file-dl" @click="handleFileDownload(url)">
+<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+下载
+</span>
+</div>
             </div></div></div>
               <div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value">{{ viewData.remark || '-' }}</div></div>
             </div>
@@ -171,8 +203,9 @@
 import { listCert, getCert, addCert, updateCert, delCert } from '@/api/safety/cert'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
-import { Search, Filter, RefreshLeft } from '@element-plus/icons-vue'
+import { Search, Filter, RefreshLeft, ArrowDown } from '@element-plus/icons-vue'
 import FilePreview from '@/components/FilePreview/index.vue'
+import { downloadFile } from '@/utils/downloadFile'
 
 const { proxy } = getCurrentInstance()
 const { safety_license_type } = proxy.useDict('safety_license_type')
@@ -186,6 +219,8 @@ const viewOpen = ref(false)
 const viewData = ref({})
 const loading = ref(true)
 const showSearch = ref(true)
+const showAdvanced = ref(false)
+const dateRange = ref([])
 const ids = ref([])
 const single = ref(true)
 const multiple = ref(true)
@@ -220,7 +255,7 @@ const columns = ref(loadColumnVisibility())
 
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, certName: undefined, certNo: undefined, certType: undefined, params: {} },
+  queryParams: { pageNum: 1, pageSize: 10, certName: undefined, certNo: undefined, certType: undefined, issueOrg: undefined, status: undefined, params: {} },
   rules: {
     certName: [{ required: true, message: '证照名称不能为空', trigger: 'blur' }],
     certNo: [{ required: true, message: '证照编号不能为空', trigger: 'blur' }],
@@ -234,17 +269,23 @@ const activeFilterCount = computed(() => {
   if (queryParams.value.certName) count++
   if (queryParams.value.certNo) count++
   if (queryParams.value.certType) count++
+  if (queryParams.value.issueOrg) count++
+  if (queryParams.value.status) count++
+  if (dateRange.value && dateRange.value.length > 0) count++
   return count
 })
 
 function handleFilePreview(url) {
-  const name = url.includes('/') ? url.substring(url.lastIndexOf('/') + 1) : url
-  proxy.$refs.filePreviewRef.open(url, name)
+const name = url.includes('/') ? url.substring(url.lastIndexOf('/') + 1) : url
+proxy.$refs.filePreviewRef.open(url, name)
+}
+function handleFileDownload(url) {
+downloadFile(url)
 }
 
 function getList() { loading.value = true; listCert(queryParams.value).then(response => { certList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths() }) }
-function handleQuery() { queryParams.value.pageNum = 1; getList() }
-function resetQuery() { queryParams.value.certName = undefined; queryParams.value.certNo = undefined; queryParams.value.certType = undefined; queryParams.value.params = {}; handleQuery() }
+function handleQuery() { showAdvanced.value = false; proxy.addDateRange(queryParams.value, dateRange.value); queryParams.value.pageNum = 1; getList() }
+function resetQuery() { queryParams.value.certName = undefined; queryParams.value.certNo = undefined; queryParams.value.certType = undefined; queryParams.value.issueOrg = undefined; queryParams.value.status = undefined; dateRange.value = []; queryParams.value.params = {}; handleQuery() }
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleSelectionChange(selection) { ids.value = selection.map(item => item.certId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function handleAdd() { reset(); collapsedCards.c0 = false; collapsedCards.c1 = false; open.value = true; title.value = '添加证照' }
@@ -259,6 +300,7 @@ function submitForm() {
   })
 }
 function handleDelete(row) { const certIds = row.certId || ids.value; proxy.$modal.confirm('是否确认删除证照？').then(function() { return delCert(certIds) }).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleExport() { proxy.download('safety/cert/export', { ...queryParams.value }, `cert_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 function reset() {
   form.value = { certId: undefined, certName: undefined, certNo: undefined, certType: undefined, issueOrg: undefined, issueDate: undefined, expireDate: undefined, attachment: undefined, remark: undefined }
@@ -277,6 +319,10 @@ getList()
 .safety-cert-page .filter-card .filter-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
 .safety-cert-page .filter-card .filter-title { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--ink-700); }
 .safety-cert-page .filter-card .filter-title .glyph { width:4px; height:14px; background:var(--brand-600); border-radius:2px; }
+.safety-cert-page .filter-card .adv-link { font-size:14px; color:var(--ink-500); text-decoration:none; display:flex; align-items:center; gap:4px; transition:color .15s; cursor:pointer; }
+.safety-cert-page .filter-card .adv-link:hover { color:var(--brand-600); }
+.safety-cert-page .filter-card .adv-link .chev { transition:transform .2s var(--ease-out); }
+.safety-cert-page .filter-card .adv-link.is-open .chev { transform:rotate(180deg); }
 .safety-cert-page .filter-card .filter-bar { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px 16px; }
 .safety-cert-page .filter-card .filter-actions { display:flex; align-items:center; justify-content:space-between; margin-top:14px; padding-top:14px; border-top:1px dashed var(--ink-200); }
 .safety-cert-page .filter-card .filter-info { font-size:13px; color:var(--ink-500); display:flex; align-items:center; gap:6px; }
@@ -291,6 +337,10 @@ getList()
 .safety-cert-page .field .control :deep(.el-input__prefix) { color:var(--ink-400); margin-right:4px; }
 .safety-cert-page .field .control :deep(.el-select) { width:100%; }
 .safety-cert-page .field .control :deep(.el-select .el-select__wrapper) { box-shadow:none !important; background:transparent !important; padding:0; min-height:34px; height:34px; }
+.safety-cert-page .field .control :deep(.el-date-editor) { width:100%; }
+.safety-cert-page .field .control :deep(.el-date-editor .el-range-input) { background:transparent; border:0; font-size:14px; color:var(--ink-900); }
+.safety-cert-page .field .control :deep(.el-date-editor .el-range-separator) { color:var(--ink-400); }
+.safety-cert-page .field .control :deep(.el-date-editor .el-range__icon) { color:var(--ink-400); }
 .safety-cert-page .toolbar { display:flex; align-items:center; justify-content:space-between; padding:12px 20px; border-bottom:1px solid var(--ink-200); background:var(--ink-50); }
 .safety-cert-page .toolbar .left, .safety-cert-page .toolbar .right { display:flex; gap:8px; align-items:center; }
 .safety-cert-page .toolbar-divider { width:1px; height:18px; background:var(--ink-200); margin:0 4px; }

@@ -12,9 +12,7 @@
         <result property="valMax"         column="val_max"/>
         <result property="targetVal"      column="target_val"/>
         <result property="judgeRule"      column="judge_rule"/>
-        <result property="tplId"          column="tpl_id"/>
-        <result property="tplName"        column="tpl_name"/>
-        <result property="status"         column="status"/>
+        <result property="status"          column="status"/>
         <result property="delFlag"        column="del_flag"/>
         <result property="createBy"       column="create_by"/>
         <result property="createTime"     column="create_time"/>
@@ -25,10 +23,9 @@
 
     <sql id="selectInspectStdVo">
         SELECT s.std_id, s.std_code, s.std_name, s.inspect_method, s.unit, s.val_min, s.val_max,
-               s.target_val, s.judge_rule, s.tpl_id, t.tpl_name, s.status,
+               s.target_val, s.judge_rule, s.status,
                s.del_flag, s.create_by, s.create_time, s.update_by, s.update_time, s.remark
         FROM qms_inspect_std s
-        LEFT JOIN qms_industry_tpl t ON s.tpl_id = t.tpl_id
     </sql>
 
     <select id="selectInspectStdList" parameterType="QmsInspectStd" resultMap="QmsInspectStdResult">
@@ -39,8 +36,14 @@
             <if test="stdName != null and stdName != ''"> AND s.std_name LIKE CONCAT('%', #{stdName}, '%')</if>
             <if test="inspectMethod != null and inspectMethod != ''"> AND s.inspect_method LIKE CONCAT('%', #{inspectMethod}, '%')</if>
             <if test="judgeRule != null and judgeRule != ''"> AND s.judge_rule = #{judgeRule}</if>
-            <if test="tplId != null"> AND s.tpl_id = #{tplId}</if>
             <if test="status != null and status != ''"> AND s.status = #{status}</if>
+            <if test="remark != null and remark != ''"> AND s.remark LIKE CONCAT('%', #{remark}, '%')</if>
+            <if test="params.beginTime != null and params.beginTime != ''"><!-- 开始时间检索 -->
+                AND date_format(s.create_time,'%Y%m%d') &gt;= date_format(#{params.beginTime},'%Y%m%d')
+            </if>
+            <if test="params.endTime != null and params.endTime != ''"><!-- 结束时间检索 -->
+                AND date_format(s.create_time,'%Y%m%d') &lt;= date_format(#{params.endTime},'%Y%m%d')
+            </if>
         </where>
         ORDER BY s.std_id DESC
     </select>
@@ -58,10 +61,10 @@
     <insert id="insertInspectStd" parameterType="QmsInspectStd" useGeneratedKeys="true" keyProperty="stdId">
         INSERT INTO qms_inspect_std (
             std_code, std_name, inspect_method, unit, val_min, val_max, target_val,
-            judge_rule, tpl_id, status, del_flag, create_by, create_time, remark
+            judge_rule, status, del_flag, create_by, create_time, remark
         ) VALUES (
             #{stdCode}, #{stdName}, #{inspectMethod}, #{unit}, #{valMin}, #{valMax}, #{targetVal},
-            #{judgeRule}, #{tplId}, #{status}, #{delFlag}, #{createBy}, sysdate(), #{remark}
+            #{judgeRule}, #{status}, #{delFlag}, #{createBy}, sysdate(), #{remark}
         )
     </insert>
 
@@ -76,7 +79,6 @@
             <if test="valMax != null">val_max = #{valMax},</if>
             <if test="targetVal != null">target_val = #{targetVal},</if>
             <if test="judgeRule != null and judgeRule != ''">judge_rule = #{judgeRule},</if>
-            <if test="tplId != null">tpl_id = #{tplId},</if>
             <if test="status != null and status != ''">status = #{status},</if>
             <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
             <if test="remark != null">remark = #{remark},</if>

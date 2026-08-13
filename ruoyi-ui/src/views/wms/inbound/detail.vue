@@ -83,7 +83,7 @@
           <el-table-column label="状态" prop="status" key="status" :width="colWidth('status', 120)" resizable align="center" v-if="columns.status.visible">
             <template #default="scope"><span class="badge" :class="badgeClass(scope.row.status)"><span class="dot"></span>{{ statusLabel(scope.row.status) }}</span></template>
           </el-table-column>
-          <el-table-column label="总数量" prop="totalQty" key="totalQty" :width="colWidth('totalQty', 110)" resizable align="right" class-name="col-num" v-if="columns.totalQty.visible" />
+          <el-table-column label="总数量" prop="totalQty" key="totalQty" :width="colWidth('totalQty', 110)" resizable align="center" class-name="col-num" v-if="columns.totalQty.visible" />
           <el-table-column label="入库日期" prop="inboundDate" key="inboundDate" :width="colWidth('inboundDate', 130)" resizable align="center" v-if="columns.inboundDate.visible" />
           <el-table-column label="操作" width="240" align="center" fixed="right">
             <template #default="scope">
@@ -149,9 +149,9 @@
         <el-table-column label="物料名称" prop="materialName" show-overflow-tooltip />
         <el-table-column label="单位" prop="unit" :width="colWidth('unit', 70)" resizable align="center"><template #default="scope"><dict-tag :options="wms_unit" :value="scope.row.unit" /></template></el-table-column>
         <el-table-column label="批次号" prop="batchNo" :width="colWidth('batchNo', 120)" resizable />
-        <el-table-column label="计划数量" prop="planQty" :width="colWidth('planQty', 100)" resizable align="right" />
-        <el-table-column label="已收数量" prop="receivedQty" :width="colWidth('receivedQty', 100)" resizable align="right" />
-        <el-table-column label="已上架数量" prop="putawayQty" :width="colWidth('putawayQty', 100)" resizable align="right" />
+        <el-table-column label="计划数量" prop="planQty" :width="colWidth('planQty', 100)" resizable align="center" />
+        <el-table-column label="已收数量" prop="receivedQty" :width="colWidth('receivedQty', 100)" resizable align="center" />
+        <el-table-column label="已上架数量" prop="putawayQty" :width="colWidth('putawayQty', 100)" resizable align="center" />
         <el-table-column label="上架库位" prop="locationName" :width="colWidth('locationName', 100)" resizable show-overflow-tooltip />
         <el-table-column label="操作" width="200" align="center">
           <template #default="scope">

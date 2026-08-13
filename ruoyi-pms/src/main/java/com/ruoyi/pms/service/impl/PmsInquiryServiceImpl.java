@@ -1,4 +1,7 @@
-package com.ruoyi.pms.service.impl;
+package com.ruoyi.pms.service.impl;
+import java.util.HashMap;
+import java.util.Map;
+
 
 import java.util.List;
 import java.util.Date;
@@ -65,7 +68,9 @@ public class PmsInquiryServiceImpl implements IPmsInquiryService
         // 自动生成询价单号
         if (StringUtils.isEmpty(pmsInquiry.getInquiryNo()))
         {
-            pmsInquiry.setInquiryNo(mkNumberRuleService.generateNumber("PMS_INQUIRY"));
+            Map<String, String> params = new HashMap<>();
+        if (StringUtils.isNotEmpty(pmsInquiry.getInquiryType())) { params.put("inquiryType", pmsInquiry.getInquiryType()); }
+        pmsInquiry.setInquiryNo(mkNumberRuleService.generateNumber("PMS_INQUIRY", params));
         }
         // 自动计算预计金额 = 数量 × 最高限价
         List<PmsInquiryDetail> details = pmsInquiry.getDetailList();

@@ -32,6 +32,13 @@
             <if test="defectLevel != null and defectLevel != ''"> AND defect_level = #{defectLevel}</if>
             <if test="defectCategory != null and defectCategory != ''"> AND defect_category LIKE CONCAT('%', #{defectCategory}, '%')</if>
             <if test="status != null and status != ''"> AND status = #{status}</if>
+            <if test="remark != null and remark != ''"> AND remark LIKE CONCAT('%', #{remark}, '%')</if>
+            <if test="params.beginTime != null and params.beginTime != ''"><!-- 开始时间检索 -->
+                AND date_format(create_time,'%Y%m%d') &gt;= date_format(#{params.beginTime},'%Y%m%d')
+            </if>
+            <if test="params.endTime != null and params.endTime != ''"><!-- 结束时间检索 -->
+                AND date_format(create_time,'%Y%m%d') &lt;= date_format(#{params.endTime},'%Y%m%d')
+            </if>
         </where>
         ORDER BY defect_id DESC
     </select>

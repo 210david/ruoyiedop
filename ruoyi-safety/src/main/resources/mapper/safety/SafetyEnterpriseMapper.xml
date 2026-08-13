@@ -40,6 +40,11 @@
             <if test="industryType != null and industryType != ''"> AND industry_type = #{industryType}</if>
             <if test="isHighRisk != null and isHighRisk != ''"> AND is_high_risk = #{isHighRisk}</if>
             <if test="status != null and status != ''"> AND status = #{status}</if>
+            <if test="legalPerson != null and legalPerson != ''"> AND legal_person LIKE CONCAT('%', #{legalPerson}, '%')</if>
+            <if test="safetyManager != null and safetyManager != ''"> AND safety_manager LIKE CONCAT('%', #{safetyManager}, '%')</if>
+            <if test="safetyOrg != null and safetyOrg != ''"> AND safety_org LIKE CONCAT('%', #{safetyOrg}, '%')</if>
+            <if test="params.beginTime != null and params.beginTime != ''"> AND date_format(create_time,'%y%m%d') &gt;= date_format(#{params.beginTime},'%y%m%d')</if>
+            <if test="params.endTime != null and params.endTime != ''"> AND date_format(create_time,'%y%m%d') &lt;= date_format(#{params.endTime},'%y%m%d')</if>
         </where>
         ORDER BY create_time DESC
     </select>

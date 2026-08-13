@@ -20,6 +20,9 @@ public class QmsComplaintController extends BaseController {
     @Autowired
     private IQmsComplaintService service;
 
+    @Autowired
+    private com.ruoyi.qms.service.IQmsCapaService qmsCapaService;
+
     @PreAuthorize("@ss.hasPermi('qms:complaint:list')")
     @GetMapping("/list")
     public TableDataInfo list(QmsComplaint complaint) { startPage(); return getDataTable(service.selectComplaintList(complaint)); }
@@ -51,8 +54,29 @@ public class QmsComplaintController extends BaseController {
     @DeleteMapping("/{complaintIds}")
     public AjaxResult remove(@PathVariable Long[] complaintIds) { return toAjax(service.deleteComplaintByIds(complaintIds)); }
 
+    @Log(title = "客诉受理", businessType = BusinessType.UPDATE)
+    @PreAuthorize("@ss.hasPermi('qms:complaint:edit')")
+    @PutMapping("/accept/{complaintId}")
+    public AjaxResult accept(@PathVariable Long complaintId) { return toAjax(service.acceptComplaint(complaintId)); }
+
+    @Log(title = "客诉处理完成", businessType = BusinessType.UPDATE)
+    @PreAuthorize("@ss.hasPermi('qms:complaint:edit')")
+    @PutMapping("/complete")
+    public AjaxResult complete(@RequestBody QmsComplaint complaint) { return toAjax(service.completeComplaint(complaint)); }
+
     @Log(title = "客诉关闭", businessType = BusinessType.UPDATE)
     @PreAuthorize("@ss.hasPermi('qms:complaint:close')")
     @PutMapping("/close/{complaintId}")
     public AjaxResult close(@PathVariable Long complaintId) { return toAjax(service.closeComplaint(complaintId)); }
+
+    /**
+     * 一键从客诉发起CAPA
+     */
+    @Log(title = "客诉发起CAPA", businessType = BusinessType.INSERT)
+    @PreAuthorize("@ss.hasPermi('qms:complaint:edit')")
+    @PostMapping("/createCapa/{complaintId}")
+    public AjaxResult createCapaFromComplaint(@PathVariable Long complaintId) {
+        Long capaId = qmsCapaService.createCapaFromComplaint(complaintId);
+        return AjaxResult.success(capaId);
+    }
 }

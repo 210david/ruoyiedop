@@ -148,14 +148,14 @@
                 <template #default="scope">{{ [scope.row.areaName, scope.row.locationName].filter(Boolean).join(' / ') || '-' }}</template>
               </el-table-column>
               <el-table-column label="批次号" prop="batchNo" :width="colWidth('batchNo', 100)" resizable />
-              <el-table-column label="账面数量" prop="bookQty" :width="colWidth('bookQty', 100)" resizable align="right" />
-              <el-table-column label="实盘数量" prop="actualQty" :width="colWidth('actualQty', 100)" resizable align="right">
+              <el-table-column label="账面数量" prop="bookQty" :width="colWidth('bookQty', 100)" resizable align="center" />
+              <el-table-column label="实盘数量" prop="actualQty" :width="colWidth('actualQty', 100)" resizable align="center">
                 <template #default="scope">
                   <span v-if="scope.row.actualQty != null" :style="{color: scope.row.diffQty < 0 ? 'red' : scope.row.diffQty > 0 ? 'green' : ''}">{{ scope.row.actualQty }}</span>
                   <span v-else>-</span>
                 </template>
               </el-table-column>
-              <el-table-column label="差异" prop="diffQty" :width="colWidth('diffQty', 80)" resizable align="right">
+              <el-table-column label="差异" prop="diffQty" :width="colWidth('diffQty', 80)" resizable align="center">
                 <template #default="scope">
                   <span v-if="scope.row.diffQty != null" :style="{color: scope.row.diffQty < 0 ? 'red' : scope.row.diffQty > 0 ? 'green' : ''}">{{ scope.row.diffQty }}</span>
                   <span v-else>-</span>
@@ -248,9 +248,9 @@
               <el-table-column label="物料编码" prop="materialCode" width="120" />
               <el-table-column label="物料名称" prop="materialName" min-width="180" show-overflow-tooltip />
               <el-table-column label="批次号" prop="batchNo" width="100" />
-              <el-table-column label="账面数量" prop="bookQty" width="100" align="right" />
-              <el-table-column label="实盘数量" prop="actualQty" width="100" align="right" />
-              <el-table-column label="差异" prop="diffQty" width="100" align="right">
+              <el-table-column label="账面数量" prop="bookQty" width="100" align="center" />
+              <el-table-column label="实盘数量" prop="actualQty" width="100" align="center" />
+              <el-table-column label="差异" prop="diffQty" width="100" align="center">
                 <template #default="scope"><span :style="{color: scope.row.diffQty < 0 ? 'red' : scope.row.diffQty > 0 ? 'green' : ''}">{{ scope.row.diffQty }}</span></template>
               </el-table-column>
               <el-table-column label="差异原因" prop="diffReason" min-width="150" show-overflow-tooltip />
@@ -347,13 +347,13 @@
           <template #default="scope">{{ [scope.row.areaName, scope.row.locationName].filter(Boolean).join(' / ') || '-' }}</template>
         </el-table-column>
         <el-table-column label="批次号" prop="batchNo" width="100" />
-        <el-table-column label="账面数量" prop="bookQty" width="100" align="right" />
+        <el-table-column label="账面数量" prop="bookQty" width="100" align="center" />
         <el-table-column label="实盘数量" width="140" align="center">
           <template #default="scope">
             <el-input-number v-model="scope.row.actualQty" :precision="2" :min="0" :controls="false" size="small" style="width: 110px" />
           </template>
         </el-table-column>
-        <el-table-column label="差异" width="80" align="right">
+        <el-table-column label="差异" width="80" align="center">
           <template #default="scope">
             <span :style="{ color: getRowDiff(scope.row) < 0 ? '#f56c6c' : getRowDiff(scope.row) > 0 ? '#67c23a' : '' }">{{ getRowDiff(scope.row) }}</span>
           </template>

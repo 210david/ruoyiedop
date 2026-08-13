@@ -84,4 +84,17 @@
         UPDATE qms_supplier_eval SET del_flag = '2' WHERE eval_id IN
         <foreach item="evalId" collection="array" open="(" separator="," close=")">#{evalId}</foreach>
     </delete>
+
+    <!-- 根据供应商ID和评价周期统计来料检验批次（从 qms_insp_task 表） -->
+    <select id="selectBatchStats" resultType="java.util.Map">
+        SELECT
+            COUNT(*) AS incomingTotal,
+            SUM(CASE WHEN inspect_result = '1' THEN 1 ELSE 0 END) AS incomingPass
+        FROM qms_insp_task
+        WHERE del_flag = '0'
+          AND task_type = 'IQC'
+          AND task_status = '2'
+          AND supplier_id = #{supplierId}
+          AND DATE_FORMAT(create_time, '%Y-%m') = #{period}
+    </select>
 </mapper>

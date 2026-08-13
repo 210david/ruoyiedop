@@ -1,4 +1,7 @@
-package com.ruoyi.wms.service.impl;
+package com.ruoyi.wms.service.impl;
+import java.util.HashMap;
+import java.util.Map;
+
 
 import java.math.BigDecimal;
 import java.util.Date;
@@ -51,7 +54,9 @@ public class WmsInboundOrderServiceImpl implements IWmsInboundOrderService
     {
         if (StringUtils.isEmpty(order.getOrderNo()))
         {
-            order.setOrderNo(mkNumberRuleService.generateNumber("wms_inbound"));
+            Map<String, String> params = new HashMap<>();
+        if (StringUtils.isNotEmpty(order.getOrderType())) { params.put("inboundType", order.getOrderType()); }
+        order.setOrderNo(mkNumberRuleService.generateNumber("wms_inbound", params));
         }
         order.setDelFlag("0");
         if (order.getStatus() == null)

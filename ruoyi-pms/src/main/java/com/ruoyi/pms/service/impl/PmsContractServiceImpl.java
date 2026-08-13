@@ -1,5 +1,9 @@
 package com.ruoyi.pms.service.impl;
 
+import java.util.HashMap;
+import java.util.Map;
+
+
 import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
@@ -58,7 +62,9 @@ public class PmsContractServiceImpl implements IPmsContractService
     {
         if (StringUtils.isEmpty(contract.getContractNo()))
         {
-            contract.setContractNo(mkNumberRuleService.generateNumber("pms_contract"));
+            Map<String, String> params = new HashMap<>();
+        if (StringUtils.isNotEmpty(contract.getContractType())) { params.put("contractType", contract.getContractType()); }
+        contract.setContractNo(mkNumberRuleService.generateNumber("pms_contract", params));
         }
         contract.setDelFlag("0");
         if (contract.getStatus() == null)
@@ -105,7 +111,9 @@ public class PmsContractServiceImpl implements IPmsContractService
             throw new ServiceException("合同不存在");
         }
         change.setContractId(contract.getContractId());
-        change.setChangeNo(mkNumberRuleService.generateNumber("pms_contract_change"));
+        Map<String, String> params = new HashMap<>();
+        if (StringUtils.isNotEmpty(change.getChangeType())) { params.put("changeType", change.getChangeType()); }
+        change.setChangeNo(mkNumberRuleService.generateNumber("pms_contract_change", params));
         change.setChangeDate(new Date());
         change.setChangeBy(SecurityUtils.getUsername());
         change.setAuditStatus("0");
