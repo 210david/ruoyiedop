@@ -10,9 +10,9 @@ public class QmsDoc extends BaseEntity {
     private Long docId;
     @Excel(name = "文档编号") private String docNo;
     @Excel(name = "文档标题") private String docTitle;
-    @Excel(name = "分类") private String docCategory;
+    @Excel(name = "分类", dictType = "qms_doc_category") private String docCategory;
     @Excel(name = "版本") private String versionNo;
-    @Excel(name = "状态") private String docStatus;
+    @Excel(name = "状态", dictType = "qms_doc_status") private String docStatus;
     private Long deptId;
     @Excel(name = "归属部门") private String deptName;
     @Excel(name = "行业类型", readConverterExp = "1=新能源材料,2=绿色铝加工,3=精细化工,4=先进装备,5=高原食品") private String industryType;

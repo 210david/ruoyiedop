@@ -100,42 +100,58 @@
           </button>
         </div>
         <div class="right">
-          <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" />
+          <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="qms_task_columns" />
         </div>
       </div>
 
       <div class="table-wrap">
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
-          <el-table-column label="任务编号" prop="taskNo" :width="colWidth('taskNo', 150)" resizable show-overflow-tooltip />
-          <el-table-column label="检验类型" prop="taskType" :width="colWidth('taskType', 100)" resizable align="center">
+          <el-table-column label="任务编号" prop="taskNo" key="taskNo" :width="colWidth('taskNo', 150)" resizable show-overflow-tooltip v-if="columns.taskNo.visible" />
+          <el-table-column label="检验类型" prop="taskType" key="taskType" :width="colWidth('taskType', 100)" resizable align="center" v-if="columns.taskType.visible">
             <template #header><span>检验类型</span><el-tooltip content="检验类型包括IQC（来料检验）、IPQC（过程检验）、FQC（成品检验）、OQC（出货检验）等" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></template>
             <template #default="scope"><span class="badge violet">{{ inspTypeLabel(scope.row.taskType) }}</span></template>
           </el-table-column>
-          <el-table-column label="来源单号" prop="sourceNo" :width="colWidth('sourceNo', 150)" resizable show-overflow-tooltip />
-          <el-table-column label="物料编码" prop="materialCode" :width="colWidth('materialCode', 140)" resizable show-overflow-tooltip />
-          <el-table-column label="物料名称" prop="materialName" :width="colWidth('materialName', 180)" resizable show-overflow-tooltip />
-          <el-table-column label="批次号" prop="batchNo" :width="colWidth('batchNo', 120)" resizable show-overflow-tooltip />
-          <el-table-column label="送检数量" prop="inspectQty" :width="colWidth('inspectQty', 100)" resizable align="center" />
-          <el-table-column label="样本量" prop="sampleSize" :width="colWidth('sampleSize', 80)" resizable align="center" />
-          <el-table-column label="Ac" prop="acVal" :width="colWidth('acVal', 60)" resizable align="center">
+          <el-table-column label="来源类型" prop="sourceType" key="sourceType" :width="colWidth('sourceType', 100)" resizable align="center" v-if="columns.sourceType.visible">
+            <template #default="scope"><dict-tag :options="qms_source_type" :value="scope.row.sourceType" /></template>
+          </el-table-column>
+          <el-table-column label="来源单号" prop="sourceNo" key="sourceNo" :width="colWidth('sourceNo', 150)" resizable show-overflow-tooltip v-if="columns.sourceNo.visible" />
+          <el-table-column label="物料编码" prop="materialCode" key="materialCode" :width="colWidth('materialCode', 140)" resizable show-overflow-tooltip v-if="columns.materialCode.visible" />
+          <el-table-column label="物料名称" prop="materialName" key="materialName" :width="colWidth('materialName', 180)" resizable show-overflow-tooltip v-if="columns.materialName.visible" />
+          <el-table-column label="供应商" prop="supplierName" key="supplierName" :width="colWidth('supplierName', 140)" resizable show-overflow-tooltip v-if="columns.supplierName.visible" />
+          <el-table-column label="批次号" prop="batchNo" key="batchNo" :width="colWidth('batchNo', 120)" resizable show-overflow-tooltip v-if="columns.batchNo.visible" />
+          <el-table-column label="送检数量" prop="inspectQty" key="inspectQty" :width="colWidth('inspectQty', 100)" resizable align="center" v-if="columns.inspectQty.visible" />
+          <el-table-column label="AQL等级" prop="aqlLevel" key="aqlLevel" :width="colWidth('aqlLevel', 90)" resizable align="center" v-if="columns.aqlLevel.visible">
+            <template #default="scope">{{ scope.row.aqlLevel != null ? scope.row.aqlLevel + '%' : '-' }}</template>
+          </el-table-column>
+          <el-table-column label="检验水平" prop="inspectMethod" key="inspectMethod" :width="colWidth('inspectMethod', 100)" resizable align="center" v-if="columns.inspectMethod.visible">
+            <template #header><span>检验水平</span><el-tooltip content="检验水平决定了批量与样本量之间的关系。OQC出货检验默认使用S-4（特殊检验水平，样本量小）；IQC/IPQC/FQC默认使用II（一般检验水平，标准样本量）" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></template>
+          </el-table-column>
+          <el-table-column label="样本量" prop="sampleSize" key="sampleSize" :width="colWidth('sampleSize', 80)" resizable align="center" v-if="columns.sampleSize.visible" />
+          <el-table-column label="Ac" prop="acVal" key="acVal" :width="colWidth('acVal', 60)" resizable align="center" v-if="columns.acVal.visible">
             <template #header><span>Ac</span><el-tooltip content="接收数（Acceptance Number），即抽样检验中允许的最大不合格品数，当样本中的不合格品数≤Ac时判定批合格" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></template>
           </el-table-column>
-          <el-table-column label="Re" prop="reVal" :width="colWidth('reVal', 60)" resizable align="center">
+          <el-table-column label="Re" prop="reVal" key="reVal" :width="colWidth('reVal', 60)" resizable align="center" v-if="columns.reVal.visible">
             <template #header><span>Re</span><el-tooltip content="拒收数（Rejection Number），即抽样检验中拒收的最小不合格品数，当样本中的不合格品数≥Re时判定批不合格" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></template>
           </el-table-column>
-          <el-table-column label="任务状态" prop="taskStatus" :width="colWidth('taskStatus', 100)" resizable align="center">
+          <el-table-column label="任务状态" prop="taskStatus" key="taskStatus" :width="colWidth('taskStatus', 100)" resizable align="center" v-if="columns.taskStatus.visible">
             <template #default="scope"><span class="badge" :class="taskBadgeClass(scope.row.taskStatus)"><span class="dot"></span>{{ taskStatusLabel(scope.row.taskStatus) }}</span></template>
           </el-table-column>
-          <el-table-column label="检验结果" prop="inspectResult" :width="colWidth('inspectResult', 100)" resizable align="center">
+          <el-table-column label="检验结果" prop="inspectResult" key="inspectResult" :width="colWidth('inspectResult', 100)" resizable align="center" v-if="columns.inspectResult.visible">
             <template #default="scope">
               <span v-if="scope.row.inspectResult" class="badge" :class="scope.row.inspectResult === '1' ? 'green' : 'red'"><span class="dot"></span>{{ inspResultLabel(scope.row.inspectResult) }}</span>
               <span v-else>-</span>
             </template>
           </el-table-column>
-          <el-table-column label="检验员" prop="inspectorName" :width="colWidth('inspectorName', 100)" resizable align="center" />
-          <el-table-column label="检验时间" prop="inspectTime" :width="colWidth('inspectTime', 160)" resizable align="center" />
-          <el-table-column label="复检" prop="isRecheck" :width="colWidth('isRecheck', 70)" resizable align="center">
+          <el-table-column label="缺陷等级" prop="defectLevel" key="defectLevel" :width="colWidth('defectLevel', 100)" resizable align="center" v-if="columns.defectLevel.visible">
+            <template #default="scope"><dict-tag :options="qms_defect_level" :value="scope.row.defectLevel" /></template>
+          </el-table-column>
+          <el-table-column label="检验员" prop="inspectorName" key="inspectorName" :width="colWidth('inspectorName', 100)" resizable align="center" v-if="columns.inspectorName.visible" />
+          <el-table-column label="检验时间" prop="inspectTime" key="inspectTime" :width="colWidth('inspectTime', 160)" resizable align="center" v-if="columns.inspectTime.visible" />
+          <el-table-column label="量检具" prop="gaugeName" key="gaugeName" :width="colWidth('gaugeName', 140)" resizable show-overflow-tooltip v-if="columns.gaugeName.visible">
+            <template #default="scope">{{ scope.row.gaugeNo ? scope.row.gaugeNo + ' - ' + (scope.row.gaugeName || '') : (scope.row.gaugeName || '-') }}</template>
+          </el-table-column>
+          <el-table-column label="复检" prop="isRecheck" key="isRecheck" :width="colWidth('isRecheck', 70)" resizable align="center" v-if="columns.isRecheck.visible">
             <template #default="scope"><span v-if="scope.row.isRecheck === '1'" class="badge orange"><span class="dot"></span>是</span><span v-else>-</span></template>
           </el-table-column>
           <el-table-column label="操作" width="240" align="center" fixed="right">
@@ -600,6 +616,49 @@ const { collapsedCards, toggleCard } = useDetailCard(['e_basic', 'e_material', '
 
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('qms_task_index')
+
+// 列显隐配置
+const defaultColumns = {
+  taskNo: { label: '任务编号', visible: true },
+  taskType: { label: '检验类型', visible: true },
+  sourceType: { label: '来源类型', visible: false },
+  sourceNo: { label: '来源单号', visible: true },
+  materialCode: { label: '物料编码', visible: true },
+  materialName: { label: '物料名称', visible: true },
+  supplierName: { label: '供应商', visible: false },
+  batchNo: { label: '批次号', visible: true },
+  inspectQty: { label: '送检数量', visible: true },
+  aqlLevel: { label: 'AQL等级', visible: false },
+  inspectMethod: { label: '检验水平', visible: false },
+  sampleSize: { label: '样本量', visible: true },
+  acVal: { label: 'Ac', visible: true },
+  reVal: { label: 'Re', visible: true },
+  taskStatus: { label: '任务状态', visible: true },
+  inspectResult: { label: '检验结果', visible: true },
+  defectLevel: { label: '缺陷等级', visible: false },
+  inspectorName: { label: '检验员', visible: true },
+  inspectTime: { label: '检验时间', visible: true },
+  gaugeName: { label: '量检具', visible: false },
+  isRecheck: { label: '复检', visible: true }
+}
+function loadColumnVisibility() {
+  try {
+    const saved = localStorage.getItem('qms_task_columns')
+    if (saved) {
+      const parsed = JSON.parse(saved)
+      const result = {}
+      Object.keys(defaultColumns).forEach(key => {
+        result[key] = {
+          label: defaultColumns[key].label,
+          visible: parsed[key] !== undefined ? parsed[key] : defaultColumns[key].visible
+        }
+      })
+      return result
+    }
+  } catch (e) {}
+  return { ...defaultColumns }
+}
+const columns = ref(loadColumnVisibility())
 const { qms_insp_type, qms_task_status, qms_insp_result, qms_inspect_level, qms_defect_level, qms_source_type } = proxy.useDict('qms_insp_type', 'qms_task_status', 'qms_insp_result', 'qms_inspect_level', 'qms_defect_level', 'qms_source_type')
 
 const showStatusHelp = ref(false)

@@ -24,7 +24,7 @@ public class QmsNcr extends BaseEntity
     private String ncrNo;
 
     /** 来源类型（inspection/complaint/patrol） */
-    @Excel(name = "来源类型")
+    @Excel(name = "来源类型", dictType = "qms_ncr_source")
     private String sourceType;
 
     /** 来源ID */

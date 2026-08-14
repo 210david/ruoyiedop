@@ -26,7 +26,7 @@ public class QmsGauge extends BaseEntity
     private String gaugeName;
 
     /** 量检具类型 */
-    @Excel(name = "类型")
+    @Excel(name = "类型", dictType = "qms_gauge_type")
     private String gaugeType;
 
     /** 精度 */

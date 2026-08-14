@@ -17,7 +17,7 @@ public class QmsAuditPlan extends BaseEntity {
     @JsonFormat(pattern = "yyyy-MM-dd") private Date auditDateFrom;
     @JsonFormat(pattern = "yyyy-MM-dd") private Date auditDateTo;
     private String auditConclusion;
-    @Excel(name = "状态") private String planStatus;
+    @Excel(name = "状态", dictType = "qms_audit_plan_status") private String planStatus;
     private String delFlag;
     private String status;
 

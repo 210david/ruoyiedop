@@ -256,7 +256,8 @@ INSERT INTO sys_dict_type (dict_name, dict_type, status, create_by, create_time,
 ('NCR处置方式', 'qms_disposition', '0', 'admin', sysdate(), '不合格品处置方式'),
 ('检验严格度', 'qms_inspect_level', '0', 'admin', sysdate(), '检验严格度'),
 ('行业类型', 'qms_industry_type', '0', 'admin', sysdate(), '行业模板类型'),
-('NCR审批操作', 'qms_approve_action', '0', 'admin', sysdate(), 'NCR审批操作类型');
+('NCR审批操作', 'qms_approve_action', '0', 'admin', sysdate(), 'NCR审批操作类型'),
+('NCR来源类型', 'qms_ncr_source', '0', 'admin', sysdate(), '不合格品报告来源类型');
 
 -- 检验类型字典数据
 INSERT INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, css_class, list_class, is_default, status, create_by, create_time) VALUES
@@ -312,6 +313,12 @@ INSERT INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, css_cla
 (3, '返工/返修', '3', 'qms_disposition', '', 'warning', 'N', '0', 'admin', sysdate()),
 (4, '报废', '4', 'qms_disposition', '', 'danger', 'N', '0', 'admin', sysdate()),
 (5, '让步接收', '5', 'qms_disposition', '', 'primary', 'N', '0', 'admin', sysdate());
+
+-- NCR来源类型字典数据
+INSERT INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, css_class, list_class, is_default, status, create_by, create_time) VALUES
+(1, '检验', 'inspection', 'qms_ncr_source', '', 'primary', 'Y', '0', 'admin', sysdate()),
+(2, '客诉', 'complaint', 'qms_ncr_source', '', 'danger', 'N', '0', 'admin', sysdate()),
+(3, '巡检', 'patrol', 'qms_ncr_source', '', 'warning', 'N', '0', 'admin', sysdate());
 
 -- 检验严格度字典数据
 INSERT INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, css_class, list_class, is_default, status, create_by, create_time) VALUES

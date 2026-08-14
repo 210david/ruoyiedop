@@ -160,27 +160,30 @@ service.interceptors.response.use(res => {
   }
 )
 
-// 隐藏 iframe 方式下载 Blob（Chrome 兼容核心方法）
-// Chrome 的用户手势安全策略会阻止异步回调中的 link.click() 和 file-saver 的 saveAs()，
-// 导致"只有下载任务，没有实际文件下载"。
-// 隐藏 iframe 方式通过在 iframe 内部创建 <a download> 触发下载，不受用户手势限制。
+// Chrome 兼容下载核心方法
+// 问题根因：Chrome 的用户手势安全策略会阻止异步回调中的某些下载操作。
+// 经过多次测试，最终确认可靠方案：
+//   使用 document.createElement('a') + link.download + link.click() 方式。
+//   关键点：
+//     1. href 必须是 blob: 同源 URL（不是跨域 URL）
+//     2. 必须设置 download 属性
+//     3. <a> 标签必须 append 到 document.body 后再 click
+//     4. click 后延迟移除 <a> 标签和释放 blob URL
+//   满足以上条件时，Chrome 允许在异步回调中触发下载。
+//   注意：window.location.href = blobUrl 方式不可用，会导致 SPA 页面被导航走。
 function saveBlobWithIframe(blob, filename) {
   const blobUrl = URL.createObjectURL(blob)
-  const iframe = document.createElement('iframe')
-  iframe.style.display = 'none'
-  document.body.appendChild(iframe)
-  // 在 iframe 内部创建 <a> 标签触发下载，保留文件名
-  const doc = iframe.contentDocument || iframe.contentWindow.document
-  const link = doc.createElement('a')
+  const link = document.createElement('a')
   link.href = blobUrl
   link.download = filename
-  doc.body.appendChild(link)
+  link.style.display = 'none'
+  document.body.appendChild(link)
   link.click()
-  // 延迟移除 iframe 和释放 Blob URL，确保下载已触发
+  // 延迟清理，确保下载已触发
   setTimeout(() => {
-    document.body.removeChild(iframe)
+    document.body.removeChild(link)
     URL.revokeObjectURL(blobUrl)
-  }, 1000)
+  }, 200)
 }
 
 // 根据文件扩展名获取 MIME 类型（不硬编码，支持多种文件格式）

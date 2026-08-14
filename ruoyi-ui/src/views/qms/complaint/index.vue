@@ -52,6 +52,25 @@
 
     <!-- ===== Table Section ===== -->
     <div class="surface">
+      <!-- Status Tabs + Tip Pill -->
+      <div class="status-tabs">
+        <div class="tabs-track">
+          <button class="status-tab" :class="{ 'is-active': activeStatusTab === 'all' }" @click="handleStatusTabClick('all')">
+            <span class="dot"></span><span>全部</span><span class="count">{{ statusCounts.all }}</span>
+          </button>
+          <button v-for="s in statusTabList" :key="s.value"
+            class="status-tab"
+            :class="[statusTabClass(s.value), { 'is-active': activeStatusTab === s.value }]"
+            @click="handleStatusTabClick(s.value)">
+            <span class="dot"></span><span>{{ s.label }}</span><span class="count">{{ statusCounts[s.value] || 0 }}</span>
+          </button>
+        </div>
+        <button class="tip-pill" @click="showStatusHelp = true">
+          <el-icon><QuestionFilled /></el-icon>
+          <span>业务操作说明</span>
+        </button>
+      </div>
+
       <div class="toolbar">
         <div class="left">
           <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['qms:complaint:add']">新增</el-button>
@@ -67,22 +86,22 @@
           </button>
         </div>
         <div class="right">
-          <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" />
+          <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="qms_complaint_columns" />
         </div>
       </div>
 
       <div class="table-wrap">
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
-          <el-table-column label="客诉编号" prop="complaintNo" :width="colWidth('complaintNo', 160)" resizable show-overflow-tooltip />
-          <el-table-column label="客户名称" prop="customerName" :width="colWidth('customerName', 180)" resizable show-overflow-tooltip />
-          <el-table-column label="物料" prop="materialName" :width="colWidth('materialName', 180)" resizable show-overflow-tooltip />
-          <el-table-column label="投诉日期" prop="complaintDate" :width="colWidth('complaintDate', 120)" resizable align="center"><template #default="scope"><span>{{ parseTime(scope.row.complaintDate, '{y}-{m}-{d}') }}</span></template></el-table-column>
-          <el-table-column label="类型" prop="complaintType" :width="colWidth('complaintType', 100)" resizable align="center"><template #default="scope"><span v-if="dictLabel(typeOptions, scope.row.complaintType)" class="badge" :class="badgeClass(typeOptions, scope.row.complaintType)"><span class="dot"></span>{{ dictLabel(typeOptions, scope.row.complaintType) }}</span></template></el-table-column>
-          <el-table-column label="严重程度" prop="severity" :width="colWidth('severity', 100)" resizable align="center"><template #default="scope"><span v-if="dictLabel(severityOptions, scope.row.severity)" class="badge" :class="badgeClass(severityOptions, scope.row.severity)"><span class="dot"></span>{{ dictLabel(severityOptions, scope.row.severity) }}</span></template></el-table-column>
-          <el-table-column label="退货金额" prop="returnAmt" :width="colWidth('returnAmt', 120)" resizable align="right"><template #default="scope"><span class="rd-amount">{{ scope.row.returnAmt != null ? '￥' + formatAmount(scope.row.returnAmt) : '-' }}</span></template></el-table-column>
-          <el-table-column label="索赔金额" prop="claimAmt" :width="colWidth('claimAmt', 120)" resizable align="right"><template #default="scope"><span class="rd-amount">{{ scope.row.claimAmt != null ? '￥' + formatAmount(scope.row.claimAmt) : '-' }}</span></template></el-table-column>
-          <el-table-column label="状态" prop="complaintStatus" :width="colWidth('complaintStatus', 100)" resizable align="center"><template #default="scope"><span v-if="dictLabel(statusOptions, scope.row.complaintStatus)" class="badge" :class="badgeClass(statusOptions, scope.row.complaintStatus)"><span class="dot"></span>{{ dictLabel(statusOptions, scope.row.complaintStatus) }}</span></template></el-table-column>
+          <el-table-column label="客诉编号" prop="complaintNo" key="complaintNo" :width="colWidth('complaintNo', 160)" resizable show-overflow-tooltip v-if="columns.complaintNo.visible" />
+          <el-table-column label="客户名称" prop="customerName" key="customerName" :width="colWidth('customerName', 180)" resizable show-overflow-tooltip v-if="columns.customerName.visible" />
+          <el-table-column label="物料" prop="materialName" key="materialName" :width="colWidth('materialName', 180)" resizable show-overflow-tooltip v-if="columns.materialName.visible" />
+          <el-table-column label="投诉日期" prop="complaintDate" key="complaintDate" :width="colWidth('complaintDate', 120)" resizable align="center" v-if="columns.complaintDate.visible"><template #default="scope"><span>{{ parseTime(scope.row.complaintDate, '{y}-{m}-{d}') }}</span></template></el-table-column>
+          <el-table-column label="类型" prop="complaintType" key="complaintType" :width="colWidth('complaintType', 100)" resizable align="center" v-if="columns.complaintType.visible"><template #default="scope"><span v-if="dictLabel(typeOptions, scope.row.complaintType)" class="badge violet">{{ dictLabel(typeOptions, scope.row.complaintType) }}</span></template></el-table-column>
+          <el-table-column label="严重程度" prop="severity" key="severity" :width="colWidth('severity', 100)" resizable align="center" v-if="columns.severity.visible"><template #default="scope"><span v-if="dictLabel(severityOptions, scope.row.severity)" class="badge" :class="severityClass(scope.row.severity)"><span class="dot"></span>{{ dictLabel(severityOptions, scope.row.severity) }}</span></template></el-table-column>
+          <el-table-column label="退货金额" prop="returnAmt" key="returnAmt" :width="colWidth('returnAmt', 120)" resizable align="right" v-if="columns.returnAmt.visible"><template #default="scope"><span class="rd-amount">{{ scope.row.returnAmt != null ? '￥' + formatAmount(scope.row.returnAmt) : '-' }}</span></template></el-table-column>
+          <el-table-column label="索赔金额" prop="claimAmt" key="claimAmt" :width="colWidth('claimAmt', 120)" resizable align="right" v-if="columns.claimAmt.visible"><template #default="scope"><span class="rd-amount">{{ scope.row.claimAmt != null ? '￥' + formatAmount(scope.row.claimAmt) : '-' }}</span></template></el-table-column>
+          <el-table-column label="状态" prop="complaintStatus" key="complaintStatus" :width="colWidth('complaintStatus', 100)" resizable align="center" v-if="columns.complaintStatus.visible"><template #default="scope"><span v-if="dictLabel(statusOptions, scope.row.complaintStatus)" class="badge" :class="statusClass(scope.row.complaintStatus)"><span class="dot"></span>{{ dictLabel(statusOptions, scope.row.complaintStatus) }}</span></template></el-table-column>
           <el-table-column label="操作" width="280" align="center" fixed="right">
             <template #default="scope">
               <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
@@ -107,7 +126,7 @@
             <div class="rd-detail-header-title">客诉详情</div>
             <div class="rd-detail-header-sub" v-if="viewData?.complaintNo">
               <span class="rd-detail-header-no">编号：{{ viewData.complaintNo }}</span>
-              <span v-if="dictLabel(statusOptions, viewData?.complaintStatus)" class="badge badge-on-dark" :class="badgeClass(statusOptions, viewData?.complaintStatus)"><span class="dot"></span>{{ dictLabel(statusOptions, viewData?.complaintStatus) }}</span>
+              <span v-if="dictLabel(statusOptions, viewData?.complaintStatus)" class="badge badge-on-dark" :class="statusClass(viewData?.complaintStatus)"><span class="dot"></span>{{ dictLabel(statusOptions, viewData?.complaintStatus) }}</span>
             </div>
           </div>
         </div>
@@ -121,8 +140,8 @@
           <div class="rd-card-body" v-show="!collapsedCards.vc0"><div class="rd-grid">
             <div class="rd-item"><span class="rd-label">客诉编号</span><div class="rd-value">{{ viewData.complaintNo || '-' }}</div></div>
             <div class="rd-item"><span class="rd-label">投诉日期</span><div class="rd-value">{{ viewData.complaintDate ? parseTime(viewData.complaintDate, '{y}-{m}-{d}') : '-' }}</div></div>
-            <div class="rd-item"><span class="rd-label">投诉类型</span><div class="rd-value"><span v-if="dictLabel(typeOptions, viewData.complaintType)" class="badge" :class="badgeClass(typeOptions, viewData.complaintType)"><span class="dot"></span>{{ dictLabel(typeOptions, viewData.complaintType) }}</span><span v-else>-</span></div></div>
-            <div class="rd-item"><span class="rd-label">严重程度</span><div class="rd-value"><span v-if="dictLabel(severityOptions, viewData.severity)" class="badge" :class="badgeClass(severityOptions, viewData.severity)"><span class="dot"></span>{{ dictLabel(severityOptions, viewData.severity) }}</span><span v-else>-</span></div></div>
+            <div class="rd-item"><span class="rd-label">投诉类型</span><div class="rd-value"><span v-if="dictLabel(typeOptions, viewData.complaintType)" class="badge violet">{{ dictLabel(typeOptions, viewData.complaintType) }}</span><span v-else>-</span></div></div>
+            <div class="rd-item"><span class="rd-label">严重程度</span><div class="rd-value"><span v-if="dictLabel(severityOptions, viewData.severity)" class="badge" :class="severityClass(viewData.severity)"><span class="dot"></span>{{ dictLabel(severityOptions, viewData.severity) }}</span><span v-else>-</span></div></div>
           </div></div>
         </section>
         <section class="rd-card">
@@ -165,7 +184,7 @@
           <div class="rd-card-body" v-show="!collapsedCards.vc4"><div class="rd-grid">
             <div class="rd-item rd-item--full"><span class="rd-label">缺陷描述</span><div class="rd-value">{{ viewData.defectDesc || '-' }}</div></div>
             <div class="rd-item rd-item--full" v-if="viewData.handleDesc"><span class="rd-label">处理描述</span><div class="rd-value">{{ viewData.handleDesc }}</div></div>
-            <div class="rd-item" v-if="viewData.handleResult"><span class="rd-label">处理结果</span><div class="rd-value"><span class="badge" :class="badgeClass(handleResultOptions, viewData.handleResult)"><span class="dot"></span>{{ dictLabel(handleResultOptions, viewData.handleResult) }}</span></div></div>
+            <div class="rd-item" v-if="viewData.handleResult"><span class="rd-label">处理结果</span><div class="rd-value"><span class="badge amber">{{ dictLabel(handleResultOptions, viewData.handleResult) }}</span></div></div>
             <div class="rd-item" v-if="viewData.closeTime"><span class="rd-label">关闭时间</span><div class="rd-value">{{ parseTime(viewData.closeTime, '{y}-{m}-{d} {h}:{i}:{s}') }}</div></div>
           </div></div>
         </section>
@@ -314,6 +333,105 @@
     <customer-picker ref="customerPickerRef" title="选择客户" @confirm="onCustomerPickerConfirm" />
     <!-- 物料选择器 -->
     <material-picker ref="materialPickerRef" title="选择物料" @confirm="onMaterialPickerConfirm" />
+
+    <!-- 业务操作说明对话框 -->
+    <el-dialog v-model="showStatusHelp" title="客诉台账业务操作说明" width="820px" append-to-body>
+      <div class="status-help-content">
+        <!-- 一、客诉释义 -->
+        <h4>一、客诉释义</h4>
+        <div class="highlight-card highlight-primary">
+          <div class="highlight-card-title">什么是客诉管理？</div>
+          <div class="highlight-card-body">
+            <strong>客诉管理（Customer Complaint Management）</strong>是质量管理中用于受理、调查和解决客户对产品质量、交期及服务方面投诉的闭环管理流程。当客户提出投诉后，企业需对投诉进行<strong>登记受理 → 调查处理 → 确认关闭</strong>的全链路闭环管理，确保客户诉求得到及时响应和有效解决。<br/><br/>
+            客诉管理是衡量企业质量服务水平和客户满意度的重要指标，满足ISO 9001、IATF 16949等质量管理体系对客户反馈管理的要求，同时为CAPA（纠正与预防措施）提供输入来源。
+          </div>
+        </div>
+
+        <!-- 二、客诉状态流转图 -->
+        <h4>二、客诉状态流转图</h4>
+        <div class="status-flow">
+          <div class="flow-item">
+            <el-tag type="info">已登记</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="warning">处理中</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="primary">待确认</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="success">已关闭</el-tag>
+          </div>
+        </div>
+
+        <!-- 三、各状态说明 -->
+        <h4>三、各状态说明</h4>
+        <el-descriptions :column="1" border>
+          <el-descriptions-item label="已登记">客诉创建后的初始状态。可修改、删除。确认投诉信息无误后点击「受理」进入处理中</el-descriptions-item>
+          <el-descriptions-item label="处理中">投诉调查处理中。可填写退货/索赔信息、处理描述及处理结果。处理完成后点击「处理」提交处理结果，进入待确认</el-descriptions-item>
+          <el-descriptions-item label="待确认">处理结果已提交，等待客户确认是否满意。客户确认后点击「关闭」完成客诉闭环</el-descriptions-item>
+          <el-descriptions-item label="已关闭">客诉流程完成，记录归档用于质量追溯和分析</el-descriptions-item>
+        </el-descriptions>
+
+        <!-- 四、业务操作流程 -->
+        <h4>四、业务操作流程</h4>
+        <el-timeline>
+          <el-timeline-item type="primary" :hollow="true">
+            <strong>登记客诉：</strong>收到客户投诉后，点击「新增」创建客诉记录，填写投诉日期、投诉类型、严重程度、客户信息、物料信息及缺陷描述
+          </el-timeline-item>
+          <el-timeline-item type="info" :hollow="true">
+            <strong>受理客诉：</strong>确认客诉信息无误后，在已登记状态下点击「受理」按钮，客诉进入处理中状态，开始调查处理
+          </el-timeline-item>
+          <el-timeline-item type="warning" :hollow="true">
+            <strong>处理客诉：</strong>在处理中状态下点击「处理」按钮，填写退货数量、退货金额、索赔金额、处理描述（8D回复内容）及处理结果，提交后进入待确认
+          </el-timeline-item>
+          <el-timeline-item type="success" :hollow="true">
+            <strong>关闭客诉：</strong>在待确认状态下，客户确认处理结果满意后，点击「关闭」按钮完成客诉闭环，记录归档
+          </el-timeline-item>
+          <el-timeline-item type="danger" :hollow="true">
+            <strong>删除客诉：</strong>仅在已登记状态下可删除客诉记录，删除后不可恢复
+          </el-timeline-item>
+        </el-timeline>
+
+        <!-- 五、字段填写指南 -->
+        <h4>五、字段填写指南</h4>
+        <div class="highlight-card highlight-warning">
+          <div class="highlight-card-title">客诉信息区</div>
+          <div class="highlight-card-body">
+            <p>• <strong>客诉编号：</strong>客诉的唯一标识编号，保存后由系统自动生成，无需手动输入</p>
+            <p>• <strong>投诉日期：</strong>客户提出投诉的日期。<span style="color: #f56c6c;">*必填</span></p>
+            <p>• <strong>投诉类型：</strong>选择投诉的类型：质量投诉（产品质量问题）、交期投诉（交货延期）、服务投诉（服务态度或响应问题）<span style="color: #f56c6c;">*必填</span></p>
+            <p>• <strong>严重程度：</strong>投诉的严重程度分级：<strong>严重</strong>（影响产品核心功能或安全）、<strong>一般</strong>（影响部分功能或体验）、<strong>轻微</strong>（不影响主要使用）<span style="color: #f56c6c;">*必填</span></p>
+          </div>
+        </div>
+        <div class="highlight-card highlight-warning" style="margin-top: 12px;">
+          <div class="highlight-card-title">客户与物料信息区</div>
+          <div class="highlight-card-body">
+            <p>• <strong>客户名称：</strong>投诉客户的企业名称，点击搜索按钮从客户档案中选择<span style="color: #f56c6c;">*必填</span></p>
+            <p>• <strong>客户编号：</strong>客户编号在选择客户后自动带出</p>
+            <p>• <strong>物料编码：</strong>投诉涉及的物料编码，点击搜索按钮从物料主数据中选择<span style="color: #f56c6c;">*必填</span></p>
+            <p>• <strong>物料名称：</strong>物料名称在选择物料后自动带出</p>
+            <p>• <strong>批次号：</strong>投诉物料的生产批次号<span style="color: #f56c6c;">*必填</span></p>
+          </div>
+        </div>
+        <div class="highlight-card highlight-primary" style="margin-top: 12px;">
+          <div class="highlight-card-title">处理信息区（处理时填写）</div>
+          <div class="highlight-card-body">
+            <p>• <strong>退货数量：</strong>因客诉产生的退货数量<span style="color: #f56c6c;">*必填</span></p>
+            <p>• <strong>退货金额：</strong>退货产生的退款金额<span style="color: #f56c6c;">*必填</span></p>
+            <p>• <strong>索赔金额：</strong>客户索赔的金额<span style="color: #f56c6c;">*必填</span></p>
+            <p>• <strong>处理描述：</strong>调查处理过程及8D回复内容，记录根因分析、临时措施、永久措施等<span style="color: #f56c6c;">*必填</span></p>
+            <p>• <strong>处理结果：</strong>处理结果分类：退货退款、换货处理、折扣补偿、质量改善、其他处理<span style="color: #f56c6c;">*必填</span></p>
+          </div>
+        </div>
+      </div>
+      <template #footer>
+        <el-button type="primary" @click="showStatusHelp = false">我知道了</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -324,11 +442,41 @@ import { useDetailCard, formatAmount } from '@/composables/useDetailCard'
 import CustomerPicker from '@/components/CustomerPicker/index.vue'
 import MaterialPicker from '@/components/MaterialPicker/index.vue'
 import { CircleClose } from '@element-plus/icons-vue'
+import { QuestionFilled, ArrowRight } from '@element-plus/icons-vue'
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('qms_complaint_index')
 const { collapsedCards, toggleCard } = useDetailCard(['vc0','vc1','vc2','vc3','vc4','vc5','ec0','ec1','ec2','ec3','ec4'])
 const { proxy } = getCurrentInstance()
 const { qms_complaint_type: typeOptions, qms_complaint_status: statusOptions, qms_complaint_severity: severityOptions, qms_complaint_handle_result: handleResultOptions } = proxy.useDict('qms_complaint_type', 'qms_complaint_status', 'qms_complaint_severity', 'qms_complaint_handle_result')
 
+const defaultColumns = {
+  complaintNo: { label: '客诉编号', visible: true },
+  customerName: { label: '客户名称', visible: true },
+  materialName: { label: '物料', visible: true },
+  complaintDate: { label: '投诉日期', visible: true },
+  complaintType: { label: '类型', visible: true },
+  severity: { label: '严重程度', visible: true },
+  returnAmt: { label: '退货金额', visible: true },
+  claimAmt: { label: '索赔金额', visible: true },
+  complaintStatus: { label: '状态', visible: true }
+}
+function loadColumnVisibility() {
+  try {
+    const saved = localStorage.getItem('qms_complaint_columns')
+    if (saved) {
+      const parsed = JSON.parse(saved)
+      const result = {}
+      Object.keys(defaultColumns).forEach(key => {
+        result[key] = {
+          label: defaultColumns[key].label,
+          visible: parsed[key] !== undefined ? parsed[key] : defaultColumns[key].visible
+        }
+      })
+      return result
+    }
+  } catch (e) {}
+  return { ...defaultColumns }
+}
+const columns = ref(loadColumnVisibility())
 const list = ref([])
 const loading = ref(true)
 const showSearch = ref(true)
@@ -339,6 +487,10 @@ const viewOpen = ref(false)
 const viewData = ref(null)
 const processOpen = ref(false)
 const processForm = ref({})
+const showStatusHelp = ref(false)
+const activeStatusTab = ref('all')
+const statusCounts = ref({ all: 0, '0': 0, '1': 0, '2': 0, '3': 0 })
+const statusTabList = computed(() => statusOptions.value)
 const title = ref('')
 const selectedId = ref(null)
 const selectedIds = ref([])
@@ -372,9 +524,9 @@ const activeFilterCount = computed(() => {
   return count
 })
 
-function getList() { loading.value = true; listComplaint(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false; applySavedWidths() }) }
+function getList() { loading.value = true; listComplaint(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false; loadStatusCounts(); applySavedWidths() }) }
 function handleQuery() { queryParams.value.pageNum = 1; getList() }
-function resetQuery() { proxy.resetForm('queryRef'); handleQuery() }
+function resetQuery() { queryParams.value.complaintNo = undefined; queryParams.value.customerName = undefined; queryParams.value.complaintType = undefined; queryParams.value.complaintStatus = undefined; activeStatusTab.value = 'all'; handleQuery() }
 function handleAdd() { reset(); open.value = true; title.value = '新增客诉' }
 function handleUpdate(row) {
   const id = row?.complaintId || selectedId.value
@@ -435,13 +587,30 @@ function handleClose(row) {
 function handleExport() { proxy.download('qms/complaint/export', { ...queryParams.value }, `complaint_${new Date().getTime()}.xlsx`) }
 function reset() { form.value = { complaintId: null, complaintNo: undefined, customerId: undefined, customerName: undefined, customerCode: undefined, materialId: undefined, materialName: undefined, materialCode: undefined, batchNo: undefined, complaintType: undefined, severity: undefined, complaintDate: new Date().toISOString().slice(0,10), defectDesc: undefined }; proxy.resetForm('complaintRef') }
 function cancel() { open.value = false; reset() }
-function dictLabel(options, val) { const item = options.value?.find(d => d.value == val); return item ? item.label : '' }
-function badgeClass(options, val) {
-  const item = options.value?.find(d => d.value == val)
-  if (!item) return 'badge-default'
-  const tagType = item.elTagType || ''
-  const map = { danger: 'badge-danger', warning: 'badge-warning', success: 'badge-success', primary: 'badge-primary', info: 'badge-info', default: 'badge-default', '': 'badge-default' }
-  return map[tagType] || 'badge-default'
+function dictLabel(options, val) { const arr = Array.isArray(options) ? options : options.value; const item = arr?.find(d => d.value == val); return item ? item.label : '' }
+function statusClass(val) {
+  const map = { '0': 'blue', '1': 'amber', '2': 'violet', '3': 'green' }
+  return map[val] || 'gray'
+}
+function severityClass(val) {
+  const map = { '1': 'red', '2': 'amber', '3': 'gray' }
+  return map[val] || 'gray'
+}
+function loadStatusCounts() {
+  listComplaint({ pageNum: 1, pageSize: 999 }).then(res => {
+    const counts = { all: res.total, '0': 0, '1': 0, '2': 0, '3': 0 }
+    ;(res.rows || []).forEach(r => { if (counts[r.complaintStatus] !== undefined) counts[r.complaintStatus]++ })
+    statusCounts.value = counts
+  }).catch(() => {})
+}
+function handleStatusTabClick(status) {
+  activeStatusTab.value = status
+  queryParams.value.complaintStatus = status === 'all' ? undefined : status
+  handleQuery()
+}
+function statusTabClass(value) {
+  const map = { '0': 'tab-registered', '1': 'tab-processing', '2': 'tab-confirming', '3': 'tab-closed' }
+  return map[value] || ''
 }
 getList()
 </script>
@@ -496,29 +665,75 @@ getList()
 /* ===== Badge 字典样式（参考供应商质量评价列表） ===== */
 .qms-complaint-page .badge { display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:999px; font-size:13px; font-weight:600; line-height:1; border:1px solid transparent; white-space:nowrap; }
 .qms-complaint-page .badge .dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
-.qms-complaint-page .badge-default { background:var(--ink-100); color:var(--ink-700); border-color:var(--ink-200); }
-.qms-complaint-page .badge-default .dot { background:var(--ink-400); }
-.qms-complaint-page .badge-primary { background:var(--brand-50); color:var(--brand-700); border-color:var(--brand-200); }
-.qms-complaint-page .badge-primary .dot { background:var(--brand-500); }
-.qms-complaint-page .badge-success { background:var(--green-50); color:var(--green-700); border-color:#a7f3d0; }
-.qms-complaint-page .badge-success .dot { background:var(--green-500); }
-.qms-complaint-page .badge-warning { background:#fffbeb; color:#b45309; border-color:#fde68a; }
-.qms-complaint-page .badge-warning .dot { background:#f59e0b; }
-.qms-complaint-page .badge-danger { background:var(--red-50); color:var(--red-700); border-color:#fecaca; }
-.qms-complaint-page .badge-danger .dot { background:var(--red-500); }
-.qms-complaint-page .badge-info { background:var(--ink-50); color:var(--ink-500); border-color:var(--ink-200); }
-.qms-complaint-page .badge-info .dot { background:var(--ink-400); }
+/* 固定颜色类（用于字典字段：类型=violet, 处理结果=amber） */
+.qms-complaint-page .badge.violet { background:var(--brand-50); color:var(--brand-700); border-color:var(--brand-200); }
+.qms-complaint-page .badge.amber { background:#fffbeb; color:#b45309; border-color:#fde68a; }
+.qms-complaint-page .badge.blue { background:var(--brand-50); color:var(--brand-700); border-color:var(--brand-200); }
+.qms-complaint-page .badge.blue .dot { background:var(--brand-500); }
+.qms-complaint-page .badge.green { background:var(--green-50); color:var(--green-700); border-color:#a7f3d0; }
+.qms-complaint-page .badge.green .dot { background:var(--green-500); }
+.qms-complaint-page .badge.red { background:var(--red-50); color:var(--red-700); border-color:#fecaca; }
+.qms-complaint-page .badge.red .dot { background:var(--red-500); }
+.qms-complaint-page .badge.gray { background:var(--ink-100); color:var(--ink-500); border-color:var(--ink-200); }
+.qms-complaint-page .badge.gray .dot { background:var(--ink-400); }
 /* 深色背景上的 badge 变体（标题横幅中使用） */
 .qms-complaint-page .badge.badge-on-dark { background:rgba(255,255,255,.15); border-color:rgba(255,255,255,.25); color:#fff; }
 .qms-complaint-page .badge.badge-on-dark .dot { background:rgba(255,255,255,.7); }
-.qms-complaint-page .badge.badge-on-dark.badge-danger { background:rgba(239,68,68,.25); border-color:rgba(239,68,68,.4); }
-.qms-complaint-page .badge.badge-on-dark.badge-danger .dot { background:#f87171; }
-.qms-complaint-page .badge.badge-on-dark.badge-warning { background:rgba(245,158,11,.25); border-color:rgba(245,158,11,.4); }
-.qms-complaint-page .badge.badge-on-dark.badge-warning .dot { background:#fbbf24; }
-.qms-complaint-page .badge.badge-on-dark.badge-success { background:rgba(16,185,129,.25); border-color:rgba(16,185,129,.4); }
-.qms-complaint-page .badge.badge-on-dark.badge-success .dot { background:#34d399; }
-.qms-complaint-page .badge.badge-on-dark.badge-primary { background:rgba(99,102,241,.25); border-color:rgba(99,102,241,.4); }
-.qms-complaint-page .badge.badge-on-dark.badge-primary .dot { background:#818cf8; }
-.qms-complaint-page .badge.badge-on-dark.badge-info { background:rgba(255,255,255,.12); border-color:rgba(255,255,255,.2); }
-.qms-complaint-page .badge.badge-on-dark.badge-info .dot { background:rgba(255,255,255,.5); }
+.qms-complaint-page .badge.badge-on-dark.blue { background:rgba(99,102,241,.25); border-color:rgba(99,102,241,.4); }
+.qms-complaint-page .badge.badge-on-dark.blue .dot { background:#818cf8; }
+.qms-complaint-page .badge.badge-on-dark.amber { background:rgba(245,158,11,.25); border-color:rgba(245,158,11,.4); }
+.qms-complaint-page .badge.badge-on-dark.amber .dot { background:#fbbf24; }
+.qms-complaint-page .badge.badge-on-dark.violet { background:rgba(99,102,241,.25); border-color:rgba(99,102,241,.4); }
+.qms-complaint-page .badge.badge-on-dark.violet .dot { background:#818cf8; }
+.qms-complaint-page .badge.badge-on-dark.green { background:rgba(16,185,129,.25); border-color:rgba(16,185,129,.4); }
+.qms-complaint-page .badge.badge-on-dark.green .dot { background:#34d399; }
+.qms-complaint-page .badge.badge-on-dark.red { background:rgba(239,68,68,.25); border-color:rgba(239,68,68,.4); }
+.qms-complaint-page .badge.badge-on-dark.red .dot { background:#f87171; }
+.qms-complaint-page .badge.badge-on-dark.gray { background:rgba(255,255,255,.12); border-color:rgba(255,255,255,.2); }
+.qms-complaint-page .badge.badge-on-dark.gray .dot { background:rgba(255,255,255,.5); }
+/* ===== Status Tabs ===== */
+.qms-complaint-page .status-tabs { display:flex; align-items:center; gap:12px; padding:6px 10px 6px 12px; border-bottom:1px solid var(--ink-200); background:#fff; }
+.qms-complaint-page .tabs-track { display:flex; align-items:center; gap:4px; flex:1; min-width:0; overflow-x:auto; scrollbar-width:none; }
+.qms-complaint-page .tabs-track::-webkit-scrollbar { display:none; }
+.qms-complaint-page .status-tab { display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 12px; border-radius:var(--r-sm); font-size:14px; color:var(--ink-500); cursor:pointer; user-select:none; transition:all .15s var(--ease-out); white-space:nowrap; border:1px solid transparent; background:transparent; }
+.qms-complaint-page .status-tab .dot { width:6px; height:6px; border-radius:50%; background:var(--ink-300); }
+.qms-complaint-page .status-tab .count { font-size:12px; font-weight:600; padding:1px 6px; border-radius:999px; background:var(--ink-100); color:var(--ink-500); min-width:18px; text-align:center; line-height:1.4; font-feature-settings:"tnum" 1; }
+.qms-complaint-page .status-tab:hover { background:var(--ink-50); color:var(--ink-700); }
+.qms-complaint-page .status-tab.is-active { background:var(--brand-50); color:var(--brand-700); font-weight:600; border-color:var(--brand-200); }
+.qms-complaint-page .status-tab.is-active .count { background:var(--brand-600); color:#fff; }
+.qms-complaint-page .status-tab.is-active .dot { background:var(--brand-500); }
+/* 已登记 - blue */
+.qms-complaint-page .status-tab.tab-registered .dot { background:var(--brand-500); }
+.qms-complaint-page .status-tab.tab-registered .count { background:var(--brand-50); color:var(--brand-700); }
+.qms-complaint-page .status-tab.is-active.tab-registered .count { background:var(--brand-500); color:#fff; }
+/* 处理中 - amber */
+.qms-complaint-page .status-tab.tab-processing .dot { background:#f59e0b; }
+.qms-complaint-page .status-tab.tab-processing .count { background:#fffbeb; color:#b45309; }
+.qms-complaint-page .status-tab.is-active.tab-processing .count { background:#f59e0b; color:#fff; }
+/* 待确认 - violet */
+.qms-complaint-page .status-tab.tab-confirming .dot { background:#8b5cf6; }
+.qms-complaint-page .status-tab.tab-confirming .count { background:var(--brand-50); color:var(--brand-700); }
+.qms-complaint-page .status-tab.is-active.tab-confirming .count { background:#8b5cf6; color:#fff; }
+/* 已关闭 - green */
+.qms-complaint-page .status-tab.tab-closed .dot { background:var(--green-500); }
+.qms-complaint-page .status-tab.tab-closed .count { background:var(--green-50); color:var(--green-700); }
+.qms-complaint-page .status-tab.is-active.tab-closed .count { background:var(--green-500); color:#fff; }
+/* ===== Tip Pill ===== */
+.qms-complaint-page .tip-pill { display:inline-flex; align-items:center; gap:6px; height:30px; padding:0 12px; font-size:14px; font-weight:500; border-radius:var(--r-sm); border:1px solid #fde68a; background:#fffbeb; color:#b45309; cursor:pointer; transition:all .15s var(--ease-out); white-space:nowrap; }
+.qms-complaint-page .tip-pill:hover { background:#fef3c7; border-color:#f59e0b; }
+/* ===== 业务操作说明对话框 ===== */
+.status-help-content { max-height: 520px; overflow-y: auto; padding-right: 10px; }
+.status-help-content h4 { margin: 20px 0 12px 0; color: #303133; font-weight: 600; border-left: 4px solid #409eff; padding-left: 10px; }
+.status-help-content h4:first-child { margin-top: 0; }
+.status-help-content .status-flow { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 16px; background-color: #f5f7fa; border-radius: 8px; margin-bottom: 8px; }
+.status-help-content .flow-item { display: flex; align-items: center; gap: 8px; }
+.status-help-content .flow-arrow { color: #909399; font-size: 16px; }
+.status-help-content .highlight-card { border-radius: 8px; padding: 16px; border: 1px solid; }
+.status-help-content .highlight-card-title { font-size: 14px; font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; }
+.status-help-content .highlight-card-body { font-size: 13px; color: #606266; line-height: 1.6; }
+.status-help-content .highlight-card-body p { margin: 4px 0; }
+.status-help-content .highlight-primary { background-color: #ecf5ff; border-color: #a0cfff; }
+.status-help-content .highlight-primary .highlight-card-title { color: #409eff; }
+.status-help-content .highlight-warning { background-color: #fdf6ec; border-color: #f5dab1; }
+.status-help-content .highlight-warning .highlight-card-title { color: #e6a23c; }
 </style>

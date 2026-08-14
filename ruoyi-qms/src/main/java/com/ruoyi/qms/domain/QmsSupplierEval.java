@@ -19,7 +19,7 @@ public class QmsSupplierEval extends BaseEntity {
     private BigDecimal deliveryScore;
     private BigDecimal serviceScore;
     @Excel(name = "综合评分") private BigDecimal totalScore;
-    @Excel(name = "等级") private String grade;
+    @Excel(name = "等级", dictType = "qms_supplier_grade") private String grade;
     private String evalStatus;
     private String delFlag;
     private String status;

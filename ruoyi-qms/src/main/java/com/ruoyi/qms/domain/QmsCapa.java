@@ -9,10 +9,10 @@ public class QmsCapa extends BaseEntity {
     private static final long serialVersionUID = 1L;
 
     private Long capaId;
-    @Excel(name = "CAPA编号") private String capaNo;
-    @Excel(name = "来源类型") private String sourceType;
-    @Excel(name = "来源编号") private String sourceNo;
-    @Excel(name = "问题标题") private String title;
+    @Excel(name = "CAPA编号", sort = 1) private String capaNo;
+    @Excel(name = "标题", sort = 2) private String title;
+    @Excel(name = "来源", dictType = "qms_capa_source_type", sort = 3) private String sourceType;
+    @Excel(name = "来源编号", sort = 4) private String sourceNo;
     private String problemDesc;
     private String teamMembers;
     private String interimAction;
@@ -21,10 +21,10 @@ public class QmsCapa extends BaseEntity {
     private String verifyResult;
     private String preventAction;
     private String closeRemark;
-    @Excel(name = "状态") private String capaStatus;
-    @Excel(name = "责任人") private String responsiblePerson;
+    @Excel(name = "状态", dictType = "qms_capa_status", sort = 5) private String capaStatus;
+    @Excel(name = "责任人", sort = 6) private String responsiblePerson;
     private Long responsiblePersonId;
-    @JsonFormat(pattern = "yyyy-MM-dd") private Date planCloseTime;
+    @Excel(name = "计划关闭", sort = 7, width = 20, dateFormat = "yyyy-MM-dd") @JsonFormat(pattern = "yyyy-MM-dd") private Date planCloseTime;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss") private Date closeTime;
     private String delFlag;
     private String status;

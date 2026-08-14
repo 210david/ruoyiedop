@@ -232,7 +232,7 @@ INSERT INTO sys_menu (menu_name, parent_id, order_num, path, menu_type, visible,
 -- SN追溯菜单
 SET @qmsTraceDirId = (SELECT menu_id FROM sys_menu WHERE menu_name = '质量追溯' AND parent_id = @qmsParentId);
 INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark)
-SELECT 'SN追溯', @qmsTraceDirId, 4, 'sn', 'qms/trace/sn', '', 'QmsTraceSn', 1, 0, 'C', '0', '0', 'qms:trace:sn:list', 'barcode', 'admin', sysdate(), 'SN单件追溯'
+SELECT 'SN追溯', @qmsTraceDirId, 4, 'sn', 'qms/trace/sn', '', 'QmsTraceSn', 1, 0, 'C', '0', '0', 'qms:trace:sn:list', 'scan', 'admin', sysdate(), 'SN单件追溯'
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_name = 'SN追溯');
 SET @qmsSnId = (SELECT menu_id FROM sys_menu WHERE menu_name = 'SN追溯' AND parent_id = @qmsTraceDirId);
 INSERT INTO sys_menu (menu_name, parent_id, order_num, path, menu_type, visible, status, perms, create_by, create_time) VALUES

@@ -17,7 +17,7 @@ public class QmsMr extends BaseEntity {
     private String inputSummary;
     private String resolution;
     private String actionItems;
-    @Excel(name = "状态") private String mrStatus;
+    @Excel(name = "状态", dictType = "qms_mr_status") private String mrStatus;
     private String delFlag;
     private String status;
 

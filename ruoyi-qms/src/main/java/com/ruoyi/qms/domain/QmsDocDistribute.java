@@ -11,7 +11,7 @@ public class QmsDocDistribute extends BaseEntity {
     private Long docId;
     @Excel(name = "文档编号") private String docNo;
     @Excel(name = "版本号") private String versionNo;
-    @Excel(name = "类型") private String distributeType;
+    @Excel(name = "类型", dictType = "qms_doc_distribute_type") private String distributeType;
     private Long deptId;
     @Excel(name = "部门") private String deptName;
     private Long userId;
@@ -19,7 +19,7 @@ public class QmsDocDistribute extends BaseEntity {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss") private Date receiveTime;
     @JsonFormat(pattern = "yyyy-MM-dd") private Date borrowDeadline;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss") private Date returnTime;
-    @Excel(name = "状态") private String distStatus;
+    @Excel(name = "状态", dictType = "qms_doc_dist_status") private String distStatus;
     private String watermark;
 
     public Long getDistributeId() { return distributeId; }

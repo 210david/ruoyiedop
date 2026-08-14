@@ -112,38 +112,38 @@
           </button>
         </div>
         <div class="right">
-          <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" />
+          <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="qms_ncr_columns" />
         </div>
       </div>
 
       <div class="table-wrap">
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
-          <el-table-column label="NCR编号" prop="ncrNo" :width="colWidth('ncrNo', 150)" resizable show-overflow-tooltip>
+          <el-table-column label="NCR编号" prop="ncrNo" key="ncrNo" :width="colWidth('ncrNo', 150)" resizable show-overflow-tooltip v-if="columns.ncrNo.visible">
             <template #header><span>NCR编号</span><el-tooltip content="NCR（Non-Conformance Report）即不合格品报告编号，用于标识和追溯不合格品的全流程处理记录" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></template>
           </el-table-column>
-          <el-table-column label="来源类型" prop="sourceType" :width="colWidth('sourceType', 100)" resizable align="center">
-            <template #default="scope"><dict-tag :options="qms_ncr_source" :value="scope.row.sourceType" /></template>
+          <el-table-column label="来源类型" prop="sourceType" key="sourceType" :width="colWidth('sourceType', 100)" resizable align="center" v-if="columns.sourceType.visible">
+            <template #default="scope"><span class="badge" :class="sourceTypeBadgeClass(scope.row.sourceType)"><span class="dot"></span>{{ sourceTypeLabel(scope.row.sourceType) }}</span></template>
           </el-table-column>
-          <el-table-column label="来源单号" prop="sourceNo" :width="colWidth('sourceNo', 150)" resizable show-overflow-tooltip />
-          <el-table-column label="物料编码" prop="materialCode" :width="colWidth('materialCode', 140)" resizable show-overflow-tooltip />
-          <el-table-column label="物料名称" prop="materialName" :width="colWidth('materialName', 180)" resizable show-overflow-tooltip />
-          <el-table-column label="批次号" prop="batchNo" :width="colWidth('batchNo', 120)" resizable show-overflow-tooltip />
-          <el-table-column label="不合格数量" prop="defectQty" :width="colWidth('defectQty', 100)" resizable align="right" />
-          <el-table-column label="缺陷等级" prop="defectLevel" :width="colWidth('defectLevel', 100)" resizable align="center">
+          <el-table-column label="来源单号" prop="sourceNo" key="sourceNo" :width="colWidth('sourceNo', 150)" resizable show-overflow-tooltip v-if="columns.sourceNo.visible" />
+          <el-table-column label="物料编码" prop="materialCode" key="materialCode" :width="colWidth('materialCode', 140)" resizable show-overflow-tooltip v-if="columns.materialCode.visible" />
+          <el-table-column label="物料名称" prop="materialName" key="materialName" :width="colWidth('materialName', 180)" resizable show-overflow-tooltip v-if="columns.materialName.visible" />
+          <el-table-column label="批次号" prop="batchNo" key="batchNo" :width="colWidth('batchNo', 120)" resizable show-overflow-tooltip v-if="columns.batchNo.visible" />
+          <el-table-column label="不合格数量" prop="defectQty" key="defectQty" :width="colWidth('defectQty', 100)" resizable align="right" v-if="columns.defectQty.visible" />
+          <el-table-column label="缺陷等级" prop="defectLevel" key="defectLevel" :width="colWidth('defectLevel', 100)" resizable align="center" v-if="columns.defectLevel.visible">
             <template #header><span>缺陷等级</span><el-tooltip content="不合格品缺陷的严重程度等级，通常分为：致命缺陷、严重缺陷、一般缺陷、轻微缺陷" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></template>
             <template #default="scope"><span class="badge" :class="defectBadgeClass(scope.row.defectLevel)"><span class="dot"></span>{{ defectLevelLabel(scope.row.defectLevel) }}</span></template>
           </el-table-column>
-          <el-table-column label="处置方式" prop="disposition" :width="colWidth('disposition', 110)" resizable align="center">
+          <el-table-column label="处置方式" prop="disposition" key="disposition" :width="colWidth('disposition', 110)" resizable align="center" v-if="columns.disposition.visible">
             <template #header><span>处置方式</span><el-tooltip content="对不合格品的处理决定，通常包括：退货、挑选、返工、报废、让步接收等" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></template>
-            <template #default="scope"><dict-tag :options="qms_disposition" :value="scope.row.disposition" /></template>
+            <template #default="scope"><span class="badge" :class="dispositionBadgeClass(scope.row.disposition)"><span class="dot"></span>{{ dispositionLabel(scope.row.disposition) }}</span></template>
           </el-table-column>
-          <el-table-column label="NCR状态" prop="ncrStatus" :width="colWidth('ncrStatus', 100)" resizable align="center">
+          <el-table-column label="NCR状态" prop="ncrStatus" key="ncrStatus" :width="colWidth('ncrStatus', 100)" resizable align="center" v-if="columns.ncrStatus.visible">
             <template #header><span>NCR状态</span><el-tooltip content="不合格品报告的流程状态，包括：已登记、评审中、处置中、待验证、已关闭、已作废" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></template>
             <template #default="scope"><span class="badge" :class="ncrBadgeClass(scope.row.ncrStatus)"><span class="dot"></span>{{ ncrStatusLabel(scope.row.ncrStatus) }}</span></template>
           </el-table-column>
-          <el-table-column label="报告人" prop="discovererName" :width="colWidth('discovererName', 100)" resizable align="center" />
-          <el-table-column label="报告时间" prop="discoverTime" :width="colWidth('discoverTime', 160)" resizable align="center" />
+          <el-table-column label="报告人" prop="discovererName" key="discovererName" :width="colWidth('discovererName', 100)" resizable align="center" v-if="columns.discovererName.visible" />
+          <el-table-column label="报告时间" prop="discoverTime" key="discoverTime" :width="colWidth('discoverTime', 160)" resizable align="center" v-if="columns.discoverTime.visible" />
           <el-table-column label="操作" width="280" align="center" fixed="right">
             <template #default="scope">
               <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
@@ -244,7 +244,7 @@
           <div class="rd-card-header" @click="toggleCard('v0')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>基本信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v0 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
           <div class="rd-card-body" v-show="!collapsedCards.v0" style="display:block"><div class="rd-grid">
             <div class="rd-item"><span class="rd-label">NCR编号</span><div class="rd-value">{{ viewData.ncrNo || '-' }}</div></div>
-            <div class="rd-item"><span class="rd-label">来源类型</span><div class="rd-value"><dict-tag :options="qms_ncr_source" :value="viewData.sourceType" /></div></div>
+            <div class="rd-item"><span class="rd-label">来源类型</span><div class="rd-value"><span class="badge" :class="sourceTypeBadgeClass(viewData.sourceType)"><span class="dot"></span>{{ sourceTypeLabel(viewData.sourceType) }}</span></div></div>
             <div class="rd-item"><span class="rd-label">来源单号</span><div class="rd-value">{{ viewData.sourceNo || '-' }}</div></div>
             <div class="rd-item"><span class="rd-label">物料编码</span><div class="rd-value">{{ viewData.materialCode || '-' }}</div></div>
             <div class="rd-item"><span class="rd-label">物料名称</span><div class="rd-value">{{ viewData.materialName || '-' }}</div></div>
@@ -259,8 +259,8 @@
         <section class="rd-card">
           <div class="rd-card-header" @click="toggleCard('v1')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>缺陷与处置</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
           <div class="rd-card-body" v-show="!collapsedCards.v1" style="display:block"><div class="rd-grid">
-            <div class="rd-item"><span class="rd-label">缺陷等级</span><div class="rd-value"><dict-tag :options="qms_defect_level" :value="viewData.defectLevel" /></div></div>
-            <div class="rd-item"><span class="rd-label">处置方式</span><div class="rd-value"><dict-tag :options="qms_disposition" :value="viewData.disposition" /></div></div>
+            <div class="rd-item"><span class="rd-label">缺陷等级</span><div class="rd-value"><span class="badge" :class="defectBadgeClass(viewData.defectLevel)"><span class="dot"></span>{{ defectLevelLabel(viewData.defectLevel) }}</span></div></div>
+            <div class="rd-item"><span class="rd-label">处置方式</span><div class="rd-value"><span class="badge" :class="dispositionBadgeClass(viewData.disposition)"><span class="dot"></span>{{ dispositionLabel(viewData.disposition) }}</span></div></div>
             <div class="rd-item"><span class="rd-label">是否隔离</span><div class="rd-value">{{ viewData.isolateFlag === '1' ? '是' : '否' }}</div></div>
             <div class="rd-item" v-if="viewData.isolateFlag === '1'"><span class="rd-label">隔离区域</span><div class="rd-value">{{ viewData.isolateArea || '-' }}</div></div>
             <div class="rd-item rd-item--full"><span class="rd-label">缺陷描述</span><div class="rd-value">{{ viewData.defectDesc || '-' }}</div></div>
@@ -269,7 +269,7 @@
         <section class="rd-card">
           <div class="rd-card-header" @click="toggleCard('v2')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>状态与验证</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
           <div class="rd-card-body" v-show="!collapsedCards.v2" style="display:block"><div class="rd-grid">
-            <div class="rd-item"><span class="rd-label">NCR状态</span><div class="rd-value">{{ ncrStatusLabel(viewData.ncrStatus) }}</div></div>
+            <div class="rd-item"><span class="rd-label">NCR状态</span><div class="rd-value"><span class="badge" :class="ncrBadgeClass(viewData.ncrStatus)"><span class="dot"></span>{{ ncrStatusLabel(viewData.ncrStatus) }}</span></div></div>
             <div class="rd-item" v-if="viewData.maxNode > 0"><span class="rd-label">审批进度</span><div class="rd-value">{{ viewData.currentNode }} / {{ viewData.maxNode }}</div></div>
             <div class="rd-item"><span class="rd-label">验证结果</span><div class="rd-value">{{ viewData.verifyResult === '1' ? '通过' : viewData.verifyResult === '2' ? '不通过' : '-' }}</div></div>
             <div class="rd-item"><span class="rd-label">验证人</span><div class="rd-value">{{ viewData.verifierName || '-' }}</div></div>
@@ -319,7 +319,7 @@
           <div class="rd-card-body" v-show="!collapsedCards.a0" style="display:block">
             <div class="rd-grid">
               <div class="rd-item"><span class="rd-label">NCR编号</span><div class="rd-value">{{ approveForm.ncrNo || '-' }}</div></div>
-            <div class="rd-item"><span class="rd-label">来源类型</span><div class="rd-value"><dict-tag :options="qms_ncr_source" :value="approveForm.sourceType" /></div></div>
+            <div class="rd-item"><span class="rd-label">来源类型</span><div class="rd-value"><span class="badge" :class="sourceTypeBadgeClass(approveForm.sourceType)"><span class="dot"></span>{{ sourceTypeLabel(approveForm.sourceType) }}</span></div></div>
               <div class="rd-item"><span class="rd-label">来源单号</span><div class="rd-value">{{ approveForm.sourceNo || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">批次号</span><div class="rd-value">{{ approveForm.batchNo || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">报告人</span><div class="rd-value">{{ approveForm.discovererName || '-' }}</div></div>
@@ -410,7 +410,7 @@
           <div class="rd-card-body" v-show="!collapsedCards.d0" style="display:block">
             <div class="rd-grid">
               <div class="rd-item"><span class="rd-label">NCR编号</span><div class="rd-value">{{ dispositionForm.ncrNo || '-' }}</div></div>
-            <div class="rd-item"><span class="rd-label">来源类型</span><div class="rd-value"><dict-tag :options="qms_ncr_source" :value="dispositionForm.sourceType" /></div></div>
+            <div class="rd-item"><span class="rd-label">来源类型</span><div class="rd-value"><span class="badge" :class="sourceTypeBadgeClass(dispositionForm.sourceType)"><span class="dot"></span>{{ sourceTypeLabel(dispositionForm.sourceType) }}</span></div></div>
               <div class="rd-item"><span class="rd-label">来源单号</span><div class="rd-value">{{ dispositionForm.sourceNo || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">批次号</span><div class="rd-value">{{ dispositionForm.batchNo || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">报告人</span><div class="rd-value">{{ dispositionForm.discovererName || '-' }}</div></div>
@@ -509,7 +509,7 @@
           <div class="rd-card-body" v-show="!collapsedCards.vf0" style="display:block">
             <div class="rd-grid">
               <div class="rd-item"><span class="rd-label">NCR编号</span><div class="rd-value">{{ verifyForm.ncrNo || '-' }}</div></div>
-            <div class="rd-item"><span class="rd-label">来源类型</span><div class="rd-value"><dict-tag :options="qms_ncr_source" :value="verifyForm.sourceType" /></div></div>
+            <div class="rd-item"><span class="rd-label">来源类型</span><div class="rd-value"><span class="badge" :class="sourceTypeBadgeClass(verifyForm.sourceType)"><span class="dot"></span>{{ sourceTypeLabel(verifyForm.sourceType) }}</span></div></div>
               <div class="rd-item"><span class="rd-label">来源单号</span><div class="rd-value">{{ verifyForm.sourceNo || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">批次号</span><div class="rd-value">{{ verifyForm.batchNo || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">报告人</span><div class="rd-value">{{ verifyForm.discovererName || '-' }}</div></div>
@@ -540,7 +540,7 @@
           <div class="rd-card-header" @click="toggleCard('vf2')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></span>处置信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vf2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
           <div class="rd-card-body" v-show="!collapsedCards.vf2" style="display:block">
             <div class="rd-grid">
-              <div class="rd-item"><span class="rd-label">处置方式</span><div class="rd-value"><dict-tag :options="qms_disposition" :value="verifyForm.disposition" /></div></div>
+              <div class="rd-item"><span class="rd-label">处置方式</span><div class="rd-value"><span class="badge" :class="dispositionBadgeClass(verifyForm.disposition)"><span class="dot"></span>{{ dispositionLabel(verifyForm.disposition) }}</span></div></div>
               <div class="rd-item"><span class="rd-label">处置数量</span><div class="rd-value">{{ verifyForm.disposeQty != null ? verifyForm.disposeQty : '-' }}</div></div>
               <div class="rd-item rd-item--full"><span class="rd-label">处置说明</span><div class="rd-value">{{ verifyForm.disposeRemark || '-' }}</div></div>
             </div>
@@ -713,6 +713,36 @@ const statusTabList = computed(() => qms_ncr_status.value)
 const supplierOptions = ref([])
 const materialPickerRef = ref()
 const userPickerRef = ref()
+
+const defaultColumns = {
+  ncrNo: { label: 'NCR编号', visible: true },
+  sourceType: { label: '来源类型', visible: true },
+  sourceNo: { label: '来源单号', visible: true },
+  materialCode: { label: '物料编码', visible: true },
+  materialName: { label: '物料名称', visible: true },
+  batchNo: { label: '批次号', visible: true },
+  defectQty: { label: '不合格数量', visible: true },
+  defectLevel: { label: '缺陷等级', visible: true },
+  disposition: { label: '处置方式', visible: true },
+  ncrStatus: { label: 'NCR状态', visible: true },
+  discovererName: { label: '报告人', visible: true },
+  discoverTime: { label: '报告时间', visible: true }
+}
+function loadColumnVisibility() {
+  try {
+    const saved = localStorage.getItem('qms_ncr_columns')
+    if (saved) {
+      const parsed = JSON.parse(saved)
+      const result = {}
+      Object.keys(defaultColumns).forEach(key => {
+        result[key] = { label: defaultColumns[key].label, visible: parsed[key] !== undefined ? parsed[key] : defaultColumns[key].visible }
+      })
+      return result
+    }
+  } catch (e) {}
+  return JSON.parse(JSON.stringify(defaultColumns))
+}
+const columns = ref(loadColumnVisibility())
 
 const approveRules = {
   approveOpinion: [{ required: true, message: '请输入审批意见', trigger: 'blur' }]
@@ -982,6 +1012,32 @@ function ncrBadgeClass(val) {
   if (val == '3') return 'green'
   if (val == '4') return 'gray'
   if (val == '5') return 'red'
+  return 'gray'
+}
+
+function sourceTypeLabel(val) {
+  const item = qms_ncr_source.value.find(d => d.value == val)
+  return item ? item.label : '-'
+}
+
+function sourceTypeBadgeClass(val) {
+  if (val == 'inspection') return 'blue'
+  if (val == 'complaint') return 'red'
+  if (val == 'patrol') return 'orange'
+  return 'gray'
+}
+
+function dispositionLabel(val) {
+  const item = qms_disposition.value.find(d => d.value == val)
+  return item ? item.label : '-'
+}
+
+function dispositionBadgeClass(val) {
+  if (val == '1') return 'red'
+  if (val == '2') return 'orange'
+  if (val == '3') return 'blue'
+  if (val == '4') return 'gray'
+  if (val == '5') return 'green'
   return 'gray'
 }
 

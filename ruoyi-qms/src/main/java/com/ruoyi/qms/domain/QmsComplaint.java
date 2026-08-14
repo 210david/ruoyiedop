@@ -16,15 +16,15 @@ public class QmsComplaint extends BaseEntity {
     private String materialCode;
     private String batchNo;
     @JsonFormat(pattern = "yyyy-MM-dd") @Excel(name = "投诉日期", dateFormat = "yyyy-MM-dd") private Date complaintDate;
-    @Excel(name = "投诉类型") private String complaintType;
+    @Excel(name = "投诉类型", dictType = "qms_complaint_type") private String complaintType;
     private String defectDesc;
-    @Excel(name = "严重程度") private String severity;
+    @Excel(name = "严重程度", dictType = "qms_complaint_severity") private String severity;
     private BigDecimal returnQty;
     private BigDecimal returnAmt;
     private BigDecimal claimAmt;
     private String handleDesc;
     private String handleResult;
-    @Excel(name = "状态") private String complaintStatus;
+    @Excel(name = "状态", dictType = "qms_complaint_status") private String complaintStatus;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss") private Date closeTime;
     private String delFlag;
     private String status;

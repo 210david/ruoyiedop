@@ -28,7 +28,7 @@ public class QmsInspTask extends BaseEntity
     private String taskType;
 
     /** 来源类型 */
-    @Excel(name = "来源类型")
+    @Excel(name = "来源类型", readConverterExp = "arrival=采购入库,production=生产工单,delivery=出货交付,manual=手动创建")
     private String sourceType;
 
     /** 来源单号 */
@@ -66,6 +66,7 @@ public class QmsInspTask extends BaseEntity
     private String aqlLevel;
 
     /** 检验严格度（1正常 2加严 3放宽） */
+    @Excel(name = "检验严格度", readConverterExp = "1=正常,2=加严,3=放宽")
     private String inspectLevel;
 
     /** 检验水平（S-1/S-2/S-3/S-4/I/II/III），默认II */
@@ -120,7 +121,6 @@ public class QmsInspTask extends BaseEntity
     private String gaugeName;
 
     /** 量检具编号 */
-    @Excel(name = "量检具编号")
     private String gaugeNo;
 
     /** 是否复检 */

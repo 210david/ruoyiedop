@@ -20,7 +20,7 @@ public class QmsMrAction extends BaseEntity {
     @JsonFormat(pattern = "yyyy-MM-dd") @Excel(name = "计划完成日期", dateFormat = "yyyy-MM-dd") private Date planCloseDate;
     @JsonFormat(pattern = "yyyy-MM-dd") private Date actualCloseDate;
     private String actionResult;
-    @Excel(name = "状态") private String actionStatus;
+    @Excel(name = "状态", dictType = "qms_mr_action_status") private String actionStatus;
     private String delFlag;
 
     public Long getActionId() { return actionId; }

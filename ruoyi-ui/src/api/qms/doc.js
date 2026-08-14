@@ -15,3 +15,6 @@ export function updateDoc(data) {
 export function delDoc(docIds) {
   return request({ url: '/qms/doc/' + docIds, method: 'delete' })
 }
+export function obsoleteDoc(docId) {
+  return request({ url: '/qms/doc/obsolete/' + docId, method: 'put' })
+}

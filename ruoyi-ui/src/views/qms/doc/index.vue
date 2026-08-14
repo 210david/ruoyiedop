@@ -89,11 +89,12 @@
           <el-table-column label="归属部门" prop="deptName" key="deptName" :width="colWidth('deptName', 140)" resizable show-overflow-tooltip v-if="columns.deptName.visible" />
           <el-table-column label="状态" prop="docStatus" key="docStatus" :width="colWidth('docStatus', 100)" resizable align="center" v-if="columns.docStatus.visible"><template #default="scope"><span class="badge" :class="docStatusBadgeClass(scope.row.docStatus)"><span class="dot"></span>{{ docStatusLabel(scope.row.docStatus) }}</span></template></el-table-column>
           <el-table-column label="生效日期" prop="publishDate" key="publishDate" :width="colWidth('publishDate', 120)" resizable align="center" v-if="columns.publishDate.visible"><template #default="scope"><span>{{ parseTime(scope.row.publishDate, '{y}-{m}-{d}') }}</span></template></el-table-column>
-          <el-table-column label="操作" width="200" align="center">
+          <el-table-column label="操作" width="260" align="center">
             <template #default="scope">
               <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
               <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['qms:doc:edit']">修改</el-button>
               <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['qms:doc:remove']">删除</el-button>
+              <el-button link type="warning" icon="CircleClose" @click="handleObsolete(scope.row)" v-if="scope.row.docStatus != '3'" v-hasPermi="['qms:doc:edit']">作废</el-button>
             </template>
           </el-table-column>
         </el-table>
@@ -172,10 +173,10 @@
               </el-row>
             </div>
           </section>
-          <!-- 归属与状态 -->
+          <!-- 归属信息 -->
           <section class="rd-card">
             <div class="rd-card-header" @click="toggleCard('c1')">
-              <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/></svg></span>归属与状态</div>
+              <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/></svg></span>归属信息</div>
               <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
             </div>
             <div class="rd-card-body" v-show="!collapsedCards.c1">
@@ -188,9 +189,6 @@
                     </el-input>
                   </el-form-item>
                 </el-col>
-                <el-col :span="12"><el-form-item label="状态"><el-select v-model="form.docStatus" style="width: 100%"><el-option v-for="d in statusOptions" :key="d.value" :label="d.label" :value="d.value" /></el-select></el-form-item></el-col>
-              </el-row>
-              <el-row :gutter="20">
                 <el-col :span="12"><el-form-item label="生效日期"><el-date-picker v-model="form.publishDate" type="date" value-format="YYYY-MM-DD" style="width: 100%" /></el-form-item></el-col>
               </el-row>
             </div>
@@ -231,7 +229,7 @@
 </template>
 
 <script setup name="QmsDoc">
-import { listDoc, getDoc, addDoc, updateDoc, delDoc } from '@/api/qms/doc'
+import { listDoc, getDoc, addDoc, updateDoc, delDoc, obsoleteDoc } from '@/api/qms/doc'
 import DeptPicker from '@/components/DeptPicker/index.vue'
 import FilePreview from '@/components/FilePreview/index.vue'
 import { downloadFile } from '@/utils/downloadFile'
@@ -296,6 +294,9 @@ function handleDelete(row) {
   const ids = row?.docId ? [row.docId] : selectedIds.value
   proxy.$modal.confirm('确认删除？').then(() => delDoc(ids.join(','))).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {})
 }
+function handleObsolete(row) {
+  proxy.$modal.confirm('确认作废该文档？作废后文档将标记为作废状态。').then(() => obsoleteDoc(row.docId)).then(() => { getList(); proxy.$modal.msgSuccess('作废成功') }).catch(() => {})
+}
 function handleExport() { proxy.download('qms/doc/export', { ...proxy.addDateRange(queryParams.value, dateRange.value) }, `doc_${new Date().getTime()}.xlsx`) }
 /** 打开部门选择弹窗 */
 function openDeptPicker() { proxy.$refs.deptPickerRef.open(form.value.deptId) }
@@ -307,7 +308,7 @@ function reset() { form.value = { docId: null, docNo: undefined, docTitle: undef
 function cancel() { open.value = false; reset() }
 function docCategoryLabel(val) { const item = categoryOptions.value.find(d => d.value == val); return item ? item.label : '-' }
 function docStatusLabel(val) { const item = statusOptions.value.find(d => d.value == val); return item ? item.label : '-' }
-function docStatusBadgeClass(val) { if (val == '0') return 'gray'; if (val == '1') return 'green'; if (val == '2') return 'orange'; if (val == '3') return 'red'; return 'gray' }
+function docStatusBadgeClass(val) { if (val == '0') return 'gray'; if (val == '2') return 'green'; if (val == '3') return 'red'; return 'gray' }
 /** 文件预览 */
 function handleFilePreview(url) {
   const name = url.includes('/') ? url.substring(url.lastIndexOf('/') + 1) : url

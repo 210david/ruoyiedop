@@ -282,9 +282,8 @@ INSERT INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, is_defa
 INSERT INTO sys_dict_type (dict_name, dict_type, status, create_by, create_time, remark) VALUES ('质量文档状态', 'qms_doc_status', '0', 'admin', sysdate(), '质量文档状态');
 INSERT INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, is_default, status, create_by, create_time) VALUES
 (1, '草稿', '0', 'qms_doc_status', 'Y', '0', 'admin', sysdate()),
-(2, '审批中', '1', 'qms_doc_status', 'N', '0', 'admin', sysdate()),
-(3, '生效', '2', 'qms_doc_status', 'N', '0', 'admin', sysdate()),
-(4, '作废', '3', 'qms_doc_status', 'N', '0', 'admin', sysdate());
+(2, '生效', '2', 'qms_doc_status', 'N', '0', 'admin', sysdate()),
+(3, '作废', '3', 'qms_doc_status', 'N', '0', 'admin', sysdate());
 
 -- 内审状态
 INSERT INTO sys_dict_type (dict_name, dict_type, status, create_by, create_time, remark) VALUES ('内审计划状态', 'qms_audit_plan_status', '0', 'admin', sysdate(), '内审计划状态');

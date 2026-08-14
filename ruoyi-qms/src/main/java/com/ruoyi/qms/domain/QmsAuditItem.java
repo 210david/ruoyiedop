@@ -16,7 +16,7 @@ public class QmsAuditItem extends BaseEntity {
     private String correctiveAction;
     private Long capaId;
     private String verifyResult;
-    @Excel(name = "状态") private String itemStatus;
+    @Excel(name = "状态", dictType = "qms_audit_item_status") private String itemStatus;
     private String delFlag;
     private String status;
 
