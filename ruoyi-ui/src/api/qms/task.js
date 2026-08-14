@@ -53,6 +53,14 @@ export function saveInspectResult(data) {
   })
 }
 
+export function saveInspectDraft(data) {
+  return request({
+    url: '/qms/task/saveDraft',
+    method: 'put',
+    data: data
+  })
+}
+
 export function createRecheckTask(taskId) {
   return request({
     url: '/qms/task/recheck/' + taskId,

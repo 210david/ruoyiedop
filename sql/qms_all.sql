@@ -114,6 +114,7 @@ CREATE TABLE qms_insp_task (
     inspect_qty     DECIMAL(18,4)                         COMMENT '送检数量',
     aql_level       VARCHAR(10)                           COMMENT 'AQL等级',
     inspect_level   VARCHAR(10)  DEFAULT '1'              COMMENT '检验严格度（1正常 2加严 3放宽）',
+    inspect_method  VARCHAR(10)  DEFAULT 'II'             COMMENT '检验水平（S-1/S-2/S-3/S-4/I/II/III）',
     sample_size     INT                                   COMMENT '样本量(n)',
     ac_val          INT                                   COMMENT '接收数(Ac)',
     re_val          INT                                   COMMENT '拒收数(Re)',
@@ -233,6 +234,10 @@ CREATE TABLE qms_ncr_approve_log (
 -- 为NCR表增加工作流字段
 ALTER TABLE qms_ncr ADD COLUMN current_node INT DEFAULT 0 COMMENT '当前审批节点（0=未提交）' AFTER ncr_status;
 ALTER TABLE qms_ncr ADD COLUMN max_node INT DEFAULT 0 COMMENT '最大审批节点数' AFTER current_node;
+
+-- 为NCR表增加处置字段
+ALTER TABLE qms_ncr ADD COLUMN dispose_qty DECIMAL(18,4) COMMENT '处置数量' AFTER close_time;
+ALTER TABLE qms_ncr ADD COLUMN dispose_remark VARCHAR(500) COMMENT '处置说明' AFTER dispose_qty;
 
 
 -- =============================================

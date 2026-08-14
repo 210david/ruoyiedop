@@ -17,6 +17,7 @@
         <result property="inspectQty"     column="inspect_qty"/>
         <result property="aqlLevel"       column="aql_level"/>
         <result property="inspectLevel"   column="inspect_level"/>
+        <result property="inspectMethod"  column="inspect_method"/>
         <result property="sampleSize"     column="sample_size"/>
         <result property="acVal"          column="ac_val"/>
         <result property="reVal"          column="re_val"/>
@@ -29,6 +30,7 @@
         <result property="judgeTime"      column="judge_time"/>
         <result property="gaugeId"        column="gauge_id"/>
         <result property="gaugeName"      column="gauge_name"/>
+        <result property="gaugeNo"        column="gauge_no"/>
         <result property="isRecheck"      column="is_recheck"/>
         <result property="originTaskId"   column="origin_task_id"/>
         <result property="status"         column="status"/>
@@ -42,9 +44,9 @@
 
     <sql id="selectInspTaskVo">
         SELECT task_id, task_no, task_type, source_type, source_no, material_id, material_code, material_name,
-               supplier_id, supplier_name, batch_no, inspect_qty, aql_level, inspect_level, sample_size,
+               supplier_id, supplier_name, batch_no, inspect_qty, aql_level, inspect_level, inspect_method, sample_size,
                ac_val, re_val, task_status, inspect_result, defect_level, inspector_id, inspector_name,
-               inspect_time, judge_time, gauge_id, gauge_name, is_recheck, origin_task_id,
+               inspect_time, judge_time, gauge_id, gauge_name, gauge_no, is_recheck, origin_task_id,
                status, del_flag, create_by, create_time, update_by, update_time, remark
         FROM qms_insp_task
     </sql>
@@ -80,15 +82,15 @@
     <insert id="insertInspTask" parameterType="QmsInspTask" useGeneratedKeys="true" keyProperty="taskId">
         INSERT INTO qms_insp_task (
             task_no, task_type, source_type, source_no, material_id, material_code, material_name,
-            supplier_id, supplier_name, batch_no, inspect_qty, aql_level, inspect_level, sample_size,
+            supplier_id, supplier_name, batch_no, inspect_qty, aql_level, inspect_level, inspect_method, sample_size,
             ac_val, re_val, task_status, inspect_result, defect_level, inspector_id, inspector_name,
-            inspect_time, judge_time, gauge_id, gauge_name, is_recheck, origin_task_id,
+            inspect_time, judge_time, gauge_id, gauge_name, gauge_no, is_recheck, origin_task_id,
             status, del_flag, create_by, create_time, remark
         ) VALUES (
             #{taskNo}, #{taskType}, #{sourceType}, #{sourceNo}, #{materialId}, #{materialCode}, #{materialName},
-            #{supplierId}, #{supplierName}, #{batchNo}, #{inspectQty}, #{aqlLevel}, #{inspectLevel}, #{sampleSize},
+            #{supplierId}, #{supplierName}, #{batchNo}, #{inspectQty}, #{aqlLevel}, #{inspectLevel}, #{inspectMethod}, #{sampleSize},
             #{acVal}, #{reVal}, #{taskStatus}, #{inspectResult}, #{defectLevel}, #{inspectorId}, #{inspectorName},
-            #{inspectTime}, #{judgeTime}, #{gaugeId}, #{gaugeName}, #{isRecheck}, #{originTaskId},
+            #{inspectTime}, #{judgeTime}, #{gaugeId}, #{gaugeName}, #{gaugeNo}, #{isRecheck}, #{originTaskId},
             #{status}, #{delFlag}, #{createBy}, sysdate(), #{remark}
         )
     </insert>
@@ -109,6 +111,7 @@
             <if test="inspectQty != null">inspect_qty = #{inspectQty},</if>
             <if test="aqlLevel != null">aql_level = #{aqlLevel},</if>
             <if test="inspectLevel != null">inspect_level = #{inspectLevel},</if>
+            <if test="inspectMethod != null">inspect_method = #{inspectMethod},</if>
             <if test="sampleSize != null">sample_size = #{sampleSize},</if>
             <if test="acVal != null">ac_val = #{acVal},</if>
             <if test="reVal != null">re_val = #{reVal},</if>
@@ -121,6 +124,7 @@
             <if test="judgeTime != null">judge_time = #{judgeTime},</if>
             <if test="gaugeId != null">gauge_id = #{gaugeId},</if>
             <if test="gaugeName != null">gauge_name = #{gaugeName},</if>
+            <if test="gaugeNo != null">gauge_no = #{gaugeNo},</if>
             <if test="isRecheck != null">is_recheck = #{isRecheck},</if>
             <if test="originTaskId != null">origin_task_id = #{originTaskId},</if>
             <if test="status != null and status != ''">status = #{status},</if>

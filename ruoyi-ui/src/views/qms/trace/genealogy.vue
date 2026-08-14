@@ -81,8 +81,8 @@
       </el-table-column>
       <el-table-column label="工序" prop="opName" min-width="80" />
       <el-table-column label="供应商" prop="supplierName" min-width="120" />
-      <el-table-column label="投入量" prop="qtyIn" min-width="80" align="right" />
-      <el-table-column label="产出量" prop="qtyOut" min-width="80" align="right" />
+      <el-table-column label="投入量" prop="qtyIn" min-width="80" align="center" />
+      <el-table-column label="产出量" prop="qtyOut" min-width="80" align="center" />
       <el-table-column label="来源" min-width="80">
         <template #default="scope"><dict-tag :options="qms_genealogy_source" :value="scope.row.sourceType" /></template>
       </el-table-column>

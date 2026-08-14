@@ -89,8 +89,8 @@
       <el-form ref="defectRef" :model="form" :rules="rules" label-width="100px">
         <div class="rd-page">
           <section class="rd-card">
-            <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>基本信息</div></div>
-            <div class="rd-card-body">
+            <div class="rd-card-header" @click="toggleCard('e_basic')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>基本信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.e_basic }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+            <div class="rd-card-body" v-show="!collapsedCards.e_basic">
               <el-row :gutter="20">
                 <el-col :span="12"><el-form-item label="缺陷代码" prop="defectCode"><el-input v-model="form.defectCode" placeholder="请输入缺陷代码" /></el-form-item></el-col>
                 <el-col :span="12"><el-form-item label="缺陷名称" prop="defectName"><el-input v-model="form.defectName" placeholder="请输入缺陷名称" /></el-form-item></el-col>
@@ -98,8 +98,8 @@
             </div>
           </section>
           <section class="rd-card">
-            <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></span>分类与等级</div></div>
-            <div class="rd-card-body">
+            <div class="rd-card-header" @click="toggleCard('e_level')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></span>分类与等级</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.e_level }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+            <div class="rd-card-body" v-show="!collapsedCards.e_level">
               <el-row :gutter="20">
                 <el-col :span="12"><el-form-item label="缺陷等级" prop="defectLevel"><el-select v-model="form.defectLevel" style="width: 100%"><el-option v-for="d in qms_defect_level" :key="d.value" :label="d.label" :value="d.value" /></el-select></el-form-item></el-col>
                 <el-col :span="12"><el-form-item label="缺陷分类" prop="defectCategory"><el-select v-model="form.defectCategory" clearable placeholder="请选择缺陷分类" style="width: 100%"><el-option v-for="d in qms_defect_category" :key="d.value" :label="d.label" :value="d.value" /></el-select></el-form-item></el-col>
@@ -108,8 +108,8 @@
             </div>
           </section>
           <section class="rd-card">
-            <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>其他信息</div></div>
-            <div class="rd-card-body">
+            <div class="rd-card-header" @click="toggleCard('e_other')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>其他信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.e_other }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+            <div class="rd-card-body" v-show="!collapsedCards.e_other">
               <el-form-item label="备注" prop="remark"><el-input v-model="form.remark" type="textarea" :rows="3" placeholder="请输入备注" /></el-form-item>
             </div>
           </section>
@@ -128,23 +128,23 @@
       </template>
       <div class="rd-page">
         <section class="rd-card">
-          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>基本信息</div></div>
-          <div class="rd-card-body" style="display:block"><div class="rd-grid">
+          <div class="rd-card-header" @click="toggleCard('v_basic')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>基本信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v_basic }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.v_basic" style="display:block"><div class="rd-grid">
             <div class="rd-item"><span class="rd-label">缺陷代码</span><div class="rd-value">{{ viewData.defectCode || '-' }}</div></div>
             <div class="rd-item"><span class="rd-label">缺陷名称</span><div class="rd-value">{{ viewData.defectName || '-' }}</div></div>
           </div></div>
         </section>
         <section class="rd-card">
-          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></span>分类与等级</div></div>
-          <div class="rd-card-body" style="display:block"><div class="rd-grid">
+          <div class="rd-card-header" @click="toggleCard('v_level')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></span>分类与等级</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v_level }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.v_level" style="display:block"><div class="rd-grid">
             <div class="rd-item"><span class="rd-label">缺陷等级</span><div class="rd-value"><span class="badge" :class="defectBadgeClass(viewData.defectLevel)"><span class="dot"></span>{{ defectLevelLabel(viewData.defectLevel) }}</span></div></div>
             <div class="rd-item"><span class="rd-label">缺陷分类</span><div class="rd-value"><dict-tag :options="qms_defect_category" :value="viewData.defectCategory" /></div></div>
             <div class="rd-item"><span class="rd-label">状态</span><div class="rd-value"><span class="badge" :class="viewData.status === '0' ? 'green' : 'gray'"><span class="dot"></span>{{ viewData.status === '0' ? '正常' : '停用' }}</span></div></div>
           </div></div>
         </section>
         <section class="rd-card" v-if="viewData.remark">
-          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>备注</div></div>
-          <div class="rd-card-body" style="display:block"><div class="rd-grid"><div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value">{{ viewData.remark || '-' }}</div></div></div></div>
+          <div class="rd-card-header" @click="toggleCard('v_remark')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>备注</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v_remark }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.v_remark" style="display:block"><div class="rd-grid"><div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value">{{ viewData.remark || '-' }}</div></div></div></div>
         </section>
       </div>
     </el-dialog>
@@ -154,9 +154,11 @@
 <script setup name="QmsDefect">
 import { listDefect, getDefect, addDefect, updateDefect, delDefect } from '@/api/qms/defect'
 import { useColumnResize } from '@/composables/useColumnResize'
+import { useDetailCard } from '@/composables/useDetailCard'
 
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('qms_defect_index')
+const { collapsedCards, toggleCard } = useDetailCard(['e_basic', 'e_level', 'e_other', 'v_basic', 'v_level', 'v_remark'])
 const { qms_defect_level, qms_defect_category } = proxy.useDict('qms_defect_level', 'qms_defect_category')
 
 const list = ref([])

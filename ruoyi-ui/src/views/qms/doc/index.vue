@@ -111,8 +111,8 @@
       </template>
       <div class="rd-page" v-if="viewData">
         <section class="rd-card">
-          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="6" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>基本信息</div></div>
-          <div class="rd-card-body" style="display:block"><div class="rd-grid">
+          <div class="rd-card-header" @click="toggleCard('v_basic')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="6" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>基本信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v_basic }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.v_basic" style="display:block"><div class="rd-grid">
             <div class="rd-item"><span class="rd-label">文档编号</span><div class="rd-value">{{ viewData.docNo || '-' }}</div></div>
             <div class="rd-item"><span class="rd-label">文档标题</span><div class="rd-value">{{ viewData.docTitle || '-' }}</div></div>
             <div class="rd-item"><span class="rd-label">分类</span><div class="rd-value">{{ docCategoryLabel(viewData.docCategory) }}</div></div>
@@ -123,8 +123,8 @@
           </div></div>
         </section>
         <section class="rd-card" v-if="viewData.fileUrl">
-          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></span>文件附件</div></div>
-          <div class="rd-card-body" style="display:block"><div class="rd-grid"><div class="rd-item rd-item--full"><span class="rd-label">附件</span><div class="rd-value"><div class="rd-file-links" v-if="viewData.fileUrl">
+          <div class="rd-card-header" @click="toggleCard('v_file')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></span>文件附件</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v_file }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.v_file" style="display:block"><div class="rd-grid"><div class="rd-item rd-item--full"><span class="rd-label">附件</span><div class="rd-value"><div class="rd-file-links" v-if="viewData.fileUrl">
             <div class="rd-file-item" v-for="(url, idx) in String(viewData.fileUrl).split(',')" :key="idx">
               <div class="rd-file-link" @click="handleFilePreview(url)">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
@@ -138,8 +138,8 @@
           </div></div></div></div></div>
         </section>
         <section class="rd-card" v-if="viewData.remark">
-          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>其他信息</div></div>
-          <div class="rd-card-body" style="display:block"><div class="rd-grid"><div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value">{{ viewData.remark || '-' }}</div></div></div></div>
+          <div class="rd-card-header" @click="toggleCard('v_other')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>其他信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v_other }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.v_other" style="display:block"><div class="rd-grid"><div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value">{{ viewData.remark || '-' }}</div></div></div></div>
         </section>
       </div>
       <template #footer><el-button @click="viewOpen = false">关 闭</el-button></template>
@@ -240,7 +240,7 @@ import { useDetailCard } from '@/composables/useDetailCard'
 import { CircleClose } from '@element-plus/icons-vue'
 const baseUrl = import.meta.env.VITE_APP_BASE_API
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('qms_doc_index')
-const { collapsedCards, toggleCard } = useDetailCard(["c0","c1","c2","c3"])
+const { collapsedCards, toggleCard } = useDetailCard(["c0","c1","c2","c3","v_basic","v_file","v_other"])
 const { proxy } = getCurrentInstance()
 const { qms_doc_category: categoryOptions, qms_doc_status: statusOptions } = proxy.useDict('qms_doc_category', 'qms_doc_status')
 
@@ -387,4 +387,52 @@ getList()
 .qms-doc-page .field .control :deep(.el-date-editor .el-range__icon) { color:var(--ink-400); }
 @media (max-width:1100px) { .qms-doc-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }
 @media (max-width:720px) { .qms-doc-page .filter-card .filter-bar { grid-template-columns:1fr; } .qms-doc-page .toolbar { flex-wrap:wrap; gap:10px; } }
+
+/* ===== Dialog Detail Page Styles ===== */
+:deep(.rd-dialog .el-dialog__header) { padding: 0; margin: 0; border: none; }
+:deep(.rd-dialog .el-dialog__headerbtn) { top: 14px; right: 14px; z-index: 10; }
+:deep(.rd-dialog .el-dialog__headerbtn .el-dialog__close) { color: #fff; font-size: 20px; }
+:deep(.rd-dialog .el-dialog__body) { padding: 12px 16px 16px; background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); }
+:deep(.rd-dialog .rd-page) { max-width: 100% !important; }
+
+.rd-detail-header { display: flex; align-items: center; gap: 12px; padding: 12px 20px; background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 60%, #3b82f6 100%); border-radius: 12px 12px 0 0; position: relative; overflow: hidden; }
+.rd-detail-header::before { content: ''; position: absolute; top: -30px; right: -15px; width: 140px; height: 140px; border-radius: 50%; background: radial-gradient(circle, rgb(255 255 255 / 0.15) 0%, transparent 70%); pointer-events: none; }
+.rd-detail-header-icon { display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 10px; background: rgb(255 255 255 / 0.2); border: 1px solid rgb(255 255 255 / 0.25); color: #fff; flex-shrink: 0; backdrop-filter: blur(4px); box-shadow: 0 4px 12px rgb(0 0 0 / 0.1); }
+.rd-detail-header-title { font-size: 18px; font-weight: 700; color: #fff; letter-spacing: -0.02em; line-height: 1.3; }
+
+.rd-page { max-width: 100%; margin: 0 auto; }
+.rd-card { background: #fff; border-radius: 12px; border: 1px solid #e5e7eb; box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); overflow: hidden; margin-bottom: 8px; transition: box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1); animation: rdFadeIn 0.4s ease-out forwards; }
+.rd-card:hover { box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); }
+.rd-card:last-child { margin-bottom: 0; }
+.rd-card-header { display: flex; align-items: center; justify-content: space-between; padding: 8px 16px; background: linear-gradient(to right, #f9fafb, #fff); border-bottom: 1px solid #f3f4f6; cursor: pointer; user-select: none; }
+.rd-card-title { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 700; color: #111827; }
+.rd-card-icon { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 8px; background: #fff; border: 1px solid #e5e7eb; color: #2563eb; box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); }
+.rd-card-header .rd-collapse-btn { display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; border: none; background: transparent; border-radius: 6px; color: #9ca3af; cursor: pointer; transition: all 0.15s ease; flex-shrink: 0; }
+.rd-card-header .rd-collapse-btn:hover { background: #f3f4f6; color: #4b5563; }
+.rd-card-header .rd-collapse-btn svg { transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
+.rd-card-header .rd-collapse-btn.is-collapsed svg { transform: rotate(-90deg); }
+.rd-card-body { padding: 14px 16px; }
+.rd-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px 24px; }
+.rd-item { display: flex; align-items: center; gap: 12px; }
+.rd-item--full { grid-column: 1 / -1; }
+.rd-label { flex: 0 0 auto; min-width: 72px; display: flex; align-items: center; font-size: 14px; font-weight: 500; color: #6b7280; white-space: nowrap; }
+.rd-value { flex: 1 1 auto; font-size: 14px; font-weight: 500; color: #111827; line-height: 1.5; padding-left: 12px; border-left: 1px solid #e5e7eb; min-width: 0; }
+.rd-form-tip { margin-left: 4px; color: #c0c4cc; font-size: 14px; cursor: help; }
+.rd-form-tip:hover { color: #909399; }
+.rd-file-links { display: flex; flex-direction: column; gap: 8px; }
+.rd-file-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 12px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; }
+.rd-file-link { display: flex; align-items: center; gap: 8px; cursor: pointer; color: #2563eb; }
+.rd-file-link:hover { text-decoration: underline; }
+.rd-file-name { font-size: 14px; }
+.rd-file-dl { display: flex; align-items: center; gap: 4px; font-size: 13px; color: #6b7280; cursor: pointer; }
+.rd-file-dl:hover { color: #2563eb; }
+
+@keyframes rdFadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.rd-card:nth-child(2) { animation-delay: 0.06s; }
+.rd-card:nth-child(3) { animation-delay: 0.12s; }
+.rd-card:nth-child(4) { animation-delay: 0.18s; }
+.rd-card:nth-child(5) { animation-delay: 0.24s; }
+.rd-card:nth-child(6) { animation-delay: 0.30s; }
+
+@media (max-width:768px) { .rd-grid { grid-template-columns: 1fr; } }
 </style>

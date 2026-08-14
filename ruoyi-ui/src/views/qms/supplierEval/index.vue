@@ -135,16 +135,16 @@
       </template>
       <div class="rd-page" v-if="viewData">
         <section class="rd-card">
-          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="6" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>基本信息</div></div>
-          <div class="rd-card-body" style="display:block"><div class="rd-grid">
+          <div class="rd-card-header" @click="toggleCard('v_basic')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="6" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>基本信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v_basic }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.v_basic" style="display:block"><div class="rd-grid">
             <div class="rd-item"><span class="rd-label">供应商名称</span><div class="rd-value">{{ viewData.supplierName || '-' }}</div></div>
             <div class="rd-item"><span class="rd-label">评价周期</span><div class="rd-value">{{ viewData.evalPeriod || '-' }}</div></div>
             <div class="rd-item"><span class="rd-label">评价类型</span><div class="rd-value">{{ viewData.evalType === 'monthly' ? '月度' : viewData.evalType === 'quarterly' ? '季度' : '-' }}</div></div>
           </div></div>
         </section>
         <section class="rd-card">
-          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg></span>来料批次统计</div></div>
-          <div class="rd-card-body" style="display:block"><div class="rd-grid">
+          <div class="rd-card-header" @click="toggleCard('v_batch')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg></span>来料批次统计</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v_batch }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.v_batch" style="display:block"><div class="rd-grid">
             <div class="rd-item"><span class="rd-label">来料批次<el-tooltip content="IQC（来料质量控制）检验的物料批次总数" placement="top"><el-icon class="rd-label-tip"><QuestionFilled /></el-icon></el-tooltip></span><div class="rd-value">{{ viewData.incomingTotal != null ? viewData.incomingTotal : '-' }}</div></div>
             <div class="rd-item"><span class="rd-label">合格批次<el-tooltip content="IQC检验结果为「合格」的来料批次数" placement="top"><el-icon class="rd-label-tip"><QuestionFilled /></el-icon></el-tooltip></span><div class="rd-value">{{ viewData.incomingPass != null ? viewData.incomingPass : '-' }}</div></div>
             <div class="rd-item"><span class="rd-label">合格率(%)<el-tooltip content="合格率 = 合格批次 ÷ 来料批次 × 100%" placement="top"><el-icon class="rd-label-tip"><QuestionFilled /></el-icon></el-tooltip></span><div class="rd-value">{{ viewData.passRate != null ? viewData.passRate + '%' : '-' }}</div></div>
@@ -152,8 +152,8 @@
           </div></div>
         </section>
         <section class="rd-card">
-          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span>评分信息</div></div>
-          <div class="rd-card-body" style="display:block"><div class="rd-grid">
+          <div class="rd-card-header" @click="toggleCard('v_score')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span>评分信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v_score }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.v_score" style="display:block"><div class="rd-grid">
             <div class="rd-item"><span class="rd-label">质量分<el-tooltip content="依据来料合格率、PPM值及缺陷严重程度综合评定的质量维度评分(0-100)" placement="top"><el-icon class="rd-label-tip"><QuestionFilled /></el-icon></el-tooltip></span><div class="rd-value">{{ viewData.qualityScore != null ? viewData.qualityScore : '-' }}</div></div>
             <div class="rd-item"><span class="rd-label">交期分<el-tooltip content="依据供应商按时交货率评定的交期维度评分(0-100)" placement="top"><el-icon class="rd-label-tip"><QuestionFilled /></el-icon></el-tooltip></span><div class="rd-value">{{ viewData.deliveryScore != null ? viewData.deliveryScore : '-' }}</div></div>
             <div class="rd-item"><span class="rd-label">服务分<el-tooltip content="依据供应商响应速度、配合度及售后服务质量评定的服务维度评分(0-100)" placement="top"><el-icon class="rd-label-tip"><QuestionFilled /></el-icon></el-tooltip></span><div class="rd-value">{{ viewData.serviceScore != null ? viewData.serviceScore : '-' }}</div></div>
@@ -162,8 +162,8 @@
           </div></div>
         </section>
         <section class="rd-card" v-if="viewData.remark">
-          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>其他信息</div></div>
-          <div class="rd-card-body" style="display:block"><div class="rd-grid"><div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value">{{ viewData.remark || '-' }}</div></div></div></div>
+          <div class="rd-card-header" @click="toggleCard('v_other')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>其他信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v_other }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.v_other" style="display:block"><div class="rd-grid"><div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value">{{ viewData.remark || '-' }}</div></div></div></div>
         </section>
       </div>
       <template #footer><el-button @click="viewOpen = false">关 闭</el-button></template>
@@ -180,8 +180,8 @@
       <el-form ref="evalRef" :model="form" :rules="rules" label-width="110px">
         <div class="rd-page">
           <section class="rd-card">
-            <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="6" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>基本信息</div></div>
-            <div class="rd-card-body">
+            <div class="rd-card-header" @click="toggleCard('e_basic')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="6" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>基本信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.e_basic }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+            <div class="rd-card-body" v-show="!collapsedCards.e_basic">
               <el-row :gutter="24">
                 <el-col :span="12"><el-form-item label="供应商" prop="supplierId"><el-select v-model="form.supplierId" filterable clearable placeholder="请选择供应商" style="width: 100%" @change="onSupplierChange"><el-option v-for="s in supplierOptions" :key="s.supplierId" :label="s.supplierName" :value="s.supplierId" /></el-select></el-form-item></el-col>
                 <el-col :span="12"><el-form-item prop="evalPeriod"><template #label><span>评价周期</span><el-tooltip content="选择需要评价的月份，系统将根据该周期自动统计IQC来料检验数据" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></template><el-date-picker v-model="form.evalPeriod" type="month" placeholder="请选择评价周期" value-format="YYYY-MM" style="width: 100%" @change="fetchBatchStats" /></el-form-item></el-col>
@@ -192,11 +192,11 @@
             </div>
           </section>
           <section class="rd-card">
-            <div class="rd-card-header">
+            <div class="rd-card-header" @click="toggleCard('e_batch')">
               <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg></span>来料批次统计</div>
-              <el-button type="primary" link icon="Refresh" :loading="batchLoading" @click="fetchBatchStats" :disabled="!form.supplierId || !form.evalPeriod">刷新统计</el-button>
+              <div class="rd-card-header-actions"><el-button type="primary" link icon="Refresh" :loading="batchLoading" @click.stop="fetchBatchStats" :disabled="!form.supplierId || !form.evalPeriod">刷新统计</el-button><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.e_batch }" aria-label="折叠" @click.stop><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
             </div>
-            <div class="rd-card-body">
+            <div class="rd-card-body" v-show="!collapsedCards.e_batch">
               <el-alert type="info" :closable="false" show-icon style="margin-bottom: 16px">
                 <template #title>来料批次和合格批次由系统自动从IQC（Incoming Quality Control，来料质量控制）检验记录中统计，无需手工输入。选择供应商和评价周期后点击"刷新统计"即可自动获取。</template>
               </el-alert>
@@ -211,8 +211,8 @@
             </div>
           </section>
           <section class="rd-card">
-            <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span>评分信息</div></div>
-            <div class="rd-card-body">
+            <div class="rd-card-header" @click="toggleCard('e_score')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span>评分信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.e_score }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+            <div class="rd-card-body" v-show="!collapsedCards.e_score">
               <el-alert type="warning" :closable="false" show-icon style="margin-bottom: 16px">
                 <template #title>评分填写说明</template>
                 <template #default>
@@ -237,8 +237,8 @@
             </div>
           </section>
           <section class="rd-card">
-            <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>其他信息</div></div>
-            <div class="rd-card-body">
+            <div class="rd-card-header" @click="toggleCard('e_other')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>其他信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.e_other }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+            <div class="rd-card-body" v-show="!collapsedCards.e_other">
               <el-form-item label="备注"><el-input v-model="form.remark" type="textarea" :rows="2" placeholder="请输入" /></el-form-item>
             </div>
           </section>
@@ -338,7 +338,9 @@
 import { listSupplierEval, getSupplierEval, addSupplierEval, updateSupplierEval, delSupplierEval, getBatchStats } from '@/api/qms/supplierEval'
 import { listSupplier } from '@/api/wms/supplier'
 import { useColumnResize } from '@/composables/useColumnResize'
+import { useDetailCard } from '@/composables/useDetailCard'
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('qms_supplierEval_index')
+const { collapsedCards, toggleCard } = useDetailCard(['v_basic', 'v_batch', 'v_score', 'v_other', 'e_basic', 'e_batch', 'e_score', 'e_other'])
 const { proxy } = getCurrentInstance()
 const { qms_supplier_grade: gradeOptions } = proxy.useDict('qms_supplier_grade')
 
@@ -521,6 +523,50 @@ getList()
 .qms-seval-page .status-tabs .tabs-track { display:flex; align-items:center; gap:8px; }
 .qms-seval-page .status-tabs .tip-pill { display:inline-flex; align-items:center; gap:6px; height:30px; padding:0 12px; font-size:14px; font-weight:500; border-radius:var(--r-sm); border:1px solid #fde68a; background:#fffbeb; color:#b45309; cursor:pointer; transition:all .15s var(--ease-out); white-space:nowrap; }
 .qms-seval-page .status-tabs .tip-pill:hover { background:#fef3c7; border-color:#f59e0b; }
+
+/* ===== Dialog Detail Page Styles ===== */
+:deep(.rd-dialog .el-dialog__header) { padding: 0; margin: 0; border: none; }
+:deep(.rd-dialog .el-dialog__headerbtn) { top: 14px; right: 14px; z-index: 10; }
+:deep(.rd-dialog .el-dialog__headerbtn .el-dialog__close) { color: #fff; font-size: 20px; }
+:deep(.rd-dialog .el-dialog__body) { padding: 12px 16px 16px; background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); }
+:deep(.rd-dialog .rd-page) { max-width: 100% !important; }
+
+.rd-detail-header { display: flex; align-items: center; gap: 12px; padding: 12px 20px; background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 60%, #3b82f6 100%); border-radius: 12px 12px 0 0; position: relative; overflow: hidden; }
+.rd-detail-header::before { content: ''; position: absolute; top: -30px; right: -15px; width: 140px; height: 140px; border-radius: 50%; background: radial-gradient(circle, rgb(255 255 255 / 0.15) 0%, transparent 70%); pointer-events: none; }
+.rd-detail-header-icon { display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 10px; background: rgb(255 255 255 / 0.2); border: 1px solid rgb(255 255 255 / 0.25); color: #fff; flex-shrink: 0; backdrop-filter: blur(4px); box-shadow: 0 4px 12px rgb(0 0 0 / 0.1); }
+.rd-detail-header-title { font-size: 18px; font-weight: 700; color: #fff; letter-spacing: -0.02em; line-height: 1.3; }
+
+.rd-page { max-width: 100%; margin: 0 auto; }
+.rd-card { background: #fff; border-radius: 12px; border: 1px solid #e5e7eb; box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); overflow: hidden; margin-bottom: 8px; transition: box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1); animation: rdFadeIn 0.4s ease-out forwards; }
+.rd-card:hover { box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); }
+.rd-card:last-child { margin-bottom: 0; }
+.rd-card-header { display: flex; align-items: center; justify-content: space-between; padding: 8px 16px; background: linear-gradient(to right, #f9fafb, #fff); border-bottom: 1px solid #f3f4f6; cursor: pointer; user-select: none; }
+.rd-card-title { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 700; color: #111827; }
+.rd-card-icon { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 8px; background: #fff; border: 1px solid #e5e7eb; color: #2563eb; box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); }
+.rd-card-header-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.rd-card-header .rd-collapse-btn { display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; border: none; background: transparent; border-radius: 6px; color: #9ca3af; cursor: pointer; transition: all 0.15s ease; flex-shrink: 0; }
+.rd-card-header .rd-collapse-btn:hover { background: #f3f4f6; color: #4b5563; }
+.rd-card-header .rd-collapse-btn svg { transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
+.rd-card-header .rd-collapse-btn.is-collapsed svg { transform: rotate(-90deg); }
+.rd-card-body { padding: 14px 16px; }
+.rd-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px 24px; }
+.rd-item { display: flex; align-items: center; gap: 12px; }
+.rd-item--full { grid-column: 1 / -1; }
+.rd-label { flex: 0 0 auto; min-width: 72px; display: flex; align-items: center; font-size: 14px; font-weight: 500; color: #6b7280; white-space: nowrap; }
+.rd-value { flex: 1 1 auto; font-size: 14px; font-weight: 500; color: #111827; line-height: 1.5; padding-left: 12px; border-left: 1px solid #e5e7eb; min-width: 0; }
+.rd-form-tip { margin-left: 4px; color: #c0c4cc; font-size: 14px; cursor: help; }
+.rd-form-tip:hover { color: #909399; }
+.rd-label-tip { margin-left: 4px; font-size: 13px; color: #c0c4cc; cursor: help; vertical-align: middle; }
+
+@keyframes rdFadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.rd-card:nth-child(2) { animation-delay: 0.06s; }
+.rd-card:nth-child(3) { animation-delay: 0.12s; }
+.rd-card:nth-child(4) { animation-delay: 0.18s; }
+.rd-card:nth-child(5) { animation-delay: 0.24s; }
+.rd-card:nth-child(6) { animation-delay: 0.30s; }
+
+@media (max-width:768px) { .rd-grid { grid-template-columns: 1fr; } }
+
 /* ===== 业务操作说明对话框 ===== */
 .status-help-content { max-height: 500px; overflow-y: auto; padding-right: 10px; }
 .status-help-content h4 { margin: 20px 0 12px 0; color: #303133; font-weight: 600; border-left: 4px solid #409eff; padding-left: 10px; }

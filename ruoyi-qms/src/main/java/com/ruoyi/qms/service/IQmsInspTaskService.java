@@ -42,4 +42,7 @@ public interface IQmsInspTaskService
 
     /** 查询各状态任务数量（状态标签栏计数） */
     public Map<String, Integer> selectStatusCounts();
+
+    /** 临时保存检验明细（不触发判定，不改变任务状态） */
+    public int saveInspectDraft(QmsInspTask inspTask);
 }

@@ -9,37 +9,28 @@ const baseURL = import.meta.env.VITE_APP_BASE_API
 let downloadLoadingInstance
 
 /**
- * 通用文件下载方法（兼容 Chrome/Firefox/Edge/Safari）
- * 优先使用原生 <a download> 方式，失败时回退到 file-saver
- * @param {Blob} blob - 文件 Blob 对象
- * @param {string} filename - 下载文件名
- * @param {string} mimeType - MIME 类型
+ * 隐藏 iframe 方式下载 Blob（Chrome 兼容核心方法）
+ * Chrome 的用户手势安全策略会阻止异步回调中的 link.click() 和 file-saver 的 saveAs()，
+ * 导致"只有下载任务，没有实际文件下载"。
+ * 隐藏 iframe 方式通过设置 src 触发浏览器原生下载，不受用户手势限制。
  */
 function downloadBlob(blob, filename, mimeType = 'application/octet-stream') {
   const finalBlob = blob.type ? blob : new Blob([blob], { type: mimeType })
-  // 方式1：原生 <a download> + blob URL（Chrome 最兼容）
-  try {
-    const blobUrl = URL.createObjectURL(finalBlob)
-    const link = document.createElement('a')
-    link.href = blobUrl
-    link.download = filename
-    link.style.display = 'none'
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    // 延迟释放 blob URL，确保下载已触发
-    setTimeout(() => URL.revokeObjectURL(blobUrl), 200)
-    return
-  } catch (e) {
-    console.warn('原生下载失败，回退到 file-saver:', e)
-  }
-  // 方式2：回退到 file-saver
-  try {
-    saveAs(finalBlob, filename)
-  } catch (e) {
-    console.error('file-saver 下载也失败:', e)
-    ElMessage.error('文件下载失败，请尝试右键另存为')
-  }
+  const blobUrl = URL.createObjectURL(finalBlob)
+  const iframe = document.createElement('iframe')
+  iframe.style.display = 'none'
+  document.body.appendChild(iframe)
+  // 在 iframe 内部创建 <a> 标签触发下载，保留文件名
+  const doc = iframe.contentDocument || iframe.contentWindow.document
+  const link = doc.createElement('a')
+  link.href = blobUrl
+  link.download = filename
+  doc.body.appendChild(link)
+  link.click()
+  setTimeout(() => {
+    document.body.removeChild(iframe)
+    URL.revokeObjectURL(blobUrl)
+  }, 1000)
 }
 
 export default {
@@ -54,6 +45,7 @@ export default {
       method: 'get',
       url: url,
       responseType: 'blob',
+      timeout: 300000, // 下载超时设为 5 分钟
       headers: { 'Authorization': 'Bearer ' + getToken() }
     }).then((res) => {
       const isBlob = blobValidate(res.data)
@@ -81,6 +73,7 @@ export default {
       method: 'get',
       url: url,
       responseType: 'blob',
+      timeout: 300000, // 下载超时设为 5 分钟
       headers: { 'Authorization': 'Bearer ' + getToken() }
     }).then((res) => {
       const isBlob = blobValidate(res.data)
@@ -104,6 +97,7 @@ export default {
       method: 'get',
       url: url,
       responseType: 'blob',
+      timeout: 300000, // 下载超时设为 5 分钟
       headers: { 'Authorization': 'Bearer ' + getToken() }
     }).then((res) => {
       const isBlob = blobValidate(res.data)

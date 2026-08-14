@@ -129,8 +129,8 @@
       <el-form ref="gaugeRef" :model="form" :rules="rules" label-width="120px">
         <div class="rd-page">
           <section class="rd-card">
-            <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>基本信息</div></div>
-            <div class="rd-card-body">
+            <div class="rd-card-header" @click="toggleCard('e_basic')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>基本信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.e_basic }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+            <div class="rd-card-body" v-show="!collapsedCards.e_basic">
               <el-row :gutter="20">
                 <el-col :span="12"><el-form-item label="量检具编号" prop="gaugeNo"><el-input v-model="form.gaugeNo" placeholder="保存后自动生成" disabled /></el-form-item></el-col>
                 <el-col :span="12"><el-form-item label="量检具名称" prop="gaugeName"><el-input v-model="form.gaugeName" placeholder="请输入量检具名称" /></el-form-item></el-col>
@@ -164,8 +164,8 @@
             </div>
           </section>
           <section class="rd-card">
-            <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>校准信息</div><el-tooltip content="记录量检具的校准周期及历次校准日期，下次校准日期 = 上次校准日期 + 校准周期，到期前应及时送检" placement="top"><el-icon class="form-tip-icon"><QuestionFilled /></el-icon></el-tooltip></div>
-            <div class="rd-card-body">
+            <div class="rd-card-header" @click="toggleCard('e_calib')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>校准信息</div><el-tooltip content="记录量检具的校准周期及历次校准日期，下次校准日期 = 上次校准日期 + 校准周期，到期前应及时送检" placement="top"><el-icon class="form-tip-icon"><QuestionFilled /></el-icon></el-tooltip><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.e_calib }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+            <div class="rd-card-body" v-show="!collapsedCards.e_calib">
               <el-row :gutter="20">
                 <el-col :span="12"><el-form-item prop="lastCalibDate"><template #label><span>上次校准日期</span><el-tooltip content="最近一次校准的执行日期，校准合格后方可继续使用" placement="top"><el-icon class="form-tip-icon"><QuestionFilled /></el-icon></el-tooltip></template><el-date-picker v-model="form.lastCalibDate" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" style="width: 100%" /></el-form-item></el-col>
                 <el-col :span="12"><el-form-item prop="nextCalibDate"><template #label><span>下次校准日期</span><el-tooltip content="预计下次需要校准的日期，通常为上次校准日期加校准周期" placement="top"><el-icon class="form-tip-icon"><QuestionFilled /></el-icon></el-tooltip></template><el-date-picker v-model="form.nextCalibDate" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" style="width: 100%" /></el-form-item></el-col>
@@ -176,8 +176,8 @@
             </div>
           </section>
           <section class="rd-card">
-            <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>状态配置</div></div>
-            <div class="rd-card-body">
+            <div class="rd-card-header" @click="toggleCard('e_status')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>状态配置</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.e_status }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+            <div class="rd-card-body" v-show="!collapsedCards.e_status">
               <el-row :gutter="20">
                 <el-col :span="12"><el-form-item prop="gaugeStatus"><template #label><span>量检具状态</span><el-tooltip content="在用：正常使用中；停用：暂停使用；待校准：校准到期需送检" placement="top"><el-icon class="form-tip-icon"><QuestionFilled /></el-icon></el-tooltip></template><el-select v-model="form.gaugeStatus" style="width: 100%"><el-option v-for="d in qms_gauge_status" :key="d.value" :label="d.label" :value="d.value" /></el-select></el-form-item></el-col>
                 <el-col :span="12"><el-form-item label="状态" prop="status"><el-radio-group v-model="form.status"><el-radio value="0">正常</el-radio><el-radio value="1">停用</el-radio></el-radio-group></el-form-item></el-col>
@@ -185,8 +185,8 @@
             </div>
           </section>
           <section class="rd-card">
-            <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>其他信息</div></div>
-            <div class="rd-card-body">
+            <div class="rd-card-header" @click="toggleCard('e_other')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>其他信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.e_other }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+            <div class="rd-card-body" v-show="!collapsedCards.e_other">
               <el-form-item label="备注" prop="remark"><el-input v-model="form.remark" type="textarea" :rows="3" placeholder="请输入备注" /></el-form-item>
             </div>
           </section>
@@ -205,8 +205,8 @@
       </template>
       <div class="rd-page">
         <section class="rd-card">
-          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>基本信息</div></div>
-          <div class="rd-card-body" style="display:block"><div class="rd-grid">
+          <div class="rd-card-header" @click="toggleCard('v_basic')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>基本信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v_basic }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.v_basic" style="display:block"><div class="rd-grid">
             <div class="rd-item"><span class="rd-label">量检具编号</span><div class="rd-value">{{ viewData.gaugeNo || '-' }}</div></div>
             <div class="rd-item"><span class="rd-label">量检具名称</span><div class="rd-value">{{ viewData.gaugeName || '-' }}</div></div>
             <div class="rd-item"><span class="rd-label">类型<el-tooltip content="量检具分类大类：称量类（天平/水分仪等）、分析类（光谱仪/色谱仪等）、量具类（卡尺/千分尺/量块等）、监测类（温度记录仪等）" placement="top"><el-icon class="form-tip-icon"><QuestionFilled /></el-icon></el-tooltip></span><div class="rd-value"><dict-tag :options="qms_gauge_type" :value="viewData.gaugeType" /></div></div>
@@ -216,8 +216,8 @@
           </div></div>
         </section>
         <section class="rd-card">
-          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>校准信息</div><el-tooltip content="记录量检具的校准周期及历次校准日期，下次校准日期 = 上次校准日期 + 校准周期，到期前应及时送检" placement="top"><el-icon class="form-tip-icon"><QuestionFilled /></el-icon></el-tooltip></div>
-          <div class="rd-card-body" style="display:block"><div class="rd-grid">
+          <div class="rd-card-header" @click="toggleCard('v_calib')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>校准信息</div><el-tooltip content="记录量检具的校准周期及历次校准日期，下次校准日期 = 上次校准日期 + 校准周期，到期前应及时送检" placement="top"><el-icon class="form-tip-icon"><QuestionFilled /></el-icon></el-tooltip><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v_calib }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.v_calib" style="display:block"><div class="rd-grid">
             <div class="rd-item"><span class="rd-label">校准周期(月)<el-tooltip content="量检具两次校准之间的间隔月数，到期前应及时送检校准" placement="top"><el-icon class="form-tip-icon"><QuestionFilled /></el-icon></el-tooltip></span><div class="rd-value">{{ viewData.calibCycle != null ? viewData.calibCycle : '-' }}</div></div>
             <div class="rd-item"><span class="rd-label">上次校准日期<el-tooltip content="最近一次校准的执行日期，校准合格后方可继续使用" placement="top"><el-icon class="form-tip-icon"><QuestionFilled /></el-icon></el-tooltip></span><div class="rd-value">{{ viewData.lastCalibDate || '-' }}</div></div>
             <div class="rd-item"><span class="rd-label">下次校准日期<el-tooltip content="预计下次需要校准的日期，通常为上次校准日期加校准周期" placement="top"><el-icon class="form-tip-icon"><QuestionFilled /></el-icon></el-tooltip></span><div class="rd-value">{{ viewData.nextCalibDate || '-' }}</div></div>
@@ -225,8 +225,8 @@
           </div></div>
         </section>
         <section class="rd-card" v-if="viewData.remark">
-          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>备注</div></div>
-          <div class="rd-card-body" style="display:block"><div class="rd-grid"><div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value">{{ viewData.remark || '-' }}</div></div></div></div>
+          <div class="rd-card-header" @click="toggleCard('v_remark')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>备注</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v_remark }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.v_remark" style="display:block"><div class="rd-grid"><div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value">{{ viewData.remark || '-' }}</div></div></div></div>
         </section>
       </div>
       <template #footer><el-button @click="viewOpen = false">关 闭</el-button></template>
@@ -237,9 +237,11 @@
 <script setup name="QmsGauge">
 import { listGauge, getGauge, addGauge, updateGauge, delGauge } from '@/api/qms/gauge'
 import { useColumnResize } from '@/composables/useColumnResize'
+import { useDetailCard } from '@/composables/useDetailCard'
 
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('qms_gauge_index')
+const { collapsedCards, toggleCard } = useDetailCard(['e_basic', 'e_calib', 'e_status', 'e_other', 'v_basic', 'v_calib', 'v_remark'])
 const { qms_gauge_status, qms_gauge_type } = proxy.useDict('qms_gauge_status', 'qms_gauge_type')
 
 const list = ref([])

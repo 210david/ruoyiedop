@@ -108,8 +108,8 @@
       </template>
       <div class="rd-page" v-if="viewData">
         <section class="rd-card">
-          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="6" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>基本信息</div></div>
-          <div class="rd-card-body" style="display:block"><div class="rd-grid">
+          <div class="rd-card-header" @click="toggleCard('v_basic')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="6" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>基本信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v_basic }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.v_basic" style="display:block"><div class="rd-grid">
             <div class="rd-item"><span class="rd-label">评审编号</span><div class="rd-value">{{ viewData.mrNo || '-' }}</div></div>
             <div class="rd-item"><span class="rd-label">评审标题</span><div class="rd-value">{{ viewData.mrTitle || '-' }}</div></div>
             <div class="rd-item"><span class="rd-label">年度</span><div class="rd-value">{{ viewData.mrYear || '-' }}</div></div>
@@ -119,8 +119,8 @@
           </div></div>
         </section>
         <section class="rd-card">
-          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>评审内容</div></div>
-          <div class="rd-card-body" style="display:block"><div class="rd-grid">
+          <div class="rd-card-header" @click="toggleCard('v_content')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>评审内容</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v_content }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.v_content" style="display:block"><div class="rd-grid">
             <div class="rd-item rd-item--full"><span class="rd-label">参会人员</span><div class="rd-value">{{ viewData.participants || '-' }}</div></div>
             <div class="rd-item rd-item--full"><span class="rd-label">输入汇总</span><div class="rd-value">{{ viewData.inputSummary || '-' }}</div></div>
             <div class="rd-item rd-item--full"><span class="rd-label">决议事项</span><div class="rd-value">{{ viewData.resolution || '-' }}</div></div>
@@ -143,8 +143,8 @@
       <el-form ref="mrRef" :model="form" :rules="rules" label-width="100px">
         <div class="rd-page">
           <section class="rd-card">
-            <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="6" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>基本信息</div></div>
-            <div class="rd-card-body">
+            <div class="rd-card-header" @click="toggleCard('e_basic')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="6" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>基本信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.e_basic }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+            <div class="rd-card-body" v-show="!collapsedCards.e_basic">
               <el-row :gutter="20">
                 <el-col :span="12"><el-form-item label="评审标题" prop="mrTitle"><el-input v-model="form.mrTitle" placeholder="请输入" /></el-form-item></el-col>
                 <el-col :span="12"><el-form-item label="年度"><el-input-number v-model="form.mrYear" :min="2020" :max="2099" style="width: 100%" /></el-form-item></el-col>
@@ -157,8 +157,8 @@
             </div>
           </section>
           <section class="rd-card">
-            <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>评审内容</div></div>
-            <div class="rd-card-body">
+            <div class="rd-card-header" @click="toggleCard('e_content')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>评审内容</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.e_content }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+            <div class="rd-card-body" v-show="!collapsedCards.e_content">
               <el-form-item label="参会人员"><el-input v-model="form.participants" type="textarea" :rows="1" placeholder="请输入" /></el-form-item>
               <el-form-item label="输入汇总"><el-input v-model="form.inputSummary" type="textarea" :rows="3" placeholder="质量目标达成、客诉情况、CAPA情况、内审结果、供应商质量等" /></el-form-item>
               <el-form-item label="决议事项"><el-input v-model="form.resolution" type="textarea" :rows="3" placeholder="请输入" /></el-form-item>
@@ -176,7 +176,9 @@
 <script setup name="QmsMr">
 import { listMr, getMr, addMr, updateMr, delMr } from '@/api/qms/mr'
 import { useColumnResize } from '@/composables/useColumnResize'
+import { useDetailCard } from '@/composables/useDetailCard'
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('qms_mr_index')
+const { collapsedCards, toggleCard } = useDetailCard(['v_basic', 'v_content', 'e_basic', 'e_content'])
 const { proxy } = getCurrentInstance()
 const { qms_mr_status: statusOptions } = proxy.useDict('qms_mr_status')
 
@@ -303,4 +305,45 @@ getList()
 .qms-mr-page .field .control :deep(.el-date-editor .el-range__icon) { color:var(--ink-400); }
 @media (max-width:1100px) { .qms-mr-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }
 @media (max-width:720px) { .qms-mr-page .filter-card .filter-bar { grid-template-columns:1fr; } .qms-mr-page .toolbar { flex-wrap:wrap; gap:10px; } }
+
+/* ===== Dialog Detail Page Styles ===== */
+:deep(.rd-dialog .el-dialog__header) { padding: 0; margin: 0; border: none; }
+:deep(.rd-dialog .el-dialog__headerbtn) { top: 14px; right: 14px; z-index: 10; }
+:deep(.rd-dialog .el-dialog__headerbtn .el-dialog__close) { color: #fff; font-size: 20px; }
+:deep(.rd-dialog .el-dialog__body) { padding: 12px 16px 16px; background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); }
+:deep(.rd-dialog .rd-page) { max-width: 100% !important; }
+
+.rd-detail-header { display: flex; align-items: center; gap: 12px; padding: 12px 20px; background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 60%, #3b82f6 100%); border-radius: 12px 12px 0 0; position: relative; overflow: hidden; }
+.rd-detail-header::before { content: ''; position: absolute; top: -30px; right: -15px; width: 140px; height: 140px; border-radius: 50%; background: radial-gradient(circle, rgb(255 255 255 / 0.15) 0%, transparent 70%); pointer-events: none; }
+.rd-detail-header-icon { display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 10px; background: rgb(255 255 255 / 0.2); border: 1px solid rgb(255 255 255 / 0.25); color: #fff; flex-shrink: 0; backdrop-filter: blur(4px); box-shadow: 0 4px 12px rgb(0 0 0 / 0.1); }
+.rd-detail-header-title { font-size: 18px; font-weight: 700; color: #fff; letter-spacing: -0.02em; line-height: 1.3; }
+
+.rd-page { max-width: 100%; margin: 0 auto; }
+.rd-card { background: #fff; border-radius: 12px; border: 1px solid #e5e7eb; box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); overflow: hidden; margin-bottom: 8px; transition: box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1); animation: rdFadeIn 0.4s ease-out forwards; }
+.rd-card:hover { box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); }
+.rd-card:last-child { margin-bottom: 0; }
+.rd-card-header { display: flex; align-items: center; justify-content: space-between; padding: 8px 16px; background: linear-gradient(to right, #f9fafb, #fff); border-bottom: 1px solid #f3f4f6; cursor: pointer; user-select: none; }
+.rd-card-title { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 700; color: #111827; }
+.rd-card-icon { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 8px; background: #fff; border: 1px solid #e5e7eb; color: #2563eb; box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); }
+.rd-card-header .rd-collapse-btn { display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; border: none; background: transparent; border-radius: 6px; color: #9ca3af; cursor: pointer; transition: all 0.15s ease; flex-shrink: 0; }
+.rd-card-header .rd-collapse-btn:hover { background: #f3f4f6; color: #4b5563; }
+.rd-card-header .rd-collapse-btn svg { transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
+.rd-card-header .rd-collapse-btn.is-collapsed svg { transform: rotate(-90deg); }
+.rd-card-body { padding: 14px 16px; }
+.rd-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px 24px; }
+.rd-item { display: flex; align-items: center; gap: 12px; }
+.rd-item--full { grid-column: 1 / -1; }
+.rd-label { flex: 0 0 auto; min-width: 72px; display: flex; align-items: center; font-size: 14px; font-weight: 500; color: #6b7280; white-space: nowrap; }
+.rd-value { flex: 1 1 auto; font-size: 14px; font-weight: 500; color: #111827; line-height: 1.5; padding-left: 12px; border-left: 1px solid #e5e7eb; min-width: 0; }
+.rd-form-tip { margin-left: 4px; color: #c0c4cc; font-size: 14px; cursor: help; }
+.rd-form-tip:hover { color: #909399; }
+
+@keyframes rdFadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.rd-card:nth-child(2) { animation-delay: 0.06s; }
+.rd-card:nth-child(3) { animation-delay: 0.12s; }
+.rd-card:nth-child(4) { animation-delay: 0.18s; }
+.rd-card:nth-child(5) { animation-delay: 0.24s; }
+.rd-card:nth-child(6) { animation-delay: 0.30s; }
+
+@media (max-width:768px) { .rd-grid { grid-template-columns: 1fr; } }
 </style>

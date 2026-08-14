@@ -91,20 +91,26 @@ public class QmsInspTaskServiceImpl implements IQmsInspTaskService
             }
             inspTask.setTaskNo(mkNumberRuleService.generateNumber("qms_insp_task", params));
         }
-        // 自动计算AQL抽样数
+        // 设置默认检验水平（OQC默认S-4, 其他默认II）
+        if (StringUtils.isEmpty(inspTask.getInspectMethod()))
+        {
+            inspTask.setInspectMethod(getDefaultInspectMethod(inspTask.getTaskType()));
+        }
+        // 设置默认检验严格度
+        if (inspTask.getInspectLevel() == null)
+        {
+            inspTask.setInspectLevel("1");
+        }
+        // 自动计算AQL抽样数（根据检验水平）
         if (inspTask.getInspectQty() != null && StringUtils.isNotEmpty(inspTask.getAqlLevel()))
         {
-            int[] result = AqlCalculator.calculate(inspTask.getInspectQty(), inspTask.getAqlLevel());
+            int[] result = AqlCalculator.calculate(inspTask.getInspectQty(), inspTask.getAqlLevel(), inspTask.getInspectMethod());
             if (result != null)
             {
                 inspTask.setSampleSize(result[0]);
                 inspTask.setAcVal(result[1]);
                 inspTask.setReVal(result[2]);
             }
-        }
-        if (inspTask.getInspectLevel() == null)
-        {
-            inspTask.setInspectLevel("1");
         }
         if (inspTask.getTaskStatus() == null)
         {
@@ -123,10 +129,16 @@ public class QmsInspTaskServiceImpl implements IQmsInspTaskService
     @Transactional(rollbackFor = Exception.class)
     public int updateInspTask(QmsInspTask inspTask)
     {
-        // 送检数量或AQL等级变更时，重新计算抽样参数
+        // 送检数量、AQL等级或检验水平变更时，重新计算抽样参数
         if (inspTask.getInspectQty() != null && StringUtils.isNotEmpty(inspTask.getAqlLevel()))
         {
-            int[] result = AqlCalculator.calculate(inspTask.getInspectQty(), inspTask.getAqlLevel());
+            // 若未指定检验水平，根据任务类型取默认值
+            String inspectMethod = inspTask.getInspectMethod();
+            if (StringUtils.isEmpty(inspectMethod))
+            {
+                inspectMethod = getDefaultInspectMethod(inspTask.getTaskType());
+            }
+            int[] result = AqlCalculator.calculate(inspTask.getInspectQty(), inspTask.getAqlLevel(), inspectMethod);
             if (result != null)
             {
                 inspTask.setSampleSize(result[0]);
@@ -319,7 +331,8 @@ public class QmsInspTaskServiceImpl implements IQmsInspTaskService
             task.setMaterialName(attr.getMaterialName());
             task.setInspectQty(new BigDecimal("100")); // 默认送检数量，实际应从WMS到货明细获取
             task.setAqlLevel("2.5"); // 默认AQL等级，实际应从物料属性或检验标准获取
-            task.setInspectLevel("1");
+            task.setInspectLevel("1"); // 检验严格度：正常
+            task.setInspectMethod(getDefaultInspectMethod(task.getTaskType())); // 检验水平
             task.setTaskStatus("0");
             task.setIsRecheck("0");
             task.setDelFlag("0");
@@ -327,7 +340,7 @@ public class QmsInspTaskServiceImpl implements IQmsInspTaskService
             task.setRemark("系统自动生成IQC检验任务");
             task.setCreateBy("system");
             // 自动计算AQL抽样数
-            int[] aqlResult = AqlCalculator.calculate(task.getInspectQty(), task.getAqlLevel());
+            int[] aqlResult = AqlCalculator.calculate(task.getInspectQty(), task.getAqlLevel(), task.getInspectMethod());
             if (aqlResult != null)
             {
                 task.setSampleSize(aqlResult[0]);
@@ -406,6 +419,22 @@ public class QmsInspTaskServiceImpl implements IQmsInspTaskService
         update.setTaskStatus("3");
         update.setRemark(buildVoidRemark(reason, voidType));
         return qmsInspTaskMapper.updateInspTask(update);
+    }
+
+    /**
+     * 根据检验类型获取默认检验水平
+     * OQC（出货检验）默认使用 S-4（特殊检验水平，样本量小）
+     * IQC（来料检验）默认使用 II（一般检验水平）
+     * IPQC（过程检验）默认使用 II
+     * FQC（成品检验）默认使用 II
+     */
+    private String getDefaultInspectMethod(String taskType)
+    {
+        if ("OQC".equals(taskType))
+        {
+            return "S-4";
+        }
+        return "II";
     }
 
     private String buildVoidRemark(String reason, String voidType)
@@ -556,5 +585,46 @@ public class QmsInspTaskServiceImpl implements IQmsInspTaskService
             task.setEsigList(esigList);
         }
         return task;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int saveInspectDraft(QmsInspTask inspTask)
+    {
+        QmsInspTask existing = qmsInspTaskMapper.selectInspTaskById(inspTask.getTaskId());
+        if (existing == null)
+        {
+            throw new ServiceException("检验任务不存在");
+        }
+        if ("2".equals(existing.getTaskStatus()))
+        {
+            throw new ServiceException("该检验任务已判定，不可修改");
+        }
+        if ("3".equals(existing.getTaskStatus()))
+        {
+            throw new ServiceException("该检验任务已作废，不可修改");
+        }
+        // 先删除旧明细
+        qmsInspItemMapper.deleteInspItemByTaskId(inspTask.getTaskId());
+        // 批量保存检验明细（不做判定，不改变任务状态）
+        List<QmsInspItem> items = inspTask.getItemList();
+        if (items != null && !items.isEmpty())
+        {
+            for (QmsInspItem item : items)
+            {
+                item.setTaskId(inspTask.getTaskId());
+            }
+            qmsInspItemMapper.batchInsertInspItem(items);
+        }
+        // 如果当前是待检状态，切换为检验中
+        if ("0".equals(existing.getTaskStatus()))
+        {
+            QmsInspTask update = new QmsInspTask();
+            update.setTaskId(inspTask.getTaskId());
+            update.setTaskStatus("1");
+            update.setInspectTime(new Date());
+            return qmsInspTaskMapper.updateInspTask(update);
+        }
+        return 1;
     }
 }

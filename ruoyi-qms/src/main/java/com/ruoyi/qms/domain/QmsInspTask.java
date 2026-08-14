@@ -68,6 +68,10 @@ public class QmsInspTask extends BaseEntity
     /** 检验严格度（1正常 2加严 3放宽） */
     private String inspectLevel;
 
+    /** 检验水平（S-1/S-2/S-3/S-4/I/II/III），默认II */
+    @Excel(name = "检验水平")
+    private String inspectMethod;
+
     /** 样本量(n) */
     @Excel(name = "样本量")
     private Integer sampleSize;
@@ -114,6 +118,10 @@ public class QmsInspTask extends BaseEntity
     /** 量检具名称 */
     @Excel(name = "量检具")
     private String gaugeName;
+
+    /** 量检具编号 */
+    @Excel(name = "量检具编号")
+    private String gaugeNo;
 
     /** 是否复检 */
     @Excel(name = "复检", readConverterExp = "0=否,1=是")
@@ -162,6 +170,8 @@ public class QmsInspTask extends BaseEntity
     public void setAqlLevel(String aqlLevel) { this.aqlLevel = aqlLevel; }
     public String getInspectLevel() { return inspectLevel; }
     public void setInspectLevel(String inspectLevel) { this.inspectLevel = inspectLevel; }
+    public String getInspectMethod() { return inspectMethod; }
+    public void setInspectMethod(String inspectMethod) { this.inspectMethod = inspectMethod; }
     public Integer getSampleSize() { return sampleSize; }
     public void setSampleSize(Integer sampleSize) { this.sampleSize = sampleSize; }
     public Integer getAcVal() { return acVal; }
@@ -186,6 +196,8 @@ public class QmsInspTask extends BaseEntity
     public void setGaugeId(Long gaugeId) { this.gaugeId = gaugeId; }
     public String getGaugeName() { return gaugeName; }
     public void setGaugeName(String gaugeName) { this.gaugeName = gaugeName; }
+    public String getGaugeNo() { return gaugeNo; }
+    public void setGaugeNo(String gaugeNo) { this.gaugeNo = gaugeNo; }
     public String getIsRecheck() { return isRecheck; }
     public void setIsRecheck(String isRecheck) { this.isRecheck = isRecheck; }
     public Long getOriginTaskId() { return originTaskId; }

@@ -78,8 +78,37 @@ service.interceptors.response.use(res => {
     const code = res.data.code || 200
     // 获取错误信息
     const msg = errorCode[code] || res.data.msg || errorCode['default']
-    // 二进制数据则直接返回
-    if (res.request.responseType ===  'blob' || res.request.responseType ===  'arraybuffer') {
+    // 二进制数据则直接返回（Chrome 兼容：当后端返回 JSON 错误时需特殊处理）
+    if (res.request.responseType === 'blob' || res.request.responseType === 'arraybuffer') {
+      // Chrome 兼容：当后端返回 JSON 错误（如 401/500）时，Content-Type 为 application/json
+      // 需在此处判断，避免将错误信息当作文件下载
+      const contentType = res.headers['content-type'] || ''
+      if (contentType.includes('application/json')) {
+        // 后端返回了 JSON，说明是错误信息，转为文本解析
+        const blob = res.request.responseType === 'arraybuffer' ? new Blob([res.data]) : res.data
+        return blob.text().then(text => {
+          let rspObj
+          try { rspObj = JSON.parse(text) } catch { rspObj = { msg: '下载失败' } }
+          const errCode = rspObj.code || 500
+          const errMsg = errorCode[errCode] || rspObj.msg || errorCode['default']
+          if (errCode === 401) {
+            if (!isRelogin.show) {
+              isRelogin.show = true
+              ElMessageBox.confirm('登录状态已过期，您可以继续留在该页面，或者重新登录', '系统提示', { confirmButtonText: '重新登录', cancelButtonText: '取消', type: 'warning' }).then(() => {
+                isRelogin.show = false
+                useUserStore().logOut().then(() => {
+                  location.href = '/index'
+                })
+              }).catch(() => {
+                isRelogin.show = false
+              })
+            }
+            return Promise.reject('无效的会话，或者会话已过期，请重新登录。')
+          }
+          ElMessage.error(errMsg)
+          return Promise.reject(new Error(errMsg))
+        })
+      }
       return res.data
     }
     if (code === 401) {
@@ -131,21 +160,72 @@ service.interceptors.response.use(res => {
   }
 )
 
-// 通用下载方法
+// 隐藏 iframe 方式下载 Blob（Chrome 兼容核心方法）
+// Chrome 的用户手势安全策略会阻止异步回调中的 link.click() 和 file-saver 的 saveAs()，
+// 导致"只有下载任务，没有实际文件下载"。
+// 隐藏 iframe 方式通过在 iframe 内部创建 <a download> 触发下载，不受用户手势限制。
+function saveBlobWithIframe(blob, filename) {
+  const blobUrl = URL.createObjectURL(blob)
+  const iframe = document.createElement('iframe')
+  iframe.style.display = 'none'
+  document.body.appendChild(iframe)
+  // 在 iframe 内部创建 <a> 标签触发下载，保留文件名
+  const doc = iframe.contentDocument || iframe.contentWindow.document
+  const link = doc.createElement('a')
+  link.href = blobUrl
+  link.download = filename
+  doc.body.appendChild(link)
+  link.click()
+  // 延迟移除 iframe 和释放 Blob URL，确保下载已触发
+  setTimeout(() => {
+    document.body.removeChild(iframe)
+    URL.revokeObjectURL(blobUrl)
+  }, 1000)
+}
+
+// 根据文件扩展名获取 MIME 类型（不硬编码，支持多种文件格式）
+function getMimeType(filename) {
+  if (!filename) return 'application/octet-stream'
+  const ext = filename.substring(filename.lastIndexOf('.') + 1).toLowerCase()
+  const mimeMap = {
+    'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'xls': 'application/vnd.ms-excel',
+    'csv': 'text/csv',
+    'pdf': 'application/pdf',
+    'zip': 'application/zip',
+    'doc': 'application/msword',
+    'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'txt': 'text/plain',
+    'png': 'image/png',
+    'jpg': 'image/jpeg',
+    'jpeg': 'image/jpeg',
+    'gif': 'image/gif'
+  }
+  return mimeMap[ext] || 'application/octet-stream'
+}
+
+// 通用下载方法（兼容 Chrome/Firefox/Edge/Safari）
+// Chrome 兼容要点：
+//   1. 不硬编码 MIME 类型，根据文件扩展名动态判断
+//   2. 增加超时时间到 5 分钟，避免大文件导出超时
+//   3. 使用隐藏 iframe 方式触发下载，不受 Chrome 用户手势安全策略限制
+//      （file-saver 的 saveAs 和 link.click() 在异步回调中都会被 Chrome 阻止）
 export function download(url, params, filename, config) {
-  downloadLoadingInstance = ElLoading.service({ text: "正在下载数据，请稍候", background: "rgba(0, 0, 0, 0.7)", })
+  downloadLoadingInstance = ElLoading.service({ text: "正在下载数据，请稍候", background: "rgba(0, 0, 0, 0.7)" })
   return service.post(url, params, {
     transformRequest: [(params) => { return tansParams(params) }],
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     responseType: 'blob',
+    timeout: 300000, // 下载/导出超时时间设为 5 分钟，避免大文件导出超时
     ...config
   }).then(async (data) => {
     const isBlob = blobValidate(data)
     if (isBlob) {
-      // 使用 file-saver 库处理下载，兼容 Chrome/Firefox/Edge/Safari
-      // file-saver 内部处理了 Chrome 的 user gesture 安全限制
-      const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
-      saveAs(blob, filename)
+      // 根据文件扩展名推断 MIME 类型，不硬编码为 Excel
+      const mimeType = getMimeType(filename)
+      const blob = data.type ? data : new Blob([data], { type: mimeType })
+      // 使用隐藏 iframe 方式下载，Chrome 兼容
+      saveBlobWithIframe(blob, filename)
     } else {
       const resText = await data.text()
       const rspObj = JSON.parse(resText)

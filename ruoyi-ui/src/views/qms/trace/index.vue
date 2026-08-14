@@ -60,8 +60,8 @@
         <el-table-column label="工单号" prop="workOrderNo" min-width="120" />
         <el-table-column label="工序" prop="opName" min-width="100" />
         <el-table-column label="供应商" prop="supplierName" min-width="140" />
-        <el-table-column label="投入数量" prop="qtyIn" min-width="90" align="right" />
-        <el-table-column label="产出数量" prop="qtyOut" min-width="90" align="right" />
+        <el-table-column label="投入数量" prop="qtyIn" min-width="90" align="center" />
+        <el-table-column label="产出数量" prop="qtyOut" min-width="90" align="center" />
         <el-table-column label="来源" prop="sourceType" min-width="80">
           <template #default="scope">
             <dict-tag :options="qms_genealogy_source" :value="scope.row.sourceType" />

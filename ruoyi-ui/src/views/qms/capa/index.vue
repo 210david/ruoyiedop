@@ -143,24 +143,24 @@
       <el-form ref="capaRef" :model="form" :rules="rules" label-width="120px">
         <div class="rd-page">
           <section class="rd-card">
-            <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="6" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>基本信息</div></div>
-            <div class="rd-card-body">
+            <div class="rd-card-header" @click="toggleCard('e_basic')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="6" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>基本信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.e_basic }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+            <div class="rd-card-body" v-show="!collapsedCards.e_basic">
               <el-row :gutter="20">
                 <el-col :span="12"><el-form-item prop="capaNo"><template #label><span>CAPA编号</span><el-tooltip content="CAPA（Corrective and Preventive Action）即纠正与预防措施编号，用于标识和追溯质量问题的闭环处理过程，保存后由系统自动生成" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></template><el-input v-model="form.capaNo" placeholder="保存后自动生成" disabled /></el-form-item></el-col>
                 <el-col :span="12"><el-form-item label="标题" prop="title"><el-input v-model="form.title" placeholder="请输入" /></el-form-item></el-col>
               </el-row>
               <el-row :gutter="20">
-                <el-col :span="12"><el-form-item label="来源类型"><el-select v-model="form.sourceType" style="width: 100%"><el-option v-for="d in sourceOptions" :key="d.value" :label="d.label" :value="d.value" /></el-select></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="来源类型" prop="sourceType"><el-select v-model="form.sourceType" style="width: 100%"><el-option v-for="d in sourceOptions" :key="d.value" :label="d.label" :value="d.value" /></el-select></el-form-item></el-col>
                 <el-col :span="12"><el-form-item label="来源编号"><el-input v-model="form.sourceNo" placeholder="请输入" /></el-form-item></el-col>
               </el-row>
             </div>
           </section>
           <section class="rd-card">
-            <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>责任与计划</div></div>
-            <div class="rd-card-body">
+            <div class="rd-card-header" @click="toggleCard('e_resp')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>责任与计划</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.e_resp }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+            <div class="rd-card-body" v-show="!collapsedCards.e_resp">
               <el-row :gutter="20">
-                <el-col :span="12"><el-form-item label="责任人"><el-input v-model="form.responsiblePerson" readonly placeholder="请选择责任人" style="width: 100%" @click="openUserPicker"><template #append><el-button icon="Search" @click="openUserPicker" /></template><template #suffix><el-icon v-if="form.responsiblePerson" class="rd-form-tip" style="cursor:pointer" @click.stop="clearResponsiblePerson"><CircleClose /></el-icon></template></el-input></el-form-item></el-col>
-                <el-col :span="12"><el-form-item label="计划关闭"><el-date-picker v-model="form.planCloseTime" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" style="width: 100%" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="责任人" prop="responsiblePerson"><el-input v-model="form.responsiblePerson" readonly placeholder="请选择责任人" style="width: 100%" @click="openUserPicker"><template #append><el-button icon="Search" @click="openUserPicker" /></template><template #suffix><el-icon v-if="form.responsiblePerson" class="rd-form-tip" style="cursor:pointer" @click.stop="clearResponsiblePerson"><CircleClose /></el-icon></template></el-input></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="计划关闭" prop="planCloseTime"><el-date-picker v-model="form.planCloseTime" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" style="width: 100%" /></el-form-item></el-col>
               </el-row>
               <el-row :gutter="20">
                 <el-col :span="24"><el-form-item label="备注"><el-input v-model="form.remark" type="textarea" :rows="2" placeholder="请输入备注信息" maxlength="500" show-word-limit /></el-form-item></el-col>
@@ -168,18 +168,19 @@
             </div>
           </section>
           <section class="rd-card">
-            <div class="rd-card-header">
+            <div class="rd-card-header" @click="toggleCard('e_8d')">
               <div class="rd-card-title">
                 <span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>8D报告内容（D1~D5）
                 <el-tooltip content="D1~D5在新建/修改时填写；D6验证结果在「提交验证」时填写；D7预防措施、D8关闭备注在「关闭」时填写" placement="top"><el-icon class="rd-form-tip" style="margin-left:6px"><QuestionFilled /></el-icon></el-tooltip>
               </div>
+              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.e_8d }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
             </div>
-            <div class="rd-card-body">
+            <div class="rd-card-body" v-show="!collapsedCards.e_8d">
               <el-form-item><template #label><span>D1 团队成员</span><el-tooltip content="D1：组建跨职能团队来解决问题，团队成员应包含具有相关知识和权限的人员" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></template><el-input v-model="form.teamMembers" type="textarea" :rows="1" placeholder="请输入" /></el-form-item>
-              <el-form-item><template #label><span>D2 问题描述</span><el-tooltip content="D2：用可测量的术语清晰描述问题，明确谁、什么、何时、何地、为何" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></template><el-input v-model="form.problemDesc" type="textarea" :rows="2" placeholder="请输入" /></el-form-item>
+              <el-form-item prop="problemDesc"><template #label><span>D2 问题描述</span><el-tooltip content="D2：用可测量的术语清晰描述问题，明确谁、什么、何时、何地、为何" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></template><el-input v-model="form.problemDesc" type="textarea" :rows="2" placeholder="请输入" /></el-form-item>
               <el-form-item><template #label><span>D3 临时措施</span><el-tooltip content="D3：制定并实施临时遏制措施以隔离问题、防止问题扩大或产生不良影响" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></template><el-input v-model="form.interimAction" type="textarea" :rows="2" placeholder="请输入" /></el-form-item>
-              <el-form-item><template #label><span>D4 根因分析</span><el-tooltip content="D4：识别并验证导致问题的根本原因，可使用鱼骨图、5Why等分析工具" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></template><el-input v-model="form.rootCause" type="textarea" :rows="2" placeholder="请输入" /></el-form-item>
-              <el-form-item><template #label><span>D5 永久措施</span><el-tooltip content="D5：基于根因分析制定并实施永久性纠正措施，消除问题根因" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></template><el-input v-model="form.permanentAction" type="textarea" :rows="2" placeholder="请输入" /></el-form-item>
+              <el-form-item prop="rootCause"><template #label><span>D4 根因分析</span><el-tooltip content="D4：识别并验证导致问题的根本原因，可使用鱼骨图、5Why等分析工具" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></template><el-input v-model="form.rootCause" type="textarea" :rows="2" placeholder="请输入" /></el-form-item>
+              <el-form-item prop="permanentAction"><template #label><span>D5 永久措施</span><el-tooltip content="D5：基于根因分析制定并实施永久性纠正措施，消除问题根因" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></template><el-input v-model="form.permanentAction" type="textarea" :rows="2" placeholder="请输入" /></el-form-item>
             </div>
           </section>
         </div>
@@ -197,13 +198,18 @@
       </template>
       <div class="rd-page" v-if="viewData">
         <section class="rd-card">
-          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="6" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>基本信息</div></div>
-          <div class="rd-card-body" style="display:block"><div class="rd-grid">
+          <div class="rd-card-header" @click="toggleCard('v_basic')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="6" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>基本信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v_basic }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.v_basic" style="display:block"><div class="rd-grid">
             <div class="rd-item"><span class="rd-label">CAPA编号</span><div class="rd-value">{{ viewData.capaNo || '-' }}</div></div>
             <div class="rd-item"><span class="rd-label">状态</span><div class="rd-value"><span class="badge" :class="capaStatusBadgeClass(viewData.capaStatus)"><span class="dot"></span>{{ capaStatusLabel(viewData.capaStatus) }}</span></div></div>
             <div class="rd-item rd-item--full"><span class="rd-label">标题</span><div class="rd-value">{{ viewData.title || '-' }}</div></div>
             <div class="rd-item"><span class="rd-label">来源</span><div class="rd-value">{{ sourceOptions.find(d => d.value === viewData.sourceType)?.label || '-' }}</div></div>
             <div class="rd-item"><span class="rd-label">来源编号</span><div class="rd-value">{{ viewData.sourceNo || '-' }}</div></div>
+          </div></div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('v_resp')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>责任与计划</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v_resp }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.v_resp" style="display:block"><div class="rd-grid">
             <div class="rd-item"><span class="rd-label">责任人</span><div class="rd-value">{{ viewData.responsiblePerson || '-' }}</div></div>
             <div class="rd-item"><span class="rd-label">计划关闭</span><div class="rd-value">{{ parseTime(viewData.planCloseTime, '{y}-{m}-{d}') || '-' }}</div></div>
             <div class="rd-item" v-if="viewData.closeTime"><span class="rd-label">实际关闭</span><div class="rd-value">{{ parseTime(viewData.closeTime, '{y}-{m}-{d} {h}:{i}:{s}') }}</div></div>
@@ -211,8 +217,8 @@
           </div></div>
         </section>
         <section class="rd-card">
-          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>8D报告</div></div>
-          <div class="rd-card-body" style="display:block"><div class="rd-grid">
+          <div class="rd-card-header" @click="toggleCard('v_8d')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>8D报告</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v_8d }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.v_8d" style="display:block"><div class="rd-grid">
             <div class="rd-item rd-item--full"><span class="rd-label">D1 团队成员</span><div class="rd-value">{{ viewData.teamMembers || '-' }}</div></div>
             <div class="rd-item rd-item--full"><span class="rd-label">D2 问题描述</span><div class="rd-value">{{ viewData.problemDesc || '-' }}</div></div>
             <div class="rd-item rd-item--full"><span class="rd-label">D3 临时措施</span><div class="rd-value">{{ viewData.interimAction || '-' }}</div></div>
@@ -224,8 +230,8 @@
           </div></div>
         </section>
         <section class="rd-card" v-if="viewData.capaStatus === '4' && viewData.remark">
-          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></span>驳回信息</div></div>
-          <div class="rd-card-body" style="display:block"><div class="rd-grid"><div class="rd-item rd-item--full"><span class="rd-label">驳回原因</span><div class="rd-value">{{ viewData.remark || '-' }}</div></div></div></div>
+          <div class="rd-card-header" @click="toggleCard('v_reject')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></span>驳回信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v_reject }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.v_reject" style="display:block"><div class="rd-grid"><div class="rd-item rd-item--full"><span class="rd-label">驳回原因</span><div class="rd-value">{{ viewData.remark || '-' }}</div></div></div></div>
         </section>
       </div>
       <template #footer><el-button @click="viewOpen = false">关 闭</el-button></template>
@@ -243,21 +249,27 @@
       <div class="rd-page" v-if="verifyForm.capaId">
         <!-- 基本信息 -->
         <section class="rd-card">
-          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="6" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>基本信息</div></div>
-          <div class="rd-card-body" style="display:block"><div class="rd-grid">
+          <div class="rd-card-header" @click="toggleCard('verify_basic')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="6" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>基本信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.verify_basic }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.verify_basic" style="display:block"><div class="rd-grid">
             <div class="rd-item"><span class="rd-label">CAPA编号</span><div class="rd-value">{{ verifyForm.capaNo || '-' }}</div></div>
             <div class="rd-item"><span class="rd-label">状态</span><div class="rd-value"><span class="badge" :class="capaStatusBadgeClass(verifyForm.capaStatus)"><span class="dot"></span>{{ capaStatusLabel(verifyForm.capaStatus) }}</span></div></div>
             <div class="rd-item rd-item--full"><span class="rd-label">标题</span><div class="rd-value">{{ verifyForm.title || '-' }}</div></div>
             <div class="rd-item"><span class="rd-label">来源</span><div class="rd-value">{{ sourceOptions.find(d => d.value === verifyForm.sourceType)?.label || '-' }}</div></div>
             <div class="rd-item"><span class="rd-label">来源编号</span><div class="rd-value">{{ verifyForm.sourceNo || '-' }}</div></div>
+          </div></div>
+        </section>
+        <!-- 责任与计划 -->
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('verify_resp')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>责任与计划</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.verify_resp }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.verify_resp" style="display:block"><div class="rd-grid">
             <div class="rd-item"><span class="rd-label">责任人</span><div class="rd-value">{{ verifyForm.responsiblePerson || '-' }}</div></div>
             <div class="rd-item"><span class="rd-label">计划关闭</span><div class="rd-value">{{ parseTime(verifyForm.planCloseTime, '{y}-{m}-{d}') || '-' }}</div></div>
           </div></div>
         </section>
         <!-- 8D报告摘要（D1~D5） -->
         <section class="rd-card">
-          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>8D报告摘要</div></div>
-          <div class="rd-card-body" style="display:block"><div class="rd-grid">
+          <div class="rd-card-header" @click="toggleCard('verify_8d')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>8D报告摘要</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.verify_8d }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.verify_8d" style="display:block"><div class="rd-grid">
             <div class="rd-item rd-item--full"><span class="rd-label">D1 团队成员</span><div class="rd-value">{{ verifyForm.teamMembers || '-' }}</div></div>
             <div class="rd-item rd-item--full"><span class="rd-label">D2 问题描述</span><div class="rd-value">{{ verifyForm.problemDesc || '-' }}</div></div>
             <div class="rd-item rd-item--full"><span class="rd-label">D3 临时措施</span><div class="rd-value">{{ verifyForm.interimAction || '-' }}</div></div>
@@ -267,8 +279,8 @@
         </section>
         <!-- D6 验证结果 -->
         <section class="rd-card">
-          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span>D6 验证结果</div></div>
-          <div class="rd-card-body">
+          <div class="rd-card-header" @click="toggleCard('verify_d6')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span>D6 验证结果</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.verify_d6 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.verify_d6">
             <el-form ref="verifyRef" :model="verifyForm" :rules="verifyRules" label-width="100px">
               <el-form-item label="验证结果" prop="verifyResult">
                 <el-input v-model="verifyForm.verifyResult" type="textarea" :rows="4" placeholder="请输入验证结果，如：已确认永久措施有效，问题不再复现，数据指标恢复正常等" show-word-limit maxlength="500" />
@@ -292,21 +304,27 @@
       <div class="rd-page" v-if="closeForm.capaId">
         <!-- 基本信息 -->
         <section class="rd-card">
-          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="6" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>基本信息</div></div>
-          <div class="rd-card-body" style="display:block"><div class="rd-grid">
+          <div class="rd-card-header" @click="toggleCard('close_basic')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="6" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>基本信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.close_basic }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.close_basic" style="display:block"><div class="rd-grid">
             <div class="rd-item"><span class="rd-label">CAPA编号</span><div class="rd-value">{{ closeForm.capaNo || '-' }}</div></div>
             <div class="rd-item"><span class="rd-label">状态</span><div class="rd-value"><span class="badge" :class="capaStatusBadgeClass(closeForm.capaStatus)"><span class="dot"></span>{{ capaStatusLabel(closeForm.capaStatus) }}</span></div></div>
             <div class="rd-item rd-item--full"><span class="rd-label">标题</span><div class="rd-value">{{ closeForm.title || '-' }}</div></div>
             <div class="rd-item"><span class="rd-label">来源</span><div class="rd-value">{{ sourceOptions.find(d => d.value === closeForm.sourceType)?.label || '-' }}</div></div>
             <div class="rd-item"><span class="rd-label">来源编号</span><div class="rd-value">{{ closeForm.sourceNo || '-' }}</div></div>
+          </div></div>
+        </section>
+        <!-- 责任与计划 -->
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('close_resp')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>责任与计划</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.close_resp }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.close_resp" style="display:block"><div class="rd-grid">
             <div class="rd-item"><span class="rd-label">责任人</span><div class="rd-value">{{ closeForm.responsiblePerson || '-' }}</div></div>
             <div class="rd-item"><span class="rd-label">计划关闭</span><div class="rd-value">{{ parseTime(closeForm.planCloseTime, '{y}-{m}-{d}') || '-' }}</div></div>
           </div></div>
         </section>
         <!-- 8D报告摘要（D1~D6） -->
         <section class="rd-card">
-          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>8D报告摘要</div></div>
-          <div class="rd-card-body" style="display:block"><div class="rd-grid">
+          <div class="rd-card-header" @click="toggleCard('close_8d')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>8D报告摘要</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.close_8d }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.close_8d" style="display:block"><div class="rd-grid">
             <div class="rd-item rd-item--full"><span class="rd-label">D1 团队成员</span><div class="rd-value">{{ closeForm.teamMembers || '-' }}</div></div>
             <div class="rd-item rd-item--full"><span class="rd-label">D2 问题描述</span><div class="rd-value">{{ closeForm.problemDesc || '-' }}</div></div>
             <div class="rd-item rd-item--full"><span class="rd-label">D3 临时措施</span><div class="rd-value">{{ closeForm.interimAction || '-' }}</div></div>
@@ -317,8 +335,8 @@
         </section>
         <!-- D7/D8 关闭信息 -->
         <section class="rd-card">
-          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span>D7/D8 关闭信息</div></div>
-          <div class="rd-card-body">
+          <div class="rd-card-header" @click="toggleCard('close_d78')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span>D7/D8 关闭信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.close_d78 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.close_d78">
             <el-form ref="closeRef" :model="closeForm" :rules="closeRules" label-width="120px">
               <el-form-item prop="preventAction">
                 <template #label><span>D7 预防措施</span><el-tooltip content="D7：制定预防措施，防止类似问题在其他产品或过程中再次发生" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></template>
@@ -347,21 +365,27 @@
       <div class="rd-page" v-if="rejectForm.capaId">
         <!-- 基本信息 -->
         <section class="rd-card">
-          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="6" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>基本信息</div></div>
-          <div class="rd-card-body" style="display:block"><div class="rd-grid">
+          <div class="rd-card-header" @click="toggleCard('reject_basic')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="6" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>基本信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.reject_basic }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.reject_basic" style="display:block"><div class="rd-grid">
             <div class="rd-item"><span class="rd-label">CAPA编号</span><div class="rd-value">{{ rejectForm.capaNo || '-' }}</div></div>
             <div class="rd-item"><span class="rd-label">状态</span><div class="rd-value"><span class="badge" :class="capaStatusBadgeClass(rejectForm.capaStatus)"><span class="dot"></span>{{ capaStatusLabel(rejectForm.capaStatus) }}</span></div></div>
             <div class="rd-item rd-item--full"><span class="rd-label">标题</span><div class="rd-value">{{ rejectForm.title || '-' }}</div></div>
             <div class="rd-item"><span class="rd-label">来源</span><div class="rd-value">{{ sourceOptions.find(d => d.value === rejectForm.sourceType)?.label || '-' }}</div></div>
             <div class="rd-item"><span class="rd-label">来源编号</span><div class="rd-value">{{ rejectForm.sourceNo || '-' }}</div></div>
+          </div></div>
+        </section>
+        <!-- 责任与计划 -->
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('reject_resp')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>责任与计划</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.reject_resp }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.reject_resp" style="display:block"><div class="rd-grid">
             <div class="rd-item"><span class="rd-label">责任人</span><div class="rd-value">{{ rejectForm.responsiblePerson || '-' }}</div></div>
             <div class="rd-item"><span class="rd-label">计划关闭</span><div class="rd-value">{{ parseTime(rejectForm.planCloseTime, '{y}-{m}-{d}') || '-' }}</div></div>
           </div></div>
         </section>
         <!-- 8D报告摘要 -->
         <section class="rd-card">
-          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>8D报告摘要</div></div>
-          <div class="rd-card-body" style="display:block"><div class="rd-grid">
+          <div class="rd-card-header" @click="toggleCard('reject_8d')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>8D报告摘要</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.reject_8d }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.reject_8d" style="display:block"><div class="rd-grid">
             <div class="rd-item rd-item--full"><span class="rd-label">D2 问题描述</span><div class="rd-value">{{ rejectForm.problemDesc || '-' }}</div></div>
             <div class="rd-item rd-item--full"><span class="rd-label">D5 永久措施</span><div class="rd-value">{{ rejectForm.permanentAction || '-' }}</div></div>
             <div class="rd-item rd-item--full"><span class="rd-label">D6 验证结果</span><div class="rd-value">{{ rejectForm.verifyResult || '-' }}</div></div>
@@ -369,8 +393,8 @@
         </section>
         <!-- 驳回意见 -->
         <section class="rd-card">
-          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 15l2 2 4-4"/></svg></span>驳回意见</div></div>
-          <div class="rd-card-body">
+          <div class="rd-card-header" @click="toggleCard('reject_opinion')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 15l2 2 4-4"/></svg></span>驳回意见</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.reject_opinion }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.reject_opinion">
             <el-form ref="rejectRef" :model="rejectForm" :rules="rejectRules" label-width="100px">
               <el-form-item label="驳回原因" prop="rejectReason">
                 <el-input v-model="rejectForm.rejectReason" type="textarea" :rows="4" placeholder="请输入驳回原因，如验证不通过、措施无效、根因分析不充分等" show-word-limit maxlength="500" />
@@ -522,9 +546,11 @@
 <script setup name="QmsCapa">
 import { listCapa, getCapa, addCapa, updateCapa, delCapa, submitCapa, submitVerifyCapa, closeCapa, rejectCapa } from '@/api/qms/capa'
 import { useColumnResize } from '@/composables/useColumnResize'
+import { useDetailCard } from '@/composables/useDetailCard'
 import { ArrowDown, ArrowRight, QuestionFilled, CircleClose } from '@element-plus/icons-vue'
 import UserPicker from '@/components/UserPicker/index.vue'
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('qms_capa_index')
+const { collapsedCards, toggleCard } = useDetailCard(['e_basic', 'e_resp', 'e_8d', 'v_basic', 'v_resp', 'v_8d', 'v_reject', 'verify_basic', 'verify_resp', 'verify_8d', 'verify_d6', 'close_basic', 'close_resp', 'close_8d', 'close_d78', 'reject_basic', 'reject_resp', 'reject_8d', 'reject_opinion'])
 const { proxy } = getCurrentInstance()
 const userPickerRef = ref()
 const sourceOptions = [{ value: 'ncr', label: '不合格品NCR' }, { value: 'complaint', label: '客诉' }, { value: 'audit', label: '内审不符合项' }]
@@ -560,7 +586,15 @@ const rejectRules = { rejectReason: [{ required: true, message: '请输入驳回
 const verifyRules = { verifyResult: [{ required: true, message: '请输入验证结果', trigger: 'blur' }] }
 const data = reactive({ form: {}, queryParams: { pageNum: 1, pageSize: 10, capaNo: undefined, sourceType: undefined, capaStatus: undefined, title: undefined, remark: undefined, params: {} } })
 const { queryParams, form } = toRefs(data)
-const rules = { title: [{ required: true, message: '请输入标题', trigger: 'blur' }] }
+const rules = {
+  title: [{ required: true, message: '请输入标题', trigger: 'blur' }],
+  sourceType: [{ required: true, message: '请选择来源类型', trigger: 'change' }],
+  responsiblePerson: [{ required: true, message: '请选择责任人', trigger: 'change' }],
+  planCloseTime: [{ required: true, message: '请选择计划关闭日期', trigger: 'change' }],
+  problemDesc: [{ required: true, message: '请输入问题描述（D2）', trigger: 'blur' }],
+  rootCause: [{ required: true, message: '请输入根因分析（D4）', trigger: 'blur' }],
+  permanentAction: [{ required: true, message: '请输入永久措施（D5）', trigger: 'blur' }]
+}
 
 const activeFilterCount = computed(() => {
   let count = 0
@@ -581,8 +615,8 @@ function handleQuery() { showAdvanced.value = false; proxy.addDateRange(queryPar
 function resetQuery() { queryParams.value.capaNo = undefined; queryParams.value.sourceType = undefined; queryParams.value.capaStatus = undefined; queryParams.value.title = undefined; queryParams.value.remark = undefined; dateRange.value = []; queryParams.value.params = {}; activeStatusTab.value = 'all'; handleQuery() }
 function handleAdd() { reset(); open.value = true; title.value = '新增CAPA' }
 function openUserPicker() { userPickerRef.value.open(form.value.responsiblePersonId) }
-function onUserPickerConfirm(user) { form.value.responsiblePersonId = user.userId; form.value.responsiblePerson = user.nickName }
-function clearResponsiblePerson() { form.value.responsiblePersonId = undefined; form.value.responsiblePerson = undefined }
+function onUserPickerConfirm(user) { form.value.responsiblePersonId = user.userId; form.value.responsiblePerson = user.nickName; proxy.$nextTick(() => proxy.$refs['capaRef']?.validateField('responsiblePerson')) }
+function clearResponsiblePerson() { form.value.responsiblePersonId = undefined; form.value.responsiblePerson = undefined; proxy.$nextTick(() => proxy.$refs['capaRef']?.validateField('responsiblePerson')) }
 function handleUpdate(row) {
   const id = row?.capaId || selectedId.value
   getCapa(id).then(res => {
@@ -794,4 +828,49 @@ getList()
 .status-help-content .highlight-danger .highlight-card-title { color: #f56c6c; }
 @media (max-width:1100px) { .qms-capa-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }
 @media (max-width:720px) { .qms-capa-page .filter-card .filter-bar { grid-template-columns:1fr; } .qms-capa-page .toolbar { flex-wrap:wrap; gap:10px; } .qms-capa-page .status-tabs { padding:6px 8px; } }
+
+/* ===== Dialog Detail Page Styles ===== */
+:deep(.rd-dialog .el-dialog__header) { padding: 0; margin: 0; border: none; }
+:deep(.rd-dialog .el-dialog__headerbtn) { top: 14px; right: 14px; z-index: 10; }
+:deep(.rd-dialog .el-dialog__headerbtn .el-dialog__close) { color: #fff; font-size: 20px; }
+:deep(.rd-dialog .el-dialog__body) { padding: 12px 16px 16px; background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); }
+:deep(.rd-dialog .rd-page) { max-width: 100% !important; }
+
+.rd-detail-header { display: flex; align-items: center; gap: 12px; padding: 12px 20px; background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 60%, #3b82f6 100%); border-radius: 12px 12px 0 0; position: relative; overflow: hidden; }
+.rd-detail-header::before { content: ''; position: absolute; top: -30px; right: -15px; width: 140px; height: 140px; border-radius: 50%; background: radial-gradient(circle, rgb(255 255 255 / 0.15) 0%, transparent 70%); pointer-events: none; }
+.rd-detail-header-icon { display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 10px; background: rgb(255 255 255 / 0.2); border: 1px solid rgb(255 255 255 / 0.25); color: #fff; flex-shrink: 0; backdrop-filter: blur(4px); box-shadow: 0 4px 12px rgb(0 0 0 / 0.1); }
+.rd-detail-header-main { display: flex; flex-direction: column; gap: 4px; min-width: 0; padding-right: 36px; }
+.rd-detail-header-title { font-size: 18px; font-weight: 700; color: #fff; letter-spacing: -0.02em; line-height: 1.3; }
+.rd-detail-header-sub { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.rd-detail-header-divider { width: 1px; height: 14px; background: rgb(255 255 255 / 0.3); }
+.rd-detail-header-no { font-size: 13px; font-weight: 500; color: rgb(255 255 255 / 0.8); font-variant-numeric: tabular-nums; }
+
+.rd-page { max-width: 100%; margin: 0 auto; }
+.rd-card { background: #fff; border-radius: 12px; border: 1px solid #e5e7eb; box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); overflow: hidden; margin-bottom: 8px; transition: box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1); animation: rdFadeIn 0.4s ease-out forwards; }
+.rd-card:hover { box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); }
+.rd-card:last-child { margin-bottom: 0; }
+.rd-card-header { display: flex; align-items: center; justify-content: space-between; padding: 8px 16px; background: linear-gradient(to right, #f9fafb, #fff); border-bottom: 1px solid #f3f4f6; cursor: pointer; user-select: none; }
+.rd-card-title { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 700; color: #111827; }
+.rd-card-icon { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 8px; background: #fff; border: 1px solid #e5e7eb; color: #2563eb; box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); }
+.rd-card-header .rd-collapse-btn { display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; border: none; background: transparent; border-radius: 6px; color: #9ca3af; cursor: pointer; transition: all 0.15s ease; flex-shrink: 0; }
+.rd-card-header .rd-collapse-btn:hover { background: #f3f4f6; color: #4b5563; }
+.rd-card-header .rd-collapse-btn svg { transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
+.rd-card-header .rd-collapse-btn.is-collapsed svg { transform: rotate(-90deg); }
+.rd-card-body { padding: 14px 16px; }
+.rd-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px 24px; }
+.rd-item { display: flex; align-items: center; gap: 12px; }
+.rd-item--full { grid-column: 1 / -1; }
+.rd-label { flex: 0 0 auto; min-width: 72px; display: flex; align-items: center; font-size: 14px; font-weight: 500; color: #6b7280; white-space: nowrap; }
+.rd-value { flex: 1 1 auto; font-size: 14px; font-weight: 500; color: #111827; line-height: 1.5; padding-left: 12px; border-left: 1px solid #e5e7eb; min-width: 0; }
+.rd-form-tip { margin-left: 4px; color: #c0c4cc; font-size: 14px; cursor: help; }
+.rd-form-tip:hover { color: #909399; }
+
+@keyframes rdFadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.rd-card:nth-child(2) { animation-delay: 0.06s; }
+.rd-card:nth-child(3) { animation-delay: 0.12s; }
+.rd-card:nth-child(4) { animation-delay: 0.18s; }
+.rd-card:nth-child(5) { animation-delay: 0.24s; }
+.rd-card:nth-child(6) { animation-delay: 0.30s; }
+
+@media (max-width:768px) { .rd-grid { grid-template-columns: 1fr; } }
 </style>

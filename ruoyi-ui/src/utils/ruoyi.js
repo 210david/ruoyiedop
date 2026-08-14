@@ -222,7 +222,14 @@ export function getNormalPath(p) {
   return res
 }
 
-// 验证是否为blob格式
+// 验证是否为blob格式（兼容 Chrome/Firefox/Edge/Safari）
+// Chrome 兼容：Chrome 浏览器在某些情况下 Blob.type 可能为空字符串，
+// 需要额外检查 size 属性，避免将空 Blob 或错误响应误判为有效文件
 export function blobValidate(data) {
-  return data.type !== 'application/json'
+  if (!data) return false
+  // 后端返回 JSON 错误信息时，Content-Type 为 application/json
+  if (data.type === 'application/json') return false
+  // Chrome 兼容：空 Blob（size=0）不是有效文件
+  if (data.size === 0) return false
+  return true
 }

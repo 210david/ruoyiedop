@@ -98,6 +98,14 @@ public class QmsInspTaskController extends BaseController
         return toAjax(qmsInspTaskService.saveInspectResult(inspTask));
     }
 
+    @Log(title = "检验结果临时保存", businessType = BusinessType.UPDATE)
+    @PreAuthorize("@ss.hasPermi('qms:task:inspect')")
+    @PutMapping("/saveDraft")
+    public AjaxResult saveInspectDraft(@RequestBody QmsInspTask inspTask)
+    {
+        return toAjax(qmsInspTaskService.saveInspectDraft(inspTask));
+    }
+
     @Log(title = "发起复检", businessType = BusinessType.INSERT)
     @PreAuthorize("@ss.hasPermi('qms:task:add')")
     @PostMapping("/recheck/{taskId}")

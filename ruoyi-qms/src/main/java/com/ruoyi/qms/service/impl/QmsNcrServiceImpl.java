@@ -300,13 +300,14 @@ public class QmsNcrServiceImpl implements IQmsNcrService
         log.setNodeSeq(existing.getMaxNode() + 1);
         log.setNodeName("处置执行");
         log.setActionType("4");
-        log.setApproveOpinion("处置方式：" + getDispositionText(ncr.getDisposition()) + "，" + (ncr.getRemark() != null ? ncr.getRemark() : ""));
+        log.setApproveOpinion("处置方式：" + getDispositionText(ncr.getDisposition()) + "，处置数量：" + (ncr.getDisposeQty() != null ? ncr.getDisposeQty() : "未指定") + "，" + (ncr.getRemark() != null ? ncr.getRemark() : ""));
         log.setApproverName(SecurityUtils.getUsername());
         log.setApproveTime(new Date());
         log.setCreateBy(SecurityUtils.getUsername());
         qmsNcrApproveLogMapper.insertApproveLog(log);
 
-        // 更新NCR状态
+        // 保存处置信息并更新NCR状态
+        ncr.setDisposeRemark(ncr.getRemark());
         ncr.setNcrStatus("3");
         ncr.setCurrentNode(existing.getMaxNode() + 2);
         return qmsNcrMapper.updateNcr(ncr);

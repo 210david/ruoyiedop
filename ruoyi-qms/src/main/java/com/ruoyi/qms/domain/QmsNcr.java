@@ -134,6 +134,14 @@ public class QmsNcr extends BaseEntity
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date closeTime;
 
+    /** 处置数量 */
+    @Excel(name = "处置数量")
+    private BigDecimal disposeQty;
+
+    /** 处置说明 */
+    @Excel(name = "处置说明")
+    private String disposeRemark;
+
     /** 状态（0正常 1停用） */
     private String status;
 
@@ -203,6 +211,10 @@ public class QmsNcr extends BaseEntity
     public void setVerifyTime(Date verifyTime) { this.verifyTime = verifyTime; }
     public Date getCloseTime() { return closeTime; }
     public void setCloseTime(Date closeTime) { this.closeTime = closeTime; }
+    public BigDecimal getDisposeQty() { return disposeQty; }
+    public void setDisposeQty(BigDecimal disposeQty) { this.disposeQty = disposeQty; }
+    public String getDisposeRemark() { return disposeRemark; }
+    public void setDisposeRemark(String disposeRemark) { this.disposeRemark = disposeRemark; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
     public String getDelFlag() { return delFlag; }
