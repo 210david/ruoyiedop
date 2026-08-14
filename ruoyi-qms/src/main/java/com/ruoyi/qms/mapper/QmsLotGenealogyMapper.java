@@ -23,8 +23,8 @@ public interface QmsLotGenealogyMapper
     /** 按产出批次号查询（反向追溯：找上游投入） */
     List<QmsLotGenealogy> selectByChildBatchNo(String childBatchNo);
 
-    /** 查询所有断点谱系 */
-    List<QmsLotGenealogy> selectBreakList();
+    /** 查询所有断点谱系（支持条件筛选） */
+    List<QmsLotGenealogy> selectBreakList(QmsLotGenealogy genealogy);
 
     /** 统计已关联工单数 */
     int countLinkedOrders();

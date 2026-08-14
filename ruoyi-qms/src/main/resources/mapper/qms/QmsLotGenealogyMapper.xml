@@ -72,9 +72,17 @@
         ORDER BY trace_time
     </select>
 
-    <select id="selectBreakList" resultMap="QmsLotGenealogyResult">
+    <select id="selectBreakList" parameterType="QmsLotGenealogy" resultMap="QmsLotGenealogyResult">
         <include refid="selectGenealogyVo"/>
-        WHERE del_flag = '0' AND break_flag = 1
+        <where>
+            del_flag = '0' AND break_flag = 1
+            <if test="parentBatchNo != null and parentBatchNo != ''"> AND parent_batch_no LIKE CONCAT('%', #{parentBatchNo}, '%')</if>
+            <if test="workOrderNo != null and workOrderNo != ''"> AND work_order_no LIKE CONCAT('%', #{workOrderNo}, '%')</if>
+            <if test="materialCode != null and materialCode != ''"> AND material_code LIKE CONCAT('%', #{materialCode}, '%')</if>
+            <if test="materialName != null and materialName != ''"> AND material_name LIKE CONCAT('%', #{materialName}, '%')</if>
+            <if test="supplierName != null and supplierName != ''"> AND supplier_name LIKE CONCAT('%', #{supplierName}, '%')</if>
+            <if test="sourceType != null and sourceType != ''"> AND source_type = #{sourceType}</if>
+        </where>
         ORDER BY create_time DESC
     </select>
 
@@ -142,7 +150,7 @@
             <if test="sourceType != null"> source_type = #{sourceType},</if>
             <if test="traceTime != null"> trace_time = #{traceTime},</if>
             <if test="breakFlag != null"> break_flag = #{breakFlag},</if>
-            <if test="breakReason != null"> break_reason = #{breakReason},</if>
+            break_reason = #{breakReason},
             <if test="status != null"> status = #{status},</if>
             <if test="updateBy != null"> update_by = #{updateBy},</if>
             update_time = sysdate(),

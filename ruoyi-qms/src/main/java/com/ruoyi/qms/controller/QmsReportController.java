@@ -29,15 +29,63 @@ public class QmsReportController extends BaseController {
     private IQmsComplaintService complaintService;
     @Autowired
     private IQmsTraceService qmsTraceService;
+    @Autowired
+    private IQmsMrService mrService;
+    @Autowired
+    private IQmsQualityTargetService qualityTargetService;
+    @Autowired
+    private IQmsAuditPlanService auditPlanService;
+
+    /**
+     * 构建日期参数 Map（用于 BaseEntity.params 的 beginTime / endTime）
+     */
+    private Map<String, Object> buildDateParams(String startDate, String endDate) {
+        Map<String, Object> params = new HashMap<>();
+        if (startDate != null && !startDate.isEmpty()) params.put("beginTime", startDate);
+        if (endDate != null && !endDate.isEmpty()) params.put("endTime", endDate);
+        return params;
+    }
+
+    /**
+     * 构建月度日期参数：month 格式为 yyyy-MM，自动推算该月起止日期
+     */
+    private Map<String, Object> buildMonthParams(String month) {
+        Map<String, Object> params = new HashMap<>();
+        if (month != null && !month.isEmpty() && month.length() >= 7) {
+            params.put("beginTime", month + "-01");
+            // 计算月末
+            try {
+                int year = Integer.parseInt(month.substring(0, 4));
+                int m = Integer.parseInt(month.substring(5, 7));
+                java.util.Calendar cal = java.util.Calendar.getInstance();
+                cal.set(year, m - 1, 1);
+                int lastDay = cal.getActualMaximum(java.util.Calendar.DAY_OF_MONTH);
+                params.put("endTime", month + "-" + String.format("%02d", lastDay));
+            } catch (Exception e) {
+                // 解析失败则不限制
+            }
+        }
+        return params;
+    }
+
+    /**
+     * 构建日报日期参数：date 格式为 yyyy-MM-dd
+     */
+    private Map<String, Object> buildDayParams(String date) {
+        Map<String, Object> params = new HashMap<>();
+        if (date != null && !date.isEmpty()) {
+            params.put("beginTime", date);
+            params.put("endTime", date);
+        }
+        return params;
+    }
 
     @PreAuthorize("@ss.hasPermi('qms:report:list')")
     @GetMapping("/summary")
     public AjaxResult summary(String startDate, String endDate) {
         Map<String, Object> result = new HashMap<>();
-        // 设置日期筛选参数
-        java.util.Map<String, Object> dateParams = new HashMap<>();
-        if (startDate != null && !startDate.isEmpty()) dateParams.put("beginTime", startDate);
-        if (endDate != null && !endDate.isEmpty()) dateParams.put("endTime", endDate);
+        Map<String, Object> dateParams = buildDateParams(startDate, endDate);
+
         // 检验任务汇总（按日期筛选）
         QmsInspTask taskQuery = new QmsInspTask();
         if (!dateParams.isEmpty()) taskQuery.setParams(dateParams);
@@ -45,12 +93,20 @@ public class QmsReportController extends BaseController {
         result.put("totalInsp", taskList.size());
         result.put("passInsp", taskList.stream().filter(t -> "1".equals(t.getInspectResult())).count());
         result.put("failInsp", taskList.stream().filter(t -> "2".equals(t.getInspectResult())).count());
+        // 合格率
+        long completedTask = taskList.stream().filter(t -> "2".equals(t.getTaskStatus())).count();
+        long passTask = taskList.stream().filter(t -> "1".equals(t.getInspectResult())).count();
+        double passRate = completedTask > 0 ? (double) passTask / completedTask * 100 : 0;
+        result.put("passRate", Math.round(passRate * 100) / 100.0);
+
         // NCR汇总
         QmsNcr ncrQuery = new QmsNcr();
         if (!dateParams.isEmpty()) ncrQuery.setParams(dateParams);
         List<QmsNcr> ncrList = ncrService.selectNcrList(ncrQuery);
         result.put("totalNcr", ncrList.size());
         result.put("openNcr", ncrList.stream().filter(n -> !"4".equals(n.getNcrStatus()) && !"5".equals(n.getNcrStatus())).count());
+        result.put("closedNcr", ncrList.stream().filter(n -> "4".equals(n.getNcrStatus())).count());
+
         // CAPA汇总
         QmsCapa capaQuery = new QmsCapa();
         if (!dateParams.isEmpty()) capaQuery.setParams(dateParams);
@@ -58,19 +114,27 @@ public class QmsReportController extends BaseController {
         result.put("totalCapa", capaList.size());
         result.put("openCapa", capaList.stream().filter(c -> !"3".equals(c.getCapaStatus())).count());
         result.put("closedCapa", capaList.stream().filter(c -> "3".equals(c.getCapaStatus())).count());
+        double capaCloseRate = capaList.size() > 0 ? (double) capaList.stream().filter(c -> "3".equals(c.getCapaStatus())).count() / capaList.size() * 100 : 0;
+        result.put("capaCloseRate", Math.round(capaCloseRate * 100) / 100.0);
+
         // 客诉汇总
         QmsComplaint complaintQuery = new QmsComplaint();
         if (!dateParams.isEmpty()) complaintQuery.setParams(dateParams);
         List<QmsComplaint> complaintList = complaintService.selectComplaintList(complaintQuery);
         result.put("totalComplaint", complaintList.size());
         result.put("openComplaint", complaintList.stream().filter(c -> !"3".equals(c.getComplaintStatus())).count());
-        // 供应商评价汇总
-        List<QmsSupplierEval> evalList = supplierEvalService.selectEvalList(new QmsSupplierEval());
+        result.put("closedComplaint", complaintList.stream().filter(c -> "3".equals(c.getComplaintStatus())).count());
+
+        // 供应商评价汇总（修复：增加日期过滤）
+        QmsSupplierEval evalQuery = new QmsSupplierEval();
+        if (!dateParams.isEmpty()) evalQuery.setParams(dateParams);
+        List<QmsSupplierEval> evalList = supplierEvalService.selectEvalList(evalQuery);
         result.put("totalEval", evalList.size());
         result.put("gradeA", evalList.stream().filter(e -> "A".equals(e.getGrade())).count());
         result.put("gradeB", evalList.stream().filter(e -> "B".equals(e.getGrade())).count());
         result.put("gradeC", evalList.stream().filter(e -> "C".equals(e.getGrade())).count());
         result.put("gradeD", evalList.stream().filter(e -> "D".equals(e.getGrade())).count());
+
         result.put("startDate", startDate);
         result.put("endDate", endDate);
         return AjaxResult.success(result);
@@ -183,14 +247,18 @@ public class QmsReportController extends BaseController {
         return obj != null ? obj.toString() : "-";
     }
 
+    // ==================== 检验日报/月报 ====================
+
     @Log(title = "检验日报", businessType = BusinessType.EXPORT)
     @PreAuthorize("@ss.hasPermi('qms:report:list')")
     @PostMapping("/exportInspDaily")
     public void exportInspDaily(HttpServletResponse response, String date) {
         QmsInspTask query = new QmsInspTask();
+        Map<String, Object> params = buildDayParams(date);
+        if (!params.isEmpty()) query.setParams(params);
         List<QmsInspTask> list = inspTaskService.selectInspTaskList(query);
         ExcelUtil<QmsInspTask> util = new ExcelUtil<>(QmsInspTask.class);
-        util.exportExcel(response, list, "检验日报");
+        util.exportExcel(response, list, "检验日报_" + (date != null ? date : "全部"));
     }
 
     @Log(title = "检验月报", businessType = BusinessType.EXPORT)
@@ -198,44 +266,142 @@ public class QmsReportController extends BaseController {
     @PostMapping("/exportInspMonthly")
     public void exportInspMonthly(HttpServletResponse response, String month) {
         QmsInspTask query = new QmsInspTask();
+        Map<String, Object> params = buildMonthParams(month);
+        if (!params.isEmpty()) query.setParams(params);
         List<QmsInspTask> list = inspTaskService.selectInspTaskList(query);
         ExcelUtil<QmsInspTask> util = new ExcelUtil<>(QmsInspTask.class);
-        util.exportExcel(response, list, "检验月报");
+        util.exportExcel(response, list, "检验月报_" + (month != null ? month : "全部"));
     }
+
+    // ==================== NCR月报 ====================
 
     @Log(title = "NCR月报", businessType = BusinessType.EXPORT)
     @PreAuthorize("@ss.hasPermi('qms:report:list')")
     @PostMapping("/exportNcrMonthly")
     public void exportNcrMonthly(HttpServletResponse response, String month) {
-        List<QmsNcr> list = ncrService.selectNcrList(new QmsNcr());
+        QmsNcr query = new QmsNcr();
+        Map<String, Object> params = buildMonthParams(month);
+        if (!params.isEmpty()) query.setParams(params);
+        List<QmsNcr> list = ncrService.selectNcrList(query);
         ExcelUtil<QmsNcr> util = new ExcelUtil<>(QmsNcr.class);
-        util.exportExcel(response, list, "NCR月报");
+        util.exportExcel(response, list, "NCR月报_" + (month != null ? month : "全部"));
     }
 
-    @Log(title = "供应商月报", businessType = BusinessType.EXPORT)
+    // ==================== 供应商月报 ====================
+
+    @Log(title = "供应商质量月报", businessType = BusinessType.EXPORT)
     @PreAuthorize("@ss.hasPermi('qms:report:list')")
     @PostMapping("/exportSupplierMonthly")
     public void exportSupplierMonthly(HttpServletResponse response, String month) {
-        List<QmsSupplierEval> list = supplierEvalService.selectEvalList(new QmsSupplierEval());
+        QmsSupplierEval query = new QmsSupplierEval();
+        Map<String, Object> params = buildMonthParams(month);
+        if (!params.isEmpty()) query.setParams(params);
+        List<QmsSupplierEval> list = supplierEvalService.selectEvalList(query);
         ExcelUtil<QmsSupplierEval> util = new ExcelUtil<>(QmsSupplierEval.class);
-        util.exportExcel(response, list, "供应商质量月报");
+        util.exportExcel(response, list, "供应商质量月报_" + (month != null ? month : "全部"));
     }
+
+    // ==================== 客诉月报 ====================
 
     @Log(title = "客诉月报", businessType = BusinessType.EXPORT)
     @PreAuthorize("@ss.hasPermi('qms:report:list')")
     @PostMapping("/exportComplaintMonthly")
     public void exportComplaintMonthly(HttpServletResponse response, String month) {
-        List<QmsComplaint> list = complaintService.selectComplaintList(new QmsComplaint());
+        QmsComplaint query = new QmsComplaint();
+        Map<String, Object> params = buildMonthParams(month);
+        if (!params.isEmpty()) query.setParams(params);
+        List<QmsComplaint> list = complaintService.selectComplaintList(query);
         ExcelUtil<QmsComplaint> util = new ExcelUtil<>(QmsComplaint.class);
-        util.exportExcel(response, list, "客诉月报");
+        util.exportExcel(response, list, "客诉月报_" + (month != null ? month : "全部"));
     }
+
+    // ==================== CAPA月报 ====================
 
     @Log(title = "CAPA月报", businessType = BusinessType.EXPORT)
     @PreAuthorize("@ss.hasPermi('qms:report:list')")
     @PostMapping("/exportCapaMonthly")
     public void exportCapaMonthly(HttpServletResponse response, String month) {
-        List<QmsCapa> list = capaService.selectCapaList(new QmsCapa());
+        QmsCapa query = new QmsCapa();
+        Map<String, Object> params = buildMonthParams(month);
+        if (!params.isEmpty()) query.setParams(params);
+        List<QmsCapa> list = capaService.selectCapaList(query);
         ExcelUtil<QmsCapa> util = new ExcelUtil<>(QmsCapa.class);
-        util.exportExcel(response, list, "CAPA月报");
+        util.exportExcel(response, list, "CAPA月报_" + (month != null ? month : "全部"));
+    }
+
+    // ==================== 管理评审(MR)报表 ====================
+
+    @Log(title = "管理评审月报", businessType = BusinessType.EXPORT)
+    @PreAuthorize("@ss.hasPermi('qms:report:list')")
+    @PostMapping("/exportMrMonthly")
+    public void exportMrMonthly(HttpServletResponse response, String month) {
+        QmsMr query = new QmsMr();
+        Map<String, Object> params = buildMonthParams(month);
+        if (!params.isEmpty()) query.setParams(params);
+        List<QmsMr> list = mrService.selectMrList(query);
+        ExcelUtil<QmsMr> util = new ExcelUtil<>(QmsMr.class);
+        util.exportExcel(response, list, "管理评审月报_" + (month != null ? month : "全部"));
+    }
+
+    // ==================== 质量目标达成报表 ====================
+
+    @Log(title = "质量目标达成报表", businessType = BusinessType.EXPORT)
+    @PreAuthorize("@ss.hasPermi('qms:report:list')")
+    @PostMapping("/exportQualityTarget")
+    public void exportQualityTarget(HttpServletResponse response, Integer year) {
+        QmsQualityTarget query = new QmsQualityTarget();
+        if (year != null) query.setTargetYear(year);
+        List<QmsQualityTarget> list = qualityTargetService.selectTargetList(query);
+        ExcelUtil<QmsQualityTarget> util = new ExcelUtil<>(QmsQualityTarget.class);
+        util.exportExcel(response, list, "质量目标达成报表_" + (year != null ? year : "全部"));
+    }
+
+    /**
+     * 质量目标达成汇总（供前端展示）
+     */
+    @PreAuthorize("@ss.hasPermi('qms:report:list')")
+    @GetMapping("/targetSummary")
+    public AjaxResult targetSummary(Integer year) {
+        QmsQualityTarget query = new QmsQualityTarget();
+        if (year != null) query.setTargetYear(year);
+        List<QmsQualityTarget> list = qualityTargetService.selectTargetList(query);
+        Map<String, Object> result = new HashMap<>();
+        result.put("total", list.size());
+        result.put("achieved", list.stream().filter(t -> "1".equals(t.getAchievement())).count());
+        result.put("notAchieved", list.stream().filter(t -> "0".equals(t.getAchievement())).count());
+        result.put("targets", list);
+        return AjaxResult.success(result);
+    }
+
+    // ==================== 审核计划报表 ====================
+
+    @Log(title = "审核计划报表", businessType = BusinessType.EXPORT)
+    @PreAuthorize("@ss.hasPermi('qms:report:list')")
+    @PostMapping("/exportAuditPlan")
+    public void exportAuditPlan(HttpServletResponse response, Integer year) {
+        QmsAuditPlan query = new QmsAuditPlan();
+        if (year != null) query.setAuditYear(year);
+        List<QmsAuditPlan> list = auditPlanService.selectAuditPlanList(query);
+        ExcelUtil<QmsAuditPlan> util = new ExcelUtil<>(QmsAuditPlan.class);
+        util.exportExcel(response, list, "审核计划报表_" + (year != null ? year : "全部"));
+    }
+
+    /**
+     * 审核计划汇总（供前端展示）
+     */
+    @PreAuthorize("@ss.hasPermi('qms:report:list')")
+    @GetMapping("/auditSummary")
+    public AjaxResult auditSummary(Integer year) {
+        QmsAuditPlan query = new QmsAuditPlan();
+        if (year != null) query.setAuditYear(year);
+        List<QmsAuditPlan> list = auditPlanService.selectAuditPlanList(query);
+        Map<String, Object> result = new HashMap<>();
+        result.put("total", list.size());
+        result.put("planned", list.stream().filter(a -> "0".equals(a.getPlanStatus())).count());
+        result.put("inProgress", list.stream().filter(a -> "1".equals(a.getPlanStatus())).count());
+        result.put("completed", list.stream().filter(a -> "2".equals(a.getPlanStatus())).count());
+        result.put("cancelled", list.stream().filter(a -> "3".equals(a.getPlanStatus())).count());
+        result.put("auditPlans", list);
+        return AjaxResult.success(result);
     }
 }

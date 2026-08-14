@@ -137,4 +137,56 @@ Write-Host "`n=== 16. Backward Trace After Fix (FG-20260808-002 -> upstream) ===
 $resp = Invoke-RestMethod -Uri "http://localhost:8081/qms/trace/backward/FG-20260808-002" -Method Get -Headers $headers
 PrintTree $resp.data.children 1
 
+Write-Host "`n=== 17. Fallback Trace - Non-existent Batch (should return 0 records) ===" -ForegroundColor Green
+$resp = Invoke-RestMethod -Uri "http://localhost:8081/qms/trace/fallback/NON-EXISTENT-BATCH?direction=backward" -Method Get -Headers $headers
+Write-Host "code=$($resp.code), fallback=$($resp.data.fallback), genealogyNodes=$($resp.data.genealogyNodeCount)"
+Write-Host "inspectTasks=$($resp.data.inspectTasks.Count), ncrList=$($resp.data.ncrList.Count)"
+Write-Host "inventoryLogs=$($resp.data.inventoryLogs.Count), inventoryList=$($resp.data.inventoryList.Count)"
+Write-Host "receiveList=$($resp.data.receiveList.Count), complaintList=$($resp.data.complaintList.Count)"
+Write-Host "shipmentList=$($resp.data.shipmentList.Count)"
+Write-Host "message=$($resp.data.message)"
+
+Write-Host "`n=== 18. Fallback Trace - Batch with Genealogy (RM-20260808-001, forward) ===" -ForegroundColor Green
+$resp = Invoke-RestMethod -Uri "http://localhost:8081/qms/trace/fallback/RM-20260808-001?direction=forward" -Method Get -Headers $headers
+Write-Host "code=$($resp.code), fallback=$($resp.data.fallback), genealogyNodes=$($resp.data.genealogyNodeCount)"
+Write-Host "inspectTasks=$($resp.data.inspectTasks.Count), ncrList=$($resp.data.ncrList.Count)"
+Write-Host "inventoryLogs=$($resp.data.inventoryLogs.Count), inventoryList=$($resp.data.inventoryList.Count)"
+Write-Host "receiveList=$($resp.data.receiveList.Count), complaintList=$($resp.data.complaintList.Count)"
+Write-Host "shipmentList=$($resp.data.shipmentList.Count)"
+Write-Host "message=$($resp.data.message)"
+
+Write-Host "`n=== 19. Fallback Trace - Batch with Genealogy (FG-20260808-001, backward) ===" -ForegroundColor Green
+$resp = Invoke-RestMethod -Uri "http://localhost:8081/qms/trace/fallback/FG-20260808-001?direction=backward" -Method Get -Headers $headers
+Write-Host "code=$($resp.code), fallback=$($resp.data.fallback), genealogyNodes=$($resp.data.genealogyNodeCount)"
+Write-Host "inspectTasks=$($resp.data.inspectTasks.Count), ncrList=$($resp.data.ncrList.Count)"
+Write-Host "inventoryLogs=$($resp.data.inventoryLogs.Count), inventoryList=$($resp.data.inventoryList.Count)"
+Write-Host "receiveList=$($resp.data.receiveList.Count), complaintList=$($resp.data.complaintList.Count)"
+Write-Host "shipmentList=$($resp.data.shipmentList.Count)"
+Write-Host "message=$($resp.data.message)"
+
+Write-Host "`n=== 20. Fallback Trace - Shipment Detail Verification ===" -ForegroundColor Green
+Write-Host "Checking ShipmentSummary structure if shipments exist..."
+if ($resp.data.shipmentList -and $resp.data.shipmentList.Count -gt 0) {
+    $ship = $resp.data.shipmentList[0]
+    Write-Host "  shipmentNo=$($ship.shipmentNo), orderNo=$($ship.orderNo), customerName=$($ship.customerName)"
+    Write-Host "  outboundOrderNo=$($ship.outboundOrderNo), shipmentDate=$($ship.shipmentDate), status=$($ship.status)"
+    Write-Host "  materialCode=$($ship.materialCode), materialName=$($ship.materialName), batchNo=$($ship.batchNo)"
+    Write-Host "  shipQty=$($ship.shipQty), receiverName=$($ship.receiverName), logisticsCompany=$($ship.logisticsCompany), trackingNo=$($ship.trackingNo)"
+} else {
+    Write-Host "  No shipment records found (expected if no mk_shipment data with matching batch_no)"
+}
+
+Write-Host "`n=== 21. Fallback Trace - Default Direction (no direction param) ===" -ForegroundColor Green
+$resp = Invoke-RestMethod -Uri "http://localhost:8081/qms/trace/fallback/RM-20260808-001" -Method Get -Headers $headers
+Write-Host "code=$($resp.code), direction=$($resp.data.direction), fallback=$($resp.data.fallback)"
+Write-Host "Default direction should be 'backward'"
+
+Write-Host "`n=== 22. Fallback Trace - Empty Batch (should error) ===" -ForegroundColor Green
+try {
+    $resp = Invoke-RestMethod -Uri "http://localhost:8081/qms/trace/fallback/" -Method Get -Headers $headers
+    Write-Host "Unexpected success: code=$($resp.code)" -ForegroundColor Red
+} catch {
+    Write-Host "Expected error (empty batch): $($_.Exception.Response.StatusCode)" -ForegroundColor Cyan
+}
+
 Write-Host "`n========== ALL TESTS DONE ==========" -ForegroundColor Green

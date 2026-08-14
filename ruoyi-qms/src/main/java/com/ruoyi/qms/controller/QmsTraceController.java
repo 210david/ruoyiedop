@@ -117,6 +117,18 @@ public class QmsTraceController extends BaseController
         return AjaxResult.success(qmsTraceService.backwardTrace(batchNo));
     }
 
+    /**
+     * 降级追溯：当谱系表无数据时，利用已有业务单据中的 batch_no 做辅助关联追溯
+     * 返回检验记录、NCR、仓库流转、采购收货、客诉等多维度信息
+     */
+    @PreAuthorize("@ss.hasPermi('qms:trace:search')")
+    @GetMapping("/fallback/{batchNo}")
+    public AjaxResult fallbackTrace(@PathVariable String batchNo,
+            @RequestParam(value = "direction", defaultValue = "backward") String direction)
+    {
+        return AjaxResult.success(qmsTraceService.fallbackTrace(batchNo, direction));
+    }
+
     // ==================== 完整度看板 ====================
 
     @PreAuthorize("@ss.hasPermi('qms:trace:dashboard')")
@@ -128,9 +140,11 @@ public class QmsTraceController extends BaseController
 
     @PreAuthorize("@ss.hasPermi('qms:trace:dashboard')")
     @GetMapping("/breakList")
-    public AjaxResult breakList()
+    public TableDataInfo breakList(QmsLotGenealogy genealogy)
     {
-        return AjaxResult.success(qmsTraceService.selectBreakList());
+        startPage();
+        List<QmsLotGenealogy> list = qmsTraceService.selectBreakList(genealogy);
+        return getDataTable(list);
     }
 
     // ==================== SN级追溯 ====================

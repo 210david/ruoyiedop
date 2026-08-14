@@ -39,6 +39,12 @@
             <if test="evalPeriod != null and evalPeriod != ''"> AND eval_period = #{evalPeriod}</if>
             <if test="evalType != null and evalType != ''"> AND eval_type = #{evalType}</if>
             <if test="grade != null and grade != ''"> AND grade = #{grade}</if>
+            <if test="params.beginTime != null and params.beginTime != ''"><!-- 开始时间检索 -->
+                AND date_format(create_time,'%Y%m%d') &gt;= date_format(#{params.beginTime},'%Y%m%d')
+            </if>
+            <if test="params.endTime != null and params.endTime != ''"><!-- 结束时间检索 -->
+                AND date_format(create_time,'%Y%m%d') &lt;= date_format(#{params.endTime},'%Y%m%d')
+            </if>
         </where>
         ORDER BY create_time DESC
     </select>

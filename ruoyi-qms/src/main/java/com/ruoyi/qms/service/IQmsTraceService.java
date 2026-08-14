@@ -3,6 +3,7 @@ package com.ruoyi.qms.service;
 import java.util.List;
 import java.util.Map;
 import com.ruoyi.qms.domain.QmsLotGenealogy;
+import com.ruoyi.qms.domain.vo.TraceFallbackVO;
 
 /**
  * 质量追溯 Service接口
@@ -41,9 +42,17 @@ public interface IQmsTraceService
     /** 谱系完整度统计（已关联工单数/断点工单数/完整率） */
     Map<String, Object> traceCompleteness();
 
-    /** 查询断点清单 */
-    List<QmsLotGenealogy> selectBreakList();
+    /** 查询断点清单（支持条件筛选+分页） */
+    List<QmsLotGenealogy> selectBreakList(QmsLotGenealogy genealogy);
 
     /** 批量补录谱系 */
     int batchInsertGenealogy(List<QmsLotGenealogy> list);
+
+    /**
+     * 降级追溯：当谱系表无数据时，利用已有业务单据中的 batch_no 做辅助关联追溯
+     * @param batchNo 批次号
+     * @param direction 追溯方向（forward=正向 / backward=反向）
+     * @return 降级追溯结果（检验记录/NCR/仓库流转/采购收货/客诉等）
+     */
+    TraceFallbackVO fallbackTrace(String batchNo, String direction);
 }

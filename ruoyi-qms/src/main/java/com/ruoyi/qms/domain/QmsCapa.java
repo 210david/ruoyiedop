@@ -11,7 +11,7 @@ public class QmsCapa extends BaseEntity {
     private Long capaId;
     @Excel(name = "CAPA编号", sort = 1) private String capaNo;
     @Excel(name = "标题", sort = 2) private String title;
-    @Excel(name = "来源", dictType = "qms_capa_source_type", sort = 3) private String sourceType;
+    @Excel(name = "来源", dictType = "qms_capa_source", sort = 3) private String sourceType;
     @Excel(name = "来源编号", sort = 4) private String sourceNo;
     private String problemDesc;
     private String teamMembers;

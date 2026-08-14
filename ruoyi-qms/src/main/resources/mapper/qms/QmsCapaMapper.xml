@@ -44,6 +44,12 @@
             <if test="sourceNo != null and sourceNo != ''"> AND source_no LIKE CONCAT('%', #{sourceNo}, '%')</if>
             <if test="title != null and title != ''"> AND title LIKE CONCAT('%', #{title}, '%')</if>
             <if test="capaStatus != null and capaStatus != ''"> AND capa_status = #{capaStatus}</if>
+            <if test="params.beginTime != null and params.beginTime != ''"><!-- 开始时间检索 -->
+                AND date_format(create_time,'%Y%m%d') &gt;= date_format(#{params.beginTime},'%Y%m%d')
+            </if>
+            <if test="params.endTime != null and params.endTime != ''"><!-- 结束时间检索 -->
+                AND date_format(create_time,'%Y%m%d') &lt;= date_format(#{params.endTime},'%Y%m%d')
+            </if>
         </where>
         ORDER BY create_time DESC
     </select>

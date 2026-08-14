@@ -142,7 +142,7 @@ const breakList = ref([])
 const showHelp = ref(false)
 
 traceCompleteness().then(res => { data.value = res.data })
-traceBreakList().then(res => { breakList.value = res.data })
+traceBreakList({ pageNum: 1, pageSize: 10 }).then(res => { breakList.value = res.rows })
 </script>
 
 <style scoped>

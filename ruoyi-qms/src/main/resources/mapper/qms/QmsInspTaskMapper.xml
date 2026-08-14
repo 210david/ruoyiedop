@@ -65,6 +65,12 @@
             <if test="taskStatus != null and taskStatus != ''"> AND task_status = #{taskStatus}</if>
             <if test="inspectResult != null and inspectResult != ''"> AND inspect_result = #{inspectResult}</if>
             <if test="isRecheck != null and isRecheck != ''"> AND is_recheck = #{isRecheck}</if>
+            <if test="params.beginTime != null and params.beginTime != ''"><!-- 开始时间检索 -->
+                AND date_format(create_time,'%Y%m%d') &gt;= date_format(#{params.beginTime},'%Y%m%d')
+            </if>
+            <if test="params.endTime != null and params.endTime != ''"><!-- 结束时间检索 -->
+                AND date_format(create_time,'%Y%m%d') &lt;= date_format(#{params.endTime},'%Y%m%d')
+            </if>
         </where>
         ORDER BY task_id DESC
     </select>

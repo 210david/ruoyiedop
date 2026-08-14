@@ -74,6 +74,12 @@
             <if test="isolateFlag != null and isolateFlag != ''"> AND isolate_flag = #{isolateFlag}</if>
             <if test="currentNode != null"> AND current_node = #{currentNode}</if>
             <if test="discovererName != null and discovererName != ''"> AND discoverer_name LIKE CONCAT('%', #{discovererName}, '%')</if>
+            <if test="params.beginTime != null and params.beginTime != ''"><!-- 开始时间检索 -->
+                AND date_format(create_time,'%Y%m%d') &gt;= date_format(#{params.beginTime},'%Y%m%d')
+            </if>
+            <if test="params.endTime != null and params.endTime != ''"><!-- 结束时间检索 -->
+                AND date_format(create_time,'%Y%m%d') &lt;= date_format(#{params.endTime},'%Y%m%d')
+            </if>
         </where>
         ORDER BY ncr_id DESC
     </select>

@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.qms.mapper.QmsTraceFallbackMapper">
+
+    <!-- ==================== 检验任务 ==================== -->
+    <resultMap type="com.ruoyi.qms.domain.vo.TraceFallbackVO$InspTaskSummary" id="InspTaskSummaryResult">
+        <result property="taskNo" column="task_no"/>
+        <result property="taskType" column="task_type"/>
+        <result property="sourceType" column="source_type"/>
+        <result property="sourceNo" column="source_no"/>
+        <result property="materialCode" column="material_code"/>
+        <result property="materialName" column="material_name"/>
+        <result property="supplierName" column="supplier_name"/>
+        <result property="batchNo" column="batch_no"/>
+        <result property="inspectResult" column="inspect_result"/>
+        <result property="defectLevel" column="defect_level"/>
+        <result property="inspectorName" column="inspector_name"/>
+        <result property="inspectTime" column="inspect_time"/>
+        <result property="judgeTime" column="judge_time"/>
+    </resultMap>
+
+    <select id="selectInspTasksByBatchNo" resultMap="InspTaskSummaryResult">
+        SELECT task_no, task_type, source_type, source_no,
+               material_code, material_name, supplier_name,
+               batch_no, inspect_result, defect_level,
+               inspector_name, inspect_time, judge_time
+        FROM qms_insp_task
+        WHERE del_flag = '0' AND batch_no = #{batchNo}
+        ORDER BY COALESCE(inspect_time, create_time) DESC
+    </select>
+
+    <!-- ==================== NCR ==================== -->
+    <resultMap type="com.ruoyi.qms.domain.vo.TraceFallbackVO$NcrSummary" id="NcrSummaryResult">
+        <result property="ncrNo" column="ncr_no"/>
+        <result property="sourceType" column="source_type"/>
+        <result property="sourceNo" column="source_no"/>
+        <result property="materialCode" column="material_code"/>
+        <result property="materialName" column="material_name"/>
+        <result property="supplierName" column="supplier_name"/>
+        <result property="batchNo" column="batch_no"/>
+        <result property="defectLevel" column="defect_level"/>
+        <result property="defectDesc" column="defect_desc"/>
+        <result property="disposition" column="disposition"/>
+        <result property="ncrStatus" column="ncr_status"/>
+        <result property="discovererName" column="discoverer_name"/>
+        <result property="discoverTime" column="discover_time"/>
+    </resultMap>
+
+    <select id="selectNcrsByBatchNo" resultMap="NcrSummaryResult">
+        SELECT ncr_no, source_type, source_no,
+               material_code, material_name, supplier_name,
+               batch_no, defect_level, defect_desc,
+               disposition, ncr_status, discoverer_name, discover_time
+        FROM qms_ncr
+        WHERE del_flag = '0' AND batch_no = #{batchNo}
+        ORDER BY discover_time DESC
+    </select>
+
+    <!-- ==================== 客诉 ==================== -->
+    <resultMap type="com.ruoyi.qms.domain.vo.TraceFallbackVO$ComplaintSummary" id="ComplaintSummaryResult">
+        <result property="complaintNo" column="complaint_no"/>
+        <result property="customerName" column="customer_name"/>
+        <result property="materialCode" column="material_code"/>
+        <result property="materialName" column="material_name"/>
+        <result property="batchNo" column="batch_no"/>
+        <result property="complaintDate" column="complaint_date"/>
+        <result property="complaintType" column="complaint_type"/>
+        <result property="severity" column="severity"/>
+        <result property="defectDesc" column="defect_desc"/>
+        <result property="complaintStatus" column="complaint_status"/>
+    </resultMap>
+
+    <select id="selectComplaintsByBatchNo" resultMap="ComplaintSummaryResult">
+        SELECT complaint_no, customer_name, material_code, material_name,
+               batch_no, complaint_date, complaint_type, severity,
+               defect_desc, complaint_status
+        FROM qms_complaint
+        WHERE del_flag = '0' AND batch_no = #{batchNo}
+        ORDER BY complaint_date DESC
+    </select>
+
+    <!-- ==================== 仓库库存流水 ==================== -->
+    <resultMap type="com.ruoyi.qms.domain.vo.TraceFallbackVO$InventoryLogSummary" id="InventoryLogSummaryResult">
+        <result property="materialCode" column="material_code"/>
+        <result property="materialName" column="material_name"/>
+        <result property="warehouseName" column="warehouse_name"/>
+        <result property="batchNo" column="batch_no"/>
+        <result property="changeType" column="change_type"/>
+        <result property="changeQty" column="change_qty"/>
+        <result property="afterQty" column="after_qty"/>
+        <result property="refOrderType" column="ref_order_type"/>
+        <result property="refOrderNo" column="ref_order_no"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+    </resultMap>
+
+    <select id="selectInventoryLogsByBatchNo" resultMap="InventoryLogSummaryResult">
+        SELECT m.material_code, m.material_name,
+               w.warehouse_name,
+               l.batch_no, l.change_type, l.change_qty, l.after_qty,
+               l.ref_order_type, l.ref_order_no, l.create_by, l.create_time
+        FROM wms_inventory_log l
+        LEFT JOIN wms_material m ON l.material_id = m.material_id
+        LEFT JOIN wms_warehouse w ON l.warehouse_id = w.warehouse_id
+        WHERE l.batch_no = #{batchNo}
+        ORDER BY l.create_time DESC
+        LIMIT 50
+    </select>
+
+    <!-- ==================== 仓库库存快照 ==================== -->
+    <resultMap type="com.ruoyi.qms.domain.vo.TraceFallbackVO$InventorySummary" id="InventorySummaryResult">
+        <result property="materialCode" column="material_code"/>
+        <result property="materialName" column="material_name"/>
+        <result property="warehouseName" column="warehouse_name"/>
+        <result property="locationName" column="location_name"/>
+        <result property="batchNo" column="batch_no"/>
+        <result property="qty" column="qty"/>
+        <result property="lockQty" column="lock_qty"/>
+    </resultMap>
+
+    <select id="selectInventoryByBatchNo" resultMap="InventorySummaryResult">
+        SELECT m.material_code, m.material_name,
+               w.warehouse_name,
+               loc.warehouse_name AS location_name,
+               i.batch_no, i.qty, i.lock_qty
+        FROM wms_inventory i
+        LEFT JOIN wms_material m ON i.material_id = m.material_id
+        LEFT JOIN wms_warehouse w ON i.warehouse_id = w.warehouse_id
+        LEFT JOIN wms_warehouse loc ON i.location_id = loc.warehouse_id
+        WHERE i.del_flag = '0' AND i.batch_no = #{batchNo}
+        ORDER BY i.warehouse_id
+    </select>
+
+    <!-- ==================== 采购收货明细 ==================== -->
+    <resultMap type="com.ruoyi.qms.domain.vo.TraceFallbackVO$ReceiveSummary" id="ReceiveSummaryResult">
+        <result property="receiveNo" column="receive_no"/>
+        <result property="orderNo" column="order_no"/>
+        <result property="supplierName" column="supplier_name"/>
+        <result property="materialCode" column="material_code"/>
+        <result property="materialName" column="material_name"/>
+        <result property="batchNo" column="batch_no"/>
+        <result property="receiveQty" column="receive_qty"/>
+        <result property="qualifiedQty" column="qualified_qty"/>
+        <result property="unqualifiedQty" column="unqualified_qty"/>
+        <result property="productionDate" column="production_date"/>
+        <result property="expiryDate" column="expiry_date"/>
+        <result property="receiveDate" column="receive_date"/>
+        <result property="status" column="status"/>
+    </resultMap>
+
+    <select id="selectReceiveDetailsByBatchNo" resultMap="ReceiveSummaryResult">
+        SELECT r.receive_no, r.order_no, r.supplier_name,
+               d.material_code, d.material_name, d.batch_no,
+               d.receive_qty, d.qualified_qty, d.unqualified_qty,
+               d.production_date, d.expiry_date,
+               r.receive_date, r.status
+        FROM pms_receive_detail d
+        INNER JOIN pms_receive r ON d.receive_id = r.receive_id
+        WHERE d.del_flag = '0' AND r.del_flag = '0'
+          AND d.batch_no = #{batchNo}
+        ORDER BY r.receive_date DESC
+    </select>
+
+    <!-- ==================== 销售发货（通过出库单明细 batch_no 关联） ==================== -->
+    <resultMap type="com.ruoyi.qms.domain.vo.TraceFallbackVO$ShipmentSummary" id="ShipmentSummaryResult">
+        <result property="shipmentNo" column="shipment_no"/>
+        <result property="orderNo" column="order_no"/>
+        <result property="customerName" column="customer_name"/>
+        <result property="outboundOrderNo" column="outbound_order_no"/>
+        <result property="shipmentDate" column="shipment_date"/>
+        <result property="status" column="status"/>
+        <result property="materialCode" column="material_code"/>
+        <result property="materialName" column="material_name"/>
+        <result property="batchNo" column="batch_no"/>
+        <result property="shipQty" column="ship_qty"/>
+        <result property="receiverName" column="receiver_name"/>
+        <result property="logisticsCompany" column="logistics_company"/>
+        <result property="trackingNo" column="tracking_no"/>
+    </resultMap>
+
+    <select id="selectShipmentsByBatchNo" resultMap="ShipmentSummaryResult">
+        SELECT s.shipment_no, s.order_no, s.customer_name, s.outbound_order_no,
+               DATE_FORMAT(s.shipment_date, '%Y-%m-%d') AS shipment_date,
+               s.status,
+               m.material_code, m.material_name,
+               d.batch_no,
+               d.actual_qty AS ship_qty,
+               s.receiver_name, s.logistics_company, s.tracking_no
+        FROM mk_shipment s
+        INNER JOIN wms_outbound_order o ON s.outbound_order_no = o.order_no
+        INNER JOIN wms_outbound_order_detail d ON o.order_id = d.order_id
+        LEFT JOIN wms_material m ON d.material_id = m.material_id
+        WHERE s.del_flag = '0'
+          AND o.del_flag = '0'
+          AND d.del_flag = '0'
+          AND d.batch_no = #{batchNo}
+        ORDER BY s.shipment_date DESC
+    </select>
+
+</mapper>

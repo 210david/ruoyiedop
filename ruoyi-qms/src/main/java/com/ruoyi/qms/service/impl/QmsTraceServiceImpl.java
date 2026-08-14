@@ -11,9 +11,11 @@ import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.qms.domain.QmsLotGenealogy;
 import com.ruoyi.qms.domain.QmsInspTask;
 import com.ruoyi.qms.domain.QmsNcr;
+import com.ruoyi.qms.domain.vo.TraceFallbackVO;
 import com.ruoyi.qms.mapper.QmsLotGenealogyMapper;
 import com.ruoyi.qms.mapper.QmsInspTaskMapper;
 import com.ruoyi.qms.mapper.QmsNcrMapper;
+import com.ruoyi.qms.mapper.QmsTraceFallbackMapper;
 import com.ruoyi.qms.service.IQmsTraceService;
 
 /**
@@ -42,6 +44,9 @@ public class QmsTraceServiceImpl implements IQmsTraceService
 
     @Autowired
     private QmsNcrMapper qmsNcrMapper;
+
+    @Autowired
+    private QmsTraceFallbackMapper traceFallbackMapper;
 
     @Override
     public List<QmsLotGenealogy> selectGenealogyList(QmsLotGenealogy genealogy)
@@ -104,6 +109,22 @@ public class QmsTraceServiceImpl implements IQmsTraceService
     @Transactional(rollbackFor = Exception.class)
     public int updateGenealogy(QmsLotGenealogy genealogy)
     {
+        // 断点重算：与 insertGenealogy 保持一致
+        // 产出批次为空 → 断点（breakFlag=1）；产出批次非空 → 正常（breakFlag=0）
+        if (StringUtils.isEmpty(genealogy.getChildBatchNo()))
+        {
+            genealogy.setBreakFlag(1);
+            if (StringUtils.isEmpty(genealogy.getBreakReason()))
+            {
+                genealogy.setBreakReason("产出批次未登记");
+            }
+        }
+        else
+        {
+            genealogy.setBreakFlag(0);
+            // 产出批次已补录，清除断点原因
+            genealogy.setBreakReason(null);
+        }
         return qmsLotGenealogyMapper.updateGenealogy(genealogy);
     }
 
@@ -270,9 +291,9 @@ public class QmsTraceServiceImpl implements IQmsTraceService
     }
 
     @Override
-    public List<QmsLotGenealogy> selectBreakList()
+    public List<QmsLotGenealogy> selectBreakList(QmsLotGenealogy genealogy)
     {
-        return qmsLotGenealogyMapper.selectBreakList();
+        return qmsLotGenealogyMapper.selectBreakList(genealogy);
     }
 
     @Override
@@ -302,5 +323,95 @@ public class QmsTraceServiceImpl implements IQmsTraceService
             if (genealogy.getTraceTime() == null) genealogy.setTraceTime(new Date());
         }
         return qmsLotGenealogyMapper.batchInsertGenealogy(list);
+    }
+
+    /**
+     * 降级追溯：当谱系表无数据时，利用已有业务单据中的 batch_no 做辅助关联追溯
+     */
+    @Override
+    public TraceFallbackVO fallbackTrace(String batchNo, String direction)
+    {
+        if (StringUtils.isEmpty(batchNo))
+        {
+            throw new ServiceException("批次号不能为空");
+        }
+        log.info("降级追溯开始：{}，方向：{}", batchNo, direction);
+
+        TraceFallbackVO result = new TraceFallbackVO();
+        result.setBatchNo(batchNo);
+        result.setDirection(direction);
+        result.setTraceTime(new Date());
+        result.setFallback(true);
+
+        // 1. 检查谱系表是否有数据
+        List<QmsLotGenealogy> genealogyList;
+        if ("forward".equals(direction))
+        {
+            genealogyList = qmsLotGenealogyMapper.selectByParentBatchNo(batchNo);
+        }
+        else
+        {
+            genealogyList = qmsLotGenealogyMapper.selectByChildBatchNo(batchNo);
+        }
+        result.setGenealogyNodeCount(genealogyList != null ? genealogyList.size() : 0);
+
+        // 2. 查询检验记录
+        List<TraceFallbackVO.InspTaskSummary> inspTasks = traceFallbackMapper.selectInspTasksByBatchNo(batchNo);
+        result.setInspectTasks(inspTasks != null ? inspTasks : Collections.emptyList());
+
+        // 3. 查询 NCR
+        List<TraceFallbackVO.NcrSummary> ncrs = traceFallbackMapper.selectNcrsByBatchNo(batchNo);
+        result.setNcrList(ncrs != null ? ncrs : Collections.emptyList());
+
+        // 4. 查询仓库库存流水
+        List<TraceFallbackVO.InventoryLogSummary> invLogs = traceFallbackMapper.selectInventoryLogsByBatchNo(batchNo);
+        result.setInventoryLogs(invLogs != null ? invLogs : Collections.emptyList());
+
+        // 5. 查询仓库库存快照
+        List<TraceFallbackVO.InventorySummary> invList = traceFallbackMapper.selectInventoryByBatchNo(batchNo);
+        result.setInventoryList(invList != null ? invList : Collections.emptyList());
+
+        // 6. 查询采购收货记录
+        List<TraceFallbackVO.ReceiveSummary> recvList = traceFallbackMapper.selectReceiveDetailsByBatchNo(batchNo);
+        result.setReceiveList(recvList != null ? recvList : Collections.emptyList());
+
+        // 7. 查询客诉记录
+        List<TraceFallbackVO.ComplaintSummary> complaintList = traceFallbackMapper.selectComplaintsByBatchNo(batchNo);
+        result.setComplaintList(complaintList != null ? complaintList : Collections.emptyList());
+
+        // 8. 查询销售发货记录（通过出库单明细 batch_no 关联）
+        List<TraceFallbackVO.ShipmentSummary> shipmentList = traceFallbackMapper.selectShipmentsByBatchNo(batchNo);
+        result.setShipmentList(shipmentList != null ? shipmentList : Collections.emptyList());
+
+        // 9. 构建提示消息
+        int totalRecords = result.getInspectTasks().size() + result.getNcrList().size()
+                + result.getInventoryLogs().size() + result.getInventoryList().size()
+                + result.getReceiveList().size() + result.getComplaintList().size()
+                + result.getShipmentList().size();
+
+        if (result.getGenealogyNodeCount() > 0)
+        {
+            result.setMessage(String.format("谱系表已有 %d 条记录，可使用正常追溯。降级追溯补充发现 %d 条关联业务记录。",
+                    result.getGenealogyNodeCount(), totalRecords));
+        }
+        else if (totalRecords > 0)
+        {
+            result.setMessage(String.format("谱系表无该批次数据（谱系未建立）。降级追溯从业务单据中找到 %d 条关联记录，建议补录谱系数据以获得完整追溯链。", totalRecords));
+        }
+        else
+        {
+            result.setMessage("谱系表无该批次数据，且业务单据中也未找到该批次的关联记录。请检查批次号是否正确，或该批次可能尚未在任何业务环节中使用。");
+        }
+
+        log.info("降级追溯完成：{}，找到检验{}条/NCR{}条/库存流水{}条/库存{}条/收货{}条/客诉{}条/发货{}条",
+                batchNo,
+                result.getInspectTasks().size(),
+                result.getNcrList().size(),
+                result.getInventoryLogs().size(),
+                result.getInventoryList().size(),
+                result.getReceiveList().size(),
+                result.getComplaintList().size(),
+                result.getShipmentList().size());
+        return result;
     }
 }

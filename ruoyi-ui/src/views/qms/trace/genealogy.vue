@@ -177,10 +177,10 @@
           <el-table-column label="工序" prop="opName" key="opName" :width="colWidth('opName', 90)" resizable align="center" v-if="columns.opName.visible" />
           <el-table-column label="供应商" prop="supplierName" key="supplierName" :width="colWidth('supplierName', 130)" resizable show-overflow-tooltip v-if="columns.supplierName.visible" />
           <el-table-column label="投入量" prop="qtyIn" key="qtyIn" :width="colWidth('qtyIn', 90)" resizable align="center" v-if="columns.qtyIn.visible">
-            <template #header><span>投入量</span><el-tooltip content="投入批次的数量，支持4位小数" placement="top"><el-icon class="col-tip"><QuestionFilled /></el-icon></el-tooltip></template>
+            <template #header><span>投入量</span><el-tooltip content="投入批次的数量，支持2位小数" placement="top"><el-icon class="col-tip"><QuestionFilled /></el-icon></el-tooltip></template>
           </el-table-column>
           <el-table-column label="产出量" prop="qtyOut" key="qtyOut" :width="colWidth('qtyOut', 90)" resizable align="center" v-if="columns.qtyOut.visible">
-            <template #header><span>产出量</span><el-tooltip content="产出批次的数量，支持4位小数" placement="top"><el-icon class="col-tip"><QuestionFilled /></el-icon></el-tooltip></template>
+            <template #header><span>产出量</span><el-tooltip content="产出批次的数量，支持2位小数" placement="top"><el-icon class="col-tip"><QuestionFilled /></el-icon></el-tooltip></template>
           </el-table-column>
           <el-table-column label="来源" prop="sourceType" key="sourceType" :width="colWidth('sourceType', 90)" resizable align="center" v-if="columns.sourceType.visible">
             <template #header><span>来源</span><el-tooltip content="谱系数据来源：投料/报工/完工/调拨/返工/合并/拆分/补录" placement="top"><el-icon class="col-tip"><QuestionFilled /></el-icon></el-tooltip></template>
@@ -233,8 +233,8 @@
           <div class="rd-card-body" v-show="!collapsedCards.v_material" style="display:block"><div class="rd-grid">
             <div class="rd-item"><span class="rd-label">物料编码<el-tooltip content="物料的唯一编码，复用仓库主数据" placement="top"><el-icon class="rd-label-tip"><QuestionFilled /></el-icon></el-tooltip></span><div class="rd-value">{{ viewData.materialCode || '-' }}</div></div>
             <div class="rd-item"><span class="rd-label">物料名称<el-tooltip content="物料的名称" placement="top"><el-icon class="rd-label-tip"><QuestionFilled /></el-icon></el-tooltip></span><div class="rd-value">{{ viewData.materialName || '-' }}</div></div>
-            <div class="rd-item"><span class="rd-label">投入数量<el-tooltip content="投入批次的数量，支持4位小数" placement="top"><el-icon class="rd-label-tip"><QuestionFilled /></el-icon></el-tooltip></span><div class="rd-value">{{ viewData.qtyIn != null ? viewData.qtyIn : '-' }}</div></div>
-            <div class="rd-item"><span class="rd-label">产出数量<el-tooltip content="产出批次的数量，支持4位小数" placement="top"><el-icon class="rd-label-tip"><QuestionFilled /></el-icon></el-tooltip></span><div class="rd-value">{{ viewData.qtyOut != null ? viewData.qtyOut : '-' }}</div></div>
+            <div class="rd-item"><span class="rd-label">投入数量<el-tooltip content="投入批次的数量，支持2位小数" placement="top"><el-icon class="rd-label-tip"><QuestionFilled /></el-icon></el-tooltip></span><div class="rd-value">{{ viewData.qtyIn != null ? viewData.qtyIn : '-' }}</div></div>
+            <div class="rd-item"><span class="rd-label">产出数量<el-tooltip content="产出批次的数量，支持2位小数" placement="top"><el-icon class="rd-label-tip"><QuestionFilled /></el-icon></el-tooltip></span><div class="rd-value">{{ viewData.qtyOut != null ? viewData.qtyOut : '-' }}</div></div>
           </div></div>
         </section>
         <section class="rd-card">
@@ -295,12 +295,12 @@
             <div class="rd-card-header" @click="toggleCard('e_material')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></span>物料与数量</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.e_material }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
             <div class="rd-card-body" v-show="!collapsedCards.e_material">
               <el-row :gutter="24">
-                <el-col :span="12"><el-form-item prop="materialCode"><template #label><span>物料编码</span><el-tooltip content="物料的唯一编码，复用仓库主数据" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></template><el-input v-model="form.materialCode" placeholder="请输入物料编码" /></el-form-item></el-col>
-                <el-col :span="12"><el-form-item prop="materialName"><template #label><span>物料名称</span><el-tooltip content="物料的名称" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></template><el-input v-model="form.materialName" placeholder="请输入物料名称" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item prop="materialCode"><template #label><span>物料编码</span><el-tooltip content="物料的唯一编码，复用仓库主数据" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></template><el-input v-model="form.materialCode" readonly placeholder="请选择物料" style="width: 100%" @click="openMaterialPicker"><template #append><el-button icon="Search" @click="openMaterialPicker" /></template><template #suffix><el-icon v-if="form.materialCode" class="rd-form-tip" style="cursor:pointer" @click.stop="clearMaterial"><CircleClose /></el-icon></template></el-input></el-form-item></el-col>
+                <el-col :span="12"><el-form-item prop="materialName"><template #label><span>物料名称</span><el-tooltip content="物料的名称" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></template><el-input v-model="form.materialName" readonly placeholder="选择物料后自动带出" /></el-form-item></el-col>
               </el-row>
               <el-row :gutter="24">
-                <el-col :span="12"><el-form-item prop="qtyIn"><template #label><span>投入数量</span><el-tooltip content="投入批次的数量，支持4位小数" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></template><el-input-number v-model="form.qtyIn" :precision="4" style="width:100%" /></el-form-item></el-col>
-                <el-col :span="12"><el-form-item prop="qtyOut"><template #label><span>产出数量</span><el-tooltip content="产出批次的数量，支持4位小数" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></template><el-input-number v-model="form.qtyOut" :precision="4" style="width:100%" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item prop="qtyIn"><template #label><span>投入数量</span><el-tooltip content="投入批次的数量，支持2位小数" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></template><el-input-number v-model="form.qtyIn" :precision="2" style="width:100%" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item prop="qtyOut"><template #label><span>产出数量</span><el-tooltip content="产出批次的数量，支持2位小数" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></template><el-input-number v-model="form.qtyOut" :precision="2" style="width:100%" /></el-form-item></el-col>
               </el-row>
             </div>
           </section>
@@ -311,10 +311,10 @@
             <div class="rd-card-body" v-show="!collapsedCards.e_prod">
               <el-row :gutter="24">
                 <el-col :span="12"><el-form-item prop="lineName"><template #label><span>产线</span><el-tooltip content="生产产线名称" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></template><el-input v-model="form.lineName" placeholder="请输入产线名称" /></el-form-item></el-col>
-                <el-col :span="12"><el-form-item prop="operator"><template #label><span>操作员</span><el-tooltip content="执行该操作的员工" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></template><el-input v-model="form.operator" placeholder="请输入操作员" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item prop="operator"><template #label><span>操作员</span><el-tooltip content="执行该操作的员工" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></template><el-input v-model="form.operator" readonly placeholder="请选择操作员" style="width: 100%" @click="openUserPicker"><template #append><el-button icon="Search" @click="openUserPicker" /></template><template #suffix><el-icon v-if="form.operator" class="rd-form-tip" style="cursor:pointer" @click.stop="clearOperator"><CircleClose /></el-icon></template></el-input></el-form-item></el-col>
               </el-row>
               <el-row :gutter="24">
-                <el-col :span="12"><el-form-item prop="supplierName"><template #label><span>供应商</span><el-tooltip content="原料批次关联的供应商名称" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></template><el-input v-model="form.supplierName" placeholder="请输入供应商名称" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item prop="supplierId"><template #label><span>供应商</span><el-tooltip content="原料批次关联的供应商名称" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></template><el-select v-model="form.supplierId" filterable clearable placeholder="请选择供应商" style="width: 100%" @change="onSupplierChange"><el-option v-for="s in supplierOptions" :key="s.supplierId" :label="s.supplierName" :value="s.supplierId" /></el-select></el-form-item></el-col>
               </el-row>
             </div>
           </section>
@@ -342,21 +342,80 @@
       <template #footer><div class="dialog-footer"><el-button type="primary" @click="submitForm">确 定</el-button><el-button @click="cancel">取 消</el-button></div></template>
     </el-dialog>
 
+    <!-- ===== 物料选择器 ===== -->
+    <material-picker ref="materialPickerRef" title="选择物料" @confirm="onMaterialPickerConfirm" />
+
+    <!-- ===== 人员选择器 ===== -->
+    <user-picker ref="userPickerRef" title="选择操作员" @confirm="onUserPickerConfirm" />
+
     <!-- ===== 断点清单弹窗 ===== -->
-    <el-dialog v-model="breakOpen" title="谱系断点清单" width="900px" append-to-body>
-      <el-alert type="warning" :closable="false" show-icon style="margin-bottom: 12px">
-        <template #title>断点清单展示产出批次未登记的谱系记录，可能导致追溯链中断。请及时补录产出批次信息。</template>
-      </el-alert>
-      <el-table :data="breakList" border size="small">
-        <el-table-column label="投入批次" prop="parentBatchNo" min-width="130" />
-        <el-table-column label="工单号" prop="workOrderNo" min-width="110" />
-        <el-table-column label="物料" min-width="150"><template #default="s">{{ s.row.materialCode }} / {{ s.row.materialName }}</template></el-table-column>
-        <el-table-column label="断点原因" prop="breakReason" min-width="200" />
-        <el-table-column label="创建时间" prop="createTime" min-width="145" />
-        <el-table-column label="操作" width="80" align="center">
-          <template #default="s"><el-button text size="small" @click="handleUpdate(s.row); breakOpen = false">补录</el-button></template>
-        </el-table-column>
-      </el-table>
+    <el-dialog v-model="breakOpen" width="1100px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+          <span class="rd-detail-header-title">谱系断点清单</span>
+        </div>
+      </template>
+      <div class="break-dialog-body">
+        <el-alert type="warning" :closable="false" show-icon class="break-alert">
+          <template #title>断点清单展示产出批次未登记的谱系记录，可能导致追溯链中断。请及时补录产出批次信息。</template>
+        </el-alert>
+        <!-- 筛选条件 -->
+        <div class="break-filter-bar">
+          <div class="break-field">
+            <label>投入批次</label>
+            <div class="break-field-control">
+              <el-input v-model="breakQueryParams.parentBatchNo" placeholder="请输入" clearable @keyup.enter="handleBreakQuery" style="width: 100%">
+                <template #prefix><el-icon><Search /></el-icon></template>
+              </el-input>
+            </div>
+          </div>
+          <div class="break-field">
+            <label>工单号</label>
+            <div class="break-field-control">
+              <el-input v-model="breakQueryParams.workOrderNo" placeholder="请输入" clearable @keyup.enter="handleBreakQuery" style="width: 100%">
+                <template #prefix><el-icon><Search /></el-icon></template>
+              </el-input>
+            </div>
+          </div>
+          <div class="break-field">
+            <label>物料编码</label>
+            <div class="break-field-control">
+              <el-input v-model="breakQueryParams.materialCode" placeholder="请输入" clearable @keyup.enter="handleBreakQuery" style="width: 100%">
+                <template #prefix><el-icon><Search /></el-icon></template>
+              </el-input>
+            </div>
+          </div>
+          <div class="break-field">
+            <label>物料名称</label>
+            <div class="break-field-control">
+              <el-input v-model="breakQueryParams.materialName" placeholder="请输入" clearable @keyup.enter="handleBreakQuery" style="width: 100%">
+                <template #prefix><el-icon><Search /></el-icon></template>
+              </el-input>
+            </div>
+          </div>
+          <div class="break-field-actions">
+            <el-button icon="RefreshLeft" @click="resetBreakQuery">重置</el-button>
+            <el-button type="primary" icon="Search" @click="handleBreakQuery">搜索</el-button>
+          </div>
+        </div>
+        <!-- 断点列表表格 -->
+        <div class="break-table-wrap">
+          <el-table :data="breakList" border v-loading="breakLoading" class="app-table" size="small">
+            <el-table-column label="序号" type="index" width="55" align="center" />
+            <el-table-column label="投入批次" prop="parentBatchNo" min-width="130" show-overflow-tooltip />
+            <el-table-column label="工单号" prop="workOrderNo" min-width="110" show-overflow-tooltip />
+            <el-table-column label="物料编码" prop="materialCode" min-width="110" show-overflow-tooltip />
+            <el-table-column label="物料名称" prop="materialName" min-width="140" show-overflow-tooltip />
+            <el-table-column label="断点原因" prop="breakReason" min-width="180" show-overflow-tooltip />
+            <el-table-column label="创建时间" prop="createTime" min-width="145" align="center" />
+            <el-table-column label="操作" width="90" align="center" fixed="right">
+              <template #default="s"><el-button link type="primary" icon="Edit" @click="handleBreakFix(s.row)">补录</el-button></template>
+            </el-table-column>
+          </el-table>
+          <pagination v-show="breakTotal > 0" :total="breakTotal" v-model:page="breakQueryParams.pageNum" v-model:limit="breakQueryParams.pageSize" @pagination="loadBreakList" />
+        </div>
+      </div>
     </el-dialog>
 
     <!-- ===== 业务操作说明对话框 ===== -->
@@ -415,7 +474,7 @@
         <h4>四、业务操作流程</h4>
         <el-timeline>
           <el-timeline-item type="primary" :hollow="true">
-            <strong>新增谱系：</strong>手动补录谱系数据时，填写投入批次、产出批次、工单号、物料信息等
+            <strong>新增谱系：</strong>手动补录谱系数据时，填写投入批次、产出批次、工单号，从物料库选择物料、从组织中选择操作员、从供应商库选择供应商
           </el-timeline-item>
           <el-timeline-item type="info" :hollow="true">
             <strong>查看断点清单：</strong>点击「断点清单」按钮查看所有断点记录，识别需补录的谱系
@@ -448,6 +507,9 @@
 <script setup name="QmsTraceGenealogy">
 import { ref, reactive, computed, getCurrentInstance } from 'vue'
 import { listGenealogy, getGenealogy, addGenealogy, updateGenealogy, delGenealogy, traceCompleteness, traceBreakList } from '@/api/qms/trace'
+import { listSupplier } from '@/api/wms/supplier'
+import MaterialPicker from '@/components/MaterialPicker/index.vue'
+import UserPicker from '@/components/UserPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
 
@@ -468,10 +530,23 @@ const viewOpen = ref(false)
 const viewData = ref(null)
 const breakOpen = ref(false)
 const breakList = ref([])
+const breakTotal = ref(0)
+const breakLoading = ref(false)
+const breakQueryParams = reactive({
+  pageNum: 1,
+  pageSize: 10,
+  parentBatchNo: undefined,
+  workOrderNo: undefined,
+  materialCode: undefined,
+  materialName: undefined
+})
 const completeness = ref({})
 const showStatusHelp = ref(false)
 const selectedId = ref(null)
 const selectedIds = ref([])
+const supplierOptions = ref([])
+const materialPickerRef = ref()
+const userPickerRef = ref()
 
 const defaultColumns = {
   parentBatchNo: { label: '投入批次', visible: true },
@@ -569,9 +644,10 @@ function handleSelectionChange(sel) {
 function reset() {
   form.value = {
     id: undefined, parentBatchNo: undefined, childBatchNo: undefined, workOrderNo: undefined,
-    opName: undefined, materialCode: undefined, materialName: undefined,
+    opName: undefined, materialId: undefined, materialCode: undefined, materialName: undefined,
     qtyIn: undefined, qtyOut: undefined, lineName: undefined, operator: undefined,
-    supplierName: undefined, sourceType: 'manual', traceTime: undefined, remark: undefined
+    supplierId: undefined, supplierName: undefined, sourceType: 'manual', traceTime: undefined,
+    breakFlag: undefined, breakReason: undefined, remark: undefined
   }
   proxy.resetForm('formRef')
 }
@@ -590,9 +666,23 @@ function submitForm() {
   proxy.$refs['formRef'].validate(valid => {
     if (!valid) return
     if (form.value.id) {
-      updateGenealogy(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList(); loadCompleteness() })
+      updateGenealogy(form.value).then(() => {
+        proxy.$modal.msgSuccess('修改成功')
+        open.value = false
+        getList()
+        loadCompleteness()
+        // 如果断点清单弹窗打开，同步刷新断点清单
+        if (breakOpen.value) { loadBreakList() }
+      })
     } else {
-      addGenealogy(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList(); loadCompleteness() })
+      addGenealogy(form.value).then(() => {
+        proxy.$modal.msgSuccess('新增成功')
+        open.value = false
+        getList()
+        loadCompleteness()
+        // 如果断点清单弹窗打开，同步刷新断点清单
+        if (breakOpen.value) { loadBreakList() }
+      })
     }
   })
 }
@@ -607,7 +697,67 @@ function handleDelete(row) {
 function handleExport() {
   proxy.download('qms/trace/genealogy/export', { ...proxy.addDateRange(queryParams.value, dateRange.value) }, `谱系数据_${new Date().getTime()}.xlsx`)
 }
-function handleBreakList() { traceBreakList().then(res => { breakList.value = res.data; breakOpen.value = true }) }
+function handleBreakList() { resetBreakQuery(); breakOpen.value = true }
+function loadBreakList() {
+  breakLoading.value = true
+  traceBreakList(breakQueryParams).then(res => {
+    breakList.value = res.rows
+    breakTotal.value = res.total
+    breakLoading.value = false
+  }).catch(() => { breakLoading.value = false })
+}
+function handleBreakQuery() {
+  breakQueryParams.pageNum = 1
+  loadBreakList()
+}
+function resetBreakQuery() {
+  breakQueryParams.pageNum = 1
+  breakQueryParams.pageSize = 10
+  breakQueryParams.parentBatchNo = undefined
+  breakQueryParams.workOrderNo = undefined
+  breakQueryParams.materialCode = undefined
+  breakQueryParams.materialName = undefined
+  loadBreakList()
+}
+/* 从断点清单点击补录：不关闭断点清单弹窗，保留 breakOpen=true 以便保存后自动刷新 */
+function handleBreakFix(row) {
+  reset()
+  const id = row?.id
+  if (!id) return
+  getGenealogy(id).then(res => { form.value = res.data; open.value = true; title.value = '补录批次谱系' })
+}
+
+/* ===== 物料选择器 ===== */
+function openMaterialPicker() { materialPickerRef.value.open(form.value.materialId) }
+function onMaterialPickerConfirm(material) {
+  form.value.materialId = material.materialId
+  form.value.materialCode = material.materialCode
+  form.value.materialName = material.materialName
+}
+function clearMaterial() {
+  form.value.materialId = undefined
+  form.value.materialCode = undefined
+  form.value.materialName = undefined
+}
+
+/* ===== 操作员选择器 ===== */
+function openUserPicker() { userPickerRef.value.open() }
+function onUserPickerConfirm(user) { form.value.operator = user.nickName }
+function clearOperator() { form.value.operator = undefined }
+
+/* ===== 供应商选择 ===== */
+function loadSupplierOptions() {
+  listSupplier({ pageNum: 1, pageSize: 999, status: '0' }).then(res => {
+    supplierOptions.value = res.rows || []
+  }).catch(() => {})
+}
+function onSupplierChange(val) {
+  const supplier = supplierOptions.value.find(s => s.supplierId === val)
+  form.value.supplierName = supplier ? supplier.supplierName : undefined
+}
+
+/* ===== 初始化 ===== */
+loadSupplierOptions()
 </script>
 
 <style scoped>
@@ -767,4 +917,33 @@ function handleBreakList() { traceBreakList().then(res => { breakList.value = re
 /* ===== Responsive ===== */
 @media (max-width: 1100px) { .qms-genealogy-page .filter-card .filter-bar { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 720px) { .qms-genealogy-page .filter-card .filter-bar { grid-template-columns: 1fr; } .qms-genealogy-page .toolbar { flex-wrap: wrap; gap: 10px; } }
+
+/* ===== Break List Dialog Styles ===== */
+.break-dialog-body { padding: 0 4px; }
+.break-dialog-body .break-alert { margin-bottom: 12px; }
+.break-dialog-body .break-filter-bar {
+  display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: flex-end;
+  padding: 14px 16px; background: var(--ink-50, #f8fafc);
+  border: 1px solid var(--ink-200, #e2e8f0); border-radius: 8px; margin-bottom: 12px;
+}
+.break-dialog-body .break-field { display: flex; flex-direction: column; gap: 6px; flex: 1 1 180px; min-width: 160px; }
+.break-dialog-body .break-field label { font-size: 14px; font-weight: 500; color: var(--ink-700, #334155); white-space: nowrap; }
+.break-dialog-body .break-field-control {
+  display: flex; align-items: center; height: 36px; padding: 0 12px;
+  background: #fff; border: 1px solid var(--ink-200, #e2e8f0); border-radius: 6px;
+  transition: border-color .15s, box-shadow .15s;
+}
+.break-dialog-body .break-field-control:focus-within { border-color: var(--brand-500, #6366f1); box-shadow: 0 0 0 3px rgba(99,102,241,.15); }
+.break-dialog-body .break-field-control :deep(.el-input__wrapper) { box-shadow: none !important; background: transparent !important; padding: 0; height: 34px; }
+.break-dialog-body .break-field-control :deep(.el-input__inner) { border: 0; background: transparent; font-size: 14px; height: 34px; line-height: 34px; }
+.break-dialog-body .break-field-control :deep(.el-input__prefix) { color: var(--ink-400, #94a3b8); margin-right: 4px; }
+.break-dialog-body .break-field-actions { display: flex; gap: 8px; flex-shrink: 0; padding-bottom: 0; }
+.break-dialog-body .break-table-wrap { border: 1px solid var(--ink-200, #e2e8f0); border-radius: 8px; overflow: hidden; }
+.break-dialog-body .app-table { --el-table-bg-color: #fff; --el-table-header-bg-color: var(--ink-50, #f8fafc); --el-table-row-hover-bg-color: #fafbff; --el-table-border-color: transparent; --el-table-text-color: var(--ink-700, #334155); --el-table-header-text-color: var(--ink-500, #64748b); }
+.break-dialog-body .app-table :deep(.el-table__body td) { border-right-color: transparent !important; }
+.break-dialog-body .app-table :deep(.el-table__header th) { border-right-color: transparent !important; background: var(--ink-50, #f8fafc) !important; color: var(--ink-500, #64748b); font-weight: 600; font-size: 13px; padding: 10px 12px; border-bottom: 1px solid var(--ink-200, #e2e8f0); }
+.break-dialog-body .app-table :deep(.el-table__body td) { padding: 10px 12px; border-bottom: 1px solid var(--ink-100, #f1f5f9); color: var(--ink-700, #334155); font-size: 13px; }
+.break-dialog-body .app-table :deep(.el-table__row:hover > td) { background: #fafbff !important; }
+.break-dialog-body .app-table :deep(.el-table__inner-wrapper::before) { display: none; }
+@media (max-width: 768px) { .break-dialog-body .break-filter-bar { flex-direction: column; } .break-dialog-body .break-field { flex: 1 1 100%; } }
 </style>

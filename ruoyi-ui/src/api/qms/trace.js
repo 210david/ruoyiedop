@@ -28,10 +28,15 @@ export function backwardTrace(batchNo) {
   return request({ url: '/qms/trace/backward/' + batchNo, method: 'get' })
 }
 
+// ==================== 降级追溯 ====================
+export function fallbackTrace(batchNo, direction) {
+  return request({ url: '/qms/trace/fallback/' + batchNo, method: 'get', params: { direction } })
+}
+
 // ==================== 完整度看板 ====================
 export function traceCompleteness() {
   return request({ url: '/qms/trace/completeness', method: 'get' })
 }
-export function traceBreakList() {
-  return request({ url: '/qms/trace/breakList', method: 'get' })
+export function traceBreakList(query) {
+  return request({ url: '/qms/trace/breakList', method: 'get', params: query })
 }
