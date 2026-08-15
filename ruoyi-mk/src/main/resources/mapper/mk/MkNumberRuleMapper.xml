@@ -41,7 +41,10 @@
             <if test="module != null and module != ''"> AND module = #{module}</if>
             <if test="ruleCode != null and ruleCode != ''"> AND rule_code LIKE CONCAT('%', #{ruleCode}, '%')</if>
             <if test="ruleName != null and ruleName != ''"> AND rule_name LIKE CONCAT('%', #{ruleName}, '%')</if>
+            <if test="resetType != null and resetType != ''"> AND reset_type = #{resetType}</if>
             <if test="status != null and status != ''"> AND status = #{status}</if>
+            <if test="params.beginTime != null and params.beginTime != ''"> AND date_format(create_time,'%y%m%d') &gt;= date_format(#{params.beginTime},'%y%m%d')</if>
+            <if test="params.endTime != null and params.endTime != ''"> AND date_format(create_time,'%y%m%d') &lt;= date_format(#{params.endTime},'%y%m%d')</if>
         </where>
         ORDER BY rule_id
     </select>

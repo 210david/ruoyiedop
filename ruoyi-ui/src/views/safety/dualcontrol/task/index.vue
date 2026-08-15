@@ -32,12 +32,24 @@
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
+        <div class="field">
           <label>任务类型</label>
           <div class="control is-select">
             <el-select v-model="queryParams.taskType" placeholder="全部" clearable @change="handleQuery">
               <el-option v-for="dict in safety_task_type" :key="dict.value" :label="dict.label" :value="dict.value" />
             </el-select>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>执行人</label>
+          <div class="control">
+            <el-input v-model="queryParams.executorName" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>计划日期</label>
+          <div class="control">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" @change="handleQuery" />
           </div>
         </div>
       </div>
@@ -493,6 +505,7 @@ const viewData = ref({})
 const loading = ref(true)
 const showSearch = ref(true)
 const showAdvanced = ref(false)
+const dateRange = ref([])
 const showStatusHelp = ref(false)
 const activeStatusTab = ref('all')
 const statusCounts = ref({ all: 0 })
@@ -533,7 +546,7 @@ const columns = ref(loadColumnVisibility())
 
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, taskName: undefined, taskCode: undefined, taskStatus: undefined, taskType: undefined, params: {} },
+  queryParams: { pageNum: 1, pageSize: 10, taskName: undefined, taskCode: undefined, taskStatus: undefined, taskType: undefined, executorName: undefined, params: {} },
   rules: {
     taskName: [{ required: true, message: '任务名称不能为空', trigger: 'blur' }],
     taskType: [{ required: true, message: '任务类型不能为空', trigger: 'change' }],
@@ -549,6 +562,8 @@ const activeFilterCount = computed(() => {
   if (queryParams.value.taskCode) count++
   if (queryParams.value.taskStatus) count++
   if (queryParams.value.taskType) count++
+  if (queryParams.value.executorName) count++
+  if (dateRange.value && dateRange.value.length > 0) count++
   return count
 })
 
@@ -562,9 +577,9 @@ function loadStatusCounts() {
 }
 function statusTabClass(value) { const map = { '0': 'tab-draft', '1': 'tab-audit', '2': 'tab-done', '3': 'tab-void' }; return map[value] || '' }
 
-function getList() { loading.value = true; listTask(queryParams.value).then(response => { taskList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths(); loadStatusCounts() }) }
+function getList() { loading.value = true; listTask(proxy.addDateRange(queryParams.value, dateRange.value)).then(response => { taskList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths(); loadStatusCounts() }) }
 function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
-function resetQuery() { queryParams.value.taskName = undefined; queryParams.value.taskCode = undefined; queryParams.value.taskStatus = undefined; queryParams.value.taskType = undefined; queryParams.value.params = {}; activeStatusTab.value = 'all'; handleQuery() }
+function resetQuery() { queryParams.value.taskName = undefined; queryParams.value.taskCode = undefined; queryParams.value.taskStatus = undefined; queryParams.value.taskType = undefined; queryParams.value.executorName = undefined; dateRange.value = []; queryParams.value.params = {}; activeStatusTab.value = 'all'; handleQuery() }
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleSelectionChange(selection) { ids.value = selection.map(item => item.taskId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function handleAdd() { reset(); collapsedCards.c0 = false; collapsedCards.c1 = false; open.value = true; title.value = '添加排查任务' }

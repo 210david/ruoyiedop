@@ -85,6 +85,21 @@
             </el-select>
           </div>
         </div>
+        <div class="field" v-show="showAdvanced">
+          <label>回款方式</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.paymentMethod" placeholder="全部" clearable @change="handleQuery">
+              <template #prefix><el-icon><Filter /></el-icon></template>
+              <el-option v-for="d in marketing_payment_method" :key="d.value" :label="d.label" :value="d.value" />
+            </el-select>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>计划回款日期</label>
+          <div class="control">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
+          </div>
+        </div>
       </div>
       <div class="filter-actions">
         <div class="filter-info">
@@ -910,7 +925,7 @@ const columns = ref(loadColumnVisibility())
 
 const data = reactive({
   addForm: {},
-  queryParams: { pageNum: 1, pageSize: 10, contractNo: undefined, customerName: undefined, paymentStatus: undefined, overdueFlag: undefined, params: {} },
+  queryParams: { pageNum: 1, pageSize: 10, contractNo: undefined, customerName: undefined, paymentStatus: undefined, overdueFlag: undefined, paymentMethod: undefined, params: {} },
   addRules: {
     customerId: [{ required: true, message: '请选择关联客户', trigger: 'change' }],
     planAmount: [{ required: true, message: '计划回款金额不能为空', trigger: 'blur' }],
@@ -925,12 +940,15 @@ const data = reactive({
 const { queryParams, addForm, addRules, recordRules } = toRefs(data)
 
 const statusTabList = computed(() => marketing_payment_status.value)
+const dateRange = ref([])
 const activeFilterCount = computed(() => {
   let count = 0
   if (queryParams.value.contractNo) count++
   if (queryParams.value.customerName) count++
   if (queryParams.value.paymentStatus) count++
   if (queryParams.value.overdueFlag) count++
+  if (queryParams.value.paymentMethod) count++
+  if (dateRange.value && dateRange.value.length === 2) count++
   return count
 })
 
@@ -1001,10 +1019,12 @@ function onContractChange(contractId) {
   }
 }
 
-function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
+function handleQuery() { showAdvanced.value = false; queryParams.value.params = proxy.addDateRange(queryParams.value.params, dateRange.value, 'PlanDate'); queryParams.value.pageNum = 1; getList() }
 function resetQuery() {
   queryParams.value.contractNo = undefined; queryParams.value.customerName = undefined
   queryParams.value.paymentStatus = undefined; queryParams.value.overdueFlag = undefined
+  queryParams.value.paymentMethod = undefined
+  dateRange.value = []
   queryParams.value.params = {}; activeStatusTab.value = 'all'; handleQuery()
 }
 function handleSortChange(column) {
@@ -1122,7 +1142,7 @@ function submitConfirm(confirmStatus) {
   }).catch(() => {})
 }
 
-function handleExport() { proxy.download('mk/payment/export', { ...queryParams.value }, `payment_${new Date().getTime()}.xlsx`) }
+function handleExport() { proxy.download('mk/payment/export', { ...proxy.addDateRange(queryParams.value, dateRange.value, 'PlanDate') }, `payment_${new Date().getTime()}.xlsx`) }
 
 getCustomerOptions()
 getContractOptions()

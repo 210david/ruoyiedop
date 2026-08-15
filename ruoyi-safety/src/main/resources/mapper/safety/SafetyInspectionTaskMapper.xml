@@ -40,6 +40,9 @@
             <if test="taskType != null and taskType != ''"> AND task_type = #{taskType}</if>
             <if test="taskStatus != null and taskStatus != ''"> AND task_status = #{taskStatus}</if>
             <if test="executorId != null"> AND executor_id = #{executorId}</if>
+            <if test="executorName != null and executorName != ''"> AND executor_name LIKE CONCAT('%', #{executorName}, '%')</if>
+            <if test="params.beginTime != null and params.beginTime != ''"> AND date_format(plan_date,'%y%m%d') &gt;= date_format(#{params.beginTime},'%y%m%d')</if>
+            <if test="params.endTime != null and params.endTime != ''"> AND date_format(plan_date,'%y%m%d') &lt;= date_format(#{params.endTime},'%y%m%d')</if>
         </where>
         ORDER BY plan_date DESC
     </select>

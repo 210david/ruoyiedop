@@ -42,10 +42,16 @@
             </el-select>
           </div>
         </div>
-        <div class="field" style="grid-column: span 2">
+        <div class="field" v-show="showAdvanced" style="grid-column: span 2">
           <label>入库日期</label>
           <div class="control">
             <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" @change="handleQuery" />
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>创建时间</label>
+          <div class="control">
+            <el-date-picker v-model="dateRangeCreateTime" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
           </div>
         </div>
       </div>
@@ -383,19 +389,19 @@ const { collapsedCards, toggleCard } = useDetailCard(['basic', 'info', 'detail',
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('wms_inbound_index')
 const { wms_inbound_type, wms_inbound_status, wms_unit } = proxy.useDict('wms_inbound_type', 'wms_inbound_status', 'wms_unit')
-const list = ref([]); const open = ref(false); const loading = ref(true); const showSearch = ref(true); const showAdvanced = ref(false); const ids = ref([]); const multiple = ref(true); const total = ref(0); const title = ref(''); const detailOpen = ref(false); const detailData = ref({}); const showStatusHelp = ref(false); const activeStatusTab = ref('all'); const statusCounts = ref({ all: 0 }); const dateRange = ref([])
+const list = ref([]); const open = ref(false); const loading = ref(true); const showSearch = ref(true); const showAdvanced = ref(false); const ids = ref([]); const multiple = ref(true); const total = ref(0); const title = ref(''); const detailOpen = ref(false); const detailData = ref({}); const showStatusHelp = ref(false); const activeStatusTab = ref('all'); const statusCounts = ref({ all: 0 }); const dateRange = ref([]); const dateRangeCreateTime = ref([])
 const warehouseOptions = ref([]); const supplierOptions = ref([]); const materialOptions = ref([])
 const defaultColumns = { orderNo: { label: '入库单号', visible: true }, orderType: { label: '入库类型', visible: true }, supplierName: { label: '供应商', visible: true }, warehouseName: { label: '目标仓库', visible: true }, status: { label: '状态', visible: true }, totalQty: { label: '总数量', visible: true }, inboundDate: { label: '入库日期', visible: true } }
 function loadColumnVisibility() { try { const saved = localStorage.getItem('wms_inbound_columns'); if (saved) { const parsed = JSON.parse(saved); const result = {}; Object.keys(defaultColumns).forEach(key => { result[key] = { label: defaultColumns[key].label, visible: parsed[key] !== undefined ? parsed[key] : defaultColumns[key].visible } }); return result } } catch (e) {} return { ...defaultColumns } }
 const columns = ref(loadColumnVisibility())
-const activeFilterCount = computed(() => { let count = 0; if (queryParams.value.orderNo) count++; if (queryParams.value.orderType) count++; if (queryParams.value.warehouseId) count++; if (queryParams.value.status) count++; if (dateRange.value && dateRange.value.length > 0) count++; return count })
+const activeFilterCount = computed(() => { let count = 0; if (queryParams.value.orderNo) count++; if (queryParams.value.orderType) count++; if (queryParams.value.warehouseId) count++; if (queryParams.value.status) count++; if (dateRange.value && dateRange.value.length > 0) count++; if (dateRangeCreateTime.value && dateRangeCreateTime.value.length > 0) count++; return count })
 const statusTabList = computed(() => wms_inbound_status.value)
 function today() { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') }
 const data = reactive({ form: {}, queryParams: { pageNum: 1, pageSize: 10, orderNo: undefined, orderType: undefined, warehouseId: undefined, status: undefined }, rules: { orderType: [{ required: true, message: '入库类型不能为空', trigger: 'change' }], warehouseId: [{ required: true, message: '目标仓库不能为空', trigger: 'change' }], inboundDate: [{ required: true, message: '预计入库日期不能为空', trigger: 'change' }] } })
 const { queryParams, form, rules } = toRefs(data)
-function getList() { loading.value = true; listInbound(proxy.addDateRange(queryParams.value, dateRange.value, 'InboundDate')).then(res => { list.value = res.rows; total.value = res.total; loading.value = false; applySavedWidths() }) }
-function handleQuery() { queryParams.value.pageNum = 1; getList() }
-function resetQuery() { queryParams.value.orderNo = undefined; queryParams.value.orderType = undefined; queryParams.value.warehouseId = undefined; queryParams.value.status = undefined; queryParams.value.params = {}; dateRange.value = []; activeStatusTab.value = 'all'; handleQuery() }
+function getList() { loading.value = true; const params = proxy.addDateRange(proxy.addDateRange(queryParams.value, dateRange.value, 'InboundDate'), dateRangeCreateTime.value, 'CreateTime'); listInbound(params).then(res => { list.value = res.rows; total.value = res.total; loading.value = false; applySavedWidths() }) }
+function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
+function resetQuery() { queryParams.value.orderNo = undefined; queryParams.value.orderType = undefined; queryParams.value.warehouseId = undefined; queryParams.value.status = undefined; queryParams.value.params = {}; dateRange.value = []; dateRangeCreateTime.value = []; activeStatusTab.value = 'all'; handleQuery() }
 function handleSelectionChange(sel) { ids.value = sel.map(i => i.orderId); multiple.value = !sel.length }
 function reset() { form.value = { orderNo: undefined, orderType: '0', supplierId: undefined, warehouseId: undefined, inboundDate: today(), status: '0', remark: undefined, detailList: [] }; proxy.resetForm('inboundRef') }
 function handleAdd() { reset(); open.value = true; title.value = '添加入库单' }
@@ -429,7 +435,7 @@ function validateDetailList() {
 }
 function handleDelete(row) { const orderIds = row.orderId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delInbound(orderIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
 function handleSubmit(row) { proxy.$modal.confirm('确认提交入库单「' + row.orderNo + '」？提交后将无法修改。').then(() => submitInbound(row.orderId)).then(() => { getList(); proxy.$modal.msgSuccess('提交成功') }).catch(() => {}) }
-function handleExport() { proxy.download('wms/inbound/export', { ...proxy.addDateRange(queryParams.value, dateRange.value, 'InboundDate') }, `inbound_${new Date().getTime()}.xlsx`) }
+function handleExport() { proxy.download('wms/inbound/export', { ...proxy.addDateRange(proxy.addDateRange(queryParams.value, dateRange.value, 'InboundDate'), dateRangeCreateTime.value, 'CreateTime') }, `inbound_${new Date().getTime()}.xlsx`) }
 function badgeClass(status) { const map = { '0': 'amber', '1': 'blue', '2': 'violet', '3': 'green' }; return map[status] || 'gray' }
 function statusLabel(status) { const item = wms_inbound_status.value.find(d => d.value == status); return item ? item.label : '-' }
 function orderTypeLabel(type) { const item = wms_inbound_type.value.find(d => d.value == type); return item ? item.label : '-' }

@@ -38,8 +38,8 @@ public class SysRole extends BaseEntity
     @Excel(name = "角色排序")
     private Integer roleSort;
 
-    /** 角色分类（业务模块：system系统管理 dms设备管理 pms采购管理 mk营销管理 wms仓储管理，支持多选用逗号分隔） */
-    @Excel(name = "角色分类", readConverterExp = "system=系统管理,dms=设备管理,pms=采购管理,mk=营销管理,wms=仓储管理")
+    /** 角色分类（业务模块：system系统管理 dms设备管理 pms采购管理 mk营销管理 wms仓储管理 safety安全生产管理 qms质量管理，支持多选用逗号分隔） */
+    @Excel(name = "角色分类", readConverterExp = "system=系统管理,dms=设备管理,pms=采购管理,mk=营销管理,wms=仓储管理,safety=安全生产管理,qms=质量管理")
     private String roleCategory;
 
     /** 数据范围（1：所有数据权限；2：自定义数据权限；3：本部门数据权限；4：本部门及以下数据权限；5：仅本人数据权限） */

@@ -4,6 +4,10 @@
     <div class="surface filter-card" v-show="showSearch">
       <div class="filter-head">
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+        <a class="adv-link" :class="{ 'is-open': showAdvanced }" @click.prevent="showAdvanced = !showAdvanced">
+          <span>{{ showAdvanced ? '收起' : '高级筛选' }}</span>
+          <el-icon class="chev"><ArrowDown /></el-icon>
+        </a>
       </div>
       <div class="filter-bar">
         <div class="field">
@@ -38,6 +42,38 @@
               <template #prefix><el-icon><Filter /></el-icon></template>
               <el-option v-for="d in marketing_customer_status" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>所属行业</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.industry" placeholder="全部" clearable @change="handleQuery">
+              <template #prefix><el-icon><Filter /></el-icon></template>
+              <el-option v-for="d in marketing_industry" :key="d.value" :label="d.label" :value="d.value" />
+            </el-select>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>客户来源</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.customerSource" placeholder="全部" clearable @change="handleQuery">
+              <template #prefix><el-icon><Filter /></el-icon></template>
+              <el-option v-for="d in marketing_customer_source" :key="d.value" :label="d.label" :value="d.value" />
+            </el-select>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>负责人</label>
+          <div class="control">
+            <el-input v-model="queryParams.userName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>创建时间</label>
+          <div class="control">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
           </div>
         </div>
       </div>
@@ -533,8 +569,8 @@
                   <el-table-column label="职位" prop="position" width="120" show-overflow-tooltip />
                   <el-table-column label="手机号" prop="phone" width="130" />
                   <el-table-column label="邮箱" prop="email" show-overflow-tooltip />
-                  <el-table-column label="关键联系人" prop="isKey" width="100" align="center"><template #default="scope"><el-tag :type="scope.row.isKey === '1' ? 'danger' : 'info'" size="small">{{ scope.row.isKey === '1' ? '是' : '否' }}</el-tag></template></el-table-column>
-                  <el-table-column label="主要联系人" prop="isPrimary" width="100" align="center"><template #default="scope"><el-tag :type="scope.row.isPrimary === '1' ? 'success' : 'info'" size="small">{{ scope.row.isPrimary === '1' ? '是' : '否' }}</el-tag></template></el-table-column>
+<el-table-column label="关键联系人" prop="isKey" width="100" align="center"><template #default="scope"><span class="badge" :class="scope.row.isKey === '1' ? 'red' : 'gray'"><span class="dot"></span>{{ scope.row.isKey === '1' ? '是' : '否' }}</span></template></el-table-column>
+<el-table-column label="主要联系人" prop="isPrimary" width="100" align="center"><template #default="scope"><span class="badge" :class="scope.row.isPrimary === '1' ? 'green' : 'gray'"><span class="dot"></span>{{ scope.row.isPrimary === '1' ? '是' : '否' }}</span></template></el-table-column>
                 </el-table>
                 <div class="rd-empty" v-else><svg class="rd-empty-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><p class="rd-empty-text">暂无联系人</p></div>
               </div>
@@ -735,6 +771,7 @@ const detailTab = ref('basic')
 const loading = ref(true)
 const showSearch = ref(true)
 const showAdvanced = ref(false)
+const dateRange = ref([])
 const activeStatusTab = ref('all')
 const statusCounts = ref({ all: 0, '0': 0, '1': 0, '2': 0, '3': 0, '4': 0 })
 const ids = ref([])
@@ -789,7 +826,7 @@ const updateKeyOptions = [
 
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, customerNo: undefined, customerName: undefined, customerLevel: undefined, customerStatus: undefined, params: {} },
+  queryParams: { pageNum: 1, pageSize: 10, customerNo: undefined, customerName: undefined, customerLevel: undefined, customerStatus: undefined, industry: undefined, customerSource: undefined, userName: undefined, params: {} },
   rules: {
     customerName: [{ required: true, message: '企业名称不能为空', trigger: 'blur' }]
   }
@@ -832,11 +869,15 @@ const columns = ref(loadColumnVisibility())
 const statusTabList = computed(() => marketing_customer_status.value)
 const activeFilterCount = computed(() => {
   let count = 0
-  if (queryParams.value.customerNo) count++
-  if (queryParams.value.customerName) count++
-  if (queryParams.value.customerLevel) count++
-  if (queryParams.value.customerStatus) count++
-  return count
+if (queryParams.value.customerNo) count++
+if (queryParams.value.customerName) count++
+if (queryParams.value.customerLevel) count++
+if (queryParams.value.customerStatus) count++
+if (queryParams.value.industry) count++
+if (queryParams.value.customerSource) count++
+if (queryParams.value.userName) count++
+if (dateRange.value && dateRange.value.length > 0) count++
+return count
 })
 
 function getList() {
@@ -880,9 +921,9 @@ function clearDept() {
   form.value.deptName = undefined
 }
 
-function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
+function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; proxy.addDateRange(queryParams.value, dateRange.value, 'CreateTime'); getList() }
 function resetQuery() {
-  queryParams.value.customerNo = undefined; queryParams.value.customerName = undefined; queryParams.value.customerLevel = undefined; queryParams.value.customerStatus = undefined; queryParams.value.params = {}; activeStatusTab.value = 'all'; handleQuery()
+queryParams.value.customerNo = undefined; queryParams.value.customerName = undefined; queryParams.value.customerLevel = undefined; queryParams.value.customerStatus = undefined; queryParams.value.industry = undefined; queryParams.value.customerSource = undefined; queryParams.value.userName = undefined; queryParams.value.params = {}; dateRange.value = []; activeStatusTab.value = 'all'; handleQuery()
 }
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleStatusTabClick(status) { activeStatusTab.value = status; queryParams.value.customerStatus = status === 'all' ? undefined : status; handleQuery() }
@@ -982,7 +1023,7 @@ function submitForm() {
   })
 }
 function handleDelete(row) { const customerIds = row.customerId || ids.value; proxy.$modal.confirm('确认删除编号为"' + customerIds + '"的数据？').then(() => delCustomer(customerIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
-function handleExport() { proxy.download('mk/customer/export', { ...queryParams.value }, `customer_${new Date().getTime()}.xlsx`) }
+function handleExport() { proxy.download('mk/customer/export', { ...proxy.addDateRange(queryParams.value, dateRange.value, 'CreateTime') }, `customer_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 
 // ====== 操作下拉菜单 ======

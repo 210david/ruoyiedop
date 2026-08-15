@@ -18,6 +18,12 @@ UPDATE `sys_role` SET `role_category` = 'pms' WHERE `del_flag` = '0' AND `role_k
 -- 仓储管理模块（role_key 包含 wms）
 UPDATE `sys_role` SET `role_category` = 'wms' WHERE `del_flag` = '0' AND `role_key` LIKE '%wms%';
 
+-- 安全生产管理模块（role_key 包含 safety）
+UPDATE `sys_role` SET `role_category` = 'safety' WHERE `del_flag` = '0' AND `role_key` LIKE '%safety%';
+
+-- 质量管理模块（role_key 包含 qms）
+UPDATE `sys_role` SET `role_category` = 'qms' WHERE `del_flag` = '0' AND `role_key` LIKE '%qms%';
+
 -- 其余角色（admin、common 等）默认归为系统管理
 UPDATE `sys_role` SET `role_category` = 'system' WHERE `del_flag` = '0' AND (`role_category` IS NULL OR `role_category` = '');
 
@@ -38,5 +44,9 @@ SELECT * FROM (
   SELECT 4, '营销管理', 'mk', 'sys_role_category', '', 'danger', 'N', '0', 'admin', sysdate(), '营销管理模块角色'
   UNION ALL
   SELECT 5, '仓储管理', 'wms', 'sys_role_category', '', 'info', 'N', '0', 'admin', sysdate(), '仓储管理模块角色'
+  UNION ALL
+  SELECT 6, '安全生产管理', 'safety', 'sys_role_category', '', 'warning', 'N', '0', 'admin', sysdate(), '安全生产管理模块角色'
+  UNION ALL
+  SELECT 7, '质量管理', 'qms', 'sys_role_category', '', 'success', 'N', '0', 'admin', sysdate(), '质量管理模块角色'
 ) AS tmp
 WHERE NOT EXISTS (SELECT 1 FROM `sys_dict_data` WHERE `dict_type` = 'sys_role_category' AND `dict_value` = tmp.dict_value);

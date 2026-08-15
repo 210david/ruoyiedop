@@ -4,6 +4,10 @@
     <div class="surface filter-card" v-show="showSearch">
       <div class="filter-head">
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+        <a class="adv-link" :class="{ 'is-open': showAdvanced }" @click.prevent="showAdvanced = !showAdvanced">
+          <span>{{ showAdvanced ? '收起' : '高级筛选' }}</span>
+          <el-icon class="chev"><ArrowDown /></el-icon>
+        </a>
       </div>
       <div class="filter-bar">
         <div class="field">
@@ -37,6 +41,38 @@
               <template #prefix><el-icon><Filter /></el-icon></template>
               <el-option v-for="d in marketing_contract_status" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>合同类型</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.contractType" placeholder="全部" clearable @change="handleQuery">
+              <template #prefix><el-icon><Filter /></el-icon></template>
+              <el-option v-for="d in marketing_contract_type" :key="d.value" :label="d.label" :value="d.value" />
+            </el-select>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>付款方式</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.paymentMethod" placeholder="全部" clearable @change="handleQuery">
+              <template #prefix><el-icon><Filter /></el-icon></template>
+              <el-option v-for="d in marketing_payment_method" :key="d.value" :label="d.label" :value="d.value" />
+            </el-select>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>负责人</label>
+          <div class="control">
+            <el-input v-model="queryParams.userName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>签约日期</label>
+          <div class="control">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
           </div>
         </div>
       </div>
@@ -1370,7 +1406,7 @@ const baseUrl = import.meta.env.VITE_APP_BASE_API
 
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, contractNo: undefined, contractName: undefined, customerName: undefined, contractStatus: undefined, params: {} },
+  queryParams: { pageNum: 1, pageSize: 10, contractNo: undefined, contractName: undefined, customerName: undefined, contractStatus: undefined, contractType: undefined, paymentMethod: undefined, userName: undefined, params: {} },
 rules: {
 contractName: [{ required: true, message: '合同名称不能为空', trigger: 'blur' }],
     customerId: [{ required: true, message: '请选择关联客户', trigger: 'change' }],
@@ -1415,12 +1451,17 @@ function loadColumnVisibility() {
 
 const columns = ref(loadColumnVisibility())
 
+const dateRange = ref([])
 const activeFilterCount = computed(() => {
   let count = 0
   if (queryParams.value.contractNo) count++
   if (queryParams.value.contractName) count++
   if (queryParams.value.customerName) count++
   if (queryParams.value.contractStatus) count++
+  if (queryParams.value.contractType) count++
+  if (queryParams.value.paymentMethod) count++
+  if (queryParams.value.userName) count++
+  if (dateRange.value && dateRange.value.length === 2) count++
   return count
 })
 
@@ -1481,8 +1522,8 @@ function handleAddPlan() {
 function handleDeletePlan(index) {
   form.value.paymentPlanList.splice(index, 1)
 }
-function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
-function resetQuery() { queryParams.value.contractNo = undefined; queryParams.value.contractName = undefined; queryParams.value.customerName = undefined; queryParams.value.contractStatus = undefined; queryParams.value.params = {}; activeStatusTab.value = 'all'; handleQuery() }
+function handleQuery() { showAdvanced.value = false; queryParams.value.params = proxy.addDateRange(queryParams.value.params, dateRange.value, 'SignDate'); queryParams.value.pageNum = 1; getList() }
+function resetQuery() { queryParams.value.contractNo = undefined; queryParams.value.contractName = undefined; queryParams.value.customerName = undefined; queryParams.value.contractStatus = undefined; queryParams.value.contractType = undefined; queryParams.value.paymentMethod = undefined; queryParams.value.userName = undefined; dateRange.value = []; queryParams.value.params = {}; activeStatusTab.value = 'all'; handleQuery() }
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.contractId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function reset() {
   form.value = { contractNo: undefined, contractName: undefined, contractType: '0', customerId: undefined, customerName: undefined, opportunityId: undefined, contractAmount: 0, signDate: undefined, effectiveDate: undefined, expireDate: undefined, paymentMethod: '0', contractStatus: '0', userId: undefined, userName: undefined, deptId: undefined, deptName: undefined, attachment: undefined, paymentPlanList: [], remark: undefined }
@@ -1817,7 +1858,7 @@ function submitChange() {
   })
 }
 
-function handleExport() { proxy.download('mk/contract/export', { ...queryParams.value }, `contract_${new Date().getTime()}.xlsx`) }
+function handleExport() { proxy.download('mk/contract/export', { ...proxy.addDateRange(queryParams.value, dateRange.value, 'SignDate') }, `contract_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 getCustomerOptions()
 getList()

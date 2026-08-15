@@ -4,6 +4,10 @@
     <div class="surface filter-card" v-show="showSearch">
       <div class="filter-head">
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+        <a class="adv-link" :class="{ 'is-open': showAdvanced }" @click.prevent="showAdvanced = !showAdvanced">
+          <span>{{ showAdvanced ? '收起' : '高级筛选' }}</span>
+          <el-icon class="chev"><ArrowDown /></el-icon>
+        </a>
       </div>
       <div class="filter-bar">
         <div class="field">
@@ -38,6 +42,20 @@
               <template #prefix><el-icon><Filter /></el-icon></template>
               <el-option v-for="d in marketing_invoice_status" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>发票抬头</label>
+          <div class="control">
+            <el-input v-model="queryParams.invoiceTitle" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>开票日期</label>
+          <div class="control">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
           </div>
         </div>
       </div>
@@ -459,6 +477,7 @@ import { listContract } from '@/api/mk/contract'
 import { listOrder } from '@/api/mk/order'
 import { useColumnResize } from '@/composables/useColumnResize'
 import request from '@/utils/request'
+import { ArrowDown } from '@element-plus/icons-vue'
 
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('mk_invoice_index')
@@ -487,7 +506,7 @@ function formatAmount(val) { if (val == null || val === '') return '-'; return N
 
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, invoiceNo: undefined, customerName: undefined, invoiceType: undefined, invoiceStatus: undefined, params: {} },
+  queryParams: { pageNum: 1, pageSize: 10, invoiceNo: undefined, customerName: undefined, invoiceType: undefined, invoiceStatus: undefined, invoiceTitle: undefined, params: {} },
   rules: {
     customerId: [{ required: true, message: '请选择关联客户', trigger: 'change' }],
     invoiceAmount: [{ required: true, message: '开票金额不能为空', trigger: 'blur' }],
@@ -529,12 +548,15 @@ function loadColumnVisibility() {
 
 const columns = ref(loadColumnVisibility())
 
+const dateRange = ref([])
 const activeFilterCount = computed(() => {
   let count = 0
   if (queryParams.value.invoiceNo) count++
   if (queryParams.value.customerName) count++
   if (queryParams.value.invoiceType) count++
   if (queryParams.value.invoiceStatus) count++
+  if (queryParams.value.invoiceTitle) count++
+  if (dateRange.value && dateRange.value.length === 2) count++
   return count
 })
 
@@ -566,8 +588,8 @@ function getContractOptions() { listContract({ pageNum: 1, pageSize: 9999 }).the
 function getOrderOptions() { listOrder({ pageNum: 1, pageSize: 9999 }).then(res => { orderOptions.value = res.rows }) }
 function onCustomerChange(customerId) { if (customerId) { const customer = customerOptions.value.find(c => c.customerId === customerId); if (customer) { form.value.customerName = customer.customerName; form.value.invoiceTitle = customer.customerName } } }
 function onOrderChange(orderId) { if (orderId) { const order = orderOptions.value.find(o => o.orderId === orderId); if (order) { form.value.orderNo = order.orderNo; form.value.customerId = order.customerId; form.value.customerName = order.customerName; form.value.invoiceAmount = order.orderAmount; form.value.invoiceTitle = order.customerName } } }
-function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
-function resetQuery() { queryParams.value.invoiceNo = undefined; queryParams.value.customerName = undefined; queryParams.value.invoiceType = undefined; queryParams.value.invoiceStatus = undefined; queryParams.value.params = {}; activeStatusTab.value = 'all'; handleQuery() }
+function handleQuery() { showAdvanced.value = false; queryParams.value.params = proxy.addDateRange(queryParams.value.params, dateRange.value, 'InvoiceDate'); queryParams.value.pageNum = 1; getList() }
+function resetQuery() { queryParams.value.invoiceNo = undefined; queryParams.value.customerName = undefined; queryParams.value.invoiceType = undefined; queryParams.value.invoiceStatus = undefined; queryParams.value.invoiceTitle = undefined; dateRange.value = []; queryParams.value.params = {}; activeStatusTab.value = 'all'; handleQuery() }
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.invoiceId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function reset() { form.value = { invoiceNo: undefined, orderId: undefined, contractId: undefined, customerId: undefined, customerName: undefined, invoiceType: '0', invoiceStatus: '1', invoiceAmount: 0, taxRate: 13.00, taxAmount: 0, invoiceTitle: undefined, taxNo: undefined, invoiceDate: undefined, invoiceAttachment: undefined, remark: undefined }; proxy.resetForm('invoiceRef'); recognizedFields.value = []; collapsedCards.recognize = false; collapsedCards.basic = false; collapsedCards.relation = false; collapsedCards.title = false; collapsedCards.attachment = false }
 function handleAdd() { reset(); open.value = true; title.value = '新增发票' }
@@ -589,7 +611,7 @@ function submitForm() {
 }
 function handleDelete(row) { const invoiceIds = row.invoiceId || ids.value; proxy.$modal.confirm('确认删除选中的发票？').then(() => delInvoice(invoiceIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
 function handleVoid(row) { proxy.$modal.confirm('确认作废发票【' + row.invoiceNo + '】？').then(() => voidInvoice(row.invoiceId)).then(() => { getList(); proxy.$modal.msgSuccess('发票已作废') }).catch(() => {}) }
-function handleExport() { proxy.download('mk/invoice/export', { ...queryParams.value }, `invoice_${new Date().getTime()}.xlsx`) }
+function handleExport() { proxy.download('mk/invoice/export', { ...proxy.addDateRange(queryParams.value, dateRange.value, 'InvoiceDate') }, `invoice_${new Date().getTime()}.xlsx`) }
 
 function handleBeforeRecognize(file) {
   const fileName = file.name.split('.')

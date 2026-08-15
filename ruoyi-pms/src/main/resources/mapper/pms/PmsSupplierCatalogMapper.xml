@@ -43,7 +43,13 @@
             <if test="supplierName != null and supplierName != ''"> AND supplier_name LIKE CONCAT('%', #{supplierName}, '%')</if>
             <if test="materialCode != null and materialCode != ''"> AND material_code LIKE CONCAT('%', #{materialCode}, '%')</if>
             <if test="materialName != null and materialName != ''"> AND material_name LIKE CONCAT('%', #{materialName}, '%')</if>
+            <if test="specModel != null and specModel != ''"> AND spec_model LIKE CONCAT('%', #{specModel}, '%')</if>
+            <if test="unit != null and unit != ''"> AND unit = #{unit}</if>
             <if test="status != null and status != ''"> AND status = #{status}</if>
+            <if test="minPrice != null"> AND unit_price &gt;= #{minPrice}</if>
+            <if test="maxPrice != null"> AND unit_price &lt;= #{maxPrice}</if>
+            <if test="params.beginPriceEffectiveDate != null and params.beginPriceEffectiveDate != ''"> AND price_effective_date &gt;= #{params.beginPriceEffectiveDate}</if>
+            <if test="params.endPriceEffectiveDate != null and params.endPriceEffectiveDate != ''"> AND price_effective_date &lt;= #{params.endPriceEffectiveDate}</if>
         </where>
         ORDER BY catalog_id DESC
     </select>

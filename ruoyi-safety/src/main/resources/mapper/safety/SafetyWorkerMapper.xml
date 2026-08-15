@@ -42,6 +42,9 @@
             <if test="workerNo != null and workerNo != ''"> AND worker_no = #{workerNo}</if>
             <if test="isSpecial != null and isSpecial != ''"> AND is_special = #{isSpecial}</if>
             <if test="jobType != null and jobType != ''"> AND job_type = #{jobType}</if>
+            <if test="position != null and position != ''"> AND position LIKE CONCAT('%', #{position}, '%')</if>
+            <if test="deptName != null and deptName != ''"> AND dept_name LIKE CONCAT('%', #{deptName}, '%')</if>
+            <if test="phone != null and phone != ''"> AND phone LIKE CONCAT('%', #{phone}, '%')</if>
             <if test="status != null and status != ''"> AND status = #{status}</if>
         </where>
         ORDER BY create_time DESC

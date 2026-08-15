@@ -4,6 +4,10 @@
     <div class="surface filter-card" v-show="showSearch">
       <div class="filter-head">
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+        <a class="adv-link" :class="{ 'is-open': showAdvanced }" @click.prevent="showAdvanced = !showAdvanced">
+          <span>{{ showAdvanced ? '收起' : '高级筛选' }}</span>
+          <el-icon class="chev"><ArrowDown /></el-icon>
+        </a>
       </div>
       <div class="filter-bar">
         <div class="field">
@@ -37,6 +41,28 @@
               <template #prefix><el-icon><Filter /></el-icon></template>
               <el-option v-for="d in marketing_shipment_status" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>物流公司</label>
+          <div class="control">
+            <el-input v-model="queryParams.logisticsCompany" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>发货人</label>
+          <div class="control">
+            <el-input v-model="queryParams.shipperName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>发货日期</label>
+          <div class="control">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
           </div>
         </div>
       </div>
@@ -495,6 +521,7 @@ import { listOrder, getOrder } from '@/api/mk/order'
 import { addReturn } from '@/api/mk/returnOrder'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard, formatMoney } from '@/composables/useDetailCard'
+import { ArrowDown } from '@element-plus/icons-vue'
 
 const { proxy } = getCurrentInstance()
 const { marketing_shipment_status } = proxy.useDict('marketing_shipment_status')
@@ -550,7 +577,7 @@ const returnRules = {
 
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, shipmentNo: undefined, orderNo: undefined, customerName: undefined, status: undefined, params: {} },
+  queryParams: { pageNum: 1, pageSize: 10, shipmentNo: undefined, orderNo: undefined, customerName: undefined, status: undefined, logisticsCompany: undefined, shipperName: undefined, params: {} },
   rules: {
     orderId: [{ required: true, message: '请选择关联订单', trigger: 'change' }]
   }
@@ -593,12 +620,16 @@ function loadColumnVisibility() {
 
 const columns = ref(loadColumnVisibility())
 
+const dateRange = ref([])
 const activeFilterCount = computed(() => {
   let count = 0
   if (queryParams.value.shipmentNo) count++
   if (queryParams.value.orderNo) count++
   if (queryParams.value.customerName) count++
   if (queryParams.value.status) count++
+  if (queryParams.value.logisticsCompany) count++
+  if (queryParams.value.shipperName) count++
+  if (dateRange.value && dateRange.value.length === 2) count++
   return count
 })
 
@@ -631,6 +662,7 @@ function getList() {
 
 function handleQuery() {
   showAdvanced.value = false
+  queryParams.value.params = proxy.addDateRange(queryParams.value.params, dateRange.value)
   queryParams.value.pageNum = 1
   getList()
 }
@@ -640,6 +672,9 @@ function resetQuery() {
   queryParams.value.orderNo = undefined
   queryParams.value.customerName = undefined
   queryParams.value.status = undefined
+  queryParams.value.logisticsCompany = undefined
+  queryParams.value.shipperName = undefined
+  dateRange.value = []
   queryParams.value.params = {}
   activeStatusTab.value = 'all'
   handleQuery()
@@ -1080,7 +1115,7 @@ function submitReturn() {
 }
 
 function handleExport() {
-  proxy.download('mk/shipment/export', { ...queryParams.value }, `shipment_${new Date().getTime()}.xlsx`)
+  proxy.download('mk/shipment/export', { ...proxy.addDateRange(queryParams.value, dateRange.value) }, `shipment_${new Date().getTime()}.xlsx`)
 }
 
 function cancel() {

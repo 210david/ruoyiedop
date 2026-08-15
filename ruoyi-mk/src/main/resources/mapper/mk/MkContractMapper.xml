@@ -53,6 +53,10 @@
             <if test="opportunityId != null"> AND co.opportunity_id = #{opportunityId}</if>
             <if test="customerName != null and customerName != ''"> AND c.customer_name LIKE CONCAT('%', #{customerName}, '%')</if>
             <if test="userId != null"> AND co.user_id = #{userId}</if>
+            <if test="paymentMethod != null and paymentMethod != ''"> AND co.payment_method = #{paymentMethod}</if>
+            <if test="userName != null and userName != ''"> AND u.nick_name LIKE CONCAT('%', #{userName}, '%')</if>
+            <if test="params.beginSignDate != null and params.beginSignDate != ''"> AND date(co.sign_date) &gt;= #{params.beginSignDate}</if>
+            <if test="params.endSignDate != null and params.endSignDate != ''"> AND date(co.sign_date) &lt;= #{params.endSignDate}</if>
         </where>
         ORDER BY co.contract_id DESC
     </select>

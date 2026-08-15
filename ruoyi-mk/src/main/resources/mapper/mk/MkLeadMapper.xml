@@ -79,8 +79,11 @@
             <if test="leadSource != null and leadSource != ''"> AND l.lead_source = #{leadSource}</if>
             <if test="isPublic != null and isPublic != ''"> AND l.is_public = #{isPublic}</if>
             <if test="receiveStatus != null and receiveStatus != ''"> AND l.receive_status = #{receiveStatus}</if>
+            <if test="industry != null and industry != ''"> AND l.industry = #{industry}</if>
             <if test="userId != null"> AND l.user_id = #{userId}</if>
             <if test="deptId != null"> AND l.dept_id = #{deptId}</if>
+            <if test="params.beginApplyTime != null and params.beginApplyTime != ''"> AND l.receive_apply_time &gt;= #{params.beginApplyTime}</if>
+            <if test="params.endApplyTime != null and params.endApplyTime != ''"> AND l.receive_apply_time &lt;= #{params.endApplyTime}</if>
         </where>
         ORDER BY l.lead_id DESC
     </select>

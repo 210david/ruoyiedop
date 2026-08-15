@@ -4,6 +4,10 @@
     <div class="surface filter-card" v-show="showSearch">
       <div class="filter-head">
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+        <a class="adv-link" :class="{ 'is-open': showAdvanced }" @click.prevent="showAdvanced = !showAdvanced">
+          <span>{{ showAdvanced ? '收起' : '高级筛选' }}</span>
+          <el-icon class="chev"><ArrowDown /></el-icon>
+        </a>
       </div>
       <div class="filter-bar">
         <div class="field">
@@ -38,6 +42,37 @@
               <template #prefix><el-icon><Filter /></el-icon></template>
               <el-option v-for="d in marketing_opportunity_status" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>商机来源</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.opportunitySource" placeholder="全部" clearable @change="handleQuery">
+              <template #prefix><el-icon><Filter /></el-icon></template>
+              <el-option v-for="d in marketing_opportunity_source" :key="d.value" :label="d.label" :value="d.value" />
+            </el-select>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>客户名称</label>
+          <div class="control">
+            <el-input v-model="queryParams.customerName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>负责人</label>
+          <div class="control">
+            <el-input v-model="queryParams.userName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>创建时间</label>
+          <div class="control">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
           </div>
         </div>
       </div>
@@ -100,7 +135,13 @@
           <el-table-column label="商机编号" prop="opportunityNo" key="opportunityNo" :width="colWidth('opportunityNo', 150)" resizable v-if="columns.opportunityNo.visible" />
           <el-table-column label="商机名称" prop="opportunityName" key="opportunityName" show-overflow-tooltip v-if="columns.opportunityName.visible" />
           <el-table-column label="客户名称" prop="customerName" key="customerName" show-overflow-tooltip v-if="columns.customerName.visible" />
-          <el-table-column label="销售阶段" prop="stageName" key="stageName" :width="colWidth('stageName', 100)" resizable align="center" v-if="columns.stageName.visible" />
+          <el-table-column label="销售阶段" prop="stageName" key="stageName" :width="colWidth('stageName', 100)" resizable align="center" v-if="columns.stageName.visible">
+            <template #default="scope">
+              <span class="badge" :class="stageBadgeClass(scope.row.stageCode)">
+                <span class="dot"></span>{{ scope.row.stageName }}
+              </span>
+            </template>
+          </el-table-column>
           <el-table-column label="预计金额" prop="expectedAmount" key="expectedAmount" :width="colWidth('expectedAmount', 120)" resizable align="right" v-if="columns.expectedAmount.visible">
             <template #default="scope"><span class="rd-amount">￥{{ scope.row.expectedAmount }}</span></template>
           </el-table-column>
@@ -287,7 +328,7 @@
           <div class="rd-detail-header-sub" v-if="viewForm.opportunityNo">
             <span class="rd-detail-header-divider"></span>
             <span class="rd-detail-header-no">编号：{{ viewForm.opportunityNo }}</span>
-            <dict-tag :options="marketing_opportunity_status" :value="viewForm.opportunityStatus" />
+            <span class="badge" :class="badgeClass(viewForm.opportunityStatus)"><span class="dot"></span>{{ statusLabel(viewForm.opportunityStatus) }}</span>
           </div>
         </div>
       </template>
@@ -330,12 +371,12 @@
               </div>
               <div class="rd-card-body" v-show="!collapsedCards.viewAmount">
                 <div class="rd-grid">
-                  <div class="rd-item"><span class="rd-label">销售阶段</span><div class="rd-value">{{ viewForm.stageName }}</div></div>
+                  <div class="rd-item"><span class="rd-label">销售阶段</span><div class="rd-value"><span class="badge" :class="stageBadgeClass(viewForm.stageCode)"><span class="dot"></span>{{ viewForm.stageName }}</span></div></div>
                   <div class="rd-item"><span class="rd-label">预计金额</span><div class="rd-value rd-value--large rd-amount rd-amount--negative">￥{{ formatAmount(viewForm.expectedAmount) }}</div></div>
                   <div class="rd-item"><span class="rd-label">预计成交</span><div class="rd-value">{{ viewForm.expectedDate }}</div></div>
                   <div class="rd-item"><span class="rd-label">赢率</span><div class="rd-value">{{ viewForm.winRate }}%</div></div>
                   <div class="rd-item"><span class="rd-label">加权金额</span><div class="rd-value rd-amount rd-amount--negative">￥{{ formatAmount(viewForm.weightedAmount) }}</div></div>
-                  <div class="rd-item"><span class="rd-label">商机状态</span><div class="rd-value"><dict-tag :options="marketing_opportunity_status" :value="viewForm.opportunityStatus" /></div></div>
+                  <div class="rd-item"><span class="rd-label">商机状态</span><div class="rd-value"><span class="badge" :class="badgeClass(viewForm.opportunityStatus)"><span class="dot"></span>{{ statusLabel(viewForm.opportunityStatus) }}</span></div></div>
                   <div class="rd-item" v-if="viewForm.actualAmount"><span class="rd-label">实际成交金额</span><div class="rd-value rd-amount rd-amount--negative">￥{{ formatAmount(viewForm.actualAmount) }}</div></div>
                   <div class="rd-item" v-if="viewForm.actualDate"><span class="rd-label">实际成交日期</span><div class="rd-value">{{ viewForm.actualDate }}</div></div>
                   <div class="rd-item rd-item--full" v-if="viewForm.lostReason"><span class="rd-label">输单原因</span><div class="rd-value">{{ viewForm.lostReason }}</div></div>
@@ -577,7 +618,7 @@
             <div class="rd-card-body" v-show="!collapsedCards.actionInfo">
               <div class="rd-grid">
                 <div class="rd-item rd-item--full"><span class="rd-label">商机名称</span><div class="rd-value">{{ actionForm.opportunityName }}</div></div>
-                <div class="rd-item"><span class="rd-label">当前阶段</span><div class="rd-value"><el-tag type="info">{{ actionForm.currentStageName }}</el-tag></div></div>
+                <div class="rd-item"><span class="rd-label">当前阶段</span><div class="rd-value"><span class="badge" :class="stageBadgeClass(actionForm.currentStageCode)"><span class="dot"></span>{{ actionForm.currentStageName }}</span></div></div>
               </div>
             </div>
           </section>
@@ -729,6 +770,7 @@ function loadStatusCounts() {
 function handleStatusTabClick(status) { activeStatusTab.value = status; queryParams.value.opportunityStatus = status === 'all' ? undefined : status; handleQuery() }
 function badgeClass(status) { const map = { '0': 'blue', '1': 'green', '2': 'red', '3': 'amber' }; return map[status] || 'gray' }
 function statusLabel(status) { const item = marketing_opportunity_status.value.find(d => d.value == status); return item ? item.label : '-' }
+function stageBadgeClass(stageCode) { const map = { 'stage1': 'blue', 'stage2': 'violet', 'stage3': 'amber', 'stage4': 'cyan', 'stage5': 'orange' }; return map[stageCode] || 'gray' }
 function statusTabClass(value) { const map = { '0': 'tab-audit', '1': 'tab-done', '2': 'tab-reject', '3': 'tab-draft' }; return map[value] || '' }
 const ids = ref([])
 const single = ref(true)
@@ -752,7 +794,7 @@ const targetStageOptions = ref([])
 
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, opportunityNo: undefined, opportunityName: undefined, stageCode: undefined, opportunityStatus: undefined, params: {} },
+  queryParams: { pageNum: 1, pageSize: 10, opportunityNo: undefined, opportunityName: undefined, stageCode: undefined, opportunityStatus: undefined, opportunitySource: undefined, customerName: undefined, userName: undefined, params: {} },
   rules: {
     opportunityName: [{ required: true, message: '商机名称不能为空', trigger: 'blur' }],
     customerId: [{ required: true, message: '请选择客户', trigger: 'change' }],
@@ -795,12 +837,17 @@ function loadColumnVisibility() {
 
 const columns = ref(loadColumnVisibility())
 
+const dateRange = ref([])
 const activeFilterCount = computed(() => {
   let count = 0
   if (queryParams.value.opportunityNo) count++
   if (queryParams.value.opportunityName) count++
   if (queryParams.value.stageCode) count++
   if (queryParams.value.opportunityStatus) count++
+  if (queryParams.value.opportunitySource) count++
+  if (queryParams.value.customerName) count++
+  if (queryParams.value.userName) count++
+  if (dateRange.value && dateRange.value.length === 2) count++
   return count
 })
 
@@ -850,8 +897,8 @@ function onStageChange(stageCode) {
   const stage = stageOptions.value.find(s => s.stageCode === stageCode)
   if (stage) { form.value.stageName = stage.stageName; form.value.winRate = stage.winRate }
 }
-function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
-function resetQuery() { queryParams.value.opportunityNo = undefined; queryParams.value.opportunityName = undefined; queryParams.value.stageCode = undefined; queryParams.value.opportunityStatus = undefined; queryParams.value.params = {}; activeStatusTab.value = 'all'; handleQuery() }
+function handleQuery() { showAdvanced.value = false; queryParams.value.params = proxy.addDateRange(queryParams.value.params, dateRange.value, 'CreateTime'); queryParams.value.pageNum = 1; getList() }
+function resetQuery() { queryParams.value.opportunityNo = undefined; queryParams.value.opportunityName = undefined; queryParams.value.stageCode = undefined; queryParams.value.opportunityStatus = undefined; queryParams.value.opportunitySource = undefined; queryParams.value.customerName = undefined; queryParams.value.userName = undefined; dateRange.value = []; queryParams.value.params = {}; activeStatusTab.value = 'all'; handleQuery() }
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.opportunityId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function reset() {
@@ -888,7 +935,7 @@ function submitForm() {
   })
 }
 function handleDelete(row) { const opportunityIds = row.opportunityId || ids.value; proxy.$modal.confirm('确认删除编号为"' + opportunityIds + '"的数据？').then(() => delOpportunity(opportunityIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
-function handleExport() { proxy.download('mk/opportunity/export', { ...queryParams.value }, `opportunity_${new Date().getTime()}.xlsx`) }
+function handleExport() { proxy.download('mk/opportunity/export', { ...proxy.addDateRange(queryParams.value, dateRange.value, 'CreateTime') }, `opportunity_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 
 // ===== 阶段推进/赢单/输单 =====

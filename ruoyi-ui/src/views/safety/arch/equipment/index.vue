@@ -32,6 +32,15 @@
             </el-select>
           </div>
         </div>
+        <div class="field">
+          <label>状态</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
+              <el-option label="正常" value="0" />
+              <el-option label="停用" value="1" />
+            </el-select>
+          </div>
+        </div>
         <div class="field" v-show="showAdvanced">
           <label>特种子类</label>
           <div class="control is-select">
@@ -41,12 +50,15 @@
           </div>
         </div>
         <div class="field" v-show="showAdvanced">
-          <label>状态</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
-              <el-option label="正常" value="0" />
-              <el-option label="停用" value="1" />
-            </el-select>
+          <label>所属区域</label>
+          <div class="control">
+            <el-input v-model="queryParams.areaName" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>责任人</label>
+          <div class="control">
+            <el-input v-model="queryParams.personName" placeholder="请输入" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
         <div class="field" v-show="showAdvanced">
@@ -277,7 +289,7 @@ const columns = ref(loadColumnVisibility())
 
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, equipmentName: undefined, equipmentCode: undefined, equipmentCategory: undefined, specialSubType: undefined, status: undefined, params: {} },
+  queryParams: { pageNum: 1, pageSize: 10, equipmentName: undefined, equipmentCode: undefined, equipmentCategory: undefined, specialSubType: undefined, status: undefined, areaName: undefined, personName: undefined, params: {} },
   rules: {
     equipmentName: [{ required: true, message: '设备名称不能为空', trigger: 'blur' }],
     equipmentCategory: [{ required: true, message: '设备类别不能为空', trigger: 'change' }]
@@ -290,15 +302,17 @@ const activeFilterCount = computed(() => {
   if (queryParams.value.equipmentName) count++
   if (queryParams.value.equipmentCode) count++
   if (queryParams.value.equipmentCategory) count++
-  if (queryParams.value.specialSubType) count++
   if (queryParams.value.status) count++
+  if (queryParams.value.specialSubType) count++
+  if (queryParams.value.areaName) count++
+  if (queryParams.value.personName) count++
   if (dateRange.value && dateRange.value.length > 0) count++
   return count
 })
 
-function getList() { loading.value = true; listEquipment(queryParams.value).then(response => { equipmentList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths() }) }
+function getList() { loading.value = true; listEquipment(proxy.addDateRange(queryParams.value, dateRange.value)).then(response => { equipmentList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths() }) }
 function handleQuery() { showAdvanced.value = false; proxy.addDateRange(queryParams.value, dateRange.value); queryParams.value.pageNum = 1; getList() }
-function resetQuery() { queryParams.value.equipmentName = undefined; queryParams.value.equipmentCode = undefined; queryParams.value.equipmentCategory = undefined; queryParams.value.specialSubType = undefined; queryParams.value.status = undefined; dateRange.value = []; queryParams.value.params = {}; handleQuery() }
+function resetQuery() { queryParams.value.equipmentName = undefined; queryParams.value.equipmentCode = undefined; queryParams.value.equipmentCategory = undefined; queryParams.value.specialSubType = undefined; queryParams.value.status = undefined; queryParams.value.areaName = undefined; queryParams.value.personName = undefined; dateRange.value = []; queryParams.value.params = {}; handleQuery() }
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleSelectionChange(selection) { ids.value = selection.map(item => item.equipmentId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function handleAdd() { reset(); collapsedCards.c0 = false; collapsedCards.c1 = false; collapsedCards.c2 = false; open.value = true; title.value = '添加特种设备' }

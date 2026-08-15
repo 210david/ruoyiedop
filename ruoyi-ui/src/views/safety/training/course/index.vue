@@ -34,13 +34,25 @@
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
+        <div class="field">
           <label>状态</label>
           <div class="control is-select">
             <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
               <el-option label="正常" value="0" />
               <el-option label="停用" value="1" />
             </el-select>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>课程编号</label>
+          <div class="control">
+            <el-input v-model="queryParams.courseCode" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>讲师</label>
+          <div class="control">
+            <el-input v-model="queryParams.instructor" placeholder="请输入" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
       </div>
@@ -253,7 +265,7 @@ const columns = ref(loadColumnVisibility())
 
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, courseName: undefined, courseType: undefined, courseForm: undefined, status: undefined, params: {} },
+  queryParams: { pageNum: 1, pageSize: 10, courseName: undefined, courseCode: undefined, courseType: undefined, courseForm: undefined, status: undefined, instructor: undefined, params: {} },
   rules: {
     courseName: [{ required: true, message: '课程名称不能为空', trigger: 'blur' }],
     courseType: [{ required: true, message: '课程类别不能为空', trigger: 'change' }],
@@ -270,6 +282,8 @@ const activeFilterCount = computed(() => {
   if (queryParams.value.courseType) count++
   if (queryParams.value.courseForm) count++
   if (queryParams.value.status) count++
+  if (queryParams.value.courseCode) count++
+  if (queryParams.value.instructor) count++
   return count
 })
 
@@ -283,7 +297,7 @@ downloadFile(url)
 
 function getList() { loading.value = true; listTrainingCourse(queryParams.value).then(response => { courseList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths() }) }
 function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
-function resetQuery() { queryParams.value.courseName = undefined; queryParams.value.courseType = undefined; queryParams.value.courseForm = undefined; queryParams.value.status = undefined; queryParams.value.params = {}; handleQuery() }
+function resetQuery() { queryParams.value.courseName = undefined; queryParams.value.courseCode = undefined; queryParams.value.courseType = undefined; queryParams.value.courseForm = undefined; queryParams.value.status = undefined; queryParams.value.instructor = undefined; queryParams.value.params = {}; handleQuery() }
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleSelectionChange(selection) { ids.value = selection.map(item => item.courseId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function handleAdd() { reset(); collapsedCards.c0 = false; collapsedCards.c1 = false; open.value = true; title.value = '添加课程' }

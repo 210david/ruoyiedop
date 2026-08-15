@@ -53,6 +53,8 @@
             <if test="planYear != null and planYear != ''"> AND p.plan_year = #{planYear}</if>
             <if test="planStatus != null and planStatus != ''"> AND p.plan_status = #{planStatus}</if>
             <if test="status != null and status != ''"> AND p.status = #{status}</if>
+            <if test="params.beginTime != null and params.beginTime != ''"> AND p.create_time &gt;= #{params.beginTime}</if>
+            <if test="params.endTime != null and params.endTime != ''"> AND p.create_time &lt;= #{params.endTime}</if>
         </where>
         ORDER BY p.create_time DESC
     </select>

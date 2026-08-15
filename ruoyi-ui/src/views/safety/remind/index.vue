@@ -4,6 +4,10 @@
     <div class="surface filter-card" v-show="showSearch">
       <div class="filter-head">
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+        <a class="adv-link" :class="{ 'is-open': showAdvanced }" @click.prevent="showAdvanced = !showAdvanced">
+          <span>{{ showAdvanced ? '收起' : '高级筛选' }}</span>
+          <el-icon class="chev"><ArrowDown /></el-icon>
+        </a>
       </div>
       <div class="filter-bar">
         <div class="field">
@@ -28,6 +32,30 @@
             <el-input v-model="queryParams.relatedName" placeholder="请输入" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
+          </div>
+        </div>
+        <div class="field">
+          <label>接收人</label>
+          <div class="control">
+            <el-input v-model="queryParams.toPersonName" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>到期日期</label>
+          <div class="control">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" @change="handleQuery" />
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>处理人</label>
+          <div class="control">
+            <el-input v-model="queryParams.handleBy" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>创建时间</label>
+          <div class="control">
+            <el-date-picker v-model="createTimeRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" @change="handleQuery" />
           </div>
         </div>
       </div>
@@ -168,7 +196,7 @@
 import { listRemind, getRemind, handleRemind, delRemind } from '@/api/safety/remind'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
-import { Search, Filter, RefreshLeft } from '@element-plus/icons-vue'
+import { Search, Filter, RefreshLeft, ArrowDown } from '@element-plus/icons-vue'
 import useUserStore from '@/store/modules/user'
 
 const { proxy } = getCurrentInstance()
@@ -182,6 +210,9 @@ const handleOpen = ref(false)
 const viewOpen = ref(false)
 const loading = ref(true)
 const showSearch = ref(true)
+const showAdvanced = ref(false)
+const dateRange = ref([])
+const createTimeRange = ref([])
 const ids = ref([])
 const single = ref(true)
 const multiple = ref(true)
@@ -221,7 +252,7 @@ const viewForm = ref({})
 
 const data = reactive({
   handleForm: {},
-  queryParams: { pageNum: 1, pageSize: 10, remindType: undefined, remindStatus: undefined, relatedName: undefined, params: {} },
+  queryParams: { pageNum: 1, pageSize: 10, remindType: undefined, remindStatus: undefined, relatedName: undefined, toPersonName: undefined, handleBy: undefined, params: {} },
   handleRules: { handleResult: [{ required: true, message: '处理结果不能为空', trigger: 'blur' }] }
 })
 const { queryParams, handleForm, handleRules } = toRefs(data)
@@ -231,11 +262,17 @@ const activeFilterCount = computed(() => {
   if (queryParams.value.remindType) count++
   if (queryParams.value.remindStatus) count++
   if (queryParams.value.relatedName) count++
+  if (queryParams.value.toPersonName) count++
+  if (queryParams.value.handleBy) count++
+  if (dateRange.value && dateRange.value.length > 0) count++
+  if (createTimeRange.value && createTimeRange.value.length > 0) count++
   return count
 })
 
 function getList() {
   loading.value = true
+  proxy.addDateRange(queryParams.value, dateRange.value, 'ExpireDate')
+  proxy.addDateRange(queryParams.value, createTimeRange.value, 'CreateTime')
   listRemind(queryParams.value).then(response => {
     remindList.value = response.rows
     total.value = response.total
@@ -243,9 +280,8 @@ function getList() {
     applySavedWidths()
   })
 }
-
-function handleQuery() { queryParams.value.pageNum = 1; getList() }
-function resetQuery() { queryParams.value.remindType = undefined; queryParams.value.remindStatus = undefined; queryParams.value.relatedName = undefined; queryParams.value.params = {}; handleQuery() }
+function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
+function resetQuery() { queryParams.value.remindType = undefined; queryParams.value.remindStatus = undefined; queryParams.value.relatedName = undefined; queryParams.value.toPersonName = undefined; queryParams.value.handleBy = undefined; dateRange.value = []; createTimeRange.value = []; queryParams.value.params = {}; handleQuery() }
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleSelectionChange(selection) { ids.value = selection.map(item => item.remindId); single.value = selection.length !== 1; multiple.value = !selection.length }
 
@@ -312,6 +348,10 @@ getList()
 .safety-remind-page .surface { background:#fff; border:1px solid var(--ink-200); border-radius:var(--r-lg); box-shadow:var(--shadow-card); overflow:hidden; margin-bottom:8px; }
 .safety-remind-page .filter-card { padding:14px 20px 16px; }
 .safety-remind-page .filter-card .filter-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+.safety-remind-page .filter-card .adv-link { display:inline-flex; align-items:center; gap:4px; font-size:13px; color:var(--ink-500); cursor:pointer; user-select:none; transition:color .15s var(--ease-out); }
+.safety-remind-page .filter-card .adv-link:hover { color:var(--brand-600); }
+.safety-remind-page .filter-card .adv-link .chev { transition:transform .2s var(--ease-out); }
+.safety-remind-page .filter-card .adv-link.is-open .chev { transform:rotate(180deg); }
 .safety-remind-page .filter-card .filter-title { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--ink-700); }
 .safety-remind-page .filter-card .filter-title .glyph { width:4px; height:14px; background:var(--brand-600); border-radius:2px; }
 .safety-remind-page .filter-card .filter-bar { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px 16px; }

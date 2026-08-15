@@ -4,6 +4,10 @@
     <div class="surface filter-card" v-show="showSearch">
       <div class="filter-head">
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+        <a class="adv-link" :class="{ 'is-open': showAdvanced }" @click.prevent="showAdvanced = !showAdvanced">
+          <span>{{ showAdvanced ? '收起' : '高级筛选' }}</span>
+          <el-icon class="chev"><ArrowDown /></el-icon>
+        </a>
       </div>
       <div class="filter-bar">
         <div class="field">
@@ -28,6 +32,31 @@
             <el-select v-model="queryParams.partType" placeholder="全部" clearable @change="handleQuery">
               <el-option v-for="dict in dms_part_type" :key="dict.value" :label="dict.label" :value="dict.value" />
             </el-select>
+          </div>
+        </div>
+        <div class="field">
+          <label>状态</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
+              <el-option label="正常" value="0" />
+              <el-option label="停用" value="1" />
+            </el-select>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>规格型号</label>
+          <div class="control">
+            <el-input v-model="queryParams.specModel" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>供应商</label>
+          <div class="control">
+            <el-input v-model="queryParams.supplier" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
           </div>
         </div>
       </div>
@@ -197,7 +226,7 @@ import { listSparepart, getSparepart, addSparepart, updateSparepart, delSparepar
 import { listSupplier } from '@/api/wms/supplier'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
-import { Search, Filter, RefreshLeft, Edit, Delete, Download } from '@element-plus/icons-vue'
+import { Search, Filter, RefreshLeft, Edit, Delete, Download, ArrowDown } from '@element-plus/icons-vue'
 const { collapsedCards, toggleCard } = useDetailCard(["c2","c1","c0"])
 
 const { proxy } = getCurrentInstance()
@@ -243,11 +272,15 @@ function loadColumnVisibility() {
   return { ...defaultColumns }
 }
 const columns = ref(loadColumnVisibility())
+const showAdvanced = ref(false)
 const activeFilterCount = computed(() => {
   let count = 0
   if (queryParams.value.partCode) count++
   if (queryParams.value.partName) count++
   if (queryParams.value.partType) count++
+  if (queryParams.value.status) count++
+  if (queryParams.value.specModel) count++
+  if (queryParams.value.supplier) count++
   return count
 })
 function partTypeLabel(val) { const item = dms_part_type.value.find(d => d.value == val); return item ? item.label : '-' }
@@ -255,7 +288,7 @@ function unitLabel(val) { const item = wms_unit.value.find(d => d.value == val);
 
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, partCode: undefined, partName: undefined, partType: undefined },
+  queryParams: { pageNum: 1, pageSize: 10, partCode: undefined, partName: undefined, partType: undefined, status: undefined, specModel: undefined, supplier: undefined },
   rules: {
     partCode: [{ required: false }],
     partName: [{ required: true, message: '备件名称不能为空', trigger: 'blur' }],
@@ -273,8 +306,8 @@ function getList() {
 function getSupplierList() {
   listSupplier({ pageNum: 1, pageSize: 9999, status: '0' }).then(res => { supplierOptions.value = res.rows })
 }
-function handleQuery() { queryParams.value.pageNum = 1; getList() }
-function resetQuery() { queryParams.value.partCode = undefined; queryParams.value.partName = undefined; queryParams.value.partType = undefined; proxy.resetForm('queryRef'); handleQuery() }
+function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
+function resetQuery() { queryParams.value.partCode = undefined; queryParams.value.partName = undefined; queryParams.value.partType = undefined; queryParams.value.status = undefined; queryParams.value.specModel = undefined; queryParams.value.supplier = undefined; proxy.resetForm('queryRef'); handleQuery() }
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.partId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function reset() {
   form.value = {

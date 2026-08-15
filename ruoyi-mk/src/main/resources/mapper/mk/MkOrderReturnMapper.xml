@@ -44,6 +44,12 @@
             <if test="customerId != null"> AND r.customer_id = #{customerId}</if>
             <if test="orderId != null"> AND r.order_id = #{orderId}</if>
             <if test="customerName != null and customerName != ''"> AND c.customer_name LIKE CONCAT('%', #{customerName}, '%')</if>
+            <if test="orderNo != null and orderNo != ''"> AND o.order_no LIKE CONCAT('%', #{orderNo}, '%')</if>
+            <if test="returnReason != null and returnReason != ''"> AND r.return_reason LIKE CONCAT('%', #{returnReason}, '%')</if>
+            <if test="params.beginRefund != null and params.beginRefund != ''"> AND date(r.refund_date) &gt;= #{params.beginRefund}</if>
+            <if test="params.endRefund != null and params.endRefund != ''"> AND date(r.refund_date) &lt;= #{params.endRefund}</if>
+            <if test="params.beginCreateTime != null and params.beginCreateTime != ''"> AND date(r.create_time) &gt;= #{params.beginCreateTime}</if>
+            <if test="params.endCreateTime != null and params.endCreateTime != ''"> AND date(r.create_time) &lt;= #{params.endCreateTime}</if>
         </where>
         ORDER BY r.return_id DESC
     </select>

@@ -40,6 +40,9 @@
             <if test="contactName != null and contactName != ''"> AND p.contact_name LIKE CONCAT('%', #{contactName}, '%')</if>
             <if test="contactPhone != null and contactPhone != ''"> AND p.contact_phone LIKE CONCAT('%', #{contactPhone}, '%')</if>
             <if test="participateStatus != null and participateStatus != ''"> AND p.participate_status = #{participateStatus}</if>
+            <if test="position != null and position != ''"> AND p.position LIKE CONCAT('%', #{position}, '%')</if>
+            <if test="params.beginSignTime != null and params.beginSignTime != ''"> AND p.sign_time &gt;= #{params.beginSignTime}</if>
+            <if test="params.endSignTime != null and params.endSignTime != ''"> AND p.sign_time &lt;= #{params.endSignTime}</if>
             <if test="customerId != null"> AND p.company_name = (SELECT customer_name FROM mk_customer WHERE customer_id = #{customerId})</if>
         </where>
         ORDER BY p.participant_id DESC

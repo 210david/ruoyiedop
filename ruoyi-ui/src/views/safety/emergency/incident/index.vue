@@ -4,6 +4,10 @@
     <div class="surface filter-card" v-show="showSearch">
       <div class="filter-head">
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+        <a class="adv-link" :class="{ 'is-open': showAdvanced }" @click.prevent="showAdvanced = !showAdvanced">
+          <span>{{ showAdvanced ? '收起' : '高级筛选' }}</span>
+          <el-icon class="chev"><ArrowDown /></el-icon>
+        </a>
       </div>
       <div class="filter-bar">
         <div class="field">
@@ -20,6 +24,24 @@
             <el-select v-model="queryParams.incidentLevel" placeholder="全部" clearable @change="handleQuery">
               <el-option v-for="dict in safety_incident_level" :key="dict.value" :label="dict.label" :value="dict.value" />
             </el-select>
+          </div>
+        </div>
+        <div class="field">
+          <label>发生时间</label>
+          <div class="control">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
+          </div>
+        </div>
+        <div class="field">
+          <label>事故地点</label>
+          <div class="control">
+            <el-input v-model="queryParams.incidentLocation" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>报告人</label>
+          <div class="control">
+            <el-input v-model="queryParams.reportPerson" placeholder="请输入" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
       </div>
@@ -209,7 +231,7 @@ import { listIncident, getIncident, addIncident, updateIncident, delIncident } f
 import UserPicker from '@/components/UserPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard, formatMoney } from '@/composables/useDetailCard'
-import { Search, Filter, RefreshLeft, CircleClose, QuestionFilled } from '@element-plus/icons-vue'
+import { Search, Filter, RefreshLeft, CircleClose, QuestionFilled, ArrowDown } from '@element-plus/icons-vue'
 
 const { proxy } = getCurrentInstance()
 const { safety_incident_level } = proxy.useDict('safety_incident_level')
@@ -220,6 +242,8 @@ const incidentList = ref([])
 const open = ref(false)
 const loading = ref(true)
 const showSearch = ref(true)
+const showAdvanced = ref(false)
+const dateRange = ref([])
 const ids = ref([])
 const single = ref(true)
 const multiple = ref(true)
@@ -258,7 +282,7 @@ const columns = ref(loadColumnVisibility())
 
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, incidentCode: undefined, incidentLevel: undefined, params: {} },
+  queryParams: { pageNum: 1, pageSize: 10, incidentCode: undefined, incidentLevel: undefined, incidentLocation: undefined, reportPerson: undefined, params: {} },
   rules: {
     incidentLevel: [{ required: true, message: '事故等级不能为空', trigger: 'change' }],
     incidentDate: [{ required: true, message: '事故发生时间不能为空', trigger: 'change' }],
@@ -272,12 +296,15 @@ const activeFilterCount = computed(() => {
   let count = 0
   if (queryParams.value.incidentCode) count++
   if (queryParams.value.incidentLevel) count++
+  if (dateRange.value && dateRange.value.length > 0) count++
+  if (queryParams.value.incidentLocation) count++
+  if (queryParams.value.reportPerson) count++
   return count
 })
 
 function getList() { loading.value = true; listIncident(queryParams.value).then(response => { incidentList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths() }) }
-function handleQuery() { queryParams.value.pageNum = 1; getList() }
-function resetQuery() { queryParams.value.incidentCode = undefined; queryParams.value.incidentLevel = undefined; queryParams.value.params = {}; handleQuery() }
+function handleQuery() { showAdvanced.value = false; proxy.addDateRange(queryParams.value, dateRange.value); queryParams.value.pageNum = 1; getList() }
+function resetQuery() { queryParams.value.incidentCode = undefined; queryParams.value.incidentLevel = undefined; queryParams.value.incidentLocation = undefined; queryParams.value.reportPerson = undefined; dateRange.value = []; queryParams.value.params = {}; handleQuery() }
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleSelectionChange(selection) { ids.value = selection.map(item => item.incidentId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function handleAdd() { reset(); collapsedCards.c0 = false; collapsedCards.c1 = false; collapsedCards.c2 = false; collapsedCards.c3 = false; open.value = true; title.value = '添加事故记录' }
@@ -318,6 +345,10 @@ getList()
 .safety-incident-page .filter-card .filter-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
 .safety-incident-page .filter-card .filter-title { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--ink-700); }
 .safety-incident-page .filter-card .filter-title .glyph { width:4px; height:14px; background:var(--brand-600); border-radius:2px; }
+.safety-incident-page .filter-card .adv-link { font-size:14px; color:var(--ink-500); text-decoration:none; display:flex; align-items:center; gap:4px; transition:color .15s; cursor:pointer; }
+.safety-incident-page .filter-card .adv-link:hover { color:var(--brand-600); }
+.safety-incident-page .filter-card .adv-link .chev { transition:transform .2s var(--ease-out); }
+.safety-incident-page .filter-card .adv-link.is-open .chev { transform:rotate(180deg); }
 .safety-incident-page .filter-card .filter-bar { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px 16px; }
 .safety-incident-page .filter-card .filter-actions { display:flex; align-items:center; justify-content:space-between; margin-top:14px; padding-top:14px; border-top:1px dashed var(--ink-200); }
 .safety-incident-page .filter-card .filter-info { font-size:13px; color:var(--ink-500); display:flex; align-items:center; gap:6px; }

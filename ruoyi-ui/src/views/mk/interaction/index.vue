@@ -4,6 +4,10 @@
     <div class="surface filter-card" v-show="showSearch">
       <div class="filter-head">
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+        <a class="adv-link" :class="{ 'is-open': showAdvanced }" @click.prevent="showAdvanced = !showAdvanced">
+          <span>{{ showAdvanced ? '收起' : '高级筛选' }}</span>
+          <el-icon class="chev"><ArrowDown /></el-icon>
+        </a>
       </div>
       <div class="filter-bar">
         <div class="field">
@@ -29,6 +33,28 @@
             <el-input v-model="queryParams.userName" placeholder="请输入" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
+          </div>
+        </div>
+        <div class="field">
+          <label>联系人</label>
+          <div class="control">
+            <el-input v-model="queryParams.contactName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>互动内容</label>
+          <div class="control">
+            <el-input v-model="queryParams.content" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>互动时间</label>
+          <div class="control">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
           </div>
         </div>
       </div>
@@ -232,7 +258,7 @@
 </template>
 
 <script setup name="MkInteraction">
-import { CircleClose } from '@element-plus/icons-vue'
+import { CircleClose, ArrowDown } from '@element-plus/icons-vue'
 import { listInteraction, getInteraction, addInteraction, updateInteraction, delInteraction } from '@/api/mk/interaction'
 import { listCustomer } from '@/api/mk/customer'
 import { listContact } from '@/api/mk/contact'
@@ -251,6 +277,7 @@ const viewOpen = ref(false)
 const loading = ref(true)
 const showSearch = ref(true)
 const showAdvanced = ref(false)
+const dateRange = ref([])
 const ids = ref([])
 const single = ref(true)
 const multiple = ref(true)
@@ -262,7 +289,7 @@ const viewForm = ref({})
 
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, customerName: undefined, interactType: undefined, userName: undefined, params: {} },
+  queryParams: { pageNum: 1, pageSize: 10, customerName: undefined, interactType: undefined, userName: undefined, contactName: undefined, content: undefined, params: {} },
   rules: {
     customerId: [{ required: true, message: '请选择客户', trigger: 'change' }],
     interactType: [{ required: true, message: '请选择互动类型', trigger: 'change' }],
@@ -304,10 +331,13 @@ const columns = ref(loadColumnVisibility())
 
 const activeFilterCount = computed(() => {
   let count = 0
-  if (queryParams.value.customerName) count++
-  if (queryParams.value.interactType) count++
-  if (queryParams.value.userName) count++
-  return count
+if (queryParams.value.customerName) count++
+if (queryParams.value.interactType) count++
+if (queryParams.value.userName) count++
+if (queryParams.value.contactName) count++
+if (queryParams.value.content) count++
+if (dateRange.value && dateRange.value.length > 0) count++
+return count
 })
 
 function getList() { loading.value = true; listInteraction(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false; applySavedWidths() }).catch(() => { loading.value = false }) }
@@ -341,8 +371,8 @@ function clearUser() {
   form.value.userId = undefined
   form.value.userName = undefined
 }
-function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
-function resetQuery() { queryParams.value.customerName = undefined; queryParams.value.interactType = undefined; queryParams.value.userName = undefined; queryParams.value.params = {}; handleQuery() }
+function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; proxy.addDateRange(queryParams.value, dateRange.value, 'InteractTime'); getList() }
+function resetQuery() { queryParams.value.customerName = undefined; queryParams.value.interactType = undefined; queryParams.value.userName = undefined; queryParams.value.contactName = undefined; queryParams.value.content = undefined; queryParams.value.params = {}; dateRange.value = []; handleQuery() }
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.recordId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function reset() {

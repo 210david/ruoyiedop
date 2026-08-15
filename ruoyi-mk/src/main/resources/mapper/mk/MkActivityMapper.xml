@@ -67,6 +67,9 @@
             <if test="activityType != null and activityType != ''"> AND a.activity_type = #{activityType}</if>
             <if test="activityStatus != null and activityStatus != ''"> AND a.activity_status = #{activityStatus}</if>
             <if test="activityForm != null and activityForm != ''"> AND a.activity_form = #{activityForm}</if>
+            <if test="userName != null and userName != ''"> AND u.nick_name LIKE CONCAT('%', #{userName}, '%')</if>
+            <if test="params.beginActivity != null and params.beginActivity != ''"> AND a.start_time &gt;= #{params.beginActivity}</if>
+            <if test="params.endActivity != null and params.endActivity != ''"> AND a.start_time &lt;= #{params.endActivity}</if>
         </where>
         ORDER BY a.activity_id DESC
     </select>

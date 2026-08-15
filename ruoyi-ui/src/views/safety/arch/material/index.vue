@@ -34,7 +34,7 @@
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
+        <div class="field">
           <label>CAS号</label>
           <div class="control">
             <el-input v-model="queryParams.casNo" placeholder="请输入" clearable @keyup.enter="handleQuery" />
@@ -57,6 +57,18 @@
               <el-option label="正常" value="0" />
               <el-option label="停用" value="1" />
             </el-select>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>储存位置</label>
+          <div class="control">
+            <el-input v-model="queryParams.storageAreaName" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>创建时间</label>
+          <div class="control">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" @change="handleQuery" />
           </div>
         </div>
       </div>
@@ -291,6 +303,7 @@ const viewData = ref({})
 const loading = ref(true)
 const showSearch = ref(true)
 const showAdvanced = ref(false)
+const dateRange = ref([])
 const ids = ref([])
 const single = ref(true)
 const multiple = ref(true)
@@ -328,7 +341,7 @@ const columns = ref(loadColumnVisibility())
 
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, materialCode: undefined, materialName: undefined, hazardClass: undefined, casNo: undefined, toxicFlag: undefined, status: undefined, params: {} },
+  queryParams: { pageNum: 1, pageSize: 10, materialCode: undefined, materialName: undefined, hazardClass: undefined, casNo: undefined, toxicFlag: undefined, status: undefined, storageAreaName: undefined, params: {} },
   rules: { materialName: [{ required: true, message: '危化品名称不能为空', trigger: 'blur' }] }
 })
 const { queryParams, form, rules } = toRefs(data)
@@ -341,6 +354,8 @@ const activeFilterCount = computed(() => {
   if (queryParams.value.casNo) count++
   if (queryParams.value.toxicFlag) count++
   if (queryParams.value.status) count++
+  if (queryParams.value.storageAreaName) count++
+  if (dateRange.value && dateRange.value.length > 0) count++
   return count
 })
 
@@ -352,14 +367,14 @@ function handleFileDownload(url) {
 downloadFile(url)
 }
 
-function getList() { loading.value = true; listMaterial(queryParams.value).then(response => { materialList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths(); loadStockAlerts() }) }
+function getList() { loading.value = true; listMaterial(proxy.addDateRange(queryParams.value, dateRange.value)).then(response => { materialList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths(); loadStockAlerts() }) }
 function loadStockAlerts() { getStockAlert().then(response => { stockAlertIds.value = (response.data || []).map(m => m.materialId) }) }
 function isStockAlert(row) { return stockAlertIds.value.includes(row.materialId) }
 function getAreaTree() { listArea({ pageNum: 1, pageSize: 9999 }).then(response => { areaOptions.value = proxy.handleTree(response.rows, 'areaId') }) }
 function onAreaChange(areaId) { const node = findAreaNode(areaOptions.value, areaId); form.value.storageAreaName = node ? node.areaName : undefined }
 function findAreaNode(nodes, id) { for (const n of nodes) { if (n.areaId === id) return n; if (n.children && n.children.length) { const found = findAreaNode(n.children, id); if (found) return found } } return null }
 function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
-function resetQuery() { queryParams.value.materialCode = undefined; queryParams.value.materialName = undefined; queryParams.value.hazardClass = undefined; queryParams.value.casNo = undefined; queryParams.value.toxicFlag = undefined; queryParams.value.status = undefined; queryParams.value.params = {}; handleQuery() }
+function resetQuery() { queryParams.value.materialCode = undefined; queryParams.value.materialName = undefined; queryParams.value.hazardClass = undefined; queryParams.value.casNo = undefined; queryParams.value.toxicFlag = undefined; queryParams.value.status = undefined; queryParams.value.storageAreaName = undefined; dateRange.value = []; queryParams.value.params = {}; handleQuery() }
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleSelectionChange(selection) { ids.value = selection.map(item => item.materialId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function handleAdd() { reset(); collapsedCards.c0 = false; collapsedCards.c1 = false; collapsedCards.c2 = false; collapsedCards.c3 = false; collapsedCards.c4 = false; open.value = true; title.value = '添加危化品' }

@@ -4,6 +4,10 @@
     <div class="surface filter-card" v-show="showSearch">
       <div class="filter-head">
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+        <a class="adv-link" :class="{ 'is-open': showAdvanced }" @click.prevent="showAdvanced = !showAdvanced">
+          <span>{{ showAdvanced ? '收起' : '高级筛选' }}</span>
+          <el-icon class="chev"><ArrowDown /></el-icon>
+        </a>
         <div v-if="queryParams.recordId" class="filter-context">
           <el-tag closable @close="clearRecordFilter">关联课程：{{ contextCourseName || '全部' }}</el-tag>
         </div>
@@ -23,6 +27,33 @@
             <el-select v-model="queryParams.isPass" placeholder="全部" clearable @change="handleQuery">
               <el-option label="合格" value="1" />
               <el-option label="不合格" value="0" />
+            </el-select>
+          </div>
+        </div>
+        <div class="field">
+          <label>所属部门</label>
+          <div class="control">
+            <el-input v-model="queryParams.deptName" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+          </div>
+        </div>
+        <div class="field">
+          <label>关联课程</label>
+          <div class="control">
+            <el-input v-model="queryParams.courseName" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>培训日期</label>
+          <div class="control is-select">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" @change="handleQuery" />
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>签到状态</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.signInStatus" placeholder="全部" clearable @change="handleQuery">
+              <el-option label="已签到" value="1" />
+              <el-option label="未签到" value="0" />
             </el-select>
           </div>
         </div>
@@ -223,7 +254,7 @@ import UserPicker from '@/components/UserPicker/index.vue'
 import ExcelImportDialog from '@/components/ExcelImportDialog/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
-import { Search, Filter, RefreshLeft, CircleClose, Upload, Download } from '@element-plus/icons-vue'
+import { Search, Filter, RefreshLeft, CircleClose, Upload, Download, ArrowDown } from '@element-plus/icons-vue'
 import { useRoute } from 'vue-router'
 
 const route = useRoute()
@@ -236,6 +267,7 @@ const recordOptions = ref([])
 const open = ref(false)
 const loading = ref(true)
 const showSearch = ref(true)
+const showAdvanced = ref(false)
 const ids = ref([])
 const single = ref(true)
 const multiple = ref(true)
@@ -244,6 +276,7 @@ const title = ref('')
 const contextCourseName = ref('')
 const viewOpen = ref(false)
 const viewData = ref({})
+const dateRange = ref([])
 
 const importTips = [
   '请先选择关联的培训记录，再导入参训人员',
@@ -279,7 +312,7 @@ const columns = ref(loadColumnVisibility())
 
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, userName: undefined, isPass: undefined, recordId: undefined, params: {} },
+  queryParams: { pageNum: 1, pageSize: 10, userName: undefined, isPass: undefined, signInStatus: undefined, deptName: undefined, courseName: undefined, recordId: undefined, params: {} },
   rules: {
     recordId: [{ required: true, message: '请选择关联培训记录', trigger: 'change' }],
     userName: [{ required: true, message: '参训人员不能为空', trigger: 'change' }]
@@ -291,6 +324,10 @@ const activeFilterCount = computed(() => {
   let count = 0
   if (queryParams.value.userName) count++
   if (queryParams.value.isPass) count++
+  if (queryParams.value.deptName) count++
+  if (queryParams.value.courseName) count++
+  if (queryParams.value.signInStatus) count++
+  if (dateRange.value && dateRange.value.length === 2) count++
   return count
 })
 
@@ -301,9 +338,13 @@ function loadRecordOptions() {
   })
 }
 
-function getList() { loading.value = true; listTrainingAttendee(queryParams.value).then(response => { attendeeList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths() }) }
-function handleQuery() { queryParams.value.pageNum = 1; getList() }
-function resetQuery() { queryParams.value.userName = undefined; queryParams.value.isPass = undefined; queryParams.value.params = {}; handleQuery() }
+function getList() {
+  loading.value = true
+  proxy.addDateRange(queryParams.value, dateRange.value)
+  listTrainingAttendee(queryParams.value).then(response => { attendeeList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths() })
+}
+function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
+function resetQuery() { queryParams.value.userName = undefined; queryParams.value.isPass = undefined; queryParams.value.signInStatus = undefined; queryParams.value.deptName = undefined; queryParams.value.courseName = undefined; dateRange.value = []; queryParams.value.params = {}; handleQuery() }
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleSelectionChange(selection) { ids.value = selection.map(item => item.attendeeId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function handleAdd() { reset(); collapsedCards.c0 = false; collapsedCards.c1 = false; open.value = true; title.value = '添加参训人员' }
@@ -410,6 +451,10 @@ getList()
 .safety-training-attendee-page .filter-card .filter-title { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--ink-700); }
 .safety-training-attendee-page .filter-card .filter-title .glyph { width:4px; height:14px; background:var(--brand-600); border-radius:2px; }
 .safety-training-attendee-page .filter-card .filter-context { display:flex; align-items:center; gap:8px; }
+.safety-training-attendee-page .filter-card .adv-link { font-size:14px; color:var(--ink-500); text-decoration:none; display:flex; align-items:center; gap:4px; transition:color .15s; cursor:pointer; }
+.safety-training-attendee-page .filter-card .adv-link:hover { color:var(--brand-600); }
+.safety-training-attendee-page .filter-card .adv-link .chev { transition:transform .2s var(--ease-out); }
+.safety-training-attendee-page .filter-card .adv-link.is-open .chev { transform:rotate(180deg); }
 .safety-training-attendee-page .filter-card .filter-bar { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px 16px; }
 .safety-training-attendee-page .filter-card .filter-actions { display:flex; align-items:center; justify-content:space-between; margin-top:14px; padding-top:14px; border-top:1px dashed var(--ink-200); }
 .safety-training-attendee-page .filter-card .filter-info { font-size:13px; color:var(--ink-500); display:flex; align-items:center; gap:6px; }

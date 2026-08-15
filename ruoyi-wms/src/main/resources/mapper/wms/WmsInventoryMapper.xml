@@ -50,6 +50,7 @@
             <if test="materialId != null"> AND i.material_id = #{materialId}</if>
             <if test="materialCode != null and materialCode != ''"> AND m.material_code LIKE CONCAT('%', #{materialCode}, '%')</if>
             <if test="materialName != null and materialName != ''"> AND m.material_name LIKE CONCAT('%', #{materialName}, '%')</if>
+            <if test="specModel != null and specModel != ''"> AND m.spec_model LIKE CONCAT('%', #{specModel}, '%')</if>
             <if test="warehouseId != null"> AND i.warehouse_id = #{warehouseId}</if>
             <if test="areaId != null"> AND l.parent_id = #{areaId}</if>
             <if test="locationId != null"> AND i.location_id = #{locationId}</if>

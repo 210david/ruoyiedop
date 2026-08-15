@@ -24,7 +24,7 @@
             <el-input v-model="queryParams.areaCode" placeholder="请输入" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
+        <div class="field">
           <label>节点类型</label>
           <div class="control is-select">
             <el-select v-model="queryParams.nodeType" placeholder="全部" clearable @change="handleQuery">
@@ -32,7 +32,7 @@
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
+        <div class="field">
           <label>区域类型</label>
           <div class="control is-select">
             <el-select v-model="queryParams.areaType" placeholder="全部" clearable @change="handleQuery">
@@ -47,6 +47,12 @@
               <el-option label="正常" value="0" />
               <el-option label="停用" value="1" />
             </el-select>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>安全责任人</label>
+          <div class="control">
+            <el-input v-model="queryParams.safetyPersonName" placeholder="请输入" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
       </div>
@@ -249,7 +255,7 @@ const columns = ref(loadColumnVisibility())
 
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, areaName: undefined, areaCode: undefined, nodeType: undefined, areaType: undefined, status: undefined, params: {} },
+  queryParams: { pageNum: 1, pageSize: 10, areaName: undefined, areaCode: undefined, nodeType: undefined, areaType: undefined, status: undefined, safetyPersonName: undefined, params: {} },
   rules: {
     areaName: [{ required: true, message: '区域名称不能为空', trigger: 'blur' }]
   }
@@ -264,12 +270,13 @@ const activeFilterCount = computed(() => {
   if (queryParams.value.nodeType) count++
   if (queryParams.value.areaType) count++
   if (queryParams.value.status) count++
+  if (queryParams.value.safetyPersonName) count++
   return count
 })
 
 function getList() { loading.value = true; listArea(queryParams.value).then(response => { areaList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths() }) }
 function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
-function resetQuery() { queryParams.value.areaName = undefined; queryParams.value.areaCode = undefined; queryParams.value.nodeType = undefined; queryParams.value.areaType = undefined; queryParams.value.status = undefined; queryParams.value.params = {}; handleQuery() }
+function resetQuery() { queryParams.value.areaName = undefined; queryParams.value.areaCode = undefined; queryParams.value.nodeType = undefined; queryParams.value.areaType = undefined; queryParams.value.status = undefined; queryParams.value.safetyPersonName = undefined; queryParams.value.params = {}; handleQuery() }
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleSelectionChange(selection) { ids.value = selection.map(item => item.areaId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function handleAdd() { reset(); collapsedCards.c0 = false; collapsedCards.c1 = false; collapsedCards.c2 = false; open.value = true; title.value = '添加区域' }

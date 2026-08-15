@@ -59,7 +59,10 @@
             <if test="industry != null and industry != ''"> AND c.industry = #{industry}</if>
             <if test="customerStatus != null and customerStatus != ''"> AND c.customer_status = #{customerStatus}</if>
             <if test="userId != null"> AND c.user_id = #{userId}</if>
+            <if test="userName != null and userName != ''"> AND u.nick_name LIKE CONCAT('%', #{userName}, '%')</if>
             <if test="deptId != null"> AND c.dept_id = #{deptId}</if>
+            <if test="params.beginCreateTime != null and params.beginCreateTime != ''"> AND c.create_time &gt;= #{params.beginCreateTime}</if>
+            <if test="params.endCreateTime != null and params.endCreateTime != ''"> AND c.create_time &lt;= #{params.endCreateTime}</if>
         </where>
         ORDER BY c.customer_id DESC
     </select>
@@ -145,7 +148,11 @@
             <if test="customerNo != null and customerNo != ''"> AND c.customer_no LIKE CONCAT('%', #{customerNo}, '%')</if>
             <if test="customerName != null and customerName != ''"> AND c.customer_name LIKE CONCAT('%', #{customerName}, '%')</if>
             <if test="customerLevel != null and customerLevel != ''"> AND c.customer_level = #{customerLevel}</if>
+            <if test="industry != null and industry != ''"> AND c.industry = #{industry}</if>
+            <if test="customerSource != null and customerSource != ''"> AND c.customer_source = #{customerSource}</if>
             <if test="customerStatus != null and customerStatus != ''"> AND c.customer_status = #{customerStatus}</if>
+            <if test="params.beginCreateTime != null and params.beginCreateTime != ''"> AND c.create_time &gt;= #{params.beginCreateTime}</if>
+            <if test="params.endCreateTime != null and params.endCreateTime != ''"> AND c.create_time &lt;= #{params.endCreateTime}</if>
         </where>
         ORDER BY c.update_time DESC
     </select>

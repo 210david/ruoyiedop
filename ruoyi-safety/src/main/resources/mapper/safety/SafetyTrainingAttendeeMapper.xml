@@ -63,8 +63,12 @@
             <if test="recordId != null"> AND a.record_id = #{recordId}</if>
             <if test="userName != null and userName != ''"> AND a.user_name LIKE CONCAT('%', #{userName}, '%')</if>
             <if test="deptId != null"> AND a.dept_id = #{deptId}</if>
+            <if test="deptName != null and deptName != ''"> AND a.dept_name LIKE CONCAT('%', #{deptName}, '%')</if>
+            <if test="courseName != null and courseName != ''"> AND r.course_name LIKE CONCAT('%', #{courseName}, '%')</if>
             <if test="signInStatus != null and signInStatus != ''"> AND a.sign_in_status = #{signInStatus}</if>
             <if test="isPass != null and isPass != ''"> AND a.is_pass = #{isPass}</if>
+            <if test="params.beginTime != null and params.beginTime != ''"> AND r.training_date &gt;= #{params.beginTime}</if>
+            <if test="params.endTime != null and params.endTime != ''"> AND r.training_date &lt;= #{params.endTime}</if>
         </where>
         ORDER BY a.create_time DESC
     </select>
@@ -155,7 +159,18 @@
         WHERE a.del_flag = '0'
         <if test="userName != null and userName != ''"> AND a.user_name LIKE CONCAT('%', #{userName}, '%')</if>
         <if test="deptId != null"> AND a.dept_id = #{deptId}</if>
+        <if test="isPass != null and isPass != ''"> AND a.is_pass = #{isPass}</if>
+        <if test="params.beginTime != null and params.beginTime != ''"> AND r.training_date &gt;= #{params.beginTime}</if>
+        <if test="params.endTime != null and params.endTime != ''"> AND r.training_date &lt;= #{params.endTime}</if>
         GROUP BY a.user_id, a.user_name, a.dept_id, a.dept_name
+        <if test="complianceStatus != null and complianceStatus != ''">
+            <if test="complianceStatus == '1'.toString">
+                HAVING SUM(CASE WHEN r.hours IS NOT NULL THEN r.hours ELSE 0 END) &gt;= 24
+            </if>
+            <if test="complianceStatus == '0'.toString">
+                HAVING SUM(CASE WHEN r.hours IS NOT NULL THEN r.hours ELSE 0 END) &lt; 24
+            </if>
+        </if>
         ORDER BY total_hours DESC
     </select>
 

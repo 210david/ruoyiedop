@@ -51,6 +51,9 @@
             <if test="orderId != null"> AND i.order_id = #{orderId}</if>
             <if test="contractId != null"> AND i.contract_id = #{contractId}</if>
             <if test="customerName != null and customerName != ''"> AND c.customer_name LIKE CONCAT('%', #{customerName}, '%')</if>
+            <if test="invoiceTitle != null and invoiceTitle != ''"> AND i.invoice_title LIKE CONCAT('%', #{invoiceTitle}, '%')</if>
+            <if test="params.beginInvoiceDate != null and params.beginInvoiceDate != ''"> AND date(i.invoice_date) &gt;= #{params.beginInvoiceDate}</if>
+            <if test="params.endInvoiceDate != null and params.endInvoiceDate != ''"> AND date(i.invoice_date) &lt;= #{params.endInvoiceDate}</if>
         </where>
         ORDER BY i.invoice_id DESC
     </select>

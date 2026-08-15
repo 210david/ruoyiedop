@@ -46,6 +46,11 @@
             <if test="interactType != null and interactType != ''"> AND i.interact_type = #{interactType}</if>
             <if test="userId != null"> AND i.user_id = #{userId}</if>
             <if test="customerName != null and customerName != ''"> AND c.customer_name LIKE CONCAT('%', #{customerName}, '%')</if>
+            <if test="contactName != null and contactName != ''"> AND ct.name LIKE CONCAT('%', #{contactName}, '%')</if>
+            <if test="userName != null and userName != ''"> AND u.nick_name LIKE CONCAT('%', #{userName}, '%')</if>
+            <if test="content != null and content != ''"> AND i.content LIKE CONCAT('%', #{content}, '%')</if>
+            <if test="params.beginInteractTime != null and params.beginInteractTime != ''"> AND i.interact_time &gt;= #{params.beginInteractTime}</if>
+            <if test="params.endInteractTime != null and params.endInteractTime != ''"> AND i.interact_time &lt;= #{params.endInteractTime}</if>
         </where>
         ORDER BY i.interact_time DESC
     </select>

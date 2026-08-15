@@ -4,6 +4,10 @@
     <div class="surface filter-card" v-show="showSearch">
       <div class="filter-head">
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+        <a class="adv-link" :class="{ 'is-open': showAdvanced }" @click.prevent="showAdvanced = !showAdvanced">
+          <span>{{ showAdvanced ? '收起' : '高级筛选' }}</span>
+          <el-icon class="chev"><ArrowDown /></el-icon>
+        </a>
       </div>
       <div class="filter-bar">
         <div class="field">
@@ -37,6 +41,20 @@
             <el-input v-model="queryParams.contractNo" placeholder="请输入" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>负责人</label>
+          <div class="control">
+            <el-input v-model="queryParams.userName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>创建时间</label>
+          <div class="control">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
           </div>
         </div>
       </div>
@@ -882,7 +900,7 @@ function formatAmount(val) { if (val == null || val === '') return '-'; return N
 
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, orderNo: undefined, customerName: undefined, orderStatus: undefined, contractNo: undefined, params: {} },
+  queryParams: { pageNum: 1, pageSize: 10, orderNo: undefined, customerName: undefined, orderStatus: undefined, contractNo: undefined, userName: undefined, params: {} },
   rules: {
     customerId: [{ required: true, message: '请选择关联客户', trigger: 'change' }],
     userId: [{ required: true, message: '请选择负责人', trigger: 'change' }]
@@ -923,12 +941,15 @@ function loadColumnVisibility() {
 
 const columns = ref(loadColumnVisibility())
 
+const dateRange = ref([])
 const activeFilterCount = computed(() => {
   let count = 0
   if (queryParams.value.orderNo) count++
   if (queryParams.value.customerName) count++
   if (queryParams.value.orderStatus) count++
   if (queryParams.value.contractNo) count++
+  if (queryParams.value.userName) count++
+  if (dateRange.value && dateRange.value.length === 2) count++
   return count
 })
 
@@ -1028,8 +1049,8 @@ function handleAddItem() { if (!form.value.itemList) { form.value.itemList = [] 
 function handleDeleteItem(index) { form.value.itemList.splice(index, 1); form.value.itemList.forEach((item, idx) => { item.lineNo = (idx + 1) * 10 }) }
 function onMaterialChange(materialId, index) { const material = materialOptions.value.find(m => m.materialId === materialId); if (material) { form.value.itemList[index].productName = material.materialName; form.value.itemList[index].productSpec = material.specModel; form.value.itemList[index].unit = material.unit } }
 function calcSubtotal(index) { const item = form.value.itemList[index]; if (item && item.quantity != null && item.unitPrice != null) { item.subtotal = (item.quantity * item.unitPrice).toFixed(2) } else { item.subtotal = undefined }; const total = form.value.itemList.reduce((sum, i) => sum + (parseFloat(i.subtotal) || 0), 0); form.value.orderAmount = total.toFixed(2) }
-function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
-function resetQuery() { queryParams.value.orderNo = undefined; queryParams.value.customerName = undefined; queryParams.value.orderStatus = undefined; queryParams.value.contractNo = undefined; queryParams.value.params = {}; activeStatusTab.value = 'all'; handleQuery() }
+function handleQuery() { showAdvanced.value = false; queryParams.value.params = proxy.addDateRange(queryParams.value.params, dateRange.value, 'CreateTime'); queryParams.value.pageNum = 1; getList() }
+function resetQuery() { queryParams.value.orderNo = undefined; queryParams.value.customerName = undefined; queryParams.value.orderStatus = undefined; queryParams.value.contractNo = undefined; queryParams.value.userName = undefined; dateRange.value = []; queryParams.value.params = {}; activeStatusTab.value = 'all'; handleQuery() }
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.orderId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function reset() { form.value = { orderNo: undefined, contractId: undefined, contractNo: undefined, customerId: undefined, customerName: undefined, orderAmount: 0, orderStatus: '0', userId: undefined, userName: undefined, deptId: undefined, deptName: undefined, itemList: [], remark: undefined }; collapsedCards.basic = false; collapsedCards.owner = false; collapsedCards.items = false; collapsedCards.other = false; proxy.resetForm('orderRef') }
 function handleAdd() { reset(); open.value = true; title.value = '新增订单' }
@@ -1049,7 +1070,7 @@ function submitAudit(passed) { proxy.$refs['auditRef'].validate(valid => { if (v
 function handleVoid(row) { voidForm.value = { orderId: row.orderId, orderNo: row.orderNo, voidReason: '' }; voidOpen.value = true }
 function submitVoid() { if (!voidForm.value.voidReason) { proxy.$modal.msgWarning('请输入作废原因'); return }; voidOrder(voidForm.value.orderId, voidForm.value.voidReason).then(() => { proxy.$modal.msgSuccess('订单已作废'); voidOpen.value = false; getList() }) }
 
-function handleExport() { proxy.download('mk/order/export', { ...queryParams.value }, `order_${new Date().getTime()}.xlsx`) }
+function handleExport() { proxy.download('mk/order/export', { ...proxy.addDateRange(queryParams.value, dateRange.value, 'CreateTime') }, `order_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 getCustomerOptions(); getContractOptions(); getMaterialOptions(); getList()
 </script>

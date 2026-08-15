@@ -24,7 +24,7 @@
             <el-input v-model="queryParams.materialCode" placeholder="请输入" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
+        <div class="field">
           <label>物资类型</label>
           <div class="control is-select">
             <el-select v-model="queryParams.materialType" placeholder="全部" clearable @change="handleQuery">
@@ -32,13 +32,31 @@
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
+        <div class="field">
           <label>状态</label>
           <div class="control is-select">
             <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
               <el-option label="正常" value="0" />
               <el-option label="停用" value="1" />
             </el-select>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>规格型号</label>
+          <div class="control">
+            <el-input v-model="queryParams.specModel" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>存放位置</label>
+          <div class="control">
+            <el-input v-model="queryParams.storageLocation" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>管理人</label>
+          <div class="control">
+            <el-input v-model="queryParams.personName" placeholder="请输入" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
       </div>
@@ -261,7 +279,7 @@ const columns = ref(loadColumnVisibility())
 
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, materialName: undefined, materialCode: undefined, materialType: undefined, status: undefined, params: {} },
+  queryParams: { pageNum: 1, pageSize: 10, materialName: undefined, materialCode: undefined, materialType: undefined, status: undefined, specModel: undefined, storageLocation: undefined, personName: undefined, params: {} },
   rules: {
     materialName: [{ required: true, message: '物资名称不能为空', trigger: 'blur' }],
     materialType: [{ required: true, message: '物资类别不能为空', trigger: 'change' }],
@@ -280,12 +298,15 @@ const activeFilterCount = computed(() => {
   if (queryParams.value.materialCode) count++
   if (queryParams.value.materialType) count++
   if (queryParams.value.status) count++
+  if (queryParams.value.specModel) count++
+  if (queryParams.value.storageLocation) count++
+  if (queryParams.value.personName) count++
   return count
 })
 
 function getList() { loading.value = true; listEmergencyMaterial(queryParams.value).then(response => { materialList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths() }) }
 function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
-function resetQuery() { queryParams.value.materialName = undefined; queryParams.value.materialCode = undefined; queryParams.value.materialType = undefined; queryParams.value.status = undefined; queryParams.value.params = {}; handleQuery() }
+function resetQuery() { queryParams.value.materialName = undefined; queryParams.value.materialCode = undefined; queryParams.value.materialType = undefined; queryParams.value.status = undefined; queryParams.value.specModel = undefined; queryParams.value.storageLocation = undefined; queryParams.value.personName = undefined; queryParams.value.params = {}; handleQuery() }
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleSelectionChange(selection) { ids.value = selection.map(item => item.materialId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function handleAdd() { reset(); collapsedCards.c0 = false; collapsedCards.c1 = false; collapsedCards.c2 = false; open.value = true; title.value = '添加应急物资' }

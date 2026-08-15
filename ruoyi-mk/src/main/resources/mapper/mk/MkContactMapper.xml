@@ -49,8 +49,11 @@
             <if test="name != null and name != ''"> AND c.name LIKE CONCAT('%', #{name}, '%')</if>
             <if test="phone != null and phone != ''"> AND c.phone LIKE CONCAT('%', #{phone}, '%')</if>
             <if test="customerName != null and customerName != ''"> AND cu.customer_name LIKE CONCAT('%', #{customerName}, '%')</if>
+            <if test="position != null and position != ''"> AND c.position LIKE CONCAT('%', #{position}, '%')</if>
+            <if test="email != null and email != ''"> AND c.email LIKE CONCAT('%', #{email}, '%')</if>
             <if test="isKey != null and isKey != ''"> AND c.is_key = #{isKey}</if>
             <if test="ownerUserId != null"> AND c.owner_user_id = #{ownerUserId}</if>
+            <if test="ownerUserName != null and ownerUserName != ''"> AND u.nick_name LIKE CONCAT('%', #{ownerUserName}, '%')</if>
         </where>
         ORDER BY c.contact_id DESC
     </select>

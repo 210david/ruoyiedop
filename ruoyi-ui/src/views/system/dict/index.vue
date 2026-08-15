@@ -104,34 +104,62 @@
      </div>
 
       <!-- 添加或修改参数配置对话框 -->
-      <el-dialog :title="title" v-model="open" width="500px" append-to-body>
+      <el-dialog v-model="open" width="560px" append-to-body draggable :close-on-click-modal="false" class="rd-dialog">
+         <template #header>
+            <div class="rd-detail-header">
+               <div class="rd-detail-header-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                     <path d="M4 5h16" /><path d="M4 12h16" /><path d="M4 19h16" />
+                     <circle cx="8" cy="5" r="1.5" fill="currentColor" /><circle cx="16" cy="12" r="1.5" fill="currentColor" /><circle cx="8" cy="19" r="1.5" fill="currentColor" />
+                  </svg>
+               </div>
+               <span class="rd-detail-header-title">{{ title }}</span>
+               <div class="rd-detail-header-sub" v-if="form.dictId">
+                  <div class="rd-detail-header-divider"></div>
+                  <span class="rd-detail-header-no">编号：{{ form.dictId }}</span>
+               </div>
+            </div>
+         </template>
          <el-form ref="dictRef" :model="form" :rules="rules" label-width="100px">
-            <el-form-item label="字典名称" prop="dictName">
-               <el-input v-model="form.dictName" placeholder="请输入字典名称" />
-            </el-form-item>
-            <el-form-item prop="dictType">
-               <el-input v-model="form.dictType" placeholder="请输入字典类型" />
-               <template #label>
-                 <span>
-                   <el-tooltip content='数据存储中的Key值，如：sys_user_sex' placement="top">
-                     <el-icon><question-filled /></el-icon>
-                   </el-tooltip>
-                   字典类型
-                 </span>
-               </template>
-            </el-form-item>
-            <el-form-item label="状态" prop="status">
-               <el-radio-group v-model="form.status">
-                  <el-radio
-                     v-for="dict in sys_normal_disable"
-                     :key="dict.value"
-                     :value="dict.value"
-                  >{{ dict.label }}</el-radio>
-               </el-radio-group>
-            </el-form-item>
-            <el-form-item label="备注" prop="remark">
-               <el-input v-model="form.remark" type="textarea" placeholder="请输入内容"></el-input>
-            </el-form-item>
+            <section class="rd-card">
+               <div class="rd-card-header">
+                  <div class="rd-card-title">
+                     <span class="rd-card-icon">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                           stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                           <polyline points="14 2 14 8 20 8" /><line x1="9" y1="15" x2="15" y2="15" />
+                        </svg>
+                     </span>
+                     字典信息
+                  </div>
+               </div>
+               <div class="rd-card-body">
+                  <el-form-item label="字典名称" prop="dictName">
+                     <el-input v-model="form.dictName" placeholder="请输入字典名称" />
+                  </el-form-item>
+                  <el-form-item prop="dictType">
+                     <el-input v-model="form.dictType" placeholder="请输入字典类型" />
+                     <template #label>
+                        <span>
+                           <el-tooltip content='数据存储中的Key值，如：sys_user_sex' placement="top">
+                              <el-icon><question-filled /></el-icon>
+                           </el-tooltip>
+                           字典类型
+                        </span>
+                     </template>
+                  </el-form-item>
+                  <el-form-item label="状态" prop="status">
+                     <el-radio-group v-model="form.status">
+                        <el-radio v-for="dict in sys_normal_disable" :key="dict.value" :value="dict.value">{{ dict.label }}</el-radio>
+                     </el-radio-group>
+                  </el-form-item>
+                  <el-form-item label="备注" prop="remark">
+                     <el-input v-model="form.remark" type="textarea" placeholder="请输入内容" :rows="3"></el-input>
+                  </el-form-item>
+               </div>
+            </section>
          </el-form>
          <template #footer>
             <div class="dialog-footer">

@@ -34,10 +34,18 @@
             </el-input>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
+        <div class="field">
           <label>批次号</label>
           <div class="control">
             <el-input v-model="queryParams.batchNo" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>规格型号</label>
+          <div class="control">
+            <el-input v-model="queryParams.specModel" placeholder="请输入" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
@@ -154,7 +162,7 @@ function loadColumnVisibility() {
 }
 const columns = ref(loadColumnVisibility())
 
-const data = reactive({ queryParams: { pageNum: 1, pageSize: 10, materialCode: undefined, materialName: undefined, locationKeyword: undefined, batchNo: undefined, params: {} } })
+const data = reactive({ queryParams: { pageNum: 1, pageSize: 10, materialCode: undefined, materialName: undefined, locationKeyword: undefined, batchNo: undefined, specModel: undefined, params: {} } })
 const { queryParams } = toRefs(data)
 
 const activeFilterCount = computed(() => {
@@ -163,6 +171,7 @@ const activeFilterCount = computed(() => {
   if (queryParams.value.materialName) count++
   if (queryParams.value.locationKeyword) count++
   if (queryParams.value.batchNo) count++
+  if (queryParams.value.specModel) count++
   if (dateRange.value && dateRange.value.length > 0) count++
   return count
 })
@@ -171,8 +180,8 @@ function getList() {
   loading.value = true
   listInventory(proxy.addDateRange(queryParams.value, dateRange.value, 'UpdateTime')).then(res => { list.value = res.rows; total.value = res.total; loading.value = false; applySavedWidths() })
 }
-function handleQuery() { queryParams.value.pageNum = 1; getList() }
-function resetQuery() { dateRange.value = []; queryParams.value.materialCode = undefined; queryParams.value.materialName = undefined; queryParams.value.locationKeyword = undefined; queryParams.value.batchNo = undefined; queryParams.value.params = {}; handleQuery() }
+function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
+function resetQuery() { dateRange.value = []; queryParams.value.materialCode = undefined; queryParams.value.materialName = undefined; queryParams.value.locationKeyword = undefined; queryParams.value.batchNo = undefined; queryParams.value.specModel = undefined; queryParams.value.params = {}; handleQuery() }
 function handleSortChange(column) {
   if (column.prop && column.order) {
     queryParams.value.params.orderByColumn = column.prop

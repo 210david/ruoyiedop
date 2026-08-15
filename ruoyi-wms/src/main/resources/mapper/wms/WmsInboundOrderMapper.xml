@@ -70,6 +70,8 @@
             <if test="params.excludeStatus != null and params.excludeStatus != ''"> AND o.status != #{params.excludeStatus}</if>
             <if test="params.beginInboundDate != null and params.beginInboundDate != ''"> AND o.inbound_date &gt;= #{params.beginInboundDate}</if>
             <if test="params.endInboundDate != null and params.endInboundDate != ''"> AND o.inbound_date &lt;= #{params.endInboundDate}</if>
+            <if test="params.beginCreateTime != null and params.beginCreateTime != ''"> AND date(o.create_time) &gt;= #{params.beginCreateTime}</if>
+            <if test="params.endCreateTime != null and params.endCreateTime != ''"> AND date(o.create_time) &lt;= #{params.endCreateTime}</if>
         </where>
         ORDER BY o.order_id DESC
     </select>

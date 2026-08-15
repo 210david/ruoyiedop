@@ -4,6 +4,10 @@
     <div class="surface filter-card" v-show="showSearch">
       <div class="filter-head">
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+        <a class="adv-link" :class="{ 'is-open': showAdvanced }" @click.prevent="showAdvanced = !showAdvanced">
+          <span>{{ showAdvanced ? '收起' : '高级筛选' }}</span>
+          <el-icon class="chev"><ArrowDown /></el-icon>
+        </a>
       </div>
       <div class="filter-bar">
         <div class="field">
@@ -26,6 +30,18 @@
           <label>培训日期</label>
           <div class="control is-select">
             <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" @change="handleQuery" />
+          </div>
+        </div>
+        <div class="field">
+          <label>培训地点</label>
+          <div class="control">
+            <el-input v-model="queryParams.trainingLocation" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>培训讲师</label>
+          <div class="control">
+            <el-input v-model="queryParams.trainer" placeholder="请输入" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
       </div>
@@ -245,7 +261,7 @@ import { batchAddTrainingAttendee, listTrainingAttendee, delTrainingAttendee } f
 import UserPicker from '@/components/UserPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
-import { Search, Filter, RefreshLeft, Document, User } from '@element-plus/icons-vue'
+import { Search, Filter, RefreshLeft, Document, User, ArrowDown } from '@element-plus/icons-vue'
 import { useRoute } from 'vue-router'
 import FilePreview from '@/components/FilePreview/index.vue'
 import { downloadFile } from '@/utils/downloadFile'
@@ -264,6 +280,7 @@ const linkedPlanName = ref('')
 const open = ref(false)
 const loading = ref(true)
 const showSearch = ref(true)
+const showAdvanced = ref(false)
 const ids = ref([])
 const single = ref(true)
 const multiple = ref(true)
@@ -306,7 +323,7 @@ const columns = ref(loadColumnVisibility())
 
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, courseName: undefined, courseType: undefined, planId: undefined, params: {} },
+  queryParams: { pageNum: 1, pageSize: 10, courseName: undefined, courseType: undefined, planId: undefined, trainingLocation: undefined, trainer: undefined, params: {} },
   rules: {
     courseName: [{ required: true, message: '课程名称不能为空', trigger: 'blur' }],
     courseType: [{ required: true, message: '课程类别不能为空', trigger: 'change' }],
@@ -323,6 +340,8 @@ const activeFilterCount = computed(() => {
   if (queryParams.value.courseName) count++
   if (queryParams.value.courseType) count++
   if (queryParams.value.planId) count++
+  if (queryParams.value.trainingLocation) count++
+  if (queryParams.value.trainer) count++
   if (dateRange.value && dateRange.value.length === 2) count++
   return count
 })
@@ -390,8 +409,8 @@ function getList() {
     applySavedWidths()
   })
 }
-function handleQuery() { queryParams.value.pageNum = 1; getList() }
-function resetQuery() { queryParams.value.courseName = undefined; queryParams.value.courseType = undefined; queryParams.value.planId = undefined; dateRange.value = []; queryParams.value.params = {}; handleQuery() }
+function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
+function resetQuery() { queryParams.value.courseName = undefined; queryParams.value.courseType = undefined; queryParams.value.planId = undefined; queryParams.value.trainingLocation = undefined; queryParams.value.trainer = undefined; dateRange.value = []; queryParams.value.params = {}; handleQuery() }
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleSelectionChange(selection) { ids.value = selection.map(item => item.recordId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function handleAdd() {
@@ -554,6 +573,10 @@ getList()
 .safety-training-record-page .filter-card .filter-title { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--ink-700); }
 .safety-training-record-page .filter-card .filter-title .glyph { width:4px; height:14px; background:var(--brand-600); border-radius:2px; }
 .safety-training-record-page .filter-card .filter-bar { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px 16px; }
+.safety-training-record-page .filter-card .adv-link { font-size:14px; color:var(--ink-500); text-decoration:none; display:flex; align-items:center; gap:4px; transition:color .15s; cursor:pointer; }
+.safety-training-record-page .filter-card .adv-link:hover { color:var(--brand-600); }
+.safety-training-record-page .filter-card .adv-link .chev { transition:transform .2s var(--ease-out); }
+.safety-training-record-page .filter-card .adv-link.is-open .chev { transform:rotate(180deg); }
 .safety-training-record-page .filter-card .filter-actions { display:flex; align-items:center; justify-content:space-between; margin-top:14px; padding-top:14px; border-top:1px dashed var(--ink-200); }
 .safety-training-record-page .filter-card .filter-info { font-size:13px; color:var(--ink-500); display:flex; align-items:center; gap:6px; }
 .safety-training-record-page .filter-card .filter-buttons { display:flex; gap:8px; }

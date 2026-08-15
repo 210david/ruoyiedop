@@ -4,6 +4,10 @@
     <div class="surface filter-card" v-show="showSearch">
       <div class="filter-head">
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+        <a class="adv-link" :class="{ 'is-open': showAdvanced }" @click.prevent="showAdvanced = !showAdvanced">
+          <span>{{ showAdvanced ? '收起' : '高级筛选' }}</span>
+          <el-icon class="chev"><ArrowDown /></el-icon>
+        </a>
       </div>
       <div class="filter-bar">
         <div class="field">
@@ -38,6 +42,30 @@
               <template #prefix><el-icon><Filter /></el-icon></template>
               <el-option v-for="d in marketing_customer_status" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>所属行业</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.industry" placeholder="全部" clearable @change="handleQuery">
+              <template #prefix><el-icon><Filter /></el-icon></template>
+              <el-option v-for="d in marketing_industry" :key="d.value" :label="d.label" :value="d.value" />
+            </el-select>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>客户来源</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.customerSource" placeholder="全部" clearable @change="handleQuery">
+              <template #prefix><el-icon><Filter /></el-icon></template>
+              <el-option v-for="d in marketing_customer_source" :key="d.value" :label="d.label" :value="d.value" />
+            </el-select>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>创建时间</label>
+          <div class="control">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
           </div>
         </div>
       </div>
@@ -96,10 +124,18 @@
             </template>
           </el-table-column>
           <el-table-column label="客户等级" prop="customerLevel" key="customerLevel" :width="colWidth('customerLevel', 100)" resizable align="center" v-if="columns.customerLevel.visible">
-            <template #default="scope"><dict-tag :options="marketing_customer_level" :value="scope.row.customerLevel" /></template>
+            <template #default="scope">
+              <span class="badge" :class="levelBadgeClass(scope.row.customerLevel)">
+                <span class="dot"></span>{{ levelLabel(scope.row.customerLevel) }}
+              </span>
+            </template>
           </el-table-column>
           <el-table-column label="所属行业" prop="industry" key="industry" :width="colWidth('industry', 120)" resizable align="center" v-if="columns.industry.visible">
-            <template #default="scope"><dict-tag :options="marketing_industry" :value="scope.row.industry" /></template>
+            <template #default="scope">
+              <span class="badge" :class="industryBadgeClass(scope.row.industry)">
+                <span class="dot"></span>{{ industryLabel(scope.row.industry) }}
+              </span>
+            </template>
           </el-table-column>
           <el-table-column label="客户状态" prop="customerStatus" key="customerStatus" :width="colWidth('customerStatus', 100)" resizable align="center" v-if="columns.customerStatus.visible">
             <template #default="scope">
@@ -233,8 +269,8 @@
                   <el-table-column label="职位" prop="position" width="120" show-overflow-tooltip />
                   <el-table-column label="手机号" prop="phone" width="130" />
                   <el-table-column label="邮箱" prop="email" show-overflow-tooltip />
-                  <el-table-column label="关键联系人" prop="isKey" width="100" align="center"><template #default="scope"><el-tag :type="scope.row.isKey === '1' ? 'danger' : 'info'" size="small">{{ scope.row.isKey === '1' ? '是' : '否' }}</el-tag></template></el-table-column>
-                  <el-table-column label="主要联系人" prop="isPrimary" width="100" align="center"><template #default="scope"><el-tag :type="scope.row.isPrimary === '1' ? 'success' : 'info'" size="small">{{ scope.row.isPrimary === '1' ? '是' : '否' }}</el-tag></template></el-table-column>
+                  <el-table-column label="关键联系人" prop="isKey" width="100" align="center"><template #default="scope"><span class="badge" :class="scope.row.isKey === '1' ? 'red' : 'gray'"><span class="dot"></span>{{ scope.row.isKey === '1' ? '是' : '否' }}</span></template></el-table-column>
+                  <el-table-column label="主要联系人" prop="isPrimary" width="100" align="center"><template #default="scope"><span class="badge" :class="scope.row.isPrimary === '1' ? 'green' : 'gray'"><span class="dot"></span>{{ scope.row.isPrimary === '1' ? '是' : '否' }}</span></template></el-table-column>
                 </el-table>
                 <div class="rd-empty" v-else><svg class="rd-empty-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><p class="rd-empty-text">暂无联系人</p></div>
               </div>
@@ -379,7 +415,7 @@
 
 <script setup name="MkCustomerPool">
 import { listPublicPool, getCustomer, claimCustomer } from '@/api/mk/customer'
-import { ArrowRight, QuestionFilled } from '@element-plus/icons-vue'
+import { ArrowRight, ArrowDown, QuestionFilled } from '@element-plus/icons-vue'
 import { listContact } from '@/api/mk/contact'
 import { listOpportunity } from '@/api/mk/opportunity'
 import { listContract } from '@/api/mk/contract'
@@ -414,7 +450,7 @@ const interactions = ref([])
 const activities = ref([])
 
 const data = reactive({
-  queryParams: { pageNum: 1, pageSize: 10, customerNo: undefined, customerName: undefined, customerLevel: undefined, customerStatus: undefined, params: {} }
+  queryParams: { pageNum: 1, pageSize: 10, customerNo: undefined, customerName: undefined, customerLevel: undefined, customerStatus: undefined, industry: undefined, customerSource: undefined, params: {} }
 })
 const { queryParams } = toRefs(data)
 
@@ -451,14 +487,18 @@ const columns = ref(loadColumnVisibility())
 
 const activeFilterCount = computed(() => {
   let count = 0
-  if (queryParams.value.customerNo) count++
-  if (queryParams.value.customerName) count++
-  if (queryParams.value.customerLevel) count++
-  if (queryParams.value.customerStatus) count++
-  return count
+if (queryParams.value.customerNo) count++
+if (queryParams.value.customerName) count++
+if (queryParams.value.customerLevel) count++
+if (queryParams.value.customerStatus) count++
+if (queryParams.value.industry) count++
+if (queryParams.value.customerSource) count++
+if (dateRange.value && dateRange.value.length > 0) count++
+return count
 })
 
 const showAdvanced = ref(false)
+const dateRange = ref([])
 const activeStatusTab = ref('all')
 const statusCounts = ref({ all: 0 })
 const statusTabList = computed(() => marketing_customer_status.value)
@@ -475,6 +515,10 @@ function loadStatusCounts() {
 function handleStatusTabClick(status) { activeStatusTab.value = status; queryParams.value.customerStatus = status === 'all' ? undefined : status; handleQuery() }
 function badgeClass(status) { const map = { '0': 'green', '1': 'amber', '2': 'red', '3': 'blue', '4': 'gray' }; return map[status] || 'gray' }
 function statusLabel(status) { const item = marketing_customer_status.value.find(d => d.value == status); return item ? item.label : '-' }
+function levelBadgeClass(level) { const map = { '1': 'violet', '2': 'blue', '3': 'green', '4': 'amber', '5': 'gray' }; return map[level] || 'gray' }
+function levelLabel(level) { const item = marketing_customer_level.value.find(d => d.value == level); return item ? item.label : '-' }
+function industryBadgeClass(industry) { const map = { '1': 'blue', '2': 'green', '3': 'violet', '4': 'amber', '5': 'cyan', '6': 'red', '7': 'gray', '8': 'orange', '9': 'pink', '10': 'indigo' }; return map[industry] || 'gray' }
+function industryLabel(industry) { const item = marketing_industry.value.find(d => d.value == industry); return item ? item.label : '-' }
 function oppBadgeClass(status) { const map = { '0': 'amber', '1': 'blue', '2': 'green', '3': 'violet', '4': 'gray', '5': 'red' }; return map[status] || 'gray' }
 function oppStatusLabel(status) { const item = marketing_opportunity_status.value.find(d => d.value == status); return item ? item.label : '-' }
 function contractBadgeClass(status) { const map = { '0': 'amber', '1': 'blue', '2': 'green', '3': 'green', '4': 'gray', '5': 'red', '6': 'violet' }; return map[status] || 'gray' }
@@ -497,8 +541,8 @@ function getList() {
     loading.value = false
   })
 }
-function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
-function resetQuery() { queryParams.value.customerNo = undefined; queryParams.value.customerName = undefined; queryParams.value.customerLevel = undefined; queryParams.value.customerStatus = undefined; queryParams.value.params = {}; activeStatusTab.value = 'all'; handleQuery() }
+function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; proxy.addDateRange(queryParams.value, dateRange.value, 'CreateTime'); getList() }
+function resetQuery() { queryParams.value.customerNo = undefined; queryParams.value.customerName = undefined; queryParams.value.customerLevel = undefined; queryParams.value.customerStatus = undefined; queryParams.value.industry = undefined; queryParams.value.customerSource = undefined; queryParams.value.params = {}; dateRange.value = []; activeStatusTab.value = 'all'; handleQuery() }
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.customerId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function handleExport() { proxy.download('mk/customer/export', { ...queryParams.value }, `public_pool_${new Date().getTime()}.xlsx`) }

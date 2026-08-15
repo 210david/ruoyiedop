@@ -45,6 +45,9 @@
             <if test="sourceType != null and sourceType != ''"> AND r.source_type = #{sourceType}</if>
             <if test="targetType != null and targetType != ''"> AND r.target_type = #{targetType}</if>
             <if test="supplierOrDept != null and supplierOrDept != ''"> AND r.supplier_or_dept LIKE CONCAT('%', #{supplierOrDept}, '%')</if>
+            <if test="receiver != null and receiver != ''"> AND r.receiver LIKE CONCAT('%', #{receiver}, '%')</if>
+            <if test="params.beginOperateDate != null and params.beginOperateDate != ''"> AND date(r.operate_date) &gt;= #{params.beginOperateDate}</if>
+            <if test="params.endOperateDate != null and params.endOperateDate != ''"> AND date(r.operate_date) &lt;= #{params.endOperateDate}</if>
         </where>
         ORDER BY r.record_id DESC
     </select>

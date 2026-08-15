@@ -43,8 +43,12 @@
             <if test="certName != null and certName != ''"> AND cert_name LIKE CONCAT('%', #{certName}, '%')</if>
             <if test="certType != null and certType != ''"> AND cert_type = #{certType}</if>
             <if test="userName != null and userName != ''"> AND user_name LIKE CONCAT('%', #{userName}, '%')</if>
+            <if test="deptName != null and deptName != ''"> AND dept_name LIKE CONCAT('%', #{deptName}, '%')</if>
+            <if test="issueOrg != null and issueOrg != ''"> AND issue_org LIKE CONCAT('%', #{issueOrg}, '%')</if>
             <if test="userId != null"> AND user_id = #{userId}</if>
             <if test="status != null and status != ''"> AND status = #{status}</if>
+            <if test="params.beginTime != null and params.beginTime != ''"> AND issue_date &gt;= #{params.beginTime}</if>
+            <if test="params.endTime != null and params.endTime != ''"> AND issue_date &lt;= #{params.endTime}</if>
         </where>
         ORDER BY issue_date DESC
     </select>

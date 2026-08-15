@@ -4,6 +4,10 @@
     <div class="surface filter-card" v-show="showSearch">
       <div class="filter-head">
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+        <a class="adv-link" :class="{ 'is-open': showAdvanced }" @click.prevent="showAdvanced = !showAdvanced">
+          <span>{{ showAdvanced ? '收起' : '高级筛选' }}</span>
+          <el-icon class="chev"><ArrowDown /></el-icon>
+        </a>
       </div>
       <div class="filter-bar">
         <div class="field">
@@ -20,6 +24,30 @@
             <el-select v-model="queryParams.deptId" placeholder="全部" clearable @change="handleQuery">
               <el-option v-for="item in deptOptions" :key="item.deptId" :label="item.deptName" :value="item.deptId" />
             </el-select>
+          </div>
+        </div>
+        <div class="field">
+          <label>达标状态</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.complianceStatus" placeholder="全部" clearable @change="handleQuery">
+              <el-option label="达标" value="1" />
+              <el-option label="未达标" value="0" />
+            </el-select>
+          </div>
+        </div>
+        <div class="field">
+          <label>是否合格</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.isPass" placeholder="全部" clearable @change="handleQuery">
+              <el-option label="合格" value="1" />
+              <el-option label="不合格" value="0" />
+            </el-select>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>培训时间</label>
+          <div class="control is-select">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" @change="handleQuery" />
           </div>
         </div>
       </div>
@@ -107,7 +135,7 @@
 import { listHoursStatistics } from '@/api/safety/trainingAttendee'
 import { listDept } from '@/api/system/dept'
 import { useColumnResize } from '@/composables/useColumnResize'
-import { Search, Filter, RefreshLeft } from '@element-plus/icons-vue'
+import { Search, Filter, RefreshLeft, ArrowDown } from '@element-plus/icons-vue'
 
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('safety_training_hours_index')
@@ -117,17 +145,22 @@ const deptOptions = ref([])
 const open = ref(false)
 const loading = ref(true)
 const showSearch = ref(true)
+const showAdvanced = ref(false)
 const total = ref(0)
+const dateRange = ref([])
 
 /** 年度达标学时标准（可配置） */
 const standardHours = ref(24)
 
-const queryParams = reactive({ pageNum: 1, pageSize: 10, userName: undefined, deptId: undefined, params: {} })
+const queryParams = reactive({ pageNum: 1, pageSize: 10, userName: undefined, deptId: undefined, complianceStatus: undefined, isPass: undefined, params: {} })
 
 const activeFilterCount = computed(() => {
   let count = 0
   if (queryParams.userName) count++
   if (queryParams.deptId) count++
+  if (queryParams.complianceStatus) count++
+  if (queryParams.isPass) count++
+  if (dateRange.value && dateRange.value.length === 2) count++
   return count
 })
 
@@ -141,6 +174,7 @@ const summaryStats = computed(() => {
 
 function getList() {
   loading.value = true
+  proxy.addDateRange(queryParams, dateRange.value)
   listHoursStatistics(queryParams).then(response => {
     hoursList.value = response.rows
     total.value = response.total
@@ -148,8 +182,8 @@ function getList() {
     applySavedWidths()
   })
 }
-function handleQuery() { queryParams.pageNum = 1; getList() }
-function resetQuery() { queryParams.userName = undefined; queryParams.deptId = undefined; handleQuery() }
+function handleQuery() { showAdvanced.value = false; queryParams.pageNum = 1; getList() }
+function resetQuery() { queryParams.userName = undefined; queryParams.deptId = undefined; queryParams.complianceStatus = undefined; queryParams.isPass = undefined; dateRange.value = []; queryParams.params = {}; handleQuery() }
 
 function calcPassRate(row) {
   if (!row.attendCount || row.attendCount === 0) return 0
@@ -175,6 +209,10 @@ getList()
 .safety-training-hours-page .filter-card .filter-title { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--ink-700); }
 .safety-training-hours-page .filter-card .filter-title .glyph { width:4px; height:14px; background:var(--brand-600); border-radius:2px; }
 .safety-training-hours-page .filter-card .filter-bar { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px 16px; }
+.safety-training-hours-page .filter-card .adv-link { font-size:14px; color:var(--ink-500); text-decoration:none; display:flex; align-items:center; gap:4px; transition:color .15s; cursor:pointer; }
+.safety-training-hours-page .filter-card .adv-link:hover { color:var(--brand-600); }
+.safety-training-hours-page .filter-card .adv-link .chev { transition:transform .2s var(--ease-out); }
+.safety-training-hours-page .filter-card .adv-link.is-open .chev { transform:rotate(180deg); }
 .safety-training-hours-page .filter-card .filter-actions { display:flex; align-items:center; justify-content:space-between; margin-top:14px; padding-top:14px; border-top:1px dashed var(--ink-200); }
 .safety-training-hours-page .filter-card .filter-info { font-size:13px; color:var(--ink-500); display:flex; align-items:center; gap:6px; }
 .safety-training-hours-page .filter-card .filter-buttons { display:flex; gap:8px; }

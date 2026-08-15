@@ -71,6 +71,7 @@
             <if test="customerName != null and customerName != ''"> AND customer_name LIKE CONCAT('%', #{customerName}, '%')</if>
             <if test="status != null and status != ''"> AND status = #{status}</if>
             <if test="shipperName != null and shipperName != ''"> AND shipper_name LIKE CONCAT('%', #{shipperName}, '%')</if>
+            <if test="logisticsCompany != null and logisticsCompany != ''"> AND logistics_company LIKE CONCAT('%', #{logisticsCompany}, '%')</if>
             <if test="params.beginDate != null and params.beginDate != ''"> AND date(shipment_date) &gt;= #{params.beginDate}</if>
             <if test="params.endDate != null and params.endDate != ''"> AND date(shipment_date) &lt;= #{params.endDate}</if>
         </where>

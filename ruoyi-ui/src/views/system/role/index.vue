@@ -133,112 +133,196 @@
       </div>
 
       <!-- 添加或修改角色配置对话框 -->
-      <el-dialog :title="title" v-model="open" width="500px" append-to-body>
-         <el-form ref="roleRef" :model="form" :rules="rules" label-width="100px">
-            <el-form-item label="角色名称" prop="roleName">
-               <el-input v-model="form.roleName" placeholder="请输入角色名称" />
-            </el-form-item>
-            <el-form-item label="角色分类" prop="roleCategoryList">
-               <el-select v-model="form.roleCategoryList" placeholder="请选择角色分类" multiple collapse-tags collapse-tags-tooltip style="width: 100%">
-                  <el-option
-                     v-for="dict in sys_role_category"
-                     :key="dict.value"
-                     :label="dict.label"
-                     :value="dict.value"
-                  />
-               </el-select>
-            </el-form-item>
-            <el-form-item prop="roleKey">
-               <template #label>
-                  <span>
-                     <el-tooltip content="控制器中定义的权限字符，如：@PreAuthorize(`@ss.hasRole('admin')`)" placement="top">
-                        <el-icon><question-filled /></el-icon>
-                     </el-tooltip>
-                     权限字符
-                  </span>
-               </template>
-               <el-input v-model="form.roleKey" placeholder="请输入权限字符" />
-            </el-form-item>
-            <el-form-item label="角色顺序" prop="roleSort">
-               <el-input-number v-model="form.roleSort" controls-position="right" :min="0" />
-            </el-form-item>
-            <el-form-item label="状态">
-               <el-radio-group v-model="form.status">
-                  <el-radio
-                     v-for="dict in sys_normal_disable"
-                     :key="dict.value"
-                     :value="dict.value"
-                  >{{ dict.label }}</el-radio>
-               </el-radio-group>
-            </el-form-item>
-            <el-form-item label="菜单权限">
-               <el-checkbox v-model="menuExpand" @change="handleCheckedTreeExpand($event, 'menu')">展开/折叠</el-checkbox>
-               <el-checkbox v-model="menuNodeAll" @change="handleCheckedTreeNodeAll($event, 'menu')">全选/全不选</el-checkbox>
-               <el-checkbox v-model="form.menuCheckStrictly" @change="handleCheckedTreeConnect($event, 'menu')">父子联动</el-checkbox>
-               <el-tree
-                  class="tree-border"
-                  :data="menuOptions"
-                  show-checkbox
-                  ref="menuRef"
-                  node-key="id"
-                  :check-strictly="!form.menuCheckStrictly"
-                  empty-text="加载中，请稍候"
-                  :props="{ label: 'label', children: 'children' }"
-               ></el-tree>
-            </el-form-item>
-            <el-form-item label="备注">
-               <el-input v-model="form.remark" type="textarea" placeholder="请输入内容"></el-input>
-            </el-form-item>
+      <el-dialog v-model="open" width="1080px" append-to-body draggable :close-on-click-modal="false" class="rd-dialog role-form-dialog">
+         <template #header>
+            <div class="rd-detail-header">
+               <div class="rd-detail-header-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                     <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                     <circle cx="9" cy="7" r="4" />
+                     <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                     <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                  </svg>
+               </div>
+               <span class="rd-detail-header-title">{{ title }}</span>
+               <div class="rd-detail-header-sub" v-if="form.roleId">
+                  <div class="rd-detail-header-divider"></div>
+                  <span class="rd-detail-header-no">编号：{{ form.roleId }}</span>
+               </div>
+            </div>
+         </template>
+         <el-form ref="roleRef" :model="form" :rules="rules" label-width="100px" class="role-form-grid">
+            <!-- 左栏：基本信息 -->
+            <div class="form-left-col">
+               <section class="rd-card">
+                  <div class="rd-card-header">
+                     <div class="rd-card-title">
+                        <span class="rd-card-icon">
+                           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                              <polyline points="14 2 14 8 20 8" />
+                              <line x1="9" y1="15" x2="15" y2="15" />
+                           </svg>
+                        </span>
+                        基本信息
+                     </div>
+                  </div>
+                  <div class="rd-card-body">
+                     <el-form-item label="角色名称" prop="roleName">
+                        <el-input v-model="form.roleName" placeholder="请输入角色名称" @input="handleRoleNameInput" />
+                     </el-form-item>
+                     <el-form-item label="角色分类" prop="roleCategoryList">
+                        <el-select v-model="form.roleCategoryList" placeholder="请选择角色分类" multiple collapse-tags collapse-tags-tooltip style="width: 100%">
+                           <el-option v-for="dict in sys_role_category" :key="dict.value" :label="dict.label" :value="dict.value" />
+                        </el-select>
+                     </el-form-item>
+                     <el-form-item prop="roleKey">
+                        <template #label>
+                           <span>
+                              <el-tooltip content="控制器中定义的权限字符，如：@PreAuthorize(`@ss.hasRole('admin')`)&#10;输入角色名称后自动生成，也可手动修改" placement="top">
+                                 <el-icon><question-filled /></el-icon>
+                              </el-tooltip>
+                              权限字符
+                           </span>
+                        </template>
+                        <el-input v-model="form.roleKey" placeholder="请输入权限字符">
+                           <template #append>
+                              <el-button @click="generateRoleKey" :disabled="!form.roleName">生成</el-button>
+                           </template>
+                        </el-input>
+                     </el-form-item>
+                     <el-form-item label="角色顺序" prop="roleSort">
+                        <el-input-number v-model="form.roleSort" controls-position="right" :min="0" />
+                     </el-form-item>
+                     <el-form-item label="状态">
+                        <el-radio-group v-model="form.status">
+                           <el-radio v-for="dict in sys_normal_disable" :key="dict.value" :value="dict.value">{{ dict.label }}</el-radio>
+                        </el-radio-group>
+                     </el-form-item>
+                     <el-form-item label="备注">
+                        <el-input v-model="form.remark" type="textarea" placeholder="请输入内容" :rows="3"></el-input>
+                     </el-form-item>
+                  </div>
+               </section>
+            </div>
+            <!-- 右栏：菜单权限 -->
+            <div class="form-right-col">
+               <section class="rd-card">
+                  <div class="rd-card-header">
+                     <div class="rd-card-title">
+                        <span class="rd-card-icon">
+                           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                              <polyline points="9 11 12 14 22 4" />
+                              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                           </svg>
+                        </span>
+                        菜单权限
+                     </div>
+                  </div>
+                  <div class="rd-card-body">
+                     <div class="menu-perm-toolbar">
+                        <div class="menu-perm-ops">
+                           <el-checkbox v-model="menuExpand" @change="handleCheckedTreeExpand($event, 'menu')">展开/折叠</el-checkbox>
+                           <el-checkbox v-model="menuNodeAll" @change="handleCheckedTreeNodeAll($event, 'menu')">全选/全不选</el-checkbox>
+                           <el-checkbox v-model="form.menuCheckStrictly" @change="handleCheckedTreeConnect($event, 'menu')">父子联动</el-checkbox>
+                        </div>
+                        <el-input v-model="menuFilterText" placeholder="搜索菜单名称" clearable size="small" style="width: 200px" :prefix-icon="Search" @input="handleMenuFilter" />
+                     </div>
+                     <el-tree
+                        class="tree-border menu-tree"
+                        :data="menuOptions"
+                        show-checkbox
+                        ref="menuRef"
+                        node-key="id"
+                        :check-strictly="!form.menuCheckStrictly"
+                        empty-text="加载中，请稍候"
+                        :props="{ label: 'label', children: 'children' }"
+                        :filter-node-method="filterMenuNode"
+                        default-expand-all
+                     ></el-tree>
+                  </div>
+               </section>
+            </div>
          </el-form>
          <template #footer>
-            <div class="dialog-footer">
-               <el-button type="primary" @click="submitForm">确 定</el-button>
-               <el-button @click="cancel">取 消</el-button>
-            </div>
+            <el-button type="primary" @click="submitForm">确 定</el-button>
+            <el-button @click="cancel">取 消</el-button>
          </template>
       </el-dialog>
 
       <!-- 分配角色数据权限对话框 -->
-      <el-dialog :title="title" v-model="openDataScope" width="500px" append-to-body>
+      <el-dialog v-model="openDataScope" width="860px" append-to-body draggable class="rd-dialog">
+         <template #header>
+            <div class="rd-detail-header">
+               <div class="rd-detail-header-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                     <circle cx="12" cy="7" r="4" />
+                  </svg>
+               </div>
+               <span class="rd-detail-header-title">分配数据权限</span>
+               <div class="rd-detail-header-sub" v-if="form.roleName">
+                  <div class="rd-detail-header-divider"></div>
+                  <span class="rd-detail-header-no">{{ form.roleName }}</span>
+               </div>
+            </div>
+         </template>
          <el-form :model="form" label-width="80px">
-            <el-form-item label="角色名称">
-               <el-input v-model="form.roleName" :disabled="true" />
-            </el-form-item>
-            <el-form-item label="权限字符">
-               <el-input v-model="form.roleKey" :disabled="true" />
-            </el-form-item>
-            <el-form-item label="权限范围">
-               <el-select v-model="form.dataScope" @change="dataScopeSelectChange">
-                  <el-option
-                     v-for="item in dataScopeOptions"
-                     :key="item.value"
-                     :label="item.label"
-                     :value="item.value"
-                  ></el-option>
-               </el-select>
-            </el-form-item>
-            <el-form-item label="数据权限" v-show="form.dataScope == 2">
-               <el-checkbox v-model="deptExpand" @change="handleCheckedTreeExpand($event, 'dept')">展开/折叠</el-checkbox>
-               <el-checkbox v-model="deptNodeAll" @change="handleCheckedTreeNodeAll($event, 'dept')">全选/全不选</el-checkbox>
-               <el-checkbox v-model="form.deptCheckStrictly" @change="handleCheckedTreeConnect($event, 'dept')">父子联动</el-checkbox>
-               <el-tree
-                  class="tree-border"
-                  :data="deptOptions"
-                  show-checkbox
-                  default-expand-all
-                  ref="deptRef"
-                  node-key="id"
-                  :check-strictly="!form.deptCheckStrictly"
-                  empty-text="加载中，请稍候"
-                  :props="{ label: 'label', children: 'children' }"
-               ></el-tree>
-            </el-form-item>
+            <section class="rd-card">
+               <div class="rd-card-header">
+                  <div class="rd-card-title">
+                     <span class="rd-card-icon">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                           stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                           <circle cx="12" cy="12" r="3" />
+                           <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0 1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83 1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0 1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83 1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                        </svg>
+                     </span>
+                     权限配置
+                  </div>
+               </div>
+               <div class="rd-card-body">
+                  <el-form-item label="角色名称">
+                     <el-input v-model="form.roleName" :disabled="true" />
+                  </el-form-item>
+                  <el-form-item label="权限字符">
+                     <el-input v-model="form.roleKey" :disabled="true" />
+                  </el-form-item>
+                  <el-form-item label="权限范围">
+                     <el-select v-model="form.dataScope" @change="dataScopeSelectChange">
+                        <el-option v-for="item in dataScopeOptions" :key="item.value" :label="item.label" :value="item.value" />
+                     </el-select>
+                  </el-form-item>
+                  <el-form-item label="数据权限" v-show="form.dataScope == 2">
+                     <div class="menu-perm-toolbar" style="margin-bottom: 8px;">
+                        <div class="menu-perm-ops">
+                           <el-checkbox v-model="deptExpand" @change="handleCheckedTreeExpand($event, 'dept')">展开/折叠</el-checkbox>
+                           <el-checkbox v-model="deptNodeAll" @change="handleCheckedTreeNodeAll($event, 'dept')">全选/全不选</el-checkbox>
+                           <el-checkbox v-model="form.deptCheckStrictly" @change="handleCheckedTreeConnect($event, 'dept')">父子联动</el-checkbox>
+                        </div>
+                     </div>
+                     <el-tree
+                        class="tree-border"
+                        :data="deptOptions"
+                        show-checkbox
+                        default-expand-all
+                        ref="deptRef"
+                        node-key="id"
+                        :check-strictly="!form.deptCheckStrictly"
+                        empty-text="加载中，请稍候"
+                        :props="{ label: 'label', children: 'children' }"
+                     ></el-tree>
+                  </el-form-item>
+               </div>
+            </section>
          </el-form>
          <template #footer>
-            <div class="dialog-footer">
-               <el-button type="primary" @click="submitDataScope">确 定</el-button>
-               <el-button @click="cancelDataScope">取 消</el-button>
-            </div>
+            <el-button type="primary" @click="submitDataScope">确 定</el-button>
+            <el-button @click="cancelDataScope">取 消</el-button>
          </template>
       </el-dialog>
    </div>
@@ -249,6 +333,7 @@ import TreePanel from "@/components/TreePanel"
 import { addRole, changeRoleStatus, dataScope, delRole, getRole, listRole, updateRole, deptTreeSelect } from "@/api/system/role"
 import { roleMenuTreeselect, treeselect as menuTreeselect } from "@/api/system/menu"
 import { Search, Key, Filter, Edit, Delete, Download, RefreshLeft } from "@element-plus/icons-vue"
+import { pinyin } from 'pinyin-pro'
 
 const router = useRouter()
 const { proxy } = getCurrentInstance()
@@ -274,6 +359,8 @@ const openDataScope = ref(false)
 const menuRef = ref(null)
 const deptRef = ref(null)
 const categoryOptions = ref([])
+const menuFilterText = ref("")
+const roleKeyAutoGen = ref(true)
 
 // 列显隐信息
 const columns = ref({
@@ -301,7 +388,9 @@ const categoryTagTypeMap = {
   dms: 'success',
   pms: 'warning',
   mk: 'danger',
-  wms: 'info'
+  wms: 'info',
+  safety: 'warning',
+  qms: 'success'
 }
 
 const data = reactive({
@@ -455,6 +544,45 @@ function getMenuTreeselect() {
   })
 }
 
+/** 根据角色名称自动生成权限字符 */
+function generateRoleKey() {
+  const name = form.value.roleName
+  if (!name) return
+  // 使用 pinyin-pro 将中文转为拼音，无空格小写，非中文字符保留
+  const py = pinyin(name, { toneType: 'none', type: 'array', nonZh: 'consecutive' })
+  let key = py.join('').replace(/\s+/g, '').toLowerCase()
+  // 移除可能的多余分隔符，只保留字母数字和下划线
+  key = key.replace(/[^a-z0-9_]/g, '')
+  if (key) {
+    form.value.roleKey = key
+  }
+}
+
+/** 角色名称输入时自动生成权限字符（仅在新增模式且自动生成开关打开时） */
+function handleRoleNameInput() {
+  if (roleKeyAutoGen.value && form.value.roleId === undefined) {
+    generateRoleKey()
+  }
+}
+
+/** 菜单树过滤方法 */
+function filterMenuNode(value, data) {
+  if (!value) return true
+  return data.label && data.label.indexOf(value) !== -1
+}
+
+/** 菜单搜索输入 */
+function handleMenuFilter() {
+  menuRef.value && menuRef.value.filter(menuFilterText.value)
+  // 搜索时自动展开所有节点
+  if (menuFilterText.value) {
+    menuExpand.value = true
+    nextTick(() => {
+      handleCheckedTreeExpand(true, 'menu')
+    })
+  }
+}
+
 /** 所有部门节点数据 */
 function getDeptAllCheckedKeys() {
   // 目前被选中的部门节点
@@ -472,6 +600,7 @@ function reset() {
   }
   menuExpand.value = false
   menuNodeAll.value = false
+  menuFilterText.value = ""
   deptExpand.value = true
   deptNodeAll.value = false
 form.value = {
@@ -774,7 +903,26 @@ watch(() => sys_role_category.value, (val) => {
 .sys-role-page .pagination-container :deep(.el-pagination .btn-prev:hover), .sys-role-page .pagination-container :deep(.el-pagination .btn-next:hover) { border-color:var(--brand-200); color:var(--brand-700); }
 .sys-role-page .pagination-container :deep(.el-pagination .el-pagination__sizes .el-select__wrapper) { border-radius:6px; box-shadow:0 0 0 1px var(--ink-200) inset; }
 
+/* ===== Role Form Dialog - Dual Column Layout (extends rd-dialog) ===== */
+.role-form-dialog .role-form-grid { display: grid; grid-template-columns: 384px 1fr; gap: 0 28px; align-items: start; }
+.role-form-dialog .form-left-col { min-width: 0; }
+.role-form-dialog .form-right-col { min-width: 0; }
+.role-form-dialog .menu-perm-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+.role-form-dialog .menu-perm-ops { display: flex; gap: 12px; align-items: center; }
+.role-form-dialog .menu-tree { max-height: 504px; overflow-y: auto; border: 1px solid #e5e7eb; border-radius: 8px; padding: 6px; background: #fff; }
+
+/* el-input with append button */
+.role-form-dialog .el-input-group__append { padding: 0 12px; }
+.role-form-dialog .el-input-group__append .el-button { font-size: 13px; }
+
+/* rd-card header cursor default for role page (no collapse) */
+.sys-role-page .rd-card .rd-card-header { cursor: default; }
+
+/* data scope dialog tree */
+.rd-dialog .menu-perm-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.rd-dialog .menu-perm-ops { display: flex; gap: 12px; align-items: center; }
+
 /* ===== Responsive ===== */
-@media (max-width:1100px) { .sys-role-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }
+@media (max-width:1100px) { .sys-role-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } .role-form-dialog .role-form-grid { grid-template-columns: 1fr; } .role-form-dialog .form-right-col { border-left: none; border-top: 1px solid var(--ink-200); padding-left: 0; padding-top: 16px; } }
 @media (max-width:720px) { .sys-role-page .filter-card .filter-bar { grid-template-columns:1fr; } .sys-role-page .toolbar { flex-wrap:wrap; gap:10px; } }
 </style>

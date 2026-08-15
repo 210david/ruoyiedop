@@ -44,6 +44,8 @@
             <if test="areaId != null"> AND area_id = #{areaId}</if>
             <if test="status != null and status != ''"> AND status = #{status}</if>
             <if test="specialSubType != null and specialSubType != ''"> AND special_sub_type = #{specialSubType}</if>
+            <if test="areaName != null and areaName != ''"> AND area_name LIKE CONCAT('%', #{areaName}, '%')</if>
+            <if test="personName != null and personName != ''"> AND person_name LIKE CONCAT('%', #{personName}, '%')</if>
             <if test="params.beginTime != null and params.beginTime != ''"> AND date_format(create_time,'%y%m%d') &gt;= date_format(#{params.beginTime},'%y%m%d')</if>
             <if test="params.endTime != null and params.endTime != ''"> AND date_format(create_time,'%y%m%d') &lt;= date_format(#{params.endTime},'%y%m%d')</if>
         </where>

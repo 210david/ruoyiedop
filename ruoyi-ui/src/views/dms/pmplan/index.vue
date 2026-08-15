@@ -13,6 +13,10 @@
     <div class="surface filter-card" v-show="showSearch">
       <div class="filter-head">
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+        <a class="adv-link" :class="{ 'is-open': showAdvanced }" @click.prevent="showAdvanced = !showAdvanced">
+          <span>{{ showAdvanced ? '收起' : '高级筛选' }}</span>
+          <el-icon class="chev"><ArrowDown /></el-icon>
+        </a>
       </div>
       <div class="filter-bar">
         <div class="field">
@@ -29,6 +33,37 @@
             <el-select v-model="queryParams.triggerType" placeholder="全部" clearable @change="handleQuery">
               <el-option v-for="d in dms_pm_trigger_type" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
+          </div>
+        </div>
+        <div class="field">
+          <label>关联设备</label>
+          <div class="control">
+            <el-input v-model="queryParams.equipmentName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field">
+          <label>状态</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
+              <el-option label="启用" value="0" />
+              <el-option label="停用" value="1" />
+            </el-select>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>负责人</label>
+          <div class="control">
+            <el-input v-model="queryParams.assigneeName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>下次执行时间</label>
+          <div class="control">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
           </div>
         </div>
       </div>
@@ -376,7 +411,7 @@ import { listSparepart } from '@/api/dms/sparepart'
 import UserPicker from '@/components/UserPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
-import { Search, Filter, RefreshLeft, Edit, Delete, Refresh } from '@element-plus/icons-vue'
+import { Search, Filter, RefreshLeft, Edit, Delete, Refresh, ArrowDown } from '@element-plus/icons-vue'
 const { collapsedCards, toggleCard } = useDetailCard(["c3","c2","c1","c0"])
 
 const { proxy } = getCurrentInstance()
@@ -429,17 +464,23 @@ function loadColumnVisibility() {
   return { ...defaultColumns }
 }
 const columns = ref(loadColumnVisibility())
+const showAdvanced = ref(false)
+const dateRange = ref([])
 const activeFilterCount = computed(() => {
   let count = 0
   if (queryParams.value.planName) count++
   if (queryParams.value.triggerType) count++
+  if (queryParams.value.equipmentName) count++
+  if (queryParams.value.status) count++
+  if (queryParams.value.assigneeName) count++
+  if (dateRange.value && dateRange.value.length === 2) count++
   return count
 })
 function triggerTypeLabel(val) { const item = dms_pm_trigger_type.value.find(d => d.value == val); return item ? item.label : '-' }
 
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, planName: undefined, triggerType: undefined },
+  queryParams: { pageNum: 1, pageSize: 10, planName: undefined, triggerType: undefined, equipmentName: undefined, status: undefined, assigneeName: undefined, params: {} },
   rules: {
     planName: [{ required: true, message: '计划名称不能为空', trigger: 'blur' }],
     triggerType: [{ required: true, message: '触发类型不能为空', trigger: 'change' }],
@@ -512,8 +553,8 @@ function onRemoveEquipment() {
   form.value.assigneeId = undefined
   form.value.assigneeName = undefined
 }
-function handleQuery() { queryParams.value.pageNum = 1; getList() }
-function resetQuery() { queryParams.value.planName = undefined; queryParams.value.triggerType = undefined; proxy.resetForm('queryRef'); handleQuery() }
+function handleQuery() { showAdvanced.value = false; queryParams.value.params = proxy.addDateRange(queryParams.value.params, dateRange.value, 'NextExecuteTime'); queryParams.value.pageNum = 1; getList() }
+function resetQuery() { queryParams.value.planName = undefined; queryParams.value.triggerType = undefined; queryParams.value.equipmentName = undefined; queryParams.value.status = undefined; queryParams.value.assigneeName = undefined; dateRange.value = []; queryParams.value.params = {}; proxy.resetForm('queryRef'); handleQuery() }
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.planId); single.value = selection.length !== 1; multiple.value = !selection.length }
 
 /** 任务清单JSON与数组互转 */

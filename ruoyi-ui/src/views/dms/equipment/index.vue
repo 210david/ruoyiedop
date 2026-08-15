@@ -4,6 +4,10 @@
     <div class="surface filter-card" v-show="showSearch">
       <div class="filter-head">
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+        <a class="adv-link" :class="{ 'is-open': showAdvanced }" @click.prevent="showAdvanced = !showAdvanced">
+          <span>{{ showAdvanced ? '收起' : '高级筛选' }}</span>
+          <el-icon class="chev"><ArrowDown /></el-icon>
+        </a>
       </div>
       <div class="filter-bar">
         <div class="field">
@@ -36,6 +40,36 @@
             <el-select v-model="queryParams.equipmentLevel" placeholder="全部" clearable @change="handleQuery">
               <el-option v-for="d in dms_equipment_level" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>使用部门</label>
+          <div class="control">
+            <el-input v-model="queryParams.deptName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>责任人</label>
+          <div class="control">
+            <el-input v-model="queryParams.responsibleName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>制造商</label>
+          <div class="control">
+            <el-input v-model="queryParams.manufacturer" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>创建时间</label>
+          <div class="control">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
           </div>
         </div>
       </div>
@@ -289,7 +323,7 @@ import DeptPicker from '@/components/DeptPicker/index.vue'
 import ExcelImportDialog from '@/components/ExcelImportDialog/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
-import { Search, Filter, RefreshLeft, Edit, Delete, Download, Upload } from '@element-plus/icons-vue'
+import { Search, Filter, RefreshLeft, Edit, Delete, Download, Upload, ArrowDown } from '@element-plus/icons-vue'
 const { collapsedCards, toggleCard } = useDetailCard(["c4","c3","c2","c1","c0"])
 
 const { proxy } = getCurrentInstance()
@@ -334,12 +368,18 @@ function loadColumnVisibility() {
   return { ...defaultColumns }
 }
 const columns = ref(loadColumnVisibility())
+const showAdvanced = ref(false)
+const dateRange = ref([])
 const activeFilterCount = computed(() => {
   let count = 0
   if (queryParams.value.equipmentCode) count++
   if (queryParams.value.equipmentName) count++
   if (queryParams.value.equipmentStatus) count++
   if (queryParams.value.equipmentLevel) count++
+  if (queryParams.value.deptName) count++
+  if (queryParams.value.responsibleName) count++
+  if (queryParams.value.manufacturer) count++
+  if (dateRange.value && dateRange.value.length === 2) count++
   return count
 })
 function equipmentLevelLabel(val) { const item = dms_equipment_level.value.find(d => d.value == val); return item ? item.label : '-' }
@@ -362,7 +402,7 @@ const updateKeyOptions = [
 ]
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, equipmentCode: undefined, equipmentName: undefined, equipmentStatus: undefined, equipmentLevel: undefined },
+  queryParams: { pageNum: 1, pageSize: 10, equipmentCode: undefined, equipmentName: undefined, equipmentStatus: undefined, equipmentLevel: undefined, deptName: undefined, responsibleName: undefined, manufacturer: undefined, params: {} },
   rules: {
     equipmentName: [{ required: true, message: '设备名称不能为空', trigger: 'blur' }]
   }
@@ -408,8 +448,8 @@ function clearDept() {
   form.value.deptId = undefined
   form.value.deptName = undefined
 }
-function handleQuery() { queryParams.value.pageNum = 1; getList() }
-function resetQuery() { queryParams.value.equipmentCode = undefined; queryParams.value.equipmentName = undefined; queryParams.value.equipmentStatus = undefined; queryParams.value.equipmentLevel = undefined; proxy.resetForm('queryRef'); handleQuery() }
+function handleQuery() { showAdvanced.value = false; queryParams.value.params = proxy.addDateRange(queryParams.value.params, dateRange.value, 'CreateTime'); queryParams.value.pageNum = 1; getList() }
+function resetQuery() { queryParams.value.equipmentCode = undefined; queryParams.value.equipmentName = undefined; queryParams.value.equipmentStatus = undefined; queryParams.value.equipmentLevel = undefined; queryParams.value.deptName = undefined; queryParams.value.responsibleName = undefined; queryParams.value.manufacturer = undefined; dateRange.value = []; queryParams.value.params = {}; proxy.resetForm('queryRef'); handleQuery() }
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.equipmentId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function reset() {
   form.value = {
@@ -436,7 +476,7 @@ function submitForm() {
   })
 }
 function handleDelete(row) { const equipmentIds = row.equipmentId || ids.value; proxy.$modal.confirm('确认删除编号为"' + equipmentIds + '"的数据？').then(() => delEquipment(equipmentIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
-function handleExport() { proxy.download('dms/equipment/export', { ...queryParams.value }, `equipment_${new Date().getTime()}.xlsx`) }
+function handleExport() { proxy.download('dms/equipment/export', { ...proxy.addDateRange(queryParams.value, dateRange.value, 'CreateTime') }, `equipment_${new Date().getTime()}.xlsx`) }
 function handleImport() {
   proxy.$refs['importRef'].open()
 }

@@ -80,6 +80,8 @@
             <if test="status != null and status != ''"> AND t.status = #{status}</if>
             <if test="params.beginPlanDate != null and params.beginPlanDate != ''"> AND t.plan_date &gt;= #{params.beginPlanDate}</if>
             <if test="params.endPlanDate != null and params.endPlanDate != ''"> AND t.plan_date &lt;= #{params.endPlanDate}</if>
+            <if test="params.beginCreateTime != null and params.beginCreateTime != ''"> AND date(t.create_time) &gt;= #{params.beginCreateTime}</if>
+            <if test="params.endCreateTime != null and params.endCreateTime != ''"> AND date(t.create_time) &lt;= #{params.endCreateTime}</if>
         </where>
         ORDER BY t.take_id DESC
     </select>

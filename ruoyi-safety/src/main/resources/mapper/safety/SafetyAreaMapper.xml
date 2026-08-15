@@ -39,6 +39,8 @@
             <if test="enterpriseId != null"> AND enterprise_id = #{enterpriseId}</if>
             <if test="parentId != null"> AND parent_id = #{parentId}</if>
             <if test="status != null and status != ''"> AND status = #{status}</if>
+            <if test="areaType != null and areaType != ''"> AND area_type = #{areaType}</if>
+            <if test="safetyPersonName != null and safetyPersonName != ''"> AND safety_person_name LIKE CONCAT('%', #{safetyPersonName}, '%')</if>
         </where>
         ORDER BY area_code
     </select>

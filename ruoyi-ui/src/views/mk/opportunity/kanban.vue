@@ -75,7 +75,7 @@
           <div class="rd-detail-header-sub" v-if="viewForm.opportunityNo">
             <span class="rd-detail-header-divider"></span>
             <span class="rd-detail-header-no">编号：{{ viewForm.opportunityNo }}</span>
-            <dict-tag :options="marketing_opportunity_status" :value="viewForm.opportunityStatus" />
+            <span class="badge" :class="badgeClass(viewForm.opportunityStatus)"><span class="dot"></span>{{ statusLabel(viewForm.opportunityStatus) }}</span>
           </div>
         </div>
       </template>
@@ -120,12 +120,12 @@
               </div>
               <div class="rd-card-body" v-show="!collapsedCards.amount">
                 <div class="rd-grid">
-                  <div class="rd-item"><span class="rd-label">销售阶段</span><div class="rd-value">{{ viewForm.stageName }}</div></div>
+                  <div class="rd-item"><span class="rd-label">销售阶段</span><div class="rd-value"><span class="badge" :class="stageBadgeClass(viewForm.stageCode)"><span class="dot"></span>{{ viewForm.stageName }}</span></div></div>
                   <div class="rd-item"><span class="rd-label">预计金额</span><div class="rd-value rd-value--large rd-amount">￥{{ formatAmount(viewForm.expectedAmount) }}</div></div>
                   <div class="rd-item"><span class="rd-label">预计成交</span><div class="rd-value">{{ viewForm.expectedDate }}</div></div>
                   <div class="rd-item"><span class="rd-label">赢率</span><div class="rd-value">{{ viewForm.winRate }}%</div></div>
                   <div class="rd-item"><span class="rd-label">加权金额</span><div class="rd-value rd-amount">￥{{ formatAmount(viewForm.weightedAmount) }}</div></div>
-                  <div class="rd-item"><span class="rd-label">商机状态</span><div class="rd-value"><dict-tag :options="marketing_opportunity_status" :value="viewForm.opportunityStatus" /></div></div>
+                  <div class="rd-item"><span class="rd-label">商机状态</span><div class="rd-value"><span class="badge" :class="badgeClass(viewForm.opportunityStatus)"><span class="dot"></span>{{ statusLabel(viewForm.opportunityStatus) }}</span></div></div>
                 </div>
               </div>
             </section>
@@ -493,6 +493,9 @@ function getLogTagType(type) {
   const map = { advance: 'success', retreat: 'warning', win: 'success', lose: 'danger', reopen: 'info' }
   return map[type] || 'primary'
 }
+function badgeClass(status) { const map = { '0': 'blue', '1': 'green', '2': 'red', '3': 'amber' }; return map[status] || 'gray' }
+function statusLabel(status) { const item = marketing_opportunity_status.value.find(d => d.value == status); return item ? item.label : '-' }
+function stageBadgeClass(stageCode) { const map = { 'stage1': 'blue', 'stage2': 'violet', 'stage3': 'amber', 'stage4': 'cyan', 'stage5': 'orange' }; return map[stageCode] || 'gray' }
 
 getUserOptions()
 loadData()

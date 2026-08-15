@@ -36,6 +36,8 @@
             <if test="partName != null and partName != ''"> AND part_name LIKE CONCAT('%', #{partName}, '%')</if>
             <if test="partType != null and partType != ''"> AND part_type = #{partType}</if>
             <if test="status != null and status != ''"> AND status = #{status}</if>
+            <if test="specModel != null and specModel != ''"> AND spec_model LIKE CONCAT('%', #{specModel}, '%')</if>
+            <if test="supplier != null and supplier != ''"> AND supplier LIKE CONCAT('%', #{supplier}, '%')</if>
         </where>
         ORDER BY part_id DESC
     </select>

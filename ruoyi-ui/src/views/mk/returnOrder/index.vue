@@ -4,6 +4,10 @@
     <div class="surface filter-card" v-show="showSearch">
       <div class="filter-head">
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+        <a class="adv-link" :class="{ 'is-open': showAdvanced }" @click.prevent="showAdvanced = !showAdvanced">
+          <span>{{ showAdvanced ? '收起' : '高级筛选' }}</span>
+          <el-icon class="chev"><ArrowDown /></el-icon>
+        </a>
       </div>
       <div class="filter-bar">
         <div class="field">
@@ -29,6 +33,34 @@
               <template #prefix><el-icon><Filter /></el-icon></template>
               <el-option v-for="d in marketing_return_status" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
+          </div>
+        </div>
+        <div class="field">
+          <label>订单编号</label>
+          <div class="control">
+            <el-input v-model="queryParams.orderNo" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>退货原因</label>
+          <div class="control">
+            <el-input v-model="queryParams.returnReason" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>退款日期</label>
+          <div class="control">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>创建时间</label>
+          <div class="control">
+            <el-date-picker v-model="dateRangeCreateTime" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
           </div>
         </div>
       </div>
@@ -887,6 +919,7 @@
 import { listReturn, getReturn, delReturn, addReturn, updateReturn, submitReturn, approveReturn, refundReturn } from '@/api/mk/returnOrder'
 import { listOrder, getOrder } from '@/api/mk/order'
 import { useColumnResize } from '@/composables/useColumnResize'
+import { ArrowDown } from '@element-plus/icons-vue'
 
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('mk_return_index')
@@ -932,7 +965,7 @@ const collapsedCards = reactive({ basic: false, reason: false, approve: false, r
 function toggleCard(name) { collapsedCards[name] = !collapsedCards[name] }
 
 const data = reactive({
-  queryParams: { pageNum: 1, pageSize: 10, returnNo: undefined, customerName: undefined, returnStatus: undefined, params: {} }
+  queryParams: { pageNum: 1, pageSize: 10, returnNo: undefined, customerName: undefined, returnStatus: undefined, orderNo: undefined, returnReason: undefined, params: {} }
 })
 const { queryParams } = toRefs(data)
 
@@ -969,11 +1002,17 @@ function loadColumnVisibility() {
 
 const columns = ref(loadColumnVisibility())
 
+const dateRange = ref([])
+const dateRangeCreateTime = ref([])
 const activeFilterCount = computed(() => {
   let count = 0
   if (queryParams.value.returnNo) count++
   if (queryParams.value.customerName) count++
   if (queryParams.value.returnStatus) count++
+  if (queryParams.value.orderNo) count++
+  if (queryParams.value.returnReason) count++
+  if (dateRange.value && dateRange.value.length === 2) count++
+  if (dateRangeCreateTime.value && dateRangeCreateTime.value.length === 2) count++
   return count
 })
 
@@ -996,8 +1035,8 @@ const totalReturnAmount = computed(() => {
 })
 
 function getList() { loading.value = true; listReturn(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false; loadStatusCounts(); applySavedWidths() }).catch(() => { loading.value = false }) }
-function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
-function resetQuery() { queryParams.value.returnNo = undefined; queryParams.value.customerName = undefined; queryParams.value.returnStatus = undefined; queryParams.value.params = {}; activeStatusTab.value = 'all'; handleQuery() }
+function handleQuery() { showAdvanced.value = false; queryParams.value.params = proxy.addDateRange(proxy.addDateRange(queryParams.value.params, dateRange.value, 'Refund'), dateRangeCreateTime.value, 'CreateTime'); queryParams.value.pageNum = 1; getList() }
+function resetQuery() { queryParams.value.returnNo = undefined; queryParams.value.customerName = undefined; queryParams.value.returnStatus = undefined; queryParams.value.orderNo = undefined; queryParams.value.returnReason = undefined; dateRange.value = []; dateRangeCreateTime.value = []; queryParams.value.params = {}; activeStatusTab.value = 'all'; handleQuery() }
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.returnId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function formatAmount(val) { if (val == null || val === '') return '-'; return Number(val).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }
 function handleView(row) { getReturn(row.returnId).then(res => { viewForm.value = res.data; collapsedCards.refund = !(res.data.refundAmount != null && res.data.refundAmount !== ''); viewOpen.value = true }) }
@@ -1007,7 +1046,7 @@ function handleApprove(row) { getReturn(row.returnId).then(res => { approveForm.
 function submitApprove(approved) { proxy.$refs['approveRef'].validate(valid => { if (valid) { approveReturn(approveForm.value.returnId, approved, approveForm.value.approveOpinion || '').then(() => { proxy.$modal.msgSuccess(approved ? '审批通过' : '审批驳回'); approveOpen.value = false; getList() }) } }) }
 function handleRefund(row) { refundForm.value = { returnId: row.returnId, returnNo: row.returnNo, returnAmount: row.returnAmount, refundAmount: row.returnAmount, refundDate: undefined }; refundOpen.value = true }
 function submitRefund() { proxy.$refs['refundRef'].validate(valid => { if (valid) { refundReturn(refundForm.value.returnId, refundForm.value.refundAmount, refundForm.value.refundDate).then(() => { proxy.$modal.msgSuccess('退款成功'); refundOpen.value = false; getList() }) } }) }
-function handleExport() { proxy.download('mk/return/export', { ...queryParams.value }, `return_${new Date().getTime()}.xlsx`) }
+function handleExport() { proxy.download('mk/return/export', { ...proxy.addDateRange(proxy.addDateRange(queryParams.value, dateRange.value, 'Refund'), dateRangeCreateTime.value, 'CreateTime') }, `return_${new Date().getTime()}.xlsx`) }
 
 /** 新增退货 */
 function handleAdd() {

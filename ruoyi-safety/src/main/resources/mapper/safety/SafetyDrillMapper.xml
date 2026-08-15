@@ -45,6 +45,10 @@
             <if test="drillName != null and drillName != ''"> AND drill_name LIKE CONCAT('%', #{drillName}, '%')</if>
             <if test="drillType != null and drillType != ''"> AND drill_type = #{drillType}</if>
             <if test="planId != null"> AND plan_id = #{planId}</if>
+            <if test="drillLocation != null and drillLocation != ''"> AND drill_location LIKE CONCAT('%', #{drillLocation}, '%')</if>
+            <if test="drillCommander != null and drillCommander != ''"> AND drill_commander LIKE CONCAT('%', #{drillCommander}, '%')</if>
+            <if test="params.beginDrillDate != null and params.beginDrillDate != ''"> AND drill_date &gt;= #{params.beginDrillDate}</if>
+            <if test="params.endDrillDate != null and params.endDrillDate != ''"> AND drill_date &lt;= #{params.endDrillDate}</if>
         </where>
         ORDER BY drill_date DESC
     </select>

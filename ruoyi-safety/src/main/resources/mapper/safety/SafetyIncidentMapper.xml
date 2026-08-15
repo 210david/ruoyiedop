@@ -41,6 +41,9 @@
             <if test="incidentCode != null and incidentCode != ''"> AND incident_code LIKE CONCAT('%', #{incidentCode}, '%')</if>
             <if test="incidentLevel != null and incidentLevel != ''"> AND incident_level = #{incidentLevel}</if>
             <if test="incidentLocation != null and incidentLocation != ''"> AND incident_location LIKE CONCAT('%', #{incidentLocation}, '%')</if>
+            <if test="reportPerson != null and reportPerson != ''"> AND report_person LIKE CONCAT('%', #{reportPerson}, '%')</if>
+            <if test="params.beginIncidentDate != null and params.beginIncidentDate != ''"> AND incident_date &gt;= #{params.beginIncidentDate}</if>
+            <if test="params.endIncidentDate != null and params.endIncidentDate != ''"> AND incident_date &lt;= #{params.endIncidentDate}</if>
         </where>
         ORDER BY incident_date DESC
     </select>

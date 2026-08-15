@@ -61,6 +61,11 @@
             <if test="equipmentLevel != null and equipmentLevel != ''"> AND e.equipment_level = #{equipmentLevel}</if>
             <if test="deptId != null"> AND e.dept_id = #{deptId}</if>
             <if test="status != null and status != ''"> AND e.status = #{status}</if>
+            <if test="deptName != null and deptName != ''"> AND d.dept_name LIKE CONCAT('%', #{deptName}, '%')</if>
+            <if test="responsibleName != null and responsibleName != ''"> AND u.nick_name LIKE CONCAT('%', #{responsibleName}, '%')</if>
+            <if test="manufacturer != null and manufacturer != ''"> AND e.manufacturer LIKE CONCAT('%', #{manufacturer}, '%')</if>
+            <if test="params.beginCreateTime != null and params.beginCreateTime != ''"> AND date(e.create_time) &gt;= #{params.beginCreateTime}</if>
+            <if test="params.endCreateTime != null and params.endCreateTime != ''"> AND date(e.create_time) &lt;= #{params.endCreateTime}</if>
         </where>
         ORDER BY e.equipment_id DESC
     </select>

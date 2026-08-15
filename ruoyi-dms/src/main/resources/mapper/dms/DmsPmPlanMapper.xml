@@ -48,6 +48,10 @@
             <if test="categoryId != null"> AND p.category_id = #{categoryId}</if>
             <if test="triggerType != null and triggerType != ''"> AND p.trigger_type = #{triggerType}</if>
             <if test="status != null and status != ''"> AND p.status = #{status}</if>
+            <if test="equipmentName != null and equipmentName != ''"> AND e.equipment_name LIKE CONCAT('%', #{equipmentName}, '%')</if>
+            <if test="assigneeName != null and assigneeName != ''"> AND p.assignee_name LIKE CONCAT('%', #{assigneeName}, '%')</if>
+            <if test="params.beginNextExecuteTime != null and params.beginNextExecuteTime != ''"> AND date(p.next_execute_time) &gt;= #{params.beginNextExecuteTime}</if>
+            <if test="params.endNextExecuteTime != null and params.endNextExecuteTime != ''"> AND date(p.next_execute_time) &lt;= #{params.endNextExecuteTime}</if>
         </where>
         ORDER BY p.plan_id DESC
     </select>

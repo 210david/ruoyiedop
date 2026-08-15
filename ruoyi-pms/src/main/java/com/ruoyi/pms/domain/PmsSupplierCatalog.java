@@ -81,6 +81,12 @@ public class PmsSupplierCatalog extends BaseEntity
     /** 删除标志 */
     private String delFlag;
 
+    /** 查询用：最低供货单价 */
+    private BigDecimal minPrice;
+
+    /** 查询用：最高供货单价 */
+    private BigDecimal maxPrice;
+
     public Long getCatalogId() { return catalogId; }
     public void setCatalogId(Long catalogId) { this.catalogId = catalogId; }
     public Long getSupplierId() { return supplierId; }
@@ -115,4 +121,8 @@ public class PmsSupplierCatalog extends BaseEntity
     public void setStatus(String status) { this.status = status; }
     public String getDelFlag() { return delFlag; }
     public void setDelFlag(String delFlag) { this.delFlag = delFlag; }
+    public BigDecimal getMinPrice() { return minPrice; }
+    public void setMinPrice(BigDecimal minPrice) { this.minPrice = minPrice; }
+    public BigDecimal getMaxPrice() { return maxPrice; }
+    public void setMaxPrice(BigDecimal maxPrice) { this.maxPrice = maxPrice; }
 }

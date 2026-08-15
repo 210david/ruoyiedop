@@ -10,8 +10,10 @@ import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.core.page.TableDataInfo;
 import com.ruoyi.common.enums.BusinessType;
+import com.ruoyi.common.utils.poi.ExcelUtil;
 import com.ruoyi.qms.domain.QmsMaterialAttr;
 import com.ruoyi.qms.service.IQmsMaterialAttrService;
+import jakarta.servlet.http.HttpServletResponse;
 
 /**
  * 物料质量属性 Controller
@@ -32,6 +34,16 @@ public class QmsMaterialAttrController extends BaseController
         startPage();
         List<QmsMaterialAttr> list = qmsMaterialAttrService.selectMaterialAttrList(materialAttr);
         return getDataTable(list);
+    }
+
+    @Log(title = "物料质量属性", businessType = BusinessType.EXPORT)
+    @PreAuthorize("@ss.hasPermi('qms:materialattr:export')")
+    @PostMapping("/export")
+    public void export(HttpServletResponse response, QmsMaterialAttr materialAttr)
+    {
+        List<QmsMaterialAttr> list = qmsMaterialAttrService.selectMaterialAttrList(materialAttr);
+        ExcelUtil<QmsMaterialAttr> util = new ExcelUtil<>(QmsMaterialAttr.class);
+        util.exportExcel(response, list, "物料质量属性数据");
     }
 
     @PreAuthorize("@ss.hasPermi('qms:materialattr:query')")

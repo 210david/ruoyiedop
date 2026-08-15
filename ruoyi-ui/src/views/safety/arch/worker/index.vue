@@ -32,10 +32,22 @@
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
+        <div class="field">
           <label>工号</label>
           <div class="control">
             <el-input v-model="queryParams.workerNo" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>所属部门</label>
+          <div class="control">
+            <el-input v-model="queryParams.deptName" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>联系电话</label>
+          <div class="control">
+            <el-input v-model="queryParams.phone" placeholder="请输入" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
         <div class="field" v-show="showAdvanced">
@@ -266,7 +278,7 @@ const columns = ref(loadColumnVisibility())
 
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, workerName: undefined, position: undefined, jobType: undefined, workerNo: undefined, status: undefined, params: {} },
+  queryParams: { pageNum: 1, pageSize: 10, workerName: undefined, position: undefined, jobType: undefined, workerNo: undefined, status: undefined, deptName: undefined, phone: undefined, params: {} },
   rules: {
     workerName: [{ required: true, message: '姓名不能为空', trigger: 'blur' }],
     deptId: [{ required: true, message: '所属部门不能为空', trigger: 'change' }],
@@ -285,12 +297,14 @@ const activeFilterCount = computed(() => {
   if (queryParams.value.jobType) count++
   if (queryParams.value.workerNo) count++
   if (queryParams.value.status) count++
+  if (queryParams.value.deptName) count++
+  if (queryParams.value.phone) count++
   return count
 })
 
 function getList() { loading.value = true; listWorker(queryParams.value).then(response => { workerList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths() }) }
 function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
-function resetQuery() { queryParams.value.workerName = undefined; queryParams.value.position = undefined; queryParams.value.jobType = undefined; queryParams.value.workerNo = undefined; queryParams.value.status = undefined; queryParams.value.params = {}; handleQuery() }
+function resetQuery() { queryParams.value.workerName = undefined; queryParams.value.position = undefined; queryParams.value.jobType = undefined; queryParams.value.workerNo = undefined; queryParams.value.status = undefined; queryParams.value.deptName = undefined; queryParams.value.phone = undefined; queryParams.value.params = {}; handleQuery() }
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleSelectionChange(selection) { ids.value = selection.map(item => item.workerId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function handleAdd() { reset(); collapsedCards.c0 = false; collapsedCards.c1 = false; collapsedCards.c2 = false; open.value = true; title.value = '添加特种人员' }

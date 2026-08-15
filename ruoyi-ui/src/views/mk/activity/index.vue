@@ -4,6 +4,10 @@
     <div class="surface filter-card" v-show="showSearch">
       <div class="filter-head">
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+        <a class="adv-link" :class="{ 'is-open': showAdvanced }" @click.prevent="showAdvanced = !showAdvanced">
+          <span>{{ showAdvanced ? '收起' : '高级筛选' }}</span>
+          <el-icon class="chev"><ArrowDown /></el-icon>
+        </a>
       </div>
       <div class="filter-bar">
         <div class="field">
@@ -38,6 +42,29 @@
               <template #prefix><el-icon><Filter /></el-icon></template>
               <el-option v-for="d in marketing_activity_status" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>活动形式</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.activityForm" placeholder="全部" clearable @change="handleQuery">
+              <template #prefix><el-icon><Filter /></el-icon></template>
+              <el-option v-for="d in marketing_activity_form" :key="d.value" :label="d.label" :value="d.value" />
+            </el-select>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>负责人</label>
+          <div class="control">
+            <el-input v-model="queryParams.userName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>活动时间</label>
+          <div class="control">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
           </div>
         </div>
       </div>
@@ -839,6 +866,7 @@ const open = ref(false)
 const loading = ref(true)
 const showSearch = ref(true)
 const showAdvanced = ref(false)
+const dateRange = ref([])
 const activeStatusTab = ref('all')
 const statusCounts = ref({ all: 0, '0': 0, '1': 0, '2': 0, '3': 0, '4': 0, '5': 0 })
 const ids = ref([])
@@ -910,7 +938,7 @@ const attachmentFileList = computed(() => {
 
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, activityNo: undefined, activityName: undefined, activityType: undefined, activityStatus: undefined, params: {} },
+  queryParams: { pageNum: 1, pageSize: 10, activityNo: undefined, activityName: undefined, activityType: undefined, activityStatus: undefined, activityForm: undefined, userName: undefined, params: {} },
   rules: {
     activityName: [{ required: true, message: '活动名称不能为空', trigger: 'blur' }],
     activityType: [{ required: true, message: '活动类型不能为空', trigger: 'change' }]
@@ -958,11 +986,14 @@ const columns = ref(loadColumnVisibility())
 const statusTabList = computed(() => marketing_activity_status.value)
 const activeFilterCount = computed(() => {
   let count = 0
-  if (queryParams.value.activityNo) count++
-  if (queryParams.value.activityName) count++
-  if (queryParams.value.activityType) count++
-  if (queryParams.value.activityStatus) count++
-  return count
+if (queryParams.value.activityNo) count++
+if (queryParams.value.activityName) count++
+if (queryParams.value.activityType) count++
+if (queryParams.value.activityStatus) count++
+if (queryParams.value.activityForm) count++
+if (queryParams.value.userName) count++
+if (dateRange.value && dateRange.value.length > 0) count++
+return count
 })
 
 function getList() {
@@ -1014,9 +1045,9 @@ function onBatchUserChange(userId) {
     }
   }
 }
-function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
+function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; proxy.addDateRange(queryParams.value, dateRange.value, 'Activity'); getList() }
 function resetQuery() {
-  queryParams.value.activityNo = undefined; queryParams.value.activityName = undefined; queryParams.value.activityType = undefined; queryParams.value.activityStatus = undefined; queryParams.value.params = {}; activeStatusTab.value = 'all'; handleQuery()
+queryParams.value.activityNo = undefined; queryParams.value.activityName = undefined; queryParams.value.activityType = undefined; queryParams.value.activityStatus = undefined; queryParams.value.activityForm = undefined; queryParams.value.userName = undefined; queryParams.value.params = {}; dateRange.value = []; activeStatusTab.value = 'all'; handleQuery()
 }
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleStatusTabClick(status) { activeStatusTab.value = status; queryParams.value.activityStatus = status === 'all' ? undefined : status; handleQuery() }
@@ -1156,7 +1187,7 @@ function submitForm() {
   })
 }
 function handleDelete(row) { const activityIds = row.activityId || ids.value; proxy.$modal.confirm('确认删除编号为"' + activityIds + '"的数据？').then(() => delActivity(activityIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
-function handleExport() { proxy.download('mk/activity/export', { ...queryParams.value }, `activity_${new Date().getTime()}.xlsx`) }
+function handleExport() { proxy.download('mk/activity/export', { ...proxy.addDateRange(queryParams.value, dateRange.value, 'Activity') }, `activity_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 
 // P0-1: 状态流转

@@ -4,6 +4,10 @@
     <div class="surface filter-card" v-show="showSearch">
       <div class="filter-head">
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+        <a class="adv-link" :class="{ 'is-open': showAdvanced }" @click.prevent="showAdvanced = !showAdvanced">
+          <span>{{ showAdvanced ? '收起' : '高级筛选' }}</span>
+          <el-icon class="chev"><ArrowDown /></el-icon>
+        </a>
       </div>
       <div class="filter-bar">
         <div class="field">
@@ -32,6 +36,33 @@
           <label>获证人员</label>
           <div class="control">
             <el-input v-model="queryParams.userName" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>所属部门</label>
+          <div class="control">
+            <el-input v-model="queryParams.deptName" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>发证机构</label>
+          <div class="control">
+            <el-input v-model="queryParams.issueOrg" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>状态</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
+              <el-option label="正常" value="0" />
+              <el-option label="停用" value="1" />
+            </el-select>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>发证日期</label>
+          <div class="control is-select">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" @change="handleQuery" />
           </div>
         </div>
       </div>
@@ -221,7 +252,7 @@ import { listTrainingCert, getTrainingCert, addTrainingCert, updateTrainingCert,
 import UserPicker from '@/components/UserPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
-import { Search, Filter, RefreshLeft, CircleClose } from '@element-plus/icons-vue'
+import { Search, Filter, RefreshLeft, CircleClose, ArrowDown } from '@element-plus/icons-vue'
 import FilePreview from '@/components/FilePreview/index.vue'
 import { downloadFile } from '@/utils/downloadFile'
 
@@ -235,6 +266,7 @@ const baseUrl = import.meta.env.VITE_APP_BASE_API
 const open = ref(false)
 const loading = ref(true)
 const showSearch = ref(true)
+const showAdvanced = ref(false)
 const ids = ref([])
 const single = ref(true)
 const multiple = ref(true)
@@ -242,6 +274,7 @@ const total = ref(0)
 const title = ref('')
 const viewOpen = ref(false)
 const viewData = ref({})
+const dateRange = ref([])
 
 const default_columns = {
   certNo: { label: '证书编号', visible: true },
@@ -274,7 +307,7 @@ const columns = ref(loadColumnVisibility())
 
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, certNo: undefined, certName: undefined, certType: undefined, userName: undefined, params: {} },
+  queryParams: { pageNum: 1, pageSize: 10, certNo: undefined, certName: undefined, certType: undefined, userName: undefined, deptName: undefined, issueOrg: undefined, status: undefined, params: {} },
   rules: {
     certNo: [{ required: true, message: '证书编号不能为空', trigger: 'blur' }],
     certName: [{ required: true, message: '证书名称不能为空', trigger: 'blur' }],
@@ -293,6 +326,10 @@ const activeFilterCount = computed(() => {
   if (queryParams.value.certName) count++
   if (queryParams.value.certType) count++
   if (queryParams.value.userName) count++
+  if (queryParams.value.deptName) count++
+  if (queryParams.value.issueOrg) count++
+  if (queryParams.value.status) count++
+  if (dateRange.value && dateRange.value.length === 2) count++
   return count
 })
 
@@ -304,9 +341,13 @@ function handleFileDownload(url) {
 downloadFile(url)
 }
 
-function getList() { loading.value = true; listTrainingCert(queryParams.value).then(response => { certList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths() }) }
-function handleQuery() { queryParams.value.pageNum = 1; getList() }
-function resetQuery() { queryParams.value.certNo = undefined; queryParams.value.certName = undefined; queryParams.value.certType = undefined; queryParams.value.userName = undefined; queryParams.value.params = {}; handleQuery() }
+function getList() {
+  loading.value = true
+  proxy.addDateRange(queryParams.value, dateRange.value)
+  listTrainingCert(queryParams.value).then(response => { certList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths() })
+}
+function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
+function resetQuery() { queryParams.value.certNo = undefined; queryParams.value.certName = undefined; queryParams.value.certType = undefined; queryParams.value.userName = undefined; queryParams.value.deptName = undefined; queryParams.value.issueOrg = undefined; queryParams.value.status = undefined; dateRange.value = []; queryParams.value.params = {}; handleQuery() }
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleSelectionChange(selection) { ids.value = selection.map(item => item.certId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function handleAdd() { reset(); collapsedCards.c0 = false; collapsedCards.c1 = false; collapsedCards.c2 = false; open.value = true; title.value = '添加证书' }
@@ -355,6 +396,10 @@ getList()
 .safety-training-cert-page .filter-card .filter-title { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--ink-700); }
 .safety-training-cert-page .filter-card .filter-title .glyph { width:4px; height:14px; background:var(--brand-600); border-radius:2px; }
 .safety-training-cert-page .filter-card .filter-bar { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px 16px; }
+.safety-training-cert-page .filter-card .adv-link { font-size:14px; color:var(--ink-500); text-decoration:none; display:flex; align-items:center; gap:4px; transition:color .15s; cursor:pointer; }
+.safety-training-cert-page .filter-card .adv-link:hover { color:var(--brand-600); }
+.safety-training-cert-page .filter-card .adv-link .chev { transition:transform .2s var(--ease-out); }
+.safety-training-cert-page .filter-card .adv-link.is-open .chev { transform:rotate(180deg); }
 .safety-training-cert-page .filter-card .filter-actions { display:flex; align-items:center; justify-content:space-between; margin-top:14px; padding-top:14px; border-top:1px dashed var(--ink-200); }
 .safety-training-cert-page .filter-card .filter-info { font-size:13px; color:var(--ink-500); display:flex; align-items:center; gap:6px; }
 .safety-training-cert-page .filter-card .filter-buttons { display:flex; gap:8px; }

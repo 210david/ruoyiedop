@@ -66,6 +66,8 @@
             <if test="waveId != null"> AND o.wave_id = #{waveId}</if>
             <if test="params.beginOutboundDate != null and params.beginOutboundDate != ''"> AND o.outbound_date &gt;= #{params.beginOutboundDate}</if>
             <if test="params.endOutboundDate != null and params.endOutboundDate != ''"> AND o.outbound_date &lt;= #{params.endOutboundDate}</if>
+            <if test="params.beginCreateTime != null and params.beginCreateTime != ''"> AND date(o.create_time) &gt;= #{params.beginCreateTime}</if>
+            <if test="params.endCreateTime != null and params.endCreateTime != ''"> AND date(o.create_time) &lt;= #{params.endCreateTime}</if>
         </where>
         ORDER BY o.order_id DESC
     </select>

@@ -1,9 +1,13 @@
-﻿﻿﻿﻿﻿﻿﻿﻿<template>
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿<template>
   <div class="app-container mk-list-page">
     <!-- ===== Filter Card ===== -->
     <div class="surface filter-card" v-show="showSearch">
       <div class="filter-head">
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+        <a class="adv-link" :class="{ 'is-open': showAdvanced }" @click.prevent="showAdvanced = !showAdvanced">
+          <span>{{ showAdvanced ? '收起' : '高级筛选' }}</span>
+          <el-icon class="chev"><ArrowDown /></el-icon>
+        </a>
       </div>
       <div class="filter-bar">
         <div class="field">
@@ -30,6 +34,46 @@
               <template #prefix><el-icon><Filter /></el-icon></template>
               <el-option v-for="d in marketing_lead_receive_status" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
+          </div>
+        </div>
+        <div class="field">
+          <label>线索来源</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.leadSource" placeholder="全部" clearable @change="handleQuery">
+              <template #prefix><el-icon><Filter /></el-icon></template>
+              <el-option v-for="d in marketing_customer_source" :key="d.value" :label="d.label" :value="d.value" />
+            </el-select>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>联系人</label>
+          <div class="control">
+            <el-input v-model="queryParams.contactName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>手机号</label>
+          <div class="control">
+            <el-input v-model="queryParams.contactPhone" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>所属行业</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.industry" placeholder="全部" clearable @change="handleQuery">
+              <template #prefix><el-icon><Filter /></el-icon></template>
+              <el-option v-for="d in marketing_industry" :key="d.value" :label="d.label" :value="d.value" />
+            </el-select>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>申请时间</label>
+          <div class="control">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
           </div>
         </div>
       </div>
@@ -411,7 +455,7 @@
 
 <script setup name="MkLeadPool">
 import { listLead, getLead, receiveLead, approveReceive, rejectReceive, getLeadLog } from '@/api/mk/lead'
-import { ArrowRight, QuestionFilled } from '@element-plus/icons-vue'
+import { ArrowRight, ArrowDown, QuestionFilled } from '@element-plus/icons-vue'
 import { listInteraction } from '@/api/mk/interaction'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
@@ -429,6 +473,7 @@ const showSearch = ref(true)
 const showHelp = ref(false)
 const showStatusHelp = ref(false)
 const showAdvanced = ref(false)
+const dateRange = ref([])
 const activeStatusTab = ref('all')
 const statusCounts = ref({ all: 0, '0': 0, '1': 0, '2': 0, '3': 0 })
 const statusTabList = computed(() => marketing_lead_receive_status.value)
@@ -457,7 +502,7 @@ const interactionList = ref([])
 const timelineList = ref([])
 
 const data = reactive({
-  queryParams: { pageNum: 1, pageSize: 10, companyName: undefined, leadGrade: undefined, receiveStatus: undefined, isPublic: '1', params: {} }
+  queryParams: { pageNum: 1, pageSize: 10, companyName: undefined, leadGrade: undefined, receiveStatus: undefined, leadSource: undefined, contactName: undefined, contactPhone: undefined, industry: undefined, isPublic: '1', params: {} }
 })
 const { queryParams } = toRefs(data)
 
@@ -497,15 +542,20 @@ const columns = ref(loadColumnVisibility())
 
 const activeFilterCount = computed(() => {
   let count = 0
-  if (queryParams.value.companyName) count++
-  if (queryParams.value.leadGrade) count++
-  if (queryParams.value.receiveStatus) count++
-  return count
+if (queryParams.value.companyName) count++
+if (queryParams.value.leadGrade) count++
+if (queryParams.value.receiveStatus) count++
+if (queryParams.value.leadSource) count++
+if (queryParams.value.contactName) count++
+if (queryParams.value.contactPhone) count++
+if (queryParams.value.industry) count++
+if (dateRange.value && dateRange.value.length > 0) count++
+return count
 })
 
 function getList() { loading.value = true; listLead(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false; loadStatusCounts(); applySavedWidths() }).catch(() => { loading.value = false }) }
-function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
-function resetQuery() { queryParams.value.companyName = undefined; queryParams.value.leadGrade = undefined; queryParams.value.receiveStatus = undefined; queryParams.value.isPublic = '1'; queryParams.value.params = {}; activeStatusTab.value = 'all'; handleQuery() }
+function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; proxy.addDateRange(queryParams.value, dateRange.value, 'ApplyTime'); getList() }
+function resetQuery() { queryParams.value.companyName = undefined; queryParams.value.leadGrade = undefined; queryParams.value.receiveStatus = undefined; queryParams.value.leadSource = undefined; queryParams.value.contactName = undefined; queryParams.value.contactPhone = undefined; queryParams.value.industry = undefined; queryParams.value.isPublic = '1'; queryParams.value.params = {}; dateRange.value = []; activeStatusTab.value = 'all'; handleQuery() }
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleView(row) {
   getLead(row.leadId).then(res => {

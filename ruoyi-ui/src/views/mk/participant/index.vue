@@ -4,6 +4,10 @@
     <div class="surface filter-card" v-show="showSearch">
       <div class="filter-head">
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+        <a class="adv-link" :class="{ 'is-open': showAdvanced }" @click.prevent="showAdvanced = !showAdvanced">
+          <span>{{ showAdvanced ? '收起' : '高级筛选' }}</span>
+          <el-icon class="chev"><ArrowDown /></el-icon>
+        </a>
       </div>
       <div class="filter-bar">
         <div class="field">
@@ -30,6 +34,36 @@
               <template #prefix><el-icon><Filter /></el-icon></template>
               <el-option v-for="d in marketing_participate_status" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
+          </div>
+        </div>
+        <div class="field">
+          <label>联系人</label>
+          <div class="control">
+            <el-input v-model="queryParams.contactName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>手机号</label>
+          <div class="control">
+            <el-input v-model="queryParams.contactPhone" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>职位</label>
+          <div class="control">
+            <el-input v-model="queryParams.position" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>签到时间</label>
+          <div class="control">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
           </div>
         </div>
       </div>
@@ -320,6 +354,7 @@ const viewOpen = ref(false)
 const loading = ref(true)
 const showSearch = ref(true)
 const showAdvanced = ref(false)
+const dateRange = ref([])
 const activeStatusTab = ref('all')
 const statusCounts = ref({ all: 0, '0': 0, '1': 0, '2': 0, '3': 0 })
 const ids = ref([])
@@ -333,7 +368,7 @@ const viewForm = ref({})
 
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, activityId: undefined, companyName: undefined, participateStatus: undefined, params: {} },
+  queryParams: { pageNum: 1, pageSize: 10, activityId: undefined, companyName: undefined, participateStatus: undefined, contactName: undefined, contactPhone: undefined, position: undefined, params: {} },
   rules: {
     activityId: [{ required: true, message: '请选择所属活动', trigger: 'change' }],
     companyName: [{ required: true, message: '企业名称不能为空', trigger: 'blur' }],
@@ -379,10 +414,14 @@ const columns = ref(loadColumnVisibility())
 const statusTabList = computed(() => marketing_participate_status.value)
 const activeFilterCount = computed(() => {
   let count = 0
-  if (queryParams.value.activityId) count++
-  if (queryParams.value.companyName) count++
-  if (queryParams.value.participateStatus) count++
-  return count
+if (queryParams.value.activityId) count++
+if (queryParams.value.companyName) count++
+if (queryParams.value.participateStatus) count++
+if (queryParams.value.contactName) count++
+if (queryParams.value.contactPhone) count++
+if (queryParams.value.position) count++
+if (dateRange.value && dateRange.value.length > 0) count++
+return count
 })
 
 function getList() {
@@ -395,9 +434,9 @@ function getActivityOptions() {
 function getContactOptions() {
   listContact({ pageNum: 1, pageSize: 9999 }).then(res => { contactOptions.value = res.rows })
 }
-function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
+function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; proxy.addDateRange(queryParams.value, dateRange.value, 'SignTime'); getList() }
 function resetQuery() {
-  queryParams.value.activityId = undefined; queryParams.value.companyName = undefined; queryParams.value.participateStatus = undefined; queryParams.value.params = {}; activeStatusTab.value = 'all'; handleQuery()
+queryParams.value.activityId = undefined; queryParams.value.companyName = undefined; queryParams.value.participateStatus = undefined; queryParams.value.contactName = undefined; queryParams.value.contactPhone = undefined; queryParams.value.position = undefined; queryParams.value.params = {}; dateRange.value = []; activeStatusTab.value = 'all'; handleQuery()
 }
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleStatusTabClick(status) { activeStatusTab.value = status; queryParams.value.participateStatus = status === 'all' ? undefined : status; handleQuery() }
@@ -446,7 +485,7 @@ function submitForm() {
   })
 }
 function handleDelete(row) { const participantIds = row.participantId || ids.value; proxy.$modal.confirm('确认删除编号为"' + participantIds + '"的数据？').then(() => delParticipant(participantIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
-function handleExport() { proxy.download('mk/participant/export', { ...queryParams.value }, `participant_${new Date().getTime()}.xlsx`) }
+function handleExport() { proxy.download('mk/participant/export', { ...proxy.addDateRange(queryParams.value, dateRange.value, 'SignTime') }, `participant_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 
 // P1-5: 签到

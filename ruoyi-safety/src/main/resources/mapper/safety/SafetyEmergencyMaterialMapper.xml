@@ -40,6 +40,9 @@
             <if test="materialName != null and materialName != ''"> AND material_name LIKE CONCAT('%', #{materialName}, '%')</if>
             <if test="materialType != null and materialType != ''"> AND material_type = #{materialType}</if>
             <if test="status != null and status != ''"> AND status = #{status}</if>
+            <if test="specModel != null and specModel != ''"> AND spec_model LIKE CONCAT('%', #{specModel}, '%')</if>
+            <if test="storageLocation != null and storageLocation != ''"> AND storage_location LIKE CONCAT('%', #{storageLocation}, '%')</if>
+            <if test="personName != null and personName != ''"> AND person_name LIKE CONCAT('%', #{personName}, '%')</if>
         </where>
         ORDER BY create_time DESC
     </select>

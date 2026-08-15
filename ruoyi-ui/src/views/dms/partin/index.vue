@@ -4,6 +4,10 @@
     <div class="surface filter-card" v-show="showSearch">
       <div class="filter-head">
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+        <a class="adv-link" :class="{ 'is-open': showAdvanced }" @click.prevent="showAdvanced = !showAdvanced">
+          <span>{{ showAdvanced ? '收起' : '高级筛选' }}</span>
+          <el-icon class="chev"><ArrowDown /></el-icon>
+        </a>
       </div>
       <div class="filter-bar">
         <div class="field">
@@ -28,6 +32,28 @@
             <el-input v-model="queryParams.supplierOrDept" placeholder="请输入" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
+          </div>
+        </div>
+        <div class="field">
+          <label>备件编号</label>
+          <div class="control">
+            <el-input v-model="queryParams.partCode" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>备件名称</label>
+          <div class="control">
+            <el-input v-model="queryParams.partName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>入库日期</label>
+          <div class="control">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
           </div>
         </div>
       </div>
@@ -269,7 +295,7 @@ import { listPartIn, addPartIn, delPartIn, getPartIn, updatePartIn } from '@/api
 import { listSparepart } from '@/api/dms/sparepart'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
-import { Search, Filter, RefreshLeft, Delete, Download } from '@element-plus/icons-vue'
+import { Search, Filter, RefreshLeft, Delete, Download, ArrowDown } from '@element-plus/icons-vue'
 const { collapsedCards, toggleCard } = useDetailCard(["c3","c2","c1","c0"])
 
 const { proxy } = getCurrentInstance()
@@ -314,11 +340,16 @@ function loadColumnVisibility() {
   return { ...defaultColumns }
 }
 const columns = ref(loadColumnVisibility())
+const showAdvanced = ref(false)
+const dateRange = ref([])
 const activeFilterCount = computed(() => {
   let count = 0
   if (queryParams.value.documentCode) count++
   if (queryParams.value.sourceType) count++
   if (queryParams.value.supplierOrDept) count++
+  if (queryParams.value.partCode) count++
+  if (queryParams.value.partName) count++
+  if (dateRange.value && dateRange.value.length === 2) count++
   return count
 })
 function unitLabel(val) { const item = wms_unit.value.find(d => d.value == val); return item ? item.label : '-' }
@@ -335,7 +366,7 @@ function today() {
 
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, documentCode: undefined, sourceType: undefined, supplierOrDept: undefined },
+  queryParams: { pageNum: 1, pageSize: 10, documentCode: undefined, sourceType: undefined, supplierOrDept: undefined, partCode: undefined, partName: undefined, params: {} },
   rules: {
     sourceType: [{ required: true, message: '入库类型不能为空', trigger: 'change' }],
     partId: [{ required: true, message: '备件不能为空', trigger: 'change' }],
@@ -350,8 +381,8 @@ function getList() {
   loading.value = true
   listPartIn(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false; applySavedWidths() })
 }
-function handleQuery() { queryParams.value.pageNum = 1; getList() }
-function resetQuery() { queryParams.value.documentCode = undefined; queryParams.value.sourceType = undefined; queryParams.value.supplierOrDept = undefined; proxy.resetForm('queryRef'); handleQuery() }
+function handleQuery() { showAdvanced.value = false; queryParams.value.params = proxy.addDateRange(queryParams.value.params, dateRange.value, 'OperateDate'); queryParams.value.pageNum = 1; getList() }
+function resetQuery() { queryParams.value.documentCode = undefined; queryParams.value.sourceType = undefined; queryParams.value.supplierOrDept = undefined; queryParams.value.partCode = undefined; queryParams.value.partName = undefined; dateRange.value = []; queryParams.value.params = {}; proxy.resetForm('queryRef'); handleQuery() }
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.recordId); multiple.value = !selection.length }
 function handleAdd() {
   reset(); open.value = true
@@ -397,7 +428,7 @@ function submitForm() {
   })
 }
 function cancel() { open.value = false; reset() }
-function handleExport() { proxy.download('dms/sparepart/partin/export', { ...queryParams.value }, `partin_${new Date().getTime()}.xlsx`) }
+function handleExport() { proxy.download('dms/sparepart/partin/export', { ...proxy.addDateRange(queryParams.value, dateRange.value, 'OperateDate') }, `partin_${new Date().getTime()}.xlsx`) }
 function handleDelete(row) { const recordIds = row.recordId || ids.value; proxy.$modal.confirm('确认删除选中的入库记录？').then(() => delPartIn(recordIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
 
 function getSpareOptions() {

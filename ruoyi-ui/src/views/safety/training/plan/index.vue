@@ -32,10 +32,27 @@
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
+        <div class="field">
           <label>培训年份</label>
           <div class="control">
             <el-date-picker v-model="queryParams.planYear" type="year" placeholder="选择年份" value-format="YYYY" style="width: 100%" @change="handleQuery" />
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>计划状态</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.planStatus" placeholder="全部" clearable @change="handleQuery">
+              <el-option label="待执行" value="0" />
+              <el-option label="执行中" value="1" />
+              <el-option label="已完成" value="2" />
+              <el-option label="已取消" value="3" />
+            </el-select>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>创建时间</label>
+          <div class="control is-select">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" @change="handleQuery" />
           </div>
         </div>
       </div>
@@ -371,6 +388,7 @@ const viewData = ref({})
 const planRecords = ref([])
 const planRecordsLoading = ref(false)
 const targetUserPickerRef = ref()
+const dateRange = ref([])
 
 const default_columns = {
   planCode: { label: '计划编号', visible: true },
@@ -434,6 +452,8 @@ const activeFilterCount = computed(() => {
   if (queryParams.value.planCode) count++
   if (queryParams.value.planType) count++
   if (queryParams.value.planYear) count++
+  if (queryParams.value.planStatus) count++
+  if (dateRange.value && dateRange.value.length === 2) count++
   return count
 })
 
@@ -446,9 +466,13 @@ const statusCounts = computed(() => {
   return { all, pending, executing, completed, cancelled }
 })
 
-function getList() { loading.value = true; listTrainingPlan(queryParams.value).then(response => { planList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths() }) }
+function getList() {
+  loading.value = true
+  proxy.addDateRange(queryParams.value, dateRange.value)
+  listTrainingPlan(queryParams.value).then(response => { planList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths() })
+}
 function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
-function resetQuery() { queryParams.value.planName = undefined; queryParams.value.planCode = undefined; queryParams.value.planType = undefined; queryParams.value.planStatus = undefined; queryParams.value.planYear = undefined; queryParams.value.params = {}; handleQuery() }
+function resetQuery() { queryParams.value.planName = undefined; queryParams.value.planCode = undefined; queryParams.value.planType = undefined; queryParams.value.planStatus = undefined; queryParams.value.planYear = undefined; dateRange.value = []; queryParams.value.params = {}; handleQuery() }
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleStatusTab(status) { queryParams.value.planStatus = status; queryParams.value.pageNum = 1; getList() }
 function handleSelectionChange(selection) { ids.value = selection.map(item => item.planId); single.value = selection.length !== 1; multiple.value = !selection.length }

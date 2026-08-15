@@ -39,6 +39,8 @@
             <if test="routeName != null and routeName != ''"> AND route_name LIKE CONCAT('%', #{routeName}, '%')</if>
             <if test="taskStatus != null and taskStatus != ''"> AND task_status = #{taskStatus}</if>
             <if test="inspectorName != null and inspectorName != ''"> AND inspector_name LIKE CONCAT('%', #{inspectorName}, '%')</if>
+            <if test="params.beginPlanDate != null and params.beginPlanDate != ''"> AND date(plan_date) &gt;= #{params.beginPlanDate}</if>
+            <if test="params.endPlanDate != null and params.endPlanDate != ''"> AND date(plan_date) &lt;= #{params.endPlanDate}</if>
         </where>
         ORDER BY task_id DESC
     </select>

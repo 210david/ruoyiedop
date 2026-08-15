@@ -74,6 +74,10 @@
             <if test="contractId != null"> AND o.contract_id = #{contractId}</if>
             <if test="customerName != null and customerName != ''"> AND c.customer_name LIKE CONCAT('%', #{customerName}, '%')</if>
             <if test="userId != null"> AND o.user_id = #{userId}</if>
+            <if test="contractNo != null and contractNo != ''"> AND ct.contract_no LIKE CONCAT('%', #{contractNo}, '%')</if>
+            <if test="userName != null and userName != ''"> AND u.nick_name LIKE CONCAT('%', #{userName}, '%')</if>
+            <if test="params.beginCreateTime != null and params.beginCreateTime != ''"> AND date(o.create_time) &gt;= #{params.beginCreateTime}</if>
+            <if test="params.endCreateTime != null and params.endCreateTime != ''"> AND date(o.create_time) &lt;= #{params.endCreateTime}</if>
         </where>
         ORDER BY o.order_id DESC
     </select>

@@ -26,7 +26,7 @@
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
+        <div class="field">
           <label>预案等级</label>
           <div class="control is-select">
             <el-select v-model="queryParams.planLevel" placeholder="全部" clearable @change="handleQuery">
@@ -34,13 +34,37 @@
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
+        <div class="field">
           <label>状态</label>
           <div class="control is-select">
             <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
               <el-option label="正常" value="0" />
               <el-option label="停用" value="1" />
             </el-select>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>预案编号</label>
+          <div class="control">
+            <el-input v-model="queryParams.planCode" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>版本号</label>
+          <div class="control">
+            <el-input v-model="queryParams.version" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>备案号</label>
+          <div class="control">
+            <el-input v-model="queryParams.regNo" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>生效日期</label>
+          <div class="control">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
           </div>
         </div>
       </div>
@@ -236,6 +260,7 @@ const open = ref(false)
 const loading = ref(true)
 const showSearch = ref(true)
 const showAdvanced = ref(false)
+const dateRange = ref([])
 const ids = ref([])
 const single = ref(true)
 const multiple = ref(true)
@@ -275,7 +300,7 @@ const columns = ref(loadColumnVisibility())
 
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, planName: undefined, planType: undefined, planLevel: undefined, status: undefined, params: {} },
+  queryParams: { pageNum: 1, pageSize: 10, planName: undefined, planType: undefined, planLevel: undefined, status: undefined, planCode: undefined, version: undefined, regNo: undefined, params: {} },
   rules: {
     planName: [{ required: true, message: '预案名称不能为空', trigger: 'blur' }],
     planType: [{ required: true, message: '预案类型不能为空', trigger: 'change' }],
@@ -293,6 +318,10 @@ const activeFilterCount = computed(() => {
   if (queryParams.value.planType) count++
   if (queryParams.value.planLevel) count++
   if (queryParams.value.status) count++
+  if (queryParams.value.planCode) count++
+  if (queryParams.value.version) count++
+  if (queryParams.value.regNo) count++
+  if (dateRange.value && dateRange.value.length > 0) count++
   return count
 })
 
@@ -305,8 +334,8 @@ downloadFile(url)
 }
 
 function getList() { loading.value = true; listEmergencyPlan(queryParams.value).then(response => { planList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths() }) }
-function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
-function resetQuery() { queryParams.value.planName = undefined; queryParams.value.planType = undefined; queryParams.value.planLevel = undefined; queryParams.value.status = undefined; queryParams.value.params = {}; handleQuery() }
+function handleQuery() { showAdvanced.value = false; proxy.addDateRange(queryParams.value, dateRange.value); queryParams.value.pageNum = 1; getList() }
+function resetQuery() { queryParams.value.planName = undefined; queryParams.value.planType = undefined; queryParams.value.planLevel = undefined; queryParams.value.status = undefined; queryParams.value.planCode = undefined; queryParams.value.version = undefined; queryParams.value.regNo = undefined; dateRange.value = []; queryParams.value.params = {}; handleQuery() }
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleSelectionChange(selection) { ids.value = selection.map(item => item.planId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function handleAdd() { reset(); collapsedCards.c0 = false; collapsedCards.c1 = false; collapsedCards.c2 = false; open.value = true; title.value = '添加应急预案' }

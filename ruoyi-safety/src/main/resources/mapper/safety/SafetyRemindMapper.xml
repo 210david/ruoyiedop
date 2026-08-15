@@ -43,6 +43,12 @@
             <if test="remindStatus != null and remindStatus != ''"> AND remind_status = #{remindStatus}</if>
             <if test="relatedName != null and relatedName != ''"> AND related_name LIKE CONCAT('%', #{relatedName}, '%')</if>
             <if test="notifyLevel != null and notifyLevel != ''"> AND notify_level = #{notifyLevel}</if>
+            <if test="toPersonName != null and toPersonName != ''"> AND to_person_name LIKE CONCAT('%', #{toPersonName}, '%')</if>
+            <if test="handleBy != null and handleBy != ''"> AND handle_by LIKE CONCAT('%', #{handleBy}, '%')</if>
+            <if test="params.beginExpireDate != null and params.beginExpireDate != ''"> AND date_format(expire_date,'%y%m%d') &gt;= date_format(#{params.beginExpireDate},'%y%m%d')</if>
+            <if test="params.endExpireDate != null and params.endExpireDate != ''"> AND date_format(expire_date,'%y%m%d') &lt;= date_format(#{params.endExpireDate},'%y%m%d')</if>
+            <if test="params.beginCreateTime != null and params.beginCreateTime != ''"> AND date_format(create_time,'%y%m%d') &gt;= date_format(#{params.beginCreateTime},'%y%m%d')</if>
+            <if test="params.endCreateTime != null and params.endCreateTime != ''"> AND date_format(create_time,'%y%m%d') &lt;= date_format(#{params.endCreateTime},'%y%m%d')</if>
         </where>
         ORDER BY expire_date ASC
     </select>

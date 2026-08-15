@@ -48,6 +48,12 @@
             <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" @change="handleQuery" />
           </div>
         </div>
+        <div class="field" v-show="showAdvanced">
+          <label>创建时间</label>
+          <div class="control">
+            <el-date-picker v-model="dateRangeCreateTime" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
+          </div>
+        </div>
       </div>
       <div class="filter-actions">
         <div class="filter-info">
@@ -481,7 +487,7 @@ const { collapsedCards, toggleCard } = useDetailCard(['basic', 'setting', 'other
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('wms_stocktake_index')
 const { wms_take_type, wms_take_status } = proxy.useDict('wms_take_type', 'wms_take_status')
-const list = ref([]); const open = ref(false); const loading = ref(true); const showSearch = ref(true); const showAdvanced = ref(false); const ids = ref([]); const multiple = ref(true); const total = ref(0); const title = ref(''); const detailOpen = ref(false); const detailData = ref({}); const submitOpen = ref(false); const approveOpen = ref(false); const activeStatusTab = ref('all'); const statusCounts = ref({ all: 0 }); const dateRange = ref([])
+const list = ref([]); const open = ref(false); const loading = ref(true); const showSearch = ref(true); const showAdvanced = ref(false); const ids = ref([]); const multiple = ref(true); const total = ref(0); const title = ref(''); const detailOpen = ref(false); const detailData = ref({}); const submitOpen = ref(false); const approveOpen = ref(false); const activeStatusTab = ref('all'); const statusCounts = ref({ all: 0 }); const dateRange = ref([]); const dateRangeCreateTime = ref([])
 const inputForm = ref({})
 const approveForm = ref({})
 // 盘点明细前端分页
@@ -501,13 +507,13 @@ const warehouseOptions = ref([]); const areaOptions = ref([]); const showStatusH
 const defaultColumns = { takeNo: { label: '盘点单号', visible: true }, warehouseName: { label: '仓库', visible: true }, areaName: { label: '库区', visible: true }, takeType: { label: '盘点类型', visible: true }, status: { label: '状态', visible: true }, planDate: { label: '计划日期', visible: true }, remark: { label: '备注', visible: true }, createTime: { label: '创建时间', visible: true } }
 function loadColumnVisibility() { try { const saved = localStorage.getItem('wms_stocktake_columns'); if (saved) { const parsed = JSON.parse(saved); const result = {}; Object.keys(defaultColumns).forEach(key => { result[key] = { label: defaultColumns[key].label, visible: parsed[key] !== undefined ? parsed[key] : defaultColumns[key].visible } }); return result } } catch (e) {} return { ...defaultColumns } }
 const columns = ref(loadColumnVisibility())
-const activeFilterCount = computed(() => { let count = 0; if (queryParams.value.takeNo) count++; if (queryParams.value.warehouseId) count++; if (queryParams.value.takeType) count++; if (queryParams.value.status) count++; if (dateRange.value && dateRange.value.length > 0) count++; return count })
+const activeFilterCount = computed(() => { let count = 0; if (queryParams.value.takeNo) count++; if (queryParams.value.warehouseId) count++; if (queryParams.value.takeType) count++; if (queryParams.value.status) count++; if (dateRange.value && dateRange.value.length > 0) count++; if (dateRangeCreateTime.value && dateRangeCreateTime.value.length > 0) count++; return count })
 const statusTabList = computed(() => wms_take_status.value)
 const data = reactive({ form: {}, queryParams: { pageNum: 1, pageSize: 10, takeNo: undefined, warehouseId: undefined, takeType: undefined, status: undefined }, rules: { warehouseId: [{ required: true, message: '仓库不能为空', trigger: 'change' }], takeType: [{ required: true, message: '盘点类型不能为空', trigger: 'change' }], planDate: [{ required: true, message: '计划日期不能为空', trigger: 'change' }] } })
 const { queryParams, form, rules } = toRefs(data)
-function getList() { loading.value = true; listStockTake(proxy.addDateRange(queryParams.value, dateRange.value, 'PlanDate')).then(res => { list.value = res.rows; total.value = res.total; loading.value = false; applySavedWidths() }) }
-function handleQuery() { queryParams.value.pageNum = 1; getList() }
-function resetQuery() { queryParams.value.takeNo = undefined; queryParams.value.warehouseId = undefined; queryParams.value.takeType = undefined; queryParams.value.status = undefined; queryParams.value.params = {}; dateRange.value = []; activeStatusTab.value = 'all'; handleQuery() }
+function getList() { loading.value = true; const params = proxy.addDateRange(proxy.addDateRange(queryParams.value, dateRange.value, 'PlanDate'), dateRangeCreateTime.value, 'CreateTime'); listStockTake(params).then(res => { list.value = res.rows; total.value = res.total; loading.value = false; applySavedWidths() }) }
+function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
+function resetQuery() { queryParams.value.takeNo = undefined; queryParams.value.warehouseId = undefined; queryParams.value.takeType = undefined; queryParams.value.status = undefined; queryParams.value.params = {}; dateRange.value = []; dateRangeCreateTime.value = []; activeStatusTab.value = 'all'; handleQuery() }
 function handleSelectionChange(sel) { ids.value = sel.map(i => i.takeId); multiple.value = !sel.length }
 function reset() { form.value = { warehouseId: undefined, areaId: undefined, takeType: '0', sampleRatio: 30, cycleNo: 1, planDate: undefined, remark: undefined }; areaOptions.value = []; proxy.resetForm('takeRef') }
 function handleAdd() { reset(); open.value = true; title.value = '添加盘点单' }

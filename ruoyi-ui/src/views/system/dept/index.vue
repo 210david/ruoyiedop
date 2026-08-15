@@ -131,58 +131,98 @@
       </div>
 
       <!-- 添加或修改部门对话框 -->
-      <el-dialog :title="title" v-model="open" width="600px" append-to-body>
+      <el-dialog v-model="open" width="680px" append-to-body draggable :close-on-click-modal="false" class="rd-dialog">
+         <template #header>
+            <div class="rd-detail-header">
+               <div class="rd-detail-header-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                     <path d="M3 21h18" /><path d="M5 21V7l8-4v18" /><path d="M19 21V11l-6-4" />
+                  </svg>
+               </div>
+               <span class="rd-detail-header-title">{{ title }}</span>
+               <div class="rd-detail-header-sub" v-if="form.deptId">
+                  <div class="rd-detail-header-divider"></div>
+                  <span class="rd-detail-header-no">编号：{{ form.deptId }}</span>
+               </div>
+            </div>
+         </template>
          <el-form ref="deptRef" :model="form" :rules="rules" label-width="80px">
-            <el-row>
-               <el-col :span="24" v-if="form.parentId !== 0">
-                  <el-form-item label="上级部门" prop="parentId">
-                     <el-tree-select
-                        v-model="form.parentId"
-                        :data="deptOptions"
-                        :props="{ value: 'deptId', label: 'deptName', children: 'children' }"
-                        value-key="deptId"
-                        placeholder="选择上级部门"
-                        check-strictly
-                     />
-                  </el-form-item>
-               </el-col>
-               <el-col :span="12">
-                  <el-form-item label="部门名称" prop="deptName">
-                     <el-input v-model="form.deptName" placeholder="请输入部门名称" />
-                  </el-form-item>
-               </el-col>
-               <el-col :span="12">
-                  <el-form-item label="显示排序" prop="orderNum">
-                     <el-input-number v-model="form.orderNum" controls-position="right" :min="0" />
-                  </el-form-item>
-               </el-col>
-               <el-col :span="12">
-                  <el-form-item label="负责人" prop="leader">
-                     <el-input v-model="form.leader" placeholder="请输入负责人" maxlength="20" />
-                  </el-form-item>
-               </el-col>
-               <el-col :span="12">
-                  <el-form-item label="联系电话" prop="phone">
-                     <el-input v-model="form.phone" placeholder="请输入联系电话" maxlength="11" />
-                  </el-form-item>
-               </el-col>
-               <el-col :span="12">
-                  <el-form-item label="邮箱" prop="email">
-                     <el-input v-model="form.email" placeholder="请输入邮箱" maxlength="50" />
-                  </el-form-item>
-               </el-col>
-               <el-col :span="12">
-                  <el-form-item label="部门状态">
-                     <el-radio-group v-model="form.status">
-                        <el-radio
-                           v-for="dict in sys_normal_disable"
-                           :key="dict.value"
-                           :value="dict.value"
-                        >{{ dict.label }}</el-radio>
-                     </el-radio-group>
-                  </el-form-item>
-               </el-col>
-            </el-row>
+            <section class="rd-card">
+               <div class="rd-card-header">
+                  <div class="rd-card-title">
+                     <span class="rd-card-icon">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                           stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                           <polyline points="14 2 14 8 20 8" /><line x1="9" y1="15" x2="15" y2="15" />
+                        </svg>
+                     </span>
+                     基本信息
+                  </div>
+               </div>
+               <div class="rd-card-body">
+                  <el-row :gutter="16">
+                     <el-col :span="24" v-if="form.parentId !== 0">
+                        <el-form-item label="上级部门" prop="parentId">
+                           <el-tree-select v-model="form.parentId" :data="deptOptions"
+                              :props="{ value: 'deptId', label: 'deptName', children: 'children' }"
+                              value-key="deptId" placeholder="选择上级部门" check-strictly style="width: 100%" />
+                        </el-form-item>
+                     </el-col>
+                     <el-col :span="12">
+                        <el-form-item label="部门名称" prop="deptName">
+                           <el-input v-model="form.deptName" placeholder="请输入部门名称" />
+                        </el-form-item>
+                     </el-col>
+                     <el-col :span="12">
+                        <el-form-item label="显示排序" prop="orderNum">
+                           <el-input-number v-model="form.orderNum" controls-position="right" :min="0" />
+                        </el-form-item>
+                     </el-col>
+                  </el-row>
+               </div>
+            </section>
+            <section class="rd-card">
+               <div class="rd-card-header">
+                  <div class="rd-card-title">
+                     <span class="rd-card-icon">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                           stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                           <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
+                        </svg>
+                     </span>
+                     联系信息
+                  </div>
+               </div>
+               <div class="rd-card-body">
+                  <el-row :gutter="16">
+                     <el-col :span="12">
+                        <el-form-item label="负责人" prop="leader">
+                           <el-input v-model="form.leader" placeholder="请输入负责人" maxlength="20" />
+                        </el-form-item>
+                     </el-col>
+                     <el-col :span="12">
+                        <el-form-item label="联系电话" prop="phone">
+                           <el-input v-model="form.phone" placeholder="请输入联系电话" maxlength="11" />
+                        </el-form-item>
+                     </el-col>
+                     <el-col :span="12">
+                        <el-form-item label="邮箱" prop="email">
+                           <el-input v-model="form.email" placeholder="请输入邮箱" maxlength="50" />
+                        </el-form-item>
+                     </el-col>
+                     <el-col :span="12">
+                        <el-form-item label="部门状态">
+                           <el-radio-group v-model="form.status">
+                              <el-radio v-for="dict in sys_normal_disable" :key="dict.value"
+                                 :value="dict.value">{{ dict.label }}</el-radio>
+                           </el-radio-group>
+                        </el-form-item>
+                     </el-col>
+                  </el-row>
+               </div>
+            </section>
          </el-form>
          <template #footer>
             <div class="dialog-footer">

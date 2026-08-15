@@ -4,6 +4,10 @@
     <div class="surface filter-card" v-show="showSearch">
       <div class="filter-head">
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+        <a class="adv-link" :class="{ 'is-open': showAdvanced }" @click.prevent="showAdvanced = !showAdvanced">
+          <span>{{ showAdvanced ? '收起' : '高级筛选' }}</span>
+          <el-icon class="chev"><ArrowDown /></el-icon>
+        </a>
       </div>
       <div class="filter-bar">
         <div class="field">
@@ -26,6 +30,40 @@
           <label>所属客户</label>
           <div class="control">
             <el-input v-model="queryParams.customerName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field">
+          <label>职位</label>
+          <div class="control">
+            <el-input v-model="queryParams.position" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>邮箱</label>
+          <div class="control">
+            <el-input v-model="queryParams.email" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>关键联系人</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.isKey" placeholder="全部" clearable @change="handleQuery">
+              <template #prefix><el-icon><Filter /></el-icon></template>
+              <el-option label="是" value="1" />
+              <el-option label="否" value="0" />
+            </el-select>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>归属销售</label>
+          <div class="control">
+            <el-input v-model="queryParams.ownerUserName" placeholder="请输入" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
@@ -98,10 +136,18 @@
           </el-table-column>
           <el-table-column label="邮箱" prop="email" key="email" :width="colWidth('email', 180)" resizable show-overflow-tooltip v-if="columns.email.visible" />
           <el-table-column label="关键联系人" prop="isKey" key="isKey" :width="colWidth('isKey', 100)" resizable align="center" v-if="columns.isKey.visible">
-            <template #default="scope"><el-tag :type="scope.row.isKey === '1' ? 'danger' : 'info'">{{ scope.row.isKey === '1' ? '是' : '否' }}</el-tag></template>
+            <template #default="scope">
+              <span class="badge" :class="scope.row.isKey === '1' ? 'red' : 'gray'">
+                <span class="dot"></span>{{ scope.row.isKey === '1' ? '是' : '否' }}
+              </span>
+            </template>
           </el-table-column>
           <el-table-column label="主要联系人" prop="isPrimary" key="isPrimary" :width="colWidth('isPrimary', 100)" resizable align="center" v-if="columns.isPrimary.visible">
-            <template #default="scope"><el-tag :type="scope.row.isPrimary === '1' ? 'success' : 'info'" size="small">{{ scope.row.isPrimary === '1' ? '是' : '否' }}</el-tag></template>
+            <template #default="scope">
+              <span class="badge" :class="scope.row.isPrimary === '1' ? 'green' : 'gray'">
+                <span class="dot"></span>{{ scope.row.isPrimary === '1' ? '是' : '否' }}
+              </span>
+            </template>
           </el-table-column>
           <el-table-column label="归属销售" prop="ownerUserName" key="ownerUserName" :width="colWidth('ownerUserName', 100)" resizable v-if="columns.ownerUserName.visible" />
           <el-table-column label="下次联系时间" prop="nextContactTime" key="nextContactTime" :width="colWidth('nextContactTime', 160)" resizable sortable="custom" v-if="columns.nextContactTime.visible">
@@ -299,8 +345,8 @@
           <div class="rd-detail-header-sub" v-if="viewForm.name">
             <span class="rd-detail-header-divider"></span>
             <span class="rd-detail-header-no">{{ viewForm.name }}</span>
-            <el-tag v-if="viewForm.isKey === '1'" type="danger" size="small">关键联系人</el-tag>
-            <el-tag v-if="viewForm.isPrimary === '1'" type="success" size="small">主要联系人</el-tag>
+            <span v-if="viewForm.isKey === '1'" class="badge red"><span class="dot"></span>关键联系人</span>
+            <span v-if="viewForm.isPrimary === '1'" class="badge green"><span class="dot"></span>主要联系人</span>
           </div>
         </div>
       </template>
@@ -365,8 +411,8 @@
               </div>
               <div class="rd-card-body" v-show="!collapsedCards.viewOwner">
                 <div class="rd-grid">
-                  <div class="rd-item"><span class="rd-label">关键联系人</span><div class="rd-value"><el-tag :type="viewForm.isKey === '1' ? 'danger' : 'info'" size="small">{{ viewForm.isKey === '1' ? '是' : '否' }}</el-tag></div></div>
-                  <div class="rd-item"><span class="rd-label">主要联系人</span><div class="rd-value"><el-tag :type="viewForm.isPrimary === '1' ? 'success' : 'info'" size="small">{{ viewForm.isPrimary === '1' ? '是' : '否' }}</el-tag></div></div>
+                  <div class="rd-item"><span class="rd-label">关键联系人</span><div class="rd-value"><span class="badge" :class="viewForm.isKey === '1' ? 'red' : 'gray'"><span class="dot"></span>{{ viewForm.isKey === '1' ? '是' : '否' }}</span></div></div>
+                  <div class="rd-item"><span class="rd-label">主要联系人</span><div class="rd-value"><span class="badge" :class="viewForm.isPrimary === '1' ? 'green' : 'gray'"><span class="dot"></span>{{ viewForm.isPrimary === '1' ? '是' : '否' }}</span></div></div>
                   <div class="rd-item"><span class="rd-label">归属销售</span><div class="rd-value" :class="{ 'rd-value--muted': !viewForm.ownerUserName }">{{ viewForm.ownerUserName || '未分配' }}</div></div>
                   <div class="rd-item"><span class="rd-label">最后联系</span><div class="rd-value">{{ viewForm.lastContactTime }}</div></div>
                   <div class="rd-item"><span class="rd-label">下次联系</span><div class="rd-value">{{ viewForm.nextContactTime }}</div></div>
@@ -554,6 +600,7 @@ const open = ref(false)
 const loading = ref(true)
 const showSearch = ref(true)
 const showAdvanced = ref(false)
+const dateRange = ref([])
 const ids = ref([])
 const single = ref(true)
 const multiple = ref(true)
@@ -588,7 +635,7 @@ const interactionRules = {
 
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, name: undefined, phone: undefined, customerName: undefined, params: {} },
+  queryParams: { pageNum: 1, pageSize: 10, name: undefined, phone: undefined, customerName: undefined, position: undefined, email: undefined, isKey: undefined, ownerUserName: undefined, params: {} },
   rules: {
     customerId: [{ required: true, message: '请选择客户', trigger: 'change' }],
     name: [{ required: true, message: '姓名不能为空', trigger: 'blur' }],
@@ -633,10 +680,14 @@ const columns = ref(loadColumnVisibility())
 
 const activeFilterCount = computed(() => {
   let count = 0
-  if (queryParams.value.name) count++
-  if (queryParams.value.phone) count++
-  if (queryParams.value.customerName) count++
-  return count
+if (queryParams.value.name) count++
+if (queryParams.value.phone) count++
+if (queryParams.value.customerName) count++
+if (queryParams.value.position) count++
+if (queryParams.value.email) count++
+if (queryParams.value.isKey) count++
+if (queryParams.value.ownerUserName) count++
+return count
 })
 
 function getList() { loading.value = true; listContact(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false; applySavedWidths() }).catch(() => { loading.value = false }) }
@@ -644,7 +695,7 @@ function getCustomerOptions() { listCustomer({ pageNum: 1, pageSize: 9999 }).the
 function getUserOptions() { listUser({ pageNum: 1, pageSize: 9999 }).then(res => { userOptions.value = res.rows.filter(u => u.userId !== 1) }) }
 function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
 function resetQuery() {
-  queryParams.value.name = undefined; queryParams.value.phone = undefined; queryParams.value.customerName = undefined; queryParams.value.params = {}; handleQuery()
+queryParams.value.name = undefined; queryParams.value.phone = undefined; queryParams.value.customerName = undefined; queryParams.value.position = undefined; queryParams.value.email = undefined; queryParams.value.isKey = undefined; queryParams.value.ownerUserName = undefined; queryParams.value.params = {}; handleQuery()
 }
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.contactId); single.value = selection.length !== 1; multiple.value = !selection.length }

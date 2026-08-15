@@ -44,6 +44,8 @@
             <if test="courseType != null and courseType != ''"> AND r.course_type = #{courseType}</if>
             <if test="planId != null"> AND r.plan_id = #{planId}</if>
             <if test="courseId != null"> AND r.course_id = #{courseId}</if>
+            <if test="trainingLocation != null and trainingLocation != ''"> AND r.training_location LIKE CONCAT('%', #{trainingLocation}, '%')</if>
+            <if test="trainer != null and trainer != ''"> AND r.trainer LIKE CONCAT('%', #{trainer}, '%')</if>
             <if test="params.beginTime != null and params.beginTime != ''"> AND r.training_date &gt;= #{params.beginTime}</if>
             <if test="params.endTime != null and params.endTime != ''"> AND r.training_date &lt;= #{params.endTime}</if>
         </where>

@@ -4,6 +4,10 @@
     <div class="surface filter-card" v-show="showSearch">
       <div class="filter-head">
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+        <a class="adv-link" :class="{ 'is-open': showAdvanced }" @click.prevent="showAdvanced = !showAdvanced">
+          <span>{{ showAdvanced ? '收起' : '高级筛选' }}</span>
+          <el-icon class="chev"><ArrowDown /></el-icon>
+        </a>
       </div>
       <div class="filter-bar">
         <div class="field">
@@ -20,6 +24,28 @@
             <el-select v-model="queryParams.taskStatus" placeholder="全部" clearable @change="handleQuery">
               <el-option v-for="d in dms_inspection_status" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
+          </div>
+        </div>
+        <div class="field">
+          <label>路线名称</label>
+          <div class="control">
+            <el-input v-model="queryParams.routeName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field">
+          <label>点检人</label>
+          <div class="control">
+            <el-input v-model="queryParams.inspectorName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>计划日期</label>
+          <div class="control">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
           </div>
         </div>
       </div>
@@ -483,7 +509,7 @@
 </template>
 
 <script setup name="DmsInspectionTask">
-import { Plus, CircleClose } from '@element-plus/icons-vue'
+import { Plus, CircleClose, Search, Filter, RefreshLeft, ArrowDown } from '@element-plus/icons-vue'
 import { listTask, getTask, addTask, updateTask, delTask, completeTask, startTask } from '@/api/dms/inspection'
 import { listRoute } from '@/api/dms/inspection'
 import UserPicker from '@/components/UserPicker/index.vue'
@@ -536,10 +562,16 @@ function loadColumnVisibility() {
 }
 const columns = ref(loadColumnVisibility())
 
+const showAdvanced = ref(false)
+const dateRange = ref([])
+
 const activeFilterCount = computed(() => {
   let count = 0
   if (queryParams.value.taskNo) count++
   if (queryParams.value.taskStatus !== undefined && queryParams.value.taskStatus !== null && queryParams.value.taskStatus !== '') count++
+  if (queryParams.value.routeName) count++
+  if (queryParams.value.inspectorName) count++
+  if (dateRange.value && dateRange.value.length === 2) count++
   return count
 })
 
@@ -562,7 +594,7 @@ const uploadHeaders = ref({ Authorization: 'Bearer ' + getToken() })
 
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, taskNo: undefined, taskStatus: undefined },
+  queryParams: { pageNum: 1, pageSize: 10, taskNo: undefined, taskStatus: undefined, routeName: undefined, inspectorName: undefined, params: {} },
   rules: {
     routeId: [{ required: true, message: '请选择巡检路线', trigger: 'change' }],
     inspectorId: [{ required: true, message: '请选择点检人', trigger: 'change' }]
@@ -572,8 +604,8 @@ const { queryParams, form, rules } = toRefs(data)
 
 function getList() { loading.value = true; listTask(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false; applySavedWidths() }) }
 function getRouteOptions() { listRoute({ pageNum: 1, pageSize: 9999, status: '0' }).then(res => { routeOptions.value = res.rows }) }
-function handleQuery() { queryParams.value.pageNum = 1; getList() }
-function resetQuery() { proxy.resetForm('queryRef'); handleQuery() }
+function handleQuery() { showAdvanced.value = false; queryParams.value.params = proxy.addDateRange(queryParams.value.params, dateRange.value, 'PlanDate'); queryParams.value.pageNum = 1; getList() }
+function resetQuery() { queryParams.value.taskNo = undefined; queryParams.value.taskStatus = undefined; queryParams.value.routeName = undefined; queryParams.value.inspectorName = undefined; dateRange.value = []; queryParams.value.params = {}; proxy.resetForm('queryRef'); handleQuery() }
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.taskId); single.value = selection.length !== 1; multiple.value = !selection.length }
 
 function reset() {

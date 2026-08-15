@@ -26,10 +26,28 @@
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
+        <div class="field">
           <label>演练编号</label>
           <div class="control">
             <el-input v-model="queryParams.drillCode" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+          </div>
+        </div>
+        <div class="field">
+          <label>演练日期</label>
+          <div class="control">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>演练地点</label>
+          <div class="control">
+            <el-input v-model="queryParams.drillLocation" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>演练指挥</label>
+          <div class="control">
+            <el-input v-model="queryParams.drillCommander" placeholder="请输入" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
       </div>
@@ -245,6 +263,7 @@ const open = ref(false)
 const loading = ref(true)
 const showSearch = ref(true)
 const showAdvanced = ref(false)
+const dateRange = ref([])
 const ids = ref([])
 const single = ref(true)
 const multiple = ref(true)
@@ -286,7 +305,7 @@ const columns = ref(loadColumnVisibility())
 
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, drillName: undefined, drillType: undefined, drillCode: undefined, params: {} },
+  queryParams: { pageNum: 1, pageSize: 10, drillName: undefined, drillType: undefined, drillCode: undefined, drillLocation: undefined, drillCommander: undefined, params: {} },
   rules: {
     drillName: [{ required: true, message: '演练名称不能为空', trigger: 'blur' }],
     drillType: [{ required: true, message: '演练类型不能为空', trigger: 'change' }],
@@ -305,6 +324,9 @@ const activeFilterCount = computed(() => {
   if (queryParams.value.drillName) count++
   if (queryParams.value.drillType) count++
   if (queryParams.value.drillCode) count++
+  if (dateRange.value && dateRange.value.length > 0) count++
+  if (queryParams.value.drillLocation) count++
+  if (queryParams.value.drillCommander) count++
   return count
 })
 
@@ -317,8 +339,8 @@ downloadFile(url)
 }
 
 function getList() { loading.value = true; listDrill(queryParams.value).then(response => { drillList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths() }) }
-function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
-function resetQuery() { queryParams.value.drillName = undefined; queryParams.value.drillType = undefined; queryParams.value.drillCode = undefined; queryParams.value.params = {}; handleQuery() }
+function handleQuery() { showAdvanced.value = false; proxy.addDateRange(queryParams.value, dateRange.value); queryParams.value.pageNum = 1; getList() }
+function resetQuery() { queryParams.value.drillName = undefined; queryParams.value.drillType = undefined; queryParams.value.drillCode = undefined; queryParams.value.drillLocation = undefined; queryParams.value.drillCommander = undefined; dateRange.value = []; queryParams.value.params = {}; handleQuery() }
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleSelectionChange(selection) { ids.value = selection.map(item => item.drillId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function handleAdd() { reset(); collapsedCards.c0 = false; collapsedCards.c1 = false; collapsedCards.c2 = false; collapsedCards.c3 = false; collapsedCards.c4 = false; open.value = true; title.value = '添加演练记录' }

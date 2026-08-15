@@ -49,6 +49,9 @@
             <if test="overdueFlag != null and overdueFlag != ''"> AND p.overdue_flag = #{overdueFlag}</if>
             <if test="customerName != null and customerName != ''"> AND c.customer_name LIKE CONCAT('%', #{customerName}, '%')</if>
             <if test="contractNo != null and contractNo != ''"> AND ct.contract_no LIKE CONCAT('%', #{contractNo}, '%')</if>
+            <if test="paymentMethod != null and paymentMethod != ''"> AND p.payment_method = #{paymentMethod}</if>
+            <if test="params.beginPlanDate != null and params.beginPlanDate != ''"> AND date(p.plan_date) &gt;= #{params.beginPlanDate}</if>
+            <if test="params.endPlanDate != null and params.endPlanDate != ''"> AND date(p.plan_date) &lt;= #{params.endPlanDate}</if>
         </where>
         ORDER BY p.plan_id DESC
     </select>

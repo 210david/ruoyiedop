@@ -4,6 +4,10 @@
     <div class="surface filter-card" v-show="showSearch">
       <div class="filter-head">
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+        <a class="adv-link" :class="{ 'is-open': showAdvanced }" @click.prevent="showAdvanced = !showAdvanced">
+          <span>{{ showAdvanced ? '收起' : '高级筛选' }}</span>
+          <el-icon class="chev"><ArrowDown /></el-icon>
+        </a>
       </div>
       <div class="filter-bar">
         <div class="field">
@@ -28,6 +32,36 @@
             <el-input v-model="queryParams.supplierOrDept" placeholder="请输入" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
+          </div>
+        </div>
+        <div class="field">
+          <label>备件编号</label>
+          <div class="control">
+            <el-input v-model="queryParams.partCode" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>备件名称</label>
+          <div class="control">
+            <el-input v-model="queryParams.partName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>领用人</label>
+          <div class="control">
+            <el-input v-model="queryParams.receiver" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>出库日期</label>
+          <div class="control">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
           </div>
         </div>
       </div>
@@ -299,7 +333,7 @@
 </template>
 
 <script setup name="DmsPartOut">
-import { CircleClose, Search, Filter, RefreshLeft, Delete, Download } from '@element-plus/icons-vue'
+import { CircleClose, Search, Filter, RefreshLeft, Delete, Download, ArrowDown } from '@element-plus/icons-vue'
 import { listPartOut, addPartOut, delPartOut, getPartOut, updatePartOut } from '@/api/dms/partout'
 import { listPartLedger } from '@/api/dms/partledger'
 import UserPicker from '@/components/UserPicker/index.vue'
@@ -350,11 +384,17 @@ function loadColumnVisibility() {
   return { ...defaultColumns }
 }
 const columns = ref(loadColumnVisibility())
+const showAdvanced = ref(false)
+const dateRange = ref([])
 const activeFilterCount = computed(() => {
   let count = 0
   if (queryParams.value.documentCode) count++
   if (queryParams.value.targetType) count++
   if (queryParams.value.supplierOrDept) count++
+  if (queryParams.value.partCode) count++
+  if (queryParams.value.partName) count++
+  if (queryParams.value.receiver) count++
+  if (dateRange.value && dateRange.value.length === 2) count++
   return count
 })
 function unitLabel(val) { const item = wms_unit.value.find(d => d.value == val); return item ? item.label : '-' }
@@ -382,7 +422,7 @@ function validateQuantity(rule, value, callback) {
 
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, documentCode: undefined, targetType: undefined, supplierOrDept: undefined },
+  queryParams: { pageNum: 1, pageSize: 10, documentCode: undefined, targetType: undefined, supplierOrDept: undefined, partCode: undefined, partName: undefined, receiver: undefined, params: {} },
   rules: {
     targetType: [{ required: true, message: '出库类型不能为空', trigger: 'change' }],
     stockId: [{ required: true, message: '备件不能为空', trigger: 'change' }],
@@ -398,8 +438,8 @@ function getList() {
   loading.value = true
   listPartOut(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false; applySavedWidths() })
 }
-function handleQuery() { queryParams.value.pageNum = 1; getList() }
-function resetQuery() { queryParams.value.documentCode = undefined; queryParams.value.targetType = undefined; queryParams.value.supplierOrDept = undefined; proxy.resetForm('queryRef'); handleQuery() }
+function handleQuery() { showAdvanced.value = false; queryParams.value.params = proxy.addDateRange(queryParams.value.params, dateRange.value, 'OperateDate'); queryParams.value.pageNum = 1; getList() }
+function resetQuery() { queryParams.value.documentCode = undefined; queryParams.value.targetType = undefined; queryParams.value.supplierOrDept = undefined; queryParams.value.partCode = undefined; queryParams.value.partName = undefined; queryParams.value.receiver = undefined; dateRange.value = []; queryParams.value.params = {}; proxy.resetForm('queryRef'); handleQuery() }
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.recordId); multiple.value = !selection.length }
 function handleAdd() {
   reset(); open.value = true
@@ -478,7 +518,7 @@ function submitForm() {
   })
 }
 function cancel() { open.value = false; reset() }
-function handleExport() { proxy.download('dms/sparepart/partout/export', { ...queryParams.value }, `partout_${new Date().getTime()}.xlsx`) }
+function handleExport() { proxy.download('dms/sparepart/partout/export', { ...proxy.addDateRange(queryParams.value, dateRange.value, 'OperateDate') }, `partout_${new Date().getTime()}.xlsx`) }
 function handleDelete(row) { const recordIds = row.recordId || ids.value; proxy.$modal.confirm('确认删除选中的出库记录？').then(() => delPartOut(recordIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
 
 /** 获取备件列表，只取库存大于0的 */
