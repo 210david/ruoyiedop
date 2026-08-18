@@ -385,6 +385,9 @@ getList()
 .safety-emergency-material-page .badge.red { background:var(--red-50); color:var(--red-700); border-color:#fecaca; } .safety-emergency-material-page .badge.red .dot { background:var(--red-500); }
 .safety-emergency-material-page .badge.violet { background:var(--violet-50); color:var(--brand-700); border-color:var(--brand-200); }
 .safety-emergency-material-page .badge.gray { background:var(--ink-100); color:var(--ink-500); border-color:var(--ink-200); } .safety-emergency-material-page .badge.gray .dot { background:var(--ink-400); }
+..safety-emergency-material-page .badge.amber { background:var(--amber-50); color:var(--amber-700); border-color:#fde68a; } ..safety-emergency-material-page .badge.amber .dot { background:var(--amber-500); }
+..safety-emergency-material-page .badge.blue { background:var(--blue-50); color:var(--blue-700); border-color:#bfdbfe; } ..safety-emergency-material-page .badge.blue .dot { background:var(--blue-500); }
+..safety-emergency-material-page .badge.green { background:var(--green-50); color:var(--green-700); border-color:#a7f3d0; } ..safety-emergency-material-page .badge.green .dot { background:var(--green-500); }
 .safety-emergency-material-page .pagination-container { display:flex; align-items:center; justify-content:flex-end; padding:14px 20px; background:#fff; }
 @media (max-width:1100px) { .safety-emergency-material-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }
 @media (max-width:720px) { .safety-emergency-material-page .filter-card .filter-bar { grid-template-columns:1fr; } }

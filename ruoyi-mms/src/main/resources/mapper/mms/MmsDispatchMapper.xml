@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mms.mapper.MmsDispatchMapper">
+
+    <resultMap type="MmsDispatch" id="MmsDispatchResult">
+        <id property="dispatchId" column="dispatch_id"/>
+        <result property="dispatchNo" column="dispatch_no"/>
+        <result property="workOrderId" column="work_order_id"/>
+        <result property="workOrderNo" column="work_order_no"/>
+        <result property="opSeq" column="op_seq"/>
+        <result property="processId" column="process_id"/>
+        <result property="processName" column="process_name"/>
+        <result property="resourceId" column="resource_id"/>
+        <result property="resourceName" column="resource_name"/>
+        <result property="teamId" column="team_id"/>
+        <result property="teamName" column="team_name"/>
+        <result property="userIds" column="user_ids"/>
+        <result property="planQty" column="plan_qty"/>
+        <result property="goodQty" column="good_qty"/>
+        <result property="defectQty" column="defect_qty"/>
+        <result property="planStart" column="plan_start"/>
+        <result property="planEnd" column="plan_end"/>
+        <result property="actualStart" column="actual_start"/>
+        <result property="actualEnd" column="actual_end"/>
+        <result property="status" column="status"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <sql id="selectDispatchVo">
+        SELECT dispatch_id, dispatch_no, work_order_id, work_order_no, op_seq, process_id, process_name, resource_id, resource_name, team_id, team_name, user_ids, plan_qty, good_qty, defect_qty, plan_start, plan_end, actual_start, actual_end, status, del_flag, create_by, create_time, update_by, update_time, remark
+        FROM mms_dispatch
+    </sql>
+
+    <select id="selectDispatchList" parameterType="MmsDispatch" resultMap="MmsDispatchResult">
+        <include refid="selectDispatchVo"/>
+        <where>
+            del_flag = '0'
+            <if test="dispatchNo != null and dispatchNo != ''"> AND dispatch_no LIKE CONCAT('%', #{dispatchNo}, '%')</if>
+            <if test="workOrderNo != null and workOrderNo != ''"> AND work_order_no LIKE CONCAT('%', #{workOrderNo}, '%')</if>
+            <if test="processName != null and processName != ''"> AND process_name LIKE CONCAT('%', #{processName}, '%')</if>
+            <if test="resourceName != null and resourceName != ''"> AND resource_name LIKE CONCAT('%', #{resourceName}, '%')</if>
+            <if test="teamName != null and teamName != ''"> AND team_name LIKE CONCAT('%', #{teamName}, '%')</if>
+            <if test="status != null and status != ''"> AND status = #{status}</if>
+            <if test="params.beginTime != null and params.beginTime != ''"> AND date(create_time) &gt;= #{params.beginTime}</if>
+            <if test="params.endTime != null and params.endTime != ''"> AND date(create_time) &lt;= #{params.endTime}</if>
+        </where>
+        ORDER BY dispatch_id DESC
+    </select>
+
+    <select id="selectDispatchById" parameterType="Long" resultMap="MmsDispatchResult">
+        <include refid="selectDispatchVo"/>
+        WHERE dispatch_id = #{dispatchId}
+    </select>
+
+    <insert id="insertDispatch" parameterType="MmsDispatch" useGeneratedKeys="true" keyProperty="dispatchId">
+        INSERT INTO mms_dispatch (
+            dispatch_no,
+            work_order_id,
+            work_order_no,
+            op_seq,
+            process_id,
+            process_name,
+            resource_id,
+            resource_name,
+            team_id,
+            team_name,
+            user_ids,
+            plan_qty,
+            good_qty,
+            defect_qty,
+            plan_start,
+            plan_end,
+            actual_start,
+            actual_end,
+            status,
+            del_flag,
+            create_by,
+            create_time,
+            update_by,
+            update_time,
+            remark
+        ) VALUES (
+            #{dispatchNo},
+            #{workOrderId},
+            #{workOrderNo},
+            #{opSeq},
+            #{processId},
+            #{processName},
+            #{resourceId},
+            #{resourceName},
+            #{teamId},
+            #{teamName},
+            #{userIds},
+            #{planQty},
+            #{goodQty},
+            #{defectQty},
+            #{planStart},
+            #{planEnd},
+            #{actualStart},
+            #{actualEnd},
+            #{status},
+            #{delFlag},
+            #{createBy},
+            #{createTime},
+            #{updateBy},
+            #{updateTime},
+            #{remark}
+        )
+    </insert>
+
+    <update id="updateDispatch" parameterType="MmsDispatch">
+        UPDATE mms_dispatch SET
+            dispatch_no = #{dispatchNo},
+            work_order_id = #{workOrderId},
+            work_order_no = #{workOrderNo},
+            op_seq = #{opSeq},
+            process_id = #{processId},
+            process_name = #{processName},
+            resource_id = #{resourceId},
+            resource_name = #{resourceName},
+            team_id = #{teamId},
+            team_name = #{teamName},
+            user_ids = #{userIds},
+            plan_qty = #{planQty},
+            good_qty = #{goodQty},
+            defect_qty = #{defectQty},
+            plan_start = #{planStart},
+            plan_end = #{planEnd},
+            actual_start = #{actualStart},
+            actual_end = #{actualEnd},
+            status = #{status},
+            update_by = #{updateBy},
+            update_time = #{updateTime},
+            remark = #{remark}
+        WHERE dispatch_id = #{dispatchId}
+    </update>
+
+    <delete id="deleteDispatchByIds" parameterType="Long">
+        UPDATE mms_dispatch SET del_flag = '2' WHERE dispatch_id IN
+        <foreach collection="array" item="dispatchId" open="(" separator="," close=")">
+            #{dispatchId}
+        </foreach>
+    </delete>
+</mapper>

@@ -93,7 +93,7 @@
           <el-table-column label="操作后库存" prop="afterStock" key="afterStock" :width="colWidth('afterStock', 110)" align="center" resizable v-if="columns.afterStock.visible" />
           <el-table-column label="供应商/客户" prop="supplierName" key="supplierName" :width="colWidth('supplierName', 140)" resizable show-overflow-tooltip v-if="columns.supplierName.visible" />
           <el-table-column label="领用人" prop="recipient" key="recipient" :width="colWidth('recipient', 100)" resizable v-if="columns.recipient.visible" />
-          <el-table-column label="出入库时间" prop="recordTime" key="recordTime" :width="colWidth('recordTime', 160)" align="center" resizable v-if="columns.recordTime.visible">
+          <el-table-column label="出入库时间" prop="recordTime" key="recordTime" :width="colWidth('recordTime', 160)" align="center" resizable sortable="custom" v-if="columns.recordTime.visible">
             <template #default="scope">{{ parseTime(scope.row.recordTime, '{y}-{m}-{d} {h}:{i}') }}</template>
           </el-table-column>
           <el-table-column label="操作" width="180" align="center" fixed="right">
@@ -347,6 +347,9 @@ getList()
 .safety-record-page .badge.amber { background:var(--amber-50); color:var(--amber-700); border-color:#fde68a; } .safety-record-page .badge.amber .dot { background:var(--amber-500); }
 .safety-record-page .badge.blue { background:var(--blue-50); color:var(--blue-700); border-color:#bfdbfe; } .safety-record-page .badge.blue .dot { background:var(--blue-500); }
 .safety-record-page .badge.gray { background:var(--ink-100); color:var(--ink-500); border-color:var(--ink-200); } .safety-record-page .badge.gray .dot { background:var(--ink-400); }
+..safety-record-page .badge.green { background:var(--green-50); color:var(--green-700); border-color:#a7f3d0; } ..safety-record-page .badge.green .dot { background:var(--green-500); }
+..safety-record-page .badge.red { background:var(--red-50); color:var(--red-700); border-color:#fecaca; } ..safety-record-page .badge.red .dot { background:var(--red-500); }
+..safety-record-page .badge.violet { background:var(--violet-50); color:var(--brand-700); border-color:var(--brand-200); }
 .safety-record-page .pagination-container { display:flex; align-items:center; justify-content:flex-end; padding:14px 20px; background:#fff; }
 @media (max-width:1100px) { .safety-record-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }
 @media (max-width:720px) { .safety-record-page .filter-card .filter-bar { grid-template-columns:1fr; } }

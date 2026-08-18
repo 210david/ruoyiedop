@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mms.mapper.MmsWorkOrderMapper">
+
+    <resultMap type="MmsWorkOrder" id="MmsWorkOrderResult">
+                <id property="workOrderId" column="work_order_id"/>
+<result property="workOrderNo"     column="work_order_no"/>
+        <result property="orderType"     column="order_type"/>
+        <result property="mpsId"     column="mps_id"/>
+        <result property="mpsNo"     column="mps_no"/>
+        <result property="demandNo"     column="demand_no"/>
+        <result property="productId"     column="product_id"/>
+        <result property="productCode"     column="product_code"/>
+        <result property="productName"     column="product_name"/>
+        <result property="specModel"     column="spec_model"/>
+        <result property="unit"     column="unit"/>
+        <result property="planQty"     column="plan_qty"/>
+        <result property="bomId"     column="bom_id"/>
+        <result property="bomNo"     column="bom_no"/>
+        <result property="routeId"     column="route_id"/>
+        <result property="routeNo"     column="route_no"/>
+        <result property="resourceId"     column="resource_id"/>
+        <result property="resourceName"     column="resource_name"/>
+        <result property="planStart"     column="plan_start"/>
+        <result property="planFinish"     column="plan_finish"/>
+        <result property="actualStart"     column="actual_start"/>
+        <result property="actualFinish"     column="actual_finish"/>
+        <result property="finishedQty"     column="finished_qty"/>
+        <result property="qualifiedQty"     column="qualified_qty"/>
+        <result property="defectQty"     column="defect_qty"/>
+        <result property="priority"     column="priority"/>
+        <result property="status"     column="status"/>
+        <result property="auditBy"     column="audit_by"/>
+        <result property="auditTime"     column="audit_time"/>
+        <result property="auditOpinion"     column="audit_opinion"/>
+        <result property="pauseReason"     column="pause_reason"/>
+<result property="closeRemark"     column="close_remark"/>
+<result property="releaseBy"     column="release_by"/>
+<result property="releaseTime"     column="release_time"/>
+<result property="delFlag"     column="del_flag"/>
+        <result property="createBy"     column="create_by"/>
+        <result property="createTime"     column="create_time"/>
+        <result property="updateBy"     column="update_by"/>
+        <result property="updateTime"     column="update_time"/>
+        <result property="remark"     column="remark"/>
+    </resultMap>
+
+    <sql id="selectWorkOrderVo">
+        SELECT work_order_id, work_order_no, order_type, mps_id, mps_no, demand_no, product_id, product_code, product_name, spec_model, unit, plan_qty, bom_id, bom_no, route_id, route_no, resource_id, resource_name, plan_start, plan_finish, actual_start, actual_finish, finished_qty, qualified_qty, defect_qty, priority, status, audit_by, audit_time, audit_opinion, pause_reason, close_remark, release_by, release_time, del_flag, create_by, create_time, update_by, update_time, remark
+        FROM mms_work_order
+    </sql>
+
+    <select id="selectWorkOrderList" parameterType="MmsWorkOrder" resultMap="MmsWorkOrderResult">
+        <include refid="selectWorkOrderVo"/>
+        <where>
+            del_flag = '0'
+            <if test="workOrderNo != null and workOrderNo != ''"> AND work_order_no LIKE CONCAT('%', #{work_order_no}, '%')</if>
+            <if test="productCode != null and productCode != ''"> AND product_code LIKE CONCAT('%', #{product_code}, '%')</if>
+            <if test="productName != null and productName != ''"> AND product_name LIKE CONCAT('%', #{product_name}, '%')</if>
+            <if test="orderType != null and orderType != ''"> AND order_type = #{order_type}</if>
+            <if test="status != null and status != ''"> AND status = #{status}</if>
+            <if test="priority != null and priority != ''"> AND priority = #{priority}</if>
+            <if test="params.beginTime != null and params.beginTime != ''"> AND date(create_time) &gt;= #{params.beginTime}</if>
+            <if test="params.endTime != null and params.endTime != ''"> AND date(create_time) &lt;= #{params.endTime}</if>
+        </where>
+        ORDER BY work_order_id DESC
+    </select>
+
+    <select id="selectWorkOrderById" parameterType="Long" resultMap="MmsWorkOrderResult">
+        <include refid="selectWorkOrderVo"/>
+        WHERE work_order_id = #{workOrderId}
+    </select>
+
+    <insert id="insertWorkOrder" parameterType="MmsWorkOrder" useGeneratedKeys="true" keyProperty="workOrderId">
+        INSERT INTO mms_work_order (
+            work_order_no,
+            order_type,
+            mps_id,
+            mps_no,
+            demand_no,
+            product_id,
+            product_code,
+            product_name,
+            spec_model,
+            unit,
+            plan_qty,
+            bom_id,
+            bom_no,
+            route_id,
+            route_no,
+            resource_id,
+            resource_name,
+            plan_start,
+            plan_finish,
+            actual_start,
+            actual_finish,
+            finished_qty,
+            qualified_qty,
+            defect_qty,
+            priority,
+            status,
+            audit_by,
+            audit_time,
+            audit_opinion,
+            pause_reason,
+            close_remark,
+            release_by,
+            release_time,
+            del_flag,
+            create_by,
+            create_time,
+            update_by,
+            update_time,
+            remark
+        )VALUES(
+            #{workOrderNo},
+            #{orderType},
+            #{mpsId},
+            #{mpsNo},
+            #{demandNo},
+            #{productId},
+            #{productCode},
+            #{productName},
+            #{specModel},
+            #{unit},
+            #{planQty},
+            #{bomId},
+            #{bomNo},
+            #{routeId},
+            #{routeNo},
+            #{resourceId},
+            #{resourceName},
+            #{planStart},
+            #{planFinish},
+            #{actualStart},
+            #{actualFinish},
+            #{finishedQty},
+            #{qualifiedQty},
+            #{defectQty},
+            #{priority},
+            #{status},
+            #{auditBy},
+            #{auditTime},
+            #{auditOpinion},
+            #{pauseReason},
+            #{closeRemark},
+            #{releaseBy},
+            #{releaseTime},
+            #{delFlag},
+            #{createBy},
+            #{createTime},
+            #{updateBy},
+            #{updateTime},
+            #{remark}
+        )
+    </insert>
+
+    <update id="updateWorkOrder" parameterType="MmsWorkOrder">
+        UPDATE mms_work_order SET
+            work_order_no = #{workOrderNo},
+            order_type = #{orderType},
+            mps_id = #{mpsId},
+            mps_no = #{mpsNo},
+            demand_no = #{demandNo},
+            product_id = #{productId},
+            product_code = #{productCode},
+            product_name = #{productName},
+            spec_model = #{specModel},
+            unit = #{unit},
+            plan_qty = #{planQty},
+            bom_id = #{bomId},
+            bom_no = #{bomNo},
+            route_id = #{routeId},
+            route_no = #{routeNo},
+            resource_id = #{resourceId},
+            resource_name = #{resourceName},
+            plan_start = #{planStart},
+            plan_finish = #{planFinish},
+            actual_start = #{actualStart},
+            actual_finish = #{actualFinish},
+            finished_qty = #{finishedQty},
+            qualified_qty = #{qualifiedQty},
+            defect_qty = #{defectQty},
+            priority = #{priority},
+            status = #{status},
+            audit_by = #{auditBy},
+            audit_time = #{auditTime},
+            audit_opinion = #{auditOpinion},
+            pause_reason = #{pauseReason},
+            close_remark = #{closeRemark},
+            release_by = #{releaseBy},
+            release_time = #{releaseTime},
+            update_by = #{updateBy},
+            update_time = #{updateTime},
+            remark = #{remark}
+        WHERE work_order_id = #{workOrderId}
+    </update>
+
+    <delete id="deleteWorkOrderByIds" parameterType="Long">
+        UPDATE mms_work_order SET del_flag = '2' WHERE work_order_id IN
+        <foreach collection="array" item="workOrderId" open="(" separator="," close=")">
+            #{workOrderId}
+        </foreach>
+    </delete>
+
+    <!-- 审核日志 -->
+    <resultMap type="MmsWorkOrderAuditLog" id="MmsWorkOrderAuditLogResult">
+        <id property="logId" column="log_id"/>
+        <result property="workOrderId" column="work_order_id"/>
+        <result property="auditBy" column="audit_by"/>
+        <result property="auditAction" column="audit_action"/>
+        <result property="auditTime" column="audit_time"/>
+        <result property="auditRemark" column="audit_remark"/>
+    </resultMap>
+
+    <select id="selectAuditLogByWorkOrderId" parameterType="Long" resultMap="MmsWorkOrderAuditLogResult">
+        SELECT log_id, work_order_id, audit_by, audit_action, audit_time, audit_remark
+        FROM mms_work_order_audit_log
+        WHERE work_order_id = #{workOrderId}
+        ORDER BY audit_time DESC
+    </select>
+
+    <insert id="insertAuditLog" parameterType="MmsWorkOrderAuditLog" useGeneratedKeys="true" keyProperty="logId">
+        INSERT INTO mms_work_order_audit_log (
+            work_order_id,
+            audit_by,
+            audit_action,
+            audit_time,
+            audit_remark
+        ) VALUES (
+            #{workOrderId},
+            #{auditBy},
+            #{auditAction},
+            #{auditTime},
+            #{auditRemark}
+        )
+    </insert>
+</mapper>

@@ -1,0 +1,39 @@
+import request from '@/utils/request'
+
+export function listIssue(query) {
+  return request({
+    url: '/mms/issue/list',
+    method: 'get',
+    params: query
+  })
+}
+
+export function getIssue(issueId) {
+  return request({
+    url: '/mms/issue/' + issueId,
+    method: 'get'
+  })
+}
+
+export function addIssue(data) {
+  return request({
+    url: '/mms/issue',
+    method: 'post',
+    data: data
+  })
+}
+
+export function updateIssue(data) {
+  return request({
+    url: '/mms/issue',
+    method: 'put',
+    data: data
+  })
+}
+
+export function delIssue(issueId) {
+  return request({
+    url: '/mms/issue/' + issueId,
+    method: 'delete'
+  })
+}

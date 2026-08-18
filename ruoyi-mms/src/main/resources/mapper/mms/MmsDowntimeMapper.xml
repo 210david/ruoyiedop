@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mms.mapper.MmsDowntimeMapper">
+
+    <resultMap type="MmsDowntime" id="MmsDowntimeResult">
+        <id property="downtimeId" column="downtime_id"/>
+        <result property="downtimeNo" column="downtime_no"/>
+        <result property="dispatchId" column="dispatch_id"/>
+        <result property="workOrderId" column="work_order_id"/>
+        <result property="resourceId" column="resource_id"/>
+        <result property="resourceName" column="resource_name"/>
+        <result property="startTime" column="start_time"/>
+        <result property="endTime" column="end_time"/>
+        <result property="dtType" column="dt_type"/>
+        <result property="reason" column="reason"/>
+        <result property="minutes" column="minutes"/>
+        <result property="status" column="status"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <sql id="selectDowntimeVo">
+        SELECT downtime_id, downtime_no, dispatch_id, work_order_id, resource_id, resource_name, start_time, end_time, dt_type, reason, minutes, status, del_flag, create_by, create_time, update_by, update_time, remark
+        FROM mms_downtime
+    </sql>
+
+    <select id="selectDowntimeList" parameterType="MmsDowntime" resultMap="MmsDowntimeResult">
+        <include refid="selectDowntimeVo"/>
+        <where>
+            del_flag = '0'
+            <if test="downtimeNo != null and downtimeNo != ''"> AND downtime_no LIKE CONCAT('%', #{downtimeNo}, '%')</if>
+            <if test="resourceName != null and resourceName != ''"> AND resource_name LIKE CONCAT('%', #{resourceName}, '%')</if>
+            <if test="dtType != null and dtType != ''"> AND dt_type = #{dtType}</if>
+            <if test="status != null and status != ''"> AND status = #{status}</if>
+            <if test="params.beginTime != null and params.beginTime != ''"> AND date(start_time) &gt;= #{params.beginTime}</if>
+            <if test="params.endTime != null and params.endTime != ''"> AND date(start_time) &lt;= #{params.endTime}</if>
+        </where>
+        ORDER BY downtime_id DESC
+    </select>
+
+    <select id="selectDowntimeById" parameterType="Long" resultMap="MmsDowntimeResult">
+        <include refid="selectDowntimeVo"/>
+        WHERE downtime_id = #{downtimeId}
+    </select>
+
+    <insert id="insertDowntime" parameterType="MmsDowntime" useGeneratedKeys="true" keyProperty="downtimeId">
+        INSERT INTO mms_downtime (
+            downtime_no, dispatch_id, work_order_id, resource_id, resource_name, start_time, end_time, dt_type, reason, minutes, status, del_flag, create_by, create_time, update_by, update_time, remark
+        ) VALUES (
+            #{downtimeNo}, #{dispatchId}, #{workOrderId}, #{resourceId}, #{resourceName}, #{startTime}, #{endTime}, #{dtType}, #{reason}, #{minutes}, #{status}, #{delFlag}, #{createBy}, sysdate(), #{updateBy}, #{updateTime}, #{remark}
+        )
+    </insert>
+
+    <update id="updateDowntime" parameterType="MmsDowntime">
+        UPDATE mms_downtime SET
+            downtime_no = #{downtimeNo},
+            dispatch_id = #{dispatchId},
+            work_order_id = #{workOrderId},
+            resource_id = #{resourceId},
+            resource_name = #{resourceName},
+            start_time = #{startTime},
+            end_time = #{endTime},
+            dt_type = #{dtType},
+            reason = #{reason},
+            minutes = #{minutes},
+            status = #{status},
+            update_by = #{updateBy},
+            update_time = sysdate(),
+            remark = #{remark}
+        WHERE downtime_id = #{downtimeId}
+    </update>
+
+    <delete id="deleteDowntimeByIds" parameterType="Long">
+        UPDATE mms_downtime SET del_flag = '2' WHERE downtime_id IN
+        <foreach collection="array" item="downtimeId" open="(" separator="," close=")">
+            #{downtimeId}
+        </foreach>
+    </delete>
+</mapper>

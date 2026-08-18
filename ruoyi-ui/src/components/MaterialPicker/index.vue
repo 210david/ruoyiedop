@@ -159,7 +159,9 @@ function handleConfirm() {
   emit('confirm', {
     materialId: selectedRow.value.materialId,
     materialCode: selectedRow.value.materialCode,
-    materialName: selectedRow.value.materialName
+    materialName: selectedRow.value.materialName,
+    specModel: selectedRow.value.specModel,
+    unit: selectedRow.value.unit
   })
   visible.value = false
 }

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mms.mapper.MmsOeeSnapshotMapper">
+
+    <resultMap type="MmsOeeSnapshot" id="MmsOeeSnapshotResult">
+        <id property="snapshotId" column="snapshot_id"/>
+        <result property="snapshotDate" column="snapshot_date"/>
+        <result property="resourceId" column="resource_id"/>
+        <result property="resourceName" column="resource_name"/>
+        <result property="workOrderId" column="work_order_id"/>
+        <result property="workOrderNo" column="work_order_no"/>
+        <result property="plannedHours" column="planned_hours"/>
+        <result property="runHours" column="run_hours"/>
+        <result property="downtimeHours" column="downtime_hours"/>
+        <result property="availability" column="availability"/>
+        <result property="performance" column="performance"/>
+        <result property="qualityRate" column="quality_rate"/>
+        <result property="oee" column="oee"/>
+        <result property="goodQty" column="good_qty"/>
+        <result property="defectQty" column="defect_qty"/>
+        <result property="createTime" column="create_time"/>
+    </resultMap>
+
+    <sql id="selectOeeVo">
+        SELECT snapshot_id, snapshot_date, resource_id, resource_name, work_order_id, work_order_no, planned_hours, run_hours, downtime_hours, availability, performance, quality_rate, oee, good_qty, defect_qty, create_time
+        FROM mms_oee_snapshot
+    </sql>
+
+    <select id="selectOeeSnapshotList" parameterType="MmsOeeSnapshot" resultMap="MmsOeeSnapshotResult">
+        <include refid="selectOeeVo"/>
+        <where>
+            <if test="resourceName != null and resourceName != ''"> AND resource_name LIKE CONCAT('%', #{resourceName}, '%')</if>
+            <if test="workOrderNo != null and workOrderNo != ''"> AND work_order_no LIKE CONCAT('%', #{workOrderNo}, '%')</if>
+            <if test="params.beginTime != null and params.beginTime != ''"> AND snapshot_date &gt;= #{params.beginTime}</if>
+            <if test="params.endTime != null and params.endTime != ''"> AND snapshot_date &lt;= #{params.endTime}</if>
+        </where>
+        ORDER BY snapshot_id DESC
+    </select>
+
+    <select id="selectOeeSnapshotById" parameterType="Long" resultMap="MmsOeeSnapshotResult">
+        <include refid="selectOeeVo"/>
+        WHERE snapshot_id = #{snapshotId}
+    </select>
+</mapper>

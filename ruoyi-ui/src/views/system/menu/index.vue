@@ -27,6 +27,12 @@
             </el-select>
           </div>
         </div>
+        <div class="field">
+          <label>显示按钮</label>
+          <div class="control is-select">
+            <el-switch v-model="showButtons" @change="toggleShowButtons" />
+          </div>
+        </div>
       </div>
       <div class="filter-actions">
         <div class="filter-info">
@@ -98,7 +104,18 @@
          </el-table-column>
          <el-table-column prop="orderNum" label="排序" width="200">
             <template #default="scope">
-               <el-input-number v-model="scope.row.orderNum" controls-position="right" :min="0" style="width: 88px" />
+               <div class="sort-cell" @click="editingSortId = scope.row.menuId">
+                  <el-input-number
+                     v-if="editingSortId === scope.row.menuId"
+                     v-model="scope.row.orderNum"
+                     controls-position="right"
+                     :min="0"
+                     style="width: 88px"
+                     @blur="editingSortId = null"
+                     ref="sortInputRefs"
+                  />
+                  <span v-else class="sort-display">{{ scope.row.orderNum }}</span>
+               </div>
             </template>
          </el-table-column>
          <el-table-column prop="perms" label="权限标识" :show-overflow-tooltip="true" />
@@ -384,6 +401,23 @@ const isExpandAll = ref(false)
 const refreshTable = ref(true)
 const iconSelectRef = ref(null)
 const originalOrders = ref({})
+const editingSortId = ref(null)
+const sortInputRefs = ref([])
+const showButtons = ref(false)
+const rawMenuList = ref([])
+
+/** 点击排序单元格时自动聚焦输入框 */
+watch(editingSortId, (val) => {
+  if (val !== null) {
+    nextTick(() => {
+      const refArr = sortInputRefs.value
+      const inputEl = Array.isArray(refArr) ? refArr[0] : refArr
+      if (inputEl && inputEl.focus) {
+        inputEl.focus()
+      }
+    })
+  }
+})
 
 const data = reactive({
   form: {},
@@ -400,12 +434,31 @@ const data = reactive({
 
 const { queryParams, form, rules } = toRefs(data)
 
+/** 递归过滤按钮类型节点（不修改原始数据） */
+function filterOutButtons(list) {
+  return list
+    .filter(item => item.menuType !== 'F')
+    .map(item => {
+      const newItem = { ...item }
+      if (newItem.children && newItem.children.length) {
+        newItem.children = filterOutButtons(newItem.children)
+      }
+      return newItem
+    })
+}
+
+/** 根据开关状态应用过滤 */
+function applyButtonFilter() {
+  menuList.value = showButtons.value ? rawMenuList.value : filterOutButtons(rawMenuList.value)
+  recordOriginalOrders(menuList.value)
+}
+
 /** 查询菜单列表 */
 function getList() {
   loading.value = true
   listMenu(queryParams.value).then(response => {
-    menuList.value = proxy.handleTree(response.data, "menuId")
-    recordOriginalOrders(menuList.value)
+    rawMenuList.value = proxy.handleTree(response.data, "menuId")
+    applyButtonFilter()
     loading.value = false
   })
 }
@@ -456,6 +509,13 @@ function selected(name) {
 /** 搜索按钮操作 */
 function handleQuery() {
   getList()
+}
+
+/** 切换显示按钮（从前端缓存重新过滤，不重新请求后端） */
+function toggleShowButtons() {
+  if (rawMenuList.value.length) {
+    applyButtonFilter()
+  }
 }
 
 /** 重置按钮操作 */
@@ -742,6 +802,28 @@ getList()
 /* ===== Table ===== */
 .menu-page .table-wrap {
   overflow-x:auto;
+}
+
+/* ===== Sort Cell (click-to-edit) ===== */
+.menu-page .sort-cell {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  min-width: 88px;
+  min-height: 28px;
+  border-radius: var(--r-sm);
+  padding: 2px 6px;
+  margin-left: -6px;
+  transition: background .12s var(--ease-out);
+}
+.menu-page .sort-cell:hover {
+  background: var(--brand-50);
+}
+.menu-page .sort-display {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-700);
+  line-height: 24px;
 }
 .menu-page .app-table {
   --el-table-bg-color:#fff;

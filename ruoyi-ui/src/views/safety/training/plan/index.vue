@@ -112,7 +112,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" v-loading="loading" :data="planList" border @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
-          <el-table-column label="计划编号" prop="planCode" key="planCode" :width="colWidth('planCode', 156)" resizable v-if="columns.planCode.visible" />
+          undefined resizable sortable="custom" v-if="columns.planCode.visible" />
           <el-table-column label="计划名称" prop="planName" key="planName" :width="colWidth('planName', 240)" resizable show-overflow-tooltip v-if="columns.planName.visible" />
           <el-table-column label="计划类型" prop="planType" key="planType" :width="colWidth('planType', 132)" resizable align="center" v-if="columns.planType.visible">
             <template #default="scope">
@@ -638,6 +638,7 @@ getList()
 .safety-training-plan-page .badge.blue { background:var(--blue-50); color:var(--blue-700); border-color:#bfdbfe; } .safety-training-plan-page .badge.blue .dot { background:var(--blue-500); }
 .safety-training-plan-page .badge.green { background:var(--green-50); color:var(--green-700); border-color:#a7f3d0; } .safety-training-plan-page .badge.green .dot { background:var(--green-500); }
 .safety-training-plan-page .badge.gray { background:var(--ink-100); color:var(--ink-500); border-color:var(--ink-200); } .safety-training-plan-page .badge.gray .dot { background:var(--ink-400); }
+..safety-training-plan-page .badge.red { background:var(--red-50); color:var(--red-700); border-color:#fecaca; } ..safety-training-plan-page .badge.red .dot { background:var(--red-500); }
 .safety-training-plan-page .pagination-container { display:flex; align-items:center; justify-content:flex-end; padding:14px 20px; background:#fff; }
 @media (max-width:1100px) { .safety-training-plan-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }
 @media (max-width:720px) { .safety-training-plan-page .filter-card .filter-bar { grid-template-columns:1fr; } .safety-training-plan-page .status-tabs { overflow-x:auto; } }

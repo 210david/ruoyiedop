@@ -609,6 +609,9 @@ getList()
 .safety-training-record-page .badge.green { background:var(--green-50); color:var(--green-700); border-color:#a7f3d0; } .safety-training-record-page .badge.green .dot { background:var(--green-500); }
 .safety-training-record-page .badge.red { background:var(--red-50); color:var(--red-700); border-color:#fecaca; } .safety-training-record-page .badge.red .dot { background:var(--red-500); }
 .safety-training-record-page .badge.violet { background:var(--violet-50); color:var(--brand-700); border-color:var(--brand-200); }
+..safety-training-record-page .badge.amber { background:var(--amber-50); color:var(--amber-700); border-color:#fde68a; } ..safety-training-record-page .badge.amber .dot { background:var(--amber-500); }
+..safety-training-record-page .badge.blue { background:var(--blue-50); color:var(--blue-700); border-color:#bfdbfe; } ..safety-training-record-page .badge.blue .dot { background:var(--blue-500); }
+..safety-training-record-page .badge.gray { background:var(--ink-100); color:var(--ink-500); border-color:var(--ink-200); } ..safety-training-record-page .badge.gray .dot { background:var(--ink-400); }
 .safety-training-record-page .pagination-container { display:flex; align-items:center; justify-content:flex-end; padding:14px 20px; background:#fff; }
 @media (max-width:1100px) { .safety-training-record-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }
 @media (max-width:720px) { .safety-training-record-page .filter-card .filter-bar { grid-template-columns:1fr; } }

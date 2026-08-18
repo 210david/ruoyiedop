@@ -75,6 +75,8 @@
       <div class="toolbar">
         <div class="left">
           <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['safety:remind:handle']">删除</el-button>
+          <div class="toolbar-divider"></div>
+          <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['safety:remind:export']">导出</el-button>
         </div>
         <div class="right">
           <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="safety_remind_columns" />
@@ -330,6 +332,7 @@ function handleView(row) {
   })
 }
 
+function handleExport() { proxy.download('safety/remind/export', { ...queryParams }, `remind_${new Date().getTime()}.xlsx`) }
 function handleDelete(row) {
   const remindIds = row.remindId || ids.value
   proxy.$modal.confirm('是否确认删除提醒？').then(function() {

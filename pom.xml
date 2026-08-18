@@ -212,6 +212,13 @@
                 <version>${ruoyi.version}</version>
             </dependency>
 
+            <!-- MMS生产管控模块-->
+            <dependency>
+                <groupId>com.ruoyi</groupId>
+                <artifactId>ruoyi-mms</artifactId>
+                <version>${ruoyi.version}</version>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
 
@@ -228,6 +235,7 @@
         <module>ruoyi-pms</module>
         <module>ruoyi-qms</module>
         <module>ruoyi-safety</module>
+        <module>ruoyi-mms</module>
     </modules>
     <packaging>pom</packaging>
 

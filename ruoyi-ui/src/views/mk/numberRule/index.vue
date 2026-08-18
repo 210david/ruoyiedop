@@ -155,6 +155,7 @@
                     <el-option label="采购管理" value="pms" />
                     <el-option label="安全生产管理" value="safety" />
                     <el-option label="质量管理" value="qms" />
+                    <el-option label="生产管控" value="mms" />
                   </el-select>
                 </el-form-item>
               </el-col>
@@ -363,7 +364,7 @@ const currentModule = computed(() => route.query.module || 'mk')
 const presetRuleCode = computed(() => route.query.ruleCode || '')
 
 /** 模块名称映射 */
-const moduleNames = { mk: '营销管理', dms: '设备管理', wms: '仓储管理', pms: '采购管理', safety: '安全生产管理', qms: '质量管理' }
+const moduleNames = { mk: '营销管理', dms: '设备管理', wms: '仓储管理', pms: '采购管理', safety: '安全生产管理', qms: '质量管理', mms: '生产管控' }
 const currentModuleName = computed(() => moduleNames[currentModule.value] || '编号规则')
 
 /** 预设规则提示文案 */
@@ -426,7 +427,7 @@ const activeFilterCount = computed(() => {
 })
 
 function moduleLabel(val) {
-  const map = { mk: '营销管理', dms: '设备管理', wms: '仓储管理', pms: '采购管理', safety: '安全生产管理' }
+  const map = { mk: '营销管理', dms: '设备管理', wms: '仓储管理', pms: '采购管理', safety: '安全生产管理', qms: '质量管理', mms: '生产管控' }
   return map[val] || val || '-'
 }
 function resetTypeLabel(val) {

@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mms.mapper.MmsIssueMapper">
+
+    <resultMap type="MmsIssue" id="MmsIssueResult">
+                <id property="issueId" column="issue_id"/>
+<result property="issueNo"     column="issue_no"/>
+        <result property="workOrderId"     column="work_order_id"/>
+        <result property="workOrderNo"     column="work_order_no"/>
+        <result property="materialId"     column="material_id"/>
+        <result property="materialCode"     column="material_code"/>
+        <result property="materialName"     column="material_name"/>
+        <result property="specModel"     column="spec_model"/>
+        <result property="unit"     column="unit"/>
+        <result property="issueQty"     column="issue_qty"/>
+        <result property="batchNo"     column="batch_no"/>
+        <result property="issueTime"     column="issue_time"/>
+        <result property="issueBy"     column="issue_by"/>
+        <result property="status"     column="status"/>
+        <result property="delFlag"     column="del_flag"/>
+        <result property="createBy"     column="create_by"/>
+        <result property="createTime"     column="create_time"/>
+        <result property="updateBy"     column="update_by"/>
+        <result property="updateTime"     column="update_time"/>
+        <result property="remark"     column="remark"/>
+    </resultMap>
+
+    <sql id="selectIssueVo">
+        SELECT issue_id, issue_no, work_order_id, work_order_no, material_id, material_code, material_name, spec_model, unit, issue_qty, batch_no, issue_time, issue_by, status, del_flag, create_by, create_time, update_by, update_time, remark
+        FROM mms_issue
+    </sql>
+
+    <select id="selectIssueList" parameterType="MmsIssue" resultMap="MmsIssueResult">
+        <include refid="selectIssueVo"/>
+        <where>
+            del_flag = '0'
+            <if test="issueNo != null and issueNo != ''"> AND issue_no LIKE CONCAT('%', #{issue_no}, '%')</if>
+            <if test="workOrderNo != null and workOrderNo != ''"> AND work_order_no LIKE CONCAT('%', #{work_order_no}, '%')</if>
+            <if test="materialCode != null and materialCode != ''"> AND material_code LIKE CONCAT('%', #{material_code}, '%')</if>
+            <if test="materialName != null and materialName != ''"> AND material_name LIKE CONCAT('%', #{material_name}, '%')</if>
+            <if test="status != null and status != ''"> AND status = #{status}</if>
+            <if test="batchNo != null and batchNo != ''"> AND batch_no LIKE CONCAT('%', #{batch_no}, '%')</if>
+            <if test="params.beginTime != null and params.beginTime != ''"> AND date(create_time) &gt;= #{params.beginTime}</if>
+            <if test="params.endTime != null and params.endTime != ''"> AND date(create_time) &lt;= #{params.endTime}</if>
+        </where>
+        ORDER BY issue_id DESC
+    </select>
+
+    <select id="selectIssueById" parameterType="Long" resultMap="MmsIssueResult">
+        <include refid="selectIssueVo"/>
+        WHERE issue_id = #{issueId}
+    </select>
+
+    <insert id="insertIssue" parameterType="MmsIssue" useGeneratedKeys="true" keyProperty="issueId">
+        INSERT INTO mms_issue (
+            issue_no,
+            work_order_id,
+            work_order_no,
+            material_id,
+            material_code,
+            material_name,
+            spec_model,
+            unit,
+            issue_qty,
+            batch_no,
+            issue_time,
+            issue_by,
+            status,
+            del_flag,
+            create_by,
+            create_time,
+            update_by,
+            update_time,
+            remark
+        )VALUES(
+            #{issueNo},
+            #{workOrderId},
+            #{workOrderNo},
+            #{materialId},
+            #{materialCode},
+            #{materialName},
+            #{specModel},
+            #{unit},
+            #{issueQty},
+            #{batchNo},
+            #{issueTime},
+            #{issueBy},
+            #{status},
+            #{delFlag},
+            #{createBy},
+            #{createTime},
+            #{updateBy},
+            #{updateTime},
+            #{remark}
+        )
+    </insert>
+
+    <update id="updateIssue" parameterType="MmsIssue">
+        UPDATE mms_issue SET
+            issue_no = #{issueNo},
+            work_order_id = #{workOrderId},
+            work_order_no = #{workOrderNo},
+            material_id = #{materialId},
+            material_code = #{materialCode},
+            material_name = #{materialName},
+            spec_model = #{specModel},
+            unit = #{unit},
+            issue_qty = #{issueQty},
+            batch_no = #{batchNo},
+            issue_time = #{issueTime},
+            issue_by = #{issueBy},
+            status = #{status},
+            update_by = #{updateBy},
+            update_time = #{updateTime},
+            remark = #{remark}
+        WHERE issue_id = #{issueId}
+    </update>
+
+    <delete id="deleteIssueByIds" parameterType="Long">
+        UPDATE mms_issue SET del_flag = '2' WHERE issue_id IN
+        <foreach collection="array" item="issueId" open="(" separator="," close=")">
+            #{issueId}
+        </foreach>
+    </delete>
+</mapper>

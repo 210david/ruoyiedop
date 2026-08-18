@@ -403,6 +403,11 @@ getList()
 .safety-drill-page .app-table :deep(.el-table__inner-wrapper::before) { display:none; }
 .safety-drill-page .badge { display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:999px; font-size:13px; font-weight:600; line-height:1; border:1px solid transparent; }
 .safety-drill-page .badge.violet { background:var(--violet-50); color:var(--brand-700); border-color:var(--brand-200); }
+..safety-drill-page .badge.amber { background:var(--amber-50); color:var(--amber-700); border-color:#fde68a; } ..safety-drill-page .badge.amber .dot { background:var(--amber-500); }
+..safety-drill-page .badge.blue { background:var(--blue-50); color:var(--blue-700); border-color:#bfdbfe; } ..safety-drill-page .badge.blue .dot { background:var(--blue-500); }
+..safety-drill-page .badge.green { background:var(--green-50); color:var(--green-700); border-color:#a7f3d0; } ..safety-drill-page .badge.green .dot { background:var(--green-500); }
+..safety-drill-page .badge.red { background:var(--red-50); color:var(--red-700); border-color:#fecaca; } ..safety-drill-page .badge.red .dot { background:var(--red-500); }
+..safety-drill-page .badge.gray { background:var(--ink-100); color:var(--ink-500); border-color:var(--ink-200); } ..safety-drill-page .badge.gray .dot { background:var(--ink-400); }
 .safety-drill-page .pagination-container { display:flex; align-items:center; justify-content:flex-end; padding:14px 20px; background:#fff; }
 @media (max-width:1100px) { .safety-drill-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }
 @media (max-width:720px) { .safety-drill-page .filter-card .filter-bar { grid-template-columns:1fr; } }

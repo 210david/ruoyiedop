@@ -89,26 +89,27 @@
           <span class="toolbar-title">学时明细</span>
         </div>
         <div class="right">
-          <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" />
+          <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="safety_training_hours_columns" />
         </div>
       </div>
 
       <div class="table-wrap">
-        <el-table ref="tableRef" v-loading="loading" :data="hoursList" border @header-dragend="onHeaderDragEnd" class="app-table">
-          <el-table-column label="参训人员" prop="userName" key="userName" :width="colWidth('userName', 156)" resizable />
-          <el-table-column label="所属部门" prop="deptName" key="deptName" :width="colWidth('deptName', 192)" resizable show-overflow-tooltip />
-          <el-table-column label="累计学时" prop="totalHours" key="totalHours" :width="colWidth('totalHours', 144)" resizable align="center">
+        <el-table ref="tableRef" v-loading="loading" :data="hoursList" border @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
+          <el-table-column type="selection" width="55" align="center" />
+          <el-table-column label="参训人员" prop="userName" key="userName" :width="colWidth('userName', 156)" resizable v-if="columns.userName.visible" />
+          <el-table-column label="所属部门" prop="deptName" key="deptName" :width="colWidth('deptName', 192)" resizable show-overflow-tooltip v-if="columns.deptName.visible" />
+          <el-table-column label="累计学时" prop="totalHours" key="totalHours" :width="colWidth('totalHours', 144)" resizable align="center" sortable="custom" v-if="columns.totalHours.visible">
             <template #default="scope">
               <span class="hours-value">{{ scope.row.totalHours || 0 }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="参训次数" prop="attendCount" key="attendCount" :width="colWidth('attendCount', 144)" resizable align="center" />
-          <el-table-column label="合格次数" prop="passCount" key="passCount" :width="colWidth('passCount', 144)" resizable align="center">
+          <el-table-column label="参训次数" prop="attendCount" key="attendCount" :width="colWidth('attendCount', 144)" resizable align="center" v-if="columns.attendCount.visible" />
+          <el-table-column label="合格次数" prop="passCount" key="passCount" :width="colWidth('passCount', 144)" resizable align="center" v-if="columns.passCount.visible">
             <template #default="scope">
               <span class="pass-rate">{{ scope.row.passCount || 0 }} / {{ scope.row.attendCount || 0 }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="合格率" prop="passRate" key="passRate" :width="colWidth('passRate', 144)" resizable align="center">
+          <el-table-column label="合格率" prop="passRate" key="passRate" :width="colWidth('passRate', 144)" resizable align="center" v-if="columns.passRate.visible">
             <template #default="scope">
               <div class="pass-rate-bar">
                 <div class="pass-rate-fill" :style="{ width: calcPassRate(scope.row) + '%' }"></div>
@@ -116,7 +117,7 @@
               </div>
             </template>
           </el-table-column>
-          <el-table-column label="达标状态" key="compliance" :width="colWidth('compliance', 144)" resizable align="center">
+          <el-table-column label="达标状态" prop="compliance" key="compliance" :width="colWidth('compliance', 144)" resizable align="center" v-if="columns.compliance.visible">
             <template #default="scope">
               <span class="badge" :class="(scope.row.totalHours || 0) >= standardHours ? 'green' : 'red'">
                 <span class="dot"></span>{{ (scope.row.totalHours || 0) >= standardHours ? '达标' : '未达标' }}
@@ -148,6 +149,33 @@ const showSearch = ref(true)
 const showAdvanced = ref(false)
 const total = ref(0)
 const dateRange = ref([])
+
+const defaultColumns = {
+  userName: { label: '参训人员', visible: true },
+  deptName: { label: '所属部门', visible: true },
+  totalHours: { label: '累计学时', visible: true },
+  attendCount: { label: '参训次数', visible: true },
+  passCount: { label: '合格次数', visible: true },
+  passRate: { label: '合格率', visible: true },
+  compliance: { label: '达标状态', visible: true }
+}
+
+function loadColumnVisibility() {
+  try {
+    const saved = localStorage.getItem('safety_training_hours_columns')
+    if (saved) {
+      const parsed = JSON.parse(saved)
+      const result = {}
+      Object.keys(defaultColumns).forEach(key => {
+        result[key] = { label: defaultColumns[key].label, visible: parsed[key] !== undefined ? parsed[key] : defaultColumns[key].visible }
+      })
+      return result
+    }
+  } catch (e) {}
+  return { ...defaultColumns }
+}
+
+const columns = ref(loadColumnVisibility())
 
 /** 年度达标学时标准（可配置） */
 const standardHours = ref(24)
@@ -255,6 +283,11 @@ getList()
 .safety-training-hours-page .badge { display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:999px; font-size:13px; font-weight:600; line-height:1; border:1px solid transparent; }
 .safety-training-hours-page .badge .dot { width:6px; height:6px; border-radius:50%; }
 .safety-training-hours-page .badge.green { background:var(--green-50); color:var(--green-700); border-color:#a7f3d0; } .safety-training-hours-page .badge.green .dot { background:var(--green-500); }
+
+.safety-training-hours-page .badge.amber { background:var(--amber-50); color:var(--amber-700); border-color:#fde68a; } .safety-training-hours-page .badge.amber .dot { background:var(--amber-500); }
+.safety-training-hours-page .badge.blue { background:var(--blue-50); color:var(--blue-700); border-color:#bfdbfe; } .safety-training-hours-page .badge.blue .dot { background:var(--blue-500); }
+.safety-training-hours-page .badge.violet { background:var(--violet-50); color:var(--brand-700); border-color:var(--brand-200); }
+.safety-training-hours-page .badge.gray { background:var(--ink-100); color:var(--ink-500); border-color:var(--ink-200); } .safety-training-hours-page .badge.gray .dot { background:var(--ink-400); }
 .safety-training-hours-page .badge.red { background:var(--red-50); color:var(--red-700); border-color:#fecaca; } .safety-training-hours-page .badge.red .dot { background:var(--red-500); }
 .safety-training-hours-page .pagination-container { display:flex; align-items:center; justify-content:flex-end; padding:14px 20px; background:#fff; }
 @media (max-width:1100px) { .safety-training-hours-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } .safety-training-hours-page .summary-row { grid-template-columns:repeat(2,1fr); } }

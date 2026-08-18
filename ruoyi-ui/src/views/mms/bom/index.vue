@@ -1,0 +1,482 @@
+<template>
+  <div class="app-container mms-bom-page">
+    <div class="surface filter-card" v-show="showSearch">
+      <div class="filter-head"><div class="filter-title"><span class="glyph"></span> 筛选条件</div><a class="adv-link" :class="{ 'is-open': showAdvanced }" @click.prevent="showAdvanced = !showAdvanced"><span>{{ showAdvanced ? '收起' : '高级筛选' }}</span><el-icon class="chev"><ArrowDown /></el-icon></a></div>
+      <div class="filter-bar">
+        <div class="field"><label>BOM编号</label><div class="control"><el-input v-model="queryParams.bomNo" placeholder="请输入" clearable @keyup.enter="handleQuery"><template #prefix><el-icon><Search /></el-icon></template></el-input></div></div>
+        <div class="field"><label>BOM名称</label><div class="control"><el-input v-model="queryParams.bomName" placeholder="请输入" clearable @keyup.enter="handleQuery" /></div></div>
+        <div class="field"><label>产品编码</label><div class="control"><el-input v-model="queryParams.productCode" placeholder="请输入" clearable @keyup.enter="handleQuery" /></div></div>
+        <div class="field"><label>产品名称</label><div class="control"><el-input v-model="queryParams.productName" placeholder="请输入" clearable @keyup.enter="handleQuery" /></div></div>
+        <div class="field" v-show="showAdvanced"><label>BOM类型</label><div class="control is-select"><el-select v-model="queryParams.bomType" placeholder="全部" clearable @change="handleQuery"><el-option v-for="d in mms_bom_type" :key="d.value" :label="d.label" :value="d.value" /></el-select></div></div>
+        <div class="field" v-show="showAdvanced"><label>状态</label><div class="control is-select"><el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery"><el-option v-for="d in mms_bom_status" :key="d.value" :label="d.label" :value="d.value" /></el-select></div></div>
+        <div class="field" v-show="showAdvanced"><label>创建日期</label><div class="control"><el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" /></div></div>
+      </div>
+      <div class="filter-actions"><div class="filter-info"><el-icon><Filter /></el-icon> 已选 {{ activeFilterCount }} 个条件，支持回车快速搜索</div><div class="filter-buttons"><el-button icon="RefreshLeft" @click="resetQuery">重置</el-button><el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button></div></div>
+    </div>
+    <div class="surface">
+      <div class="status-tabs"><div class="tabs-track"><button class="status-tab" :class="{ 'is-active': activeStatusTab === 'all' }" @click="handleStatusTabClick('all')"><span class="dot"></span><span>全部</span><span class="count">{{ statusCounts.all || 0 }}</span></button><button v-for="s in statusTabList" :key="s.value" class="status-tab" :class="[{ 'is-active': activeStatusTab === s.value }, statusTabClass(s.value)]" @click="handleStatusTabClick(s.value)"><span class="dot"></span><span>{{ s.label }}</span><span class="count">{{ statusCounts[s.value] || 0 }}</span></button></div><button class="tip-pill" @click="showStatusHelp = true"><el-icon><WarningFilled /></el-icon><span>业务操作说明</span></button></div>
+      <div class="toolbar"><div class="left"><el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['mms:bom:add']">新增</el-button><el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['mms:bom:edit']">修改</el-button><el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['mms:bom:remove']">删除</el-button><div class="toolbar-divider"></div><el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['mms:bom:export']">导出</el-button></div><div class="right"><right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="mms_bom_columns" /></div></div>
+      <div class="table-wrap"><el-table ref="tableRef" v-loading="loading" :data="bomList" border @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" class="app-table"><el-table-column type="selection" width="55" align="center" /><el-table-column label="BOM编号" prop="bomNo" key="bomNo" :width="colWidth('bomNo', 140)" resizable v-if="columns.bomNo.visible" /><el-table-column label="BOM名称" prop="bomName" key="bomName" :width="colWidth('bomName', 200)" resizable show-overflow-tooltip v-if="columns.bomName.visible" /><el-table-column label="产品编码" prop="productCode" key="productCode" :width="colWidth('productCode', 130)" resizable v-if="columns.productCode.visible" /><el-table-column label="产品名称" prop="productName" key="productName" :width="colWidth('productName', 200)" resizable show-overflow-tooltip v-if="columns.productName.visible" /><el-table-column label="BOM类型" prop="bomType" key="bomType" :width="colWidth('bomType', 100)" resizable align="center" v-if="columns.bomType.visible"><template #default="scope"><span class="badge blue"><span class="dot"></span>{{ bomTypeLabel(scope.row.bomType) }}</span></template></el-table-column><el-table-column label="版本" prop="version" key="version" :width="colWidth('version', 80)" resizable align="center" v-if="columns.version.visible" /><el-table-column label="基准数量" prop="baseQty" key="baseQty" :width="colWidth('baseQty', 100)" resizable align="center" v-if="columns.baseQty.visible"><template #default="scope"><span>{{ scope.row.baseQty }} {{ scope.row.baseUnit }}</span></template></el-table-column><el-table-column label="状态" prop="status" key="status" :width="colWidth('status', 100)" resizable align="center" v-if="columns.status.visible"><template #default="scope"><span class="badge" :class="badgeClass(scope.row.status)"><span class="dot"></span>{{ statusLabel(scope.row.status) }}</span></template></el-table-column><el-table-column label="创建时间" prop="createTime" key="createTime" :width="colWidth('createTime', 160)" resizable align="center" v-if="columns.createTime.visible"><template #default="scope"><span>{{ parseTime(scope.row.createTime) }}</span></template></el-table-column><el-table-column label="操作" width="280" align="center" fixed="right"><template #default="scope"><el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-if="scope.row.status !== '1'" v-hasPermi="['mms:bom:edit']">修改</el-button><el-button link type="success" icon="Promotion" @click="handlePublish(scope.row)" v-if="scope.row.status === '0'" v-hasPermi="['mms:bom:edit']">发布</el-button><el-button link type="warning" icon="CopyDocument" @click="handleCopy(scope.row)" v-hasPermi="['mms:bom:add']">复制</el-button><el-button link type="primary" icon="View" @click="handleView(scope.row)">详情</el-button><el-button link type="info" icon="View" @click="handleViewTree(scope.row)">展开</el-button><el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-if="scope.row.status !== '1'" v-hasPermi="['mms:bom:remove']">删除</el-button></template></el-table-column></el-table></div>
+      <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+    </div>
+
+    <!-- 新增/修改对话框 -->
+    <el-dialog v-model="open" width="1100px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></div>
+          <span class="rd-detail-header-title">{{ title }}</span>
+          <div class="rd-detail-header-sub" v-if="form.bomNo">
+            <div class="rd-detail-header-divider"></div>
+            <span class="rd-detail-header-no">编号：{{ form.bomNo }}</span>
+          </div>
+        </div>
+      </template>
+      <el-form ref="bomRef" :model="form" :rules="rules" label-width="100px">
+        <div class="rd-page">
+          <!-- BOM标识 -->
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('c1')">
+              <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></span>BOM标识</div>
+              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.c1">
+              <el-row :gutter="20">
+                <el-col :span="8"><el-form-item label="BOM编号" prop="bomNo"><el-input v-model="form.bomNo" placeholder="请输入" /></el-form-item></el-col>
+                <el-col :span="8"><el-form-item label="BOM名称" prop="bomName"><el-input v-model="form.bomName" placeholder="请输入" /></el-form-item></el-col>
+                <el-col :span="8"><el-form-item label="BOM类型" prop="bomType"><el-select v-model="form.bomType" placeholder="请选择" style="width: 100%"><el-option v-for="d in mms_bom_type" :key="d.value" :label="d.label" :value="d.value" /></el-select></el-form-item></el-col>
+              </el-row>
+              <el-row :gutter="20">
+                <el-col :span="8"><el-form-item label="版本" prop="version"><el-input v-model="form.version" placeholder="请输入版本号" /></el-form-item></el-col>
+                <el-col :span="8"><el-form-item label="基准数量" prop="baseQty"><el-input-number v-model="form.baseQty" :min="0" :precision="2" :step="1" style="width: 100%" /></el-form-item></el-col>
+                <el-col :span="8"><el-form-item label="基准单位" prop="baseUnit"><el-select v-model="form.baseUnit" placeholder="请选择" style="width: 100%"><el-option v-for="d in wms_unit" :key="d.value" :label="d.label" :value="d.value" /></el-select></el-form-item></el-col>
+              </el-row>
+            </div>
+          </section>
+          <!-- 产品信息 -->
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('c2')">
+              <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h5a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z"/><path d="M3 7a2 2 0 0 1 2-2h5a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></span>产品信息</div>
+              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.c2">
+              <el-row :gutter="20">
+                <el-col :span="8"><el-form-item label="产品编码" prop="productCode"><el-input v-model="form.productCode" readonly placeholder="请选择产品" style="width: 100%" @click="openProductPicker"><template #append><el-button icon="Search" @click="openProductPicker" /></template></el-input></el-form-item></el-col>
+                <el-col :span="16"><el-form-item label="产品名称" prop="productName"><el-input v-model="form.productName" placeholder="请选择产品" readonly /></el-form-item></el-col>
+              </el-row>
+            </div>
+          </section>
+          <!-- BOM明细 -->
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('c4')">
+              <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></span>BOM明细（子件物料）</div>
+              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c4 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.c4">
+              <div class="detail-toolbar"><el-button type="primary" plain icon="Plus" size="small" @click="handleAddDetail">添加物料行</el-button><span class="detail-tip">子项物料如本身也有BOM，可在"引用BOM"列关联，支持多层级展开</span></div>
+              <el-table :data="form.detailList" border size="small" class="detail-table" max-height="400">
+                <el-table-column label="序号" width="55" align="center"><template #default="scope">{{ scope.$index + 1 }}</template></el-table-column>
+                <el-table-column label="物料编码" width="140"><template #default="scope"><el-input v-model="scope.row.materialCode" readonly size="small" placeholder="选择物料" @click="openMaterialPicker(scope.$index)"><template #append><el-button icon="Search" size="small" @click="openMaterialPicker(scope.$index)" /></template></el-input></template></el-table-column>
+                <el-table-column label="物料名称" width="150" show-overflow-tooltip><template #default="scope"><span>{{ scope.row.materialName }}</span></template></el-table-column>
+                <el-table-column label="规格型号" width="110" show-overflow-tooltip><template #default="scope"><span>{{ scope.row.specModel }}</span></template></el-table-column>
+                <el-table-column label="单位" width="60" align="center"><template #default="scope"><span>{{ unitLabel(scope.row.unit) }}</span></template></el-table-column>
+                <el-table-column label="单件用量" width="110"><template #default="scope"><el-input-number v-model="scope.row.usageQty" :min="0" :precision="2" :step="0.1" size="small" controls-position="right" style="width: 100%" /></template></el-table-column>
+                <el-table-column label="损耗率(%)" width="90"><template #default="scope"><el-input-number v-model="scope.row.lossRate" :min="0" :max="100" :precision="2" :step="1" size="small" controls-position="right" style="width: 100%" /></template></el-table-column>
+                <el-table-column label="关键料" width="60" align="center"><template #default="scope"><el-checkbox v-model="scope.row.isKeyMaterial" true-value="1" false-value="0" /></template></el-table-column>
+                <el-table-column label="供应方式" width="110"><template #default="scope"><el-select v-model="scope.row.supplyType" size="small" style="width: 100%"><el-option v-for="d in mms_supply_type" :key="d.value" :label="d.label" :value="d.value" /></el-select></template></el-table-column>
+                <el-table-column label="虚拟件" width="60" align="center"><template #default="scope"><el-checkbox v-model="scope.row.isPhantom" true-value="1" false-value="0" /></template></el-table-column>
+                <el-table-column label="引用BOM" width="130"><template #default="scope"><el-input v-model="scope.row.bomRefNo" readonly size="small" placeholder="半成品关联" @click="openBomRefPicker(scope.$index)"><template #append><el-button icon="Search" size="small" @click="openBomRefPicker(scope.$index)" /></template></el-input></template></el-table-column>
+                <el-table-column label="操作" width="60" align="center" fixed="right"><template #default="scope"><el-button link type="danger" icon="Delete" size="small" @click="handleDeleteDetail(scope.$index)" /></template></el-table-column>
+              </el-table>
+              <div v-if="!form.detailList || form.detailList.length === 0" class="empty-detail"><el-empty description="暂无明细，请点击「添加物料行」" :image-size="60" /></div>
+            </div>
+          </section>
+          <!-- 状态与生效 -->
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('c3')">
+              <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>状态与生效</div>
+              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c3 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.c3">
+              <el-row :gutter="20">
+                <el-col :span="12"><el-form-item label="状态" prop="status"><el-select v-model="form.status" placeholder="请选择" style="width: 100%" :disabled="form.status === '1'"><el-option v-for="d in mms_bom_status" :key="d.value" :label="d.label" :value="d.value" /></el-select></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="生效日期" prop="effectiveDate"><el-date-picker v-model="form.effectiveDate" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" style="width: 100%" /></el-form-item></el-col>
+              </el-row>
+            </div>
+          </section>
+          <!-- 附加信息 -->
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('c0')">
+              <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>附加信息</div>
+              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c0 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.c0">
+              <el-row :gutter="20">
+                <el-col :span="24"><el-form-item label="备注" prop="remark"><el-input v-model="form.remark" type="textarea" :rows="3" placeholder="请输入备注信息" /></el-form-item></el-col>
+              </el-row>
+            </div>
+          </section>
+        </div>
+      </el-form>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button type="primary" @click="submitForm">确 定</el-button>
+          <el-button @click="cancel">取 消</el-button>
+        </div>
+      </template>
+    </el-dialog>
+
+    <!-- BOM详情查看对话框 -->
+    <el-dialog v-model="viewOpen" width="1100px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></div>
+          <span class="rd-detail-header-title">BOM详情</span>
+          <div class="rd-detail-header-sub" v-if="viewData.bomNo">
+            <div class="rd-detail-header-divider"></div>
+            <span class="rd-detail-header-no">编号：{{ viewData.bomNo }}</span>
+          </div>
+        </div>
+      </template>
+      <div class="rd-page" v-loading="viewLoading">
+        <!-- BOM标识 -->
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('vc1')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></span>BOM标识</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.vc1" style="display:block">
+            <div class="rd-grid">
+              <div class="rd-item"><span class="rd-label">BOM编号</span><div class="rd-value">{{ viewData.bomNo || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">BOM名称</span><div class="rd-value">{{ viewData.bomName || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">BOM类型</span><div class="rd-value"><span class="badge blue"><span class="dot"></span>{{ bomTypeLabel(viewData.bomType) }}</span></div></div>
+              <div class="rd-item"><span class="rd-label">版本</span><div class="rd-value">{{ viewData.version || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">基准数量</span><div class="rd-value">{{ viewData.baseQty != null ? viewData.baseQty : '-' }} {{ unitLabel(viewData.baseUnit) }}</div></div>
+              <div class="rd-item"><span class="rd-label">状态</span><div class="rd-value"><span class="badge" :class="badgeClass(viewData.status)"><span class="dot"></span>{{ statusLabel(viewData.status) }}</span></div></div>
+            </div>
+          </div>
+        </section>
+        <!-- 产品信息 -->
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('vc2')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h5a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z"/><path d="M3 7a2 2 0 0 1 2-2h5a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></span>产品信息</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.vc2" style="display:block">
+            <div class="rd-grid">
+              <div class="rd-item"><span class="rd-label">产品编码</span><div class="rd-value">{{ viewData.productCode || '-' }}</div></div>
+              <div class="rd-item rd-item--full"><span class="rd-label">产品名称</span><div class="rd-value">{{ viewData.productName || '-' }}</div></div>
+            </div>
+          </div>
+        </section>
+        <!-- BOM明细 -->
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('vc4')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></span>BOM明细（子件物料）</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc4 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.vc4" style="display:block">
+            <el-table :data="viewData.detailList" border size="small" class="app-table" max-height="400">
+              <el-table-column label="序号" width="55" align="center"><template #default="scope">{{ scope.$index + 1 }}</template></el-table-column>
+              <el-table-column label="物料编码" prop="materialCode" width="140" show-overflow-tooltip />
+              <el-table-column label="物料名称" prop="materialName" min-width="150" show-overflow-tooltip />
+              <el-table-column label="规格型号" prop="specModel" width="120" show-overflow-tooltip />
+              <el-table-column label="单位" prop="unit" width="70" align="center"><template #default="scope">{{ unitLabel(scope.row.unit) }}</template></el-table-column>
+              <el-table-column label="单件用量" prop="usageQty" width="110" align="center" />
+              <el-table-column label="损耗率(%)" prop="lossRate" width="100" align="center" />
+              <el-table-column label="关键料" width="70" align="center"><template #default="scope"><el-tag v-if="scope.row.isKeyMaterial === '1'" type="danger" size="small">是</el-tag><span v-else>否</span></template></el-table-column>
+              <el-table-column label="供应方式" width="100" align="center"><template #default="scope">{{ supplyTypeLabel(scope.row.supplyType) }}</template></el-table-column>
+              <el-table-column label="虚拟件" width="70" align="center"><template #default="scope"><el-tag v-if="scope.row.isPhantom === '1'" type="warning" size="small">是</el-tag><span v-else>否</span></template></el-table-column>
+              <el-table-column label="引用BOM" prop="bomRefNo" width="120" show-overflow-tooltip />
+              <template #empty><el-empty description="暂无明细数据" :image-size="60" /></template>
+            </el-table>
+          </div>
+        </section>
+        <!-- 状态与生效 -->
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('vc3')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>状态与生效</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc3 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.vc3" style="display:block">
+            <div class="rd-grid">
+              <div class="rd-item"><span class="rd-label">状态</span><div class="rd-value"><span class="badge" :class="badgeClass(viewData.status)"><span class="dot"></span>{{ statusLabel(viewData.status) }}</span></div></div>
+              <div class="rd-item"><span class="rd-label">生效日期</span><div class="rd-value">{{ viewData.effectiveDate || '-' }}</div></div>
+            </div>
+          </div>
+        </section>
+        <!-- 附加信息 -->
+        <section class="rd-card" v-if="viewData.remark">
+          <div class="rd-card-header" @click="toggleCard('vc0')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>附加信息</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc0 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.vc0" style="display:block">
+            <div class="rd-grid">
+              <div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value">{{ viewData.remark || '-' }}</div></div>
+            </div>
+          </div>
+        </section>
+      </div>
+      <template #footer>
+        <el-button @click="viewOpen = false">关 闭</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- BOM多层级展开对话框 -->
+    <el-dialog v-model="treeOpen" width="1000px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/><path d="M6 15l6 6 6-6"/></svg></div>
+          <span class="rd-detail-header-title">BOM多层级展开 - {{ treeBomNo }}</span>
+        </div>
+      </template>
+      <el-table v-loading="treeLoading" :data="treeData" border size="small" class="app-table" max-height="500">
+        <el-table-column label="层级" width="60" align="center"><template #default="scope"><span class="level-badge" :class="'level-' + scope.row.treeLevel">{{ scope.row.treeLevel }}</span></template></el-table-column>
+        <el-table-column label="物料编码" prop="materialCode" width="140" show-overflow-tooltip />
+        <el-table-column label="物料名称" prop="materialName" min-width="180" show-overflow-tooltip />
+        <el-table-column label="规格型号" prop="specModel" width="120" show-overflow-tooltip />
+        <el-table-column label="单位" prop="unit" width="70" align="center"><template #default="scope">{{ unitLabel(scope.row.unit) }}</template></el-table-column>
+        <el-table-column label="单件用量" prop="usageQty" width="110" align="center" />
+        <el-table-column label="损耗率(%)" prop="lossRate" width="100" align="center" />
+        <el-table-column label="关键料" width="70" align="center"><template #default="scope"><el-tag v-if="scope.row.isKeyMaterial === '1'" type="danger" size="small">是</el-tag><span v-else>否</span></template></el-table-column>
+        <el-table-column label="供应方式" width="100" align="center"><template #default="scope">{{ supplyTypeLabel(scope.row.supplyType) }}</template></el-table-column>
+        <el-table-column label="引用BOM" prop="bomRefNo" width="120" show-overflow-tooltip />
+      </el-table>
+      <template #footer>
+        <el-button @click="treeOpen = false">关 闭</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 物料选择器 -->
+    <material-picker ref="materialPickerRef" title="选择物料" @confirm="onMaterialPickerConfirm" />
+    <!-- 产品选择器 -->
+    <material-picker ref="productPickerRef" title="选择产品" @confirm="onProductPickerConfirm" />
+
+    <!-- BOM引用选择器 -->
+    <el-dialog v-model="bomRefOpen" width="800px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></div>
+          <span class="rd-detail-header-title">选择引用BOM（半成品）</span>
+        </div>
+      </template>
+      <el-table v-loading="bomRefLoading" :data="bomRefList" border size="small" highlight-current-row @row-click="onBomRefRowClick" height="400">
+        <el-table-column width="45" align="center"><template #default="{ row }"><el-radio :model-value="selectedBomRefId" :value="row.bomId" @click.stop><span /></el-radio></template></el-table-column>
+        <el-table-column label="BOM编号" prop="bomNo" width="140" show-overflow-tooltip />
+        <el-table-column label="BOM名称" prop="bomName" min-width="180" show-overflow-tooltip />
+        <el-table-column label="产品编码" prop="productCode" width="120" />
+        <el-table-column label="产品名称" prop="productName" min-width="150" show-overflow-tooltip />
+        <el-table-column label="版本" prop="version" width="70" align="center" />
+      </el-table>
+      <template #footer>
+        <el-button @click="bomRefOpen = false">取 消</el-button>
+        <el-button type="primary" @click="confirmBomRef" :disabled="!selectedBomRefId">确 定</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 业务说明 -->
+    <el-dialog v-model="showStatusHelp" width="860px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></div>
+          <span class="rd-detail-header-title">BOM管理业务操作说明</span>
+        </div>
+      </template>
+      <div class="status-help-content">
+        <h4>一、BOM释义</h4>
+        <div class="highlight-card highlight-primary">
+          <div class="highlight-card-title">什么是BOM？</div>
+          <div class="highlight-card-body">
+            <strong>BOM（Bill of Materials，物料清单）</strong>是生产管控中定义产品组成结构和用量关系的核心主数据。BOM列出了生产一个产品所需的所有原材料、半成品、零件及其数量关系，是物料需求计划（MRP）和工单发料的基础依据。<br/><br/>
+            支持多层级BOM结构（半成品嵌套）、基准数量（批量BOM）、供应方式（直接领料/倒冲/车间库存）、版本发布管理，确保生产过程中使用正确的物料清单，支持成本核算和物料追溯。
+          </div>
+        </div>
+        <h4>二、重点业务规则</h4>
+        <div class="highlight-card highlight-warning">
+          <div class="highlight-card-title">核心规则</div>
+          <div class="highlight-card-body">
+            <p>• <strong>BOM编号：</strong>唯一标识每个BOM，便于引用和管理</p>
+            <p>• <strong>版本管理：</strong>支持版本号管理，可通过「复制」创建新版本</p>
+            <p>• <strong>状态流转：</strong>草稿 → 已发布 → 停用，已发布后不可修改</p>
+            <p>• <strong>唯一发布版：</strong>同一产品同时仅一个已发布版本</p>
+            <p>• <strong>多层级BOM：</strong>明细中引用其他BOM可递归展开（最深3层）</p>
+            <p>• <strong>基准数量：</strong>支持批量BOM（如生产100个产品的用量）</p>
+          </div>
+        </div>
+        <h4>三、业务操作流程</h4>
+        <el-timeline>
+          <el-timeline-item type="primary" :hollow="true"><strong>创建BOM：</strong>点击「新增」创建BOM，填写产品信息、版本号和基准数量</el-timeline-item>
+          <el-timeline-item type="warning" :hollow="true"><strong>维护明细：</strong>在BOM明细中添加组成物料及其用量关系，子项为半成品时可引用其BOM</el-timeline-item>
+          <el-timeline-item type="success" :hollow="true"><strong>发布BOM：</strong>点击「发布」，BOM状态变为已发布，可被工单引用</el-timeline-item>
+          <el-timeline-item type="info" :hollow="true"><strong>多层级展开：</strong>点击「展开」查看BOM的完整多层级物料树</el-timeline-item>
+        </el-timeline>
+      </div>
+      <template #footer>
+        <el-button type="primary" @click="showStatusHelp = false">我知道了</el-button>
+      </template>
+    </el-dialog>
+  </div>
+</template>
+
+<script setup name="Bom">
+import { listBom, getBom, addBom, updateBom, delBom, publishBom, copyBom, getBomTree } from "@/api/mms/bom";
+import { useColumnResize } from '@/composables/useColumnResize'
+import { useDetailCard } from '@/composables/useDetailCard'
+import { Search, Filter, RefreshLeft, ArrowDown, WarningFilled } from '@element-plus/icons-vue'
+import MaterialPicker from '@/components/MaterialPicker/index.vue'
+
+const { collapsedCards, toggleCard } = useDetailCard(['c1', 'c2', 'c3', 'c4', 'c0', 'vc0', 'vc1', 'vc2', 'vc3', 'vc4'])
+
+const { proxy } = getCurrentInstance();
+const { mms_bom_type, mms_bom_status, mms_supply_type, wms_unit } = proxy.useDict("mms_bom_type", "mms_bom_status", "mms_supply_type", "wms_unit");
+const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('mms_bom_index')
+
+const bomList = ref([]); const open = ref(false); const loading = ref(true); const showSearch = ref(true); const showAdvanced = ref(false);
+const ids = ref([]); const single = ref(true); const multiple = ref(true); const total = ref(0); const title = ref("");
+const dateRange = ref([]); const activeStatusTab = ref("all"); const statusCounts = ref({}); const showStatusHelp = ref(false);
+const treeOpen = ref(false); const treeLoading = ref(false); const treeData = ref([]); const treeBomNo = ref("");
+const viewOpen = ref(false); const viewLoading = ref(false); const viewData = ref({});
+const bomRefOpen = ref(false); const bomRefLoading = ref(false); const bomRefList = ref([]); const selectedBomRefId = ref(null);
+const currentDetailIndex = ref(-1); const materialPickerRef = ref(null); const productPickerRef = ref(null);
+
+const statusTabList = computed(() => mms_bom_status.value ? mms_bom_status.value.map(d => ({ label: d.label, value: d.value })) : []);
+const defaultColumns = { bomNo: { label: 'BOM编号', visible: true }, bomName: { label: 'BOM名称', visible: true }, productCode: { label: '产品编码', visible: true }, productName: { label: '产品名称', visible: true }, bomType: { label: 'BOM类型', visible: true }, version: { label: '版本', visible: true }, baseQty: { label: '基准数量', visible: true }, status: { label: '状态', visible: true }, createTime: { label: '创建时间', visible: true } }
+function loadColumnVisibility() { try { const saved = localStorage.getItem('mms_bom_columns'); if (saved) { const parsed = JSON.parse(saved); const result = {}; Object.keys(defaultColumns).forEach(key => { result[key] = { label: defaultColumns[key].label, visible: parsed[key] !== undefined ? parsed[key] : defaultColumns[key].visible } }); return result } } catch (e) {} return { ...defaultColumns } }
+const columns = ref(loadColumnVisibility())
+const activeFilterCount = computed(() => { let c = 0; if (queryParams.value.bomNo) c++; if (queryParams.value.bomName) c++; if (queryParams.value.productCode) c++; if (queryParams.value.productName) c++; if (queryParams.value.bomType) c++; if (queryParams.value.status) c++; if (dateRange.value && dateRange.value.length === 2) c++; return c; });
+
+const data = reactive({ form: { detailList: [] }, queryParams: { pageNum: 1, pageSize: 10, bomNo: undefined, bomName: undefined, productCode: undefined, productName: undefined, bomType: undefined, status: undefined, params: {} }, rules: { bomNo: [{ required: true, message: "BOM编号不能为空", trigger: "blur" }], bomName: [{ required: true, message: "BOM名称不能为空", trigger: "blur" }] } });
+const { queryParams, form, rules } = toRefs(data);
+
+function getList() { loading.value = true; listBom(proxy.addDateRange(queryParams.value, dateRange.value)).then(response => { bomList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths(); updateStatusCounts(response.rows); }); }
+function updateStatusCounts(rows) { const counts = { all: total.value }; if (mms_bom_status.value) { mms_bom_status.value.forEach(d => { counts[d.value] = rows.filter(r => r.status === d.value).length; }); } statusCounts.value = counts; }
+function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList(); }
+function resetQuery() { queryParams.value.bomNo = undefined; queryParams.value.bomName = undefined; queryParams.value.productCode = undefined; queryParams.value.productName = undefined; queryParams.value.bomType = undefined; queryParams.value.status = undefined; dateRange.value = []; queryParams.value.params = {}; activeStatusTab.value = 'all'; handleQuery(); }
+function handleStatusTabClick(status) { activeStatusTab.value = status; queryParams.value.status = status === "all" ? undefined : status; handleQuery(); }
+function statusTabClass(status) { const map = { '0': 'tab-draft', '1': 'tab-done', '2': 'tab-void' }; return map[status] || ''; }
+function handleSelectionChange(selection) { ids.value = selection.map(item => item.bomId); single.value = selection.length !== 1; multiple.value = !selection.length; }
+function reset() { form.value = { bomId: null, bomNo: undefined, bomName: undefined, productId: undefined, productCode: undefined, productName: undefined, bomType: "0", version: "1.0", baseQty: 1, baseUnit: undefined, status: "0", effectiveDate: undefined, remark: undefined, detailList: [] }; proxy.resetForm("bomRef"); }
+function handleAdd() { reset(); open.value = true; title.value = "新增BOM"; }
+function handleUpdate(row) { reset(); const bomId = row.bomId || ids.value[0]; getBom(bomId).then(response => { form.value = response.data; if (!form.value.detailList) { form.value.detailList = []; } open.value = true; title.value = "修改BOM"; }); }
+function submitForm() { proxy.$refs["bomRef"].validate(valid => { if (valid) { if (form.value.bomId != null) { updateBom(form.value).then(() => { proxy.$modal.msgSuccess("修改成功"); open.value = false; getList(); }); } else { addBom(form.value).then(() => { proxy.$modal.msgSuccess("新增成功"); open.value = false; getList(); }); } } }); }
+function cancel() { open.value = false; reset(); }
+function handleDelete(row) { const bomIds = row.bomId || ids.value; proxy.$modal.confirm('是否确认删除选中的BOM？').then(() => delBom(bomIds)).then(() => { getList(); proxy.$modal.msgSuccess("删除成功"); }).catch(() => {}); }
+function handleExport() { proxy.download("mms/bom/export", { ...queryParams.value }, `bom_${new Date().getTime()}.xlsx`); }
+function bomTypeLabel(type) { const item = mms_bom_type.value.find(d => d.value == type); return item ? item.label : '-' }
+function statusLabel(status) { const item = mms_bom_status.value.find(d => d.value == status); return item ? item.label : '-' }
+function supplyTypeLabel(type) { const item = mms_supply_type.value.find(d => d.value == type); return item ? item.label : '-' }
+function unitLabel(unit) { const item = wms_unit.value.find(d => d.value == unit); return item ? item.label : (unit || '-') }
+function badgeClass(status) { const map = { '0': 'amber', '1': 'green', '2': 'gray' }; return map[status] || 'gray'; }
+
+/* ===== BOM详情查看 ===== */
+function handleView(row) { const bomId = row.bomId || ids.value[0]; viewLoading.value = true; viewOpen.value = true; getBom(bomId).then(response => { viewData.value = response.data; if (!viewData.value.detailList) { viewData.value.detailList = []; } viewLoading.value = false; }); }
+
+/* ===== BOM发布 ===== */
+function handlePublish(row) { proxy.$modal.confirm('是否确认发布BOM[' + row.bomNo + ']？发布后不可修改。').then(() => publishBom(row.bomId)).then(() => { proxy.$modal.msgSuccess("发布成功"); getList(); }).catch(() => {}); }
+
+/* ===== BOM复制 ===== */
+function handleCopy(row) { proxy.$modal.confirm('是否确认复制BOM[' + row.bomNo + ']为新版本？').then(() => copyBom(row.bomId)).then(() => { proxy.$modal.msgSuccess("复制成功"); getList(); }).catch(() => {}); }
+
+/* ===== BOM多层级展开 ===== */
+function handleViewTree(row) { treeOpen.value = true; treeBomNo.value = row.bomNo; treeLoading.value = true; getBomTree(row.bomId).then(response => { treeData.value = response.data || []; treeLoading.value = false; }); }
+
+/* ===== BOM明细行操作 ===== */
+function handleAddDetail() { form.value.detailList.push({ detailId: null, seq: (form.value.detailList.length + 1) * 10, materialId: undefined, materialCode: '', materialName: '', specModel: '', unit: '', usageQty: 1, lossRate: 0, isKeyMaterial: '0', supplyType: '1', pickStoreId: undefined, isPhantom: '0', bomRefId: undefined, bomRefNo: '' }); }
+function handleDeleteDetail(index) { form.value.detailList.splice(index, 1); }
+
+/* ===== 物料选择器 ===== */
+function openMaterialPicker(index) { currentDetailIndex.value = index; materialPickerRef.value.open(form.value.detailList[index].materialId); }
+function onMaterialPickerConfirm(material) { if (currentDetailIndex.value >= 0) { const d = form.value.detailList[currentDetailIndex.value]; d.materialId = material.materialId; d.materialCode = material.materialCode; d.materialName = material.materialName; d.specModel = material.specModel || ''; d.unit = material.unit || ''; } }
+
+/* ===== 产品选择器 ===== */
+function openProductPicker() { productPickerRef.value.open(form.value.productId); }
+function onProductPickerConfirm(material) { form.value.productId = material.materialId; form.value.productCode = material.materialCode; form.value.productName = material.materialName; if (!form.value.baseUnit) { form.value.baseUnit = material.unit || ''; } }
+
+/* ===== BOM引用选择器 ===== */
+function openBomRefPicker(index) { currentDetailIndex.value = index; bomRefOpen.value = true; bomRefLoading.value = true; selectedBomRefId.value = form.value.detailList[index].bomRefId || null; listBom({ status: '1', pageSize: 100 }).then(response => { bomRefList.value = response.rows || []; bomRefLoading.value = false; }); }
+function onBomRefRowClick(row) { selectedBomRefId.value = row.bomId; }
+function confirmBomRef() { if (selectedBomRefId.value) { const row = bomRefList.value.find(r => r.bomId === selectedBomRefId.value); if (row && currentDetailIndex.value >= 0) { const d = form.value.detailList[currentDetailIndex.value]; d.bomRefId = row.bomId; d.bomRefNo = row.bomNo; } } bomRefOpen.value = false; }
+
+getList();
+</script>
+
+<style scoped>
+.mms-bom-page{padding-top:10px;--brand-50:#eef2ff;--brand-100:#e0e7ff;--brand-200:#c7d2fe;--brand-500:#6366f1;--brand-600:#4f46e5;--brand-700:#4338ca;--ink-900:#0f172a;--ink-700:#334155;--ink-500:#64748b;--ink-400:#94a3b8;--ink-300:#cbd5e1;--ink-200:#e2e8f0;--ink-100:#f1f5f9;--ink-50:#f8fafc;--amber-50:#fffbeb;--amber-500:#f59e0b;--amber-700:#b45309;--blue-50:#eff6ff;--blue-500:#3b82f6;--blue-700:#1d4ed8;--green-50:#ecfdf5;--green-500:#10b981;--green-700:#047857;--red-50:#fef2f2;--red-500:#ef4444;--red-700:#b91c1c;--r-sm:6px;--r-md:10px;--r-lg:14px;--shadow-card:0 1px 0 rgba(15,23,42,.04),0 1px 2px rgba(15,23,42,.04);--ease-out:cubic-bezier(.16,.84,.44,1);font-feature-settings:"tnum" 1;color:var(--ink-900)}
+.mms-bom-page .surface { background:#fff; border:1px solid var(--ink-200); border-radius:var(--r-lg); box-shadow:var(--shadow-card); overflow:hidden; margin-bottom:8px; }
+.mms-bom-page .filter-card { padding:14px 20px 16px; }
+.mms-bom-page .filter-card .filter-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+.mms-bom-page .filter-card .filter-title { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--ink-700); }
+.mms-bom-page .filter-card .filter-title .glyph { width:4px; height:14px; background:var(--brand-600); border-radius:2px; }
+.mms-bom-page .filter-card .adv-link { font-size:14px; color:var(--ink-500); text-decoration:none; display:flex; align-items:center; gap:4px; transition:color .15s; cursor:pointer; }
+.mms-bom-page .filter-card .adv-link:hover { color:var(--brand-600); }
+.mms-bom-page .filter-card .adv-link .chev { transition:transform .2s var(--ease-out); }
+.mms-bom-page .filter-card .adv-link.is-open .chev { transform:rotate(180deg); }
+.mms-bom-page .filter-card .filter-bar { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px 16px; }
+.mms-bom-page .filter-card .filter-actions { display:flex; align-items:center; justify-content:space-between; margin-top:14px; padding-top:14px; border-top:1px dashed var(--ink-200); }
+.mms-bom-page .filter-card .filter-info { font-size:13px; color:var(--ink-500); display:flex; align-items:center; gap:6px; }
+.mms-bom-page .filter-card .filter-buttons { display:flex; gap:8px; }
+.mms-bom-page .field { display:flex; flex-direction:column; gap:6px; }
+.mms-bom-page .field label { font-size:14px; font-weight:500; color:var(--ink-700); }
+.mms-bom-page .field .control { display:flex; align-items:center; height:36px; padding:0 12px; background:#fff; border:1px solid var(--ink-200); border-radius:var(--r-sm); }
+.mms-bom-page .field .control:focus-within { border-color:var(--brand-500); box-shadow:0 0 0 3px rgba(99,102,241,.15); }
+.mms-bom-page .field .control :deep(.el-input__wrapper) { box-shadow:none !important; background:transparent !important; padding:0; height:34px; }
+.mms-bom-page .field .control :deep(.el-input__inner) { border:0; background:transparent; font-size:14px; color:var(--ink-900); height:34px; line-height:34px; }
+.mms-bom-page .field .control :deep(.el-input__inner::placeholder) { color:var(--ink-400); }
+.mms-bom-page .field .control :deep(.el-input__prefix) { color:var(--ink-400); margin-right:4px; }
+.mms-bom-page .field .control :deep(.el-select) { width:100%; }
+.mms-bom-page .field .control :deep(.el-select .el-select__wrapper) { box-shadow:none !important; background:transparent !important; padding:0; min-height:34px; height:34px; }
+.mms-bom-page .toolbar { display:flex; align-items:center; justify-content:space-between; padding:12px 20px; border-bottom:1px solid var(--ink-200); background:var(--ink-50); }
+.mms-bom-page .toolbar .left, .mms-bom-page .toolbar .right { display:flex; gap:8px; align-items:center; }
+.mms-bom-page .toolbar-divider { width:1px; height:18px; background:var(--ink-200); margin:0 4px; }
+.mms-bom-page .table-wrap { overflow-x:auto; }
+.mms-bom-page .app-table { --el-table-bg-color:#fff; --el-table-header-bg-color:var(--ink-50); --el-table-row-hover-bg-color:#fafbff; --el-table-border-color:transparent; --el-table-text-color:var(--ink-700); --el-table-header-text-color:var(--ink-500); }
+.mms-bom-page .app-table :deep(.el-table__body td) { border-right-color:transparent !important; }
+.mms-bom-page .app-table :deep(.el-table__header th) { border-right-color:transparent !important; background:var(--ink-50) !important; color:var(--ink-500); font-weight:600; font-size:14px; padding:12px 16px; border-bottom:1px solid var(--ink-200); }
+.mms-bom-page .app-table :deep(.el-table__body td) { padding:14px 16px; border-bottom:1px solid var(--ink-100); color:var(--ink-700); }
+.mms-bom-page .app-table :deep(.el-table__inner-wrapper::before) { display:none; }
+.mms-bom-page .badge { display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:999px; font-size:13px; font-weight:600; line-height:1; border:1px solid transparent; }
+.mms-bom-page .badge .dot { width:6px; height:6px; border-radius:50%; }
+.mms-bom-page .badge.amber { background:var(--amber-50); color:var(--amber-700); border-color:#fde68a; } .mms-bom-page .badge.amber .dot { background:var(--amber-500); }
+.mms-bom-page .badge.blue { background:var(--blue-50); color:var(--blue-700); border-color:#bfdbfe; } .mms-bom-page .badge.blue .dot { background:var(--blue-500); }
+.mms-bom-page .badge.green { background:var(--green-50); color:var(--green-700); border-color:#a7f3d0; } .mms-bom-page .badge.green .dot { background:var(--green-500); }
+.mms-bom-page .badge.red { background:var(--red-50); color:var(--red-700); border-color:#fecaca; } .mms-bom-page .badge.red .dot { background:var(--red-500); }
+.mms-bom-page .badge.gray { background:var(--ink-100); color:var(--ink-500); border-color:var(--ink-200); } .mms-bom-page .badge.gray .dot { background:var(--ink-400); }
+.mms-bom-page .pagination-container { display:flex; align-items:center; justify-content:flex-end; padding:14px 20px; background:#fff; }
+.mms-bom-page .status-tabs { display:flex; align-items:center; gap:12px; padding:6px 10px 6px 12px; border-bottom:1px solid var(--ink-200); background:#fff; }
+.mms-bom-page .tabs-track { display:flex; align-items:center; gap:4px; flex:1; min-width:0; overflow-x:auto; scrollbar-width:none; }
+.mms-bom-page .tabs-track::-webkit-scrollbar { display:none; }
+.mms-bom-page .status-tab { display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 12px; border-radius:var(--r-sm); font-size:14px; color:var(--ink-500); cursor:pointer; user-select:none; transition:all .15s var(--ease-out); white-space:nowrap; border:1px solid transparent; background:transparent; }
+.mms-bom-page .status-tab .dot { width:6px; height:6px; border-radius:50%; background:var(--ink-300); }
+.mms-bom-page .status-tab .count { font-size:12px; font-weight:600; padding:1px 6px; border-radius:999px; background:var(--ink-100); color:var(--ink-500); min-width:18px; text-align:center; line-height:1.4; }
+.mms-bom-page .status-tab:hover { background:var(--ink-50); color:var(--ink-700); }
+.mms-bom-page .status-tab.is-active { background:var(--brand-50); color:var(--brand-700); font-weight:600; border-color:var(--brand-200); }
+.mms-bom-page .status-tab.is-active .count { background:var(--brand-600); color:#fff; }
+.mms-bom-page .status-tab.is-active .dot { background:var(--brand-500); }
+.mms-bom-page .status-tab.tab-draft .dot { background:var(--amber-500); } .mms-bom-page .status-tab.tab-draft .count { background:var(--amber-50); color:var(--amber-700); } .mms-bom-page .status-tab.is-active.tab-draft .count { background:var(--amber-500); color:#fff; }
+.mms-bom-page .status-tab.tab-done .dot { background:var(--green-500); } .mms-bom-page .status-tab.tab-done .count { background:var(--green-50); color:var(--green-700); } .mms-bom-page .status-tab.is-active.tab-done .count { background:var(--green-500); color:#fff; }
+.mms-bom-page .status-tab.tab-void .dot { background:var(--ink-400); } .mms-bom-page .status-tab.tab-void .count { background:var(--ink-100); color:var(--ink-500); } .mms-bom-page .status-tab.is-active.tab-void .count { background:var(--ink-400); color:#fff; }
+.mms-bom-page .tip-pill { display:inline-flex; align-items:center; gap:5px; height:30px; padding:0 10px; background:#fffaf0; border:1px solid #fde68a; color:#92400e; border-radius:999px; font-size:13px; font-weight:500; cursor:pointer; transition:all .15s var(--ease-out); flex-shrink:0; white-space:nowrap; }
+.mms-bom-page .tip-pill:hover { background:var(--amber-50); border-color:var(--amber-500); color:#7c2d12; }
+.mms-bom-page .tip-pill .el-icon { font-size:14px; color:var(--amber-700); }
+.mms-bom-page .detail-toolbar { display:flex; align-items:center; gap:12px; margin-bottom:10px; }
+.mms-bom-page .detail-toolbar .detail-tip { font-size:12px; color:var(--ink-400); }
+.mms-bom-page .detail-table { --el-table-header-bg-color:var(--ink-50); }
+.mms-bom-page .empty-detail { padding:20px 0; }
+.mms-bom-page .level-badge { display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:50%; font-size:12px; font-weight:600; }
+.mms-bom-page .level-badge.level-0 { background:var(--brand-100); color:var(--brand-700); }
+.mms-bom-page .level-badge.level-1 { background:var(--blue-50); color:var(--blue-700); }
+.mms-bom-page .level-badge.level-2 { background:var(--amber-50); color:var(--amber-700); }
+.mms-bom-page .level-badge.level-3 { background:var(--green-50); color:var(--green-700); }
+.status-help-content { max-height:500px; overflow-y:auto; padding-right:10px; }
+.status-help-content h4 { margin:20px 0 12px 0; color:#303133; font-weight:600; border-left:4px solid #409eff; padding-left:10px; }
+.status-help-content h4:first-child { margin-top:0; }
+.status-help-content .highlight-card { border-radius:8px; padding:16px; border:1px solid; }
+.status-help-content .highlight-card-title { font-size:14px; font-weight:600; margin-bottom:8px; display:flex; align-items:center; }
+.status-help-content .highlight-card-body { font-size:13px; color:#606266; line-height:1.6; }
+.status-help-content .highlight-card-body p { margin:4px 0; }
+.status-help-content .highlight-primary { background-color:#ecf5ff; border-color:#a0cfff; } .status-help-content .highlight-primary .highlight-card-title { color:#409eff; }
+.status-help-content .highlight-warning { background-color:#fdf6ec; border-color:#f5dab1; } .status-help-content .highlight-warning .highlight-card-title { color:#e6a23c; }
+@media (max-width:1100px) { .mms-bom-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }
+@media (max-width:720px) { .mms-bom-page .filter-card .filter-bar { grid-template-columns:1fr; } }
+</style>

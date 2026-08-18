@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mms.mapper.MmsOutsourceMapper">
+
+    <resultMap type="MmsOutsource" id="MmsOutsourceResult">
+        <id property="outsourceId" column="outsource_id"/>
+        <result property="outsourceNo" column="outsource_no"/>
+        <result property="workOrderId" column="work_order_id"/>
+        <result property="workOrderNo" column="work_order_no"/>
+        <result property="opSeq" column="op_seq"/>
+        <result property="processName" column="process_name"/>
+        <result property="supplierId" column="supplier_id"/>
+        <result property="supplierName" column="supplier_name"/>
+        <result property="outQty" column="out_qty"/>
+        <result property="unitPrice" column="unit_price"/>
+        <result property="totalAmount" column="total_amount"/>
+        <result property="outDate" column="out_date"/>
+        <result property="planBackDate" column="plan_back_date"/>
+        <result property="actualBackDate" column="actual_back_date"/>
+        <result property="backQty" column="back_qty"/>
+        <result property="lossQty" column="loss_qty"/>
+        <result property="status" column="status"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <sql id="selectOutsourceVo">
+        SELECT outsource_id, outsource_no, work_order_id, work_order_no, op_seq, process_name, supplier_id, supplier_name, out_qty, unit_price, total_amount, out_date, plan_back_date, actual_back_date, back_qty, loss_qty, status, del_flag, create_by, create_time, update_by, update_time, remark
+        FROM mms_outsource
+    </sql>
+
+    <select id="selectOutsourceList" parameterType="MmsOutsource" resultMap="MmsOutsourceResult">
+        <include refid="selectOutsourceVo"/>
+        <where>
+            del_flag = '0'
+            <if test="outsourceNo != null and outsourceNo != ''"> AND outsource_no LIKE CONCAT('%', #{outsourceNo}, '%')</if>
+            <if test="workOrderNo != null and workOrderNo != ''"> AND work_order_no LIKE CONCAT('%', #{workOrderNo}, '%')</if>
+            <if test="supplierName != null and supplierName != ''"> AND supplier_name LIKE CONCAT('%', #{supplierName}, '%')</if>
+            <if test="status != null and status != ''"> AND status = #{status}</if>
+            <if test="params.beginTime != null and params.beginTime != ''"> AND date(out_date) &gt;= #{params.beginTime}</if>
+            <if test="params.endTime != null and params.endTime != ''"> AND date(out_date) &lt;= #{params.endTime}</if>
+        </where>
+        ORDER BY outsource_id DESC
+    </select>
+
+    <select id="selectOutsourceById" parameterType="Long" resultMap="MmsOutsourceResult">
+        <include refid="selectOutsourceVo"/>
+        WHERE outsource_id = #{outsourceId}
+    </select>
+
+    <insert id="insertOutsource" parameterType="MmsOutsource" useGeneratedKeys="true" keyProperty="outsourceId">
+        INSERT INTO mms_outsource (
+            outsource_no, work_order_id, work_order_no, op_seq, process_name, supplier_id, supplier_name, out_qty, unit_price, total_amount, out_date, plan_back_date, actual_back_date, back_qty, loss_qty, status, del_flag, create_by, create_time, update_by, update_time, remark
+        ) VALUES (
+            #{outsourceNo}, #{workOrderId}, #{workOrderNo}, #{opSeq}, #{processName}, #{supplierId}, #{supplierName}, #{outQty}, #{unitPrice}, #{totalAmount}, #{outDate}, #{planBackDate}, #{actualBackDate}, #{backQty}, #{lossQty}, #{status}, #{delFlag}, #{createBy}, sysdate(), #{updateBy}, #{updateTime}, #{remark}
+        )
+    </insert>
+
+    <update id="updateOutsource" parameterType="MmsOutsource">
+        UPDATE mms_outsource SET
+            outsource_no = #{outsourceNo},
+            work_order_id = #{workOrderId},
+            work_order_no = #{workOrderNo},
+            op_seq = #{opSeq},
+            process_name = #{processName},
+            supplier_id = #{supplierId},
+            supplier_name = #{supplierName},
+            out_qty = #{outQty},
+            unit_price = #{unitPrice},
+            total_amount = #{totalAmount},
+            out_date = #{outDate},
+            plan_back_date = #{planBackDate},
+            actual_back_date = #{actualBackDate},
+            back_qty = #{backQty},
+            loss_qty = #{lossQty},
+            status = #{status},
+            update_by = #{updateBy},
+            update_time = sysdate(),
+            remark = #{remark}
+        WHERE outsource_id = #{outsourceId}
+    </update>
+
+    <delete id="deleteOutsourceByIds" parameterType="Long">
+        UPDATE mms_outsource SET del_flag = '2' WHERE outsource_id IN
+        <foreach collection="array" item="outsourceId" open="(" separator="," close=")">
+            #{outsourceId}
+        </foreach>
+    </delete>
+</mapper>

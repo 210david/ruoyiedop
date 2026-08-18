@@ -260,48 +260,145 @@
     <user-picker ref="userPickerRef" title="选择执行人" @confirm="onUserPickerConfirm" />
 
     <!-- 业务操作说明对话框 -->
-    <el-dialog v-model="showStatusHelp" title="排查任务业务操作说明" width="720px" append-to-body>
+    <el-dialog v-model="showStatusHelp" title="排查任务业务操作说明" width="820px" append-to-body>
       <div class="status-help-content">
-        <h4>一、业务状态流转图</h4>
+        <!-- 一、排查任务释义 -->
+        <h4>一、排查任务释义</h4>
+        <div class="highlight-card highlight-primary">
+          <div class="highlight-card-title">什么是排查任务？</div>
+          <div class="highlight-card-body">
+            <strong>排查任务（Inspection Task）</strong>是安全生产管理中"双控机制"（风险分级管控与隐患排查治理）的核心执行单据。系统根据风险点的管控措施和排查周期，自动或手动生成排查任务，由安全员或指定执行人按照计划日期对风险点进行现场排查，记录检查结果（正常/有隐患），如发现隐患可同步登记隐患明细并跟踪整改闭环。<br/><br/>
+            排查任务基于<strong>风险分级管控（LEC评估法）</strong>，通过风险点（L-发生可能性 × E-暴露频率 × C-后果严重性）计算风险等级，针对不同风险等级制定差异化的排查周期和管控措施。排查任务覆盖日常排查、综合排查、专项排查、季节性排查、节假日排查等多种类型，满足《安全生产法》和《双重预防机制》关于定期隐患排查的合规要求。
+          </div>
+        </div>
+
+        <!-- 二、排查任务状态流转图 -->
+        <h4>二、排查任务状态流转图</h4>
         <div class="status-flow">
           <div class="flow-item">
             <el-tag type="warning">待执行</el-tag>
             <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+            <el-tag size="small" type="primary">点击「执行反馈」</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
           </div>
           <div class="flow-item">
             <el-tag type="primary">执行中</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+            <el-tag size="small" type="primary">提交反馈</el-tag>
             <el-icon class="flow-arrow"><ArrowRight /></el-icon>
           </div>
           <div class="flow-item">
             <el-tag type="success">已完成</el-tag>
           </div>
         </div>
-        <div class="status-flow" style="margin-top:8px">
+        <div class="status-flow" style="margin-top: 8px;">
           <div class="flow-item">
-            <el-tag type="warning">待执行/执行中</el-tag>
+            <el-tag type="warning">待执行</el-tag>
+            <el-tag size="small" type="danger">或</el-tag>
+            <el-tag type="primary">执行中</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+            <el-tag size="small" type="primary">点击「作废」</el-tag>
             <el-icon class="flow-arrow"><ArrowRight /></el-icon>
           </div>
           <div class="flow-item">
             <el-tag type="info">已作废</el-tag>
+            <el-tag size="small" type="info">异常终止</el-tag>
           </div>
         </div>
 
-        <h4>二、各状态说明</h4>
+        <!-- 三、各状态说明 -->
+        <h4>三、各状态说明</h4>
         <el-descriptions :column="1" border>
-          <el-descriptions-item label="待执行">任务已创建但尚未开始执行，可修改、执行反馈或作废</el-descriptions-item>
-          <el-descriptions-item label="执行中">任务正在执行中，可进行执行反馈或作废</el-descriptions-item>
-          <el-descriptions-item label="已完成">任务已完成执行反馈，系统自动记录检查结果和隐患数量</el-descriptions-item>
-          <el-descriptions-item label="已作废">任务已作废，不可再进行操作</el-descriptions-item>
+          <el-descriptions-item label="待执行">排查任务创建后的初始状态。可修改任务信息、执行反馈或作废。点击「执行反馈」开始现场排查，系统自动将任务状态变为执行中</el-descriptions-item>
+          <el-descriptions-item label="执行中">执行人已开始排查，正在填写检查结果和隐患明细。可继续填写或提交反馈，提交后系统自动记录检查结果和隐患数量</el-descriptions-item>
+          <el-descriptions-item label="已完成">排查任务已完成执行反馈，系统自动记录检查结果（正常/有隐患）和隐患数量。可查看详情、查看关联隐患列表及整改状态</el-descriptions-item>
+          <el-descriptions-item label="已作废">排查任务因异常情况被作废，不再有效。待执行和执行中状态的任务可手动作废</el-descriptions-item>
         </el-descriptions>
 
-        <h4>三、重点业务规则</h4>
-        <div class="highlight-card">
-          <p>• <strong>任务类型：</strong>支持日常排查、综合排查、专项排查、季节性排查、节假日排查等多种类型</p>
-          <p>• <strong>执行反馈：</strong>执行人填写检查结果（正常/有隐患），如发现隐患可同时登记隐患明细</p>
-          <p>• <strong>隐患登记：</strong>检查结果为"有隐患"时，可添加多条隐患记录，包含描述、类型、等级、责任人、整改要求等</p>
-          <p>• <strong>任务作废：</strong>待执行或执行中状态的任务可作废，作废后不可恢复</p>
-          <p>• <strong>关联隐患：</strong>已完成的任务详情页可查看关联的隐患列表及整改状态</p>
+        <!-- 四、新增/修改表单填写指南 -->
+        <h4>四、新增/修改表单填写指南</h4>
+        <div class="highlight-card highlight-warning">
+          <div class="highlight-card-title">任务信息区</div>
+          <div class="highlight-card-body">
+            <p>• <strong>任务编号：</strong>排查任务的唯一标识编号，保存后由系统自动生成</p>
+            <p>• <strong>任务名称：</strong>排查任务的名称，建议包含排查类型、排查对象和日期信息，如"2026年8月车间日常安全隐患排查"<span style="color: #f56c6c;">*必填</span></p>
+            <p>• <strong>任务类型：</strong>包括日常排查、综合排查、专项排查、季节性排查、节假日排查等<span style="color: #f56c6c;">*必填</span></p>
+            <p>• <strong>计划日期：</strong>排查任务的计划执行日期<span style="color: #f56c6c;">*必填</span></p>
+            <p>• <strong>执行人：</strong>从组织机构中选择执行排查任务的人员，选择后自动带出执行人姓名<span style="color: #f56c6c;">*必填</span></p>
+          </div>
         </div>
+        <div class="highlight-card highlight-warning" style="margin-top: 12px;">
+          <div class="highlight-card-title">其他信息区</div>
+          <div class="highlight-card-body">
+            <p>• <strong>备注：</strong>排查任务的补充说明信息，如特殊注意事项、排查重点等</p>
+          </div>
+        </div>
+
+        <!-- 五、执行反馈填写指南 -->
+        <h4>五、执行反馈填写指南</h4>
+        <div class="highlight-card highlight-primary">
+          <div class="highlight-card-title">检查情况登记</div>
+          <div class="highlight-card-body">
+            <p>在待执行或执行中状态下，点击列表中的「执行反馈」按钮进入执行反馈界面，按以下步骤操作：</p>
+            <p>1. <strong>检查结果：</strong>选择"正常"或"有隐患"。正常表示排查未发现安全隐患；有隐患表示排查过程中发现了需要整改的安全隐患<span style="color: #f56c6c;">*必填</span></p>
+            <p>2. <strong>检查说明：</strong>填写排查情况说明，包括检查范围、检查内容、现场情况等信息</p>
+          </div>
+        </div>
+        <div class="highlight-card highlight-danger" style="margin-top: 12px;">
+          <div class="highlight-card-title">隐患明细登记</div>
+          <div class="highlight-card-body">
+            <p>当检查结果选择"有隐患"时，需添加至少一条隐患明细，点击「添加隐患」按钮填写：</p>
+            <p>• <strong>隐患描述：</strong>详细描述发现的安全隐患情况<span style="color: #f56c6c;">*必填</span></p>
+            <p>• <strong>隐患类型：</strong>选择隐患分类，如设备设施类、作业行为类、环境条件类、管理类等<span style="color: #f56c6c;">*必填</span></p>
+            <p>• <strong>隐患等级：</strong>选择隐患严重程度，一般隐患或重大隐患<span style="color: #f56c6c;">*必填</span></p>
+            <p>• <strong>发现位置：</strong>隐患发生的具体位置描述</p>
+            <p>• <strong>隐患图片：</strong>可上传隐患现场照片，最多5张</p>
+            <p>• <strong>责任人：</strong>从组织机构中选择负责整改的人员，选择后自动带出责任部门<span style="color: #f56c6c;">*必填</span></p>
+            <p>• <strong>责任部门：</strong>隐患整改的责任部门，选择责任人后自动带出，也可手动选择<span style="color: #f56c6c;">*必填</span></p>
+            <p>• <strong>整改期限：</strong>隐患整改完成的截止日期<span style="color: #f56c6c;">*必填</span></p>
+            <p>• <strong>整改要求：</strong>详细描述整改措施和要求<span style="color: #f56c6c;">*必填</span></p>
+          </div>
+        </div>
+
+        <!-- 六、隐患分级管控说明 -->
+        <h4>六、隐患分级管控说明</h4>
+        <div class="highlight-card highlight-success">
+          <div class="highlight-card-title">什么是隐患分级管控？</div>
+          <div class="highlight-card-body">
+            <strong>隐患分级管控</strong>是安全生产"双重预防机制"的核心环节，根据隐患的严重程度和可能造成的后果，将隐患分为<strong>一般隐患</strong>和<strong>重大隐患</strong>两个等级。一般隐患由班组或车间内部整改，重大隐患需上报安全主管审批后整改，并纳入隐患台账跟踪闭环。
+          </div>
+        </div>
+        <div class="highlight-card highlight-warning" style="margin-top: 12px;">
+          <div class="highlight-card-title">隐患整改闭环流程</div>
+          <div class="highlight-card-body">
+            <p>排查任务中发现隐患后，系统自动进入隐患整改闭环流程：</p>
+            <p>1. <strong>隐患登记：</strong>在执行反馈中填写隐患明细，提交后系统自动生成隐患记录</p>
+            <p>2. <strong>隐患审批：</strong>重大隐患需安全主管审批，审批通过后进入待整改状态</p>
+            <p>3. <strong>隐患整改：</strong>责任人按照整改要求和期限执行整改</p>
+            <p>4. <strong>整改验收：</strong>整改完成后由安全员验收，验收通过后隐患闭环</p>
+            <p>5. <strong>超期提醒：</strong>整改期限到期未闭环的隐患，系统自动标记为"超期未整改"</p>
+          </div>
+        </div>
+
+        <!-- 七、业务操作流程 -->
+        <h4>七、业务操作流程</h4>
+        <el-timeline>
+          <el-timeline-item type="primary" :hollow="true">
+            <strong>创建排查任务：</strong>点击「新增」创建排查任务，填写任务名称、选择任务类型、计划日期和执行人，保存后任务编号自动生成
+          </el-timeline-item>
+          <el-timeline-item type="warning" :hollow="true">
+            <strong>执行反馈：</strong>在待执行状态下点击「执行反馈」开始排查，任务自动切换为执行中状态。填写检查结果（正常/有隐患），如有隐患则添加隐患明细
+          </el-timeline-item>
+          <el-timeline-item type="success" :hollow="true">
+            <strong>提交反馈：</strong>填写完检查情况和隐患明细后点击「确定」，系统自动记录检查结果、隐患数量和检查时间，任务变为已完成状态
+          </el-timeline-item>
+          <el-timeline-item type="info" :hollow="true">
+            <strong>查看详情：</strong>已完成的排查任务可点击「查看」查看详情，包括任务信息、检查执行情况、关联隐患列表及整改状态
+          </el-timeline-item>
+          <el-timeline-item type="danger" :hollow="true">
+            <strong>任务作废：</strong>待执行或执行中状态的任务如因特殊情况无法继续执行，可点击「作废」终止任务，作废后不可恢复
+          </el-timeline-item>
+        </el-timeline>
       </div>
       <template #footer>
         <el-button type="primary" @click="showStatusHelp = false">我知道了</el-button>
@@ -491,7 +588,7 @@ import UserPicker from '@/components/UserPicker/index.vue'
 import DeptPicker from '@/components/DeptPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
-import { Search, Filter, RefreshLeft, CircleClose, WarningFilled, ArrowRight, ArrowDown } from '@element-plus/icons-vue'
+import { Search, Filter, RefreshLeft, CircleClose, WarningFilled, ArrowRight, ArrowDown, QuestionFilled } from '@element-plus/icons-vue'
 
 const { proxy } = getCurrentInstance()
 const { safety_task_type, safety_task_status, safety_hazard_type, safety_hazard_level } = proxy.useDict('safety_task_type', 'safety_task_status', 'safety_hazard_type', 'safety_hazard_level')
@@ -824,6 +921,16 @@ getList()
 .status-help-content .status-flow { display:flex; align-items:center; flex-wrap:wrap; gap:8px; padding:16px; background-color:#f5f7fa; border-radius:8px; margin-bottom:8px; }
 .status-help-content .flow-item { display:flex; align-items:center; gap:8px; }
 .status-help-content .flow-arrow { color:#909399; font-size:16px; }
-.status-help-content .highlight-card { background-color:#ecf5ff; border-radius:8px; padding:16px; border-left:4px solid #409eff; }
-.status-help-content .highlight-card p { margin:6px 0; line-height:1.6; font-size:13px; color:#606266; }
+.status-help-content .highlight-card { border-radius: 8px; padding: 16px; border: 1px solid; }
+.status-help-content .highlight-card-title { font-size: 14px; font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; }
+.status-help-content .highlight-card-body { font-size: 13px; color: #606266; line-height: 1.6; }
+.status-help-content .highlight-card-body p { margin: 4px 0; }
+.status-help-content .highlight-primary { background-color: #ecf5ff; border-color: #a0cfff; }
+.status-help-content .highlight-primary .highlight-card-title { color: #409eff; }
+.status-help-content .highlight-success { background-color: #f0f9eb; border-color: #b3e19d; }
+.status-help-content .highlight-success .highlight-card-title { color: #67c23a; }
+.status-help-content .highlight-warning { background-color: #fdf6ec; border-color: #f5dab1; }
+.status-help-content .highlight-warning .highlight-card-title { color: #e6a23c; }
+.status-help-content .highlight-danger { background-color: #fef0f0; border-color: #fbc4c4; }
+.status-help-content .highlight-danger .highlight-card-title { color: #f56c6c; }
 </style>

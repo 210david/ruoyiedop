@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mms.mapper.MmsMpsMapper">
+
+    <resultMap type="MmsMps" id="MmsMpsResult">
+                <id property="mpsId" column="mps_id"/>
+<result property="mpsNo"     column="mps_no"/>
+        <result property="demandId"     column="demand_id"/>
+        <result property="demandNo"     column="demand_no"/>
+        <result property="productId"     column="product_id"/>
+        <result property="productCode"     column="product_code"/>
+        <result property="productName"     column="product_name"/>
+        <result property="specModel"     column="spec_model"/>
+        <result property="unit"     column="unit"/>
+        <result property="planQty"     column="plan_qty"/>
+        <result property="periodStart"     column="period_start"/>
+        <result property="periodEnd"     column="period_end"/>
+        <result property="resourceId"     column="resource_id"/>
+        <result property="resourceName"     column="resource_name"/>
+        <result property="priority"     column="priority"/>
+        <result property="status"     column="status"/>
+        <result property="auditBy"     column="audit_by"/>
+        <result property="auditTime"     column="audit_time"/>
+        <result property="auditOpinion"     column="audit_opinion"/>
+        <result property="delFlag"     column="del_flag"/>
+        <result property="createBy"     column="create_by"/>
+        <result property="createTime"     column="create_time"/>
+        <result property="updateBy"     column="update_by"/>
+        <result property="updateTime"     column="update_time"/>
+        <result property="remark"     column="remark"/>
+    </resultMap>
+
+    <sql id="selectMpsVo">
+        SELECT mps_id, mps_no, demand_id, demand_no, product_id, product_code, product_name, spec_model, unit, plan_qty, period_start, period_end, resource_id, resource_name, priority, status, audit_by, audit_time, audit_opinion, del_flag, create_by, create_time, update_by, update_time, remark
+        FROM mms_mps
+    </sql>
+
+    <select id="selectMpsList" parameterType="MmsMps" resultMap="MmsMpsResult">
+        <include refid="selectMpsVo"/>
+        <where>
+            del_flag = '0'
+            <if test="mpsNo != null and mpsNo != ''"> AND mps_no LIKE CONCAT('%', #{mps_no}, '%')</if>
+            <if test="productCode != null and productCode != ''"> AND product_code LIKE CONCAT('%', #{product_code}, '%')</if>
+            <if test="productName != null and productName != ''"> AND product_name LIKE CONCAT('%', #{product_name}, '%')</if>
+            <if test="status != null and status != ''"> AND status = #{status}</if>
+            <if test="priority != null and priority != ''"> AND priority = #{priority}</if>
+            <if test="params.beginTime != null and params.beginTime != ''"> AND date(create_time) &gt;= #{params.beginTime}</if>
+            <if test="params.endTime != null and params.endTime != ''"> AND date(create_time) &lt;= #{params.endTime}</if>
+        </where>
+        ORDER BY mps_id DESC
+    </select>
+
+    <select id="selectMpsById" parameterType="Long" resultMap="MmsMpsResult">
+        <include refid="selectMpsVo"/>
+        WHERE mps_id = #{mpsId}
+    </select>
+
+    <insert id="insertMps" parameterType="MmsMps" useGeneratedKeys="true" keyProperty="mpsId">
+        INSERT INTO mms_mps (
+            mps_no,
+            demand_id,
+            demand_no,
+            product_id,
+            product_code,
+            product_name,
+            spec_model,
+            unit,
+            plan_qty,
+            period_start,
+            period_end,
+            resource_id,
+            resource_name,
+            priority,
+            status,
+            audit_by,
+            audit_time,
+            audit_opinion,
+            del_flag,
+            create_by,
+            create_time,
+            update_by,
+            update_time,
+            remark
+        )VALUES(
+            #{mpsNo},
+            #{demandId},
+            #{demandNo},
+            #{productId},
+            #{productCode},
+            #{productName},
+            #{specModel},
+            #{unit},
+            #{planQty},
+            #{periodStart},
+            #{periodEnd},
+            #{resourceId},
+            #{resourceName},
+            #{priority},
+            #{status},
+            #{auditBy},
+            #{auditTime},
+            #{auditOpinion},
+            #{delFlag},
+            #{createBy},
+            #{createTime},
+            #{updateBy},
+            #{updateTime},
+            #{remark}
+        )
+    </insert>
+
+    <update id="updateMps" parameterType="MmsMps">
+        UPDATE mms_mps SET
+            mps_no = #{mpsNo},
+            demand_id = #{demandId},
+            demand_no = #{demandNo},
+            product_id = #{productId},
+            product_code = #{productCode},
+            product_name = #{productName},
+            spec_model = #{specModel},
+            unit = #{unit},
+            plan_qty = #{planQty},
+            period_start = #{periodStart},
+            period_end = #{periodEnd},
+            resource_id = #{resourceId},
+            resource_name = #{resourceName},
+            priority = #{priority},
+            status = #{status},
+            audit_by = #{auditBy},
+            audit_time = #{auditTime},
+            audit_opinion = #{auditOpinion},
+            update_by = #{updateBy},
+            update_time = #{updateTime},
+            remark = #{remark}
+        WHERE mps_id = #{mpsId}
+    </update>
+
+    <delete id="deleteMpsByIds" parameterType="Long">
+        UPDATE mms_mps SET del_flag = '2' WHERE mps_id IN
+        <foreach collection="array" item="mpsId" open="(" separator="," close=")">
+            #{mpsId}
+        </foreach>
+    </delete>
+</mapper>

@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mms.mapper.MmsProcessMapper">
+
+    <resultMap type="MmsProcess" id="MmsProcessResult">
+                <id property="processId" column="process_id"/>
+<result property="processCode"     column="process_code"/>
+        <result property="processName"     column="process_name"/>
+        <result property="processType"     column="process_type"/>
+        <result property="stdTime"     column="std_time"/>
+        <result property="prepTime"     column="prep_time"/>
+        <result property="isKeyProcess"     column="is_key_process"/>
+        <result property="isOutsource"     column="is_outsource"/>
+        <result property="workshopName"     column="workshop_name"/>
+        <result property="lineName"     column="line_name"/>
+        <result property="status"     column="status"/>
+        <result property="delFlag"     column="del_flag"/>
+        <result property="createBy"     column="create_by"/>
+        <result property="createTime"     column="create_time"/>
+        <result property="updateBy"     column="update_by"/>
+        <result property="updateTime"     column="update_time"/>
+        <result property="remark"     column="remark"/>
+    </resultMap>
+
+    <sql id="selectProcessVo">
+        SELECT process_id, process_code, process_name, process_type, std_time, prep_time, is_key_process, is_outsource, workshop_name, line_name, status, del_flag, create_by, create_time, update_by, update_time, remark
+        FROM mms_process
+    </sql>
+
+    <select id="selectProcessList" parameterType="MmsProcess" resultMap="MmsProcessResult">
+        <include refid="selectProcessVo"/>
+        <where>
+            del_flag = '0'
+            <if test="processCode != null and processCode != ''"> AND process_code LIKE CONCAT('%', #{process_code}, '%')</if>
+            <if test="processName != null and processName != ''"> AND process_name LIKE CONCAT('%', #{process_name}, '%')</if>
+            <if test="processType != null and processType != ''"> AND process_type = #{process_type}</if>
+            <if test="status != null and status != ''"> AND status = #{status}</if>
+            <if test="workshopName != null and workshopName != ''"> AND workshop_name LIKE CONCAT('%', #{workshop_name}, '%')</if>
+            <if test="params.beginTime != null and params.beginTime != ''"> AND date(create_time) &gt;= #{params.beginTime}</if>
+            <if test="params.endTime != null and params.endTime != ''"> AND date(create_time) &lt;= #{params.endTime}</if>
+        </where>
+        ORDER BY process_id DESC
+    </select>
+
+    <select id="selectProcessById" parameterType="Long" resultMap="MmsProcessResult">
+        <include refid="selectProcessVo"/>
+        WHERE process_id = #{processId}
+    </select>
+
+    <insert id="insertProcess" parameterType="MmsProcess" useGeneratedKeys="true" keyProperty="processId">
+        INSERT INTO mms_process (
+            process_code,
+            process_name,
+            process_type,
+            std_time,
+            prep_time,
+            is_key_process,
+            is_outsource,
+            workshop_name,
+            line_name,
+            status,
+            del_flag,
+            create_by,
+            create_time,
+            update_by,
+            update_time,
+            remark
+        )VALUES(
+            #{processCode},
+            #{processName},
+            #{processType},
+            #{stdTime},
+            #{prepTime},
+            #{isKeyProcess},
+            #{isOutsource},
+            #{workshopName},
+            #{lineName},
+            #{status},
+            #{delFlag},
+            #{createBy},
+            #{createTime},
+            #{updateBy},
+            #{updateTime},
+            #{remark}
+        )
+    </insert>
+
+    <update id="updateProcess" parameterType="MmsProcess">
+        UPDATE mms_process SET
+            process_code = #{processCode},
+            process_name = #{processName},
+            process_type = #{processType},
+            std_time = #{stdTime},
+            prep_time = #{prepTime},
+            is_key_process = #{isKeyProcess},
+            is_outsource = #{isOutsource},
+            workshop_name = #{workshopName},
+            line_name = #{lineName},
+            status = #{status},
+            update_by = #{updateBy},
+            update_time = #{updateTime},
+            remark = #{remark}
+        WHERE process_id = #{processId}
+    </update>
+
+    <delete id="deleteProcessByIds" parameterType="Long">
+        UPDATE mms_process SET del_flag = '2' WHERE process_id IN
+        <foreach collection="array" item="processId" open="(" separator="," close=")">
+            #{processId}
+        </foreach>
+    </delete>
+</mapper>

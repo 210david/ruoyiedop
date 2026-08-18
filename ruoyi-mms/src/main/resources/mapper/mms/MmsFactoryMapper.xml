@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mms.mapper.MmsFactoryMapper">
+
+    <resultMap type="MmsFactory" id="MmsFactoryResult">
+        <id property="factoryId" column="factory_id"/>
+        <result property="factoryCode" column="factory_code"/>
+        <result property="factoryName" column="factory_name"/>
+        <result property="address" column="address"/>
+        <result property="status" column="status"/>
+        <result property="tenantId" column="tenant_id"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <sql id="selectFactoryVo">
+        SELECT factory_id, factory_code, factory_name, address, status, tenant_id, del_flag, create_by, create_time, update_by, update_time, remark
+        FROM mms_factory
+    </sql>
+
+    <select id="selectFactoryList" parameterType="MmsFactory" resultMap="MmsFactoryResult">
+        <include refid="selectFactoryVo"/>
+        <where>
+            del_flag = '0'
+            <if test="factoryCode != null and factoryCode != ''"> AND factory_code LIKE CONCAT('%', #{factoryCode}, '%')</if>
+            <if test="factoryName != null and factoryName != ''"> AND factory_name LIKE CONCAT('%', #{factoryName}, '%')</if>
+            <if test="status != null and status != ''"> AND status = #{status}</if>
+        </where>
+        ORDER BY factory_id ASC
+    </select>
+
+    <select id="selectFactoryById" parameterType="Long" resultMap="MmsFactoryResult">
+        <include refid="selectFactoryVo"/>
+        WHERE factory_id = #{factoryId}
+    </select>
+
+    <insert id="insertFactory" parameterType="MmsFactory" useGeneratedKeys="true" keyProperty="factoryId">
+        INSERT INTO mms_factory (
+            factory_code, factory_name, address, status, tenant_id, del_flag, create_by, create_time, update_by, update_time, remark
+        ) VALUES (
+            #{factoryCode}, #{factoryName}, #{address}, #{status}, #{tenantId}, #{delFlag}, #{createBy}, sysdate(), #{updateBy}, #{updateTime}, #{remark}
+        )
+    </insert>
+
+    <update id="updateFactory" parameterType="MmsFactory">
+        UPDATE mms_factory SET
+            factory_code = #{factoryCode},
+            factory_name = #{factoryName},
+            address = #{address},
+            status = #{status},
+            update_by = #{updateBy},
+            update_time = sysdate(),
+            remark = #{remark}
+        WHERE factory_id = #{factoryId}
+    </update>
+
+    <delete id="deleteFactoryByIds" parameterType="Long">
+        UPDATE mms_factory SET del_flag = '2' WHERE factory_id IN
+        <foreach collection="array" item="factoryId" open="(" separator="," close=")">
+            #{factoryId}
+        </foreach>
+    </delete>
+</mapper>

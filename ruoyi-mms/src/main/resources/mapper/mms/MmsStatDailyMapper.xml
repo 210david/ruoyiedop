@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mms.mapper.MmsStatDailyMapper">
+
+    <resultMap type="MmsStatDaily" id="MmsStatDailyResult">
+        <id property="statId" column="stat_id"/>
+        <result property="statDate" column="stat_date"/>
+        <result property="workOrderCount" column="work_order_count"/>
+        <result property="completedCount" column="completed_count"/>
+        <result property="inProgressCount" column="in_progress_count"/>
+        <result property="abnormalCount" column="abnormal_count"/>
+        <result property="totalPlanQty" column="total_plan_qty"/>
+        <result property="totalGoodQty" column="total_good_qty"/>
+        <result property="totalDefectQty" column="total_defect_qty"/>
+        <result property="avgOee" column="avg_oee"/>
+        <result property="reportCount" column="report_count"/>
+        <result property="createTime" column="create_time"/>
+    </resultMap>
+
+    <sql id="selectStatDailyVo">
+        SELECT stat_id, stat_date, work_order_count, completed_count, in_progress_count, abnormal_count, total_plan_qty, total_good_qty, total_defect_qty, avg_oee, report_count, create_time
+        FROM mms_stat_daily
+    </sql>
+
+    <select id="selectStatDailyList" parameterType="MmsStatDaily" resultMap="MmsStatDailyResult">
+        <include refid="selectStatDailyVo"/>
+        <where>
+            <if test="params.beginTime != null and params.beginTime != ''"> AND stat_date &gt;= #{params.beginTime}</if>
+            <if test="params.endTime != null and params.endTime != ''"> AND stat_date &lt;= #{params.endTime}</if>
+        </where>
+        ORDER BY stat_date DESC
+    </select>
+
+    <select id="selectStatDailyById" parameterType="Long" resultMap="MmsStatDailyResult">
+        <include refid="selectStatDailyVo"/>
+        WHERE stat_id = #{statId}
+    </select>
+</mapper>

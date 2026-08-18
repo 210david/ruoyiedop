@@ -90,7 +90,7 @@
           <el-table-column label="参训人员" prop="userName" key="userName" :width="colWidth('userName', 144)" resizable v-if="columns.userName.visible" />
           <el-table-column label="所属部门" prop="deptName" key="deptName" :width="colWidth('deptName', 168)" resizable show-overflow-tooltip v-if="columns.deptName.visible" />
           <el-table-column label="关联课程" prop="courseName" key="courseName" :width="colWidth('courseName', 216)" resizable show-overflow-tooltip v-if="columns.courseName.visible" />
-          <el-table-column label="培训日期" prop="trainingDate" key="trainingDate" :width="colWidth('trainingDate', 132)" resizable align="center" v-if="columns.trainingDate.visible" />
+          <el-table-column label="培训日期" prop="trainingDate" key="trainingDate" :width="colWidth('trainingDate', 132)" resizable sortable="custom" align="center" v-if="columns.trainingDate.visible" />
           <el-table-column label="考试分数" prop="examScore" key="examScore" :width="colWidth('examScore', 108)" resizable align="center" v-if="columns.examScore.visible">
             <template #default="scope">
               <span v-if="scope.row.examScore != null" :class="scope.row.examScore >= 60 ? 'score-pass' : 'score-fail'">{{ scope.row.examScore }}</span>
@@ -486,6 +486,8 @@ getList()
 .safety-training-attendee-page .badge.red { background:var(--red-50); color:var(--red-700); border-color:#fecaca; } .safety-training-attendee-page .badge.red .dot { background:var(--red-500); }
 .safety-training-attendee-page .badge.amber { background:var(--amber-50); color:var(--amber-700); border-color:#fde68a; } .safety-training-attendee-page .badge.amber .dot { background:var(--amber-500); }
 .safety-training-attendee-page .badge.gray { background:var(--ink-100); color:var(--ink-500); border-color:var(--ink-200); } .safety-training-attendee-page .badge.gray .dot { background:var(--ink-400); }
+..safety-training-attendee-page .badge.blue { background:var(--blue-50); color:var(--blue-700); border-color:#bfdbfe; } ..safety-training-attendee-page .badge.blue .dot { background:var(--blue-500); }
+..safety-training-attendee-page .badge.violet { background:var(--violet-50); color:var(--brand-700); border-color:var(--brand-200); }
 .safety-training-attendee-page .score-pass { color: var(--green-700); font-weight: 600; }
 .safety-training-attendee-page .score-fail { color: var(--red-700); font-weight: 600; }
 .safety-training-attendee-page .pagination-container { display:flex; align-items:center; justify-content:flex-end; padding:14px 20px; background:#fff; }

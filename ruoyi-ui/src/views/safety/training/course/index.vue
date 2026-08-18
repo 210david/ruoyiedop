@@ -98,7 +98,7 @@
             <template #default="scope">{{ scope.row.hours != null ? scope.row.hours + ' 学时' : '-' }}</template>
           </el-table-column>
           <el-table-column label="讲师" prop="instructor" key="instructor" :width="colWidth('instructor', 144)" resizable show-overflow-tooltip v-if="columns.instructor.visible" />
-          <el-table-column label="状态" prop="status" key="status" :width="colWidth('status', 96)" resizable align="center" v-if="columns.status.visible">
+          <el-table-column label="状态" prop="status" key="status" :width="colWidth('status', 96)" resizable sortable="custom" align="center" v-if="columns.status.visible">
             <template #default="scope">
               <span class="badge" :class="scope.row.status === '0' ? 'green' : 'red'">
                 <span class="dot"></span>{{ scope.row.status === '0' ? '正常' : '停用' }}
@@ -366,6 +366,7 @@ getList()
 .safety-training-course-page .badge.violet { background:var(--violet-50); color:var(--brand-700); border-color:var(--brand-200); }
 .safety-training-course-page .badge.blue { background:var(--blue-50); color:var(--blue-700); border-color:#bfdbfe; } .safety-training-course-page .badge.blue .dot { background:var(--blue-500); }
 .safety-training-course-page .badge.gray { background:var(--ink-100); color:var(--ink-500); border-color:var(--ink-200); } .safety-training-course-page .badge.gray .dot { background:var(--ink-400); }
+..safety-training-course-page .badge.amber { background:var(--amber-50); color:var(--amber-700); border-color:#fde68a; } ..safety-training-course-page .badge.amber .dot { background:var(--amber-500); }
 .safety-training-course-page .pagination-container { display:flex; align-items:center; justify-content:flex-end; padding:14px 20px; background:#fff; }
 @media (max-width:1100px) { .safety-training-course-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }
 @media (max-width:720px) { .safety-training-course-page .filter-card .filter-bar { grid-template-columns:1fr; } }

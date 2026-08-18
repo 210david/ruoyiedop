@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mms.mapper.MmsAbnormalMapper">
+
+    <resultMap type="MmsAbnormal" id="MmsAbnormalResult">
+                <id property="abnormalId" column="abnormal_id"/>
+<result property="abnormalNo"     column="abnormal_no"/>
+        <result property="workOrderId"     column="work_order_id"/>
+        <result property="workOrderNo"     column="work_order_no"/>
+        <result property="resourceId"     column="resource_id"/>
+        <result property="resourceName"     column="resource_name"/>
+        <result property="abnormalType"     column="abnormal_type"/>
+        <result property="severity"     column="severity"/>
+        <result property="description"     column="description"/>
+        <result property="reportBy"     column="report_by"/>
+        <result property="reportTime"     column="report_time"/>
+        <result property="responseBy"     column="response_by"/>
+        <result property="responseTime"     column="response_time"/>
+        <result property="closeTime"     column="close_time"/>
+        <result property="handleResult"     column="handle_result"/>
+        <result property="status"     column="status"/>
+        <result property="delFlag"     column="del_flag"/>
+        <result property="createBy"     column="create_by"/>
+        <result property="createTime"     column="create_time"/>
+        <result property="updateBy"     column="update_by"/>
+        <result property="updateTime"     column="update_time"/>
+        <result property="remark"     column="remark"/>
+    </resultMap>
+
+    <sql id="selectAbnormalVo">
+        SELECT abnormal_id, abnormal_no, work_order_id, work_order_no, resource_id, resource_name, abnormal_type, severity, description, report_by, report_time, response_by, response_time, close_time, handle_result, status, del_flag, create_by, create_time, update_by, update_time, remark
+        FROM mms_abnormal
+    </sql>
+
+    <select id="selectAbnormalList" parameterType="MmsAbnormal" resultMap="MmsAbnormalResult">
+        <include refid="selectAbnormalVo"/>
+        <where>
+            del_flag = '0'
+            <if test="abnormalNo != null and abnormalNo != ''"> AND abnormal_no LIKE CONCAT('%', #{abnormal_no}, '%')</if>
+            <if test="workOrderNo != null and workOrderNo != ''"> AND work_order_no LIKE CONCAT('%', #{work_order_no}, '%')</if>
+            <if test="abnormalType != null and abnormalType != ''"> AND abnormal_type = #{abnormal_type}</if>
+            <if test="severity != null and severity != ''"> AND severity = #{severity}</if>
+            <if test="status != null and status != ''"> AND status = #{status}</if>
+            <if test="reportBy != null and reportBy != ''"> AND report_by LIKE CONCAT('%', #{report_by}, '%')</if>
+            <if test="params.beginTime != null and params.beginTime != ''"> AND date(create_time) &gt;= #{params.beginTime}</if>
+            <if test="params.endTime != null and params.endTime != ''"> AND date(create_time) &lt;= #{params.endTime}</if>
+        </where>
+        ORDER BY abnormal_id DESC
+    </select>
+
+    <select id="selectAbnormalById" parameterType="Long" resultMap="MmsAbnormalResult">
+        <include refid="selectAbnormalVo"/>
+        WHERE abnormal_id = #{abnormalId}
+    </select>
+
+    <insert id="insertAbnormal" parameterType="MmsAbnormal" useGeneratedKeys="true" keyProperty="abnormalId">
+        INSERT INTO mms_abnormal (
+            abnormal_no,
+            work_order_id,
+            work_order_no,
+            resource_id,
+            resource_name,
+            abnormal_type,
+            severity,
+            description,
+            report_by,
+            report_time,
+            response_by,
+            response_time,
+            close_time,
+            handle_result,
+            status,
+            del_flag,
+            create_by,
+            create_time,
+            update_by,
+            update_time,
+            remark
+        )VALUES(
+            #{abnormalNo},
+            #{workOrderId},
+            #{workOrderNo},
+            #{resourceId},
+            #{resourceName},
+            #{abnormalType},
+            #{severity},
+            #{description},
+            #{reportBy},
+            #{reportTime},
+            #{responseBy},
+            #{responseTime},
+            #{closeTime},
+            #{handleResult},
+            #{status},
+            #{delFlag},
+            #{createBy},
+            #{createTime},
+            #{updateBy},
+            #{updateTime},
+            #{remark}
+        )
+    </insert>
+
+    <update id="updateAbnormal" parameterType="MmsAbnormal">
+        UPDATE mms_abnormal SET
+            abnormal_no = #{abnormalNo},
+            work_order_id = #{workOrderId},
+            work_order_no = #{workOrderNo},
+            resource_id = #{resourceId},
+            resource_name = #{resourceName},
+            abnormal_type = #{abnormalType},
+            severity = #{severity},
+            description = #{description},
+            report_by = #{reportBy},
+            report_time = #{reportTime},
+            response_by = #{responseBy},
+            response_time = #{responseTime},
+            close_time = #{closeTime},
+            handle_result = #{handleResult},
+            status = #{status},
+            update_by = #{updateBy},
+            update_time = #{updateTime},
+            remark = #{remark}
+        WHERE abnormal_id = #{abnormalId}
+    </update>
+
+    <delete id="deleteAbnormalByIds" parameterType="Long">
+        UPDATE mms_abnormal SET del_flag = '2' WHERE abnormal_id IN
+        <foreach collection="array" item="abnormalId" open="(" separator="," close=")">
+            #{abnormalId}
+        </foreach>
+    </delete>
+</mapper>

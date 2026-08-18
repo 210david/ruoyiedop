@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mms.mapper.MmsBatchTraceMapper">
+
+    <resultMap type="MmsBatchTrace" id="MmsBatchTraceResult">
+        <id property="traceId" column="trace_id"/>
+        <result property="workOrderId" column="work_order_id"/>
+        <result property="opSeq" column="op_seq"/>
+        <result property="batchOut" column="batch_out"/>
+        <result property="batchIn" column="batch_in"/>
+        <result property="materialIn" column="material_in"/>
+        <result property="materialCode" column="material_code"/>
+        <result property="qtyUsed" column="qty_used"/>
+        <result property="createTime" column="create_time"/>
+        <result property="createBy" column="create_by"/>
+    </resultMap>
+
+    <sql id="selectBatchTraceVo">
+        SELECT trace_id, work_order_id, op_seq, batch_out, batch_in, material_in, material_code, qty_used, create_time, create_by
+        FROM mms_batch_trace
+    </sql>
+
+    <select id="selectBatchTraceList" parameterType="MmsBatchTrace" resultMap="MmsBatchTraceResult">
+        <include refid="selectBatchTraceVo"/>
+        <where>
+            <if test="batchOut != null and batchOut != ''"> AND batch_out LIKE CONCAT('%', #{batchOut}, '%')</if>
+            <if test="batchIn != null and batchIn != ''"> AND batch_in LIKE CONCAT('%', #{batchIn}, '%')</if>
+            <if test="materialCode != null and materialCode != ''"> AND material_code LIKE CONCAT('%', #{materialCode}, '%')</if>
+            <if test="workOrderId != null"> AND work_order_id = #{workOrderId}</if>
+        </where>
+        ORDER BY trace_id DESC
+    </select>
+
+    <select id="selectBatchTraceById" parameterType="Long" resultMap="MmsBatchTraceResult">
+        <include refid="selectBatchTraceVo"/>
+        WHERE trace_id = #{traceId}
+    </select>
+</mapper>

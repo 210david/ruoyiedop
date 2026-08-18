@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mms.mapper.MmsFinishReceiptMapper">
+
+    <resultMap type="MmsFinishReceipt" id="MmsFinishReceiptResult">
+                <id property="finishId" column="finish_id"/>
+<result property="finishNo"     column="finish_no"/>
+        <result property="workOrderId"     column="work_order_id"/>
+        <result property="workOrderNo"     column="work_order_no"/>
+        <result property="productId"     column="product_id"/>
+        <result property="productCode"     column="product_code"/>
+        <result property="productName"     column="product_name"/>
+        <result property="unit"     column="unit"/>
+        <result property="finishQty"     column="finish_qty"/>
+        <result property="qualifiedQty"     column="qualified_qty"/>
+        <result property="batchNo"     column="batch_no"/>
+        <result property="finishTime"     column="finish_time"/>
+        <result property="finishBy"     column="finish_by"/>
+        <result property="isOnTime"     column="is_on_time"/>
+        <result property="status"     column="status"/>
+        <result property="delFlag"     column="del_flag"/>
+        <result property="createBy"     column="create_by"/>
+        <result property="createTime"     column="create_time"/>
+        <result property="updateBy"     column="update_by"/>
+        <result property="updateTime"     column="update_time"/>
+        <result property="remark"     column="remark"/>
+    </resultMap>
+
+    <sql id="selectFinishReceiptVo">
+        SELECT finish_id, finish_no, work_order_id, work_order_no, product_id, product_code, product_name, unit, finish_qty, qualified_qty, batch_no, finish_time, finish_by, is_on_time, status, del_flag, create_by, create_time, update_by, update_time, remark
+        FROM mms_finish_receipt
+    </sql>
+
+    <select id="selectFinishReceiptList" parameterType="MmsFinishReceipt" resultMap="MmsFinishReceiptResult">
+        <include refid="selectFinishReceiptVo"/>
+        <where>
+            del_flag = '0'
+            <if test="finishNo != null and finishNo != ''"> AND finish_no LIKE CONCAT('%', #{finish_no}, '%')</if>
+            <if test="workOrderNo != null and workOrderNo != ''"> AND work_order_no LIKE CONCAT('%', #{work_order_no}, '%')</if>
+            <if test="productCode != null and productCode != ''"> AND product_code LIKE CONCAT('%', #{product_code}, '%')</if>
+            <if test="productName != null and productName != ''"> AND product_name LIKE CONCAT('%', #{product_name}, '%')</if>
+            <if test="status != null and status != ''"> AND status = #{status}</if>
+            <if test="batchNo != null and batchNo != ''"> AND batch_no LIKE CONCAT('%', #{batch_no}, '%')</if>
+            <if test="params.beginTime != null and params.beginTime != ''"> AND date(create_time) &gt;= #{params.beginTime}</if>
+            <if test="params.endTime != null and params.endTime != ''"> AND date(create_time) &lt;= #{params.endTime}</if>
+        </where>
+        ORDER BY finish_id DESC
+    </select>
+
+    <select id="selectFinishReceiptById" parameterType="Long" resultMap="MmsFinishReceiptResult">
+        <include refid="selectFinishReceiptVo"/>
+        WHERE finish_id = #{finishId}
+    </select>
+
+    <insert id="insertFinishReceipt" parameterType="MmsFinishReceipt" useGeneratedKeys="true" keyProperty="finishId">
+        INSERT INTO mms_finish_receipt (
+            finish_no,
+            work_order_id,
+            work_order_no,
+            product_id,
+            product_code,
+            product_name,
+            unit,
+            finish_qty,
+            qualified_qty,
+            batch_no,
+            finish_time,
+            finish_by,
+            is_on_time,
+            status,
+            del_flag,
+            create_by,
+            create_time,
+            update_by,
+            update_time,
+            remark
+        )VALUES(
+            #{finishNo},
+            #{workOrderId},
+            #{workOrderNo},
+            #{productId},
+            #{productCode},
+            #{productName},
+            #{unit},
+            #{finishQty},
+            #{qualifiedQty},
+            #{batchNo},
+            #{finishTime},
+            #{finishBy},
+            #{isOnTime},
+            #{status},
+            #{delFlag},
+            #{createBy},
+            #{createTime},
+            #{updateBy},
+            #{updateTime},
+            #{remark}
+        )
+    </insert>
+
+    <update id="updateFinishReceipt" parameterType="MmsFinishReceipt">
+        UPDATE mms_finish_receipt SET
+            finish_no = #{finishNo},
+            work_order_id = #{workOrderId},
+            work_order_no = #{workOrderNo},
+            product_id = #{productId},
+            product_code = #{productCode},
+            product_name = #{productName},
+            unit = #{unit},
+            finish_qty = #{finishQty},
+            qualified_qty = #{qualifiedQty},
+            batch_no = #{batchNo},
+            finish_time = #{finishTime},
+            finish_by = #{finishBy},
+            is_on_time = #{isOnTime},
+            status = #{status},
+            update_by = #{updateBy},
+            update_time = #{updateTime},
+            remark = #{remark}
+        WHERE finish_id = #{finishId}
+    </update>
+
+    <delete id="deleteFinishReceiptByIds" parameterType="Long">
+        UPDATE mms_finish_receipt SET del_flag = '2' WHERE finish_id IN
+        <foreach collection="array" item="finishId" open="(" separator="," close=")">
+            #{finishId}
+        </foreach>
+    </delete>
+</mapper>

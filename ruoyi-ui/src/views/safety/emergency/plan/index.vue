@@ -409,6 +409,7 @@ getList()
 .safety-emergency-plan-page .badge.red { background:var(--red-50); color:var(--red-700); border-color:#fecaca; } .safety-emergency-plan-page .badge.red .dot { background:var(--red-500); }
 .safety-emergency-plan-page .badge.violet { background:var(--violet-50); color:var(--brand-700); border-color:var(--brand-200); }
 .safety-emergency-plan-page .badge.gray { background:var(--ink-100); color:var(--ink-500); border-color:var(--ink-200); } .safety-emergency-plan-page .badge.gray .dot { background:var(--ink-400); }
+..safety-emergency-plan-page .badge.green { background:var(--green-50); color:var(--green-700); border-color:#a7f3d0; } ..safety-emergency-plan-page .badge.green .dot { background:var(--green-500); }
 .safety-emergency-plan-page .pagination-container { display:flex; align-items:center; justify-content:flex-end; padding:14px 20px; background:#fff; }
 @media (max-width:1100px) { .safety-emergency-plan-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }
 @media (max-width:720px) { .safety-emergency-plan-page .filter-card .filter-bar { grid-template-columns:1fr; } }

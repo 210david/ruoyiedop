@@ -90,6 +90,12 @@
             <artifactId>ruoyi-safety</artifactId>
         </dependency>
 
+        <!-- MMS生产管控 -->
+        <dependency>
+            <groupId>com.ruoyi</groupId>
+            <artifactId>ruoyi-mms</artifactId>
+        </dependency>
+
     </dependencies>
 
     <build>

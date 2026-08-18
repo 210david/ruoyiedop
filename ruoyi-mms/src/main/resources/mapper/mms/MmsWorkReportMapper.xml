@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mms.mapper.MmsWorkReportMapper">
+
+    <resultMap type="MmsWorkReport" id="MmsWorkReportResult">
+                <id property="reportId" column="report_id"/>
+<result property="reportNo"     column="report_no"/>
+        <result property="workOrderId"     column="work_order_id"/>
+        <result property="workOrderNo"     column="work_order_no"/>
+        <result property="processId"     column="process_id"/>
+        <result property="processName"     column="process_name"/>
+        <result property="resourceId"     column="resource_id"/>
+        <result property="resourceName"     column="resource_name"/>
+        <result property="goodQty"     column="good_qty"/>
+        <result property="defectQty"     column="defect_qty"/>
+        <result property="workHours"     column="work_hours"/>
+        <result property="reportTime"     column="report_time"/>
+        <result property="reportBy"     column="report_by"/>
+        <result property="teamName"     column="team_name"/>
+        <result property="shiftName"     column="shift_name"/>
+        <result property="isFirstPiece"     column="is_first_piece"/>
+        <result property="status"     column="status"/>
+        <result property="auditBy"     column="audit_by"/>
+        <result property="auditTime"     column="audit_time"/>
+        <result property="auditRemark"     column="audit_remark"/>
+        <result property="delFlag"     column="del_flag"/>
+        <result property="createBy"     column="create_by"/>
+        <result property="createTime"     column="create_time"/>
+        <result property="updateBy"     column="update_by"/>
+        <result property="updateTime"     column="update_time"/>
+        <result property="remark"     column="remark"/>
+    </resultMap>
+
+    <sql id="selectWorkReportVo">
+        SELECT report_id, report_no, work_order_id, work_order_no, process_id, process_name, resource_id, resource_name, good_qty, defect_qty, work_hours, report_time, report_by, team_name, shift_name, is_first_piece, status, audit_by, audit_time, audit_remark, del_flag, create_by, create_time, update_by, update_time, remark
+        FROM mms_work_report
+    </sql>
+
+    <select id="selectWorkReportList" parameterType="MmsWorkReport" resultMap="MmsWorkReportResult">
+        <include refid="selectWorkReportVo"/>
+        <where>
+            del_flag = '0'
+            <if test="reportNo != null and reportNo != ''"> AND report_no LIKE CONCAT('%', #{reportNo}, '%')</if>
+            <if test="workOrderNo != null and workOrderNo != ''"> AND work_order_no LIKE CONCAT('%', #{work_order_no}, '%')</if>
+            <if test="processName != null and processName != ''"> AND process_name LIKE CONCAT('%', #{process_name}, '%')</if>
+            <if test="status != null and status != ''"> AND status = #{status}</if>
+            <if test="reportBy != null and reportBy != ''"> AND report_by LIKE CONCAT('%', #{report_by}, '%')</if>
+            <if test="teamName != null and teamName != ''"> AND team_name LIKE CONCAT('%', #{team_name}, '%')</if>
+            <if test="params.beginTime != null and params.beginTime != ''"> AND date(create_time) &gt;= #{params.beginTime}</if>
+            <if test="params.endTime != null and params.endTime != ''"> AND date(create_time) &lt;= #{params.endTime}</if>
+        </where>
+        ORDER BY report_id DESC
+    </select>
+
+    <select id="selectWorkReportById" parameterType="Long" resultMap="MmsWorkReportResult">
+        <include refid="selectWorkReportVo"/>
+        WHERE report_id = #{reportId}
+    </select>
+
+    <insert id="insertWorkReport" parameterType="MmsWorkReport" useGeneratedKeys="true" keyProperty="reportId">
+        INSERT INTO mms_work_report (
+            report_no,
+            work_order_id,
+            work_order_no,
+            process_id,
+            process_name,
+            resource_id,
+            resource_name,
+            good_qty,
+            defect_qty,
+            work_hours,
+            report_time,
+            report_by,
+            team_name,
+            shift_name,
+            is_first_piece,
+            status,
+            audit_by,
+            audit_time,
+            audit_remark,
+            del_flag,
+            create_by,
+            create_time,
+            update_by,
+            update_time,
+            remark
+        )VALUES(
+            #{reportNo},
+            #{workOrderId},
+            #{workOrderNo},
+            #{processId},
+            #{processName},
+            #{resourceId},
+            #{resourceName},
+            #{goodQty},
+            #{defectQty},
+            #{workHours},
+            #{reportTime},
+            #{reportBy},
+            #{teamName},
+            #{shiftName},
+            #{isFirstPiece},
+            #{status},
+            #{auditBy},
+            #{auditTime},
+            #{auditRemark},
+            #{delFlag},
+            #{createBy},
+            #{createTime},
+            #{updateBy},
+            #{updateTime},
+            #{remark}
+        )
+    </insert>
+
+    <update id="updateWorkReport" parameterType="MmsWorkReport">
+        UPDATE mms_work_report SET
+            report_no = #{reportNo},
+            work_order_id = #{workOrderId},
+            work_order_no = #{workOrderNo},
+            process_id = #{processId},
+            process_name = #{processName},
+            resource_id = #{resourceId},
+            resource_name = #{resourceName},
+            good_qty = #{goodQty},
+            defect_qty = #{defectQty},
+            work_hours = #{workHours},
+            report_time = #{reportTime},
+            report_by = #{reportBy},
+            team_name = #{teamName},
+            shift_name = #{shiftName},
+            is_first_piece = #{isFirstPiece},
+            status = #{status},
+            audit_by = #{auditBy},
+            audit_time = #{auditTime},
+            audit_remark = #{auditRemark},
+            update_by = #{updateBy},
+            update_time = #{updateTime},
+            remark = #{remark}
+        WHERE report_id = #{reportId}
+    </update>
+
+    <delete id="deleteWorkReportByIds" parameterType="Long">
+        UPDATE mms_work_report SET del_flag = '2' WHERE report_id IN
+        <foreach collection="array" item="reportId" open="(" separator="," close=")">
+            #{reportId}
+        </foreach>
+    </delete>
+</mapper>

@@ -20,8 +20,8 @@ public class MkNumberRule extends BaseEntity
     @Excel(name = "规则编码")
     private String ruleCode;
 
-    /** 所属模块(mk=营销,dms=设备,wms=仓储) */
-    @Excel(name = "所属模块", readConverterExp = "mk=营销管理,dms=设备管理,wms=仓储管理")
+    /** 所属模块(mk=营销,dms=设备,wms=仓储,pms=采购,safety=安全生产,qms=质量管理,mms=生产管控) */
+    @Excel(name = "所属模块", readConverterExp = "mk=营销管理,dms=设备管理,wms=仓储管理,pms=采购管理,safety=安全生产管理,qms=质量管理,mms=生产管控")
     private String module;
 
     /** 规则名称 */

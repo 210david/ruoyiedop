@@ -429,6 +429,9 @@ getList()
 .safety-training-cert-page .badge.green { background:var(--green-50); color:var(--green-700); border-color:#a7f3d0; } .safety-training-cert-page .badge.green .dot { background:var(--green-500); }
 .safety-training-cert-page .badge.red { background:var(--red-50); color:var(--red-700); border-color:#fecaca; } .safety-training-cert-page .badge.red .dot { background:var(--red-500); }
 .safety-training-cert-page .badge.violet { background:var(--violet-50); color:var(--brand-700); border-color:var(--brand-200); }
+..safety-training-cert-page .badge.amber { background:var(--amber-50); color:var(--amber-700); border-color:#fde68a; } ..safety-training-cert-page .badge.amber .dot { background:var(--amber-500); }
+..safety-training-cert-page .badge.blue { background:var(--blue-50); color:var(--blue-700); border-color:#bfdbfe; } ..safety-training-cert-page .badge.blue .dot { background:var(--blue-500); }
+..safety-training-cert-page .badge.gray { background:var(--ink-100); color:var(--ink-500); border-color:var(--ink-200); } ..safety-training-cert-page .badge.gray .dot { background:var(--ink-400); }
 .safety-training-cert-page .expiring-soon { color: var(--amber-700); font-weight: 600; }
 .safety-training-cert-page .pagination-container { display:flex; align-items:center; justify-content:flex-end; padding:14px 20px; background:#fff; }
 @media (max-width:1100px) { .safety-training-cert-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }

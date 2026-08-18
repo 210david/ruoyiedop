@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mms.mapper.MmsReturnMaterialMapper">
+
+    <resultMap type="MmsReturnMaterial" id="MmsReturnMaterialResult">
+                <id property="returnId" column="return_id"/>
+<result property="returnNo"     column="return_no"/>
+        <result property="workOrderId"     column="work_order_id"/>
+        <result property="workOrderNo"     column="work_order_no"/>
+        <result property="materialId"     column="material_id"/>
+        <result property="materialCode"     column="material_code"/>
+        <result property="materialName"     column="material_name"/>
+        <result property="specModel"     column="spec_model"/>
+        <result property="unit"     column="unit"/>
+        <result property="returnQty"     column="return_qty"/>
+        <result property="returnReason"     column="return_reason"/>
+        <result property="returnTime"     column="return_time"/>
+        <result property="returnBy"     column="return_by"/>
+        <result property="status"     column="status"/>
+        <result property="delFlag"     column="del_flag"/>
+        <result property="createBy"     column="create_by"/>
+        <result property="createTime"     column="create_time"/>
+        <result property="updateBy"     column="update_by"/>
+        <result property="updateTime"     column="update_time"/>
+        <result property="remark"     column="remark"/>
+    </resultMap>
+
+    <sql id="selectReturnMaterialVo">
+        SELECT return_id, return_no, work_order_id, work_order_no, material_id, material_code, material_name, spec_model, unit, return_qty, return_reason, return_time, return_by, status, del_flag, create_by, create_time, update_by, update_time, remark
+        FROM mms_return_material
+    </sql>
+
+    <select id="selectReturnMaterialList" parameterType="MmsReturnMaterial" resultMap="MmsReturnMaterialResult">
+        <include refid="selectReturnMaterialVo"/>
+        <where>
+            del_flag = '0'
+            <if test="returnNo != null and returnNo != ''"> AND return_no LIKE CONCAT('%', #{return_no}, '%')</if>
+            <if test="workOrderNo != null and workOrderNo != ''"> AND work_order_no LIKE CONCAT('%', #{work_order_no}, '%')</if>
+            <if test="materialCode != null and materialCode != ''"> AND material_code LIKE CONCAT('%', #{material_code}, '%')</if>
+            <if test="materialName != null and materialName != ''"> AND material_name LIKE CONCAT('%', #{material_name}, '%')</if>
+            <if test="status != null and status != ''"> AND status = #{status}</if>
+            <if test="params.beginTime != null and params.beginTime != ''"> AND date(create_time) &gt;= #{params.beginTime}</if>
+            <if test="params.endTime != null and params.endTime != ''"> AND date(create_time) &lt;= #{params.endTime}</if>
+        </where>
+        ORDER BY return_id DESC
+    </select>
+
+    <select id="selectReturnMaterialById" parameterType="Long" resultMap="MmsReturnMaterialResult">
+        <include refid="selectReturnMaterialVo"/>
+        WHERE return_id = #{returnId}
+    </select>
+
+    <insert id="insertReturnMaterial" parameterType="MmsReturnMaterial" useGeneratedKeys="true" keyProperty="returnId">
+        INSERT INTO mms_return_material (
+            return_no,
+            work_order_id,
+            work_order_no,
+            material_id,
+            material_code,
+            material_name,
+            spec_model,
+            unit,
+            return_qty,
+            return_reason,
+            return_time,
+            return_by,
+            status,
+            del_flag,
+            create_by,
+            create_time,
+            update_by,
+            update_time,
+            remark
+        )VALUES(
+            #{returnNo},
+            #{workOrderId},
+            #{workOrderNo},
+            #{materialId},
+            #{materialCode},
+            #{materialName},
+            #{specModel},
+            #{unit},
+            #{returnQty},
+            #{returnReason},
+            #{returnTime},
+            #{returnBy},
+            #{status},
+            #{delFlag},
+            #{createBy},
+            #{createTime},
+            #{updateBy},
+            #{updateTime},
+            #{remark}
+        )
+    </insert>
+
+    <update id="updateReturnMaterial" parameterType="MmsReturnMaterial">
+        UPDATE mms_return_material SET
+            return_no = #{returnNo},
+            work_order_id = #{workOrderId},
+            work_order_no = #{workOrderNo},
+            material_id = #{materialId},
+            material_code = #{materialCode},
+            material_name = #{materialName},
+            spec_model = #{specModel},
+            unit = #{unit},
+            return_qty = #{returnQty},
+            return_reason = #{returnReason},
+            return_time = #{returnTime},
+            return_by = #{returnBy},
+            status = #{status},
+            update_by = #{updateBy},
+            update_time = #{updateTime},
+            remark = #{remark}
+        WHERE return_id = #{returnId}
+    </update>
+
+    <delete id="deleteReturnMaterialByIds" parameterType="Long">
+        UPDATE mms_return_material SET del_flag = '2' WHERE return_id IN
+        <foreach collection="array" item="returnId" open="(" separator="," close=")">
+            #{returnId}
+        </foreach>
+    </delete>
+</mapper>

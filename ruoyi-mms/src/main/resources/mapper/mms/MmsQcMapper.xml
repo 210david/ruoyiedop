@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mms.mapper.MmsQcMapper">
+
+    <resultMap type="MmsQc" id="MmsQcResult">
+                <id property="qcId" column="qc_id"/>
+<result property="qcNo"     column="qc_no"/>
+        <result property="workOrderId"     column="work_order_id"/>
+        <result property="workOrderNo"     column="work_order_no"/>
+        <result property="processId"     column="process_id"/>
+        <result property="processName"     column="process_name"/>
+        <result property="qcType"     column="qc_type"/>
+        <result property="inspectQty"     column="inspect_qty"/>
+        <result property="defectQty"     column="defect_qty"/>
+        <result property="scrapQty"     column="scrap_qty"/>
+        <result property="defectType"     column="defect_type"/>
+        <result property="qcResult"     column="qc_result"/>
+        <result property="qcBy"     column="qc_by"/>
+        <result property="qcTime"     column="qc_time"/>
+        <result property="delFlag"     column="del_flag"/>
+        <result property="createBy"     column="create_by"/>
+        <result property="createTime"     column="create_time"/>
+        <result property="updateBy"     column="update_by"/>
+        <result property="updateTime"     column="update_time"/>
+        <result property="remark"     column="remark"/>
+    </resultMap>
+
+    <sql id="selectQcVo">
+        SELECT qc_id, qc_no, work_order_id, work_order_no, process_id, process_name, qc_type, inspect_qty, defect_qty, scrap_qty, defect_type, qc_result, qc_by, qc_time, del_flag, create_by, create_time, update_by, update_time, remark
+        FROM mms_qc
+    </sql>
+
+    <select id="selectQcList" parameterType="MmsQc" resultMap="MmsQcResult">
+        <include refid="selectQcVo"/>
+        <where>
+            del_flag = '0'
+            <if test="qcNo != null and qcNo != ''"> AND qc_no LIKE CONCAT('%', #{qc_no}, '%')</if>
+            <if test="workOrderNo != null and workOrderNo != ''"> AND work_order_no LIKE CONCAT('%', #{work_order_no}, '%')</if>
+            <if test="processName != null and processName != ''"> AND process_name LIKE CONCAT('%', #{process_name}, '%')</if>
+            <if test="qcType != null and qcType != ''"> AND qc_type = #{qc_type}</if>
+            <if test="qcResult != null and qcResult != ''"> AND qc_result = #{qc_result}</if>
+            <if test="qcBy != null and qcBy != ''"> AND qc_by LIKE CONCAT('%', #{qc_by}, '%')</if>
+            <if test="params.beginTime != null and params.beginTime != ''"> AND date(create_time) &gt;= #{params.beginTime}</if>
+            <if test="params.endTime != null and params.endTime != ''"> AND date(create_time) &lt;= #{params.endTime}</if>
+        </where>
+        ORDER BY qc_id DESC
+    </select>
+
+    <select id="selectQcById" parameterType="Long" resultMap="MmsQcResult">
+        <include refid="selectQcVo"/>
+        WHERE qc_id = #{qcId}
+    </select>
+
+    <insert id="insertQc" parameterType="MmsQc" useGeneratedKeys="true" keyProperty="qcId">
+        INSERT INTO mms_qc (
+            qc_no,
+            work_order_id,
+            work_order_no,
+            process_id,
+            process_name,
+            qc_type,
+            inspect_qty,
+            defect_qty,
+            scrap_qty,
+            defect_type,
+            qc_result,
+            qc_by,
+            qc_time,
+            del_flag,
+            create_by,
+            create_time,
+            update_by,
+            update_time,
+            remark
+        )VALUES(
+            #{qcNo},
+            #{workOrderId},
+            #{workOrderNo},
+            #{processId},
+            #{processName},
+            #{qcType},
+            #{inspectQty},
+            #{defectQty},
+            #{scrapQty},
+            #{defectType},
+            #{qcResult},
+            #{qcBy},
+            #{qcTime},
+            #{delFlag},
+            #{createBy},
+            #{createTime},
+            #{updateBy},
+            #{updateTime},
+            #{remark}
+        )
+    </insert>
+
+    <update id="updateQc" parameterType="MmsQc">
+        UPDATE mms_qc SET
+            qc_no = #{qcNo},
+            work_order_id = #{workOrderId},
+            work_order_no = #{workOrderNo},
+            process_id = #{processId},
+            process_name = #{processName},
+            qc_type = #{qcType},
+            inspect_qty = #{inspectQty},
+            defect_qty = #{defectQty},
+            scrap_qty = #{scrapQty},
+            defect_type = #{defectType},
+            qc_result = #{qcResult},
+            qc_by = #{qcBy},
+            qc_time = #{qcTime},
+            update_by = #{updateBy},
+            update_time = #{updateTime},
+            remark = #{remark}
+        WHERE qc_id = #{qcId}
+    </update>
+
+    <delete id="deleteQcByIds" parameterType="Long">
+        UPDATE mms_qc SET del_flag = '2' WHERE qc_id IN
+        <foreach collection="array" item="qcId" open="(" separator="," close=")">
+            #{qcId}
+        </foreach>
+    </delete>
+</mapper>

@@ -62,6 +62,8 @@
         <div class="left">
           <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['safety:emergency:incident:add']">新增</el-button>
           <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['safety:emergency:incident:remove']">删除</el-button>
+          <div class="toolbar-divider"></div>
+          <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['safety:emergency:incident:export']">导出</el-button>
         </div>
         <div class="right">
           <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="safety_incident_columns" />
@@ -89,7 +91,7 @@
               </span>
             </template>
           </el-table-column>
-          <el-table-column label="经济损失" prop="economicLoss" key="economicLoss" :width="colWidth('economicLoss', 120)" resizable align="right" v-if="columns.economicLoss.visible">
+          <el-table-column label="经济损失" prop="economicLoss" key="economicLoss" :width="colWidth('economicLoss', 120)" resizable align="center" v-if="columns.economicLoss.visible">
             <template #default="scope"><span class="rd-amount">{{ formatMoney(scope.row.economicLoss) }}</span></template>
           </el-table-column>
           <el-table-column label="报告人" prop="reportPerson" key="reportPerson" :width="colWidth('reportPerson', 100)" resizable v-if="columns.reportPerson.visible" />
@@ -318,6 +320,7 @@ function submitForm() {
     }
   })
 }
+function handleExport() { proxy.download('safety/emergency/incident/export', { ...queryParams }, `incident_${new Date().getTime()}.xlsx`) }
 function handleDelete(row) { const incidentIds = row.incidentId || ids.value; proxy.$modal.confirm('是否确认删除事故记录？').then(function() { return delIncident(incidentIds) }).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
 function cancel() { open.value = false; reset() }
 function reset() {
@@ -377,6 +380,9 @@ getList()
 .safety-incident-page .badge.amber { background:var(--amber-50); color:var(--amber-700); border-color:#fde68a; } .safety-incident-page .badge.amber .dot { background:var(--amber-500); }
 .safety-incident-page .badge.red { background:var(--red-50); color:var(--red-700); border-color:#fecaca; } .safety-incident-page .badge.red .dot { background:var(--red-500); }
 .safety-incident-page .badge.gray { background:var(--ink-100); color:var(--ink-500); border-color:var(--ink-200); } .safety-incident-page .badge.gray .dot { background:var(--ink-400); }
+..safety-incident-page .badge.blue { background:var(--blue-50); color:var(--blue-700); border-color:#bfdbfe; } ..safety-incident-page .badge.blue .dot { background:var(--blue-500); }
+..safety-incident-page .badge.green { background:var(--green-50); color:var(--green-700); border-color:#a7f3d0; } ..safety-incident-page .badge.green .dot { background:var(--green-500); }
+..safety-incident-page .badge.violet { background:var(--violet-50); color:var(--brand-700); border-color:var(--brand-200); }
 .safety-incident-page .pagination-container { display:flex; align-items:center; justify-content:flex-end; padding:14px 20px; background:#fff; }
 .safety-incident-page .rd-form-tip { margin-left: 4px; color: #c0c4cc; font-size: 14px; cursor: help; }
 .safety-incident-page .rd-form-tip:hover { color: #909399; }

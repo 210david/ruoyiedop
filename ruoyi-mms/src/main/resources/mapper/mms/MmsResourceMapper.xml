@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mms.mapper.MmsResourceMapper">
+
+    <resultMap type="MmsResource" id="MmsResourceResult">
+                <id property="resourceId" column="resource_id"/>
+<result property="resourceCode"     column="resource_code"/>
+        <result property="resourceName"     column="resource_name"/>
+        <result property="resourceType"     column="resource_type"/>
+        <result property="rate"     column="rate"/>
+        <result property="rateUnit"     column="rate_unit"/>
+        <result property="batchMin"     column="batch_min"/>
+        <result property="batchMax"     column="batch_max"/>
+        <result property="efficiency"     column="efficiency"/>
+        <result property="workshopName"     column="workshop_name"/>
+        <result property="lineName"     column="line_name"/>
+        <result property="status"     column="status"/>
+        <result property="delFlag"     column="del_flag"/>
+        <result property="createBy"     column="create_by"/>
+        <result property="createTime"     column="create_time"/>
+        <result property="updateBy"     column="update_by"/>
+        <result property="updateTime"     column="update_time"/>
+        <result property="remark"     column="remark"/>
+    </resultMap>
+
+    <sql id="selectResourceVo">
+        SELECT resource_id, resource_code, resource_name, resource_type, rate, rate_unit, batch_min, batch_max, efficiency, workshop_name, line_name, status, del_flag, create_by, create_time, update_by, update_time, remark
+        FROM mms_resource
+    </sql>
+
+    <select id="selectResourceList" parameterType="MmsResource" resultMap="MmsResourceResult">
+        <include refid="selectResourceVo"/>
+        <where>
+            del_flag = '0'
+            <if test="resourceCode != null and resourceCode != ''"> AND resource_code LIKE CONCAT('%', #{resource_code}, '%')</if>
+            <if test="resourceName != null and resourceName != ''"> AND resource_name LIKE CONCAT('%', #{resource_name}, '%')</if>
+            <if test="resourceType != null and resourceType != ''"> AND resource_type = #{resource_type}</if>
+            <if test="status != null and status != ''"> AND status = #{status}</if>
+            <if test="workshopName != null and workshopName != ''"> AND workshop_name LIKE CONCAT('%', #{workshop_name}, '%')</if>
+            <if test="params.beginTime != null and params.beginTime != ''"> AND date(create_time) &gt;= #{params.beginTime}</if>
+            <if test="params.endTime != null and params.endTime != ''"> AND date(create_time) &lt;= #{params.endTime}</if>
+        </where>
+        ORDER BY resource_id DESC
+    </select>
+
+    <select id="selectResourceById" parameterType="Long" resultMap="MmsResourceResult">
+        <include refid="selectResourceVo"/>
+        WHERE resource_id = #{resourceId}
+    </select>
+
+    <insert id="insertResource" parameterType="MmsResource" useGeneratedKeys="true" keyProperty="resourceId">
+        INSERT INTO mms_resource (
+            resource_code,
+            resource_name,
+            resource_type,
+            rate,
+            rate_unit,
+            batch_min,
+            batch_max,
+            efficiency,
+            workshop_name,
+            line_name,
+            status,
+            del_flag,
+            create_by,
+            create_time,
+            update_by,
+            update_time,
+            remark
+        )VALUES(
+            #{resourceCode},
+            #{resourceName},
+            #{resourceType},
+            #{rate},
+            #{rateUnit},
+            #{batchMin},
+            #{batchMax},
+            #{efficiency},
+            #{workshopName},
+            #{lineName},
+            #{status},
+            #{delFlag},
+            #{createBy},
+            #{createTime},
+            #{updateBy},
+            #{updateTime},
+            #{remark}
+        )
+    </insert>
+
+    <update id="updateResource" parameterType="MmsResource">
+        UPDATE mms_resource SET
+            resource_code = #{resourceCode},
+            resource_name = #{resourceName},
+            resource_type = #{resourceType},
+            rate = #{rate},
+            rate_unit = #{rateUnit},
+            batch_min = #{batchMin},
+            batch_max = #{batchMax},
+            efficiency = #{efficiency},
+            workshop_name = #{workshopName},
+            line_name = #{lineName},
+            status = #{status},
+            update_by = #{updateBy},
+            update_time = #{updateTime},
+            remark = #{remark}
+        WHERE resource_id = #{resourceId}
+    </update>
+
+    <delete id="deleteResourceByIds" parameterType="Long">
+        UPDATE mms_resource SET del_flag = '2' WHERE resource_id IN
+        <foreach collection="array" item="resourceId" open="(" separator="," close=")">
+            #{resourceId}
+        </foreach>
+    </delete>
+</mapper>
