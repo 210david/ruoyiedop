@@ -76,8 +76,45 @@ EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
 -- =============================================
+-- 0.7 旧数据迁移：将旧版脚本插入的 mms 编号规则记录的 module 字段更新为 'mms'
+-- 旧版脚本（mms_production_control_part3.sql）插入时没有 module 字段，需要补充
+-- =============================================
+UPDATE `mk_number_rule` SET `module` = 'mms' WHERE `module` IS NULL OR `module` = '' OR `module` = 'mk'
+AND `rule_code` IN (
+    'mms_bom', 'mms_route', 'mms_process', 'mms_resource', 'mms_shift',
+    'mms_demand', 'mms_mps', 'mms_kit', 'mms_kit_check',
+    'mms_work_order', 'mms_workorder', 'mms_issue', 'mms_return_material', 'mms_return',
+    'mms_report', 'mms_work_report', 'mms_qc', 'mms_abnormal', 'mms_finish', 'mms_finish_receipt',
+    'mms_flow_card', 'mms_dispatch', 'mms_downtime'
+);
+
+-- 如果旧版脚本使用了 date_pattern / reset_cycle 等旧列名，尝试迁移数据到新列名
+-- 注意：如果旧列已不存在，这些语句会被忽略
+SET @col_old_date = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'mk_number_rule' AND COLUMN_NAME = 'date_pattern');
+SET @sql_mig1 = IF(@col_old_date > 0, 'UPDATE `mk_number_rule` SET `date_format` = `date_pattern` WHERE `date_format` IS NULL AND `date_pattern` IS NOT NULL', 'SELECT 1');
+PREPARE stmt_mig1 FROM @sql_mig1;
+EXECUTE stmt_mig1;
+DEALLOCATE PREPARE stmt_mig1;
+
+SET @col_old_reset = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'mk_number_rule' AND COLUMN_NAME = 'reset_cycle');
+SET @sql_mig2 = IF(@col_old_reset > 0, 'UPDATE `mk_number_rule` SET `reset_type` = CASE WHEN `reset_cycle` = ''day'' THEN ''1'' WHEN `reset_cycle` = ''month'' THEN ''2'' WHEN `reset_cycle` = ''year'' THEN ''3'' ELSE ''0'' END WHERE `reset_type` IS NULL AND `reset_cycle` IS NOT NULL', 'SELECT 1');
+PREPARE stmt_mig2 FROM @sql_mig2;
+EXECUTE stmt_mig2;
+DEALLOCATE PREPARE stmt_mig2;
+
+-- =============================================
 -- 一、初始化生产管控编号规则（幂等插入）
 -- =============================================
+
+-- BOM编号
+INSERT INTO `mk_number_rule` (`rule_code`, `module`, `rule_name`, `prefix`, `date_format`, `reset_type`, `seq_length`, `seq_start`, `step`, `current_seq`, `current_date_str`, `connector`, `status`, `create_by`, `create_time`, `remark`)
+SELECT 'mms_bom', 'mms', 'BOM编号', 'BOM', 'yyyyMMdd', '1', 4, 1, 1, 0, '', '-', '0', 'admin', sysdate(), 'BOM物料清单编号，每日重置'
+WHERE NOT EXISTS (SELECT 1 FROM mk_number_rule WHERE rule_code='mms_bom');
+
+-- 工艺路线编号
+INSERT INTO `mk_number_rule` (`rule_code`, `module`, `rule_name`, `prefix`, `date_format`, `reset_type`, `seq_length`, `seq_start`, `step`, `current_seq`, `current_date_str`, `connector`, `status`, `create_by`, `create_time`, `remark`)
+SELECT 'mms_route', 'mms', '工艺路线编号', 'RT', 'yyyyMMdd', '1', 4, 1, 1, 0, '', '-', '0', 'admin', sysdate(), '工艺路线编号，每日重置'
+WHERE NOT EXISTS (SELECT 1 FROM mk_number_rule WHERE rule_code='mms_route');
 
 -- 主生产计划编号
 INSERT INTO `mk_number_rule` (`rule_code`, `module`, `rule_name`, `prefix`, `date_format`, `reset_type`, `seq_length`, `seq_start`, `step`, `current_seq`, `current_date_str`, `connector`, `status`, `create_by`, `create_time`, `remark`)
@@ -128,6 +165,21 @@ WHERE NOT EXISTS (SELECT 1 FROM mk_number_rule WHERE rule_code='mms_work_report'
 INSERT INTO `mk_number_rule` (`rule_code`, `module`, `rule_name`, `prefix`, `date_format`, `reset_type`, `seq_length`, `seq_start`, `step`, `current_seq`, `current_date_str`, `connector`, `status`, `create_by`, `create_time`, `remark`)
 SELECT 'mms_abnormal', 'mms', '异常单编号', 'EX', 'yyyyMMdd', '1', 4, 1, 1, 0, '', '-', '0', 'admin', sysdate(), '异常单编号，每日重置'
 WHERE NOT EXISTS (SELECT 1 FROM mk_number_rule WHERE rule_code='mms_abnormal');
+
+-- 工序编号
+INSERT INTO `mk_number_rule` (`rule_code`, `module`, `rule_name`, `prefix`, `date_format`, `reset_type`, `seq_length`, `seq_start`, `step`, `current_seq`, `current_date_str`, `connector`, `status`, `create_by`, `create_time`, `remark`)
+SELECT 'mms_process', 'mms', '工序编号', 'GX', '', '0', 4, 1, 1, 0, '', '-', '0', 'admin', sysdate(), '工序编号，永不重置'
+WHERE NOT EXISTS (SELECT 1 FROM mk_number_rule WHERE rule_code='mms_process');
+
+-- 产能资源编号
+INSERT INTO `mk_number_rule` (`rule_code`, `module`, `rule_name`, `prefix`, `date_format`, `reset_type`, `seq_length`, `seq_start`, `step`, `current_seq`, `current_date_str`, `connector`, `status`, `create_by`, `create_time`, `remark`)
+SELECT 'mms_resource', 'mms', '产能资源编号', 'RES', 'yyyyMMdd', '1', 4, 1, 1, 0, '', '-', '0', 'admin', sysdate(), '产能资源编号，每日重置'
+WHERE NOT EXISTS (SELECT 1 FROM mk_number_rule WHERE rule_code='mms_resource');
+
+-- 班次编号
+INSERT INTO `mk_number_rule` (`rule_code`, `module`, `rule_name`, `prefix`, `date_format`, `reset_type`, `seq_length`, `seq_start`, `step`, `current_seq`, `current_date_str`, `connector`, `status`, `create_by`, `create_time`, `remark`)
+SELECT 'mms_shift', 'mms', '班次编号', 'SFT', 'yyyyMMdd', '1', 4, 1, 1, 0, '', '-', '0', 'admin', sysdate(), '班次编号，每日重置'
+WHERE NOT EXISTS (SELECT 1 FROM mk_number_rule WHERE rule_code='mms_shift');
 
 -- =============================================
 -- 二、生产管控 - 编码规则菜单（挂在生产管控目录下）

@@ -4,6 +4,7 @@
 
     <resultMap type="MmsShift" id="MmsShiftResult">
                 <id property="shiftId" column="shift_id"/>
+<result property="shiftCode"     column="shift_code"/>
 <result property="shiftName"     column="shift_name"/>
         <result property="startTime"     column="start_time"/>
         <result property="endTime"     column="end_time"/>
@@ -19,7 +20,7 @@
     </resultMap>
 
     <sql id="selectShiftVo">
-        SELECT shift_id, shift_name, start_time, end_time, rest_minutes, avail_hours, status, del_flag, create_by, create_time, update_by, update_time, remark
+        SELECT shift_id, shift_code, shift_name, start_time, end_time, rest_minutes, avail_hours, status, del_flag, create_by, create_time, update_by, update_time, remark
         FROM mms_shift
     </sql>
 
@@ -27,7 +28,8 @@
         <include refid="selectShiftVo"/>
         <where>
             del_flag = '0'
-            <if test="shiftName != null and shiftName != ''"> AND shift_name LIKE CONCAT('%', #{shift_name}, '%')</if>
+            <if test="shiftCode != null and shiftCode != ''"> AND shift_code LIKE CONCAT('%', #{shiftCode}, '%')</if>
+            <if test="shiftName != null and shiftName != ''"> AND shift_name LIKE CONCAT('%', #{shiftName}, '%')</if>
             <if test="status != null and status != ''"> AND status = #{status}</if>
             <if test="params.beginTime != null and params.beginTime != ''"> AND date(create_time) &gt;= #{params.beginTime}</if>
             <if test="params.endTime != null and params.endTime != ''"> AND date(create_time) &lt;= #{params.endTime}</if>
@@ -42,6 +44,7 @@
 
     <insert id="insertShift" parameterType="MmsShift" useGeneratedKeys="true" keyProperty="shiftId">
         INSERT INTO mms_shift (
+            shift_code,
             shift_name,
             start_time,
             end_time,
@@ -55,6 +58,7 @@
             update_time,
             remark
         )VALUES(
+            #{shiftCode},
             #{shiftName},
             #{startTime},
             #{endTime},

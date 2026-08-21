@@ -46,11 +46,12 @@ export function enableRoute(routeId) {
   })
 }
 
-/** 审核路线（已启用→已审核） */
-export function auditRoute(routeId) {
+/** 审核路线（已启用→已审核/已驳回） */
+export function auditRoute(routeId, auditAction, auditRemark) {
   return request({
     url: '/mms/route/audit/' + routeId,
-    method: 'put'
+    method: 'put',
+    params: { auditAction, auditRemark }
   })
 }
 

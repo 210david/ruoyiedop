@@ -43,6 +43,14 @@ export function delWorkOrder(workOrderId) {
   })
 }
 
+// 工单下达预览（获取BOM明细+工艺工序+校验结果）
+export function getReleasePreview(workOrderId) {
+  return request({
+    url: '/mms/workorder/release/preview/' + workOrderId,
+    method: 'get'
+  })
+}
+
 // 工单下达
 export function releaseWorkOrder(workOrderId) {
   return request({

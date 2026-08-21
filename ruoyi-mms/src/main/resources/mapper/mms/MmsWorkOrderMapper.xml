@@ -43,6 +43,11 @@
         <result property="updateBy"     column="update_by"/>
         <result property="updateTime"     column="update_time"/>
         <result property="remark"     column="remark"/>
+        <result property="scheduleNo"     column="sch_schedule_no"/>
+        <result property="scheduleStatus"     column="sch_status"/>
+        <result property="schedulePlanStart"     column="sch_plan_start"/>
+        <result property="schedulePlanEnd"     column="sch_plan_end"/>
+        <result property="scheduleResourceName"     column="sch_resource_name"/>
     </resultMap>
 
     <sql id="selectWorkOrderVo">
@@ -67,8 +72,22 @@
     </select>
 
     <select id="selectWorkOrderById" parameterType="Long" resultMap="MmsWorkOrderResult">
-        <include refid="selectWorkOrderVo"/>
-        WHERE work_order_id = #{workOrderId}
+        SELECT wo.work_order_id, wo.work_order_no, wo.order_type, wo.mps_id, wo.mps_no, wo.demand_no,
+               wo.product_id, wo.product_code, wo.product_name, wo.spec_model, wo.unit, wo.plan_qty,
+               wo.bom_id, wo.bom_no, wo.route_id, wo.route_no, wo.resource_id, wo.resource_name,
+               wo.plan_start, wo.plan_finish, wo.actual_start, wo.actual_finish,
+               wo.finished_qty, wo.qualified_qty, wo.defect_qty, wo.priority, wo.status,
+               wo.audit_by, wo.audit_time, wo.audit_opinion, wo.pause_reason, wo.close_remark,
+               wo.release_by, wo.release_time, wo.del_flag, wo.create_by, wo.create_time,
+               wo.update_by, wo.update_time, wo.remark,
+               sch.schedule_no AS sch_schedule_no, sch.status AS sch_status,
+               sch.plan_start AS sch_plan_start, sch.plan_end AS sch_plan_end,
+               sch.resource_name AS sch_resource_name
+        FROM mms_work_order wo
+        LEFT JOIN mms_schedule_task sch ON sch.work_order_id = wo.work_order_id AND sch.del_flag = '0'
+        WHERE wo.work_order_id = #{workOrderId}
+        ORDER BY sch.plan_start ASC
+        LIMIT 1
     </select>
 
     <insert id="insertWorkOrder" parameterType="MmsWorkOrder" useGeneratedKeys="true" keyProperty="workOrderId">

@@ -46,10 +46,10 @@ public class MmsBomController extends BaseController
     }
 
     @PreAuthorize("@ss.hasPermi('mms:bom:query')")
-    @GetMapping(value = "/{BomId:[0-9]+}")
-    public AjaxResult getInfo(@PathVariable("BomId") Long BomId)
+    @GetMapping(value = "/{bomId}")
+    public AjaxResult getInfo(@PathVariable("bomId") Long bomId)
     {
-        return AjaxResult.success(mmsBomService.selectBomById(BomId));
+        return AjaxResult.success(mmsBomService.selectBomById(bomId));
     }
 
     @Log(title = "BOM", businessType = BusinessType.INSERT)
@@ -70,10 +70,10 @@ public class MmsBomController extends BaseController
 
     @Log(title = "BOM", businessType = BusinessType.DELETE)
     @PreAuthorize("@ss.hasPermi('mms:bom:remove')")
-    @DeleteMapping("/{BomIds:[0-9]+}")
-    public AjaxResult remove(@PathVariable Long[] BomIds)
+    @DeleteMapping("/{bomIds}")
+    public AjaxResult remove(@PathVariable Long[] bomIds)
     {
-        return toAjax(mmsBomService.deleteBomByIds(BomIds));
+        return toAjax(mmsBomService.deleteBomByIds(bomIds));
     }
 
     /**
@@ -85,6 +85,28 @@ public class MmsBomController extends BaseController
     public AjaxResult publish(@PathVariable("bomId") Long bomId)
     {
         return toAjax(mmsBomService.publishBom(bomId));
+    }
+
+    /**
+     * BOM停用（已发布→已停用）
+     */
+    @Log(title = "BOM", businessType = BusinessType.UPDATE)
+    @PreAuthorize("@ss.hasPermi('mms:bom:edit')")
+    @PutMapping("/disable/{bomId}")
+    public AjaxResult disable(@PathVariable("bomId") Long bomId)
+    {
+        return toAjax(mmsBomService.disableBom(bomId));
+    }
+
+    /**
+     * BOM启用（已停用→已发布）
+     */
+    @Log(title = "BOM", businessType = BusinessType.UPDATE)
+    @PreAuthorize("@ss.hasPermi('mms:bom:edit')")
+    @PutMapping("/enable/{bomId}")
+    public AjaxResult enable(@PathVariable("bomId") Long bomId)
+    {
+        return toAjax(mmsBomService.enableBom(bomId));
     }
 
     /**

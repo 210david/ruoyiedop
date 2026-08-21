@@ -1,6 +1,8 @@
 package com.ruoyi.mms.domain;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 import com.ruoyi.common.annotation.Excel;
 import com.ruoyi.common.core.domain.BaseEntity;
 
@@ -81,6 +83,9 @@ public class MmsBomDetail extends BaseEntity
     /** 层级(多层级展开时使用, 0=顶层) */
     private transient Integer treeLevel;
 
+    /** 子节点列表(多层级展开时使用) */
+    private transient List<MmsBomDetail> children = new ArrayList<>();
+
     public Long getDetailId() { return detailId; }
     public void setDetailId(Long detailId) { this.detailId = detailId; }
     public Long getBomId() { return bomId; }
@@ -119,4 +124,6 @@ public class MmsBomDetail extends BaseEntity
     public void setDelFlag(String delFlag) { this.delFlag = delFlag; }
     public Integer getTreeLevel() { return treeLevel; }
     public void setTreeLevel(Integer treeLevel) { this.treeLevel = treeLevel; }
+    public List<MmsBomDetail> getChildren() { return children; }
+    public void setChildren(List<MmsBomDetail> children) { this.children = children; }
 }

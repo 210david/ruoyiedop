@@ -25,6 +25,9 @@ public interface IMmsWorkOrderService
     /** 工单下达：0(新建) → 1(已下达) */
     public int releaseWorkOrder(Long workOrderId);
 
+    /** 工单下达预览：返回BOM明细+工艺工序，供前端弹窗展示 */
+    public com.ruoyi.common.core.domain.AjaxResult getReleasePreview(Long workOrderId);
+
     /** 工单暂停：1(已下达)/2(执行中) → 7(已暂停) */
     public int pauseWorkOrder(Long workOrderId, String pauseReason);
 

@@ -38,6 +38,8 @@
         <result property="itemId"        column="item_id"/>
         <result property="orderId"       column="order_id"/>
         <result property="lineNo"         column="line_no"/>
+        <result property="materialId"    column="material_id"/>
+        <result property="materialCode"  column="material_code"/>
         <result property="productName"   column="product_name"/>
         <result property="productSpec"   column="product_spec"/>
         <result property="unit"          column="unit"/>
@@ -87,9 +89,12 @@
     </select>
 
     <select id="selectOrderItems" parameterType="Long" resultMap="MkOrderItemResult">
-        SELECT item_id, order_id, line_no, product_name, product_spec, unit, quantity, shipped_qty, unit_price, subtotal,
-               create_time, remark
-        FROM mk_order_item WHERE order_id = #{orderId}
+        SELECT oi.item_id, oi.order_id, oi.line_no, oi.material_id, oi.material_code,
+               oi.product_name, oi.product_spec, oi.unit, oi.quantity, oi.shipped_qty,
+               oi.unit_price, oi.subtotal, oi.create_time, oi.remark
+        FROM mk_order_item oi
+        WHERE oi.order_id = #{orderId}
+        ORDER BY oi.line_no
     </select>
 
     <insert id="insertOrder" parameterType="MkOrder" useGeneratedKeys="true" keyProperty="orderId">
@@ -106,8 +111,8 @@
     </insert>
 
     <insert id="insertOrderItem" parameterType="MkOrderItem">
-        INSERT INTO mk_order_item (order_id, line_no, product_name, product_spec, unit, quantity, shipped_qty, unit_price, subtotal, create_time, remark)
-        VALUES (#{orderId}, #{lineNo}, #{productName}, #{productSpec}, #{unit}, #{quantity}, #{shippedQty}, #{unitPrice}, #{subtotal}, sysdate(), #{remark})
+        INSERT INTO mk_order_item (order_id, line_no, material_id, material_code, product_name, product_spec, unit, quantity, shipped_qty, unit_price, subtotal, create_time, remark)
+        VALUES (#{orderId}, #{lineNo}, #{materialId}, #{materialCode}, #{productName}, #{productSpec}, #{unit}, #{quantity}, #{shippedQty}, #{unitPrice}, #{subtotal}, sysdate(), #{remark})
     </insert>
 
     <update id="updateOrder" parameterType="MkOrder">

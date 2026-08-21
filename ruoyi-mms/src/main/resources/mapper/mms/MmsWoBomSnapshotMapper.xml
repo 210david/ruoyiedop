@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mms.mapper.MmsWoBomSnapshotMapper">
+
+    <resultMap type="com.ruoyi.mms.domain.MmsWoBomSnapshot" id="MmsWoBomSnapshotResult">
+        <id property="snapshotId" column="snapshot_id"/>
+        <result property="workOrderId" column="work_order_id"/>
+        <result property="bomId" column="bom_id"/>
+        <result property="bomNo" column="bom_no"/>
+        <result property="bomVersion" column="bom_version"/>
+        <result property="seq" column="seq"/>
+        <result property="materialId" column="material_id"/>
+        <result property="materialCode" column="material_code"/>
+        <result property="materialName" column="material_name"/>
+        <result property="specModel" column="spec_model"/>
+        <result property="unit" column="unit"/>
+        <result property="usageQty" column="usage_qty"/>
+        <result property="lossRate" column="loss_rate"/>
+        <result property="isKeyMaterial" column="is_key_material"/>
+        <result property="supplyType" column="supply_type"/>
+        <result property="pickStoreId" column="pick_store_id"/>
+        <result property="pickStoreName" column="pick_store_name"/>
+        <result property="isPhantom" column="is_phantom"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+    </resultMap>
+
+    <sql id="selectBomSnapshotVo">
+        SELECT snapshot_id, work_order_id, bom_id, bom_no, bom_version, seq, material_id, material_code, material_name, spec_model, unit, usage_qty, loss_rate, is_key_material, supply_type, pick_store_id, pick_store_name, is_phantom, del_flag, create_by, create_time
+        FROM mms_wo_bom_snapshot
+    </sql>
+
+    <select id="selectBomSnapshotByWorkOrderId" parameterType="Long" resultMap="MmsWoBomSnapshotResult">
+        <include refid="selectBomSnapshotVo"/>
+        WHERE work_order_id = #{workOrderId} AND del_flag = '0'
+        ORDER BY seq
+    </select>
+
+    <insert id="batchInsertBomSnapshot" parameterType="java.util.List">
+        INSERT INTO mms_wo_bom_snapshot (
+            work_order_id, bom_id, bom_no, bom_version, seq, material_id, material_code, material_name, spec_model, unit, usage_qty, loss_rate, is_key_material, supply_type, pick_store_id, pick_store_name, is_phantom, del_flag, create_by, create_time
+        ) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.workOrderId}, #{item.bomId}, #{item.bomNo}, #{item.bomVersion}, #{item.seq}, #{item.materialId}, #{item.materialCode}, #{item.materialName}, #{item.specModel}, #{item.unit}, #{item.usageQty}, #{item.lossRate}, #{item.isKeyMaterial}, #{item.supplyType}, #{item.pickStoreId}, #{item.pickStoreName}, #{item.isPhantom}, #{item.delFlag}, #{item.createBy}, #{item.createTime}
+            )
+        </foreach>
+    </insert>
+
+    <delete id="deleteBomSnapshotByWorkOrderId" parameterType="Long">
+        DELETE FROM mms_wo_bom_snapshot WHERE work_order_id = #{workOrderId}
+    </delete>
+
+</mapper>

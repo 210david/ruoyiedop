@@ -1,17 +1,32 @@
 package com.ruoyi.mms.service.impl;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.ruoyi.common.exception.ServiceException;
+import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.mk.service.IMkNumberRuleService;
+import com.ruoyi.mms.domain.MmsBom;
+import com.ruoyi.mms.domain.MmsBomDetail;
+import com.ruoyi.mms.domain.MmsDispatch;
+import com.ruoyi.mms.domain.MmsRoute;
+import com.ruoyi.mms.domain.MmsRouteProcess;
 import com.ruoyi.mms.domain.MmsWorkOrder;
 import com.ruoyi.mms.domain.MmsWorkOrderAuditLog;
+import com.ruoyi.mms.domain.MmsWoBomSnapshot;
+import com.ruoyi.mms.domain.MmsWoRouteSnapshot;
+import com.ruoyi.mms.mapper.MmsBomMapper;
+import com.ruoyi.mms.mapper.MmsDispatchMapper;
+import com.ruoyi.mms.mapper.MmsRouteMapper;
+import com.ruoyi.mms.mapper.MmsScheduleMapper;
+import com.ruoyi.mms.mapper.MmsWoBomSnapshotMapper;
+import com.ruoyi.mms.mapper.MmsWoRouteSnapshotMapper;
 import com.ruoyi.mms.mapper.MmsWorkOrderMapper;
 import com.ruoyi.mms.service.IMmsWorkOrderService;
 
@@ -33,6 +48,24 @@ public class MmsWorkOrderServiceImpl implements IMmsWorkOrderService
 
     @Autowired
     private IMkNumberRuleService mkNumberRuleService;
+
+    @Autowired
+    private MmsBomMapper bomMapper;
+
+    @Autowired
+    private MmsRouteMapper routeMapper;
+
+    @Autowired
+    private MmsDispatchMapper dispatchMapper;
+
+    @Autowired
+    private MmsWoBomSnapshotMapper woBomSnapshotMapper;
+
+    @Autowired
+    private MmsWoRouteSnapshotMapper woRouteSnapshotMapper;
+
+    @Autowired
+    private MmsScheduleMapper scheduleMapper;
 
     // ========== 标准 CRUD ==========
 
@@ -77,6 +110,7 @@ public class MmsWorkOrderServiceImpl implements IMmsWorkOrderService
             workOrder.setDefectQty(BigDecimal.ZERO);
         }
         workOrder.setCreateBy(SecurityUtils.getUsername());
+        workOrder.setCreateTime(DateUtils.getNowDate());
         return workOrderMapper.insertWorkOrder(workOrder);
     }
 
@@ -91,6 +125,7 @@ public class MmsWorkOrderServiceImpl implements IMmsWorkOrderService
             throw new ServiceException("当前状态不允许修改工单信息");
         }
         workOrder.setUpdateBy(SecurityUtils.getUsername());
+        workOrder.setUpdateTime(DateUtils.getNowDate());
         return workOrderMapper.updateWorkOrder(workOrder);
     }
 
@@ -107,6 +142,8 @@ public class MmsWorkOrderServiceImpl implements IMmsWorkOrderService
                 throw new ServiceException("工单[" + wo.getWorkOrderNo() + "]非新建/作废状态，不允许删除");
             }
         }
+        // 删除工单前，同步取消关联的已下达排产记录
+        scheduleMapper.cancelSchedulesByWorkOrderIds(workOrderIds);
         return workOrderMapper.deleteWorkOrderByIds(workOrderIds);
     }
 
@@ -125,25 +162,151 @@ public class MmsWorkOrderServiceImpl implements IMmsWorkOrderService
     public int releaseWorkOrder(Long workOrderId)
     {
         MmsWorkOrder wo = getAndCheckWorkOrder(workOrderId);
-        // 状态校验：只有新建(0)状态可下达
+
+        // ===== 步骤1：校验状态+BOM =====
         if (!"0".equals(wo.getStatus()))
         {
             throw new ServiceException("工单[" + wo.getWorkOrderNo() + "]当前状态为" + statusName(wo.getStatus()) + "，只有新建状态可下达");
         }
-        // 校验BOM：已下达需要BOM
         if (wo.getBomId() == null)
         {
             throw new ServiceException("工单[" + wo.getWorkOrderNo() + "]未关联BOM，无法下达");
         }
-        // 状态流转：0 → 1
+        // 校验BOM状态：必须为已发布(1)
+        MmsBom bom = bomMapper.selectBomById(wo.getBomId());
+        if (bom == null)
+        {
+            throw new ServiceException("工单[" + wo.getWorkOrderNo() + "]关联的BOM不存在，无法下达");
+        }
+        if (!"1".equals(bom.getStatus()))
+        {
+            throw new ServiceException("BOM[" + bom.getBomNo() + "]当前状态非已发布，无法下达");
+        }
+
+        String username = SecurityUtils.getUsername();
+        Date now = DateUtils.getNowDate();
+
+        // ===== 步骤2：复制BOM明细 → 工单BOM快照 =====
+        List<MmsBomDetail> bomDetails = bomMapper.selectBomDetailByBomId(wo.getBomId());
+        if (bomDetails == null || bomDetails.isEmpty())
+        {
+            throw new ServiceException("BOM[" + bom.getBomNo() + "]没有明细行，无法下达");
+        }
+        // 先清理旧快照（防止异常重试后重复数据）
+        woBomSnapshotMapper.deleteBomSnapshotByWorkOrderId(workOrderId);
+        List<MmsWoBomSnapshot> bomSnapshots = new ArrayList<>();
+        for (MmsBomDetail detail : bomDetails)
+        {
+            MmsWoBomSnapshot snapshot = new MmsWoBomSnapshot();
+            snapshot.setWorkOrderId(workOrderId);
+            snapshot.setBomId(wo.getBomId());
+            snapshot.setBomNo(wo.getBomNo());
+            snapshot.setBomVersion(bom.getVersion());
+            snapshot.setSeq(detail.getSeq());
+            snapshot.setMaterialId(detail.getMaterialId());
+            snapshot.setMaterialCode(detail.getMaterialCode());
+            snapshot.setMaterialName(detail.getMaterialName());
+            snapshot.setSpecModel(detail.getSpecModel());
+            snapshot.setUnit(detail.getUnit());
+            snapshot.setUsageQty(detail.getUsageQty());
+            snapshot.setLossRate(detail.getLossRate());
+            snapshot.setIsKeyMaterial(detail.getIsKeyMaterial());
+            snapshot.setSupplyType(detail.getSupplyType());
+            snapshot.setPickStoreId(detail.getPickStoreId());
+            snapshot.setPickStoreName(detail.getPickStoreName());
+            snapshot.setIsPhantom(detail.getIsPhantom());
+            snapshot.setDelFlag("0");
+            snapshot.setCreateBy(username);
+            snapshot.setCreateTime(now);
+            bomSnapshots.add(snapshot);
+        }
+        woBomSnapshotMapper.batchInsertBomSnapshot(bomSnapshots);
+
+        // ===== 步骤3：复制工艺明细 → 工单工艺快照 =====
+        if (wo.getRouteId() != null)
+        {
+            MmsRoute route = routeMapper.selectRouteById(wo.getRouteId());
+            if (route != null)
+            {
+                List<MmsRouteProcess> routeProcesses = routeMapper.selectRouteProcessByRouteId(wo.getRouteId());
+                if (routeProcesses != null && !routeProcesses.isEmpty())
+                {
+                    woRouteSnapshotMapper.deleteRouteSnapshotByWorkOrderId(workOrderId);
+                    List<MmsWoRouteSnapshot> routeSnapshots = new ArrayList<>();
+                    for (MmsRouteProcess rp : routeProcesses)
+                    {
+                        MmsWoRouteSnapshot snapshot = new MmsWoRouteSnapshot();
+                        snapshot.setWorkOrderId(workOrderId);
+                        snapshot.setRouteId(wo.getRouteId());
+                        snapshot.setRouteNo(wo.getRouteNo());
+                        snapshot.setRouteVersion(route.getVersion());
+                        snapshot.setStepSeq(rp.getStepSeq());
+                        snapshot.setProcessId(rp.getProcessId());
+                        snapshot.setProcessCode(rp.getProcessCode());
+                        snapshot.setProcessName(rp.getProcessName());
+                        snapshot.setStdTime(rp.getStdTime());
+                        snapshot.setPrepTime(rp.getPrepTime());
+                        snapshot.setIsKeyProcess(rp.getIsKeyProcess());
+                        snapshot.setIsOutsource(rp.getIsOutsource());
+                        snapshot.setDelFlag("0");
+                        snapshot.setCreateBy(username);
+                        snapshot.setCreateTime(now);
+                        routeSnapshots.add(snapshot);
+                    }
+                    woRouteSnapshotMapper.batchInsertRouteSnapshot(routeSnapshots);
+
+                    // ===== 步骤6：生成首工序派工单 =====
+                    // 首工序 = stepSeq 最小的工序
+                    MmsRouteProcess firstOp = routeProcesses.get(0);
+                    for (MmsRouteProcess rp : routeProcesses)
+                    {
+                        if (rp.getStepSeq() != null && firstOp.getStepSeq() != null
+                                && rp.getStepSeq() < firstOp.getStepSeq())
+                        {
+                            firstOp = rp;
+                        }
+                    }
+                    MmsDispatch dispatch = new MmsDispatch();
+                    dispatch.setDispatchNo(mkNumberRuleService.generateNumber("mms_dispatch"));
+                    dispatch.setWorkOrderId(workOrderId);
+                    dispatch.setWorkOrderNo(wo.getWorkOrderNo());
+                    dispatch.setOpSeq(firstOp.getStepSeq());
+                    dispatch.setProcessId(firstOp.getProcessId());
+                    dispatch.setProcessName(firstOp.getProcessName());
+                    dispatch.setResourceId(wo.getResourceId());
+                    dispatch.setResourceName(wo.getResourceName());
+                    dispatch.setPlanQty(wo.getPlanQty());
+                    dispatch.setGoodQty(BigDecimal.ZERO);
+                    dispatch.setDefectQty(BigDecimal.ZERO);
+                    dispatch.setPlanStart(wo.getPlanStart());
+                    dispatch.setPlanEnd(wo.getPlanFinish());
+                    dispatch.setStatus("0"); // 待开工
+                    dispatch.setDelFlag("0");
+                    dispatch.setCreateBy(username);
+                    dispatch.setCreateTime(now);
+                    dispatch.setRemark("工单下达自动生成（首工序）");
+                    dispatchMapper.insertDispatch(dispatch);
+                }
+            }
+        }
+
+        // ===== 步骤5：状态推进 + 写下达时间 =====
         wo.setStatus("1");
-        wo.setReleaseBy(SecurityUtils.getUsername());
-        wo.setReleaseTime(new Date());
-        wo.setUpdateBy(SecurityUtils.getUsername());
+        wo.setReleaseBy(username);
+        wo.setReleaseTime(now);
+        wo.setUpdateBy(username);
+        wo.setUpdateTime(now);
         int rows = workOrderMapper.updateWorkOrder(wo);
 
-        // 记录审核日志
-        insertAuditLog(workOrderId, wo.getWorkOrderNo(), "release", "工单下达");
+        // ===== 步骤7：记录审核日志 =====
+        StringBuilder logRemark = new StringBuilder("工单下达");
+        logRemark.append("（BOM快照").append(bomSnapshots.size()).append("行");
+        if (wo.getRouteId() != null)
+        {
+            // 有工艺则追加工序数信息
+        }
+        logRemark.append("）");
+        insertAuditLog(workOrderId, wo.getWorkOrderNo(), "release", logRemark.toString());
         return rows;
     }
 
@@ -160,6 +323,7 @@ public class MmsWorkOrderServiceImpl implements IMmsWorkOrderService
         wo.setStatus("7");
         wo.setPauseReason(pauseReason);
         wo.setUpdateBy(SecurityUtils.getUsername());
+        wo.setUpdateTime(DateUtils.getNowDate());
         int rows = workOrderMapper.updateWorkOrder(wo);
 
         insertAuditLog(workOrderId, wo.getWorkOrderNo(), "pause", "工单暂停" + (StringUtils.isNotEmpty(pauseReason) ? "：" + pauseReason : ""));
@@ -180,6 +344,7 @@ public class MmsWorkOrderServiceImpl implements IMmsWorkOrderService
         wo.setStatus("1");
         wo.setPauseReason(null);
         wo.setUpdateBy(SecurityUtils.getUsername());
+        wo.setUpdateTime(DateUtils.getNowDate());
         int rows = workOrderMapper.updateWorkOrder(wo);
 
         insertAuditLog(workOrderId, wo.getWorkOrderNo(), "resume", "工单恢复");
@@ -206,6 +371,7 @@ public class MmsWorkOrderServiceImpl implements IMmsWorkOrderService
         wo.setStatus("4");
         wo.setActualFinish(new Date());
         wo.setUpdateBy(SecurityUtils.getUsername());
+        wo.setUpdateTime(DateUtils.getNowDate());
         int rows = workOrderMapper.updateWorkOrder(wo);
 
         insertAuditLog(workOrderId, wo.getWorkOrderNo(), "finish", "工单完工");
@@ -225,6 +391,7 @@ public class MmsWorkOrderServiceImpl implements IMmsWorkOrderService
         wo.setStatus("6");
         wo.setCloseRemark(closeRemark);
         wo.setUpdateBy(SecurityUtils.getUsername());
+        wo.setUpdateTime(DateUtils.getNowDate());
         int rows = workOrderMapper.updateWorkOrder(wo);
 
         insertAuditLog(workOrderId, wo.getWorkOrderNo(), "close", "工单关闭" + (StringUtils.isNotEmpty(closeRemark) ? "：" + closeRemark : ""));
@@ -249,7 +416,11 @@ public class MmsWorkOrderServiceImpl implements IMmsWorkOrderService
         wo.setStatus("8");
         wo.setCloseRemark(cancelReason);
         wo.setUpdateBy(SecurityUtils.getUsername());
+        wo.setUpdateTime(DateUtils.getNowDate());
         int rows = workOrderMapper.updateWorkOrder(wo);
+
+        // 工单作废时，同步取消关联的已下达排产记录
+        scheduleMapper.cancelSchedulesByWorkOrderIds(new Long[]{ workOrderId });
 
         insertAuditLog(workOrderId, wo.getWorkOrderNo(), "cancel", "工单作废" + (StringUtils.isNotEmpty(cancelReason) ? "：" + cancelReason : ""));
         return rows;
@@ -303,12 +474,14 @@ public class MmsWorkOrderServiceImpl implements IMmsWorkOrderService
         newWo.setDefectQty(BigDecimal.ZERO);
         newWo.setDelFlag("0");
         newWo.setCreateBy(SecurityUtils.getUsername());
+        newWo.setCreateTime(DateUtils.getNowDate());
         newWo.setRemark("由工单[" + wo.getWorkOrderNo() + "]拆分而来");
         workOrderMapper.insertWorkOrder(newWo);
 
         // 原工单扣减计划数量
         wo.setPlanQty(wo.getPlanQty().subtract(splitQty));
         wo.setUpdateBy(SecurityUtils.getUsername());
+        wo.setUpdateTime(DateUtils.getNowDate());
         workOrderMapper.updateWorkOrder(wo);
 
         insertAuditLog(workOrderId, wo.getWorkOrderNo(), "split",
@@ -317,6 +490,129 @@ public class MmsWorkOrderServiceImpl implements IMmsWorkOrderService
                 "工单拆分产生：来源于工单[" + wo.getWorkOrderNo() + "]，拆分数量" + splitQty + wo.getUnit());
 
         return newWo.getWorkOrderId();
+    }
+
+    @Override
+    public com.ruoyi.common.core.domain.AjaxResult getReleasePreview(Long workOrderId)
+    {
+        MmsWorkOrder wo = getAndCheckWorkOrder(workOrderId);
+        if (!"0".equals(wo.getStatus()))
+        {
+            throw new ServiceException("工单[" + wo.getWorkOrderNo() + "]当前状态为" + statusName(wo.getStatus()) + "，只有新建状态可下达");
+        }
+
+        java.util.Map<String, Object> data = new java.util.HashMap<>();
+        data.put("workOrder", wo);
+
+        // BOM明细
+        java.util.List<java.util.Map<String, Object>> bomList = new java.util.ArrayList<>();
+        if (wo.getBomId() != null)
+        {
+            MmsBom bom = bomMapper.selectBomById(wo.getBomId());
+            if (bom != null)
+            {
+                data.put("bom", bom);
+                data.put("bomStatusOk", "1".equals(bom.getStatus()));
+                List<MmsBomDetail> details = bomMapper.selectBomDetailByBomId(wo.getBomId());
+                if (details != null)
+                {
+                    for (MmsBomDetail d : details)
+                    {
+                        java.util.Map<String, Object> item = new java.util.LinkedHashMap<>();
+                        item.put("seq", d.getSeq());
+                        item.put("materialCode", d.getMaterialCode());
+                        item.put("materialName", d.getMaterialName());
+                        item.put("specModel", d.getSpecModel());
+                        item.put("unit", d.getUnit());
+                        item.put("usageQty", d.getUsageQty());
+                        item.put("lossRate", d.getLossRate());
+                        item.put("isKeyMaterial", "1".equals(d.getIsKeyMaterial()));
+                        item.put("supplyType", d.getSupplyType());
+                        // 计算需求数量 = 计划数量 × 单件用量 × (1 + 损耗率/100)
+                        BigDecimal demandQty = wo.getPlanQty()
+                                .multiply(d.getUsageQty() == null ? BigDecimal.ZERO : d.getUsageQty());
+                        if (d.getLossRate() != null && d.getLossRate().compareTo(BigDecimal.ZERO) > 0)
+                        {
+                            demandQty = demandQty.multiply(BigDecimal.ONE.add(d.getLossRate().divide(BigDecimal.valueOf(100), 6, BigDecimal.ROUND_HALF_UP)));
+                        }
+                        item.put("demandQty", demandQty.setScale(4, BigDecimal.ROUND_HALF_UP));
+                        bomList.add(item);
+                    }
+                }
+            }
+        }
+        else
+        {
+            data.put("bomStatusOk", false);
+        }
+        data.put("bomDetails", bomList);
+
+        // 工艺工序
+        java.util.List<java.util.Map<String, Object>> routeList = new java.util.ArrayList<>();
+        if (wo.getRouteId() != null)
+        {
+            MmsRoute route = routeMapper.selectRouteById(wo.getRouteId());
+            if (route != null)
+            {
+                data.put("route", route);
+                List<MmsRouteProcess> processes = routeMapper.selectRouteProcessByRouteId(wo.getRouteId());
+                if (processes != null)
+                {
+                    for (MmsRouteProcess rp : processes)
+                    {
+                        java.util.Map<String, Object> item = new java.util.LinkedHashMap<>();
+                        item.put("stepSeq", rp.getStepSeq());
+                        item.put("processCode", rp.getProcessCode());
+                        item.put("processName", rp.getProcessName());
+                        item.put("stdTime", rp.getStdTime());
+                        item.put("prepTime", rp.getPrepTime());
+                        item.put("isKeyProcess", "1".equals(rp.getIsKeyProcess()));
+                        item.put("isOutsource", "1".equals(rp.getIsOutsource()));
+                        routeList.add(item);
+                    }
+                }
+            }
+        }
+        data.put("routeProcesses", routeList);
+
+        // 校验结果汇总
+        java.util.List<String> warnings = new java.util.ArrayList<>();
+        if (wo.getBomId() == null)
+        {
+            warnings.add("未关联BOM，无法下达");
+        }
+        else
+        {
+            MmsBom bom = bomMapper.selectBomById(wo.getBomId());
+            if (bom == null)
+            {
+                warnings.add("关联的BOM不存在");
+            }
+            else if (!"1".equals(bom.getStatus()))
+            {
+                warnings.add("BOM[" + bom.getBomNo() + "]状态非已发布");
+            }
+            else
+            {
+                List<MmsBomDetail> details = bomMapper.selectBomDetailByBomId(wo.getBomId());
+                if (details == null || details.isEmpty())
+                {
+                    warnings.add("BOM没有明细行");
+                }
+            }
+        }
+        if (wo.getResourceId() == null)
+        {
+            warnings.add("未分配产能单元，下达后将无法自动生成派工单");
+        }
+        if (wo.getPlanStart() == null || wo.getPlanFinish() == null)
+        {
+            warnings.add("未设置计划开工/完工时间");
+        }
+        data.put("warnings", warnings);
+        data.put("canRelease", warnings.stream().noneMatch(w -> w.contains("无法下达") || w.contains("不存在") || w.contains("非已发布") || w.contains("没有明细")));
+
+        return com.ruoyi.common.core.domain.AjaxResult.success(data);
     }
 
     // ========== 私有辅助方法 ==========

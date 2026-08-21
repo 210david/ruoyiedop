@@ -110,6 +110,23 @@ public class MmsWorkOrder extends BaseEntity
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date releaseTime;
 
+    /** 排产单号（关联 mms_schedule_task） */
+    private String scheduleNo;
+
+    /** 排产状态（关联 mms_schedule_task.status） */
+    private String scheduleStatus;
+
+    /** 排产计划开始（关联 mms_schedule_task.plan_start） */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date schedulePlanStart;
+
+    /** 排产计划结束（关联 mms_schedule_task.plan_end） */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date schedulePlanEnd;
+
+    /** 排产产能单元（关联 mms_schedule_task.resource_name） */
+    private String scheduleResourceName;
+
     public Long getWorkOrderId() { return workOrderId; }
     public void setWorkOrderId(Long workOrderId) { this.workOrderId = workOrderId; }
     public String getWorkOrderNo() { return workOrderNo; }
@@ -180,4 +197,14 @@ public class MmsWorkOrder extends BaseEntity
     public void setReleaseBy(String releaseBy) { this.releaseBy = releaseBy; }
     public Date getReleaseTime() { return releaseTime; }
     public void setReleaseTime(Date releaseTime) { this.releaseTime = releaseTime; }
+    public String getScheduleNo() { return scheduleNo; }
+    public void setScheduleNo(String scheduleNo) { this.scheduleNo = scheduleNo; }
+    public String getScheduleStatus() { return scheduleStatus; }
+    public void setScheduleStatus(String scheduleStatus) { this.scheduleStatus = scheduleStatus; }
+    public Date getSchedulePlanStart() { return schedulePlanStart; }
+    public void setSchedulePlanStart(Date schedulePlanStart) { this.schedulePlanStart = schedulePlanStart; }
+    public Date getSchedulePlanEnd() { return schedulePlanEnd; }
+    public void setSchedulePlanEnd(Date schedulePlanEnd) { this.schedulePlanEnd = schedulePlanEnd; }
+    public String getScheduleResourceName() { return scheduleResourceName; }
+    public void setScheduleResourceName(String scheduleResourceName) { this.scheduleResourceName = scheduleResourceName; }
 }

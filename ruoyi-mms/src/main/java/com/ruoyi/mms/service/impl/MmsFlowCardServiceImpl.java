@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.ruoyi.common.exception.ServiceException;
+import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.mk.service.IMkNumberRuleService;
@@ -61,6 +62,7 @@ public class MmsFlowCardServiceImpl implements IMmsFlowCardService
             flowCard.setPrintCount(0);
         }
         flowCard.setCreateBy(SecurityUtils.getUsername());
+        flowCard.setCreateTime(DateUtils.getNowDate());
         return flowCardMapper.insertFlowCard(flowCard);
     }
 

@@ -36,6 +36,9 @@
             <if test="processType != null and processType != ''"> AND process_type = #{process_type}</if>
             <if test="status != null and status != ''"> AND status = #{status}</if>
             <if test="workshopName != null and workshopName != ''"> AND workshop_name LIKE CONCAT('%', #{workshop_name}, '%')</if>
+            <if test="lineName != null and lineName != ''"> AND line_name LIKE CONCAT('%', #{line_name}, '%')</if>
+            <if test="isKeyProcess != null and isKeyProcess != ''"> AND is_key_process = #{is_key_process}</if>
+            <if test="isOutsource != null and isOutsource != ''"> AND is_outsource = #{is_outsource}</if>
             <if test="params.beginTime != null and params.beginTime != ''"> AND date(create_time) &gt;= #{params.beginTime}</if>
             <if test="params.endTime != null and params.endTime != ''"> AND date(create_time) &lt;= #{params.endTime}</if>
         </where>
@@ -78,7 +81,7 @@
             #{status},
             #{delFlag},
             #{createBy},
-            #{createTime},
+            sysdate(),
             #{updateBy},
             #{updateTime},
             #{remark}
@@ -98,7 +101,7 @@
             line_name = #{lineName},
             status = #{status},
             update_by = #{updateBy},
-            update_time = #{updateTime},
+            update_time = sysdate(),
             remark = #{remark}
         WHERE process_id = #{processId}
     </update>

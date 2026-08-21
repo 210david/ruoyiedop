@@ -9,11 +9,15 @@ import org.springframework.transaction.annotation.Transactional;
 import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.common.utils.SecurityUtils;
+import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.mms.domain.MmsRoute;
+import com.ruoyi.mms.domain.MmsRouteAuditLog;
 import com.ruoyi.mms.domain.MmsRouteProcess;
 import com.ruoyi.mms.domain.MmsRouteVersionLog;
+import com.ruoyi.mms.mapper.MmsRouteAuditLogMapper;
 import com.ruoyi.mms.mapper.MmsRouteMapper;
 import com.ruoyi.mms.service.IMmsRouteService;
+import com.ruoyi.mk.service.IMkNumberRuleService;
 
 /**
  * 工艺路线 Service实现
@@ -25,6 +29,12 @@ public class MmsRouteServiceImpl implements IMmsRouteService
 {
     @Autowired
     private MmsRouteMapper routeMapper;
+
+    @Autowired
+    private MmsRouteAuditLogMapper routeAuditLogMapper;
+
+    @Autowired
+    private IMkNumberRuleService mkNumberRuleService;
 
     @Override
     public List<MmsRoute> selectRouteList(MmsRoute route)
@@ -44,6 +54,9 @@ public class MmsRouteServiceImpl implements IMmsRouteService
             {
                 route.setProcessCount(processList.size());
             }
+            // 加载审核日志
+            List<MmsRouteAuditLog> auditLogList = routeAuditLogMapper.selectAuditLogByRouteId(RouteId);
+            route.setAuditLogList(auditLogList);
         }
         return route;
     }
@@ -57,8 +70,15 @@ public class MmsRouteServiceImpl implements IMmsRouteService
         {
             route.setStatus("0"); // 草稿
         }
+        // 自动生成路线编号（如果Controller未提前生成）
+        if (StringUtils.isEmpty(route.getRouteNo()))
+        {
+            route.setRouteNo(generateRouteNo());
+        }
         // 计算总标准工时
         calculateTotalStdTime(route);
+        route.setCreateBy(SecurityUtils.getUsername());
+        route.setCreateTime(DateUtils.getNowDate());
         // 插入主表
         int rows = routeMapper.insertRoute(route);
         // 插入工序明细
@@ -81,6 +101,19 @@ public class MmsRouteServiceImpl implements IMmsRouteService
         if ("2".equals(existing.getStatus()) || "3".equals(existing.getStatus()))
         {
             throw new ServiceException("已审核/已停用的工艺路线不允许修改，请复制新版本后编辑");
+        }
+        // 已驳回状态修改后重置为已启用，清空审核信息
+        if ("4".equals(existing.getStatus()))
+        {
+            MmsRoute resetUpdate = new MmsRoute();
+            resetUpdate.setRouteId(route.getRouteId());
+            resetUpdate.setStatus("1");
+            resetUpdate.setAuditBy("");
+            resetUpdate.setAuditTime(DateUtils.getNowDate());
+            resetUpdate.setAuditRemark("");
+            resetUpdate.setUpdateBy(SecurityUtils.getUsername());
+            resetUpdate.setUpdateTime(DateUtils.getNowDate());
+            routeMapper.updateRouteStatus(resetUpdate);
         }
         // 计算总标准工时
         calculateTotalStdTime(route);
@@ -142,7 +175,7 @@ public class MmsRouteServiceImpl implements IMmsRouteService
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public int auditRoute(Long routeId)
+    public int auditRoute(Long routeId, String auditAction, String auditRemark)
     {
         MmsRoute route = routeMapper.selectRouteById(routeId);
         if (route == null)
@@ -153,16 +186,32 @@ public class MmsRouteServiceImpl implements IMmsRouteService
         {
             throw new ServiceException("只有已启用的路线才能审核");
         }
+        if (!"1".equals(auditAction) && !"2".equals(auditAction))
+        {
+            throw new ServiceException("审核动作不合法");
+        }
+        // 1=通过→已审核(2), 2=驳回→已驳回(4)
+        String newStatus = "1".equals(auditAction) ? "2" : "4";
+        String changeDesc = "1".equals(auditAction) ? "审核通过" : "审核驳回";
         MmsRoute update = new MmsRoute();
         update.setRouteId(routeId);
-        update.setStatus("2");
+        update.setStatus(newStatus);
         update.setAuditBy(SecurityUtils.getUsername());
         update.setAuditTime(DateUtils.getNowDate());
+        update.setAuditRemark(auditRemark);
         update.setUpdateBy(SecurityUtils.getUsername());
         update.setUpdateTime(DateUtils.getNowDate());
         int rows = routeMapper.updateRouteStatus(update);
         // 记录变更日志
-        insertVersionLog(route, route.getVersion(), route.getVersion(), route.getStatus(), "2", "audit", "审核通过");
+        insertVersionLog(route, route.getVersion(), route.getVersion(), route.getStatus(), newStatus, "audit", changeDesc);
+        // 写入审核日志
+        MmsRouteAuditLog auditLog = new MmsRouteAuditLog();
+        auditLog.setRouteId(routeId);
+        auditLog.setAuditAction(auditAction);
+        auditLog.setAuditBy(SecurityUtils.getUsername());
+        auditLog.setAuditTime(DateUtils.getNowDate());
+        auditLog.setAuditRemark(auditRemark);
+        routeAuditLogMapper.insertAuditLog(auditLog);
         return rows;
     }
 
@@ -203,15 +252,13 @@ public class MmsRouteServiceImpl implements IMmsRouteService
 
         // 复制主表
         MmsRoute newRoute = new MmsRoute();
-        newRoute.setRouteNo(source.getRouteNo() + "-COPY");
+        newRoute.setRouteNo(generateRouteNo());
         newRoute.setRouteName(source.getRouteName());
         newRoute.setProductId(source.getProductId());
         newRoute.setProductCode(source.getProductCode());
         newRoute.setProductName(source.getProductName());
         newRoute.setVersion(incrementVersion(source.getVersion()));
         newRoute.setStatus("0"); // 草稿
-        newRoute.setDefaultWorkshop(source.getDefaultWorkshop());
-        newRoute.setDefaultLine(source.getDefaultLine());
         newRoute.setTotalStdTime(source.getTotalStdTime());
         newRoute.setDelFlag("0");
         newRoute.setCreateBy(SecurityUtils.getUsername());
@@ -246,6 +293,29 @@ public class MmsRouteServiceImpl implements IMmsRouteService
     }
 
     // ====== 私有辅助方法 ======
+
+    /**
+     * 自动生成路线编号
+     * 通过编码规则服务（mk_number_rule 表中 rule_code='mms_route'）生成标准编号。
+     * 编号格式：RT-yyyyMMdd-0001（前缀+日期+流水号）
+     * 如果编号规则未配置或生成失败，使用时间戳兜底。
+     * 注意：此方法为 public 且无 @Transactional 注解，在 Controller 中独立调用，
+     * 不参与 insertRoute 的事务，避免编号生成失败导致事务被标记为 rollback-only。
+     */
+    @Override
+    public String generateRouteNo()
+    {
+        try
+        {
+            return mkNumberRuleService.generateNumber("mms_route");
+        }
+        catch (Exception e)
+        {
+            // 如果编号规则未配置或生成失败，使用时间戳兜底
+            String timestamp = new java.text.SimpleDateFormat("yyyyMMddHHmmssSSS").format(new Date());
+            return "RT" + timestamp;
+        }
+    }
 
     /**
      * 计算总标准工时

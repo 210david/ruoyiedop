@@ -34,6 +34,18 @@ public class QmsWorkshop extends BaseEntity
     @Excel(name = "层级类型", readConverterExp = "1=车间,2=产线,3=工位,4=检验点")
     private String nodeType;
 
+    /** 产线类型（0自动化 1半自动 2手工，仅node_type=2时使用） */
+    @Excel(name = "产线类型", readConverterExp = "0=自动化,1=半自动,2=手工")
+    private String lineType;
+
+    /** 节拍（秒，仅node_type=2时使用） */
+    @Excel(name = "节拍(秒)")
+    private Integer cycleTime;
+
+    /** 工位类型（0加工 1检验 2包装 3暂存，仅node_type=3时使用） */
+    @Excel(name = "工位类型", readConverterExp = "0=加工,1=检验,2=包装,3=暂存")
+    private String stationType;
+
     /** 排序号 */
     private Integer orderNum;
 
@@ -57,6 +69,12 @@ public class QmsWorkshop extends BaseEntity
     public void setWorkshopName(String workshopName) { this.workshopName = workshopName; }
     public String getNodeType() { return nodeType; }
     public void setNodeType(String nodeType) { this.nodeType = nodeType; }
+    public String getLineType() { return lineType; }
+    public void setLineType(String lineType) { this.lineType = lineType; }
+    public Integer getCycleTime() { return cycleTime; }
+    public void setCycleTime(Integer cycleTime) { this.cycleTime = cycleTime; }
+    public String getStationType() { return stationType; }
+    public void setStationType(String stationType) { this.stationType = stationType; }
     public Integer getOrderNum() { return orderNum; }
     public void setOrderNum(Integer orderNum) { this.orderNum = orderNum; }
     public String getStatus() { return status; }

@@ -7,11 +7,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.ruoyi.common.exception.ServiceException;
+import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.mk.service.IMkNumberRuleService;
 import com.ruoyi.mms.domain.MmsMps;
+import com.ruoyi.mms.domain.MmsMpsAuditLog;
 import com.ruoyi.mms.domain.MmsWorkOrder;
+import com.ruoyi.mms.mapper.MmsMpsAuditLogMapper;
 import com.ruoyi.mms.mapper.MmsMpsMapper;
 import com.ruoyi.mms.mapper.MmsWorkOrderMapper;
 import com.ruoyi.mms.service.IMmsMpsService;
@@ -33,6 +36,9 @@ public class MmsMpsServiceImpl implements IMmsMpsService
     private MmsMpsMapper mpsMapper;
 
     @Autowired
+    private MmsMpsAuditLogMapper mpsAuditLogMapper;
+
+    @Autowired
     private MmsWorkOrderMapper workOrderMapper;
 
     @Autowired
@@ -49,7 +55,12 @@ public class MmsMpsServiceImpl implements IMmsMpsService
     @Override
     public MmsMps selectMpsById(Long mpsId)
     {
-        return mpsMapper.selectMpsById(mpsId);
+        MmsMps mps = mpsMapper.selectMpsById(mpsId);
+        if (mps != null)
+        {
+            mps.setAuditLogList(mpsAuditLogMapper.selectAuditLogByMpsId(mpsId));
+        }
+        return mps;
     }
 
     @Override
@@ -68,6 +79,7 @@ public class MmsMpsServiceImpl implements IMmsMpsService
         }
         mps.setDelFlag("0");
         mps.setCreateBy(SecurityUtils.getUsername());
+        mps.setCreateTime(DateUtils.getNowDate());
         return mpsMapper.insertMps(mps);
     }
 
@@ -150,7 +162,25 @@ public class MmsMpsServiceImpl implements IMmsMpsService
         mps.setAuditTime(new Date());
         mps.setAuditOpinion(auditOpinion);
         mps.setUpdateBy(SecurityUtils.getUsername());
-        return mpsMapper.updateMps(mps);
+        int rows = mpsMapper.updateMps(mps);
+
+        // 写入审核日志（永久留存）
+        MmsMpsAuditLog auditLog = new MmsMpsAuditLog();
+        auditLog.setMpsId(mpsId);
+        auditLog.setAuditBy(SecurityUtils.getUsername());
+        auditLog.setAuditRemark(auditOpinion);
+        // auditAction: 1=通过 2=驳回（与前端时间线模板一致）
+        if ("2".equals(status))
+        {
+            auditLog.setAuditAction("1");
+        }
+        else
+        {
+            auditLog.setAuditAction("2");
+        }
+        mpsAuditLogMapper.insertAuditLog(auditLog);
+
+        return rows;
     }
 
     @Override
@@ -192,6 +222,7 @@ public class MmsMpsServiceImpl implements IMmsMpsService
         wo.setDefectQty(BigDecimal.ZERO);
         wo.setDelFlag("0");
         wo.setCreateBy(SecurityUtils.getUsername());
+        wo.setCreateTime(DateUtils.getNowDate());
         wo.setRemark("由计划[" + mps.getMpsNo() + "]自动生成");
         workOrderMapper.insertWorkOrder(wo);
 

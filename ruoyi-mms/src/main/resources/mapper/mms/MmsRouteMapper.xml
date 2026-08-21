@@ -10,14 +10,12 @@
         <result property="productCode"  column="product_code"/>
         <result property="productName" column="product_name"/>
         <result property="version"     column="version"/>
-        <result property="effectiveDate" column="effective_date"/>
-        <result property="expireDate"   column="expire_date"/>
         <result property="status"      column="status"/>
         <result property="auditBy"     column="audit_by"/>
         <result property="auditTime"   column="audit_time"/>
-        <result property="defaultWorkshop" column="default_workshop"/>
-        <result property="defaultLine"     column="default_line"/>
+        <result property="auditRemark" column="audit_remark"/>
         <result property="totalStdTime"    column="total_std_time"/>
+        <result property="processCount"   column="process_count"/>
         <result property="delFlag"     column="del_flag"/>
         <result property="createBy"    column="create_by"/>
         <result property="createTime"  column="create_time"/>
@@ -28,26 +26,30 @@
 
     <sql id="selectRouteVo">
         SELECT route_id, route_no, route_name, product_id, product_code, product_name, version,
-               effective_date, expire_date, status, audit_by, audit_time,
-               default_workshop, default_line, total_std_time,
+               status, audit_by, audit_time, audit_remark, total_std_time,
                del_flag, create_by, create_time, update_by, update_time, remark
         FROM mms_route
     </sql>
 
     <select id="selectRouteList" parameterType="MmsRoute" resultMap="MmsRouteResult">
-        <include refid="selectRouteVo"/>
+        SELECT r.route_id, r.route_no, r.route_name, r.product_id, r.product_code, r.product_name, r.version,
+               r.status, r.audit_by, r.audit_time, r.audit_remark, r.total_std_time,
+               r.del_flag, r.create_by, r.create_time, r.update_by, r.update_time, r.remark,
+               (SELECT COUNT(*) FROM mms_route_process rp WHERE rp.route_id = r.route_id AND rp.del_flag = '0') AS process_count
+        FROM mms_route r
         <where>
-            del_flag = '0'
-            <if test="routeNo != null and routeNo != ''"> AND route_no LIKE CONCAT('%', #{routeNo}, '%')</if>
-            <if test="routeName != null and routeName != ''"> AND route_name LIKE CONCAT('%', #{routeName}, '%')</if>
-            <if test="productCode != null and productCode != ''"> AND product_code LIKE CONCAT('%', #{productCode}, '%')</if>
-            <if test="productName != null and productName != ''"> AND product_name LIKE CONCAT('%', #{productName}, '%')</if>
-            <if test="version != null and version != ''"> AND version LIKE CONCAT('%', #{version}, '%')</if>
-            <if test="status != null and status != ''"> AND status = #{status}</if>
-            <if test="params.beginTime != null and params.beginTime != ''"> AND date(create_time) &gt;= #{params.beginTime}</if>
-            <if test="params.endTime != null and params.endTime != ''"> AND date(create_time) &lt;= #{params.endTime}</if>
+            r.del_flag = '0'
+            <if test="routeNo != null and routeNo != ''"> AND r.route_no LIKE CONCAT('%', #{routeNo}, '%')</if>
+            <if test="routeName != null and routeName != ''"> AND r.route_name LIKE CONCAT('%', #{routeName}, '%')</if>
+            <if test="productId != null"> AND r.product_id = #{productId}</if>
+            <if test="productCode != null and productCode != ''"> AND r.product_code LIKE CONCAT('%', #{productCode}, '%')</if>
+            <if test="productName != null and productName != ''"> AND r.product_name LIKE CONCAT('%', #{productName}, '%')</if>
+            <if test="version != null and version != ''"> AND r.version LIKE CONCAT('%', #{version}, '%')</if>
+            <if test="status != null and status != ''"> AND r.status = #{status}</if>
+            <if test="params.beginTime != null and params.beginTime != ''"> AND date(r.create_time) &gt;= #{params.beginTime}</if>
+            <if test="params.endTime != null and params.endTime != ''"> AND date(r.create_time) &lt;= #{params.endTime}</if>
         </where>
-        ORDER BY route_id DESC
+        ORDER BY r.route_id DESC
     </select>
 
     <resultMap type="MmsRouteProcess" id="MmsRouteProcessResult">
@@ -61,16 +63,6 @@
         <result property="prepTime"       column="prep_time"/>
         <result property="isKeyProcess"   column="is_key_process"/>
         <result property="isOutsource"    column="is_outsource"/>
-        <result property="resourceId"     column="resource_id"/>
-        <result property="resourceName"   column="resource_name"/>
-        <result property="equipId"        column="equip_id"/>
-        <result property="equipName"      column="equip_name"/>
-        <result property="moldId"         column="mold_id"/>
-        <result property="moldName"       column="mold_name"/>
-        <result property="sopId"          column="sop_id"/>
-        <result property="sopNo"         column="sop_no"/>
-        <result property="sopName"       column="sop_name"/>
-        <result property="paramTemplate" column="param_template"/>
         <result property="delFlag"       column="del_flag"/>
         <result property="createBy"      column="create_by"/>
         <result property="createTime"    column="create_time"/>
@@ -82,9 +74,7 @@
     <sql id="selectRouteProcessVo">
         SELECT rp.id, rp.route_id, rp.process_id, rp.process_code, rp.process_name, rp.step_seq,
                rp.std_time, rp.prep_time, rp.is_key_process, rp.is_outsource,
-               rp.resource_id, rp.resource_name, rp.equip_id, rp.equip_name,
-               rp.mold_id, rp.mold_name, rp.sop_id, rp.sop_no, rp.sop_name,
-               rp.param_template, rp.del_flag, rp.create_by, rp.create_time,
+               rp.del_flag, rp.create_by, rp.create_time,
                rp.update_by, rp.update_time, rp.remark
         FROM mms_route_process rp
     </sql>
@@ -103,13 +93,11 @@
     <insert id="insertRoute" parameterType="MmsRoute" useGeneratedKeys="true" keyProperty="routeId">
         INSERT INTO mms_route (
             route_no, route_name, product_id, product_code, product_name, version,
-            effective_date, expire_date, status, audit_by, audit_time,
-            default_workshop, default_line, total_std_time,
+            status, audit_by, audit_time, total_std_time,
             del_flag, create_by, create_time, update_by, update_time, remark
         )VALUES(
             #{routeNo}, #{routeName}, #{productId}, #{productCode}, #{productName}, #{version},
-            #{effectiveDate}, #{expireDate}, #{status}, #{auditBy}, #{auditTime},
-            #{defaultWorkshop}, #{defaultLine}, #{totalStdTime},
+            #{status}, #{auditBy}, #{auditTime}, #{totalStdTime},
             #{delFlag}, #{createBy}, #{createTime}, #{updateBy}, #{updateTime}, #{remark}
         )
     </insert>
@@ -122,12 +110,11 @@
             product_code = #{productCode},
             product_name = #{productName},
             version = #{version},
-            effective_date = #{effectiveDate},
-            expire_date = #{expireDate},
-            status = #{status},
-            default_workshop = #{defaultWorkshop},
-            default_line = #{defaultLine},
             total_std_time = #{totalStdTime},
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="auditBy != null">audit_by = #{auditBy},</if>
+            <if test="auditTime != null">audit_time = #{auditTime},</if>
+            <if test="auditRemark != null">audit_remark = #{auditRemark},</if>
             update_by = #{updateBy},
             update_time = #{updateTime},
             remark = #{remark}
@@ -139,6 +126,7 @@
             status = #{status},
             audit_by = #{auditBy},
             audit_time = #{auditTime},
+            audit_remark = #{auditRemark},
             update_by = #{updateBy},
             update_time = #{updateTime}
         WHERE route_id = #{routeId}
@@ -155,15 +143,11 @@
         INSERT INTO mms_route_process (
             route_id, process_id, process_code, process_name, step_seq,
             std_time, prep_time, is_key_process, is_outsource,
-            resource_id, resource_name, equip_id, equip_name,
-            mold_id, mold_name, sop_id, sop_no, sop_name,
-            param_template, del_flag, create_by, create_time, update_by, update_time, remark
+            del_flag, create_by, create_time, update_by, update_time, remark
         )VALUES(
             #{routeId}, #{processId}, #{processCode}, #{processName}, #{stepSeq},
             #{stdTime}, #{prepTime}, #{isKeyProcess}, #{isOutsource},
-            #{resourceId}, #{resourceName}, #{equipId}, #{equipName},
-            #{moldId}, #{moldName}, #{sopId}, #{sopNo}, #{sopName},
-            #{paramTemplate}, #{delFlag}, #{createBy}, #{createTime}, #{updateBy}, #{updateTime}, #{remark}
+            #{delFlag}, #{createBy}, #{createTime}, #{updateBy}, #{updateTime}, #{remark}
         )
     </insert>
 

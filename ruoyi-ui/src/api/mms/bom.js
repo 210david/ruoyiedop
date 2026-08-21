@@ -45,6 +45,20 @@ export function publishBom(bomId) {
   })
 }
 
+export function disableBom(bomId) {
+  return request({
+    url: '/mms/bom/disable/' + bomId,
+    method: 'put'
+  })
+}
+
+export function enableBom(bomId) {
+  return request({
+    url: '/mms/bom/enable/' + bomId,
+    method: 'put'
+  })
+}
+
 export function copyBom(bomId) {
   return request({
     url: '/mms/bom/copy/' + bomId,

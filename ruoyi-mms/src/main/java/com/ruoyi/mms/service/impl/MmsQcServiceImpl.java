@@ -4,6 +4,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.mk.service.IMkNumberRuleService;
@@ -47,6 +48,8 @@ public class MmsQcServiceImpl implements IMmsQcService
             qc.setQcNo(mkNumberRuleService.generateNumber("mms_qc"));
         }
         qc.setDelFlag("0");
+        qc.setCreateBy(SecurityUtils.getUsername());
+        qc.setCreateTime(DateUtils.getNowDate());
         return qcMapper.insertQc(qc);
     }
 

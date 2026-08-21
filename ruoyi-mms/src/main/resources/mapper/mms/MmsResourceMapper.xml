@@ -7,11 +7,6 @@
 <result property="resourceCode"     column="resource_code"/>
         <result property="resourceName"     column="resource_name"/>
         <result property="resourceType"     column="resource_type"/>
-        <result property="rate"     column="rate"/>
-        <result property="rateUnit"     column="rate_unit"/>
-        <result property="batchMin"     column="batch_min"/>
-        <result property="batchMax"     column="batch_max"/>
-        <result property="efficiency"     column="efficiency"/>
         <result property="workshopName"     column="workshop_name"/>
         <result property="lineName"     column="line_name"/>
         <result property="status"     column="status"/>
@@ -24,7 +19,7 @@
     </resultMap>
 
     <sql id="selectResourceVo">
-        SELECT resource_id, resource_code, resource_name, resource_type, rate, rate_unit, batch_min, batch_max, efficiency, workshop_name, line_name, status, del_flag, create_by, create_time, update_by, update_time, remark
+        SELECT resource_id, resource_code, resource_name, resource_type, workshop_name, line_name, status, del_flag, create_by, create_time, update_by, update_time, remark
         FROM mms_resource
     </sql>
 
@@ -53,11 +48,6 @@
             resource_code,
             resource_name,
             resource_type,
-            rate,
-            rate_unit,
-            batch_min,
-            batch_max,
-            efficiency,
             workshop_name,
             line_name,
             status,
@@ -71,11 +61,6 @@
             #{resourceCode},
             #{resourceName},
             #{resourceType},
-            #{rate},
-            #{rateUnit},
-            #{batchMin},
-            #{batchMax},
-            #{efficiency},
             #{workshopName},
             #{lineName},
             #{status},
@@ -90,14 +75,8 @@
 
     <update id="updateResource" parameterType="MmsResource">
         UPDATE mms_resource SET
-            resource_code = #{resourceCode},
             resource_name = #{resourceName},
             resource_type = #{resourceType},
-            rate = #{rate},
-            rate_unit = #{rateUnit},
-            batch_min = #{batchMin},
-            batch_max = #{batchMax},
-            efficiency = #{efficiency},
             workshop_name = #{workshopName},
             line_name = #{lineName},
             status = #{status},

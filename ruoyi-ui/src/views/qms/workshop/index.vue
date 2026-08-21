@@ -99,6 +99,12 @@
                   <span class="badge violet"><span class="dot"></span>{{ nodeTypeLabel(scope.row.nodeType) }}</span>
                 </template>
               </el-table-column>
+              <el-table-column label="工位类型" align="center" key="stationType" :width="colWidth('stationType', 100)" resizable v-if="columns.stationType.visible">
+                <template #default="scope">
+                  <span v-if="scope.row.nodeType === '3'" class="badge" :class="stationTypeBadge(scope.row.stationType).cls"><span class="dot"></span>{{ stationTypeBadge(scope.row.stationType).label }}</span>
+                  <span v-else>-</span>
+                </template>
+              </el-table-column>
               <el-table-column prop="orderNum" label="排序" key="orderNum" align="center" :width="colWidth('orderNum', 80)" resizable v-if="columns.orderNum.visible" />
               <el-table-column label="状态" align="center" key="status" :width="colWidth('status', 100)" resizable v-if="columns.status.visible">
                 <template #default="scope">
@@ -151,6 +157,15 @@
                   </el-form-item>
                 </el-col>
               </el-row>
+              <!-- 工位特有字段 -->
+              <el-form-item v-if="form.nodeType === '3'" label="工位类型" prop="stationType" :rules="[{ required: true, message: '工位类型不能为空', trigger: 'change' }]">
+                <el-select v-model="form.stationType" placeholder="请选择" style="width: 100%">
+                  <el-option label="加工" value="0" />
+                  <el-option label="检验" value="1" />
+                  <el-option label="包装" value="2" />
+                  <el-option label="暂存" value="3" />
+                </el-select>
+              </el-form-item>
             </div>
           </section>
           <section class="rd-card">
@@ -221,7 +236,7 @@ const refreshTable = ref(true)
 const deptName = ref(undefined)
 const currentWorkshopId = ref(undefined)
 const defaultProps = { children: 'children', label: 'workshopName' }
-const defaultColumns = { workshopName: { label: '节点名称', visible: true }, workshopCode: { label: '节点编码', visible: true }, nodeType: { label: '层级类型', visible: true }, orderNum: { label: '排序', visible: true }, status: { label: '状态', visible: true }, createTime: { label: '创建时间', visible: true } }
+const defaultColumns = { workshopName: { label: '节点名称', visible: true }, workshopCode: { label: '节点编码', visible: true }, nodeType: { label: '层级类型', visible: true }, stationType: { label: '工位类型', visible: true }, orderNum: { label: '排序', visible: true }, status: { label: '状态', visible: true }, createTime: { label: '创建时间', visible: true } }
 function loadColumnVisibility() { try { const saved = localStorage.getItem('qms_workshop_columns'); if (saved) { const parsed = JSON.parse(saved); const result = {}; Object.keys(defaultColumns).forEach(key => { result[key] = { label: defaultColumns[key].label, visible: parsed[key] !== undefined ? parsed[key] : defaultColumns[key].visible } }); return result } } catch (e) {} return { ...defaultColumns } }
 const columns = ref(loadColumnVisibility())
 
@@ -238,6 +253,7 @@ const data = reactive({
 const { queryParams, form, rules } = toRefs(data)
 
 function nodeTypeLabel(val) { const item = qms_workshop_node_type.value.find(d => d.value == val); return item ? item.label : '-' }
+function stationTypeBadge(val) { const map = { '0': { cls: 'blue', label: '加工' }, '1': { cls: 'amber', label: '检验' }, '2': { cls: 'green', label: '包装' }, '3': { cls: 'gray', label: '暂存' } }; return map[val] || { cls: 'gray', label: '-' }; }
 
 const activeFilterCount = computed(() => {
   let count = 0
@@ -397,6 +413,7 @@ function reset() {
     workshopCode: undefined,
     workshopName: undefined,
     nodeType: undefined,
+    stationType: undefined,
     orderNum: 0,
     status: '0',
     remark: undefined
@@ -475,6 +492,10 @@ getTreeselect()
 .qms-workshop-page .badge.gray .dot { background:var(--ink-400); }
 .qms-workshop-page .badge.violet { background:var(--violet-50); color:#7c3aed; border-color:#ddd6fe; }
 .qms-workshop-page .badge.violet .dot { background:#8b5cf6; }
+.qms-workshop-page .badge.blue { background:var(--brand-50); color:var(--brand-700); border-color:#c7d2fe; }
+.qms-workshop-page .badge.blue .dot { background:var(--brand-500); }
+.qms-workshop-page .badge.amber { background:#fffbeb; color:#b45309; border-color:#fde68a; }
+.qms-workshop-page .badge.amber .dot { background:#f59e0b; }
 @media (max-width:1100px) { .qms-workshop-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }
 @media (max-width:720px) { .qms-workshop-page .filter-card .filter-bar { grid-template-columns:1fr; } .qms-workshop-page .toolbar { flex-wrap:wrap; gap:10px; } }
 </style>

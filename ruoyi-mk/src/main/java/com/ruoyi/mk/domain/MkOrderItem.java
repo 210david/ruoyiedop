@@ -23,6 +23,14 @@ public class MkOrderItem extends BaseEntity
     @Excel(name = "行号")
     private Integer lineNo;
 
+    /** 物料ID */
+    @Excel(name = "物料ID")
+    private Long materialId;
+
+    /** 物料编码 */
+    @Excel(name = "物料编码")
+    private String materialCode;
+
     /** 商品名称 */
     @Excel(name = "商品名称")
     private String productName;
@@ -60,6 +68,10 @@ public class MkOrderItem extends BaseEntity
     public void setOrderId(Long orderId) { this.orderId = orderId; }
     public Integer getLineNo() { return lineNo; }
     public void setLineNo(Integer lineNo) { this.lineNo = lineNo; }
+    public Long getMaterialId() { return materialId; }
+    public void setMaterialId(Long materialId) { this.materialId = materialId; }
+    public String getMaterialCode() { return materialCode; }
+    public void setMaterialCode(String materialCode) { this.materialCode = materialCode; }
     public String getProductName() { return productName; }
     public void setProductName(String productName) { this.productName = productName; }
     public String getProductSpec() { return productSpec; }

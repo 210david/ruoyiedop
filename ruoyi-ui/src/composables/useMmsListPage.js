@@ -72,9 +72,11 @@ export function useMmsListPage(pageKey, dictNames = [], defaultColumnsConfig, op
 
   // 字典辅助函数
   function dictLabel(dictRef, value) {
-    if (!dictRef || !dictRef.value) return '-'
-    const item = dictRef.value.find(d => d.value == value)
-    return item ? item.label : '-'
+    if (value === null || value === undefined || value === '') return '—'
+    const arr = (dictRef && dictRef.value) ? dictRef.value : dictRef
+    if (!arr || !Array.isArray(arr)) return '—'
+    const item = arr.find(d => d.value == value)
+    return item ? item.label : '—'
   }
 
   function badgeClass(status) {

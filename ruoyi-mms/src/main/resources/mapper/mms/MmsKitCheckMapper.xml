@@ -108,4 +108,68 @@
             #{kitId}
         </foreach>
     </delete>
+
+    <!-- ============ 齐套检查明细 ============ -->
+
+    <resultMap type="MmsKitCheckDetail" id="MmsKitCheckDetailResult">
+        <id property="detailId"     column="detail_id"/>
+        <result property="kitId"       column="kit_id"/>
+        <result property="materialId"  column="material_id"/>
+        <result property="materialCode" column="material_code"/>
+        <result property="materialName" column="material_name"/>
+        <result property="specModel"   column="spec_model"/>
+        <result property="unit"        column="unit"/>
+        <result property="requiredQty" column="required_qty"/>
+        <result property="availableQty" column="available_qty"/>
+        <result property="shortageQty" column="shortage_qty"/>
+        <result property="isComplete" column="is_complete"/>
+        <result property="delFlag"     column="del_flag"/>
+        <result property="createBy"    column="create_by"/>
+        <result property="createTime"  column="create_time"/>
+        <result property="updateBy"    column="update_by"/>
+        <result property="updateTime"  column="update_time"/>
+        <result property="remark"      column="remark"/>
+    </resultMap>
+
+    <select id="selectKitCheckDetailByKitId" parameterType="Long" resultMap="MmsKitCheckDetailResult">
+        SELECT detail_id, kit_id, material_id, material_code, material_name, spec_model, unit,
+               required_qty, available_qty, shortage_qty, is_complete, del_flag,
+               create_by, create_time, update_by, update_time, remark
+        FROM mms_kit_check_detail
+        WHERE kit_id = #{kitId} AND del_flag = '0'
+        ORDER BY detail_id
+    </select>
+
+    <insert id="insertKitCheckDetail" parameterType="MmsKitCheckDetail" useGeneratedKeys="true" keyProperty="detailId">
+        INSERT INTO mms_kit_check_detail (
+            kit_id, material_id, material_code, material_name, spec_model, unit,
+            required_qty, available_qty, shortage_qty, is_complete, del_flag,
+            create_by, create_time, update_by, update_time, remark
+        ) VALUES (
+            #{kitId}, #{materialId}, #{materialCode}, #{materialName}, #{specModel}, #{unit},
+            #{requiredQty}, #{availableQty}, #{shortageQty}, #{isComplete}, #{delFlag},
+            #{createBy}, #{createTime}, #{updateBy}, #{updateTime}, #{remark}
+        )
+    </insert>
+
+    <update id="updateKitCheckDetail" parameterType="MmsKitCheckDetail">
+        UPDATE mms_kit_check_detail SET
+            available_qty = #{availableQty},
+            shortage_qty  = #{shortageQty},
+            is_complete   = #{isComplete},
+            update_by      = #{updateBy},
+            update_time    = #{updateTime}
+        WHERE detail_id = #{detailId}
+    </update>
+
+    <delete id="deleteKitCheckDetailByKitId" parameterType="Long">
+        UPDATE mms_kit_check_detail SET del_flag = '2' WHERE kit_id = #{kitId}
+    </delete>
+
+    <!-- 查询物料可用库存总量（跨模块查询 wms_inventory） -->
+    <select id="selectAvailableQtyByMaterialId" parameterType="Long" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(i.qty - i.lock_qty), 0)
+        FROM wms_inventory i
+        WHERE i.material_id = #{materialId} AND i.del_flag = '0'
+    </select>
 </mapper>

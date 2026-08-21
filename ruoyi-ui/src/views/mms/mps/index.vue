@@ -127,13 +127,14 @@
           </el-table-column>
           <el-table-column label="产能单元" prop="resourceName" key="resourceName" :width="colWidth('resourceName', 120)" resizable v-if="columns.resourceName.visible" />
           <el-table-column label="优先级" prop="priority" key="priority" :width="colWidth('priority', 90)" resizable align="center" v-if="columns.priority.visible">
-            <template #default="scope"><span class="badge" :class="priorityBadgeClass(scope.row.priority)"><span class="dot"></span>{{ priorityLabel(scope.row.priority) }}</span></template>
+            <template #default="scope"><span v-if="scope.row.priority" class="badge" :class="priorityBadgeClass(scope.row.priority)"><span class="dot"></span>{{ priorityLabel(scope.row.priority) }}</span><span v-else class="text-muted">—</span></template>
           </el-table-column>
           <el-table-column label="状态" prop="status" key="status" :width="colWidth('status', 100)" resizable align="center" v-if="columns.status.visible">
             <template #default="scope">
-              <span class="badge" :class="badgeClass(scope.row.status)">
+              <span v-if="scope.row.status" class="badge" :class="badgeClass(scope.row.status)">
                 <span class="dot"></span>{{ statusLabel(scope.row.status) }}
               </span>
+              <span v-else class="text-muted">—</span>
             </template>
           </el-table-column>
           <el-table-column label="创建时间" prop="createTime" key="createTime" :width="colWidth('createTime', 160)" resizable align="center" v-if="columns.createTime.visible">
@@ -141,6 +142,7 @@
           </el-table-column>
           <el-table-column label="操作" width="280" align="center" fixed="right">
             <template #default="scope">
+              <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
               <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['mms:mps:edit']">修改</el-button>
               <el-button v-if="scope.row.status === '0'" link type="primary" icon="Check" @click="handleConfirm(scope.row)" v-hasPermi="['mms:mps:confirm']">确认</el-button>
               <el-button v-if="scope.row.status === '1'" link type="primary" icon="Aim" @click="handleAudit(scope.row)" v-hasPermi="['mms:mps:approve']">审批</el-button>
@@ -154,105 +156,211 @@
       <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
     </div>
 
-    <!-- ===== 新增/修改 Dialog ===== -->
-    <el-dialog :title="title" v-model="open" width="780px" append-to-body>
+    <!-- ===== 编辑弹窗 ===== -->
+    <el-dialog v-model="open" width="780px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg></div>
+          <span class="rd-detail-header-title">{{ title }}</span>
+        </div>
+      </template>
       <el-form ref="formRef" :model="form" :rules="rules" label-width="120px">
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="计划编号" prop="mpsNo">
-              <el-input v-model="form.mpsNo" placeholder="自动生成" disabled />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="关联需求号" prop="demandNo">
-              <el-input v-model="form.demandNo" placeholder="请输入" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="产品编码" prop="productCode">
-              <el-input v-model="form.productCode" placeholder="请输入" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="产品名称" prop="productName">
-              <el-input v-model="form.productName" placeholder="请输入" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="规格型号" prop="specModel">
-              <el-input v-model="form.specModel" placeholder="请输入" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="单位" prop="unit">
-              <el-input v-model="form.unit" placeholder="请输入" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="计划产量" prop="planQty">
-              <el-input-number v-model="form.planQty" :min="0" :precision="2" style="width: 100%" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="产能单元" prop="resourceName">
-              <el-input v-model="form.resourceName" placeholder="请输入" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="计划期开始" prop="periodStart">
-              <el-date-picker v-model="form.periodStart" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" style="width: 100%" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="计划期结束" prop="periodEnd">
-              <el-date-picker v-model="form.periodEnd" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" style="width: 100%" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-form-item label="优先级" prop="priority">
-          <el-select v-model="form.priority" placeholder="请选择">
-            <el-option v-for="dict in mms_priority" :key="dict.value" :label="dict.label" :value="dict.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="备注" prop="remark">
-          <el-input v-model="form.remark" type="textarea" placeholder="请输入" />
-        </el-form-item>
+        <div class="rd-page">
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('c0')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg></span>基本信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c0 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+            <div class="rd-card-body" v-show="!collapsedCards.c0">
+              <el-row :gutter="20"><el-col :span="12"><el-form-item label="计划编号" prop="mpsNo"><el-input v-model="form.mpsNo" placeholder="自动生成" disabled /></el-form-item></el-col><el-col :span="12"><el-form-item label="关联需求号" prop="demandNo"><el-input v-model="form.demandNo" readonly placeholder="请选择需求" style="width: 100%" @click="openDemandPicker"><template #append><el-button icon="Search" @click="openDemandPicker" /></template><template #suffix><el-icon v-if="form.demandNo" class="rd-form-tip" style="cursor:pointer" @click.stop="clearDemand"><CircleClose /></el-icon></template></el-input></el-form-item></el-col></el-row>
+              <el-row :gutter="20"><el-col :span="12"><el-form-item label="优先级" prop="priority"><el-select v-model="form.priority" placeholder="请选择" style="width: 100%"><el-option v-for="dict in mms_priority" :key="dict.value" :label="dict.label" :value="dict.value" /></el-select></el-form-item></el-col></el-row>
+            </div>
+          </section>
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('c1')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7l-8-4-8 4 8 4 8-4z"/><path d="M4 7v10l8 4 8-4V7"/></svg></span>产品信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+            <div class="rd-card-body" v-show="!collapsedCards.c1">
+              <el-row :gutter="20"><el-col :span="12"><el-form-item label="产品编码" prop="productCode"><el-input v-model="form.productCode" readonly placeholder="请选择物料" style="width: 100%" @click="openMaterialPicker"><template #append><el-button icon="Search" @click="openMaterialPicker" /></template><template #suffix><el-icon v-if="form.productCode" class="rd-form-tip" style="cursor:pointer" @click.stop="clearMaterial"><CircleClose /></el-icon></template></el-input></el-form-item></el-col><el-col :span="12"><el-form-item label="产品名称"><el-input v-model="form.productName" readonly placeholder="选择物料后自动带出" /></el-form-item></el-col></el-row>
+              <el-row :gutter="20"><el-col :span="12"><el-form-item label="规格型号"><el-input v-model="form.specModel" readonly placeholder="选择物料后自动带出" /></el-form-item></el-col><el-col :span="12"><el-form-item label="单位" prop="unit"><el-select v-model="form.unit" placeholder="请选择" style="width: 100%"><el-option v-for="d in wms_unit" :key="d.value" :label="d.label" :value="d.value" /></el-select></el-form-item></el-col></el-row>
+            </div>
+          </section>
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('c2')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>计划参数</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+            <div class="rd-card-body" v-show="!collapsedCards.c2">
+              <el-row :gutter="20"><el-col :span="12"><el-form-item label="计划产量" prop="planQty"><el-input-number v-model="form.planQty" :min="0" :precision="2" style="width: 100%" /></el-form-item></el-col><el-col :span="12"><el-form-item label="产能单元" prop="resourceName"><el-input v-model="form.resourceName" readonly placeholder="请选择产能单元" style="width: 100%" @click="openResourcePicker"><template #append><el-button icon="Search" @click="openResourcePicker" /></template><template #suffix><el-icon v-if="form.resourceName" class="rd-form-tip" style="cursor:pointer" @click.stop="clearResource"><CircleClose /></el-icon></template></el-input></el-form-item></el-col></el-row>
+              <el-row :gutter="20"><el-col :span="12"><el-form-item label="计划期开始" prop="periodStart"><el-date-picker v-model="form.periodStart" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" style="width: 100%" /></el-form-item></el-col><el-col :span="12"><el-form-item label="计划期结束" prop="periodEnd"><el-date-picker v-model="form.periodEnd" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" style="width: 100%" /></el-form-item></el-col></el-row>
+            </div>
+          </section>
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('c3')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>其他信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c3 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+            <div class="rd-card-body" v-show="!collapsedCards.c3">
+              <el-form-item label="备注" prop="remark"><el-input v-model="form.remark" type="textarea" :rows="2" placeholder="请输入" /></el-form-item>
+            </div>
+          </section>
+        </div>
       </el-form>
       <template #footer>
-        <div class="dialog-footer">
-          <el-button type="primary" @click="submitForm">确 定</el-button>
-          <el-button @click="cancel">取 消</el-button>
-        </div>
+        <el-button type="primary" @click="submitForm">确 定</el-button>
+        <el-button @click="cancel">取 消</el-button>
       </template>
     </el-dialog>
 
-    <!-- ===== 审批 Dialog ===== -->
-    <el-dialog title="计划审批" v-model="auditOpen" width="500px" append-to-body>
-      <el-form ref="auditFormRef" :model="auditForm" label-width="100px">
-        <el-form-item label="计划编号"><span>{{ auditForm.mpsNo }}</span></el-form-item>
-        <el-form-item label="审批结果" prop="status">
-          <el-radio-group v-model="auditForm.status">
-            <el-radio value="2">通过</el-radio>
-            <el-radio value="0">驳回</el-radio>
-          </el-radio-group>
-        </el-form-item>
-        <el-form-item label="审批意见" prop="auditOpinion">
-          <el-input v-model="auditForm.auditOpinion" type="textarea" placeholder="请输入审批意见" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <div class="dialog-footer">
-          <el-button type="primary" @click="submitAudit">确 定</el-button>
-          <el-button @click="auditOpen = false">取 消</el-button>
+    <!-- ===== 查看详情弹窗 ===== -->
+    <el-dialog v-model="viewOpen" width="780px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></div>
+          <span class="rd-detail-header-title">主生产计划详情</span>
+          <div class="rd-detail-header-sub" v-if="viewData.mpsNo"><div class="rd-detail-header-divider"></div><span class="rd-detail-header-no">编号：{{ viewData.mpsNo }}</span></div>
         </div>
+      </template>
+      <div class="rd-page">
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('vc0')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg></span>基本信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc0 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.vc0" style="display:block"><div class="rd-grid"><div class="rd-item"><span class="rd-label">计划编号</span><div class="rd-value">{{ viewData.mpsNo || '-' }}</div></div><div class="rd-item"><span class="rd-label">关联需求号</span><div class="rd-value">{{ viewData.demandNo || '-' }}</div></div><div class="rd-item"><span class="rd-label">优先级</span><div class="rd-value"><dict-tag :options="mms_priority" :value="viewData.priority" /></div></div><div class="rd-item"><span class="rd-label">状态</span><div class="rd-value"><dict-tag :options="mms_mps_status" :value="viewData.status" /></div></div></div></div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('vc1')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7l-8-4-8 4 8 4 8-4z"/><path d="M4 7v10l8 4 8-4V7"/></svg></span>产品信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.vc1" style="display:block"><div class="rd-grid"><div class="rd-item"><span class="rd-label">产品编码</span><div class="rd-value">{{ viewData.productCode || '-' }}</div></div><div class="rd-item"><span class="rd-label">产品名称</span><div class="rd-value">{{ viewData.productName || '-' }}</div></div><div class="rd-item"><span class="rd-label">规格型号</span><div class="rd-value">{{ viewData.specModel || '-' }}</div></div><div class="rd-item"><span class="rd-label">单位</span><div class="rd-value"><dict-tag :options="wms_unit" :value="viewData.unit" /></div></div></div></div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('vc2')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>计划参数</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.vc2" style="display:block"><div class="rd-grid"><div class="rd-item"><span class="rd-label">计划产量</span><div class="rd-value">{{ viewData.planQty != null ? viewData.planQty : '-' }}</div></div><div class="rd-item"><span class="rd-label">产能单元</span><div class="rd-value">{{ viewData.resourceName || '-' }}</div></div><div class="rd-item"><span class="rd-label">计划期开始</span><div class="rd-value">{{ viewData.periodStart ? parseTime(viewData.periodStart, '{y}-{m}-{d}') : '-' }}</div></div><div class="rd-item"><span class="rd-label">计划期结束</span><div class="rd-value">{{ viewData.periodEnd ? parseTime(viewData.periodEnd, '{y}-{m}-{d}') : '-' }}</div></div></div></div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('vc3')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>其他信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc3 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.vc3" style="display:block"><div class="rd-grid"><div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value">{{ viewData.remark || '-' }}</div></div><div class="rd-item"><span class="rd-label">创建时间</span><div class="rd-value">{{ viewData.createTime ? parseTime(viewData.createTime) : '-' }}</div></div></div></div>
+        </section>
+        <!-- 审核记录 -->
+        <section class="rd-card" v-if="viewData.auditLogList && viewData.auditLogList.length">
+          <div class="rd-card-header" @click="toggleCard('vc4')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>审核记录</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc4 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.vc4" style="display:block">
+            <div class="rd-timeline">
+              <div class="rd-timeline-item" v-for="log in viewData.auditLogList" :key="log.logId">
+                <div class="rd-timeline-dot" :class="{ 'rd-timeline-dot--success': log.auditAction === '1', 'rd-timeline-dot--error': log.auditAction === '2' }"></div>
+                <div class="rd-timeline-content">
+                  <div class="rd-timeline-header">
+                    <span class="rd-timeline-title">
+                      <el-tag v-if="log.auditAction === '1'" type="success" size="small" effect="light" round>审核通过</el-tag>
+                      <el-tag v-else-if="log.auditAction === '2'" type="danger" size="small" effect="light" round>审核驳回</el-tag>
+                    </span>
+                    <span class="rd-timeline-time">{{ log.auditTime }}</span>
+                  </div>
+                  <div class="rd-timeline-body">
+                    <div class="rd-item"><span class="rd-label">审核人</span><div class="rd-value">{{ log.auditBy || '-' }}</div></div>
+                  </div>
+                  <div class="rd-timeline-comment" v-if="log.auditRemark">
+                    <strong>审核意见：</strong>{{ log.auditRemark }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+      <template #footer><el-button @click="viewOpen = false">关 闭</el-button></template>
+    </el-dialog>
+
+    <!-- ===== 需求选择器弹窗 ===== -->
+    <el-dialog v-model="demandPickerOpen" width="900px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+          <span class="rd-detail-header-title">选择生产需求</span>
+        </div>
+      </template>
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <el-input v-model="demandPickerQuery.demandNo" placeholder="需求编号" clearable size="small" style="width:180px" @keyup.enter="handleDemandPickerQuery">
+          <template #prefix><el-icon><Search /></el-icon></template>
+        </el-input>
+        <el-input v-model="demandPickerQuery.productName" placeholder="产品名称" clearable size="small" style="width:180px" @keyup.enter="handleDemandPickerQuery" />
+        <el-button type="primary" plain icon="Search" size="small" @click="handleDemandPickerQuery">查询</el-button>
+        <el-button icon="RefreshLeft" size="small" @click="resetDemandPickerQuery">重置</el-button>
+      </div>
+      <el-table ref="demandPickerTableRef" v-loading="demandPickerLoading" :data="demandPickerList" highlight-current-row @row-click="onDemandRowClick" @row-dblclick="onDemandRowDblClick" height="360" size="small">
+        <el-table-column width="45" align="center"><template #default="{ row }"><el-radio :model-value="demandPickerSelectedId" :value="row.demandId" @click.stop><span /></el-radio></template></el-table-column>
+        <el-table-column label="需求编号" prop="demandNo" width="140" show-overflow-tooltip />
+        <el-table-column label="产品编码" prop="productCode" width="120" show-overflow-tooltip />
+        <el-table-column label="产品名称" prop="productName" min-width="140" show-overflow-tooltip />
+        <el-table-column label="需求数量" prop="demandQty" width="90" align="center" />
+        <el-table-column label="需求日期" prop="requireDate" width="110" align="center" />
+        <el-table-column label="优先级" prop="priority" width="80" align="center"><template #default="scope"><dict-tag :options="mms_priority" :value="scope.row.priority" /></template></el-table-column>
+      </el-table>
+      <div style="display:flex;justify-content:flex-end;padding-top:8px">
+        <el-pagination v-model:current-page="demandPickerQuery.pageNum" v-model:page-size="demandPickerQuery.pageSize" :total="demandPickerTotal" layout="total, prev, pager, next" small @current-change="getDemandPickerList" />
+      </div>
+      <div v-if="demandPickerList.length > 0" style="margin-top:6px;font-size:12px;color:#94a3b8;text-align:center">双击行可选择并带出需求信息</div>
+      <template #footer><el-button @click="demandPickerOpen = false">取 消</el-button><el-button type="primary" @click="handleDemandPickerConfirm" :disabled="!demandPickerSelectedId">确 定</el-button></template>
+    </el-dialog>
+
+    <!-- ===== 审批 Dialog ===== -->
+    <el-dialog v-model="auditOpen" width="960px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+          <span class="rd-detail-header-title">主生产计划审批</span>
+          <div class="rd-detail-header-sub" v-if="auditData.mpsNo"><div class="rd-detail-header-divider"></div><span class="rd-detail-header-no">编号：{{ auditData.mpsNo }}</span></div>
+        </div>
+      </template>
+      <div class="rd-page">
+        <!-- 基本信息 -->
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('ac0')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg></span>基本信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.ac0 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.ac0" style="display:block"><div class="rd-grid"><div class="rd-item"><span class="rd-label">计划编号</span><div class="rd-value">{{ auditData.mpsNo || '-' }}</div></div><div class="rd-item"><span class="rd-label">关联需求号</span><div class="rd-value">{{ auditData.demandNo || '-' }}</div></div><div class="rd-item"><span class="rd-label">优先级</span><div class="rd-value"><dict-tag :options="mms_priority" :value="auditData.priority" /></div></div><div class="rd-item"><span class="rd-label">状态</span><div class="rd-value"><dict-tag :options="mms_mps_status" :value="auditData.status" /></div></div></div></div>
+        </section>
+        <!-- 产品信息 -->
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('ac3')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7l-8-4-8 4 8 4 8-4z"/><path d="M4 7v10l8 4 8-4V7"/></svg></span>产品信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.ac3 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.ac3" style="display:block"><div class="rd-grid"><div class="rd-item"><span class="rd-label">产品编码</span><div class="rd-value">{{ auditData.productCode || '-' }}</div></div><div class="rd-item"><span class="rd-label">产品名称</span><div class="rd-value">{{ auditData.productName || '-' }}</div></div><div class="rd-item"><span class="rd-label">规格型号</span><div class="rd-value">{{ auditData.specModel || '-' }}</div></div><div class="rd-item"><span class="rd-label">单位</span><div class="rd-value"><dict-tag :options="wms_unit" :value="auditData.unit" /></div></div></div></div>
+        </section>
+        <!-- 计划参数 -->
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('ac4')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>计划参数</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.ac4 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.ac4" style="display:block"><div class="rd-grid"><div class="rd-item"><span class="rd-label">计划产量</span><div class="rd-value">{{ auditData.planQty != null ? auditData.planQty : '-' }}</div></div><div class="rd-item"><span class="rd-label">产能单元</span><div class="rd-value">{{ auditData.resourceName || '-' }}</div></div><div class="rd-item"><span class="rd-label">计划期开始</span><div class="rd-value">{{ auditData.periodStart ? parseTime(auditData.periodStart, '{y}-{m}-{d}') : '-' }}</div></div><div class="rd-item"><span class="rd-label">计划期结束</span><div class="rd-value">{{ auditData.periodEnd ? parseTime(auditData.periodEnd, '{y}-{m}-{d}') : '-' }}</div></div></div></div>
+        </section>
+        <!-- 其他信息 -->
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('ac5')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>其他信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.ac5 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.ac5" style="display:block"><div class="rd-grid"><div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value">{{ auditData.remark || '-' }}</div></div></div></div>
+        </section>
+        <!-- 历史审核记录 -->
+        <section class="rd-card" v-if="auditData.auditLogList && auditData.auditLogList.length">
+          <div class="rd-card-header" @click="toggleCard('ac1')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>审核记录</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.ac1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.ac1" style="display:block">
+            <div class="rd-timeline">
+              <div class="rd-timeline-item" v-for="log in auditData.auditLogList" :key="log.logId">
+                <div class="rd-timeline-dot" :class="{ 'rd-timeline-dot--success': log.auditAction === '1', 'rd-timeline-dot--error': log.auditAction === '2' }"></div>
+                <div class="rd-timeline-content">
+                  <div class="rd-timeline-header">
+                    <span class="rd-timeline-title">
+                      <el-tag v-if="log.auditAction === '1'" type="success" size="small" effect="light" round>审核通过</el-tag>
+                      <el-tag v-else-if="log.auditAction === '2'" type="danger" size="small" effect="light" round>审核驳回</el-tag>
+                    </span>
+                    <span class="rd-timeline-time">{{ log.auditTime }}</span>
+                  </div>
+                  <div class="rd-timeline-body">
+                    <div class="rd-item"><span class="rd-label">审核人</span><div class="rd-value">{{ log.auditBy || '-' }}</div></div>
+                  </div>
+                  <div class="rd-timeline-comment" v-if="log.auditRemark">
+                    <strong>审核意见：</strong>{{ log.auditRemark }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+        <!-- 审批意见 -->
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('ac2')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 15l2 2 4-4"/></svg></span>审批意见</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.ac2 }" type="button"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.ac2">
+            <el-form ref="auditFormRef" :model="auditForm" :rules="auditRules" label-width="100px">
+              <el-form-item label="审批意见" prop="auditOpinion">
+                <el-input v-model="auditForm.auditOpinion" type="textarea" :rows="4" placeholder="请输入审批意见" show-word-limit maxlength="500" />
+              </el-form-item>
+            </el-form>
+          </div>
+        </section>
+      </div>
+      <template #footer>
+        <el-button type="success" @click="submitAudit(true)">通 过</el-button>
+        <el-button type="danger" @click="submitAudit(false)">驳 回</el-button>
+        <el-button @click="auditOpen = false">取 消</el-button>
       </template>
     </el-dialog>
 
@@ -270,6 +378,42 @@
           <el-button @click="cancelOpen = false">取 消</el-button>
         </div>
       </template>
+    </el-dialog>
+
+    <!-- ===== 物料选择器 ===== -->
+    <material-picker ref="materialPickerRef" title="选择产品物料" @confirm="onMaterialPickerConfirm" />
+
+    <!-- ===== 产能单元选择器弹窗 ===== -->
+    <el-dialog v-model="resourcePickerOpen" width="860px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div>
+          <span class="rd-detail-header-title">选择产能单元</span>
+        </div>
+      </template>
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <el-input v-model="resourcePickerQuery.resourceName" placeholder="产能单元名称" clearable size="small" style="width:200px" @keyup.enter="handleResourcePickerQuery">
+          <template #prefix><el-icon><Search /></el-icon></template>
+        </el-input>
+        <el-select v-model="resourcePickerQuery.resourceType" placeholder="类型" clearable size="small" style="width:120px" @change="handleResourcePickerQuery">
+          <el-option v-for="d in mms_resource_type" :key="d.value" :label="d.label" :value="d.value" />
+        </el-select>
+        <el-button type="primary" plain icon="Search" size="small" @click="handleResourcePickerQuery">查询</el-button>
+        <el-button icon="RefreshLeft" size="small" @click="resetResourcePickerQuery">重置</el-button>
+      </div>
+      <el-table ref="resourcePickerTableRef" v-loading="resourcePickerLoading" :data="resourcePickerList" highlight-current-row @row-click="onResourceRowClick" @row-dblclick="onResourceRowDblClick" height="360" size="small">
+        <el-table-column width="45" align="center"><template #default="{ row }"><el-radio :model-value="resourcePickerSelectedId" :value="row.resourceId" @click.stop><span /></el-radio></template></el-table-column>
+        <el-table-column label="资源编码" prop="resourceCode" width="130" show-overflow-tooltip />
+        <el-table-column label="产能单元" prop="resourceName" min-width="150" show-overflow-tooltip />
+        <el-table-column label="类型" prop="resourceType" width="100" align="center"><template #default="scope"><dict-tag :options="mms_resource_type" :value="scope.row.resourceType" /></template></el-table-column>
+        <el-table-column label="产线" prop="lineName" width="100" show-overflow-tooltip />
+        <el-table-column label="车间" prop="workshopName" width="100" show-overflow-tooltip />
+      </el-table>
+      <div style="display:flex;justify-content:flex-end;padding-top:8px">
+        <el-pagination v-model:current-page="resourcePickerQuery.pageNum" v-model:page-size="resourcePickerQuery.pageSize" :total="resourcePickerTotal" layout="total, prev, pager, next" small @current-change="getResourcePickerList" />
+      </div>
+      <div v-if="resourcePickerList.length > 0" style="margin-top:6px;font-size:12px;color:#94a3b8;text-align:center">双击行可选择并带出产能单元</div>
+      <template #footer><el-button @click="resourcePickerOpen = false">取 消</el-button><el-button type="primary" @click="handleResourcePickerConfirm" :disabled="!resourcePickerSelectedId">确 定</el-button></template>
     </el-dialog>
 
     <!-- ===== 业务操作说明对话框 ===== -->
@@ -330,15 +474,22 @@
 
 <script setup name="Mps">
 import { listMps, getMps, addMps, updateMps, delMps, confirmMps, auditMps, releaseMps, cancelMps } from "@/api/mms/mps";
+import { listDemand } from "@/api/mms/demand";
+import { listResource } from "@/api/mms/resource";
 import { useColumnResize } from '@/composables/useColumnResize'
-import { Search, Filter, RefreshLeft, ArrowRight, ArrowDown, WarningFilled } from '@element-plus/icons-vue'
+import { useDetailCard } from '@/composables/useDetailCard'
+import MaterialPicker from '@/components/MaterialPicker/index.vue'
+import { Search, Filter, RefreshLeft, ArrowRight, ArrowDown, WarningFilled, CircleClose } from '@element-plus/icons-vue'
 
 const { proxy } = getCurrentInstance();
-const { mms_mps_status, mms_priority } = proxy.useDict("mms_mps_status", "mms_priority");
+const { mms_mps_status, mms_priority, wms_unit, mms_resource_type } = proxy.useDict("mms_mps_status", "mms_priority", "wms_unit", "mms_resource_type");
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('mms_mps_index')
+const { collapsedCards, toggleCard } = useDetailCard(["c0","c1","c2","c3","vc0","vc1","vc2","vc3","vc4","ac0","ac1","ac2","ac3","ac4","ac5"])
 
 const dataList = ref([]);
 const open = ref(false);
+const viewOpen = ref(false);
+const viewData = ref({});
 const loading = ref(true);
 const showSearch = ref(true);
 const showAdvanced = ref(false);
@@ -352,6 +503,7 @@ const activeStatusTab = ref("all");
 const statusCounts = ref({});
 const showStatusHelp = ref(false);
 const auditOpen = ref(false);
+const auditData = ref({});
 const cancelOpen = ref(false);
 
 const statusTabList = computed(() => {
@@ -422,17 +574,21 @@ const data = reactive({
     params: {}
   },
   rules: {
-    productCode: [{ required: true, message: "请输入产品编码", trigger: "blur" }],
-    productName: [{ required: true, message: "请输入产品名称", trigger: "blur" }],
+    productCode: [{ required: true, message: "请选择产品编码", trigger: "change" }],
+    unit: [{ required: true, message: "请选择单位", trigger: "change" }],
+    resourceName: [{ required: true, message: "请选择产能单元", trigger: "change" }],
     planQty: [{ required: true, message: "请输入计划产量", trigger: "blur" }],
     periodStart: [{ required: true, message: "请选择计划期开始", trigger: "change" }],
     periodEnd: [{ required: true, message: "请选择计划期结束", trigger: "change" }]
   },
   auditForm: {},
+  auditRules: {
+    auditOpinion: [{ required: true, message: "请输入审批意见", trigger: "blur" }]
+  },
   cancelForm: {}
 });
 
-const { queryParams, form, rules, auditForm, cancelForm } = toRefs(data);
+const { queryParams, form, rules, auditForm, auditRules, cancelForm } = toRefs(data);
 
 function getList() {
   loading.value = true;
@@ -441,18 +597,26 @@ function getList() {
     total.value = response.total;
     loading.value = false;
     applySavedWidths();
-    updateStatusCounts(response.rows);
+    loadStatusCounts();
   });
 }
 
-function updateStatusCounts(rows) {
-  const counts = { all: total.value };
-  if (mms_mps_status.value) {
-    mms_mps_status.value.forEach(d => {
-      counts[d.value] = rows.filter(r => r.status === d.value).length;
-    });
-  }
-  statusCounts.value = counts;
+function loadStatusCounts() {
+  const baseQuery = { pageNum: 1, pageSize: 999 };
+  if (queryParams.value.mpsNo) baseQuery.mpsNo = queryParams.value.mpsNo;
+  if (queryParams.value.productCode) baseQuery.productCode = queryParams.value.productCode;
+  if (queryParams.value.productName) baseQuery.productName = queryParams.value.productName;
+  if (queryParams.value.priority) baseQuery.priority = queryParams.value.priority;
+  if (queryParams.value.demandNo) baseQuery.demandNo = queryParams.value.demandNo;
+  if (queryParams.value.resourceName) baseQuery.resourceName = queryParams.value.resourceName;
+  listMps(proxy.addDateRange(baseQuery, dateRange.value)).then(res => {
+    const counts = { all: res.total };
+    if (mms_mps_status.value) {
+      mms_mps_status.value.forEach(d => { counts[d.value] = 0; });
+      (res.rows || []).forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++; });
+    }
+    statusCounts.value = counts;
+  }).catch(() => {});
 }
 
 function handleQuery() {
@@ -489,8 +653,8 @@ function handleSelectionChange(selection) {
 
 function reset() {
   form.value = {
-    mpsNo: undefined, demandNo: undefined, productCode: undefined, productName: undefined,
-    specModel: undefined, unit: undefined, planQty: undefined, resourceName: undefined,
+    mpsNo: undefined, demandId: undefined, demandNo: undefined, productId: undefined, productCode: undefined, productName: undefined,
+    specModel: undefined, unit: undefined, planQty: undefined, resourceId: undefined, resourceName: undefined,
     periodStart: undefined, periodEnd: undefined, priority: undefined, remark: undefined
   };
   proxy.resetForm("formRef");
@@ -501,6 +665,10 @@ function handleUpdate(row) {
   reset();
   const id = row.mpsId || ids.value[0];
   getMps(id).then(response => { form.value = response.data; open.value = true; title.value = "修改计划"; });
+}
+function handleView(row) {
+  const id = row.mpsId || ids.value[0];
+  getMps(id).then(response => { viewData.value = response.data; viewOpen.value = true; });
 }
 
 function submitForm() {
@@ -526,12 +694,26 @@ function handleConfirm(row) {
   proxy.$modal.confirm('是否确认提交计划"' + row.mpsNo + '"？').then(() => confirmMps(row.mpsId)).then(() => { getList(); proxy.$modal.msgSuccess("确认成功"); }).catch(() => {});
 }
 function handleAudit(row) {
-  auditForm.value = { mpsId: row.mpsId, mpsNo: row.mpsNo, status: "2", auditOpinion: "" };
-  auditOpen.value = true;
+  const id = row.mpsId;
+  getMps(id).then(response => {
+    auditData.value = response.data;
+    auditForm.value = { mpsId: id, auditOpinion: "" };
+    auditOpen.value = true;
+  });
 }
-function submitAudit() {
-  auditMps(auditForm.value.mpsId, auditForm.value.status, auditForm.value.auditOpinion).then(() => {
-    auditOpen.value = false; getList(); proxy.$modal.msgSuccess("审批成功");
+function submitAudit(passed) {
+  proxy.$refs["auditFormRef"].validate(valid => {
+    if (valid) {
+      const status = passed ? '2' : '0';
+      const actionText = passed ? '通过' : '驳回';
+      proxy.$modal.confirm(`确认${actionText}该主生产计划？`).then(() => {
+        return auditMps(auditForm.value.mpsId, status, auditForm.value.auditOpinion);
+      }).then(() => {
+        proxy.$modal.msgSuccess("审批成功");
+        auditOpen.value = false;
+        getList();
+      }).catch(() => {});
+    }
   });
 }
 function handleRelease(row) {
@@ -547,10 +729,130 @@ function submitCancel() {
   });
 }
 
+// ===== 需求选择器 =====
+const demandPickerOpen = ref(false);
+const demandPickerLoading = ref(false);
+const demandPickerList = ref([]);
+const demandPickerTotal = ref(0);
+const demandPickerSelectedId = ref(null);
+const demandPickerSelectedRow = ref(null);
+const demandPickerTableRef = ref();
+const demandPickerQuery = reactive({ pageNum: 1, pageSize: 10, demandNo: undefined, productName: undefined, status: '1' });
+
+function openDemandPicker() {
+  demandPickerOpen.value = true;
+  demandPickerSelectedId.value = null;
+  demandPickerSelectedRow.value = null;
+  demandPickerQuery.pageNum = 1;
+  demandPickerQuery.demandNo = undefined;
+  demandPickerQuery.productName = undefined;
+  getDemandPickerList();
+}
+function getDemandPickerList() {
+  demandPickerLoading.value = true;
+  listDemand(demandPickerQuery).then(res => {
+    demandPickerList.value = res.rows;
+    demandPickerTotal.value = res.total;
+    demandPickerLoading.value = false;
+  }).catch(() => { demandPickerLoading.value = false; });
+}
+function handleDemandPickerQuery() { demandPickerQuery.pageNum = 1; getDemandPickerList(); }
+function resetDemandPickerQuery() { demandPickerQuery.demandNo = undefined; demandPickerQuery.productName = undefined; handleDemandPickerQuery(); }
+function onDemandRowClick(row) { demandPickerSelectedId.value = row.demandId; demandPickerSelectedRow.value = row; }
+function onDemandRowDblClick(row) { onDemandRowClick(row); handleDemandPickerConfirm(); }
+function handleDemandPickerConfirm() {
+  if (!demandPickerSelectedId.value) { proxy.$modal.msgWarning('请先选择需求'); return; }
+  const row = demandPickerSelectedRow.value;
+  form.value.demandId = row.demandId;
+  form.value.demandNo = row.demandNo;
+  // 自动带出产品信息
+  form.value.productId = row.productId;
+  form.value.productCode = row.productCode;
+  form.value.productName = row.productName;
+  form.value.specModel = row.specModel;
+  form.value.unit = row.unit;
+  // 自动带出计划数量
+  if (row.demandQty != null) form.value.planQty = Number(row.demandQty);
+  // 自动带出优先级
+  if (row.priority) form.value.priority = row.priority;
+  // 自动带出计划期（以需求日期为完工日期）
+  if (row.requireDate) {
+    form.value.periodEnd = row.requireDate;
+    const d = new Date(row.requireDate);
+    d.setDate(d.getDate() - 7);
+    form.value.periodStart = d.toISOString().split('T')[0];
+  }
+  demandPickerOpen.value = false;
+}
+function clearDemand() {
+  form.value.demandId = undefined;
+  form.value.demandNo = undefined;
+}
+
+// ===== 物料选择器 =====
+const materialPickerRef = ref()
+function openMaterialPicker() { materialPickerRef.value.open(form.value.productId) }
+function onMaterialPickerConfirm(material) {
+  form.value.productId = material.materialId
+  form.value.productCode = material.materialCode
+  form.value.productName = material.materialName
+  form.value.specModel = material.specModel
+  if (material.unit) form.value.unit = material.unit
+}
+function clearMaterial() {
+  form.value.productId = undefined
+  form.value.productCode = undefined
+  form.value.productName = undefined
+  form.value.specModel = undefined
+}
+
+// ===== 产能单元选择器 =====
+const resourcePickerOpen = ref(false);
+const resourcePickerLoading = ref(false);
+const resourcePickerList = ref([]);
+const resourcePickerTotal = ref(0);
+const resourcePickerSelectedId = ref(null);
+const resourcePickerSelectedRow = ref(null);
+const resourcePickerTableRef = ref();
+const resourcePickerQuery = reactive({ pageNum: 1, pageSize: 10, resourceName: undefined, resourceType: undefined, status: '0' });
+
+function openResourcePicker() {
+  resourcePickerOpen.value = true;
+  resourcePickerSelectedId.value = null;
+  resourcePickerSelectedRow.value = null;
+  resourcePickerQuery.pageNum = 1;
+  resourcePickerQuery.resourceName = undefined;
+  resourcePickerQuery.resourceType = undefined;
+  getResourcePickerList();
+}
+function getResourcePickerList() {
+  resourcePickerLoading.value = true;
+  listResource(resourcePickerQuery).then(res => {
+    resourcePickerList.value = res.rows;
+    resourcePickerTotal.value = res.total;
+    resourcePickerLoading.value = false;
+  }).catch(() => { resourcePickerLoading.value = false; });
+}
+function handleResourcePickerQuery() { resourcePickerQuery.pageNum = 1; getResourcePickerList(); }
+function resetResourcePickerQuery() { resourcePickerQuery.resourceName = undefined; resourcePickerQuery.resourceType = undefined; handleResourcePickerQuery(); }
+function onResourceRowClick(row) { resourcePickerSelectedId.value = row.resourceId; resourcePickerSelectedRow.value = row; }
+function onResourceRowDblClick(row) { onResourceRowClick(row); handleResourcePickerConfirm(); }
+function handleResourcePickerConfirm() {
+  if (!resourcePickerSelectedId.value) { proxy.$modal.msgWarning('请先选择产能单元'); return; }
+  const row = resourcePickerSelectedRow.value;
+  form.value.resourceId = row.resourceId;
+  form.value.resourceName = row.resourceName;
+  resourcePickerOpen.value = false;
+}
+function clearResource() {
+  form.value.resourceId = undefined;
+  form.value.resourceName = undefined;
+}
+
 // ===== 字典辅助函数 =====
 function statusLabel(status) {
   const item = mms_mps_status.value.find(d => d.value == status);
-  return item ? item.label : '-';
+  return item ? item.label : '—';
 }
 
 function badgeClass(status) {
@@ -577,7 +879,7 @@ function statusTabClass(value) {
 
 function priorityLabel(priority) {
   const item = mms_priority.value.find(d => d.value == priority);
-  return item ? item.label : '-';
+  return item ? item.label : '—';
 }
 
 function priorityBadgeClass(priority) {

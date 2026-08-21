@@ -15,6 +15,9 @@ public class MmsShift extends BaseEntity
 
     private Long shiftId;
 
+    @Excel(name = "班次编号")
+    private String shiftCode;
+
     @Excel(name = "班次名称")
     private String shiftName;
 
@@ -36,6 +39,8 @@ public class MmsShift extends BaseEntity
 
     public Long getShiftId() { return shiftId; }
     public void setShiftId(Long shiftId) { this.shiftId = shiftId; }
+    public String getShiftCode() { return shiftCode; }
+    public void setShiftCode(String shiftCode) { this.shiftCode = shiftCode; }
     public String getShiftName() { return shiftName; }
     public void setShiftName(String shiftName) { this.shiftName = shiftName; }
     public String getStartTime() { return startTime; }

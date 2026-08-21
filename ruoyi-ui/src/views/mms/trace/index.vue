@@ -7,7 +7,7 @@
         <div class="field"><label>投入批次</label><div class="control"><el-input v-model="queryParams.batchIn" placeholder="请输入" clearable @keyup.enter="handleQuery" /></div></div>
         <div class="field"><label>物料编码</label><div class="control"><el-input v-model="queryParams.materialCode" placeholder="请输入" clearable @keyup.enter="handleQuery" /></div></div>
       </div>
-      <div class="filter-actions"><div class="filter-info">支持回车快速搜索</div><div class="filter-buttons"><el-button icon="RefreshLeft" @click="resetQuery">重置</el-button><el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button></div></div>
+      <div class="filter-actions"><div class="filter-info"><el-icon><Filter /></el-icon> 支持回车快速搜索</div><div class="filter-buttons"><el-button icon="RefreshLeft" @click="resetQuery">重置</el-button><el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button></div></div>
     </div>
     <div class="surface">
       <div class="toolbar">
@@ -31,6 +31,7 @@
 </template>
 <script setup name="Trace">
 import { listTrace } from "@/api/mms/trace";
+import { Filter, RefreshLeft } from '@element-plus/icons-vue'
 const { proxy } = getCurrentInstance();
 const dataList = ref([]); const loading = ref(true); const showSearch = ref(true); const total = ref(0);
 const data = reactive({ queryParams: { pageNum: 1, pageSize: 10, batchOut: undefined, batchIn: undefined, materialCode: undefined, params: {} } });

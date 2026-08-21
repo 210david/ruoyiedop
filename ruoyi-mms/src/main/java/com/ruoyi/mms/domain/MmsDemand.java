@@ -50,6 +50,11 @@ public class MmsDemand extends BaseEntity
     @Excel(name = "优先级", readConverterExp = "0=高,1=中,2=低")
     private String priority;
 
+    private Long customerId;
+
+    @Excel(name = "客户编号")
+    private String customerNo;
+
     @Excel(name = "客户名称")
     private String customerName;
 
@@ -82,6 +87,10 @@ public class MmsDemand extends BaseEntity
     public void setRequireDate(Date requireDate) { this.requireDate = requireDate; }
     public String getPriority() { return priority; }
     public void setPriority(String priority) { this.priority = priority; }
+    public Long getCustomerId() { return customerId; }
+    public void setCustomerId(Long customerId) { this.customerId = customerId; }
+    public String getCustomerNo() { return customerNo; }
+    public void setCustomerNo(String customerNo) { this.customerNo = customerNo; }
     public String getCustomerName() { return customerName; }
     public void setCustomerName(String customerName) { this.customerName = customerName; }
     public String getStatus() { return status; }

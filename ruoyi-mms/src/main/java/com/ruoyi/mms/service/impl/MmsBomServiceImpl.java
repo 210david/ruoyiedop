@@ -9,6 +9,8 @@ import org.springframework.transaction.annotation.Transactional;
 import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.common.utils.SecurityUtils;
+import com.ruoyi.common.utils.StringUtils;
+import com.ruoyi.mk.service.IMkNumberRuleService;
 import com.ruoyi.mms.domain.MmsBom;
 import com.ruoyi.mms.domain.MmsBomDetail;
 import com.ruoyi.mms.mapper.MmsBomMapper;
@@ -24,6 +26,9 @@ public class MmsBomServiceImpl implements IMmsBomService
 {
     @Autowired
     private MmsBomMapper bomMapper;
+
+    @Autowired
+    private IMkNumberRuleService mkNumberRuleService;
 
     @Override
     public List<MmsBom> selectBomList(MmsBom bom)
@@ -46,8 +51,15 @@ public class MmsBomServiceImpl implements IMmsBomService
     @Transactional(rollbackFor = Exception.class)
     public int insertBom(MmsBom bom)
     {
+        // 自动生成BOM编号
+        if (StringUtils.isEmpty(bom.getBomNo()))
+        {
+            bom.setBomNo(mkNumberRuleService.generateNumber("mms_bom"));
+        }
         // 初始化默认值
         bom.setDelFlag("0");
+        bom.setCreateBy(SecurityUtils.getUsername());
+        bom.setCreateTime(DateUtils.getNowDate());
         if (bom.getStatus() == null)
         {
             bom.setStatus("0"); // 草稿
@@ -133,14 +145,68 @@ public class MmsBomServiceImpl implements IMmsBomService
         {
             throw new ServiceException("产品[" + bom.getProductCode() + "]已存在已发布版本的BOM，请先停用旧版本");
         }
-        bom.setStatus("1"); // 已发布
+        MmsBom update = new MmsBom();
+        update.setBomId(bomId);
+        update.setStatus("1"); // 已发布
         if (bom.getEffectiveDate() == null)
         {
-            bom.setEffectiveDate(DateUtils.getNowDate());
+            update.setEffectiveDate(DateUtils.getNowDate());
         }
-        bom.setUpdateBy(SecurityUtils.getUsername());
-        bom.setUpdateTime(DateUtils.getNowDate());
-        return bomMapper.updateBom(bom);
+        else
+        {
+            update.setEffectiveDate(bom.getEffectiveDate());
+        }
+        update.setUpdateBy(SecurityUtils.getUsername());
+        update.setUpdateTime(DateUtils.getNowDate());
+        return bomMapper.updateBomStatus(update);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int disableBom(Long bomId)
+    {
+        MmsBom bom = bomMapper.selectBomById(bomId);
+        if (bom == null)
+        {
+            throw new ServiceException("BOM不存在");
+        }
+        if (!"1".equals(bom.getStatus()))
+        {
+            throw new ServiceException("只有已发布状态的BOM才能停用");
+        }
+        MmsBom update = new MmsBom();
+        update.setBomId(bomId);
+        update.setStatus("2"); // 已停用
+        update.setUpdateBy(SecurityUtils.getUsername());
+        update.setUpdateTime(DateUtils.getNowDate());
+        return bomMapper.updateBomStatus(update);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int enableBom(Long bomId)
+    {
+        MmsBom bom = bomMapper.selectBomById(bomId);
+        if (bom == null)
+        {
+            throw new ServiceException("BOM不存在");
+        }
+        if (!"2".equals(bom.getStatus()))
+        {
+            throw new ServiceException("只有已停用状态的BOM才能启用");
+        }
+        // 校验同物料同时仅一个已发布版本
+        int count = bomMapper.countPublishedByProductId(bom.getProductId());
+        if (count > 0)
+        {
+            throw new ServiceException("产品[" + bom.getProductCode() + "]已存在已发布版本的BOM，请先停用旧版本");
+        }
+        MmsBom update = new MmsBom();
+        update.setBomId(bomId);
+        update.setStatus("1"); // 已发布
+        update.setUpdateBy(SecurityUtils.getUsername());
+        update.setUpdateTime(DateUtils.getNowDate());
+        return bomMapper.updateBomStatus(update);
     }
 
     @Override
@@ -154,7 +220,7 @@ public class MmsBomServiceImpl implements IMmsBomService
         }
         // 复制主表
         MmsBom newBom = new MmsBom();
-        newBom.setBomNo(source.getBomNo() + "-COPY");
+        newBom.setBomNo(mkNumberRuleService.generateNumber("mms_bom"));
         newBom.setBomName(source.getBomName());
         newBom.setProductId(source.getProductId());
         newBom.setProductCode(source.getProductCode());
@@ -191,38 +257,35 @@ public class MmsBomServiceImpl implements IMmsBomService
     @Override
     public List<MmsBomDetail> selectBomTreeByBomId(Long bomId)
     {
-        List<MmsBomDetail> result = new ArrayList<>();
-        collectBomDetails(bomId, result, 0, BigDecimal.ONE, 0);
-        return result;
+        return collectBomTree(bomId, BigDecimal.ONE, 0);
     }
 
     /**
-     * 递归收集BOM明细（多层级展开，最深3层）
+     * 递归构建BOM树形结构（多层级展开，最深5层）
      */
-    private void collectBomDetails(Long bomId, List<MmsBomDetail> result, int level, BigDecimal parentQty, int currentLevel)
+    private List<MmsBomDetail> collectBomTree(Long bomId, BigDecimal parentQty, int currentLevel)
     {
-        if (currentLevel >= 3)
+        if (currentLevel >= 5)
         {
-            return;
+            return new ArrayList<>();
         }
         List<MmsBomDetail> details = bomMapper.selectBomDetailByBomId(bomId);
         if (details == null)
         {
-            return;
+            return new ArrayList<>();
         }
         for (MmsBomDetail d : details)
         {
-            // 设置层级标识
             d.setTreeLevel(currentLevel);
-            // 计算实际用量（考虑上级用量的传递）
             BigDecimal actualQty = d.getUsageQty() != null ? d.getUsageQty().multiply(parentQty) : BigDecimal.ZERO;
-            result.add(d);
-            // 如果子项有引用BOM（半成品），递归展开
+            // 如果子项有引用BOM（半成品），递归构建子节点
             if (d.getBomRefId() != null && d.getBomRefId() > 0)
             {
-                collectBomDetails(d.getBomRefId(), result, level + 1, actualQty, currentLevel + 1);
+                List<MmsBomDetail> children = collectBomTree(d.getBomRefId(), actualQty, currentLevel + 1);
+                d.setChildren(children);
             }
         }
+        return details;
     }
 
     /**

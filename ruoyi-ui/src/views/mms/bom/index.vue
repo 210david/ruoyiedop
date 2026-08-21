@@ -14,9 +14,9 @@
       <div class="filter-actions"><div class="filter-info"><el-icon><Filter /></el-icon> 已选 {{ activeFilterCount }} 个条件，支持回车快速搜索</div><div class="filter-buttons"><el-button icon="RefreshLeft" @click="resetQuery">重置</el-button><el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button></div></div>
     </div>
     <div class="surface">
-      <div class="status-tabs"><div class="tabs-track"><button class="status-tab" :class="{ 'is-active': activeStatusTab === 'all' }" @click="handleStatusTabClick('all')"><span class="dot"></span><span>全部</span><span class="count">{{ statusCounts.all || 0 }}</span></button><button v-for="s in statusTabList" :key="s.value" class="status-tab" :class="[{ 'is-active': activeStatusTab === s.value }, statusTabClass(s.value)]" @click="handleStatusTabClick(s.value)"><span class="dot"></span><span>{{ s.label }}</span><span class="count">{{ statusCounts[s.value] || 0 }}</span></button></div><button class="tip-pill" @click="showStatusHelp = true"><el-icon><WarningFilled /></el-icon><span>业务操作说明</span></button></div>
+      <div class="status-tabs"><div class="tabs-track"><button class="status-tab" :class="{ 'is-active': activeStatusTab === 'all' }" @click="handleStatusTabClick('all')"><span class="dot"></span><span>全部</span><span class="count">{{ statusCounts.all || 0 }}</span></button><button v-for="s in statusTabList" :key="s.value" class="status-tab" :class="[{ 'is-active': activeStatusTab === s.value }, statusTabClass(s.value)]" @click="handleStatusTabClick(s.value)"><span class="dot"></span><span>{{ s.label }}</span><span class="count">{{ statusCounts[s.value] || 0 }}</span></button></div><button class="tip-pill" @click="showStatusHelp = true"><el-icon><QuestionFilled /></el-icon><span>业务操作说明</span></button></div>
       <div class="toolbar"><div class="left"><el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['mms:bom:add']">新增</el-button><el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['mms:bom:edit']">修改</el-button><el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['mms:bom:remove']">删除</el-button><div class="toolbar-divider"></div><el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['mms:bom:export']">导出</el-button></div><div class="right"><right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="mms_bom_columns" /></div></div>
-      <div class="table-wrap"><el-table ref="tableRef" v-loading="loading" :data="bomList" border @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" class="app-table"><el-table-column type="selection" width="55" align="center" /><el-table-column label="BOM编号" prop="bomNo" key="bomNo" :width="colWidth('bomNo', 140)" resizable v-if="columns.bomNo.visible" /><el-table-column label="BOM名称" prop="bomName" key="bomName" :width="colWidth('bomName', 200)" resizable show-overflow-tooltip v-if="columns.bomName.visible" /><el-table-column label="产品编码" prop="productCode" key="productCode" :width="colWidth('productCode', 130)" resizable v-if="columns.productCode.visible" /><el-table-column label="产品名称" prop="productName" key="productName" :width="colWidth('productName', 200)" resizable show-overflow-tooltip v-if="columns.productName.visible" /><el-table-column label="BOM类型" prop="bomType" key="bomType" :width="colWidth('bomType', 100)" resizable align="center" v-if="columns.bomType.visible"><template #default="scope"><span class="badge blue"><span class="dot"></span>{{ bomTypeLabel(scope.row.bomType) }}</span></template></el-table-column><el-table-column label="版本" prop="version" key="version" :width="colWidth('version', 80)" resizable align="center" v-if="columns.version.visible" /><el-table-column label="基准数量" prop="baseQty" key="baseQty" :width="colWidth('baseQty', 100)" resizable align="center" v-if="columns.baseQty.visible"><template #default="scope"><span>{{ scope.row.baseQty }} {{ scope.row.baseUnit }}</span></template></el-table-column><el-table-column label="状态" prop="status" key="status" :width="colWidth('status', 100)" resizable align="center" v-if="columns.status.visible"><template #default="scope"><span class="badge" :class="badgeClass(scope.row.status)"><span class="dot"></span>{{ statusLabel(scope.row.status) }}</span></template></el-table-column><el-table-column label="创建时间" prop="createTime" key="createTime" :width="colWidth('createTime', 160)" resizable align="center" v-if="columns.createTime.visible"><template #default="scope"><span>{{ parseTime(scope.row.createTime) }}</span></template></el-table-column><el-table-column label="操作" width="280" align="center" fixed="right"><template #default="scope"><el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-if="scope.row.status !== '1'" v-hasPermi="['mms:bom:edit']">修改</el-button><el-button link type="success" icon="Promotion" @click="handlePublish(scope.row)" v-if="scope.row.status === '0'" v-hasPermi="['mms:bom:edit']">发布</el-button><el-button link type="warning" icon="CopyDocument" @click="handleCopy(scope.row)" v-hasPermi="['mms:bom:add']">复制</el-button><el-button link type="primary" icon="View" @click="handleView(scope.row)">详情</el-button><el-button link type="info" icon="View" @click="handleViewTree(scope.row)">展开</el-button><el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-if="scope.row.status !== '1'" v-hasPermi="['mms:bom:remove']">删除</el-button></template></el-table-column></el-table></div>
+      <div class="table-wrap"><el-table ref="tableRef" v-loading="loading" :data="bomList" border @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" class="app-table"><el-table-column type="selection" width="55" align="center" /><el-table-column label="BOM编号" prop="bomNo" key="bomNo" :width="colWidth('bomNo', 140)" resizable v-if="columns.bomNo.visible" /><el-table-column label="BOM名称" prop="bomName" key="bomName" :width="colWidth('bomName', 200)" resizable show-overflow-tooltip v-if="columns.bomName.visible" /><el-table-column label="产品编码" prop="productCode" key="productCode" :width="colWidth('productCode', 130)" resizable v-if="columns.productCode.visible" /><el-table-column label="产品名称" prop="productName" key="productName" :width="colWidth('productName', 200)" resizable show-overflow-tooltip v-if="columns.productName.visible" /><el-table-column label="BOM类型" prop="bomType" key="bomType" :width="colWidth('bomType', 100)" resizable align="center" v-if="columns.bomType.visible"><template #default="scope"><span class="badge blue"><span class="dot"></span>{{ bomTypeLabel(scope.row.bomType) }}</span></template></el-table-column><el-table-column label="版本" prop="version" key="version" :width="colWidth('version', 80)" resizable align="center" v-if="columns.version.visible" /><el-table-column label="基准数量" prop="baseQty" key="baseQty" :width="colWidth('baseQty', 100)" resizable align="center" v-if="columns.baseQty.visible"><template #default="scope"><span>{{ scope.row.baseQty }} {{ scope.row.baseUnit }}</span></template></el-table-column><el-table-column label="状态" prop="status" key="status" :width="colWidth('status', 100)" resizable align="center" v-if="columns.status.visible"><template #default="scope"><span class="badge" :class="badgeClass(scope.row.status)"><span class="dot"></span>{{ statusLabel(scope.row.status) }}</span></template></el-table-column><el-table-column label="创建时间" prop="createTime" key="createTime" :width="colWidth('createTime', 160)" resizable align="center" v-if="columns.createTime.visible"><template #default="scope"><span>{{ parseTime(scope.row.createTime) }}</span></template></el-table-column><el-table-column label="操作" width="240" align="center" fixed="right"><template #default="scope"><el-button link type="primary" icon="View" @click="handleView(scope.row)">详情</el-button><el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-if="scope.row.status !== '1'" v-hasPermi="['mms:bom:edit']">修改</el-button><el-button link type="success" icon="Promotion" @click="handlePublish(scope.row)" v-if="scope.row.status === '0'" v-hasPermi="['mms:bom:edit']">发布</el-button><el-button link type="warning" icon="CircleClose" @click="handleDisable(scope.row)" v-if="scope.row.status === '1'" v-hasPermi="['mms:bom:edit']">停用</el-button><el-button link type="success" icon="CircleCheck" @click="handleEnable(scope.row)" v-if="scope.row.status === '2'" v-hasPermi="['mms:bom:edit']">启用</el-button><el-button link type="warning" icon="CopyDocument" @click="handleCopy(scope.row)" v-hasPermi="['mms:bom:add']">复制</el-button><el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-if="scope.row.status !== '1'" v-hasPermi="['mms:bom:remove']">删除</el-button></template></el-table-column></el-table></div>
       <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
     </div>
 
@@ -42,7 +42,7 @@
             </div>
             <div class="rd-card-body" v-show="!collapsedCards.c1">
               <el-row :gutter="20">
-                <el-col :span="8"><el-form-item label="BOM编号" prop="bomNo"><el-input v-model="form.bomNo" placeholder="请输入" /></el-form-item></el-col>
+                <el-col :span="8"><el-form-item label="BOM编号" prop="bomNo"><el-input v-model="form.bomNo" placeholder="保存后自动生成" disabled /></el-form-item></el-col>
                 <el-col :span="8"><el-form-item label="BOM名称" prop="bomName"><el-input v-model="form.bomName" placeholder="请输入" /></el-form-item></el-col>
                 <el-col :span="8"><el-form-item label="BOM类型" prop="bomType"><el-select v-model="form.bomType" placeholder="请选择" style="width: 100%"><el-option v-for="d in mms_bom_type" :key="d.value" :label="d.label" :value="d.value" /></el-select></el-form-item></el-col>
               </el-row>
@@ -147,11 +147,11 @@
           </div>
           <div class="rd-card-body" v-show="!collapsedCards.vc1" style="display:block">
             <div class="rd-grid">
-              <div class="rd-item"><span class="rd-label">BOM编号</span><div class="rd-value">{{ viewData.bomNo || '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label">BOM名称</span><div class="rd-value">{{ viewData.bomName || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">BOM编号</span><div class="rd-value">{{ viewData.bomNo || '—' }}</div></div>
+              <div class="rd-item"><span class="rd-label">BOM名称</span><div class="rd-value">{{ viewData.bomName || '—' }}</div></div>
               <div class="rd-item"><span class="rd-label">BOM类型</span><div class="rd-value"><span class="badge blue"><span class="dot"></span>{{ bomTypeLabel(viewData.bomType) }}</span></div></div>
-              <div class="rd-item"><span class="rd-label">版本</span><div class="rd-value">{{ viewData.version || '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label">基准数量</span><div class="rd-value">{{ viewData.baseQty != null ? viewData.baseQty : '-' }} {{ unitLabel(viewData.baseUnit) }}</div></div>
+              <div class="rd-item"><span class="rd-label">版本</span><div class="rd-value">{{ viewData.version || '—' }}</div></div>
+              <div class="rd-item"><span class="rd-label">基准数量</span><div class="rd-value">{{ viewData.baseQty != null ? viewData.baseQty : '—' }} {{ unitLabel(viewData.baseUnit) }}</div></div>
               <div class="rd-item"><span class="rd-label">状态</span><div class="rd-value"><span class="badge" :class="badgeClass(viewData.status)"><span class="dot"></span>{{ statusLabel(viewData.status) }}</span></div></div>
             </div>
           </div>
@@ -164,8 +164,8 @@
           </div>
           <div class="rd-card-body" v-show="!collapsedCards.vc2" style="display:block">
             <div class="rd-grid">
-              <div class="rd-item"><span class="rd-label">产品编码</span><div class="rd-value">{{ viewData.productCode || '-' }}</div></div>
-              <div class="rd-item rd-item--full"><span class="rd-label">产品名称</span><div class="rd-value">{{ viewData.productName || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">产品编码</span><div class="rd-value">{{ viewData.productCode || '—' }}</div></div>
+              <div class="rd-item"><span class="rd-label">产品名称</span><div class="rd-value">{{ viewData.productName || '—' }}</div></div>
             </div>
           </div>
         </section>
@@ -201,7 +201,7 @@
           <div class="rd-card-body" v-show="!collapsedCards.vc3" style="display:block">
             <div class="rd-grid">
               <div class="rd-item"><span class="rd-label">状态</span><div class="rd-value"><span class="badge" :class="badgeClass(viewData.status)"><span class="dot"></span>{{ statusLabel(viewData.status) }}</span></div></div>
-              <div class="rd-item"><span class="rd-label">生效日期</span><div class="rd-value">{{ viewData.effectiveDate || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">生效日期</span><div class="rd-value">{{ viewData.effectiveDate || '—' }}</div></div>
             </div>
           </div>
         </section>
@@ -213,35 +213,40 @@
           </div>
           <div class="rd-card-body" v-show="!collapsedCards.vc0" style="display:block">
             <div class="rd-grid">
-              <div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value">{{ viewData.remark || '-' }}</div></div>
+              <div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value">{{ viewData.remark || '—' }}</div></div>
             </div>
           </div>
         </section>
       </div>
       <template #footer>
+        <el-button type="primary" icon="Connection" @click="handleViewTreeFromDetail" v-if="viewData.bomId">多层级展开</el-button>
         <el-button @click="viewOpen = false">关 闭</el-button>
       </template>
     </el-dialog>
 
     <!-- BOM多层级展开对话框 -->
-    <el-dialog v-model="treeOpen" width="1000px" append-to-body draggable class="rd-dialog">
+    <el-dialog v-model="treeOpen" width="1100px" append-to-body draggable class="rd-dialog">
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/><path d="M6 15l6 6 6-6"/></svg></div>
           <span class="rd-detail-header-title">BOM多层级展开 - {{ treeBomNo }}</span>
         </div>
       </template>
-      <el-table v-loading="treeLoading" :data="treeData" border size="small" class="app-table" max-height="500">
-        <el-table-column label="层级" width="60" align="center"><template #default="scope"><span class="level-badge" :class="'level-' + scope.row.treeLevel">{{ scope.row.treeLevel }}</span></template></el-table-column>
-        <el-table-column label="物料编码" prop="materialCode" width="140" show-overflow-tooltip />
+      <div v-if="!treeLoading && treeData.length === 0" style="text-align:center;padding:60px 20px;color:var(--ink-400)">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:12px"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+        <p style="margin:0 0 8px;font-size:15px;font-weight:600;color:var(--ink-500)">暂无多层级展开数据</p>
+        <p style="margin:0;font-size:13px;line-height:1.6;color:var(--ink-400)">BOM明细中未设置"引用BOM"的子件，无法展开多层级结构。<br/>在BOM明细中为半成品子件设置引用BOM后，可查看完整的树形结构。</p>
+      </div>
+      <el-table v-loading="treeLoading" v-else :data="treeData" border size="small" class="app-table" row-key="_rowKey" :tree-props="{ children: 'children', hasChildren: 'hasChildren' }" default-expand-all max-height="500">
+        <el-table-column label="物料编码" prop="materialCode" width="150" show-overflow-tooltip />
         <el-table-column label="物料名称" prop="materialName" min-width="180" show-overflow-tooltip />
         <el-table-column label="规格型号" prop="specModel" width="120" show-overflow-tooltip />
         <el-table-column label="单位" prop="unit" width="70" align="center"><template #default="scope">{{ unitLabel(scope.row.unit) }}</template></el-table-column>
-        <el-table-column label="单件用量" prop="usageQty" width="110" align="center" />
-        <el-table-column label="损耗率(%)" prop="lossRate" width="100" align="center" />
+        <el-table-column label="单件用量" prop="usageQty" width="100" align="center" />
+        <el-table-column label="损耗率(%)" prop="lossRate" width="90" align="center" />
         <el-table-column label="关键料" width="70" align="center"><template #default="scope"><el-tag v-if="scope.row.isKeyMaterial === '1'" type="danger" size="small">是</el-tag><span v-else>否</span></template></el-table-column>
         <el-table-column label="供应方式" width="100" align="center"><template #default="scope">{{ supplyTypeLabel(scope.row.supplyType) }}</template></el-table-column>
-        <el-table-column label="引用BOM" prop="bomRefNo" width="120" show-overflow-tooltip />
+        <el-table-column label="引用BOM" prop="bomRefNo" width="130" show-overflow-tooltip />
       </el-table>
       <template #footer>
         <el-button @click="treeOpen = false">关 闭</el-button>
@@ -275,41 +280,164 @@
       </template>
     </el-dialog>
 
-    <!-- 业务说明 -->
-    <el-dialog v-model="showStatusHelp" width="860px" append-to-body draggable class="rd-dialog">
-      <template #header>
-        <div class="rd-detail-header">
-          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></div>
-          <span class="rd-detail-header-title">BOM管理业务操作说明</span>
-        </div>
-      </template>
+    <!-- 业务操作说明 -->
+    <el-dialog v-model="showStatusHelp" title="BOM管理业务操作说明" width="820px" append-to-body draggable class="rd-dialog">
       <div class="status-help-content">
+        <!-- 一、BOM释义 -->
         <h4>一、BOM释义</h4>
         <div class="highlight-card highlight-primary">
           <div class="highlight-card-title">什么是BOM？</div>
           <div class="highlight-card-body">
             <strong>BOM（Bill of Materials，物料清单）</strong>是生产管控中定义产品组成结构和用量关系的核心主数据。BOM列出了生产一个产品所需的所有原材料、半成品、零件及其数量关系，是物料需求计划（MRP）和工单发料的基础依据。<br/><br/>
-            支持多层级BOM结构（半成品嵌套）、基准数量（批量BOM）、供应方式（直接领料/倒冲/车间库存）、版本发布管理，确保生产过程中使用正确的物料清单，支持成本核算和物料追溯。
+            支持多层级BOM结构（半成品嵌套）、基准数量（批量BOM）、供应方式（直接领料/倒冲/车间库存）、版本发布管理，确保生产过程中使用正确的物料清单，支持成本核算和物料追溯。BOM的准确性直接影响MRP运算结果和工单发料的正确性，是生产管控系统中最关键的基础主数据之一。
           </div>
         </div>
-        <h4>二、重点业务规则</h4>
-        <div class="highlight-card highlight-warning">
-          <div class="highlight-card-title">核心规则</div>
+        <div class="highlight-card highlight-success" style="margin-top: 12px;">
+          <div class="highlight-card-title">BOM的分类</div>
           <div class="highlight-card-body">
-            <p>• <strong>BOM编号：</strong>唯一标识每个BOM，便于引用和管理</p>
-            <p>• <strong>版本管理：</strong>支持版本号管理，可通过「复制」创建新版本</p>
-            <p>• <strong>状态流转：</strong>草稿 → 已发布 → 停用，已发布后不可修改</p>
-            <p>• <strong>唯一发布版：</strong>同一产品同时仅一个已发布版本</p>
-            <p>• <strong>多层级BOM：</strong>明细中引用其他BOM可递归展开（最深3层）</p>
-            <p>• <strong>基准数量：</strong>支持批量BOM（如生产100个产品的用量）</p>
+            <p>• <strong>标准BOM：</strong>用于标准产品的生产管理，是最常用的BOM类型，定义产品的标准组成结构</p>
+            <p>• <strong>定制BOM：</strong>用于定制化产品的生产管理，根据客户需求调整组成结构和用量</p>
+            <p>• <strong>维修BOM：</strong>用于设备维修和售后服务，定义维修所需备品备件清单</p>
           </div>
         </div>
-        <h4>三、业务操作流程</h4>
+
+        <!-- 二、BOM状态流转图 -->
+        <h4>二、BOM状态流转图</h4>
+        <div class="status-flow">
+          <div class="flow-item">
+            <el-tag type="warning">草稿</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+            <el-tag size="small" type="primary">点击「发布」</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="success">已发布</el-tag>
+          </div>
+        </div>
+        <div class="status-flow" style="margin-top: 8px;">
+          <div class="flow-item">
+            <el-tag type="success">已发布</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+            <el-tag size="small" type="primary">点击「停用」</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="info">已停用</el-tag>
+          </div>
+        </div>
+        <div class="status-flow" style="margin-top: 8px;">
+          <div class="flow-item">
+            <el-tag type="warning">草稿</el-tag>
+            <el-tag size="small" type="danger">点击「删除」</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="danger">已删除</el-tag>
+            <el-tag size="small" type="info">异常终止</el-tag>
+          </div>
+        </div>
+
+        <!-- 三、各状态说明 -->
+        <h4>三、各状态说明</h4>
+        <el-descriptions :column="1" border>
+          <el-descriptions-item label="草稿">BOM创建后的初始状态。可修改BOM信息、维护明细行、发布或删除。点击「发布」后BOM状态变为已发布，不可再修改</el-descriptions-item>
+          <el-descriptions-item label="已发布">BOM已正式发布，可被生产工单和MRP运算引用。已发布状态不可修改，如需调整可通过「复制」创建新版本后修改</el-descriptions-item>
+          <el-descriptions-item label="已停用">BOM已停用，不再被新工单引用，但历史关联工单仍保留。停用后可重新启用恢复为已发布状态</el-descriptions-item>
+        </el-descriptions>
+
+        <!-- 四、新增/修改表单填写指南 -->
+        <h4>四、新增/修改表单填写指南</h4>
+        <div class="highlight-card highlight-warning">
+          <div class="highlight-card-title">BOM标识区</div>
+          <div class="highlight-card-body">
+            <p>• <strong>BOM编号：</strong>BOM的唯一标识编号，保存后由系统自动生成，无需手工输入</p>
+            <p>• <strong>BOM名称：</strong>BOM的描述性名称，建议包含产品名+版本/规格，如"产品A标准BOM V1.0"<span style="color: #f56c6c;">*必填</span></p>
+            <p>• <strong>BOM类型：</strong>选择BOM类型（标准BOM/定制BOM/维修BOM），不同类型用于不同业务场景<span style="color: #f56c6c;">*必填</span></p>
+            <p>• <strong>版本：</strong>BOM的版本号，用于版本管理。可通过「复制」创建新版本号<span style="color: #f56c6c;">*必填</span></p>
+            <p>• <strong>基准数量：</strong>BOM的基准生产数量。当用量按批量定义时，基准数量表示该用量对应的产量。例如基准数量100、单件用量2，表示生产100个产品需200个物料<span style="color: #f56c6c;">*必填</span></p>
+            <p>• <strong>基准单位：</strong>基准数量的计量单位，需与产品单位一致<span style="color: #f56c6c;">*必填</span></p>
+          </div>
+        </div>
+        <div class="highlight-card highlight-warning" style="margin-top: 12px;">
+          <div class="highlight-card-title">产品信息区</div>
+          <div class="highlight-card-body">
+            <p>• <strong>产品编码：</strong>从物料库中选择该BOM对应的产品，点击搜索按钮弹出选择器，选择后自动带出产品名称<span style="color: #f56c6c;">*必填</span></p>
+            <p>• <strong>产品名称：</strong>选择产品后自动带出，不可手动编辑</p>
+          </div>
+        </div>
+        <div class="highlight-card highlight-primary" style="margin-top: 12px;">
+          <div class="highlight-card-title">BOM明细区（子件物料）</div>
+          <div class="highlight-card-body">
+            <p>• <strong>物料编码：</strong>从物料库中选择子件物料，选择后自动带出物料名称、规格型号和单位<span style="color: #f56c6c;">*必填</span></p>
+            <p>• <strong>物料名称：</strong>选择物料后自动带出，不可手动编辑</p>
+            <p>• <strong>规格型号：</strong>选择物料后自动带出，不可手动编辑</p>
+            <p>• <strong>单位：</strong>选择物料后自动带出，不可手动编辑</p>
+            <p>• <strong>单件用量：</strong>生产一个基准数量产品所需的该物料数量，支持小数。例如单件用量2，基准数量100，则总用量=2×100=200<span style="color: #f56c6c;">*必填</span></p>
+            <p>• <strong>损耗率(%)：</strong>生产过程中的损耗比例，系统按"单件用量×(1+损耗率)"计算实际发料量。如单件用量10、损耗率5%，则实际发料=10×1.05=10.5</p>
+            <p>• <strong>关键料：</strong>勾选表示该物料为关键物料（影响交期或成本的关键件），MRP运算时优先计算</p>
+            <p>• <strong>供应方式：</strong>选择物料的供应方式：直接领料（从仓库领料）、倒冲（生产完工后按消耗量扣减）、车间库存（从车间库存中领用）<span style="color: #f56c6c;">*必填</span></p>
+            <p>• <strong>虚拟件：</strong>勾选表示该子件为虚拟件（Phantom），虚拟件不实际入库，其BOM明细直接展开到当前层级</p>
+            <p>• <strong>引用BOM：</strong>当子件为半成品时，可关联其BOM编号，支持多层级BOM展开。设置后可在详情中查看完整多层级物料树</p>
+          </div>
+        </div>
+        <div class="highlight-card highlight-warning" style="margin-top: 12px;">
+          <div class="highlight-card-title">状态与生效区</div>
+          <div class="highlight-card-body">
+            <p>• <strong>状态：</strong>BOM的当前状态（草稿/已发布/已停用）。新增时默认为草稿，已发布后不可修改此字段</p>
+            <p>• <strong>生效日期：</strong>BOM的生效日期，生效后可被工单引用。可根据业务需要设置未来生效日期</p>
+          </div>
+        </div>
+
+        <!-- 五、核心业务规则 -->
+        <h4>五、核心业务规则</h4>
+        <div class="highlight-card highlight-danger">
+          <div class="highlight-card-title">关键规则</div>
+          <div class="highlight-card-body">
+            <p>• <strong>唯一发布版：</strong>同一产品同时仅允许一个已发布版本的BOM。发布前系统自动校验，若已有已发布版本将阻止发布</p>
+            <p>• <strong>已发布不可修改：</strong>BOM状态为已发布后，所有字段均不可修改。如需调整，请先「复制」创建新版本BOM，修改后发布新版本，旧版本自动停用</p>
+            <p>• <strong>不可删除已发布BOM：</strong>已发布状态的BOM不可删除，仅草稿或已停用状态可删除</p>
+            <p>• <strong>基准数量与用量关系：</strong>子件总用量 = 单件用量 × 基准数量 × (1 + 损耗率)。基准数量为1时，单件用量即为每个产品的用量</p>
+          </div>
+        </div>
+        <div class="highlight-card highlight-primary" style="margin-top: 12px;">
+          <div class="highlight-card-title">多层级BOM规则</div>
+          <div class="highlight-card-body">
+            <p>• <strong>引用BOM：</strong>BOM明细中的子件如果是半成品（本身也有BOM），可在"引用BOM"列关联其BOM编号</p>
+            <p>• <strong>递归展开：</strong>系统支持递归展开多层级BOM结构，最深支持3层。在BOM详情中点击「多层级展开」可查看完整物料树</p>
+            <p>• <strong>虚拟件展开：</strong>虚拟件的BOM明细会在MRP运算时自动展开到上层，虚拟件本身不产生库存出入库</p>
+            <p style="color: #e6a23c;"><strong>提示：</strong>设置引用BOM后，MRP运算时会自动展开半成品的子件需求，实现完整物料需求计算</p>
+          </div>
+        </div>
+        <div class="highlight-card highlight-success" style="margin-top: 12px;">
+          <div class="highlight-card-title">供应方式说明</div>
+          <div class="highlight-card-body">
+            <p>• <strong>直接领料：</strong>从仓库按需领料，适用于大部分常规物料。工单下发后凭领料单到仓库领料</p>
+            <p>• <strong>倒冲：</strong>生产完工入库时按BOM用量自动扣减库存，适用于不易按单件计量的辅助材料（如胶水、油漆等）</p>
+            <p>• <strong>车间库存：</strong>从车间库存中领用，适用于车间常备的低值易耗品，定期补充车间库存</p>
+          </div>
+        </div>
+
+        <!-- 六、业务操作流程 -->
+        <h4>六、业务操作流程</h4>
         <el-timeline>
-          <el-timeline-item type="primary" :hollow="true"><strong>创建BOM：</strong>点击「新增」创建BOM，填写产品信息、版本号和基准数量</el-timeline-item>
-          <el-timeline-item type="warning" :hollow="true"><strong>维护明细：</strong>在BOM明细中添加组成物料及其用量关系，子项为半成品时可引用其BOM</el-timeline-item>
-          <el-timeline-item type="success" :hollow="true"><strong>发布BOM：</strong>点击「发布」，BOM状态变为已发布，可被工单引用</el-timeline-item>
-          <el-timeline-item type="info" :hollow="true"><strong>多层级展开：</strong>点击「展开」查看BOM的完整多层级物料树</el-timeline-item>
+          <el-timeline-item type="primary" :hollow="true">
+            <strong>创建BOM：</strong>点击「新增」创建BOM，填写BOM名称、类型、版本号和基准数量，BOM编号保存后自动生成
+          </el-timeline-item>
+          <el-timeline-item type="warning" :hollow="true">
+            <strong>选择产品：</strong>在产品信息区点击搜索按钮，从物料库中选择该BOM对应的产品，选择后自动带出产品名称
+          </el-timeline-item>
+          <el-timeline-item type="warning" :hollow="true">
+            <strong>维护明细：</strong>在BOM明细区点击「添加物料行」，逐行添加组成物料，设置用量、损耗率、供应方式等。半成品子件可关联引用BOM
+          </el-timeline-item>
+          <el-timeline-item type="success" :hollow="true">
+            <strong>发布BOM：</strong>确认无误后点击「发布」，BOM状态变为已发布，可被生产工单和MRP运算引用
+          </el-timeline-item>
+          <el-timeline-item type="info" :hollow="true">
+            <strong>多层级展开：</strong>在BOM详情中点击「多层级展开」，查看BOM的完整多层级物料树结构，支持最深3层展开
+          </el-timeline-item>
+          <el-timeline-item type="info" :hollow="true">
+            <strong>复制新版本：</strong>如需修改已发布的BOM，点击「复制」创建新版本BOM，修改后发布新版本，旧版本自动停用
+          </el-timeline-item>
         </el-timeline>
       </div>
       <template #footer>
@@ -320,10 +448,10 @@
 </template>
 
 <script setup name="Bom">
-import { listBom, getBom, addBom, updateBom, delBom, publishBom, copyBom, getBomTree } from "@/api/mms/bom";
+import { listBom, getBom, addBom, updateBom, delBom, publishBom, disableBom, enableBom, copyBom, getBomTree } from "@/api/mms/bom";
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
-import { Search, Filter, RefreshLeft, ArrowDown, WarningFilled } from '@element-plus/icons-vue'
+import { Search, Filter, RefreshLeft, ArrowDown, QuestionFilled, ArrowRight, Connection, CircleClose, CircleCheck } from '@element-plus/icons-vue'
 import MaterialPicker from '@/components/MaterialPicker/index.vue'
 
 const { collapsedCards, toggleCard } = useDetailCard(['c1', 'c2', 'c3', 'c4', 'c0', 'vc0', 'vc1', 'vc2', 'vc3', 'vc4'])
@@ -346,11 +474,11 @@ function loadColumnVisibility() { try { const saved = localStorage.getItem('mms_
 const columns = ref(loadColumnVisibility())
 const activeFilterCount = computed(() => { let c = 0; if (queryParams.value.bomNo) c++; if (queryParams.value.bomName) c++; if (queryParams.value.productCode) c++; if (queryParams.value.productName) c++; if (queryParams.value.bomType) c++; if (queryParams.value.status) c++; if (dateRange.value && dateRange.value.length === 2) c++; return c; });
 
-const data = reactive({ form: { detailList: [] }, queryParams: { pageNum: 1, pageSize: 10, bomNo: undefined, bomName: undefined, productCode: undefined, productName: undefined, bomType: undefined, status: undefined, params: {} }, rules: { bomNo: [{ required: true, message: "BOM编号不能为空", trigger: "blur" }], bomName: [{ required: true, message: "BOM名称不能为空", trigger: "blur" }] } });
+const data = reactive({ form: { detailList: [] }, queryParams: { pageNum: 1, pageSize: 10, bomNo: undefined, bomName: undefined, productCode: undefined, productName: undefined, bomType: undefined, status: undefined, params: {} }, rules: { bomName: [{ required: true, message: "BOM名称不能为空", trigger: "blur" }] } });
 const { queryParams, form, rules } = toRefs(data);
 
-function getList() { loading.value = true; listBom(proxy.addDateRange(queryParams.value, dateRange.value)).then(response => { bomList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths(); updateStatusCounts(response.rows); }); }
-function updateStatusCounts(rows) { const counts = { all: total.value }; if (mms_bom_status.value) { mms_bom_status.value.forEach(d => { counts[d.value] = rows.filter(r => r.status === d.value).length; }); } statusCounts.value = counts; }
+function getList() { loading.value = true; listBom(proxy.addDateRange(queryParams.value, dateRange.value)).then(response => { bomList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths(); loadStatusCounts(); }); }
+function loadStatusCounts() { const baseQuery = { pageNum: 1, pageSize: 999 }; if (queryParams.value.bomNo) baseQuery.bomNo = queryParams.value.bomNo; if (queryParams.value.bomName) baseQuery.bomName = queryParams.value.bomName; if (queryParams.value.productCode) baseQuery.productCode = queryParams.value.productCode; if (queryParams.value.productName) baseQuery.productName = queryParams.value.productName; if (queryParams.value.bomType) baseQuery.bomType = queryParams.value.bomType; listBom(proxy.addDateRange(baseQuery, dateRange.value)).then(res => { const counts = { all: res.total }; if (mms_bom_status.value) { mms_bom_status.value.forEach(d => { counts[d.value] = 0; }); (res.rows || []).forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++; }); } statusCounts.value = counts; }).catch(() => {}); }
 function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList(); }
 function resetQuery() { queryParams.value.bomNo = undefined; queryParams.value.bomName = undefined; queryParams.value.productCode = undefined; queryParams.value.productName = undefined; queryParams.value.bomType = undefined; queryParams.value.status = undefined; dateRange.value = []; queryParams.value.params = {}; activeStatusTab.value = 'all'; handleQuery(); }
 function handleStatusTabClick(status) { activeStatusTab.value = status; queryParams.value.status = status === "all" ? undefined : status; handleQuery(); }
@@ -363,10 +491,10 @@ function submitForm() { proxy.$refs["bomRef"].validate(valid => { if (valid) { i
 function cancel() { open.value = false; reset(); }
 function handleDelete(row) { const bomIds = row.bomId || ids.value; proxy.$modal.confirm('是否确认删除选中的BOM？').then(() => delBom(bomIds)).then(() => { getList(); proxy.$modal.msgSuccess("删除成功"); }).catch(() => {}); }
 function handleExport() { proxy.download("mms/bom/export", { ...queryParams.value }, `bom_${new Date().getTime()}.xlsx`); }
-function bomTypeLabel(type) { const item = mms_bom_type.value.find(d => d.value == type); return item ? item.label : '-' }
-function statusLabel(status) { const item = mms_bom_status.value.find(d => d.value == status); return item ? item.label : '-' }
-function supplyTypeLabel(type) { const item = mms_supply_type.value.find(d => d.value == type); return item ? item.label : '-' }
-function unitLabel(unit) { const item = wms_unit.value.find(d => d.value == unit); return item ? item.label : (unit || '-') }
+function bomTypeLabel(type) { if (type === null || type === undefined || type === '') return '—'; const item = mms_bom_type.value.find(d => d.value == type); return item ? item.label : '—' }
+function statusLabel(status) { if (status === null || status === undefined || status === '') return '—'; const item = mms_bom_status.value.find(d => d.value == status); return item ? item.label : '—' }
+function supplyTypeLabel(type) { if (type === null || type === undefined || type === '') return '—'; const item = mms_supply_type.value.find(d => d.value == type); return item ? item.label : '—' }
+function unitLabel(unit) { if (unit === null || unit === undefined || unit === '') return '—'; const item = wms_unit.value.find(d => d.value == unit); return item ? item.label : (unit || '—') }
 function badgeClass(status) { const map = { '0': 'amber', '1': 'green', '2': 'gray' }; return map[status] || 'gray'; }
 
 /* ===== BOM详情查看 ===== */
@@ -374,12 +502,16 @@ function handleView(row) { const bomId = row.bomId || ids.value[0]; viewLoading.
 
 /* ===== BOM发布 ===== */
 function handlePublish(row) { proxy.$modal.confirm('是否确认发布BOM[' + row.bomNo + ']？发布后不可修改。').then(() => publishBom(row.bomId)).then(() => { proxy.$modal.msgSuccess("发布成功"); getList(); }).catch(() => {}); }
+function handleDisable(row) { proxy.$modal.confirm('是否确认停用BOM[' + row.bomNo + ']？停用后不再被新工单引用。').then(() => disableBom(row.bomId)).then(() => { proxy.$modal.msgSuccess("停用成功"); getList(); }).catch(() => {}); }
+function handleEnable(row) { proxy.$modal.confirm('是否确认启用BOM[' + row.bomNo + ']？启用后将恢复为已发布状态。').then(() => enableBom(row.bomId)).then(() => { proxy.$modal.msgSuccess("启用成功"); getList(); }).catch(() => {}); }
 
 /* ===== BOM复制 ===== */
 function handleCopy(row) { proxy.$modal.confirm('是否确认复制BOM[' + row.bomNo + ']为新版本？').then(() => copyBom(row.bomId)).then(() => { proxy.$modal.msgSuccess("复制成功"); getList(); }).catch(() => {}); }
 
 /* ===== BOM多层级展开 ===== */
-function handleViewTree(row) { treeOpen.value = true; treeBomNo.value = row.bomNo; treeLoading.value = true; getBomTree(row.bomId).then(response => { treeData.value = response.data || []; treeLoading.value = false; }); }
+function handleViewTree(row) { treeOpen.value = true; treeBomNo.value = row.bomNo; treeLoading.value = true; getBomTree(row.bomId).then(response => { treeData.value = addTreeKeys(response.data || [], 0); treeLoading.value = false; }); }
+function handleViewTreeFromDetail() { if (viewData.value.bomId) { handleViewTree(viewData.value); } }
+function addTreeKeys(nodes, prefix) { return nodes.map((n, i) => { n._rowKey = prefix + '-' + i; if (n.children && n.children.length > 0) { n.children = addTreeKeys(n.children, prefix + '-' + i); } else { delete n.children; } return n; }); }
 
 /* ===== BOM明细行操作 ===== */
 function handleAddDetail() { form.value.detailList.push({ detailId: null, seq: (form.value.detailList.length + 1) * 10, materialId: undefined, materialCode: '', materialName: '', specModel: '', unit: '', usageQty: 1, lossRate: 0, isKeyMaterial: '0', supplyType: '1', pickStoreId: undefined, isPhantom: '0', bomRefId: undefined, bomRefNo: '' }); }
@@ -468,15 +600,20 @@ getList();
 .mms-bom-page .level-badge.level-1 { background:var(--blue-50); color:var(--blue-700); }
 .mms-bom-page .level-badge.level-2 { background:var(--amber-50); color:var(--amber-700); }
 .mms-bom-page .level-badge.level-3 { background:var(--green-50); color:var(--green-700); }
-.status-help-content { max-height:500px; overflow-y:auto; padding-right:10px; }
+.status-help-content { max-height:520px; overflow-y:auto; padding-right:10px; }
 .status-help-content h4 { margin:20px 0 12px 0; color:#303133; font-weight:600; border-left:4px solid #409eff; padding-left:10px; }
 .status-help-content h4:first-child { margin-top:0; }
+.status-help-content .status-flow { display:flex; align-items:center; flex-wrap:wrap; gap:8px; padding:16px; background-color:#f5f7fa; border-radius:8px; margin-bottom:8px; }
+.status-help-content .flow-item { display:flex; align-items:center; gap:8px; }
+.status-help-content .flow-arrow { color:#909399; font-size:16px; }
 .status-help-content .highlight-card { border-radius:8px; padding:16px; border:1px solid; }
 .status-help-content .highlight-card-title { font-size:14px; font-weight:600; margin-bottom:8px; display:flex; align-items:center; }
 .status-help-content .highlight-card-body { font-size:13px; color:#606266; line-height:1.6; }
 .status-help-content .highlight-card-body p { margin:4px 0; }
 .status-help-content .highlight-primary { background-color:#ecf5ff; border-color:#a0cfff; } .status-help-content .highlight-primary .highlight-card-title { color:#409eff; }
+.status-help-content .highlight-success { background-color:#f0f9eb; border-color:#b3e19d; } .status-help-content .highlight-success .highlight-card-title { color:#67c23a; }
 .status-help-content .highlight-warning { background-color:#fdf6ec; border-color:#f5dab1; } .status-help-content .highlight-warning .highlight-card-title { color:#e6a23c; }
+.status-help-content .highlight-danger { background-color:#fef0f0; border-color:#fbc4c4; } .status-help-content .highlight-danger .highlight-card-title { color:#f56c6c; }
 @media (max-width:1100px) { .mms-bom-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }
 @media (max-width:720px) { .mms-bom-page .filter-card .filter-bar { grid-template-columns:1fr; } }
 </style>

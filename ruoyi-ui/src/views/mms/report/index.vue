@@ -87,17 +87,18 @@
           </el-table-column>
           <el-table-column label="工时" prop="workHours" key="workHours" :width="colWidth('workHours', 80)" resizable align="center" v-if="columns.workHours.visible" />
           <el-table-column label="是否首件" prop="isFirstPiece" key="isFirstPiece" :width="colWidth('isFirstPiece', 90)" resizable align="center" v-if="columns.isFirstPiece.visible">
-            <template #default="scope"><span class="badge" :class="scope.row.isFirstPiece === '1' ? 'green' : 'gray'"><span class="dot"></span>{{ isFirstPieceLabel(scope.row.isFirstPiece) }}</span></template>
+            <template #default="scope"><span v-if="scope.row.isFirstPiece" class="badge" :class="scope.row.isFirstPiece === '1' ? 'green' : 'gray'"><span class="dot"></span>{{ isFirstPieceLabel(scope.row.isFirstPiece) }}</span><span v-else class="text-muted">—</span></template>
           </el-table-column>
           <el-table-column label="报工人" prop="reportBy" key="reportBy" :width="colWidth('reportBy', 90)" resizable align="center" v-if="columns.reportBy.visible" />
           <el-table-column label="报工时间" prop="reportTime" key="reportTime" :width="colWidth('reportTime', 160)" resizable align="center" v-if="columns.reportTime.visible">
             <template #default="scope"><span>{{ parseTime(scope.row.reportTime) }}</span></template>
           </el-table-column>
           <el-table-column label="状态" prop="status" key="status" :width="colWidth('status', 100)" resizable align="center" v-if="columns.status.visible">
-            <template #default="scope"><span class="badge" :class="badgeClass(scope.row.status)"><span class="dot"></span>{{ statusLabel(scope.row.status) }}</span></template>
+            <template #default="scope"><span v-if="scope.row.status" class="badge" :class="badgeClass(scope.row.status)"><span class="dot"></span>{{ statusLabel(scope.row.status) }}</span><span v-else class="text-muted">—</span></template>
           </el-table-column>
           <el-table-column label="操作" width="200" align="center" fixed="right">
             <template #default="scope">
+              <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
               <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['mms:report:edit']">修改</el-button>
               <el-button v-if="scope.row.status === '0'" link type="success" icon="Check" @click="handleAudit(scope.row, '1')" v-hasPermi="['mms:report:audit']">审核</el-button>
               <el-button v-if="scope.row.status === '0'" link type="danger" icon="Close" @click="handleAudit(scope.row, '2')" v-hasPermi="['mms:report:audit']">驳回</el-button>
@@ -108,30 +109,75 @@
       <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
     </div>
 
-    <!-- ===== 新增/修改 Dialog ===== -->
-    <el-dialog :title="title" v-model="open" width="700px" append-to-body>
+    <!-- ===== 编辑弹窗 ===== -->
+    <el-dialog v-model="open" width="780px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+          <span class="rd-detail-header-title">{{ title }}</span>
+        </div>
+      </template>
       <el-form ref="formRef" :model="form" :rules="rules" label-width="120px">
-        <el-row :gutter="20">
-          <el-col :span="12"><el-form-item label="报工单号" prop="reportNo"><el-input v-model="form.reportNo" placeholder="自动生成" disabled /></el-form-item></el-col>
-          <el-col :span="12"><el-form-item label="工单号" prop="workOrderNo"><el-input v-model="form.workOrderNo" placeholder="请输入" /></el-form-item></el-col>
-        </el-row>
-        <el-row :gutter="20">
-          <el-col :span="12"><el-form-item label="工序名称" prop="processName"><el-input v-model="form.processName" placeholder="请输入" /></el-form-item></el-col>
-          <el-col :span="12"><el-form-item label="产能单元" prop="resourceName"><el-input v-model="form.resourceName" placeholder="请输入" /></el-form-item></el-col>
-        </el-row>
-        <el-row :gutter="20">
-          <el-col :span="8"><el-form-item label="合格数" prop="goodQty"><el-input-number v-model="form.goodQty" :min="0" :precision="2" style="width: 100%" /></el-form-item></el-col>
-          <el-col :span="8"><el-form-item label="不良数" prop="defectQty"><el-input-number v-model="form.defectQty" :min="0" :precision="2" style="width: 100%" /></el-form-item></el-col>
-          <el-col :span="8"><el-form-item label="工时" prop="workHours"><el-input-number v-model="form.workHours" :min="0" :precision="2" style="width: 100%" /></el-form-item></el-col>
-        </el-row>
-        <el-row :gutter="20">
-          <el-col :span="12"><el-form-item label="班组" prop="teamName"><el-input v-model="form.teamName" placeholder="请输入" /></el-form-item></el-col>
-          <el-col :span="12"><el-form-item label="班次" prop="shiftName"><el-input v-model="form.shiftName" placeholder="请输入" /></el-form-item></el-col>
-        </el-row>
-        <el-form-item label="是否首件" prop="isFirstPiece"><el-radio-group v-model="form.isFirstPiece"><el-radio value="1">是</el-radio><el-radio value="0">否</el-radio></el-radio-group></el-form-item>
-        <el-form-item label="备注" prop="remark"><el-input v-model="form.remark" type="textarea" placeholder="请输入" /></el-form-item>
+        <div class="rd-page">
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('c0')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg></span>基本信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c0 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+            <div class="rd-card-body" v-show="!collapsedCards.c0">
+              <el-row :gutter="20"><el-col :span="12"><el-form-item label="报工单号" prop="reportNo"><el-input v-model="form.reportNo" placeholder="自动生成" disabled /></el-form-item></el-col><el-col :span="12"><el-form-item label="工单号" prop="workOrderNo"><el-input v-model="form.workOrderNo" placeholder="请输入" /></el-form-item></el-col></el-row>
+              <el-row :gutter="20"><el-col :span="12"><el-form-item label="工序名称" prop="processName"><el-input v-model="form.processName" placeholder="请输入" /></el-form-item></el-col><el-col :span="12"><el-form-item label="产能单元" prop="resourceName"><el-input v-model="form.resourceName" placeholder="请输入" /></el-form-item></el-col></el-row>
+            </div>
+          </section>
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('c1')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg></span>报工数据</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+            <div class="rd-card-body" v-show="!collapsedCards.c1">
+              <el-row :gutter="20"><el-col :span="8"><el-form-item label="合格数" prop="goodQty"><el-input-number v-model="form.goodQty" :min="0" :precision="2" style="width: 100%" /></el-form-item></el-col><el-col :span="8"><el-form-item label="不良数" prop="defectQty"><el-input-number v-model="form.defectQty" :min="0" :precision="2" style="width: 100%" /></el-form-item></el-col><el-col :span="8"><el-form-item label="工时" prop="workHours"><el-input-number v-model="form.workHours" :min="0" :precision="2" style="width: 100%" /></el-form-item></el-col></el-row>
+            </div>
+          </section>
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('c2')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>班组信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+            <div class="rd-card-body" v-show="!collapsedCards.c2">
+              <el-row :gutter="20"><el-col :span="12"><el-form-item label="班组" prop="teamName"><el-input v-model="form.teamName" placeholder="请输入" /></el-form-item></el-col><el-col :span="12"><el-form-item label="班次" prop="shiftName"><el-input v-model="form.shiftName" placeholder="请输入" /></el-form-item></el-col></el-row>
+              <el-form-item label="是否首件" prop="isFirstPiece"><el-radio-group v-model="form.isFirstPiece"><el-radio value="1">是</el-radio><el-radio value="0">否</el-radio></el-radio-group></el-form-item>
+            </div>
+          </section>
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('c3')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>其他信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c3 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+            <div class="rd-card-body" v-show="!collapsedCards.c3">
+              <el-form-item label="备注" prop="remark"><el-input v-model="form.remark" type="textarea" :rows="2" placeholder="请输入" /></el-form-item>
+            </div>
+          </section>
+        </div>
       </el-form>
-      <template #footer><div class="dialog-footer"><el-button type="primary" @click="submitForm">确 定</el-button><el-button @click="cancel">取 消</el-button></div></template>
+      <template #footer><el-button type="primary" @click="submitForm">确 定</el-button><el-button @click="cancel">取 消</el-button></template>
+    </el-dialog>
+
+    <!-- ===== 查看详情弹窗 ===== -->
+    <el-dialog v-model="viewOpen" width="780px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></div>
+          <span class="rd-detail-header-title">报工记录详情</span>
+          <div class="rd-detail-header-sub" v-if="viewData.reportNo"><div class="rd-detail-header-divider"></div><span class="rd-detail-header-no">编号：{{ viewData.reportNo }}</span></div>
+        </div>
+      </template>
+      <div class="rd-page">
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('vc0')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg></span>基本信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc0 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.vc0" style="display:block"><div class="rd-grid"><div class="rd-item"><span class="rd-label">报工单号</span><div class="rd-value">{{ viewData.reportNo || '-' }}</div></div><div class="rd-item"><span class="rd-label">工单号</span><div class="rd-value">{{ viewData.workOrderNo || '-' }}</div></div><div class="rd-item"><span class="rd-label">工序名称</span><div class="rd-value">{{ viewData.processName || '-' }}</div></div><div class="rd-item"><span class="rd-label">产能单元</span><div class="rd-value">{{ viewData.resourceName || '-' }}</div></div><div class="rd-item"><span class="rd-label">状态</span><div class="rd-value">{{ viewData.status === '0' ? '待审核' : viewData.status === '1' ? '已审核' : viewData.status === '2' ? '已驳回' : '-' }}</div></div></div></div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('vc1')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg></span>报工数据</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.vc1" style="display:block"><div class="rd-grid"><div class="rd-item"><span class="rd-label">合格数</span><div class="rd-value">{{ viewData.goodQty != null ? viewData.goodQty : '-' }}</div></div><div class="rd-item"><span class="rd-label">不良数</span><div class="rd-value">{{ viewData.defectQty != null ? viewData.defectQty : '-' }}</div></div><div class="rd-item"><span class="rd-label">工时</span><div class="rd-value">{{ viewData.workHours != null ? viewData.workHours : '-' }}</div></div></div></div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('vc2')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>班组信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.vc2" style="display:block"><div class="rd-grid"><div class="rd-item"><span class="rd-label">班组</span><div class="rd-value">{{ viewData.teamName || '-' }}</div></div><div class="rd-item"><span class="rd-label">班次</span><div class="rd-value">{{ viewData.shiftName || '-' }}</div></div><div class="rd-item"><span class="rd-label">是否首件</span><div class="rd-value">{{ viewData.isFirstPiece === '1' ? '是' : '否' }}</div></div></div></div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('vc3')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>其他信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc3 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.vc3" style="display:block"><div class="rd-grid"><div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value">{{ viewData.remark || '-' }}</div></div><div class="rd-item"><span class="rd-label">创建时间</span><div class="rd-value">{{ viewData.createTime ? parseTime(viewData.createTime) : '-' }}</div></div></div></div>
+        </section>
+      </div>
+      <template #footer><el-button @click="viewOpen = false">关 闭</el-button></template>
     </el-dialog>
 
     <!-- ===== 审核Dialog ===== -->
@@ -194,15 +240,15 @@
 <script setup name="WorkReport">
 import { listWorkReport, getWorkReport, addWorkReport, updateWorkReport, delWorkReport, auditWorkReport } from "@/api/mms/report";
 import { useColumnResize } from '@/composables/useColumnResize'
+import { useDetailCard } from '@/composables/useDetailCard'
 import { Search, Filter, RefreshLeft, ArrowRight, ArrowDown, WarningFilled } from '@element-plus/icons-vue'
 
 const { proxy } = getCurrentInstance();
 const { mms_report_status, mms_yes_no } = proxy.useDict("mms_report_status", "mms_yes_no");
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('mms_report_index')
+const { collapsedCards, toggleCard } = useDetailCard(["c0","c1","c2","c3","vc0","vc1","vc2","vc3"])
 
-const dataList = ref([]);
-const open = ref(false);
-const loading = ref(true);
+const dataList = ref([]); const open = ref(false); const viewOpen = ref(false); const viewData = ref({}); const loading = ref(true);
 const showSearch = ref(true);
 const showAdvanced = ref(false);
 const ids = ref([]);
@@ -251,10 +297,10 @@ const { queryParams, form, rules, auditForm } = toRefs(data);
 function getList() {
   loading.value = true;
   listWorkReport(proxy.addDateRange(queryParams.value, dateRange.value)).then(response => {
-    dataList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths(); updateStatusCounts(response.rows);
+    dataList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths(); loadStatusCounts();
   });
 }
-function updateStatusCounts(rows) { const counts = { all: total.value }; if (mms_report_status.value) { mms_report_status.value.forEach(d => { counts[d.value] = rows.filter(r => r.status === d.value).length; }); } statusCounts.value = counts; }
+function loadStatusCounts() { const baseQuery = { pageNum: 1, pageSize: 999 }; if (queryParams.value.reportNo) baseQuery.reportNo = queryParams.value.reportNo; if (queryParams.value.workOrderNo) baseQuery.workOrderNo = queryParams.value.workOrderNo; if (queryParams.value.processName) baseQuery.processName = queryParams.value.processName; if (queryParams.value.resourceName) baseQuery.resourceName = queryParams.value.resourceName; if (queryParams.value.reportBy) baseQuery.reportBy = queryParams.value.reportBy; if (queryParams.value.isFirstPiece) baseQuery.isFirstPiece = queryParams.value.isFirstPiece; listWorkReport(proxy.addDateRange(baseQuery, dateRange.value)).then(res => { const counts = { all: res.total }; if (mms_report_status.value) { mms_report_status.value.forEach(d => { counts[d.value] = 0; }); (res.rows || []).forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++; }); } statusCounts.value = counts; }).catch(() => {}); }
 function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList(); }
 function resetQuery() { queryParams.value.reportNo = undefined; queryParams.value.workOrderNo = undefined; queryParams.value.processName = undefined; queryParams.value.resourceName = undefined; queryParams.value.status = undefined; queryParams.value.reportBy = undefined; queryParams.value.isFirstPiece = undefined; dateRange.value = []; queryParams.value.params = {}; activeStatusTab.value = 'all'; handleQuery(); }
 function handleStatusTabClick(status) { activeStatusTab.value = status; queryParams.value.status = status === "all" ? undefined : status; handleQuery(); }
@@ -269,6 +315,10 @@ function handleUpdate(row) {
   reset();
   const id = row.reportId || ids.value[0];
   getWorkReport(id).then(response => { form.value = response.data; open.value = true; title.value = "修改报工"; });
+}
+function handleView(row) {
+  const id = row.reportId || ids.value[0];
+  getWorkReport(id).then(response => { viewData.value = response.data; viewOpen.value = true; });
 }
 function submitForm() {
   proxy.$refs["formRef"].validate(valid => {
@@ -299,7 +349,7 @@ function submitAudit() {
   });
 }
 
-function dictLabel(dictRef, value) { if (!dictRef || !dictRef.value) return '-'; const item = dictRef.value.find(d => d.value == value); return item ? item.label : '-'; }
+function dictLabel(dictRef, value) { if (value === null || value === undefined || value === '') return '—'; const arr = (dictRef && dictRef.value) ? dictRef.value : dictRef; if (!arr || !Array.isArray(arr)) return '—'; const item = arr.find(d => d.value == value); return item ? item.label : '—'; }
 function statusLabel(status) { return dictLabel(mms_report_status, status); }
 function isFirstPieceLabel(val) { return dictLabel(mms_yes_no, val); }
 function badgeClass(status) { const map = { '0': 'amber', '1': 'green', '2': 'red' }; return map[status] || 'gray'; }

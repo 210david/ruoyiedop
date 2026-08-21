@@ -75,4 +75,42 @@ public class MmsDemandController extends BaseController
     {
         return toAjax(mmsDemandService.deleteDemandByIds(DemandIds));
     }
+
+    // ========== 业务流程操作 ==========
+
+    /**
+     * 需求确认
+     * 状态：0(草稿) → 1(已确认)
+     */
+    @Log(title = "生产需求-确认", businessType = BusinessType.UPDATE)
+    @PreAuthorize("@ss.hasPermi('mms:demand:confirm')")
+    @PutMapping("/confirm/{demandId}")
+    public AjaxResult confirm(@PathVariable("demandId") Long demandId)
+    {
+        return toAjax(mmsDemandService.confirmDemand(demandId));
+    }
+
+    /**
+     * 需求取消确认
+     * 状态：1(已确认) → 0(草稿)
+     */
+    @Log(title = "生产需求-取消确认", businessType = BusinessType.UPDATE)
+    @PreAuthorize("@ss.hasPermi('mms:demand:confirm')")
+    @PutMapping("/unconfirm/{demandId}")
+    public AjaxResult unconfirm(@PathVariable("demandId") Long demandId)
+    {
+        return toAjax(mmsDemandService.unconfirmDemand(demandId));
+    }
+
+    /**
+     * 需求转计划
+     * 根据需求创建MPS草稿，并回写需求状态为已排产(2)
+     */
+    @Log(title = "生产需求-转计划", businessType = BusinessType.INSERT)
+    @PreAuthorize("@ss.hasPermi('mms:demand:toplan')")
+    @PostMapping("/toMps/{demandId}")
+    public AjaxResult toMps(@PathVariable("demandId") Long demandId)
+    {
+        return AjaxResult.success(mmsDemandService.convertToMps(demandId));
+    }
 }

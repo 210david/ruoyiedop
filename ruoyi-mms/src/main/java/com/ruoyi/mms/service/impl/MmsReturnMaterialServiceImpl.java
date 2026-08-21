@@ -4,6 +4,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.mk.service.IMkNumberRuleService;
@@ -47,6 +48,8 @@ public class MmsReturnMaterialServiceImpl implements IMmsReturnMaterialService
             returnMaterial.setReturnNo(mkNumberRuleService.generateNumber("mms_return_material"));
         }
         returnMaterial.setDelFlag("0");
+        returnMaterial.setCreateBy(SecurityUtils.getUsername());
+        returnMaterial.setCreateTime(DateUtils.getNowDate());
         return returnMaterialMapper.insertReturnMaterial(returnMaterial);
     }
 

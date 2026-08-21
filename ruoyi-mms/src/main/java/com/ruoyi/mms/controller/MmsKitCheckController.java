@@ -121,4 +121,48 @@ public class MmsKitCheckController extends BaseController
     {
         return AjaxResult.success(mmsKitCheckService.selectKitCheckDetailByKitId(kitId));
     }
+
+    // ========== 一键齐套检查 ==========
+
+    /**
+     * 一键齐套检查（根据工单ID）
+     * 自动根据工单BOM展开物料需求，对比库存，生成齐套检查单及明细
+     */
+    @Log(title = "齐套检查-一键", businessType = BusinessType.INSERT)
+    @PreAuthorize("@ss.hasPermi('mms:kit:add')")
+    @PostMapping("/autoCheck/{workOrderId}")
+    public AjaxResult autoCheckByWorkOrderId(@PathVariable("workOrderId") Long workOrderId)
+    {
+        Long kitId = mmsKitCheckService.autoKitCheckByWorkOrderId(workOrderId);
+        AjaxResult result = AjaxResult.success("齐套检查完成");
+        result.put("kitId", kitId);
+        return result;
+    }
+
+    /**
+     * 一键齐套检查（根据工单号）
+     */
+    @Log(title = "齐套检查-一键", businessType = BusinessType.INSERT)
+    @PreAuthorize("@ss.hasPermi('mms:kit:add')")
+    @PostMapping("/autoCheckByNo/{workOrderNo}")
+    public AjaxResult autoCheckByWorkOrderNo(@PathVariable("workOrderNo") String workOrderNo)
+    {
+        Long kitId = mmsKitCheckService.autoKitCheckByWorkOrderNo(workOrderNo);
+        AjaxResult result = AjaxResult.success("齐套检查完成");
+        result.put("kitId", kitId);
+        return result;
+    }
+
+    /**
+     * 批量一键齐套检查
+     * 支持多个工单同时进行齐套检查
+     */
+    @Log(title = "齐套检查-批量", businessType = BusinessType.INSERT)
+    @PreAuthorize("@ss.hasPermi('mms:kit:add')")
+    @PostMapping("/batchAutoCheck")
+    public AjaxResult batchAutoCheck(@RequestBody Long[] workOrderIds)
+    {
+        int count = mmsKitCheckService.batchAutoKitCheck(workOrderIds);
+        return AjaxResult.success("批量齐套检查完成，共" + count + "个工单检查成功");
+    }
 }

@@ -97,11 +97,11 @@
             </template>
           </el-table-column>
           <el-table-column label="日期格式" prop="dateFormat" key="dateFormat" :width="colWidth('dateFormat', 120)" resizable align="center" v-if="columns.dateFormat.visible">
-            <template #default="scope">{{ scope.row.dateFormat || '-' }}</template>
+            <template #default="scope">{{ scope.row.dateFormat || '—' }}</template>
           </el-table-column>
           <el-table-column label="重置类型" prop="resetType" key="resetType" :width="colWidth('resetType', 100)" resizable align="center" v-if="columns.resetType.visible">
             <template #default="scope">
-              <span class="badge amber">{{ resetTypeLabel(scope.row.resetType) }}</span>
+              <span v-if="scope.row.resetType" class="badge amber">{{ resetTypeLabel(scope.row.resetType) }}</span><span v-else class="text-muted">—</span>
             </template>
           </el-table-column>
           <el-table-column label="序列号长度" prop="seqLength" key="seqLength" :width="colWidth('seqLength', 110)" resizable align="center" v-if="columns.seqLength.visible" />
@@ -111,7 +111,7 @@
           </el-table-column>
           <el-table-column label="状态" prop="status" key="status" :width="colWidth('status', 100)" resizable align="center" v-if="columns.status.visible">
             <template #default="scope">
-              <span class="badge" :class="scope.row.status === '0' ? 'green' : 'gray'"><span class="dot"></span>{{ statusLabel(scope.row.status) }}</span>
+              <span v-if="scope.row.status" class="badge" :class="scope.row.status === '0' ? 'green' : 'gray'"><span class="dot"></span>{{ statusLabel(scope.row.status) }}</span><span v-else class="text-muted">—</span>
             </template>
           </el-table-column>
           <el-table-column label="备注" prop="remark" key="remark" :width="colWidth('remark', 200)" resizable show-overflow-tooltip v-if="columns.remark.visible" />
@@ -413,8 +413,8 @@ const activeFilterCount = computed(() => {
   return count
 })
 
-function resetTypeLabel(type) { const item = mk_number_reset_type.value.find(d => d.value == type); return item ? item.label : '-' }
-function statusLabel(status) { const item = sys_normal_disable.value.find(d => d.value == status); return item ? item.label : '-' }
+function resetTypeLabel(type) { if (type === null || type === undefined || type === '') return '—'; const item = mk_number_reset_type.value.find(d => d.value == type); return item ? item.label : '—' }
+function statusLabel(status) { if (status === null || status === undefined || status === '') return '—'; const item = sys_normal_disable.value.find(d => d.value == status); return item ? item.label : '—' }
 
 const data = reactive({
   form: {},
@@ -554,6 +554,9 @@ const ruleFieldMap = {
   ],
   mms_work_report: [
     { field: 'reportType', label: '报工类型', dictType: 'mms_report_type' }
+  ],
+  mms_process: [
+    { field: 'processType', label: '工序类型', dictType: 'mms_process_type' }
   ]
 }
 

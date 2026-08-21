@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mms.mapper.MmsWoRouteSnapshotMapper">
+
+    <resultMap type="com.ruoyi.mms.domain.MmsWoRouteSnapshot" id="MmsWoRouteSnapshotResult">
+        <id property="snapshotId" column="snapshot_id"/>
+        <result property="workOrderId" column="work_order_id"/>
+        <result property="routeId" column="route_id"/>
+        <result property="routeNo" column="route_no"/>
+        <result property="routeVersion" column="route_version"/>
+        <result property="stepSeq" column="step_seq"/>
+        <result property="processId" column="process_id"/>
+        <result property="processCode" column="process_code"/>
+        <result property="processName" column="process_name"/>
+        <result property="stdTime" column="std_time"/>
+        <result property="prepTime" column="prep_time"/>
+        <result property="isKeyProcess" column="is_key_process"/>
+        <result property="isOutsource" column="is_outsource"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+    </resultMap>
+
+    <sql id="selectRouteSnapshotVo">
+        SELECT snapshot_id, work_order_id, route_id, route_no, route_version, step_seq, process_id, process_code, process_name, std_time, prep_time, is_key_process, is_outsource, del_flag, create_by, create_time
+        FROM mms_wo_route_snapshot
+    </sql>
+
+    <select id="selectRouteSnapshotByWorkOrderId" parameterType="Long" resultMap="MmsWoRouteSnapshotResult">
+        <include refid="selectRouteSnapshotVo"/>
+        WHERE work_order_id = #{workOrderId} AND del_flag = '0'
+        ORDER BY step_seq
+    </select>
+
+    <insert id="batchInsertRouteSnapshot" parameterType="java.util.List">
+        INSERT INTO mms_wo_route_snapshot (
+            work_order_id, route_id, route_no, route_version, step_seq, process_id, process_code, process_name, std_time, prep_time, is_key_process, is_outsource, del_flag, create_by, create_time
+        ) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.workOrderId}, #{item.routeId}, #{item.routeNo}, #{item.routeVersion}, #{item.stepSeq}, #{item.processId}, #{item.processCode}, #{item.processName}, #{item.stdTime}, #{item.prepTime}, #{item.isKeyProcess}, #{item.isOutsource}, #{item.delFlag}, #{item.createBy}, #{item.createTime}
+            )
+        </foreach>
+    </insert>
+
+    <delete id="deleteRouteSnapshotByWorkOrderId" parameterType="Long">
+        DELETE FROM mms_wo_route_snapshot WHERE work_order_id = #{workOrderId}
+    </delete>
+
+</mapper>

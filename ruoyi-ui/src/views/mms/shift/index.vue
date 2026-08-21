@@ -10,12 +10,11 @@
         </a>
       </div>
       <div class="filter-bar">
+        <div class="field"><label>班次编号</label><div class="control"><el-input v-model="queryParams.shiftCode" placeholder="请输入" clearable @keyup.enter="handleQuery"><template #prefix><el-icon><Search /></el-icon></template></el-input></div></div>
         <div class="field">
           <label>班次名称</label>
           <div class="control">
-            <el-input v-model="queryParams.shiftName" placeholder="请输入" clearable @keyup.enter="handleQuery">
-              <template #prefix><el-icon><Search /></el-icon></template>
-            </el-input>
+            <el-input v-model="queryParams.shiftName" placeholder="请输入" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
         <div class="field">
@@ -89,6 +88,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" v-loading="loading" :data="dataList" border @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
+          <el-table-column label="班次编号" prop="shiftCode" key="shiftCode" :width="colWidth('shiftCode', 140)" resizable v-if="columns.shiftCode.visible" />
           <el-table-column label="班次名称" prop="shiftName" key="shiftName" :width="colWidth('shiftName', 140)" resizable v-if="columns.shiftName.visible" />
           <el-table-column label="开始时间" prop="startTime" key="startTime" :width="colWidth('startTime', 100)" resizable align="center" v-if="columns.startTime.visible" />
           <el-table-column label="结束时间" prop="endTime" key="endTime" :width="colWidth('endTime', 100)" resizable align="center" v-if="columns.endTime.visible" />
@@ -104,8 +104,9 @@
           <el-table-column label="创建时间" prop="createTime" key="createTime" :width="colWidth('createTime', 160)" resizable align="center" v-if="columns.createTime.visible">
             <template #default="scope"><span>{{ parseTime(scope.row.createTime) }}</span></template>
           </el-table-column>
-          <el-table-column label="操作" width="180" align="center" fixed="right">
+          <el-table-column label="操作" width="220" align="center" fixed="right">
             <template #default="scope">
+              <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
               <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['mms:shift:edit']">修改</el-button>
               <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['mms:shift:remove']">删除</el-button>
             </template>
@@ -116,57 +117,130 @@
       <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
     </div>
 
-    <!-- ===== 新增/修改 Dialog ===== -->
-    <el-dialog :title="title" v-model="open" width="700px" append-to-body>
-      <el-form ref="formRef" :model="form" :rules="rules" label-width="120px">
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="班次名称" prop="shiftName">
-              <el-input v-model="form.shiftName" placeholder="请输入" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="状态" prop="status">
-              <el-select v-model="form.status" placeholder="请选择">
-                <el-option v-for="d in mms_shift_status" :key="d.value" :label="d.label" :value="d.value" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="开始时间" prop="startTime">
-              <el-input v-model="form.startTime" placeholder="如：08:00" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="结束时间" prop="endTime">
-              <el-input v-model="form.endTime" placeholder="如：17:00" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="休息分钟" prop="restMinutes">
-              <el-input-number v-model="form.restMinutes" :min="0" :step="5" style="width: 100%" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="可用工时" prop="availHours">
-              <el-input-number v-model="form.availHours" :min="0" :precision="2" :step="0.5" style="width: 100%" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-form-item label="备注" prop="remark">
-          <el-input v-model="form.remark" type="textarea" placeholder="请输入" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <div class="dialog-footer">
-          <el-button type="primary" @click="submitForm">确 定</el-button>
-          <el-button @click="cancel">取 消</el-button>
+    <!-- ===== 编辑弹窗 ===== -->
+    <el-dialog v-model="open" width="700px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+          <span class="rd-detail-header-title">{{ title }}</span>
         </div>
       </template>
+      <el-form ref="formRef" :model="form" :rules="rules" label-width="120px">
+        <div class="rd-page">
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('c0')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg></span>基本信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c0 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+            <div class="rd-card-body" v-show="!collapsedCards.c0">
+              <el-row :gutter="20">
+                <el-col :span="12">
+                  <el-form-item label="班次编号" prop="shiftCode">
+                    <el-input v-model="form.shiftCode" placeholder="保存时自动生成" readonly />
+                  </el-form-item>
+                </el-col>
+                <el-col :span="12">
+                  <el-form-item label="班次名称" prop="shiftName">
+                    <el-input v-model="form.shiftName" placeholder="请输入" />
+                  </el-form-item>
+                </el-col>
+                <el-col :span="12">
+                  <el-form-item label="状态" prop="status">
+                    <el-select v-model="form.status" placeholder="请选择" style="width: 100%">
+                      <el-option v-for="d in mms_shift_status" :key="d.value" :label="d.label" :value="d.value" />
+                    </el-select>
+                  </el-form-item>
+                </el-col>
+              </el-row>
+            </div>
+          </section>
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('c1')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>时间与工时</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+            <div class="rd-card-body" v-show="!collapsedCards.c1">
+              <el-row :gutter="20">
+                <el-col :span="12">
+                  <el-form-item label="开始时间" prop="startTime">
+                    <el-time-picker v-model="form.startTime" format="HH:mm" value-format="HH:mm" placeholder="如：08:00" style="width: 100%" />
+                  </el-form-item>
+                </el-col>
+                <el-col :span="12">
+                  <el-form-item label="结束时间" prop="endTime">
+                    <el-time-picker v-model="form.endTime" format="HH:mm" value-format="HH:mm" placeholder="如：17:00" style="width: 100%" />
+                  </el-form-item>
+                </el-col>
+              </el-row>
+              <el-row :gutter="20">
+                <el-col :span="12">
+                  <el-form-item label="休息分钟" prop="restMinutes">
+                    <el-input-number v-model="form.restMinutes" :min="0" :step="5" style="width: 100%" />
+                  </el-form-item>
+                </el-col>
+                <el-col :span="12">
+                  <el-form-item label="可用工时" prop="availHours">
+                    <el-input-number v-model="form.availHours" :min="0" :precision="2" :step="0.5" style="width: 100%" />
+                  </el-form-item>
+                </el-col>
+              </el-row>
+            </div>
+          </section>
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('c2')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>其他信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+            <div class="rd-card-body" v-show="!collapsedCards.c2">
+              <el-form-item label="备注" prop="remark">
+                <el-input v-model="form.remark" type="textarea" :rows="2" placeholder="请输入" />
+              </el-form-item>
+            </div>
+          </section>
+        </div>
+      </el-form>
+      <template #footer>
+        <el-button type="primary" @click="submitForm">确 定</el-button>
+        <el-button @click="cancel">取 消</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- ===== 查看详情弹窗 ===== -->
+    <el-dialog v-model="viewOpen" width="700px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+          <span class="rd-detail-header-title">班次详情</span>
+          <div class="rd-detail-header-sub" v-if="viewData.shiftCode">
+            <div class="rd-detail-header-divider"></div>
+            <span class="rd-detail-header-no">编号：{{ viewData.shiftCode }}</span>
+          </div>
+        </div>
+      </template>
+      <div class="rd-page">
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('vc0')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg></span>基本信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc0 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.vc0" style="display:block">
+            <div class="rd-grid">
+              <div class="rd-item"><span class="rd-label">班次编号</span><div class="rd-value">{{ viewData.shiftCode || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">班次名称</span><div class="rd-value">{{ viewData.shiftName || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">状态</span><div class="rd-value"><dict-tag :options="mms_shift_status" :value="viewData.status" /></div></div>
+            </div>
+          </div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('vc1')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>时间与工时</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.vc1" style="display:block">
+            <div class="rd-grid">
+              <div class="rd-item"><span class="rd-label">开始时间</span><div class="rd-value">{{ viewData.startTime || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">结束时间</span><div class="rd-value">{{ viewData.endTime || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">休息时长</span><div class="rd-value">{{ viewData.restMinutes != null ? viewData.restMinutes + ' 分钟' : '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">可用工时</span><div class="rd-value">{{ viewData.availHours != null ? viewData.availHours + ' 小时' : '-' }}</div></div>
+            </div>
+          </div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('vc2')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>其他信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.vc2" style="display:block">
+            <div class="rd-grid">
+              <div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value">{{ viewData.remark || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">创建时间</span><div class="rd-value">{{ viewData.createTime || '-' }}</div></div>
+            </div>
+          </div>
+        </section>
+      </div>
+      <template #footer><el-button @click="viewOpen = false">关 闭</el-button></template>
     </el-dialog>
 
     <!-- ===== 业务操作说明对话框 ===== -->
@@ -182,14 +256,12 @@
         </div>
         <h4>二、状态流转图</h4>
         <div class="status-flow">
-          <div class="flow-item"><el-tag type="info">草稿</el-tag><el-icon class="flow-arrow"><ArrowRight /></el-icon><el-tag size="small" type="primary">启用</el-tag><el-icon class="flow-arrow"><ArrowRight /></el-icon></div>
           <div class="flow-item"><el-tag type="success">已启用</el-tag><el-icon class="flow-arrow"><ArrowRight /></el-icon><el-tag size="small" type="primary">停用</el-tag><el-icon class="flow-arrow"><ArrowRight /></el-icon></div>
           <div class="flow-item"><el-tag type="danger">已停用</el-tag></div>
         </div>
         <h4>三、各状态说明</h4>
         <el-descriptions :column="1" border>
-          <el-descriptions-item label="草稿">班次新建后的初始状态，可修改信息或启用</el-descriptions-item>
-          <el-descriptions-item label="已启用">班次已启用，可被工单排产引用。可停用</el-descriptions-item>
+          <el-descriptions-item label="已启用">班次新建后默认为已启用，可被工单排产引用。可停用</el-descriptions-item>
           <el-descriptions-item label="已停用">班次已停用，不可被新工单引用。可重新启用</el-descriptions-item>
         </el-descriptions>
         <h4>四、重点业务规则</h4>
@@ -204,8 +276,7 @@
         </div>
         <h4>五、业务操作流程</h4>
         <el-timeline>
-          <el-timeline-item type="primary" :hollow="true"><strong>创建班次：</strong>点击「新增」创建班次，填写班次名称、上下班时间和休息时长</el-timeline-item>
-          <el-timeline-item type="warning" :hollow="true"><strong>启用班次：</strong>草稿状态下点击「启用」使班次可被排产引用</el-timeline-item>
+          <el-timeline-item type="primary" :hollow="true"><strong>创建班次：</strong>点击「新增」创建班次，填写班次名称、上下班时间和休息时长，保存后默认为已启用</el-timeline-item>
           <el-timeline-item type="danger" :hollow="true"><strong>停用班次：</strong>不再使用的班次可停用，停用后不可被新工单引用</el-timeline-item>
         </el-timeline>
       </div>
@@ -219,14 +290,18 @@
 <script setup name="Shift">
 import { listShift, getShift, addShift, updateShift, delShift } from "@/api/mms/shift";
 import { useColumnResize } from '@/composables/useColumnResize'
+import { useDetailCard } from '@/composables/useDetailCard'
 import { Search, Filter, RefreshLeft, ArrowRight, ArrowDown, WarningFilled } from '@element-plus/icons-vue'
 
 const { proxy } = getCurrentInstance();
 const { mms_shift_status } = proxy.useDict("mms_shift_status");
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('mms_shift_index')
+const { collapsedCards, toggleCard } = useDetailCard(["c0","c1","c2","vc0","vc1","vc2"])
 
 const dataList = ref([]);
 const open = ref(false);
+const viewOpen = ref(false);
+const viewData = ref({});
 const loading = ref(true);
 const showSearch = ref(true);
 const showAdvanced = ref(false);
@@ -248,6 +323,7 @@ const statusTabList = computed(() => {
 
 // 列显隐配置
 const defaultColumns = {
+  shiftCode: { label: '班次编号', visible: true },
   shiftName: { label: '班次名称', visible: true },
   startTime: { label: '开始时间', visible: true },
   endTime: { label: '结束时间', visible: true },
@@ -281,6 +357,7 @@ const columns = ref(loadColumnVisibility())
 const activeFilterCount = computed(() => {
   let count = 0;
   if (queryParams.value.shiftName) count++;
+  if (queryParams.value.shiftCode) count++;
   if (queryParams.value.status) count++;
   if (queryParams.value.startTime) count++;
   if (dateRange.value && dateRange.value.length === 2) count++;
@@ -289,14 +366,7 @@ const activeFilterCount = computed(() => {
 
 const data = reactive({
   form: {},
-  queryParams: {
-    pageNum: 1,
-    pageSize: 10,
-    shiftName: undefined,
-    startTime: undefined,
-    status: undefined,
-    params: {}
-  },
+    queryParams: { pageNum: 1, pageSize: 10, shiftCode: undefined, shiftName: undefined, startTime: undefined, status: undefined, params: {} },
   rules: {
     shiftName: [{ required: true, message: "请输入班次名称", trigger: "blur" }],
     startTime: [{ required: true, message: "请输入开始时间", trigger: "blur" }],
@@ -313,18 +383,23 @@ function getList() {
     total.value = response.total;
     loading.value = false;
     applySavedWidths();
-    updateStatusCounts(response.rows);
+    loadStatusCounts();
   });
 }
 
-function updateStatusCounts(rows) {
-  const counts = { all: total.value };
-  if (mms_shift_status.value) {
-    mms_shift_status.value.forEach(d => {
-      counts[d.value] = rows.filter(r => r.status === d.value).length;
-    });
-  }
-  statusCounts.value = counts;
+function loadStatusCounts() {
+  const baseQuery = { pageNum: 1, pageSize: 999 };
+  if (queryParams.value.shiftName) baseQuery.shiftName = queryParams.value.shiftName;
+  if (queryParams.value.shiftCode) baseQuery.shiftCode = queryParams.value.shiftCode;
+  if (queryParams.value.startTime) baseQuery.startTime = queryParams.value.startTime;
+  listShift(proxy.addDateRange(baseQuery, dateRange.value)).then(res => {
+    const counts = { all: res.total };
+    if (mms_shift_status.value) {
+      mms_shift_status.value.forEach(d => { counts[d.value] = 0; });
+      (res.rows || []).forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++; });
+    }
+    statusCounts.value = counts;
+  }).catch(() => {});
 }
 
 function handleQuery() {
@@ -335,6 +410,7 @@ function handleQuery() {
 
 function resetQuery() {
   queryParams.value.shiftName = undefined;
+  queryParams.value.shiftCode = undefined;
   queryParams.value.startTime = undefined;
   queryParams.value.status = undefined;
   dateRange.value = [];
@@ -357,12 +433,13 @@ function handleSelectionChange(selection) {
 
 function reset() {
   form.value = {
+    shiftCode: undefined,
     shiftName: undefined,
     startTime: undefined,
     endTime: undefined,
     restMinutes: undefined,
     availHours: undefined,
-    status: undefined,
+    status: '1',
     remark: undefined,
   };
   proxy.resetForm("formRef");
@@ -381,6 +458,13 @@ function handleUpdate(row) {
     form.value = response.data;
     open.value = true;
     title.value = "修改班次";
+  });
+}
+function handleView(row) {
+  const id = row.shiftId || ids.value[0];
+  getShift(id).then(response => {
+    viewData.value = response.data;
+    viewOpen.value = true;
   });
 }
 
@@ -425,14 +509,14 @@ function handleExport() {
 
 // ===== 字典辅助函数 =====
 function statusLabel(status) {
-  if (!mms_shift_status.value) return '-';
+  if (status === null || status === undefined || status === '') return '—';
+  if (!mms_shift_status.value) return '—';
   const item = mms_shift_status.value.find(d => d.value == status);
-  return item ? item.label : '-';
+  return item ? item.label : '—';
 }
 
 function badgeClass(status) {
   const map = {
-    '0': 'amber',    // 草稿
     '1': 'green',    // 已启用
     '2': 'gray'      // 已停用
   };
@@ -441,7 +525,6 @@ function badgeClass(status) {
 
 function statusTabClass(value) {
   const map = {
-    '0': 'tab-draft',
     '1': 'tab-done',
     '2': 'tab-void'
   };

@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mms.mapper.MmsScheduleMapper">
+
+    <resultMap type="MmsSchedule" id="MmsScheduleResult">
+        <id property="scheduleId" column="task_id"/>
+        <result property="scheduleNo" column="schedule_no"/>
+        <result property="workOrderId" column="work_order_id"/>
+        <result property="workOrderNo" column="work_order_no"/>
+        <result property="productId" column="product_id"/>
+        <result property="productCode" column="product_code"/>
+        <result property="productName" column="product_name"/>
+        <result property="resourceId" column="resource_id"/>
+        <result property="resourceName" column="resource_name"/>
+        <result property="opSeq" column="op_seq"/>
+        <result property="planStart" column="plan_start"/>
+        <result property="planEnd" column="plan_end"/>
+        <result property="setupMinutes" column="setup_minutes"/>
+        <result property="strategy" column="strategy"/>
+        <result property="status" column="status"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <sql id="selectScheduleVo">
+        SELECT task_id, schedule_no, work_order_id, work_order_no, product_id, product_code, product_name,
+               resource_id, resource_name, op_seq, plan_start, plan_end, setup_minutes, strategy, status,
+               del_flag, create_by, create_time, update_by, update_time, remark
+        FROM mms_schedule_task
+    </sql>
+
+    <select id="selectScheduleList" parameterType="MmsSchedule" resultMap="MmsScheduleResult">
+        <include refid="selectScheduleVo"/>
+        <where>
+            del_flag = '0'
+            <if test="scheduleNo != null and scheduleNo != ''"> AND schedule_no LIKE CONCAT('%', #{scheduleNo}, '%')</if>
+            <if test="workOrderNo != null and workOrderNo != ''"> AND work_order_no LIKE CONCAT('%', #{workOrderNo}, '%')</if>
+            <if test="resourceName != null and resourceName != ''"> AND resource_name LIKE CONCAT('%', #{resourceName}, '%')</if>
+            <if test="status != null and status != ''"> AND status = #{status}</if>
+            <if test="strategy != null and strategy != ''"> AND strategy = #{strategy}</if>
+            <if test="params.beginTime != null and params.beginTime != ''"> AND date(create_time) &gt;= #{params.beginTime}</if>
+            <if test="params.endTime != null and params.endTime != ''"> AND date(create_time) &lt;= #{params.endTime}</if>
+        </where>
+        ORDER BY task_id DESC
+    </select>
+
+    <select id="selectScheduleById" parameterType="Long" resultMap="MmsScheduleResult">
+        <include refid="selectScheduleVo"/>
+        WHERE task_id = #{scheduleId}
+    </select>
+
+    <insert id="insertSchedule" parameterType="MmsSchedule" useGeneratedKeys="true" keyProperty="scheduleId">
+        INSERT INTO mms_schedule_task (
+            schedule_no, work_order_id, work_order_no, product_id, product_code, product_name,
+            resource_id, resource_name, op_seq, plan_start, plan_end, setup_minutes,
+            strategy, status, del_flag, create_by, create_time, update_by, update_time, remark
+        ) VALUES (
+            #{scheduleNo}, #{workOrderId}, #{workOrderNo}, #{productId}, #{productCode}, #{productName},
+            #{resourceId}, #{resourceName}, #{opSeq}, #{planStart}, #{planEnd}, #{setupMinutes},
+            #{strategy}, #{status}, #{delFlag}, #{createBy}, #{createTime}, #{updateBy}, #{updateTime}, #{remark}
+        )
+    </insert>
+
+    <update id="updateSchedule" parameterType="MmsSchedule">
+        UPDATE mms_schedule_task SET
+            schedule_no = #{scheduleNo},
+            work_order_id = #{workOrderId},
+            work_order_no = #{workOrderNo},
+            product_id = #{productId},
+            product_code = #{productCode},
+            product_name = #{productName},
+            resource_id = #{resourceId},
+            resource_name = #{resourceName},
+            op_seq = #{opSeq},
+            plan_start = #{planStart},
+            plan_end = #{planEnd},
+            setup_minutes = #{setupMinutes},
+            strategy = #{strategy},
+            status = #{status},
+            update_by = #{updateBy},
+            update_time = #{updateTime},
+            remark = #{remark}
+        WHERE task_id = #{scheduleId}
+    </update>
+
+    <delete id="deleteScheduleByIds" parameterType="Long">
+        UPDATE mms_schedule_task SET del_flag = '2' WHERE task_id IN
+        <foreach collection="array" item="scheduleId" open="(" separator="," close=")">
+            #{scheduleId}
+        </foreach>
+    </delete>
+
+    <!-- 按日期范围查询排产任务（不分页，供甘特图渲染） -->
+    <!-- 关联工单表，排除已删除(del_flag='2')和已作废(status='8')的工单 -->
+    <select id="selectScheduleByDateRange" resultMap="MmsScheduleResult">
+        SELECT s.task_id, s.schedule_no, s.work_order_id, s.work_order_no, s.product_id, s.product_code, s.product_name,
+               s.resource_id, s.resource_name, s.op_seq, s.plan_start, s.plan_end, s.setup_minutes, s.strategy, s.status,
+               s.del_flag, s.create_by, s.create_time, s.update_by, s.update_time, s.remark
+        FROM mms_schedule_task s
+        INNER JOIN mms_work_order w ON w.work_order_id = s.work_order_id
+        WHERE s.del_flag = '0'
+          AND s.status IN ('0','1')
+          AND w.del_flag = '0'
+          AND w.status != '8'
+          AND s.plan_start &lt;= CONCAT(#{endDate}, ' 23:59:59')
+          AND s.plan_end &gt;= CONCAT(#{startDate}, ' 00:00:00')
+        ORDER BY s.resource_id, s.plan_start
+    </select>
+
+    <!-- 冲突检测：同一资源同一时段是否有重叠（排除自身和已取消的） -->
+    <select id="countConflict" resultType="int">
+        SELECT COUNT(1) FROM mms_schedule_task
+        WHERE del_flag = '0'
+          AND status = '0'
+          AND resource_id = #{resourceId}
+          AND plan_start &lt; #{planEnd}
+          AND plan_end &gt; #{planStart}
+          <if test="excludeScheduleId != null">
+              AND task_id != #{excludeScheduleId}
+          </if>
+    </select>
+
+    <!-- 查询所有有已下达排产记录的工单ID（不限日期范围，供待排产列表排除） -->
+    <!-- 关联工单表，排除已删除/已作废的工单 -->
+    <select id="selectScheduledWorkOrderIds" resultType="long">
+        SELECT DISTINCT s.work_order_id FROM mms_schedule_task s
+        INNER JOIN mms_work_order w ON w.work_order_id = s.work_order_id
+        WHERE s.del_flag = '0'
+          AND s.status = '0'
+          AND w.del_flag = '0'
+          AND w.status != '8'
+          AND s.work_order_id IS NOT NULL
+    </select>
+
+    <!-- 按工单ID批量取消排产记录（将已下达的排产改为已取消） -->
+    <update id="cancelSchedulesByWorkOrderIds">
+        UPDATE mms_schedule_task SET status = '1', update_by = 'system', update_time = sysdate(),
+               remark = CONCAT(IFNULL(remark, ''), ' [工单删除自动取消排产]')
+        WHERE del_flag = '0'
+          AND status = '0'
+          AND work_order_id IN
+        <foreach collection="workOrderIds" item="woId" open="(" separator="," close=")">
+            #{woId}
+        </foreach>
+    </update>
+</mapper>

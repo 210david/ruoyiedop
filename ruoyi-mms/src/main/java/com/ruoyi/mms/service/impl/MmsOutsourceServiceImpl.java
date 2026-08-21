@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.mk.service.IMkNumberRuleService;
@@ -53,6 +54,7 @@ public class MmsOutsourceServiceImpl implements IMmsOutsourceService
         if (outsource.getBackQty() == null) outsource.setBackQty(BigDecimal.ZERO);
         if (outsource.getLossQty() == null) outsource.setLossQty(BigDecimal.ZERO);
         outsource.setCreateBy(SecurityUtils.getUsername());
+        outsource.setCreateTime(DateUtils.getNowDate());
         return outsourceMapper.insertOutsource(outsource);
     }
 

@@ -30,4 +30,29 @@ public interface IMmsKitCheckService
      * 状态：0(待检查) → 1(已通过) 或 2(缺料)
      */
     public int executeKitCheck(Long kitId);
+
+    /**
+     * 一键齐套检查（根据工单自动创建齐套检查单并执行检查）
+     * 流程：根据工单关联的BOM展开物料需求 → 对比库存 → 生成明细 → 计算齐套率
+     *
+     * @param workOrderId 工单ID
+     * @return 齐套检查单ID
+     */
+    public Long autoKitCheckByWorkOrderId(Long workOrderId);
+
+    /**
+     * 一键齐套检查（根据工单号自动创建齐套检查单并执行检查）
+     *
+     * @param workOrderNo 工单号
+     * @return 齐套检查单ID
+     */
+    public Long autoKitCheckByWorkOrderNo(String workOrderNo);
+
+    /**
+     * 批量齐套检查（根据多个工单ID一键创建并执行齐套检查）
+     *
+     * @param workOrderIds 工单ID数组
+     * @return 成功创建的齐套检查单数量
+     */
+    public int batchAutoKitCheck(Long[] workOrderIds);
 }

@@ -251,6 +251,9 @@
               </el-row>
               <el-table border :data="form.itemList" size="small">
                 <el-table-column label="行号" prop="lineNo" width="70" align="center" />
+                <el-table-column label="物料编码" prop="materialCode" width="140" align="center">
+                  <template #default="scope"><span>{{ scope.row.materialCode || '—' }}</span></template>
+                </el-table-column>
                 <el-table-column label="商品名称" min-width="180" align="center">
                   <template #default="scope">
                     <el-select v-model="scope.row.materialId" filterable clearable size="small" placeholder="请选择商品" style="width: 100%" @change="(val) => onMaterialChange(val, scope.$index)">
@@ -472,6 +475,9 @@
           <div class="rd-card-body" v-show="!collapsedCards.items">
             <el-table border :data="viewForm.itemList" size="small" v-if="viewForm.itemList && viewForm.itemList.length > 0">
               <el-table-column label="行号" prop="lineNo" width="70" align="center" />
+              <el-table-column label="物料编码" prop="materialCode" width="140" align="center">
+                <template #default="scope"><span>{{ scope.row.materialCode || '—' }}</span></template>
+              </el-table-column>
               <el-table-column label="商品名称" prop="productName" show-overflow-tooltip align="center" />
               <el-table-column label="规格型号" prop="productSpec" width="140" align="center" />
               <el-table-column label="单位" width="80" align="center">
@@ -710,6 +716,9 @@
           <div class="rd-card-body" v-show="!collapsedCards.auditItems">
             <el-table border :data="auditData.itemList" size="small">
               <el-table-column label="行号" prop="lineNo" width="70" align="center" />
+              <el-table-column label="物料编码" prop="materialCode" width="140" align="center">
+                <template #default="scope"><span>{{ scope.row.materialCode || '—' }}</span></template>
+              </el-table-column>
               <el-table-column label="商品名称" prop="productName" show-overflow-tooltip align="center" />
               <el-table-column label="规格型号" prop="productSpec" width="140" align="center" />
               <el-table-column label="单位" width="80" align="center"><template #default="scope"><span class="badge gray"><span class="dot"></span>{{ scope.row.unit }}</span></template></el-table-column>
@@ -1045,9 +1054,9 @@ function onContractChange(contractId) {
     form.value.contractNo = undefined
   }
 }
-function handleAddItem() { if (!form.value.itemList) { form.value.itemList = [] }; const lineNo = (form.value.itemList.length + 1) * 10; form.value.itemList.push({ lineNo, materialId: undefined, productName: undefined, productSpec: undefined, unit: undefined, quantity: undefined, unitPrice: undefined, subtotal: undefined }) }
+function handleAddItem() { if (!form.value.itemList) { form.value.itemList = [] }; const lineNo = (form.value.itemList.length + 1) * 10; form.value.itemList.push({ lineNo, materialId: undefined, materialCode: undefined, productName: undefined, productSpec: undefined, unit: undefined, quantity: undefined, unitPrice: undefined, subtotal: undefined }) }
 function handleDeleteItem(index) { form.value.itemList.splice(index, 1); form.value.itemList.forEach((item, idx) => { item.lineNo = (idx + 1) * 10 }) }
-function onMaterialChange(materialId, index) { const material = materialOptions.value.find(m => m.materialId === materialId); if (material) { form.value.itemList[index].productName = material.materialName; form.value.itemList[index].productSpec = material.specModel; form.value.itemList[index].unit = material.unit } }
+function onMaterialChange(materialId, index) { const material = materialOptions.value.find(m => m.materialId === materialId); if (material) { form.value.itemList[index].materialId = material.materialId; form.value.itemList[index].materialCode = material.materialCode; form.value.itemList[index].productName = material.materialName; form.value.itemList[index].productSpec = material.specModel; form.value.itemList[index].unit = material.unit } }
 function calcSubtotal(index) { const item = form.value.itemList[index]; if (item && item.quantity != null && item.unitPrice != null) { item.subtotal = (item.quantity * item.unitPrice).toFixed(2) } else { item.subtotal = undefined }; const total = form.value.itemList.reduce((sum, i) => sum + (parseFloat(i.subtotal) || 0), 0); form.value.orderAmount = total.toFixed(2) }
 function handleQuery() { showAdvanced.value = false; queryParams.value.params = proxy.addDateRange(queryParams.value.params, dateRange.value, 'CreateTime'); queryParams.value.pageNum = 1; getList() }
 function resetQuery() { queryParams.value.orderNo = undefined; queryParams.value.customerName = undefined; queryParams.value.orderStatus = undefined; queryParams.value.contractNo = undefined; queryParams.value.userName = undefined; dateRange.value = []; queryParams.value.params = {}; activeStatusTab.value = 'all'; handleQuery() }

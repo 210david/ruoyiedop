@@ -57,7 +57,13 @@ public class MmsRouteController extends BaseController
     @PostMapping
     public AjaxResult add(@RequestBody MmsRoute route)
     {
-        return toAjax(mmsRouteService.insertRoute(route));
+        // 在事务开始前生成编号（避免编号服务事务失败影响insertRoute事务）
+        if (route.getRouteNo() == null || route.getRouteNo().isEmpty())
+        {
+            route.setRouteNo(mmsRouteService.generateRouteNo());
+        }
+        mmsRouteService.insertRoute(route);
+        return AjaxResult.success(route.getRouteId());
     }
 
     @Log(title = "工艺路线", businessType = BusinessType.UPDATE)
@@ -88,14 +94,16 @@ public class MmsRouteController extends BaseController
     }
 
     /**
-     * 审核路线（已启用→已审核）
+     * 审核路线（已启用→已审核/已驳回）
      */
     @Log(title = "工艺路线", businessType = BusinessType.UPDATE)
     @PreAuthorize("@ss.hasPermi('mms:route:status')")
     @PutMapping("/audit/{routeId}")
-    public AjaxResult audit(@PathVariable("routeId") Long routeId)
+    public AjaxResult audit(@PathVariable("routeId") Long routeId,
+                           @RequestParam String auditAction,
+                           @RequestParam(required = false) String auditRemark)
     {
-        return toAjax(mmsRouteService.auditRoute(routeId));
+        return toAjax(mmsRouteService.auditRoute(routeId, auditAction, auditRemark));
     }
 
     /**

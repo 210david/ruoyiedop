@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.ruoyi.common.exception.ServiceException;
+import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.mk.service.IMkNumberRuleService;
@@ -57,6 +58,8 @@ public class MmsAbnormalServiceImpl implements IMmsAbnormalService
             abnormal.setStatus("0");
         }
         abnormal.setDelFlag("0");
+        abnormal.setCreateBy(SecurityUtils.getUsername());
+        abnormal.setCreateTime(DateUtils.getNowDate());
         abnormal.setReportBy(SecurityUtils.getUsername());
         abnormal.setReportTime(new Date());
         return abnormalMapper.insertAbnormal(abnormal);

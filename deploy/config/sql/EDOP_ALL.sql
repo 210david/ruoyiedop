@@ -2540,16 +2540,20 @@ DROP TABLE IF EXISTS mk_order_item;
 CREATE TABLE mk_order_item (
     item_id         BIGINT        NOT NULL AUTO_INCREMENT  COMMENT '明细ID',
     order_id        BIGINT        NOT NULL                 COMMENT '订单ID',
+    line_no         INT                                    COMMENT '行号',
+    material_id     BIGINT                                 COMMENT '物料ID（关联wms_material）',
     product_name    VARCHAR(200)  NOT NULL                 COMMENT '商品名称',
     product_spec    VARCHAR(200)                           COMMENT '规格型号',
     unit            VARCHAR(20)                            COMMENT '单位',
     quantity        INT           NOT NULL                 COMMENT '数量',
+    shipped_qty     DECIMAL(18,2) DEFAULT 0                COMMENT '已发货数量',
     unit_price      DECIMAL(14,2) NOT NULL                 COMMENT '单价',
     subtotal        DECIMAL(14,2) NOT NULL                 COMMENT '小计',
     create_time     DATETIME                               COMMENT '创建时间',
     remark          VARCHAR(500)                           COMMENT '备注',
     PRIMARY KEY (item_id),
-    KEY idx_order_item_order (order_id)
+    KEY idx_order_item_order (order_id),
+    KEY idx_order_item_material (material_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='订单明细表';
 
 -- 12. 回款计划表

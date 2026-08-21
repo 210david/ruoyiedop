@@ -125,60 +125,39 @@
     </div>
 
     <!-- ===== 新增/修改 Dialog ===== -->
-    <el-dialog :title="title" v-model="open" width="680px" append-to-body>
+    <el-dialog v-model="open" width="780px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+          <span class="rd-detail-header-title">{{ title }}</span>
+        </div>
+      </template>
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="流转卡号" prop="cardCode">
-              <el-input v-model="form.cardCode" placeholder="自动生成" disabled />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="工单编号" prop="workOrderNo">
-              <el-input v-model="form.workOrderNo" placeholder="请输入" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="批次号" prop="batchNo">
-              <el-input v-model="form.batchNo" placeholder="请输入" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="当前工序序号" prop="opSeq">
-              <el-input-number v-model="form.opSeq" :min="0" placeholder="请输入" style="width: 100%" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="当前工序" prop="processName">
-              <el-input v-model="form.processName" placeholder="请输入" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="状态" prop="status">
-              <el-select v-model="form.status" placeholder="请选择">
-                <el-option v-for="d in mms_flowcard_status" :key="d.value" :label="d.label" :value="d.value" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-form-item label="备注" prop="remark">
-          <el-input v-model="form.remark" type="textarea" placeholder="请输入" />
-        </el-form-item>
+        <div class="rd-page">
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('c0')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg></span>基本信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c0 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+            <div class="rd-card-body" v-show="!collapsedCards.c0">
+              <el-row :gutter="20"><el-col :span="12"><el-form-item label="流转卡号" prop="cardCode"><el-input v-model="form.cardCode" placeholder="自动生成" disabled /></el-form-item></el-col><el-col :span="12"><el-form-item label="工单编号" prop="workOrderNo"><el-input v-model="form.workOrderNo" placeholder="请输入" /></el-form-item></el-col></el-row>
+              <el-row :gutter="20"><el-col :span="12"><el-form-item label="批次号" prop="batchNo"><el-input v-model="form.batchNo" placeholder="请输入" /></el-form-item></el-col><el-col :span="12"><el-form-item label="当前工序序号" prop="opSeq"><el-input-number v-model="form.opSeq" :min="0" placeholder="请输入" style="width: 100%" /></el-form-item></el-col></el-row>
+              <el-row :gutter="20"><el-col :span="12"><el-form-item label="当前工序" prop="processName"><el-input v-model="form.processName" placeholder="请输入" /></el-form-item></el-col><el-col :span="12"><el-form-item label="状态" prop="status"><el-select v-model="form.status" placeholder="请选择"><el-option v-for="d in mms_flowcard_status" :key="d.value" :label="d.label" :value="d.value" /></el-select></el-form-item></el-col></el-row>
+            </div>
+          </section>
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('c1')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>备注信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+            <div class="rd-card-body" v-show="!collapsedCards.c1">
+              <el-form-item label="备注" prop="remark"><el-input v-model="form.remark" type="textarea" :rows="2" placeholder="请输入" /></el-form-item>
+            </div>
+          </section>
+        </div>
       </el-form>
       <template #footer>
-        <div class="dialog-footer">
-          <el-button type="primary" @click="submitForm">确 定</el-button>
-          <el-button @click="cancel">取 消</el-button>
-        </div>
+        <el-button type="primary" @click="submitForm">确 定</el-button>
+        <el-button @click="cancel">取 消</el-button>
       </template>
     </el-dialog>
 
     <!-- ===== 详情弹窗 ===== -->
-    <el-dialog v-model="viewOpen" width="800px" append-to-body draggable>
+    <el-dialog v-model="viewOpen" width="780px" append-to-body draggable class="rd-dialog">
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon">
@@ -192,18 +171,26 @@
         </div>
       </template>
       <div class="rd-page">
-        <div class="rd-grid">
-          <div class="rd-item"><span class="rd-label">流转卡号</span><div class="rd-value">{{ viewData.cardCode || '-' }}</div></div>
-          <div class="rd-item"><span class="rd-label">工单编号</span><div class="rd-value">{{ viewData.workOrderNo || '-' }}</div></div>
-          <div class="rd-item"><span class="rd-label">批次号</span><div class="rd-value">{{ viewData.batchNo || '-' }}</div></div>
-          <div class="rd-item"><span class="rd-label">当前工序序号</span><div class="rd-value">{{ viewData.opSeq != null ? viewData.opSeq : '-' }}</div></div>
-          <div class="rd-item"><span class="rd-label">当前工序</span><div class="rd-value">{{ viewData.processName || '-' }}</div></div>
-          <div class="rd-item"><span class="rd-label">状态</span><div class="rd-value"><span class="badge" :class="badgeClass(viewData.status)"><span class="dot"></span>{{ statusLabel(viewData.status) }}</span></div></div>
-          <div class="rd-item"><span class="rd-label">打印次数</span><div class="rd-value">{{ viewData.printCount != null ? viewData.printCount : 0 }}</div></div>
-          <div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value" :class="{ 'rd-value--muted': !viewData.remark }">{{ viewData.remark || '暂无' }}</div></div>
-          <div class="rd-item"><span class="rd-label">创建人</span><div class="rd-value">{{ viewData.createBy || '-' }}</div></div>
-          <div class="rd-item"><span class="rd-label">创建时间</span><div class="rd-value">{{ viewData.createTime ? parseTime(viewData.createTime) : '-' }}</div></div>
-        </div>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('vc0')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg></span>基本信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc0 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.vc0" style="display:block"><div class="rd-grid">
+            <div class="rd-item"><span class="rd-label">流转卡号</span><div class="rd-value">{{ viewData.cardCode || '—' }}</div></div>
+            <div class="rd-item"><span class="rd-label">工单编号</span><div class="rd-value">{{ viewData.workOrderNo || '—' }}</div></div>
+            <div class="rd-item"><span class="rd-label">批次号</span><div class="rd-value">{{ viewData.batchNo || '—' }}</div></div>
+            <div class="rd-item"><span class="rd-label">当前工序序号</span><div class="rd-value">{{ viewData.opSeq != null ? viewData.opSeq : '—' }}</div></div>
+            <div class="rd-item"><span class="rd-label">当前工序</span><div class="rd-value">{{ viewData.processName || '—' }}</div></div>
+            <div class="rd-item"><span class="rd-label">状态</span><div class="rd-value"><span v-if="viewData.status" class="badge" :class="badgeClass(viewData.status)"><span class="dot"></span>{{ statusLabel(viewData.status) }}</span><span v-else class="text-muted">—</span></div></div>
+            <div class="rd-item"><span class="rd-label">打印次数</span><div class="rd-value">{{ viewData.printCount != null ? viewData.printCount : 0 }}</div></div>
+          </div></div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('vc1')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>备注信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.vc1" style="display:block"><div class="rd-grid">
+            <div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value" :class="{ 'rd-value--muted': !viewData.remark }">{{ viewData.remark || '暂无' }}</div></div>
+            <div class="rd-item"><span class="rd-label">创建人</span><div class="rd-value">{{ viewData.createBy || '—' }}</div></div>
+            <div class="rd-item"><span class="rd-label">创建时间</span><div class="rd-value">{{ viewData.createTime ? parseTime(viewData.createTime) : '—' }}</div></div>
+          </div></div>
+        </section>
       </div>
       <template #footer><el-button @click="viewOpen = false">关 闭</el-button></template>
     </el-dialog>
@@ -236,11 +223,13 @@
 <script setup name="FlowCard">
 import { listFlowCard, getFlowCard, addFlowCard, updateFlowCard, delFlowCard, printFlowCard } from "@/api/mms/flowcard";
 import { useColumnResize } from '@/composables/useColumnResize'
+import { useDetailCard } from '@/composables/useDetailCard'
 import { Search, Filter, RefreshLeft, ArrowDown, ArrowRight, WarningFilled } from '@element-plus/icons-vue'
 
 const { proxy } = getCurrentInstance();
 const { mms_flowcard_status } = proxy.useDict("mms_flowcard_status");
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('mms_flowcard_index')
+const { collapsedCards, toggleCard } = useDetailCard(["c0","c1","vc0","vc1"])
 
 const dataList = ref([]);
 const open = ref(false);
@@ -333,18 +322,24 @@ function getList() {
     total.value = response.total;
     loading.value = false;
     applySavedWidths();
-    updateStatusCounts(response.rows);
+    loadStatusCounts();
   });
 }
 
-function updateStatusCounts(rows) {
-  const counts = { all: total.value };
-  if (mms_flowcard_status.value) {
-    mms_flowcard_status.value.forEach(d => {
-      counts[d.value] = rows.filter(r => r.status === d.value).length;
-    });
-  }
-  statusCounts.value = counts;
+function loadStatusCounts() {
+  const baseQuery = { pageNum: 1, pageSize: 999 };
+  if (queryParams.value.cardCode) baseQuery.cardCode = queryParams.value.cardCode;
+  if (queryParams.value.workOrderNo) baseQuery.workOrderNo = queryParams.value.workOrderNo;
+  if (queryParams.value.batchNo) baseQuery.batchNo = queryParams.value.batchNo;
+  if (queryParams.value.processName) baseQuery.processName = queryParams.value.processName;
+  listFlowCard(proxy.addDateRange(baseQuery, dateRange.value)).then(res => {
+    const counts = { all: res.total };
+    if (mms_flowcard_status.value) {
+      mms_flowcard_status.value.forEach(d => { counts[d.value] = 0; });
+      (res.rows || []).forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++; });
+    }
+    statusCounts.value = counts;
+  }).catch(() => {});
 }
 
 function handleQuery() {
@@ -478,7 +473,7 @@ function handlePrint(row) {
 
 function statusLabel(status) {
   const item = mms_flowcard_status.value.find(d => d.value == status);
-  return item ? item.label : '-';
+  return item ? item.label : '—';
 }
 
 function badgeClass(status) {
@@ -563,6 +558,15 @@ getList();
 .rd-label { flex: 0 0 auto; min-width: 72px; display: flex; align-items: center; font-size: 14px; font-weight: 500; color: #6b7280; white-space: nowrap; }
 .rd-value { flex: 1 1 auto; font-size: 14px; font-weight: 500; color: #111827; line-height: 1.5; padding-left: 12px; border-left: 1px solid #e5e7eb; min-width: 0; }
 .rd-value--muted { color: #9ca3af; font-style: italic; }
+.mms-flowcard-page .rd-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; margin-bottom: 12px; overflow: hidden; }
+.mms-flowcard-page .rd-card-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; cursor: pointer; background: #f8fafc; border-bottom: 1px solid #e5e7eb; }
+.mms-flowcard-page .rd-card-header:hover { background: #f1f5f9; }
+.mms-flowcard-page .rd-card-title { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: #334155; }
+.mms-flowcard-page .rd-card-icon { display: flex; align-items: center; color: #6366f1; }
+.mms-flowcard-page .rd-collapse-btn { display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; border: none; background: transparent; cursor: pointer; color: #94a3b8; transition: transform .2s; }
+.mms-flowcard-page .rd-collapse-btn.is-collapsed { transform: rotate(180deg); }
+.mms-flowcard-page .rd-card-body { padding: 16px; }
+.mms-flowcard-page .text-muted { color: #94a3b8; }
 @media (max-width:1100px) { .mms-flowcard-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }
 @media (max-width:720px) { .mms-flowcard-page .filter-card .filter-bar { grid-template-columns:1fr; } }
 </style>

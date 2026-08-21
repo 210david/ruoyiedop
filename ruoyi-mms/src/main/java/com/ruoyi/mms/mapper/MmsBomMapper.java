@@ -15,4 +15,5 @@ public interface MmsBomMapper {
     public int deleteBomDetailByBomId(Long bomId);
     public int countPublishedByProductId(Long productId);
     public MmsBom selectBomByProductId(Long productId);
+    public int updateBomStatus(MmsBom bom);
 }

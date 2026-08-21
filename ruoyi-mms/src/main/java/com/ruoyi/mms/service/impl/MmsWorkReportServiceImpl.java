@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.ruoyi.common.exception.ServiceException;
+import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.mk.service.IMkNumberRuleService;
@@ -69,6 +70,8 @@ public class MmsWorkReportServiceImpl implements IMmsWorkReportService
             workReport.setStatus("0");
         }
         workReport.setDelFlag("0");
+        workReport.setCreateBy(SecurityUtils.getUsername());
+        workReport.setCreateTime(DateUtils.getNowDate());
         workReport.setReportBy(SecurityUtils.getUsername());
         workReport.setReportTime(new Date());
         // 校验工单状态：工单需为已下达(1)或执行中(2)或报工中(3)

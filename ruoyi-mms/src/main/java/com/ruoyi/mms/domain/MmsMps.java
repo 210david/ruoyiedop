@@ -2,6 +2,7 @@ package com.ruoyi.mms.domain;
 
 import java.math.BigDecimal;
 import java.util.Date;
+import java.util.List;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.ruoyi.common.annotation.Excel;
 import com.ruoyi.common.core.domain.BaseEntity;
@@ -70,6 +71,9 @@ public class MmsMps extends BaseEntity
 
     private String delFlag;
 
+    /** 审核日志列表（非持久化字段） */
+    private List<MmsMpsAuditLog> auditLogList;
+
     public Long getMpsId() { return mpsId; }
     public void setMpsId(Long mpsId) { this.mpsId = mpsId; }
     public String getMpsNo() { return mpsNo; }
@@ -110,4 +114,6 @@ public class MmsMps extends BaseEntity
     public void setAuditOpinion(String auditOpinion) { this.auditOpinion = auditOpinion; }
     public String getDelFlag() { return delFlag; }
     public void setDelFlag(String delFlag) { this.delFlag = delFlag; }
+    public List<MmsMpsAuditLog> getAuditLogList() { return auditLogList; }
+    public void setAuditLogList(List<MmsMpsAuditLog> auditLogList) { this.auditLogList = auditLogList; }
 }

@@ -18,6 +18,8 @@ public interface IMmsBomService
     public int deleteBomByIds(Long[] BomIds);
     public List<MmsBomDetail> selectBomDetailByBomId(Long BomId);
     public int publishBom(Long bomId);
+    public int disableBom(Long bomId);
+    public int enableBom(Long bomId);
     public MmsBom copyBom(Long bomId);
     public List<MmsBomDetail> selectBomTreeByBomId(Long bomId);
 }

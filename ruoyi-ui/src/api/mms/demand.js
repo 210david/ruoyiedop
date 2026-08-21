@@ -37,3 +37,27 @@ export function delDemand(demandId) {
     method: 'delete'
   })
 }
+
+// 需求确认
+export function confirmDemand(demandId) {
+  return request({
+    url: '/mms/demand/confirm/' + demandId,
+    method: 'put'
+  })
+}
+
+// 需求取消确认
+export function unconfirmDemand(demandId) {
+  return request({
+    url: '/mms/demand/unconfirm/' + demandId,
+    method: 'put'
+  })
+}
+
+// 需求转计划
+export function demandToMps(demandId) {
+  return request({
+    url: '/mms/demand/toMps/' + demandId,
+    method: 'post'
+  })
+}

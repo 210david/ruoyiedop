@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.ruoyi.common.exception.ServiceException;
+import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.mk.service.IMkNumberRuleService;
@@ -69,6 +70,7 @@ public class MmsDispatchServiceImpl implements IMmsDispatchService
             dispatch.setDefectQty(BigDecimal.ZERO);
         }
         dispatch.setCreateBy(SecurityUtils.getUsername());
+        dispatch.setCreateTime(DateUtils.getNowDate());
         return dispatchMapper.insertDispatch(dispatch);
     }
 

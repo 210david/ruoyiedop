@@ -81,10 +81,10 @@
           <el-table-column label="工单号" prop="workOrderNo" key="workOrderNo" :width="colWidth('workOrderNo', 140)" resizable v-if="columns.workOrderNo.visible" />
           <el-table-column label="产能单元" prop="resourceName" key="resourceName" :width="colWidth('resourceName', 120)" resizable v-if="columns.resourceName.visible" />
           <el-table-column label="异常类型" prop="abnormalType" key="abnormalType" :width="colWidth('abnormalType', 100)" resizable align="center" v-if="columns.abnormalType.visible">
-            <template #default="scope"><span class="badge" :class="abnormalTypeBadgeClass(scope.row.abnormalType)"><span class="dot"></span>{{ dictLabel(mms_abnormal_type, scope.row.abnormalType) }}</span></template>
+            <template #default="scope"><span v-if="scope.row.abnormalType" class="badge" :class="abnormalTypeBadgeClass(scope.row.abnormalType)"><span class="dot"></span>{{ dictLabel(mms_abnormal_type, scope.row.abnormalType) }}</span><span v-else class="text-muted">—</span></template>
           </el-table-column>
           <el-table-column label="严重等级" prop="severity" key="severity" :width="colWidth('severity', 90)" resizable align="center" v-if="columns.severity.visible">
-            <template #default="scope"><span class="badge" :class="severityBadgeClass(scope.row.severity)"><span class="dot"></span>{{ dictLabel(mms_abnormal_severity, scope.row.severity) }}</span></template>
+            <template #default="scope"><span v-if="scope.row.severity" class="badge" :class="severityBadgeClass(scope.row.severity)"><span class="dot"></span>{{ dictLabel(mms_abnormal_severity, scope.row.severity) }}</span><span v-else class="text-muted">—</span></template>
           </el-table-column>
           <el-table-column label="描述" prop="description" key="description" :width="colWidth('description', 200)" resizable show-overflow-tooltip v-if="columns.description.visible" />
           <el-table-column label="上报人" prop="reportBy" key="reportBy" :width="colWidth('reportBy', 90)" resizable align="center" v-if="columns.reportBy.visible" />
@@ -92,10 +92,11 @@
             <template #default="scope"><span>{{ parseTime(scope.row.reportTime) }}</span></template>
           </el-table-column>
           <el-table-column label="状态" prop="status" key="status" :width="colWidth('status', 100)" resizable align="center" v-if="columns.status.visible">
-            <template #default="scope"><span class="badge" :class="badgeClass(scope.row.status)"><span class="dot"></span>{{ statusLabel(scope.row.status) }}</span></template>
+            <template #default="scope"><span v-if="scope.row.status" class="badge" :class="badgeClass(scope.row.status)"><span class="dot"></span>{{ statusLabel(scope.row.status) }}</span><span v-else class="text-muted">—</span></template>
           </el-table-column>
           <el-table-column label="操作" width="200" align="center" fixed="right">
             <template #default="scope">
+              <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
               <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['mms:abnormal:edit']">修改</el-button>
               <el-button v-if="scope.row.status === '0'" link type="warning" icon="Bell" @click="handleRespond(scope.row)" v-hasPermi="['mms:abnormal:respond']">响应</el-button>
               <el-button v-if="scope.row.status === '1'" link type="success" icon="CircleCheck" @click="handleResolve(scope.row)" v-hasPermi="['mms:abnormal:resolve']">处理关闭</el-button>
@@ -106,24 +107,65 @@
       <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
     </div>
 
-    <!-- ===== 新增/修改 Dialog ===== -->
-    <el-dialog :title="title" v-model="open" width="700px" append-to-body>
+    <!-- ===== 编辑弹窗 ===== -->
+    <el-dialog v-model="open" width="780px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+          <span class="rd-detail-header-title">{{ title }}</span>
+        </div>
+      </template>
       <el-form ref="formRef" :model="form" :rules="rules" label-width="120px">
-        <el-row :gutter="20">
-          <el-col :span="12"><el-form-item label="异常单号" prop="abnormalNo"><el-input v-model="form.abnormalNo" placeholder="自动生成" disabled /></el-form-item></el-col>
-          <el-col :span="12"><el-form-item label="工单号" prop="workOrderNo"><el-input v-model="form.workOrderNo" placeholder="请输入" /></el-form-item></el-col>
-        </el-row>
-        <el-row :gutter="20">
-          <el-col :span="12"><el-form-item label="产能单元" prop="resourceName"><el-input v-model="form.resourceName" placeholder="请输入" /></el-form-item></el-col>
-          <el-col :span="12"><el-form-item label="异常类型" prop="abnormalType"><el-select v-model="form.abnormalType" placeholder="请选择"><el-option v-for="d in mms_abnormal_type" :key="d.value" :label="d.label" :value="d.value" /></el-select></el-form-item></el-col>
-        </el-row>
-        <el-row :gutter="20">
-          <el-col :span="12"><el-form-item label="严重等级" prop="severity"><el-select v-model="form.severity" placeholder="请选择"><el-option v-for="d in mms_abnormal_severity" :key="d.value" :label="d.label" :value="d.value" /></el-select></el-form-item></el-col>
-        </el-row>
-        <el-form-item label="异常描述" prop="description"><el-input v-model="form.description" type="textarea" placeholder="请输入异常描述" /></el-form-item>
-        <el-form-item label="备注" prop="remark"><el-input v-model="form.remark" type="textarea" placeholder="请输入" /></el-form-item>
+        <div class="rd-page">
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('c0')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg></span>基本信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c0 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+            <div class="rd-card-body" v-show="!collapsedCards.c0">
+              <el-row :gutter="20"><el-col :span="12"><el-form-item label="异常单号" prop="abnormalNo"><el-input v-model="form.abnormalNo" placeholder="自动生成" disabled /></el-form-item></el-col><el-col :span="12"><el-form-item label="工单号" prop="workOrderNo"><el-input v-model="form.workOrderNo" placeholder="请输入" /></el-form-item></el-col></el-row>
+              <el-row :gutter="20"><el-col :span="12"><el-form-item label="产能单元" prop="resourceName"><el-input v-model="form.resourceName" placeholder="请输入" /></el-form-item></el-col></el-row>
+            </div>
+          </section>
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('c1')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>异常详情</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+            <div class="rd-card-body" v-show="!collapsedCards.c1">
+              <el-row :gutter="20"><el-col :span="12"><el-form-item label="异常类型" prop="abnormalType"><el-select v-model="form.abnormalType" placeholder="请选择" style="width: 100%"><el-option v-for="d in mms_abnormal_type" :key="d.value" :label="d.label" :value="d.value" /></el-select></el-form-item></el-col><el-col :span="12"><el-form-item label="严重等级" prop="severity"><el-select v-model="form.severity" placeholder="请选择" style="width: 100%"><el-option v-for="d in mms_abnormal_severity" :key="d.value" :label="d.label" :value="d.value" /></el-select></el-form-item></el-col></el-row>
+            </div>
+          </section>
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('c2')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>描述信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+            <div class="rd-card-body" v-show="!collapsedCards.c2">
+              <el-form-item label="异常描述" prop="description"><el-input v-model="form.description" type="textarea" :rows="3" placeholder="请输入异常描述" /></el-form-item>
+              <el-form-item label="备注" prop="remark"><el-input v-model="form.remark" type="textarea" :rows="2" placeholder="请输入" /></el-form-item>
+            </div>
+          </section>
+        </div>
       </el-form>
-      <template #footer><div class="dialog-footer"><el-button type="primary" @click="submitForm">确 定</el-button><el-button @click="cancel">取 消</el-button></div></template>
+      <template #footer><el-button type="primary" @click="submitForm">确 定</el-button><el-button @click="cancel">取 消</el-button></template>
+    </el-dialog>
+
+    <!-- ===== 查看详情弹窗 ===== -->
+    <el-dialog v-model="viewOpen" width="780px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></div>
+          <span class="rd-detail-header-title">异常记录详情</span>
+          <div class="rd-detail-header-sub" v-if="viewData.abnormalNo"><div class="rd-detail-header-divider"></div><span class="rd-detail-header-no">编号：{{ viewData.abnormalNo }}</span></div>
+        </div>
+      </template>
+      <div class="rd-page">
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('vc0')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg></span>基本信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc0 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.vc0" style="display:block"><div class="rd-grid"><div class="rd-item"><span class="rd-label">异常单号</span><div class="rd-value">{{ viewData.abnormalNo || '-' }}</div></div><div class="rd-item"><span class="rd-label">工单号</span><div class="rd-value">{{ viewData.workOrderNo || '-' }}</div></div><div class="rd-item"><span class="rd-label">产能单元</span><div class="rd-value">{{ viewData.resourceName || '-' }}</div></div><div class="rd-item"><span class="rd-label">状态</span><div class="rd-value">{{ viewData.status === '0' ? '待响应' : viewData.status === '1' ? '已响应' : viewData.status === '2' ? '已关闭' : '-' }}</div></div></div></div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('vc1')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>异常详情</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.vc1" style="display:block"><div class="rd-grid"><div class="rd-item"><span class="rd-label">异常类型</span><div class="rd-value"><dict-tag :options="mms_abnormal_type" :value="viewData.abnormalType" /></div></div><div class="rd-item"><span class="rd-label">严重等级</span><div class="rd-value"><dict-tag :options="mms_abnormal_severity" :value="viewData.severity" /></div></div></div></div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('vc2')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>描述信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.vc2" style="display:block"><div class="rd-grid"><div class="rd-item rd-item--full"><span class="rd-label">异常描述</span><div class="rd-value">{{ viewData.description || '-' }}</div></div><div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value">{{ viewData.remark || '-' }}</div></div><div class="rd-item"><span class="rd-label">创建时间</span><div class="rd-value">{{ viewData.createTime ? parseTime(viewData.createTime) : '-' }}</div></div></div></div>
+        </section>
+      </div>
+      <template #footer><el-button @click="viewOpen = false">关 闭</el-button></template>
     </el-dialog>
 
     <!-- ===== 响应Dialog ===== -->
@@ -192,15 +234,15 @@
 <script setup name="Abnormal">
 import { listAbnormal, getAbnormal, addAbnormal, updateAbnormal, delAbnormal, respondAbnormal, resolveAbnormal } from "@/api/mms/abnormal";
 import { useColumnResize } from '@/composables/useColumnResize'
+import { useDetailCard } from '@/composables/useDetailCard'
 import { Search, Filter, RefreshLeft, ArrowRight, ArrowDown, WarningFilled } from '@element-plus/icons-vue'
 
 const { proxy } = getCurrentInstance();
 const { mms_abnormal_type, mms_abnormal_severity, mms_abnormal_status } = proxy.useDict("mms_abnormal_type", "mms_abnormal_severity", "mms_abnormal_status");
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('mms_abnormal_index')
+const { collapsedCards, toggleCard } = useDetailCard(["c0","c1","c2","vc0","vc1","vc2"])
 
-const dataList = ref([]);
-const open = ref(false);
-const loading = ref(true);
+const dataList = ref([]); const open = ref(false); const viewOpen = ref(false); const viewData = ref({}); const loading = ref(true);
 const showSearch = ref(true);
 const showAdvanced = ref(false);
 const ids = ref([]);
@@ -244,9 +286,9 @@ const { queryParams, form, rules, respondForm, resolveForm } = toRefs(data);
 
 function getList() {
   loading.value = true;
-  listAbnormal(proxy.addDateRange(queryParams.value, dateRange.value)).then(response => { dataList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths(); updateStatusCounts(response.rows); });
+  listAbnormal(proxy.addDateRange(queryParams.value, dateRange.value)).then(response => { dataList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths(); loadStatusCounts(); });
 }
-function updateStatusCounts(rows) { const counts = { all: total.value }; if (mms_abnormal_status.value) { mms_abnormal_status.value.forEach(d => { counts[d.value] = rows.filter(r => r.status === d.value).length; }); } statusCounts.value = counts; }
+function loadStatusCounts() { const baseQuery = { pageNum: 1, pageSize: 999 }; if (queryParams.value.abnormalNo) baseQuery.abnormalNo = queryParams.value.abnormalNo; if (queryParams.value.workOrderNo) baseQuery.workOrderNo = queryParams.value.workOrderNo; if (queryParams.value.abnormalType) baseQuery.abnormalType = queryParams.value.abnormalType; if (queryParams.value.severity) baseQuery.severity = queryParams.value.severity; if (queryParams.value.resourceName) baseQuery.resourceName = queryParams.value.resourceName; if (queryParams.value.reportBy) baseQuery.reportBy = queryParams.value.reportBy; listAbnormal(proxy.addDateRange(baseQuery, dateRange.value)).then(res => { const counts = { all: res.total }; if (mms_abnormal_status.value) { mms_abnormal_status.value.forEach(d => { counts[d.value] = 0; }); (res.rows || []).forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++; }); } statusCounts.value = counts; }).catch(() => {}); }
 function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList(); }
 function resetQuery() { queryParams.value.abnormalNo = undefined; queryParams.value.workOrderNo = undefined; queryParams.value.abnormalType = undefined; queryParams.value.severity = undefined; queryParams.value.status = undefined; queryParams.value.resourceName = undefined; queryParams.value.reportBy = undefined; dateRange.value = []; queryParams.value.params = {}; activeStatusTab.value = 'all'; handleQuery(); }
 function handleStatusTabClick(status) { activeStatusTab.value = status; queryParams.value.status = status === "all" ? undefined : status; handleQuery(); }
@@ -254,6 +296,7 @@ function handleSelectionChange(selection) { ids.value = selection.map(item => it
 function reset() { form.value = { abnormalNo: undefined, workOrderNo: undefined, resourceName: undefined, abnormalType: undefined, severity: undefined, description: undefined, remark: undefined }; proxy.resetForm("formRef"); }
 function handleAdd() { reset(); open.value = true; title.value = "新增异常"; }
 function handleUpdate(row) { reset(); const id = row.abnormalId || ids.value[0]; getAbnormal(id).then(response => { form.value = response.data; open.value = true; title.value = "修改异常"; }); }
+function handleView(row) { const id = row.abnormalId || ids.value[0]; getAbnormal(id).then(response => { viewData.value = response.data; viewOpen.value = true; }); }
 function submitForm() { proxy.$refs["formRef"].validate(valid => { if (valid) { if (form.value.abnormalId != null) { updateAbnormal(form.value).then(() => { proxy.$modal.msgSuccess("修改成功"); open.value = false; getList(); }); } else { addAbnormal(form.value).then(() => { proxy.$modal.msgSuccess("新增成功"); open.value = false; getList(); }); } } }); }
 function cancel() { open.value = false; reset(); }
 function handleDelete(row) { const delIds = row.abnormalId || ids.value; proxy.$modal.confirm('是否确认删除选中的异常记录？').then(() => delAbnormal(delIds)).then(() => { getList(); proxy.$modal.msgSuccess("删除成功"); }).catch(() => {}); }
@@ -263,7 +306,7 @@ function submitRespond() { respondAbnormal(respondForm.value.abnormalId, respond
 function handleResolve(row) { resolveForm.value = { abnormalId: row.abnormalId, abnormalNo: row.abnormalNo, handleResult: "" }; resolveOpen.value = true; }
 function submitResolve() { resolveAbnormal(resolveForm.value.abnormalId, resolveForm.value.handleResult).then(() => { resolveOpen.value = false; getList(); proxy.$modal.msgSuccess("处理关闭成功"); }); }
 
-function dictLabel(dictRef, value) { if (!dictRef || !dictRef.value) return '-'; const item = dictRef.value.find(d => d.value == value); return item ? item.label : '-'; }
+function dictLabel(dictRef, value) { if (value === null || value === undefined || value === '') return '—'; const arr = (dictRef && dictRef.value) ? dictRef.value : dictRef; if (!arr || !Array.isArray(arr)) return '—'; const item = arr.find(d => d.value == value); return item ? item.label : '—'; }
 function statusLabel(status) { return dictLabel(mms_abnormal_status, status); }
 function badgeClass(status) { const map = { '0': 'red', '1': 'amber', '2': 'green' }; return map[status] || 'gray'; }
 function statusTabClass(value) { const map = { '0': 'tab-reject', '1': 'tab-draft', '2': 'tab-done' }; return map[value] || ''; }

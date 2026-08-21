@@ -101,9 +101,20 @@ public class MmsWorkOrderController extends BaseController
     // ========== 业务流程操作 ==========
 
     /**
+     * 工单下达预览
+     * 返回BOM明细+工艺工序+校验结果，供前端弹窗展示
+     */
+    @PreAuthorize("@ss.hasPermi('mms:workorder:release')")
+    @GetMapping("/release/preview/{workOrderId}")
+    public AjaxResult releasePreview(@PathVariable("workOrderId") Long workOrderId)
+    {
+        return mmsWorkOrderService.getReleasePreview(workOrderId);
+    }
+
+    /**
      * 工单下达
      * 状态：0(新建) → 1(已下达)
-     * 事务内完成：校验状态、冻结BOM/工艺快照、写入下达时间
+     * 事务内完成：校验状态、冻结BOM/工艺快照、生成首工序派工单、写入下达时间
      */
     @Log(title = "生产工单-下达", businessType = BusinessType.UPDATE)
     @PreAuthorize("@ss.hasPermi('mms:workorder:release')")

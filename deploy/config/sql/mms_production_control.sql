@@ -164,8 +164,7 @@ CREATE TABLE `mms_shift` (
   `create_time`     DATETIME      DEFAULT NULL             COMMENT '创建时间',
   `update_by`       VARCHAR(64)   DEFAULT ''               COMMENT '更新者',
   `update_time`     DATETIME      DEFAULT NULL             COMMENT '更新时间',
-  PRIMARY KEY (`shift_id`),
-  UNIQUE KEY `uk_shift_name` (`shift_name`)
+PRIMARY KEY (`shift_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 COMMENT='班次定义表';
 
 -- ============================================================
@@ -187,7 +186,9 @@ CREATE TABLE `mms_demand` (
   `demand_qty`      DECIMAL(18,3) NOT NULL                 COMMENT '需求数量',
   `require_date`    DATE          NOT NULL                 COMMENT '需求交期',
   `priority`       VARCHAR(10)   DEFAULT '1'              COMMENT '优先级(0高 1中 2低)',
-  `customer_name`   VARCHAR(100)  DEFAULT ''               COMMENT '客户名称',
+  `customer_id`    BIGINT(20)    DEFAULT NULL             COMMENT '客户ID',
+  `customer_no`    VARCHAR(50)   DEFAULT ''               COMMENT '客户编号',
+  `customer_name`  VARCHAR(100)  DEFAULT ''               COMMENT '客户名称',
   `status`          VARCHAR(10)   DEFAULT '0'              COMMENT '状态(0草稿 1已确认 2已排产 3已取消)',
   `remark`          VARCHAR(500)  DEFAULT NULL             COMMENT '备注',
   `del_flag`        CHAR(1)       DEFAULT '0'              COMMENT '删除标志',
@@ -252,7 +253,11 @@ CREATE TABLE `mms_kit_check` (
   `update_by`       VARCHAR(64)   DEFAULT ''               COMMENT '更新者',
   `update_time`     DATETIME      DEFAULT NULL             COMMENT '更新时间',
   PRIMARY KEY (`kit_id`),
-  UNIQUE KEY `uk_kit_no` (`kit_no`)
+  UNIQUE KEY `uk_kit_no` (`kit_no`),
+  KEY `idx_is_complete` (`is_complete`),
+  KEY `idx_status` (`status`),
+  KEY `idx_work_order_no` (`work_order_no`),
+  KEY `idx_mps_no` (`mps_no`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 COMMENT='物料齐套检查表';
 
 -- 11. 齐套检查明细表
@@ -272,8 +277,12 @@ CREATE TABLE `mms_kit_check_detail` (
   `del_flag`        CHAR(1)       DEFAULT '0'              COMMENT '删除标志',
   `create_by`       VARCHAR(64)   DEFAULT ''               COMMENT '创建者',
   `create_time`     DATETIME      DEFAULT NULL             COMMENT '创建时间',
+  `update_by`       VARCHAR(64)   DEFAULT ''               COMMENT '更新者',
+  `update_time`     DATETIME      DEFAULT NULL             COMMENT '更新时间',
+  `remark`          VARCHAR(500)  DEFAULT NULL             COMMENT '备注',
   PRIMARY KEY (`detail_id`),
-  KEY `idx_kit_id` (`kit_id`)
+  KEY `idx_kit_id` (`kit_id`),
+  KEY `idx_material_id` (`material_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 COMMENT='齐套检查明细表';
 
 -- 12. 生产工单表 (WO-01)

@@ -4,6 +4,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.mk.service.IMkNumberRuleService;
@@ -47,6 +48,8 @@ public class MmsFinishReceiptServiceImpl implements IMmsFinishReceiptService
             finishReceipt.setFinishNo(mkNumberRuleService.generateNumber("mms_finish_receipt"));
         }
         finishReceipt.setDelFlag("0");
+        finishReceipt.setCreateBy(SecurityUtils.getUsername());
+        finishReceipt.setCreateTime(DateUtils.getNowDate());
         return finishReceiptMapper.insertFinishReceipt(finishReceipt);
     }
 

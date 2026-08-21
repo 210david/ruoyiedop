@@ -58,3 +58,28 @@ export function getKitCheckDetail(kitId) {
     method: 'get'
   })
 }
+
+// 一键齐套检查（根据工单ID）
+export function autoKitCheckByWorkOrderId(workOrderId) {
+  return request({
+    url: '/mms/kit/autoCheck/' + workOrderId,
+    method: 'post'
+  })
+}
+
+// 一键齐套检查（根据工单号）
+export function autoKitCheckByWorkOrderNo(workOrderNo) {
+  return request({
+    url: '/mms/kit/autoCheckByNo/' + workOrderNo,
+    method: 'post'
+  })
+}
+
+// 批量一键齐套检查
+export function batchAutoKitCheck(workOrderIds) {
+  return request({
+    url: '/mms/kit/batchAutoCheck',
+    method: 'post',
+    data: workOrderIds
+  })
+}

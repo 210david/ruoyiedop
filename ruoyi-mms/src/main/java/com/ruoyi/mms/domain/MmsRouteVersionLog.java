@@ -17,8 +17,13 @@ public class MmsRouteVersionLog extends BaseEntity
     private String newVersion;
     private String oldStatus;
     private String newStatus;
+
+    /** 操作类型：create/update/enable/audit/disable/copy */
     private String changeType;
+    /** 操作描述 */
     private String changeDesc;
+
+    /** 操作人 */
     private String changeBy;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")

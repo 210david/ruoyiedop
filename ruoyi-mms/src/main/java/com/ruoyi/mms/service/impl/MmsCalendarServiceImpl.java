@@ -4,6 +4,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.mms.domain.MmsCalendar;
@@ -38,6 +39,7 @@ public class MmsCalendarServiceImpl implements IMmsCalendarService
         }
         calendar.setDelFlag("0");
         calendar.setCreateBy(SecurityUtils.getUsername());
+        calendar.setCreateTime(DateUtils.getNowDate());
         return calendarMapper.insertCalendar(calendar);
     }
 
