@@ -31,6 +31,14 @@
           </div>
         </div>
         <div class="field">
+          <label>来源类型</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.sourceType" placeholder="全部" clearable @change="handleQuery">
+              <el-option v-for="d in mms_work_order_source_type" :key="d.value" :label="d.label" :value="d.value" />
+            </el-select>
+          </div>
+        </div>
+        <div class="field">
           <label>工单类型</label>
           <div class="control is-select">
             <el-select v-model="queryParams.orderType" placeholder="全部" clearable @change="handleQuery">
@@ -64,12 +72,6 @@
           <label>工艺路线</label>
           <div class="control">
             <el-input v-model="queryParams.routeNo" placeholder="请输入" clearable @keyup.enter="handleQuery" />
-          </div>
-        </div>
-        <div class="field" v-show="showAdvanced">
-          <label>产能单元</label>
-          <div class="control">
-            <el-input v-model="queryParams.resourceName" placeholder="请输入" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
         <div class="field" v-show="showAdvanced">
@@ -119,6 +121,8 @@
           <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['mms:workorder:remove']">删除</el-button>
           <div class="toolbar-divider"></div>
           <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['mms:workorder:export']">导出</el-button>
+          <div class="toolbar-divider"></div>
+          <el-button type="primary" plain icon="MagicStick" :disabled="multiple" @click="handleBatchKitCheck" v-hasPermi="['mms:kit:add']">批量齐套检查</el-button>
         </div>
         <div class="right">
           <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="mms_workorder_columns" />
@@ -132,6 +136,9 @@
           <el-table-column label="工单编号" prop="workOrderNo" key="workOrderNo" :width="colWidth('workOrderNo', 150)" resizable v-if="columns.workOrderNo.visible" />
           <el-table-column label="工单类型" prop="orderType" key="orderType" :width="colWidth('orderType', 100)" resizable align="center" v-if="columns.orderType.visible">
             <template #default="scope"><span v-if="scope.row.orderType" class="badge violet">{{ orderTypeLabel(scope.row.orderType) }}</span><span v-else class="text-muted">—</span></template>
+          </el-table-column>
+          <el-table-column label="来源类型" prop="sourceType" key="sourceType" :width="colWidth('sourceType', 100)" resizable align="center" v-if="columns.sourceType.visible">
+            <template #default="scope"><dict-tag :options="mms_work_order_source_type" :value="scope.row.sourceType" /></template>
           </el-table-column>
           <el-table-column label="产品编码" prop="productCode" key="productCode" :width="colWidth('productCode', 130)" resizable v-if="columns.productCode.visible" />
           <el-table-column label="产品名称" prop="productName" key="productName" :width="colWidth('productName', 200)" resizable show-overflow-tooltip v-if="columns.productName.visible" />
@@ -162,15 +169,18 @@
           <el-table-column label="创建时间" prop="createTime" key="createTime" :width="colWidth('createTime', 160)" resizable align="center" v-if="columns.createTime.visible">
             <template #default="scope"><span>{{ parseTime(scope.row.createTime) }}</span></template>
           </el-table-column>
-          <el-table-column label="操作" width="320" align="center" fixed="right">
+          <el-table-column label="操作" width="380" align="center" fixed="right">
             <template #default="scope">
               <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['mms:workorder:query']">详情</el-button>
               <el-button v-if="scope.row.status === '0'" link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['mms:workorder:edit']">修改</el-button>
               <el-button v-if="scope.row.status === '0'" link type="success" icon="Promotion" @click="handleRelease(scope.row)" v-hasPermi="['mms:workorder:release']">下达</el-button>
+              <el-button v-if="scope.row.status === '0' || scope.row.status === '1'" link type="primary" icon="MagicStick" @click="handleKitCheck(scope.row)" v-hasPermi="['mms:kit:add']">齐套检查</el-button>
               <el-button v-if="scope.row.status === '1' || scope.row.status === '2'" link type="warning" icon="VideoPause" @click="handlePause(scope.row)" v-hasPermi="['mms:workorder:pause']">暂停</el-button>
               <el-button v-if="scope.row.status === '7'" link type="success" icon="VideoPlay" @click="handleResume(scope.row)" v-hasPermi="['mms:workorder:resume']">恢复</el-button>
               <el-button v-if="scope.row.status === '2' || scope.row.status === '3'" link type="primary" icon="CircleCheck" @click="handleFinish(scope.row)" v-hasPermi="['mms:workorder:finish']">完工</el-button>
+              <el-button v-if="scope.row.status === '2' || scope.row.status === '3'" link type="warning" icon="CircleClose" @click="handleForceClose(scope.row)" v-hasPermi="['mms:workorder:close']">强制关闭</el-button>
               <el-button v-if="scope.row.status === '4' || scope.row.status === '5'" link type="success" icon="Lock" @click="handleClose(scope.row)" v-hasPermi="['mms:workorder:close']">关闭</el-button>
+              <el-button v-if="scope.row.status === '4' || scope.row.status === '5' || scope.row.status === '6'" link type="warning" icon="RefreshLeft" @click="handleRework(scope.row)" v-hasPermi="['mms:workorder:edit']" :disabled="scope.row.defectQty == null || scope.row.defectQty <= 0">返工</el-button>
               <el-button v-if="scope.row.status !== '6' && scope.row.status !== '8'" link type="danger" icon="Close" @click="handleCancel(scope.row)" v-hasPermi="['mms:workorder:cancel']">作废</el-button>
             </template>
           </el-table-column>
@@ -193,7 +203,9 @@
           <section class="rd-card">
             <div class="rd-card-header" @click="toggleCard('c0')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg></span>基本信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c0 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
             <div class="rd-card-body" v-show="!collapsedCards.c0">
-              <el-row :gutter="20"><el-col :span="12"><el-form-item label="关联计划号" prop="mpsNo"><el-input v-model="form.mpsNo" readonly placeholder="请选择关联计划，选择后自动带出工单信息" style="width: 100%" @click="openMpsPicker"><template #append><el-button icon="Search" @click="openMpsPicker" /></template><template #suffix><el-icon v-if="form.mpsNo" class="rd-form-tip" style="cursor:pointer" @click.stop="clearMps"><CircleClose /></el-icon></template></el-input></el-form-item></el-col><el-col :span="12"><el-form-item label="工单类型" prop="orderType"><el-select v-model="form.orderType" placeholder="请选择"><el-option v-for="dict in mms_order_type" :key="dict.value" :label="dict.label" :value="dict.value" /></el-select></el-form-item></el-col></el-row>
+              <el-row :gutter="20"><el-col :span="12"><el-form-item label="来源类型" prop="sourceType"><el-select v-model="form.sourceType" placeholder="请选择" @change="handleSourceTypeChange" style="width: 100%"><el-option v-for="dict in mms_work_order_source_type" :key="dict.value" :label="dict.label" :value="dict.value" /></el-select></el-form-item></el-col><el-col :span="12"><el-form-item label="工单类型" prop="orderType"><el-select v-model="form.orderType" placeholder="请选择"><el-option v-for="dict in mms_order_type" :key="dict.value" :label="dict.label" :value="dict.value" /></el-select></el-form-item></el-col></el-row>
+              <el-row :gutter="20" v-if="form.sourceType === '1'"><el-col :span="12"><el-form-item label="关联计划号" prop="mpsNo" :rules="[{ required: true, message: '请选择关联计划', trigger: 'change' }]"><el-input v-model="form.mpsNo" readonly placeholder="请选择关联计划，选择后自动带出工单信息" style="width: 100%" @click="openMpsPicker"><template #append><el-button icon="Search" @click="openMpsPicker" /></template><template #suffix><el-icon v-if="form.mpsNo" class="rd-form-tip" style="cursor:pointer" @click.stop="clearMps"><CircleClose /></el-icon></template></el-input></el-form-item></el-col></el-row>
+              <el-row :gutter="20" v-if="form.sourceType === '2'"><el-col :span="12"><el-form-item label="关联订单号" prop="sourceOrderNo" :rules="[{ required: true, message: '请选择关联销售订单', trigger: 'change' }]"><el-input v-model="form.sourceOrderNo" readonly placeholder="请选择关联销售订单，选择后自动带出信息" style="width: 100%" @click="openOrderPicker"><template #append><el-button icon="Search" @click="openOrderPicker" /></template><template #suffix><el-icon v-if="form.sourceOrderNo" class="rd-form-tip" style="cursor:pointer" @click.stop="clearSourceOrder"><CircleClose /></el-icon></template></el-input></el-form-item></el-col></el-row>
               <el-row :gutter="20"><el-col :span="12"><el-form-item label="工单编号" prop="workOrderNo"><el-input v-model="form.workOrderNo" placeholder="自动生成" disabled /></el-form-item></el-col><el-col :span="12"><el-form-item label="产品编码" prop="productCode"><el-input v-model="form.productCode" readonly placeholder="请选择物料" style="width: 100%" @click="openMaterialPicker"><template #append><el-button icon="Search" @click="openMaterialPicker" /></template><template #suffix><el-icon v-if="form.productCode" class="rd-form-tip" style="cursor:pointer" @click.stop="clearMaterial"><CircleClose /></el-icon></template></el-input></el-form-item></el-col></el-row>
               <el-row :gutter="20"><el-col :span="12"><el-form-item label="产品名称" prop="productName"><el-input v-model="form.productName" readonly placeholder="选择物料后自动带出" /></el-form-item></el-col><el-col :span="12"><el-form-item label="规格型号" prop="specModel"><el-input v-model="form.specModel" readonly placeholder="选择物料后自动带出" /></el-form-item></el-col></el-row>
               <el-row :gutter="20"><el-col :span="12"><el-form-item label="单位" prop="unit"><el-select v-model="form.unit" placeholder="请选择" style="width: 100%"><el-option v-for="d in wms_unit" :key="d.value" :label="d.label" :value="d.value" /></el-select></el-form-item></el-col></el-row>
@@ -203,7 +215,7 @@
             <div class="rd-card-header" @click="toggleCard('c1')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M2 12h20"/></svg></span>生产信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
             <div class="rd-card-body" v-show="!collapsedCards.c1">
               <el-row :gutter="20"><el-col :span="12"><el-form-item label="计划数量" prop="planQty"><el-input-number v-model="form.planQty" :min="0" :precision="2" placeholder="请输入" style="width: 100%" /></el-form-item></el-col><el-col :span="12"><el-form-item label="BOM编号" prop="bomNo"><el-input v-model="form.bomNo" readonly placeholder="请选择BOM" style="width: 100%" @click="openBomPicker"><template #append><el-button icon="Search" @click="openBomPicker" /></template><template #suffix><el-icon v-if="form.bomNo" class="rd-form-tip" style="cursor:pointer" @click.stop="clearBom"><CircleClose /></el-icon></template></el-input></el-form-item></el-col></el-row>
-              <el-row :gutter="20"><el-col :span="12"><el-form-item label="工艺路线" prop="routeNo"><el-input v-model="form.routeNo" readonly placeholder="请选择工艺路线" style="width: 100%" @click="openRoutePicker"><template #append><el-button icon="Search" @click="openRoutePicker" /></template><template #suffix><el-icon v-if="form.routeNo" class="rd-form-tip" style="cursor:pointer" @click.stop="clearRoute"><CircleClose /></el-icon></template></el-input></el-form-item></el-col><el-col :span="12"><el-form-item label="产能单元" prop="resourceName"><el-input v-model="form.resourceName" readonly placeholder="请选择产能单元" style="width: 100%" @click="openResourcePicker"><template #append><el-button icon="Search" @click="openResourcePicker" /></template><template #suffix><el-icon v-if="form.resourceName" class="rd-form-tip" style="cursor:pointer" @click.stop="clearResource"><CircleClose /></el-icon></template></el-input></el-form-item></el-col></el-row>
+              <el-row :gutter="20"><el-col :span="24"><el-form-item label="工艺路线" prop="routeNo"><el-input v-model="form.routeNo" readonly placeholder="请选择工艺路线" style="width: 100%" @click="openRoutePicker"><template #append><el-button icon="Search" @click="openRoutePicker" /></template><template #suffix><el-icon v-if="form.routeNo" class="rd-form-tip" style="cursor:pointer" @click.stop="clearRoute"><CircleClose /></el-icon></template></el-input></el-form-item></el-col></el-row>
               <el-row :gutter="20"><el-col :span="12"><el-form-item label="计划开工" prop="planStart"><el-date-picker v-model="form.planStart" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" placeholder="选择时间" style="width: 100%" /></el-form-item></el-col><el-col :span="12"><el-form-item label="计划完工" prop="planFinish"><el-date-picker v-model="form.planFinish" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" placeholder="选择时间" style="width: 100%" /></el-form-item></el-col></el-row>
             </div>
           </section>
@@ -248,7 +260,6 @@
                 <div class="rd-item"><span class="rd-label">计划数量</span><div class="rd-value">{{ releaseData.workOrder.planQty }} {{ unitLabel(releaseData.workOrder.unit) }}</div></div>
                 <div class="rd-item"><span class="rd-label">BOM编号</span><div class="rd-value">{{ releaseData.workOrder.bomNo || '—' }}</div></div>
                 <div class="rd-item"><span class="rd-label">工艺路线</span><div class="rd-value">{{ releaseData.workOrder.routeNo || '—' }}</div></div>
-                <div class="rd-item"><span class="rd-label">产能单元</span><div class="rd-value">{{ releaseData.workOrder.resourceName || '—' }}</div></div>
                 <div class="rd-item"><span class="rd-label">计划开工</span><div class="rd-value">{{ releaseData.workOrder.planStart ? parseTime(releaseData.workOrder.planStart) : '—' }}</div></div>
               </div>
             </div>
@@ -330,6 +341,47 @@
               <el-alert v-for="(w, i) in releaseData.warnings" :key="i" :title="w" type="warning" :closable="false" show-icon style="margin-bottom: 4px;" />
             </div>
           </section>
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('rc_kit')">
+              <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></span>齐套检查</div>
+              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.rc_kit }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.rc_kit">
+              <div v-if="!releaseKitCheckDone" style="text-align:center;padding:20px 0">
+                <el-button type="primary" plain icon="MagicStick" @click="handleReleaseKitCheck" v-hasPermi="['mms:kit:add']">执行齐套检查</el-button>
+                <div style="margin-top:8px;color:var(--el-text-color-secondary);font-size:12px;">
+                  <el-icon><InfoFilled /></el-icon>
+                  下达前建议执行齐套检查，确认物料是否满足生产需求
+                </div>
+              </div>
+              <div v-else-if="releaseKitCheckData" class="kit-release-result">
+                <div class="kit-release-summary">
+                  <div class="kit-release-item">
+                    <span class="kit-release-label">齐套单号</span>
+                    <span class="kit-release-value">{{ releaseKitCheckData.kitNo || '—' }}</span>
+                  </div>
+                  <div class="kit-release-item">
+                    <span class="kit-release-label">齐套率</span>
+                    <span class="kit-release-value" :style="{ color: parseFloat(releaseKitCheckData.kitRate) >= 100 ? '#10b981' : parseFloat(releaseKitCheckData.kitRate) >= 80 ? '#f59e0b' : '#ef4444', fontWeight: 600 }">{{ releaseKitCheckData.kitRate }}%</span>
+                  </div>
+                  <div class="kit-release-item">
+                    <span class="kit-release-label">是否齐套</span>
+                    <span class="kit-release-value"><span v-if="releaseKitCheckData.isComplete" class="badge" :class="releaseKitCheckData.isComplete === '1' ? 'green' : 'red'"><span class="dot"></span>{{ releaseKitCheckData.isComplete === '1' ? '是' : '否' }}</span><span v-else>—</span></span>
+                  </div>
+                  <div class="kit-release-item">
+                    <span class="kit-release-label">检查时间</span>
+                    <span class="kit-release-value">{{ releaseKitCheckData.checkTime ? parseTime(releaseKitCheckData.checkTime) : '—' }}</span>
+                  </div>
+                </div>
+                <el-alert v-if="releaseKitCheckData.isComplete === '0'" type="error" :closable="false" show-icon style="margin-top:8px">
+                  <template #title>物料不齐套，存在缺料风险，建议跟进缺料后再下达</template>
+                </el-alert>
+                <el-alert v-else-if="releaseKitCheckData.isComplete === '1'" type="success" :closable="false" show-icon style="margin-top:8px">
+                  <template #title>物料齐套检查通过，可以放心下达</template>
+                </el-alert>
+              </div>
+            </div>
+          </section>
         </template>
       </div>
       <template #footer>
@@ -338,39 +390,155 @@
       </template>
     </el-dialog>
 
-    <!-- ===== 暂停原因 Dialog ===== -->
-    <el-dialog title="工单暂停" v-model="pauseOpen" width="600px" append-to-body>
-      <el-form ref="pauseFormRef" :model="pauseForm" label-width="100px">
-        <el-form-item label="工单编号">
-          <span>{{ pauseForm.workOrderNo }}</span>
-        </el-form-item>
-        <el-form-item label="暂停原因" prop="pauseReason">
-          <el-input v-model="pauseForm.pauseReason" type="textarea" placeholder="请输入暂停原因" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <div class="dialog-footer">
-          <el-button type="primary" @click="submitPause">确 定</el-button>
-          <el-button @click="pauseOpen = false">取 消</el-button>
+    <!-- ===== 暂停原因弹窗 ===== -->
+    <el-dialog v-model="pauseOpen" width="984px" append-to-body draggable class="rd-dialog" :close-on-click-modal="false">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg></div>
+          <span class="rd-detail-header-title">工单暂停</span>
+          <div class="rd-detail-header-sub" v-if="pauseForm.workOrderNo">
+            <span class="rd-detail-header-divider"></span>
+            <span class="rd-detail-header-no">{{ pauseForm.workOrderNo }}</span>
+          </div>
         </div>
+      </template>
+      <div class="rd-page">
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('pc_wo')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg></span>工单信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.pc_wo }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.pc_wo" style="display:block"><div class="rd-grid">
+            <div class="rd-item"><span class="rd-label">工单编号</span><div class="rd-value">{{ pauseForm.workOrderNo || '—' }}</div></div>
+            <div class="rd-item"><span class="rd-label">工单类型</span><div class="rd-value"><dict-tag :options="mms_order_type" :value="pauseForm.orderType" /></div></div>
+            <div class="rd-item"><span class="rd-label">产品编码</span><div class="rd-value">{{ pauseForm.productCode || '—' }}</div></div>
+            <div class="rd-item"><span class="rd-label">产品名称</span><div class="rd-value">{{ pauseForm.productName || '—' }}</div></div>
+            <div class="rd-item"><span class="rd-label">计划数量</span><div class="rd-value">{{ pauseForm.planQty != null ? pauseForm.planQty : '—' }} {{ unitLabel(pauseForm.unit) }}</div></div>
+            <div class="rd-item"><span class="rd-label">完工数量</span><div class="rd-value">{{ pauseForm.finishedQty != null ? pauseForm.finishedQty : '—' }}</div></div>
+<div class="rd-item"><span class="rd-label">工单状态</span><div class="rd-value"><span v-if="pauseForm.status" class="badge" :class="badgeClass(pauseForm.status)"><span class="dot"></span>{{ statusLabel(pauseForm.status) }}</span><span v-else class="text-muted">—</span></div></div>
+</div></div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('pc_reason')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>暂停原因</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.pc_reason }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.pc_reason">
+            <el-form ref="pauseFormRef" :model="pauseForm" label-width="100px">
+              <el-form-item label="暂停原因" prop="pauseReason" :rules="[{ required: true, message: '请输入暂停原因', trigger: 'blur' }]">
+                <el-input v-model="pauseForm.pauseReason" type="textarea" :rows="4" placeholder="请输入暂停原因，例如：等待物料齐套、设备故障、品质异常等" />
+              </el-form-item>
+            </el-form>
+            <div style="margin-top: 8px; color: var(--el-text-color-secondary); font-size: 12px;">
+              <el-icon><InfoFilled /></el-icon>
+              暂停后工单将进入"已暂停"状态，恢复后可继续生产
+            </div>
+          </div>
+        </section>
+      </div>
+      <template #footer>
+        <el-button @click="pauseOpen = false">取 消</el-button>
+        <el-button type="warning" @click="submitPause">确认暂停</el-button>
       </template>
     </el-dialog>
 
-    <!-- ===== 关闭/作废 Dialog ===== -->
-    <el-dialog :title="closeTitle" v-model="closeOpen" width="600px" append-to-body>
-      <el-form ref="closeFormRef" :model="closeForm" label-width="100px">
-        <el-form-item label="工单编号">
-          <span>{{ closeForm.workOrderNo }}</span>
-        </el-form-item>
-        <el-form-item :label="closeLabel" prop="remark">
-          <el-input v-model="closeForm.remark" type="textarea" :placeholder="'请输入' + closeLabel" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <div class="dialog-footer">
-          <el-button type="primary" @click="submitClose">确 定</el-button>
-          <el-button @click="closeOpen = false">取 消</el-button>
+    <!-- ===== 关闭/作废弹窗 ===== -->
+    <el-dialog v-model="closeOpen" width="984px" append-to-body draggable class="rd-dialog" :close-on-click-modal="false">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div>
+          <span class="rd-detail-header-title">{{ closeTitle }}</span>
+          <div class="rd-detail-header-sub" v-if="closeForm.workOrderNo">
+            <span class="rd-detail-header-divider"></span>
+            <span class="rd-detail-header-no">{{ closeForm.workOrderNo }}</span>
+          </div>
         </div>
+      </template>
+      <div class="rd-page">
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('cc_wo')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg></span>工单信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.cc_wo }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.cc_wo" style="display:block"><div class="rd-grid">
+            <div class="rd-item"><span class="rd-label">工单编号</span><div class="rd-value">{{ closeForm.workOrderNo || '—' }}</div></div>
+            <div class="rd-item"><span class="rd-label">工单类型</span><div class="rd-value"><dict-tag :options="mms_order_type" :value="closeForm.orderType" /></div></div>
+            <div class="rd-item"><span class="rd-label">产品编码</span><div class="rd-value">{{ closeForm.productCode || '—' }}</div></div>
+            <div class="rd-item"><span class="rd-label">产品名称</span><div class="rd-value">{{ closeForm.productName || '—' }}</div></div>
+            <div class="rd-item"><span class="rd-label">计划数量</span><div class="rd-value">{{ closeForm.planQty != null ? closeForm.planQty : '—' }} {{ unitLabel(closeForm.unit) }}</div></div>
+            <div class="rd-item"><span class="rd-label">完工数量</span><div class="rd-value">{{ closeForm.finishedQty != null ? closeForm.finishedQty : '—' }}</div></div>
+            <div class="rd-item"><span class="rd-label">合格数量</span><div class="rd-value">{{ closeForm.qualifiedQty != null ? closeForm.qualifiedQty : '—' }}</div></div>
+            <div class="rd-item" v-if="closeForm.type === 'forceClose'"><span class="rd-label">不良数量</span><div class="rd-value" style="color: var(--el-color-danger);">{{ closeForm.defectQty != null ? closeForm.defectQty : '—' }}</div></div>
+            <div class="rd-item" v-if="closeForm.type === 'forceClose'"><span class="rd-label">短产数量</span><div class="rd-value" style="color: var(--el-color-danger); font-weight: 600;">{{ closeForm.shortQty != null ? closeForm.shortQty : '—' }} {{ unitLabel(closeForm.unit) }}</div></div>
+            <div class="rd-item"><span class="rd-label">工单状态</span><div class="rd-value"><span v-if="closeForm.status" class="badge" :class="badgeClass(closeForm.status)"><span class="dot"></span>{{ statusLabel(closeForm.status) }}</span><span v-else class="text-muted">—</span></div></div>
+          </div></div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('cc_reason')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>{{ closeLabel }}</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.cc_reason }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.cc_reason">
+            <el-form ref="closeFormRef" :model="closeForm" label-width="100px">
+              <el-form-item :label="closeLabel" prop="remark" :rules="[{ required: true, message: '请输入' + closeLabel, trigger: 'blur' }]">
+                <el-input v-model="closeForm.remark" type="textarea" :rows="4" :placeholder="'请输入' + closeLabel" />
+              </el-form-item>
+            </el-form>
+            <div v-if="closeForm.type === 'cancel'" style="margin-top: 8px; color: var(--el-color-danger); font-size: 12px;">
+              <el-icon><WarningFilled /></el-icon>
+              作废后工单将无法恢复，请确认后再操作
+            </div>
+            <div v-else-if="closeForm.type === 'forceClose'" style="margin-top: 8px; color: var(--el-color-danger); font-size: 12px;">
+              <el-icon><WarningFilled /></el-icon>
+              强制关闭将终止未完成的工序，取消未完成派工单，工单进入“已关闭”状态。短产数量：{{ closeForm.shortQty }} {{ unitLabel(closeForm.unit) }}
+            </div>
+            <div v-else style="margin-top: 8px; color: var(--el-text-color-secondary); font-size: 12px;">
+              <el-icon><InfoFilled /></el-icon>
+              关闭后工单将进入“已关闭”状态，不再允许任何操作
+            </div>
+          </div>
+        </section>
+      </div>
+      <template #footer>
+        <el-button @click="closeOpen = false">取 消</el-button>
+        <el-button :type="closeForm.type === 'cancel' ? 'danger' : (closeForm.type === 'forceClose' ? 'warning' : 'success')" @click="submitClose">{{ closeForm.type === 'cancel' ? '确认作废' : (closeForm.type === 'forceClose' ? '确认强制关闭' : '确认关闭') }}</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- ===== 返工弹窗 ===== -->
+    <el-dialog v-model="reworkOpen" width="984px" append-to-body draggable class="rd-dialog" :close-on-click-modal="false">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></div>
+          <span class="rd-detail-header-title">创建返工工单</span>
+          <div class="rd-detail-header-sub" v-if="reworkForm.workOrderNo">
+            <span class="rd-detail-header-divider"></span>
+            <span class="rd-detail-header-no">{{ reworkForm.workOrderNo }}</span>
+          </div>
+        </div>
+      </template>
+      <div class="rd-page">
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('rw_wo')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg></span>源工单信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.rw_wo }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.rw_wo" style="display:block"><div class="rd-grid">
+            <div class="rd-item"><span class="rd-label">工单编号</span><div class="rd-value">{{ reworkForm.workOrderNo || '—' }}</div></div>
+            <div class="rd-item"><span class="rd-label">产品编码</span><div class="rd-value">{{ reworkForm.productCode || '—' }}</div></div>
+            <div class="rd-item"><span class="rd-label">产品名称</span><div class="rd-value">{{ reworkForm.productName || '—' }}</div></div>
+            <div class="rd-item"><span class="rd-label">计划数量</span><div class="rd-value">{{ reworkForm.planQty != null ? reworkForm.planQty : '—' }} {{ unitLabel(reworkForm.unit) }}</div></div>
+            <div class="rd-item"><span class="rd-label">合格数量</span><div class="rd-value">{{ reworkForm.qualifiedQty != null ? reworkForm.qualifiedQty : '—' }}</div></div>
+            <div class="rd-item rd-item-highlight"><span class="rd-label">不良数量</span><div class="rd-value" style="color: var(--el-color-danger); font-weight: 600;">{{ reworkForm.defectQty != null ? reworkForm.defectQty : '—' }}</div></div>
+          </div></div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('rw_form')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>返工信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.rw_form }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.rw_form">
+            <el-form ref="reworkFormRef" :model="reworkForm" label-width="100px">
+              <el-form-item label="返工数量" prop="reworkQty" :rules="[{ required: true, message: '请输入返工数量', trigger: 'blur' }]">
+                <el-input-number v-model="reworkForm.reworkQty" :min="1" :max="reworkForm.defectQty || 0" :precision="0" style="width: 200px" />
+                <span style="margin-left: 8px; color: var(--el-text-color-secondary); font-size: 12px;">最大可返工数量：{{ reworkForm.defectQty || 0 }}</span>
+              </el-form-item>
+              <el-form-item label="返工原因" prop="reworkReason">
+                <el-input v-model="reworkForm.reworkReason" type="textarea" :rows="4" placeholder="请输入返工原因（可选）" />
+              </el-form-item>
+            </el-form>
+            <div style="margin-top: 8px; color: var(--el-color-warning); font-size: 12px;">
+              <el-icon><InfoFilled /></el-icon>
+              返工工单将继承源工单的BOM和工艺路线，需重新下达后才能开始生产
+            </div>
+          </div>
+        </section>
+      </div>
+      <template #footer>
+        <el-button @click="reworkOpen = false">取 消</el-button>
+        <el-button type="warning" @click="submitRework">确认创建返工工单</el-button>
       </template>
     </el-dialog>
 
@@ -394,6 +562,9 @@
           <div class="rd-card-body" v-show="!collapsedCards.vc0" style="display:block"><div class="rd-grid">
             <div class="rd-item"><span class="rd-label">工单编号</span><div class="rd-value">{{ viewData.workOrderNo || '—' }}</div></div>
             <div class="rd-item"><span class="rd-label">工单类型</span><div class="rd-value"><dict-tag :options="mms_order_type" :value="viewData.orderType" /></div></div>
+            <div class="rd-item"><span class="rd-label">来源类型</span><div class="rd-value"><dict-tag :options="mms_work_order_source_type" :value="viewData.sourceType" /></div></div>
+            <div class="rd-item" v-if="viewData.sourceType === '1'"><span class="rd-label">关联计划号</span><div class="rd-value">{{ viewData.mpsNo || '—' }}</div></div>
+            <div class="rd-item" v-if="viewData.sourceType === '2'"><span class="rd-label">关联订单号</span><div class="rd-value">{{ viewData.sourceOrderNo || '—' }}</div></div>
             <div class="rd-item"><span class="rd-label">产品编码</span><div class="rd-value">{{ viewData.productCode || '—' }}</div></div>
             <div class="rd-item"><span class="rd-label">产品名称</span><div class="rd-value">{{ viewData.productName || '—' }}</div></div>
             <div class="rd-item"><span class="rd-label">规格型号</span><div class="rd-value">{{ viewData.specModel || '—' }}</div></div>
@@ -410,10 +581,64 @@
             <div class="rd-item"><span class="rd-label">合格数量</span><div class="rd-value">{{ viewData.qualifiedQty != null ? viewData.qualifiedQty : '—' }}</div></div>
             <div class="rd-item"><span class="rd-label">BOM编号</span><div class="rd-value">{{ viewData.bomNo || '—' }}</div></div>
             <div class="rd-item"><span class="rd-label">工艺路线</span><div class="rd-value">{{ viewData.routeNo || '—' }}</div></div>
-            <div class="rd-item"><span class="rd-label">产能单元</span><div class="rd-value">{{ viewData.resourceName || '—' }}</div></div>
             <div class="rd-item"><span class="rd-label">计划开工</span><div class="rd-value">{{ viewData.planStart ? parseTime(viewData.planStart) : '—' }}</div></div>
             <div class="rd-item"><span class="rd-label">计划完工</span><div class="rd-value">{{ viewData.planFinish ? parseTime(viewData.planFinish) : '—' }}</div></div>
           </div></div>
+        </section>
+        <section class="rd-card" v-if="viewData.bomSnapshotList && viewData.bomSnapshotList.length > 0">
+          <div class="rd-card-header" @click="toggleCard('vc_bom')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></span>BOM明细（下达冻结）</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc_bom }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.vc_bom">
+            <el-table :data="viewData.bomSnapshotList" border size="small" style="width: 100%" max-height="300">
+              <el-table-column label="序号" prop="seq" width="60" align="center" />
+              <el-table-column label="物料编码" prop="materialCode" min-width="120" />
+              <el-table-column label="物料名称" prop="materialName" min-width="140" />
+              <el-table-column label="规格型号" prop="specModel" min-width="120" />
+              <el-table-column label="单位" width="60" align="center">
+                <template #default="scope">{{ unitLabel(scope.row.unit) }}</template>
+              </el-table-column>
+              <el-table-column label="单件用量" prop="usageQty" width="100" align="center" />
+              <el-table-column label="损耗率(%)" prop="lossRate" width="90" align="center" />
+              <el-table-column label="关键料" width="70" align="center">
+                <template #default="scope">
+                  <el-tag v-if="scope.row.isKeyMaterial === '1'" type="danger" size="small">是</el-tag>
+                  <span v-else>—</span>
+                </template>
+              </el-table-column>
+            </el-table>
+            <div style="margin-top: 8px; color: var(--el-text-color-secondary); font-size: 12px;">
+              <el-icon><InfoFilled /></el-icon>
+              BOM明细在工单下达时冻结为快照，后续BOM变更不影响本工单
+            </div>
+          </div>
+        </section>
+        <section class="rd-card" v-if="viewData.routeSnapshotList && viewData.routeSnapshotList.length > 0">
+          <div class="rd-card-header" @click="toggleCard('vc_route')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>工艺工序（下达冻结）</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc_route }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.vc_route">
+            <el-table :data="viewData.routeSnapshotList" border size="small" style="width: 100%" max-height="300">
+              <el-table-column label="顺序" prop="stepSeq" width="70" align="center" />
+              <el-table-column label="工序编码" prop="processCode" min-width="120" />
+              <el-table-column label="工序名称" prop="processName" min-width="140" />
+              <el-table-column label="产能单元" prop="resourceName" min-width="120" show-overflow-tooltip />
+              <el-table-column label="标准工时(h)" prop="stdTime" width="110" align="center" />
+              <el-table-column label="准备时间(h)" prop="prepTime" width="110" align="center" />
+              <el-table-column label="关键工序" width="80" align="center">
+                <template #default="scope">
+                  <el-tag v-if="scope.row.isKeyProcess === '1'" type="danger" size="small">是</el-tag>
+                  <span v-else>—</span>
+                </template>
+              </el-table-column>
+              <el-table-column label="外协" width="70" align="center">
+                <template #default="scope">
+                  <el-tag v-if="scope.row.isOutsource === '1'" type="warning" size="small">是</el-tag>
+                  <span v-else>—</span>
+                </template>
+              </el-table-column>
+            </el-table>
+            <div style="margin-top: 8px; color: var(--el-text-color-secondary); font-size: 12px;">
+              <el-icon><InfoFilled /></el-icon>
+              工艺工序在工单下达时冻结为快照，后续工艺变更不影响本工单
+            </div>
+          </div>
         </section>
         <section class="rd-card">
           <div class="rd-card-header" @click="toggleCard('vc_sched')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>排产信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc_sched }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
@@ -431,7 +656,7 @@
         <section class="rd-card">
           <div class="rd-card-header" @click="toggleCard('vc2')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>其他信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
           <div class="rd-card-body" v-show="!collapsedCards.vc2" style="display:block"><div class="rd-grid">
-            <div class="rd-item"><span class="rd-label">关联计划号</span><div class="rd-value">{{ viewData.mpsNo || '—' }}</div></div>
+            <div class="rd-item" v-if="viewData.sourceType !== '1' && viewData.sourceType !== '2'"><span class="rd-label">来源说明</span><div class="rd-value text-muted">手工创建，无关联单据</div></div>
             <div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value" :class="{ 'rd-value--muted': !viewData.remark }">{{ viewData.remark || '暂无' }}</div></div>
             <div class="rd-item"><span class="rd-label">创建人</span><div class="rd-value">{{ viewData.createBy || '—' }}</div></div>
             <div class="rd-item"><span class="rd-label">创建时间</span><div class="rd-value">{{ viewData.createTime ? parseTime(viewData.createTime) : '—' }}</div></div>
@@ -453,8 +678,66 @@
       </el-table>
     </el-dialog>
 
-    <!-- ===== 物料选择器 ===== -->
-    <material-picker ref="materialPickerRef" title="选择产品物料" @confirm="onMaterialPickerConfirm" />
+    <!-- ===== 齐套检查结果弹窗 ===== -->
+    <el-dialog v-model="kitCheckResultOpen" width="960px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
+          <span class="rd-detail-header-title">齐套检查结果</span>
+          <div class="rd-detail-header-sub" v-if="kitCheckResultData.kitNo">
+            <span class="rd-detail-header-divider"></span>
+            <span class="rd-detail-header-no">编号：{{ kitCheckResultData.kitNo }}</span>
+          </div>
+        </div>
+      </template>
+      <div class="rd-page">
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('kc_info')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg></span>基本信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.kc_info }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.kc_info" style="display:block"><div class="rd-grid">
+            <div class="rd-item"><span class="rd-label">齐套单号</span><div class="rd-value">{{ kitCheckResultData.kitNo || '-' }}</div></div>
+            <div class="rd-item"><span class="rd-label">工单号</span><div class="rd-value">{{ kitCheckResultData.workOrderNo || '-' }}</div></div>
+            <div class="rd-item"><span class="rd-label">主计划号</span><div class="rd-value">{{ kitCheckResultData.mpsNo || '-' }}</div></div>
+            <div class="rd-item"><span class="rd-label">BOM编号</span><div class="rd-value">{{ kitCheckResultData.bomNo || '-' }}</div></div>
+            <div class="rd-item"><span class="rd-label">齐套率</span><div class="rd-value" :style="{ color: parseFloat(kitCheckResultData.kitRate) >= 100 ? '#10b981' : parseFloat(kitCheckResultData.kitRate) >= 80 ? '#f59e0b' : '#ef4444', fontWeight: 600 }">{{ kitCheckResultData.kitRate != null ? kitCheckResultData.kitRate + '%' : '-' }}</div></div>
+            <div class="rd-item"><span class="rd-label">是否齐套</span><div class="rd-value"><span v-if="kitCheckResultData.isComplete" class="badge" :class="kitCheckResultData.isComplete === '1' ? 'green' : 'red'"><span class="dot"></span>{{ kitCheckResultData.isComplete === '1' ? '是' : '否' }}</span><span v-else class="text-muted">—</span></div></div>
+            <div class="rd-item"><span class="rd-label">状态</span><div class="rd-value"><span v-if="kitCheckResultData.status" class="badge" :class="kitStatusBadgeClass(kitCheckResultData.status)"><span class="dot"></span>{{ kitStatusLabel(kitCheckResultData.status) }}</span><span v-else class="text-muted">—</span></div></div>
+            <div class="rd-item"><span class="rd-label">检查时间</span><div class="rd-value">{{ kitCheckResultData.checkTime ? parseTime(kitCheckResultData.checkTime) : '-' }}</div></div>
+          </div></div>
+        </section>
+        <section class="rd-card" v-if="kitCheckDetailList.length > 0">
+          <div class="rd-card-header" @click="toggleCard('kc_summary')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg></span>统计概览</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.kc_summary }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.kc_summary" style="display:block"><div class="rd-grid">
+            <div class="rd-item"><span class="rd-label">物料总项数</span><div class="rd-value" style="font-size:18px;font-weight:700">{{ kitCheckDetailList.length }}</div></div>
+            <div class="rd-item"><span class="rd-label">齐套项数</span><div class="rd-value" style="font-size:18px;font-weight:700;color:#10b981">{{ kitCheckDetailList.filter(d => d.isComplete === '1').length }}</div></div>
+            <div class="rd-item"><span class="rd-label">缺料项数</span><div class="rd-value" style="font-size:18px;font-weight:700;color:#ef4444">{{ kitCheckDetailList.filter(d => d.isComplete === '0').length }}</div></div>
+            <div class="rd-item"><span class="rd-label">齐套率</span><div class="rd-value" style="font-size:18px;font-weight:700" :style="{ color: parseFloat(kitCheckResultData.kitRate) >= 100 ? '#10b981' : parseFloat(kitCheckResultData.kitRate) >= 80 ? '#f59e0b' : '#ef4444' }">{{ kitCheckResultData.kitRate != null ? kitCheckResultData.kitRate + '%' : '-' }}</div></div>
+          </div></div>
+        </section>
+        <section class="rd-card" v-if="kitCheckDetailList.length > 0">
+          <div class="rd-card-header" @click="toggleCard('kc_detail')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg></span>物料明细</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.kc_detail }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.kc_detail" style="padding:0">
+            <el-table :data="kitCheckDetailList" border :max-height="400" size="small">
+              <el-table-column label="物料编码" align="center" prop="materialCode" width="120" />
+              <el-table-column label="物料名称" align="center" prop="materialName" min-width="150" show-overflow-tooltip />
+              <el-table-column label="规格型号" align="center" prop="specModel" width="120" />
+              <el-table-column label="单位" align="center" prop="unit" width="60" />
+              <el-table-column label="需求数量" align="center" prop="requiredQty" width="100" />
+              <el-table-column label="可用数量" align="center" prop="availableQty" width="100" />
+              <el-table-column label="缺口量" align="center" prop="shortageQty" width="100">
+                <template #default="scope"><span :style="{ color: scope.row.shortageQty > 0 ? '#ef4444' : '#10b981', fontWeight: 600 }">{{ scope.row.shortageQty }}</span></template>
+              </el-table-column>
+              <el-table-column label="是否齐套" align="center" prop="isComplete" width="80">
+                <template #default="scope"><span v-if="scope.row.isComplete" class="badge" :class="scope.row.isComplete === '1' ? 'green' : 'red'"><span class="dot"></span>{{ scope.row.isComplete === '1' ? '是' : '否' }}</span><span v-else class="text-muted">—</span></template>
+              </el-table-column>
+            </el-table>
+          </div>
+        </section>
+      </div>
+      <template #footer><el-button @click="kitCheckResultOpen = false">关 闭</el-button></template>
+    </el-dialog>
+
+    <!-- ===== 物料选择器（仅半成品和成品） ===== -->
+    <material-picker ref="materialPickerRef" title="选择产品物料" :material-types="['1','2']" @confirm="onMaterialPickerConfirm" />
 
     <!-- ===== BOM选择器弹窗 ===== -->
     <el-dialog v-model="bomPickerOpen" width="860px" append-to-body draggable class="rd-dialog">
@@ -518,35 +801,6 @@
       <template #footer><el-button @click="routePickerOpen = false">取 消</el-button><el-button type="primary" @click="handleRoutePickerConfirm" :disabled="!routePickerSelectedId">确 定</el-button></template>
     </el-dialog>
 
-    <!-- ===== 产能单元选择器弹窗 ===== -->
-    <el-dialog v-model="resourcePickerOpen" width="860px" append-to-body draggable class="rd-dialog">
-      <template #header>
-        <div class="rd-detail-header">
-          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div>
-          <span class="rd-detail-header-title">选择产能单元</span>
-        </div>
-      </template>
-      <div style="display:flex;gap:8px;margin-bottom:12px">
-        <el-input v-model="resourcePickerQuery.resourceName" placeholder="产能单元名称" clearable size="small" style="width:200px" @keyup.enter="handleResourcePickerQuery">
-          <template #prefix><el-icon><Search /></el-icon></template>
-        </el-input>
-        <el-button type="primary" plain icon="Search" size="small" @click="handleResourcePickerQuery">查询</el-button>
-        <el-button icon="RefreshLeft" size="small" @click="resetResourcePickerQuery">重置</el-button>
-      </div>
-      <el-table ref="resourcePickerTableRef" v-loading="resourcePickerLoading" :data="resourcePickerList" highlight-current-row @row-click="onResourceRowClick" @row-dblclick="onResourceRowDblClick" height="360" size="small">
-        <el-table-column width="45" align="center"><template #default="{ row }"><el-radio :model-value="resourcePickerSelectedId" :value="row.resourceId" @click.stop><span /></el-radio></template></el-table-column>
-        <el-table-column label="资源编码" prop="resourceCode" width="130" show-overflow-tooltip />
-        <el-table-column label="产能单元" prop="resourceName" min-width="150" show-overflow-tooltip />
-        <el-table-column label="产线" prop="lineName" width="100" show-overflow-tooltip />
-        <el-table-column label="车间" prop="workshopName" width="100" show-overflow-tooltip />
-      </el-table>
-      <div style="display:flex;justify-content:flex-end;padding-top:8px">
-        <el-pagination v-model:current-page="resourcePickerQuery.pageNum" v-model:page-size="resourcePickerQuery.pageSize" :total="resourcePickerTotal" layout="total, prev, pager, next" small @current-change="getResourcePickerList" />
-      </div>
-      <div v-if="resourcePickerList.length > 0" style="margin-top:6px;font-size:12px;color:#94a3b8;text-align:center">双击行可选择并带出产能单元</div>
-      <template #footer><el-button @click="resourcePickerOpen = false">取 消</el-button><el-button type="primary" @click="handleResourcePickerConfirm" :disabled="!resourcePickerSelectedId">确 定</el-button></template>
-    </el-dialog>
-
     <!-- ===== 关联计划选择器弹窗 ===== -->
     <el-dialog v-model="mpsPickerOpen" width="860px" append-to-body draggable class="rd-dialog">
       <template #header>
@@ -579,6 +833,42 @@
       <template #footer><el-button @click="mpsPickerOpen = false">取 消</el-button><el-button type="primary" @click="handleMpsPickerConfirm" :disabled="!mpsPickerSelectedId">确 定</el-button></template>
     </el-dialog>
 
+    <!-- ===== 关联销售订单选择器弹窗（订单+明细展平到单表） ===== -->
+    <el-dialog v-model="orderPickerOpen" width="960px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/></svg></div>
+          <span class="rd-detail-header-title">选择关联销售订单</span>
+        </div>
+      </template>
+      <div class="material-picker">
+        <div class="material-picker-search">
+          <el-input v-model="orderPickerQuery.orderNo" placeholder="订单编号" clearable size="small" style="width: 180px" @keyup.enter="handleOrderPickerQuery">
+            <template #prefix><el-icon><Search /></el-icon></template>
+          </el-input>
+          <el-button type="primary" plain icon="Search" size="small" style="margin-left: 8px" @click="handleOrderPickerQuery">查询</el-button>
+          <el-button icon="RefreshLeft" size="small" @click="resetOrderPickerQuery">重置</el-button>
+        </div>
+        <div class="material-picker-table order-picker-table">
+          <el-table v-loading="orderPickerLoading" :data="orderPickerFlatList" highlight-current-row @row-click="onOrderRowClick" @row-dblclick="onOrderRowDblClick" height="380" size="small" :span-method="onOrderSpanMethod" :row-class-name="orderRowClassName" empty-text="暂无已确认的订单明细">
+            <el-table-column width="45" align="center"><template #default="{ row }"><el-radio :model-value="orderPickerSelectedId" :value="row._rowKey" @click.stop="onOrderRadioClick(row)"><span /></el-radio></template></el-table-column>
+            <el-table-column label="订单编号" prop="orderNo" width="140" show-overflow-tooltip />
+            <el-table-column label="客户名称" prop="customerName" min-width="120" show-overflow-tooltip />
+            <el-table-column label="订单金额" prop="orderAmount" width="100" align="center" />
+            <el-table-column label="行号" prop="lineNo" width="60" align="center" />
+            <el-table-column label="产品名称" prop="productName" min-width="140" show-overflow-tooltip />
+            <el-table-column label="规格型号" prop="productSpec" width="120" show-overflow-tooltip />
+            <el-table-column label="单位" prop="unit" width="70" align="center"><template #default="scope"><dict-tag :options="wms_unit" :value="scope.row.unit" /></template></el-table-column>
+            <el-table-column label="订单数量" prop="quantity" width="90" align="center" />
+          </el-table>
+        </div>
+        <div class="material-picker-pager">
+          <el-pagination v-model:current-page="orderPickerQuery.pageNum" v-model:page-size="orderPickerQuery.pageSize" :total="orderPickerTotal" layout="total, prev, pager, next" small @current-change="getOrderPickerList" />
+        </div>
+      </div>
+      <template #footer><el-button @click="orderPickerOpen = false">取 消</el-button><el-button type="primary" @click="handleOrderPickerConfirm" :disabled="!orderPickerSelectedId">确 定</el-button></template>
+    </el-dialog>
+
     <!-- ===== 业务操作说明对话框 ===== -->
     <el-dialog v-model="showStatusHelp" title="工单管理业务操作说明" width="984px" append-to-body>
       <div class="status-help-content">
@@ -587,7 +877,7 @@
         <div class="highlight-card highlight-primary">
           <div class="highlight-card-title">什么是工单？</div>
           <div class="highlight-card-body">
-            <strong>工单（Work Order）</strong>是生产管控中用于安排、执行和跟踪生产任务的核心单据。工单关联产品、BOM、工艺路线和产能单元，定义计划数量、计划开工/完工时间，通过下达→生产→完工的全生命周期管理，实现生产过程的数字化管控和进度追踪。<br/><br/>
+            <strong>工单（Work Order）</strong>是生产管控中用于安排、执行和跟踪生产任务的核心单据。工单关联产品、BOM和工艺路线，定义计划数量、计划开工/完工时间，通过下达→生产→完工的全生命周期管理，实现生产过程的数字化管控和进度追踪。<br/><br/>
             工单是<strong>MES（制造执行系统）</strong>的核心数据载体，向上对接主生产计划（MPS）和销售需求，向下驱动物料领料、工序流转、质量检验和完工入库，满足精益生产和离散制造对生产过程可追溯、可量化、可管控的要求。
           </div>
         </div>
@@ -675,6 +965,10 @@
           <div class="highlight-card-body">
             <p>• <strong>工单编号：</strong>工单的唯一标识编号，保存后由系统自动生成</p>
             <p>• <strong>工单类型：</strong>包括生产工单、返工工单、试产工单等<span style="color: #f56c6c;">*必填</span></p>
+            <p>• <strong>来源类型：</strong>工单来源分为三种<span style="color: #f56c6c;">*必填</span></p>
+            <p style="padding-left: 16px;">○ <strong>计划生成：</strong>从主生产计划（MPS）下达而来，需选择关联计划号</p>
+            <p style="padding-left: 16px;">○ <strong>订单直转：</strong>从销售订单直接转为工单，需选择关联订单号</p>
+            <p style="padding-left: 16px;">○ <strong>手工创建：</strong>手工新建工单，无关联单据</p>
             <p>• <strong>产品编码：</strong>待生产产品的编码<span style="color: #f56c6c;">*必填</span></p>
             <p>• <strong>产品名称：</strong>待生产产品的名称<span style="color: #f56c6c;">*必填</span></p>
             <p>• <strong>规格型号：</strong>产品的规格型号信息</p>
@@ -687,7 +981,7 @@
             <p>• <strong>计划数量：</strong>本工单计划生产的数量<span style="color: #f56c6c;">*必填</span></p>
             <p>• <strong>BOM编号：</strong>关联的物料清单编号，用于确定物料需求</p>
             <p>• <strong>工艺路线：</strong>关联的工艺路线编号，用于确定加工工序路径</p>
-            <p>• <strong>产能单元：</strong>指派生产的产能单元（设备/产线）</p>
+            <p>• <strong>工艺路线：</strong>工单关联的工艺路线，各工序已绑定对应产能单元</p>
             <p>• <strong>计划开工：</strong>计划开始生产的时间</p>
             <p>• <strong>计划完工：</strong>计划完成生产的时间</p>
           </div>
@@ -752,20 +1046,21 @@
 <script setup name="WorkOrder">
 import { listWorkOrder, getWorkOrder, addWorkOrder, updateWorkOrder, delWorkOrder,
          getReleasePreview, releaseWorkOrder, pauseWorkOrder, resumeWorkOrder, finishWorkOrder,
-         closeWorkOrder, cancelWorkOrder, getWorkOrderAuditLog } from "@/api/mms/workorder";
+         closeWorkOrder, cancelWorkOrder, getWorkOrderAuditLog, createReworkOrder } from "@/api/mms/workorder";
 import { listBom } from "@/api/mms/bom";
 import { listRoute } from "@/api/mms/route";
-import { listResource } from "@/api/mms/resource";
 import { listMps } from "@/api/mms/mps";
+import { listOrder, getOrder } from "@/api/mk/order";
+import { autoKitCheckByWorkOrderId, batchAutoKitCheck, getKitCheck, getKitCheckDetail } from "@/api/mms/kit";
 import MaterialPicker from '@/components/MaterialPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
-import { Search, Filter, RefreshLeft, ArrowRight, ArrowDown, WarningFilled, QuestionFilled, CircleClose } from '@element-plus/icons-vue'
+import { Search, Filter, RefreshLeft, ArrowRight, ArrowDown, WarningFilled, QuestionFilled, CircleClose, MagicStick, Box, CircleCheck, DataAnalysis } from '@element-plus/icons-vue'
 
 const { proxy } = getCurrentInstance();
-const { mms_order_type, mms_priority, mms_workorder_status, wms_unit, mms_schedule_status } = proxy.useDict("mms_order_type", "mms_priority", "mms_workorder_status", "wms_unit", "mms_schedule_status");
+const { mms_order_type, mms_work_order_source_type, mms_priority, mms_workorder_status, wms_unit, mms_schedule_status, mms_kit_status, mms_yes_no, marketing_order_status } = proxy.useDict("mms_order_type", "mms_work_order_source_type", "mms_priority", "mms_workorder_status", "wms_unit", "mms_schedule_status", "mms_kit_status", "mms_yes_no", "marketing_order_status");
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('mms_workorder_index')
-const { collapsedCards, toggleCard } = useDetailCard(["c0","c1","c2","vc0","vc1","vc2","vc_sched","rc_bom","rc_route","rc_warn"])
+const { collapsedCards, toggleCard } = useDetailCard(["c0","c1","c2","vc0","vc1","vc2","vc_sched","vc_bom","vc_route","rc_bom","rc_route","rc_warn","rc_kit","pc_wo","pc_reason","cc_wo","cc_reason","kc_info","kc_summary","kc_detail"])
 
 const dataList = ref([]);
 const open = ref(false);
@@ -787,6 +1082,9 @@ const pauseOpen = ref(false);
 const closeOpen = ref(false);
 const closeTitle = ref("");
 const closeLabel = ref("");
+const reworkOpen = ref(false);
+const reworkForm = ref({});
+const reworkFormRef = ref(null);
 const logOpen = ref(false);
 const auditLogList = ref([]);
 
@@ -795,6 +1093,16 @@ const releaseOpen = ref(false);
 const releaseLoading = ref(false);
 const releaseData = ref({});
 const releaseSubmitting = ref(false);
+
+// 齐套检查结果弹窗
+const kitCheckResultOpen = ref(false);
+const kitCheckResultData = ref({});
+const kitCheckDetailList = ref([]);
+const kitCheckLoading = ref(false);
+
+// 下达弹窗内的齐套检查
+const releaseKitCheckDone = ref(false);
+const releaseKitCheckData = ref(null);
 
 // 状态标签列表
 const statusTabList = computed(() => {
@@ -806,6 +1114,7 @@ const statusTabList = computed(() => {
 const defaultColumns = {
   workOrderNo: { label: '工单编号', visible: true },
   orderType: { label: '工单类型', visible: true },
+  sourceType: { label: '来源类型', visible: true },
   productCode: { label: '产品编码', visible: true },
   productName: { label: '产品名称', visible: true },
   specModel: { label: '规格型号', visible: true },
@@ -851,7 +1160,6 @@ const activeFilterCount = computed(() => {
   if (queryParams.value.priority) count++;
   if (queryParams.value.bomNo) count++;
   if (queryParams.value.routeNo) count++;
-  if (queryParams.value.resourceName) count++;
   if (dateRange.value && dateRange.value.length === 2) count++;
   return count;
 });
@@ -865,11 +1173,11 @@ const data = reactive({
     productCode: undefined,
     productName: undefined,
     orderType: undefined,
+    sourceType: undefined,
     priority: undefined,
     status: undefined,
     bomNo: undefined,
     routeNo: undefined,
-    resourceName: undefined,
     params: {}
   },
   rules: {
@@ -903,10 +1211,10 @@ function loadStatusCounts() {
   if (queryParams.value.productCode) baseQuery.productCode = queryParams.value.productCode;
   if (queryParams.value.productName) baseQuery.productName = queryParams.value.productName;
   if (queryParams.value.orderType) baseQuery.orderType = queryParams.value.orderType;
+  if (queryParams.value.sourceType) baseQuery.sourceType = queryParams.value.sourceType;
   if (queryParams.value.priority) baseQuery.priority = queryParams.value.priority;
   if (queryParams.value.bomNo) baseQuery.bomNo = queryParams.value.bomNo;
   if (queryParams.value.routeNo) baseQuery.routeNo = queryParams.value.routeNo;
-  if (queryParams.value.resourceName) baseQuery.resourceName = queryParams.value.resourceName;
   listWorkOrder(proxy.addDateRange(baseQuery, dateRange.value)).then(res => {
     const counts = { all: res.total };
     if (mms_workorder_status.value) {
@@ -928,11 +1236,11 @@ function resetQuery() {
   queryParams.value.productCode = undefined;
   queryParams.value.productName = undefined;
   queryParams.value.orderType = undefined;
+  queryParams.value.sourceType = undefined;
   queryParams.value.priority = undefined;
   queryParams.value.status = undefined;
   queryParams.value.bomNo = undefined;
   queryParams.value.routeNo = undefined;
-  queryParams.value.resourceName = undefined;
   dateRange.value = [];
   queryParams.value.params = {};
   activeStatusTab.value = 'all';
@@ -966,6 +1274,9 @@ function reset() {
   form.value = {
     workOrderNo: undefined,
     orderType: undefined,
+    sourceType: '3',
+    sourceOrderId: undefined,
+    sourceOrderNo: undefined,
     mpsId: undefined,
     mpsNo: undefined,
     demandNo: undefined,
@@ -979,8 +1290,6 @@ function reset() {
     bomNo: undefined,
     routeId: undefined,
     routeNo: undefined,
-    resourceId: undefined,
-    resourceName: undefined,
     planStart: undefined,
     planFinish: undefined,
     priority: undefined,
@@ -1058,6 +1367,8 @@ function handleRelease(row) {
   releaseLoading.value = true;
   releaseOpen.value = true;
   releaseData.value = {};
+  releaseKitCheckDone.value = false;
+  releaseKitCheckData.value = null;
   getReleasePreview(row.workOrderId).then(res => {
     releaseData.value = res.data;
     releaseLoading.value = false;
@@ -1080,15 +1391,30 @@ function submitRelease() {
 }
 
 function handlePause(row) {
-  pauseForm.value = { workOrderId: row.workOrderId, workOrderNo: row.workOrderNo, pauseReason: "" };
+  pauseForm.value = {
+    workOrderId: row.workOrderId,
+    workOrderNo: row.workOrderNo,
+    orderType: row.orderType,
+    productCode: row.productCode,
+    productName: row.productName,
+    planQty: row.planQty,
+    unit: row.unit,
+    finishedQty: row.finishedQty,
+    status: row.status,
+    pauseReason: ""
+  };
   pauseOpen.value = true;
 }
 
 function submitPause() {
-  pauseWorkOrder(pauseForm.value.workOrderId, pauseForm.value.pauseReason).then(() => {
-    pauseOpen.value = false;
-    getList();
-    proxy.$modal.msgSuccess("暂停成功");
+  proxy.$refs["pauseFormRef"].validate(valid => {
+    if (valid) {
+      pauseWorkOrder(pauseForm.value.workOrderId, pauseForm.value.pauseReason).then(() => {
+        pauseOpen.value = false;
+        getList();
+        proxy.$modal.msgSuccess("暂停成功");
+      });
+    }
   });
 }
 
@@ -1113,37 +1439,199 @@ function handleFinish(row) {
 function handleClose(row) {
   closeTitle.value = "工单关闭";
   closeLabel.value = "关闭备注";
-  closeForm.value = { workOrderId: row.workOrderId, workOrderNo: row.workOrderNo, remark: "", type: "close" };
+  closeForm.value = {
+    workOrderId: row.workOrderId,
+    workOrderNo: row.workOrderNo,
+    orderType: row.orderType,
+    productCode: row.productCode,
+    productName: row.productName,
+    planQty: row.planQty,
+    unit: row.unit,
+    finishedQty: row.finishedQty,
+    qualifiedQty: row.qualifiedQty,
+    status: row.status,
+    remark: "",
+    type: "close"
+  };
   closeOpen.value = true;
 }
 
 function handleCancel(row) {
   closeTitle.value = "工单作废";
   closeLabel.value = "作废原因";
-  closeForm.value = { workOrderId: row.workOrderId, workOrderNo: row.workOrderNo, remark: "", type: "cancel" };
+  closeForm.value = {
+    workOrderId: row.workOrderId,
+    workOrderNo: row.workOrderNo,
+    orderType: row.orderType,
+    productCode: row.productCode,
+    productName: row.productName,
+    planQty: row.planQty,
+    unit: row.unit,
+    finishedQty: row.finishedQty,
+    qualifiedQty: row.qualifiedQty,
+    status: row.status,
+    remark: "",
+    type: "cancel"
+  };
   closeOpen.value = true;
 }
 
 function submitClose() {
-  if (closeForm.value.type === "close") {
-    closeWorkOrder(closeForm.value.workOrderId, closeForm.value.remark).then(() => {
-      closeOpen.value = false;
-      getList();
-      proxy.$modal.msgSuccess("关闭成功");
-    });
-  } else {
-    cancelWorkOrder(closeForm.value.workOrderId, closeForm.value.remark).then(() => {
-      closeOpen.value = false;
-      getList();
-      proxy.$modal.msgSuccess("作废成功");
-    });
-  }
+  proxy.$refs["closeFormRef"].validate(valid => {
+    if (valid) {
+      if (closeForm.value.type === "close" || closeForm.value.type === "forceClose") {
+        closeWorkOrder(closeForm.value.workOrderId, closeForm.value.remark).then(() => {
+          closeOpen.value = false;
+          getList();
+          proxy.$modal.msgSuccess(closeForm.value.type === "forceClose" ? "强制关闭成功" : "关闭成功");
+        });
+      } else {
+        cancelWorkOrder(closeForm.value.workOrderId, closeForm.value.remark).then(() => {
+          closeOpen.value = false;
+          getList();
+          proxy.$modal.msgSuccess("作废成功");
+        });
+      }
+    }
+  });
+}
+
+// ===== 强制关闭（短产关闭） =====
+function handleForceClose(row) {
+  const totalOutput = (row.qualifiedQty || 0) + (row.defectQty || 0);
+  const shortQty = row.planQty - totalOutput;
+  closeTitle.value = "强制关闭（短产）";
+  closeLabel.value = "短产原因";
+  closeForm.value = {
+    workOrderId: row.workOrderId,
+    workOrderNo: row.workOrderNo,
+    orderType: row.orderType,
+    productCode: row.productCode,
+    productName: row.productName,
+    planQty: row.planQty,
+    unit: row.unit,
+    finishedQty: row.finishedQty,
+    qualifiedQty: row.qualifiedQty,
+    defectQty: row.defectQty,
+    status: row.status,
+    remark: "",
+    type: "forceClose",
+    shortQty: shortQty
+  };
+  closeOpen.value = true;
+}
+
+// ===== 创建返工工单 =====
+function handleRework(row) {
+  reworkForm.value = {
+    workOrderId: row.workOrderId,
+    workOrderNo: row.workOrderNo,
+    productCode: row.productCode,
+    productName: row.productName,
+    planQty: row.planQty,
+    qualifiedQty: row.qualifiedQty,
+    defectQty: row.defectQty,
+    unit: row.unit,
+    reworkQty: row.defectQty || 0,
+    reworkReason: ""
+  };
+  reworkOpen.value = true;
+}
+
+function submitRework() {
+  proxy.$refs["reworkFormRef"].validate(valid => {
+    if (valid) {
+      createReworkOrder(reworkForm.value.workOrderId, reworkForm.value.reworkQty, reworkForm.value.reworkReason).then(() => {
+        reworkOpen.value = false;
+        getList();
+        proxy.$modal.msgSuccess("返工工单创建成功，请到工单列表下达");
+      });
+    }
+  });
 }
 
 function handleAuditLog(row) {
   getWorkOrderAuditLog(row.workOrderId).then(response => {
     auditLogList.value = response.data;
     logOpen.value = true;
+  });
+}
+
+// ===== 齐套检查 =====
+// 单工单齐套检查（行内按钮）
+function handleKitCheck(row) {
+  const loadingInstance = proxy.$loading({ text: '正在执行齐套检查...' });
+  autoKitCheckByWorkOrderId(row.workOrderId).then(response => {
+    loadingInstance.close();
+    const kitId = response.kitId;
+    // 获取齐套检查结果详情
+    Promise.all([getKitCheck(kitId), getKitCheckDetail(kitId)]).then(([infoRes, detailRes]) => {
+      kitCheckResultData.value = infoRes.data;
+      kitCheckDetailList.value = detailRes.data || [];
+      kitCheckResultOpen.value = true;
+    });
+    getList();
+  }).catch(() => {
+    loadingInstance.close();
+  });
+}
+
+// 批量齐套检查（工具栏按钮）
+function handleBatchKitCheck() {
+  if (ids.value.length === 0) {
+    proxy.$modal.msgWarning('请先选择需要检查的工单');
+    return;
+  }
+  proxy.$modal.confirm('是否确认对选中的 ' + ids.value.length + ' 个工单进行齐套检查？').then(() => {
+    const loadingInstance = proxy.$loading({ text: '正在执行批量齐套检查...' });
+    batchAutoKitCheck(ids.value).then(response => {
+      loadingInstance.close();
+      proxy.$modal.msgSuccess(response.msg);
+      getList();
+    }).catch(() => {
+      loadingInstance.close();
+    });
+  }).catch(() => {});
+}
+
+// 齐套检查结果辅助函数
+function kitStatusBadgeClass(status) {
+  const map = { '0': 'amber', '1': 'green', '2': 'red' };
+  return map[status] || 'gray';
+}
+function kitStatusLabel(status) {
+  const item = mms_kit_status.value ? mms_kit_status.value.find(d => d.value == status) : null;
+  return item ? item.label : '—';
+}
+function kitRateClass(rate) {
+  const r = parseFloat(rate);
+  if (isNaN(r)) return 'rate-bad';
+  if (r >= 100) return 'rate-good';
+  if (r >= 80) return 'rate-warn';
+  return 'rate-bad';
+}
+function kitRateStatusText(rate) {
+  const r = parseFloat(rate);
+  if (isNaN(r)) return '未知';
+  if (r >= 100) return '齐套';
+  if (r >= 80) return '部分齐套';
+  return '不齐套';
+}
+
+// 下达弹窗内的齐套检查
+function handleReleaseKitCheck() {
+  const wo = releaseData.value.workOrder;
+  if (!wo) return;
+  const loadingInstance = proxy.$loading({ text: '正在执行齐套检查...' });
+  autoKitCheckByWorkOrderId(wo.workOrderId).then(response => {
+    loadingInstance.close();
+    const kitId = response.kitId;
+    Promise.all([getKitCheck(kitId), getKitCheckDetail(kitId)]).then(([infoRes, detailRes]) => {
+      releaseKitCheckData.value = infoRes.data;
+      releaseKitCheckDone.value = true;
+    });
+  }).catch(() => {
+    loadingInstance.close();
   });
 }
 
@@ -1403,47 +1891,6 @@ function handleRoutePickerConfirm() {
 }
 function clearRoute() { form.value.routeId = undefined; form.value.routeNo = undefined }
 
-// ===== 产能单元选择器 =====
-const resourcePickerOpen = ref(false)
-const resourcePickerLoading = ref(false)
-const resourcePickerList = ref([])
-const resourcePickerTotal = ref(0)
-const resourcePickerSelectedId = ref(null)
-const resourcePickerSelectedRow = ref(null)
-const resourcePickerTableRef = ref()
-const resourcePickerQuery = reactive({ pageNum: 1, pageSize: 10, resourceName: undefined, status: '0' })
-
-function openResourcePicker() {
-  resourcePickerOpen.value = true
-  resourcePickerSelectedId.value = null
-  resourcePickerSelectedRow.value = null
-  resourcePickerQuery.pageNum = 1
-  resourcePickerQuery.resourceName = undefined
-  getResourcePickerList()
-}
-function getResourcePickerList() {
-  resourcePickerLoading.value = true
-  listResource(resourcePickerQuery).then(res => {
-    resourcePickerList.value = res.rows
-    resourcePickerTotal.value = res.total
-    resourcePickerLoading.value = false
-  }).catch(() => { resourcePickerLoading.value = false })
-}
-function handleResourcePickerQuery() { resourcePickerQuery.pageNum = 1; getResourcePickerList() }
-function resetResourcePickerQuery() { resourcePickerQuery.resourceName = undefined; handleResourcePickerQuery() }
-function onResourceRowClick(row) { resourcePickerSelectedId.value = row.resourceId; resourcePickerSelectedRow.value = row }
-function onResourceRowDblClick(row) { onResourceRowClick(row); handleResourcePickerConfirm() }
-function handleResourcePickerConfirm() {
-  if (!resourcePickerSelectedId.value) { proxy.$modal.msgWarning('请先选择产能单元'); return }
-  form.value.resourceId = resourcePickerSelectedRow.value.resourceId
-  form.value.resourceName = resourcePickerSelectedRow.value.resourceName
-  resourcePickerOpen.value = false
-}
-function clearResource() {
-  form.value.resourceId = undefined
-  form.value.resourceName = undefined
-}
-
 // ===== 关联计划选择器 =====
 const mpsPickerOpen = ref(false)
 const mpsPickerLoading = ref(false)
@@ -1495,8 +1942,6 @@ function handleMpsPickerConfirm() {
   if (row.specModel) form.value.specModel = row.specModel
   if (row.unit) form.value.unit = row.unit
   if (row.planQty != null) form.value.planQty = row.planQty
-  if (row.resourceId) form.value.resourceId = row.resourceId
-  if (row.resourceName) form.value.resourceName = row.resourceName
   if (row.priority) form.value.priority = row.priority
   if (row.demandNo) form.value.demandNo = row.demandNo
   if (row.periodStart) form.value.planStart = row.periodStart + ' 00:00:00'
@@ -1512,6 +1957,188 @@ function handleMpsPickerConfirm() {
 function clearMps() {
   form.value.mpsId = undefined
   form.value.mpsNo = undefined
+}
+
+// ===== 来源类型切换 =====
+function handleSourceTypeChange() {
+  // 切换来源类型时，清空所有关联字段和自动带出的数据
+  form.value.mpsId = undefined
+  form.value.mpsNo = undefined
+  form.value.sourceOrderId = undefined
+  form.value.sourceOrderNo = undefined
+  form.value.demandNo = undefined
+  // 清空选择计划/订单时自动带出的产品、BOM、工艺路线等数据
+  form.value.productId = undefined
+  form.value.productCode = undefined
+  form.value.productName = undefined
+  form.value.specModel = undefined
+  form.value.unit = undefined
+  form.value.planQty = undefined
+  form.value.bomId = undefined
+  form.value.bomNo = undefined
+  form.value.routeId = undefined
+  form.value.routeNo = undefined
+  form.value.resourceId = undefined
+  form.value.resourceName = undefined
+  form.value.planStart = undefined
+  form.value.planFinish = undefined
+  form.value.priority = undefined
+}
+
+// ===== 关联销售订单选择器（订单+明细展平到单表） =====
+const orderPickerOpen = ref(false)
+const orderPickerLoading = ref(false)
+const orderPickerFlatList = ref([])
+const orderPickerTotal = ref(0)
+const orderPickerSelectedId = ref(null)
+const orderPickerSelectedRow = ref(null)
+const orderPickerQuery = reactive({ pageNum: 1, pageSize: 10, orderNo: undefined, orderStatus: '2' })
+const _orderGroupIndexMap = ref({})
+
+function openOrderPicker() {
+  orderPickerOpen.value = true
+  orderPickerSelectedId.value = null
+  orderPickerSelectedRow.value = null
+  orderPickerFlatList.value = []
+  _orderGroupIndexMap.value = {}
+  orderPickerQuery.pageNum = 1
+  orderPickerQuery.orderNo = undefined
+  getOrderPickerList()
+}
+
+/** 查询订单列表 → 逐个加载明细 → 展平为行 */
+function getOrderPickerList() {
+  orderPickerLoading.value = true
+  listOrder(orderPickerQuery).then(async res => {
+    const orders = res.rows || []
+    orderPickerTotal.value = res.total
+    const flatRows = []
+    for (const order of orders) {
+      try {
+        const detail = await getOrder(order.orderId)
+        const items = (detail.data && detail.data.itemList) ? detail.data.itemList : []
+        if (items.length === 0) {
+          flatRows.push({
+            _rowKey: order.orderId + '_0',
+            orderId: order.orderId,
+            orderNo: order.orderNo,
+            customerName: order.customerName,
+            orderAmount: order.orderAmount,
+            customerId: order.customerId,
+            lineNo: null, productName: null, productSpec: null, unit: null, quantity: null,
+            _orderRowspan: 1
+          })
+        } else {
+          items.forEach((item, idx) => {
+            flatRows.push({
+              _rowKey: order.orderId + '_' + item.itemId,
+              orderId: order.orderId,
+              orderNo: order.orderNo,
+              customerName: order.customerName,
+              orderAmount: order.orderAmount,
+              customerId: order.customerId,
+              itemId: item.itemId,
+              lineNo: item.lineNo,
+              materialId: item.materialId,
+              materialCode: item.materialCode,
+              productName: item.productName,
+              productSpec: item.productSpec,
+              unit: item.unit,
+              quantity: item.quantity,
+              _orderRowspan: idx === 0 ? items.length : 0
+            })
+          })
+        }
+      } catch (e) {
+        // 单个订单加载失败，跳过
+      }
+    }
+    orderPickerFlatList.value = flatRows
+    orderPickerLoading.value = false
+  }).catch(() => {
+    orderPickerLoading.value = false
+    orderPickerFlatList.value = []
+  })
+}
+
+function handleOrderPickerQuery() { orderPickerQuery.pageNum = 1; getOrderPickerList() }
+function resetOrderPickerQuery() { orderPickerQuery.orderNo = undefined; handleOrderPickerQuery() }
+
+/** radio 点击 → 选中行 */
+function onOrderRadioClick(row) { onOrderRowClick(row) }
+
+/** 行样式：不同订单交替背景色 */
+function orderRowClassName({ row }) {
+  if (!row.orderId) return ''
+  if (_orderGroupIndexMap.value[row.orderId] === undefined) {
+    const usedIds = Object.keys(_orderGroupIndexMap.value)
+    _orderGroupIndexMap.value[row.orderId] = usedIds.length % 2
+  }
+  return _orderGroupIndexMap.value[row.orderId] === 0 ? 'order-group-a' : 'order-group-b'
+}
+
+/** 行点击 → 选中（必须有明细行才算有效选择） */
+function onOrderRowClick(row) {
+  if (row.itemId == null) return
+  orderPickerSelectedId.value = row._rowKey
+  orderPickerSelectedRow.value = row
+}
+function onOrderRowDblClick(row) {
+  if (row.itemId == null) return
+  onOrderRowClick(row)
+  handleOrderPickerConfirm()
+}
+
+/** 合并行：同一订单的 orderNo/customerName/orderAmount 合并显示 */
+function onOrderSpanMethod({ row, columnIndex }) {
+  if (columnIndex >= 1 && columnIndex <= 3) {
+    if (row._orderRowspan > 0) return { rowspan: row._orderRowspan, colspan: 1 }
+    return { rowspan: 0, colspan: 0 }
+  }
+}
+
+/** 确认选择：一步带出订单号 + 产品 + 数量等信息 */
+function handleOrderPickerConfirm() {
+  if (!orderPickerSelectedId.value) { proxy.$modal.msgWarning('请先选择订单明细行'); return }
+  const row = orderPickerSelectedRow.value
+  // 来源订单号
+  form.value.sourceOrderId = row.orderId
+  form.value.sourceOrderNo = row.orderNo
+  // 产品信息（从订单明细行带出）
+  if (row.materialId) form.value.productId = row.materialId
+  if (row.materialCode) form.value.productCode = row.materialCode
+  if (row.productName) form.value.productName = row.productName
+  if (row.productSpec) form.value.specModel = row.productSpec
+  if (row.unit) form.value.unit = row.unit
+  if (row.quantity != null) form.value.planQty = Number(row.quantity)
+  orderPickerOpen.value = false
+  // 自动查询已发布的BOM和已审核的工艺路线
+  if (row.materialId) {
+    autoFillBomAndRoute(row.materialId, false)
+  } else {
+    proxy.$modal.msgSuccess('已带出订单关联信息，请确认并补充BOM、工艺路线等')
+  }
+}
+
+function clearSourceOrder() {
+  form.value.sourceOrderId = undefined
+  form.value.sourceOrderNo = undefined
+  // 清空由订单带出的数据
+  form.value.productId = undefined
+  form.value.productCode = undefined
+  form.value.productName = undefined
+  form.value.specModel = undefined
+  form.value.unit = undefined
+  form.value.planQty = undefined
+  form.value.bomId = undefined
+  form.value.bomNo = undefined
+  form.value.routeId = undefined
+  form.value.routeNo = undefined
+  form.value.resourceId = undefined
+  form.value.resourceName = undefined
+  form.value.planStart = undefined
+  form.value.planFinish = undefined
+  form.value.priority = undefined
 }
 
 getList();
@@ -1621,4 +2248,17 @@ getList();
 .mms-workorder-page .text-muted { color: #94a3b8; }
 @media (max-width:1100px) { .mms-workorder-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }
 @media (max-width:720px) { .mms-workorder-page .filter-card .filter-bar { grid-template-columns:1fr; } }
+/* 齐套检查-下达弹窗内嵌结果样式 */
+.kit-release-result { padding: 4px 0; }
+.kit-release-summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px 24px; }
+.kit-release-item { display: flex; align-items: center; gap: 8px; }
+.kit-release-label { font-size: 13px; font-weight: 500; color: #6b7280; white-space: nowrap; min-width: 60px; }
+.kit-release-value { font-size: 14px; font-weight: 500; color: #111827; }
+
+/* ===== 订单选择弹窗：不同订单交替背景色 ===== */
+.mms-workorder-page :deep(.order-group-a > td) { background-color: #fafbff !important; }
+.mms-workorder-page :deep(.order-group-b > td) { background-color: #fff8f0 !important; }
+.mms-workorder-page :deep(.el-table__body tr.order-group-a:hover > td) { background-color: #eef2ff !important; }
+.mms-workorder-page :deep(.el-table__body tr.order-group-b:hover > td) { background-color: #fdf2e9 !important; }
+.mms-workorder-page :deep(.el-table__body tr.current-row > td) { background-color: #e0e7ff !important; }
 </style>

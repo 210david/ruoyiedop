@@ -30,9 +30,8 @@ VALUES
 (2033, 3, '已发布', '2', 'mms_mps_status', '', 'success', 'N', '0', 'admin', sysdate(), '', NULL, '已发布'),
 (2034, 4, '已取消', '3', 'mms_mps_status', '', 'danger', 'N', '0', 'admin', sysdate(), '', NULL, '已取消'),
 -- 齐套状态
-(2041, 1, '待检查', '0', 'mms_kit_status', '', 'info', 'Y', '0', 'admin', sysdate(), '', NULL, '待检查'),
-(2042, 2, '已通过', '1', 'mms_kit_status', '', 'success', 'N', '0', 'admin', sysdate(), '', NULL, '已通过'),
-(2043, 3, '缺料',   '2', 'mms_kit_status', '', 'danger', 'N', '0', 'admin', sysdate(), '', NULL, '缺料'),
+(2041, 1, '已通过', '1', 'mms_kit_status', '', 'success', 'Y', '0', 'admin', sysdate(), '', NULL, '已通过'),
+(2042, 2, '缺料',   '2', 'mms_kit_status', '', 'danger', 'N', '0', 'admin', sysdate(), '', NULL, '缺料'),
 -- 工单类型
 (2051, 1, '生产', '0', 'mms_order_type', '', 'primary', 'Y', '0', 'admin', sysdate(), '', NULL, '生产工单'),
 (2052, 2, '返工', '1', 'mms_order_type', '', 'warning', 'N', '0', 'admin', sysdate(), '', NULL, '返工工单'),

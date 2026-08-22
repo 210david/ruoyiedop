@@ -25,6 +25,7 @@ public class MmsWorkReport extends BaseEntity {
     @Excel(name = "班次") private String shiftName;
     @Excel(name = "首件") private String isFirstPiece;
     @Excel(name = "状态", readConverterExp = "0=待审核,1=已审核,2=已驳回") private String status;
+    @Excel(name = "来源", readConverterExp = "1=手动报工,2=派工完工") private String source;
     private String auditBy;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss") private Date auditTime;
     private String auditRemark;
@@ -64,6 +65,8 @@ public class MmsWorkReport extends BaseEntity {
     public void setIsFirstPiece(String isFirstPiece) { this.isFirstPiece = isFirstPiece; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+    public String getSource() { return source; }
+    public void setSource(String source) { this.source = source; }
     public String getAuditBy() { return auditBy; }
     public void setAuditBy(String auditBy) { this.auditBy = auditBy; }
     public Date getAuditTime() { return auditTime; }

@@ -33,6 +33,9 @@ public class MmsKitCheck extends BaseEntity
 
     private Long bomId;
 
+    /** BOM编号（查询用，非数据库字段） */
+    private String bomNo;
+
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date checkTime;
 
@@ -63,6 +66,8 @@ public class MmsKitCheck extends BaseEntity
     public void setMpsNo(String mpsNo) { this.mpsNo = mpsNo; }
     public Long getBomId() { return bomId; }
     public void setBomId(Long bomId) { this.bomId = bomId; }
+    public String getBomNo() { return bomNo; }
+    public void setBomNo(String bomNo) { this.bomNo = bomNo; }
     public Date getCheckTime() { return checkTime; }
     public void setCheckTime(Date checkTime) { this.checkTime = checkTime; }
     public BigDecimal getKitRate() { return kitRate; }

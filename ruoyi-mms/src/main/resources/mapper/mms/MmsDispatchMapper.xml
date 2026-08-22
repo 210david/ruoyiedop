@@ -7,6 +7,10 @@
         <result property="dispatchNo" column="dispatch_no"/>
         <result property="workOrderId" column="work_order_id"/>
         <result property="workOrderNo" column="work_order_no"/>
+        <result property="productCode" column="product_code"/>
+        <result property="productName" column="product_name"/>
+        <result property="specModel" column="spec_model"/>
+        <result property="unit" column="unit"/>
         <result property="opSeq" column="op_seq"/>
         <result property="processId" column="process_id"/>
         <result property="processName" column="process_name"/>
@@ -32,7 +36,7 @@
     </resultMap>
 
     <sql id="selectDispatchVo">
-        SELECT dispatch_id, dispatch_no, work_order_id, work_order_no, op_seq, process_id, process_name, resource_id, resource_name, team_id, team_name, user_ids, plan_qty, good_qty, defect_qty, plan_start, plan_end, actual_start, actual_end, status, del_flag, create_by, create_time, update_by, update_time, remark
+        SELECT dispatch_id, dispatch_no, work_order_id, work_order_no, product_code, product_name, spec_model, unit, op_seq, process_id, process_name, resource_id, resource_name, team_id, team_name, user_ids, plan_qty, good_qty, defect_qty, plan_start, plan_end, actual_start, actual_end, status, del_flag, create_by, create_time, update_by, update_time, remark
         FROM mms_dispatch
     </sql>
 
@@ -41,10 +45,13 @@
         <where>
             del_flag = '0'
             <if test="dispatchNo != null and dispatchNo != ''"> AND dispatch_no LIKE CONCAT('%', #{dispatchNo}, '%')</if>
+            <if test="workOrderId != null"> AND work_order_id = #{workOrderId}</if>
             <if test="workOrderNo != null and workOrderNo != ''"> AND work_order_no LIKE CONCAT('%', #{workOrderNo}, '%')</if>
+            <if test="opSeq != null"> AND op_seq = #{opSeq}</if>
             <if test="processName != null and processName != ''"> AND process_name LIKE CONCAT('%', #{processName}, '%')</if>
             <if test="resourceName != null and resourceName != ''"> AND resource_name LIKE CONCAT('%', #{resourceName}, '%')</if>
             <if test="teamName != null and teamName != ''"> AND team_name LIKE CONCAT('%', #{teamName}, '%')</if>
+            <if test="teamId != null"> AND team_id = #{teamId}</if>
             <if test="status != null and status != ''"> AND status = #{status}</if>
             <if test="params.beginTime != null and params.beginTime != ''"> AND date(create_time) &gt;= #{params.beginTime}</if>
             <if test="params.endTime != null and params.endTime != ''"> AND date(create_time) &lt;= #{params.endTime}</if>
@@ -62,6 +69,10 @@
             dispatch_no,
             work_order_id,
             work_order_no,
+            product_code,
+            product_name,
+            spec_model,
+            unit,
             op_seq,
             process_id,
             process_name,
@@ -88,6 +99,10 @@
             #{dispatchNo},
             #{workOrderId},
             #{workOrderNo},
+            #{productCode},
+            #{productName},
+            #{specModel},
+            #{unit},
             #{opSeq},
             #{processId},
             #{processName},
@@ -118,6 +133,10 @@
             dispatch_no = #{dispatchNo},
             work_order_id = #{workOrderId},
             work_order_no = #{workOrderNo},
+            product_code = #{productCode},
+            product_name = #{productName},
+            spec_model = #{specModel},
+            unit = #{unit},
             op_seq = #{opSeq},
             process_id = #{processId},
             process_name = #{processName},
@@ -146,4 +165,24 @@
             #{dispatchId}
         </foreach>
     </delete>
+
+    <!-- 按工单ID批量更新派工单状态（仅更新未完成的派工单：排除已完成2和已取消3） -->
+    <update id="updateDispatchStatusByWorkOrder">
+        UPDATE mms_dispatch SET
+            status = #{targetStatus},
+            update_by = #{updateBy},
+            update_time = NOW()
+        WHERE work_order_id = #{workOrderId}
+          AND del_flag = '0'
+          AND status NOT IN ('2', '3')
+    </update>
+
+    <!-- 按工单ID查询未完成的派工单列表（状态非已完成/已取消） -->
+    <select id="selectActiveDispatchByWorkOrder" resultMap="MmsDispatchResult">
+        <include refid="selectDispatchVo"/>
+        WHERE work_order_id = #{workOrderId}
+          AND del_flag = '0'
+          AND status NOT IN ('2', '3')
+        ORDER BY op_seq ASC
+    </select>
 </mapper>

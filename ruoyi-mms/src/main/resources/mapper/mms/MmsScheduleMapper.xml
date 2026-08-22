@@ -24,6 +24,18 @@
         <result property="updateBy" column="update_by"/>
         <result property="updateTime" column="update_time"/>
         <result property="remark" column="remark"/>
+        <!-- 工单关联字段（甘特图查询时关联工单表填充） -->
+        <result property="orderType" column="order_type"/>
+        <result property="specModel" column="spec_model"/>
+        <result property="planQty" column="plan_qty"/>
+        <result property="unit" column="unit"/>
+        <result property="priority" column="priority"/>
+        <result property="bomNo" column="bom_no"/>
+        <result property="routeNo" column="route_no"/>
+        <result property="mpsNo" column="mps_no"/>
+        <result property="demandNo" column="demand_no"/>
+        <result property="releaseBy" column="release_by"/>
+        <result property="releaseTime" column="release_time"/>
     </resultMap>
 
     <sql id="selectScheduleVo">
@@ -96,10 +108,13 @@
 
     <!-- 按日期范围查询排产任务（不分页，供甘特图渲染） -->
     <!-- 关联工单表，排除已删除(del_flag='2')和已作废(status='8')的工单 -->
+    <!-- 同时关联工单表补充核心字段（工单类型、规格型号、计划数量、单位、优先级、BOM编号、工艺路线编号等） -->
     <select id="selectScheduleByDateRange" resultMap="MmsScheduleResult">
         SELECT s.task_id, s.schedule_no, s.work_order_id, s.work_order_no, s.product_id, s.product_code, s.product_name,
                s.resource_id, s.resource_name, s.op_seq, s.plan_start, s.plan_end, s.setup_minutes, s.strategy, s.status,
-               s.del_flag, s.create_by, s.create_time, s.update_by, s.update_time, s.remark
+               s.del_flag, s.create_by, s.create_time, s.update_by, s.update_time, s.remark,
+               w.order_type, w.spec_model, w.plan_qty, w.unit, w.priority, w.bom_no, w.route_no,
+               w.mps_no, w.demand_no, w.release_by, w.release_time
         FROM mms_schedule_task s
         INNER JOIN mms_work_order w ON w.work_order_id = s.work_order_id
         WHERE s.del_flag = '0'

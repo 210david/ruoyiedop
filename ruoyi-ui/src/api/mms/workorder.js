@@ -111,6 +111,15 @@ export function splitWorkOrder(workOrderId, splitQty) {
   })
 }
 
+// 创建返工工单
+export function createReworkOrder(workOrderId, reworkQty, reworkReason) {
+  return request({
+    url: '/mms/workorder/rework/' + workOrderId,
+    method: 'post',
+    params: { reworkQty, reworkReason }
+  })
+}
+
 // 查询工单审核日志
 export function getWorkOrderAuditLog(workOrderId) {
   return request({

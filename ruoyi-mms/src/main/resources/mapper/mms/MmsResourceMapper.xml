@@ -27,11 +27,12 @@
         <include refid="selectResourceVo"/>
         <where>
             del_flag = '0'
-            <if test="resourceCode != null and resourceCode != ''"> AND resource_code LIKE CONCAT('%', #{resource_code}, '%')</if>
-            <if test="resourceName != null and resourceName != ''"> AND resource_name LIKE CONCAT('%', #{resource_name}, '%')</if>
-            <if test="resourceType != null and resourceType != ''"> AND resource_type = #{resource_type}</if>
+            <if test="resourceCode != null and resourceCode != ''"> AND resource_code LIKE CONCAT('%', #{resourceCode}, '%')</if>
+            <if test="resourceName != null and resourceName != ''"> AND resource_name LIKE CONCAT('%', #{resourceName}, '%')</if>
+            <if test="resourceType != null and resourceType != ''"> AND resource_type = #{resourceType}</if>
             <if test="status != null and status != ''"> AND status = #{status}</if>
-            <if test="workshopName != null and workshopName != ''"> AND workshop_name LIKE CONCAT('%', #{workshop_name}, '%')</if>
+            <if test="workshopName != null and workshopName != ''"> AND workshop_name LIKE CONCAT('%', #{workshopName}, '%')</if>
+            <if test="lineName != null and lineName != ''"> AND line_name LIKE CONCAT('%', #{lineName}, '%')</if>
             <if test="params.beginTime != null and params.beginTime != ''"> AND date(create_time) &gt;= #{params.beginTime}</if>
             <if test="params.endTime != null and params.endTime != ''"> AND date(create_time) &lt;= #{params.endTime}</if>
         </where>

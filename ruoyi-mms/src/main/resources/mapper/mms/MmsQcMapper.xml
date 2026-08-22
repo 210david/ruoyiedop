@@ -34,12 +34,12 @@
         <include refid="selectQcVo"/>
         <where>
             del_flag = '0'
-            <if test="qcNo != null and qcNo != ''"> AND qc_no LIKE CONCAT('%', #{qc_no}, '%')</if>
-            <if test="workOrderNo != null and workOrderNo != ''"> AND work_order_no LIKE CONCAT('%', #{work_order_no}, '%')</if>
-            <if test="processName != null and processName != ''"> AND process_name LIKE CONCAT('%', #{process_name}, '%')</if>
-            <if test="qcType != null and qcType != ''"> AND qc_type = #{qc_type}</if>
-            <if test="qcResult != null and qcResult != ''"> AND qc_result = #{qc_result}</if>
-            <if test="qcBy != null and qcBy != ''"> AND qc_by LIKE CONCAT('%', #{qc_by}, '%')</if>
+            <if test="qcNo != null and qcNo != ''"> AND qc_no LIKE CONCAT('%', #{qcNo}, '%')</if>
+            <if test="workOrderNo != null and workOrderNo != ''"> AND work_order_no LIKE CONCAT('%', #{workOrderNo}, '%')</if>
+            <if test="processName != null and processName != ''"> AND process_name LIKE CONCAT('%', #{processName}, '%')</if>
+            <if test="qcType != null and qcType != ''"> AND qc_type = #{qcType}</if>
+            <if test="qcResult != null and qcResult != ''"> AND qc_result = #{qcResult}</if>
+            <if test="qcBy != null and qcBy != ''"> AND qc_by LIKE CONCAT('%', #{qcBy}, '%')</if>
             <if test="params.beginTime != null and params.beginTime != ''"> AND date(create_time) &gt;= #{params.beginTime}</if>
             <if test="params.endTime != null and params.endTime != ''"> AND date(create_time) &lt;= #{params.endTime}</if>
         </where>

@@ -51,8 +51,8 @@
     </resultMap>
 
     <sql id="selectBomVo">
-        SELECT bom_id, bom_no, bom_name, product_id, product_code, product_name, bom_type, version, base_qty, base_unit, status, effective_date, expire_date, del_flag, create_by, create_time, update_by, update_time, remark
-        FROM mms_bom
+        SELECT b.bom_id, b.bom_no, b.bom_name, b.product_id, b.product_code, b.product_name, b.bom_type, b.version, b.base_qty, b.base_unit, b.status, b.effective_date, b.expire_date, b.del_flag, b.create_by, b.create_time, b.update_by, b.update_time, b.remark
+        FROM mms_bom b
     </sql>
 
     <sql id="selectBomDetailVo">
@@ -68,23 +68,24 @@
     <select id="selectBomList" parameterType="MmsBom" resultMap="MmsBomResult">
         <include refid="selectBomVo"/>
         <where>
-            del_flag = '0'
-            <if test="bomNo != null and bomNo != ''"> AND bom_no LIKE CONCAT('%', #{bomNo}, '%')</if>
-            <if test="bomName != null and bomName != ''"> AND bom_name LIKE CONCAT('%', #{bomName}, '%')</if>
-            <if test="productId != null"> AND product_id = #{productId}</if>
-            <if test="productCode != null and productCode != ''"> AND product_code LIKE CONCAT('%', #{productCode}, '%')</if>
-            <if test="productName != null and productName != ''"> AND product_name LIKE CONCAT('%', #{productName}, '%')</if>
-            <if test="bomType != null and bomType != ''"> AND bom_type = #{bomType}</if>
-            <if test="status != null and status != ''"> AND status = #{status}</if>
-            <if test="params.beginTime != null and params.beginTime != ''"> AND date(create_time) &gt;= #{params.beginTime}</if>
-            <if test="params.endTime != null and params.endTime != ''"> AND date(create_time) &lt;= #{params.endTime}</if>
+            b.del_flag = '0'
+            <if test="bomNo != null and bomNo != ''"> AND b.bom_no LIKE CONCAT('%', #{bomNo}, '%')</if>
+            <if test="bomName != null and bomName != ''"> AND b.bom_name LIKE CONCAT('%', #{bomName}, '%')</if>
+            <if test="productId != null"> AND b.product_id = #{productId}</if>
+            <if test="productCode != null and productCode != ''"> AND b.product_code LIKE CONCAT('%', #{productCode}, '%')</if>
+            <if test="productName != null and productName != ''"> AND b.product_name LIKE CONCAT('%', #{productName}, '%')</if>
+            <if test="bomType != null and bomType != ''"> AND b.bom_type = #{bomType}</if>
+            <if test="status != null and status != ''"> AND b.status = #{status}</if>
+            <if test="productMaterialType != null and productMaterialType != ''"> AND EXISTS (SELECT 1 FROM wms_material m WHERE m.material_id = b.product_id AND m.material_type = #{productMaterialType})</if>
+            <if test="params.beginTime != null and params.beginTime != ''"> AND date(b.create_time) &gt;= #{params.beginTime}</if>
+            <if test="params.endTime != null and params.endTime != ''"> AND date(b.create_time) &lt;= #{params.endTime}</if>
         </where>
-        ORDER BY bom_id DESC
+        ORDER BY b.bom_id DESC
     </select>
 
     <select id="selectBomById" parameterType="Long" resultMap="MmsBomResult">
         <include refid="selectBomVo"/>
-        WHERE bom_id = #{bomId} AND del_flag = '0'
+        WHERE b.bom_id = #{bomId} AND b.del_flag = '0'
     </select>
 
     <insert id="insertBom" parameterType="MmsBom" useGeneratedKeys="true" keyProperty="bomId">
@@ -222,7 +223,7 @@
 
     <select id="selectBomByProductId" parameterType="Long" resultMap="MmsBomResult">
         <include refid="selectBomVo"/>
-        WHERE product_id = #{productId} AND status = '1' AND del_flag = '0'
+        WHERE b.product_id = #{productId} AND b.status = '1' AND b.del_flag = '0'
         LIMIT 1
     </select>
 

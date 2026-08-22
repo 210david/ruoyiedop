@@ -34,10 +34,10 @@
         <include refid="selectReturnMaterialVo"/>
         <where>
             del_flag = '0'
-            <if test="returnNo != null and returnNo != ''"> AND return_no LIKE CONCAT('%', #{return_no}, '%')</if>
-            <if test="workOrderNo != null and workOrderNo != ''"> AND work_order_no LIKE CONCAT('%', #{work_order_no}, '%')</if>
-            <if test="materialCode != null and materialCode != ''"> AND material_code LIKE CONCAT('%', #{material_code}, '%')</if>
-            <if test="materialName != null and materialName != ''"> AND material_name LIKE CONCAT('%', #{material_name}, '%')</if>
+            <if test="returnNo != null and returnNo != ''"> AND return_no LIKE CONCAT('%', #{returnNo}, '%')</if>
+            <if test="workOrderNo != null and workOrderNo != ''"> AND work_order_no LIKE CONCAT('%', #{workOrderNo}, '%')</if>
+            <if test="materialCode != null and materialCode != ''"> AND material_code LIKE CONCAT('%', #{materialCode}, '%')</if>
+            <if test="materialName != null and materialName != ''"> AND material_name LIKE CONCAT('%', #{materialName}, '%')</if>
             <if test="status != null and status != ''"> AND status = #{status}</if>
             <if test="params.beginTime != null and params.beginTime != ''"> AND date(create_time) &gt;= #{params.beginTime}</if>
             <if test="params.endTime != null and params.endTime != ''"> AND date(create_time) &lt;= #{params.endTime}</if>

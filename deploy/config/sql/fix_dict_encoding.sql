@@ -55,9 +55,8 @@ ON DUPLICATE KEY UPDATE dict_label = VALUES(dict_label), list_class = VALUES(lis
 
 -- mms_kit_status
 INSERT INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, css_class, list_class, is_default, status, create_by, create_time, remark) VALUES
-(1, '待检查', '0', 'mms_kit_status', '', 'info',    'Y', '0', 'admin', sysdate(), '待检查'),
-(2, '已通过', '1', 'mms_kit_status', '', 'success', 'N', '0', 'admin', sysdate(), '已通过'),
-(3, '缺料',   '2', 'mms_kit_status', '', 'danger',  'N', '0', 'admin', sysdate(), '缺料')
+(1, '已通过', '1', 'mms_kit_status', '', 'success', 'Y', '0', 'admin', sysdate(), '已通过'),
+(2, '缺料',   '2', 'mms_kit_status', '', 'danger',  'N', '0', 'admin', sysdate(), '缺料')
 ON DUPLICATE KEY UPDATE dict_label = VALUES(dict_label), list_class = VALUES(list_class);
 
 -- mms_abnormal_type

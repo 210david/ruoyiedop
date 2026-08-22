@@ -43,19 +43,21 @@ export function delDispatch(dispatchId) {
   })
 }
 
-// 派工开工
-export function startDispatch(dispatchId) {
+// 派工开工（需填写操作人员）
+export function startDispatch(dispatchId, data) {
   return request({
     url: '/mms/dispatch/start/' + dispatchId,
-    method: 'put'
+    method: 'put',
+    data: data || {}
   })
 }
 
-// 派工完工
-export function finishDispatch(dispatchId) {
+// 派工完工（需填写合格数量、不良数量、备注）
+export function finishDispatch(dispatchId, data) {
   return request({
     url: '/mms/dispatch/finish/' + dispatchId,
-    method: 'put'
+    method: 'put',
+    data: data
   })
 }
 

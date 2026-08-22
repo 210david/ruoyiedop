@@ -78,13 +78,57 @@ public class MmsWorkOrderServiceImpl implements IMmsWorkOrderService
     @Override
     public MmsWorkOrder selectWorkOrderById(Long workOrderId)
     {
-        return workOrderMapper.selectWorkOrderById(workOrderId);
+        MmsWorkOrder wo = workOrderMapper.selectWorkOrderById(workOrderId);
+        if (wo != null)
+        {
+            // 查询工单BOM快照和工艺快照，供详情页展示
+            List<MmsWoBomSnapshot> bomSnapshots = woBomSnapshotMapper.selectBomSnapshotByWorkOrderId(workOrderId);
+            wo.setBomSnapshotList(bomSnapshots);
+            List<MmsWoRouteSnapshot> routeSnapshots = woRouteSnapshotMapper.selectRouteSnapshotByWorkOrderId(workOrderId);
+            wo.setRouteSnapshotList(routeSnapshots);
+        }
+        return wo;
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertWorkOrder(MmsWorkOrder workOrder)
     {
+        // 来源类型校验：默认手工创建
+        if (StringUtils.isEmpty(workOrder.getSourceType()))
+        {
+            workOrder.setSourceType("3");
+        }
+        // 计划生成时，关联计划号必填
+        if ("1".equals(workOrder.getSourceType()) && StringUtils.isEmpty(workOrder.getMpsNo()))
+        {
+            throw new ServiceException("来源类型为计划生成时，关联计划号不能为空");
+        }
+        // 订单直转时，关联订单号必填
+        if ("2".equals(workOrder.getSourceType()) && StringUtils.isEmpty(workOrder.getSourceOrderNo()))
+        {
+            throw new ServiceException("来源类型为订单直转时，关联销售订单号不能为空");
+        }
+        // 手工创建时，清空关联计划/订单（避免脏数据）
+        if ("3".equals(workOrder.getSourceType()))
+        {
+            workOrder.setMpsId(null);
+            workOrder.setMpsNo(null);
+            workOrder.setSourceOrderId(null);
+            workOrder.setSourceOrderNo(null);
+        }
+        // 计划生成时，清空关联订单
+        if ("1".equals(workOrder.getSourceType()))
+        {
+            workOrder.setSourceOrderId(null);
+            workOrder.setSourceOrderNo(null);
+        }
+        // 订单直转时，清空关联计划
+        if ("2".equals(workOrder.getSourceType()))
+        {
+            workOrder.setMpsId(null);
+            workOrder.setMpsNo(null);
+        }
         // 新建工单默认状态为0(新建)
         if (StringUtils.isEmpty(workOrder.getStatus()))
         {
@@ -124,6 +168,36 @@ public class MmsWorkOrderServiceImpl implements IMmsWorkOrderService
         {
             throw new ServiceException("当前状态不允许修改工单信息");
         }
+        // 来源类型校验
+        if (StringUtils.isEmpty(workOrder.getSourceType()))
+        {
+            workOrder.setSourceType("3");
+        }
+        if ("1".equals(workOrder.getSourceType()) && StringUtils.isEmpty(workOrder.getMpsNo()))
+        {
+            throw new ServiceException("来源类型为计划生成时，关联计划号不能为空");
+        }
+        if ("2".equals(workOrder.getSourceType()) && StringUtils.isEmpty(workOrder.getSourceOrderNo()))
+        {
+            throw new ServiceException("来源类型为订单直转时，关联销售订单号不能为空");
+        }
+        if ("3".equals(workOrder.getSourceType()))
+        {
+            workOrder.setMpsId(null);
+            workOrder.setMpsNo(null);
+            workOrder.setSourceOrderId(null);
+            workOrder.setSourceOrderNo(null);
+        }
+        if ("1".equals(workOrder.getSourceType()))
+        {
+            workOrder.setSourceOrderId(null);
+            workOrder.setSourceOrderNo(null);
+        }
+        if ("2".equals(workOrder.getSourceType()))
+        {
+            workOrder.setMpsId(null);
+            workOrder.setMpsNo(null);
+        }
         workOrder.setUpdateBy(SecurityUtils.getUsername());
         workOrder.setUpdateTime(DateUtils.getNowDate());
         return workOrderMapper.updateWorkOrder(workOrder);
@@ -144,6 +218,12 @@ public class MmsWorkOrderServiceImpl implements IMmsWorkOrderService
         }
         // 删除工单前，同步取消关联的已下达排产记录
         scheduleMapper.cancelSchedulesByWorkOrderIds(workOrderIds);
+        // 级联取消关联的未完成派工单
+        String username = SecurityUtils.getUsername();
+        for (Long id : workOrderIds)
+        {
+            dispatchMapper.updateDispatchStatusByWorkOrder(id, "3", username);
+        }
         return workOrderMapper.deleteWorkOrderByIds(workOrderIds);
     }
 
@@ -244,6 +324,8 @@ public class MmsWorkOrderServiceImpl implements IMmsWorkOrderService
                         snapshot.setProcessId(rp.getProcessId());
                         snapshot.setProcessCode(rp.getProcessCode());
                         snapshot.setProcessName(rp.getProcessName());
+                        snapshot.setResourceId(rp.getResourceId());
+                        snapshot.setResourceName(rp.getResourceName());
                         snapshot.setStdTime(rp.getStdTime());
                         snapshot.setPrepTime(rp.getPrepTime());
                         snapshot.setIsKeyProcess(rp.getIsKeyProcess());
@@ -255,37 +337,55 @@ public class MmsWorkOrderServiceImpl implements IMmsWorkOrderService
                     }
                     woRouteSnapshotMapper.batchInsertRouteSnapshot(routeSnapshots);
 
-                    // ===== 步骤6：生成首工序派工单 =====
-                    // 首工序 = stepSeq 最小的工序
-                    MmsRouteProcess firstOp = routeProcesses.get(0);
+                    // ===== 步骤6：生成首工序派工单（支持并行工序） =====
+                    // 首工序 = stepSeq 最小的一组工序（相同 step_seq 视为并行，全部生成）
+                    int minStepSeq = Integer.MAX_VALUE;
                     for (MmsRouteProcess rp : routeProcesses)
                     {
-                        if (rp.getStepSeq() != null && firstOp.getStepSeq() != null
-                                && rp.getStepSeq() < firstOp.getStepSeq())
+                        if (rp.getStepSeq() != null && rp.getStepSeq() < minStepSeq)
                         {
-                            firstOp = rp;
+                            minStepSeq = rp.getStepSeq();
                         }
                     }
-                    MmsDispatch dispatch = new MmsDispatch();
-                    dispatch.setDispatchNo(mkNumberRuleService.generateNumber("mms_dispatch"));
-                    dispatch.setWorkOrderId(workOrderId);
-                    dispatch.setWorkOrderNo(wo.getWorkOrderNo());
-                    dispatch.setOpSeq(firstOp.getStepSeq());
-                    dispatch.setProcessId(firstOp.getProcessId());
-                    dispatch.setProcessName(firstOp.getProcessName());
-                    dispatch.setResourceId(wo.getResourceId());
-                    dispatch.setResourceName(wo.getResourceName());
-                    dispatch.setPlanQty(wo.getPlanQty());
-                    dispatch.setGoodQty(BigDecimal.ZERO);
-                    dispatch.setDefectQty(BigDecimal.ZERO);
-                    dispatch.setPlanStart(wo.getPlanStart());
-                    dispatch.setPlanEnd(wo.getPlanFinish());
-                    dispatch.setStatus("0"); // 待开工
-                    dispatch.setDelFlag("0");
-                    dispatch.setCreateBy(username);
-                    dispatch.setCreateTime(now);
-                    dispatch.setRemark("工单下达自动生成（首工序）");
-                    dispatchMapper.insertDispatch(dispatch);
+                    for (MmsRouteProcess rp : routeProcesses)
+                    {
+                        if (rp.getStepSeq() != null && rp.getStepSeq() == minStepSeq)
+                        {
+                            MmsDispatch dispatch = new MmsDispatch();
+                            dispatch.setDispatchNo(mkNumberRuleService.generateNumber("mms_dispatch"));
+                            dispatch.setWorkOrderId(workOrderId);
+                            dispatch.setWorkOrderNo(wo.getWorkOrderNo());
+                            dispatch.setProductCode(wo.getProductCode());
+                            dispatch.setProductName(wo.getProductName());
+                            dispatch.setSpecModel(wo.getSpecModel());
+                            dispatch.setUnit(wo.getUnit());
+                            dispatch.setOpSeq(rp.getStepSeq());
+                            dispatch.setProcessId(rp.getProcessId());
+                            dispatch.setProcessName(rp.getProcessName());
+                            // 产能单元优先取工序上绑定的，工序未绑定则用工单头上的
+                            if (rp.getResourceId() != null)
+                            {
+                                dispatch.setResourceId(rp.getResourceId());
+                                dispatch.setResourceName(rp.getResourceName());
+                            }
+                            else
+                            {
+                                dispatch.setResourceId(wo.getResourceId());
+                                dispatch.setResourceName(wo.getResourceName());
+                            }
+                            dispatch.setPlanQty(wo.getPlanQty());
+                            dispatch.setGoodQty(BigDecimal.ZERO);
+                            dispatch.setDefectQty(BigDecimal.ZERO);
+                            dispatch.setPlanStart(wo.getPlanStart());
+                            dispatch.setPlanEnd(wo.getPlanFinish());
+                            dispatch.setStatus("0"); // 待开工
+                            dispatch.setDelFlag("0");
+                            dispatch.setCreateBy(username);
+                            dispatch.setCreateTime(now);
+                            dispatch.setRemark("工单下达自动生成（首工序" + (routeProcesses.size() > 1 ? "，并行" : "") + "）");
+                            dispatchMapper.insertDispatch(dispatch);
+                        }
+                    }
                 }
             }
         }
@@ -322,9 +422,23 @@ public class MmsWorkOrderServiceImpl implements IMmsWorkOrderService
         }
         wo.setStatus("7");
         wo.setPauseReason(pauseReason);
-        wo.setUpdateBy(SecurityUtils.getUsername());
+        String username = SecurityUtils.getUsername();
+        wo.setUpdateBy(username);
         wo.setUpdateTime(DateUtils.getNowDate());
         int rows = workOrderMapper.updateWorkOrder(wo);
+
+        // 级联暂停派工单：将进行中(1)的派工单改回待开工(0)，暂停期间不允许继续生产
+        // 注意：不取消已完成的派工单，不改待开工的派工单（本就未开始）
+        List<MmsDispatch> activeDispatches = dispatchMapper.selectActiveDispatchByWorkOrder(workOrderId);
+        for (MmsDispatch d : activeDispatches)
+        {
+            if ("1".equals(d.getStatus()))
+            {
+                d.setStatus("0"); // 进行中 → 待开工（暂停后恢复需重新开工）
+                d.setUpdateBy(username);
+                dispatchMapper.updateDispatch(d);
+            }
+        }
 
         insertAuditLog(workOrderId, wo.getWorkOrderNo(), "pause", "工单暂停" + (StringUtils.isNotEmpty(pauseReason) ? "：" + pauseReason : ""));
         return rows;
@@ -383,18 +497,66 @@ public class MmsWorkOrderServiceImpl implements IMmsWorkOrderService
     public int closeWorkOrder(Long workOrderId, String closeRemark)
     {
         MmsWorkOrder wo = getAndCheckWorkOrder(workOrderId);
-        // 状态校验：待完工质检(4)或完工入库(5)可关闭
-        if (!"4".equals(wo.getStatus()) && !"5".equals(wo.getStatus()))
+        // 状态校验：待完工质检(4)、完工入库(5)可正常关闭；
+        // 执行中(2)、报工中(3)可强制关闭（短产关闭），需记录短产原因
+        String status = wo.getStatus();
+        boolean isForceClose = "2".equals(status) || "3".equals(status);
+        if (!isForceClose && !"4".equals(status) && !"5".equals(status))
         {
-            throw new ServiceException("工单[" + wo.getWorkOrderNo() + "]当前状态为" + statusName(wo.getStatus()) + "，只有待完工质检/完工入库状态可关闭");
+            throw new ServiceException("工单[" + wo.getWorkOrderNo() + "]当前状态为" + statusName(status) + "，只有执行中/报工中/待完工质检/完工入库状态可关闭");
         }
+
+        String username = SecurityUtils.getUsername();
+
+        // 如果是强制关闭（短产关闭），级联取消未完成的派工单
+        if (isForceClose)
+        {
+            // 计算短产数量
+            BigDecimal totalOutput = (wo.getQualifiedQty() == null ? BigDecimal.ZERO : wo.getQualifiedQty())
+                    .add(wo.getDefectQty() == null ? BigDecimal.ZERO : wo.getDefectQty());
+            BigDecimal shortQty = wo.getPlanQty().subtract(totalOutput);
+            // 级联取消未完成的派工单（待开工0和进行中1 → 已取消3）
+            dispatchMapper.updateDispatchStatusByWorkOrder(workOrderId, "3", username);
+            // 同步取消关联的排产记录
+            scheduleMapper.cancelSchedulesByWorkOrderIds(new Long[]{ workOrderId });
+
+            // 记录短产信息
+            String qtyDesc;
+            if (shortQty.compareTo(BigDecimal.ZERO) > 0)
+            {
+                qtyDesc = "短产" + shortQty + wo.getUnit();
+            }
+            else if (shortQty.compareTo(BigDecimal.ZERO) == 0)
+            {
+                qtyDesc = "满产";
+            }
+            else
+            {
+                qtyDesc = "超产" + shortQty.abs() + wo.getUnit();
+            }
+            String forceCloseMsg = "强制关闭（" + qtyDesc + "）";
+            if (StringUtils.isNotEmpty(closeRemark))
+            {
+                forceCloseMsg += "：" + closeRemark;
+            }
+            wo.setCloseRemark(forceCloseMsg);
+        }
+        else
+        {
+            wo.setCloseRemark(closeRemark);
+        }
+
         wo.setStatus("6");
-        wo.setCloseRemark(closeRemark);
-        wo.setUpdateBy(SecurityUtils.getUsername());
+        wo.setActualFinish(new Date());
+        wo.setUpdateBy(username);
         wo.setUpdateTime(DateUtils.getNowDate());
         int rows = workOrderMapper.updateWorkOrder(wo);
 
-        insertAuditLog(workOrderId, wo.getWorkOrderNo(), "close", "工单关闭" + (StringUtils.isNotEmpty(closeRemark) ? "：" + closeRemark : ""));
+        String logAction = isForceClose ? "forceClose" : "close";
+        String logRemark = isForceClose
+                ? "工单强制关闭" + (StringUtils.isNotEmpty(closeRemark) ? "：" + closeRemark : "")
+                : "工单关闭" + (StringUtils.isNotEmpty(closeRemark) ? "：" + closeRemark : "");
+        insertAuditLog(workOrderId, wo.getWorkOrderNo(), logAction, logRemark);
         return rows;
     }
 
@@ -413,14 +575,18 @@ public class MmsWorkOrderServiceImpl implements IMmsWorkOrderService
         {
             throw new ServiceException("工单[" + wo.getWorkOrderNo() + "]处于报工中状态，请先处理报工记录后再作废");
         }
+        String username = SecurityUtils.getUsername();
         wo.setStatus("8");
         wo.setCloseRemark(cancelReason);
-        wo.setUpdateBy(SecurityUtils.getUsername());
+        wo.setUpdateBy(username);
         wo.setUpdateTime(DateUtils.getNowDate());
         int rows = workOrderMapper.updateWorkOrder(wo);
 
         // 工单作废时，同步取消关联的已下达排产记录
         scheduleMapper.cancelSchedulesByWorkOrderIds(new Long[]{ workOrderId });
+
+        // 级联取消未完成的派工单（待开工0和进行中1 → 已取消3）
+        dispatchMapper.updateDispatchStatusByWorkOrder(workOrderId, "3", username);
 
         insertAuditLog(workOrderId, wo.getWorkOrderNo(), "cancel", "工单作废" + (StringUtils.isNotEmpty(cancelReason) ? "：" + cancelReason : ""));
         return rows;
@@ -490,6 +656,75 @@ public class MmsWorkOrderServiceImpl implements IMmsWorkOrderService
                 "工单拆分产生：来源于工单[" + wo.getWorkOrderNo() + "]，拆分数量" + splitQty + wo.getUnit());
 
         return newWo.getWorkOrderId();
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Long createReworkOrder(Long sourceWorkOrderId, BigDecimal reworkQty, String reworkReason)
+    {
+        MmsWorkOrder sourceWo = getAndCheckWorkOrder(sourceWorkOrderId);
+        // 校验：源工单必须是已关闭(6)或待完工质检(4)或完工入库(5)状态
+        String srcStatus = sourceWo.getStatus();
+        if (!"4".equals(srcStatus) && !"5".equals(srcStatus) && !"6".equals(srcStatus))
+        {
+            throw new ServiceException("源工单[" + sourceWo.getWorkOrderNo() + "]当前状态为" + statusName(srcStatus)
+                    + "，只有待完工质检/完工入库/已关闭状态可创建返工工单");
+        }
+        // 校验返工数量
+        if (reworkQty == null || reworkQty.compareTo(BigDecimal.ZERO) <= 0)
+        {
+            throw new ServiceException("返工数量必须大于0");
+        }
+        // 返工数量不能超过源工单的不良数
+        BigDecimal srcDefectQty = sourceWo.getDefectQty() == null ? BigDecimal.ZERO : sourceWo.getDefectQty();
+        if (reworkQty.compareTo(srcDefectQty) > 0)
+        {
+            throw new ServiceException("返工数量(" + reworkQty + ")不能超过源工单不良数量(" + srcDefectQty + ")");
+        }
+
+        // 创建返工工单
+        MmsWorkOrder reworkWo = new MmsWorkOrder();
+        reworkWo.setWorkOrderNo(mkNumberRuleService.generateNumber("mms_work_order"));
+        reworkWo.setOrderType("1"); // 返工工单
+        reworkWo.setSourceType("3"); // 手工创建
+        reworkWo.setSourceOrderId(sourceWorkOrderId);
+        reworkWo.setSourceOrderNo(sourceWo.getWorkOrderNo()); // 复用工单号字段关联源工单
+        reworkWo.setProductId(sourceWo.getProductId());
+        reworkWo.setProductCode(sourceWo.getProductCode());
+        reworkWo.setProductName(sourceWo.getProductName());
+        reworkWo.setSpecModel(sourceWo.getSpecModel());
+        reworkWo.setUnit(sourceWo.getUnit());
+        reworkWo.setPlanQty(reworkQty);
+        reworkWo.setBomId(sourceWo.getBomId());
+        reworkWo.setBomNo(sourceWo.getBomNo());
+        reworkWo.setRouteId(sourceWo.getRouteId());
+        reworkWo.setRouteNo(sourceWo.getRouteNo());
+        reworkWo.setResourceId(sourceWo.getResourceId());
+        reworkWo.setResourceName(sourceWo.getResourceName());
+        reworkWo.setPlanStart(DateUtils.getNowDate());
+        reworkWo.setPlanFinish(sourceWo.getPlanFinish());
+        reworkWo.setPriority(sourceWo.getPriority());
+        reworkWo.setStatus("0"); // 新建状态，需重新下达
+        reworkWo.setFinishedQty(BigDecimal.ZERO);
+        reworkWo.setQualifiedQty(BigDecimal.ZERO);
+        reworkWo.setDefectQty(BigDecimal.ZERO);
+        reworkWo.setDelFlag("0");
+        String username = SecurityUtils.getUsername();
+        reworkWo.setCreateBy(username);
+        reworkWo.setCreateTime(DateUtils.getNowDate());
+        reworkWo.setRemark("返工工单：来源于工单[" + sourceWo.getWorkOrderNo() + "]，返工数量" + reworkQty
+                + sourceWo.getUnit() + (StringUtils.isNotEmpty(reworkReason) ? "，返工原因：" + reworkReason : ""));
+        workOrderMapper.insertWorkOrder(reworkWo);
+
+        // 记录审核日志（源工单）
+        insertAuditLog(sourceWorkOrderId, sourceWo.getWorkOrderNo(), "rework",
+                "创建返工工单[" + reworkWo.getWorkOrderNo() + "]，返工数量" + reworkQty + sourceWo.getUnit()
+                        + (StringUtils.isNotEmpty(reworkReason) ? "，原因：" + reworkReason : ""));
+        // 记录审核日志（返工工单）
+        insertAuditLog(reworkWo.getWorkOrderId(), reworkWo.getWorkOrderNo(), "rework",
+                "返工工单创建：来源于工单[" + sourceWo.getWorkOrderNo() + "]，返工数量" + reworkQty + sourceWo.getUnit());
+
+        return reworkWo.getWorkOrderId();
     }
 
     @Override

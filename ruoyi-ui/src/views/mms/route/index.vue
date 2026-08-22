@@ -54,9 +54,9 @@
             <template #default="scope">
               <el-button link type="primary" icon="View" @click.stop="handleView(scope.row)">详情</el-button>
               <el-button link type="primary" icon="Edit" @click.stop="handleUpdate(scope.row)" v-if="scope.row.status === '0' || scope.row.status === '1' || scope.row.status === '4'" v-hasPermi="['mms:route:edit']">修改</el-button>
-              <el-button link type="success" icon="CircleCheck" @click.stop="handleEnable(scope.row)" v-if="scope.row.status === '0' || scope.row.status === '3'" v-hasPermi="['mms:route:status']">启用</el-button>
+              <el-button link type="success" icon="CircleCheck" @click.stop="handleEnable(scope.row)" v-if="scope.row.status === '0' || scope.row.status === '3' || scope.row.status === '4'" v-hasPermi="['mms:route:status']">提交审核</el-button>
               <el-button link type="warning" icon="Check" @click.stop="handleAudit(scope.row)" v-if="scope.row.status === '1'" v-hasPermi="['mms:route:status']">审核</el-button>
-              <el-button link type="danger" icon="CircleClose" @click.stop="handleDisable(scope.row)" v-if="scope.row.status === '0' || scope.row.status === '1' || scope.row.status === '2' || scope.row.status === '4'" v-hasPermi="['mms:route:status']">停用</el-button>
+              <el-button link type="danger" icon="CircleClose" @click.stop="handleDisable(scope.row)" v-if="scope.row.status === '0' || scope.row.status === '1' || scope.row.status === '2'" v-hasPermi="['mms:route:status']">停用</el-button>
               <el-button link type="info" icon="CopyDocument" @click.stop="handleCopy(scope.row)" v-hasPermi="['mms:route:copy']">复制</el-button>
             </template>
           </el-table-column>
@@ -84,16 +84,44 @@
           <section class="rd-card">
             <div class="rd-card-header" @click="toggleCard('c3')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/></svg></span>工序明细</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c3 }"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg></button></div>
             <div class="rd-card-body" v-show="!collapsedCards.c3">
-              <div class="detail-toolbar"><el-button type="primary" plain icon="Plus" size="small" @click="handleAddProcess">添加工序行</el-button><el-button type="success" plain icon="Sort" size="small" @click="handleSortProcess" :disabled="!form.processList || form.processList.length < 2">按序号排序</el-button><span class="detail-tip">点击工序编码选择已有工序</span></div>
-              <el-table :data="form.processList" border size="small" class="detail-table" max-height="400">
-                <el-table-column label="序号" width="70" align="center"><template #default="scope"><el-input-number v-model="scope.row.stepSeq" :min="1" :step="1" size="small" controls-position="right" style="width: 100%" /></template></el-table-column>
-                <el-table-column label="工序编码" width="130"><template #default="scope"><el-input v-model="scope.row.processCode" readonly size="small" placeholder="选择工序" @click="openProcessPicker(scope.$index)"><template #append><el-button icon="Search" size="small" @click="openProcessPicker(scope.$index)" /></template></el-input></template></el-table-column>
+              <div class="detail-toolbar"><el-button type="primary" plain icon="Plus" size="small" @click="handleAddProcess">添加工序</el-button><span class="detail-tip">拖拽行调整顺序 · 点击「并行」将工序与上方合并为并行执行</span></div>
+              <div class="flow-canvas" v-if="form.processList && form.processList.length > 0">
+                <template v-for="(group, gi) in processGroups" :key="gi">
+                  <div class="flow-connector" v-if="gi > 0">
+                    <div class="flow-connector-dot"></div>
+                    <div class="flow-connector-line"></div>
+                    <div class="flow-connector-arrow"></div>
+                  </div>
+                  <div class="flow-step" :class="{ 'is-parallel': group.length > 1 }">
+                    <div class="flow-step-badge" :class="group.length > 1 ? 'parallel' : 'serial'">{{ gi + 1 }}</div>
+                    <div class="flow-step-body">
+                      <div class="flow-step-label" v-if="group.length > 1">并行执行</div>
+                      <div class="flow-step-label" v-else>串行</div>
+                      <div class="flow-step-nodes">
+                        <div class="flow-card" v-for="(p, pi) in group" :key="p._uid || p.processCode + gi + pi">
+                          <div class="flow-card-icon" :class="p.isKeyProcess === '1' ? 'key' : 'normal'"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+                          <div class="flow-card-text">
+                            <div class="flow-card-name">{{ p.processName || '未命名' }}</div>
+                            <div class="flow-card-code">{{ p.processCode || '—' }}</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </template>
+              </div>
+              <div class="flow-empty" v-else><el-empty description="暂无工序，请点击「添加工序」" :image-size="60" /></div>
+              <el-table :data="form.processList" border size="small" class="detail-table process-edit-table" max-height="350" row-key="_uid">
+                <el-table-column label="" width="36" align="center"><template #default><el-icon class="drag-handle" style="cursor:grab"><Rank /></el-icon></template></el-table-column>
+                <el-table-column label="步骤" width="80" align="center"><template #default="scope"><div class="step-cell"><span class="step-num">{{ scope.row._stepGroupIdx + 1 }}</span><el-button v-if="scope.$index > 0 && canMergeParallel(scope.$index)" link type="warning" size="small" @click.stop="toggleParallel(scope.$index)">并行</el-button><el-button v-if="scope.row._isParallel" link type="primary" size="small" @click.stop="toggleParallel(scope.$index)">拆分</el-button></div></template></el-table-column>
+                <el-table-column label="工序编码" width="130"><template #default="scope"><el-input v-model="scope.row.processCode" readonly size="small" placeholder="选择" @click="openProcessPicker(scope.$index)"><template v-if="scope.row.processCode" #append><el-button icon="CircleClose" size="small" @click.stop="clearProcess(scope.$index)" /></template><template v-else #append><el-button icon="Search" size="small" @click="openProcessPicker(scope.$index)" /></template></el-input></template></el-table-column>
                 <el-table-column label="工序名称" min-width="120"><template #default="scope"><el-input v-model="scope.row.processName" size="small" /></template></el-table-column>
-                <el-table-column label="标准工时(h)" width="110"><template #default="scope"><el-input-number v-model="scope.row.stdTime" :min="0" :precision="2" :step="0.5" size="small" controls-position="right" style="width: 100%" @change="recalcTotalStdTime" /></template></el-table-column>
-                <el-table-column label="准备时间(h)" width="110"><template #default="scope"><el-input-number v-model="scope.row.prepTime" :min="0" :precision="2" :step="0.5" size="small" controls-position="right" style="width: 100%" /></template></el-table-column>
-                <el-table-column label="关键" width="55" align="center"><template #default="scope"><el-checkbox v-model="scope.row.isKeyProcess" true-value="1" false-value="0" /></template></el-table-column>
-                <el-table-column label="外协" width="55" align="center"><template #default="scope"><el-checkbox v-model="scope.row.isOutsource" true-value="1" false-value="0" /></template></el-table-column>
-                <el-table-column label="操作" width="60" align="center" fixed="right"><template #default="scope"><el-button link type="danger" icon="Delete" size="small" @click="handleDeleteProcess(scope.$index)" /></template></el-table-column>
+                <el-table-column label="产能单元" width="160"><template #default="scope"><el-input v-model="scope.row.resourceName" readonly size="small" placeholder="选择" @click="openResourcePicker(scope.$index)"><template v-if="scope.row.resourceName" #append><el-button icon="CircleClose" size="small" @click.stop="clearResource(scope.$index)" /></template><template v-else #append><el-button icon="Search" size="small" @click="openResourcePicker(scope.$index)" /></template></el-input></template></el-table-column>
+                <el-table-column label="工时(h)" width="100"><template #default="scope"><el-input-number v-model="scope.row.stdTime" :min="0" :precision="2" :step="0.5" size="small" controls-position="right" style="width: 100%" @change="recalcTotalStdTime" /></template></el-table-column>
+                <el-table-column label="准备(h)" width="100"><template #default="scope"><el-input-number v-model="scope.row.prepTime" :min="0" :precision="2" :step="0.5" size="small" controls-position="right" style="width: 100%" /></template></el-table-column>
+                <el-table-column label="关键" width="50" align="center"><template #default="scope"><el-checkbox v-model="scope.row.isKeyProcess" true-value="1" false-value="0" /></template></el-table-column>
+                <el-table-column label="外协" width="50" align="center"><template #default="scope"><el-checkbox v-model="scope.row.isOutsource" true-value="1" false-value="0" /></template></el-table-column>
+                <el-table-column label="操作" width="50" align="center" fixed="right"><template #default="scope"><el-button link type="danger" icon="Delete" size="small" @click.stop="handleDeleteProcess(scope.$index)" /></template></el-table-column>
               </el-table>
               <div v-if="!form.processList || form.processList.length === 0" class="empty-detail"><el-empty description="暂无工序" :image-size="60" /></div>
             </div>
@@ -128,10 +156,37 @@
         <section class="rd-card">
           <div class="rd-card-header" @click="toggleCard('vc3')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/></svg></span>工序列表</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc3 }"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg></button></div>
           <div class="rd-card-body" v-show="!collapsedCards.vc3">
-            <el-table :data="viewData.processList" border size="small" class="detail-table">
+            <div class="flow-canvas" v-if="viewData.processList && viewData.processList.length > 0">
+              <template v-for="(group, gi) in viewProcessGroups" :key="gi">
+                <div class="flow-connector" v-if="gi > 0">
+                  <div class="flow-connector-dot"></div>
+                  <div class="flow-connector-line"></div>
+                  <div class="flow-connector-arrow"></div>
+                </div>
+                <div class="flow-step" :class="{ 'is-parallel': group.length > 1 }">
+                  <div class="flow-step-badge" :class="group.length > 1 ? 'parallel' : 'serial'">{{ gi + 1 }}</div>
+                  <div class="flow-step-body">
+                    <div class="flow-step-label" v-if="group.length > 1">并行执行</div>
+                    <div class="flow-step-label" v-else>串行</div>
+                    <div class="flow-step-nodes">
+                      <div class="flow-card" v-for="(p, pi) in group" :key="pi">
+                        <div class="flow-card-icon" :class="p.isKeyProcess === '1' ? 'key' : 'normal'"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+                        <div class="flow-card-text">
+                          <div class="flow-card-name">{{ p.processName || '未命名' }}</div>
+                          <div class="flow-card-code">{{ p.processCode || '—' }}</div>
+                          <div class="flow-card-meta" v-if="p.resourceName">{{ p.resourceName }}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </template>
+            </div>
+            <el-table :data="viewData.processList" border size="small" class="detail-table" style="margin-top:12px">
               <el-table-column label="序号" prop="stepSeq" width="60" align="center" />
               <el-table-column label="工序编码" prop="processCode" width="120" />
               <el-table-column label="工序名称" prop="processName" min-width="120" show-overflow-tooltip />
+              <el-table-column label="产能单元" prop="resourceName" min-width="120" show-overflow-tooltip />
               <el-table-column label="标准工时(h)" prop="stdTime" width="100" align="center" />
               <el-table-column label="准备时间(h)" prop="prepTime" width="100" align="center" />
               <el-table-column label="关键" width="55" align="center"><template #default="scope"><el-tag v-if="scope.row.isKeyProcess === '1'" size="small" type="danger">是</el-tag><span v-else>否</span></template></el-table-column>
@@ -140,34 +195,15 @@
             <div v-if="!viewData.processList || viewData.processList.length === 0" class="empty-detail"><el-empty description="暂无工序" :image-size="60" /></div>
           </div>
         </section>
-        <!-- 审核记录 -->
-        <section class="rd-card" v-if="viewData.auditLogList && viewData.auditLogList.length > 0">
-          <div class="rd-card-header" @click="toggleCard('vcAudit')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z"/></svg></span>审核记录</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vcAudit }" type="button"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg></button></div>
-          <div class="rd-card-body" v-show="!collapsedCards.vcAudit" style="display:block">
-            <el-alert v-if="viewData.status === '4'" type="warning" :closable="false" show-icon style="margin-bottom:12px">该路线已被驳回，请修改后重新提交审核</el-alert>
-            <div class="rd-timeline">
-              <div class="rd-timeline-item" v-for="log in viewData.auditLogList" :key="log.logId">
-                <div class="rd-timeline-dot" :class="{ 'rd-timeline-dot--success': log.auditAction === '1', 'rd-timeline-dot--error': log.auditAction === '2' }"></div>
-                <div class="rd-timeline-content">
-                  <div class="rd-timeline-header">
-                    <el-tag v-if="log.auditAction === '1'" type="success" size="small" effect="light" round>审核通过</el-tag>
-                    <el-tag v-else-if="log.auditAction === '2'" type="danger" size="small" effect="light" round>审核驳回</el-tag>
-                    <span style="margin-left:8px;color:#c0c4cc">— {{ log.auditBy }}</span>
-                    <span style="margin-left:auto;color:#909399;font-size:13px">{{ log.auditTime }}</span>
-                  </div>
-                  <div class="rd-timeline-body" v-if="log.auditRemark" style="margin-top:4px;color:#606266;font-size:13px">{{ log.auditRemark }}</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
+        <!-- 版本变更记录（含审核意见） -->
         <section class="rd-card">
-          <div class="rd-card-header" @click="toggleCard('vc4')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></svg></span>版本变更记录</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc4 }"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg></button></div>
-          <div class="rd-card-body" v-show="!collapsedCards.vc4">
-            <el-timeline><el-timeline-item v-for="log in versionLogs" :key="log.logId" :timestamp="log.changeTime" :type="logTimelineType(log.changeType)"><span style="font-weight:600">{{ log.changeDesc }}</span><span style="margin-left:8px;color:#c0c4cc">— {{ log.changeBy }}</span></el-timeline-item></el-timeline>
-            <el-empty v-if="!versionLogs || versionLogs.length === 0" description="暂无变更记录" :image-size="60" />
-          </div>
-        </section>
+<div class="rd-card-header" @click="toggleCard('vc4')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></svg></span>版本变更记录</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc4 }"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+<div class="rd-card-body" v-show="!collapsedCards.vc4">
+<el-alert v-if="viewData.status === '4'" type="warning" :closable="false" show-icon style="margin-bottom:12px">该路线已被驳回，请修改后重新提交审核</el-alert>
+<el-timeline><el-timeline-item v-for="log in versionLogs" :key="log.logId" :timestamp="log.changeTime" :type="logTimelineType(log.changeType)"><div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px"><span style="font-weight:600">{{ log.changeDesc }}</span><el-tag v-if="log.changeType === 'audit' && log.newStatus === '2'" type="success" size="small" effect="light" round>通过</el-tag><el-tag v-else-if="log.changeType === 'audit' && log.newStatus === '4'" type="danger" size="small" effect="light" round>驳回</el-tag><span style="margin-left:4px;color:#c0c4cc">— {{ log.changeBy }}</span></div><div v-if="log.auditRemark" style="margin-top:4px;color:#606266;font-size:13px;line-height:1.5;background:var(--ink-50);border-radius:4px;padding:6px 10px">审核意见：{{ log.auditRemark }}</div></el-timeline-item></el-timeline>
+<el-empty v-if="!versionLogs || versionLogs.length === 0" description="暂无变更记录" :image-size="60" />
+</div>
+</section>
       </div>
       <template #footer>
         <el-button @click="viewOpen = false">关 闭</el-button>
@@ -205,10 +241,36 @@
         <section class="rd-card">
           <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/></svg></span>工序列表</div></div>
           <div class="rd-card-body" style="display:block">
-            <el-table :data="auditData.processList" border size="small">
+            <div class="flow-canvas" v-if="auditData.processList && auditData.processList.length > 0">
+              <template v-for="(group, gi) in auditProcessGroups" :key="gi">
+                <div class="flow-connector" v-if="gi > 0">
+                  <div class="flow-connector-dot"></div>
+                  <div class="flow-connector-line"></div>
+                  <div class="flow-connector-arrow"></div>
+                </div>
+                <div class="flow-step" :class="{ 'is-parallel': group.length > 1 }">
+                  <div class="flow-step-badge" :class="group.length > 1 ? 'parallel' : 'serial'">{{ gi + 1 }}</div>
+                  <div class="flow-step-body">
+                    <div class="flow-step-label" v-if="group.length > 1">并行执行</div>
+                    <div class="flow-step-label" v-else>串行</div>
+                    <div class="flow-step-nodes">
+                      <div class="flow-card" v-for="(p, pi) in group" :key="pi">
+                        <div class="flow-card-icon" :class="p.isKeyProcess === '1' ? 'key' : 'normal'"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+                        <div class="flow-card-text">
+                          <div class="flow-card-name">{{ p.processName || '未命名' }}</div>
+                          <div class="flow-card-code">{{ p.processCode || '—' }}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </template>
+            </div>
+            <el-table :data="auditData.processList" border size="small" style="margin-top:12px">
               <el-table-column label="序号" prop="stepSeq" width="60" align="center" />
               <el-table-column label="工序编码" prop="processCode" width="120" />
               <el-table-column label="工序名称" prop="processName" min-width="120" show-overflow-tooltip />
+              <el-table-column label="产能单元" prop="resourceName" min-width="120" show-overflow-tooltip />
               <el-table-column label="标准工时(h)" prop="stdTime" width="100" align="center" />
               <el-table-column label="关键" width="55" align="center"><template #default="scope"><el-tag v-if="scope.row.isKeyProcess === '1'" size="small" type="danger">是</el-tag><span v-else>否</span></template></el-table-column>
               <el-table-column label="外协" width="55" align="center"><template #default="scope"><el-tag v-if="scope.row.isOutsource === '1'" size="small" type="warning">是</el-tag><span v-else>否</span></template></el-table-column>
@@ -248,6 +310,9 @@
             <template #prefix><el-icon><Search /></el-icon></template>
           </el-input>
           <el-input v-model="processPickerQuery.processName" placeholder="工序名称" clearable size="small" style="width:160px" @keyup.enter="loadProcessPicker" />
+          <el-select v-model="processPickerQuery.processType" placeholder="类型" clearable size="small" style="width:140px" @change="loadProcessPicker">
+            <el-option v-for="d in mms_process_type" :key="d.value" :label="d.label" :value="d.value" />
+          </el-select>
           <el-button type="primary" plain icon="Search" size="small" @click="loadProcessPicker">查询</el-button>
           <el-button icon="RefreshLeft" size="small" @click="resetProcessPickerQuery">重置</el-button>
         </div>
@@ -280,6 +345,34 @@
         </div>
       </template>
     </el-dialog>
+    <!-- Resource Picker -->
+    <el-dialog v-model="resourcePickerOpen" width="860px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div>
+          <span class="rd-detail-header-title">选择产能单元</span>
+        </div>
+      </template>
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <el-input v-model="resourcePickerQuery.resourceName" placeholder="产能单元名称" clearable size="small" style="width:200px" @keyup.enter="handleResourcePickerQuery">
+          <template #prefix><el-icon><Search /></el-icon></template>
+        </el-input>
+        <el-input v-model="resourcePickerQuery.lineName" placeholder="产线" clearable size="small" style="width:160px" @keyup.enter="handleResourcePickerQuery" />
+        <el-button type="primary" plain icon="Search" size="small" @click="handleResourcePickerQuery">查询</el-button>
+        <el-button icon="RefreshLeft" size="small" @click="resetResourcePickerQuery">重置</el-button>
+      </div>
+      <el-table v-loading="resourcePickerLoading" :data="resourcePickerList" highlight-current-row @row-click="onResourceRowClick" @row-dblclick="onResourceRowDblClick" height="360" size="small">
+        <el-table-column width="45" align="center"><template #default="{ row }"><el-radio :model-value="resourcePickerSelectedId" :value="row.resourceId" @click.stop><span /></el-radio></template></el-table-column>
+        <el-table-column label="资源编码" prop="resourceCode" width="130" show-overflow-tooltip />
+        <el-table-column label="产能单元" prop="resourceName" min-width="150" show-overflow-tooltip />
+        <el-table-column label="产线" prop="lineName" width="100" show-overflow-tooltip />
+        <el-table-column label="车间" prop="workshopName" width="100" show-overflow-tooltip />
+      </el-table>
+      <div style="display:flex;justify-content:flex-end;padding-top:8px">
+        <el-pagination v-model:current-page="resourcePickerQuery.pageNum" v-model:page-size="resourcePickerQuery.pageSize" :total="resourcePickerTotal" layout="total, prev, pager, next" small @current-change="getResourcePickerList" />
+      </div>
+      <template #footer><el-button @click="resourcePickerOpen = false">取 消</el-button><el-button type="primary" @click="confirmResourcePicker" :disabled="!resourcePickerSelectedId">确 定</el-button></template>
+    </el-dialog>
     <!-- Product Picker -->
     <material-picker ref="productPickerRef" title="选择产品" @confirm="onProductPickerConfirm" />
     <!-- 业务操作说明 -->
@@ -309,11 +402,11 @@
           <div class="flow-item">
             <el-tag type="info">草稿</el-tag>
             <el-icon class="flow-arrow"><ArrowRight /></el-icon>
-            <el-tag size="small" type="primary">点击「启用」</el-tag>
+            <el-tag size="small" type="primary">点击「提交审核」</el-tag>
             <el-icon class="flow-arrow"><ArrowRight /></el-icon>
           </div>
           <div class="flow-item">
-            <el-tag type="primary">已启用</el-tag>
+            <el-tag type="primary">待审核</el-tag>
             <el-icon class="flow-arrow"><ArrowRight /></el-icon>
             <el-tag size="small" type="primary">点击「审核」</el-tag>
             <el-icon class="flow-arrow"><ArrowRight /></el-icon>
@@ -324,7 +417,7 @@
         </div>
         <div class="status-flow" style="margin-top: 8px;">
           <div class="flow-item">
-            <el-tag type="primary">已启用</el-tag>
+            <el-tag type="primary">待审核</el-tag>
             <el-icon class="flow-arrow"><ArrowRight /></el-icon>
             <el-tag size="small" type="danger">审核驳回</el-tag>
             <el-icon class="flow-arrow"><ArrowRight /></el-icon>
@@ -332,11 +425,11 @@
           <div class="flow-item">
             <el-tag type="danger">已驳回</el-tag>
             <el-icon class="flow-arrow"><ArrowRight /></el-icon>
-            <el-tag size="small" type="primary">修改后重新启用</el-tag>
+            <el-tag size="small" type="primary">修改后重新提交</el-tag>
             <el-icon class="flow-arrow"><ArrowRight /></el-icon>
           </div>
           <div class="flow-item">
-            <el-tag type="primary">已启用</el-tag>
+            <el-tag type="primary">待审核</el-tag>
             <span style="font-size: 12px; color: #909399; margin-left: 4px;">（可重新审核）</span>
           </div>
         </div>
@@ -344,7 +437,7 @@
           <div class="flow-item">
             <el-tag type="info">草稿</el-tag>
             <el-tag size="small" type="primary">或</el-tag>
-            <el-tag type="primary">已启用</el-tag>
+            <el-tag type="primary">待审核</el-tag>
             <el-icon class="flow-arrow"><ArrowRight /></el-icon>
             <el-tag size="small" type="primary">点击「停用」</el-tag>
             <el-icon class="flow-arrow"><ArrowRight /></el-icon>
@@ -357,11 +450,11 @@
           <div class="flow-item">
             <el-tag type="danger">已停用</el-tag>
             <el-icon class="flow-arrow"><ArrowRight /></el-icon>
-            <el-tag size="small" type="primary">点击「启用」</el-tag>
+            <el-tag size="small" type="primary">点击「提交审核」</el-tag>
             <el-icon class="flow-arrow"><ArrowRight /></el-icon>
           </div>
           <div class="flow-item">
-            <el-tag type="primary">已启用</el-tag>
+            <el-tag type="primary">待审核</el-tag>
             <el-tag size="small" type="info">可重新审核</el-tag>
           </div>
         </div>
@@ -369,11 +462,11 @@
         <!-- 三、各状态说明 -->
         <h4>三、各状态说明</h4>
         <el-descriptions :column="1" border>
-          <el-descriptions-item label="草稿">路线新建后的初始状态。可修改路线信息、维护工序列表、启用或删除。点击「启用」后进入已启用状态，可继续修改</el-descriptions-item>
-          <el-descriptions-item label="已启用">路线已启用，可提交审核。此状态下仍可修改工序和属性，方便调整完善。点击「审核」后进入已审核状态</el-descriptions-item>
+          <el-descriptions-item label="草稿">路线新建后的初始状态。可修改路线信息、维护工序列表、提交审核或删除。点击「提交审核」后进入待审核状态，可继续修改</el-descriptions-item>
+          <el-descriptions-item label="待审核">路线已提交审核，等待审核人审批。此状态下仍可修改工序和属性，方便调整完善。点击「审核」后进入已审核状态</el-descriptions-item>
           <el-descriptions-item label="已审核">路线已审核通过，可被生产工单引用进行排产和工序流转。已审核状态不可直接修改，如需调整请先「复制」创建新版本</el-descriptions-item>
-          <el-descriptions-item label="已停用">路线已停用，不可被新工单引用，但历史关联工单仍保留。可重新「启用」恢复为已启用状态</el-descriptions-item>
-          <el-descriptions-item label="已驳回">审核人驳回路线，可修改后重新启用并提交审核。修改后状态自动重置为已启用，审核日志保留</el-descriptions-item>
+          <el-descriptions-item label="已停用">路线已停用，不可被新工单引用，但历史关联工单仍保留。可重新「提交审核」恢复为待审核状态</el-descriptions-item>
+          <el-descriptions-item label="已驳回">审核人驳回路线。可修改内容后点击「提交审核」重新提交，或直接「提交审核」再次送审。修改后状态自动重置为待审核，审核日志保留</el-descriptions-item>
         </el-descriptions>
 
         <!-- 四、新增/修改表单填写指南 -->
@@ -412,8 +505,8 @@
         <div class="highlight-card highlight-danger">
           <div class="highlight-card-title">关键规则</div>
           <div class="highlight-card-body">
-            <p>• <strong>已审核不可修改：</strong>路线状态为已审核后，所有字段均不可修改。如需调整，请先「复制」创建新版本，修改后重新启用并审核</p>
-            <p>• <strong>工单引用校验：</strong>只有已审核状态的路线才能被生产工单引用。草稿、已启用、已停用状态的路线不可被工单引用</p>
+            <p>• <strong>已审核不可修改：</strong>路线状态为已审核后，所有字段均不可修改。如需调整，请先「复制」创建新版本，修改后重新提交审核</p>
+            <p>• <strong>工单引用校验：</strong>只有已审核状态的路线才能被生产工单引用。草稿、待审核、已停用状态的路线不可被工单引用</p>
             <p>• <strong>总工时自动计算：</strong>总工时 = 所有工序标准工时之和，系统在添加、删除或修改工序工时后自动重算，不可手动修改</p>
             <p>• <strong>版本管理：</strong>通过「复制」功能创建新版本路线，新版本独立于原版本，可独立修改和审核。同一产品可有多个版本的路线</p>
           </div>
@@ -438,16 +531,16 @@
             <strong>维护工序：</strong>在工序明细区点击「添加工序行」，逐行添加工序，设置序号、标准工时、关键/外协标记
           </el-timeline-item>
           <el-timeline-item type="warning" :hollow="true">
-            <strong>启用路线：</strong>确认工序信息无误后点击「启用」，路线进入已启用状态，仍可继续调整完善
+            <strong>提交审核：</strong>确认工序信息无误后点击「提交审核」，路线进入待审核状态，仍可继续调整完善
           </el-timeline-item>
           <el-timeline-item type="success" :hollow="true">
-            <strong>审核路线：</strong>已启用状态下点击「审核」，在审批弹窗中查看路线信息和工序列表，填写审批意见后点击「通过」或「驳回」。审核通过后路线状态变为已审核，可被生产工单引用进行排产；审核驳回后状态变为已驳回，可修改后重新提交
+            <strong>审核路线：</strong>待审核状态下点击「审核」，在审批弹窗中查看路线信息和工序列表，填写审批意见后点击「通过」或「驳回」。审核通过后路线状态变为已审核，可被生产工单引用进行排产；审核驳回后状态变为已驳回，可修改后重新提交
           </el-timeline-item>
           <el-timeline-item type="info" :hollow="true">
-            <strong>复制新版本：</strong>如需修改已审核的路线，点击「复制」创建新版本，修改后重新启用并审核
+            <strong>复制新版本：</strong>如需修改已审核的路线，点击「复制」创建新版本，修改后重新提交审核
           </el-timeline-item>
           <el-timeline-item type="danger" :hollow="true">
-            <strong>停用路线：</strong>不再使用的路线可点击「停用」，停用后不可被新工单引用，可随时重新启用
+            <strong>停用路线：</strong>不再使用的路线可点击「停用」，停用后不可被新工单引用，可随时重新提交审核
           </el-timeline-item>
         </el-timeline>
       </div>
@@ -460,10 +553,12 @@
 <script setup name="Route">
 import { listRoute, getRoute, addRoute, updateRoute, delRoute, enableRoute, auditRoute, disableRoute, copyRoute, getRouteVersionLog } from "@/api/mms/route";
 import { listProcess } from "@/api/mms/process";
+import { listResource } from "@/api/mms/resource";
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
 import MaterialPicker from '@/components/MaterialPicker/index.vue'
-import { Search, Filter, RefreshLeft, ArrowRight, ArrowDown, QuestionFilled, CopyDocument, CircleCheck, CircleClose, Check, Sort } from '@element-plus/icons-vue'
+import { Search, Filter, RefreshLeft, ArrowRight, ArrowDown, QuestionFilled, CopyDocument, CircleCheck, CircleClose, Check, Sort, Rank } from '@element-plus/icons-vue'
+import Sortable from 'sortablejs'
 
 const { collapsedCards, toggleCard } = useDetailCard(['c1', 'c2', 'c3', 'c0', 'cAudit', 'vc1', 'vc2', 'vc3', 'vcAudit', 'vc4', 'vc5', 'aAudit', 'aOpinion'])
 const { proxy } = getCurrentInstance();
@@ -503,10 +598,19 @@ const processPickerOpen = ref(false);
 const processPickerLoading = ref(false);
 const processPickerList = ref([]);
 const processPickerTotal = ref(0);
-const processPickerQuery = reactive({ pageNum: 1, pageSize: 10, processCode: undefined, processName: undefined, status: '0' });
+const processPickerQuery = reactive({ pageNum: 1, pageSize: 10, processCode: undefined, processName: undefined, processType: undefined, status: '0' });
 const selectedProcessId = ref(null);
 const selectedProcessRow = ref(null);
 const currentProcessIndex = ref(-1);
+
+// Resource Picker state
+const resourcePickerOpen = ref(false);
+const resourcePickerLoading = ref(false);
+const resourcePickerList = ref([]);
+const resourcePickerTotal = ref(0);
+const resourcePickerQuery = reactive({ pageNum: 1, pageSize: 10, resourceName: undefined, lineName: undefined, status: '0' });
+const resourcePickerSelectedId = ref(null);
+const resourcePickerSelectedRow = ref(null);
 
 const statusTabList = computed(() => mms_route_status.value ? mms_route_status.value.map(d => ({ label: d.label, value: d.value })) : []);
 
@@ -602,7 +706,7 @@ function reset() {
   proxy.resetForm("formRef");
 }
 
-function handleAdd() { reset(); open.value = true; title.value = "新增工艺路线"; }
+function handleAdd() { reset(); handleAddProcess(); open.value = true; title.value = "新增工艺路线"; initSortable(); }
 
 function handleUpdate(row) {
   reset();
@@ -610,8 +714,22 @@ function handleUpdate(row) {
   getRoute(id).then(response => {
     form.value = response.data;
     if (!form.value.processList) form.value.processList = [];
+    if (form.value.processList.length === 0) { handleAddProcess(); }
+    form.value.processList.sort((a, b) => (a.stepSeq || 0) - (b.stepSeq || 0));
+    form.value.processList.forEach((p, i) => {
+      p._uid = genUid();
+      p._isParallel = false;
+      p._stepGroupIdx = i;
+    });
+    for (let i = 1; i < form.value.processList.length; i++) {
+      if (form.value.processList[i].stepSeq === form.value.processList[i - 1].stepSeq) {
+        form.value.processList[i]._isParallel = true;
+      }
+    }
+    syncStepGroups();
     open.value = true;
     title.value = "修改工艺路线";
+    initSortable();
   });
 }
 
@@ -620,21 +738,40 @@ function handleView(row) {
   getRoute(row.routeId).then(response => {
     viewData.value = response.data;
     if (!viewData.value.processList) viewData.value.processList = [];
+    // 无数据时默认收缩卡片
+    collapsedCards.vc3 = viewData.value.processList.length === 0;
     viewLoading.value = false;
-    getRouteVersionLog(row.routeId).then(res => { versionLogs.value = res.data || []; });
+    getRouteVersionLog(row.routeId).then(res => {
+      versionLogs.value = res.data || [];
+      collapsedCards.vc4 = versionLogs.value.length === 0;
+    });
   });
 }
 
 function submitForm() {
   proxy.$refs["formRef"].validate(valid => {
     if (valid) {
-      if (form.value.routeId != null) {
-        updateRoute(form.value).then(() => { proxy.$modal.msgSuccess("修改成功"); open.value = false; getList(); });
-      } else {
-        addRoute(form.value).then(() => { proxy.$modal.msgSuccess("新增成功"); open.value = false; getList(); });
+      if (!form.value.processList || form.value.processList.length === 0) {
+        proxy.$modal.msgWarning('工序明细至少需要添加一个工序');
+        return;
       }
+      const missing = form.value.processList.filter(p => !p.resourceId);
+      if (missing.length > 0) {
+        proxy.$modal.confirm(`有 ${missing.length} 道工序未选择产能单元，未选择产能单元的工序在排产时将使用工单头上的产能单元。是否继续提交？`).then(() => {
+          doSubmit();
+        }).catch(() => {});
+        return;
+      }
+      doSubmit();
     }
   });
+}
+function doSubmit() {
+  if (form.value.routeId != null) {
+    updateRoute(form.value).then(() => { proxy.$modal.msgSuccess("修改成功"); open.value = false; getList(); });
+  } else {
+    addRoute(form.value).then(() => { proxy.$modal.msgSuccess("新增成功"); open.value = false; getList(); });
+  }
 }
 
 function cancel() { open.value = false; reset(); }
@@ -646,7 +783,7 @@ function handleDelete(row) {
 
 function handleExport() { proxy.download("mms/route/export", { ...queryParams.value }, `route_${new Date().getTime()}.xlsx`); }
 
-function handleEnable(row) { proxy.$modal.confirm('是否确认启用工艺路线[' + row.routeNo + ']？').then(() => enableRoute(row.routeId)).then(() => { proxy.$modal.msgSuccess("启用成功"); getList(); }).catch(() => {}); }
+function handleEnable(row) { proxy.$modal.confirm('是否确认提交工艺路线[' + row.routeNo + ']进行审核？').then(() => enableRoute(row.routeId)).then(() => { proxy.$modal.msgSuccess("已提交审核"); getList(); }).catch(() => {}); }
 function handleAudit(row) {
   auditForm.value = { routeId: row.routeId, auditRemark: undefined };
   auditData.value = {};
@@ -678,16 +815,105 @@ function handleDisable(row) { proxy.$modal.confirm('是否确认停用工艺路�
 function handleCopy(row) { proxy.$modal.confirm('是否确认复制工艺路线[' + row.routeNo + ']为新版本？').then(() => copyRoute(row.routeId)).then(() => { proxy.$modal.msgSuccess("复制成功"); getList(); }).catch(() => {}); }
 
 // ===== Process Detail Operations =====
+let _uidCounter = 0;
+function genUid() { return 'p_' + (++_uidCounter) + '_' + Date.now(); }
 function handleAddProcess() {
-  const seq = (form.value.processList.length + 1) * 10;
-  form.value.processList.push({ id: null, processId: undefined, processCode: '', processName: '', stepSeq: seq, stdTime: 0, prepTime: 0, isKeyProcess: '0', isOutsource: '0', remark: undefined });
+  const list = form.value.processList || (form.value.processList = []);
+  list.push({ _uid: genUid(), id: null, processId: undefined, processCode: '', processName: '', resourceId: undefined, resourceName: '', stepSeq: (list.length + 1) * 10, stdTime: 0, prepTime: 0, isKeyProcess: '0', isOutsource: '0', remark: undefined, _isParallel: false, _stepGroupIdx: list.length });
+  syncStepGroups();
 }
-function handleDeleteProcess(index) { form.value.processList.splice(index, 1); recalcTotalStdTime(); }
-function handleSortProcess() { form.value.processList.sort((a, b) => (a.stepSeq || 0) - (b.stepSeq || 0)); }
+function handleDeleteProcess(index) {
+  if (form.value.processList.length <= 1) {
+    proxy.$modal.msgWarning('工序明细至少需要保留一个工序，不能删除');
+    return;
+  }
+  form.value.processList.splice(index, 1);
+  recalcTotalStdTime();
+  syncStepGroups();
+}
 function recalcTotalStdTime() {
   let total = 0;
   form.value.processList.forEach(p => { if (p.stdTime) total += p.stdTime; });
   form.value.totalStdTime = Math.round(total * 100) / 100;
+}
+
+// ===== 可视化流程图：并行分组计算 =====
+const processGroups = computed(() => {
+  const list = form.value.processList || [];
+  const groups = [];
+  let currentGroup = [];
+  list.forEach((p, i) => {
+    if (i === 0) {
+      currentGroup.push(p);
+    } else {
+      if (p._isParallel) {
+        currentGroup.push(p);
+      } else {
+        groups.push(currentGroup);
+        currentGroup = [p];
+      }
+    }
+  });
+  if (currentGroup.length > 0) groups.push(currentGroup);
+  return groups;
+});
+
+const viewProcessGroups = computed(() => {
+  return groupByStepSeq(viewData.value.processList);
+});
+const auditProcessGroups = computed(() => {
+  return groupByStepSeq(auditData.value.processList);
+});
+function groupByStepSeq(list) {
+  if (!list || list.length === 0) return [];
+  const sorted = [...list].sort((a, b) => (a.stepSeq || 0) - (b.stepSeq || 0));
+  const groups = [];
+  let currentGroup = [sorted[0]];
+  for (let i = 1; i < sorted.length; i++) {
+    if (sorted[i].stepSeq === sorted[i - 1].stepSeq) {
+      currentGroup.push(sorted[i]);
+    } else {
+      groups.push(currentGroup);
+      currentGroup = [sorted[i]];
+    }
+  }
+  groups.push(currentGroup);
+  return groups;
+}
+
+function syncStepGroups() {
+  const groups = processGroups.value;
+  groups.forEach((group, gi) => {
+    group.forEach(p => {
+      p._stepGroupIdx = gi;
+      p.stepSeq = (gi + 1) * 10;
+    });
+  });
+}
+
+function canMergeParallel(index) {
+  if (index <= 0) return false;
+  const prev = form.value.processList[index - 1];
+  return prev && (prev.processCode || prev.processName);
+}
+
+function toggleParallel(index) {
+  const p = form.value.processList[index];
+  if (p._isParallel) {
+    p._isParallel = false;
+  } else {
+    p._isParallel = true;
+  }
+  syncStepGroups();
+}
+
+function prepareProcessListForSubmit() {
+  syncStepGroups();
+  form.value.processList.forEach(p => {
+    delete p._uid;
+    delete p._isParallel;
+    delete p._stepGroupIdx;
+  });
 }
 
 // ===== Process Picker =====
@@ -697,6 +923,7 @@ function openProcessPicker(index) {
   processPickerQuery.pageNum = 1;
   processPickerQuery.processCode = undefined;
   processPickerQuery.processName = undefined;
+  processPickerQuery.processType = undefined;
   selectedProcessId.value = form.value.processList[index].processId || null;
   selectedProcessRow.value = null;
   loadProcessPicker();
@@ -712,7 +939,7 @@ function loadProcessPicker() {
 function onProcessPickerRowClick(row) { selectedProcessId.value = row.processId; selectedProcessRow.value = row; }
 function onProcessPickerRadioChange(row) { selectedProcessId.value = row.processId; selectedProcessRow.value = row; }
 function processPickerRowClass({ row }) { return selectedProcessId.value === row.processId ? 'current-row' : ''; }
-function resetProcessPickerQuery() { processPickerQuery.pageNum = 1; processPickerQuery.processCode = undefined; processPickerQuery.processName = undefined; loadProcessPicker(); }
+function resetProcessPickerQuery() { processPickerQuery.pageNum = 1; processPickerQuery.processCode = undefined; processPickerQuery.processName = undefined; processPickerQuery.processType = undefined; loadProcessPicker(); }
 function confirmProcessPicker() {
   if (!selectedProcessRow.value) return;
   const row = selectedProcessRow.value;
@@ -729,8 +956,45 @@ function confirmProcessPicker() {
   processPickerOpen.value = false;
 }
 
+function clearProcess(index) { const p = form.value.processList[index]; p.processId = undefined; p.processCode = ''; p.processName = ''; p.stdTime = 0; p.prepTime = 0; p.isKeyProcess = '0'; p.isOutsource = '0'; recalcTotalStdTime(); }
+
+// ===== Resource Picker =====
+function openResourcePicker(index) {
+  currentProcessIndex.value = index;
+  resourcePickerOpen.value = true;
+  resourcePickerQuery.pageNum = 1;
+  resourcePickerQuery.resourceName = undefined;
+  resourcePickerQuery.lineName = undefined;
+  resourcePickerSelectedId.value = form.value.processList[index].resourceId || null;
+  resourcePickerSelectedRow.value = null;
+  getResourcePickerList();
+}
+function getResourcePickerList() {
+  resourcePickerLoading.value = true;
+  listResource(resourcePickerQuery).then(res => {
+    resourcePickerList.value = res.rows;
+    resourcePickerTotal.value = res.total;
+    resourcePickerLoading.value = false;
+  }).catch(() => { resourcePickerLoading.value = false; });
+}
+function handleResourcePickerQuery() { resourcePickerQuery.pageNum = 1; getResourcePickerList(); }
+function resetResourcePickerQuery() { resourcePickerQuery.pageNum = 1; resourcePickerQuery.resourceName = undefined; resourcePickerQuery.lineName = undefined; getResourcePickerList(); }
+function onResourceRowClick(row) { resourcePickerSelectedId.value = row.resourceId; resourcePickerSelectedRow.value = row; }
+function onResourceRowDblClick(row) { onResourceRowClick(row); confirmResourcePicker(); }
+function confirmResourcePicker() {
+  if (!resourcePickerSelectedRow.value) return;
+  const row = resourcePickerSelectedRow.value;
+  const idx = currentProcessIndex.value;
+  const p = form.value.processList[idx];
+  p.resourceId = row.resourceId;
+  p.resourceName = row.resourceName;
+  resourcePickerOpen.value = false;
+}
+function clearResource(index) { const p = form.value.processList[index]; p.resourceId = undefined; p.resourceName = ''; }
+
 // ===== Product Picker =====
 function openProductPicker() { proxy.$refs.productPickerRef.open(form.value.productId); }
+function clearProduct() { form.value.productId = undefined; form.value.productCode = undefined; form.value.productName = undefined; }
 function onProductPickerConfirm(material) {
   form.value.productId = material.materialId;
   form.value.productCode = material.materialCode;
@@ -746,73 +1010,101 @@ function logTimelineType(type) { const map = { create: 'primary', update: 'warni
 function changeTypeLabel(type) { if (!mms_route_change_type.value) return type; const item = mms_route_change_type.value.find(d => d.value === type); return item ? item.label : type; }
 function dictLabel(dictRef, value) { if (value === null || value === undefined || value === '') return '—'; const arr = (dictRef && dictRef.value) ? dictRef.value : dictRef; if (!arr || !Array.isArray(arr)) return '—'; const item = arr.find(d => d.value == value); return item ? item.label : '—'; }
 
+// ===== 拖拽排序 =====
+let sortableInstance = null;
+function initSortable() {
+  nextTick(() => {
+    const el = document.querySelector('.process-edit-table .el-table__body > tbody');
+    if (!el) return;
+    if (sortableInstance) { sortableInstance.destroy(); sortableInstance = null; }
+    sortableInstance = Sortable.create(el, {
+      handle: '.drag-handle',
+      animation: 200,
+      ghostClass: 'sortable-ghost',
+      onEnd: (evt) => {
+        if (evt.oldIndex === evt.newIndex) return;
+        const moved = form.value.processList.splice(evt.oldIndex, 1)[0];
+        form.value.processList.splice(evt.newIndex, 0, moved);
+        // 重新判断并行标记：移除首行的并行标记
+        form.value.processList.forEach((p, i) => {
+          if (i === 0) p._isParallel = false;
+        });
+        syncStepGroups();
+      }
+    });
+  });
+}
+
 getList();
 </script>
 
+<style>
+:root{--brand-50:#eef2ff;--brand-100:#e0e7ff;--brand-200:#c7d2fe;--brand-500:#6366f1;--brand-600:#4f46e5;--brand-700:#4338ca;--ink-900:#0f172a;--ink-700:#334155;--ink-500:#64748b;--ink-400:#94a3b8;--ink-300:#cbd5e1;--ink-200:#e2e8f0;--ink-100:#f1f5f9;--ink-50:#f8fafc;--amber-50:#fffbeb;--amber-500:#f59e0b;--amber-700:#b45309;--blue-50:#eff6ff;--blue-500:#3b82f6;--blue-700:#1d4ed8;--green-50:#ecfdf5;--green-500:#10b981;--green-700:#047857;--red-50:#fef2f2;--red-500:#ef4444;--red-700:#b91c1c;--r-sm:6px;--r-md:10px;--r-lg:14px;--shadow-card:0 1px 0 rgba(15,23,42,.04),0 1px 2px rgba(15,23,42,.04);--ease-out:cubic-bezier(.16,.84,.44,1)}
+</style>
 <style scoped>
-.mms-route-page{padding-top:10px;--brand-50:#eef2ff;--brand-100:#e0e7ff;--brand-200:#c7d2fe;--brand-500:#6366f1;--brand-600:#4f46e5;--brand-700:#4338ca;--ink-900:#0f172a;--ink-700:#334155;--ink-500:#64748b;--ink-400:#94a3b8;--ink-300:#cbd5e1;--ink-200:#e2e8f0;--ink-100:#f1f5f9;--ink-50:#f8fafc;--amber-50:#fffbeb;--amber-500:#f59e0b;--amber-700:#b45309;--blue-50:#eff6ff;--blue-500:#3b82f6;--blue-700:#1d4ed8;--green-50:#ecfdf5;--green-500:#10b981;--green-700:#047857;--red-50:#fef2f2;--red-500:#ef4444;--red-700:#b91c1c;--r-sm:6px;--r-md:10px;--r-lg:14px;--shadow-card:0 1px 0 rgba(15,23,42,.04),0 1px 2px rgba(15,23,42,.04);--ease-out:cubic-bezier(.16,.84,.44,1);font-feature-settings:"tnum" 1;color:var(--ink-900)}
-.mms-route-page .surface{background:#fff;border:1px solid var(--ink-200);border-radius:var(--r-lg);box-shadow:var(--shadow-card);overflow:hidden;margin-bottom:8px}
-.mms-route-page .filter-card{padding:14px 20px 16px}
-.mms-route-page .filter-card .filter-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
-.mms-route-page .filter-card .filter-title{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;color:var(--ink-700)}
-.mms-route-page .filter-card .filter-title .glyph{width:4px;height:14px;background:var(--brand-600);border-radius:2px}
-.mms-route-page .filter-card .adv-link{font-size:14px;color:var(--ink-500);text-decoration:none;display:flex;align-items:center;gap:4px;transition:color .15s;cursor:pointer}
-.mms-route-page .filter-card .adv-link:hover{color:var(--brand-600)}
-.mms-route-page .filter-card .adv-link .chev{transition:transform .2s var(--ease-out)}
-.mms-route-page .filter-card .adv-link.is-open .chev{transform:rotate(180deg)}
-.mms-route-page .filter-card .filter-bar{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px 16px}
-.mms-route-page .filter-card .filter-actions{display:flex;align-items:center;justify-content:space-between;margin-top:14px;padding-top:14px;border-top:1px dashed var(--ink-200)}
-.mms-route-page .filter-card .filter-info{font-size:13px;color:var(--ink-500);display:flex;align-items:center;gap:6px}
-.mms-route-page .filter-card .filter-buttons{display:flex;gap:8px}
-.mms-route-page .field{display:flex;flex-direction:column;gap:6px}
-.mms-route-page .field label{font-size:14px;font-weight:500;color:var(--ink-700)}
-.mms-route-page .field .control{display:flex;align-items:center;height:36px;padding:0 12px;background:#fff;border:1px solid var(--ink-200);border-radius:var(--r-sm)}
-.mms-route-page .field .control:focus-within{border-color:var(--brand-500);box-shadow:0 0 0 3px rgba(99,102,241,.15)}
-.mms-route-page .field .control :deep(.el-input__wrapper){box-shadow:none!important;background:transparent!important;padding:0;height:34px}
-.mms-route-page .field .control :deep(.el-input__inner){border:0;background:transparent;font-size:14px;color:var(--ink-900);height:34px;line-height:34px}
-.mms-route-page .field .control :deep(.el-input__inner::placeholder){color:var(--ink-400)}
-.mms-route-page .field .control :deep(.el-input__prefix){color:var(--ink-400);margin-right:4px}
-.mms-route-page .field .control :deep(.el-select){width:100%}
-.mms-route-page .field .control :deep(.el-select .el-select__wrapper){box-shadow:none!important;background:transparent!important;padding:0;min-height:34px;height:34px}
-.mms-route-page .toolbar{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:1px solid var(--ink-200);background:var(--ink-50)}
-.mms-route-page .toolbar .left,.mms-route-page .toolbar .right{display:flex;gap:8px;align-items:center}
-.mms-route-page .toolbar-divider{width:1px;height:18px;background:var(--ink-200);margin:0 4px}
-.mms-route-page .table-wrap{overflow-x:auto}
-.mms-route-page .app-table{--el-table-bg-color:#fff;--el-table-header-bg-color:var(--ink-50);--el-table-row-hover-bg-color:#fafbff;--el-table-border-color:transparent;--el-table-text-color:var(--ink-700);--el-table-header-text-color:var(--ink-500)}
-.mms-route-page .app-table :deep(.el-table__body td){border-right-color:transparent!important}
-.mms-route-page .app-table :deep(.el-table__header th){border-right-color:transparent!important;background:var(--ink-50)!important;color:var(--ink-500);font-weight:600;font-size:14px;padding:12px 16px;border-bottom:1px solid var(--ink-200)}
-.mms-route-page .app-table :deep(.el-table__body td){padding:14px 16px;border-bottom:1px solid var(--ink-100);color:var(--ink-700)}
-.mms-route-page .app-table :deep(.el-table__inner-wrapper::before){display:none}
-.mms-route-page .badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;font-size:13px;font-weight:600;line-height:1;border:1px solid transparent}
-.mms-route-page .badge .dot{width:6px;height:6px;border-radius:50%}
-.mms-route-page .badge.amber{background:var(--amber-50);color:var(--amber-700);border-color:#fde68a}.mms-route-page .badge.amber .dot{background:var(--amber-500)}
-.mms-route-page .badge.blue{background:var(--blue-50);color:var(--blue-700);border-color:#bfdbfe}.mms-route-page .badge.blue .dot{background:var(--blue-500)}
-.mms-route-page .badge.green{background:var(--green-50);color:var(--green-700);border-color:#a7f3d0}.mms-route-page .badge.green .dot{background:var(--green-500)}
-.mms-route-page .badge.gray{background:var(--ink-100);color:var(--ink-500);border-color:var(--ink-200)}.mms-route-page .badge.gray .dot{background:var(--ink-400)}
-.mms-route-page .pagination-container{display:flex;align-items:center;justify-content:flex-end;padding:14px 20px;background:#fff}
-.mms-route-page .status-tabs{display:flex;align-items:center;gap:12px;padding:6px 10px 6px 12px;border-bottom:1px solid var(--ink-200);background:#fff}
-.mms-route-page .tabs-track{display:flex;align-items:center;gap:4px;flex:1;min-width:0;overflow-x:auto;scrollbar-width:none}
-.mms-route-page .tabs-track::-webkit-scrollbar{display:none}
-.mms-route-page .status-tab{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:var(--r-sm);font-size:14px;color:var(--ink-500);cursor:pointer;user-select:none;transition:all .15s var(--ease-out);white-space:nowrap;border:1px solid transparent;background:transparent}
-.mms-route-page .status-tab .dot{width:6px;height:6px;border-radius:50%;background:var(--ink-300)}
-.mms-route-page .status-tab .count{font-size:12px;font-weight:600;padding:1px 6px;border-radius:999px;background:var(--ink-100);color:var(--ink-500);min-width:18px;text-align:center;line-height:1.4}
-.mms-route-page .status-tab:hover{background:var(--ink-50);color:var(--ink-700)}
-.mms-route-page .status-tab.is-active{background:var(--brand-50);color:var(--brand-700);font-weight:600;border-color:var(--brand-200)}
-.mms-route-page .status-tab.is-active .count{background:var(--brand-600);color:#fff}
-.mms-route-page .status-tab.is-active .dot{background:var(--brand-500)}
-.mms-route-page .status-tab.tab-draft .dot{background:var(--amber-500)}.mms-route-page .status-tab.tab-draft .count{background:var(--amber-50);color:var(--amber-700)}.mms-route-page .status-tab.is-active.tab-draft .count{background:var(--amber-500);color:#fff}
-.mms-route-page .status-tab.tab-audit .dot{background:var(--blue-500)}.mms-route-page .status-tab.tab-audit .count{background:var(--blue-50);color:var(--blue-700)}.mms-route-page .status-tab.is-active.tab-audit .count{background:var(--blue-500);color:#fff}
-.mms-route-page .status-tab.tab-done .dot{background:var(--green-500)}.mms-route-page .status-tab.tab-done .count{background:var(--green-50);color:var(--green-700)}.mms-route-page .status-tab.is-active.tab-done .count{background:var(--green-500);color:#fff}
-.mms-route-page .status-tab.tab-void .dot{background:var(--ink-400)}.mms-route-page .status-tab.tab-void .count{background:var(--ink-100);color:var(--ink-500)}.mms-route-page .status-tab.is-active.tab-void .count{background:var(--ink-400);color:#fff}
-.mms-route-page .status-tab.tab-reject .dot{background:var(--red-500)}.mms-route-page .status-tab.tab-reject .count{background:var(--red-50);color:var(--red-700)}.mms-route-page .status-tab.is-active.tab-reject .count{background:var(--red-500);color:#fff}
-.mms-route-page .badge.red{background:var(--red-50);color:var(--red-700);border-color:#fecaca}.mms-route-page .badge.red .dot{background:var(--red-500)}
-.mms-route-page .reject-alert{margin-bottom:16px}
-.mms-route-page .tip-pill{display:inline-flex;align-items:center;gap:5px;height:30px;padding:0 10px;background:#fffaf0;border:1px solid #fde68a;color:#92400e;border-radius:999px;font-size:13px;font-weight:500;cursor:pointer;transition:all .15s var(--ease-out);flex-shrink:0;white-space:nowrap}
-.mms-route-page .tip-pill:hover{background:var(--amber-50);border-color:var(--amber-500);color:#7c2d12}
-.mms-route-page .tip-pill .el-icon{font-size:14px;color:var(--amber-700)}
-.mms-route-page .detail-toolbar{display:flex;align-items:center;gap:8px;margin-bottom:12px}
-.mms-route-page .detail-toolbar .detail-tip{font-size:13px;color:var(--ink-500)}
-.mms-route-page .empty-detail{padding:20px 0}
+.mms-route-page{padding-top:10px;font-feature-settings:"tnum" 1;color:var(--ink-900)}
+.surface{background:#fff;border:1px solid var(--ink-200);border-radius:var(--r-lg);box-shadow:var(--shadow-card);overflow:hidden;margin-bottom:8px}
+.filter-card{padding:14px 20px 16px}
+.filter-card .filter-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.filter-card .filter-title{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;color:var(--ink-700)}
+.filter-card .filter-title .glyph{width:4px;height:14px;background:var(--brand-600);border-radius:2px}
+.filter-card .adv-link{font-size:14px;color:var(--ink-500);text-decoration:none;display:flex;align-items:center;gap:4px;transition:color .15s;cursor:pointer}
+.filter-card .adv-link:hover{color:var(--brand-600)}
+.filter-card .adv-link .chev{transition:transform .2s var(--ease-out)}
+.filter-card .adv-link.is-open .chev{transform:rotate(180deg)}
+.filter-card .filter-bar{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px 16px}
+.filter-card .filter-actions{display:flex;align-items:center;justify-content:space-between;margin-top:14px;padding-top:14px;border-top:1px dashed var(--ink-200)}
+.filter-card .filter-info{font-size:13px;color:var(--ink-500);display:flex;align-items:center;gap:6px}
+.filter-card .filter-buttons{display:flex;gap:8px}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-size:14px;font-weight:500;color:var(--ink-700)}
+.field .control{display:flex;align-items:center;height:36px;padding:0 12px;background:#fff;border:1px solid var(--ink-200);border-radius:var(--r-sm)}
+.field .control:focus-within{border-color:var(--brand-500);box-shadow:0 0 0 3px rgba(99,102,241,.15)}
+.field .control :deep(.el-input__wrapper){box-shadow:none!important;background:transparent!important;padding:0;height:34px}
+.field .control :deep(.el-input__inner){border:0;background:transparent;font-size:14px;color:var(--ink-900);height:34px;line-height:34px}
+.field .control :deep(.el-input__inner::placeholder){color:var(--ink-400)}
+.field .control :deep(.el-input__prefix){color:var(--ink-400);margin-right:4px}
+.field .control :deep(.el-select){width:100%}
+.field .control :deep(.el-select .el-select__wrapper){box-shadow:none!important;background:transparent!important;padding:0;min-height:34px;height:34px}
+.toolbar{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:1px solid var(--ink-200);background:var(--ink-50)}
+.toolbar .left,.toolbar .right{display:flex;gap:8px;align-items:center}
+.toolbar-divider{width:1px;height:18px;background:var(--ink-200);margin:0 4px}
+.table-wrap{overflow-x:auto}
+.app-table{--el-table-bg-color:#fff;--el-table-header-bg-color:var(--ink-50);--el-table-row-hover-bg-color:#fafbff;--el-table-border-color:transparent;--el-table-text-color:var(--ink-700);--el-table-header-text-color:var(--ink-500)}
+.app-table :deep(.el-table__body td){border-right-color:transparent!important}
+.app-table :deep(.el-table__header th){border-right-color:transparent!important;background:var(--ink-50)!important;color:var(--ink-500);font-weight:600;font-size:14px;padding:12px 16px;border-bottom:1px solid var(--ink-200)}
+.app-table :deep(.el-table__body td){padding:14px 16px;border-bottom:1px solid var(--ink-100);color:var(--ink-700)}
+.app-table :deep(.el-table__inner-wrapper::before){display:none}
+.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;font-size:13px;font-weight:600;line-height:1;border:1px solid transparent}
+.badge .dot{width:6px;height:6px;border-radius:50%}
+.badge.amber{background:var(--amber-50);color:var(--amber-700);border-color:#fde68a}.badge.amber .dot{background:var(--amber-500)}
+.badge.blue{background:var(--blue-50);color:var(--blue-700);border-color:#bfdbfe}.badge.blue .dot{background:var(--blue-500)}
+.badge.green{background:var(--green-50);color:var(--green-700);border-color:#a7f3d0}.badge.green .dot{background:var(--green-500)}
+.badge.gray{background:var(--ink-100);color:var(--ink-500);border-color:var(--ink-200)}.badge.gray .dot{background:var(--ink-400)}
+.pagination-container{display:flex;align-items:center;justify-content:flex-end;padding:14px 20px;background:#fff}
+.status-tabs{display:flex;align-items:center;gap:12px;padding:6px 10px 6px 12px;border-bottom:1px solid var(--ink-200);background:#fff}
+.tabs-track{display:flex;align-items:center;gap:4px;flex:1;min-width:0;overflow-x:auto;scrollbar-width:none}
+.tabs-track::-webkit-scrollbar{display:none}
+.status-tab{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:var(--r-sm);font-size:14px;color:var(--ink-500);cursor:pointer;user-select:none;transition:all .15s var(--ease-out);white-space:nowrap;border:1px solid transparent;background:transparent}
+.status-tab .dot{width:6px;height:6px;border-radius:50%;background:var(--ink-300)}
+.status-tab .count{font-size:12px;font-weight:600;padding:1px 6px;border-radius:999px;background:var(--ink-100);color:var(--ink-500);min-width:18px;text-align:center;line-height:1.4}
+.status-tab:hover{background:var(--ink-50);color:var(--ink-700)}
+.status-tab.is-active{background:var(--brand-50);color:var(--brand-700);font-weight:600;border-color:var(--brand-200)}
+.status-tab.is-active .count{background:var(--brand-600);color:#fff}
+.status-tab.is-active .dot{background:var(--brand-500)}
+.status-tab.tab-draft .dot{background:var(--amber-500)}.status-tab.tab-draft .count{background:var(--amber-50);color:var(--amber-700)}.status-tab.is-active.tab-draft .count{background:var(--amber-500);color:#fff}
+.status-tab.tab-audit .dot{background:var(--blue-500)}.status-tab.tab-audit .count{background:var(--blue-50);color:var(--blue-700)}.status-tab.is-active.tab-audit .count{background:var(--blue-500);color:#fff}
+.status-tab.tab-done .dot{background:var(--green-500)}.status-tab.tab-done .count{background:var(--green-50);color:var(--green-700)}.status-tab.is-active.tab-done .count{background:var(--green-500);color:#fff}
+.status-tab.tab-void .dot{background:var(--ink-400)}.status-tab.tab-void .count{background:var(--ink-100);color:var(--ink-500)}.status-tab.is-active.tab-void .count{background:var(--ink-400);color:#fff}
+.status-tab.tab-reject .dot{background:var(--red-500)}.status-tab.tab-reject .count{background:var(--red-50);color:var(--red-700)}.status-tab.is-active.tab-reject .count{background:var(--red-500);color:#fff}
+.badge.red{background:var(--red-50);color:var(--red-700);border-color:#fecaca}.badge.red .dot{background:var(--red-500)}
+.reject-alert{margin-bottom:16px}
+.tip-pill{display:inline-flex;align-items:center;gap:5px;height:30px;padding:0 10px;background:#fffaf0;border:1px solid #fde68a;color:#92400e;border-radius:999px;font-size:13px;font-weight:500;cursor:pointer;transition:all .15s var(--ease-out);flex-shrink:0;white-space:nowrap}
+.tip-pill:hover{background:var(--amber-50);border-color:var(--amber-500);color:#7c2d12}
+.tip-pill .el-icon{font-size:14px;color:var(--amber-700)}
+.detail-toolbar{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.detail-toolbar .detail-tip{font-size:13px;color:var(--ink-500)}
+.empty-detail{padding:20px 0}
 .status-help-content{max-height:520px;overflow-y:auto;padding-right:10px}
 .status-help-content h4{margin:20px 0 12px 0;color:#303133;font-weight:600;border-left:4px solid #409eff;padding-left:10px}
 .status-help-content h4:first-child{margin-top:0}
@@ -827,6 +1119,43 @@ getList();
 .status-help-content .highlight-success{background-color:#f0f9eb;border-color:#b3e19d}.status-help-content .highlight-success .highlight-card-title{color:#67c23a}
 .status-help-content .highlight-warning{background-color:#fdf6ec;border-color:#f5dab1}.status-help-content .highlight-warning .highlight-card-title{color:#e6a23c}
 .status-help-content .highlight-danger{background-color:#fef0f0;border-color:#fbc4c4}.status-help-content .highlight-danger .highlight-card-title{color:#f56c6c}
-@media(max-width:1100px){.mms-route-page .filter-card .filter-bar{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:720px){.mms-route-page .filter-card .filter-bar{grid-template-columns:1fr}}
+/* ===== 横向流程图样式 ===== */
+.flow-canvas{display:flex;align-items:flex-start;overflow-x:auto;overflow-y:hidden;padding:18px 16px;background:linear-gradient(180deg,#f8fafc 0%,#f1f5f9 100%);border:1px solid var(--ink-200);border-radius:var(--r-md);margin-bottom:12px;gap:0;scrollbar-width:thin}
+.flow-canvas::-webkit-scrollbar{height:6px}
+.flow-canvas::-webkit-scrollbar-track{background:transparent}
+.flow-canvas::-webkit-scrollbar-thumb{background:var(--ink-300);border-radius:3px}
+.flow-connector{display:flex;align-items:center;height:72px;flex-shrink:0;padding:0 2px}
+.flow-connector-dot{width:6px;height:6px;border-radius:50%;background:var(--ink-300);flex-shrink:0}
+.flow-connector-line{width:24px;height:2px;background:linear-gradient(90deg,var(--ink-300),var(--ink-400));flex-shrink:0}
+.flow-connector-arrow{width:0;height:0;border-left:7px solid var(--ink-400);border-top:5px solid transparent;border-bottom:5px solid transparent;flex-shrink:0;margin-left:-1px}
+.flow-step{display:flex;align-items:flex-start;flex-shrink:0}
+.flow-step-badge{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;font-size:13px;font-weight:700;flex-shrink:0;margin-right:8px;transition:all .2s var(--ease-out)}
+.flow-step-badge.serial{background:linear-gradient(135deg,#6366f1,#4f46e5);color:#fff;box-shadow:0 2px 6px rgba(79,70,229,.35)}
+.flow-step-badge.parallel{background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;box-shadow:0 2px 6px rgba(217,119,6,.35)}
+.flow-step-body{display:flex;flex-direction:column;gap:4px}
+.flow-step-label{font-size:11px;font-weight:600;letter-spacing:.3px;padding:1px 7px;border-radius:999px;display:inline-flex;align-items:center;gap:3px;width:fit-content}
+.flow-step.is-parallel .flow-step-label{background:#fffbeb;color:#b45309;border:1px solid #fde68a}
+.flow-step:not(.is-parallel) .flow-step-label{background:var(--brand-50);color:var(--brand-700);border:1px solid var(--brand-200)}
+.flow-step-nodes{display:flex;flex-direction:column;gap:4px}
+.flow-card{display:flex;align-items:center;gap:8px;padding:8px 12px;background:#fff;border:1px solid var(--ink-200);border-radius:var(--r-sm);min-width:140px;transition:all .15s var(--ease-out);box-shadow:0 1px 2px rgba(15,23,42,.04)}
+.flow-card:hover{border-color:var(--brand-400);box-shadow:0 2px 8px rgba(99,102,241,.15);transform:translateY(-1px)}
+.flow-card-icon{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:var(--r-sm);flex-shrink:0}
+.flow-card-icon.normal{background:var(--ink-100);color:var(--ink-500)}
+.flow-card-icon.key{background:#fef2f2;color:#ef4444}
+.flow-card-text{display:flex;flex-direction:column;gap:1px;min-width:0}
+.flow-card-name{font-size:13px;font-weight:600;color:var(--ink-900);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px}
+.flow-card-code{font-size:11px;color:var(--ink-400);font-family:'SF Mono',Monaco,monospace}
+.flow-card-meta{font-size:10px;color:var(--ink-500);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px}
+.flow-empty{padding:20px 0}
+.step-cell{display:flex;flex-direction:column;align-items:center;gap:2px}
+.step-num{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:var(--brand-50);color:var(--brand-700);font-size:12px;font-weight:700}
+.drag-handle{color:var(--ink-400);font-size:16px}
+.drag-handle:hover{color:var(--brand-500)}
+.process-edit-table :deep(.el-table__body tr){cursor:default}
+.process-edit-table :deep(.el-table__body tr:hover .drag-handle){color:var(--brand-500)}
+.process-edit-table :deep(.sortable-ghost){opacity:.4;background:var(--brand-50)}
+.process-edit-table :deep(.sortable-chosen){background:var(--brand-50)}
+
+@media(max-width:1100px){.filter-card .filter-bar{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:720px){.filter-card .filter-bar{grid-template-columns:1fr}}
 </style>

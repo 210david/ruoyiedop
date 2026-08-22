@@ -69,10 +69,10 @@ public class MmsKitCheckServiceImpl implements IMmsKitCheckService
         {
             kitCheck.setKitNo(mkNumberRuleService.generateNumber("mms_kit_check"));
         }
-        // 默认状态为待检查
+        // 默认状态为已通过
         if (StringUtils.isEmpty(kitCheck.getStatus()))
         {
-            kitCheck.setStatus("0");
+            kitCheck.setStatus("1");
         }
         kitCheck.setDelFlag("0");
         kitCheck.setCreateBy(SecurityUtils.getUsername());
@@ -97,15 +97,6 @@ public class MmsKitCheckServiceImpl implements IMmsKitCheckService
     @Transactional(rollbackFor = Exception.class)
     public int deleteKitCheckByIds(Long[] kitIds)
     {
-        // 已通过的检查不允许删除
-        for (Long id : kitIds)
-        {
-            MmsKitCheck check = kitCheckMapper.selectKitCheckById(id);
-            if (check != null && "1".equals(check.getStatus()))
-            {
-                throw new ServiceException("齐套检查[" + check.getKitNo() + "]已通过，不允许删除");
-            }
-        }
         return kitCheckMapper.deleteKitCheckByIds(kitIds);
     }
 
@@ -124,11 +115,8 @@ public class MmsKitCheckServiceImpl implements IMmsKitCheckService
         {
             throw new ServiceException("齐套检查记录不存在或已删除");
         }
-        // 状态校验：只有待检查(0)可执行
-        if (!"0".equals(kitCheck.getStatus()))
-        {
-            throw new ServiceException("齐套检查[" + kitCheck.getKitNo() + "]当前状态为" + statusName(kitCheck.getStatus()) + "，只有待检查状态可执行");
-        }
+        // 状态校验：已通过(1)或缺料(2)均可重新执行检查
+        // （不再有待检查状态，一键检查直接生成最终状态）
 
         // 如果明细为空，尝试自动从BOM生成明细
         List<MmsKitCheckDetail> details = kitCheckMapper.selectKitCheckDetailByKitId(kitId);

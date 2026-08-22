@@ -30,7 +30,7 @@ FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_dict_type WHERE dict_type = 'mms_r
 
 INSERT INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, css_class, list_class, is_default, status, create_by, create_time, remark) VALUES
 (1, '草稿',   '0', 'mms_route_status', '', 'info',    'Y', '0', 'admin', sysdate(), '草稿'),
-(2, '已启用', '1', 'mms_route_status', '', 'primary', 'N', '0', 'admin', sysdate(), '已启用'),
+(2, '待审核', '1', 'mms_route_status', '', 'primary', 'N', '0', 'admin', sysdate(), '待审核'),
 (3, '已审核', '2', 'mms_route_status', '', 'success', 'N', '0', 'admin', sysdate(), '已审核'),
 (4, '已停用', '3', 'mms_route_status', '', 'danger',  'N', '0', 'admin', sysdate(), '已停用')
 ON DUPLICATE KEY UPDATE dict_label = VALUES(dict_label);
@@ -199,9 +199,8 @@ SELECT '齐套状态', 'mms_kit_status', '0', 'admin', sysdate(), '齐套检查�
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_dict_type WHERE dict_type = 'mms_kit_status');
 
 INSERT INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, css_class, list_class, is_default, status, create_by, create_time, remark) VALUES
-(1, '待检查', '0', 'mms_kit_status', '', 'info',    'Y', '0', 'admin', sysdate(), '待检查'),
-(2, '已通过', '1', 'mms_kit_status', '', 'success', 'N', '0', 'admin', sysdate(), '已通过'),
-(3, '缺料',   '2', 'mms_kit_status', '', 'danger',  'N', '0', 'admin', sysdate(), '缺料')
+(1, '已通过', '1', 'mms_kit_status', '', 'success', 'Y', '0', 'admin', sysdate(), '已通过'),
+(2, '缺料',   '2', 'mms_kit_status', '', 'danger',  'N', '0', 'admin', sysdate(), '缺料')
 ON DUPLICATE KEY UPDATE dict_label = VALUES(dict_label);
 
 -- 18. MPS计划状态字典（mps 页面使用）

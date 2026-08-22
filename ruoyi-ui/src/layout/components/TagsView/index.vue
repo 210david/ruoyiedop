@@ -197,6 +197,14 @@ function initTags() {
   if (tagsViewPersist.value) {
     useTagsViewStore().loadPersistedViews()
   }
+  // 恢复超时前的最后路由（无论是否开启持久化都尝试恢复）
+  const lastRoute = useTagsViewStore().getLastRoute()
+  if (lastRoute) {
+    if (!useTagsViewStore().visitedViews.some(v => v.path === lastRoute.path)) {
+      useTagsViewStore().addVisitedView(lastRoute)
+    }
+    useTagsViewStore().addCachedView(lastRoute)
+  }
   const res = filterAffixTags(routes.value)
   affixTags.value = res
   for (const tag of res) {

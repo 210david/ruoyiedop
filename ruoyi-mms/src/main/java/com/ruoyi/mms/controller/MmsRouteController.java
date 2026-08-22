@@ -83,7 +83,7 @@ public class MmsRouteController extends BaseController
     }
 
     /**
-     * 启用路线（草稿→已启用）
+     * 提交审核（草稿→待审核）
      */
     @Log(title = "工艺路线", businessType = BusinessType.UPDATE)
     @PreAuthorize("@ss.hasPermi('mms:route:status')")
@@ -94,7 +94,7 @@ public class MmsRouteController extends BaseController
     }
 
     /**
-     * 审核路线（已启用→已审核/已驳回）
+     * 审核路线（待审核→已审核/已驳回）
      */
     @Log(title = "工艺路线", businessType = BusinessType.UPDATE)
     @PreAuthorize("@ss.hasPermi('mms:route:status')")

@@ -34,12 +34,12 @@
         <include refid="selectIssueVo"/>
         <where>
             del_flag = '0'
-            <if test="issueNo != null and issueNo != ''"> AND issue_no LIKE CONCAT('%', #{issue_no}, '%')</if>
-            <if test="workOrderNo != null and workOrderNo != ''"> AND work_order_no LIKE CONCAT('%', #{work_order_no}, '%')</if>
-            <if test="materialCode != null and materialCode != ''"> AND material_code LIKE CONCAT('%', #{material_code}, '%')</if>
-            <if test="materialName != null and materialName != ''"> AND material_name LIKE CONCAT('%', #{material_name}, '%')</if>
+            <if test="issueNo != null and issueNo != ''"> AND issue_no LIKE CONCAT('%', #{issueNo}, '%')</if>
+            <if test="workOrderNo != null and workOrderNo != ''"> AND work_order_no LIKE CONCAT('%', #{workOrderNo}, '%')</if>
+            <if test="materialCode != null and materialCode != ''"> AND material_code LIKE CONCAT('%', #{materialCode}, '%')</if>
+            <if test="materialName != null and materialName != ''"> AND material_name LIKE CONCAT('%', #{materialName}, '%')</if>
             <if test="status != null and status != ''"> AND status = #{status}</if>
-            <if test="batchNo != null and batchNo != ''"> AND batch_no LIKE CONCAT('%', #{batch_no}, '%')</if>
+            <if test="batchNo != null and batchNo != ''"> AND batch_no LIKE CONCAT('%', #{batchNo}, '%')</if>
             <if test="params.beginTime != null and params.beginTime != ''"> AND date(create_time) &gt;= #{params.beginTime}</if>
             <if test="params.endTime != null and params.endTime != ''"> AND date(create_time) &lt;= #{params.endTime}</if>
         </where>

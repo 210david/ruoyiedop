@@ -36,7 +36,7 @@ public class MmsRoute extends BaseEntity
     @Excel(name = "总标准工时")
     private BigDecimal totalStdTime;
 
-    @Excel(name = "状态", readConverterExp = "0=草稿,1=已启用,2=已审核,3=已停用,4=已驳回")
+    @Excel(name = "状态", readConverterExp = "0=草稿,1=待审核,2=已审核,3=已停用,4=已驳回")
     private String status;
 
     /** 审核人 */

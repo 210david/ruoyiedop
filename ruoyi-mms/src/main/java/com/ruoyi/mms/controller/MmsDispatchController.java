@@ -1,6 +1,8 @@
 package com.ruoyi.mms.controller;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
@@ -29,9 +31,6 @@ public class MmsDispatchController extends BaseController
 
     // ========== 标准 CRUD ==========
 
-    /**
-     * 查询派工单列表（分页）
-     */
     @PreAuthorize("@ss.hasPermi('mms:dispatch:list')")
     @GetMapping("/list")
     public TableDataInfo list(MmsDispatch dispatch)
@@ -41,9 +40,6 @@ public class MmsDispatchController extends BaseController
         return getDataTable(list);
     }
 
-    /**
-     * 导出 Excel
-     */
     @Log(title = "派工管理", businessType = BusinessType.EXPORT)
     @PreAuthorize("@ss.hasPermi('mms:dispatch:export')")
     @PostMapping("/export")
@@ -54,9 +50,6 @@ public class MmsDispatchController extends BaseController
         util.exportExcel(response, list, "派工单数据");
     }
 
-    /**
-     * 根据ID获取派工单详情
-     */
     @PreAuthorize("@ss.hasPermi('mms:dispatch:query')")
     @GetMapping(value = "/{dispatchId}")
     public AjaxResult getInfo(@PathVariable("dispatchId") Long dispatchId)
@@ -64,9 +57,6 @@ public class MmsDispatchController extends BaseController
         return AjaxResult.success(mmsDispatchService.selectDispatchById(dispatchId));
     }
 
-    /**
-     * 新增派工单
-     */
     @Log(title = "派工管理", businessType = BusinessType.INSERT)
     @PreAuthorize("@ss.hasPermi('mms:dispatch:add')")
     @PostMapping
@@ -75,9 +65,6 @@ public class MmsDispatchController extends BaseController
         return toAjax(mmsDispatchService.insertDispatch(dispatch));
     }
 
-    /**
-     * 修改派工单
-     */
     @Log(title = "派工管理", businessType = BusinessType.UPDATE)
     @PreAuthorize("@ss.hasPermi('mms:dispatch:edit')")
     @PutMapping
@@ -86,9 +73,6 @@ public class MmsDispatchController extends BaseController
         return toAjax(mmsDispatchService.updateDispatch(dispatch));
     }
 
-    /**
-     * 删除派工单（软删除）
-     */
     @Log(title = "派工管理", businessType = BusinessType.DELETE)
     @PreAuthorize("@ss.hasPermi('mms:dispatch:remove')")
     @DeleteMapping("/{dispatchIds}")
@@ -102,25 +86,59 @@ public class MmsDispatchController extends BaseController
     /**
      * 派工开工
      * 状态：0(待开工) → 1(进行中)
+     * 需填写：班组、操作人员（默认当前登录用户）
      */
     @Log(title = "派工管理-开工", businessType = BusinessType.UPDATE)
     @PreAuthorize("@ss.hasPermi('mms:dispatch:start')")
     @PutMapping("/start/{dispatchId}")
-    public AjaxResult start(@PathVariable("dispatchId") Long dispatchId)
+    public AjaxResult start(@PathVariable("dispatchId") Long dispatchId, @RequestBody(required = false) Map<String, Object> body)
     {
-        return toAjax(mmsDispatchService.startDispatch(dispatchId));
+        String operatorName = body != null && body.get("operatorName") != null ? body.get("operatorName").toString() : null;
+        Long teamId = null;
+        String teamName = null;
+        if (body != null)
+        {
+            if (body.get("teamId") != null)
+            {
+                try { teamId = Long.valueOf(body.get("teamId").toString()); } catch (NumberFormatException e) {}
+            }
+            if (body.get("teamName") != null)
+            {
+                teamName = body.get("teamName").toString();
+            }
+        }
+        return toAjax(mmsDispatchService.startDispatch(dispatchId, operatorName, teamId, teamName));
     }
 
     /**
      * 派工完工
      * 状态：1(进行中) → 2(已完成)
+     * 需填写：合格数量、不良数量、实际开始时间、实际结束时间、完工备注（不良原因等）
+     * 完工后自动：回写派工单数量和时间 → 生成报工记录 → 更新工单进度
      */
     @Log(title = "派工管理-完工", businessType = BusinessType.UPDATE)
     @PreAuthorize("@ss.hasPermi('mms:dispatch:finish')")
     @PutMapping("/finish/{dispatchId}")
-    public AjaxResult finish(@PathVariable("dispatchId") Long dispatchId)
+    public AjaxResult finish(@PathVariable("dispatchId") Long dispatchId, @RequestBody(required = false) Map<String, Object> body)
     {
-        return toAjax(mmsDispatchService.finishDispatch(dispatchId));
+        body = body != null ? body : Map.of();
+        BigDecimal goodQty = body.get("goodQty") != null ? new BigDecimal(body.get("goodQty").toString()) : BigDecimal.ZERO;
+        BigDecimal defectQty = body.get("defectQty") != null ? new BigDecimal(body.get("defectQty").toString()) : BigDecimal.ZERO;
+        String remark = body.get("remark") != null ? body.get("remark").toString() : null;
+        // 实际开始/结束时间（用户可在完工时修改，为空则后端自动处理）
+        java.util.Date actualStart = null;
+        java.util.Date actualEnd = null;
+        if (body.get("actualStart") != null && !body.get("actualStart").toString().isEmpty())
+        {
+            try { actualStart = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(body.get("actualStart").toString()); }
+            catch (Exception e) {}
+        }
+        if (body.get("actualEnd") != null && !body.get("actualEnd").toString().isEmpty())
+        {
+            try { actualEnd = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(body.get("actualEnd").toString()); }
+            catch (Exception e) {}
+        }
+        return toAjax(mmsDispatchService.finishDispatch(dispatchId, goodQty, defectQty, remark, actualStart, actualEnd));
     }
 
     /**

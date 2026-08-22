@@ -1,6 +1,7 @@
 package com.ruoyi.wms.domain;
 
 import java.math.BigDecimal;
+import java.util.List;
 import com.ruoyi.common.annotation.Excel;
 import com.ruoyi.common.core.domain.BaseEntity;
 
@@ -66,6 +67,9 @@ public class WmsMaterial extends BaseEntity
     /** 删除标志 */
     private String delFlag;
 
+    /** 物料类型列表（用于IN查询，如：半成品+成品） */
+    private List<String> materialTypes;
+
     public Long getMaterialId() { return materialId; }
     public void setMaterialId(Long materialId) { this.materialId = materialId; }
     public String getMaterialCode() { return materialCode; }
@@ -94,4 +98,6 @@ public class WmsMaterial extends BaseEntity
     public void setStatus(String status) { this.status = status; }
     public String getDelFlag() { return delFlag; }
     public void setDelFlag(String delFlag) { this.delFlag = delFlag; }
+    public List<String> getMaterialTypes() { return materialTypes; }
+    public void setMaterialTypes(List<String> materialTypes) { this.materialTypes = materialTypes; }
 }

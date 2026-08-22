@@ -12,6 +12,8 @@
         <result property="processId" column="process_id"/>
         <result property="processCode" column="process_code"/>
         <result property="processName" column="process_name"/>
+        <result property="resourceId" column="resource_id"/>
+        <result property="resourceName" column="resource_name"/>
         <result property="stdTime" column="std_time"/>
         <result property="prepTime" column="prep_time"/>
         <result property="isKeyProcess" column="is_key_process"/>
@@ -22,7 +24,7 @@
     </resultMap>
 
     <sql id="selectRouteSnapshotVo">
-        SELECT snapshot_id, work_order_id, route_id, route_no, route_version, step_seq, process_id, process_code, process_name, std_time, prep_time, is_key_process, is_outsource, del_flag, create_by, create_time
+        SELECT snapshot_id, work_order_id, route_id, route_no, route_version, step_seq, process_id, process_code, process_name, resource_id, resource_name, std_time, prep_time, is_key_process, is_outsource, del_flag, create_by, create_time
         FROM mms_wo_route_snapshot
     </sql>
 
@@ -34,11 +36,11 @@
 
     <insert id="batchInsertRouteSnapshot" parameterType="java.util.List">
         INSERT INTO mms_wo_route_snapshot (
-            work_order_id, route_id, route_no, route_version, step_seq, process_id, process_code, process_name, std_time, prep_time, is_key_process, is_outsource, del_flag, create_by, create_time
+            work_order_id, route_id, route_no, route_version, step_seq, process_id, process_code, process_name, resource_id, resource_name, std_time, prep_time, is_key_process, is_outsource, del_flag, create_by, create_time
         ) VALUES
         <foreach collection="list" item="item" separator=",">
             (
-                #{item.workOrderId}, #{item.routeId}, #{item.routeNo}, #{item.routeVersion}, #{item.stepSeq}, #{item.processId}, #{item.processCode}, #{item.processName}, #{item.stdTime}, #{item.prepTime}, #{item.isKeyProcess}, #{item.isOutsource}, #{item.delFlag}, #{item.createBy}, #{item.createTime}
+                #{item.workOrderId}, #{item.routeId}, #{item.routeNo}, #{item.routeVersion}, #{item.stepSeq}, #{item.processId}, #{item.processCode}, #{item.processName}, #{item.resourceId}, #{item.resourceName}, #{item.stdTime}, #{item.prepTime}, #{item.isKeyProcess}, #{item.isOutsource}, #{item.delFlag}, #{item.createBy}, #{item.createTime}
             )
         </foreach>
     </insert>

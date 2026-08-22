@@ -69,6 +69,11 @@ public class MmsWorkReportServiceImpl implements IMmsWorkReportService
         {
             workReport.setStatus("0");
         }
+        // 默认来源为手动报工
+        if (StringUtils.isEmpty(workReport.getSource()))
+        {
+            workReport.setSource("1");
+        }
         workReport.setDelFlag("0");
         workReport.setCreateBy(SecurityUtils.getUsername());
         workReport.setCreateTime(DateUtils.getNowDate());

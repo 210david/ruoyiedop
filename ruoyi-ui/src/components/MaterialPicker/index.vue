@@ -1,5 +1,5 @@
 <template>
-  <el-dialog v-model="visible" width="720px" append-to-body draggable class="rd-dialog" @open="onOpen">
+  <el-dialog v-model="visible" width="780px" append-to-body draggable class="rd-dialog" @open="onOpen">
     <template #header>
       <div class="rd-detail-header">
         <div class="rd-detail-header-icon">
@@ -19,6 +19,9 @@
           <template #prefix><el-icon><Search /></el-icon></template>
         </el-input>
         <el-input v-model="queryParams.materialName" placeholder="物料名称" clearable size="small" style="width: 180px; margin-left: 8px" @keyup.enter="handleQuery" />
+        <el-select v-model="queryParams.materialType" placeholder="物料类型" clearable size="small" style="width: 130px; margin-left: 8px" @change="handleQuery">
+          <el-option v-for="item in availableMaterialTypes" :key="item.value" :label="item.label" :value="item.value" />
+        </el-select>
         <el-button type="primary" plain icon="Search" size="small" style="margin-left: 8px" @click="handleQuery">查询</el-button>
         <el-button icon="RefreshLeft" size="small" @click="resetQuery">重置</el-button>
       </div>
@@ -41,8 +44,11 @@
             </template>
           </el-table-column>
           <el-table-column label="物料编码" prop="materialCode" width="140" show-overflow-tooltip />
-          <el-table-column label="物料名称" prop="materialName" min-width="180" show-overflow-tooltip />
-          <el-table-column label="规格型号" prop="specModel" width="140" show-overflow-tooltip />
+          <el-table-column label="物料名称" prop="materialName" min-width="160" show-overflow-tooltip />
+          <el-table-column label="物料类型" prop="materialType" width="90" align="center">
+            <template #default="scope"><span class="badge" :class="materialTypeBadgeClass(scope.row.materialType)">{{ materialTypeLabel(scope.row.materialType) }}</span></template>
+          </el-table-column>
+          <el-table-column label="规格型号" prop="specModel" width="130" show-overflow-tooltip />
           <el-table-column label="单位" prop="unit" width="70" align="center">
             <template #default="scope"><span class="badge blue">{{ unitLabel(scope.row.unit) }}</span></template>
           </el-table-column>
@@ -72,12 +78,17 @@
 import { listMaterial } from '@/api/wms/material'
 
 const { proxy } = getCurrentInstance()
-const { wms_unit } = proxy.useDict('wms_unit')
+const { wms_unit, wms_material_type } = proxy.useDict('wms_unit', 'wms_material_type')
 
 const props = defineProps({
   title: {
     type: String,
     default: '选择物料'
+  },
+  /** 物料类型列表（用于过滤，如 ['1','2'] 表示半成品+成品） */
+  materialTypes: {
+    type: Array,
+    default: () => []
   }
 })
 
@@ -96,13 +107,25 @@ const queryParams = reactive({
   pageSize: 10,
   materialCode: undefined,
   materialName: undefined,
+  materialType: undefined,
+  materialTypes: [],
   status: '0'
+})
+
+/** 可选的物料类型（受 props.materialTypes 限制） */
+const availableMaterialTypes = computed(() => {
+  if (props.materialTypes.length > 0) {
+    return wms_material_type.value.filter(d => props.materialTypes.includes(d.value))
+  }
+  return wms_material_type.value
 })
 
 /** 弹窗打开时初始化 */
 function onOpen() {
   queryParams.materialCode = undefined
   queryParams.materialName = undefined
+  queryParams.materialType = undefined
+  queryParams.materialTypes = props.materialTypes.length > 0 ? [...props.materialTypes] : []
   queryParams.pageNum = 1
   selectedId.value = null
   selectedRow.value = null
@@ -137,6 +160,7 @@ function handleQuery() {
 function resetQuery() {
   queryParams.materialCode = undefined
   queryParams.materialName = undefined
+  queryParams.materialType = undefined
   handleQuery()
 }
 
@@ -160,6 +184,7 @@ function handleConfirm() {
     materialId: selectedRow.value.materialId,
     materialCode: selectedRow.value.materialCode,
     materialName: selectedRow.value.materialName,
+    materialType: selectedRow.value.materialType,
     specModel: selectedRow.value.specModel,
     unit: selectedRow.value.unit
   })
@@ -178,6 +203,20 @@ function open(currentMaterialId) {
 function unitLabel(unit) {
   const item = wms_unit.value.find(d => d.value == unit)
   return item ? item.label : '-'
+}
+
+/** 物料类型标签 */
+function materialTypeLabel(type) {
+  const item = wms_material_type.value.find(d => d.value == type)
+  return item ? item.label : '-'
+}
+
+/** 物料类型徽章样式 */
+function materialTypeBadgeClass(type) {
+  const item = wms_material_type.value.find(d => d.value == type)
+  const listClass = item ? item.listClass : ''
+  const map = { 'primary': 'blue', 'info': 'gray', 'success': 'green', 'warning': 'amber', 'danger': 'red' }
+  return map[listClass] || 'gray'
 }
 
 defineExpose({ open })

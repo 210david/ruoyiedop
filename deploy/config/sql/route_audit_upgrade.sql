@@ -39,11 +39,11 @@ DELETE FROM `sys_dict_data` WHERE `dict_type` = 'mms_route_status';
 DELETE FROM `sys_dict_type` WHERE `dict_type` = 'mms_route_status';
 
 INSERT INTO `sys_dict_type` (`dict_name`, `dict_type`, `status`, `create_by`, `create_time`, `remark`)
-VALUES ('工艺路线状态', 'mms_route_status', '0', 'admin', sysdate(), '工艺路线状态：草稿/已启用/已审核/已停用/已驳回');
+VALUES ('工艺路线状态', 'mms_route_status', '0', 'admin', sysdate(), '工艺路线状态：草稿/待审核/已审核/已停用/已驳回');
 
 INSERT INTO `sys_dict_data` (`dict_sort`, `dict_label`, `dict_value`, `dict_type`, `css_class`, `list_class`, `is_default`, `status`, `create_by`, `create_time`, `remark`) VALUES
 (1, '草稿',   '0', 'mms_route_status', '', 'info',    'Y', '0', 'admin', sysdate(), '草稿'),
-(2, '已启用', '1', 'mms_route_status', '', 'primary', 'N', '0', 'admin', sysdate(), '已启用'),
+(2, '待审核', '1', 'mms_route_status', '', 'primary', 'N', '0', 'admin', sysdate(), '待审核'),
 (3, '已审核', '2', 'mms_route_status', '', 'success', 'N', '0', 'admin', sysdate(), '已审核'),
 (4, '已停用', '3', 'mms_route_status', '', 'danger',  'N', '0', 'admin', sysdate(), '已停用'),
 (5, '已驳回', '4', 'mms_route_status', '', 'danger',  'N', '0', 'admin', sysdate(), '已驳回');

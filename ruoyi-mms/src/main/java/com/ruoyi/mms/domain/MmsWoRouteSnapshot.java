@@ -32,6 +32,10 @@ public class MmsWoRouteSnapshot extends BaseEntity
 
     private String processName;
 
+    private Long resourceId;
+
+    private String resourceName;
+
     private BigDecimal stdTime;
 
     private BigDecimal prepTime;
@@ -60,6 +64,10 @@ public class MmsWoRouteSnapshot extends BaseEntity
     public void setProcessCode(String processCode) { this.processCode = processCode; }
     public String getProcessName() { return processName; }
     public void setProcessName(String processName) { this.processName = processName; }
+    public Long getResourceId() { return resourceId; }
+    public void setResourceId(Long resourceId) { this.resourceId = resourceId; }
+    public String getResourceName() { return resourceName; }
+    public void setResourceName(String resourceName) { this.resourceName = resourceName; }
     public BigDecimal getStdTime() { return stdTime; }
     public void setStdTime(BigDecimal stdTime) { this.stdTime = stdTime; }
     public BigDecimal getPrepTime() { return prepTime; }

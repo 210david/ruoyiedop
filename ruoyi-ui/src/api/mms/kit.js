@@ -17,37 +17,11 @@ export function getKitCheck(kitId) {
   })
 }
 
-// 新增齐套检查
-export function addKitCheck(data) {
-  return request({
-    url: '/mms/kit',
-    method: 'post',
-    data: data
-  })
-}
-
-// 修改齐套检查
-export function updateKitCheck(data) {
-  return request({
-    url: '/mms/kit',
-    method: 'put',
-    data: data
-  })
-}
-
 // 删除齐套检查
 export function delKitCheck(kitId) {
   return request({
     url: '/mms/kit/' + kitId,
     method: 'delete'
-  })
-}
-
-// 执行齐套检查
-export function executeKitCheck(kitId) {
-  return request({
-    url: '/mms/kit/execute/' + kitId,
-    method: 'put'
   })
 }
 

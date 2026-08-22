@@ -20,6 +20,7 @@
         <result property="shiftName"     column="shift_name"/>
         <result property="isFirstPiece"     column="is_first_piece"/>
         <result property="status"     column="status"/>
+        <result property="source"     column="source"/>
         <result property="auditBy"     column="audit_by"/>
         <result property="auditTime"     column="audit_time"/>
         <result property="auditRemark"     column="audit_remark"/>
@@ -32,7 +33,7 @@
     </resultMap>
 
     <sql id="selectWorkReportVo">
-        SELECT report_id, report_no, work_order_id, work_order_no, process_id, process_name, resource_id, resource_name, good_qty, defect_qty, work_hours, report_time, report_by, team_name, shift_name, is_first_piece, status, audit_by, audit_time, audit_remark, del_flag, create_by, create_time, update_by, update_time, remark
+        SELECT report_id, report_no, work_order_id, work_order_no, process_id, process_name, resource_id, resource_name, good_qty, defect_qty, work_hours, report_time, report_by, team_name, shift_name, is_first_piece, status, source, audit_by, audit_time, audit_remark, del_flag, create_by, create_time, update_by, update_time, remark
         FROM mms_work_report
     </sql>
 
@@ -41,11 +42,11 @@
         <where>
             del_flag = '0'
             <if test="reportNo != null and reportNo != ''"> AND report_no LIKE CONCAT('%', #{reportNo}, '%')</if>
-            <if test="workOrderNo != null and workOrderNo != ''"> AND work_order_no LIKE CONCAT('%', #{work_order_no}, '%')</if>
-            <if test="processName != null and processName != ''"> AND process_name LIKE CONCAT('%', #{process_name}, '%')</if>
+            <if test="workOrderNo != null and workOrderNo != ''"> AND work_order_no LIKE CONCAT('%', #{workOrderNo}, '%')</if>
+            <if test="processName != null and processName != ''"> AND process_name LIKE CONCAT('%', #{processName}, '%')</if>
             <if test="status != null and status != ''"> AND status = #{status}</if>
-            <if test="reportBy != null and reportBy != ''"> AND report_by LIKE CONCAT('%', #{report_by}, '%')</if>
-            <if test="teamName != null and teamName != ''"> AND team_name LIKE CONCAT('%', #{team_name}, '%')</if>
+            <if test="reportBy != null and reportBy != ''"> AND report_by LIKE CONCAT('%', #{reportBy}, '%')</if>
+            <if test="teamName != null and teamName != ''"> AND team_name LIKE CONCAT('%', #{teamName}, '%')</if>
             <if test="params.beginTime != null and params.beginTime != ''"> AND date(create_time) &gt;= #{params.beginTime}</if>
             <if test="params.endTime != null and params.endTime != ''"> AND date(create_time) &lt;= #{params.endTime}</if>
         </where>
@@ -75,6 +76,7 @@
             shift_name,
             is_first_piece,
             status,
+            source,
             audit_by,
             audit_time,
             audit_remark,
@@ -101,6 +103,7 @@
             #{shiftName},
             #{isFirstPiece},
             #{status},
+            #{source},
             #{auditBy},
             #{auditTime},
             #{auditRemark},
@@ -131,6 +134,7 @@
             shift_name = #{shiftName},
             is_first_piece = #{isFirstPiece},
             status = #{status},
+            source = #{source},
             audit_by = #{auditBy},
             audit_time = #{auditTime},
             audit_remark = #{auditRemark},

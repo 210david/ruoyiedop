@@ -172,6 +172,7 @@ import { getCodeImg } from "@/api/login"
 import Cookies from "js-cookie"
 import { encrypt, decrypt } from "@/utils/jsencrypt"
 import useUserStore from '@/store/modules/user'
+import useTagsViewStore from '@/store/modules/tagsView'
 import { ElMessage } from 'element-plus'
 
 const userStore = useUserStore()
@@ -276,7 +277,28 @@ function handleLogin() {
           }
           return acc
         }, {})
-        router.push({ path: redirect.value || "/", query: otherQueryParams })
+        // 获取 redirect 路径，如果无 redirect 则尝试从 sessionStorage 恢复最后访问的路由
+        let redirectPath = redirect.value || "/"
+        if (!redirect.value || redirect.value === '/') {
+          const lastRoute = useTagsViewStore().getLastRoute()
+          if (lastRoute && lastRoute.fullPath) {
+            redirectPath = lastRoute.fullPath
+          }
+        }
+        // 解析 redirectPath 中的 query 参数（处理 fullPath 带参数的情况）
+        let finalQuery = { ...otherQueryParams }
+        if (redirectPath && redirectPath.includes('?')) {
+          const [pathOnly, queryString] = redirectPath.split('?')
+          redirectPath = pathOnly
+          // 解析 query string 并合并到 finalQuery
+          const params = new URLSearchParams(queryString)
+          for (const [key, value] of params.entries()) {
+            if (!finalQuery[key]) {
+              finalQuery[key] = value
+            }
+          }
+        }
+        router.push({ path: redirectPath, query: finalQuery })
       }).catch(() => {
         loading.value = false
         getCode()

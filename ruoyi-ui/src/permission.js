@@ -9,6 +9,7 @@ import useUserStore from '@/store/modules/user'
 import useLockStore from '@/store/modules/lock'
 import useSettingsStore from '@/store/modules/settings'
 import usePermissionStore from '@/store/modules/permission'
+import useTagsViewStore from '@/store/modules/tagsView'
 
 NProgress.configure({ showSpinner: false })
 
@@ -71,6 +72,10 @@ router.beforeEach(async (to, from) => {
   }
 })
 
-router.afterEach(() => {
+router.afterEach((to) => {
   NProgress.done()
+  // 保存当前访问的路由到 sessionStorage，超时重新登录时用于恢复
+  if (to.path && !isWhiteList(to.path) && to.path !== '/login') {
+    useTagsViewStore().saveLastRoute(to)
+  }
 })

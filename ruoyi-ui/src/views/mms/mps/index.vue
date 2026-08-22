@@ -53,12 +53,6 @@
           </div>
         </div>
         <div class="field" v-show="showAdvanced">
-          <label>产能单元</label>
-          <div class="control">
-            <el-input v-model="queryParams.resourceName" placeholder="请输入" clearable @keyup.enter="handleQuery" />
-          </div>
-        </div>
-        <div class="field" v-show="showAdvanced">
           <label>创建日期</label>
           <div class="control">
             <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
@@ -125,7 +119,6 @@
           <el-table-column label="计划结束" prop="periodEnd" key="periodEnd" :width="colWidth('periodEnd', 120)" resizable align="center" v-if="columns.periodEnd.visible">
             <template #default="scope"><span>{{ parseTime(scope.row.periodEnd, '{y}-{m}-{d}') }}</span></template>
           </el-table-column>
-          <el-table-column label="产能单元" prop="resourceName" key="resourceName" :width="colWidth('resourceName', 120)" resizable v-if="columns.resourceName.visible" />
           <el-table-column label="优先级" prop="priority" key="priority" :width="colWidth('priority', 90)" resizable align="center" v-if="columns.priority.visible">
             <template #default="scope"><span v-if="scope.row.priority" class="badge" :class="priorityBadgeClass(scope.row.priority)"><span class="dot"></span>{{ priorityLabel(scope.row.priority) }}</span><span v-else class="text-muted">—</span></template>
           </el-table-column>
@@ -183,7 +176,7 @@
           <section class="rd-card">
             <div class="rd-card-header" @click="toggleCard('c2')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>计划参数</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
             <div class="rd-card-body" v-show="!collapsedCards.c2">
-              <el-row :gutter="20"><el-col :span="12"><el-form-item label="计划产量" prop="planQty"><el-input-number v-model="form.planQty" :min="0" :precision="2" style="width: 100%" /></el-form-item></el-col><el-col :span="12"><el-form-item label="产能单元" prop="resourceName"><el-input v-model="form.resourceName" readonly placeholder="请选择产能单元" style="width: 100%" @click="openResourcePicker"><template #append><el-button icon="Search" @click="openResourcePicker" /></template><template #suffix><el-icon v-if="form.resourceName" class="rd-form-tip" style="cursor:pointer" @click.stop="clearResource"><CircleClose /></el-icon></template></el-input></el-form-item></el-col></el-row>
+              <el-row :gutter="20"><el-col :span="12"><el-form-item label="计划产量" prop="planQty"><el-input-number v-model="form.planQty" :min="0" :precision="2" style="width: 100%" /></el-form-item></el-col></el-row>
               <el-row :gutter="20"><el-col :span="12"><el-form-item label="计划期开始" prop="periodStart"><el-date-picker v-model="form.periodStart" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" style="width: 100%" /></el-form-item></el-col><el-col :span="12"><el-form-item label="计划期结束" prop="periodEnd"><el-date-picker v-model="form.periodEnd" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" style="width: 100%" /></el-form-item></el-col></el-row>
             </div>
           </section>
@@ -221,7 +214,7 @@
         </section>
         <section class="rd-card">
           <div class="rd-card-header" @click="toggleCard('vc2')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>计划参数</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
-          <div class="rd-card-body" v-show="!collapsedCards.vc2" style="display:block"><div class="rd-grid"><div class="rd-item"><span class="rd-label">计划产量</span><div class="rd-value">{{ viewData.planQty != null ? viewData.planQty : '-' }}</div></div><div class="rd-item"><span class="rd-label">产能单元</span><div class="rd-value">{{ viewData.resourceName || '-' }}</div></div><div class="rd-item"><span class="rd-label">计划期开始</span><div class="rd-value">{{ viewData.periodStart ? parseTime(viewData.periodStart, '{y}-{m}-{d}') : '-' }}</div></div><div class="rd-item"><span class="rd-label">计划期结束</span><div class="rd-value">{{ viewData.periodEnd ? parseTime(viewData.periodEnd, '{y}-{m}-{d}') : '-' }}</div></div></div></div>
+          <div class="rd-card-body" v-show="!collapsedCards.vc2" style="display:block"><div class="rd-grid"><div class="rd-item"><span class="rd-label">计划产量</span><div class="rd-value">{{ viewData.planQty != null ? viewData.planQty : '-' }}</div></div><div class="rd-item"><span class="rd-label">计划期开始</span><div class="rd-value">{{ viewData.periodStart ? parseTime(viewData.periodStart, '{y}-{m}-{d}') : '-' }}</div></div><div class="rd-item"><span class="rd-label">计划期结束</span><div class="rd-value">{{ viewData.periodEnd ? parseTime(viewData.periodEnd, '{y}-{m}-{d}') : '-' }}</div></div></div></div>
         </section>
         <section class="rd-card">
           <div class="rd-card-header" @click="toggleCard('vc3')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>其他信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc3 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
@@ -312,7 +305,7 @@
         <!-- 计划参数 -->
         <section class="rd-card">
           <div class="rd-card-header" @click="toggleCard('ac4')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>计划参数</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.ac4 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
-          <div class="rd-card-body" v-show="!collapsedCards.ac4" style="display:block"><div class="rd-grid"><div class="rd-item"><span class="rd-label">计划产量</span><div class="rd-value">{{ auditData.planQty != null ? auditData.planQty : '-' }}</div></div><div class="rd-item"><span class="rd-label">产能单元</span><div class="rd-value">{{ auditData.resourceName || '-' }}</div></div><div class="rd-item"><span class="rd-label">计划期开始</span><div class="rd-value">{{ auditData.periodStart ? parseTime(auditData.periodStart, '{y}-{m}-{d}') : '-' }}</div></div><div class="rd-item"><span class="rd-label">计划期结束</span><div class="rd-value">{{ auditData.periodEnd ? parseTime(auditData.periodEnd, '{y}-{m}-{d}') : '-' }}</div></div></div></div>
+          <div class="rd-card-body" v-show="!collapsedCards.ac4" style="display:block"><div class="rd-grid"><div class="rd-item"><span class="rd-label">计划产量</span><div class="rd-value">{{ auditData.planQty != null ? auditData.planQty : '-' }}</div></div><div class="rd-item"><span class="rd-label">计划期开始</span><div class="rd-value">{{ auditData.periodStart ? parseTime(auditData.periodStart, '{y}-{m}-{d}') : '-' }}</div></div><div class="rd-item"><span class="rd-label">计划期结束</span><div class="rd-value">{{ auditData.periodEnd ? parseTime(auditData.periodEnd, '{y}-{m}-{d}') : '-' }}</div></div></div></div>
         </section>
         <!-- 其他信息 -->
         <section class="rd-card">
@@ -380,41 +373,8 @@
       </template>
     </el-dialog>
 
-    <!-- ===== 物料选择器 ===== -->
-    <material-picker ref="materialPickerRef" title="选择产品物料" @confirm="onMaterialPickerConfirm" />
-
-    <!-- ===== 产能单元选择器弹窗 ===== -->
-    <el-dialog v-model="resourcePickerOpen" width="860px" append-to-body draggable class="rd-dialog">
-      <template #header>
-        <div class="rd-detail-header">
-          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div>
-          <span class="rd-detail-header-title">选择产能单元</span>
-        </div>
-      </template>
-      <div style="display:flex;gap:8px;margin-bottom:12px">
-        <el-input v-model="resourcePickerQuery.resourceName" placeholder="产能单元名称" clearable size="small" style="width:200px" @keyup.enter="handleResourcePickerQuery">
-          <template #prefix><el-icon><Search /></el-icon></template>
-        </el-input>
-        <el-select v-model="resourcePickerQuery.resourceType" placeholder="类型" clearable size="small" style="width:120px" @change="handleResourcePickerQuery">
-          <el-option v-for="d in mms_resource_type" :key="d.value" :label="d.label" :value="d.value" />
-        </el-select>
-        <el-button type="primary" plain icon="Search" size="small" @click="handleResourcePickerQuery">查询</el-button>
-        <el-button icon="RefreshLeft" size="small" @click="resetResourcePickerQuery">重置</el-button>
-      </div>
-      <el-table ref="resourcePickerTableRef" v-loading="resourcePickerLoading" :data="resourcePickerList" highlight-current-row @row-click="onResourceRowClick" @row-dblclick="onResourceRowDblClick" height="360" size="small">
-        <el-table-column width="45" align="center"><template #default="{ row }"><el-radio :model-value="resourcePickerSelectedId" :value="row.resourceId" @click.stop><span /></el-radio></template></el-table-column>
-        <el-table-column label="资源编码" prop="resourceCode" width="130" show-overflow-tooltip />
-        <el-table-column label="产能单元" prop="resourceName" min-width="150" show-overflow-tooltip />
-        <el-table-column label="类型" prop="resourceType" width="100" align="center"><template #default="scope"><dict-tag :options="mms_resource_type" :value="scope.row.resourceType" /></template></el-table-column>
-        <el-table-column label="产线" prop="lineName" width="100" show-overflow-tooltip />
-        <el-table-column label="车间" prop="workshopName" width="100" show-overflow-tooltip />
-      </el-table>
-      <div style="display:flex;justify-content:flex-end;padding-top:8px">
-        <el-pagination v-model:current-page="resourcePickerQuery.pageNum" v-model:page-size="resourcePickerQuery.pageSize" :total="resourcePickerTotal" layout="total, prev, pager, next" small @current-change="getResourcePickerList" />
-      </div>
-      <div v-if="resourcePickerList.length > 0" style="margin-top:6px;font-size:12px;color:#94a3b8;text-align:center">双击行可选择并带出产能单元</div>
-      <template #footer><el-button @click="resourcePickerOpen = false">取 消</el-button><el-button type="primary" @click="handleResourcePickerConfirm" :disabled="!resourcePickerSelectedId">确 定</el-button></template>
-    </el-dialog>
+    <!-- ===== 物料选择器（仅半成品和成品） ===== -->
+    <material-picker ref="materialPickerRef" title="选择产品物料" :material-types="['1','2']" @confirm="onMaterialPickerConfirm" />
 
     <!-- ===== 业务操作说明对话框 ===== -->
     <el-dialog v-model="showStatusHelp" title="主生产计划业务操作说明" width="820px" append-to-body>
@@ -475,14 +435,13 @@
 <script setup name="Mps">
 import { listMps, getMps, addMps, updateMps, delMps, confirmMps, auditMps, releaseMps, cancelMps } from "@/api/mms/mps";
 import { listDemand } from "@/api/mms/demand";
-import { listResource } from "@/api/mms/resource";
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
 import MaterialPicker from '@/components/MaterialPicker/index.vue'
 import { Search, Filter, RefreshLeft, ArrowRight, ArrowDown, WarningFilled, CircleClose } from '@element-plus/icons-vue'
 
 const { proxy } = getCurrentInstance();
-const { mms_mps_status, mms_priority, wms_unit, mms_resource_type } = proxy.useDict("mms_mps_status", "mms_priority", "wms_unit", "mms_resource_type");
+const { mms_mps_status, mms_priority, wms_unit } = proxy.useDict("mms_mps_status", "mms_priority", "wms_unit");
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('mms_mps_index')
 const { collapsedCards, toggleCard } = useDetailCard(["c0","c1","c2","c3","vc0","vc1","vc2","vc3","vc4","ac0","ac1","ac2","ac3","ac4","ac5"])
 
@@ -519,7 +478,6 @@ const defaultColumns = {
   planQty: { label: '计划数量', visible: true },
   periodStart: { label: '计划开始', visible: true },
   periodEnd: { label: '计划结束', visible: true },
-  resourceName: { label: '产能单元', visible: true },
   priority: { label: '优先级', visible: true },
   status: { label: '状态', visible: true },
   createTime: { label: '创建时间', visible: true }
@@ -554,7 +512,6 @@ const activeFilterCount = computed(() => {
   if (queryParams.value.status) count++;
   if (queryParams.value.priority) count++;
   if (queryParams.value.demandNo) count++;
-  if (queryParams.value.resourceName) count++;
   if (dateRange.value && dateRange.value.length === 2) count++;
   return count;
 });
@@ -570,13 +527,11 @@ const data = reactive({
     status: undefined,
     priority: undefined,
     demandNo: undefined,
-    resourceName: undefined,
     params: {}
   },
   rules: {
     productCode: [{ required: true, message: "请选择产品编码", trigger: "change" }],
     unit: [{ required: true, message: "请选择单位", trigger: "change" }],
-    resourceName: [{ required: true, message: "请选择产能单元", trigger: "change" }],
     planQty: [{ required: true, message: "请输入计划产量", trigger: "blur" }],
     periodStart: [{ required: true, message: "请选择计划期开始", trigger: "change" }],
     periodEnd: [{ required: true, message: "请选择计划期结束", trigger: "change" }]
@@ -608,7 +563,6 @@ function loadStatusCounts() {
   if (queryParams.value.productName) baseQuery.productName = queryParams.value.productName;
   if (queryParams.value.priority) baseQuery.priority = queryParams.value.priority;
   if (queryParams.value.demandNo) baseQuery.demandNo = queryParams.value.demandNo;
-  if (queryParams.value.resourceName) baseQuery.resourceName = queryParams.value.resourceName;
   listMps(proxy.addDateRange(baseQuery, dateRange.value)).then(res => {
     const counts = { all: res.total };
     if (mms_mps_status.value) {
@@ -632,7 +586,6 @@ function resetQuery() {
   queryParams.value.status = undefined;
   queryParams.value.priority = undefined;
   queryParams.value.demandNo = undefined;
-  queryParams.value.resourceName = undefined;
   dateRange.value = [];
   queryParams.value.params = {};
   activeStatusTab.value = 'all';
@@ -654,7 +607,7 @@ function handleSelectionChange(selection) {
 function reset() {
   form.value = {
     mpsNo: undefined, demandId: undefined, demandNo: undefined, productId: undefined, productCode: undefined, productName: undefined,
-    specModel: undefined, unit: undefined, planQty: undefined, resourceId: undefined, resourceName: undefined,
+    specModel: undefined, unit: undefined, planQty: undefined,
     periodStart: undefined, periodEnd: undefined, priority: undefined, remark: undefined
   };
   proxy.resetForm("formRef");
@@ -804,49 +757,6 @@ function clearMaterial() {
   form.value.productCode = undefined
   form.value.productName = undefined
   form.value.specModel = undefined
-}
-
-// ===== 产能单元选择器 =====
-const resourcePickerOpen = ref(false);
-const resourcePickerLoading = ref(false);
-const resourcePickerList = ref([]);
-const resourcePickerTotal = ref(0);
-const resourcePickerSelectedId = ref(null);
-const resourcePickerSelectedRow = ref(null);
-const resourcePickerTableRef = ref();
-const resourcePickerQuery = reactive({ pageNum: 1, pageSize: 10, resourceName: undefined, resourceType: undefined, status: '0' });
-
-function openResourcePicker() {
-  resourcePickerOpen.value = true;
-  resourcePickerSelectedId.value = null;
-  resourcePickerSelectedRow.value = null;
-  resourcePickerQuery.pageNum = 1;
-  resourcePickerQuery.resourceName = undefined;
-  resourcePickerQuery.resourceType = undefined;
-  getResourcePickerList();
-}
-function getResourcePickerList() {
-  resourcePickerLoading.value = true;
-  listResource(resourcePickerQuery).then(res => {
-    resourcePickerList.value = res.rows;
-    resourcePickerTotal.value = res.total;
-    resourcePickerLoading.value = false;
-  }).catch(() => { resourcePickerLoading.value = false; });
-}
-function handleResourcePickerQuery() { resourcePickerQuery.pageNum = 1; getResourcePickerList(); }
-function resetResourcePickerQuery() { resourcePickerQuery.resourceName = undefined; resourcePickerQuery.resourceType = undefined; handleResourcePickerQuery(); }
-function onResourceRowClick(row) { resourcePickerSelectedId.value = row.resourceId; resourcePickerSelectedRow.value = row; }
-function onResourceRowDblClick(row) { onResourceRowClick(row); handleResourcePickerConfirm(); }
-function handleResourcePickerConfirm() {
-  if (!resourcePickerSelectedId.value) { proxy.$modal.msgWarning('请先选择产能单元'); return; }
-  const row = resourcePickerSelectedRow.value;
-  form.value.resourceId = row.resourceId;
-  form.value.resourceName = row.resourceName;
-  resourcePickerOpen.value = false;
-}
-function clearResource() {
-  form.value.resourceId = undefined;
-  form.value.resourceName = undefined;
 }
 
 // ===== 字典辅助函数 =====

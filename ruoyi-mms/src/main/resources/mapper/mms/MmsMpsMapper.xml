@@ -39,9 +39,9 @@
         <include refid="selectMpsVo"/>
         <where>
             del_flag = '0'
-            <if test="mpsNo != null and mpsNo != ''"> AND mps_no LIKE CONCAT('%', #{mps_no}, '%')</if>
-            <if test="productCode != null and productCode != ''"> AND product_code LIKE CONCAT('%', #{product_code}, '%')</if>
-            <if test="productName != null and productName != ''"> AND product_name LIKE CONCAT('%', #{product_name}, '%')</if>
+            <if test="mpsNo != null and mpsNo != ''"> AND mps_no LIKE CONCAT('%', #{mpsNo}, '%')</if>
+            <if test="productCode != null and productCode != ''"> AND product_code LIKE CONCAT('%', #{productCode}, '%')</if>
+            <if test="productName != null and productName != ''"> AND product_name LIKE CONCAT('%', #{productName}, '%')</if>
             <if test="status != null and status != ''"> AND status = #{status}</if>
             <if test="priority != null and priority != ''"> AND priority = #{priority}</if>
             <if test="params.beginTime != null and params.beginTime != ''"> AND date(create_time) &gt;= #{params.beginTime}</if>

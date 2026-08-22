@@ -31,14 +31,14 @@
         <include refid="selectProcessVo"/>
         <where>
             del_flag = '0'
-            <if test="processCode != null and processCode != ''"> AND process_code LIKE CONCAT('%', #{process_code}, '%')</if>
-            <if test="processName != null and processName != ''"> AND process_name LIKE CONCAT('%', #{process_name}, '%')</if>
-            <if test="processType != null and processType != ''"> AND process_type = #{process_type}</if>
+            <if test="processCode != null and processCode != ''"> AND process_code LIKE CONCAT('%', #{processCode}, '%')</if>
+            <if test="processName != null and processName != ''"> AND process_name LIKE CONCAT('%', #{processName}, '%')</if>
+            <if test="processType != null and processType != ''"> AND process_type = #{processType}</if>
             <if test="status != null and status != ''"> AND status = #{status}</if>
-            <if test="workshopName != null and workshopName != ''"> AND workshop_name LIKE CONCAT('%', #{workshop_name}, '%')</if>
-            <if test="lineName != null and lineName != ''"> AND line_name LIKE CONCAT('%', #{line_name}, '%')</if>
-            <if test="isKeyProcess != null and isKeyProcess != ''"> AND is_key_process = #{is_key_process}</if>
-            <if test="isOutsource != null and isOutsource != ''"> AND is_outsource = #{is_outsource}</if>
+            <if test="workshopName != null and workshopName != ''"> AND workshop_name LIKE CONCAT('%', #{workshopName}, '%')</if>
+            <if test="lineName != null and lineName != ''"> AND line_name LIKE CONCAT('%', #{lineName}, '%')</if>
+            <if test="isKeyProcess != null and isKeyProcess != ''"> AND is_key_process = #{isKeyProcess}</if>
+            <if test="isOutsource != null and isOutsource != ''"> AND is_outsource = #{isOutsource}</if>
             <if test="params.beginTime != null and params.beginTime != ''"> AND date(create_time) &gt;= #{params.beginTime}</if>
             <if test="params.endTime != null and params.endTime != ''"> AND date(create_time) &lt;= #{params.endTime}</if>
         </where>

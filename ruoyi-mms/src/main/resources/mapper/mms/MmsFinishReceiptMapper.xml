@@ -35,12 +35,12 @@
         <include refid="selectFinishReceiptVo"/>
         <where>
             del_flag = '0'
-            <if test="finishNo != null and finishNo != ''"> AND finish_no LIKE CONCAT('%', #{finish_no}, '%')</if>
-            <if test="workOrderNo != null and workOrderNo != ''"> AND work_order_no LIKE CONCAT('%', #{work_order_no}, '%')</if>
-            <if test="productCode != null and productCode != ''"> AND product_code LIKE CONCAT('%', #{product_code}, '%')</if>
-            <if test="productName != null and productName != ''"> AND product_name LIKE CONCAT('%', #{product_name}, '%')</if>
+            <if test="finishNo != null and finishNo != ''"> AND finish_no LIKE CONCAT('%', #{finishNo}, '%')</if>
+            <if test="workOrderNo != null and workOrderNo != ''"> AND work_order_no LIKE CONCAT('%', #{workOrderNo}, '%')</if>
+            <if test="productCode != null and productCode != ''"> AND product_code LIKE CONCAT('%', #{productCode}, '%')</if>
+            <if test="productName != null and productName != ''"> AND product_name LIKE CONCAT('%', #{productName}, '%')</if>
             <if test="status != null and status != ''"> AND status = #{status}</if>
-            <if test="batchNo != null and batchNo != ''"> AND batch_no LIKE CONCAT('%', #{batch_no}, '%')</if>
+            <if test="batchNo != null and batchNo != ''"> AND batch_no LIKE CONCAT('%', #{batchNo}, '%')</if>
             <if test="params.beginTime != null and params.beginTime != ''"> AND date(create_time) &gt;= #{params.beginTime}</if>
             <if test="params.endTime != null and params.endTime != ''"> AND date(create_time) &lt;= #{params.endTime}</if>
         </where>

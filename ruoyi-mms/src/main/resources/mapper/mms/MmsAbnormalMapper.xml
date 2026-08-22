@@ -36,12 +36,12 @@
         <include refid="selectAbnormalVo"/>
         <where>
             del_flag = '0'
-            <if test="abnormalNo != null and abnormalNo != ''"> AND abnormal_no LIKE CONCAT('%', #{abnormal_no}, '%')</if>
-            <if test="workOrderNo != null and workOrderNo != ''"> AND work_order_no LIKE CONCAT('%', #{work_order_no}, '%')</if>
-            <if test="abnormalType != null and abnormalType != ''"> AND abnormal_type = #{abnormal_type}</if>
+            <if test="abnormalNo != null and abnormalNo != ''"> AND abnormal_no LIKE CONCAT('%', #{abnormalNo}, '%')</if>
+            <if test="workOrderNo != null and workOrderNo != ''"> AND work_order_no LIKE CONCAT('%', #{workOrderNo}, '%')</if>
+            <if test="abnormalType != null and abnormalType != ''"> AND abnormal_type = #{abnormalType}</if>
             <if test="severity != null and severity != ''"> AND severity = #{severity}</if>
             <if test="status != null and status != ''"> AND status = #{status}</if>
-            <if test="reportBy != null and reportBy != ''"> AND report_by LIKE CONCAT('%', #{report_by}, '%')</if>
+            <if test="reportBy != null and reportBy != ''"> AND report_by LIKE CONCAT('%', #{reportBy}, '%')</if>
             <if test="params.beginTime != null and params.beginTime != ''"> AND date(create_time) &gt;= #{params.beginTime}</if>
             <if test="params.endTime != null and params.endTime != ''"> AND date(create_time) &lt;= #{params.endTime}</if>
         </where>

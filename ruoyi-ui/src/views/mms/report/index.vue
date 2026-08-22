@@ -43,6 +43,10 @@
           <div class="control is-select"><el-select v-model="queryParams.isFirstPiece" placeholder="全部" clearable @change="handleQuery"><el-option v-for="d in mms_yes_no" :key="d.value" :label="d.label" :value="d.value" /></el-select></div>
         </div>
         <div class="field" v-show="showAdvanced">
+          <label>报工来源</label>
+          <div class="control is-select"><el-select v-model="queryParams.source" placeholder="全部" clearable @change="handleQuery"><el-option v-for="d in mms_report_source" :key="d.value" :label="d.label" :value="d.value" /></el-select></div>
+        </div>
+        <div class="field" v-show="showAdvanced">
           <label>报工日期</label>
           <div class="control"><el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" /></div>
         </div>
@@ -96,6 +100,9 @@
           <el-table-column label="状态" prop="status" key="status" :width="colWidth('status', 100)" resizable align="center" v-if="columns.status.visible">
             <template #default="scope"><span v-if="scope.row.status" class="badge" :class="badgeClass(scope.row.status)"><span class="dot"></span>{{ statusLabel(scope.row.status) }}</span><span v-else class="text-muted">—</span></template>
           </el-table-column>
+          <el-table-column label="来源" prop="source" key="source" :width="colWidth('source', 100)" resizable align="center" v-if="columns.source.visible">
+            <template #default="scope"><span v-if="scope.row.source" class="badge" :class="sourceBadgeClass(scope.row.source)"><span class="dot"></span>{{ sourceLabel(scope.row.source) }}</span><span v-else class="text-muted">—</span></template>
+          </el-table-column>
           <el-table-column label="操作" width="200" align="center" fixed="right">
             <template #default="scope">
               <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
@@ -124,6 +131,7 @@
             <div class="rd-card-body" v-show="!collapsedCards.c0">
               <el-row :gutter="20"><el-col :span="12"><el-form-item label="报工单号" prop="reportNo"><el-input v-model="form.reportNo" placeholder="自动生成" disabled /></el-form-item></el-col><el-col :span="12"><el-form-item label="工单号" prop="workOrderNo"><el-input v-model="form.workOrderNo" placeholder="请输入" /></el-form-item></el-col></el-row>
               <el-row :gutter="20"><el-col :span="12"><el-form-item label="工序名称" prop="processName"><el-input v-model="form.processName" placeholder="请输入" /></el-form-item></el-col><el-col :span="12"><el-form-item label="产能单元" prop="resourceName"><el-input v-model="form.resourceName" placeholder="请输入" /></el-form-item></el-col></el-row>
+              <el-row :gutter="20"><el-col :span="12"><el-form-item label="报工来源" prop="source"><el-select v-model="form.source" placeholder="请选择" style="width: 100%"><el-option v-for="d in mms_report_source" :key="d.value" :label="d.label" :value="d.value" /></el-select></el-form-item></el-col></el-row>
             </div>
           </section>
           <section class="rd-card">
@@ -162,7 +170,7 @@
       <div class="rd-page">
         <section class="rd-card">
           <div class="rd-card-header" @click="toggleCard('vc0')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg></span>基本信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc0 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
-          <div class="rd-card-body" v-show="!collapsedCards.vc0" style="display:block"><div class="rd-grid"><div class="rd-item"><span class="rd-label">报工单号</span><div class="rd-value">{{ viewData.reportNo || '-' }}</div></div><div class="rd-item"><span class="rd-label">工单号</span><div class="rd-value">{{ viewData.workOrderNo || '-' }}</div></div><div class="rd-item"><span class="rd-label">工序名称</span><div class="rd-value">{{ viewData.processName || '-' }}</div></div><div class="rd-item"><span class="rd-label">产能单元</span><div class="rd-value">{{ viewData.resourceName || '-' }}</div></div><div class="rd-item"><span class="rd-label">状态</span><div class="rd-value">{{ viewData.status === '0' ? '待审核' : viewData.status === '1' ? '已审核' : viewData.status === '2' ? '已驳回' : '-' }}</div></div></div></div>
+          <div class="rd-card-body" v-show="!collapsedCards.vc0" style="display:block"><div class="rd-grid"><div class="rd-item"><span class="rd-label">报工单号</span><div class="rd-value">{{ viewData.reportNo || '-' }}</div></div><div class="rd-item"><span class="rd-label">工单号</span><div class="rd-value">{{ viewData.workOrderNo || '-' }}</div></div><div class="rd-item"><span class="rd-label">工序名称</span><div class="rd-value">{{ viewData.processName || '-' }}</div></div><div class="rd-item"><span class="rd-label">产能单元</span><div class="rd-value">{{ viewData.resourceName || '-' }}</div></div><div class="rd-item"><span class="rd-label">状态</span><div class="rd-value"><span v-if="viewData.status" class="badge" :class="badgeClass(viewData.status)"><span class="dot"></span>{{ statusLabel(viewData.status) }}</span><span v-else class="text-muted">—</span></div></div><div class="rd-item"><span class="rd-label">来源</span><div class="rd-value"><span v-if="viewData.source" class="badge" :class="sourceBadgeClass(viewData.source)"><span class="dot"></span>{{ sourceLabel(viewData.source) }}</span><span v-else class="text-muted">—</span></div></div></div></div>
         </section>
         <section class="rd-card">
           <div class="rd-card-header" @click="toggleCard('vc1')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg></span>报工数据</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
@@ -244,7 +252,7 @@ import { useDetailCard } from '@/composables/useDetailCard'
 import { Search, Filter, RefreshLeft, ArrowRight, ArrowDown, WarningFilled } from '@element-plus/icons-vue'
 
 const { proxy } = getCurrentInstance();
-const { mms_report_status, mms_yes_no } = proxy.useDict("mms_report_status", "mms_yes_no");
+const { mms_report_status, mms_yes_no, mms_report_source } = proxy.useDict("mms_report_status", "mms_yes_no", "mms_report_source");
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('mms_report_index')
 const { collapsedCards, toggleCard } = useDetailCard(["c0","c1","c2","c3","vc0","vc1","vc2","vc3"])
 
@@ -271,7 +279,7 @@ const defaultColumns = {
   goodQty: { label: '合格数', visible: true }, defectQty: { label: '不良数', visible: true },
   workHours: { label: '工时', visible: true }, isFirstPiece: { label: '是否首件', visible: true },
   reportBy: { label: '报工人', visible: true }, reportTime: { label: '报工时间', visible: true },
-  status: { label: '状态', visible: true }
+  status: { label: '状态', visible: true }, source: { label: '来源', visible: true }
 }
 
 function loadColumnVisibility() {
@@ -280,12 +288,12 @@ function loadColumnVisibility() {
 const columns = ref(loadColumnVisibility())
 
 const activeFilterCount = computed(() => {
-  let c = 0; if (queryParams.value.reportNo) c++; if (queryParams.value.workOrderNo) c++; if (queryParams.value.processName) c++; if (queryParams.value.resourceName) c++; if (queryParams.value.status) c++; if (queryParams.value.reportBy) c++; if (queryParams.value.isFirstPiece) c++; if (dateRange.value && dateRange.value.length === 2) c++; return c;
+  let c = 0; if (queryParams.value.reportNo) c++; if (queryParams.value.workOrderNo) c++; if (queryParams.value.processName) c++; if (queryParams.value.resourceName) c++; if (queryParams.value.status) c++; if (queryParams.value.reportBy) c++; if (queryParams.value.isFirstPiece) c++; if (queryParams.value.source) c++; if (dateRange.value && dateRange.value.length === 2) c++; return c;
 });
 
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, reportNo: undefined, workOrderNo: undefined, processName: undefined, resourceName: undefined, status: undefined, reportBy: undefined, isFirstPiece: undefined, params: {} },
+  queryParams: { pageNum: 1, pageSize: 10, reportNo: undefined, workOrderNo: undefined, processName: undefined, resourceName: undefined, status: undefined, reportBy: undefined, isFirstPiece: undefined, source: undefined, params: {} },
   rules: {
     workOrderNo: [{ required: true, message: "请输入工单号", trigger: "blur" }],
     goodQty: [{ required: true, message: "请输入合格数", trigger: "blur" }]
@@ -300,14 +308,14 @@ function getList() {
     dataList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths(); loadStatusCounts();
   });
 }
-function loadStatusCounts() { const baseQuery = { pageNum: 1, pageSize: 999 }; if (queryParams.value.reportNo) baseQuery.reportNo = queryParams.value.reportNo; if (queryParams.value.workOrderNo) baseQuery.workOrderNo = queryParams.value.workOrderNo; if (queryParams.value.processName) baseQuery.processName = queryParams.value.processName; if (queryParams.value.resourceName) baseQuery.resourceName = queryParams.value.resourceName; if (queryParams.value.reportBy) baseQuery.reportBy = queryParams.value.reportBy; if (queryParams.value.isFirstPiece) baseQuery.isFirstPiece = queryParams.value.isFirstPiece; listWorkReport(proxy.addDateRange(baseQuery, dateRange.value)).then(res => { const counts = { all: res.total }; if (mms_report_status.value) { mms_report_status.value.forEach(d => { counts[d.value] = 0; }); (res.rows || []).forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++; }); } statusCounts.value = counts; }).catch(() => {}); }
+function loadStatusCounts() { const baseQuery = { pageNum: 1, pageSize: 999 }; if (queryParams.value.reportNo) baseQuery.reportNo = queryParams.value.reportNo; if (queryParams.value.workOrderNo) baseQuery.workOrderNo = queryParams.value.workOrderNo; if (queryParams.value.processName) baseQuery.processName = queryParams.value.processName; if (queryParams.value.resourceName) baseQuery.resourceName = queryParams.value.resourceName; if (queryParams.value.reportBy) baseQuery.reportBy = queryParams.value.reportBy; if (queryParams.value.isFirstPiece) baseQuery.isFirstPiece = queryParams.value.isFirstPiece; if (queryParams.value.source) baseQuery.source = queryParams.value.source; listWorkReport(proxy.addDateRange(baseQuery, dateRange.value)).then(res => { const counts = { all: res.total }; if (mms_report_status.value) { mms_report_status.value.forEach(d => { counts[d.value] = 0; }); (res.rows || []).forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++; }); } statusCounts.value = counts; }).catch(() => {}); }
 function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList(); }
-function resetQuery() { queryParams.value.reportNo = undefined; queryParams.value.workOrderNo = undefined; queryParams.value.processName = undefined; queryParams.value.resourceName = undefined; queryParams.value.status = undefined; queryParams.value.reportBy = undefined; queryParams.value.isFirstPiece = undefined; dateRange.value = []; queryParams.value.params = {}; activeStatusTab.value = 'all'; handleQuery(); }
+function resetQuery() { queryParams.value.reportNo = undefined; queryParams.value.workOrderNo = undefined; queryParams.value.processName = undefined; queryParams.value.resourceName = undefined; queryParams.value.status = undefined; queryParams.value.reportBy = undefined; queryParams.value.isFirstPiece = undefined; queryParams.value.source = undefined; dateRange.value = []; queryParams.value.params = {}; activeStatusTab.value = 'all'; handleQuery(); }
 function handleStatusTabClick(status) { activeStatusTab.value = status; queryParams.value.status = status === "all" ? undefined : status; handleQuery(); }
 function handleSelectionChange(selection) { ids.value = selection.map(item => item.reportId); single.value = selection.length !== 1; multiple.value = !selection.length; }
 
 function reset() {
-  form.value = { reportNo: undefined, workOrderNo: undefined, processName: undefined, resourceName: undefined, goodQty: 0, defectQty: 0, workHours: 0, teamName: undefined, shiftName: undefined, isFirstPiece: "0", remark: undefined };
+  form.value = { reportNo: undefined, workOrderNo: undefined, processName: undefined, resourceName: undefined, goodQty: 0, defectQty: 0, workHours: 0, teamName: undefined, shiftName: undefined, isFirstPiece: "0", source: "1", remark: undefined };
   proxy.resetForm("formRef");
 }
 function handleAdd() { reset(); open.value = true; title.value = "新增报工"; }
@@ -354,6 +362,8 @@ function statusLabel(status) { return dictLabel(mms_report_status, status); }
 function isFirstPieceLabel(val) { return dictLabel(mms_yes_no, val); }
 function badgeClass(status) { const map = { '0': 'amber', '1': 'green', '2': 'red' }; return map[status] || 'gray'; }
 function statusTabClass(value) { const map = { '0': 'tab-draft', '1': 'tab-done', '2': 'tab-reject' }; return map[value] || ''; }
+function sourceLabel(value) { return dictLabel(mms_report_source, value); }
+function sourceBadgeClass(value) { const map = { '1': 'blue', '2': 'green' }; return map[value] || 'gray'; }
 
 getList();
 </script>

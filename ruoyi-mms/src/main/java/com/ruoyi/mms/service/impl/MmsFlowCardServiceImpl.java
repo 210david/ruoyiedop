@@ -55,7 +55,7 @@ public class MmsFlowCardServiceImpl implements IMmsFlowCardService
         flowCard.setDelFlag("0");
         if (StringUtils.isEmpty(flowCard.getCardCode()))
         {
-            flowCard.setCardCode(mkNumberRuleService.generateNumber("FC"));
+            flowCard.setCardCode(mkNumberRuleService.generateNumber("mms_flow_card"));
         }
         if (flowCard.getPrintCount() == null)
         {

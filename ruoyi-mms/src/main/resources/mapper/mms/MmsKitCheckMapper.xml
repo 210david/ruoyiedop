@@ -10,6 +10,7 @@
         <result property="mpsId"     column="mps_id"/>
         <result property="mpsNo"     column="mps_no"/>
         <result property="bomId"     column="bom_id"/>
+        <result property="bomNo"      column="bom_no"/>
         <result property="checkTime"     column="check_time"/>
         <result property="kitRate"     column="kit_rate"/>
         <result property="isComplete"     column="is_complete"/>
@@ -23,27 +24,30 @@
     </resultMap>
 
     <sql id="selectKitCheckVo">
-        SELECT kit_id, kit_no, work_order_id, work_order_no, mps_id, mps_no, bom_id, check_time, kit_rate, is_complete, status, del_flag, create_by, create_time, update_by, update_time, remark
-        FROM mms_kit_check
+        SELECT k.kit_id, k.kit_no, k.work_order_id, k.work_order_no, k.mps_id, k.mps_no, k.bom_id, b.bom_no, k.check_time, k.kit_rate, k.is_complete, k.status, k.del_flag, k.create_by, k.create_time, k.update_by, k.update_time, k.remark
+        FROM mms_kit_check k
+        LEFT JOIN mms_bom b ON k.bom_id = b.bom_id
     </sql>
 
     <select id="selectKitCheckList" parameterType="MmsKitCheck" resultMap="MmsKitCheckResult">
         <include refid="selectKitCheckVo"/>
         <where>
-            del_flag = '0'
-            <if test="kitNo != null and kitNo != ''"> AND kit_no LIKE CONCAT('%', #{kit_no}, '%')</if>
-            <if test="workOrderNo != null and workOrderNo != ''"> AND work_order_no LIKE CONCAT('%', #{work_order_no}, '%')</if>
-            <if test="mpsNo != null and mpsNo != ''"> AND mps_no LIKE CONCAT('%', #{mps_no}, '%')</if>
-            <if test="status != null and status != ''"> AND status = #{status}</if>
-            <if test="params.beginTime != null and params.beginTime != ''"> AND date(create_time) &gt;= #{params.beginTime}</if>
-            <if test="params.endTime != null and params.endTime != ''"> AND date(create_time) &lt;= #{params.endTime}</if>
+            k.del_flag = '0'
+            <if test="kitNo != null and kitNo != ''"> AND k.kit_no LIKE CONCAT('%', #{kitNo}, '%')</if>
+            <if test="workOrderNo != null and workOrderNo != ''"> AND k.work_order_no LIKE CONCAT('%', #{workOrderNo}, '%')</if>
+            <if test="mpsNo != null and mpsNo != ''"> AND k.mps_no LIKE CONCAT('%', #{mpsNo}, '%')</if>
+            <if test="isComplete != null and isComplete != ''"> AND k.is_complete = #{isComplete}</if>
+            <if test="status != null and status != ''"> AND k.status = #{status}</if>
+            <if test="bomNo != null and bomNo != ''"> AND b.bom_no LIKE CONCAT('%', #{bomNo}, '%')</if>
+            <if test="params.beginTime != null and params.beginTime != ''"> AND date(k.create_time) &gt;= #{params.beginTime}</if>
+            <if test="params.endTime != null and params.endTime != ''"> AND date(k.create_time) &lt;= #{params.endTime}</if>
         </where>
-        ORDER BY kit_id DESC
+        ORDER BY k.kit_id DESC
     </select>
 
     <select id="selectKitCheckById" parameterType="Long" resultMap="MmsKitCheckResult">
         <include refid="selectKitCheckVo"/>
-        WHERE kit_id = #{kitId}
+        WHERE k.kit_id = #{kitId} AND k.del_flag = '0'
     </select>
 
     <insert id="insertKitCheck" parameterType="MmsKitCheck" useGeneratedKeys="true" keyProperty="kitId">

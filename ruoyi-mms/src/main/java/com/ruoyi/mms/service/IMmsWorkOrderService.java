@@ -45,4 +45,13 @@ public interface IMmsWorkOrderService
 
     /** 工单拆分：返回拆分后的新工单ID */
     public Long splitWorkOrder(Long workOrderId, BigDecimal splitQty);
+
+    /**
+     * 创建返工工单：基于原工单的不良品数量创建返工工单（order_type=1）
+     * @param sourceWorkOrderId 原工单ID
+     * @param reworkQty 返工数量（不超过原工单不良数）
+     * @param reworkReason 返工原因
+     * @return 新工单ID
+     */
+    public Long createReworkOrder(Long sourceWorkOrderId, BigDecimal reworkQty, String reworkReason);
 }

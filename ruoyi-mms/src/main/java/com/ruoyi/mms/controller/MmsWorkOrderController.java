@@ -201,6 +201,20 @@ public class MmsWorkOrderController extends BaseController
     }
 
     /**
+     * 创建返工工单
+     * 基于已完工/已关闭工单的不良品创建返工工单（order_type=1）
+     */
+    @Log(title = "生产工单-返工", businessType = BusinessType.INSERT)
+    @PreAuthorize("@ss.hasPermi('mms:workorder:edit')")
+    @PostMapping("/rework/{workOrderId}")
+    public AjaxResult rework(@PathVariable("workOrderId") Long workOrderId,
+            @RequestParam BigDecimal reworkQty,
+            @RequestParam(required = false) String reworkReason)
+    {
+        return AjaxResult.success(mmsWorkOrderService.createReworkOrder(workOrderId, reworkQty, reworkReason));
+    }
+
+    /**
      * 查询工单审核日志
      */
     @PreAuthorize("@ss.hasPermi('mms:workorder:query')")

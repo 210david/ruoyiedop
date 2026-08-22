@@ -46,7 +46,7 @@ public class MmsDowntimeServiceImpl implements IMmsDowntimeService
         downtime.setDelFlag("0");
         if (StringUtils.isEmpty(downtime.getDowntimeNo()))
         {
-            downtime.setDowntimeNo(mkNumberRuleService.generateNumber("DT"));
+            downtime.setDowntimeNo(mkNumberRuleService.generateNumber("mms_downtime"));
         }
         downtime.setCreateBy(SecurityUtils.getUsername());
         downtime.setCreateTime(DateUtils.getNowDate());

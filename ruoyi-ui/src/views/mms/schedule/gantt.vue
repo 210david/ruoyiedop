@@ -271,36 +271,101 @@
           <div class="rd-card-body" v-show="!collapsedCards.td_basic">
             <div class="rd-grid">
               <div class="rd-item">
-                <span class="rd-label">排产编号</span>
+                <span class="rd-label"><span class="rd-label-dot"></span>排产编号</span>
                 <div class="rd-value">{{ currentTask.scheduleNo || '-' }}</div>
               </div>
               <div class="rd-item">
-                <span class="rd-label">状态</span>
+                <span class="rd-label"><span class="rd-label-dot"></span>状态</span>
                 <div class="rd-value">
                   <el-tag :type="statusTagType(currentTask.status)" size="small">{{ statusLabel(currentTask.status) }}</el-tag>
                 </div>
               </div>
               <div class="rd-item">
-                <span class="rd-label">工单编号</span>
+                <span class="rd-label"><span class="rd-label-dot"></span>工单编号</span>
                 <div class="rd-value">{{ currentTask.workOrderNo || '-' }}</div>
               </div>
               <div class="rd-item">
-                <span class="rd-label">产品名称</span>
-                <div class="rd-value">{{ currentTask.productName || '-' }}</div>
+                <span class="rd-label"><span class="rd-label-dot"></span>工单类型</span>
+                <div class="rd-value">
+                  <el-tag :type="currentTask.orderType == '0' ? '' : currentTask.orderType == '1' ? 'warning' : 'info'" size="small">{{ woTypeLabel(currentTask.orderType) }}</el-tag>
+                </div>
               </div>
               <div class="rd-item">
-                <span class="rd-label">产能单元</span>
+                <span class="rd-label"><span class="rd-label-dot"></span>产能单元</span>
                 <div class="rd-value">{{ currentTask.resourceName || '-' }}</div>
               </div>
               <div class="rd-item">
-                <span class="rd-label">工序</span>
+                <span class="rd-label"><span class="rd-label-dot"></span>工序</span>
                 <div class="rd-value">工序{{ currentTask.opSeq }}</div>
+              </div>
+              <div class="rd-item">
+                <span class="rd-label"><span class="rd-label-dot"></span>优先级</span>
+                <div class="rd-value">
+                  <el-tag :type="currentTask.priority == '0' ? 'danger' : currentTask.priority == '1' ? 'warning' : 'info'" size="small" effect="dark">
+                    {{ priorityLabel(currentTask.priority) }}
+                  </el-tag>
+                </div>
+              </div>
+              <div class="rd-item">
+                <span class="rd-label"><span class="rd-label-dot"></span>排产策略</span>
+                <div class="rd-value">{{ currentTask.strategy == '1' ? '正排' : '倒排' }}</div>
               </div>
             </div>
           </div>
         </section>
 
-        <!-- 卡片2：排产信息 -->
+        <!-- 卡片2：产品与工单信息 -->
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('td_wo')">
+            <div class="rd-card-title">
+              <span class="rd-card-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7l-8-4-8 4 8 4 8-4z"/><path d="M4 12l8 4 8-4"/><path d="M4 17l8 4 8-4"/></svg>
+              </span>
+              产品与工单信息
+            </div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.td_wo }" aria-label="折叠">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+            </button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.td_wo">
+            <div class="rd-grid">
+              <div class="rd-item">
+                <span class="rd-label"><span class="rd-label-dot"></span>产品编码</span>
+                <div class="rd-value">{{ currentTask.productCode || '-' }}</div>
+              </div>
+              <div class="rd-item">
+                <span class="rd-label"><span class="rd-label-dot"></span>产品名称</span>
+                <div class="rd-value">{{ currentTask.productName || '-' }}</div>
+              </div>
+              <div class="rd-item">
+                <span class="rd-label"><span class="rd-label-dot"></span>规格型号</span>
+                <div class="rd-value">{{ currentTask.specModel || '-' }}</div>
+              </div>
+              <div class="rd-item">
+                <span class="rd-label"><span class="rd-label-dot"></span>计划数量</span>
+                <div class="rd-value">{{ currentTask.planQty }} {{ unitLabel(currentTask.unit) }}</div>
+              </div>
+              <div class="rd-item">
+                <span class="rd-label"><span class="rd-label-dot"></span>BOM编号</span>
+                <div class="rd-value">{{ currentTask.bomNo || '-' }}</div>
+              </div>
+              <div class="rd-item">
+                <span class="rd-label"><span class="rd-label-dot"></span>工艺路线</span>
+                <div class="rd-value">{{ currentTask.routeNo || '-' }}</div>
+              </div>
+              <div class="rd-item" v-if="currentTask.mpsNo">
+                <span class="rd-label"><span class="rd-label-dot"></span>关联主计划</span>
+                <div class="rd-value">{{ currentTask.mpsNo }}</div>
+              </div>
+              <div class="rd-item" v-if="currentTask.demandNo">
+                <span class="rd-label"><span class="rd-label-dot"></span>关联需求号</span>
+                <div class="rd-value">{{ currentTask.demandNo }}</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 卡片3：排产信息 -->
         <section class="rd-card">
           <div class="rd-card-header" @click="toggleCard('td_plan')">
             <div class="rd-card-title">
@@ -316,20 +381,28 @@
           <div class="rd-card-body" v-show="!collapsedCards.td_plan">
             <div class="rd-grid">
               <div class="rd-item">
-                <span class="rd-label">计划开始</span>
+                <span class="rd-label"><span class="rd-label-dot"></span>计划开始</span>
                 <div class="rd-value">{{ formatTime(currentTask.planStart) }}</div>
               </div>
               <div class="rd-item">
-                <span class="rd-label">计划结束</span>
+                <span class="rd-label"><span class="rd-label-dot"></span>计划结束</span>
                 <div class="rd-value">{{ formatTime(currentTask.planEnd) }}</div>
               </div>
               <div class="rd-item">
-                <span class="rd-label">准备时间</span>
+                <span class="rd-label"><span class="rd-label-dot"></span>准备时间</span>
                 <div class="rd-value">{{ currentTask.setupMinutes }} 分钟</div>
               </div>
               <div class="rd-item">
-                <span class="rd-label">排产策略</span>
-                <div class="rd-value">{{ currentTask.strategy == '1' ? '正排' : '倒排' }}</div>
+                <span class="rd-label"><span class="rd-label-dot"></span>下达人</span>
+                <div class="rd-value">{{ currentTask.releaseBy || '-' }}</div>
+              </div>
+              <div class="rd-item" v-if="currentTask.releaseTime">
+                <span class="rd-label"><span class="rd-label-dot"></span>下达时间</span>
+                <div class="rd-value">{{ formatTime(currentTask.releaseTime) }}</div>
+              </div>
+              <div class="rd-item">
+                <span class="rd-label"><span class="rd-label-dot"></span>创建时间</span>
+                <div class="rd-value">{{ formatTime(currentTask.createTime) }}</div>
               </div>
             </div>
           </div>
@@ -413,20 +486,55 @@
           <div class="rd-card-body" v-show="!collapsedCards.help_flow">
             <el-steps :active="3" direction="vertical" :space="70" class="help-steps">
               <el-step title="步骤1：选择日期范围" description="在顶部日期选择器中调整甘特图显示的日期区间，默认显示当天。可切换「日视图/周视图」，日视图按小时展示，周视图按天展示。使用「前一天/后一天」按钮快速翻页。" />
-              <el-step title="步骤2：拖拽工单到甘特图" description="从左侧待排产工单列表中，将工单卡片拖拽到甘特图上对应的产能单元行和起始时间位置。拖拽时甘特图上会显示动态指示线，实时提示当前时间点。" />
-              <el-step title="步骤3：编辑并确认排产" description="松开鼠标后会弹出排产编辑弹窗，显示工单信息和排产时间，用户可手动调整排产时间和产能单元。点击「确认排产」后系统自动下达，排产任务状态变为「已下达」，同时更新工单的计划时间。" />
+              <el-step title="步骤2：拖拽工单到甘特图" description="从左侧待排产工单列表中，将工单卡片拖拽到甘特图上对应的产能单元行和起始时间位置。拖拽时甘特图上会显示动态指示线，实时提示当前时间点和产能单元。拖拽到的产能单元行即为该工单首工序的排产设备。" />
+              <el-step title="步骤3：编辑并确认排产" description="松开鼠标后会弹出排产编辑弹窗，显示工单信息和排产时间，用户可手动调整排产时间和产能单元。排产对应的是工单的首道工序，产能单元取自拖拽位置。点击「确认排产」后系统自动下达，排产任务状态变为「已下达」，同时更新工单的计划时间。" />
             </el-steps>
           </div>
         </section>
 
-        <!-- 卡片3：任务条颜色说明 -->
+        <!-- 卡片3：产能单元与工序关系 -->
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('help_resource')">
+            <div class="rd-card-title">
+              <span class="rd-card-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+              </span>
+              三、产能单元与工序关系
+            </div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.help_resource }" aria-label="折叠">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+            </button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.help_resource">
+            <div class="help-list">
+              <div class="help-list-item">
+                <span class="help-list-bullet">●</span>
+                <span class="help-list-text"><b>产能单元绑定在工艺路线的每道工序上。</b>在工艺路线管理中，每道工序可指定对应的产能单元（设备/产线），例如：工序10注塑→注塑机A，工序20组装→组装线1号，工序30检验→检验台C。一个工单可跨多个产能单元完成生产。</span>
+              </div>
+              <div class="help-list-item">
+                <span class="help-list-bullet">●</span>
+                <span class="help-list-text"><b>排产对应首工序。</b>工单排产时，排产任务对应的是工单的第一道工序。拖拽工单到甘特图某产能单元行上，即为该首工序指定排产设备。排产弹窗中的产能单元下拉可手动调整。</span>
+              </div>
+              <div class="help-list-item">
+                <span class="help-list-bullet">●</span>
+                <span class="help-list-text"><b>工单下达时自动生成首工序派工单。</b>工单下达时，系统根据工艺路线中首工序绑定的产能单元自动生成派工单。若工序已绑定产能单元则取工序的，未绑定则取排产指定的。</span>
+              </div>
+              <div class="help-list-item">
+                <span class="help-list-bullet">●</span>
+                <span class="help-list-text"><b>工序流转时自动带入各工序的产能单元。</b>首工序派工单完工后，系统自动创建下一道工序的派工单，产能单元取自工艺快照中该工序绑定的产能单元。例如：注塑工序完工后，系统自动创建组装工序的派工单，产能单元自动带出"组装线1号"，无需人工干预。</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 卡片4：任务条颜色说明 -->
         <section class="rd-card">
           <div class="rd-card-header" @click="toggleCard('help_color')">
             <div class="rd-card-title">
               <span class="rd-card-icon">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="19" cy="12" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="10" cy="18" r="2.5"/></svg>
               </span>
-              三、任务条颜色说明
+              四、任务条颜色说明
             </div>
             <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.help_color }" aria-label="折叠">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
@@ -466,7 +574,7 @@
               <span class="rd-card-icon">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2h-4"/><polyline points="9 11 12 14 15 11"/><line x1="12" y1="3" x2="12" y2="14"/></svg>
               </span>
-              四、单任务操作
+              五、单任务操作
             </div>
             <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.help_task }" aria-label="折叠">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
@@ -497,7 +605,7 @@
               <span class="rd-card-icon">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-6"/></svg>
               </span>
-              五、排产策略
+              六、排产策略
             </div>
             <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.help_strategy }" aria-label="折叠">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
@@ -530,7 +638,7 @@
               <span class="rd-card-icon">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
               </span>
-              六、常见问题
+              七、常见问题
             </div>
             <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.help_faq }" aria-label="折叠">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
@@ -570,7 +678,7 @@ const { proxy } = getCurrentInstance()
 const { mms_schedule_status, mms_schedule_strategy } = proxy.useDict('mms_schedule_status', 'mms_schedule_strategy')
 const { mms_order_type, mms_priority } = proxy.useDict('mms_order_type', 'mms_priority')
 const { wms_unit } = proxy.useDict('wms_unit')
-const { collapsedCards, toggleCard } = useDetailCard(['sc_wo', 'sc_plan', 'td_basic', 'td_plan', 'help_layout', 'help_flow', 'help_color', 'help_task', 'help_strategy', 'help_faq'])
+const { collapsedCards, toggleCard } = useDetailCard(['sc_wo', 'sc_plan', 'td_basic', 'td_wo', 'td_plan', 'help_layout', 'help_flow', 'help_resource', 'help_color', 'help_task', 'help_strategy', 'help_faq'])
 
 // ===== 状态 =====
 const ganttChartRef = ref(null)

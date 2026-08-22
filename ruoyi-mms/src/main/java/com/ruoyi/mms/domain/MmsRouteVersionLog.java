@@ -23,6 +23,9 @@ public class MmsRouteVersionLog extends BaseEntity
     /** 操作描述 */
     private String changeDesc;
 
+    /** 审核意见（仅审核操作时有值） */
+    private String auditRemark;
+
     /** 操作人 */
     private String changeBy;
 
@@ -47,6 +50,8 @@ public class MmsRouteVersionLog extends BaseEntity
     public void setChangeType(String changeType) { this.changeType = changeType; }
     public String getChangeDesc() { return changeDesc; }
     public void setChangeDesc(String changeDesc) { this.changeDesc = changeDesc; }
+    public String getAuditRemark() { return auditRemark; }
+    public void setAuditRemark(String auditRemark) { this.auditRemark = auditRemark; }
     public String getChangeBy() { return changeBy; }
     public void setChangeBy(String changeBy) { this.changeBy = changeBy; }
     public java.util.Date getChangeTime() { return changeTime; }

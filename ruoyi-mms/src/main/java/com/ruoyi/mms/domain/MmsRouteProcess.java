@@ -21,6 +21,11 @@ public class MmsRouteProcess extends BaseEntity
     @Excel(name = "工序名称")
     private String processName;
 
+    private Long resourceId;
+
+    @Excel(name = "产能单元")
+    private String resourceName;
+
     @Excel(name = "顺序")
     private Integer stepSeq;
 
@@ -52,6 +57,10 @@ public class MmsRouteProcess extends BaseEntity
     public void setProcessCode(String processCode) { this.processCode = processCode; }
     public String getProcessName() { return processName; }
     public void setProcessName(String processName) { this.processName = processName; }
+    public Long getResourceId() { return resourceId; }
+    public void setResourceId(Long resourceId) { this.resourceId = resourceId; }
+    public String getResourceName() { return resourceName; }
+    public void setResourceName(String resourceName) { this.resourceName = resourceName; }
     public Integer getStepSeq() { return stepSeq; }
     public void setStepSeq(Integer stepSeq) { this.stepSeq = stepSeq; }
     public BigDecimal getStdTime() { return stdTime; }

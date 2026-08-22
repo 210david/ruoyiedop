@@ -44,7 +44,10 @@
         <div class="tabs-track">
           <span class="status-tab is-active"><span class="dot"></span><span>停机管理</span></span>
         </div>
-        <button class="tip-pill" @click="showStatusHelp = true"><el-icon><WarningFilled /></el-icon><span>业务操作说明</span></button>
+        <button class="tip-pill" @click="showStatusHelp = true">
+          <el-icon><WarningFilled /></el-icon>
+          <span>业务操作说明</span>
+        </button>
       </div>
       <div class="toolbar">
         <div class="left">
@@ -145,21 +148,98 @@
     </el-dialog>
 
     <!-- ===== 业务操作说明对话框 ===== -->
-    <el-dialog v-model="showStatusHelp" title="停机管理业务操作说明" width="820px" append-to-body>
+    <el-dialog v-model="showStatusHelp" title="停机管理业务操作说明" width="984px" append-to-body>
       <div class="status-help-content">
+        <!-- 一、停机管理释义 -->
         <h4>一、停机管理释义</h4>
         <div class="highlight-card highlight-primary">
           <div class="highlight-card-title">什么是停机管理？</div>
           <div class="highlight-card-body">
             <strong>停机管理（Downtime Management）</strong>是生产管控中记录生产设备/产线停机事件的单据。停机管理记录停机开始/结束时间、停机类型、停机时长和停机原因，支持设备利用率分析和产能损耗统计。<br/><br/>
-            停机管理遵循 <strong>MES 设备效率管理规范</strong>，通过停机时长统计支持 OEE（设备综合效率）计算，停机类型分类（计划停机/故障停机/换型停机等）支持根因分析和改善措施制定。
+            停机管理是<strong>MES（制造执行系统）</strong>中设备效率管理的核心载体，通过停机时长统计支持 OEE（设备综合效率）计算，停机类型分类（计划停机/故障停机/换型停机等）支持根因分析和改善措施制定，满足精益生产对设备运行状态可追溯、可量化、可管控的要求。
           </div>
         </div>
-        <h4>二、业务操作流程</h4>
+
+        <!-- 二、停机状态流转图 -->
+        <h4>二、停机状态流转图</h4>
+        <div class="status-flow">
+          <div class="flow-item">
+            <el-tag type="danger">停机中</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+            <el-tag size="small" type="primary">填写结束时间</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="success">已恢复</el-tag>
+          </div>
+        </div>
+
+        <!-- 三、各状态说明 -->
+        <h4>三、各状态说明</h4>
+        <el-descriptions :column="1" border>
+          <el-descriptions-item label="停机中">设备/产线已停机，尚未恢复。可修改停机信息、填写结束时间恢复生产。填写结束时间后状态自动变为已恢复</el-descriptions-item>
+          <el-descriptions-item label="已恢复">设备/产线已恢复生产，停机时长已自动计算。不可再修改停机信息，数据归档用于统计分析</el-descriptions-item>
+        </el-descriptions>
+
+        <!-- 四、新增/修改表单填写指南 -->
+        <h4>四、新增/修改表单填写指南</h4>
+        <div class="highlight-card highlight-warning">
+          <div class="highlight-card-title">基本信息区</div>
+          <div class="highlight-card-body">
+            <p>• <strong>停机单号：</strong>停机记录的唯一标识编号，保存后由系统自动生成</p>
+            <p>• <strong>产能单元：</strong>发生停机的设备/产线名称<span style="color: #f56c6c;">*必填</span></p>
+          </div>
+        </div>
+        <div class="highlight-card highlight-primary" style="margin-top: 12px;">
+          <div class="highlight-card-title">停机详情区</div>
+          <div class="highlight-card-body">
+            <p>• <strong>开始时间：</strong>停机开始的准确时间<span style="color: #f56c6c;">*必填</span></p>
+            <p>• <strong>结束时间：</strong>停机恢复的时间，填写后系统自动计算停机时长</p>
+            <p>• <strong>停机类型：</strong>停机类型分类，如计划停机、故障停机、换型停机等</p>
+            <p>• <strong>状态：</strong>停机记录的当前状态，包括停机中和已恢复</p>
+          </div>
+        </div>
+        <div class="highlight-card highlight-warning" style="margin-top: 12px;">
+          <div class="highlight-card-title">描述信息区</div>
+          <div class="highlight-card-body">
+            <p>• <strong>停机原因：</strong>详细描述停机的原因和经过</p>
+            <p>• <strong>备注：</strong>停机记录的补充说明信息</p>
+          </div>
+        </div>
+
+        <!-- 五、停机管理生命周期管控 -->
+        <h4>五、停机管理生命周期管控</h4>
+        <div class="highlight-card highlight-success">
+          <div class="highlight-card-title">什么是停机管理生命周期管控？</div>
+          <div class="highlight-card-body">
+            <strong>停机管理生命周期管控</strong>是生产管控的核心机制，通过状态流转实现停机记录从创建到恢复的全过程管理。每个状态对应特定的可执行操作，确保设备停机事件有序可控、可追溯。停机时长的自动计算机制确保设备效率数据准确归集，停机类型分类支持根因分析和持续改善。
+          </div>
+        </div>
+        <div class="highlight-card highlight-warning" style="margin-top: 12px;">
+          <div class="highlight-card-title">异常处理规则</div>
+          <div class="highlight-card-body">
+            <p>1. <strong>已恢复的停机记录无法修改：</strong>停机记录恢复后进入「已恢复」状态，不允许再编辑基本信息，确保停机数据的一致性</p>
+            <p>2. <strong>停机时长自动计算：</strong>填写结束时间后系统自动计算停机时长（分钟），无需手动输入</p>
+            <p>3. <strong>停机类型准确分类：</strong>停机类型影响 OEE 计算和根因分析，需准确填写</p>
+            <p style="color: #e6a23c;"><strong>提示：</strong>停机记录的创建和恢复操作均记录操作日志，确保全流程可追溯</p>
+          </div>
+        </div>
+
+        <!-- 六、业务操作流程 -->
+        <h4>六、业务操作流程</h4>
         <el-timeline>
-          <el-timeline-item type="danger" :hollow="true"><strong>记录停机：</strong>设备/产线停机时点击「新增」创建停机记录，填写开始时间和停机类型</el-timeline-item>
-          <el-timeline-item type="warning" :hollow="true"><strong>记录结束：</strong>停机结束后填写结束时间，系统自动计算停机时长</el-timeline-item>
-          <el-timeline-item type="success" :hollow="true"><strong>分析统计：</strong>停机数据用于设备利用率分析和产能损耗统计</el-timeline-item>
+          <el-timeline-item type="danger" :hollow="true">
+            <strong>记录停机：</strong>设备/产线停机时点击「新增」创建停机记录，填写产能单元、开始时间和停机类型
+          </el-timeline-item>
+          <el-timeline-item type="warning" :hollow="true">
+            <strong>记录恢复：</strong>停机结束后填写结束时间，系统自动计算停机时长，状态变为已恢复
+          </el-timeline-item>
+          <el-timeline-item type="info" :hollow="true">
+            <strong>查看详情：</strong>点击「查看」查看停机记录完整信息，包括停机时长、停机原因等
+          </el-timeline-item>
+          <el-timeline-item type="success" :hollow="true">
+            <strong>分析统计：</strong>停机数据用于设备利用率分析、OEE 计算和产能损耗统计
+          </el-timeline-item>
         </el-timeline>
       </div>
       <template #footer><el-button type="primary" @click="showStatusHelp = false">我知道了</el-button></template>
@@ -250,6 +330,27 @@ getList();
 .mms-downtime-page .rd-collapse-btn.is-collapsed { transform: rotate(180deg); }
 .mms-downtime-page .rd-card-body { padding: 16px; }
 .mms-downtime-page .text-muted { color: #94a3b8; }
+.mms-downtime-page .tip-pill { display:inline-flex; align-items:center; gap:5px; height:30px; padding:0 10px; background:#fffaf0; border:1px solid #fde68a; color:#92400e; border-radius:999px; font-size:13px; font-weight:500; cursor:pointer; transition:all .15s; flex-shrink:0; white-space:nowrap; }
+.mms-downtime-page .tip-pill:hover { background:#fffbeb; border-color:#f59e0b; color:#7c2d12; }
+.mms-downtime-page .tip-pill .el-icon { font-size:14px; color:#b45309; }
+.status-help-content { max-height: 520px; overflow-y: auto; padding-right: 10px; }
+.status-help-content h4 { margin: 20px 0 12px 0; color: #303133; font-weight: 600; border-left: 4px solid #409eff; padding-left: 10px; }
+.status-help-content h4:first-child { margin-top: 0; }
+.status-help-content .status-flow { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 16px; background-color: #f5f7fa; border-radius: 8px; margin-bottom: 8px; }
+.status-help-content .flow-item { display: flex; align-items: center; gap: 8px; }
+.status-help-content .flow-arrow { color: #909399; font-size: 16px; }
+.status-help-content .highlight-card { border-radius: 8px; padding: 16px; border: 1px solid; }
+.status-help-content .highlight-card-title { font-size: 14px; font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; }
+.status-help-content .highlight-card-body { font-size: 13px; color: #606266; line-height: 1.6; }
+.status-help-content .highlight-card-body p { margin: 4px 0; }
+.status-help-content .highlight-primary { background-color: #ecf5ff; border-color: #a0cfff; }
+.status-help-content .highlight-primary .highlight-card-title { color: #409eff; }
+.status-help-content .highlight-success { background-color: #f0f9eb; border-color: #b3e19d; }
+.status-help-content .highlight-success .highlight-card-title { color: #67c23a; }
+.status-help-content .highlight-warning { background-color: #fdf6ec; border-color: #f5dab1; }
+.status-help-content .highlight-warning .highlight-card-title { color: #e6a23c; }
+.status-help-content .highlight-danger { background-color: #fef0f0; border-color: #fbc4c4; }
+.status-help-content .highlight-danger .highlight-card-title { color: #f56c6c; }
 @media (max-width: 1100px) { .mms-downtime-page .filter-bar { grid-template-columns: repeat(2,1fr); } }
 @media (max-width: 720px) { .mms-downtime-page .filter-bar { grid-template-columns: 1fr; } }
 </style>

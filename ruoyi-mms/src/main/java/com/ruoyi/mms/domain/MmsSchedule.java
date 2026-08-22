@@ -1,5 +1,6 @@
 package com.ruoyi.mms.domain;
 
+import java.math.BigDecimal;
 import java.util.Date;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.ruoyi.common.annotation.Excel;
@@ -59,6 +60,42 @@ public class MmsSchedule extends BaseEntity
 
     private String delFlag;
 
+    // ========== 工单关联字段（非持久化，甘特图查询时关联工单表填充） ==========
+
+    /** 工单类型（0=生产,1=返工,2=外协） */
+    private String orderType;
+
+    /** 规格型号 */
+    private String specModel;
+
+    /** 计划数量 */
+    private BigDecimal planQty;
+
+    /** 单位 */
+    private String unit;
+
+    /** 优先级（0=高,1=中,2=低） */
+    private String priority;
+
+    /** BOM编号 */
+    private String bomNo;
+
+    /** 工艺路线编号 */
+    private String routeNo;
+
+    /** 关联主计划号 */
+    private String mpsNo;
+
+    /** 关联需求号 */
+    private String demandNo;
+
+    /** 下达人 */
+    private String releaseBy;
+
+    /** 下达时间 */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date releaseTime;
+
     public Long getScheduleId() { return scheduleId; }
     public void setScheduleId(Long scheduleId) { this.scheduleId = scheduleId; }
     public String getScheduleNo() { return scheduleNo; }
@@ -91,4 +128,26 @@ public class MmsSchedule extends BaseEntity
     public void setStatus(String status) { this.status = status; }
     public String getDelFlag() { return delFlag; }
     public void setDelFlag(String delFlag) { this.delFlag = delFlag; }
+    public String getOrderType() { return orderType; }
+    public void setOrderType(String orderType) { this.orderType = orderType; }
+    public String getSpecModel() { return specModel; }
+    public void setSpecModel(String specModel) { this.specModel = specModel; }
+    public BigDecimal getPlanQty() { return planQty; }
+    public void setPlanQty(BigDecimal planQty) { this.planQty = planQty; }
+    public String getUnit() { return unit; }
+    public void setUnit(String unit) { this.unit = unit; }
+    public String getPriority() { return priority; }
+    public void setPriority(String priority) { this.priority = priority; }
+    public String getBomNo() { return bomNo; }
+    public void setBomNo(String bomNo) { this.bomNo = bomNo; }
+    public String getRouteNo() { return routeNo; }
+    public void setRouteNo(String routeNo) { this.routeNo = routeNo; }
+    public String getMpsNo() { return mpsNo; }
+    public void setMpsNo(String mpsNo) { this.mpsNo = mpsNo; }
+    public String getDemandNo() { return demandNo; }
+    public void setDemandNo(String demandNo) { this.demandNo = demandNo; }
+    public String getReleaseBy() { return releaseBy; }
+    public void setReleaseBy(String releaseBy) { this.releaseBy = releaseBy; }
+    public Date getReleaseTime() { return releaseTime; }
+    public void setReleaseTime(Date releaseTime) { this.releaseTime = releaseTime; }
 }

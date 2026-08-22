@@ -6,6 +6,9 @@
                 <id property="workOrderId" column="work_order_id"/>
 <result property="workOrderNo"     column="work_order_no"/>
         <result property="orderType"     column="order_type"/>
+        <result property="sourceType"     column="source_type"/>
+        <result property="sourceOrderId"     column="source_order_id"/>
+        <result property="sourceOrderNo"     column="source_order_no"/>
         <result property="mpsId"     column="mps_id"/>
         <result property="mpsNo"     column="mps_no"/>
         <result property="demandNo"     column="demand_no"/>
@@ -51,7 +54,7 @@
     </resultMap>
 
     <sql id="selectWorkOrderVo">
-        SELECT work_order_id, work_order_no, order_type, mps_id, mps_no, demand_no, product_id, product_code, product_name, spec_model, unit, plan_qty, bom_id, bom_no, route_id, route_no, resource_id, resource_name, plan_start, plan_finish, actual_start, actual_finish, finished_qty, qualified_qty, defect_qty, priority, status, audit_by, audit_time, audit_opinion, pause_reason, close_remark, release_by, release_time, del_flag, create_by, create_time, update_by, update_time, remark
+        SELECT work_order_id, work_order_no, order_type, source_type, source_order_id, source_order_no, mps_id, mps_no, demand_no, product_id, product_code, product_name, spec_model, unit, plan_qty, bom_id, bom_no, route_id, route_no, resource_id, resource_name, plan_start, plan_finish, actual_start, actual_finish, finished_qty, qualified_qty, defect_qty, priority, status, audit_by, audit_time, audit_opinion, pause_reason, close_remark, release_by, release_time, del_flag, create_by, create_time, update_by, update_time, remark
         FROM mms_work_order
     </sql>
 
@@ -59,12 +62,16 @@
         <include refid="selectWorkOrderVo"/>
         <where>
             del_flag = '0'
-            <if test="workOrderNo != null and workOrderNo != ''"> AND work_order_no LIKE CONCAT('%', #{work_order_no}, '%')</if>
-            <if test="productCode != null and productCode != ''"> AND product_code LIKE CONCAT('%', #{product_code}, '%')</if>
-            <if test="productName != null and productName != ''"> AND product_name LIKE CONCAT('%', #{product_name}, '%')</if>
-            <if test="orderType != null and orderType != ''"> AND order_type = #{order_type}</if>
+            <if test="workOrderNo != null and workOrderNo != ''"> AND work_order_no LIKE CONCAT('%', #{workOrderNo}, '%')</if>
+            <if test="productCode != null and productCode != ''"> AND product_code LIKE CONCAT('%', #{productCode}, '%')</if>
+            <if test="productName != null and productName != ''"> AND product_name LIKE CONCAT('%', #{productName}, '%')</if>
+            <if test="orderType != null and orderType != ''"> AND order_type = #{orderType}</if>
+            <if test="sourceType != null and sourceType != ''"> AND source_type = #{sourceType}</if>
             <if test="status != null and status != ''"> AND status = #{status}</if>
             <if test="priority != null and priority != ''"> AND priority = #{priority}</if>
+            <if test="bomNo != null and bomNo != ''"> AND bom_no LIKE CONCAT('%', #{bomNo}, '%')</if>
+            <if test="routeNo != null and routeNo != ''"> AND route_no LIKE CONCAT('%', #{routeNo}, '%')</if>
+            <if test="resourceName != null and resourceName != ''"> AND resource_name LIKE CONCAT('%', #{resourceName}, '%')</if>
             <if test="params.beginTime != null and params.beginTime != ''"> AND date(create_time) &gt;= #{params.beginTime}</if>
             <if test="params.endTime != null and params.endTime != ''"> AND date(create_time) &lt;= #{params.endTime}</if>
         </where>
@@ -72,7 +79,7 @@
     </select>
 
     <select id="selectWorkOrderById" parameterType="Long" resultMap="MmsWorkOrderResult">
-        SELECT wo.work_order_id, wo.work_order_no, wo.order_type, wo.mps_id, wo.mps_no, wo.demand_no,
+        SELECT wo.work_order_id, wo.work_order_no, wo.order_type, wo.source_type, wo.source_order_id, wo.source_order_no, wo.mps_id, wo.mps_no, wo.demand_no,
                wo.product_id, wo.product_code, wo.product_name, wo.spec_model, wo.unit, wo.plan_qty,
                wo.bom_id, wo.bom_no, wo.route_id, wo.route_no, wo.resource_id, wo.resource_name,
                wo.plan_start, wo.plan_finish, wo.actual_start, wo.actual_finish,
@@ -94,6 +101,9 @@
         INSERT INTO mms_work_order (
             work_order_no,
             order_type,
+            source_type,
+            source_order_id,
+            source_order_no,
             mps_id,
             mps_no,
             demand_no,
@@ -134,6 +144,9 @@
         )VALUES(
             #{workOrderNo},
             #{orderType},
+            #{sourceType},
+            #{sourceOrderId},
+            #{sourceOrderNo},
             #{mpsId},
             #{mpsNo},
             #{demandNo},
@@ -178,6 +191,9 @@
         UPDATE mms_work_order SET
             work_order_no = #{workOrderNo},
             order_type = #{orderType},
+            source_type = #{sourceType},
+            source_order_id = #{sourceOrderId},
+            source_order_no = #{sourceOrderNo},
             mps_id = #{mpsId},
             mps_no = #{mpsNo},
             demand_no = #{demandNo},

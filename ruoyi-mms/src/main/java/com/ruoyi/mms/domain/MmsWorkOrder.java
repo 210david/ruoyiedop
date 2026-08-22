@@ -2,9 +2,12 @@ package com.ruoyi.mms.domain;
 
 import java.math.BigDecimal;
 import java.util.Date;
+import java.util.List;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.ruoyi.common.annotation.Excel;
 import com.ruoyi.common.core.domain.BaseEntity;
+import com.ruoyi.mms.domain.MmsWoBomSnapshot;
+import com.ruoyi.mms.domain.MmsWoRouteSnapshot;
 
 /**
  * 生产工单 mms_work_order
@@ -22,6 +25,14 @@ public class MmsWorkOrder extends BaseEntity
 
     @Excel(name = "工单类型", readConverterExp = "0=生产,1=返工,2=外协")
     private String orderType;
+
+    @Excel(name = "来源类型", readConverterExp = "1=计划生成,2=订单直转,3=手工创建")
+    private String sourceType;
+
+    private Long sourceOrderId;
+
+    @Excel(name = "关联销售订单号")
+    private String sourceOrderNo;
 
     private Long mpsId;
 
@@ -127,6 +138,12 @@ public class MmsWorkOrder extends BaseEntity
     /** 排产产能单元（关联 mms_schedule_task.resource_name） */
     private String scheduleResourceName;
 
+    /** BOM快照明细（非持久化，详情查询时填充） */
+    private List<MmsWoBomSnapshot> bomSnapshotList;
+
+    /** 工艺快照明细（非持久化，详情查询时填充） */
+    private List<MmsWoRouteSnapshot> routeSnapshotList;
+
     public Long getWorkOrderId() { return workOrderId; }
     public void setWorkOrderId(Long workOrderId) { this.workOrderId = workOrderId; }
     public String getWorkOrderNo() { return workOrderNo; }
@@ -137,6 +154,12 @@ public class MmsWorkOrder extends BaseEntity
     public void setMpsId(Long mpsId) { this.mpsId = mpsId; }
     public String getMpsNo() { return mpsNo; }
     public void setMpsNo(String mpsNo) { this.mpsNo = mpsNo; }
+    public String getSourceType() { return sourceType; }
+    public void setSourceType(String sourceType) { this.sourceType = sourceType; }
+    public Long getSourceOrderId() { return sourceOrderId; }
+    public void setSourceOrderId(Long sourceOrderId) { this.sourceOrderId = sourceOrderId; }
+    public String getSourceOrderNo() { return sourceOrderNo; }
+    public void setSourceOrderNo(String sourceOrderNo) { this.sourceOrderNo = sourceOrderNo; }
     public String getDemandNo() { return demandNo; }
     public void setDemandNo(String demandNo) { this.demandNo = demandNo; }
     public Long getProductId() { return productId; }
@@ -207,4 +230,8 @@ public class MmsWorkOrder extends BaseEntity
     public void setSchedulePlanEnd(Date schedulePlanEnd) { this.schedulePlanEnd = schedulePlanEnd; }
     public String getScheduleResourceName() { return scheduleResourceName; }
     public void setScheduleResourceName(String scheduleResourceName) { this.scheduleResourceName = scheduleResourceName; }
+    public List<MmsWoBomSnapshot> getBomSnapshotList() { return bomSnapshotList; }
+    public void setBomSnapshotList(List<MmsWoBomSnapshot> bomSnapshotList) { this.bomSnapshotList = bomSnapshotList; }
+    public List<MmsWoRouteSnapshot> getRouteSnapshotList() { return routeSnapshotList; }
+    public void setRouteSnapshotList(List<MmsWoRouteSnapshot> routeSnapshotList) { this.routeSnapshotList = routeSnapshotList; }
 }

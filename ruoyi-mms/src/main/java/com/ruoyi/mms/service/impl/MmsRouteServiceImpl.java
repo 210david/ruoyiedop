@@ -84,7 +84,7 @@ public class MmsRouteServiceImpl implements IMmsRouteService
         // 插入工序明细
         insertRouteProcesses(route);
         // 记录变更日志
-        insertVersionLog(route, null, route.getVersion(), null, route.getStatus(), "create", "创建工艺路线");
+        insertVersionLog(route, null, route.getVersion(), null, route.getStatus(), "create", "创建工艺路线", null);
         return rows;
     }
 
@@ -102,7 +102,7 @@ public class MmsRouteServiceImpl implements IMmsRouteService
         {
             throw new ServiceException("已审核/已停用的工艺路线不允许修改，请复制新版本后编辑");
         }
-        // 已驳回状态修改后重置为已启用，清空审核信息
+        // 已驳回状态修改后重置为待审核，清空审核信息
         if ("4".equals(existing.getStatus()))
         {
             MmsRoute resetUpdate = new MmsRoute();
@@ -124,7 +124,7 @@ public class MmsRouteServiceImpl implements IMmsRouteService
         // 插入新明细
         insertRouteProcesses(route);
         // 记录变更日志
-        insertVersionLog(route, existing.getVersion(), route.getVersion(), existing.getStatus(), route.getStatus(), "update", "修改工艺路线");
+        insertVersionLog(route, existing.getVersion(), route.getVersion(), existing.getStatus(), route.getStatus(), "update", "修改工艺路线", null);
         return rows;
     }
 
@@ -150,9 +150,9 @@ public class MmsRouteServiceImpl implements IMmsRouteService
         {
             throw new ServiceException("工艺路线不存在");
         }
-        if (!"0".equals(route.getStatus()) && !"3".equals(route.getStatus()))
+        if (!"0".equals(route.getStatus()) && !"3".equals(route.getStatus()) && !"4".equals(route.getStatus()))
         {
-            throw new ServiceException("只有草稿或已停用的路线才能启用");
+            throw new ServiceException("只有草稿、已停用或已驳回的路线才能提交审核");
         }
         if (route.getProcessList() == null)
         {
@@ -160,7 +160,14 @@ public class MmsRouteServiceImpl implements IMmsRouteService
         }
         if (route.getProcessList() == null || route.getProcessList().isEmpty())
         {
-            throw new ServiceException("工艺路线没有工序，无法启用");
+            throw new ServiceException("工艺路线没有工序，无法提交审核");
+        }
+        // 唯一性校验：同一产品同一时间只能有一条已审核的工艺路线
+        // 在提交审核时就拦截，避免用户准备审核后才发现冲突
+        int count = routeMapper.countAuditedByProductId(route.getProductId());
+        if (count > 0)
+        {
+            throw new ServiceException("产品[" + route.getProductCode() + "]已存在已审核的工艺路线，请先停用旧版本再提交审核");
         }
         MmsRoute update = new MmsRoute();
         update.setRouteId(routeId);
@@ -169,7 +176,7 @@ public class MmsRouteServiceImpl implements IMmsRouteService
         update.setUpdateTime(DateUtils.getNowDate());
         int rows = routeMapper.updateRouteStatus(update);
         // 记录变更日志
-        insertVersionLog(route, route.getVersion(), route.getVersion(), route.getStatus(), "1", "enable", "启用工艺路线");
+        insertVersionLog(route, route.getVersion(), route.getVersion(), route.getStatus(), "1", "enable", "提交审核", null);
         return rows;
     }
 
@@ -184,7 +191,7 @@ public class MmsRouteServiceImpl implements IMmsRouteService
         }
         if (!"1".equals(route.getStatus()))
         {
-            throw new ServiceException("只有已启用的路线才能审核");
+            throw new ServiceException("只有待审核的路线才能审核");
         }
         if (!"1".equals(auditAction) && !"2".equals(auditAction))
         {
@@ -203,7 +210,7 @@ public class MmsRouteServiceImpl implements IMmsRouteService
         update.setUpdateTime(DateUtils.getNowDate());
         int rows = routeMapper.updateRouteStatus(update);
         // 记录变更日志
-        insertVersionLog(route, route.getVersion(), route.getVersion(), route.getStatus(), newStatus, "audit", changeDesc);
+        insertVersionLog(route, route.getVersion(), route.getVersion(), route.getStatus(), newStatus, "audit", changeDesc, auditRemark);
         // 写入审核日志
         MmsRouteAuditLog auditLog = new MmsRouteAuditLog();
         auditLog.setRouteId(routeId);
@@ -235,7 +242,7 @@ public class MmsRouteServiceImpl implements IMmsRouteService
         update.setUpdateTime(DateUtils.getNowDate());
         int rows = routeMapper.updateRouteStatus(update);
         // 记录变更日志
-        insertVersionLog(route, route.getVersion(), route.getVersion(), route.getStatus(), "3", "disable", "停用工艺路线");
+        insertVersionLog(route, route.getVersion(), route.getVersion(), route.getStatus(), "3", "disable", "停用工艺路线", null);
         return rows;
     }
 
@@ -282,7 +289,7 @@ public class MmsRouteServiceImpl implements IMmsRouteService
         }
 
         // 记录变更日志
-        insertVersionLog(source, source.getVersion(), newRoute.getVersion(), source.getStatus(), "0", "copy", "复制为新版本：" + newRoute.getVersion());
+        insertVersionLog(source, source.getVersion(), newRoute.getVersion(), source.getStatus(), "0", "copy", "复制为新版本：" + newRoute.getVersion(), null);
         return newRoute;
     }
 
@@ -374,8 +381,9 @@ public class MmsRouteServiceImpl implements IMmsRouteService
 
     /**
      * 插入版本变更记录
+     * @param auditRemark 审核意见（仅审核操作时有值，其他传 null）
      */
-    private void insertVersionLog(MmsRoute route, String oldVersion, String newVersion, String oldStatus, String newStatus, String changeType, String desc)
+    private void insertVersionLog(MmsRoute route, String oldVersion, String newVersion, String oldStatus, String newStatus, String changeType, String desc, String auditRemark)
     {
         MmsRouteVersionLog log = new MmsRouteVersionLog();
         log.setRouteId(route.getRouteId());
@@ -386,6 +394,7 @@ public class MmsRouteServiceImpl implements IMmsRouteService
         log.setNewStatus(newStatus);
         log.setChangeType(changeType);
         log.setChangeDesc(desc);
+        log.setAuditRemark(auditRemark);
         log.setChangeBy(SecurityUtils.getUsername());
         log.setChangeTime(DateUtils.getNowDate());
         routeMapper.insertVersionLog(log);

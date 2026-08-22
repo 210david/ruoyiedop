@@ -18,7 +18,12 @@
       <div class="status-tabs"><div class="tabs-track">
         <button class="status-tab" :class="{ 'is-active': activeStatusTab === 'all' }" @click="handleStatusTabClick('all')"><span class="dot"></span><span>全部</span></button>
         <button v-for="s in statusTabList" :key="s.value" class="status-tab" :class="[statusTabClass(s.value), { 'is-active': activeStatusTab === s.value }]" @click="handleStatusTabClick(s.value)"><span class="dot"></span><span>{{ s.label }}</span></button>
-      </div></div>
+      </div>
+        <button class="tip-pill" @click="showStatusHelp = true">
+          <el-icon><WarningFilled /></el-icon>
+          <span>业务操作说明</span>
+        </button>
+      </div>
       <div class="toolbar">
         <div class="left">
           <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['mms:outsource:add']">新增</el-button>
@@ -129,18 +134,132 @@
       </div>
       <template #footer><el-button @click="viewOpen = false">关 闭</el-button></template>
     </el-dialog>
+
+    <!-- ===== 业务操作说明对话框 ===== -->
+    <el-dialog v-model="showStatusHelp" title="外协管理业务操作说明" width="984px" append-to-body>
+      <div class="status-help-content">
+        <!-- 一、外协单释义 -->
+        <h4>一、外协单释义</h4>
+        <div class="highlight-card highlight-primary">
+          <div class="highlight-card-title">什么是外协单？</div>
+          <div class="highlight-card-body">
+            <strong>外协单（Outsource Order）</strong>是生产管控中将工序任务委托外部供应商加工的业务单据。外协单关联工单编号、工序信息和供应商，记录外协数量、单价、总金额及回厂数量，通过外协发料→回厂验收的状态流转，实现外协业务的精细化管控和过程可追溯。<br/><br/>
+            外协单是<strong>MES（制造执行系统）</strong>中外协管理的核心载体，向上对接工单的工序拆分与产能规划，向下驱动供应商协同、回厂验收和损耗统计，满足精益生产对外协业务可追溯、可量化、可管控的要求。
+          </div>
+        </div>
+
+        <!-- 二、外协单状态流转图 -->
+        <h4>二、外协单状态流转图</h4>
+        <div class="status-flow">
+          <div class="flow-item">
+            <el-tag type="warning">待外协</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+            <el-tag size="small" type="primary">发料外协</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="primary">外协中</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+            <el-tag size="small" type="primary">回厂验收</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="success">已回厂</el-tag>
+          </div>
+        </div>
+
+        <!-- 三、各状态说明 -->
+        <h4>三、各状态说明</h4>
+        <el-descriptions :column="1" border>
+          <el-descriptions-item label="待外协">外协单新建后的初始状态。可修改外协信息、发料至供应商。发料后状态变为外协中</el-descriptions-item>
+          <el-descriptions-item label="外协中">外协物料已发至供应商，正在外协加工中。可录入回厂信息，回厂验收后状态变为已回厂</el-descriptions-item>
+          <el-descriptions-item label="已回厂">外协物料已回厂验收，回厂数量和损耗数量已确认。不可再修改，数据归档</el-descriptions-item>
+        </el-descriptions>
+
+        <!-- 四、新增/修改表单填写指南 -->
+        <h4>四、新增/修改表单填写指南</h4>
+        <div class="highlight-card highlight-warning">
+          <div class="highlight-card-title">基本信息区</div>
+          <div class="highlight-card-body">
+            <p>• <strong>外协单号：</strong>外协单的唯一标识编号，保存后由系统自动生成</p>
+            <p>• <strong>工单编号：</strong>关联的生产工单编号<span style="color: #f56c6c;">*必填</span></p>
+            <p>• <strong>工序序号：</strong>对应工单中的工序序号</p>
+            <p>• <strong>工序名称：</strong>外协加工的工序名称</p>
+          </div>
+        </div>
+        <div class="highlight-card highlight-primary" style="margin-top: 12px;">
+          <div class="highlight-card-title">外协信息区</div>
+          <div class="highlight-card-body">
+            <p>• <strong>供应商：</strong>承接外协任务的供应商名称<span style="color: #f56c6c;">*必填</span></p>
+            <p>• <strong>外协数量：</strong>委托外协加工的数量<span style="color: #f56c6c;">*必填</span></p>
+            <p>• <strong>单价：</strong>外协加工的单价</p>
+            <p>• <strong>状态：</strong>外协单的当前流转状态</p>
+          </div>
+        </div>
+        <div class="highlight-card highlight-warning" style="margin-top: 12px;">
+          <div class="highlight-card-title">日期信息区</div>
+          <div class="highlight-card-body">
+            <p>• <strong>外协日期：</strong>物料发至供应商的日期</p>
+            <p>• <strong>计划回厂：</strong>计划外协物料回厂的日期</p>
+            <p>• <strong>实际回厂：</strong>外协物料实际回厂的日期</p>
+          </div>
+        </div>
+        <div class="highlight-card highlight-warning" style="margin-top: 12px;">
+          <div class="highlight-card-title">备注信息区</div>
+          <div class="highlight-card-body">
+            <p>• <strong>备注：</strong>外协单的补充说明信息</p>
+          </div>
+        </div>
+
+        <!-- 五、外协单生命周期管控 -->
+        <h4>五、外协单生命周期管控</h4>
+        <div class="highlight-card highlight-success">
+          <div class="highlight-card-title">什么是外协单生命周期管控？</div>
+          <div class="highlight-card-body">
+            <strong>外协单生命周期管控</strong>是生产管控的核心机制，通过状态流转实现外协单从创建到回厂的全过程管理。每个状态对应特定的可执行操作，确保外协业务有序可控、可追溯。外协发料机制确保物料流向可查，回厂验收机制确保回厂数量和损耗数量的准确归集。
+          </div>
+        </div>
+        <div class="highlight-card highlight-warning" style="margin-top: 12px;">
+          <div class="highlight-card-title">异常处理规则</div>
+          <div class="highlight-card-body">
+            <p>1. <strong>已回厂的外协单无法修改：</strong>外协单回厂验收后进入「已回厂」状态，不允许再编辑基本信息，确保外协数据的一致性</p>
+            <p>2. <strong>损耗数量记录：</strong>外协物料回厂时需核对数量，损耗数量 = 外协数量 - 回厂数量，系统自动计算</p>
+            <p>3. <strong>超期预警：</strong>超过计划回厂日期未回厂的外协单需及时跟进供应商，确保生产计划不受影响</p>
+            <p style="color: #e6a23c;"><strong>提示：</strong>外协单的创建和回厂操作均记录操作日志，确保全流程可追溯</p>
+          </div>
+        </div>
+
+        <!-- 六、业务操作流程 -->
+        <h4>六、业务操作流程</h4>
+        <el-timeline>
+          <el-timeline-item type="primary" :hollow="true">
+            <strong>创建外协单：</strong>点击「新增」创建外协单，填写工单编号、工序信息、供应商和外协数量，保存后外协单号自动生成
+          </el-timeline-item>
+          <el-timeline-item type="warning" :hollow="true">
+            <strong>发料外协：</strong>将物料发至供应商，填写外协日期，状态变为外协中
+          </el-timeline-item>
+          <el-timeline-item type="info" :hollow="true">
+            <strong>查看详情：</strong>点击「查看」查看外协单完整信息，包括外协信息、日期信息和回厂数据
+          </el-timeline-item>
+          <el-timeline-item type="success" :hollow="true">
+            <strong>回厂验收：</strong>外协物料回厂后填写实际回厂日期和回厂数量，系统自动计算损耗数量，状态变为已回厂
+          </el-timeline-item>
+        </el-timeline>
+      </div>
+      <template #footer><el-button type="primary" @click="showStatusHelp = false">我知道了</el-button></template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup name="Outsource">
 import { listOutsource, getOutsource, addOutsource, updateOutsource, delOutsource } from "@/api/mms/outsource";
 import { useDetailCard } from '@/composables/useDetailCard'
-import { Filter, RefreshLeft, ArrowDown } from '@element-plus/icons-vue'
+import { Filter, RefreshLeft, ArrowDown, ArrowRight, WarningFilled } from '@element-plus/icons-vue'
 const { proxy } = getCurrentInstance();
 const { mms_outsource_status } = proxy.useDict("mms_outsource_status");
 const { collapsedCards, toggleCard } = useDetailCard(["c0","c1","c2","c3","vc0","vc1","vc2","vc3"])
 const dataList = ref([]); const open = ref(false); const viewOpen = ref(false); const viewData = ref({}); const loading = ref(true); const showSearch = ref(true); const showAdvanced = ref(false);
-const ids = ref([]); const single = ref(true); const multiple = ref(true); const total = ref(0); const title = ref(""); const dateRange = ref([]);
+const ids = ref([]); const single = ref(true); const multiple = ref(true); const total = ref(0); const title = ref(""); const dateRange = ref([]); const showStatusHelp = ref(false);
 const activeStatusTab = ref("all");
 const statusTabList = computed(() => mms_outsource_status.value ? mms_outsource_status.value.map(d => ({ label: d.label, value: d.value })) : []);
 const data = reactive({
@@ -230,6 +349,27 @@ getList();
 .mms-outsource-page .rd-collapse-btn.is-collapsed { transform: rotate(180deg); }
 .mms-outsource-page .rd-card-body { padding: 16px; }
 .mms-outsource-page .text-muted { color: #94a3b8; }
+.mms-outsource-page .tip-pill { display:inline-flex; align-items:center; gap:5px; height:30px; padding:0 10px; background:#fffaf0; border:1px solid #fde68a; color:#92400e; border-radius:999px; font-size:13px; font-weight:500; cursor:pointer; transition:all .15s; flex-shrink:0; white-space:nowrap; }
+.mms-outsource-page .tip-pill:hover { background:#fffbeb; border-color:#f59e0b; color:#7c2d12; }
+.mms-outsource-page .tip-pill .el-icon { font-size:14px; color:#b45309; }
+.status-help-content { max-height: 520px; overflow-y: auto; padding-right: 10px; }
+.status-help-content h4 { margin: 20px 0 12px 0; color: #303133; font-weight: 600; border-left: 4px solid #409eff; padding-left: 10px; }
+.status-help-content h4:first-child { margin-top: 0; }
+.status-help-content .status-flow { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 16px; background-color: #f5f7fa; border-radius: 8px; margin-bottom: 8px; }
+.status-help-content .flow-item { display: flex; align-items: center; gap: 8px; }
+.status-help-content .flow-arrow { color: #909399; font-size: 16px; }
+.status-help-content .highlight-card { border-radius: 8px; padding: 16px; border: 1px solid; }
+.status-help-content .highlight-card-title { font-size: 14px; font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; }
+.status-help-content .highlight-card-body { font-size: 13px; color: #606266; line-height: 1.6; }
+.status-help-content .highlight-card-body p { margin: 4px 0; }
+.status-help-content .highlight-primary { background-color: #ecf5ff; border-color: #a0cfff; }
+.status-help-content .highlight-primary .highlight-card-title { color: #409eff; }
+.status-help-content .highlight-success { background-color: #f0f9eb; border-color: #b3e19d; }
+.status-help-content .highlight-success .highlight-card-title { color: #67c23a; }
+.status-help-content .highlight-warning { background-color: #fdf6ec; border-color: #f5dab1; }
+.status-help-content .highlight-warning .highlight-card-title { color: #e6a23c; }
+.status-help-content .highlight-danger { background-color: #fef0f0; border-color: #fbc4c4; }
+.status-help-content .highlight-danger .highlight-card-title { color: #f56c6c; }
 @media (max-width: 1100px) { .mms-outsource-page .filter-bar { grid-template-columns: repeat(2,1fr); } }
 @media (max-width: 720px) { .mms-outsource-page .filter-bar { grid-template-columns: 1fr; } }
 </style>

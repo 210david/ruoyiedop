@@ -76,7 +76,10 @@
             <span class="dot"></span><span>{{ s.label }}</span><span class="count">{{ statusCounts[s.value] || 0 }}</span>
           </button>
         </div>
-        <button class="tip-pill" @click="showStatusHelp = true"><el-icon><WarningFilled /></el-icon><span>业务操作说明</span></button>
+        <button class="tip-pill" @click="showStatusHelp = true">
+          <el-icon><WarningFilled /></el-icon>
+          <span>业务操作说明</span>
+        </button>
       </div>
 
       <div class="toolbar">
@@ -196,21 +199,108 @@
     </el-dialog>
 
     <!-- ===== 业务操作说明对话框 ===== -->
-    <el-dialog v-model="showStatusHelp" title="流转卡管理业务操作说明" width="820px" append-to-body>
+    <el-dialog v-model="showStatusHelp" title="流转卡管理业务操作说明" width="984px" append-to-body>
       <div class="status-help-content">
+        <!-- 一、流转卡释义 -->
         <h4>一、流转卡释义</h4>
         <div class="highlight-card highlight-primary">
           <div class="highlight-card-title">什么是流转卡？</div>
           <div class="highlight-card-body">
-            <strong>流转卡（Flow Card）</strong>是生产管控中跟踪在制品（WIP）在工序间流转的跟踪单据。流转卡记录当前工序、批次号、状态和打印次数，支持工序级进度追踪和批次追溯，是实现工序级生产管控的核心载体。<br/><br/>
-            流转卡遵循 <strong>MES 在制品管理规范</strong>，通过工序流转记录实现在制品的精确追踪，支持批次管理和打印管理，确保生产过程可追溯。
+            <strong>流转卡（Flow Card）</strong>是生产管控中跟踪在制品（WIP）在工序间流转的跟踪单据。流转卡关联工单编号、批次号和当前工序，记录流转状态和打印次数，通过工序流转记录实现在制品的精确追踪和批次追溯。<br/><br/>
+            流转卡是<strong>MES（制造执行系统）</strong>中在制品管理的核心载体，向上对接工单的工序拆分与排产计划，向下驱动工序间的物料流转、质量追踪和进度回报，满足精益生产对在制品可追溯、可量化、可管控的要求。
           </div>
         </div>
-        <h4>二、业务操作流程</h4>
+
+        <!-- 二、流转卡状态流转图 -->
+        <h4>二、流转卡状态流转图</h4>
+        <div class="status-flow">
+          <div class="flow-item">
+            <el-tag type="primary">流转中</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+            <el-tag size="small" type="primary">工序流转</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="success">已完成</el-tag>
+          </div>
+        </div>
+        <div class="status-flow" style="margin-top: 8px;">
+          <div class="flow-item">
+            <el-tag type="primary">流转中</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+            <el-tag size="small" type="danger">异常停流</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="danger">已停流</el-tag>
+            <el-tag size="small" type="info">异常终止</el-tag>
+          </div>
+        </div>
+
+        <!-- 三、各状态说明 -->
+        <h4>三、各状态说明</h4>
+        <el-descriptions :column="1" border>
+          <el-descriptions-item label="流转中">流转卡新建后的初始状态。在制品正在工序间流转，可修改流转卡信息或打印。工序流转完成后状态自动变为已完成</el-descriptions-item>
+          <el-descriptions-item label="已完成">流转卡已完成全部工序流转，在制品已完工。不可再修改，数据归档</el-descriptions-item>
+          <el-descriptions-item label="已停流">流转卡因异常情况停止流转，不再执行。需排查异常原因后重新创建流转卡</el-descriptions-item>
+        </el-descriptions>
+
+        <!-- 四、新增/修改表单填写指南 -->
+        <h4>四、新增/修改表单填写指南</h4>
+        <div class="highlight-card highlight-warning">
+          <div class="highlight-card-title">基本信息区</div>
+          <div class="highlight-card-body">
+            <p>• <strong>流转卡号：</strong>流转卡的唯一标识编号，保存后由系统自动生成</p>
+            <p>• <strong>工单编号：</strong>关联的生产工单编号<span style="color: #f56c6c;">*必填</span></p>
+            <p>• <strong>批次号：</strong>在制品的批次编号，用于批次追溯<span style="color: #f56c6c;">*必填</span></p>
+            <p>• <strong>当前工序序号：</strong>当前所在工序的序号</p>
+            <p>• <strong>当前工序：</strong>当前正在执行的工序名称</p>
+            <p>• <strong>状态：</strong>流转卡的当前流转状态</p>
+          </div>
+        </div>
+        <div class="highlight-card highlight-warning" style="margin-top: 12px;">
+          <div class="highlight-card-title">备注信息区</div>
+          <div class="highlight-card-body">
+            <p>• <strong>备注：</strong>流转卡的补充说明信息</p>
+          </div>
+        </div>
+
+        <!-- 五、流转卡生命周期管控 -->
+        <h4>五、流转卡生命周期管控</h4>
+        <div class="highlight-card highlight-success">
+          <div class="highlight-card-title">什么是流转卡生命周期管控？</div>
+          <div class="highlight-card-body">
+            <strong>流转卡生命周期管控</strong>是生产管控的核心机制，通过状态流转实现流转卡从创建到完工的全过程管理。每个状态对应特定的可执行操作，确保在制品流转有序可控、可追溯。流转卡的工序流转机制确保在制品进度实时可查，打印机制支持实物卡片的多次输出与次数记录。
+          </div>
+        </div>
+        <div class="highlight-card highlight-warning" style="margin-top: 12px;">
+          <div class="highlight-card-title">异常处理规则</div>
+          <div class="highlight-card-body">
+            <p>1. <strong>已完成的流转卡无法修改：</strong>流转卡完成全部工序后进入「已完成」状态，不允许再编辑基本信息，确保流转数据的一致性</p>
+            <p>2. <strong>已停流的流转卡无法恢复：</strong>流转卡停流后终止，如需继续生产需重新创建流转卡</p>
+            <p>3. <strong>打印次数记录：</strong>每次打印流转卡系统自动累计打印次数，确保打印操作可追溯</p>
+            <p style="color: #e6a23c;"><strong>提示：</strong>流转卡修改和打印操作均记录操作日志，确保全流程可追溯</p>
+          </div>
+        </div>
+
+        <!-- 六、业务操作流程 -->
+        <h4>六、业务操作流程</h4>
         <el-timeline>
-          <el-timeline-item type="primary" :hollow="true"><strong>创建流转卡：</strong>工单下达后系统自动生成流转卡，关联批次号和工序信息</el-timeline-item>
-          <el-timeline-item type="warning" :hollow="true"><strong>工序流转：</strong>流转卡随在制品在工序间流转，记录当前工序状态</el-timeline-item>
-          <el-timeline-item type="success" :hollow="true"><strong>打印管理：</strong>流转卡可打印实物卡，支持多次打印并记录打印次数</el-timeline-item>
+          <el-timeline-item type="primary" :hollow="true">
+            <strong>创建流转卡：</strong>点击「新增」创建流转卡，填写工单编号、批次号和工序信息，保存后流转卡号自动生成
+          </el-timeline-item>
+          <el-timeline-item type="warning" :hollow="true">
+            <strong>工序流转：</strong>流转卡随在制品在工序间流转，记录当前工序状态，支持随时查看流转进度
+          </el-timeline-item>
+          <el-timeline-item type="success" :hollow="true">
+            <strong>打印管理：</strong>点击「打印」可输出实物流转卡，支持多次打印并自动记录打印次数
+          </el-timeline-item>
+          <el-timeline-item type="info" :hollow="true">
+            <strong>查看详情：</strong>点击「详情」查看流转卡完整信息，包括基本信息、状态和打印记录
+          </el-timeline-item>
+          <el-timeline-item type="danger" :hollow="true">
+            <strong>异常停流：</strong>流转中如遇异常情况，流转卡停止流转，需排查原因后重新创建
+          </el-timeline-item>
         </el-timeline>
       </div>
       <template #footer>
@@ -567,6 +657,27 @@ getList();
 .mms-flowcard-page .rd-collapse-btn.is-collapsed { transform: rotate(180deg); }
 .mms-flowcard-page .rd-card-body { padding: 16px; }
 .mms-flowcard-page .text-muted { color: #94a3b8; }
+.mms-flowcard-page .tip-pill { display:inline-flex; align-items:center; gap:5px; height:30px; padding:0 10px; background:#fffaf0; border:1px solid #fde68a; color:#92400e; border-radius:999px; font-size:13px; font-weight:500; cursor:pointer; transition:all .15s var(--ease-out); flex-shrink:0; white-space:nowrap; }
+.mms-flowcard-page .tip-pill:hover { background:var(--amber-50); border-color:var(--amber-500); color:#7c2d12; }
+.mms-flowcard-page .tip-pill .el-icon { font-size:14px; color:var(--amber-700); }
+.status-help-content { max-height: 520px; overflow-y: auto; padding-right: 10px; }
+.status-help-content h4 { margin: 20px 0 12px 0; color: #303133; font-weight: 600; border-left: 4px solid #409eff; padding-left: 10px; }
+.status-help-content h4:first-child { margin-top: 0; }
+.status-help-content .status-flow { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 16px; background-color: #f5f7fa; border-radius: 8px; margin-bottom: 8px; }
+.status-help-content .flow-item { display: flex; align-items: center; gap: 8px; }
+.status-help-content .flow-arrow { color: #909399; font-size: 16px; }
+.status-help-content .highlight-card { border-radius: 8px; padding: 16px; border: 1px solid; }
+.status-help-content .highlight-card-title { font-size: 14px; font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; }
+.status-help-content .highlight-card-body { font-size: 13px; color: #606266; line-height: 1.6; }
+.status-help-content .highlight-card-body p { margin: 4px 0; }
+.status-help-content .highlight-primary { background-color: #ecf5ff; border-color: #a0cfff; }
+.status-help-content .highlight-primary .highlight-card-title { color: #409eff; }
+.status-help-content .highlight-success { background-color: #f0f9eb; border-color: #b3e19d; }
+.status-help-content .highlight-success .highlight-card-title { color: #67c23a; }
+.status-help-content .highlight-warning { background-color: #fdf6ec; border-color: #f5dab1; }
+.status-help-content .highlight-warning .highlight-card-title { color: #e6a23c; }
+.status-help-content .highlight-danger { background-color: #fef0f0; border-color: #fbc4c4; }
+.status-help-content .highlight-danger .highlight-card-title { color: #f56c6c; }
 @media (max-width:1100px) { .mms-flowcard-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }
 @media (max-width:720px) { .mms-flowcard-page .filter-card .filter-bar { grid-template-columns:1fr; } }
 </style>

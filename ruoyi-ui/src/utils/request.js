@@ -6,6 +6,7 @@ import { tansParams, blobValidate } from '@/utils/ruoyi'
 import cache from '@/plugins/cache'
 import { saveAs } from 'file-saver'
 import useUserStore from '@/store/modules/user'
+import router from '@/router'
 
 let downloadLoadingInstance
 // 是否显示重新登录
@@ -96,8 +97,11 @@ service.interceptors.response.use(res => {
               isRelogin.show = true
               ElMessageBox.confirm('登录状态已过期，您可以继续留在该页面，或者重新登录', '系统提示', { confirmButtonText: '重新登录', cancelButtonText: '取消', type: 'warning' }).then(() => {
                 isRelogin.show = false
+                // 获取当前路由路径作为 redirect 参数
+                const currentPath = router.currentRoute.value.fullPath
                 useUserStore().logOut().then(() => {
-                  location.href = '/index'
+                  // 使用 Vue Router 跳转，保留当前页面路径作为 redirect 参数
+                  router.push({ path: '/login', query: { redirect: currentPath } })
                 })
               }).catch(() => {
                 isRelogin.show = false
@@ -116,13 +120,16 @@ service.interceptors.response.use(res => {
         isRelogin.show = true
         ElMessageBox.confirm('登录状态已过期，您可以继续留在该页面，或者重新登录', '系统提示', { confirmButtonText: '重新登录', cancelButtonText: '取消', type: 'warning' }).then(() => {
           isRelogin.show = false
+          // 获取当前路由路径作为 redirect 参数
+          const currentPath = router.currentRoute.value.fullPath
           useUserStore().logOut().then(() => {
-            location.href = '/index'
+            // 使用 Vue Router 跳转，保留当前页面路径作为 redirect 参数
+            router.push({ path: '/login', query: { redirect: currentPath } })
           })
-      }).catch(() => {
-        isRelogin.show = false
-      })
-    }
+        }).catch(() => {
+          isRelogin.show = false
+        })
+      }
       return Promise.reject('无效的会话，或者会话已过期，请重新登录。')
     } else if (code === 500) {
       // suppressError: 非关键请求（如列宽配置、状态计数）失败时不弹错误提示

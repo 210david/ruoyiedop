@@ -60,9 +60,20 @@ public class MmsBomServiceImpl implements IMmsBomService
         bom.setDelFlag("0");
         bom.setCreateBy(SecurityUtils.getUsername());
         bom.setCreateTime(DateUtils.getNowDate());
-        if (bom.getStatus() == null)
+        // 强制设置为草稿状态，新增时状态不可由前端指定
+        bom.setStatus("0"); // 草稿
+        // 校验明细不能为空
+        if (bom.getDetailList() == null || bom.getDetailList().isEmpty())
         {
-            bom.setStatus("0"); // 草稿
+            throw new ServiceException("BOM明细不能为空，请至少添加一行物料明细");
+        }
+        // 校验明细行物料不能为空
+        for (MmsBomDetail d : bom.getDetailList())
+        {
+            if (d.getMaterialId() == null)
+            {
+                throw new ServiceException("BOM明细中存在未选择物料的行，请选择物料或删除该行");
+            }
         }
         if (bom.getBaseQty() == null)
         {
@@ -84,6 +95,21 @@ public class MmsBomServiceImpl implements IMmsBomService
         if (existing != null && "1".equals(existing.getStatus()))
         {
             throw new ServiceException("已发布的BOM不允许修改，请复制新版本后编辑");
+        }
+        // 状态不允许通过修改接口变更，保持原有状态（草稿或已停用）
+        bom.setStatus(existing != null ? existing.getStatus() : "0");
+        // 校验明细不能为空
+        if (bom.getDetailList() == null || bom.getDetailList().isEmpty())
+        {
+            throw new ServiceException("BOM明细不能为空，请至少添加一行物料明细");
+        }
+        // 校验明细行物料不能为空
+        for (MmsBomDetail d : bom.getDetailList())
+        {
+            if (d.getMaterialId() == null)
+            {
+                throw new ServiceException("BOM明细中存在未选择物料的行，请选择物料或删除该行");
+            }
         }
         // 删除旧明细，重新插入
         bomMapper.deleteBomDetailByBomId(bom.getBomId());

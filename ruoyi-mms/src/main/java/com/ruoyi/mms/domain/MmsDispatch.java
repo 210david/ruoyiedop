@@ -30,6 +30,18 @@ public class MmsDispatch extends BaseEntity
     @Excel(name = "工单编号")
     private String workOrderNo;
 
+    @Excel(name = "产品编码")
+    private String productCode;
+
+    @Excel(name = "产品名称")
+    private String productName;
+
+    @Excel(name = "规格型号")
+    private String specModel;
+
+    @Excel(name = "单位")
+    private String unit;
+
     @Excel(name = "工序序号")
     private Integer opSeq;
 
@@ -87,6 +99,14 @@ public class MmsDispatch extends BaseEntity
     public void setWorkOrderId(Long workOrderId) { this.workOrderId = workOrderId; }
     public String getWorkOrderNo() { return workOrderNo; }
     public void setWorkOrderNo(String workOrderNo) { this.workOrderNo = workOrderNo; }
+    public String getProductCode() { return productCode; }
+    public void setProductCode(String productCode) { this.productCode = productCode; }
+    public String getProductName() { return productName; }
+    public void setProductName(String productName) { this.productName = productName; }
+    public String getSpecModel() { return specModel; }
+    public void setSpecModel(String specModel) { this.specModel = specModel; }
+    public String getUnit() { return unit; }
+    public void setUnit(String unit) { this.unit = unit; }
     public Integer getOpSeq() { return opSeq; }
     public void setOpSeq(Integer opSeq) { this.opSeq = opSeq; }
     public Long getProcessId() { return processId; }

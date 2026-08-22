@@ -71,6 +71,9 @@ public class MmsBom extends BaseEntity
     /** 删除标志 */
     private String delFlag;
 
+    /** 产品物料类型（仅用于查询过滤，不持久化） */
+    private transient String productMaterialType;
+
     /** BOM明细列表 */
     private List<MmsBomDetail> detailList;
 
@@ -102,6 +105,8 @@ public class MmsBom extends BaseEntity
     public void setExpireDate(Date expireDate) { this.expireDate = expireDate; }
     public String getDelFlag() { return delFlag; }
     public void setDelFlag(String delFlag) { this.delFlag = delFlag; }
+    public String getProductMaterialType() { return productMaterialType; }
+    public void setProductMaterialType(String productMaterialType) { this.productMaterialType = productMaterialType; }
     public List<MmsBomDetail> getDetailList() { return detailList; }
     public void setDetailList(List<MmsBomDetail> detailList) { this.detailList = detailList; }
 }

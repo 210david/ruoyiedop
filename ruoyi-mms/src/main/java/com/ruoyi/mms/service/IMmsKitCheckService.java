@@ -8,7 +8,7 @@ import com.ruoyi.mms.domain.MmsKitCheckDetail;
  * 齐套检查 Service接口
  *
  * 状态机：
- * 0(待检查) → 1(已通过) / 2(缺料)
+ * 1(已通过) / 2(缺料) —— 一键检查直接生成最终状态
  *
  * @author ruoyi
  */

@@ -58,6 +58,8 @@
         <result property="processId"      column="process_id"/>
         <result property="processCode"    column="process_code"/>
         <result property="processName"    column="process_name"/>
+        <result property="resourceId"     column="resource_id"/>
+        <result property="resourceName"   column="resource_name"/>
         <result property="stepSeq"        column="step_seq"/>
         <result property="stdTime"        column="std_time"/>
         <result property="prepTime"       column="prep_time"/>
@@ -72,7 +74,7 @@
     </resultMap>
 
     <sql id="selectRouteProcessVo">
-        SELECT rp.id, rp.route_id, rp.process_id, rp.process_code, rp.process_name, rp.step_seq,
+        SELECT rp.id, rp.route_id, rp.process_id, rp.process_code, rp.process_name, rp.resource_id, rp.resource_name, rp.step_seq,
                rp.std_time, rp.prep_time, rp.is_key_process, rp.is_outsource,
                rp.del_flag, rp.create_by, rp.create_time,
                rp.update_by, rp.update_time, rp.remark
@@ -141,11 +143,11 @@
 
     <insert id="insertRouteProcess" parameterType="MmsRouteProcess" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO mms_route_process (
-            route_id, process_id, process_code, process_name, step_seq,
+            route_id, process_id, process_code, process_name, resource_id, resource_name, step_seq,
             std_time, prep_time, is_key_process, is_outsource,
             del_flag, create_by, create_time, update_by, update_time, remark
         )VALUES(
-            #{routeId}, #{processId}, #{processCode}, #{processName}, #{stepSeq},
+            #{routeId}, #{processId}, #{processCode}, #{processName}, #{resourceId}, #{resourceName}, #{stepSeq},
             #{stdTime}, #{prepTime}, #{isKeyProcess}, #{isOutsource},
             #{delFlag}, #{createBy}, #{createTime}, #{updateBy}, #{updateTime}, #{remark}
         )
@@ -167,13 +169,14 @@
         <result property="newStatus" column="new_status"/>
         <result property="changeType" column="change_type"/>
         <result property="changeDesc" column="change_desc"/>
+        <result property="auditRemark" column="audit_remark"/>
         <result property="changeBy" column="change_by"/>
         <result property="changeTime" column="change_time"/>
     </resultMap>
 
     <select id="selectVersionLogByRouteId" parameterType="Long" resultMap="MmsRouteVersionLogResult">
         SELECT log_id, route_id, route_no, old_version, new_version, old_status, new_status,
-               change_type, change_desc, change_by, change_time
+               change_type, change_desc, audit_remark, change_by, change_time
         FROM mms_route_version_log
         WHERE route_id = #{routeId}
         ORDER BY log_id DESC
@@ -182,11 +185,18 @@
     <insert id="insertVersionLog" parameterType="MmsRouteVersionLog" useGeneratedKeys="true" keyProperty="logId">
         INSERT INTO mms_route_version_log (
             route_id, route_no, old_version, new_version, old_status, new_status,
-            change_type, change_desc, change_by, change_time
+            change_type, change_desc, audit_remark, change_by, change_time
         )VALUES(
             #{routeId}, #{routeNo}, #{oldVersion}, #{newVersion}, #{oldStatus}, #{newStatus},
-            #{changeType}, #{changeDesc}, #{changeBy}, #{changeTime}
+            #{changeType}, #{changeDesc}, #{auditRemark}, #{changeBy}, #{changeTime}
         )
     </insert>
+
+    <!-- ============ 工艺路线唯一性校验 ============ -->
+    <!-- 统计同一产品已审核（status=2）的工艺路线数量，排除了当前路线 -->
+    <select id="countAuditedByProductId" parameterType="Long" resultType="int">
+        SELECT COUNT(*) FROM mms_route
+        WHERE product_id = #{productId} AND status = '2' AND del_flag = '0'
+    </select>
 
 </mapper>

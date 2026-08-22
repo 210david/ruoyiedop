@@ -45,7 +45,7 @@ public class MmsOutsourceServiceImpl implements IMmsOutsourceService
         outsource.setDelFlag("0");
         if (StringUtils.isEmpty(outsource.getOutsourceNo()))
         {
-            outsource.setOutsourceNo(mkNumberRuleService.generateNumber("OUT"));
+            outsource.setOutsourceNo(mkNumberRuleService.generateNumber("mms_outsource"));
         }
         if (outsource.getOutQty() != null && outsource.getUnitPrice() != null)
         {

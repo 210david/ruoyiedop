@@ -80,6 +80,7 @@ import useAppStore from '@/store/modules/app'
 import useUserStore from '@/store/modules/user'
 import useLockStore from '@/store/modules/lock'
 import useSettingsStore from '@/store/modules/settings'
+import useTagsViewStore from '@/store/modules/tagsView'
 import HeaderNotice from './HeaderNotice'
 
 const route = useRoute()
@@ -116,7 +117,11 @@ function logout() {
     type: 'warning'
   }).then(() => {
     userStore.logOut().then(() => {
-      location.href = '/index'
+      // 手动登出时清除超时恢复用的最后路由记录和标签页
+      useTagsViewStore().clearLastRoute()
+      useTagsViewStore().delAllViews()
+      // 手动登出使用 Vue Router 跳转，不携带 redirect 参数
+      router.push({ path: '/login' })
     })
   }).catch(() => { })
 }

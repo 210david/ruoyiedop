@@ -22,11 +22,11 @@ public interface IMmsRouteService
     public int deleteRouteByIds(Long[] RouteIds);
     public List<MmsRouteProcess> selectRouteProcessByRouteId(Long RouteId);
 
-    /** 启用路线（草稿→已启用） */
+    /** 提交审核（草稿→待审核） */
     public int enableRoute(Long routeId);
-    /** 审核路线（已启用→已审核/已驳回） */
+    /** 审核路线（待审核→已审核/已驳回） */
     public int auditRoute(Long routeId, String auditAction, String auditRemark);
-    /** 停用路线（草稿/已启用/已审核→已停用） */
+    /** 停用路线（草稿/待审核/已审核→已停用） */
     public int disableRoute(Long routeId);
     /** 复制路线为新版本 */
     public MmsRoute copyRoute(Long routeId);

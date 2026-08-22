@@ -46,8 +46,10 @@
         </div>
         <div class="field" v-show="showAdvanced">
           <label>班组</label>
-          <div class="control">
-            <el-input v-model="queryParams.teamName" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+          <div class="control is-select">
+            <el-select v-model="queryParams.teamId" placeholder="全部" clearable filterable @change="handleQuery">
+              <el-option v-for="t in teamOptions" :key="t.teamId" :label="t.teamName" :value="t.teamId" />
+            </el-select>
           </div>
         </div>
         <div class="field" v-show="showAdvanced">
@@ -83,29 +85,31 @@
             <span class="dot"></span><span>{{ s.label }}</span><span class="count">{{ statusCounts[s.value] || 0 }}</span>
           </button>
         </div>
+        <button class="tip-pill" @click="showStatusHelp = true">
+          <el-icon><WarningFilled /></el-icon>
+          <span>业务操作说明</span>
+        </button>
       </div>
 
       <!-- Toolbar -->
       <div class="toolbar">
         <div class="left">
-          <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['mms:dispatch:add']">新增</el-button>
-          <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['mms:dispatch:edit']">修改</el-button>
-          <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['mms:dispatch:remove']">删除</el-button>
-          <div class="toolbar-divider"></div>
           <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['mms:dispatch:export']">导出</el-button>
         </div>
         <div class="right">
-          <button class="tip-pill" @click="showStatusHelp = true"><el-icon><WarningFilled /></el-icon><span>业务操作说明</span></button>
           <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="mms_dispatch_columns" />
         </div>
       </div>
 
       <!-- Table -->
       <div class="table-wrap">
-        <el-table ref="tableRef" v-loading="loading" :data="dataList" border @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
-          <el-table-column type="selection" width="55" align="center" />
+        <el-table ref="tableRef" v-loading="loading" :data="dataList" border @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
           <el-table-column label="派工单号" prop="dispatchNo" key="dispatchNo" :width="colWidth('dispatchNo', 150)" resizable v-if="columns.dispatchNo.visible" />
           <el-table-column label="工单编号" prop="workOrderNo" key="workOrderNo" :width="colWidth('workOrderNo', 140)" resizable v-if="columns.workOrderNo.visible" />
+          <el-table-column label="产品编码" prop="productCode" key="productCode" :width="colWidth('productCode', 120)" resizable show-overflow-tooltip v-if="columns.productCode.visible" />
+          <el-table-column label="产品名称" prop="productName" key="productName" :width="colWidth('productName', 160)" resizable show-overflow-tooltip v-if="columns.productName.visible" />
+          <el-table-column label="规格型号" prop="specModel" key="specModel" :width="colWidth('specModel', 120)" resizable show-overflow-tooltip v-if="columns.specModel.visible" />
+          <el-table-column label="单位" prop="unit" key="unit" :width="colWidth('unit', 80)" resizable align="center" v-if="columns.unit.visible"><template #default="scope"><dict-tag :options="wms_unit" :value="scope.row.unit" /></template></el-table-column>
           <el-table-column label="工序序号" prop="opSeq" key="opSeq" :width="colWidth('opSeq', 90)" resizable align="center" v-if="columns.opSeq.visible" />
           <el-table-column label="工序名称" prop="processName" key="processName" :width="colWidth('processName', 140)" resizable show-overflow-tooltip v-if="columns.processName.visible" />
           <el-table-column label="产能单元" prop="resourceName" key="resourceName" :width="colWidth('resourceName', 140)" resizable show-overflow-tooltip v-if="columns.resourceName.visible" />
@@ -131,10 +135,9 @@
           <el-table-column label="创建时间" prop="createTime" key="createTime" :width="colWidth('createTime', 160)" resizable align="center" v-if="columns.createTime.visible">
             <template #default="scope"><span>{{ parseTime(scope.row.createTime) }}</span></template>
           </el-table-column>
-          <el-table-column label="操作" width="240" align="center" fixed="right">
+          <el-table-column label="操作" width="200" align="center" fixed="right">
             <template #default="scope">
               <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['mms:dispatch:query']">详情</el-button>
-              <el-button v-if="scope.row.status === '0'" link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['mms:dispatch:edit']">修改</el-button>
               <el-button v-if="scope.row.status === '0'" link type="success" icon="VideoPlay" @click="handleStart(scope.row)" v-hasPermi="['mms:dispatch:start']">开工</el-button>
               <el-button v-if="scope.row.status === '1'" link type="primary" icon="CircleCheck" @click="handleFinish(scope.row)" v-hasPermi="['mms:dispatch:finish']">完工</el-button>
               <el-button v-if="scope.row.status === '0' || scope.row.status === '1'" link type="danger" icon="Close" @click="handleCancel(scope.row)" v-hasPermi="['mms:dispatch:cancel']">取消</el-button>
@@ -145,50 +148,6 @@
 
       <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
     </div>
-
-    <!-- ===== 新增/修改 Dialog ===== -->
-    <el-dialog v-model="open" width="820px" append-to-body draggable class="rd-dialog">
-      <template #header>
-        <div class="rd-detail-header">
-          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
-          <span class="rd-detail-header-title">{{ title }}</span>
-        </div>
-      </template>
-      <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
-        <div class="rd-page">
-          <section class="rd-card">
-            <div class="rd-card-header" @click="toggleCard('c0')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg></span>基本信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c0 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
-            <div class="rd-card-body" v-show="!collapsedCards.c0">
-              <el-row :gutter="20"><el-col :span="12"><el-form-item label="派工单号" prop="dispatchNo"><el-input v-model="form.dispatchNo" placeholder="自动生成" disabled /></el-form-item></el-col><el-col :span="12"><el-form-item label="工单编号" prop="workOrderNo"><el-input v-model="form.workOrderNo" placeholder="请输入" /></el-form-item></el-col></el-row>
-              <el-row :gutter="20"><el-col :span="12"><el-form-item label="工序序号" prop="opSeq"><el-input-number v-model="form.opSeq" :min="1" placeholder="请输入" style="width: 100%" /></el-form-item></el-col><el-col :span="12"><el-form-item label="工序名称" prop="processName"><el-input v-model="form.processName" placeholder="请输入" /></el-form-item></el-col></el-row>
-            </div>
-          </section>
-          <section class="rd-card">
-            <div class="rd-card-header" @click="toggleCard('c1')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg></span>派工信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
-            <div class="rd-card-body" v-show="!collapsedCards.c1">
-              <el-row :gutter="20"><el-col :span="12"><el-form-item label="产能单元" prop="resourceName"><el-input v-model="form.resourceName" placeholder="请输入" /></el-form-item></el-col><el-col :span="12"><el-form-item label="班组" prop="teamName"><el-input v-model="form.teamName" placeholder="请输入" /></el-form-item></el-col></el-row>
-              <el-row :gutter="20"><el-col :span="12"><el-form-item label="派工人员" prop="userIds"><el-input v-model="form.userIds" placeholder="请输入人员" /></el-form-item></el-col><el-col :span="12"><el-form-item label="计划数量" prop="planQty"><el-input-number v-model="form.planQty" :min="0" :precision="2" placeholder="请输入" style="width: 100%" /></el-form-item></el-col></el-row>
-            </div>
-          </section>
-          <section class="rd-card">
-            <div class="rd-card-header" @click="toggleCard('c2')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>计划时间</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
-            <div class="rd-card-body" v-show="!collapsedCards.c2">
-              <el-row :gutter="20"><el-col :span="12"><el-form-item label="计划开始" prop="planStart"><el-date-picker v-model="form.planStart" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" placeholder="选择时间" style="width: 100%" /></el-form-item></el-col><el-col :span="12"><el-form-item label="计划结束" prop="planEnd"><el-date-picker v-model="form.planEnd" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" placeholder="选择时间" style="width: 100%" /></el-form-item></el-col></el-row>
-            </div>
-          </section>
-          <section class="rd-card">
-            <div class="rd-card-header" @click="toggleCard('c3')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>备注信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c3 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
-            <div class="rd-card-body" v-show="!collapsedCards.c3">
-              <el-form-item label="备注" prop="remark"><el-input v-model="form.remark" type="textarea" :rows="2" placeholder="请输入" /></el-form-item>
-            </div>
-          </section>
-        </div>
-      </el-form>
-      <template #footer>
-        <el-button type="primary" @click="submitForm">确 定</el-button>
-        <el-button @click="cancel">取 消</el-button>
-      </template>
-    </el-dialog>
 
     <!-- ===== 详情弹窗 ===== -->
     <el-dialog v-model="viewOpen" width="820px" append-to-body draggable class="rd-dialog">
@@ -210,6 +169,10 @@
           <div class="rd-card-body" v-show="!collapsedCards.vc0" style="display:block"><div class="rd-grid">
             <div class="rd-item"><span class="rd-label">派工单号</span><div class="rd-value">{{ viewData.dispatchNo || '—' }}</div></div>
             <div class="rd-item"><span class="rd-label">工单编号</span><div class="rd-value">{{ viewData.workOrderNo || '—' }}</div></div>
+            <div class="rd-item"><span class="rd-label">产品编码</span><div class="rd-value">{{ viewData.productCode || '—' }}</div></div>
+            <div class="rd-item"><span class="rd-label">产品名称</span><div class="rd-value">{{ viewData.productName || '—' }}</div></div>
+            <div class="rd-item"><span class="rd-label">规格型号</span><div class="rd-value">{{ viewData.specModel || '—' }}</div></div>
+            <div class="rd-item"><span class="rd-label">单位</span><div class="rd-value"><dict-tag :options="wms_unit" :value="viewData.unit" /></div></div>
             <div class="rd-item"><span class="rd-label">工序序号</span><div class="rd-value">{{ viewData.opSeq != null ? viewData.opSeq : '—' }}</div></div>
             <div class="rd-item"><span class="rd-label">工序名称</span><div class="rd-value">{{ viewData.processName || '—' }}</div></div>
           </div></div>
@@ -246,87 +209,256 @@
       </div>
       <template #footer><el-button @click="viewOpen = false">关 闭</el-button></template>
     </el-dialog>
+    <!-- ===== 开工 Dialog ===== -->
+    <el-dialog v-model="startOpen" width="720px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>
+          <span class="rd-detail-header-title">派工开工</span>
+          <div class="rd-detail-header-sub" v-if="startForm.dispatchNo">
+            <span class="rd-detail-header-divider"></span>
+            <span class="rd-detail-header-no">编号：{{ startForm.dispatchNo }}</span>
+          </div>
+        </div>
+      </template>
+      <el-form ref="startFormRef" :model="startForm" :rules="startRules" label-width="100px">
+        <div class="rd-page">
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('sc0')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg></span>派工单信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.sc0 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+            <div class="rd-card-body" v-show="!collapsedCards.sc0">
+              <el-row :gutter="20"><el-col :span="12"><el-form-item label="派工单号"><el-input :model-value="startForm.dispatchNo" disabled /></el-form-item></el-col><el-col :span="12"><el-form-item label="工单编号"><el-input :model-value="startForm.workOrderNo" disabled /></el-form-item></el-col></el-row>
+              <el-row :gutter="20"><el-col :span="12"><el-form-item label="产品编码"><el-input :model-value="startForm.productCode" disabled /></el-form-item></el-col><el-col :span="12"><el-form-item label="产品名称"><el-input :model-value="startForm.productName" disabled /></el-form-item></el-col></el-row>
+              <el-row :gutter="20"><el-col :span="12"><el-form-item label="规格型号"><el-input :model-value="startForm.specModel" disabled /></el-form-item></el-col><el-col :span="12"><el-form-item label="单位"><el-input :model-value="unitLabel(startForm.unit)" disabled /></el-form-item></el-col></el-row>
+              <el-row :gutter="20"><el-col :span="12"><el-form-item label="工序序号"><el-input :model-value="startForm.opSeq" disabled /></el-form-item></el-col><el-col :span="12"><el-form-item label="工序名称"><el-input :model-value="startForm.processName" disabled /></el-form-item></el-col></el-row>
+              <el-row :gutter="20"><el-col :span="12"><el-form-item label="产能单元"><el-input :model-value="startForm.resourceName" disabled /></el-form-item></el-col><el-col :span="12"><el-form-item label="班组" prop="teamId" required><el-select v-model="startForm.teamId" placeholder="请选择班组" style="width: 100%" @change="onStartTeamChange"><el-option v-for="t in teamOptions" :key="t.teamId" :label="t.teamName" :value="t.teamId" /></el-select></el-form-item></el-col></el-row>
+            </div>
+          </section>
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('sc1')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>计划信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.sc1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+            <div class="rd-card-body" v-show="!collapsedCards.sc1">
+              <el-row :gutter="20"><el-col :span="12"><el-form-item label="计划数量"><el-input-number :model-value="startForm.planQty" :min="0" :precision="2" disabled style="width: 100%" /></el-form-item></el-col><el-col :span="12"><el-form-item label="计划开始"><el-input :model-value="startForm.planStart ? parseTime(startForm.planStart) : '—'" disabled /></el-form-item></el-col></el-row>
+              <el-row :gutter="20"><el-col :span="12"><el-form-item label="计划结束"><el-input :model-value="startForm.planEnd ? parseTime(startForm.planEnd) : '—'" disabled /></el-form-item></el-col></el-row>
+            </div>
+          </section>
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('sc2')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg></span>开工确认</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.sc2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+            <div class="rd-card-body" v-show="!collapsedCards.sc2">
+              <el-row :gutter="20"><el-col :span="12"><el-form-item label="操作人员" prop="operatorName"><el-input v-model="startForm.operatorName" readonly placeholder="当前操作人" style="width: 100%" /></el-form-item></el-col></el-row>
+            </div>
+          </section>
+        </div>
+      </el-form>
+      <div style="margin: 8px 0 0; padding: 10px 16px; background: #f0f9ff; border: 1px solid #d0e8ff; border-radius: 6px; font-size: 13px; color: #1d4ed8; display: flex; align-items: center; gap: 6px;">
+        <el-icon><InfoFilled /></el-icon>
+        <span>开工后派工单状态变为进行中，同时联动将关联工单状态从已下达变为执行中</span>
+      </div>
+      <template #footer>
+        <el-button @click="startOpen = false">取 消</el-button>
+        <el-button type="primary" @click="submitStart">确 认 开 工</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- ===== 完工 Dialog ===== -->
+    <el-dialog v-model="finishOpen" width="720px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+          <span class="rd-detail-header-title">派工完工</span>
+          <div class="rd-detail-header-sub" v-if="finishForm.dispatchNo">
+            <span class="rd-detail-header-divider"></span>
+            <span class="rd-detail-header-no">编号：{{ finishForm.dispatchNo }}</span>
+          </div>
+        </div>
+      </template>
+      <el-form ref="finishFormRef" :model="finishForm" :rules="finishRules" label-width="100px">
+        <div class="rd-page">
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('fc0')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg></span>派工单信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.fc0 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+            <div class="rd-card-body" v-show="!collapsedCards.fc0">
+              <el-row :gutter="20"><el-col :span="12"><el-form-item label="派工单号"><el-input :model-value="finishForm.dispatchNo" disabled /></el-form-item></el-col><el-col :span="12"><el-form-item label="工单编号"><el-input :model-value="finishForm.workOrderNo" disabled /></el-form-item></el-col></el-row>
+              <el-row :gutter="20"><el-col :span="12"><el-form-item label="产品编码"><el-input :model-value="finishForm.productCode" disabled /></el-form-item></el-col><el-col :span="12"><el-form-item label="产品名称"><el-input :model-value="finishForm.productName" disabled /></el-form-item></el-col></el-row>
+              <el-row :gutter="20"><el-col :span="12"><el-form-item label="规格型号"><el-input :model-value="finishForm.specModel" disabled /></el-form-item></el-col><el-col :span="12"><el-form-item label="单位"><el-input :model-value="unitLabel(finishForm.unit)" disabled /></el-form-item></el-col></el-row>
+              <el-row :gutter="20"><el-col :span="12"><el-form-item label="工序序号"><el-input :model-value="finishForm.opSeq" disabled /></el-form-item></el-col><el-col :span="12"><el-form-item label="工序名称"><el-input :model-value="finishForm.processName" disabled /></el-form-item></el-col></el-row>
+              <el-row :gutter="20"><el-col :span="12"><el-form-item label="产能单元"><el-input :model-value="finishForm.resourceName" disabled /></el-form-item></el-col><el-col :span="12"><el-form-item label="班组"><el-input :model-value="finishForm.teamName" disabled /></el-form-item></el-col></el-row>
+            </div>
+          </section>
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('fc1')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>完工数据填报</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.fc1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+            <div class="rd-card-body" v-show="!collapsedCards.fc1">
+              <el-row :gutter="20"><el-col :span="12"><el-form-item label="计划数量"><el-input-number :model-value="finishForm.planQty" :min="0" :precision="2" disabled style="width: 100%" /></el-form-item></el-col><el-col :span="12"><el-form-item label="开工时间"><el-input :model-value="finishForm.actualStart ? parseTime(finishForm.actualStart) : '—'" disabled /></el-form-item></el-col></el-row>
+              <el-row :gutter="20"><el-col :span="12"><el-form-item label="实际开始" prop="actualStartInput"><el-date-picker v-model="finishForm.actualStartInput" type="datetime" placeholder="选择实际开始时间" value-format="YYYY-MM-DD HH:mm:ss" style="width: 100%" /></el-form-item></el-col><el-col :span="12"><el-form-item label="实际结束" prop="actualEndInput"><el-date-picker v-model="finishForm.actualEndInput" type="datetime" placeholder="选择实际结束时间" value-format="YYYY-MM-DD HH:mm:ss" style="width: 100%" /></el-form-item></el-col></el-row>
+              <el-row :gutter="20"><el-col :span="12"><el-form-item label="合格数量" prop="goodQty"><el-input-number v-model="finishForm.goodQty" :min="0" :precision="2" :max="finishForm.planQty" placeholder="请输入" style="width: 100%" /></el-form-item></el-col><el-col :span="12"><el-form-item label="不良数量" prop="defectQty"><el-input-number v-model="finishForm.defectQty" :min="0" :precision="2" :max="finishForm.planQty" placeholder="请输入" style="width: 100%" /></el-form-item></el-col></el-row>
+              <el-form-item label="完工备注"><el-input v-model="finishForm.remark" type="textarea" :rows="2" placeholder="不良原因、其他说明" /></el-form-item>
+            </div>
+          </section>
+        </div>
+      </el-form>
+      <div style="margin: 8px 0 0; padding: 10px 16px; background: #f0f9ff; border: 1px solid #d0e8ff; border-radius: 6px; font-size: 13px; color: #1d4ed8; display: flex; align-items: center; gap: 6px;">
+        <el-icon><InfoFilled /></el-icon>
+        <span>完工后系统将自动生成已审核的报工记录并联动更新工单进度。若存在后续工序，且当前工序所在并行组已全部完工（或取消），系统将自动创建下一组工序的派工单（计划数量取并行组最小合格数）。如需多次中间报工、首件确认或记录工时/班次，请前往报工管理手动新增</span>
+      </div>
+      <template #footer>
+        <el-button @click="finishOpen = false">取 消</el-button>
+        <el-button type="primary" @click="submitFinish">确 认 完 工</el-button>
+      </template>
+    </el-dialog>
+
     <!-- ===== 业务操作说明对话框 ===== -->
-    <el-dialog v-model="showStatusHelp" title="派工管理业务操作说明" width="820px" append-to-body>
+    <el-dialog v-model="showStatusHelp" title="派工管理业务操作说明" width="984px" append-to-body>
       <div class="status-help-content">
+        <!-- 一、派工单释义 -->
         <h4>一、派工单释义</h4>
         <div class="highlight-card highlight-primary">
           <div class="highlight-card-title">什么是派工单？</div>
           <div class="highlight-card-body">
-            <strong>派工单（Dispatch Order）</strong>是制造管理中将工单工序任务分配到具体产能单元和人员的执行单据。派工单关联工单编号、工序序号、产能单元、班组和派工人员，记录计划数量与实际完成数量，是实现工序级任务派发与进度追踪的核心载体。<br/><br/>
-            派工单遵循 <strong>MES 派工管理规范</strong>，通过开工→完工→取消的状态流转，实现生产任务的精细化管控和过程可追溯。
+            <strong>派工单（Dispatch Order）</strong>是生产管控中将工单工序任务分配到具体产能单元和人员的执行单据。派工单关联工单编号、工序序号、产能单元、班组和派工人员，记录计划数量与实际完成数量，通过开工→完工→取消的状态流转，实现工序级任务的精细化管控和过程可追溯。<br/><br/>
+            派工单是<strong>MES（制造执行系统）</strong>中工序级任务管理的核心载体，向上对接工单的工序拆分与排产计划，向下驱动产能单元的任务执行、人员调配和进度回报，满足精益生产对工序级任务可追溯、可量化、可管控的要求。
           </div>
         </div>
 
-        <h4>二、状态流转图</h4>
+        <!-- 二、派工单状态流转图 -->
+        <h4>二、派工单状态流转图</h4>
         <div class="status-flow">
           <div class="flow-item">
-            <el-tag type="warning" size="small">待开工</el-tag>
+            <el-tag type="warning">待开工</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+            <el-tag size="small" type="primary">点击「开工」</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
           </div>
-          <el-icon class="flow-arrow"><ArrowRight /></el-icon>
           <div class="flow-item">
-            <el-tag type="primary" size="small">进行中</el-tag>
+            <el-tag type="primary">进行中</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+            <el-tag size="small" type="primary">点击「完工」</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
           </div>
-          <el-icon class="flow-arrow"><ArrowRight /></el-icon>
           <div class="flow-item">
-            <el-tag type="success" size="small">已完成</el-tag>
+            <el-tag type="success">已完成</el-tag>
           </div>
-          <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+        </div>
+        <div class="status-flow" style="margin-top: 8px;">
           <div class="flow-item">
-            <el-tag type="info" size="small">已取消</el-tag>
+            <el-tag type="warning">待开工</el-tag>
+            <el-tag size="small" type="danger">或</el-tag>
+            <el-tag type="primary">进行中</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+            <el-tag size="small" type="primary">点击「取消」</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="info">已取消</el-tag>
+            <el-tag size="small" type="info">异常终止</el-tag>
           </div>
         </div>
 
-        <h4>三、状态说明</h4>
-        <el-descriptions :column="1" border size="small">
-          <el-descriptions-item label="待开工">派工单已创建，尚未开始执行，可修改、开工或取消。</el-descriptions-item>
-          <el-descriptions-item label="进行中">派工单已开工，正在执行生产任务，可完工或取消。</el-descriptions-item>
-          <el-descriptions-item label="已完成">派工单已完工，实际生产数量已回写，不可再修改。</el-descriptions-item>
-          <el-descriptions-item label="已取消">派工单已取消作废，不再有效，不可再操作。</el-descriptions-item>
+        <!-- 三、各状态说明 -->
+        <h4>三、各状态说明</h4>
+        <el-descriptions :column="1" border>
+          <el-descriptions-item label="待开工">派工单由工单下达自动生成后的初始状态。可开工或取消。点击「开工」将弹出开工窗口，需填写操作人员姓名，确认后派工单下发至产能单元，状态变为进行中，同时联动将关联工单状态从已下达变为执行中</el-descriptions-item>
+          <el-descriptions-item label="进行中">派工单已开工，正在执行生产任务。可完工或取消。点击「完工」将弹出完工窗口，需填写合格数量、不良数量和完工备注，确认后系统自动回写派工单数量、生成报工记录（已审核状态）、联动更新工单完工进度和状态</el-descriptions-item>
+          <el-descriptions-item label="已完成">派工单已完工，实际生产数量已确认回写，报工记录已自动生成。不可取消，数据归档</el-descriptions-item>
+          <el-descriptions-item label="已取消">派工单因异常情况被取消作废，不再执行。除已完成和已取消外的派工单均可取消</el-descriptions-item>
         </el-descriptions>
 
-        <h4>四、表单填写指南</h4>
+        <!-- 四、派工单字段说明 -->
+        <h4>四、派工单字段说明</h4>
         <div class="highlight-card highlight-warning">
-          <div class="highlight-card-title">填写说明</div>
+          <div class="highlight-card-title">基本信息</div>
           <div class="highlight-card-body">
-            <p><strong>派工单号：</strong>系统自动生成，无需手动输入。</p>
-            <p><strong>工单编号：</strong>必填，关联对应生产工单。</p>
-            <p><strong>工序序号 / 工序名称：</strong>必填，对应工单中的工序信息。</p>
-            <p><strong>产能单元：</strong>必填，指定执行该任务的产能单元。</p>
-            <p><strong>班组：</strong>选填，指定执行任务的班组。</p>
-            <p><strong>派工人员：</strong>必填，指定执行任务的操作人员。</p>
-            <p><strong>计划数量：</strong>必填，该工序的计划生产数量。</p>
-            <p><strong>计划开始 / 计划结束：</strong>选填，设定任务计划执行时间窗口。</p>
+            <p>• <strong>派工单号：</strong>派工单的唯一标识编号，由系统自动生成</p>
+            <p>• <strong>工单编号：</strong>关联的生产工单编号，工单下达时自动带出</p>
+            <p>• <strong>产品编码：</strong>生产的产品编码，工单下达时自动带出</p>
+            <p>• <strong>产品名称：</strong>生产的产品名称，工单下达时自动带出</p>
+            <p>• <strong>规格型号：</strong>产品的规格型号，工单下达时自动带出</p>
+            <p>• <strong>单位：</strong>产品的计量单位（字典 wms_unit），工单下达时自动带出</p>
+            <p>• <strong>工序序号：</strong>对应工单工艺路线中的工序顺序号，工单下达时自动带出</p>
+            <p>• <strong>工序名称：</strong>对应工单工艺路线中的工序名称，工单下达时自动带出</p>
+          </div>
+        </div>
+        <div class="highlight-card highlight-primary" style="margin-top: 12px;">
+          <div class="highlight-card-title">派工信息</div>
+          <div class="highlight-card-body">
+            <p>• <strong>产能单元：</strong>执行该工序任务的产能单元（设备/产线），工单下达时自动带出</p>
+            <p>• <strong>班组：</strong>指定执行任务的班组</p>
+            <p>• <strong>派工人员：</strong>执行任务的操作人员，开工时填写</p>
+            <p>• <strong>计划数量：</strong>该工序的计划生产数量，工单下达时自动带出</p>
+          </div>
+        </div>
+        <div class="highlight-card highlight-warning" style="margin-top: 12px;">
+          <div class="highlight-card-title">时间信息</div>
+          <div class="highlight-card-body">
+            <p>• <strong>计划开始：</strong>计划开始执行任务的时间</p>
+            <p>• <strong>计划结束：</strong>计划完成任务的时间</p>
+            <p>• <strong>实际开始：</strong>完工时填写，记录实际开工时间，默认带出开工时系统记录的时间</p>
+            <p>• <strong>实际结束：</strong>完工时填写，记录实际完工时间，默认为当前系统时间</p>
           </div>
         </div>
 
-        <h4>五、生命周期管控</h4>
+        <!-- 五、派工单生命周期管控 -->
+        <h4>五、派工单生命周期管控</h4>
         <div class="highlight-card highlight-success">
-          <div class="highlight-card-title">关键管控节点</div>
+          <div class="highlight-card-title">什么是派工单生命周期管控？</div>
           <div class="highlight-card-body">
-            <p>1. <strong>创建</strong>：新建派工单后状态为「待开工」，可修改和取消。</p>
-            <p>2. <strong>开工</strong>：点击「开工」按钮后状态变为「进行中」，开始记录实际执行信息。</p>
-            <p>3. <strong>完工</strong>：点击「完工」按钮后状态变为「已完成」，回写合格数量和不良数量。</p>
-            <p>4. <strong>取消</strong>：在「待开工」或「进行中」状态可取消派工单，取消后状态变为「已取消」。</p>
+            <strong>派工单生命周期管控</strong>是生产管控的核心机制，通过状态流转实现派工单从创建到完工的全过程管理。每个状态对应特定的可执行操作，确保工序任务有序可控、可追溯。派工单的开工/完工机制确保生产进度数据实时回写，取消机制支持应对订单变更、设备故障等异常情况。<br/><br/>
+            完工操作是核心联动节点：<strong>完工确认 → 回写派工单数量 → 自动生成报工记录 → 联动更新工单完工进度和状态</strong>，实现工序级生产数据的闭环管理。
+          </div>
+        </div>
+        <div class="highlight-card highlight-warning" style="margin-top: 12px;">
+          <div class="highlight-card-title">异常处理规则</div>
+          <div class="highlight-card-body">
+            <p>1. <strong>已开工无法取消编辑：</strong>派工单开工后进入「进行中」状态，仅可完工或取消，确保执行数据的一致性</p>
+            <p>2. <strong>已完工无法取消：</strong>完工状态为终态，实际数量已回写归档，报工记录已生成，不可再取消</p>
+            <p>3. <strong>取消后不可恢复：</strong>派工单取消后作废终止，如需重新执行需新建派工单</p>
+            <p>4. <strong>工单暂停/作废联动：</strong>若关联工单被暂停或作废，派工单将同步受到影响，暂停状态下不可开工</p>
+            <p>5. <strong>完工数量校验：</strong>合格数量+不良数量不能超过计划数量，各数量不能为负数</p>
+            <p>6. <strong>时间校验：</strong>实际结束时间不能早于实际开始时间</p>
+            <p style="color: #e6a23c;"><strong>提示：</strong>取消操作需确认，系统自动记录操作日志，确保全流程可追溯</p>
           </div>
         </div>
 
-        <h4>六、异常处理规则</h4>
-        <div class="highlight-card highlight-danger">
-          <div class="highlight-card-title">异常场景与处理</div>
+        <!-- 六、开工与完工操作详解 -->
+        <h4>六、开工与完工操作详解</h4>
+        <div class="highlight-card highlight-primary">
+          <div class="highlight-card-title">开工操作</div>
           <div class="highlight-card-body">
-            <p><strong>已开工的派工单无法修改：</strong>派工单开工后进入「进行中」状态，不允许再编辑基本信息。</p>
-            <p><strong>已完工的派工单无法取消：</strong>完工状态为终态，不可再取消或修改。</p>
-            <p><strong>取消后不可恢复：</strong>派工单取消后作废，如需重新执行需新建派工单。</p>
+            <p>在待开工状态下点击「开工」按钮，系统弹出开工确认窗口，需填写以下内容：</p>
+            <p>• <strong>操作人员</strong><span style="color: #f56c6c;">*必填</span>：从人员选择弹窗中选择实际执行该工序任务的操作人员，将记录到派工单的派工人员字段</p>
+            <p style="color: #409eff;"><strong>联动逻辑：</strong>开工后派工单状态变为进行中，记录实际开始时间；同时联动将关联工单状态从已下达(1)变为执行中(2)</p>
+          </div>
+        </div>
+        <div class="highlight-card highlight-success" style="margin-top: 12px;">
+          <div class="highlight-card-title">完工操作</div>
+          <div class="highlight-card-body">
+            <p>在进行中状态下点击「完工」按钮，系统弹出完工确认窗口，需填写以下内容：</p>
+            <p>• <strong>合格数量</strong><span style="color: #f56c6c;">*必填</span>：本次完工的合格品数量，不能超过计划数量</p>
+            <p>• <strong>不良数量</strong>：本次完工的不良品数量，合格+不良不能超过计划数量</p>
+            <p>• <strong>实际开始时间</strong><span style="color: #f56c6c;">*必填</span>：实际开工的日期时间，默认带出开工时系统记录的时间，可修改</p>
+            <p>• <strong>实际结束时间</strong><span style="color: #f56c6c;">*必填</span>：实际完工的日期时间，默认为当前系统时间，可修改</p>
+            <p>• <strong>完工备注</strong>：不良原因、其他说明等信息（选填）</p>
+            <p style="color: #67c23a;"><strong>联动逻辑（三步联动）：</strong></p>
+            <p style="padding-left: 16px;">① <strong>回写派工单</strong>：更新合格数量、不良数量、实际开始时间、实际结束时间，状态变为已完成</p>
+            <p style="padding-left: 16px;">② <strong>自动生成报工记录</strong>：系统自动创建一条已审核状态的报工记录，包含合格数、不良数、工序、产能单元等信息</p>
+            <p style="padding-left: 16px;">③ <strong>联动更新工单进度</strong>：工单完工数量、合格数量、不良数量自动累计；工单状态从已下达(1)→执行中(2)→报工中(3)</p>
           </div>
         </div>
 
+        <!-- 七、业务操作流程 -->
         <h4>七、业务操作流程</h4>
         <el-timeline>
-          <el-timeline-item type="primary" :hollow="true"><strong>新增派工单：</strong>填写工单编号、工序信息和派工人员，保存后状态为「待开工」</el-timeline-item>
-          <el-timeline-item type="warning" :hollow="true"><strong>开工：</strong>确认开工后状态变为「进行中」，开始执行生产任务</el-timeline-item>
-          <el-timeline-item type="success" :hollow="true"><strong>完工：</strong>生产完成后点击完工，回写实际数量，状态变为「已完成」</el-timeline-item>
-          <el-timeline-item type="info" :hollow="true"><strong>取消：</strong>在待开工或进行中状态可取消派工单</el-timeline-item>
+          <el-timeline-item type="primary" :hollow="true">
+            <strong>自动生成派工单：</strong>生产工单下达时，系统自动生成首工序（step_seq最小的一组）派工单。若首工序含多道并行工序，则同时生成多条派工单，带出工单编号、工序信息、产能单元、计划数量等，无需手动创建
+          </el-timeline-item>
+          <el-timeline-item type="warning" :hollow="true">
+            <strong>开工：</strong>待开工状态下点击「开工」弹出开工窗口，填写操作人员姓名后确认，派工单状态变为进行中，同时联动将关联工单状态从已下达变为执行中
+          </el-timeline-item>
+          <el-timeline-item type="success" :hollow="true">
+            <strong>完工确认：</strong>生产完成后点击「完工」弹出完工窗口，填写合格数量、不良数量、实际开始时间、实际结束时间和完工备注后确认，系统自动回写派工单数量、生成报工记录、联动更新工单完工进度和状态，派工单状态变为已完成。若存在后续工序，且当前工序所在并行组已全部完工（或取消），系统将自动创建下一组工序的派工单（计划数量取并行组最小合格数），实现工序级流转
+          </el-timeline-item>
+          <el-timeline-item type="info" :hollow="true">
+            <strong>查看详情：</strong>点击「详情」可查看派工单完整信息，包括基本信息、派工信息、实际执行数据、时间信息等
+          </el-timeline-item>
+          <el-timeline-item type="danger" :hollow="true">
+            <strong>取消：</strong>异常派工单可在待开工或进行中状态点击「取消」终止，取消后不可恢复
+          </el-timeline-item>
         </el-timeline>
       </div>
       <template #footer>
@@ -337,33 +469,38 @@
 </template>
 
 <script setup name="Dispatch">
-import { listDispatch, getDispatch, addDispatch, updateDispatch, delDispatch,
+import { listDispatch, getDispatch,
          startDispatch, finishDispatch, cancelDispatch } from "@/api/mms/dispatch";
+import { listTeam } from "@/api/mms/team";
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
-import { Search, Filter, RefreshLeft, ArrowDown, ArrowRight, WarningFilled } from '@element-plus/icons-vue'
+import { Search, Filter, RefreshLeft, ArrowDown, ArrowRight, WarningFilled, InfoFilled, CircleClose } from '@element-plus/icons-vue'
+import useUserStore from '@/store/modules/user'
 
 const { proxy } = getCurrentInstance();
-const { mms_dispatch_status } = proxy.useDict("mms_dispatch_status");
+const { mms_dispatch_status, wms_unit } = proxy.useDict("mms_dispatch_status", "wms_unit");
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('mms_dispatch_index')
-const { collapsedCards, toggleCard } = useDetailCard(["c0","c1","c2","c3","vc0","vc1","vc2","vc3"])
+const { collapsedCards, toggleCard } = useDetailCard(["vc0","vc1","vc2","vc3","sc0","sc1","sc2","fc0","fc1"])
 
 const dataList = ref([]);
-const open = ref(false);
 const viewOpen = ref(false);
 const viewData = ref({});
 const loading = ref(true);
 const showSearch = ref(true);
 const showAdvanced = ref(false);
-const ids = ref([]);
-const single = ref(true);
-const multiple = ref(true);
 const showStatusHelp = ref(false);
 const total = ref(0);
-const title = ref("");
 const dateRange = ref([]);
 const activeStatusTab = ref("all");
 const statusCounts = ref({});
+const teamOptions = ref([]);
+
+// 加载班组下拉
+function loadTeamOptions() {
+  listTeam({ pageNum: 1, pageSize: 999, status: '0' }).then(response => {
+    teamOptions.value = response.rows || [];
+  });
+}
 
 // 状态标签列表
 const statusTabList = computed(() => {
@@ -375,6 +512,10 @@ const statusTabList = computed(() => {
 const defaultColumns = {
   dispatchNo: { label: '派工单号', visible: true },
   workOrderNo: { label: '工单编号', visible: true },
+  productCode: { label: '产品编码', visible: true },
+  productName: { label: '产品名称', visible: true },
+  specModel: { label: '规格型号', visible: true },
+  unit: { label: '单位', visible: true },
   opSeq: { label: '工序序号', visible: true },
   processName: { label: '工序名称', visible: true },
   resourceName: { label: '产能单元', visible: true },
@@ -417,13 +558,65 @@ const activeFilterCount = computed(() => {
   if (queryParams.value.processName) count++;
   if (queryParams.value.resourceName) count++;
   if (queryParams.value.status) count++;
-  if (queryParams.value.teamName) count++;
+  if (queryParams.value.teamId) count++;
   if (dateRange.value && dateRange.value.length === 2) count++;
   return count;
 });
 
+// 开工弹窗
+const startOpen = ref(false);
+const startForm = reactive({
+  dispatchId: undefined,
+  dispatchNo: '',
+  workOrderNo: '',
+  productCode: '',
+  productName: '',
+  specModel: '',
+  unit: '',
+  opSeq: undefined,
+  processName: '',
+  resourceName: '',
+  teamId: undefined,
+  teamName: '',
+  planQty: 0,
+  planStart: undefined,
+  planEnd: undefined,
+  operatorName: ''
+});
+const startRules = {
+  teamId: [{ required: true, message: "请选择班组", trigger: "change" }],
+  operatorName: [{ required: true, message: "操作人员不能为空", trigger: "blur" }]
+};
+
+// 完工弹窗
+const finishOpen = ref(false);
+const finishForm = reactive({
+  dispatchId: undefined,
+  dispatchNo: '',
+  workOrderNo: '',
+  productCode: '',
+  productName: '',
+  specModel: '',
+  unit: '',
+  opSeq: undefined,
+  processName: '',
+  resourceName: '',
+  teamName: '',
+  planQty: 0,
+  actualStart: undefined,       // 开工时记录的时间（只读展示）
+  actualStartInput: undefined,   // 完工时可编辑的实际开始时间
+  actualEndInput: undefined,      // 完工时可编辑的实际结束时间
+  goodQty: 0,
+  defectQty: 0,
+  remark: ''
+});
+const finishRules = {
+  goodQty: [{ required: true, message: "请输入合格数量", trigger: "blur" }],
+  actualStartInput: [{ required: true, message: "请选择实际开始时间", trigger: "change" }],
+  actualEndInput: [{ required: true, message: "请选择实际结束时间", trigger: "change" }]
+};
+
 const data = reactive({
-  form: {},
   queryParams: {
     pageNum: 1,
     pageSize: 10,
@@ -431,19 +624,13 @@ const data = reactive({
     workOrderNo: undefined,
     processName: undefined,
     resourceName: undefined,
-    teamName: undefined,
+    teamId: undefined,
     status: undefined,
     params: {}
-  },
-  rules: {
-    workOrderNo: [{ required: true, message: "请输入工单编号", trigger: "blur" }],
-    opSeq: [{ required: true, message: "请输入工序序号", trigger: "blur" }],
-    processName: [{ required: true, message: "请输入工序名称", trigger: "blur" }],
-    planQty: [{ required: true, message: "请输入计划数量", trigger: "blur" }]
   }
 });
 
-const { queryParams, form, rules } = toRefs(data);
+const { queryParams } = toRefs(data);
 
 function getList() {
   loading.value = true;
@@ -462,7 +649,7 @@ function loadStatusCounts() {
   if (queryParams.value.workOrderNo) baseQuery.workOrderNo = queryParams.value.workOrderNo;
   if (queryParams.value.processName) baseQuery.processName = queryParams.value.processName;
   if (queryParams.value.resourceName) baseQuery.resourceName = queryParams.value.resourceName;
-  if (queryParams.value.teamName) baseQuery.teamName = queryParams.value.teamName;
+  if (queryParams.value.teamId) baseQuery.teamId = queryParams.value.teamId;
   listDispatch(proxy.addDateRange(baseQuery, dateRange.value)).then(res => {
     const counts = { all: res.total };
     if (mms_dispatch_status.value) {
@@ -484,7 +671,7 @@ function resetQuery() {
   queryParams.value.workOrderNo = undefined;
   queryParams.value.processName = undefined;
   queryParams.value.resourceName = undefined;
-  queryParams.value.teamName = undefined;
+  queryParams.value.teamId = undefined;
   queryParams.value.status = undefined;
   dateRange.value = [];
   queryParams.value.params = {};
@@ -509,92 +696,11 @@ function handleSortChange(column) {
   getList();
 }
 
-function handleSelectionChange(selection) {
-  ids.value = selection.map(item => item.dispatchId);
-  single.value = selection.length !== 1;
-  multiple.value = !selection.length;
-}
-
-function reset() {
-  form.value = {
-    dispatchNo: undefined,
-    workOrderId: undefined,
-    workOrderNo: undefined,
-    opSeq: undefined,
-    processId: undefined,
-    processName: undefined,
-    resourceId: undefined,
-    resourceName: undefined,
-    teamId: undefined,
-    teamName: undefined,
-    userIds: undefined,
-    planQty: undefined,
-    goodQty: undefined,
-    defectQty: undefined,
-    planStart: undefined,
-    planEnd: undefined,
-    status: undefined,
-    remark: undefined,
-  };
-  proxy.resetForm("formRef");
-}
-
-function handleAdd() {
-  reset();
-  open.value = true;
-  title.value = "新增派工单";
-}
-
-function handleUpdate(row) {
-  reset();
-  const id = row.dispatchId || ids.value[0];
-  getDispatch(id).then(response => {
-    form.value = response.data;
-    open.value = true;
-    title.value = "修改派工单";
-  });
-}
-
 function handleView(row) {
   getDispatch(row.dispatchId).then(response => {
     viewData.value = response.data;
     viewOpen.value = true;
   });
-}
-
-function submitForm() {
-  proxy.$refs["formRef"].validate(valid => {
-    if (valid) {
-      if (form.value.dispatchId != null) {
-        updateDispatch(form.value).then(response => {
-          proxy.$modal.msgSuccess("修改成功");
-          open.value = false;
-          getList();
-        });
-      } else {
-        addDispatch(form.value).then(response => {
-          proxy.$modal.msgSuccess("新增成功");
-          open.value = false;
-          getList();
-        });
-      }
-    }
-  });
-}
-
-function cancel() {
-  open.value = false;
-  reset();
-}
-
-function handleDelete(row) {
-  const delIds = row.dispatchId || ids.value;
-  proxy.$modal.confirm('是否确认删除选中的派工单？').then(function() {
-    return delDispatch(delIds);
-  }).then(() => {
-    getList();
-    proxy.$modal.msgSuccess("删除成功");
-  }).catch(() => {});
 }
 
 function handleExport() {
@@ -604,21 +710,99 @@ function handleExport() {
 // ===== 业务操作 =====
 
 function handleStart(row) {
-  proxy.$modal.confirm('是否确认开工派工单"' + row.dispatchNo + '"？').then(function() {
-    return startDispatch(row.dispatchId);
-  }).then(() => {
-    getList();
-    proxy.$modal.msgSuccess("开工成功");
-  }).catch(() => {});
+  startForm.dispatchId = row.dispatchId;
+  startForm.dispatchNo = row.dispatchNo;
+  startForm.workOrderNo = row.workOrderNo;
+  startForm.productCode = row.productCode;
+  startForm.productName = row.productName;
+  startForm.specModel = row.specModel;
+  startForm.unit = row.unit;
+  startForm.opSeq = row.opSeq;
+  startForm.processName = row.processName;
+  startForm.resourceName = row.resourceName;
+  startForm.teamId = row.teamId;
+  startForm.teamName = row.teamName;
+  startForm.planQty = row.planQty;
+  startForm.planStart = row.planStart;
+  startForm.planEnd = row.planEnd;
+  // 默认取当前登录用户昵称
+  startForm.operatorName = useUserStore().nickName;
+  startOpen.value = true;
+}
+
+// ===== 开工-班组选择 =====
+function onStartTeamChange(val) {
+  const team = teamOptions.value.find(t => t.teamId === val);
+  startForm.teamName = team ? team.teamName : '';
+}
+
+function submitStart() {
+  proxy.$refs["startFormRef"].validate(valid => {
+    if (valid) {
+      startDispatch(startForm.dispatchId, {
+        operatorName: startForm.operatorName,
+        teamId: startForm.teamId,
+        teamName: startForm.teamName
+      }).then(() => {
+        startOpen.value = false;
+        getList();
+        loadStatusCounts();
+        proxy.$modal.msgSuccess("开工成功");
+      });
+    }
+  });
 }
 
 function handleFinish(row) {
-  proxy.$modal.confirm('是否确认完工派工单"' + row.dispatchNo + '"？').then(function() {
-    return finishDispatch(row.dispatchId);
-  }).then(() => {
-    getList();
-    proxy.$modal.msgSuccess("完工成功");
-  }).catch(() => {});
+  finishForm.dispatchId = row.dispatchId;
+  finishForm.dispatchNo = row.dispatchNo;
+  finishForm.workOrderNo = row.workOrderNo;
+  finishForm.productCode = row.productCode;
+  finishForm.productName = row.productName;
+  finishForm.specModel = row.specModel;
+  finishForm.unit = row.unit;
+  finishForm.opSeq = row.opSeq;
+  finishForm.processName = row.processName;
+  finishForm.resourceName = row.resourceName;
+  finishForm.teamName = row.teamName;
+  finishForm.planQty = row.planQty;
+  finishForm.actualStart = row.actualStart;
+  // 默认实际开始时间 = 开工时记录时间
+  finishForm.actualStartInput = row.actualStart ? parseTime(row.actualStart) : parseTime(new Date());
+  // 默认实际结束时间 = 当前时间
+  finishForm.actualEndInput = parseTime(new Date());
+  finishForm.goodQty = row.planQty;
+  finishForm.defectQty = 0;
+  finishForm.remark = '';
+  finishOpen.value = true;
+}
+
+function submitFinish() {
+  proxy.$refs["finishFormRef"].validate(valid => {
+    if (valid) {
+      // 前端校验实际结束不早于实际开始
+      if (finishForm.actualStartInput && finishForm.actualEndInput) {
+        const start = new Date(finishForm.actualStartInput);
+        const end = new Date(finishForm.actualEndInput);
+        if (end < start) {
+          proxy.$modal.msgError("实际结束时间不能早于实际开始时间");
+          return;
+        }
+      }
+      finishDispatch(finishForm.dispatchId, {
+        goodQty: finishForm.goodQty,
+        defectQty: finishForm.defectQty,
+        remark: finishForm.remark,
+        actualStart: finishForm.actualStartInput,
+        actualEnd: finishForm.actualEndInput
+      }).then(() => {
+        finishOpen.value = false;
+        getList();
+        loadStatusCounts();
+        proxy.$modal.msgSuccess("完工成功，已自动生成报工记录");
+      });
+    }
+  });
 }
 
 function handleCancel(row) {
@@ -634,6 +818,12 @@ function handleCancel(row) {
 function statusLabel(status) {
   const item = mms_dispatch_status.value.find(d => d.value == status);
   return item ? item.label : '—';
+}
+
+function unitLabel(val) {
+  if (!val && val !== 0) return '—';
+  const item = wms_unit.value ? wms_unit.value.find(d => d.value == val) : null;
+  return item ? item.label : val;
 }
 
 function badgeClass(status) {
@@ -656,6 +846,7 @@ function statusTabClass(value) {
   return map[value] || '';
 }
 
+loadTeamOptions();
 getList();
 </script>
 
@@ -715,6 +906,9 @@ getList();
 .mms-dispatch-page .status-tab.tab-audit .dot { background:var(--blue-500); } .mms-dispatch-page .status-tab.tab-audit .count { background:var(--blue-50); color:var(--blue-700); } .mms-dispatch-page .status-tab.is-active.tab-audit .count { background:var(--blue-500); color:#fff; }
 .mms-dispatch-page .status-tab.tab-done .dot { background:var(--green-500); } .mms-dispatch-page .status-tab.tab-done .count { background:var(--green-50); color:var(--green-700); } .mms-dispatch-page .status-tab.is-active.tab-done .count { background:var(--green-500); color:#fff; }
 .mms-dispatch-page .status-tab.tab-void .dot { background:var(--ink-400); } .mms-dispatch-page .status-tab.tab-void .count { background:var(--ink-100); color:var(--ink-500); } .mms-dispatch-page .status-tab.is-active.tab-void .count { background:var(--ink-400); color:#fff; }
+.mms-dispatch-page .tip-pill { display:inline-flex; align-items:center; gap:5px; height:30px; padding:0 10px; background:#fffaf0; border:1px solid #fde68a; color:#92400e; border-radius:999px; font-size:13px; font-weight:500; cursor:pointer; transition:all .15s var(--ease-out); flex-shrink:0; white-space:nowrap; }
+.mms-dispatch-page .tip-pill:hover { background:var(--amber-50); border-color:var(--amber-500); color:#7c2d12; }
+.mms-dispatch-page .tip-pill .el-icon { font-size:14px; color:var(--amber-700); }
 .rd-detail-header { display: flex; align-items: center; gap: 10px; padding: 8px 16px; background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 60%, #3b82f6 100%); border-radius: 12px 12px 0 0; position: relative; overflow: hidden; }
 .rd-detail-header::before { content: ''; position: absolute; top: -25px; right: -10px; width: 120px; height: 120px; border-radius: 50%; background: radial-gradient(circle, rgb(255 255 255 / 0.12) 0%, transparent 70%); pointer-events: none; }
 .rd-detail-header-icon { display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 8px; background: rgb(255 255 255 / 0.2); border: 1px solid rgb(255 255 255 / 0.25); color: #fff; flex-shrink: 0; backdrop-filter: blur(4px); box-shadow: 0 2px 8px rgb(0 0 0 / 0.1); }
@@ -740,4 +934,22 @@ getList();
 .mms-dispatch-page .text-muted { color: #94a3b8; }
 @media (max-width:1100px) { .mms-dispatch-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }
 @media (max-width:720px) { .mms-dispatch-page .filter-card .filter-bar { grid-template-columns:1fr; } }
+.status-help-content { max-height: 520px; overflow-y: auto; padding-right: 10px; }
+.status-help-content h4 { margin: 20px 0 12px 0; color: #303133; font-weight: 600; border-left: 4px solid #409eff; padding-left: 10px; }
+.status-help-content h4:first-child { margin-top: 0; }
+.status-help-content .status-flow { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 16px; background-color: #f5f7fa; border-radius: 8px; margin-bottom: 8px; }
+.status-help-content .flow-item { display: flex; align-items: center; gap: 8px; }
+.status-help-content .flow-arrow { color: #909399; font-size: 16px; }
+.status-help-content .highlight-card { border-radius: 8px; padding: 16px; border: 1px solid; }
+.status-help-content .highlight-card-title { font-size: 14px; font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; }
+.status-help-content .highlight-card-body { font-size: 13px; color: #606266; line-height: 1.6; }
+.status-help-content .highlight-card-body p { margin: 4px 0; }
+.status-help-content .highlight-primary { background-color: #ecf5ff; border-color: #a0cfff; }
+.status-help-content .highlight-primary .highlight-card-title { color: #409eff; }
+.status-help-content .highlight-success { background-color: #f0f9eb; border-color: #b3e19d; }
+.status-help-content .highlight-success .highlight-card-title { color: #67c23a; }
+.status-help-content .highlight-warning { background-color: #fdf6ec; border-color: #f5dab1; }
+.status-help-content .highlight-warning .highlight-card-title { color: #e6a23c; }
+.status-help-content .highlight-danger { background-color: #fef0f0; border-color: #fbc4c4; }
+.status-help-content .highlight-danger .highlight-card-title { color: #f56c6c; }
 </style>

@@ -17,4 +17,10 @@ public interface MmsRouteMapper {
     public int updateRouteStatus(MmsRoute route);
     public List<MmsRouteVersionLog> selectVersionLogByRouteId(Long routeId);
     public int insertVersionLog(MmsRouteVersionLog log);
+
+    /**
+     * 统计同一产品已审核（生效）的工艺路线数量
+     * 用于唯一性校验：同一产品同一时间只能有一条已审核路线
+     */
+    public int countAuditedByProductId(Long productId);
 }
