@@ -107,21 +107,40 @@ public class MmsAbnormalController extends BaseController
     @PreAuthorize("@ss.hasPermi('mms:abnormal:respond')")
     @PutMapping("/respond/{abnormalId}")
     public AjaxResult respond(@PathVariable("abnormalId") Long abnormalId,
-            @RequestParam(required = false) String responseBy)
+            @RequestBody(required = false) com.ruoyi.mms.domain.MmsAbnormal body)
     {
-        return toAjax(mmsAbnormalService.respondAbnormal(abnormalId, responseBy));
+        String responseBy = body != null ? body.getResponseBy() : null;
+        java.util.Date responseTime = body != null ? body.getResponseTime() : null;
+        return toAjax(mmsAbnormalService.respondAbnormal(abnormalId, responseBy, responseTime));
     }
 
     /**
      * 异常处理关闭
      * 状态：1(处理中) → 2(已关闭)
+     * 同时联动关闭关联的停机记录
      */
     @Log(title = "异常记录-处理关闭", businessType = BusinessType.UPDATE)
     @PreAuthorize("@ss.hasPermi('mms:abnormal:resolve')")
     @PutMapping("/resolve/{abnormalId}")
     public AjaxResult resolve(@PathVariable("abnormalId") Long abnormalId,
-            @RequestParam(required = false) String handleResult)
+            @RequestBody(required = false) com.ruoyi.mms.domain.MmsAbnormal body)
     {
-        return toAjax(mmsAbnormalService.resolveAbnormal(abnormalId, handleResult));
+        String handleResult = body != null ? body.getHandleResult() : null;
+        String handleBy = body != null ? body.getHandleBy() : null;
+        java.util.Date handleTime = body != null ? body.getHandleTime() : null;
+        return toAjax(mmsAbnormalService.resolveAbnormal(abnormalId, handleResult, handleBy, handleTime));
+    }
+
+    /**
+     * 联动生成停机记录
+     * 根据异常单信息自动创建一条停机记录
+     */
+    @Log(title = "异常记录-联动停机", businessType = BusinessType.INSERT)
+    @PreAuthorize("@ss.hasPermi('mms:abnormal:linkDowntime')")
+    @PostMapping("/linkDowntime/{abnormalId}")
+    public AjaxResult linkDowntime(@PathVariable("abnormalId") Long abnormalId)
+    {
+        Long downtimeId = mmsAbnormalService.linkDowntime(abnormalId);
+        return AjaxResult.success("停机记录已联动生成", downtimeId);
     }
 }

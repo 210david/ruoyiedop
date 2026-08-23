@@ -149,6 +149,7 @@
 <script setup name="MmsDashboard">
 import { getOverview } from "@/api/mms/dashboard";
 import { listWorkOrder } from "@/api/mms/workorder";
+import { WarningFilled, Timer } from '@element-plus/icons-vue'
 
 const { proxy } = getCurrentInstance();
 const { mms_workorder_status } = proxy.useDict("mms_workorder_status");
@@ -212,16 +213,21 @@ onMounted(() => {
   }
 
   .stat-row { margin-bottom: 16px; }
+  @keyframes pulse-alert { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
   .stat-card { background: #fff; border-radius: 10px; padding: 20px; display: flex; gap: 16px; align-items: flex-start; box-shadow: 0 1px 4px rgba(0,0,0,0.04); transition: all 0.3s;
     &:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
     .stat-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; color: #fff; flex-shrink: 0; }
     &.stat-workorder .stat-icon { background: linear-gradient(135deg, #3370ff, #00ceb8); }
     &.stat-mps .stat-icon { background: linear-gradient(135deg, #722ed1, #2f54eb); }
     &.stat-abnormal .stat-icon { background: linear-gradient(135deg, #fa5c7c, #ff8e53); }
+    &.stat-abnormal-alert .stat-icon { background: linear-gradient(135deg, #f5385b, #ff6b6b); }
+    &.stat-downtime .stat-icon { background: linear-gradient(135deg, #ff9f43, #ee5a24); }
     &.stat-report .stat-icon { background: linear-gradient(135deg, #52c41a, #95de64); }
     .stat-body { flex: 1; }
     .stat-label { font-size: 13px; color: #8f959e; margin-bottom: 4px; }
     .stat-value { font-size: 28px; font-weight: 700; color: #1f2329; margin-bottom: 8px; }
+    .stat-value.value-alert { color: #f5385b; animation: pulse-alert 2s ease-in-out infinite; }
+    .stat-unit { font-size: 13px; font-weight: 500; color: #8f959e; }
     .stat-detail { display: flex; flex-wrap: wrap; gap: 4px;
       .tag { font-size: 11px; padding: 2px 8px; border-radius: 10px; display: inline-block;
         &.tag-default { background: #f5f6f7; color: #8f959e; }

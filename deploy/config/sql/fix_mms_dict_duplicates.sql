@@ -318,8 +318,7 @@ INSERT INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, css_cla
 -- 领料状态
 INSERT INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, css_class, list_class, is_default, status, create_by, create_time, remark) VALUES
 (1, '待领料', '0', 'mms_issue_status', '', 'info',    'Y', '0', 'admin', sysdate(), '待领料'),
-(2, '已领料', '1', 'mms_issue_status', '', 'success', 'N', '0', 'admin', sysdate(), '已领料'),
-(3, '已退料', '2', 'mms_issue_status', '', 'warning', 'N', '0', 'admin', sysdate(), '已退料');
+(2, '已领料', '1', 'mms_issue_status', '', 'success', 'N', '0', 'admin', sysdate(), '已领料');
 
 -- 优先级
 INSERT INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, css_class, list_class, is_default, status, create_by, create_time, remark) VALUES

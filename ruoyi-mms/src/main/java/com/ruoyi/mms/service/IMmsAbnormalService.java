@@ -1,6 +1,7 @@
 package com.ruoyi.mms.service;
 
 import java.util.List;
+import java.util.Map;
 import com.ruoyi.mms.domain.MmsAbnormal;
 
 /**
@@ -21,8 +22,29 @@ public interface IMmsAbnormalService
     public int deleteAbnormalByIds(Long[] abnormalIds);
 
     /** 异常响应：0(待响应) → 1(处理中) */
-    public int respondAbnormal(Long abnormalId, String responseBy);
+    public int respondAbnormal(Long abnormalId, String responseBy, java.util.Date responseTime);
 
     /** 异常处理关闭：1(处理中) → 2(已关闭) */
-    public int resolveAbnormal(Long abnormalId, String handleResult);
+    public int resolveAbnormal(Long abnormalId, String handleResult, String handleBy, java.util.Date handleTime);
+
+    /**
+     * 联动生成停机记录
+     * 根据异常单信息自动创建一条停机记录，建立关联关系
+     * @param abnormalId 异常单ID
+     * @return 生成的停机记录ID
+     */
+    public Long linkDowntime(Long abnormalId);
+
+    /**
+     * 异常关闭时联动关闭停机记录
+     * 将关联的停机记录状态设为已恢复，填写结束时间
+     * @param abnormalId 异常单ID
+     */
+    public void closeLinkedDowntime(Long abnormalId);
+
+    /**
+     * 看板：今日停机统计
+     * @return Map containing totalMinutes, count, activeCount
+     */
+    public Map<String, Object> getDowntimeTodayStats();
 }

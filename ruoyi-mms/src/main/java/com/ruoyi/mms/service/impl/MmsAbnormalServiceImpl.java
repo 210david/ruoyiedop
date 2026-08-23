@@ -1,7 +1,9 @@
 package com.ruoyi.mms.service.impl;
 
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -11,7 +13,9 @@ import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.mk.service.IMkNumberRuleService;
 import com.ruoyi.mms.domain.MmsAbnormal;
+import com.ruoyi.mms.domain.MmsDowntime;
 import com.ruoyi.mms.mapper.MmsAbnormalMapper;
+import com.ruoyi.mms.mapper.MmsDowntimeMapper;
 import com.ruoyi.mms.service.IMmsAbnormalService;
 
 /**
@@ -30,6 +34,9 @@ public class MmsAbnormalServiceImpl implements IMmsAbnormalService
 
     @Autowired
     private IMkNumberRuleService mkNumberRuleService;
+
+    @Autowired
+    private MmsDowntimeMapper downtimeMapper;
 
     @Override
     public List<MmsAbnormal> selectAbnormalList(MmsAbnormal abnormal)
@@ -96,7 +103,7 @@ public class MmsAbnormalServiceImpl implements IMmsAbnormalService
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public int respondAbnormal(Long abnormalId, String responseBy)
+    public int respondAbnormal(Long abnormalId, String responseBy, Date responseTime)
     {
         MmsAbnormal abnormal = getAndCheckAbnormal(abnormalId);
         // 状态校验：只有待响应(0)可响应
@@ -106,13 +113,13 @@ public class MmsAbnormalServiceImpl implements IMmsAbnormalService
         }
         abnormal.setStatus("1");
         abnormal.setResponseBy(StringUtils.isNotEmpty(responseBy) ? responseBy : SecurityUtils.getUsername());
-        abnormal.setResponseTime(new Date());
+        abnormal.setResponseTime(responseTime != null ? responseTime : new Date());
         return abnormalMapper.updateAbnormal(abnormal);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public int resolveAbnormal(Long abnormalId, String handleResult)
+    public int resolveAbnormal(Long abnormalId, String handleResult, String handleBy, Date handleTime)
     {
         MmsAbnormal abnormal = getAndCheckAbnormal(abnormalId);
         // 状态校验：只有处理中(1)可关闭
@@ -122,8 +129,120 @@ public class MmsAbnormalServiceImpl implements IMmsAbnormalService
         }
         abnormal.setStatus("2");
         abnormal.setHandleResult(handleResult);
+        // 处理人默认取响应人
+        abnormal.setHandleBy(StringUtils.isNotEmpty(handleBy) ? handleBy : abnormal.getResponseBy());
+        abnormal.setHandleTime(handleTime != null ? handleTime : new Date());
         abnormal.setCloseTime(new Date());
-        return abnormalMapper.updateAbnormal(abnormal);
+        int rows = abnormalMapper.updateAbnormal(abnormal);
+        // 联动关闭停机记录
+        closeLinkedDowntime(abnormalId);
+        return rows;
+    }
+
+    // ========== 异常↔停机联动 ==========
+
+    /** 异常类型到停机类型的映射 */
+    private String mapAbnormalTypeToDowntimeType(String abnormalType)
+    {
+        if (abnormalType == null) return "9";
+        switch (abnormalType)
+        {
+            case "0": return "1"; // 设备异常 → 故障停机
+            case "1": return "3"; // 物料异常 → 物料停机
+            case "2": return "9"; // 质量异常 → 其他停机
+            case "3": return "9"; // 安全异常 → 其他停机
+            default: return "9";  // 其他 → 其他停机
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Long linkDowntime(Long abnormalId)
+    {
+        MmsAbnormal abnormal = getAndCheckAbnormal(abnormalId);
+
+        // 检查是否已关联停机记录
+        MmsDowntime query = new MmsDowntime();
+        query.setAbnormalId(abnormalId);
+        List<MmsDowntime> existing = downtimeMapper.selectDowntimeList(query);
+        if (existing != null && !existing.isEmpty())
+        {
+            throw new ServiceException("异常[" + abnormal.getAbnormalNo() + "]已关联停机记录[" + existing.get(0).getDowntimeNo() + "]，不可重复关联");
+        }
+
+        // 创建停机记录
+        MmsDowntime downtime = new MmsDowntime();
+        downtime.setAbnormalId(abnormalId);
+        downtime.setAbnormalNo(abnormal.getAbnormalNo());
+        downtime.setWorkOrderId(abnormal.getWorkOrderId());
+        downtime.setResourceId(abnormal.getResourceId());
+        downtime.setResourceName(abnormal.getResourceName());
+        downtime.setDowntimeNo(mkNumberRuleService.generateNumber("mms_downtime"));
+        downtime.setStartTime(abnormal.getReportTime() != null ? abnormal.getReportTime() : new Date());
+        downtime.setDtType(mapAbnormalTypeToDowntimeType(abnormal.getAbnormalType()));
+        downtime.setReason("[联动] " + (abnormal.getDescription() != null ? abnormal.getDescription() : ""));
+        downtime.setStatus("0"); // 停机中
+        downtime.setDelFlag("0");
+        downtime.setCreateBy(SecurityUtils.getUsername());
+        downtime.setCreateTime(DateUtils.getNowDate());
+        downtimeMapper.insertDowntime(downtime);
+
+        return downtime.getDowntimeId();
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void closeLinkedDowntime(Long abnormalId)
+    {
+        MmsDowntime query = new MmsDowntime();
+        query.setAbnormalId(abnormalId);
+        List<MmsDowntime> linked = downtimeMapper.selectDowntimeList(query);
+        if (linked == null || linked.isEmpty()) return;
+
+        for (MmsDowntime dt : linked)
+        {
+            if ("0".equals(dt.getStatus())) // 只关闭停机中的
+            {
+                dt.setStatus("1"); // 已恢复
+                dt.setEndTime(new Date());
+                if (dt.getStartTime() != null)
+                {
+                    long diff = dt.getEndTime().getTime() - dt.getStartTime().getTime();
+                    dt.setMinutes((int) (diff / (1000 * 60)));
+                }
+                dt.setUpdateBy(SecurityUtils.getUsername());
+                downtimeMapper.updateDowntime(dt);
+            }
+        }
+    }
+
+    @Override
+    public Map<String, Object> getDowntimeTodayStats()
+    {
+        Map<String, Object> stats = new HashMap<>();
+        // 查询今日停机记录（params.beginTime/endTime 为字符串，mapper 中用 date() 比较）
+        String today = DateUtils.dateTimeNow("yyyy-MM-dd");
+        MmsDowntime query = new MmsDowntime();
+        query.getParams().put("beginTime", today);
+        query.getParams().put("endTime", today);
+        List<MmsDowntime> todayList = downtimeMapper.selectDowntimeList(query);
+
+        int totalMinutes = 0;
+        int count = 0;
+        int activeCount = 0;
+        if (todayList != null)
+        {
+            for (MmsDowntime dt : todayList)
+            {
+                count++;
+                if ("0".equals(dt.getStatus())) activeCount++;
+                if (dt.getMinutes() != null) totalMinutes += dt.getMinutes();
+            }
+        }
+        stats.put("totalMinutes", totalMinutes);
+        stats.put("count", count);
+        stats.put("activeCount", activeCount);
+        return stats;
     }
 
     // ========== 私有辅助方法 ==========

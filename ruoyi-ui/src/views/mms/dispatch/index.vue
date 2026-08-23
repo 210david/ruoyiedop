@@ -1,5 +1,17 @@
 <template>
   <div class="app-container mms-dispatch-page">
+    <!-- ===== Top-Level Tab Switch: 派工管理 / 报工记录 ===== -->
+    <div class="page-tabs-bar">
+      <button class="page-tab" :class="{ 'is-active': pageTab === 'dispatch' }" @click="switchPageTab('dispatch')">
+        <el-icon><Grid /></el-icon><span>派工管理</span>
+      </button>
+      <button class="page-tab" :class="{ 'is-active': pageTab === 'report' }" @click="switchPageTab('report')">
+        <el-icon><Tickets /></el-icon><span>报工记录</span>
+      </button>
+    </div>
+
+    <!-- ===== 派工管理 Tab ===== -->
+    <template v-if="pageTab === 'dispatch'">
     <!-- ===== Filter Card ===== -->
     <div class="surface filter-card" v-show="showSearch">
       <div class="filter-head">
@@ -500,7 +512,7 @@
       </el-form>
       <div style="margin: 8px 0 0; padding: 10px 16px; background: #f0f9ff; border: 1px solid #d0e8ff; border-radius: 6px; font-size: 13px; color: #1d4ed8; display: flex; align-items: center; gap: 6px;">
         <el-icon><InfoFilled /></el-icon>
-        <span>完工后系统将自动生成已审核的报工记录并联动更新工单进度。若存在后续工序，且当前工序所在并行组已全部完工（或取消），系统将自动创建下一组工序的派工单（计划数量取并行组最小合格数）。若为末道工序，且所有工序均已完工，系统将自动完工工单，无需手动操作。如需多次中间报工、首件确认或记录工时/班次，请前往报工管理手动新增</span>
+        <span>完工后系统将自动生成已审核的报工记录并联动更新工单进度。若存在后续工序，且当前工序所在并行组已全部完工（或取消），系统将自动创建下一组工序的派工单（计划数量取并行组最小合格数）。若为末道工序，且所有工序均已完工，系统将自动完工工单，无需手动操作。如需多次中间报工、首件确认或记录工时/班次，请切换到「报工记录」Tab手动新增</span>
       </div>
       <template #footer>
         <el-button @click="finishOpen = false">取 消</el-button>
@@ -670,23 +682,446 @@
         <el-button type="primary" @click="showStatusHelp = false">我知道了</el-button>
       </template>
     </el-dialog>
+    </template>
+    <!-- ===== /派工管理 Tab ===== -->
+
+    <!-- ===== 报工记录 Tab ===== -->
+    <template v-if="pageTab === 'report'">
+    <!-- ===== Report Filter Card ===== -->
+    <div class="surface filter-card" v-show="reportShowSearch">
+      <div class="filter-head">
+        <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+        <a class="adv-link" :class="{ 'is-open': reportShowAdvanced }" @click.prevent="reportShowAdvanced = !reportShowAdvanced">
+          <span>{{ reportShowAdvanced ? '收起' : '高级筛选' }}</span>
+          <el-icon class="chev"><ArrowDown /></el-icon>
+        </a>
+      </div>
+      <div class="filter-bar">
+        <div class="field">
+          <label>报工单号</label>
+          <div class="control">
+            <el-input v-model="reportQuery.reportNo" placeholder="请输入" clearable @keyup.enter="handleReportQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field">
+          <label>工单号</label>
+          <div class="control"><el-input v-model="reportQuery.workOrderNo" placeholder="请输入" clearable @keyup.enter="handleReportQuery" /></div>
+        </div>
+        <div class="field">
+          <label>工序</label>
+          <div class="control"><el-input v-model="reportQuery.processName" placeholder="请输入" clearable @keyup.enter="handleReportQuery" /></div>
+        </div>
+        <div class="field">
+          <label>产能单元</label>
+          <div class="control"><el-input v-model="reportQuery.resourceName" placeholder="请输入" clearable @keyup.enter="handleReportQuery" /></div>
+        </div>
+        <div class="field" v-show="reportShowAdvanced">
+          <label>状态</label>
+          <div class="control is-select"><el-select v-model="reportQuery.status" placeholder="全部" clearable @change="handleReportQuery"><el-option v-for="d in mms_report_status" :key="d.value" :label="d.label" :value="d.value" /></el-select></div>
+        </div>
+        <div class="field" v-show="reportShowAdvanced">
+          <label>报工人</label>
+          <div class="control"><el-input v-model="reportQuery.reportBy" placeholder="请输入" clearable @keyup.enter="handleReportQuery" /></div>
+        </div>
+        <div class="field" v-show="reportShowAdvanced">
+          <label>是否首件</label>
+          <div class="control is-select"><el-select v-model="reportQuery.isFirstPiece" placeholder="全部" clearable @change="handleReportQuery"><el-option v-for="d in mms_yes_no" :key="d.value" :label="d.label" :value="d.value" /></el-select></div>
+        </div>
+        <div class="field" v-show="reportShowAdvanced">
+          <label>报工来源</label>
+          <div class="control is-select"><el-select v-model="reportQuery.source" placeholder="全部" clearable @change="handleReportQuery"><el-option v-for="d in mms_report_source" :key="d.value" :label="d.label" :value="d.value" /></el-select></div>
+        </div>
+        <div class="field" v-show="reportShowAdvanced">
+          <label>报工日期</label>
+          <div class="control"><el-date-picker v-model="reportDateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" /></div>
+        </div>
+      </div>
+      <div class="filter-actions">
+        <div class="filter-info"><el-icon><Filter /></el-icon> 已选 {{ reportActiveFilterCount }} 个条件，支持回车快速搜索</div>
+        <div class="filter-buttons"><el-button icon="RefreshLeft" @click="resetReportQuery">重置</el-button><el-button type="primary" icon="Search" @click="handleReportQuery">搜索</el-button></div>
+      </div>
+    </div>
+
+    <!-- ===== Report Table Section ===== -->
+    <div class="surface">
+      <div class="status-tabs">
+        <div class="tabs-track">
+          <button class="status-tab" :class="{ 'is-active': reportActiveStatusTab === 'all' }" @click="handleReportStatusTabClick('all')"><span class="dot"></span><span>全部</span><span class="count">{{ reportStatusCounts.all || 0 }}</span></button>
+          <button v-for="s in reportStatusTabList" :key="s.value" class="status-tab" :class="[reportStatusTabClass(s.value), { 'is-active': reportActiveStatusTab === s.value }]" @click="handleReportStatusTabClick(s.value)"><span class="dot"></span><span>{{ s.label }}</span><span class="count">{{ reportStatusCounts[s.value] || 0 }}</span></button>
+        </div>
+        <button class="tip-pill" @click="reportShowHelp = true"><el-icon><WarningFilled /></el-icon><span>业务操作说明</span></button>
+      </div>
+
+      <!-- ===== 报工记录提示 ===== -->
+      <div class="report-info-banner">
+        <el-icon class="report-info-icon"><InfoFilled /></el-icon>
+        <div class="report-info-text">
+          <span class="report-info-title">报工记录说明</span>
+          <span class="report-info-desc">派工完工时系统会<span class="emph">自动生成已审核的报工记录</span>，无需在此手动操作。此页面用于补充报工场景：<span class="emph">多次中间报工</span>（分批记录进度）、<span class="emph">首件确认</span>（质量追溯）、<span class="emph">记录工时/班次</span>（绩效统计）等。手动新增的报工需经审核通过后才生效。</span>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <div class="left">
+          <el-button type="primary" plain icon="Plus" @click="handleReportAdd" v-hasPermi="['mms:report:add']">新增</el-button>
+          <el-button type="success" plain icon="Edit" :disabled="reportSingle" @click="handleReportUpdate" v-hasPermi="['mms:report:edit']">修改</el-button>
+          <el-button type="danger" plain icon="Delete" :disabled="reportMultiple" @click="handleReportDelete" v-hasPermi="['mms:report:remove']">删除</el-button>
+          <div class="toolbar-divider"></div>
+          <el-button type="warning" plain icon="Download" @click="handleReportExport" v-hasPermi="['mms:report:export']">导出</el-button>
+        </div>
+        <div class="right"><right-toolbar v-model:showSearch="reportShowSearch" @queryTable="getReportList" /></div>
+      </div>
+
+      <div class="table-wrap">
+        <el-table ref="reportTableRef" v-loading="reportLoading" :data="reportDataList" border @selection-change="handleReportSelectionChange" class="app-table">
+          <el-table-column type="selection" width="55" align="center" />
+          <el-table-column label="报工单号" prop="reportNo" width="168" resizable />
+          <el-table-column label="工单号" prop="workOrderNo" width="168" resizable />
+          <el-table-column label="工序" prop="processName" width="120" resizable />
+          <el-table-column label="产能单元" prop="resourceName" width="144" resizable />
+          <el-table-column label="合格数" prop="goodQty" width="96" resizable align="center" />
+          <el-table-column label="不良数" prop="defectQty" width="96" resizable align="center">
+            <template #default="scope"><span :style="{ color: scope.row.defectQty > 0 ? '#ef4444' : 'inherit', fontWeight: scope.row.defectQty > 0 ? 600 : 400 }">{{ scope.row.defectQty }}</span></template>
+          </el-table-column>
+          <el-table-column label="是否首件" prop="isFirstPiece" width="108" resizable align="center">
+            <template #default="scope"><span v-if="scope.row.isFirstPiece" class="badge" :class="scope.row.isFirstPiece === '1' ? 'green' : 'gray'"><span class="dot"></span>{{ reportIsFirstPieceLabel(scope.row.isFirstPiece) }}</span><span v-else class="text-muted">—</span></template>
+          </el-table-column>
+          <el-table-column label="报工人" prop="reportBy" width="108" resizable align="center" />
+          <el-table-column label="报工时间" prop="reportTime" width="192" resizable align="center">
+            <template #default="scope"><span>{{ parseTime(scope.row.reportTime) }}</span></template>
+          </el-table-column>
+          <el-table-column label="状态" prop="status" width="120" resizable align="center">
+            <template #default="scope"><span v-if="scope.row.status" class="badge" :class="reportBadgeClass(scope.row.status)"><span class="dot"></span>{{ reportStatusLabel(scope.row.status) }}</span><span v-else class="text-muted">—</span></template>
+          </el-table-column>
+          <el-table-column label="来源" prop="source" width="120" resizable align="center">
+            <template #default="scope"><span v-if="scope.row.source" class="badge" :class="reportSourceBadgeClass(scope.row.source)"><span class="dot"></span>{{ reportSourceLabel(scope.row.source) }}</span><span v-else class="text-muted">—</span></template>
+          </el-table-column>
+          <el-table-column label="操作" width="200" align="center" fixed="right">
+            <template #default="scope">
+              <el-button link type="primary" icon="View" @click="handleReportView(scope.row)">查看</el-button>
+              <el-button link type="primary" icon="Edit" @click="handleReportUpdate(scope.row)" v-hasPermi="['mms:report:edit']">修改</el-button>
+              <el-button v-if="scope.row.status === '0'" link type="success" icon="Check" @click="handleReportAudit(scope.row, '1')" v-hasPermi="['mms:report:audit']">审核</el-button>
+              <el-button v-if="scope.row.status === '0'" link type="danger" icon="Close" @click="handleReportAudit(scope.row, '2')" v-hasPermi="['mms:report:audit']">驳回</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+      <pagination v-show="reportTotal > 0" :total="reportTotal" v-model:page="reportQuery.pageNum" v-model:limit="reportQuery.pageSize" @pagination="getReportList" />
+    </div>
+
+    <!-- ===== Report 查看详情弹窗 ===== -->
+    <el-dialog v-model="reportViewOpen" width="936px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></div>
+          <span class="rd-detail-header-title">报工记录详情</span>
+          <div class="rd-detail-header-sub" v-if="reportViewData.reportNo"><div class="rd-detail-header-divider"></div><span class="rd-detail-header-no">编号：{{ reportViewData.reportNo }}</span></div>
+        </div>
+      </template>
+      <div class="rd-page">
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('rvc0')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg></span>基本信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.rvc0 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.rvc0" style="display:block"><div class="rd-grid"><div class="rd-item"><span class="rd-label">报工单号</span><div class="rd-value">{{ reportViewData.reportNo || '-' }}</div></div><div class="rd-item"><span class="rd-label">工单号</span><div class="rd-value">{{ reportViewData.workOrderNo || '-' }}</div></div><div class="rd-item"><span class="rd-label">工序名称</span><div class="rd-value">{{ reportViewData.processName || '-' }}</div></div><div class="rd-item"><span class="rd-label">产能单元</span><div class="rd-value">{{ reportViewData.resourceName || '-' }}</div></div><div class="rd-item"><span class="rd-label">状态</span><div class="rd-value"><span v-if="reportViewData.status" class="badge" :class="reportBadgeClass(reportViewData.status)"><span class="dot"></span>{{ reportStatusLabel(reportViewData.status) }}</span><span v-else class="text-muted">—</span></div></div><div class="rd-item"><span class="rd-label">来源</span><div class="rd-value"><span v-if="reportViewData.source" class="badge" :class="reportSourceBadgeClass(reportViewData.source)"><span class="dot"></span>{{ reportSourceLabel(reportViewData.source) }}</span><span v-else class="text-muted">—</span></div></div></div></div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('rvc1')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg></span>报工数据</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.rvc1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.rvc1" style="display:block"><div class="rd-grid"><div class="rd-item"><span class="rd-label">合格数</span><div class="rd-value">{{ reportViewData.goodQty != null ? reportViewData.goodQty : '-' }}</div></div><div class="rd-item"><span class="rd-label">不良数</span><div class="rd-value">{{ reportViewData.defectQty != null ? reportViewData.defectQty : '-' }}</div></div></div></div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('rvc2')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>班组信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.rvc2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.rvc2" style="display:block"><div class="rd-grid"><div class="rd-item"><span class="rd-label">班组</span><div class="rd-value">{{ reportViewData.teamName || '-' }}</div></div><div class="rd-item"><span class="rd-label">班次</span><div class="rd-value">{{ reportViewData.shiftName || '-' }}</div></div><div class="rd-item"><span class="rd-label">是否首件</span><div class="rd-value">{{ reportViewData.isFirstPiece === '1' ? '是' : '否' }}</div></div></div></div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('rvc3')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>其他信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.rvc3 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.rvc3" style="display:block"><div class="rd-grid"><div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value">{{ reportViewData.remark || '-' }}</div></div><div class="rd-item"><span class="rd-label">创建时间</span><div class="rd-value">{{ reportViewData.createTime ? parseTime(reportViewData.createTime) : '-' }}</div></div></div></div>
+        </section>
+      </div>
+      <template #footer><el-button @click="reportViewOpen = false">关 闭</el-button></template>
+    </el-dialog>
+
+    <!-- ===== Report 编辑弹窗 ===== -->
+    <el-dialog v-model="reportEditOpen" width="936px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+          <span class="rd-detail-header-title">{{ reportEditTitle }}</span>
+        </div>
+      </template>
+      <el-form ref="reportFormRef" :model="reportForm" :rules="reportRules" label-width="120px">
+        <div class="rd-page">
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('rc0')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg></span>基本信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.rc0 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+            <div class="rd-card-body" v-show="!collapsedCards.rc0">
+              <el-row :gutter="20"><el-col :span="12"><el-form-item label="报工单号" prop="reportNo"><el-input v-model="reportForm.reportNo" placeholder="自动生成" disabled /></el-form-item></el-col><el-col :span="12"><el-form-item label="工单号" prop="workOrderNo"><el-input v-model="reportForm.workOrderNo" placeholder="请选择工单" readonly style="width: calc(100% - 32px)"><template #append><el-button icon="Search" @click="openReportWoPicker" /></template></el-input></el-form-item></el-col></el-row>
+              <el-row :gutter="20"><el-col :span="12"><el-form-item label="工序名称" prop="processName"><el-input v-model="reportForm.processName" placeholder="请选择工序" readonly style="width: calc(100% - 32px)"><template #append><el-button icon="Search" @click="openReportProcessPicker" :disabled="!reportForm.workOrderId" /></template></el-input></el-form-item></el-col><el-col :span="12"><el-form-item label="产能单元" prop="resourceName"><el-input v-model="reportForm.resourceName" placeholder="请选择产能单元" readonly style="width: calc(100% - 32px)"><template #append><el-button icon="Search" @click="openReportResPicker" /></template></el-input></el-form-item></el-col></el-row>
+              <el-row :gutter="20"><el-col :span="12"><el-form-item label="报工来源" prop="source"><el-select v-model="reportForm.source" placeholder="手动报工" disabled style="width: 100%"><el-option v-for="d in mms_report_source" :key="d.value" :label="d.label" :value="d.value" /></el-select></el-form-item></el-col></el-row>
+            </div>
+          </section>
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('rc1')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg></span>报工数据</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.rc1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+            <div class="rd-card-body" v-show="!collapsedCards.rc1">
+              <el-row :gutter="20"><el-col :span="12"><el-form-item label="合格数" prop="goodQty"><el-input-number v-model="reportForm.goodQty" :min="0" :precision="2" style="width: 100%" /></el-form-item></el-col><el-col :span="12"><el-form-item label="不良数" prop="defectQty"><el-input-number v-model="reportForm.defectQty" :min="0" :precision="2" style="width: 100%" /></el-form-item></el-col></el-row>
+            </div>
+          </section>
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('rc2')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>班组信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.rc2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+            <div class="rd-card-body" v-show="!collapsedCards.rc2">
+              <el-row :gutter="20"><el-col :span="12"><el-form-item label="班组" prop="teamName"><el-input v-model="reportForm.teamName" placeholder="请选择班组" readonly style="width: calc(100% - 32px)"><template #append><el-button icon="Search" @click="openReportTeamPicker" /></template></el-input></el-form-item></el-col><el-col :span="12"><el-form-item label="班次" prop="shiftName"><el-input v-model="reportForm.shiftName" placeholder="请选择班次" readonly style="width: calc(100% - 32px)"><template #append><el-button icon="Search" @click="openReportShiftPicker" /></template></el-input></el-form-item></el-col></el-row>
+              <el-form-item label="是否首件" prop="isFirstPiece"><el-radio-group v-model="reportForm.isFirstPiece"><el-radio value="1">是</el-radio><el-radio value="0">否</el-radio></el-radio-group></el-form-item>
+            </div>
+          </section>
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('rc3')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>其他信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.rc3 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+            <div class="rd-card-body" v-show="!collapsedCards.rc3">
+              <el-form-item label="备注" prop="remark"><el-input v-model="reportForm.remark" type="textarea" :rows="2" placeholder="请输入" /></el-form-item>
+            </div>
+          </section>
+        </div>
+      </el-form>
+      <template #footer><el-button type="primary" @click="submitReportForm">确 定</el-button><el-button @click="reportEditOpen = false">取 消</el-button></template>
+    </el-dialog>
+
+    <!-- ===== Report 审核Dialog ===== -->
+    <el-dialog :title="reportAuditTitle" v-model="reportAuditOpen" width="500px" append-to-body>
+      <el-form ref="reportAuditFormRef" :model="reportAuditForm" label-width="100px">
+        <el-form-item label="报工单号"><span>{{ reportAuditForm.reportNo }}</span></el-form-item>
+        <el-form-item label="审核备注" prop="auditRemark"><el-input v-model="reportAuditForm.auditRemark" type="textarea" placeholder="请输入审核备注" /></el-form-item>
+      </el-form>
+      <template #footer><div class="dialog-footer"><el-button type="primary" @click="submitReportAudit">确 定</el-button><el-button @click="reportAuditOpen = false">取 消</el-button></div></template>
+    </el-dialog>
+
+    <!-- ===== Report 业务操作说明对话框 ===== -->
+    <el-dialog v-model="reportShowHelp" title="报工记录业务操作说明" width="820px" append-to-body>
+      <div class="status-help-content">
+        <h4>一、报工记录释义</h4>
+        <div class="highlight-card highlight-primary">
+          <div class="highlight-card-title">什么是报工记录？</div>
+          <div class="highlight-card-body">
+            <strong>报工记录（Work Report）</strong>是生产管控中记录工序生产进度、工时和质量的单据。报工记录工序完成数量、合格/不良数量、工时和操作人员，通过审核流程确保数据准确性，是生产进度追踪、产能分析和绩效考核的核心数据来源。<br/><br/>
+            <strong>报工来源：</strong>派工管理中点击「完工」后，系统将自动生成已审核的报工记录。本页面也可手动新增报工记录，用于多次中间报工、首件确认或记录工时/班次等场景。
+          </div>
+        </div>
+        <h4>二、状态流转图</h4>
+        <div class="status-flow">
+          <div class="flow-item"><el-tag type="warning">待审核</el-tag><el-icon class="flow-arrow"><ArrowRight /></el-icon><el-tag size="small" type="primary">审核通过</el-tag><el-icon class="flow-arrow"><ArrowRight /></el-icon></div>
+          <div class="flow-item"><el-tag type="success">已通过</el-tag></div>
+        </div>
+        <div class="status-flow" style="margin-top:8px">
+          <div class="flow-item"><el-tag type="warning">待审核</el-tag><el-icon class="flow-arrow"><ArrowRight /></el-icon><el-tag size="small" type="primary">驳回</el-tag><el-icon class="flow-arrow"><ArrowRight /></el-icon></div>
+          <div class="flow-item"><el-tag type="danger">已驳回</el-tag></div>
+        </div>
+        <h4>三、各状态说明</h4>
+        <el-descriptions :column="1" border>
+          <el-descriptions-item label="待审核">报工新建后的初始状态，等待审核确认</el-descriptions-item>
+          <el-descriptions-item label="已通过">报工审核通过，数据已生效</el-descriptions-item>
+          <el-descriptions-item label="已驳回">报工审核未通过，需修改后重新提交</el-descriptions-item>
+        </el-descriptions>
+        <h4>四、重点业务规则</h4>
+        <div class="highlight-card highlight-warning">
+          <div class="highlight-card-title">核心规则</div>
+          <div class="highlight-card-body">
+            <p>• <strong>派工完工自动生成：</strong>在派工管理中完工时，系统自动生成已审核状态的报工记录，无需在此手动操作</p>
+            <p>• <strong>手动新增：</strong>如需多次中间报工、首件确认或记录工时/班次，可点击「新增」手动创建</p>
+            <p>• <strong>报工审核：</strong>待审核状态的报工可执行审核通过或驳回操作</p>
+            <p>• <strong>首件确认：</strong>首件报工需标记"是否首件"为"是"，以便质量追溯</p>
+            <p>• <strong>不良数监控：</strong>不良数大于0时自动标红显示，便于关注质量问题</p>
+          </div>
+        </div>
+      </div>
+      <template #footer><el-button type="primary" @click="reportShowHelp = false">我知道了</el-button></template>
+    </el-dialog>
+
+    <!-- ===== Report 工单选择器弹窗 ===== -->
+    <el-dialog v-model="reportWoPickerOpen" width="936px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <span class="rd-detail-header-title">选择工单</span>
+        </div>
+      </template>
+      <div class="material-picker">
+        <div class="material-picker-search">
+          <el-input v-model="reportWoPickerQuery.workOrderNo" placeholder="工单编号" clearable size="small" style="width: 180px" @keyup.enter="handleReportWoPickerQuery">
+            <template #prefix><el-icon><Search /></el-icon></template>
+          </el-input>
+          <el-input v-model="reportWoPickerQuery.productName" placeholder="产品名称" clearable size="small" style="width: 180px; margin-left: 8px" @keyup.enter="handleReportWoPickerQuery" />
+          <el-button type="primary" plain icon="Search" size="small" style="margin-left: 8px" @click="handleReportWoPickerQuery">查询</el-button>
+          <el-button icon="RefreshLeft" size="small" @click="resetReportWoPickerQuery">重置</el-button>
+        </div>
+        <div class="material-picker-table">
+          <el-table v-loading="reportWoPickerLoading" :data="reportWoPickerList" highlight-current-row @row-click="onReportWoRowClick" @row-dblclick="onReportWoRowDblClick" height="360" size="small" border>
+            <el-table-column width="45" align="center"><template #default="{ row }"><el-radio :model-value="reportWoPickerSelectedId" :value="row.workOrderId" @click.stop="onReportWoRowClick(row)"><span /></el-radio></template></el-table-column>
+            <el-table-column label="工单编号" prop="workOrderNo" width="150" show-overflow-tooltip />
+            <el-table-column label="产品编码" prop="productCode" width="120" show-overflow-tooltip />
+            <el-table-column label="产品名称" prop="productName" min-width="160" show-overflow-tooltip />
+            <el-table-column label="规格型号" prop="specModel" width="120" show-overflow-tooltip />
+            <el-table-column label="计划数量" prop="planQty" width="90" align="center" />
+            <el-table-column label="状态" prop="status" width="90" align="center"><template #default="scope"><dict-tag :options="mms_workorder_status" :value="scope.row.status" /></template></el-table-column>
+          </el-table>
+        </div>
+        <div class="material-picker-pager">
+          <el-pagination v-model:current-page="reportWoPickerQuery.pageNum" v-model:page-size="reportWoPickerQuery.pageSize" :total="reportWoPickerTotal" layout="total, prev, pager, next" small @current-change="getReportWoPickerList" />
+        </div>
+      </div>
+      <template #footer><el-button @click="reportWoPickerOpen = false">取 消</el-button><el-button type="primary" @click="handleReportWoPickerConfirm" :disabled="!reportWoPickerSelectedId">确 定</el-button></template>
+    </el-dialog>
+
+    <!-- ===== Report 工序选择器弹窗 ===== -->
+    <el-dialog v-model="reportProcPickerOpen" width="780px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+          <span class="rd-detail-header-title">选择工序（来源：工单工艺快照）</span>
+        </div>
+      </template>
+      <div class="material-picker">
+        <div class="material-picker-table">
+          <el-table v-loading="reportProcPickerLoading" :data="reportProcessOptions" highlight-current-row @row-click="onReportProcRowClick" @row-dblclick="onReportProcRowDblClick" height="360" size="small" border>
+            <el-table-column width="45" align="center"><template #default="{ row }"><el-radio :model-value="reportProcPickerSelectedId" :value="row.processId" @click.stop="onReportProcRowClick(row)"><span /></el-radio></template></el-table-column>
+            <el-table-column label="序号" prop="seq" width="60" align="center" />
+            <el-table-column label="工序编码" prop="processCode" width="120" show-overflow-tooltip />
+            <el-table-column label="工序名称" prop="processName" min-width="160" show-overflow-tooltip />
+            <el-table-column label="绑定产能单元" prop="resourceName" min-width="140" show-overflow-tooltip />
+            <el-table-column label="标准工时(分)" prop="standardHours" width="100" align="center" />
+          </el-table>
+        </div>
+        <div v-if="reportProcessOptions.length === 0 && !reportProcPickerLoading" style="text-align:center;padding:20px;color:#909399;font-size:13px">
+          该工单暂无工艺快照数据，请确认工单已下达
+        </div>
+      </div>
+      <template #footer><el-button @click="reportProcPickerOpen = false">取 消</el-button><el-button type="primary" @click="handleReportProcPickerConfirm" :disabled="!reportProcPickerSelectedId">确 定</el-button></template>
+    </el-dialog>
+
+    <!-- ===== Report 产能单元选择器弹窗 ===== -->
+    <el-dialog v-model="reportResPickerOpen" width="860px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></div>
+          <span class="rd-detail-header-title">选择产能单元</span>
+        </div>
+      </template>
+      <div class="material-picker">
+        <div class="material-picker-search">
+          <el-input v-model="reportResPickerQuery.resourceName" placeholder="产能单元名称" clearable size="small" style="width: 200px" @keyup.enter="handleReportResPickerQuery">
+            <template #prefix><el-icon><Search /></el-icon></template>
+          </el-input>
+          <el-button type="primary" plain icon="Search" size="small" style="margin-left: 8px" @click="handleReportResPickerQuery">查询</el-button>
+          <el-button icon="RefreshLeft" size="small" @click="resetReportResPickerQuery">重置</el-button>
+        </div>
+        <div class="material-picker-table">
+          <el-table v-loading="reportResPickerLoading" :data="reportResPickerList" highlight-current-row @row-click="onReportResRowClick" @row-dblclick="onReportResRowDblClick" height="360" size="small" border>
+            <el-table-column width="45" align="center"><template #default="{ row }"><el-radio :model-value="reportResPickerSelectedId" :value="row.resourceId" @click.stop="onReportResRowClick(row)"><span /></el-radio></template></el-table-column>
+            <el-table-column label="单元编码" prop="resourceCode" width="120" show-overflow-tooltip />
+            <el-table-column label="单元名称" prop="resourceName" min-width="160" show-overflow-tooltip />
+            <el-table-column label="类型" prop="resourceType" width="100" align="center"><template #default="scope"><dict-tag :options="mms_resource_type" :value="scope.row.resourceType" /></template></el-table-column>
+            <el-table-column label="状态" prop="status" width="80" align="center"><template #default="scope"><el-tag :type="scope.row.status === '0' ? 'success' : 'info'" size="small">{{ scope.row.status === '0' ? '启用' : '停用' }}</el-tag></template></el-table-column>
+          </el-table>
+        </div>
+        <div class="material-picker-pager">
+          <el-pagination v-model:current-page="reportResPickerQuery.pageNum" v-model:page-size="reportResPickerQuery.pageSize" :total="reportResPickerTotal" layout="total, prev, pager, next" small @current-change="getReportResPickerList" />
+        </div>
+      </div>
+      <template #footer><el-button @click="reportResPickerOpen = false">取 消</el-button><el-button type="primary" @click="handleReportResPickerConfirm" :disabled="!reportResPickerSelectedId">确 定</el-button></template>
+    </el-dialog>
+
+    <!-- ===== Report 班组选择器弹窗 ===== -->
+    <el-dialog v-model="reportTeamPickerOpen" width="780px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+          <span class="rd-detail-header-title">选择班组</span>
+        </div>
+      </template>
+      <div class="material-picker">
+        <div class="material-picker-search">
+          <el-input v-model="reportTeamPickerQuery.teamName" placeholder="班组名称" clearable size="small" style="width: 200px" @keyup.enter="handleReportTeamPickerQuery">
+            <template #prefix><el-icon><Search /></el-icon></template>
+          </el-input>
+          <el-button type="primary" plain icon="Search" size="small" style="margin-left: 8px" @click="handleReportTeamPickerQuery">查询</el-button>
+          <el-button icon="RefreshLeft" size="small" @click="resetReportTeamPickerQuery">重置</el-button>
+        </div>
+        <div class="material-picker-table">
+          <el-table v-loading="reportTeamPickerLoading" :data="reportTeamPickerList" highlight-current-row @row-click="onReportTeamRowClick" @row-dblclick="onReportTeamRowDblClick" height="360" size="small" border>
+            <el-table-column width="45" align="center"><template #default="{ row }"><el-radio :model-value="reportTeamPickerSelectedId" :value="row.teamId" @click.stop="onReportTeamRowClick(row)"><span /></el-radio></template></el-table-column>
+            <el-table-column label="班组编码" prop="teamCode" width="120" show-overflow-tooltip />
+            <el-table-column label="班组名称" prop="teamName" min-width="160" show-overflow-tooltip />
+            <el-table-column label="负责人" prop="leader" width="100" show-overflow-tooltip />
+            <el-table-column label="状态" prop="status" width="80" align="center"><template #default="scope"><el-tag :type="scope.row.status === '0' ? 'success' : 'info'" size="small">{{ scope.row.status === '0' ? '启用' : '停用' }}</el-tag></template></el-table-column>
+          </el-table>
+        </div>
+        <div class="material-picker-pager">
+          <el-pagination v-model:current-page="reportTeamPickerQuery.pageNum" v-model:page-size="reportTeamPickerQuery.pageSize" :total="reportTeamPickerTotal" layout="total, prev, pager, next" small @current-change="getReportTeamPickerList" />
+        </div>
+      </div>
+      <template #footer><el-button @click="reportTeamPickerOpen = false">取 消</el-button><el-button type="primary" @click="handleReportTeamPickerConfirm" :disabled="!reportTeamPickerSelectedId">确 定</el-button></template>
+    </el-dialog>
+
+    <!-- ===== Report 班次选择器弹窗 ===== -->
+    <el-dialog v-model="reportShiftPickerOpen" width="780px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+          <span class="rd-detail-header-title">选择班次</span>
+        </div>
+      </template>
+      <div class="material-picker">
+        <div class="material-picker-search">
+          <el-input v-model="reportShiftPickerQuery.shiftName" placeholder="班次名称" clearable size="small" style="width: 200px" @keyup.enter="handleReportShiftPickerQuery">
+            <template #prefix><el-icon><Search /></el-icon></template>
+          </el-input>
+          <el-button type="primary" plain icon="Search" size="small" style="margin-left: 8px" @click="handleReportShiftPickerQuery">查询</el-button>
+          <el-button icon="RefreshLeft" size="small" @click="resetReportShiftPickerQuery">重置</el-button>
+        </div>
+        <div class="material-picker-table">
+          <el-table v-loading="reportShiftPickerLoading" :data="reportShiftPickerList" highlight-current-row @row-click="onReportShiftRowClick" @row-dblclick="onReportShiftRowDblClick" height="360" size="small" border>
+            <el-table-column width="45" align="center"><template #default="{ row }"><el-radio :model-value="reportShiftPickerSelectedId" :value="row.shiftId" @click.stop="onReportShiftRowClick(row)"><span /></el-radio></template></el-table-column>
+            <el-table-column label="班次编码" prop="shiftCode" width="120" show-overflow-tooltip />
+            <el-table-column label="班次名称" prop="shiftName" min-width="120" show-overflow-tooltip />
+            <el-table-column label="开始时间" prop="startTime" width="100" align="center" />
+            <el-table-column label="结束时间" prop="endTime" width="100" align="center" />
+            <el-table-column label="状态" prop="status" width="80" align="center"><template #default="scope"><el-tag :type="scope.row.status === '0' ? 'success' : 'info'" size="small">{{ scope.row.status === '0' ? '启用' : '停用' }}</el-tag></template></el-table-column>
+          </el-table>
+        </div>
+        <div class="material-picker-pager">
+          <el-pagination v-model:current-page="reportShiftPickerQuery.pageNum" v-model:page-size="reportShiftPickerQuery.pageSize" :total="reportShiftPickerTotal" layout="total, prev, pager, next" small @current-change="getReportShiftPickerList" />
+        </div>
+      </div>
+      <template #footer><el-button @click="reportShiftPickerOpen = false">取 消</el-button><el-button type="primary" @click="handleReportShiftPickerConfirm" :disabled="!reportShiftPickerSelectedId">确 定</el-button></template>
+    </el-dialog>
+
+    </template>
+    <!-- ===== /报工记录 Tab ===== -->
   </div>
 </template>
 
 <script setup name="Dispatch">
 import { listDispatch, getDispatch,
          startDispatch, finishDispatch, cancelDispatch } from "@/api/mms/dispatch";
+import { listWorkReport, getWorkReport, addWorkReport, updateWorkReport, delWorkReport, auditWorkReport } from "@/api/mms/report";
+import { listWorkOrder, listWorkOrderProcesses } from "@/api/mms/workorder";
 import { listTeam } from "@/api/mms/team";
 import { listResource } from "@/api/mms/resource";
+import { listShift } from "@/api/mms/shift";
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
-import { Search, Filter, RefreshLeft, ArrowDown, ArrowRight, WarningFilled, InfoFilled, CircleClose, Grid, List, Box, Calendar } from '@element-plus/icons-vue'
+import { Search, Filter, RefreshLeft, ArrowDown, ArrowRight, WarningFilled, InfoFilled, CircleClose, Grid, List, Box, Calendar, Tickets } from '@element-plus/icons-vue'
 import useUserStore from '@/store/modules/user'
 
 const { proxy } = getCurrentInstance();
-const { mms_dispatch_status, wms_unit } = proxy.useDict("mms_dispatch_status", "wms_unit");
+const { mms_dispatch_status, wms_unit, mms_report_status, mms_yes_no, mms_report_source, mms_workorder_status, mms_resource_type } = proxy.useDict("mms_dispatch_status", "wms_unit", "mms_report_status", "mms_yes_no", "mms_report_source", "mms_workorder_status", "mms_resource_type");
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('mms_dispatch_index')
-const { collapsedCards, toggleCard } = useDetailCard(["vc0","vc1","vc2","vc3","sc0","sc0a","sc0b","sc0c","sc1","sc2","fc0","fc0a","fc0b","fc0c","fc1"])
+const { collapsedCards, toggleCard } = useDetailCard(["vc0","vc1","vc2","vc3","sc0","sc0a","sc0b","sc0c","sc1","sc2","fc0","fc0a","fc0b","fc0c","fc1","rvc0","rvc1","rvc2","rvc3","rc0","rc1","rc2","rc3"])
+
+// ===== 页面Tab切换 =====
+const pageTab = ref('dispatch');
+function switchPageTab(tab) {
+  pageTab.value = tab;
+  if (tab === 'report' && reportDataList.value.length === 0) {
+    getReportList();
+  }
+}
 
 const dataList = ref([]);
 const viewOpen = ref(false);
@@ -1353,6 +1788,398 @@ function statusTabClass(value) {
 loadTeamOptions();
 loadResourceOptions();
 getList();
+
+// ============================================================
+// ===== 报工记录 Tab 逻辑 =====
+// ============================================================
+
+const reportDataList = ref([]);
+const reportLoading = ref(true);
+const reportShowSearch = ref(true);
+const reportShowAdvanced = ref(false);
+const reportTotal = ref(0);
+const reportDateRange = ref([]);
+const reportActiveStatusTab = ref("all");
+const reportStatusCounts = ref({});
+const reportShowHelp = ref(false);
+const reportViewOpen = ref(false);
+const reportViewData = ref({});
+const reportEditOpen = ref(false);
+const reportEditTitle = ref("");
+const reportIds = ref([]);
+const reportSingle = ref(true);
+const reportMultiple = ref(true);
+const reportAuditOpen = ref(false);
+const reportAuditTitle = ref("");
+
+const reportStatusTabList = computed(() => mms_report_status.value ? mms_report_status.value.map(d => ({ label: d.label, value: d.value })) : []);
+
+const reportActiveFilterCount = computed(() => {
+  let c = 0;
+  if (reportQuery.value.reportNo) c++;
+  if (reportQuery.value.workOrderNo) c++;
+  if (reportQuery.value.processName) c++;
+  if (reportQuery.value.resourceName) c++;
+  if (reportQuery.value.status) c++;
+  if (reportQuery.value.reportBy) c++;
+  if (reportQuery.value.isFirstPiece) c++;
+  if (reportQuery.value.source) c++;
+  if (reportDateRange.value && reportDateRange.value.length === 2) c++;
+  return c;
+});
+
+const reportData = reactive({
+  reportForm: {},
+  reportQuery: { pageNum: 1, pageSize: 10, reportNo: undefined, workOrderNo: undefined, processName: undefined, resourceName: undefined, status: undefined, reportBy: undefined, isFirstPiece: undefined, source: undefined, params: {} },
+  reportRules: {
+    workOrderNo: [{ required: true, message: "请选择工单", trigger: "change" }],
+    processName: [{ required: true, message: "请选择工序", trigger: "change" }],
+    resourceName: [{ required: true, message: "请选择产能单元", trigger: "change" }],
+    goodQty: [{ required: true, message: "请输入合格数", trigger: "blur" }]
+  },
+  reportAuditForm: {}
+});
+const { reportQuery, reportForm, reportRules, reportAuditForm } = toRefs(reportData);
+
+function getReportList() {
+  reportLoading.value = true;
+  listWorkReport(proxy.addDateRange(reportQuery.value, reportDateRange.value)).then(response => {
+    reportDataList.value = response.rows;
+    reportTotal.value = response.total;
+    reportLoading.value = false;
+    loadReportStatusCounts();
+  });
+}
+
+function loadReportStatusCounts() {
+  const baseQuery = { pageNum: 1, pageSize: 999 };
+  if (reportQuery.value.reportNo) baseQuery.reportNo = reportQuery.value.reportNo;
+  if (reportQuery.value.workOrderNo) baseQuery.workOrderNo = reportQuery.value.workOrderNo;
+  if (reportQuery.value.processName) baseQuery.processName = reportQuery.value.processName;
+  if (reportQuery.value.resourceName) baseQuery.resourceName = reportQuery.value.resourceName;
+  if (reportQuery.value.reportBy) baseQuery.reportBy = reportQuery.value.reportBy;
+  if (reportQuery.value.isFirstPiece) baseQuery.isFirstPiece = reportQuery.value.isFirstPiece;
+  if (reportQuery.value.source) baseQuery.source = reportQuery.value.source;
+  listWorkReport(proxy.addDateRange(baseQuery, reportDateRange.value)).then(res => {
+    const counts = { all: res.total };
+    if (mms_report_status.value) {
+      mms_report_status.value.forEach(d => { counts[d.value] = 0; });
+      (res.rows || []).forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++; });
+    }
+    reportStatusCounts.value = counts;
+  }).catch(() => {});
+}
+
+function handleReportQuery() {
+  reportShowAdvanced.value = false;
+  reportQuery.value.pageNum = 1;
+  getReportList();
+}
+
+function resetReportQuery() {
+  reportQuery.value.reportNo = undefined;
+  reportQuery.value.workOrderNo = undefined;
+  reportQuery.value.processName = undefined;
+  reportQuery.value.resourceName = undefined;
+  reportQuery.value.status = undefined;
+  reportQuery.value.reportBy = undefined;
+  reportQuery.value.isFirstPiece = undefined;
+  reportQuery.value.source = undefined;
+  reportDateRange.value = [];
+  reportQuery.value.params = {};
+  reportActiveStatusTab.value = 'all';
+  handleReportQuery();
+}
+
+function handleReportStatusTabClick(status) {
+  reportActiveStatusTab.value = status;
+  reportQuery.value.status = status === "all" ? undefined : status;
+  handleReportQuery();
+}
+
+function handleReportSelectionChange(selection) {
+  reportIds.value = selection.map(item => item.reportId);
+  reportSingle.value = selection.length !== 1;
+  reportMultiple.value = !selection.length;
+}
+
+function resetReportForm() {
+  reportForm.value = { reportNo: undefined, workOrderId: undefined, workOrderNo: undefined, processId: undefined, processName: undefined, resourceId: undefined, resourceName: undefined, goodQty: 0, defectQty: 0, teamId: undefined, teamName: undefined, shiftId: undefined, shiftName: undefined, isFirstPiece: "0", source: "1", remark: undefined };
+  reportProcessOptions.value = [];
+  proxy.resetForm("reportFormRef");
+}
+
+function handleReportAdd() {
+  resetReportForm();
+  reportEditOpen.value = true;
+  reportEditTitle.value = "新增报工";
+}
+
+function handleReportUpdate(row) {
+  resetReportForm();
+  const id = row.reportId || reportIds.value[0];
+  getWorkReport(id).then(response => {
+    reportForm.value = response.data;
+    if (reportForm.value.workOrderId) {
+      listWorkOrderProcesses(reportForm.value.workOrderId).then(res => {
+        reportProcessOptions.value = res.data || [];
+        reportEditOpen.value = true;
+        reportEditTitle.value = "修改报工";
+      }).catch(() => { reportEditOpen.value = true; reportEditTitle.value = "修改报工"; });
+    } else {
+      reportEditOpen.value = true;
+      reportEditTitle.value = "修改报工";
+    }
+  });
+}
+
+function handleReportView(row) {
+  const id = row.reportId || reportIds.value[0];
+  getWorkReport(id).then(response => { reportViewData.value = response.data; reportViewOpen.value = true; });
+}
+
+function submitReportForm() {
+  proxy.$refs["reportFormRef"].validate(valid => {
+    if (valid) {
+      if (reportForm.value.reportId != null) {
+        updateWorkReport(reportForm.value).then(() => { proxy.$modal.msgSuccess("修改成功"); reportEditOpen.value = false; getReportList(); });
+      } else {
+        addWorkReport(reportForm.value).then(() => { proxy.$modal.msgSuccess("新增成功"); reportEditOpen.value = false; getReportList(); });
+      }
+    }
+  });
+}
+
+function handleReportDelete(row) {
+  const delIds = row.reportId || reportIds.value;
+  proxy.$modal.confirm('是否确认删除选中的报工记录？').then(() => delWorkReport(delIds)).then(() => { getReportList(); proxy.$modal.msgSuccess("删除成功"); }).catch(() => {});
+}
+
+function handleReportExport() {
+  proxy.download("mms/report/export", { ...reportQuery.value }, `report_${new Date().getTime()}.xlsx`);
+}
+
+function handleReportAudit(row, status) {
+  reportAuditTitle.value = status === "1" ? "报工审核-通过" : "报工审核-驳回";
+  reportAuditForm.value = { reportId: row.reportId, reportNo: row.reportNo, status: status, auditRemark: "" };
+  reportAuditOpen.value = true;
+}
+
+function submitReportAudit() {
+  auditWorkReport(reportAuditForm.value.reportId, reportAuditForm.value.status, reportAuditForm.value.auditRemark).then(() => {
+    reportAuditOpen.value = false;
+    getReportList();
+    proxy.$modal.msgSuccess("操作成功");
+  });
+}
+
+// ===== 报工字典辅助 =====
+function reportDictLabel(dictRef, value) {
+  if (value === null || value === undefined || value === '') return '—';
+  const arr = (dictRef && dictRef.value) ? dictRef.value : dictRef;
+  if (!arr || !Array.isArray(arr)) return '—';
+  const item = arr.find(d => d.value == value);
+  return item ? item.label : '—';
+}
+function reportStatusLabel(status) { return reportDictLabel(mms_report_status, status); }
+function reportIsFirstPieceLabel(val) { return reportDictLabel(mms_yes_no, val); }
+function reportBadgeClass(status) { const map = { '0': 'amber', '1': 'green', '2': 'red' }; return map[status] || 'gray'; }
+function reportStatusTabClass(value) { const map = { '0': 'tab-draft', '1': 'tab-done', '2': 'tab-reject' }; return map[value] || ''; }
+function reportSourceLabel(value) { return reportDictLabel(mms_report_source, value); }
+function reportSourceBadgeClass(value) { const map = { '1': 'blue', '2': 'green' }; return map[value] || 'gray'; }
+
+// ===== 报工-工单选择器 =====
+const reportWoPickerOpen = ref(false);
+const reportWoPickerLoading = ref(false);
+const reportWoPickerList = ref([]);
+const reportWoPickerTotal = ref(0);
+const reportWoPickerSelectedId = ref(null);
+const reportWoPickerSelectedRow = ref(null);
+const reportWoPickerQuery = reactive({ pageNum: 1, pageSize: 10, workOrderNo: undefined, productName: undefined });
+
+function openReportWoPicker() {
+  reportWoPickerOpen.value = true;
+  reportWoPickerSelectedId.value = reportForm.value.workOrderId || null;
+  reportWoPickerSelectedRow.value = null;
+  reportWoPickerQuery.pageNum = 1;
+  reportWoPickerQuery.workOrderNo = undefined;
+  reportWoPickerQuery.productName = undefined;
+  getReportWoPickerList();
+}
+function getReportWoPickerList() {
+  reportWoPickerLoading.value = true;
+  listWorkOrder(reportWoPickerQuery).then(res => {
+    reportWoPickerList.value = res.rows;
+    reportWoPickerTotal.value = res.total;
+    reportWoPickerLoading.value = false;
+  }).catch(() => { reportWoPickerLoading.value = false; });
+}
+function handleReportWoPickerQuery() { reportWoPickerQuery.pageNum = 1; getReportWoPickerList(); }
+function resetReportWoPickerQuery() { reportWoPickerQuery.workOrderNo = undefined; reportWoPickerQuery.productName = undefined; handleReportWoPickerQuery(); }
+function onReportWoRowClick(row) { reportWoPickerSelectedId.value = row.workOrderId; reportWoPickerSelectedRow.value = row; }
+function onReportWoRowDblClick(row) { onReportWoRowClick(row); handleReportWoPickerConfirm(); }
+function handleReportWoPickerConfirm() {
+  if (!reportWoPickerSelectedId.value) { proxy.$modal.msgWarning('请先选择工单'); return; }
+  const row = reportWoPickerSelectedRow.value;
+  reportForm.value.workOrderId = row.workOrderId;
+  reportForm.value.workOrderNo = row.workOrderNo;
+  reportForm.value.processId = undefined;
+  reportForm.value.processName = undefined;
+  reportProcessOptions.value = [];
+  reportWoPickerOpen.value = false;
+  proxy.$refs["reportFormRef"] && proxy.$refs["reportFormRef"].validateField('workOrderNo');
+  listWorkOrderProcesses(row.workOrderId).then(res => {
+    reportProcessOptions.value = res.data || [];
+  }).catch(() => {});
+}
+
+// ===== 报工-工序选择器 =====
+const reportProcPickerOpen = ref(false);
+const reportProcPickerLoading = ref(false);
+const reportProcPickerSelectedId = ref(null);
+const reportProcPickerSelectedRow = ref(null);
+const reportProcessOptions = ref([]);
+
+function openReportProcessPicker() {
+  if (!reportForm.value.workOrderId) { proxy.$modal.msgWarning('请先选择工单'); return; }
+  reportProcPickerOpen.value = true;
+  reportProcPickerSelectedId.value = reportForm.value.processId || null;
+  reportProcPickerSelectedRow.value = null;
+  if (reportProcessOptions.value.length === 0) {
+    reportProcPickerLoading.value = true;
+    listWorkOrderProcesses(reportForm.value.workOrderId).then(res => {
+      reportProcessOptions.value = res.data || [];
+      reportProcPickerLoading.value = false;
+    }).catch(() => { reportProcPickerLoading.value = false; });
+  }
+}
+function onReportProcRowClick(row) { reportProcPickerSelectedId.value = row.processId; reportProcPickerSelectedRow.value = row; }
+function onReportProcRowDblClick(row) { onReportProcRowClick(row); handleReportProcPickerConfirm(); }
+function handleReportProcPickerConfirm() {
+  if (!reportProcPickerSelectedId.value) { proxy.$modal.msgWarning('请先选择工序'); return; }
+  const row = reportProcPickerSelectedRow.value;
+  reportForm.value.processId = row.processId;
+  reportForm.value.processName = row.processName;
+  if (row.resourceId) {
+    reportForm.value.resourceId = row.resourceId;
+    reportForm.value.resourceName = row.resourceName;
+  }
+  reportProcPickerOpen.value = false;
+  proxy.$refs["reportFormRef"] && proxy.$refs["reportFormRef"].validateField('processName');
+}
+
+// ===== 报工-产能单元选择器 =====
+const reportResPickerOpen = ref(false);
+const reportResPickerLoading = ref(false);
+const reportResPickerList = ref([]);
+const reportResPickerTotal = ref(0);
+const reportResPickerSelectedId = ref(null);
+const reportResPickerSelectedRow = ref(null);
+const reportResPickerQuery = reactive({ pageNum: 1, pageSize: 10, resourceName: undefined, status: '0' });
+
+function openReportResPicker() {
+  reportResPickerOpen.value = true;
+  reportResPickerSelectedId.value = reportForm.value.resourceId || null;
+  reportResPickerSelectedRow.value = null;
+  reportResPickerQuery.pageNum = 1;
+  reportResPickerQuery.resourceName = undefined;
+  getReportResPickerList();
+}
+function getReportResPickerList() {
+  reportResPickerLoading.value = true;
+  listResource(reportResPickerQuery).then(res => {
+    reportResPickerList.value = res.rows;
+    reportResPickerTotal.value = res.total;
+    reportResPickerLoading.value = false;
+  }).catch(() => { reportResPickerLoading.value = false; });
+}
+function handleReportResPickerQuery() { reportResPickerQuery.pageNum = 1; getReportResPickerList(); }
+function resetReportResPickerQuery() { reportResPickerQuery.resourceName = undefined; handleReportResPickerQuery(); }
+function onReportResRowClick(row) { reportResPickerSelectedId.value = row.resourceId; reportResPickerSelectedRow.value = row; }
+function onReportResRowDblClick(row) { onReportResRowClick(row); handleReportResPickerConfirm(); }
+function handleReportResPickerConfirm() {
+  if (!reportResPickerSelectedId.value) { proxy.$modal.msgWarning('请先选择产能单元'); return; }
+  const row = reportResPickerSelectedRow.value;
+  reportForm.value.resourceId = row.resourceId;
+  reportForm.value.resourceName = row.resourceName;
+  reportResPickerOpen.value = false;
+  proxy.$refs["reportFormRef"] && proxy.$refs["reportFormRef"].validateField('resourceName');
+}
+
+// ===== 报工-班组选择器 =====
+const reportTeamPickerOpen = ref(false);
+const reportTeamPickerLoading = ref(false);
+const reportTeamPickerList = ref([]);
+const reportTeamPickerTotal = ref(0);
+const reportTeamPickerSelectedId = ref(null);
+const reportTeamPickerSelectedRow = ref(null);
+const reportTeamPickerQuery = reactive({ pageNum: 1, pageSize: 10, teamName: undefined, status: '0' });
+
+function openReportTeamPicker() {
+  reportTeamPickerOpen.value = true;
+  reportTeamPickerSelectedId.value = reportForm.value.teamId || null;
+  reportTeamPickerSelectedRow.value = null;
+  reportTeamPickerQuery.pageNum = 1;
+  reportTeamPickerQuery.teamName = undefined;
+  getReportTeamPickerList();
+}
+function getReportTeamPickerList() {
+  reportTeamPickerLoading.value = true;
+  listTeam(reportTeamPickerQuery).then(res => {
+    reportTeamPickerList.value = res.rows;
+    reportTeamPickerTotal.value = res.total;
+    reportTeamPickerLoading.value = false;
+  }).catch(() => { reportTeamPickerLoading.value = false; });
+}
+function handleReportTeamPickerQuery() { reportTeamPickerQuery.pageNum = 1; getReportTeamPickerList(); }
+function resetReportTeamPickerQuery() { reportTeamPickerQuery.teamName = undefined; handleReportTeamPickerQuery(); }
+function onReportTeamRowClick(row) { reportTeamPickerSelectedId.value = row.teamId; reportTeamPickerSelectedRow.value = row; }
+function onReportTeamRowDblClick(row) { onReportTeamRowClick(row); handleReportTeamPickerConfirm(); }
+function handleReportTeamPickerConfirm() {
+  if (!reportTeamPickerSelectedId.value) { proxy.$modal.msgWarning('请先选择班组'); return; }
+  const row = reportTeamPickerSelectedRow.value;
+  reportForm.value.teamId = row.teamId;
+  reportForm.value.teamName = row.teamName;
+  reportTeamPickerOpen.value = false;
+}
+
+// ===== 报工-班次选择器 =====
+const reportShiftPickerOpen = ref(false);
+const reportShiftPickerLoading = ref(false);
+const reportShiftPickerList = ref([]);
+const reportShiftPickerTotal = ref(0);
+const reportShiftPickerSelectedId = ref(null);
+const reportShiftPickerSelectedRow = ref(null);
+const reportShiftPickerQuery = reactive({ pageNum: 1, pageSize: 10, shiftName: undefined, status: '0' });
+
+function openReportShiftPicker() {
+  reportShiftPickerOpen.value = true;
+  reportShiftPickerSelectedId.value = reportForm.value.shiftId || null;
+  reportShiftPickerSelectedRow.value = null;
+  reportShiftPickerQuery.pageNum = 1;
+  reportShiftPickerQuery.shiftName = undefined;
+  getReportShiftPickerList();
+}
+function getReportShiftPickerList() {
+  reportShiftPickerLoading.value = true;
+  listShift(reportShiftPickerQuery).then(res => {
+    reportShiftPickerList.value = res.rows;
+    reportShiftPickerTotal.value = res.total;
+    reportShiftPickerLoading.value = false;
+  }).catch(() => { reportShiftPickerLoading.value = false; });
+}
+function handleReportShiftPickerQuery() { reportShiftPickerQuery.pageNum = 1; getReportShiftPickerList(); }
+function resetReportShiftPickerQuery() { reportShiftPickerQuery.shiftName = undefined; handleReportShiftPickerQuery(); }
+function onReportShiftRowClick(row) { reportShiftPickerSelectedId.value = row.shiftId; reportShiftPickerSelectedRow.value = row; }
+function onReportShiftRowDblClick(row) { onReportShiftRowClick(row); handleReportShiftPickerConfirm(); }
+function handleReportShiftPickerConfirm() {
+  if (!reportShiftPickerSelectedId.value) { proxy.$modal.msgWarning('请先选择班次'); return; }
+  const row = reportShiftPickerSelectedRow.value;
+  reportForm.value.shiftId = row.shiftId;
+  reportForm.value.shiftName = row.shiftName;
+  reportShiftPickerOpen.value = false;
+}
+// ===== /报工记录 Tab 逻辑 =====
 </script>
 
 <style scoped>
@@ -1522,4 +2349,25 @@ getList();
 /* Pagination in grouped view */
 .mms-dispatch-page .grouped-view + .pagination-container,
 .mms-dispatch-page .grouped-view .pagination-container { display: flex; align-items: center; justify-content: flex-end; padding: 14px 20px; background: #fff; }
+/* ===== Page Tabs Bar ===== */
+.mms-dispatch-page .page-tabs-bar { display: flex; align-items: center; gap: 4px; padding: 0 0 10px 0; border-bottom: 2px solid var(--ink-200); margin-bottom: 10px; }
+.mms-dispatch-page .page-tab { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 16px; border: none; background: transparent; border-radius: var(--r-sm) var(--r-sm) 0 0; font-size: 15px; font-weight: 500; color: var(--ink-500); cursor: pointer; transition: all .15s var(--ease-out); white-space: nowrap; position: relative; }
+.mms-dispatch-page .page-tab:hover { background: var(--ink-50); color: var(--ink-700); }
+.mms-dispatch-page .page-tab.is-active { color: var(--brand-600); font-weight: 600; }
+.mms-dispatch-page .page-tab.is-active::after { content: ''; position: absolute; bottom: -2px; left: 0; right: 0; height: 3px; background: var(--brand-600); border-radius: 3px 3px 0 0; }
+.mms-dispatch-page .page-tab .el-icon { font-size: 16px; }
+/* ===== Report Status Tab Reject ===== */
+.mms-dispatch-page .status-tab.tab-reject .dot { background: var(--red-500); } .mms-dispatch-page .status-tab.tab-reject .count { background: var(--red-50); color: var(--red-700); } .mms-dispatch-page .status-tab.is-active.tab-reject .count { background: var(--red-500); color: #fff; }
+/* ===== Material Picker (shared) ===== */
+.mms-dispatch-page .material-picker { display: flex; flex-direction: column; gap: 8px; }
+.mms-dispatch-page .material-picker-search { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; padding-bottom: 4px; }
+.mms-dispatch-page .material-picker-table { flex: 1; overflow: hidden; border: 1px solid var(--ink-200); border-radius: var(--r-sm); }
+.mms-dispatch-page .material-picker-pager { display: flex; justify-content: flex-end; padding-top: 4px; }
+/* ===== Report Info Banner ===== */
+.mms-dispatch-page .report-info-banner { display: flex; align-items: flex-start; gap: 10px; margin: 0 20px; padding: 12px 16px; background: linear-gradient(135deg, #eff6ff 0%, #f0f9ff 100%); border: 1px solid #bfdbfe; border-left: 4px solid #3b82f6; border-radius: 8px; }
+.mms-dispatch-page .report-info-banner .report-info-icon { font-size: 20px; color: #3b82f6; flex-shrink: 0; margin-top: 1px; }
+.mms-dispatch-page .report-info-banner .report-info-text { flex: 1; min-width: 0; }
+.mms-dispatch-page .report-info-banner .report-info-title { display: block; font-size: 14px; font-weight: 700; color: #1d4ed8; margin-bottom: 4px; }
+.mms-dispatch-page .report-info-banner .report-info-desc { display: block; font-size: 13px; color: #475569; line-height: 1.6; }
+.mms-dispatch-page .report-info-banner .report-info-desc .emph { font-weight: 600; color: #2563eb; }
 </style>

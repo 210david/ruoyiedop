@@ -19,7 +19,6 @@ import com.ruoyi.mms.domain.MmsWorkOrder;
 import com.ruoyi.mms.domain.MmsMps;
 import com.ruoyi.mms.domain.MmsAbnormal;
 import com.ruoyi.mms.domain.MmsWorkReport;
-
 /**
  * 生产看板 Controller
  *
@@ -42,6 +41,9 @@ public class MmsDashboardController extends BaseController
 
     @Autowired
     private MmsWorkReportMapper workReportMapper;
+
+    @Autowired
+    private IMmsAbnormalService abnormalService;
 
     /**
      * 工单统计
@@ -210,6 +212,18 @@ public class MmsDashboardController extends BaseController
         rpStats.put("approved", rpApproved);
         rpStats.put("rejected", rpRejected);
         result.put("report", rpStats);
+
+        // 今日停机统计
+        java.util.Map<String, Object> dtStats = abnormalService.getDowntimeTodayStats();
+        result.put("downtime", dtStats);
+
+        // 未闭环异常数（待响应+处理中）
+        int unclosedAbnormal = abPending + abProcessing;
+        java.util.Map<String, Object> abnormalSummary = new java.util.LinkedHashMap<>();
+        abnormalSummary.put("unclosed", unclosedAbnormal);
+        abnormalSummary.put("pending", abPending);
+        abnormalSummary.put("processing", abProcessing);
+        result.put("abnormalSummary", abnormalSummary);
 
         return AjaxResult.success(result);
     }

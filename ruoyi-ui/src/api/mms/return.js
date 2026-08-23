@@ -38,3 +38,28 @@ export function updateReturnMaterial(data) {
   })
 }
 
+// 查询已领料的领料单列表（供退料选择）
+export function listIssueForReturn(query) {
+  return request({
+    url: '/mms/return/issueList',
+    method: 'get',
+    params: query
+  })
+}
+
+// 根据领料单ID查询领料单详情（带明细），供退料页面带出信息
+export function getIssueInfo(issueId) {
+  return request({
+    url: '/mms/return/issueInfo/' + issueId,
+    method: 'get'
+  })
+}
+
+// 确认退料
+export function confirmReturnMaterial(data) {
+  return request({
+    url: '/mms/return/confirm',
+    method: 'put',
+    data: data
+  })
+}

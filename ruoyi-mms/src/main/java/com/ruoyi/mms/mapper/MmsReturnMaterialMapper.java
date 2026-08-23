@@ -17,4 +17,7 @@ public interface MmsReturnMaterialMapper {
     public int insertReturnDetail(MmsReturnDetail detail);
     /** 删除退料明细（按退料单ID） */
     public int deleteReturnDetailByReturnId(Long returnId);
+
+    /** 查询某个领料单已退料的明细（只查已退料状态=1的退料单） */
+    public List<MmsReturnDetail> selectReturnedDetailByIssueId(Long issueId);
 }

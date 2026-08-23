@@ -19,6 +19,15 @@
 .rd-dialog .el-dialog__headerbtn:hover .el-dialog__close {
   color: #fff;
 }
+
+/* 业务说明弹框（无蓝色横幅头，使用默认白底标题栏）—— 关闭按钮用深色 */
+.rd-dialog.status-help-dialog .el-dialog__headerbtn .el-dialog__close {
+  color: #909399;
+  font-size: 20px;
+}
+.rd-dialog.status-help-dialog .el-dialog__headerbtn:hover .el-dialog__close {
+  color: #606266;
+}
 .rd-dialog .el-dialog__body {
   padding: 12px 16px 16px;
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
@@ -1113,4 +1122,20 @@
   color: #94a3b8;
   font-style: italic;
 }
+
+/* ===== material-picker 弹窗内选择器样式（全局，用于 append-to-body 的 dialog） ===== */
+.material-picker { display: flex; flex-direction: column; }
+.material-picker-search { display: flex; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 4px; }
+.material-picker-table { border: 1px solid #ebeef5; border-radius: 8px; overflow: hidden; }
+.material-picker-table .el-table__row { cursor: pointer; }
+.material-picker-table .el-table__row:hover > td { background: #f0f7ff; }
+.material-picker-table .el-table__row.is-current > td { background: #e6f0fd; }
+.material-picker-pager { margin-top: 8px; display: flex; justify-content: flex-end; }
+
+/* ===== 静态文本样式（用于弹窗中的只读展示字段） ===== */
+.rd-static-text { font-size: 14px; color: #303133; font-weight: 500; }
+
+/* ===== 表单提示图标样式 ===== */
+.rd-form-tip { color: #c0c4cc; transition: color 0.15s; }
+.rd-form-tip:hover { color: #f56c6c; }
 

@@ -52,10 +52,22 @@ public class MmsIssue extends BaseEntity
     @Excel(name = "领料人")
     private String issueBy;
 
-    @Excel(name = "状态", readConverterExp = "0=待领料,1=已领料,2=已退料")
+    @Excel(name = "状态", readConverterExp = "0=待领料,1=已领料")
     private String status;
 
     private String delFlag;
+
+    /** 产品编码（来源工单，非持久化） */
+    @Excel(name = "产品编码")
+    private String productCode;
+
+    /** 产品名称（来源工单，非持久化） */
+    @Excel(name = "产品名称")
+    private String productName;
+
+    /** 工单数量（来源工单，非持久化） */
+    @Excel(name = "工单数量")
+    private BigDecimal planQty;
 
     /** 领料明细列表（批量领料） */
     private List<MmsIssueDetail> detailList;
@@ -90,6 +102,12 @@ public class MmsIssue extends BaseEntity
     public void setStatus(String status) { this.status = status; }
     public String getDelFlag() { return delFlag; }
     public void setDelFlag(String delFlag) { this.delFlag = delFlag; }
+    public String getProductCode() { return productCode; }
+    public void setProductCode(String productCode) { this.productCode = productCode; }
+    public String getProductName() { return productName; }
+    public void setProductName(String productName) { this.productName = productName; }
+    public BigDecimal getPlanQty() { return planQty; }
+    public void setPlanQty(BigDecimal planQty) { this.planQty = planQty; }
     public List<MmsIssueDetail> getDetailList() { return detailList; }
     public void setDetailList(List<MmsIssueDetail> detailList) { this.detailList = detailList; }
 }

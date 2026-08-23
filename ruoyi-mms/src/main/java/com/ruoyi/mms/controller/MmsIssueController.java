@@ -75,4 +75,16 @@ public class MmsIssueController extends BaseController
     {
         return toAjax(mmsIssueService.deleteIssueByIds(IssueIds));
     }
+
+    /**
+     * 确认领料
+     * 状态：0(待领料) → 1(已领料)，记录领料时间，可修改领料人和明细数量
+     */
+    @Log(title = "领料-确认领料", businessType = BusinessType.UPDATE)
+    @PreAuthorize("@ss.hasPermi('mms:issue:confirm')")
+    @PutMapping("/confirm")
+    public AjaxResult confirm(@RequestBody MmsIssue issue)
+    {
+        return toAjax(mmsIssueService.confirmIssue(issue));
+    }
 }

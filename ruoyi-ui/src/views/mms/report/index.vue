@@ -128,8 +128,8 @@
           <section class="rd-card">
             <div class="rd-card-header" @click="toggleCard('c0')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg></span>基本信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c0 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
             <div class="rd-card-body" v-show="!collapsedCards.c0">
-              <el-row :gutter="20"><el-col :span="12"><el-form-item label="报工单号" prop="reportNo"><el-input v-model="form.reportNo" placeholder="自动生成" disabled /></el-form-item></el-col><el-col :span="12"><el-form-item label="工单号" prop="workOrderNo"><el-select v-model="form.workOrderId" placeholder="请选择工单" filterable clearable style="width: 100%" @change="onWorkOrderChange"><el-option v-for="wo in workOrderOptions" :key="wo.workOrderId" :label="wo.workOrderNo + (wo.productName ? ' / ' + wo.productName : '')" :value="wo.workOrderId" /></el-select></el-form-item></el-col></el-row>
-              <el-row :gutter="20"><el-col :span="12"><el-form-item label="工序名称" prop="processName"><el-select v-model="form.processId" placeholder="请选择工序" filterable clearable style="width: 100%" @change="onProcessChange"><el-option v-for="p in processOptions" :key="p.processId" :label="p.processName" :value="p.processId" /></el-select></el-form-item></el-col><el-col :span="12"><el-form-item label="产能单元" prop="resourceName"><el-select v-model="form.resourceId" placeholder="请选择产能单元" filterable clearable style="width: 100%" @change="onResourceChange"><el-option v-for="r in resourceOptions" :key="r.resourceId" :label="r.resourceName" :value="r.resourceId" /></el-select></el-form-item></el-col></el-row>
+              <el-row :gutter="20"><el-col :span="12"><el-form-item label="报工单号" prop="reportNo"><el-input v-model="form.reportNo" placeholder="自动生成" disabled /></el-form-item></el-col><el-col :span="12"><el-form-item label="工单号" prop="workOrderNo"><el-input v-model="form.workOrderNo" placeholder="请选择工单" readonly style="width: calc(100% - 32px)"><template #append><el-button icon="Search" @click="openWoPicker" /></template></el-input></el-form-item></el-col></el-row>
+              <el-row :gutter="20"><el-col :span="12"><el-form-item label="工序名称" prop="processName"><el-input v-model="form.processName" placeholder="请选择工序" readonly style="width: calc(100% - 32px)"><template #append><el-button icon="Search" @click="openProcessPicker" :disabled="!form.workOrderId" /></template></el-input></el-form-item></el-col><el-col :span="12"><el-form-item label="产能单元" prop="resourceName"><el-input v-model="form.resourceName" placeholder="请选择产能单元" readonly style="width: calc(100% - 32px)"><template #append><el-button icon="Search" @click="openResourcePicker" /></template></el-input></el-form-item></el-col></el-row>
               <el-row :gutter="20"><el-col :span="12"><el-form-item label="报工来源" prop="source"><el-select v-model="form.source" placeholder="手动报工" disabled style="width: 100%"><el-option v-for="d in mms_report_source" :key="d.value" :label="d.label" :value="d.value" /></el-select></el-form-item></el-col></el-row>
             </div>
           </section>
@@ -142,7 +142,7 @@
           <section class="rd-card">
             <div class="rd-card-header" @click="toggleCard('c2')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>班组信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
             <div class="rd-card-body" v-show="!collapsedCards.c2">
-              <el-row :gutter="20"><el-col :span="12"><el-form-item label="班组" prop="teamName"><el-select v-model="form.teamId" placeholder="请选择班组" filterable clearable style="width: 100%" @change="onTeamChange"><el-option v-for="t in teamOptions" :key="t.teamId" :label="t.teamName" :value="t.teamId" /></el-select></el-form-item></el-col><el-col :span="12"><el-form-item label="班次" prop="shiftName"><el-select v-model="form.shiftId" placeholder="请选择班次" filterable clearable style="width: 100%" @change="onShiftChange"><el-option v-for="s in shiftOptions" :key="s.shiftId" :label="s.shiftName" :value="s.shiftId" /></el-select></el-form-item></el-col></el-row>
+              <el-row :gutter="20"><el-col :span="12"><el-form-item label="班组" prop="teamName"><el-input v-model="form.teamName" placeholder="请选择班组" readonly style="width: calc(100% - 32px)"><template #append><el-button icon="Search" @click="openTeamPicker" /></template></el-input></el-form-item></el-col><el-col :span="12"><el-form-item label="班次" prop="shiftName"><el-input v-model="form.shiftName" placeholder="请选择班次" readonly style="width: calc(100% - 32px)"><template #append><el-button icon="Search" @click="openShiftPicker" /></template></el-input></el-form-item></el-col></el-row>
               <el-form-item label="是否首件" prop="isFirstPiece"><el-radio-group v-model="form.isFirstPiece"><el-radio value="1">是</el-radio><el-radio value="0">否</el-radio></el-radio-group></el-form-item>
             </div>
           </section>
@@ -241,6 +241,164 @@
       </div>
       <template #footer><el-button type="primary" @click="showStatusHelp = false">我知道了</el-button></template>
     </el-dialog>
+
+    <!-- ===== 工单选择器弹窗 ===== -->
+    <el-dialog v-model="woPickerOpen" width="936px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <span class="rd-detail-header-title">选择工单</span>
+        </div>
+      </template>
+      <div class="material-picker">
+        <div class="material-picker-search">
+          <el-input v-model="woPickerQuery.workOrderNo" placeholder="工单编号" clearable size="small" style="width: 180px" @keyup.enter="handleWoPickerQuery">
+            <template #prefix><el-icon><Search /></el-icon></template>
+          </el-input>
+          <el-input v-model="woPickerQuery.productName" placeholder="产品名称" clearable size="small" style="width: 180px; margin-left: 8px" @keyup.enter="handleWoPickerQuery" />
+          <el-button type="primary" plain icon="Search" size="small" style="margin-left: 8px" @click="handleWoPickerQuery">查询</el-button>
+          <el-button icon="RefreshLeft" size="small" @click="resetWoPickerQuery">重置</el-button>
+        </div>
+        <div class="material-picker-table">
+          <el-table v-loading="woPickerLoading" :data="woPickerList" highlight-current-row @row-click="onWoRowClick" @row-dblclick="onWoRowDblClick" height="360" size="small" border>
+            <el-table-column width="45" align="center"><template #default="{ row }"><el-radio :model-value="woPickerSelectedId" :value="row.workOrderId" @click.stop="onWoRowClick(row)"><span /></el-radio></template></el-table-column>
+            <el-table-column label="工单编号" prop="workOrderNo" width="150" show-overflow-tooltip />
+            <el-table-column label="产品编码" prop="productCode" width="120" show-overflow-tooltip />
+            <el-table-column label="产品名称" prop="productName" min-width="160" show-overflow-tooltip />
+            <el-table-column label="规格型号" prop="specModel" width="120" show-overflow-tooltip />
+            <el-table-column label="计划数量" prop="planQty" width="90" align="center" />
+            <el-table-column label="状态" prop="status" width="90" align="center"><template #default="scope"><dict-tag :options="mms_workorder_status" :value="scope.row.status" /></template></el-table-column>
+          </el-table>
+        </div>
+        <div class="material-picker-pager">
+          <el-pagination v-model:current-page="woPickerQuery.pageNum" v-model:page-size="woPickerQuery.pageSize" :total="woPickerTotal" layout="total, prev, pager, next" small @current-change="getWoPickerList" />
+        </div>
+      </div>
+      <template #footer><el-button @click="woPickerOpen = false">取 消</el-button><el-button type="primary" @click="handleWoPickerConfirm" :disabled="!woPickerSelectedId">确 定</el-button></template>
+    </el-dialog>
+
+    <!-- ===== 工序选择器弹窗 ===== -->
+    <el-dialog v-model="procPickerOpen" width="780px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+          <span class="rd-detail-header-title">选择工序（来源：工单工艺快照）</span>
+        </div>
+      </template>
+      <div class="material-picker">
+        <div class="material-picker-table">
+          <el-table v-loading="procPickerLoading" :data="processOptions" highlight-current-row @row-click="onProcRowClick" @row-dblclick="onProcRowDblClick" height="360" size="small" border>
+            <el-table-column width="45" align="center"><template #default="{ row }"><el-radio :model-value="procPickerSelectedId" :value="row.processId" @click.stop="onProcRowClick(row)"><span /></el-radio></template></el-table-column>
+            <el-table-column label="序号" prop="seq" width="60" align="center" />
+            <el-table-column label="工序编码" prop="processCode" width="120" show-overflow-tooltip />
+            <el-table-column label="工序名称" prop="processName" min-width="160" show-overflow-tooltip />
+            <el-table-column label="绑定产能单元" prop="resourceName" min-width="140" show-overflow-tooltip />
+            <el-table-column label="标准工时(分)" prop="standardHours" width="100" align="center" />
+          </el-table>
+        </div>
+        <div v-if="processOptions.length === 0 && !procPickerLoading" style="text-align:center;padding:20px;color:#909399;font-size:13px">
+          该工单暂无工艺快照数据，请确认工单已下达
+        </div>
+      </div>
+      <template #footer><el-button @click="procPickerOpen = false">取 消</el-button><el-button type="primary" @click="handleProcPickerConfirm" :disabled="!procPickerSelectedId">确 定</el-button></template>
+    </el-dialog>
+
+    <!-- ===== 产能单元选择器弹窗 ===== -->
+    <el-dialog v-model="resPickerOpen" width="860px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></div>
+          <span class="rd-detail-header-title">选择产能单元</span>
+        </div>
+      </template>
+      <div class="material-picker">
+        <div class="material-picker-search">
+          <el-input v-model="resPickerQuery.resourceName" placeholder="产能单元名称" clearable size="small" style="width: 200px" @keyup.enter="handleResPickerQuery">
+            <template #prefix><el-icon><Search /></el-icon></template>
+          </el-input>
+          <el-button type="primary" plain icon="Search" size="small" style="margin-left: 8px" @click="handleResPickerQuery">查询</el-button>
+          <el-button icon="RefreshLeft" size="small" @click="resetResPickerQuery">重置</el-button>
+        </div>
+        <div class="material-picker-table">
+          <el-table v-loading="resPickerLoading" :data="resPickerList" highlight-current-row @row-click="onResRowClick" @row-dblclick="onResRowDblClick" height="360" size="small" border>
+            <el-table-column width="45" align="center"><template #default="{ row }"><el-radio :model-value="resPickerSelectedId" :value="row.resourceId" @click.stop="onResRowClick(row)"><span /></el-radio></template></el-table-column>
+            <el-table-column label="单元编码" prop="resourceCode" width="120" show-overflow-tooltip />
+            <el-table-column label="单元名称" prop="resourceName" min-width="160" show-overflow-tooltip />
+            <el-table-column label="类型" prop="resourceType" width="100" align="center"><template #default="scope"><dict-tag :options="mms_resource_type" :value="scope.row.resourceType" /></template></el-table-column>
+            <el-table-column label="状态" prop="status" width="80" align="center"><template #default="scope"><el-tag :type="scope.row.status === '0' ? 'success' : 'info'" size="small">{{ scope.row.status === '0' ? '启用' : '停用' }}</el-tag></template></el-table-column>
+          </el-table>
+        </div>
+        <div class="material-picker-pager">
+          <el-pagination v-model:current-page="resPickerQuery.pageNum" v-model:page-size="resPickerQuery.pageSize" :total="resPickerTotal" layout="total, prev, pager, next" small @current-change="getResPickerList" />
+        </div>
+      </div>
+      <template #footer><el-button @click="resPickerOpen = false">取 消</el-button><el-button type="primary" @click="handleResPickerConfirm" :disabled="!resPickerSelectedId">确 定</el-button></template>
+    </el-dialog>
+
+    <!-- ===== 班组选择器弹窗 ===== -->
+    <el-dialog v-model="teamPickerOpen" width="780px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+          <span class="rd-detail-header-title">选择班组</span>
+        </div>
+      </template>
+      <div class="material-picker">
+        <div class="material-picker-search">
+          <el-input v-model="teamPickerQuery.teamName" placeholder="班组名称" clearable size="small" style="width: 200px" @keyup.enter="handleTeamPickerQuery">
+            <template #prefix><el-icon><Search /></el-icon></template>
+          </el-input>
+          <el-button type="primary" plain icon="Search" size="small" style="margin-left: 8px" @click="handleTeamPickerQuery">查询</el-button>
+          <el-button icon="RefreshLeft" size="small" @click="resetTeamPickerQuery">重置</el-button>
+        </div>
+        <div class="material-picker-table">
+          <el-table v-loading="teamPickerLoading" :data="teamPickerList" highlight-current-row @row-click="onTeamRowClick" @row-dblclick="onTeamRowDblClick" height="360" size="small" border>
+            <el-table-column width="45" align="center"><template #default="{ row }"><el-radio :model-value="teamPickerSelectedId" :value="row.teamId" @click.stop="onTeamRowClick(row)"><span /></el-radio></template></el-table-column>
+            <el-table-column label="班组编码" prop="teamCode" width="120" show-overflow-tooltip />
+            <el-table-column label="班组名称" prop="teamName" min-width="160" show-overflow-tooltip />
+            <el-table-column label="负责人" prop="leader" width="100" show-overflow-tooltip />
+            <el-table-column label="状态" prop="status" width="80" align="center"><template #default="scope"><el-tag :type="scope.row.status === '0' ? 'success' : 'info'" size="small">{{ scope.row.status === '0' ? '启用' : '停用' }}</el-tag></template></el-table-column>
+          </el-table>
+        </div>
+        <div class="material-picker-pager">
+          <el-pagination v-model:current-page="teamPickerQuery.pageNum" v-model:page-size="teamPickerQuery.pageSize" :total="teamPickerTotal" layout="total, prev, pager, next" small @current-change="getTeamPickerList" />
+        </div>
+      </div>
+      <template #footer><el-button @click="teamPickerOpen = false">取 消</el-button><el-button type="primary" @click="handleTeamPickerConfirm" :disabled="!teamPickerSelectedId">确 定</el-button></template>
+    </el-dialog>
+
+    <!-- ===== 班次选择器弹窗 ===== -->
+    <el-dialog v-model="shiftPickerOpen" width="780px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+          <span class="rd-detail-header-title">选择班次</span>
+        </div>
+      </template>
+      <div class="material-picker">
+        <div class="material-picker-search">
+          <el-input v-model="shiftPickerQuery.shiftName" placeholder="班次名称" clearable size="small" style="width: 200px" @keyup.enter="handleShiftPickerQuery">
+            <template #prefix><el-icon><Search /></el-icon></template>
+          </el-input>
+          <el-button type="primary" plain icon="Search" size="small" style="margin-left: 8px" @click="handleShiftPickerQuery">查询</el-button>
+          <el-button icon="RefreshLeft" size="small" @click="resetShiftPickerQuery">重置</el-button>
+        </div>
+        <div class="material-picker-table">
+          <el-table v-loading="shiftPickerLoading" :data="shiftPickerList" highlight-current-row @row-click="onShiftRowClick" @row-dblclick="onShiftRowDblClick" height="360" size="small" border>
+            <el-table-column width="45" align="center"><template #default="{ row }"><el-radio :model-value="shiftPickerSelectedId" :value="row.shiftId" @click.stop="onShiftRowClick(row)"><span /></el-radio></template></el-table-column>
+            <el-table-column label="班次编码" prop="shiftCode" width="120" show-overflow-tooltip />
+            <el-table-column label="班次名称" prop="shiftName" min-width="120" show-overflow-tooltip />
+            <el-table-column label="开始时间" prop="startTime" width="100" align="center" />
+            <el-table-column label="结束时间" prop="endTime" width="100" align="center" />
+            <el-table-column label="状态" prop="status" width="80" align="center"><template #default="scope"><el-tag :type="scope.row.status === '0' ? 'success' : 'info'" size="small">{{ scope.row.status === '0' ? '启用' : '停用' }}</el-tag></template></el-table-column>
+          </el-table>
+        </div>
+        <div class="material-picker-pager">
+          <el-pagination v-model:current-page="shiftPickerQuery.pageNum" v-model:page-size="shiftPickerQuery.pageSize" :total="shiftPickerTotal" layout="total, prev, pager, next" small @current-change="getShiftPickerList" />
+        </div>
+      </div>
+      <template #footer><el-button @click="shiftPickerOpen = false">取 消</el-button><el-button type="primary" @click="handleShiftPickerConfirm" :disabled="!shiftPickerSelectedId">确 定</el-button></template>
+    </el-dialog>
   </div>
 </template>
 
@@ -255,7 +413,7 @@ import { useDetailCard } from '@/composables/useDetailCard'
 import { Search, Filter, RefreshLeft, ArrowRight, ArrowDown, WarningFilled } from '@element-plus/icons-vue'
 
 const { proxy } = getCurrentInstance();
-const { mms_report_status, mms_yes_no, mms_report_source } = proxy.useDict("mms_report_status", "mms_yes_no", "mms_report_source");
+const { mms_report_status, mms_yes_no, mms_report_source, mms_workorder_status, mms_resource_type } = proxy.useDict("mms_report_status", "mms_yes_no", "mms_report_source", "mms_workorder_status", "mms_resource_type");
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('mms_report_index')
 const { collapsedCards, toggleCard } = useDetailCard(["c0","c1","c2","c3","vc0","vc1","vc2","vc3"])
 
@@ -273,30 +431,6 @@ const statusCounts = ref({});
 const showStatusHelp = ref(false);
 const auditOpen = ref(false);
 const auditTitle = ref("");
-
-// ===== 下拉选项数据 =====
-const workOrderOptions = ref([]);   // 工单列表
-const processOptions = ref([]);    // 工序列表（根据工单联动）
-const resourceOptions = ref([]);   // 产能单元列表
-const teamOptions = ref([]);       // 班组列表
-const shiftOptions = ref([]);      // 班次列表
-
-// 加载下拉数据
-function loadOptions() {
-  // 工单：只查已下达(1)和执行中(2)的工单
-  listWorkOrder({ pageNum: 1, pageSize: 999, status: '1' }).then(res => {
-    const released = res.rows || [];
-    listWorkOrder({ pageNum: 1, pageSize: 999, status: '2' }).then(res2 => {
-      workOrderOptions.value = [...released, ...(res2.rows || [])];
-    }).catch(() => { workOrderOptions.value = released; });
-  }).catch(() => {});
-  // 产能单元：只查启用的
-  listResource({ pageNum: 1, pageSize: 999, status: '0' }).then(res => { resourceOptions.value = res.rows || []; }).catch(() => {});
-  // 班组：只查启用的
-  listTeam({ pageNum: 1, pageSize: 999, status: '0' }).then(res => { teamOptions.value = res.rows || []; }).catch(() => {});
-  // 班次：只查启用的
-  listShift({ pageNum: 1, pageSize: 999, status: '0' }).then(res => { shiftOptions.value = res.rows || []; }).catch(() => {});
-}
 
 const statusTabList = computed(() => mms_report_status.value ? mms_report_status.value.map(d => ({ label: d.label, value: d.value })) : []);
 
@@ -322,9 +456,9 @@ const data = reactive({
   form: {},
   queryParams: { pageNum: 1, pageSize: 10, reportNo: undefined, workOrderNo: undefined, processName: undefined, resourceName: undefined, status: undefined, reportBy: undefined, isFirstPiece: undefined, source: undefined, params: {} },
   rules: {
-    workOrderId: [{ required: true, message: "请选择工单", trigger: "change" }],
-    processId: [{ required: true, message: "请选择工序", trigger: "change" }],
-    resourceId: [{ required: true, message: "请选择产能单元", trigger: "change" }],
+    workOrderNo: [{ required: true, message: "请选择工单", trigger: "change" }],
+    processName: [{ required: true, message: "请选择工序", trigger: "change" }],
+    resourceName: [{ required: true, message: "请选择产能单元", trigger: "change" }],
     goodQty: [{ required: true, message: "请输入合格数", trigger: "blur" }]
   },
   auditForm: {}
@@ -406,78 +540,163 @@ function statusTabClass(value) { const map = { '0': 'tab-draft', '1': 'tab-done'
 function sourceLabel(value) { return dictLabel(mms_report_source, value); }
 function sourceBadgeClass(value) { const map = { '1': 'blue', '2': 'green' }; return map[value] || 'gray'; }
 
-// ===== 下拉联动函数 =====
-function onWorkOrderChange(workOrderId) {
-  // 选择工单后，清空工序，加载该工单的工艺快照工序列表
+// ===== 工单选择器 =====
+const woPickerOpen = ref(false); const woPickerLoading = ref(false); const woPickerList = ref([]); const woPickerTotal = ref(0); const woPickerSelectedId = ref(null); const woPickerSelectedRow = ref(null);
+const woPickerQuery = reactive({ pageNum: 1, pageSize: 10, workOrderNo: undefined, productName: undefined });
+
+function openWoPicker() { woPickerOpen.value = true; woPickerSelectedId.value = form.value.workOrderId || null; woPickerSelectedRow.value = null; woPickerQuery.pageNum = 1; woPickerQuery.workOrderNo = undefined; woPickerQuery.productName = undefined; getWoPickerList(); }
+function getWoPickerList() { woPickerLoading.value = true; listWorkOrder(woPickerQuery).then(res => { woPickerList.value = res.rows; woPickerTotal.value = res.total; woPickerLoading.value = false; }).catch(() => { woPickerLoading.value = false; }); }
+function handleWoPickerQuery() { woPickerQuery.pageNum = 1; getWoPickerList(); }
+function resetWoPickerQuery() { woPickerQuery.workOrderNo = undefined; woPickerQuery.productName = undefined; handleWoPickerQuery(); }
+function onWoRowClick(row) { woPickerSelectedId.value = row.workOrderId; woPickerSelectedRow.value = row; }
+function onWoRowDblClick(row) { onWoRowClick(row); handleWoPickerConfirm(); }
+function handleWoPickerConfirm() {
+  if (!woPickerSelectedId.value) { proxy.$modal.msgWarning('请先选择工单'); return; }
+  const row = woPickerSelectedRow.value;
+  form.value.workOrderId = row.workOrderId;
+  form.value.workOrderNo = row.workOrderNo;
+  // 清空工序（因为换了工单）
   form.value.processId = undefined;
   form.value.processName = undefined;
-  form.value.workOrderNo = undefined;
   processOptions.value = [];
-  if (workOrderId) {
-    // 从工单选项中找到工单号
-    const wo = workOrderOptions.value.find(w => w.workOrderId === workOrderId);
-    if (wo) {
-      form.value.workOrderNo = wo.workOrderNo;
-    }
-    // 加载工单的工序快照
-    listWorkOrderProcesses(workOrderId).then(res => {
-      processOptions.value = res.data || [];
-      // 如果只有一个工序，自动选中
-      if (processOptions.value.length === 1) {
-        form.value.processId = processOptions.value[0].processId;
-        form.value.processName = processOptions.value[0].processName;
-        // 自动带出工序上的产能单元
-        if (processOptions.value[0].resourceId) {
-          form.value.resourceId = processOptions.value[0].resourceId;
-          form.value.resourceName = processOptions.value[0].resourceName;
-        }
-      }
-    }).catch(() => {});
-  }
-}
-function onProcessChange(processId) {
-  // 选择工序后，带出工序名称和产能单元
-  const p = processOptions.value.find(item => item.processId === processId);
-  if (p) {
-    form.value.processName = p.processName;
-    // 如果工序有绑定的产能单元，自动带出
-    if (p.resourceId) {
-      form.value.resourceId = p.resourceId;
-      form.value.resourceName = p.resourceName;
-    }
-  } else {
-    form.value.processName = undefined;
-  }
-}
-function onResourceChange(resourceId) {
-  // 选择产能单元后，带出名称
-  const r = resourceOptions.value.find(item => item.resourceId === resourceId);
-  if (r) {
-    form.value.resourceName = r.resourceName;
-  } else {
-    form.value.resourceName = undefined;
-  }
-}
-function onTeamChange(teamId) {
-  // 选择班组后，带出名称
-  const t = teamOptions.value.find(item => item.teamId === teamId);
-  if (t) {
-    form.value.teamName = t.teamName;
-  } else {
-    form.value.teamName = undefined;
-  }
-}
-function onShiftChange(shiftId) {
-  // 选择班次后，带出名称
-  const s = shiftOptions.value.find(item => item.shiftId === shiftId);
-  if (s) {
-    form.value.shiftName = s.shiftName;
-  } else {
-    form.value.shiftName = undefined;
-  }
+  woPickerOpen.value = false;
+  proxy.$refs["formRef"] && proxy.$refs["formRef"].validateField('workOrderNo');
+  // 加载该工单的工艺快照工序列表
+  listWorkOrderProcesses(row.workOrderId).then(res => {
+    processOptions.value = res.data || [];
+  }).catch(() => {});
 }
 
-loadOptions();
+// ===== 工序选择器 =====
+const procPickerOpen = ref(false); const procPickerLoading = ref(false); const procPickerSelectedId = ref(null); const procPickerSelectedRow = ref(null);
+const processOptions = ref([]);
+
+function openProcessPicker() {
+  if (!form.value.workOrderId) { proxy.$modal.msgWarning('请先选择工单'); return; }
+  procPickerOpen.value = true;
+  procPickerSelectedId.value = form.value.processId || null;
+  procPickerSelectedRow.value = null;
+  if (processOptions.value.length === 0) {
+    procPickerLoading.value = true;
+    listWorkOrderProcesses(form.value.workOrderId).then(res => {
+      processOptions.value = res.data || [];
+      procPickerLoading.value = false;
+    }).catch(() => { procPickerLoading.value = false; });
+  }
+}
+function onProcRowClick(row) { procPickerSelectedId.value = row.processId; procPickerSelectedRow.value = row; }
+function onProcRowDblClick(row) { onProcRowClick(row); handleProcPickerConfirm(); }
+function handleProcPickerConfirm() {
+  if (!procPickerSelectedId.value) { proxy.$modal.msgWarning('请先选择工序'); return; }
+  const row = procPickerSelectedRow.value;
+  form.value.processId = row.processId;
+  form.value.processName = row.processName;
+  // 如果工序有绑定的产能单元，自动带出
+  if (row.resourceId) {
+    form.value.resourceId = row.resourceId;
+    form.value.resourceName = row.resourceName;
+  }
+  procPickerOpen.value = false;
+  proxy.$refs["formRef"] && proxy.$refs["formRef"].validateField('processName');
+}
+
+// ===== 产能单元选择器 =====
+const resPickerOpen = ref(false); const resPickerLoading = ref(false); const resPickerList = ref([]); const resPickerTotal = ref(0); const resPickerSelectedId = ref(null); const resPickerSelectedRow = ref(null);
+const resPickerQuery = reactive({ pageNum: 1, pageSize: 10, resourceName: undefined, status: '0' });
+
+function openResourcePicker() {
+  resPickerOpen.value = true;
+  resPickerSelectedId.value = form.value.resourceId || null;
+  resPickerSelectedRow.value = null;
+  resPickerQuery.pageNum = 1;
+  resPickerQuery.resourceName = undefined;
+  getResPickerList();
+}
+function getResPickerList() {
+  resPickerLoading.value = true;
+  listResource(resPickerQuery).then(res => {
+    resPickerList.value = res.rows;
+    resPickerTotal.value = res.total;
+    resPickerLoading.value = false;
+  }).catch(() => { resPickerLoading.value = false; });
+}
+function handleResPickerQuery() { resPickerQuery.pageNum = 1; getResPickerList(); }
+function resetResPickerQuery() { resPickerQuery.resourceName = undefined; handleResPickerQuery(); }
+function onResRowClick(row) { resPickerSelectedId.value = row.resourceId; resPickerSelectedRow.value = row; }
+function onResRowDblClick(row) { onResRowClick(row); handleResPickerConfirm(); }
+function handleResPickerConfirm() {
+  if (!resPickerSelectedId.value) { proxy.$modal.msgWarning('请先选择产能单元'); return; }
+  const row = resPickerSelectedRow.value;
+  form.value.resourceId = row.resourceId;
+  form.value.resourceName = row.resourceName;
+  resPickerOpen.value = false;
+  proxy.$refs["formRef"] && proxy.$refs["formRef"].validateField('resourceName');
+}
+
+// ===== 班组选择器 =====
+const teamPickerOpen = ref(false); const teamPickerLoading = ref(false); const teamPickerList = ref([]); const teamPickerTotal = ref(0); const teamPickerSelectedId = ref(null); const teamPickerSelectedRow = ref(null);
+const teamPickerQuery = reactive({ pageNum: 1, pageSize: 10, teamName: undefined, status: '0' });
+
+function openTeamPicker() {
+  teamPickerOpen.value = true;
+  teamPickerSelectedId.value = form.value.teamId || null;
+  teamPickerSelectedRow.value = null;
+  teamPickerQuery.pageNum = 1;
+  teamPickerQuery.teamName = undefined;
+  getTeamPickerList();
+}
+function getTeamPickerList() {
+  teamPickerLoading.value = true;
+  listTeam(teamPickerQuery).then(res => {
+    teamPickerList.value = res.rows;
+    teamPickerTotal.value = res.total;
+    teamPickerLoading.value = false;
+  }).catch(() => { teamPickerLoading.value = false; });
+}
+function handleTeamPickerQuery() { teamPickerQuery.pageNum = 1; getTeamPickerList(); }
+function resetTeamPickerQuery() { teamPickerQuery.teamName = undefined; handleTeamPickerQuery(); }
+function onTeamRowClick(row) { teamPickerSelectedId.value = row.teamId; teamPickerSelectedRow.value = row; }
+function onTeamRowDblClick(row) { onTeamRowClick(row); handleTeamPickerConfirm(); }
+function handleTeamPickerConfirm() {
+  if (!teamPickerSelectedId.value) { proxy.$modal.msgWarning('请先选择班组'); return; }
+  const row = teamPickerSelectedRow.value;
+  form.value.teamId = row.teamId;
+  form.value.teamName = row.teamName;
+  teamPickerOpen.value = false;
+}
+
+// ===== 班次选择器 =====
+const shiftPickerOpen = ref(false); const shiftPickerLoading = ref(false); const shiftPickerList = ref([]); const shiftPickerTotal = ref(0); const shiftPickerSelectedId = ref(null); const shiftPickerSelectedRow = ref(null);
+const shiftPickerQuery = reactive({ pageNum: 1, pageSize: 10, shiftName: undefined, status: '0' });
+
+function openShiftPicker() {
+  shiftPickerOpen.value = true;
+  shiftPickerSelectedId.value = form.value.shiftId || null;
+  shiftPickerSelectedRow.value = null;
+  shiftPickerQuery.pageNum = 1;
+  shiftPickerQuery.shiftName = undefined;
+  getShiftPickerList();
+}
+function getShiftPickerList() {
+  shiftPickerLoading.value = true;
+  listShift(shiftPickerQuery).then(res => {
+    shiftPickerList.value = res.rows;
+    shiftPickerTotal.value = res.total;
+    shiftPickerLoading.value = false;
+  }).catch(() => { shiftPickerLoading.value = false; });
+}
+function handleShiftPickerQuery() { shiftPickerQuery.pageNum = 1; getShiftPickerList(); }
+function resetShiftPickerQuery() { shiftPickerQuery.shiftName = undefined; handleShiftPickerQuery(); }
+function onShiftRowClick(row) { shiftPickerSelectedId.value = row.shiftId; shiftPickerSelectedRow.value = row; }
+function onShiftRowDblClick(row) { onShiftRowClick(row); handleShiftPickerConfirm(); }
+function handleShiftPickerConfirm() {
+  if (!shiftPickerSelectedId.value) { proxy.$modal.msgWarning('请先选择班次'); return; }
+  const row = shiftPickerSelectedRow.value;
+  form.value.shiftId = row.shiftId;
+  form.value.shiftName = row.shiftName;
+  shiftPickerOpen.value = false;
+}
+
 getList();
 </script>
 
@@ -549,6 +768,10 @@ getList();
 .status-help-content .flow-arrow{color:#909399;font-size:16px}
 .status-help-content .highlight-card{background-color:#ecf5ff;border-radius:8px;padding:16px;border-left:4px solid #409eff}
 .status-help-content .highlight-card p{margin:6px 0;line-height:1.6;font-size:13px;color:#606266}
+.material-picker{display:flex;flex-direction:column;gap:12px}
+.material-picker-search{display:flex;align-items:center;gap:4px}
+.material-picker-table{border:1px solid var(--ink-200);border-radius:var(--r-sm);overflow:hidden}
+.material-picker-pager{display:flex;justify-content:flex-end}
 @media(max-width:1100px){.mms-report-page .filter-card .filter-bar{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:720px){.mms-report-page .filter-card .filter-bar{grid-template-columns:1fr}}
 </style>

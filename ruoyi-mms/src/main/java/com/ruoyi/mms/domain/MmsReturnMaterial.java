@@ -11,6 +11,7 @@ public class MmsReturnMaterial extends BaseEntity {
     private static final long serialVersionUID = 1L;
     private Long returnId;
     @Excel(name = "退料单号") private String returnNo;
+    private Long issueId;
     private Long workOrderId;
     @Excel(name = "工单号") private String workOrderNo;
     private Long materialId;
@@ -25,6 +26,13 @@ public class MmsReturnMaterial extends BaseEntity {
     @Excel(name = "状态") private String status;
     private String delFlag;
 
+    /** 领料单号（来源领料单，非持久化） */
+    @Excel(name = "领料单号") private String issueNo;
+    /** 产品编码（来源工单，非持久化） */
+    @Excel(name = "产品编码") private String productCode;
+    /** 产品名称（来源工单，非持久化） */
+    @Excel(name = "产品名称") private String productName;
+
     /** 退料明细列表（批量退料） */
     private List<MmsReturnDetail> detailList;
 
@@ -32,6 +40,8 @@ public class MmsReturnMaterial extends BaseEntity {
     public void setReturnId(Long returnId) { this.returnId = returnId; }
     public String getReturnNo() { return returnNo; }
     public void setReturnNo(String returnNo) { this.returnNo = returnNo; }
+    public Long getIssueId() { return issueId; }
+    public void setIssueId(Long issueId) { this.issueId = issueId; }
     public Long getWorkOrderId() { return workOrderId; }
     public void setWorkOrderId(Long workOrderId) { this.workOrderId = workOrderId; }
     public String getWorkOrderNo() { return workOrderNo; }
@@ -58,6 +68,12 @@ public class MmsReturnMaterial extends BaseEntity {
     public void setStatus(String status) { this.status = status; }
     public String getDelFlag() { return delFlag; }
     public void setDelFlag(String delFlag) { this.delFlag = delFlag; }
+    public String getIssueNo() { return issueNo; }
+    public void setIssueNo(String issueNo) { this.issueNo = issueNo; }
+    public String getProductCode() { return productCode; }
+    public void setProductCode(String productCode) { this.productCode = productCode; }
+    public String getProductName() { return productName; }
+    public void setProductName(String productName) { this.productName = productName; }
     public List<MmsReturnDetail> getDetailList() { return detailList; }
     public void setDetailList(List<MmsReturnDetail> detailList) { this.detailList = detailList; }
 }

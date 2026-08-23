@@ -38,8 +38,17 @@ public class MmsReturnDetail extends BaseEntity
     @Excel(name = "退料数量")
     private BigDecimal returnQty;
 
-    @Excel(name = "退料原因")
-    private String returnReason;
+    /** 领料数量（来源领料明细，只读参考） */
+    @Excel(name = "领料数量")
+    private BigDecimal issueQty;
+
+    /** 已退数量（多次退料累计，非持久化） */
+    @Excel(name = "已退数量")
+    private BigDecimal returnedQty;
+
+    /** 可退数量（领料数量-已退数量，非持久化） */
+    @Excel(name = "可退数量")
+    private BigDecimal availableQty;
 
     private String delFlag;
 
@@ -61,8 +70,12 @@ public class MmsReturnDetail extends BaseEntity
     public void setUnit(String unit) { this.unit = unit; }
     public BigDecimal getReturnQty() { return returnQty; }
     public void setReturnQty(BigDecimal returnQty) { this.returnQty = returnQty; }
-    public String getReturnReason() { return returnReason; }
-    public void setReturnReason(String returnReason) { this.returnReason = returnReason; }
+    public BigDecimal getIssueQty() { return issueQty; }
+    public void setIssueQty(BigDecimal issueQty) { this.issueQty = issueQty; }
+    public BigDecimal getReturnedQty() { return returnedQty; }
+    public void setReturnedQty(BigDecimal returnedQty) { this.returnedQty = returnedQty; }
+    public BigDecimal getAvailableQty() { return availableQty; }
+    public void setAvailableQty(BigDecimal availableQty) { this.availableQty = availableQty; }
     public String getDelFlag() { return delFlag; }
     public void setDelFlag(String delFlag) { this.delFlag = delFlag; }
 }

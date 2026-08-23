@@ -48,6 +48,11 @@ public class MmsDowntimeServiceImpl implements IMmsDowntimeService
         {
             downtime.setDowntimeNo(mkNumberRuleService.generateNumber("mms_downtime"));
         }
+        // 默认上报人为当前用户
+        if (StringUtils.isEmpty(downtime.getReportBy()))
+        {
+            downtime.setReportBy(SecurityUtils.getUsername());
+        }
         downtime.setCreateBy(SecurityUtils.getUsername());
         downtime.setCreateTime(DateUtils.getNowDate());
         return downtimeMapper.insertDowntime(downtime);
@@ -57,10 +62,31 @@ public class MmsDowntimeServiceImpl implements IMmsDowntimeService
     @Transactional(rollbackFor = Exception.class)
     public int updateDowntime(MmsDowntime downtime)
     {
-        if ("1".equals(downtime.getStatus()) && downtime.getEndTime() != null && downtime.getStartTime() != null)
+        // 状态变为已恢复时，自动计算停机时长
+        if ("1".equals(downtime.getStatus()))
         {
-            long diff = downtime.getEndTime().getTime() - downtime.getStartTime().getTime();
-            downtime.setMinutes((int) (diff / (1000 * 60)));
+            // 如果开始时间为空，从数据库取已有值（防止前端传空覆盖）
+            if (downtime.getStartTime() == null)
+            {
+                MmsDowntime existing = downtimeMapper.selectDowntimeById(downtime.getDowntimeId());
+                if (existing != null)
+                {
+                    downtime.setStartTime(existing.getStartTime());
+                }
+            }
+            if (downtime.getEndTime() != null && downtime.getStartTime() != null)
+            {
+                long diff = downtime.getEndTime().getTime() - downtime.getStartTime().getTime();
+                int minutes = (int) (diff / (1000 * 60));
+                // 防止负数时长（结束时间早于开始时间时取0）
+                if (minutes < 0) minutes = 0;
+                downtime.setMinutes(minutes);
+            }
+            // 恢复时自动设置处理人为当前用户
+            if (StringUtils.isEmpty(downtime.getHandleBy()))
+            {
+                downtime.setHandleBy(SecurityUtils.getUsername());
+            }
         }
         downtime.setUpdateBy(SecurityUtils.getUsername());
         return downtimeMapper.updateDowntime(downtime);

@@ -6,15 +6,22 @@
         <id property="downtimeId" column="downtime_id"/>
         <result property="downtimeNo" column="downtime_no"/>
         <result property="dispatchId" column="dispatch_id"/>
+        <result property="abnormalId" column="abnormal_id"/>
+        <result property="abnormalNo" column="abnormal_no"/>
         <result property="workOrderId" column="work_order_id"/>
         <result property="resourceId" column="resource_id"/>
         <result property="resourceName" column="resource_name"/>
         <result property="startTime" column="start_time"/>
         <result property="endTime" column="end_time"/>
         <result property="dtType" column="dt_type"/>
+        <result property="dtCategory" column="dt_category"/>
+        <result property="dtLevel" column="dt_level"/>
         <result property="reason" column="reason"/>
         <result property="minutes" column="minutes"/>
         <result property="status" column="status"/>
+        <result property="reportBy" column="report_by"/>
+        <result property="handleBy" column="handle_by"/>
+        <result property="handleResult" column="handle_result"/>
         <result property="delFlag" column="del_flag"/>
         <result property="createBy" column="create_by"/>
         <result property="createTime" column="create_time"/>
@@ -24,7 +31,7 @@
     </resultMap>
 
     <sql id="selectDowntimeVo">
-        SELECT downtime_id, downtime_no, dispatch_id, work_order_id, resource_id, resource_name, start_time, end_time, dt_type, reason, minutes, status, del_flag, create_by, create_time, update_by, update_time, remark
+        SELECT downtime_id, downtime_no, dispatch_id, abnormal_id, abnormal_no, work_order_id, resource_id, resource_name, start_time, end_time, dt_type, dt_category, dt_level, reason, minutes, status, report_by, handle_by, handle_result, del_flag, create_by, create_time, update_by, update_time, remark
         FROM mms_downtime
     </sql>
 
@@ -33,9 +40,13 @@
         <where>
             del_flag = '0'
             <if test="downtimeNo != null and downtimeNo != ''"> AND downtime_no LIKE CONCAT('%', #{downtimeNo}, '%')</if>
+            <if test="abnormalId != null"> AND abnormal_id = #{abnormalId}</if>
             <if test="resourceName != null and resourceName != ''"> AND resource_name LIKE CONCAT('%', #{resourceName}, '%')</if>
             <if test="dtType != null and dtType != ''"> AND dt_type = #{dtType}</if>
+            <if test="dtCategory != null and dtCategory != ''"> AND dt_category = #{dtCategory}</if>
+            <if test="dtLevel != null and dtLevel != ''"> AND dt_level = #{dtLevel}</if>
             <if test="status != null and status != ''"> AND status = #{status}</if>
+            <if test="reportBy != null and reportBy != ''"> AND report_by LIKE CONCAT('%', #{reportBy}, '%')</if>
             <if test="params.beginTime != null and params.beginTime != ''"> AND date(start_time) &gt;= #{params.beginTime}</if>
             <if test="params.endTime != null and params.endTime != ''"> AND date(start_time) &lt;= #{params.endTime}</if>
         </where>
@@ -49,9 +60,9 @@
 
     <insert id="insertDowntime" parameterType="MmsDowntime" useGeneratedKeys="true" keyProperty="downtimeId">
         INSERT INTO mms_downtime (
-            downtime_no, dispatch_id, work_order_id, resource_id, resource_name, start_time, end_time, dt_type, reason, minutes, status, del_flag, create_by, create_time, update_by, update_time, remark
+            downtime_no, dispatch_id, abnormal_id, abnormal_no, work_order_id, resource_id, resource_name, start_time, end_time, dt_type, dt_category, dt_level, reason, minutes, status, report_by, handle_by, handle_result, del_flag, create_by, create_time, update_by, update_time, remark
         ) VALUES (
-            #{downtimeNo}, #{dispatchId}, #{workOrderId}, #{resourceId}, #{resourceName}, #{startTime}, #{endTime}, #{dtType}, #{reason}, #{minutes}, #{status}, #{delFlag}, #{createBy}, sysdate(), #{updateBy}, #{updateTime}, #{remark}
+            #{downtimeNo}, #{dispatchId}, #{abnormalId}, #{abnormalNo}, #{workOrderId}, #{resourceId}, #{resourceName}, #{startTime}, #{endTime}, #{dtType}, #{dtCategory}, #{dtLevel}, #{reason}, #{minutes}, #{status}, #{reportBy}, #{handleBy}, #{handleResult}, #{delFlag}, #{createBy}, sysdate(), #{updateBy}, #{updateTime}, #{remark}
         )
     </insert>
 
@@ -59,15 +70,22 @@
         UPDATE mms_downtime SET
             downtime_no = #{downtimeNo},
             dispatch_id = #{dispatchId},
+            abnormal_id = #{abnormalId},
+            abnormal_no = #{abnormalNo},
             work_order_id = #{workOrderId},
             resource_id = #{resourceId},
             resource_name = #{resourceName},
             start_time = #{startTime},
             end_time = #{endTime},
             dt_type = #{dtType},
+            dt_category = #{dtCategory},
+            dt_level = #{dtLevel},
             reason = #{reason},
             minutes = #{minutes},
             status = #{status},
+            report_by = #{reportBy},
+            handle_by = #{handleBy},
+            handle_result = #{handleResult},
             update_by = #{updateBy},
             update_time = sysdate(),
             remark = #{remark}

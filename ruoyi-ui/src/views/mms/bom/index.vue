@@ -272,7 +272,7 @@
     <material-picker ref="productPickerRef" title="选择产品" :material-types="['1','2']" @confirm="onProductPickerConfirm" />
 
     <!-- 业务操作说明 -->
-    <el-dialog v-model="showStatusHelp" title="BOM管理业务操作说明" width="820px" append-to-body draggable class="rd-dialog">
+    <el-dialog v-model="showStatusHelp" title="BOM管理业务操作说明" width="820px" append-to-body draggable class="rd-dialog status-help-dialog">
       <div class="status-help-content">
         <!-- 一、BOM释义 -->
         <h4>一、BOM释义</h4>

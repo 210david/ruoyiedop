@@ -517,6 +517,12 @@ public class MmsWorkOrderServiceImpl implements IMmsWorkOrderService
         qc.setQcNo(mkNumberRuleService.generateNumber("mms_qc"));
         qc.setWorkOrderId(wo.getWorkOrderId());
         qc.setWorkOrderNo(wo.getWorkOrderNo());
+        // 带出工单产品信息
+        qc.setProductCode(wo.getProductCode());
+        qc.setProductName(wo.getProductName());
+        qc.setSpecModel(wo.getSpecModel());
+        qc.setUnit(wo.getUnit());
+        qc.setPlanQty(wo.getPlanQty());
         // 完工质检单不绑定具体工序，检验的是最终成品
         qc.setQcType("2"); // 末件/完工检
         // 检验数量 = 工单完工数量（合格+不良）

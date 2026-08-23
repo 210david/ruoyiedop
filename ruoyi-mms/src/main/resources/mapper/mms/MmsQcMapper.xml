@@ -7,6 +7,11 @@
 <result property="qcNo"     column="qc_no"/>
         <result property="workOrderId"     column="work_order_id"/>
         <result property="workOrderNo"     column="work_order_no"/>
+        <result property="productCode"     column="product_code"/>
+        <result property="productName"     column="product_name"/>
+        <result property="specModel"     column="spec_model"/>
+        <result property="unit"     column="unit"/>
+        <result property="planQty"     column="plan_qty"/>
         <result property="processId"     column="process_id"/>
         <result property="processName"     column="process_name"/>
         <result property="qcType"     column="qc_type"/>
@@ -26,7 +31,7 @@
     </resultMap>
 
     <sql id="selectQcVo">
-        SELECT qc_id, qc_no, work_order_id, work_order_no, process_id, process_name, qc_type, inspect_qty, defect_qty, scrap_qty, defect_type, qc_result, qc_by, qc_time, del_flag, create_by, create_time, update_by, update_time, remark
+        SELECT qc_id, qc_no, work_order_id, work_order_no, product_code, product_name, spec_model, unit, plan_qty, process_id, process_name, qc_type, inspect_qty, defect_qty, scrap_qty, defect_type, qc_result, qc_by, qc_time, del_flag, create_by, create_time, update_by, update_time, remark
         FROM mms_qc
     </sql>
 
@@ -57,6 +62,11 @@
             qc_no,
             work_order_id,
             work_order_no,
+            product_code,
+            product_name,
+            spec_model,
+            unit,
+            plan_qty,
             process_id,
             process_name,
             qc_type,
@@ -77,6 +87,11 @@
             #{qcNo},
             #{workOrderId},
             #{workOrderNo},
+            #{productCode},
+            #{productName},
+            #{specModel},
+            #{unit},
+            #{planQty},
             #{processId},
             #{processName},
             #{qcType},
@@ -101,6 +116,11 @@
             qc_no = #{qcNo},
             work_order_id = #{workOrderId},
             work_order_no = #{workOrderNo},
+            product_code = #{productCode},
+            product_name = #{productName},
+            spec_model = #{specModel},
+            unit = #{unit},
+            plan_qty = #{planQty},
             process_id = #{processId},
             process_name = #{processName},
             qc_type = #{qcType},

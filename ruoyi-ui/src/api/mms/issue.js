@@ -37,3 +37,12 @@ export function delIssue(issueId) {
     method: 'delete'
   })
 }
+
+// 确认领料
+export function confirmIssue(data) {
+  return request({
+    url: '/mms/issue/confirm',
+    method: 'put',
+    data: data
+  })
+}

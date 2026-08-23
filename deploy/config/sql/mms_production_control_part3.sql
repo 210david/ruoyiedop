@@ -78,7 +78,6 @@ VALUES
 -- 领料状态
 (2141, 1, '待领料', '0', 'mms_issue_status', '', 'info', 'Y', '0', 'admin', sysdate(), '', NULL, '待领料'),
 (2142, 2, '已领料', '1', 'mms_issue_status', '', 'success', 'N', '0', 'admin', sysdate(), '', NULL, '已领料'),
-(2143, 3, '已退料', '2', 'mms_issue_status', '', 'warning', 'N', '0', 'admin', sysdate(), '', NULL, '已退料'),
 -- 优先级
 (2151, 1, '高', '0', 'mms_priority', '', 'danger', 'N', '0', 'admin', sysdate(), '', NULL, '高优先级'),
 (2152, 2, '中', '1', 'mms_priority', '', 'primary', 'Y', '0', 'admin', sysdate(), '', NULL, '中优先级'),

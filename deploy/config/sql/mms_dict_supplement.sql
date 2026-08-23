@@ -84,8 +84,7 @@ FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_dict_type WHERE dict_type = 'mms_i
 
 INSERT INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, css_class, list_class, is_default, status, create_by, create_time, remark) VALUES
 (1, '待领料', '0', 'mms_issue_status', '', 'info',    'Y', '0', 'admin', sysdate(), '待领料'),
-(2, '已领料', '1', 'mms_issue_status', '', 'success', 'N', '0', 'admin', sysdate(), '已领料'),
-(3, '已退料', '2', 'mms_issue_status', '', 'warning', 'N', '0', 'admin', sysdate(), '已退料')
+(2, '已领料', '1', 'mms_issue_status', '', 'success', 'N', '0', 'admin', sysdate(), '已领料')
 ON DUPLICATE KEY UPDATE dict_label = VALUES(dict_label);
 
 -- 8. 需求状态字典（demand 页面使用）

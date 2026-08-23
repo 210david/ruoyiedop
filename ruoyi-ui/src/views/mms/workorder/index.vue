@@ -555,7 +555,7 @@
     </el-dialog>
 
     <!-- ===== 工单详情弹窗 ===== -->
-    <el-dialog v-model="viewOpen" width="984px" append-to-body draggable class="rd-dialog">
+    <el-dialog v-model="viewOpen" width="1180px" append-to-body draggable class="rd-dialog">
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon">
@@ -856,6 +856,112 @@
             <div class="rd-empty-icon"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
             <p class="rd-empty-text">暂无工序完成情况数据</p>
           </div>
+        </el-tab-pane>
+
+        <!-- 页签三：领料记录 -->
+        <el-tab-pane label="领料记录" name="issue">
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('vc_issue')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></span>领料记录</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc_issue }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+            <div class="rd-card-body" v-show="!collapsedCards.vc_issue" style="padding:0">
+              <el-table v-loading="viewIssueLoading" :data="viewIssueList" border size="small" style="width: 100%" max-height="400" empty-text="暂无领料记录">
+                <el-table-column label="领料编号" prop="issueNo" min-width="140" show-overflow-tooltip />
+                <el-table-column label="物料编码" prop="materialCode" min-width="130" show-overflow-tooltip />
+                <el-table-column label="物料名称" prop="materialName" min-width="180" show-overflow-tooltip />
+                <el-table-column label="规格型号" prop="specModel" min-width="130" show-overflow-tooltip />
+                <el-table-column label="单位" width="70" align="center">
+                  <template #default="scope"><dict-tag :options="wms_unit" :value="scope.row.unit" /></template>
+                </el-table-column>
+                <el-table-column label="领料数量" prop="issueQty" width="100" align="center" />
+                <el-table-column label="领料人" prop="issueBy" width="90" align="center" />
+                <el-table-column label="状态" width="100" align="center">
+                  <template #default="scope">
+                    <span v-if="scope.row.status" class="badge" :class="issueBadgeClass(scope.row.status)"><span class="dot"></span>{{ issueStatusLabel(scope.row.status) }}</span>
+                    <span v-else class="text-muted">—</span>
+                  </template>
+                </el-table-column>
+                <el-table-column label="创建时间" prop="createTime" width="160" align="center">
+                  <template #default="scope"><span>{{ parseTime(scope.row.createTime) }}</span></template>
+                </el-table-column>
+              </el-table>
+              <div style="display:flex;justify-content:flex-end;padding:8px 0 0">
+                <el-pagination v-show="viewIssueTotal > 0" v-model:current-page="viewIssuePageNum" v-model:page-size="viewIssuePageSize" :total="viewIssueTotal" :page-sizes="[10, 20, 50]" layout="total, sizes, prev, pager, next, jumper" small @current-change="handleIssuePageChange" @size-change="handleIssuePageChange" />
+              </div>
+            </div>
+          </section>
+        </el-tab-pane>
+
+        <!-- 页签四：退料记录 -->
+        <el-tab-pane label="退料记录" name="return">
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('vc_return')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg></span>退料记录</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc_return }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+            <div class="rd-card-body" v-show="!collapsedCards.vc_return" style="padding:0">
+              <el-table v-loading="viewReturnLoading" :data="viewReturnList" border size="small" style="width: 100%" max-height="400" empty-text="暂无退料记录">
+                <el-table-column label="退料编号" prop="returnNo" min-width="140" show-overflow-tooltip />
+                <el-table-column label="领料单号" prop="issueNo" min-width="140" show-overflow-tooltip />
+                <el-table-column label="物料编码" prop="materialCode" min-width="130" show-overflow-tooltip />
+                <el-table-column label="物料名称" prop="materialName" min-width="180" show-overflow-tooltip />
+                <el-table-column label="规格型号" prop="specModel" min-width="130" show-overflow-tooltip />
+                <el-table-column label="单位" width="70" align="center">
+                  <template #default="scope"><dict-tag :options="wms_unit" :value="scope.row.unit" /></template>
+                </el-table-column>
+                <el-table-column label="退料数量" prop="returnQty" width="100" align="center" />
+                <el-table-column label="退料人" prop="returnBy" width="90" align="center" />
+                <el-table-column label="状态" width="100" align="center">
+                  <template #default="scope">
+                    <span v-if="scope.row.status" class="badge" :class="returnBadgeClass(scope.row.status)"><span class="dot"></span>{{ returnStatusLabel(scope.row.status) }}</span>
+                    <span v-else class="text-muted">—</span>
+                  </template>
+                </el-table-column>
+                <el-table-column label="创建时间" prop="createTime" width="160" align="center">
+                  <template #default="scope"><span>{{ parseTime(scope.row.createTime) }}</span></template>
+                </el-table-column>
+              </el-table>
+              <div style="display:flex;justify-content:flex-end;padding:8px 0 0">
+                <el-pagination v-show="viewReturnTotal > 0" v-model:current-page="viewReturnPageNum" v-model:page-size="viewReturnPageSize" :total="viewReturnTotal" :page-sizes="[10, 20, 50]" layout="total, sizes, prev, pager, next, jumper" small @current-change="handleReturnPageChange" @size-change="handleReturnPageChange" />
+              </div>
+            </div>
+          </section>
+        </el-tab-pane>
+
+        <!-- 页签五：质量检验 -->
+        <el-tab-pane label="质量检验" name="qc">
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('vc_qc')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>质量检验</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc_qc }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+            <div class="rd-card-body" v-show="!collapsedCards.vc_qc" style="padding:0">
+              <el-table v-loading="viewQcLoading" :data="viewQcTaskList" border size="small" style="width: 100%" max-height="400" empty-text="暂无质检任务">
+                <el-table-column label="任务编号" prop="taskNo" min-width="140" show-overflow-tooltip />
+                <el-table-column label="检验类型" width="100" align="center">
+                  <template #default="scope"><span class="badge violet">{{ qcInspTypeLabel(scope.row.taskType) }}</span></template>
+                </el-table-column>
+                <el-table-column label="来源类型" width="100" align="center">
+                  <template #default="scope"><dict-tag :options="qms_source_type" :value="scope.row.sourceType" /></template>
+                </el-table-column>
+                <el-table-column label="来源单号" prop="sourceNo" min-width="140" show-overflow-tooltip />
+                <el-table-column label="物料编码" prop="materialCode" min-width="130" show-overflow-tooltip />
+                <el-table-column label="物料名称" prop="materialName" min-width="160" show-overflow-tooltip />
+                <el-table-column label="送检数量" prop="inspectQty" width="90" align="center" />
+                <el-table-column label="任务状态" width="100" align="center">
+                  <template #default="scope">
+                    <span class="badge" :class="qcTaskBadgeClass(scope.row.taskStatus)"><span class="dot"></span>{{ qcTaskStatusLabel(scope.row.taskStatus) }}</span>
+                  </template>
+                </el-table-column>
+                <el-table-column label="检验结果" width="100" align="center">
+                  <template #default="scope">
+                    <span v-if="scope.row.inspectResult" class="badge" :class="scope.row.inspectResult === '1' ? 'green' : 'red'"><span class="dot"></span>{{ qcInspResultLabel(scope.row.inspectResult) }}</span>
+                    <span v-else class="text-muted">—</span>
+                  </template>
+                </el-table-column>
+                <el-table-column label="缺陷等级" width="100" align="center">
+                  <template #default="scope"><dict-tag :options="qms_defect_level" :value="scope.row.defectLevel" /></template>
+                </el-table-column>
+                <el-table-column label="检验员" prop="inspectorName" width="90" align="center" />
+                <el-table-column label="检验时间" prop="inspectTime" width="160" align="center" />
+              </el-table>
+              <div style="display:flex;justify-content:flex-end;padding:8px 0 0">
+                <el-pagination v-show="viewQcTotal > 0" v-model:current-page="viewQcPageNum" v-model:page-size="viewQcPageSize" :total="viewQcTotal" :page-sizes="[10, 20, 50]" layout="total, sizes, prev, pager, next, jumper" small @current-change="handleQcPageChange" @size-change="handleQcPageChange" />
+              </div>
+            </div>
+          </section>
         </el-tab-pane>
       </el-tabs>
       </div>
@@ -1296,15 +1402,18 @@ import { listRoute } from "@/api/mms/route";
 import { listMps } from "@/api/mms/mps";
 import { listOrder, getOrder } from "@/api/mk/order";
 import { autoKitCheckByWorkOrderId, batchAutoKitCheck, getKitCheck, getKitCheckDetail } from "@/api/mms/kit";
+import { listIssue } from "@/api/mms/issue";
+import { listReturnMaterial } from "@/api/mms/return";
+import { listTask } from "@/api/qms/task";
 import MaterialPicker from '@/components/MaterialPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
 import { Search, Filter, RefreshLeft, ArrowRight, ArrowDown, WarningFilled, QuestionFilled, CircleClose, MagicStick, Box, CircleCheck, DataAnalysis } from '@element-plus/icons-vue'
 
 const { proxy } = getCurrentInstance();
-const { mms_order_type, mms_work_order_source_type, mms_priority, mms_workorder_status, wms_unit, mms_schedule_status, mms_kit_status, mms_yes_no, marketing_order_status } = proxy.useDict("mms_order_type", "mms_work_order_source_type", "mms_priority", "mms_workorder_status", "wms_unit", "mms_schedule_status", "mms_kit_status", "mms_yes_no", "marketing_order_status");
+const { mms_order_type, mms_work_order_source_type, mms_priority, mms_workorder_status, wms_unit, mms_schedule_status, mms_kit_status, mms_yes_no, marketing_order_status, mms_issue_status, mms_return_status, qms_insp_type, qms_task_status, qms_insp_result, qms_source_type, qms_defect_level } = proxy.useDict("mms_order_type", "mms_work_order_source_type", "mms_priority", "mms_workorder_status", "wms_unit", "mms_schedule_status", "mms_kit_status", "mms_yes_no", "marketing_order_status", "mms_issue_status", "mms_return_status", "qms_insp_type", "qms_task_status", "qms_insp_result", "qms_source_type", "qms_defect_level");
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('mms_workorder_index')
-const { collapsedCards, toggleCard } = useDetailCard(["c0","c1","c2","vc0","vc1","vc2","vc_sched","vc_bom","vc_route","vc_progress","rc_bom","rc_route","rc_warn","rc_kit","pc_wo","pc_reason","cc_wo","cc_reason","kc_info","kc_summary","kc_detail","pc_overview","pc_timeline"])
+const { collapsedCards, toggleCard } = useDetailCard(["c0","c1","c2","vc0","vc1","vc2","vc_sched","vc_bom","vc_route","vc_progress","rc_bom","rc_route","rc_warn","rc_kit","pc_wo","pc_reason","cc_wo","cc_reason","kc_info","kc_summary","kc_detail","pc_overview","pc_timeline","vc_issue","vc_return","vc_qc"])
 
 const dataList = ref([]);
 const open = ref(false);
@@ -1348,6 +1457,112 @@ const kitCheckLoading = ref(false);
 // 下达弹窗内的齐套检查
 const releaseKitCheckDone = ref(false);
 const releaseKitCheckData = ref(null);
+
+// ===== 详情页签：领料 / 退料 / 质检 =====
+const viewIssueList = ref([]);       // 领料记录
+const viewReturnList = ref([]);      // 退料记录
+const viewQcTaskList = ref([]);      // 质检任务
+const viewIssueLoading = ref(false);
+const viewReturnLoading = ref(false);
+const viewQcLoading = ref(false);
+// 分页参数
+const viewIssueTotal = ref(0);
+const viewIssuePageNum = ref(1);
+const viewIssuePageSize = ref(10);
+const viewReturnTotal = ref(0);
+const viewReturnPageNum = ref(1);
+const viewReturnPageSize = ref(10);
+const viewQcTotal = ref(0);
+const viewQcPageNum = ref(1);
+const viewQcPageSize = ref(10);
+// 缓存当前工单号
+const viewWorkOrderNo = ref('');
+
+/** 加载工单关联的领料记录 */
+function loadViewIssueList() {
+  if (!viewWorkOrderNo.value) { viewIssueList.value = []; viewIssueTotal.value = 0; return; }
+  viewIssueLoading.value = true;
+  listIssue({ workOrderNo: viewWorkOrderNo.value, pageNum: viewIssuePageNum.value, pageSize: viewIssuePageSize.value }).then(res => {
+    viewIssueList.value = res.rows || [];
+    viewIssueTotal.value = res.total || 0;
+  }).catch(() => { viewIssueList.value = []; viewIssueTotal.value = 0; }).finally(() => { viewIssueLoading.value = false; });
+}
+
+/** 加载工单关联的退料记录 */
+function loadViewReturnList() {
+  if (!viewWorkOrderNo.value) { viewReturnList.value = []; viewReturnTotal.value = 0; return; }
+  viewReturnLoading.value = true;
+  listReturnMaterial({ workOrderNo: viewWorkOrderNo.value, pageNum: viewReturnPageNum.value, pageSize: viewReturnPageSize.value }).then(res => {
+    viewReturnList.value = res.rows || [];
+    viewReturnTotal.value = res.total || 0;
+  }).catch(() => { viewReturnList.value = []; viewReturnTotal.value = 0; }).finally(() => { viewReturnLoading.value = false; });
+}
+
+/** 加载工单关联的质检任务 */
+function loadViewQcTaskList() {
+  if (!viewWorkOrderNo.value) { viewQcTaskList.value = []; viewQcTotal.value = 0; return; }
+  viewQcLoading.value = true;
+  listTask({ sourceNo: viewWorkOrderNo.value, pageNum: viewQcPageNum.value, pageSize: viewQcPageSize.value }).then(res => {
+    viewQcTaskList.value = res.rows || [];
+    viewQcTotal.value = res.total || 0;
+  }).catch(() => { viewQcTaskList.value = []; viewQcTotal.value = 0; }).finally(() => { viewQcLoading.value = false; });
+}
+
+/** 领料分页变化 */
+function handleIssuePageChange() { loadViewIssueList(); }
+/** 退料分页变化 */
+function handleReturnPageChange() { loadViewReturnList(); }
+/** 质检分页变化 */
+function handleQcPageChange() { loadViewQcTaskList(); }
+
+/** 领料状态标签 */
+function issueStatusLabel(status) {
+  if (!status) return '—';
+  const item = mms_issue_status.value.find(d => d.value == status);
+  return item ? item.label : '—';
+}
+/** 领料状态徽章 */
+function issueBadgeClass(status) {
+  const map = { '0': 'amber', '1': 'green' };
+  return map[status] || 'gray';
+}
+/** 退料状态标签 */
+function returnStatusLabel(status) {
+  if (!status) return '—';
+  const item = mms_return_status.value.find(d => d.value == status);
+  return item ? item.label : '—';
+}
+/** 退料状态徽章 */
+function returnBadgeClass(status) {
+  const map = { '0': 'amber', '1': 'green' };
+  return map[status] || 'gray';
+}
+/** 质检任务状态标签 */
+function qcTaskStatusLabel(val) {
+  if (!val) return '—';
+  const item = qms_task_status.value.find(d => d.value == val);
+  return item ? item.label : '—';
+}
+/** 质检任务状态徽章 */
+function qcTaskBadgeClass(val) {
+  if (val == '0') return 'gray';
+  if (val == '1') return 'orange';
+  if (val == '2') return 'green';
+  if (val == '3') return 'red';
+  return 'gray';
+}
+/** 质检检验结果标签 */
+function qcInspResultLabel(val) {
+  if (!val) return '—';
+  const item = qms_insp_result.value.find(d => d.value == val);
+  return item ? item.label : '—';
+}
+/** 质检检验类型标签 */
+function qcInspTypeLabel(val) {
+  if (!val) return '—';
+  const item = qms_insp_type.value.find(d => d.value == val);
+  return item ? item.label : '—';
+}
 
 // 状态标签列表
 const statusTabList = computed(() => {
@@ -1780,6 +1995,15 @@ getWorkOrder(row.workOrderId).then(response => {
 viewData.value = response.data;
 viewActiveTab.value = 'detail';
 viewOpen.value = true;
+// 缓存工单号并重置分页
+viewWorkOrderNo.value = response.data.workOrderNo;
+viewIssuePageNum.value = 1; viewIssuePageSize.value = 10;
+viewReturnPageNum.value = 1; viewReturnPageSize.value = 10;
+viewQcPageNum.value = 1; viewQcPageSize.value = 10;
+// 加载领料、退料、质检数据
+loadViewIssueList();
+loadViewReturnList();
+loadViewQcTaskList();
 });
 }
 

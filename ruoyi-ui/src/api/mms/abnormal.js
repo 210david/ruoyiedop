@@ -44,19 +44,27 @@ export function delAbnormal(abnormalId) {
 }
 
 // 异常响应
-export function respondAbnormal(abnormalId, responseBy) {
+export function respondAbnormal(abnormalId, data) {
   return request({
     url: '/mms/abnormal/respond/' + abnormalId,
     method: 'put',
-    params: { responseBy }
+    data: data
   })
 }
 
 // 异常处理关闭
-export function resolveAbnormal(abnormalId, handleResult) {
+export function resolveAbnormal(abnormalId, data) {
   return request({
     url: '/mms/abnormal/resolve/' + abnormalId,
     method: 'put',
-    params: { handleResult }
+    data: data
+  })
+}
+
+// 联动生成停机记录
+export function linkDowntime(abnormalId) {
+  return request({
+    url: '/mms/abnormal/linkDowntime/' + abnormalId,
+    method: 'post'
   })
 }

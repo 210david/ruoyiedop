@@ -11,6 +11,11 @@ public class MmsQc extends BaseEntity {
     @Excel(name = "质检单号") private String qcNo;
     private Long workOrderId;
     @Excel(name = "工单号") private String workOrderNo;
+    @Excel(name = "产品编码") private String productCode;
+    @Excel(name = "产品名称") private String productName;
+    @Excel(name = "规格型号") private String specModel;
+    @Excel(name = "单位") private String unit;
+    @Excel(name = "工单数量") private java.math.BigDecimal planQty;
     private Long processId;
     @Excel(name = "工序名称") private String processName;
     @Excel(name = "检验类型", readConverterExp = "0=首件,1=巡检,2=末件") private String qcType;
@@ -31,6 +36,16 @@ public class MmsQc extends BaseEntity {
     public void setWorkOrderId(Long workOrderId) { this.workOrderId = workOrderId; }
     public String getWorkOrderNo() { return workOrderNo; }
     public void setWorkOrderNo(String workOrderNo) { this.workOrderNo = workOrderNo; }
+    public String getProductCode() { return productCode; }
+    public void setProductCode(String productCode) { this.productCode = productCode; }
+    public String getProductName() { return productName; }
+    public void setProductName(String productName) { this.productName = productName; }
+    public String getSpecModel() { return specModel; }
+    public void setSpecModel(String specModel) { this.specModel = specModel; }
+    public String getUnit() { return unit; }
+    public void setUnit(String unit) { this.unit = unit; }
+    public java.math.BigDecimal getPlanQty() { return planQty; }
+    public void setPlanQty(java.math.BigDecimal planQty) { this.planQty = planQty; }
     public Long getProcessId() { return processId; }
     public void setProcessId(Long processId) { this.processId = processId; }
     public String getProcessName() { return processName; }

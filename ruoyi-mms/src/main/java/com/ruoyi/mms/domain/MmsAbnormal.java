@@ -13,6 +13,10 @@ public class MmsAbnormal extends BaseEntity {
     @Excel(name = "工单号") private String workOrderNo;
     private Long resourceId;
     @Excel(name = "产能单元") private String resourceName;
+    @Excel(name = "产品编号") private String productCode;
+    @Excel(name = "产品名称") private String productName;
+    @Excel(name = "规格型号") private String specModel;
+    @Excel(name = "单位") private String unit;
     @Excel(name = "异常类型", readConverterExp = "0=设备,1=物料,2=质量,3=安全,4=其他") private String abnormalType;
     @Excel(name = "严重等级", readConverterExp = "0=一般,1=严重,2=紧急") private String severity;
     private String description;
@@ -20,6 +24,8 @@ public class MmsAbnormal extends BaseEntity {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss") private Date reportTime;
     private String responseBy;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss") private Date responseTime;
+    private String handleBy;
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss") private Date handleTime;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss") private Date closeTime;
     private String handleResult;
     @Excel(name = "状态", readConverterExp = "0=待响应,1=处理中,2=已关闭") private String status;
@@ -37,6 +43,14 @@ public class MmsAbnormal extends BaseEntity {
     public void setResourceId(Long resourceId) { this.resourceId = resourceId; }
     public String getResourceName() { return resourceName; }
     public void setResourceName(String resourceName) { this.resourceName = resourceName; }
+    public String getProductCode() { return productCode; }
+    public void setProductCode(String productCode) { this.productCode = productCode; }
+    public String getProductName() { return productName; }
+    public void setProductName(String productName) { this.productName = productName; }
+    public String getSpecModel() { return specModel; }
+    public void setSpecModel(String specModel) { this.specModel = specModel; }
+    public String getUnit() { return unit; }
+    public void setUnit(String unit) { this.unit = unit; }
     public String getAbnormalType() { return abnormalType; }
     public void setAbnormalType(String abnormalType) { this.abnormalType = abnormalType; }
     public String getSeverity() { return severity; }
@@ -51,6 +65,10 @@ public class MmsAbnormal extends BaseEntity {
     public void setResponseBy(String responseBy) { this.responseBy = responseBy; }
     public Date getResponseTime() { return responseTime; }
     public void setResponseTime(Date responseTime) { this.responseTime = responseTime; }
+    public String getHandleBy() { return handleBy; }
+    public void setHandleBy(String handleBy) { this.handleBy = handleBy; }
+    public Date getHandleTime() { return handleTime; }
+    public void setHandleTime(Date handleTime) { this.handleTime = handleTime; }
     public Date getCloseTime() { return closeTime; }
     public void setCloseTime(Date closeTime) { this.closeTime = closeTime; }
     public String getHandleResult() { return handleResult; }

@@ -35,11 +35,27 @@ public class MmsIssueDetail extends BaseEntity
     @Excel(name = "单位")
     private String unit;
 
+    /** 单件用量（来源BOM） */
+    @Excel(name = "单件用量")
+    private BigDecimal usageQty;
+
+    /** 建议数量（单件用量×工单数量） */
+    @Excel(name = "建议数量")
+    private BigDecimal suggestedQty;
+
     @Excel(name = "领料数量")
     private BigDecimal issueQty;
 
     @Excel(name = "批次号")
     private String batchNo;
+
+    /** 已退数量（多次退料累计，非持久化） */
+    @Excel(name = "已退数量")
+    private BigDecimal returnedQty;
+
+    /** 可退数量（领料数量-已退数量，非持久化） */
+    @Excel(name = "可退数量")
+    private BigDecimal availableQty;
 
     private String delFlag;
 
@@ -59,10 +75,18 @@ public class MmsIssueDetail extends BaseEntity
     public void setSpecModel(String specModel) { this.specModel = specModel; }
     public String getUnit() { return unit; }
     public void setUnit(String unit) { this.unit = unit; }
+    public BigDecimal getUsageQty() { return usageQty; }
+    public void setUsageQty(BigDecimal usageQty) { this.usageQty = usageQty; }
+    public BigDecimal getSuggestedQty() { return suggestedQty; }
+    public void setSuggestedQty(BigDecimal suggestedQty) { this.suggestedQty = suggestedQty; }
     public BigDecimal getIssueQty() { return issueQty; }
     public void setIssueQty(BigDecimal issueQty) { this.issueQty = issueQty; }
     public String getBatchNo() { return batchNo; }
     public void setBatchNo(String batchNo) { this.batchNo = batchNo; }
+    public BigDecimal getReturnedQty() { return returnedQty; }
+    public void setReturnedQty(BigDecimal returnedQty) { this.returnedQty = returnedQty; }
+    public BigDecimal getAvailableQty() { return availableQty; }
+    public void setAvailableQty(BigDecimal availableQty) { this.availableQty = availableQty; }
     public String getDelFlag() { return delFlag; }
     public void setDelFlag(String delFlag) { this.delFlag = delFlag; }
 }

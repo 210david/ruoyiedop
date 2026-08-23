@@ -15,4 +15,9 @@ public interface IMmsIssueService
     public int insertIssue(MmsIssue issue);
     public int updateIssue(MmsIssue issue);
     public int deleteIssueByIds(Long[] IssueIds);
+
+    /**
+     * 确认领料：状态 0(待领料) → 1(已领料)，记录领料时间，可修改领料人和明细数量
+     */
+    public int confirmIssue(MmsIssue issue);
 }

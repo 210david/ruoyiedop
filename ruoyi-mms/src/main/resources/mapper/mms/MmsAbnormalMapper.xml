@@ -9,6 +9,10 @@
         <result property="workOrderNo"     column="work_order_no"/>
         <result property="resourceId"     column="resource_id"/>
         <result property="resourceName"     column="resource_name"/>
+        <result property="productCode"     column="product_code"/>
+        <result property="productName"     column="product_name"/>
+        <result property="specModel"     column="spec_model"/>
+        <result property="unit"     column="unit"/>
         <result property="abnormalType"     column="abnormal_type"/>
         <result property="severity"     column="severity"/>
         <result property="description"     column="description"/>
@@ -16,6 +20,8 @@
         <result property="reportTime"     column="report_time"/>
         <result property="responseBy"     column="response_by"/>
         <result property="responseTime"     column="response_time"/>
+        <result property="handleBy"     column="handle_by"/>
+        <result property="handleTime"     column="handle_time"/>
         <result property="closeTime"     column="close_time"/>
         <result property="handleResult"     column="handle_result"/>
         <result property="status"     column="status"/>
@@ -28,7 +34,7 @@
     </resultMap>
 
     <sql id="selectAbnormalVo">
-        SELECT abnormal_id, abnormal_no, work_order_id, work_order_no, resource_id, resource_name, abnormal_type, severity, description, report_by, report_time, response_by, response_time, close_time, handle_result, status, del_flag, create_by, create_time, update_by, update_time, remark
+        SELECT abnormal_id, abnormal_no, work_order_id, work_order_no, resource_id, resource_name, product_code, product_name, spec_model, unit, abnormal_type, severity, description, report_by, report_time, response_by, response_time, handle_by, handle_time, close_time, handle_result, status, del_flag, create_by, create_time, update_by, update_time, remark
         FROM mms_abnormal
     </sql>
 
@@ -60,6 +66,10 @@
             work_order_no,
             resource_id,
             resource_name,
+            product_code,
+            product_name,
+            spec_model,
+            unit,
             abnormal_type,
             severity,
             description,
@@ -82,6 +92,10 @@
             #{workOrderNo},
             #{resourceId},
             #{resourceName},
+            #{productCode},
+            #{productName},
+            #{specModel},
+            #{unit},
             #{abnormalType},
             #{severity},
             #{description},
@@ -108,6 +122,10 @@
             work_order_no = #{workOrderNo},
             resource_id = #{resourceId},
             resource_name = #{resourceName},
+            product_code = #{productCode},
+            product_name = #{productName},
+            spec_model = #{specModel},
+            unit = #{unit},
             abnormal_type = #{abnormalType},
             severity = #{severity},
             description = #{description},
@@ -115,6 +133,8 @@
             report_time = #{reportTime},
             response_by = #{responseBy},
             response_time = #{responseTime},
+            handle_by = #{handleBy},
+            handle_time = #{handleTime},
             close_time = #{closeTime},
             handle_result = #{handleResult},
             status = #{status},
