@@ -15,6 +15,7 @@ import com.ruoyi.mk.service.IMkNumberRuleService;
 import com.ruoyi.mms.domain.MmsBom;
 import com.ruoyi.mms.domain.MmsBomDetail;
 import com.ruoyi.mms.domain.MmsDispatch;
+import com.ruoyi.mms.domain.MmsQc;
 import com.ruoyi.mms.domain.MmsRoute;
 import com.ruoyi.mms.domain.MmsRouteProcess;
 import com.ruoyi.mms.domain.MmsWorkOrder;
@@ -23,6 +24,7 @@ import com.ruoyi.mms.domain.MmsWoBomSnapshot;
 import com.ruoyi.mms.domain.MmsWoRouteSnapshot;
 import com.ruoyi.mms.mapper.MmsBomMapper;
 import com.ruoyi.mms.mapper.MmsDispatchMapper;
+import com.ruoyi.mms.mapper.MmsQcMapper;
 import com.ruoyi.mms.mapper.MmsRouteMapper;
 import com.ruoyi.mms.mapper.MmsScheduleMapper;
 import com.ruoyi.mms.mapper.MmsWoBomSnapshotMapper;
@@ -33,10 +35,16 @@ import com.ruoyi.mms.service.IMmsWorkOrderService;
 /**
  * 生产工单 Service实现
  *
- * 工单状态机：
- * 0(新建) → 1(已下达) → 2(执行中) → 3(报工中) → 4(待完工质检) → 5(完工入库) → 6(已关闭)
- *               ↓                ↓             ↓
- *           7(已暂停) ⇄ 1     7(已暂停)     8(已作废)
+ * 工单状态机（精简版，质检与入库解耦为独立业务）：
+ * 0(新建) → 1(已下达) → 2(执行中) → 3(已完工) → 4(已关闭)
+ *               ↓            ↓
+ *           5(已暂停) ⇄ 1  5(已暂停)
+ *
+ * 说明：
+ * - 报工只是执行中的动作，不再设独立状态
+ * - 完工后质检和入库作为独立业务单据流转，不卡住工单状态
+ * - 工单完工时自动生成完工质检单（通过工单号关联），质检独立处理
+ * - 任意非已关闭/已作废状态 → 6(已作废)
  *
  * @author ruoyi
  */
@@ -67,6 +75,9 @@ public class MmsWorkOrderServiceImpl implements IMmsWorkOrderService
     @Autowired
     private MmsScheduleMapper scheduleMapper;
 
+    @Autowired
+    private MmsQcMapper qcMapper;
+
     // ========== 标准 CRUD ==========
 
     @Override
@@ -86,6 +97,11 @@ public class MmsWorkOrderServiceImpl implements IMmsWorkOrderService
             wo.setBomSnapshotList(bomSnapshots);
             List<MmsWoRouteSnapshot> routeSnapshots = woRouteSnapshotMapper.selectRouteSnapshotByWorkOrderId(workOrderId);
             wo.setRouteSnapshotList(routeSnapshots);
+            // 查询派工单列表，供详情页展示各工序完成情况
+            MmsDispatch query = new MmsDispatch();
+            query.setWorkOrderId(workOrderId);
+            List<MmsDispatch> dispatchList = dispatchMapper.selectDispatchList(query);
+            wo.setDispatchList(dispatchList);
         }
         return wo;
     }
@@ -164,7 +180,7 @@ public class MmsWorkOrderServiceImpl implements IMmsWorkOrderService
     {
         // 校验：已下达及之后状态不允许修改核心字段
         MmsWorkOrder existing = workOrderMapper.selectWorkOrderById(workOrder.getWorkOrderId());
-        if (existing != null && !"0".equals(existing.getStatus()) && !"7".equals(existing.getStatus()))
+        if (existing != null && !"0".equals(existing.getStatus()) && !"5".equals(existing.getStatus()))
         {
             throw new ServiceException("当前状态不允许修改工单信息");
         }
@@ -211,7 +227,7 @@ public class MmsWorkOrderServiceImpl implements IMmsWorkOrderService
         for (Long id : workOrderIds)
         {
             MmsWorkOrder wo = workOrderMapper.selectWorkOrderById(id);
-            if (wo != null && !"0".equals(wo.getStatus()) && !"8".equals(wo.getStatus()))
+            if (wo != null && !"0".equals(wo.getStatus()) && !"6".equals(wo.getStatus()))
             {
                 throw new ServiceException("工单[" + wo.getWorkOrderNo() + "]非新建/作废状态，不允许删除");
             }
@@ -420,7 +436,7 @@ public class MmsWorkOrderServiceImpl implements IMmsWorkOrderService
         {
             throw new ServiceException("工单[" + wo.getWorkOrderNo() + "]当前状态为" + statusName(wo.getStatus()) + "，只有已下达/执行中状态可暂停");
         }
-        wo.setStatus("7");
+        wo.setStatus("5");
         wo.setPauseReason(pauseReason);
         String username = SecurityUtils.getUsername();
         wo.setUpdateBy(username);
@@ -449,8 +465,8 @@ public class MmsWorkOrderServiceImpl implements IMmsWorkOrderService
     public int resumeWorkOrder(Long workOrderId)
     {
         MmsWorkOrder wo = getAndCheckWorkOrder(workOrderId);
-        // 状态校验：只有已暂停(7)可恢复
-        if (!"7".equals(wo.getStatus()))
+        // 状态校验：只有已暂停(5)可恢复
+        if (!"5".equals(wo.getStatus()))
         {
             throw new ServiceException("工单[" + wo.getWorkOrderNo() + "]当前状态为" + statusName(wo.getStatus()) + "，只有已暂停状态可恢复");
         }
@@ -470,10 +486,10 @@ public class MmsWorkOrderServiceImpl implements IMmsWorkOrderService
     public int finishWorkOrder(Long workOrderId)
     {
         MmsWorkOrder wo = getAndCheckWorkOrder(workOrderId);
-        // 状态校验：执行中(2)或报工中(3)可完工
-        if (!"2".equals(wo.getStatus()) && !"3".equals(wo.getStatus()))
+        // 状态校验：执行中(2)可完工（报工是执行中的动作，不再单独设状态）
+        if (!"2".equals(wo.getStatus()))
         {
-            throw new ServiceException("工单[" + wo.getWorkOrderNo() + "]当前状态为" + statusName(wo.getStatus()) + "，只有执行中/报工中状态可完工");
+            throw new ServiceException("工单[" + wo.getWorkOrderNo() + "]当前状态为" + statusName(wo.getStatus()) + "，只有执行中状态可完工");
         }
         // 完工条件：合格数 + 不良数 >= 计划数量 * 完工允差（默认100%）
         BigDecimal totalOutput = (wo.getQualifiedQty() == null ? BigDecimal.ZERO : wo.getQualifiedQty())
@@ -482,13 +498,46 @@ public class MmsWorkOrderServiceImpl implements IMmsWorkOrderService
         {
             throw new ServiceException("工单[" + wo.getWorkOrderNo() + "]产出量(" + totalOutput + ")未达到计划数量(" + wo.getPlanQty() + ")，不允许完工");
         }
-        wo.setStatus("4");
+        // 工单完工 → 直接进入已完工(3)状态，质检和入库作为独立业务不卡住工单
+        wo.setStatus("3");
         wo.setActualFinish(new Date());
         wo.setUpdateBy(SecurityUtils.getUsername());
         wo.setUpdateTime(DateUtils.getNowDate());
         int rows = workOrderMapper.updateWorkOrder(wo);
 
         insertAuditLog(workOrderId, wo.getWorkOrderNo(), "finish", "工单完工");
+
+        // ===== 自动生成完工质检单 =====
+        // 工单完工时自动创建一条完工检(qc_type=2)类型的质检单
+        // 质检作为独立业务流转，不卡住工单状态
+        // 预填充来自工单的检验数量、不良数量等数据，质检员只需确认检验结果即可
+        Date now = new Date();
+        String username = SecurityUtils.getUsername();
+        MmsQc qc = new MmsQc();
+        qc.setQcNo(mkNumberRuleService.generateNumber("mms_qc"));
+        qc.setWorkOrderId(wo.getWorkOrderId());
+        qc.setWorkOrderNo(wo.getWorkOrderNo());
+        // 完工质检单不绑定具体工序，检验的是最终成品
+        qc.setQcType("2"); // 末件/完工检
+        // 检验数量 = 工单完工数量（合格+不良）
+        BigDecimal qualifiedQty = wo.getQualifiedQty() != null ? wo.getQualifiedQty() : BigDecimal.ZERO;
+        BigDecimal defectQty = wo.getDefectQty() != null ? wo.getDefectQty() : BigDecimal.ZERO;
+        qc.setInspectQty(qualifiedQty.add(defectQty).intValue());
+        // 不良数量 = 工单总不良数量
+        qc.setDefectQty(defectQty.intValue());
+        // 报废数量暂不预填，由质检员判定后填写
+        qc.setScrapQty(0);
+        // 检验结论默认未判定（留空），等待质检员确认后填写
+        qc.setDefectType("");
+        qc.setQcResult("");
+        qc.setQcBy("");
+        qc.setQcTime(null);
+        qc.setDelFlag("0");
+        qc.setCreateBy(username);
+        qc.setCreateTime(now);
+        qc.setRemark("工单完工自动生成，待质检员确认检验结果");
+        qcMapper.insertQc(qc);
+
         return rows;
     }
 
@@ -497,13 +546,12 @@ public class MmsWorkOrderServiceImpl implements IMmsWorkOrderService
     public int closeWorkOrder(Long workOrderId, String closeRemark)
     {
         MmsWorkOrder wo = getAndCheckWorkOrder(workOrderId);
-        // 状态校验：待完工质检(4)、完工入库(5)可正常关闭；
-        // 执行中(2)、报工中(3)可强制关闭（短产关闭），需记录短产原因
+        // 状态校验：已完工(3)可正常关闭；执行中(2)可强制关闭（短产关闭），需记录短产原因
         String status = wo.getStatus();
-        boolean isForceClose = "2".equals(status) || "3".equals(status);
-        if (!isForceClose && !"4".equals(status) && !"5".equals(status))
+        boolean isForceClose = "2".equals(status);
+        if (!isForceClose && !"3".equals(status))
         {
-            throw new ServiceException("工单[" + wo.getWorkOrderNo() + "]当前状态为" + statusName(status) + "，只有执行中/报工中/待完工质检/完工入库状态可关闭");
+            throw new ServiceException("工单[" + wo.getWorkOrderNo() + "]当前状态为" + statusName(status) + "，只有执行中/已完工状态可关闭");
         }
 
         String username = SecurityUtils.getUsername();
@@ -546,7 +594,7 @@ public class MmsWorkOrderServiceImpl implements IMmsWorkOrderService
             wo.setCloseRemark(closeRemark);
         }
 
-        wo.setStatus("6");
+        wo.setStatus("4");
         wo.setActualFinish(new Date());
         wo.setUpdateBy(username);
         wo.setUpdateTime(DateUtils.getNowDate());
@@ -565,18 +613,18 @@ public class MmsWorkOrderServiceImpl implements IMmsWorkOrderService
     public int cancelWorkOrder(Long workOrderId, String cancelReason)
     {
         MmsWorkOrder wo = getAndCheckWorkOrder(workOrderId);
-        // 状态校验：已关闭(6)和已作废(8)不可作废
-        if ("6".equals(wo.getStatus()) || "8".equals(wo.getStatus()))
+        // 状态校验：已关闭(4)和已作废(6)不可作废
+        if ("4".equals(wo.getStatus()) || "6".equals(wo.getStatus()))
         {
             throw new ServiceException("工单[" + wo.getWorkOrderNo() + "]当前状态为" + statusName(wo.getStatus()) + "，不允许作废");
         }
-        // 作废条件：无在制报工（报工中状态不允许直接作废）
+        // 作废条件：已完工(3)状态不允许直接作废，需先处理质检/入库等关联业务
         if ("3".equals(wo.getStatus()))
         {
-            throw new ServiceException("工单[" + wo.getWorkOrderNo() + "]处于报工中状态，请先处理报工记录后再作废");
+            throw new ServiceException("工单[" + wo.getWorkOrderNo() + "]已完工，请先关闭工单后再作废");
         }
         String username = SecurityUtils.getUsername();
-        wo.setStatus("8");
+        wo.setStatus("6");
         wo.setCloseRemark(cancelReason);
         wo.setUpdateBy(username);
         wo.setUpdateTime(DateUtils.getNowDate());
@@ -663,23 +711,23 @@ public class MmsWorkOrderServiceImpl implements IMmsWorkOrderService
     public Long createReworkOrder(Long sourceWorkOrderId, BigDecimal reworkQty, String reworkReason)
     {
         MmsWorkOrder sourceWo = getAndCheckWorkOrder(sourceWorkOrderId);
-        // 校验：源工单必须是已关闭(6)或待完工质检(4)或完工入库(5)状态
+        // 校验：源工单必须是已完工(3)或已关闭(4)状态
         String srcStatus = sourceWo.getStatus();
-        if (!"4".equals(srcStatus) && !"5".equals(srcStatus) && !"6".equals(srcStatus))
+        if (!"3".equals(srcStatus) && !"4".equals(srcStatus))
         {
             throw new ServiceException("源工单[" + sourceWo.getWorkOrderNo() + "]当前状态为" + statusName(srcStatus)
-                    + "，只有待完工质检/完工入库/已关闭状态可创建返工工单");
+                    + "，只有已完工/已关闭状态可创建返工工单");
         }
         // 校验返工数量
         if (reworkQty == null || reworkQty.compareTo(BigDecimal.ZERO) <= 0)
         {
             throw new ServiceException("返工数量必须大于0");
         }
-        // 返工数量不能超过源工单的不良数
-        BigDecimal srcDefectQty = sourceWo.getDefectQty() == null ? BigDecimal.ZERO : sourceWo.getDefectQty();
-        if (reworkQty.compareTo(srcDefectQty) > 0)
+        // 返工数量不能超过源工单的计划数量
+        BigDecimal srcPlanQty = sourceWo.getPlanQty() == null ? BigDecimal.ZERO : sourceWo.getPlanQty();
+        if (reworkQty.compareTo(srcPlanQty) > 0)
         {
-            throw new ServiceException("返工数量(" + reworkQty + ")不能超过源工单不良数量(" + srcDefectQty + ")");
+            throw new ServiceException("返工数量(" + reworkQty + ")不能超过源工单计划数量(" + srcPlanQty + ")");
         }
 
         // 创建返工工单
@@ -889,12 +937,10 @@ public class MmsWorkOrderServiceImpl implements IMmsWorkOrderService
             case "0": return "新建";
             case "1": return "已下达";
             case "2": return "执行中";
-            case "3": return "报工中";
-            case "4": return "待完工质检";
-            case "5": return "完工入库";
-            case "6": return "已关闭";
-            case "7": return "已暂停";
-            case "8": return "已作废";
+            case "3": return "已完工";
+            case "4": return "已关闭";
+            case "5": return "已暂停";
+            case "6": return "已作废";
             default: return "未知(" + status + ")";
         }
     }

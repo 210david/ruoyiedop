@@ -14,12 +14,15 @@ import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.mk.service.IMkNumberRuleService;
 import com.ruoyi.mms.domain.MmsDispatch;
 import com.ruoyi.mms.domain.MmsWorkOrder;
+import com.ruoyi.mms.domain.MmsWorkOrderAuditLog;
 import com.ruoyi.mms.domain.MmsWoRouteSnapshot;
 import com.ruoyi.mms.domain.MmsWorkReport;
+import com.ruoyi.mms.domain.MmsQc;
 import com.ruoyi.mms.mapper.MmsDispatchMapper;
 import com.ruoyi.mms.mapper.MmsWorkOrderMapper;
 import com.ruoyi.mms.mapper.MmsWoRouteSnapshotMapper;
 import com.ruoyi.mms.mapper.MmsWorkReportMapper;
+import com.ruoyi.mms.mapper.MmsQcMapper;
 import com.ruoyi.mms.service.IMmsDispatchService;
 
 /**
@@ -35,6 +38,7 @@ import com.ruoyi.mms.service.IMmsDispatchService;
  * 2. 自动生成报工记录（状态=已审核）
  * 3. 联动更新工单 finishedQty/qualifiedQty/defectQty 和状态
  * 4. 自动创建下一道工序的派工单（如果存在后续工序）
+ * 5. 最后一道工序完工时自动完工工单（状态→已完工），同时自动生成完工质检单
  *
  * @author ruoyi
  */
@@ -49,6 +53,9 @@ public class MmsDispatchServiceImpl implements IMmsDispatchService
 
     @Autowired
     private MmsWorkReportMapper workReportMapper;
+
+    @Autowired
+    private MmsQcMapper qcMapper;
 
     @Autowired
     private MmsWoRouteSnapshotMapper woRouteSnapshotMapper;
@@ -128,7 +135,7 @@ public class MmsDispatchServiceImpl implements IMmsDispatchService
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public int startDispatch(Long dispatchId, String operatorName, Long teamId, String teamName)
+    public int startDispatch(Long dispatchId, String operatorName, String operateTime, Long teamId, String teamName, Long resourceId, String resourceName)
     {
         MmsDispatch d = getAndCheckDispatch(dispatchId);
         if (!"0".equals(d.getStatus()))
@@ -146,17 +153,28 @@ public class MmsDispatchServiceImpl implements IMmsDispatchService
             d.setTeamId(teamId);
             d.setTeamName(teamName);
         }
+        // 如果传入了产能单元则更新
+        if (resourceId != null)
+        {
+            d.setResourceId(resourceId);
+            d.setResourceName(resourceName);
+        }
+        // 产能单元必填校验
+        if (d.getResourceId() == null)
+        {
+            throw new ServiceException("请选择产能单元");
+        }
         // 校验关联工单状态：工单暂停(7)或作废(8)时不允许开工
         if (d.getWorkOrderId() != null)
         {
             MmsWorkOrder wo = workOrderMapper.selectWorkOrderById(d.getWorkOrderId());
             if (wo != null)
             {
-                if ("7".equals(wo.getStatus()))
+                if ("5".equals(wo.getStatus()))
                 {
                     throw new ServiceException("关联工单[" + wo.getWorkOrderNo() + "]已暂停，请先恢复工单后再开工");
                 }
-                if ("8".equals(wo.getStatus()))
+                if ("6".equals(wo.getStatus()))
                 {
                     throw new ServiceException("关联工单[" + wo.getWorkOrderNo() + "]已作废，派工单无法开工");
                 }
@@ -169,7 +187,21 @@ public class MmsDispatchServiceImpl implements IMmsDispatchService
         }
         d.setUserIds(operatorName);
         d.setStatus("1");
-        d.setActualStart(new Date());
+        // 操作时间：用户指定时使用用户输入，否则取当前时间
+        Date actualStartDate = new Date();
+        if (StringUtils.isNotEmpty(operateTime))
+        {
+            try
+            {
+                java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                actualStartDate = sdf.parse(operateTime);
+            }
+            catch (Exception e)
+            {
+                // 解析失败时使用当前时间
+            }
+        }
+        d.setActualStart(actualStartDate);
         String username = SecurityUtils.getUsername();
         d.setUpdateBy(username);
         int rows = dispatchMapper.updateDispatch(d);
@@ -181,7 +213,7 @@ public class MmsDispatchServiceImpl implements IMmsDispatchService
             if (wo != null && "1".equals(wo.getStatus()))
             {
                 wo.setStatus("2");
-                wo.setActualStart(new Date());
+                wo.setActualStart(actualStartDate);
                 wo.setUpdateBy(username);
                 workOrderMapper.updateWorkOrder(wo);
             }
@@ -272,29 +304,77 @@ public class MmsDispatchServiceImpl implements IMmsDispatchService
         workReportMapper.insertWorkReport(report);
 
         // ===== 3. 联动更新工单进度 =====
+        // 修正逻辑：串行工序间数量是流转的（后道计划=前道合格），不能简单累加
+        // 重新从所有已完工派工单中计算工单的合格/不良/完工数量
         if (d.getWorkOrderId() != null)
         {
             MmsWorkOrder wo = workOrderMapper.selectWorkOrderById(d.getWorkOrderId());
             if (wo != null)
             {
-                // 累计完工数量
-                BigDecimal woFinished = wo.getFinishedQty() == null ? BigDecimal.ZERO : wo.getFinishedQty();
-                BigDecimal woQualified = wo.getQualifiedQty() == null ? BigDecimal.ZERO : wo.getQualifiedQty();
-                BigDecimal woDefect = wo.getDefectQty() == null ? BigDecimal.ZERO : wo.getDefectQty();
+                // 查询该工单下所有已完工的派工单
+                List<MmsDispatch> completedList = dispatchMapper.selectCompletedDispatchByWorkOrder(d.getWorkOrderId());
 
-                wo.setFinishedQty(woFinished.add(goodQty).add(defectQty));
-                wo.setQualifiedQty(woQualified.add(goodQty));
-                wo.setDefectQty(woDefect.add(defectQty));
+                // 1. 合格数量：取最大 op_seq 的已完工工序的合格数（并行工序取最小合格数）
+                BigDecimal finalGoodQty = BigDecimal.ZERO;
+                BigDecimal finalDefectQty = BigDecimal.ZERO; // 最终工序的不良数
+                Integer maxOpSeq = null;
+                for (MmsDispatch cd : completedList)
+                {
+                    if (cd.getOpSeq() != null)
+                    {
+                        if (maxOpSeq == null || cd.getOpSeq() > maxOpSeq)
+                        {
+                            maxOpSeq = cd.getOpSeq();
+                            finalGoodQty = cd.getGoodQty() != null ? cd.getGoodQty() : BigDecimal.ZERO;
+                            finalDefectQty = cd.getDefectQty() != null ? cd.getDefectQty() : BigDecimal.ZERO;
+                        }
+                        else if (cd.getOpSeq().equals(maxOpSeq))
+                        {
+                            // 同一 op_seq 的并行工序，取最小合格数
+                            BigDecimal gq = cd.getGoodQty() != null ? cd.getGoodQty() : BigDecimal.ZERO;
+                            if (gq.compareTo(finalGoodQty) < 0)
+                            {
+                                finalGoodQty = gq;
+                            }
+                            // 并行工序的不良数取对应最小合格数那条的不良数
+                            BigDecimal dq = cd.getDefectQty() != null ? cd.getDefectQty() : BigDecimal.ZERO;
+                            if (gq.compareTo(finalGoodQty) == 0 && dq.compareTo(finalDefectQty) != 0)
+                            {
+                                finalDefectQty = dq;
+                            }
+                        }
+                    }
+                }
 
-                // 工单状态联动：已下达(1) → 执行中(2)，执行中(2) → 报工中(3)
+                // 2. 不良数量：工单总投入量 - 最终合格数量
+                //    串行工序中不良是递进淘汰的（前道不良不会流转到后道），不能简单累加各工序不良
+                //    总损耗 = 投入量(首工序计划/工单计划) - 最终产出合格数
+                //    注意：如果还没有任何工序完工，不良数量应为0
+                BigDecimal totalDefect = BigDecimal.ZERO;
+                if (maxOpSeq != null)
+                {
+                    BigDecimal planQty = wo.getPlanQty() != null ? wo.getPlanQty() : BigDecimal.ZERO;
+                    totalDefect = planQty.subtract(finalGoodQty);
+                    if (totalDefect.compareTo(BigDecimal.ZERO) < 0)
+                    {
+                        totalDefect = BigDecimal.ZERO;
+                    }
+                }
+
+                // 3. 完工数量（当前产出） = 最终工序的产出总数 = 最终合格数 + 最终工序不良数
+                //    表示最后一道工序实际处理了多少产品
+                BigDecimal finishedQty = finalGoodQty.add(finalDefectQty);
+
+                wo.setQualifiedQty(finalGoodQty);
+                wo.setDefectQty(totalDefect);
+                wo.setFinishedQty(finishedQty);
+
+                // 工单状态联动：已下达(1) → 执行中(2)
+                // 报工只是执行中的动作，不再单独设状态
                 if ("1".equals(wo.getStatus()))
                 {
                     wo.setStatus("2");
                     wo.setActualStart(now);
-                }
-                else if ("2".equals(wo.getStatus()))
-                {
-                    wo.setStatus("3");
                 }
 
                 wo.setUpdateBy(username);
@@ -305,6 +385,9 @@ public class MmsDispatchServiceImpl implements IMmsDispatchService
 
         // ===== 4. 自动创建下一道工序的派工单 =====
         createNextDispatch(d, username, now);
+
+        // ===== 5. 检查是否所有工序都已完工，如果是则自动完工工单 =====
+        autoFinishWorkOrderIfAllCompleted(d, username, now);
 
         return rows;
     }
@@ -463,6 +546,113 @@ public class MmsDispatchServiceImpl implements IMmsDispatchService
                 nextDispatches.add(nextDispatch);
             }
         }
+    }
+
+    /**
+     * 检查工单是否所有工序都已完工（或取消），如果是则自动完工工单
+     * 末道工序完工 + 同组工序全部完工 → 工单状态从执行中(2) → 已完工(3)
+     * 同时自动生成完工质检单（质检独立业务，不卡住工单状态）
+     *
+     * @param currentDispatch 当前完工的派工单
+     * @param username 操作人
+     * @param now 当前时间
+     */
+    private void autoFinishWorkOrderIfAllCompleted(MmsDispatch currentDispatch, String username, Date now)
+    {
+        if (currentDispatch.getWorkOrderId() == null)
+        {
+            return;
+        }
+        // 查询工单的工艺路线快照（按 step_seq 排序）
+        List<MmsWoRouteSnapshot> snapshots = woRouteSnapshotMapper
+                .selectRouteSnapshotByWorkOrderId(currentDispatch.getWorkOrderId());
+        if (snapshots == null || snapshots.isEmpty())
+        {
+            return;
+        }
+        // 查询该工单下所有派工单
+        MmsDispatch queryAll = new MmsDispatch();
+        queryAll.setWorkOrderId(currentDispatch.getWorkOrderId());
+        List<MmsDispatch> allDispatches = dispatchMapper.selectDispatchList(queryAll);
+        if (allDispatches == null || allDispatches.isEmpty())
+        {
+            return;
+        }
+
+        // 检查每道工序快照是否都有对应的已完工(2)或已取消(3)的派工单
+        for (MmsWoRouteSnapshot snapshot : snapshots)
+        {
+            boolean found = false;
+            for (MmsDispatch disp : allDispatches)
+            {
+                if (snapshot.getStepSeq() != null && snapshot.getStepSeq().equals(disp.getOpSeq())
+                        && ("2".equals(disp.getStatus()) || "3".equals(disp.getStatus())))
+                {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found)
+            {
+                // 还有工序未完工，不自动完工工单
+                return;
+            }
+        }
+
+        // 所有工序都已完工（或取消），自动完工工单
+        MmsWorkOrder wo = workOrderMapper.selectWorkOrderById(currentDispatch.getWorkOrderId());
+        if (wo == null)
+        {
+            return;
+        }
+        // 只有执行中(2)状态才自动完工
+        if (!"2".equals(wo.getStatus()))
+        {
+            return;
+        }
+        wo.setStatus("3"); // 已完工
+        wo.setActualFinish(now);
+        wo.setUpdateBy(username);
+        wo.setUpdateTime(now);
+        workOrderMapper.updateWorkOrder(wo);
+
+        // 记录审计日志
+        MmsWorkOrderAuditLog log = new MmsWorkOrderAuditLog();
+        log.setWorkOrderId(wo.getWorkOrderId());
+        log.setAuditBy(username);
+        log.setAuditAction("finish");
+        log.setAuditTime(now);
+        log.setAuditRemark("末道工序完工自动完工工单");
+        workOrderMapper.insertAuditLog(log);
+
+        // ===== 自动生成完工质检单 =====
+        // 工单完工时自动创建一条完工检(qc_type=2)类型的质检单
+        // 质检作为独立业务流转，不卡住工单状态
+        // 预填充来自派工完工的检验数量、不良数量等数据，质检员只需确认检验结果即可
+        MmsQc qc = new MmsQc();
+        qc.setQcNo(mkNumberRuleService.generateNumber("mms_qc"));
+        qc.setWorkOrderId(wo.getWorkOrderId());
+        qc.setWorkOrderNo(wo.getWorkOrderNo());
+        // 完工质检单不绑定具体工序，检验的是最终成品
+        qc.setQcType("2"); // 末件/完工检
+        // 检验数量 = 工单完工数量（合格+不良中的最终产出）
+        BigDecimal qualifiedQty = wo.getQualifiedQty() != null ? wo.getQualifiedQty() : BigDecimal.ZERO;
+        BigDecimal defectQty = wo.getDefectQty() != null ? wo.getDefectQty() : BigDecimal.ZERO;
+        qc.setInspectQty(qualifiedQty.add(defectQty).intValue());
+        // 不良数量 = 工单总不良数量
+        qc.setDefectQty(defectQty.intValue());
+        // 报废数量暂不预填，由质检员判定后填写
+        qc.setScrapQty(0);
+        // 检验结论默认未判定（留空），等待质检员确认后填写
+        qc.setDefectType("");
+        qc.setQcResult("");
+        qc.setQcBy("");
+        qc.setQcTime(null);
+        qc.setDelFlag("0");
+        qc.setCreateBy(username);
+        qc.setCreateTime(now);
+        qc.setRemark("工单完工自动生成，待质检员确认检验结果");
+        qcMapper.insertQc(qc);
     }
 
     private MmsDispatch getAndCheckDispatch(Long dispatchId)

@@ -383,16 +383,18 @@
         <div class="highlight-card highlight-primary">
           <div class="highlight-card-title">什么是工艺路线？</div>
           <div class="highlight-card-body">
-            <strong>工艺路线（Routing）</strong>是生产管控中定义产品生产加工路径的核心主数据。工艺路线规定了各工序的先后顺序、对应设备、标准工时和准备时间，是工单排产、工序流转和产能计算的基础依据。<br/><br/>
+            <strong>工艺路线（Routing）</strong>是生产管控中定义产品生产加工路径的核心主数据。工艺路线规定了各工序的先后顺序、对应产能单元、标准工时和准备时间，是工单排产、工序流转和产能计算的基础依据。<br/><br/>
             工艺路线遵循<strong>MES标准化生产模型</strong>，通过版本管理支持不同工艺方案的并存与切换。已审核状态的路线方可被工单引用，确保生产过程使用经过验证的标准工艺。工艺路线与BOM共同构成生产管控的两大核心主数据：BOM定义"用什么料"，工艺路线定义"怎么造"。
           </div>
         </div>
         <div class="highlight-card highlight-success" style="margin-top: 12px;">
           <div class="highlight-card-title">工艺路线的核心组成</div>
           <div class="highlight-card-body">
-            <p>• <strong>工序序列：</strong>按生产先后顺序排列的加工步骤，每个工序包含编码、名称、标准工时等</p>
+            <p>• <strong>工序序列：</strong>按生产先后顺序排列的加工步骤，支持串行和并行排列，每个工序包含编码、名称、标准工时等</p>
+            <p>• <strong>产能单元：</strong>每个工序可绑定具体的产能单元（设备/产线），用于排产时的资源分配</p>
             <p>• <strong>标准工时：</strong>每个工序的标准加工时间，用于计算总工时和排产计划</p>
             <p>• <strong>关键/外协标记：</strong>标记关键工序和外协工序，便于排产和产能管理</p>
+            <p>• <strong>流程图可视化：</strong>系统自动生成横向流程图，直观展示串行/并行工序关系</p>
           </div>
         </div>
 
@@ -477,26 +479,44 @@
             <p>• <strong>路线编号：</strong>路线的唯一标识编号，保存后由系统自动生成，无需手工输入</p>
             <p>• <strong>路线名称：</strong>路线的描述性名称，建议包含产品名+工艺特征，如"产品A-标准工艺路线"<span style="color: #f56c6c;">*必填</span></p>
             <p>• <strong>版本：</strong>路线的版本号，用于版本管理。可通过「复制」创建新版本<span style="color: #f56c6c;">*必填</span></p>
+            <p>• <strong>状态：</strong>当前路线状态（草稿/待审核/已审核/已停用/已驳回），以标签形式只读展示</p>
             <p>• <strong>总工时(h)：</strong>所有工序标准工时之和，系统自动计算，不可手动修改</p>
           </div>
         </div>
         <div class="highlight-card highlight-warning" style="margin-top: 12px;">
           <div class="highlight-card-title">产品信息区</div>
           <div class="highlight-card-body">
-            <p>• <strong>产品编码：</strong>从物料库中选择该路线对应的产品，点击搜索按钮弹出选择器，选择后自动带出产品名称<span style="color: #f56c6c;">*必填</span></p>
+            <p>• <strong>产品编码：</strong>从物料库中选择该路线对应的产品，点击输入框右侧搜索按钮弹出物料选择器，选择后自动带出产品名称<span style="color: #f56c6c;">*必填</span></p>
             <p>• <strong>产品名称：</strong>选择产品后自动带出，不可手动编辑</p>
           </div>
         </div>
         <div class="highlight-card highlight-primary" style="margin-top: 12px;">
           <div class="highlight-card-title">工序明细区</div>
           <div class="highlight-card-body">
-            <p>• <strong>序号：</strong>工序的排列顺序，支持手动调整。点击「按序号排序」可自动重排<span style="color: #f56c6c;">*必填</span></p>
-            <p>• <strong>工序编码：</strong>从工序库中选择已有工序，选择后自动带出工序名称、标准工时等<span style="color: #f56c6c;">*必填</span></p>
+            <p>• <strong>添加工序：</strong>点击「添加工序」按钮新增一行工序，新增后点击工序编码右侧搜索按钮从工序库中选择已有工序</p>
+            <p>• <strong>拖拽排序：</strong>按住工序行左侧拖拽手柄图标（⋮），上下拖动可调整工序排列顺序，步骤序号自动重排</p>
+            <p>• <strong>串行/并行：</strong>点击工序行「并行」按钮，可将该工序与上方工序合并为并行执行组（同一步骤序号）；再次点击「拆分」可恢复为串行</p>
+            <p>• <strong>流程图可视化：</strong>工序明细区上方自动生成横向流程图，蓝色圆形节点表示串行步骤，橙色节点表示并行组，直观展示工序间逻辑关系</p>
+            <p>• <strong>工序编码：</strong>从工序库中选择已有工序，选择后自动带出工序名称、标准工时、准备时间等<span style="color: #f56c6c;">*必填</span></p>
             <p>• <strong>工序名称：</strong>选择工序后自动带出，可手动修改为更具体的名称</p>
+            <p>• <strong>产能单元：</strong>点击输入框右侧搜索按钮从产能单元库中选择该工序对应的设备/产线资源。可选择资源编码、产能单元名称、所属产线和车间。未选择产能单元的工序在排产时将使用工单头上的产能单元</p>
             <p>• <strong>标准工时(h)：</strong>该工序的标准加工时间，用于计算总工时和排产计划。修改后自动重算总工时<span style="color: #f56c6c;">*必填</span></p>
             <p>• <strong>准备时间(h)：</strong>该工序的换线/准备时间，排产时计入工序总耗时</p>
             <p>• <strong>关键：</strong>勾选表示该工序为关键工序（瓶颈工序），排产时优先保障产能</p>
             <p>• <strong>外协：</strong>勾选表示该工序为外协工序，需发送给外部供应商加工</p>
+            <p>• <strong>删除工序：</strong>点击行尾删除按钮移除该工序，系统保留至少一个工序行，不允许全部删除</p>
+          </div>
+        </div>
+        <div class="highlight-card highlight-warning" style="margin-top: 12px;">
+          <div class="highlight-card-title">附加信息区</div>
+          <div class="highlight-card-body">
+            <p>• <strong>备注：</strong>填写路线的补充说明信息，如特殊工艺要求、注意事项等</p>
+          </div>
+        </div>
+        <div class="highlight-card highlight-danger" style="margin-top: 12px;">
+          <div class="highlight-card-title">驳回提醒</div>
+          <div class="highlight-card-body">
+            <p>• 当路线状态为「已驳回」时，编辑表单顶部会显示橙色警告提示：<strong>"该路线已被驳回，请修改后重新提交"</strong>，提醒用户修改内容后重新提交审核</p>
           </div>
         </div>
 
@@ -506,43 +526,104 @@
           <div class="highlight-card-title">关键规则</div>
           <div class="highlight-card-body">
             <p>• <strong>已审核不可修改：</strong>路线状态为已审核后，所有字段均不可修改。如需调整，请先「复制」创建新版本，修改后重新提交审核</p>
-            <p>• <strong>工单引用校验：</strong>只有已审核状态的路线才能被生产工单引用。草稿、待审核、已停用状态的路线不可被工单引用</p>
+            <p>• <strong>工单引用校验：</strong>只有已审核状态的路线才能被生产工单引用。草稿、待审核、已停用、已驳回状态的路线不可被工单引用</p>
             <p>• <strong>总工时自动计算：</strong>总工时 = 所有工序标准工时之和，系统在添加、删除或修改工序工时后自动重算，不可手动修改</p>
             <p>• <strong>版本管理：</strong>通过「复制」功能创建新版本路线，新版本独立于原版本，可独立修改和审核。同一产品可有多个版本的路线</p>
+            <p>• <strong>产能单元校验：</strong>提交时若存在未选择产能单元的工序，系统将弹窗提示，未选择产能单元的工序在排产时将使用工单头上的产能单元</p>
+            <p>• <strong>至少一道工序：</strong>提交时工序明细至少需要保留一个工序，系统不允许删除最后一个工序行</p>
           </div>
         </div>
         <div class="highlight-card highlight-primary" style="margin-top: 12px;">
           <div class="highlight-card-title">工序规则</div>
           <div class="highlight-card-body">
             <p>• <strong>工序来源：</strong>工序列表中的工序从工序库中选择，确保工序编码和标准的统一性</p>
+            <p>• <strong>并行工序：</strong>同一步骤序号的工序为并行执行，表示这些工序可同时加工，排产时并行分配资源</p>
             <p>• <strong>关键工序：</strong>关键工序在排产时优先保障产能，系统在产能负荷分析时重点关注关键工序</p>
             <p>• <strong>外协工序：</strong>外协工序在工单下发时生成外协采购需求，不计入内部产能</p>
             <p style="color: #e6a23c;"><strong>提示：</strong>合理设置标准工时和准备时间是准确排产的基础，建议定期根据实际生产数据校准标准工时</p>
           </div>
         </div>
 
-        <!-- 六、业务操作流程 -->
-        <h4>六、业务操作流程</h4>
+        <!-- 六、详情查看与版本变更记录 -->
+        <h4>六、详情查看与版本变更记录</h4>
+        <div class="highlight-card highlight-success">
+          <div class="highlight-card-title">详情弹窗</div>
+          <div class="highlight-card-body">
+            <p>• 点击列表行操作列「详情」按钮，打开路线详情弹窗</p>
+            <p>• 详情弹窗包含：<strong>路线标识</strong>（编号、名称、版本、状态、总工时、工序数）、<strong>产品信息</strong>（编码、名称）、<strong>工序列表</strong>（含流程图可视化展示和工序明细表格）、<strong>版本变更记录</strong>（时间轴展示）</p>
+            <p>• 所有卡片支持折叠/展开，点击卡片标题栏即可切换</p>
+          </div>
+        </div>
+        <div class="highlight-card highlight-primary" style="margin-top: 12px;">
+          <div class="highlight-card-title">版本变更记录</div>
+          <div class="highlight-card-body">
+            <p>• 版本变更记录以<strong>时间轴</strong>形式展示路线的全部操作历史</p>
+            <p>• 记录类型包括：创建、修改、提交审核、审核通过、审核驳回、停用、复制等</p>
+            <p>• 审核记录会显示审核意见内容，驳回记录以红色标签标识，通过记录以绿色标签标识</p>
+            <p>• 若路线状态为「已驳回」，变更记录区顶部会显示橙色提醒：该路线已被驳回，请修改后重新提交审核</p>
+          </div>
+        </div>
+
+        <!-- 七、审核操作说明 -->
+        <h4>七、审核操作说明</h4>
+        <div class="highlight-card highlight-warning">
+          <div class="highlight-card-title">审核流程</div>
+          <div class="highlight-card-body">
+            <p>• 当路线状态为「待审核」时，行操作列会出现「审核」按钮，点击后进入<strong>审批弹窗</strong></p>
+            <p>• 审批弹窗展示：<strong>路线信息摘要</strong>（编号、名称、产品、版本、总工时、工序数）、<strong>工序列表</strong>（含流程图可视化展示和工序明细表格，含关键/外协标记）</p>
+            <p>• 在「审批意见」区填写审批意见（必填，最多500字），点击底部按钮：</p>
+            <p style="padding-left: 16px;">○ 点击「通过」：路线状态变为<strong>已审核</strong>，可被生产工单引用</p>
+            <p style="padding-left: 16px;">○ 点击「驳回」：路线状态变为<strong>已驳回</strong>，可修改后重新提交审核</p>
+            <p>• 审核操作均会记录在版本变更记录中，保留审核意见</p>
+          </div>
+        </div>
+
+        <!-- 八、业务操作流程 -->
+        <h4>八、业务操作流程</h4>
         <el-timeline>
           <el-timeline-item type="primary" :hollow="true">
-            <strong>创建路线：</strong>点击「新增」创建工艺路线，填写路线名称、版本号，选择产品，路线编号保存后自动生成
+            <strong>创建路线：</strong>点击「新增」创建工艺路线，填写路线名称、版本号，点击产品编码搜索按钮从物料库中选择产品，路线编号保存后自动生成
           </el-timeline-item>
           <el-timeline-item type="warning" :hollow="true">
-            <strong>维护工序：</strong>在工序明细区点击「添加工序行」，逐行添加工序，设置序号、标准工时、关键/外协标记
+            <strong>维护工序：</strong>在工序明细区点击「添加工序」新增工序行，点击工序编码搜索按钮从工序库选择工序，点击产能单元搜索按钮选择对应资源。通过拖拽手柄调整工序顺序，点击「并行」按钮可设置并行工序组。修改标准工时后总工时自动重算，设置关键/外协标记
           </el-timeline-item>
           <el-timeline-item type="warning" :hollow="true">
             <strong>提交审核：</strong>确认工序信息无误后点击「提交审核」，路线进入待审核状态，仍可继续调整完善
           </el-timeline-item>
           <el-timeline-item type="success" :hollow="true">
-            <strong>审核路线：</strong>待审核状态下点击「审核」，在审批弹窗中查看路线信息和工序列表，填写审批意见后点击「通过」或「驳回」。审核通过后路线状态变为已审核，可被生产工单引用进行排产；审核驳回后状态变为已驳回，可修改后重新提交
+            <strong>审核路线：</strong>待审核状态下点击「审核」，在审批弹窗中查看路线信息摘要和工序列表（含流程图），填写审批意见后点击「通过」或「驳回」。审核通过后路线状态变为已审核，可被生产工单引用进行排产；审核驳回后状态变为已驳回，可修改后重新提交
           </el-timeline-item>
           <el-timeline-item type="info" :hollow="true">
-            <strong>复制新版本：</strong>如需修改已审核的路线，点击「复制」创建新版本，修改后重新提交审核
+            <strong>复制新版本：</strong>如需修改已审核的路线，点击「复制」创建新版本，修改后重新提交审核。新版本独立于原版本，可独立修改和审核
           </el-timeline-item>
           <el-timeline-item type="danger" :hollow="true">
-            <strong>停用路线：</strong>不再使用的路线可点击「停用」，停用后不可被新工单引用，可随时重新提交审核
+            <strong>停用路线：</strong>不再使用的路线可点击「停用」，停用后不可被新工单引用，可随时重新提交审核恢复
+          </el-timeline-item>
+          <el-timeline-item type="primary" :hollow="true">
+            <strong>查看详情：</strong>点击「详情」可查看路线完整信息，包括路线标识、产品信息、工序列表（含流程图可视化展示）和版本变更记录时间轴
           </el-timeline-item>
         </el-timeline>
+
+        <!-- 九、筛选与列表操作 -->
+        <h4>九、筛选与列表操作</h4>
+        <div class="highlight-card highlight-primary">
+          <div class="highlight-card-title">筛选与搜索</div>
+          <div class="highlight-card-body">
+            <p>• <strong>基础筛选：</strong>支持按路线编号、路线名称、产品编码、产品名称快速搜索，输入后回车或点击「搜索」按钮查询</p>
+            <p>• <strong>高级筛选：</strong>点击「高级筛选」展开更多条件，包括状态（下拉选择）、版本号、创建日期范围（日期区间选择器）</p>
+            <p>• <strong>重置：</strong>点击「重置」按钮清空所有筛选条件并重新查询</p>
+            <p>• <strong>状态标签页：</strong>列表顶部提供状态标签快捷切换（全部/草稿/待审核/已审核/已停用/已驳回），各标签显示对应状态的记录数</p>
+          </div>
+        </div>
+        <div class="highlight-card highlight-success" style="margin-top: 12px;">
+          <div class="highlight-card-title">列表操作</div>
+          <div class="highlight-card-body">
+            <p>• <strong>列设置：</strong>点击右上角工具栏的列设置图标，可自定义显示/隐藏表格列（路线编号、路线名称、产品编码、产品名称、版本、工序数、总工时、状态、创建时间）</p>
+            <p>• <strong>列宽调整：</strong>表格列头支持拖拽调整列宽，设置自动保存到本地</p>
+            <p>• <strong>导出：</strong>点击「导出」按钮可将当前筛选结果导出为Excel文件</p>
+            <p>• <strong>批量删除：</strong>勾选多行后点击「删除」按钮可批量删除选中路线</p>
+          </div>
+        </div>
       </div>
       <template #footer>
         <el-button type="primary" @click="showStatusHelp = false">我知道了</el-button>

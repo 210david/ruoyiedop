@@ -7,6 +7,7 @@
         <result property="dispatchNo" column="dispatch_no"/>
         <result property="workOrderId" column="work_order_id"/>
         <result property="workOrderNo" column="work_order_no"/>
+        <result property="workOrderStatus" column="work_order_status"/>
         <result property="productCode" column="product_code"/>
         <result property="productName" column="product_name"/>
         <result property="specModel" column="spec_model"/>
@@ -36,32 +37,33 @@
     </resultMap>
 
     <sql id="selectDispatchVo">
-        SELECT dispatch_id, dispatch_no, work_order_id, work_order_no, product_code, product_name, spec_model, unit, op_seq, process_id, process_name, resource_id, resource_name, team_id, team_name, user_ids, plan_qty, good_qty, defect_qty, plan_start, plan_end, actual_start, actual_end, status, del_flag, create_by, create_time, update_by, update_time, remark
-        FROM mms_dispatch
+        SELECT d.dispatch_id, d.dispatch_no, d.work_order_id, d.work_order_no, wo.status AS work_order_status, d.product_code, d.product_name, d.spec_model, d.unit, d.op_seq, d.process_id, d.process_name, d.resource_id, d.resource_name, d.team_id, d.team_name, d.user_ids, d.plan_qty, d.good_qty, d.defect_qty, d.plan_start, d.plan_end, d.actual_start, d.actual_end, d.status, d.del_flag, d.create_by, d.create_time, d.update_by, d.update_time, d.remark
+        FROM mms_dispatch d
+        LEFT JOIN mms_work_order wo ON d.work_order_id = wo.work_order_id
     </sql>
 
     <select id="selectDispatchList" parameterType="MmsDispatch" resultMap="MmsDispatchResult">
         <include refid="selectDispatchVo"/>
         <where>
-            del_flag = '0'
-            <if test="dispatchNo != null and dispatchNo != ''"> AND dispatch_no LIKE CONCAT('%', #{dispatchNo}, '%')</if>
-            <if test="workOrderId != null"> AND work_order_id = #{workOrderId}</if>
-            <if test="workOrderNo != null and workOrderNo != ''"> AND work_order_no LIKE CONCAT('%', #{workOrderNo}, '%')</if>
-            <if test="opSeq != null"> AND op_seq = #{opSeq}</if>
-            <if test="processName != null and processName != ''"> AND process_name LIKE CONCAT('%', #{processName}, '%')</if>
-            <if test="resourceName != null and resourceName != ''"> AND resource_name LIKE CONCAT('%', #{resourceName}, '%')</if>
-            <if test="teamName != null and teamName != ''"> AND team_name LIKE CONCAT('%', #{teamName}, '%')</if>
-            <if test="teamId != null"> AND team_id = #{teamId}</if>
-            <if test="status != null and status != ''"> AND status = #{status}</if>
-            <if test="params.beginTime != null and params.beginTime != ''"> AND date(create_time) &gt;= #{params.beginTime}</if>
-            <if test="params.endTime != null and params.endTime != ''"> AND date(create_time) &lt;= #{params.endTime}</if>
+            d.del_flag = '0'
+            <if test="dispatchNo != null and dispatchNo != ''"> AND d.dispatch_no LIKE CONCAT('%', #{dispatchNo}, '%')</if>
+            <if test="workOrderId != null"> AND d.work_order_id = #{workOrderId}</if>
+            <if test="workOrderNo != null and workOrderNo != ''"> AND d.work_order_no LIKE CONCAT('%', #{workOrderNo}, '%')</if>
+            <if test="opSeq != null"> AND d.op_seq = #{opSeq}</if>
+            <if test="processName != null and processName != ''"> AND d.process_name LIKE CONCAT('%', #{processName}, '%')</if>
+            <if test="resourceName != null and resourceName != ''"> AND d.resource_name LIKE CONCAT('%', #{resourceName}, '%')</if>
+            <if test="teamName != null and teamName != ''"> AND d.team_name LIKE CONCAT('%', #{teamName}, '%')</if>
+            <if test="teamId != null"> AND d.team_id = #{teamId}</if>
+            <if test="status != null and status != ''"> AND d.status = #{status}</if>
+            <if test="params.beginTime != null and params.beginTime != ''"> AND date(d.create_time) &gt;= #{params.beginTime}</if>
+            <if test="params.endTime != null and params.endTime != ''"> AND date(d.create_time) &lt;= #{params.endTime}</if>
         </where>
-        ORDER BY dispatch_id DESC
+        ORDER BY d.dispatch_id DESC
     </select>
 
     <select id="selectDispatchById" parameterType="Long" resultMap="MmsDispatchResult">
         <include refid="selectDispatchVo"/>
-        WHERE dispatch_id = #{dispatchId}
+        WHERE d.dispatch_id = #{dispatchId}
     </select>
 
     <insert id="insertDispatch" parameterType="MmsDispatch" useGeneratedKeys="true" keyProperty="dispatchId">
@@ -180,9 +182,18 @@
     <!-- 按工单ID查询未完成的派工单列表（状态非已完成/已取消） -->
     <select id="selectActiveDispatchByWorkOrder" resultMap="MmsDispatchResult">
         <include refid="selectDispatchVo"/>
-        WHERE work_order_id = #{workOrderId}
-          AND del_flag = '0'
-          AND status NOT IN ('2', '3')
-        ORDER BY op_seq ASC
+        WHERE d.work_order_id = #{workOrderId}
+          AND d.del_flag = '0'
+          AND d.status NOT IN ('2', '3')
+        ORDER BY d.op_seq ASC
+    </select>
+
+    <!-- 按工单ID查询所有已完工的派工单列表（状态=已完成2），按op_seq升序 -->
+    <select id="selectCompletedDispatchByWorkOrder" resultMap="MmsDispatchResult">
+        <include refid="selectDispatchVo"/>
+        WHERE d.work_order_id = #{workOrderId}
+          AND d.del_flag = '0'
+          AND d.status = '2'
+        ORDER BY d.op_seq ASC
     </select>
 </mapper>

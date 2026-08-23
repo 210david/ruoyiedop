@@ -29,4 +29,12 @@ public interface MmsDispatchMapper
      * @return 派工单列表
      */
     public List<MmsDispatch> selectActiveDispatchByWorkOrder(@Param("workOrderId") Long workOrderId);
+
+    /**
+     * 按工单ID查询所有已完工的派工单列表（状态=已完成2），按op_seq升序
+     *
+     * @param workOrderId 工单ID
+     * @return 派工单列表
+     */
+    public List<MmsDispatch> selectCompletedDispatchByWorkOrder(@Param("workOrderId") Long workOrderId);
 }

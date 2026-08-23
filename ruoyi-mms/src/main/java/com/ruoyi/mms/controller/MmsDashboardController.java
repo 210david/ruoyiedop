@@ -142,9 +142,9 @@ public class MmsDashboardController extends BaseController
         for (MmsWorkOrder wo : allOrders)
         {
             String s = wo.getStatus() == null ? "0" : wo.getStatus();
-            if ("1".equals(s) || "2".equals(s) || "3".equals(s)) woInProduction++;
-            if ("5".equals(s) || "6".equals(s)) woCompleted++;
-            if ("7".equals(s) || "8".equals(s)) woAbnormal++;
+            if ("1".equals(s) || "2".equals(s)) woInProduction++;
+            if ("3".equals(s) || "4".equals(s)) woCompleted++;
+            if ("5".equals(s) || "6".equals(s)) woAbnormal++;
         }
         woStats.put("inProduction", woInProduction);
         woStats.put("completed", woCompleted);

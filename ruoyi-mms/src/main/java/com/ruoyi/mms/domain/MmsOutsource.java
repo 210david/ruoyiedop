@@ -25,7 +25,7 @@ public class MmsOutsource extends BaseEntity
     @Excel(name = "工单编号")
     private String workOrderNo;
 
-    @Excel(name = "工序序号")
+    @Excel(name = "工序顺序号")
     private Integer opSeq;
 
     @Excel(name = "工序名称")

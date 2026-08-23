@@ -13,6 +13,10 @@ import com.ruoyi.common.core.page.TableDataInfo;
 import com.ruoyi.common.enums.BusinessType;
 import com.ruoyi.common.utils.poi.ExcelUtil;
 import com.ruoyi.mms.domain.MmsWorkOrder;
+import com.ruoyi.mms.domain.MmsWoBomSnapshot;
+import com.ruoyi.mms.domain.MmsWoRouteSnapshot;
+import com.ruoyi.mms.mapper.MmsWoBomSnapshotMapper;
+import com.ruoyi.mms.mapper.MmsWoRouteSnapshotMapper;
 import com.ruoyi.mms.service.IMmsWorkOrderService;
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -27,6 +31,12 @@ public class MmsWorkOrderController extends BaseController
 {
     @Autowired
     private IMmsWorkOrderService mmsWorkOrderService;
+
+    @Autowired
+    private MmsWoRouteSnapshotMapper woRouteSnapshotMapper;
+
+    @Autowired
+    private MmsWoBomSnapshotMapper woBomSnapshotMapper;
 
     // ========== 标准 CRUD ==========
 
@@ -126,7 +136,7 @@ public class MmsWorkOrderController extends BaseController
 
     /**
      * 工单暂停
-     * 状态：1(已下达)/2(执行中) → 7(已暂停)
+     * 状态：1(已下达)/2(执行中) → 5(已暂停)
      */
     @Log(title = "生产工单-暂停", businessType = BusinessType.UPDATE)
     @PreAuthorize("@ss.hasPermi('mms:workorder:pause')")
@@ -139,7 +149,7 @@ public class MmsWorkOrderController extends BaseController
 
     /**
      * 工单恢复
-     * 状态：7(已暂停) → 1(已下达)
+     * 状态：5(已暂停) → 1(已下达)
      */
     @Log(title = "生产工单-恢复", businessType = BusinessType.UPDATE)
     @PreAuthorize("@ss.hasPermi('mms:workorder:resume')")
@@ -151,7 +161,7 @@ public class MmsWorkOrderController extends BaseController
 
     /**
      * 工单完工
-     * 状态：2(执行中)/3(报工中) → 4(待完工质检)
+     * 状态：2(执行中) → 3(已完工)，自动生成完工质检单（独立业务）
      */
     @Log(title = "生产工单-完工", businessType = BusinessType.UPDATE)
     @PreAuthorize("@ss.hasPermi('mms:workorder:finish')")
@@ -163,7 +173,7 @@ public class MmsWorkOrderController extends BaseController
 
     /**
      * 工单关闭
-     * 状态：4(待完工质检)/5(完工入库) → 6(已关闭)
+     * 状态：3(已完工) → 4(已关闭)，或2(执行中)强制关闭
      */
     @Log(title = "生产工单-关闭", businessType = BusinessType.UPDATE)
     @PreAuthorize("@ss.hasPermi('mms:workorder:close')")
@@ -176,7 +186,7 @@ public class MmsWorkOrderController extends BaseController
 
     /**
      * 工单作废
-     * 状态：任意非已关闭/已作废状态 → 8(已作废)，需无在制报工
+     * 状态：任意非已关闭/已作废状态 → 6(已作废)，需无在制报工
      */
     @Log(title = "生产工单-作废", businessType = BusinessType.UPDATE)
     @PreAuthorize("@ss.hasPermi('mms:workorder:cancel')")
@@ -222,5 +232,27 @@ public class MmsWorkOrderController extends BaseController
     public AjaxResult auditLog(@PathVariable("workOrderId") Long workOrderId)
     {
         return AjaxResult.success(mmsWorkOrderService.selectAuditLogByWorkOrderId(workOrderId));
+    }
+
+    /**
+     * 查询工单的工序快照列表（供质检页面选择工序）
+     */
+    @PreAuthorize("@ss.hasPermi('mms:workorder:query')")
+    @GetMapping("/processes/{workOrderId}")
+    public AjaxResult processes(@PathVariable("workOrderId") Long workOrderId)
+    {
+        List<MmsWoRouteSnapshot> list = woRouteSnapshotMapper.selectRouteSnapshotByWorkOrderId(workOrderId);
+        return AjaxResult.success(list);
+    }
+
+    /**
+     * 查询工单的BOM快照列表（供领料/退料页面选择物料）
+     */
+    @PreAuthorize("@ss.hasPermi('mms:workorder:query')")
+    @GetMapping("/bomSnapshot/{workOrderId}")
+    public AjaxResult bomSnapshot(@PathVariable("workOrderId") Long workOrderId)
+    {
+        List<MmsWoBomSnapshot> list = woBomSnapshotMapper.selectBomSnapshotByWorkOrderId(workOrderId);
+        return AjaxResult.success(list);
     }
 }

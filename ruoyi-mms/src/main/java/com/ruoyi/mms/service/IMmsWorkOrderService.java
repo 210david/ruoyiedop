@@ -28,19 +28,19 @@ public interface IMmsWorkOrderService
     /** 工单下达预览：返回BOM明细+工艺工序，供前端弹窗展示 */
     public com.ruoyi.common.core.domain.AjaxResult getReleasePreview(Long workOrderId);
 
-    /** 工单暂停：1(已下达)/2(执行中) → 7(已暂停) */
+    /** 工单暂停：1(已下达)/2(执行中) → 5(已暂停) */
     public int pauseWorkOrder(Long workOrderId, String pauseReason);
 
-    /** 工单恢复：7(已暂停) → 1(已下达) */
+    /** 工单恢复：5(已暂停) → 1(已下达) */
     public int resumeWorkOrder(Long workOrderId);
 
-    /** 工单完工：2(执行中)/3(报工中) → 4(待完工质检) */
+    /** 工单完工：2(执行中) → 3(已完工)，同时自动生成完工质检单（独立业务） */
     public int finishWorkOrder(Long workOrderId);
 
-    /** 工单关闭：4(待完工质检)/5(完工入库) → 6(已关闭) */
+    /** 工单关闭：3(已完工) → 4(已关闭)，或2(执行中)强制关闭 */
     public int closeWorkOrder(Long workOrderId, String closeRemark);
 
-    /** 工单作废：任意非关闭/作废状态 → 8(已作废) */
+    /** 工单作废：任意非关闭/作废状态 → 6(已作废) */
     public int cancelWorkOrder(Long workOrderId, String cancelReason);
 
     /** 工单拆分：返回拆分后的新工单ID */

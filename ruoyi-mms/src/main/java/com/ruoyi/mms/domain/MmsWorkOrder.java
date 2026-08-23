@@ -100,7 +100,7 @@ public class MmsWorkOrder extends BaseEntity
     @Excel(name = "优先级", readConverterExp = "0=高,1=中,2=低")
     private String priority;
 
-    @Excel(name = "状态", readConverterExp = "0=新建,1=已下达,2=执行中,3=报工中,4=待完工质检,5=完工入库,6=已关闭,7=已暂停,8=已作废")
+    @Excel(name = "状态", readConverterExp = "0=新建,1=已下达,2=执行中,3=已完工,4=已关闭,5=已暂停,6=已作废")
     private String status;
 
     private String auditBy;
@@ -143,6 +143,9 @@ public class MmsWorkOrder extends BaseEntity
 
     /** 工艺快照明细（非持久化，详情查询时填充） */
     private List<MmsWoRouteSnapshot> routeSnapshotList;
+
+    /** 派工单列表（非持久化，详情查询时填充，用于展示各工序完成情况） */
+    private List<MmsDispatch> dispatchList;
 
     public Long getWorkOrderId() { return workOrderId; }
     public void setWorkOrderId(Long workOrderId) { this.workOrderId = workOrderId; }
@@ -234,4 +237,6 @@ public class MmsWorkOrder extends BaseEntity
     public void setBomSnapshotList(List<MmsWoBomSnapshot> bomSnapshotList) { this.bomSnapshotList = bomSnapshotList; }
     public List<MmsWoRouteSnapshot> getRouteSnapshotList() { return routeSnapshotList; }
     public void setRouteSnapshotList(List<MmsWoRouteSnapshot> routeSnapshotList) { this.routeSnapshotList = routeSnapshotList; }
+    public List<MmsDispatch> getDispatchList() { return dispatchList; }
+    public void setDispatchList(List<MmsDispatch> dispatchList) { this.dispatchList = dispatchList; }
 }

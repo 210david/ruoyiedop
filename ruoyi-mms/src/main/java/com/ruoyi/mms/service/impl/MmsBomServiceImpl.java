@@ -2,10 +2,13 @@ package com.ruoyi.mms.service.impl;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.common.utils.SecurityUtils;
@@ -13,6 +16,7 @@ import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.mk.service.IMkNumberRuleService;
 import com.ruoyi.mms.domain.MmsBom;
 import com.ruoyi.mms.domain.MmsBomDetail;
+import com.ruoyi.mms.domain.MmsBomImport;
 import com.ruoyi.mms.mapper.MmsBomMapper;
 import com.ruoyi.mms.service.IMmsBomService;
 
@@ -373,5 +377,191 @@ public class MmsBomServiceImpl implements IMmsBomService
         {
             return version + "-COPY";
         }
+    }
+
+    /**
+     * BOM批量导入
+     * Excel每行包含BOM主表字段和明细字段，按"产品编码+版本号"分组构建BOM
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public AjaxResult importBom(List<MmsBomImport> importList, Boolean isUpdateSupport, String operName)
+    {
+        if (StringUtils.isNull(importList) || importList.isEmpty())
+        {
+            return AjaxResult.error("导入BOM数据不能为空！");
+        }
+
+        // 1. 按"产品编码+版本号"分组
+        Map<String, List<MmsBomImport>> groupedMap = new LinkedHashMap<>();
+        for (MmsBomImport row : importList)
+        {
+            String productCode = StringUtils.trimToEmpty(row.getProductCode());
+            String version = StringUtils.trimToEmpty(row.getVersion());
+            if (productCode.isEmpty() || version.isEmpty())
+            {
+                continue;
+            }
+            String groupKey = productCode + "||" + version;
+            groupedMap.computeIfAbsent(groupKey, k -> new ArrayList<>()).add(row);
+        }
+
+        if (groupedMap.isEmpty())
+        {
+            return AjaxResult.error("未检测到有效的BOM数据，请确保产品编码和版本号不为空");
+        }
+
+        int successNum = 0;
+        int failureNum = 0;
+        StringBuilder successMsg = new StringBuilder();
+        StringBuilder failureMsg = new StringBuilder();
+
+        for (Map.Entry<String, List<MmsBomImport>> entry : groupedMap.entrySet())
+        {
+            String groupKey = entry.getKey();
+            List<MmsBomImport> rows = entry.getValue();
+            String productCode = groupKey.split("\\|\\|")[0];
+            String version = groupKey.split("\\|\\|")[1];
+
+            try
+            {
+                // 取第一行作为BOM主表信息
+                MmsBomImport firstRow = rows.get(0);
+
+                // 校验BOM名称
+                if (StringUtils.isEmpty(firstRow.getBomName()))
+                {
+                    throw new RuntimeException("BOM名称不能为空");
+                }
+
+                // 校验产品编码
+                if (StringUtils.isEmpty(firstRow.getProductCode()))
+                {
+                    throw new RuntimeException("产品编码不能为空");
+                }
+
+                // 通过产品编码查询产品物料信息
+                Map<String, Object> productInfo = bomMapper.selectMaterialByCode(firstRow.getProductCode());
+                if (productInfo == null)
+                {
+                    throw new RuntimeException("产品编码[" + firstRow.getProductCode() + "]在物料库中不存在");
+                }
+
+                // 检查是否已存在相同产品编码+版本号的BOM
+                MmsBom existingBom = bomMapper.selectBomByProductCodeAndVersion(firstRow.getProductCode(), firstRow.getVersion());
+
+                if (existingBom != null)
+                {
+                    if (!isUpdateSupport)
+                    {
+                        failureNum++;
+                        failureMsg.append("<br/>").append(failureNum).append("、BOM ")
+                            .append(firstRow.getBomName()).append("（产品：").append(firstRow.getProductCode())
+                            .append("，版本：").append(firstRow.getVersion()).append("）已存在");
+                        continue;
+                    }
+                    // 更新模式：删除旧BOM后重新创建
+                    bomMapper.deleteBomDetailByBomId(existingBom.getBomId());
+                    bomMapper.deleteBomByIds(new Long[]{existingBom.getBomId()});
+                }
+
+                // 构建BOM主表对象
+                MmsBom bom = new MmsBom();
+                bom.setBomNo(mkNumberRuleService.generateNumber("mms_bom"));
+                bom.setBomName(firstRow.getBomName());
+                bom.setProductId((Long) productInfo.get("materialId"));
+                bom.setProductCode(firstRow.getProductCode());
+                bom.setProductName(firstRow.getProductName() != null ? firstRow.getProductName() : (String) productInfo.get("materialName"));
+                bom.setBomType(StringUtils.isNotEmpty(firstRow.getBomType()) ? firstRow.getBomType() : "0");
+                bom.setVersion(firstRow.getVersion());
+                bom.setBaseQty(firstRow.getBaseQty() != null ? firstRow.getBaseQty() : BigDecimal.ONE);
+                bom.setBaseUnit(StringUtils.isNotEmpty(firstRow.getBaseUnit()) ? firstRow.getBaseUnit() : (String) productInfo.get("unit"));
+                bom.setStatus("0"); // 草稿
+                bom.setDelFlag("0");
+                bom.setCreateBy(operName);
+                bom.setCreateTime(DateUtils.getNowDate());
+                bom.setRemark(firstRow.getRemark());
+
+                // 构建明细列表
+                List<MmsBomDetail> detailList = new ArrayList<>();
+                int seq = 10;
+                for (MmsBomImport row : rows)
+                {
+                    if (StringUtils.isEmpty(row.getMaterialCode()))
+                    {
+                        // 跳过没有物料编码的行
+                        continue;
+                    }
+                    // 通过物料编码查询物料信息
+                    Map<String, Object> materialInfo = bomMapper.selectMaterialByCode(row.getMaterialCode());
+                    if (materialInfo == null)
+                    {
+                        throw new RuntimeException("物料编码[" + row.getMaterialCode() + "]在物料库中不存在");
+                    }
+                    MmsBomDetail detail = new MmsBomDetail();
+                    detail.setSeq(seq);
+                    detail.setMaterialId((Long) materialInfo.get("materialId"));
+                    detail.setMaterialCode(row.getMaterialCode());
+                    detail.setMaterialName((String) materialInfo.get("materialName"));
+                    detail.setSpecModel((String) materialInfo.get("specModel"));
+                    detail.setUnit((String) materialInfo.get("unit"));
+                    detail.setUsageQty(row.getUsageQty() != null ? row.getUsageQty() : BigDecimal.ONE);
+                    detail.setLossRate(row.getLossRate() != null ? row.getLossRate() : BigDecimal.ZERO);
+                    detail.setIsKeyMaterial(StringUtils.isNotEmpty(row.getIsKeyMaterial()) ? row.getIsKeyMaterial() : "0");
+                    detail.setSupplyType(StringUtils.isNotEmpty(row.getSupplyType()) ? row.getSupplyType() : "1");
+                    detail.setIsPhantom(StringUtils.isNotEmpty(row.getIsPhantom()) ? row.getIsPhantom() : "0");
+                    detail.setDelFlag("0");
+                    detail.setCreateBy(operName);
+                    detail.setCreateTime(DateUtils.getNowDate());
+                    detailList.add(detail);
+                    seq += 10;
+                }
+
+                if (detailList.isEmpty())
+                {
+                    throw new RuntimeException("BOM明细不能为空，至少需要一行物料数据");
+                }
+
+                bom.setDetailList(detailList);
+
+                // 插入主表
+                bomMapper.insertBom(bom);
+                // 插入明细
+                insertBomDetails(bom);
+
+                successNum++;
+                successMsg.append("<br/>").append(successNum).append("、BOM ")
+                    .append(bom.getBomName()).append("（产品：").append(bom.getProductCode())
+                    .append("，版本：").append(bom.getVersion()).append("）导入成功，含")
+                    .append(detailList.size()).append("条明细");
+            }
+            catch (Exception e)
+            {
+                failureNum++;
+                failureMsg.append("<br/>").append(failureNum).append("、BOM（产品：")
+                    .append(productCode).append("，版本：").append(version)
+                    .append("）导入失败：").append(e.getMessage());
+            }
+        }
+
+        // 构建返回结果
+        StringBuilder resultMsg = new StringBuilder();
+        if (successNum > 0)
+        {
+            resultMsg.append(successMsg);
+        }
+        if (failureNum > 0)
+        {
+            resultMsg.append(failureMsg);
+        }
+
+        AjaxResult ajax = AjaxResult.success(resultMsg.toString());
+        ajax.put("successNum", successNum);
+        ajax.put("failureNum", failureNum);
+        if (failureNum > 0 && successNum == 0)
+        {
+            ajax.put("code", 500);
+        }
+        return ajax;
     }
 }

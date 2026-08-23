@@ -356,8 +356,8 @@ function statusLabel(status) { return dictLabel(mms_kit_status, status); }
 function unitLabel(unit) { return dictLabel(wms_unit, unit); }
 function badgeClass(status) { const map = { '0': 'amber', '1': 'green', '2': 'red' }; return map[status] || 'gray'; }
 function statusTabClass(value) { const map = { '1': 'tab-done', '2': 'tab-short' }; return map[value] || ''; }
-function workOrderStatusLabel(status) { const map = { '0': '新建', '1': '已下达', '2': '执行中', '3': '报工中', '4': '待质检', '5': '完工', '6': '已关闭', '7': '已暂停', '8': '已作废' }; return map[status] || '未知'; }
-function workOrderStatusBadgeClass(status) { const map = { '0': 'amber', '1': 'blue', '2': 'blue', '3': 'blue', '4': 'amber', '5': 'green', '6': 'gray', '7': 'red', '8': 'gray' }; return map[status] || 'gray'; }
+function workOrderStatusLabel(status) { const map = { '0': '新建', '1': '已下达', '2': '执行中', '3': '已完工', '4': '已关闭', '5': '已暂停', '6': '已作废' }; return map[status] || '未知'; }
+function workOrderStatusBadgeClass(status) { const map = { '0': 'amber', '1': 'blue', '2': 'blue', '3': 'green', '4': 'gray', '5': 'amber', '6': 'red' }; return map[status] || 'gray'; }
 function rateClass(rate) { const r = parseFloat(rate); if (isNaN(r)) return 'rate-bad'; if (r >= 100) return 'rate-good'; if (r >= 80) return 'rate-warn'; return 'rate-bad'; }
 function rateStatusText(rate) { const r = parseFloat(rate); if (isNaN(r)) return '未知'; if (r >= 100) return '齐套'; if (r >= 80) return '部分齐套'; return '不齐套'; }
 

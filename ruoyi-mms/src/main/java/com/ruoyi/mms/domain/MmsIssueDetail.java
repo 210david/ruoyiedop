@@ -1,30 +1,25 @@
 package com.ruoyi.mms.domain;
 
 import java.math.BigDecimal;
-import java.util.Date;
-import java.util.List;
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.ruoyi.common.annotation.Excel;
 import com.ruoyi.common.core.domain.BaseEntity;
 
 /**
- * 领料单 mms_issue
+ * 领料明细 mms_issue_detail
  *
  * @author ruoyi
  */
-public class MmsIssue extends BaseEntity
+public class MmsIssueDetail extends BaseEntity
 {
     private static final long serialVersionUID = 1L;
 
+    private Long detailId;
+
+    /** 领料单ID */
     private Long issueId;
 
-    @Excel(name = "领料单号")
-    private String issueNo;
-
-    private Long workOrderId;
-
-    @Excel(name = "工单号")
-    private String workOrderNo;
+    @Excel(name = "序号")
+    private Integer seq;
 
     private Long materialId;
 
@@ -46,28 +41,14 @@ public class MmsIssue extends BaseEntity
     @Excel(name = "批次号")
     private String batchNo;
 
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private Date issueTime;
-
-    @Excel(name = "领料人")
-    private String issueBy;
-
-    @Excel(name = "状态", readConverterExp = "0=待领料,1=已领料,2=已退料")
-    private String status;
-
     private String delFlag;
 
-    /** 领料明细列表（批量领料） */
-    private List<MmsIssueDetail> detailList;
-
+    public Long getDetailId() { return detailId; }
+    public void setDetailId(Long detailId) { this.detailId = detailId; }
     public Long getIssueId() { return issueId; }
     public void setIssueId(Long issueId) { this.issueId = issueId; }
-    public String getIssueNo() { return issueNo; }
-    public void setIssueNo(String issueNo) { this.issueNo = issueNo; }
-    public Long getWorkOrderId() { return workOrderId; }
-    public void setWorkOrderId(Long workOrderId) { this.workOrderId = workOrderId; }
-    public String getWorkOrderNo() { return workOrderNo; }
-    public void setWorkOrderNo(String workOrderNo) { this.workOrderNo = workOrderNo; }
+    public Integer getSeq() { return seq; }
+    public void setSeq(Integer seq) { this.seq = seq; }
     public Long getMaterialId() { return materialId; }
     public void setMaterialId(Long materialId) { this.materialId = materialId; }
     public String getMaterialCode() { return materialCode; }
@@ -82,14 +63,6 @@ public class MmsIssue extends BaseEntity
     public void setIssueQty(BigDecimal issueQty) { this.issueQty = issueQty; }
     public String getBatchNo() { return batchNo; }
     public void setBatchNo(String batchNo) { this.batchNo = batchNo; }
-    public Date getIssueTime() { return issueTime; }
-    public void setIssueTime(Date issueTime) { this.issueTime = issueTime; }
-    public String getIssueBy() { return issueBy; }
-    public void setIssueBy(String issueBy) { this.issueBy = issueBy; }
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
     public String getDelFlag() { return delFlag; }
     public void setDelFlag(String delFlag) { this.delFlag = delFlag; }
-    public List<MmsIssueDetail> getDetailList() { return detailList; }
-    public void setDetailList(List<MmsIssueDetail> detailList) { this.detailList = detailList; }
 }

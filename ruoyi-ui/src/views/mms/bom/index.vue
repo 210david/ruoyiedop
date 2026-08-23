@@ -15,7 +15,7 @@
     </div>
     <div class="surface">
       <div class="status-tabs"><div class="tabs-track"><button class="status-tab" :class="{ 'is-active': activeStatusTab === 'all' }" @click="handleStatusTabClick('all')"><span class="dot"></span><span>全部</span><span class="count">{{ statusCounts.all || 0 }}</span></button><button v-for="s in statusTabList" :key="s.value" class="status-tab" :class="[{ 'is-active': activeStatusTab === s.value }, statusTabClass(s.value)]" @click="handleStatusTabClick(s.value)"><span class="dot"></span><span>{{ s.label }}</span><span class="count">{{ statusCounts[s.value] || 0 }}</span></button></div><button class="tip-pill" @click="showStatusHelp = true"><el-icon><QuestionFilled /></el-icon><span>业务操作说明</span></button></div>
-      <div class="toolbar"><div class="left"><el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['mms:bom:add']">新增</el-button><el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['mms:bom:edit']">修改</el-button><el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['mms:bom:remove']">删除</el-button><div class="toolbar-divider"></div><el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['mms:bom:export']">导出</el-button></div><div class="right"><right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="mms_bom_columns" /></div></div>
+      <div class="toolbar"><div class="left"><el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['mms:bom:add']">新增</el-button><el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['mms:bom:edit']">修改</el-button><el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['mms:bom:remove']">删除</el-button><div class="toolbar-divider"></div><el-button type="info" plain icon="Upload" @click="handleImport" v-hasPermi="['mms:bom:import']">导入</el-button><el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['mms:bom:export']">导出</el-button></div><div class="right"><right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="mms_bom_columns" /></div></div>
       <div class="table-wrap"><el-table ref="tableRef" v-loading="loading" :data="bomList" border @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" class="app-table"><el-table-column type="selection" width="55" align="center" /><el-table-column label="BOM编号" prop="bomNo" key="bomNo" :width="colWidth('bomNo', 140)" resizable v-if="columns.bomNo.visible" /><el-table-column label="BOM名称" prop="bomName" key="bomName" :width="colWidth('bomName', 200)" resizable show-overflow-tooltip v-if="columns.bomName.visible" /><el-table-column label="产品编码" prop="productCode" key="productCode" :width="colWidth('productCode', 130)" resizable v-if="columns.productCode.visible" /><el-table-column label="产品名称" prop="productName" key="productName" :width="colWidth('productName', 200)" resizable show-overflow-tooltip v-if="columns.productName.visible" /><el-table-column label="BOM类型" prop="bomType" key="bomType" :width="colWidth('bomType', 100)" resizable align="center" v-if="columns.bomType.visible"><template #default="scope"><span class="badge blue"><span class="dot"></span>{{ bomTypeLabel(scope.row.bomType) }}</span></template></el-table-column><el-table-column label="版本" prop="version" key="version" :width="colWidth('version', 80)" resizable align="center" v-if="columns.version.visible" /><el-table-column label="基准数量" prop="baseQty" key="baseQty" :width="colWidth('baseQty', 100)" resizable align="center" v-if="columns.baseQty.visible"><template #default="scope"><span>{{ scope.row.baseQty }} {{ unitLabel(scope.row.baseUnit) }}</span></template></el-table-column><el-table-column label="状态" prop="status" key="status" :width="colWidth('status', 100)" resizable align="center" v-if="columns.status.visible"><template #default="scope"><span class="badge" :class="badgeClass(scope.row.status)"><span class="dot"></span>{{ statusLabel(scope.row.status) }}</span></template></el-table-column><el-table-column label="创建时间" prop="createTime" key="createTime" :width="colWidth('createTime', 160)" resizable align="center" v-if="columns.createTime.visible"><template #default="scope"><span>{{ parseTime(scope.row.createTime) }}</span></template></el-table-column><el-table-column label="操作" width="240" align="center" fixed="right"><template #default="scope"><el-button link type="primary" icon="View" @click="handleView(scope.row)">详情</el-button><el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-if="scope.row.status !== '1'" v-hasPermi="['mms:bom:edit']">修改</el-button><el-button link type="success" icon="Promotion" @click="handlePublish(scope.row)" v-if="scope.row.status === '0'" v-hasPermi="['mms:bom:edit']">发布</el-button><el-button link type="warning" icon="CircleClose" @click="handleDisable(scope.row)" v-if="scope.row.status === '1'" v-hasPermi="['mms:bom:edit']">停用</el-button><el-button link type="success" icon="CircleCheck" @click="handleEnable(scope.row)" v-if="scope.row.status === '2'" v-hasPermi="['mms:bom:edit']">启用</el-button><el-button link type="warning" icon="CopyDocument" @click="handleCopy(scope.row)" v-hasPermi="['mms:bom:add']">复制</el-button><el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-if="scope.row.status !== '1'" v-hasPermi="['mms:bom:remove']">删除</el-button></template></el-table-column></el-table></div>
       <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
     </div>
@@ -254,6 +254,18 @@
       </template>
     </el-dialog>
 
+    <!-- ===== 导入对话框 ===== -->
+    <excel-import-dialog
+      ref="importRef"
+      title="BOM导入"
+      action="/mms/bom/importData"
+      template-action="/mms/bom/importTemplate"
+      template-file-name="bom_template"
+      update-support-label="是否更新已存在的BOM数据"
+      :tips="importTips"
+      @success="getList"
+    />
+
     <!-- 物料选择器 -->
     <material-picker ref="materialPickerRef" title="选择物料" @confirm="onMaterialPickerConfirm" />
     <!-- 产品选择器（仅半成品和成品） -->
@@ -431,7 +443,8 @@
 import { listBom, getBom, addBom, updateBom, delBom, publishBom, disableBom, enableBom, copyBom, getBomTree } from "@/api/mms/bom";
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
-import { Search, Filter, RefreshLeft, ArrowDown, QuestionFilled, ArrowRight, Connection, CircleClose, CircleCheck } from '@element-plus/icons-vue'
+import ExcelImportDialog from '@/components/ExcelImportDialog'
+import { Search, Filter, RefreshLeft, ArrowDown, QuestionFilled, ArrowRight, Connection, CircleClose, CircleCheck, Upload } from '@element-plus/icons-vue'
 import MaterialPicker from '@/components/MaterialPicker/index.vue'
 
 const { collapsedCards, toggleCard } = useDetailCard(['c1', 'c2', 'c3', 'c4', 'c0', 'vc0', 'vc1', 'vc2', 'vc3', 'vc4'])
@@ -470,6 +483,19 @@ function submitForm() { proxy.$refs["bomRef"].validate(valid => { if (!valid) re
 function cancel() { open.value = false; reset(); }
 function handleDelete(row) { const bomIds = row.bomId || ids.value; proxy.$modal.confirm('是否确认删除选中的BOM？').then(() => delBom(bomIds)).then(() => { getList(); proxy.$modal.msgSuccess("删除成功"); }).catch(() => {}); }
 function handleExport() { proxy.download("mms/bom/export", { ...queryParams.value }, `bom_${new Date().getTime()}.xlsx`); }
+
+/* ===== BOM导入 ===== */
+const importTips = [
+  'BOM名称、产品编码、版本号为必填字段，不能为空',
+  'BOM编号由系统自动生成，无需填写',
+  '同一BOM的多行明细通过"产品编码+版本号"分组，每行填写一行物料明细',
+  'BOM类型填：标准BOM/替代BOM/配方/临时BOM（或留空，默认标准BOM）',
+  '供应方式填：直接领料/倒冲/车间库存（或留空，默认直接领料）',
+  '是否关键料、是否虚拟件填：是/否（或留空，默认否）',
+  '物料编码必须在物料管理中已存在，产品编码对应的物料类型应为半成品或成品',
+  '如勾选「更新已存在数据」，相同产品编码+版本号的BOM将被覆盖更新',
+];
+function handleImport() { proxy.$refs['importRef'].open(); }
 function bomTypeLabel(type) { if (type === null || type === undefined || type === '') return '—'; const item = mms_bom_type.value.find(d => d.value == type); return item ? item.label : '—' }
 function statusLabel(status) { if (status === null || status === undefined || status === '') return '—'; const item = mms_bom_status.value.find(d => d.value == status); return item ? item.label : '—' }
 function supplyTypeLabel(type) { if (type === null || type === undefined || type === '') return '—'; const item = mms_supply_type.value.find(d => d.value == type); return item ? item.label : '—' }

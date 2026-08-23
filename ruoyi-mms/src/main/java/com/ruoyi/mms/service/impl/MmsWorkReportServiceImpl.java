@@ -24,7 +24,7 @@ import com.ruoyi.mms.service.IMmsWorkReportService;
  * 0(待审核) → 1(已审核) / 2(已驳回)
  *
  * 审核通过时联动更新工单：
- * - 工单状态 → 执行中(2) 或 报工中(3)
+ * - 工单状态 → 执行中(2)
  * - 工单完工数量累计
  * - 工单合格数量累计
  * - 工单不良数量累计
@@ -79,7 +79,7 @@ public class MmsWorkReportServiceImpl implements IMmsWorkReportService
         workReport.setCreateTime(DateUtils.getNowDate());
         workReport.setReportBy(SecurityUtils.getUsername());
         workReport.setReportTime(new Date());
-        // 校验工单状态：工单需为已下达(1)或执行中(2)或报工中(3)
+        // 校验工单状态：工单需为已下达(1)或执行中(2)
         if (workReport.getWorkOrderId() != null)
         {
             MmsWorkOrder wo = workOrderMapper.selectWorkOrderById(workReport.getWorkOrderId());
@@ -89,9 +89,17 @@ public class MmsWorkReportServiceImpl implements IMmsWorkReportService
                 {
                     throw new ServiceException("工单[" + wo.getWorkOrderNo() + "]未下达，不允许报工");
                 }
-                if ("6".equals(wo.getStatus()) || "8".equals(wo.getStatus()))
+                if ("4".equals(wo.getStatus()) || "6".equals(wo.getStatus()))
                 {
                     throw new ServiceException("工单[" + wo.getWorkOrderNo() + "]已关闭/作废，不允许报工");
+                }
+                if ("3".equals(wo.getStatus()))
+                {
+                    throw new ServiceException("工单[" + wo.getWorkOrderNo() + "]已完工，不允许报工");
+                }
+                if ("5".equals(wo.getStatus()))
+                {
+                    throw new ServiceException("工单[" + wo.getWorkOrderNo() + "]已暂停，请先恢复后再报工");
                 }
             }
         }
@@ -172,15 +180,11 @@ public class MmsWorkReportServiceImpl implements IMmsWorkReportService
                 wo.setDefectQty(defectQty.add(addDefect));
 
                 // 工单状态联动：已下达(1) → 执行中(2)
+                // 报工只是执行中的动作，不再单独设状态
                 if ("1".equals(wo.getStatus()))
                 {
                     wo.setStatus("2");
                     wo.setActualStart(new Date());
-                }
-                // 执行中(2) → 报工中(3)（有报工记录后）
-                else if ("2".equals(wo.getStatus()))
-                {
-                    wo.setStatus("3");
                 }
 
                 wo.setUpdateBy(SecurityUtils.getUsername());

@@ -38,6 +38,7 @@
             <if test="workOrderNo != null and workOrderNo != ''"> AND work_order_no LIKE CONCAT('%', #{workOrderNo}, '%')</if>
             <if test="processName != null and processName != ''"> AND process_name LIKE CONCAT('%', #{processName}, '%')</if>
             <if test="qcType != null and qcType != ''"> AND qc_type = #{qcType}</if>
+            <if test="qcResult != null and qcResult == ''"> AND (qc_result IS NULL OR qc_result = '')</if>
             <if test="qcResult != null and qcResult != ''"> AND qc_result = #{qcResult}</if>
             <if test="qcBy != null and qcBy != ''"> AND qc_by LIKE CONCAT('%', #{qcBy}, '%')</if>
             <if test="params.beginTime != null and params.beginTime != ''"> AND date(create_time) &gt;= #{params.beginTime}</if>

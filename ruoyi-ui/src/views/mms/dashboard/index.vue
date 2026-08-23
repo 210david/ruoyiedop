@@ -162,7 +162,7 @@ const workOrderBars = computed(() => {
   return [
     { label: "新建", count: 0, percent: 0, class: "bar-default" },
     { label: "已下达", count: 0, percent: 0, class: "bar-info" },
-    { label: "生产中", count: wo.inProduction || 0, percent: Math.round((wo.inProduction || 0) / total * 100), class: "bar-primary" },
+    { label: "执行中", count: wo.inProduction || 0, percent: Math.round((wo.inProduction || 0) / total * 100), class: "bar-primary" },
     { label: "已完工", count: wo.completed || 0, percent: Math.round((wo.completed || 0) / total * 100), class: "bar-success" },
     { label: "异常", count: wo.abnormal || 0, percent: Math.round((wo.abnormal || 0) / total * 100), class: "bar-warning" }
   ];

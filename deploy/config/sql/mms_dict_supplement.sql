@@ -235,13 +235,11 @@ FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_dict_type WHERE dict_type = 'mms_w
 INSERT INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, css_class, list_class, is_default, status, create_by, create_time, remark) VALUES
 (1, '新建',       '0', 'mms_workorder_status', '', 'info',    'Y', '0', 'admin', sysdate(), '新建状态'),
 (2, '已下达',     '1', 'mms_workorder_status', '', 'primary', 'N', '0', 'admin', sysdate(), '已下达'),
-(3, '执行中',     '2', 'mms_workorder_status', '', 'primary', 'N', '0', 'admin', sysdate(), '执行中'),
-(4, '报工中',     '3', 'mms_workorder_status', '', 'primary', 'N', '0', 'admin', sysdate(), '报工中'),
-(5, '待完工质检', '4', 'mms_workorder_status', '', 'warning', 'N', '0', 'admin', sysdate(), '待完工质检'),
-(6, '完工入库',   '5', 'mms_workorder_status', '', 'success', 'N', '0', 'admin', sysdate(), '完工入库'),
-(7, '已关闭',     '6', 'mms_workorder_status', '', 'info',    'N', '0', 'admin', sysdate(), '已关闭'),
-(8, '已暂停',     '7', 'mms_workorder_status', '', 'warning', 'N', '0', 'admin', sysdate(), '已暂停'),
-(9, '已作废',     '8', 'mms_workorder_status', '', 'danger',  'N', '0', 'admin', sysdate(), '已作废')
+(3, '执行中',     '2', 'mms_workorder_status', '', 'success', 'N', '0', 'admin', sysdate(), '执行中'),
+(4, '已完工',     '3', 'mms_workorder_status', '', 'success', 'N', '0', 'admin', sysdate(), '已完工'),
+(5, '已关闭',     '4', 'mms_workorder_status', '', 'info',    'N', '0', 'admin', sysdate(), '已关闭'),
+(6, '已暂停',     '5', 'mms_workorder_status', '', 'warning', 'N', '0', 'admin', sysdate(), '已暂停'),
+(7, '已作废',     '6', 'mms_workorder_status', '', 'danger',  'N', '0', 'admin', sysdate(), '已作废')
 ON DUPLICATE KEY UPDATE dict_label = VALUES(dict_label);
 
 -- 21. 优先级字典（workorder/demand/mps 页面使用）

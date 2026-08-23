@@ -102,6 +102,14 @@ export function cancelWorkOrder(workOrderId, cancelReason) {
   })
 }
 
+// 查询工单的工序快照列表（供质检页面选择工序）
+export function listWorkOrderProcesses(workOrderId) {
+  return request({
+    url: '/mms/workorder/processes/' + workOrderId,
+    method: 'get'
+  })
+}
+
 // 工单拆分
 export function splitWorkOrder(workOrderId, splitQty) {
   return request({
@@ -124,6 +132,14 @@ export function createReworkOrder(workOrderId, reworkQty, reworkReason) {
 export function getWorkOrderAuditLog(workOrderId) {
   return request({
     url: '/mms/workorder/auditLog/' + workOrderId,
+    method: 'get'
+  })
+}
+
+// 查询工单的BOM快照列表（供领料/退料页面选择物料）
+export function getWorkOrderBomSnapshot(workOrderId) {
+  return request({
+    url: '/mms/workorder/bomSnapshot/' + workOrderId,
     method: 'get'
   })
 }

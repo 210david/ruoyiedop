@@ -13,10 +13,11 @@
         <result property="resourceName"     column="resource_name"/>
         <result property="goodQty"     column="good_qty"/>
         <result property="defectQty"     column="defect_qty"/>
-        <result property="workHours"     column="work_hours"/>
         <result property="reportTime"     column="report_time"/>
         <result property="reportBy"     column="report_by"/>
+        <result property="teamId"     column="team_id"/>
         <result property="teamName"     column="team_name"/>
+        <result property="shiftId"     column="shift_id"/>
         <result property="shiftName"     column="shift_name"/>
         <result property="isFirstPiece"     column="is_first_piece"/>
         <result property="status"     column="status"/>
@@ -33,7 +34,7 @@
     </resultMap>
 
     <sql id="selectWorkReportVo">
-        SELECT report_id, report_no, work_order_id, work_order_no, process_id, process_name, resource_id, resource_name, good_qty, defect_qty, work_hours, report_time, report_by, team_name, shift_name, is_first_piece, status, source, audit_by, audit_time, audit_remark, del_flag, create_by, create_time, update_by, update_time, remark
+        SELECT report_id, report_no, work_order_id, work_order_no, process_id, process_name, resource_id, resource_name, good_qty, defect_qty, report_time, report_by, team_id, team_name, shift_id, shift_name, is_first_piece, status, source, audit_by, audit_time, audit_remark, del_flag, create_by, create_time, update_by, update_time, remark
         FROM mms_work_report
     </sql>
 
@@ -69,10 +70,11 @@
             resource_name,
             good_qty,
             defect_qty,
-            work_hours,
             report_time,
             report_by,
+            team_id,
             team_name,
+            shift_id,
             shift_name,
             is_first_piece,
             status,
@@ -96,10 +98,11 @@
             #{resourceName},
             #{goodQty},
             #{defectQty},
-            #{workHours},
             #{reportTime},
             #{reportBy},
+            #{teamId},
             #{teamName},
+            #{shiftId},
             #{shiftName},
             #{isFirstPiece},
             #{status},
@@ -127,10 +130,11 @@
             resource_name = #{resourceName},
             good_qty = #{goodQty},
             defect_qty = #{defectQty},
-            work_hours = #{workHours},
             report_time = #{reportTime},
             report_by = #{reportBy},
+            team_id = #{teamId},
             team_name = #{teamName},
+            shift_id = #{shiftId},
             shift_name = #{shiftName},
             is_first_piece = #{isFirstPiece},
             status = #{status},

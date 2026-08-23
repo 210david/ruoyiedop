@@ -86,7 +86,7 @@ public class MmsDispatchController extends BaseController
     /**
      * 派工开工
      * 状态：0(待开工) → 1(进行中)
-     * 需填写：班组、操作人员（默认当前登录用户）
+     * 需填写：产能单元（工序/工单未指定时可修改）、班组、操作人员（默认当前登录用户）、操作时间（默认当前时间）
      */
     @Log(title = "派工管理-开工", businessType = BusinessType.UPDATE)
     @PreAuthorize("@ss.hasPermi('mms:dispatch:start')")
@@ -94,8 +94,11 @@ public class MmsDispatchController extends BaseController
     public AjaxResult start(@PathVariable("dispatchId") Long dispatchId, @RequestBody(required = false) Map<String, Object> body)
     {
         String operatorName = body != null && body.get("operatorName") != null ? body.get("operatorName").toString() : null;
+        String operateTime = body != null && body.get("operateTime") != null ? body.get("operateTime").toString() : null;
         Long teamId = null;
         String teamName = null;
+        Long resourceId = null;
+        String resourceName = null;
         if (body != null)
         {
             if (body.get("teamId") != null)
@@ -106,8 +109,16 @@ public class MmsDispatchController extends BaseController
             {
                 teamName = body.get("teamName").toString();
             }
+            if (body.get("resourceId") != null)
+            {
+                try { resourceId = Long.valueOf(body.get("resourceId").toString()); } catch (NumberFormatException e) {}
+            }
+            if (body.get("resourceName") != null)
+            {
+                resourceName = body.get("resourceName").toString();
+            }
         }
-        return toAjax(mmsDispatchService.startDispatch(dispatchId, operatorName, teamId, teamName));
+        return toAjax(mmsDispatchService.startDispatch(dispatchId, operatorName, operateTime, teamId, teamName, resourceId, resourceName));
     }
 
     /**

@@ -28,10 +28,13 @@ public interface IMmsDispatchService
      * 派工开工：0(待开工) → 1(进行中)
      * @param dispatchId 派工单ID
      * @param operatorName 操作人员（为空时默认取当前登录用户）
+     * @param operateTime 操作时间（为空时默认取当前时间，格式 yyyy-MM-dd HH:mm:ss）
      * @param teamId 班组ID
      * @param teamName 班组名称
+     * @param resourceId 产能单元ID（为空且派工单无产能单元时必填，传值时更新）
+     * @param resourceName 产能单元名称
      */
-    public int startDispatch(Long dispatchId, String operatorName, Long teamId, String teamName);
+    public int startDispatch(Long dispatchId, String operatorName, String operateTime, Long teamId, String teamName, Long resourceId, String resourceName);
 
     /**
      * 派工完工：1(进行中) → 2(已完成)

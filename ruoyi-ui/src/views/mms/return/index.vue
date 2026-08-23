@@ -20,7 +20,7 @@
       <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
     </div>
     <!-- ===== 编辑弹窗 ===== -->
-    <el-dialog v-model="open" width="780px" append-to-body draggable class="rd-dialog">
+    <el-dialog v-model="open" width="936px" append-to-body draggable class="rd-dialog">
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
@@ -32,21 +32,21 @@
           <section class="rd-card">
             <div class="rd-card-header" @click="toggleCard('c0')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg></span>基本信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c0 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
             <div class="rd-card-body" v-show="!collapsedCards.c0">
-              <el-row :gutter="20"><el-col :span="12"><el-form-item label="退料编号" prop="returnNo"><el-input v-model="form.returnNo" placeholder="自动生成" disabled /></el-form-item></el-col><el-col :span="12"><el-form-item label="工单编号" prop="workOrderNo"><el-input v-model="form.workOrderNo" placeholder="请输入" /></el-form-item></el-col></el-row>
+              <el-row :gutter="20"><el-col :span="12"><el-form-item label="退料编号" prop="returnNo"><el-input v-model="form.returnNo" placeholder="自动生成" disabled /></el-form-item></el-col><el-col :span="12"><el-form-item label="工单编号" prop="workOrderNo" :rules="[{ required: true, message: '请选择工单', trigger: 'change' }]"><el-input v-model="form.workOrderNo" readonly placeholder="请选择工单" style="width: 100%" @click="openWorkOrderPicker"><template #append><el-button icon="Search" @click="openWorkOrderPicker" /></template><template #suffix><el-icon v-if="form.workOrderNo" class="rd-form-tip" style="cursor:pointer" @click.stop="clearWorkOrder"><CircleClose /></el-icon></template></el-input></el-form-item></el-col></el-row>
               <el-row :gutter="20"><el-col :span="12"><el-form-item label="状态" prop="status"><el-select v-model="form.status" placeholder="请选择" style="width: 100%"><el-option v-for="d in mms_issue_status" :key="d.value" :label="d.label" :value="d.value" /></el-select></el-form-item></el-col></el-row>
             </div>
           </section>
           <section class="rd-card">
             <div class="rd-card-header" @click="toggleCard('c1')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7l-8-4-8 4 8 4 8-4z"/><path d="M4 7v10l8 4 8-4V7"/></svg></span>物料信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
             <div class="rd-card-body" v-show="!collapsedCards.c1">
-              <el-row :gutter="20"><el-col :span="12"><el-form-item label="物料编码" prop="materialCode"><el-input v-model="form.materialCode" placeholder="请输入" /></el-form-item></el-col><el-col :span="12"><el-form-item label="物料名称" prop="materialName"><el-input v-model="form.materialName" placeholder="请输入" /></el-form-item></el-col></el-row>
-              <el-row :gutter="20"><el-col :span="12"><el-form-item label="规格型号" prop="specModel"><el-input v-model="form.specModel" placeholder="请输入" /></el-form-item></el-col><el-col :span="12"><el-form-item label="单位" prop="unit"><el-select v-model="form.unit" placeholder="请选择" style="width: 100%"><el-option v-for="d in wms_unit" :key="d.value" :label="d.label" :value="d.value" /></el-select></el-form-item></el-col></el-row>
+              <el-row :gutter="20"><el-col :span="12"><el-form-item label="物料编码" prop="materialCode" :rules="[{ required: true, message: '请选择物料', trigger: 'change' }]"><el-input v-model="form.materialCode" readonly placeholder="请先选择工单再选择物料" style="width: 100%" @click="openMaterialPicker"><template #append><el-button icon="Search" @click="openMaterialPicker" :disabled="!form.workOrderId" /></template><template #suffix><el-icon v-if="form.materialCode" class="rd-form-tip" style="cursor:pointer" @click.stop="clearMaterial"><CircleClose /></el-icon></template></el-input></el-form-item></el-col><el-col :span="12"><el-form-item label="物料名称" prop="materialName"><el-input v-model="form.materialName" readonly placeholder="选择物料后自动带出" /></el-form-item></el-col></el-row>
+              <el-row :gutter="20"><el-col :span="12"><el-form-item label="规格型号" prop="specModel"><el-input v-model="form.specModel" readonly placeholder="选择物料后自动带出" /></el-form-item></el-col><el-col :span="12"><el-form-item label="单位" prop="unit"><el-select v-model="form.unit" placeholder="请选择" style="width: 100%"><el-option v-for="d in wms_unit" :key="d.value" :label="d.label" :value="d.value" /></el-select></el-form-item></el-col></el-row>
             </div>
           </section>
           <section class="rd-card">
             <div class="rd-card-header" @click="toggleCard('c2')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg></span>退料详情</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
             <div class="rd-card-body" v-show="!collapsedCards.c2">
-              <el-row :gutter="20"><el-col :span="8"><el-form-item label="退料数量" prop="returnQty"><el-input-number v-model="form.returnQty" :min="0" :precision="2" style="width: 100%" /></el-form-item></el-col><el-col :span="8"><el-form-item label="退料人" prop="returnBy"><el-input v-model="form.returnBy" placeholder="请输入" /></el-form-item></el-col></el-row>
+              <el-row :gutter="20"><el-col :span="8"><el-form-item label="退料数量" prop="returnQty"><el-input-number v-model="form.returnQty" :min="0" :precision="2" style="width: 100%" /></el-form-item></el-col><el-col :span="8"><el-form-item label="退料人" prop="returnBy"><el-input v-model="form.returnByName" readonly placeholder="请选择退料人" style="width: 100%" @click="openReturnByPicker"><template #append><el-button icon="Search" @click="openReturnByPicker" /></template><template #suffix><el-icon v-if="form.returnByName" class="rd-form-tip" style="cursor:pointer" @click.stop="clearReturnBy"><CircleClose /></el-icon></template></el-input></el-form-item></el-col></el-row>
               <el-row :gutter="20"><el-col :span="12"><el-form-item label="退料原因" prop="returnReason"><el-input v-model="form.returnReason" placeholder="请输入" /></el-form-item></el-col></el-row>
             </div>
           </section>
@@ -62,7 +62,7 @@
     </el-dialog>
 
     <!-- ===== 查看详情弹窗 ===== -->
-    <el-dialog v-model="viewOpen" width="780px" append-to-body draggable class="rd-dialog">
+    <el-dialog v-model="viewOpen" width="936px" append-to-body draggable class="rd-dialog">
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></div>
@@ -90,18 +90,86 @@
       </div>
       <template #footer><el-button @click="viewOpen = false">关 闭</el-button></template>
     </el-dialog>
-    <el-dialog v-model="showStatusHelp" title="生产退料业务操作说明" width="820px" append-to-body><div class="status-help-content"><h4>一、生产退料释义</h4><div class="highlight-card highlight-primary"><div class="highlight-card-title">什么是生产退料？</div><div class="highlight-card-body"><strong>生产退料（Return Material）</strong>是生产管控中记录生产过程中多余物料退回仓库的单据。退料需关联生产工单和物料，记录退料数量和退料原因，确保物料库存准确和生产成本正确归集。<br/><br/>生产退料遵循 <strong>MES 物料管理规范</strong>，退料数据与仓库管理系统（WMS）联动，确保库存数据实时一致，退料原因分析支持物料损耗管控和成本优化。</div></div><h4>二、重点业务规则</h4><div class="highlight-card highlight-warning"><div class="highlight-card-title">核心规则</div><div class="highlight-card-body"><p>• <strong>退料编号：</strong>系统自动生成，唯一标识每笔退料记录</p><p>• <strong>退料原因：</strong>需记录退料原因，便于物料损耗分析</p><p>• <strong>工单关联：</strong>退料需关联生产工单，确保成本准确归集</p><p>• <strong>库存同步：</strong>退料确认后同步更新仓库库存</p></div></div><h4>三、新增/修改表单填写指南</h4><div class="highlight-card highlight-warning"><div class="highlight-card-title">基本信息区</div><div class="highlight-card-body"><p>• <strong>退料编号：</strong>退料记录的唯一标识编号，保存后由系统自动生成</p><p>• <strong>工单编号：</strong>关联的生产工单编号<span style="color: #f56c6c;">*必填</span></p></div></div><div class="highlight-card highlight-primary" style="margin-top: 12px;"><div class="highlight-card-title">物料信息区</div><div class="highlight-card-body"><p>• <strong>物料编码：</strong>退回物料的编码<span style="color: #f56c6c;">*必填</span></p><p>• <strong>物料名称：</strong>退回物料的名称<span style="color: #f56c6c;">*必填</span></p><p>• <strong>规格型号：</strong>物料的规格型号信息</p><p>• <strong>单位：</strong>物料的计量单位</p></div></div><div class="highlight-card highlight-primary" style="margin-top: 12px;"><div class="highlight-card-title">退料信息区</div><div class="highlight-card-body"><p>• <strong>退料数量：</strong>退回仓库的物料数量<span style="color: #f56c6c;">*必填</span></p><p>• <strong>退料原因：</strong>退料的原因说明，便于物料损耗分析<span style="color: #f56c6c;">*必填</span></p><p>• <strong>退料人：</strong>执行退料操作的人员<span style="color: #f56c6c;">*必填</span></p></div></div><div class="highlight-card highlight-warning" style="margin-top: 12px;"><div class="highlight-card-title">其他信息区</div><div class="highlight-card-body"><p>• <strong>状态：</strong>退料记录的当前状态<span style="color: #f56c6c;">*必填</span></p><p>• <strong>备注：</strong>退料的补充说明信息</p></div></div><h4>四、业务操作流程</h4><el-timeline><el-timeline-item type="primary" :hollow="true"><strong>创建退料记录：</strong>点击「新增」创建退料记录，填写工单编号和物料信息</el-timeline-item><el-timeline-item type="warning" :hollow="true"><strong>记录退料信息：</strong>填写退料数量、退料原因和退料人</el-timeline-item><el-timeline-item type="success" :hollow="true"><strong>确认退料：</strong>确认退料信息无误后保存，系统同步更新库存数据</el-timeline-item></el-timeline></div><template #footer><el-button type="primary" @click="showStatusHelp = false">我知道了</el-button></template></el-dialog>
+    <el-dialog v-model="showStatusHelp" title="生产退料业务操作说明" width="984px" append-to-body draggable class="rd-dialog"><div class="status-help-content"><h4>一、生产退料释义</h4><div class="highlight-card highlight-primary"><div class="highlight-card-title">什么是生产退料？</div><div class="highlight-card-body"><strong>生产退料（Return Material）</strong>是生产管控中记录生产过程中多余物料退回仓库的单据。退料需关联生产工单和物料，记录退料数量和退料原因，确保物料库存准确和生产成本正确归集。<br/><br/>生产退料遵循 <strong>MES 物料管理规范</strong>，退料数据与仓库管理系统（WMS）联动，确保库存数据实时一致，退料原因分析支持物料损耗管控和成本优化。</div></div><h4>二、重点业务规则</h4><div class="highlight-card highlight-warning"><div class="highlight-card-title">核心规则</div><div class="highlight-card-body"><p>• <strong>退料编号：</strong>系统自动生成，唯一标识每笔退料记录</p><p>• <strong>退料原因：</strong>需记录退料原因，便于物料损耗分析</p><p>• <strong>工单关联：</strong>退料需关联生产工单，确保成本准确归集</p><p>• <strong>库存同步：</strong>退料确认后同步更新仓库库存</p></div></div><h4>三、新增/修改表单填写指南</h4><div class="highlight-card highlight-warning"><div class="highlight-card-title">基本信息区</div><div class="highlight-card-body"><p>• <strong>退料编号：</strong>退料记录的唯一标识编号，保存后由系统自动生成</p><p>• <strong>工单编号：</strong>关联的生产工单编号<span style="color: #f56c6c;">*必填</span></p></div></div><div class="highlight-card highlight-primary" style="margin-top: 12px;"><div class="highlight-card-title">物料信息区</div><div class="highlight-card-body"><p>• <strong>物料编码：</strong>退回物料的编码<span style="color: #f56c6c;">*必填</span></p><p>• <strong>物料名称：</strong>退回物料的名称<span style="color: #f56c6c;">*必填</span></p><p>• <strong>规格型号：</strong>物料的规格型号信息</p><p>• <strong>单位：</strong>物料的计量单位</p></div></div><div class="highlight-card highlight-primary" style="margin-top: 12px;"><div class="highlight-card-title">退料信息区</div><div class="highlight-card-body"><p>• <strong>退料数量：</strong>退回仓库的物料数量<span style="color: #f56c6c;">*必填</span></p><p>• <strong>退料原因：</strong>退料的原因说明，便于物料损耗分析<span style="color: #f56c6c;">*必填</span></p><p>• <strong>退料人：</strong>执行退料操作的人员<span style="color: #f56c6c;">*必填</span></p></div></div><div class="highlight-card highlight-warning" style="margin-top: 12px;"><div class="highlight-card-title">其他信息区</div><div class="highlight-card-body"><p>• <strong>状态：</strong>退料记录的当前状态<span style="color: #f56c6c;">*必填</span></p><p>• <strong>备注：</strong>退料的补充说明信息</p></div></div><h4>四、业务操作流程</h4><el-timeline><el-timeline-item type="primary" :hollow="true"><strong>创建退料记录：</strong>点击「新增」创建退料记录，填写工单编号和物料信息</el-timeline-item><el-timeline-item type="warning" :hollow="true"><strong>记录退料信息：</strong>填写退料数量、退料原因和退料人</el-timeline-item><el-timeline-item type="success" :hollow="true"><strong>确认退料：</strong>确认退料信息无误后保存，系统同步更新库存数据</el-timeline-item></el-timeline></div><template #footer><el-button type="primary" @click="showStatusHelp = false">我知道了</el-button></template></el-dialog>
+
+    <!-- ===== 工单选择器弹窗 ===== -->
+    <el-dialog v-model="woPickerOpen" width="936px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <span class="rd-detail-header-title">选择工单</span>
+        </div>
+      </template>
+      <div class="material-picker">
+        <div class="material-picker-search">
+          <el-input v-model="woPickerQuery.workOrderNo" placeholder="工单编号" clearable size="small" style="width: 180px" @keyup.enter="handleWoPickerQuery">
+            <template #prefix><el-icon><Search /></el-icon></template>
+          </el-input>
+          <el-input v-model="woPickerQuery.productName" placeholder="产品名称" clearable size="small" style="width: 180px; margin-left: 8px" @keyup.enter="handleWoPickerQuery" />
+          <el-button type="primary" plain icon="Search" size="small" style="margin-left: 8px" @click="handleWoPickerQuery">查询</el-button>
+          <el-button icon="RefreshLeft" size="small" @click="resetWoPickerQuery">重置</el-button>
+        </div>
+        <div class="material-picker-table">
+          <el-table v-loading="woPickerLoading" :data="woPickerList" highlight-current-row @row-click="onWoRowClick" @row-dblclick="onWoRowDblClick" height="360" size="small" border>
+            <el-table-column width="45" align="center"><template #default="{ row }"><el-radio :model-value="woPickerSelectedId" :value="row.workOrderId" @click.stop="onWoRowClick(row)"><span /></el-radio></template></el-table-column>
+            <el-table-column label="工单编号" prop="workOrderNo" width="150" show-overflow-tooltip />
+            <el-table-column label="产品编码" prop="productCode" width="120" show-overflow-tooltip />
+            <el-table-column label="产品名称" prop="productName" min-width="160" show-overflow-tooltip />
+            <el-table-column label="规格型号" prop="specModel" width="120" show-overflow-tooltip />
+            <el-table-column label="计划数量" prop="planQty" width="90" align="center" />
+            <el-table-column label="状态" prop="status" width="90" align="center"><template #default="scope"><dict-tag :options="mms_workorder_status" :value="scope.row.status" /></template></el-table-column>
+          </el-table>
+        </div>
+        <div class="material-picker-pager">
+          <el-pagination v-model:current-page="woPickerQuery.pageNum" v-model:page-size="woPickerQuery.pageSize" :total="woPickerTotal" layout="total, prev, pager, next" small @current-change="getWoPickerList" />
+        </div>
+      </div>
+      <template #footer><el-button @click="woPickerOpen = false">取 消</el-button><el-button type="primary" @click="handleWoPickerConfirm" :disabled="!woPickerSelectedId">确 定</el-button></template>
+    </el-dialog>
+
+    <!-- ===== 物料选择器弹窗（基于工单BOM快照） ===== -->
+    <el-dialog v-model="matPickerOpen" width="936px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></div>
+          <span class="rd-detail-header-title">选择物料（来源：工单BOM）</span>
+        </div>
+      </template>
+      <div class="material-picker">
+        <div class="material-picker-table">
+          <el-table v-loading="matPickerLoading" :data="woBomList" highlight-current-row @row-click="onMatRowClick" @row-dblclick="onMatRowDblClick" height="360" size="small" border>
+            <el-table-column width="45" align="center"><template #default="{ row }"><el-radio :model-value="matPickerSelectedId" :value="row.materialId" @click.stop="onMatRowClick(row)"><span /></el-radio></template></el-table-column>
+            <el-table-column label="序号" prop="seq" width="60" align="center" />
+            <el-table-column label="物料编码" prop="materialCode" width="140" show-overflow-tooltip />
+            <el-table-column label="物料名称" prop="materialName" min-width="160" show-overflow-tooltip />
+            <el-table-column label="规格型号" prop="specModel" width="130" show-overflow-tooltip />
+            <el-table-column label="单位" prop="unit" width="70" align="center"><template #default="scope"><dict-tag :options="wms_unit" :value="scope.row.unit" /></template></el-table-column>
+            <el-table-column label="单件用量" prop="usageQty" width="90" align="center" />
+            <el-table-column label="关键料" prop="isKeyMaterial" width="70" align="center"><template #default="scope"><el-tag v-if="scope.row.isKeyMaterial === '1'" type="danger" size="small">是</el-tag><span v-else>—</span></template></el-table-column>
+          </el-table>
+        </div>
+        <div v-if="woBomList.length === 0 && !matPickerLoading" style="text-align:center;padding:20px;color:#909399;font-size:13px">
+          该工单暂无BOM快照数据，请确认工单已下达
+        </div>
+      </div>
+      <template #footer><el-button @click="matPickerOpen = false">取 消</el-button><el-button type="primary" @click="handleMatPickerConfirm" :disabled="!matPickerSelectedId">确 定</el-button></template>
+    </el-dialog>
+
+    <!-- ===== 人员选择器 ===== -->
+    <user-picker ref="userPickerRef" title="选择退料人" @confirm="onUserPickerConfirm" />
   </div>
 </template>
 
 <script setup name="ReturnMaterial">
 import { listReturnMaterial, getReturnMaterial, addReturnMaterial, updateReturnMaterial, delReturnMaterial } from "@/api/mms/return";
+import { listWorkOrder, getWorkOrderBomSnapshot } from "@/api/mms/workorder";
+import UserPicker from '@/components/UserPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
-import { Search, Filter, RefreshLeft, ArrowDown, WarningFilled, ArrowRight, QuestionFilled } from '@element-plus/icons-vue'
+import { Search, Filter, RefreshLeft, ArrowDown, WarningFilled, ArrowRight, QuestionFilled, CircleClose } from '@element-plus/icons-vue'
 
 const { proxy } = getCurrentInstance();
-const { mms_issue_status, wms_unit } = proxy.useDict("mms_issue_status", "wms_unit");
+const { mms_issue_status, mms_workorder_status, wms_unit } = proxy.useDict("mms_issue_status", "mms_workorder_status", "wms_unit");
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('mms_return_index')
 const { collapsedCards, toggleCard } = useDetailCard(["c0","c1","c2","c3","vc0","vc1","vc2","vc3"])
 
@@ -115,7 +183,7 @@ function loadColumnVisibility() { try { const saved = localStorage.getItem('mms_
 const columns = ref(loadColumnVisibility())
 const activeFilterCount = computed(() => { let c = 0; if (queryParams.value.returnNo) c++; if (queryParams.value.workOrderNo) c++; if (queryParams.value.materialCode) c++; if (queryParams.value.materialName) c++; if (queryParams.value.status) c++; if (queryParams.value.returnBy) c++; if (dateRange.value && dateRange.value.length === 2) c++; return c; });
 
-const data = reactive({ form: {}, queryParams: { pageNum: 1, pageSize: 10, returnNo: undefined, workOrderNo: undefined, materialCode: undefined, materialName: undefined, status: undefined, returnBy: undefined, params: {} }, rules: { returnNo: [{ required: true, message: "请输入退料编号", trigger: "blur" }], workOrderNo: [{ required: true, message: "请输入工单编号", trigger: "blur" }] } });
+const data = reactive({ form: {}, queryParams: { pageNum: 1, pageSize: 10, returnNo: undefined, workOrderNo: undefined, materialCode: undefined, materialName: undefined, status: undefined, returnBy: undefined, params: {} }, rules: { returnNo: [{ required: true, message: "请输入退料编号", trigger: "blur" }], workOrderNo: [{ required: true, message: '请选择工单', trigger: 'change' }], materialCode: [{ required: true, message: '请选择物料', trigger: 'change' }] } });
 const { queryParams, form, rules } = toRefs(data);
 
 function getList() { loading.value = true; listReturnMaterial(proxy.addDateRange(queryParams.value, dateRange.value)).then(response => { dataList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths(); loadStatusCounts(); }); }
@@ -124,17 +192,92 @@ function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum =
 function resetQuery() { queryParams.value.returnNo = undefined; queryParams.value.workOrderNo = undefined; queryParams.value.materialCode = undefined; queryParams.value.materialName = undefined; queryParams.value.status = undefined; queryParams.value.returnBy = undefined; dateRange.value = []; queryParams.value.params = {}; activeStatusTab.value = 'all'; handleQuery(); }
 function handleStatusTabClick(status) { activeStatusTab.value = status; queryParams.value.status = status === "all" ? undefined : status; handleQuery(); }
 function handleSelectionChange(selection) { ids.value = selection.map(item => item.returnId); single.value = selection.length !== 1; multiple.value = !selection.length; }
-function reset() { form.value = { returnNo: undefined, workOrderNo: undefined, materialCode: undefined, materialName: undefined, specModel: undefined, unit: undefined, returnQty: undefined, returnReason: undefined, returnBy: undefined, status: undefined, remark: undefined }; proxy.resetForm("formRef"); }
+function reset() { form.value = { returnNo: undefined, workOrderId: undefined, workOrderNo: undefined, materialId: undefined, materialCode: undefined, materialName: undefined, specModel: undefined, unit: undefined, returnQty: undefined, returnReason: undefined, returnBy: undefined, returnByName: undefined, status: '0', remark: undefined }; proxy.resetForm("formRef"); }
 function handleAdd() { reset(); open.value = true; title.value = "新增退料"; }
-function handleUpdate(row) { reset(); const id = row.returnId || ids.value[0]; getReturnMaterial(id).then(response => { form.value = response.data; open.value = true; title.value = "修改退料"; }); }
+function handleUpdate(row) { reset(); const id = row.returnId || ids.value[0]; getReturnMaterial(id).then(response => { form.value = response.data; form.value.returnByName = form.value.returnBy; open.value = true; title.value = "修改退料"; }); }
 function handleView(row) { const id = row.returnId || ids.value[0]; getReturnMaterial(id).then(response => { viewData.value = response.data; viewOpen.value = true; }); }
-function submitForm() { proxy.$refs["formRef"].validate(valid => { if (valid) { if (form.value.returnId != null) { updateReturnMaterial(form.value).then(() => { proxy.$modal.msgSuccess("修改成功"); open.value = false; getList(); }); } else { addReturnMaterial(form.value).then(() => { proxy.$modal.msgSuccess("新增成功"); open.value = false; getList(); }); } } }); }
+function submitForm() { proxy.$refs["formRef"].validate(valid => { if (valid) { form.value.returnBy = form.value.returnByName; if (form.value.returnId != null) { updateReturnMaterial(form.value).then(() => { proxy.$modal.msgSuccess("修改成功"); open.value = false; getList(); }); } else { addReturnMaterial(form.value).then(() => { proxy.$modal.msgSuccess("新增成功"); open.value = false; getList(); }); } } }); }
 function cancel() { open.value = false; reset(); }
 function handleDelete(row) { const delIds = row.returnId || ids.value; proxy.$modal.confirm('是否确认删除选中的退料记录？').then(() => delReturnMaterial(delIds)).then(() => { getList(); proxy.$modal.msgSuccess("删除成功"); }).catch(() => {}); }
 function handleExport() { proxy.download("mms/return/export", { ...queryParams.value }, `return_${new Date().getTime()}.xlsx`); }
 function dictLabel(dictRef, value) { if (value === null || value === undefined || value === '') return '—'; const arr = (dictRef && dictRef.value) ? dictRef.value : dictRef; if (!arr || !Array.isArray(arr)) return '—'; const item = arr.find(d => d.value == value); return item ? item.label : '—'; }
 function statusLabel(status) { return dictLabel(mms_issue_status, status); }
 function badgeClass(status) { const map = { '0': 'amber', '1': 'green', '2': 'red' }; return map[status] || 'gray'; }
+
+// ===== 工单选择器 =====
+const woPickerOpen = ref(false); const woPickerLoading = ref(false); const woPickerList = ref([]); const woPickerTotal = ref(0); const woPickerSelectedId = ref(null); const woPickerSelectedRow = ref(null);
+const woPickerQuery = reactive({ pageNum: 1, pageSize: 10, workOrderNo: undefined, productName: undefined });
+
+function openWorkOrderPicker() { woPickerOpen.value = true; woPickerSelectedId.value = null; woPickerSelectedRow.value = null; woPickerQuery.pageNum = 1; woPickerQuery.workOrderNo = undefined; woPickerQuery.productName = undefined; getWoPickerList(); }
+function getWoPickerList() { woPickerLoading.value = true; listWorkOrder(woPickerQuery).then(res => { woPickerList.value = res.rows; woPickerTotal.value = res.total; woPickerLoading.value = false; }).catch(() => { woPickerLoading.value = false; }); }
+function handleWoPickerQuery() { woPickerQuery.pageNum = 1; getWoPickerList(); }
+function resetWoPickerQuery() { woPickerQuery.workOrderNo = undefined; woPickerQuery.productName = undefined; handleWoPickerQuery(); }
+function onWoRowClick(row) { woPickerSelectedId.value = row.workOrderId; woPickerSelectedRow.value = row; }
+function onWoRowDblClick(row) { onWoRowClick(row); handleWoPickerConfirm(); }
+function handleWoPickerConfirm() {
+  if (!woPickerSelectedId.value) { proxy.$modal.msgWarning('请先选择工单'); return; }
+  const row = woPickerSelectedRow.value;
+  form.value.workOrderId = row.workOrderId;
+  form.value.workOrderNo = row.workOrderNo;
+  woPickerOpen.value = false;
+  proxy.$refs["formRef"] && proxy.$refs["formRef"].validateField('workOrderNo');
+  clearMaterial();
+}
+function clearWorkOrder() {
+  form.value.workOrderId = undefined;
+  form.value.workOrderNo = undefined;
+  clearMaterial();
+  proxy.$refs["formRef"] && proxy.$refs["formRef"].validateField('workOrderNo');
+}
+
+// ===== 物料选择器（基于工单BOM快照） =====
+const matPickerOpen = ref(false); const matPickerLoading = ref(false); const woBomList = ref([]); const matPickerSelectedId = ref(null); const matPickerSelectedRow = ref(null);
+
+function openMaterialPicker() {
+  if (!form.value.workOrderId) { proxy.$modal.msgWarning('请先选择工单'); return; }
+  matPickerOpen.value = true;
+  matPickerSelectedId.value = form.value.materialId || null;
+  matPickerSelectedRow.value = null;
+  matPickerLoading.value = true;
+  getWorkOrderBomSnapshot(form.value.workOrderId).then(res => {
+    woBomList.value = res.data || [];
+    matPickerLoading.value = false;
+  }).catch(() => { matPickerLoading.value = false; });
+}
+function onMatRowClick(row) { matPickerSelectedId.value = row.materialId; matPickerSelectedRow.value = row; }
+function onMatRowDblClick(row) { onMatRowClick(row); handleMatPickerConfirm(); }
+function handleMatPickerConfirm() {
+  if (!matPickerSelectedRow.value) { proxy.$modal.msgWarning('请先选择物料'); return; }
+  const row = matPickerSelectedRow.value;
+  form.value.materialId = row.materialId;
+  form.value.materialCode = row.materialCode;
+  form.value.materialName = row.materialName;
+  form.value.specModel = row.specModel;
+  form.value.unit = row.unit;
+  matPickerOpen.value = false;
+  proxy.$refs["formRef"] && proxy.$refs["formRef"].validateField('materialCode');
+}
+function clearMaterial() {
+  form.value.materialId = undefined;
+  form.value.materialCode = undefined;
+  form.value.materialName = undefined;
+  form.value.specModel = undefined;
+  form.value.unit = undefined;
+  proxy.$refs["formRef"] && proxy.$refs["formRef"].validateField('materialCode');
+}
+
+// ===== 退料人选择器 =====
+function openReturnByPicker() { proxy.$refs.userPickerRef.open(); }
+function onUserPickerConfirm(user) {
+  form.value.returnBy = user.nickName;
+  form.value.returnByName = user.nickName;
+  proxy.$refs["formRef"] && proxy.$refs["formRef"].validateField('returnBy');
+}
+function clearReturnBy() {
+  form.value.returnBy = undefined;
+  form.value.returnByName = undefined;
+  proxy.$refs["formRef"] && proxy.$refs["formRef"].validateField('returnBy');
+}
 
 getList();
 </script>

@@ -18,7 +18,7 @@
         <el-table v-loading="loading" :data="dataList" border class="app-table">
           <el-table-column label="产出批次" prop="batchOut" width="160" />
           <el-table-column label="投入批次" prop="batchIn" width="160" />
-          <el-table-column label="工序序号" prop="opSeq" width="100" align="center" />
+          <el-table-column label="工序顺序号" prop="opSeq" width="100" align="center" />
           <el-table-column label="物料编码" prop="materialCode" width="160" />
           <el-table-column label="使用数量" prop="qtyUsed" width="120" align="center" />
           <el-table-column label="创建人" prop="createBy" width="120" align="center" />

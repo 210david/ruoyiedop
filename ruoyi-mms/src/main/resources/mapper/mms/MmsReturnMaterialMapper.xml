@@ -25,6 +25,26 @@
         <result property="remark"     column="remark"/>
     </resultMap>
 
+    <!-- 带明细的resultMap -->
+    <resultMap type="MmsReturnMaterial" id="MmsReturnDetailResult" extends="MmsReturnMaterialResult">
+        <collection property="detailList" ofType="com.ruoyi.mms.domain.MmsReturnDetail">
+            <id property="detailId" column="d_detail_id"/>
+            <result property="returnId" column="d_return_id"/>
+            <result property="seq" column="d_seq"/>
+            <result property="materialId" column="d_material_id"/>
+            <result property="materialCode" column="d_material_code"/>
+            <result property="materialName" column="d_material_name"/>
+            <result property="specModel" column="d_spec_model"/>
+            <result property="unit" column="d_unit"/>
+            <result property="returnQty" column="d_return_qty"/>
+            <result property="returnReason" column="d_return_reason"/>
+            <result property="delFlag" column="d_del_flag"/>
+            <result property="createBy" column="d_create_by"/>
+            <result property="createTime" column="d_create_time"/>
+            <result property="remark" column="d_remark"/>
+        </collection>
+    </resultMap>
+
     <sql id="selectReturnMaterialVo">
         SELECT return_id, return_no, work_order_id, work_order_no, material_id, material_code, material_name, spec_model, unit, return_qty, return_reason, return_time, return_by, status, del_flag, create_by, create_time, update_by, update_time, remark
         FROM mms_return_material
@@ -39,15 +59,29 @@
             <if test="materialCode != null and materialCode != ''"> AND material_code LIKE CONCAT('%', #{materialCode}, '%')</if>
             <if test="materialName != null and materialName != ''"> AND material_name LIKE CONCAT('%', #{materialName}, '%')</if>
             <if test="status != null and status != ''"> AND status = #{status}</if>
+            <if test="returnBy != null and returnBy != ''"> AND return_by LIKE CONCAT('%', #{returnBy}, '%')</if>
             <if test="params.beginTime != null and params.beginTime != ''"> AND date(create_time) &gt;= #{params.beginTime}</if>
             <if test="params.endTime != null and params.endTime != ''"> AND date(create_time) &lt;= #{params.endTime}</if>
         </where>
         ORDER BY return_id DESC
     </select>
 
-    <select id="selectReturnMaterialById" parameterType="Long" resultMap="MmsReturnMaterialResult">
-        <include refid="selectReturnMaterialVo"/>
-        WHERE return_id = #{returnId}
+    <!-- 查询退料单（带明细） -->
+    <select id="selectReturnMaterialById" parameterType="Long" resultMap="MmsReturnDetailResult">
+        SELECT r.return_id, r.return_no, r.work_order_id, r.work_order_no, r.material_id,
+               r.material_code, r.material_name, r.spec_model, r.unit, r.return_qty,
+               r.return_reason, r.return_time, r.return_by, r.status, r.del_flag,
+               r.create_by, r.create_time, r.update_by, r.update_time, r.remark,
+               d.detail_id AS d_detail_id, d.return_id AS d_return_id, d.seq AS d_seq,
+               d.material_id AS d_material_id, d.material_code AS d_material_code,
+               d.material_name AS d_material_name, d.spec_model AS d_spec_model, d.unit AS d_unit,
+               d.return_qty AS d_return_qty, d.return_reason AS d_return_reason,
+               d.del_flag AS d_del_flag, d.create_by AS d_create_by,
+               d.create_time AS d_create_time, d.remark AS d_remark
+        FROM mms_return_material r
+        LEFT JOIN mms_return_detail d ON r.return_id = d.return_id AND d.del_flag = '0'
+        WHERE r.return_id = #{returnId} AND r.del_flag = '0'
+        ORDER BY d.seq ASC
     </select>
 
     <insert id="insertReturnMaterial" parameterType="MmsReturnMaterial" useGeneratedKeys="true" keyProperty="returnId">
@@ -120,5 +154,28 @@
         <foreach collection="array" item="returnId" open="(" separator="," close=")">
             #{returnId}
         </foreach>
+    </delete>
+
+    <!-- ===== 退料明细操作 ===== -->
+    <select id="selectReturnDetailByReturnId" parameterType="Long" resultType="com.ruoyi.mms.domain.MmsReturnDetail">
+        SELECT detail_id, return_id, seq, material_id, material_code, material_name, spec_model,
+               unit, return_qty, return_reason, del_flag, create_by, create_time, remark
+        FROM mms_return_detail
+        WHERE return_id = #{returnId} AND del_flag = '0'
+        ORDER BY seq ASC
+    </select>
+
+    <insert id="insertReturnDetail" parameterType="com.ruoyi.mms.domain.MmsReturnDetail">
+        INSERT INTO mms_return_detail (
+            return_id, seq, material_id, material_code, material_name, spec_model,
+            unit, return_qty, return_reason, del_flag, create_by, create_time, remark
+        ) VALUES (
+            #{returnId}, #{seq}, #{materialId}, #{materialCode}, #{materialName}, #{specModel},
+            #{unit}, #{returnQty}, #{returnReason}, '0', #{createBy}, #{createTime}, #{remark}
+        )
+    </insert>
+
+    <delete id="deleteReturnDetailByReturnId" parameterType="Long">
+        UPDATE mms_return_detail SET del_flag = '2' WHERE return_id = #{returnId}
     </delete>
 </mapper>

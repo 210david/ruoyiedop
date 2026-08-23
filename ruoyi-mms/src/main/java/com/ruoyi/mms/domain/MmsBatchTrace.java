@@ -19,7 +19,7 @@ public class MmsBatchTrace extends BaseEntity
 
     private Long workOrderId;
 
-    @Excel(name = "工序序号")
+    @Excel(name = "工序顺序号")
     private Integer opSeq;
 
     @Excel(name = "产出批次")

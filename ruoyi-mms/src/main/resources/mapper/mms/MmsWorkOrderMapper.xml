@@ -93,7 +93,7 @@
         FROM mms_work_order wo
         LEFT JOIN mms_schedule_task sch ON sch.work_order_id = wo.work_order_id AND sch.del_flag = '0'
         WHERE wo.work_order_id = #{workOrderId}
-        ORDER BY sch.plan_start ASC
+        ORDER BY (CASE WHEN sch.status = '0' THEN 0 ELSE 1 END), sch.update_time DESC
         LIMIT 1
     </select>
 

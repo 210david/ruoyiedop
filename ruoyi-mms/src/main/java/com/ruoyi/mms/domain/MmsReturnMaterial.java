@@ -2,6 +2,7 @@ package com.ruoyi.mms.domain;
 
 import java.math.BigDecimal;
 import java.util.Date;
+import java.util.List;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.ruoyi.common.annotation.Excel;
 import com.ruoyi.common.core.domain.BaseEntity;
@@ -23,6 +24,9 @@ public class MmsReturnMaterial extends BaseEntity {
     @Excel(name = "退料人") private String returnBy;
     @Excel(name = "状态") private String status;
     private String delFlag;
+
+    /** 退料明细列表（批量退料） */
+    private List<MmsReturnDetail> detailList;
 
     public Long getReturnId() { return returnId; }
     public void setReturnId(Long returnId) { this.returnId = returnId; }
@@ -54,4 +58,6 @@ public class MmsReturnMaterial extends BaseEntity {
     public void setStatus(String status) { this.status = status; }
     public String getDelFlag() { return delFlag; }
     public void setDelFlag(String delFlag) { this.delFlag = delFlag; }
+    public List<MmsReturnDetail> getDetailList() { return detailList; }
+    public void setDetailList(List<MmsReturnDetail> detailList) { this.detailList = detailList; }
 }

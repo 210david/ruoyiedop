@@ -15,4 +15,10 @@ public interface IMmsQcService
     public int insertQc(MmsQc qc);
     public int updateQc(MmsQc qc);
     public int deleteQcByIds(Long[] QcIds);
+
+    /**
+     * 执行质检（提交质检结果）
+     * 质检员确认检验数据后，提交检验结论、缺陷类型等信息
+     */
+    public int inspectQc(MmsQc qc);
 }

@@ -28,7 +28,7 @@ public class MmsFlowCard extends BaseEntity
     @Excel(name = "批次号")
     private String batchNo;
 
-    @Excel(name = "当前工序序号")
+    @Excel(name = "当前工序顺序号")
     private Integer opSeq;
 
     @Excel(name = "当前工序")

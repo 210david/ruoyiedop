@@ -236,4 +236,27 @@
         WHERE bom_id = #{bomId}
     </update>
 
+    <!-- ============ 导入相关查询 ============ -->
+
+    <!-- 根据产品编码+版本号查询已存在的BOM -->
+    <select id="selectBomByProductCodeAndVersion" resultMap="MmsBomResult">
+        <include refid="selectBomVo"/>
+        WHERE b.del_flag = '0' AND b.product_code = #{productCode} AND b.version = #{version}
+        LIMIT 1
+    </select>
+
+    <!-- 根据物料编码查询物料信息（跨模块查询 wms_material） -->
+    <select id="selectMaterialByCode" resultType="java.util.HashMap">
+        SELECT
+            material_id AS materialId,
+            material_code AS materialCode,
+            material_name AS materialName,
+            material_type AS materialType,
+            spec_model AS specModel,
+            unit
+        FROM wms_material
+        WHERE del_flag = '0' AND material_code = #{materialCode}
+        LIMIT 1
+    </select>
+
 </mapper>

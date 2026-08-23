@@ -101,8 +101,114 @@
         </div>
       </div>
 
-      <!-- Table -->
-      <div class="table-wrap">
+      <!-- View Mode Switch -->
+      <div class="view-mode-bar">
+        <div class="view-mode-tabs">
+          <button class="view-mode-tab" :class="{ 'is-active': viewMode === 'grouped' }" @click="switchViewMode('grouped')">
+            <el-icon><Grid /></el-icon><span>工单分组视图</span>
+          </button>
+          <button class="view-mode-tab" :class="{ 'is-active': viewMode === 'flat' }" @click="switchViewMode('flat')">
+            <el-icon><List /></el-icon><span>平铺列表视图</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ===== Grouped View (工单分组折叠列表) ===== -->
+      <div v-if="viewMode === 'grouped'" class="grouped-view" v-loading="loading">
+        <div v-if="groupedList.length === 0 && !loading" class="empty-state">
+          <el-icon class="empty-icon"><Box /></el-icon>
+          <p>暂无派工数据</p>
+        </div>
+        <div v-for="group in groupedList" :key="group.workOrderNo" class="wo-group">
+          <!-- 工单分组头 -->
+          <div class="wo-group-header" @click="toggleGroup(group.workOrderNo)">
+            <div class="wo-group-toggle">
+              <el-icon class="toggle-icon" :class="{ 'is-expanded': expandedGroups.has(group.workOrderNo) }"><ArrowRight /></el-icon>
+            </div>
+            <div class="wo-group-main">
+              <div class="wo-group-line1">
+                <span class="wo-no">{{ group.workOrderNo }}</span>
+                <span class="wo-product">{{ group.productName }}</span>
+                <span class="wo-code text-muted">{{ group.productCode }}</span>
+                <span class="wo-spec text-muted" v-if="group.specModel">{{ group.specModel }}</span>
+              </div>
+              <div class="wo-group-line2">
+                <!-- 进度 -->
+                <div class="wo-progress">
+                  <span class="wo-progress-label">进度</span>
+                  <span class="wo-progress-value">{{ group.doneCount }}/{{ group.totalCount }}</span>
+                  <div class="wo-progress-bar">
+                    <div class="wo-progress-fill" :style="{ width: group.progressPercent + '%' }"></div>
+                  </div>
+                </div>
+                <!-- 状态统计 -->
+                <div class="wo-status-stats">
+                  <span class="stat-chip stat-pending" v-if="group.statusCounts['0']">待开工 {{ group.statusCounts['0'] }}</span>
+                  <span class="stat-chip stat-running" v-if="group.statusCounts['1']">进行中 {{ group.statusCounts['1'] }}</span>
+                  <span class="stat-chip stat-done" v-if="group.statusCounts['2']">已完成 {{ group.statusCounts['2'] }}</span>
+                  <span class="stat-chip stat-cancel" v-if="group.statusCounts['3']">已取消 {{ group.statusCounts['3'] }}</span>
+                </div>
+                <!-- 数量汇总 -->
+                <div class="wo-qty-stats">
+                  <span class="qty-item"><span class="qty-label">计划</span><span class="qty-val">{{ group.summaryPlanQty }}</span></span>
+                  <span class="qty-item"><span class="qty-label">{{ isGroupFinished(group) ? '合格' : '当前合格' }}</span><span class="qty-val" :class="isGroupFinished(group) ? 'text-success' : 'text-in-progress'">{{ group.summaryGoodQty }}</span></span>
+                  <span class="qty-item"><span class="qty-label">不良</span><span class="qty-val text-danger" v-if="group.totalDefectQty">{{ group.totalDefectQty }}</span></span>
+                </div>
+                <!-- 时间范围 -->
+                <div class="wo-time-range" v-if="group.minPlanStart">
+                  <el-icon><Calendar /></el-icon>
+                  <span>{{ group.minPlanStart }} ~ {{ group.maxPlanEnd }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="wo-group-actions">
+              <el-button link type="primary" size="small" @click.stop="toggleGroup(group.workOrderNo)">
+                {{ expandedGroups.has(group.workOrderNo) ? '收起工序' : '展开工序' }}
+              </el-button>
+            </div>
+          </div>
+          <!-- 工序列表（展开时显示） -->
+          <div class="wo-group-body" v-show="expandedGroups.has(group.workOrderNo)">
+            <el-table :data="group.items" border class="app-table inner-table" size="small" :ref="el => setInnerTableRef(el, group.workOrderNo)" @header-dragend="(n,o,w) => onInnerHeaderDragEnd(group.workOrderNo, n, o, w)">
+              <el-table-column label="序号" prop="opSeq" :width="innerColWidth('opSeq', 70)" resizable align="center" />
+              <el-table-column label="工序名称" prop="processName" :width="innerColWidth('processName', 150)" resizable show-overflow-tooltip />
+              <el-table-column label="派工单号" prop="dispatchNo" :width="innerColWidth('dispatchNo', 160)" resizable show-overflow-tooltip />
+              <el-table-column label="产能单元" prop="resourceName" :width="innerColWidth('resourceName', 150)" resizable show-overflow-tooltip />
+              <el-table-column label="班组" prop="teamName" :width="innerColWidth('teamName', 120)" resizable show-overflow-tooltip />
+              <el-table-column label="派工人员" prop="userIds" :width="innerColWidth('userIds', 130)" resizable show-overflow-tooltip />
+              <el-table-column label="计划数量" prop="planQty" :width="innerColWidth('planQty', 100)" resizable align="center" />
+              <el-table-column label="合格" prop="goodQty" :width="innerColWidth('goodQty', 90)" resizable align="center" />
+              <el-table-column label="不良" prop="defectQty" :width="innerColWidth('defectQty', 90)" resizable align="center" />
+              <el-table-column label="状态" prop="status" :width="innerColWidth('status', 100)" resizable align="center">
+                <template #default="scope">
+                  <span v-if="scope.row.status" class="badge" :class="badgeClass(scope.row.status)">
+                    <span class="dot"></span>{{ statusLabel(scope.row.status) }}
+                  </span>
+                  <span v-else class="text-muted">—</span>
+                </template>
+              </el-table-column>
+              <el-table-column label="计划开始" prop="planStart" :width="innerColWidth('planStart', 160)" resizable align="center">
+                <template #default="scope"><span>{{ parseTime(scope.row.planStart) }}</span></template>
+              </el-table-column>
+              <el-table-column label="计划结束" prop="planEnd" :width="innerColWidth('planEnd', 160)" resizable align="center">
+                <template #default="scope"><span>{{ parseTime(scope.row.planEnd) }}</span></template>
+              </el-table-column>
+              <el-table-column label="操作" width="190" align="center" fixed="right">
+                <template #default="scope">
+                  <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['mms:dispatch:query']">详情</el-button>
+                  <el-button v-if="scope.row.status === '0'" link type="success" icon="VideoPlay" @click="handleStart(scope.row)" v-hasPermi="['mms:dispatch:start']">开工</el-button>
+                  <el-button v-if="scope.row.status === '1'" link type="primary" icon="CircleCheck" @click="handleFinish(scope.row)" v-hasPermi="['mms:dispatch:finish']">完工</el-button>
+                  <el-button v-if="scope.row.status === '0' || scope.row.status === '1'" link type="danger" icon="Close" @click="handleCancel(scope.row)" v-hasPermi="['mms:dispatch:cancel']">取消</el-button>
+                </template>
+              </el-table-column>
+            </el-table>
+          </div>
+        </div>
+        <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+      </div>
+
+      <!-- ===== Flat View (原始平铺列表) ===== -->
+      <div v-show="viewMode === 'flat'" class="table-wrap">
         <el-table ref="tableRef" v-loading="loading" :data="dataList" border @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
           <el-table-column label="派工单号" prop="dispatchNo" key="dispatchNo" :width="colWidth('dispatchNo', 150)" resizable v-if="columns.dispatchNo.visible" />
           <el-table-column label="工单编号" prop="workOrderNo" key="workOrderNo" :width="colWidth('workOrderNo', 140)" resizable v-if="columns.workOrderNo.visible" />
@@ -110,7 +216,7 @@
           <el-table-column label="产品名称" prop="productName" key="productName" :width="colWidth('productName', 160)" resizable show-overflow-tooltip v-if="columns.productName.visible" />
           <el-table-column label="规格型号" prop="specModel" key="specModel" :width="colWidth('specModel', 120)" resizable show-overflow-tooltip v-if="columns.specModel.visible" />
           <el-table-column label="单位" prop="unit" key="unit" :width="colWidth('unit', 80)" resizable align="center" v-if="columns.unit.visible"><template #default="scope"><dict-tag :options="wms_unit" :value="scope.row.unit" /></template></el-table-column>
-          <el-table-column label="工序序号" prop="opSeq" key="opSeq" :width="colWidth('opSeq', 90)" resizable align="center" v-if="columns.opSeq.visible" />
+          <el-table-column label="工序顺序号" prop="opSeq" key="opSeq" :width="colWidth('opSeq', 90)" resizable align="center" v-if="columns.opSeq.visible" />
           <el-table-column label="工序名称" prop="processName" key="processName" :width="colWidth('processName', 140)" resizable show-overflow-tooltip v-if="columns.processName.visible" />
           <el-table-column label="产能单元" prop="resourceName" key="resourceName" :width="colWidth('resourceName', 140)" resizable show-overflow-tooltip v-if="columns.resourceName.visible" />
           <el-table-column label="班组" prop="teamName" key="teamName" :width="colWidth('teamName', 120)" resizable v-if="columns.teamName.visible" />
@@ -144,9 +250,8 @@
             </template>
           </el-table-column>
         </el-table>
+        <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
       </div>
-
-      <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
     </div>
 
     <!-- ===== 详情弹窗 ===== -->
@@ -173,7 +278,7 @@
             <div class="rd-item"><span class="rd-label">产品名称</span><div class="rd-value">{{ viewData.productName || '—' }}</div></div>
             <div class="rd-item"><span class="rd-label">规格型号</span><div class="rd-value">{{ viewData.specModel || '—' }}</div></div>
             <div class="rd-item"><span class="rd-label">单位</span><div class="rd-value"><dict-tag :options="wms_unit" :value="viewData.unit" /></div></div>
-            <div class="rd-item"><span class="rd-label">工序序号</span><div class="rd-value">{{ viewData.opSeq != null ? viewData.opSeq : '—' }}</div></div>
+            <div class="rd-item"><span class="rd-label">工序顺序号</span><div class="rd-value">{{ viewData.opSeq != null ? viewData.opSeq : '—' }}</div></div>
             <div class="rd-item"><span class="rd-label">工序名称</span><div class="rd-value">{{ viewData.processName || '—' }}</div></div>
           </div></div>
         </section>
@@ -210,7 +315,7 @@
       <template #footer><el-button @click="viewOpen = false">关 闭</el-button></template>
     </el-dialog>
     <!-- ===== 开工 Dialog ===== -->
-    <el-dialog v-model="startOpen" width="720px" append-to-body draggable class="rd-dialog">
+    <el-dialog v-model="startOpen" width="1037px" append-to-body draggable class="rd-dialog">
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>
@@ -223,27 +328,47 @@
       </template>
       <el-form ref="startFormRef" :model="startForm" :rules="startRules" label-width="100px">
         <div class="rd-page">
+          <!-- 派工单信息 -->
           <section class="rd-card">
             <div class="rd-card-header" @click="toggleCard('sc0')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg></span>派工单信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.sc0 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
             <div class="rd-card-body" v-show="!collapsedCards.sc0">
               <el-row :gutter="20"><el-col :span="12"><el-form-item label="派工单号"><el-input :model-value="startForm.dispatchNo" disabled /></el-form-item></el-col><el-col :span="12"><el-form-item label="工单编号"><el-input :model-value="startForm.workOrderNo" disabled /></el-form-item></el-col></el-row>
-              <el-row :gutter="20"><el-col :span="12"><el-form-item label="产品编码"><el-input :model-value="startForm.productCode" disabled /></el-form-item></el-col><el-col :span="12"><el-form-item label="产品名称"><el-input :model-value="startForm.productName" disabled /></el-form-item></el-col></el-row>
-              <el-row :gutter="20"><el-col :span="12"><el-form-item label="规格型号"><el-input :model-value="startForm.specModel" disabled /></el-form-item></el-col><el-col :span="12"><el-form-item label="单位"><el-input :model-value="unitLabel(startForm.unit)" disabled /></el-form-item></el-col></el-row>
-              <el-row :gutter="20"><el-col :span="12"><el-form-item label="工序序号"><el-input :model-value="startForm.opSeq" disabled /></el-form-item></el-col><el-col :span="12"><el-form-item label="工序名称"><el-input :model-value="startForm.processName" disabled /></el-form-item></el-col></el-row>
-              <el-row :gutter="20"><el-col :span="12"><el-form-item label="产能单元"><el-input :model-value="startForm.resourceName" disabled /></el-form-item></el-col><el-col :span="12"><el-form-item label="班组" prop="teamId" required><el-select v-model="startForm.teamId" placeholder="请选择班组" style="width: 100%" @change="onStartTeamChange"><el-option v-for="t in teamOptions" :key="t.teamId" :label="t.teamName" :value="t.teamId" /></el-select></el-form-item></el-col></el-row>
             </div>
           </section>
+          <!-- 产品信息 -->
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('sc0a')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></span>产品信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.sc0a }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+            <div class="rd-card-body" v-show="!collapsedCards.sc0a">
+              <el-row :gutter="20"><el-col :span="12"><el-form-item label="产品编码"><el-input :model-value="startForm.productCode" disabled /></el-form-item></el-col><el-col :span="12"><el-form-item label="产品名称"><el-input :model-value="startForm.productName" disabled /></el-form-item></el-col></el-row>
+              <el-row :gutter="20"><el-col :span="12"><el-form-item label="规格型号"><el-input :model-value="startForm.specModel" disabled /></el-form-item></el-col><el-col :span="12"><el-form-item label="单位"><el-input :model-value="unitLabel(startForm.unit)" disabled /></el-form-item></el-col></el-row>
+            </div>
+          </section>
+          <!-- 工序信息 -->
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('sc0b')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11H5a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h4"/><path d="M15 11h4a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-4"/><line x1="9" y1="13" x2="15" y2="13"/></svg></span>工序信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.sc0b }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+            <div class="rd-card-body" v-show="!collapsedCards.sc0b">
+              <el-row :gutter="20"><el-col :span="12"><el-form-item label="工序顺序号"><el-input :model-value="startForm.opSeq" disabled /></el-form-item></el-col><el-col :span="12"><el-form-item label="工序名称"><el-input :model-value="startForm.processName" disabled /></el-form-item></el-col></el-row>
+            </div>
+          </section>
+          <!-- 执行资源 -->
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('sc0c')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg></span>执行资源</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.sc0c }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+            <div class="rd-card-body" v-show="!collapsedCards.sc0c">
+              <el-row :gutter="20"><el-col :span="12"><el-form-item label="产能单元" prop="resourceName" required><el-input v-model="startForm.resourceName" readonly placeholder="请选择产能单元" style="width: 100%" @click="openStartResourcePicker"><template #append><el-button icon="Search" @click="openStartResourcePicker" /></template><template #suffix><el-icon v-if="startForm.resourceName" class="rd-form-tip" style="cursor:pointer" @click.stop="clearStartResource"><CircleClose /></el-icon></template></el-input></el-form-item></el-col><el-col :span="12"><el-form-item label="班组" prop="teamName" required><el-input v-model="startForm.teamName" readonly placeholder="请选择班组" style="width: 100%" @click="openStartTeamPicker"><template #append><el-button icon="Search" @click="openStartTeamPicker" /></template><template #suffix><el-icon v-if="startForm.teamName" class="rd-form-tip" style="cursor:pointer" @click.stop="clearStartTeam"><CircleClose /></el-icon></template></el-input></el-form-item></el-col></el-row>
+            </div>
+          </section>
+          <!-- 计划信息 -->
           <section class="rd-card">
             <div class="rd-card-header" @click="toggleCard('sc1')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>计划信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.sc1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
             <div class="rd-card-body" v-show="!collapsedCards.sc1">
-              <el-row :gutter="20"><el-col :span="12"><el-form-item label="计划数量"><el-input-number :model-value="startForm.planQty" :min="0" :precision="2" disabled style="width: 100%" /></el-form-item></el-col><el-col :span="12"><el-form-item label="计划开始"><el-input :model-value="startForm.planStart ? parseTime(startForm.planStart) : '—'" disabled /></el-form-item></el-col></el-row>
-              <el-row :gutter="20"><el-col :span="12"><el-form-item label="计划结束"><el-input :model-value="startForm.planEnd ? parseTime(startForm.planEnd) : '—'" disabled /></el-form-item></el-col></el-row>
+              <el-row :gutter="20"><el-col :span="8"><el-form-item label="计划数量"><el-input-number :model-value="startForm.planQty" :min="0" :precision="2" disabled style="width: 100%" /></el-form-item></el-col><el-col :span="8"><el-form-item label="计划开始"><el-input :model-value="startForm.planStart ? parseTime(startForm.planStart) : '—'" disabled /></el-form-item></el-col><el-col :span="8"><el-form-item label="计划结束"><el-input :model-value="startForm.planEnd ? parseTime(startForm.planEnd) : '—'" disabled /></el-form-item></el-col></el-row>
             </div>
           </section>
+          <!-- 开工确认 -->
           <section class="rd-card">
-            <div class="rd-card-header" @click="toggleCard('sc2')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg></span>开工确认</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.sc2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+            <div class="rd-card-header" @click="toggleCard('sc2')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg></span>开工确认</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.sc2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
             <div class="rd-card-body" v-show="!collapsedCards.sc2">
-              <el-row :gutter="20"><el-col :span="12"><el-form-item label="操作人员" prop="operatorName"><el-input v-model="startForm.operatorName" readonly placeholder="当前操作人" style="width: 100%" /></el-form-item></el-col></el-row>
+              <el-row :gutter="20"><el-col :span="12"><el-form-item label="操作人员" prop="operatorName"><el-input v-model="startForm.operatorName" placeholder="请输入操作人员" style="width: 100%" /></el-form-item></el-col><el-col :span="12"><el-form-item label="操作时间" prop="operateTime"><el-date-picker v-model="startForm.operateTime" type="datetime" placeholder="请选择操作时间" value-format="YYYY-MM-DD HH:mm:ss" style="width: 100%" /></el-form-item></el-col></el-row>
             </div>
           </section>
         </div>
@@ -258,8 +383,68 @@
       </template>
     </el-dialog>
 
+    <!-- ===== 开工-产能单元选择弹窗 ===== -->
+    <el-dialog v-model="startResourcePickerOpen" width="860px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div>
+          <span class="rd-detail-header-title">选择产能单元</span>
+        </div>
+      </template>
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <el-input v-model="startResourcePickerQuery.resourceName" placeholder="产能单元名称" clearable size="small" style="width:200px" @keyup.enter="handleStartResourcePickerQuery">
+          <template #prefix><el-icon><Search /></el-icon></template>
+        </el-input>
+        <el-input v-model="startResourcePickerQuery.lineName" placeholder="产线" clearable size="small" style="width:160px" @keyup.enter="handleStartResourcePickerQuery" />
+        <el-button type="primary" plain icon="Search" size="small" @click="handleStartResourcePickerQuery">查询</el-button>
+        <el-button icon="RefreshLeft" size="small" @click="resetStartResourcePickerQuery">重置</el-button>
+      </div>
+      <el-table v-loading="startResourcePickerLoading" :data="startResourcePickerList" highlight-current-row @row-click="onStartResourceRowClick" @row-dblclick="onStartResourceRowDblClick" height="360" size="small">
+        <el-table-column width="45" align="center"><template #default="{ row }"><el-radio :model-value="startResourcePickerSelectedId" :value="row.resourceId" @click.stop><span /></el-radio></template></el-table-column>
+        <el-table-column label="资源编码" prop="resourceCode" width="130" show-overflow-tooltip />
+        <el-table-column label="产能单元" prop="resourceName" min-width="150" show-overflow-tooltip />
+        <el-table-column label="产线" prop="lineName" width="100" show-overflow-tooltip />
+        <el-table-column label="车间" prop="workshopName" width="100" show-overflow-tooltip />
+      </el-table>
+      <div style="display:flex;justify-content:flex-end;padding-top:8px">
+        <el-pagination v-model:current-page="startResourcePickerQuery.pageNum" v-model:page-size="startResourcePickerQuery.pageSize" :total="startResourcePickerTotal" layout="total, prev, pager, next" small @current-change="getStartResourcePickerList" />
+      </div>
+      <div v-if="startResourcePickerList.length > 0" style="margin-top:6px;font-size:12px;color:#94a3b8;text-align:center">双击行可选择并带出产能单元</div>
+      <template #footer><el-button @click="startResourcePickerOpen = false">取 消</el-button><el-button type="primary" @click="confirmStartResourcePicker" :disabled="!startResourcePickerSelectedId">确 定</el-button></template>
+    </el-dialog>
+
+    <!-- ===== 开工-班组选择弹窗 ===== -->
+    <el-dialog v-model="startTeamPickerOpen" width="760px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+          <span class="rd-detail-header-title">选择班组</span>
+        </div>
+      </template>
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <el-input v-model="startTeamPickerQuery.teamName" placeholder="班组名称" clearable size="small" style="width:200px" @keyup.enter="handleStartTeamPickerQuery">
+          <template #prefix><el-icon><Search /></el-icon></template>
+        </el-input>
+        <el-button type="primary" plain icon="Search" size="small" @click="handleStartTeamPickerQuery">查询</el-button>
+        <el-button icon="RefreshLeft" size="small" @click="resetStartTeamPickerQuery">重置</el-button>
+      </div>
+      <el-table v-loading="startTeamPickerLoading" :data="startTeamPickerList" highlight-current-row @row-click="onStartTeamRowClick" @row-dblclick="onStartTeamRowDblClick" height="360" size="small">
+        <el-table-column width="45" align="center"><template #default="{ row }"><el-radio :model-value="startTeamPickerSelectedId" :value="row.teamId" @click.stop><span /></el-radio></template></el-table-column>
+        <el-table-column label="班组编号" prop="teamCode" width="130" show-overflow-tooltip />
+        <el-table-column label="班组名称" prop="teamName" min-width="150" show-overflow-tooltip />
+        <el-table-column label="产能单元" prop="resourceName" width="150" show-overflow-tooltip />
+        <el-table-column label="班组长" prop="leader" width="100" show-overflow-tooltip />
+        <el-table-column label="班组人数" prop="memberCount" width="90" align="center" />
+      </el-table>
+      <div style="display:flex;justify-content:flex-end;padding-top:8px">
+        <el-pagination v-model:current-page="startTeamPickerQuery.pageNum" v-model:page-size="startTeamPickerQuery.pageSize" :total="startTeamPickerTotal" layout="total, prev, pager, next" small @current-change="getStartTeamPickerList" />
+      </div>
+      <div v-if="startTeamPickerList.length > 0" style="margin-top:6px;font-size:12px;color:#94a3b8;text-align:center">双击行可选择并带出班组</div>
+      <template #footer><el-button @click="startTeamPickerOpen = false">取 消</el-button><el-button type="primary" @click="confirmStartTeamPicker" :disabled="!startTeamPickerSelectedId">确 定</el-button></template>
+    </el-dialog>
+
     <!-- ===== 完工 Dialog ===== -->
-    <el-dialog v-model="finishOpen" width="720px" append-to-body draggable class="rd-dialog">
+    <el-dialog v-model="finishOpen" width="864px" append-to-body draggable class="rd-dialog">
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
@@ -272,20 +457,40 @@
       </template>
       <el-form ref="finishFormRef" :model="finishForm" :rules="finishRules" label-width="100px">
         <div class="rd-page">
+          <!-- 派工单信息 -->
           <section class="rd-card">
             <div class="rd-card-header" @click="toggleCard('fc0')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg></span>派工单信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.fc0 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
             <div class="rd-card-body" v-show="!collapsedCards.fc0">
               <el-row :gutter="20"><el-col :span="12"><el-form-item label="派工单号"><el-input :model-value="finishForm.dispatchNo" disabled /></el-form-item></el-col><el-col :span="12"><el-form-item label="工单编号"><el-input :model-value="finishForm.workOrderNo" disabled /></el-form-item></el-col></el-row>
-              <el-row :gutter="20"><el-col :span="12"><el-form-item label="产品编码"><el-input :model-value="finishForm.productCode" disabled /></el-form-item></el-col><el-col :span="12"><el-form-item label="产品名称"><el-input :model-value="finishForm.productName" disabled /></el-form-item></el-col></el-row>
-              <el-row :gutter="20"><el-col :span="12"><el-form-item label="规格型号"><el-input :model-value="finishForm.specModel" disabled /></el-form-item></el-col><el-col :span="12"><el-form-item label="单位"><el-input :model-value="unitLabel(finishForm.unit)" disabled /></el-form-item></el-col></el-row>
-              <el-row :gutter="20"><el-col :span="12"><el-form-item label="工序序号"><el-input :model-value="finishForm.opSeq" disabled /></el-form-item></el-col><el-col :span="12"><el-form-item label="工序名称"><el-input :model-value="finishForm.processName" disabled /></el-form-item></el-col></el-row>
-              <el-row :gutter="20"><el-col :span="12"><el-form-item label="产能单元"><el-input :model-value="finishForm.resourceName" disabled /></el-form-item></el-col><el-col :span="12"><el-form-item label="班组"><el-input :model-value="finishForm.teamName" disabled /></el-form-item></el-col></el-row>
             </div>
           </section>
+          <!-- 产品信息 -->
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('fc0a')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></span>产品信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.fc0a }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+            <div class="rd-card-body" v-show="!collapsedCards.fc0a">
+              <el-row :gutter="20"><el-col :span="8"><el-form-item label="产品编码"><el-input :model-value="finishForm.productCode" disabled /></el-form-item></el-col><el-col :span="16"><el-form-item label="产品名称"><el-input :model-value="finishForm.productName" disabled /></el-form-item></el-col></el-row>
+              <el-row :gutter="20"><el-col :span="16"><el-form-item label="规格型号"><el-input :model-value="finishForm.specModel" disabled /></el-form-item></el-col><el-col :span="8"><el-form-item label="单位"><el-input :model-value="unitLabel(finishForm.unit)" disabled /></el-form-item></el-col></el-row>
+            </div>
+          </section>
+          <!-- 工序与资源 -->
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('fc0b')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11H5a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h4"/><path d="M15 11h4a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-4"/><line x1="9" y1="13" x2="15" y2="13"/></svg></span>工序与资源</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.fc0b }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+            <div class="rd-card-body" v-show="!collapsedCards.fc0b">
+              <el-row :gutter="20"><el-col :span="8"><el-form-item label="工序顺序号"><el-input :model-value="finishForm.opSeq" disabled /></el-form-item></el-col><el-col :span="16"><el-form-item label="工序名称"><el-input :model-value="finishForm.processName" disabled /></el-form-item></el-col></el-row>
+              <el-row :gutter="20"><el-col :span="16"><el-form-item label="产能单元"><el-input :model-value="finishForm.resourceName" disabled /></el-form-item></el-col><el-col :span="8"><el-form-item label="班组"><el-input :model-value="finishForm.teamName" disabled /></el-form-item></el-col></el-row>
+            </div>
+          </section>
+          <!-- 计划与进度 -->
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('fc0c')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>计划与进度</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.fc0c }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+            <div class="rd-card-body" v-show="!collapsedCards.fc0c">
+              <el-row :gutter="20"><el-col :span="8"><el-form-item label="计划数量"><el-input-number :model-value="finishForm.planQty" :min="0" :precision="2" disabled style="width: 100%" /></el-form-item></el-col><el-col :span="8"><el-form-item label="开工时间"><el-input :model-value="finishForm.actualStart ? parseTime(finishForm.actualStart) : '—'" disabled /></el-form-item></el-col><el-col :span="8"><el-form-item label="当前状态"><el-input :model-value="'进行中'" disabled /></el-form-item></el-col></el-row>
+            </div>
+          </section>
+          <!-- 完工数据填报 -->
           <section class="rd-card">
             <div class="rd-card-header" @click="toggleCard('fc1')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>完工数据填报</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.fc1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
             <div class="rd-card-body" v-show="!collapsedCards.fc1">
-              <el-row :gutter="20"><el-col :span="12"><el-form-item label="计划数量"><el-input-number :model-value="finishForm.planQty" :min="0" :precision="2" disabled style="width: 100%" /></el-form-item></el-col><el-col :span="12"><el-form-item label="开工时间"><el-input :model-value="finishForm.actualStart ? parseTime(finishForm.actualStart) : '—'" disabled /></el-form-item></el-col></el-row>
               <el-row :gutter="20"><el-col :span="12"><el-form-item label="实际开始" prop="actualStartInput"><el-date-picker v-model="finishForm.actualStartInput" type="datetime" placeholder="选择实际开始时间" value-format="YYYY-MM-DD HH:mm:ss" style="width: 100%" /></el-form-item></el-col><el-col :span="12"><el-form-item label="实际结束" prop="actualEndInput"><el-date-picker v-model="finishForm.actualEndInput" type="datetime" placeholder="选择实际结束时间" value-format="YYYY-MM-DD HH:mm:ss" style="width: 100%" /></el-form-item></el-col></el-row>
               <el-row :gutter="20"><el-col :span="12"><el-form-item label="合格数量" prop="goodQty"><el-input-number v-model="finishForm.goodQty" :min="0" :precision="2" :max="finishForm.planQty" placeholder="请输入" style="width: 100%" /></el-form-item></el-col><el-col :span="12"><el-form-item label="不良数量" prop="defectQty"><el-input-number v-model="finishForm.defectQty" :min="0" :precision="2" :max="finishForm.planQty" placeholder="请输入" style="width: 100%" /></el-form-item></el-col></el-row>
               <el-form-item label="完工备注"><el-input v-model="finishForm.remark" type="textarea" :rows="2" placeholder="不良原因、其他说明" /></el-form-item>
@@ -295,7 +500,7 @@
       </el-form>
       <div style="margin: 8px 0 0; padding: 10px 16px; background: #f0f9ff; border: 1px solid #d0e8ff; border-radius: 6px; font-size: 13px; color: #1d4ed8; display: flex; align-items: center; gap: 6px;">
         <el-icon><InfoFilled /></el-icon>
-        <span>完工后系统将自动生成已审核的报工记录并联动更新工单进度。若存在后续工序，且当前工序所在并行组已全部完工（或取消），系统将自动创建下一组工序的派工单（计划数量取并行组最小合格数）。如需多次中间报工、首件确认或记录工时/班次，请前往报工管理手动新增</span>
+        <span>完工后系统将自动生成已审核的报工记录并联动更新工单进度。若存在后续工序，且当前工序所在并行组已全部完工（或取消），系统将自动创建下一组工序的派工单（计划数量取并行组最小合格数）。若为末道工序，且所有工序均已完工，系统将自动完工工单，无需手动操作。如需多次中间报工、首件确认或记录工时/班次，请前往报工管理手动新增</span>
       </div>
       <template #footer>
         <el-button @click="finishOpen = false">取 消</el-button>
@@ -311,7 +516,7 @@
         <div class="highlight-card highlight-primary">
           <div class="highlight-card-title">什么是派工单？</div>
           <div class="highlight-card-body">
-            <strong>派工单（Dispatch Order）</strong>是生产管控中将工单工序任务分配到具体产能单元和人员的执行单据。派工单关联工单编号、工序序号、产能单元、班组和派工人员，记录计划数量与实际完成数量，通过开工→完工→取消的状态流转，实现工序级任务的精细化管控和过程可追溯。<br/><br/>
+            <strong>派工单（Dispatch Order）</strong>是生产管控中将工单工序任务分配到具体产能单元和人员的执行单据。派工单关联工单编号、工序顺序号、产能单元、班组和派工人员，记录计划数量与实际完成数量，通过开工→完工→取消的状态流转，实现工序级任务的精细化管控和过程可追溯。<br/><br/>
             派工单是<strong>MES（制造执行系统）</strong>中工序级任务管理的核心载体，向上对接工单的工序拆分与排产计划，向下驱动产能单元的任务执行、人员调配和进度回报，满足精益生产对工序级任务可追溯、可量化、可管控的要求。
           </div>
         </div>
@@ -370,7 +575,7 @@
             <p>• <strong>产品名称：</strong>生产的产品名称，工单下达时自动带出</p>
             <p>• <strong>规格型号：</strong>产品的规格型号，工单下达时自动带出</p>
             <p>• <strong>单位：</strong>产品的计量单位（字典 wms_unit），工单下达时自动带出</p>
-            <p>• <strong>工序序号：</strong>对应工单工艺路线中的工序顺序号，工单下达时自动带出</p>
+            <p>• <strong>工序顺序号：</strong>该工序在工单工艺路线中的先后顺序（如10、20、30…），工单下达时自动带出</p>
             <p>• <strong>工序名称：</strong>对应工单工艺路线中的工序名称，工单下达时自动带出</p>
           </div>
         </div>
@@ -437,7 +642,7 @@
             <p style="color: #67c23a;"><strong>联动逻辑（三步联动）：</strong></p>
             <p style="padding-left: 16px;">① <strong>回写派工单</strong>：更新合格数量、不良数量、实际开始时间、实际结束时间，状态变为已完成</p>
             <p style="padding-left: 16px;">② <strong>自动生成报工记录</strong>：系统自动创建一条已审核状态的报工记录，包含合格数、不良数、工序、产能单元等信息</p>
-            <p style="padding-left: 16px;">③ <strong>联动更新工单进度</strong>：工单完工数量、合格数量、不良数量自动累计；工单状态从已下达(1)→执行中(2)→报工中(3)</p>
+            <p style="padding-left: 16px;">③ <strong>联动更新工单进度</strong>：工单完工数量、合格数量、不良数量自动累计；工单状态从已下达(1)→执行中(2)</p>
           </div>
         </div>
 
@@ -472,15 +677,16 @@
 import { listDispatch, getDispatch,
          startDispatch, finishDispatch, cancelDispatch } from "@/api/mms/dispatch";
 import { listTeam } from "@/api/mms/team";
+import { listResource } from "@/api/mms/resource";
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
-import { Search, Filter, RefreshLeft, ArrowDown, ArrowRight, WarningFilled, InfoFilled, CircleClose } from '@element-plus/icons-vue'
+import { Search, Filter, RefreshLeft, ArrowDown, ArrowRight, WarningFilled, InfoFilled, CircleClose, Grid, List, Box, Calendar } from '@element-plus/icons-vue'
 import useUserStore from '@/store/modules/user'
 
 const { proxy } = getCurrentInstance();
 const { mms_dispatch_status, wms_unit } = proxy.useDict("mms_dispatch_status", "wms_unit");
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('mms_dispatch_index')
-const { collapsedCards, toggleCard } = useDetailCard(["vc0","vc1","vc2","vc3","sc0","sc1","sc2","fc0","fc1"])
+const { collapsedCards, toggleCard } = useDetailCard(["vc0","vc1","vc2","vc3","sc0","sc0a","sc0b","sc0c","sc1","sc2","fc0","fc0a","fc0b","fc0c","fc1"])
 
 const dataList = ref([]);
 const viewOpen = ref(false);
@@ -494,11 +700,197 @@ const dateRange = ref([]);
 const activeStatusTab = ref("all");
 const statusCounts = ref({});
 const teamOptions = ref([]);
+const resourceOptions = ref([]);
+const viewMode = ref('grouped'); // 'grouped' | 'flat'
+const groupedList = ref([]);
+const expandedGroups = ref(new Set());
+
+// 切换视图模式
+function switchViewMode(mode) {
+  viewMode.value = mode;
+  if (mode === 'grouped') {
+    buildGroupedList();
+  }
+}
+
+// 切换单个工单分组展开/折叠
+function toggleGroup(workOrderNo) {
+  if (expandedGroups.value.has(workOrderNo)) {
+    expandedGroups.value.delete(workOrderNo);
+  } else {
+    expandedGroups.value.add(workOrderNo);
+  }
+  // 触发响应式更新
+  expandedGroups.value = new Set(expandedGroups.value);
+}
+
+// 展开某个工单分组（用于点击"展开工序"按钮）
+function expandAllGroup(workOrderNo) {
+  expandedGroups.value.add(workOrderNo);
+  expandedGroups.value = new Set(expandedGroups.value);
+}
+
+// ===== 内表格（分组视图）列宽管理 =====
+const innerTableRefs = {};  // 存储 el-table 实例引用
+const innerColWidths = ref({});  // 全局共享列宽配置
+
+// 内表格列宽获取函数
+function innerColWidth(prop, defaultWidth) {
+  const w = innerColWidths.value[prop];
+  return w ? w : defaultWidth;
+}
+
+// 设置内表格 ref
+function setInnerTableRef(el, workOrderNo) {
+  if (el) {
+    innerTableRefs[workOrderNo] = el;
+  } else {
+    delete innerTableRefs[workOrderNo];
+  }
+}
+
+// 内表格 header-dragend 事件处理：拖一个卡片的列，所有卡片同步生效
+function onInnerHeaderDragEnd(workOrderNo, newWidth, oldWidth, column) {
+  if (column && column.property) {
+    // 保存到全局共享列宽
+    innerColWidths.value[column.property] = Math.round(newWidth);
+    // 触发响应式更新
+    innerColWidths.value = { ...innerColWidths.value };
+    // 同步更新所有展开的表格列宽
+    nextTick(() => {
+      Object.keys(innerTableRefs).forEach(key => {
+        if (key !== workOrderNo && innerTableRefs[key]) {
+          const table = innerTableRefs[key];
+          const col = table.columns.find(c => c.property === column.property);
+          if (col) {
+            col.width = Math.round(newWidth);
+            col.resizeWidth = Math.round(newWidth);
+            table.headerChecked = false;
+            table.updateLayout();
+          }
+        }
+      });
+    });
+  }
+}
+
+// 构建工单分组数据
+function buildGroupedList() {
+  const groupMap = new Map();
+  dataList.value.forEach(row => {
+    const key = row.workOrderNo || row.dispatchNo;
+    if (!groupMap.has(key)) {
+      groupMap.set(key, {
+        workOrderNo: row.workOrderNo,
+        productCode: row.productCode,
+        productName: row.productName,
+        specModel: row.specModel,
+        unit: row.unit,
+        items: [],
+        totalCount: 0,
+        doneCount: 0,
+        statusCounts: { '0': 0, '1': 0, '2': 0, '3': 0 },
+        totalPlanQty: 0,
+        totalGoodQty: 0,
+        totalDefectQty: 0,
+        rawDefectQty: 0,
+        firstOpSeq: undefined,
+        firstPlanQty: 0,
+        lastDoneOpSeq: undefined,
+        lastDoneGoodQty: undefined,
+        summaryPlanQty: 0,
+        summaryGoodQty: 0,
+        minPlanStart: null,
+        maxPlanEnd: null,
+        progressPercent: 0
+      });
+    }
+    const g = groupMap.get(key);
+    g.items.push(row);
+    g.totalCount++;
+    if (row.status === '2') g.doneCount++;
+    if (row.status !== undefined && g.statusCounts[row.status] !== undefined) {
+      g.statusCounts[row.status]++;
+    }
+    // 数量汇总（修正逻辑：不简单求和）
+    // 计划数量：取首工序（op_seq最小的一组）的计划数量，并行取最小值
+    if (row.planQty != null) g.totalPlanQty += Number(row.planQty) || 0;
+    if (row.goodQty != null) g.totalGoodQty += Number(row.goodQty) || 0;
+    if (row.defectQty != null) g.rawDefectQty += Number(row.defectQty) || 0;
+    // 记录首工序的计划数量（op_seq最小）
+    if (row.opSeq != null) {
+      if (g.firstOpSeq === undefined || row.opSeq < g.firstOpSeq) {
+        g.firstOpSeq = row.opSeq;
+        g.firstPlanQty = Number(row.planQty) || 0;
+      } else if (row.opSeq === g.firstOpSeq) {
+ // 并行工序：取最小值
+        g.firstPlanQty = Math.min(g.firstPlanQty, Number(row.planQty) || 0);
+      }
+      // 记录最大 op_seq 的已完成工序的合格数量（最终产出）
+      if (row.status === '2') {
+        if (g.lastDoneOpSeq === undefined || row.opSeq >= g.lastDoneOpSeq) {
+          if (row.opSeq > g.lastDoneOpSeq || g.lastDoneGoodQty === undefined) {
+            g.lastDoneOpSeq = row.opSeq;
+            g.lastDoneGoodQty = Number(row.goodQty) || 0;
+          } else {
+            // 同一 op_seq 的并行工序，取最小合格数
+            g.lastDoneGoodQty = Math.min(g.lastDoneGoodQty, Number(row.goodQty) || 0);
+          }
+        }
+      }
+    }
+    // 时间范围
+    if (row.planStart) {
+      if (!g.minPlanStart || row.planStart < g.minPlanStart) g.minPlanStart = row.planStart;
+    }
+    if (row.planEnd) {
+      if (!g.maxPlanEnd || row.planEnd > g.maxPlanEnd) g.maxPlanEnd = row.planEnd;
+    }
+  });
+  // 计算进度百分比并格式化时间
+  const result = Array.from(groupMap.values());
+  result.forEach(g => {
+    g.progressPercent = g.totalCount > 0 ? Math.round((g.doneCount / g.totalCount) * 100) : 0;
+    // 计划数量：取首工序计划数量（代表工单总投入量）
+    g.summaryPlanQty = g.firstPlanQty || 0;
+    // 合格数量：取最后一道已完成工序的合格数量（代表当前最终产出）
+    g.summaryGoodQty = g.lastDoneGoodQty !== undefined ? g.lastDoneGoodQty : 0;
+    // 不良数量：工单总投入量 - 最终合格数量（串行工序不良是递进淘汰的，不能简单累加）
+    // 注意：如果没有已完工工序，不良数量应为0
+    if (g.lastDoneGoodQty !== undefined && g.lastDoneOpSeq !== undefined) {
+      g.totalDefectQty = Math.max(0, (g.firstPlanQty || 0) - g.lastDoneGoodQty);
+    } else {
+      g.totalDefectQty = 0;
+    }
+    g.totalPlanQty = Number(g.totalPlanQty.toFixed(2));
+    g.totalGoodQty = Number(g.totalGoodQty.toFixed(2));
+    g.totalDefectQty = Number(g.totalDefectQty.toFixed(2));
+    g.summaryPlanQty = Number(g.summaryPlanQty.toFixed(2));
+    g.summaryGoodQty = Number(g.summaryGoodQty.toFixed(2));
+    if (g.minPlanStart) g.minPlanStart = proxy.parseTime(g.minPlanStart, '{y}-{m}-{d}');
+    if (g.maxPlanEnd) g.maxPlanEnd = proxy.parseTime(g.maxPlanEnd, '{y}-{m}-{d}');
+    // 按工序顺序号排序
+    g.items.sort((a, b) => (a.opSeq || 0) - (b.opSeq || 0));
+  });
+  groupedList.value = result;
+  // 默认展开第一个分组
+  if (result.length > 0 && expandedGroups.value.size === 0) {
+    expandedGroups.value.add(result[0].workOrderNo);
+    expandedGroups.value = new Set(expandedGroups.value);
+  }
+}
 
 // 加载班组下拉
 function loadTeamOptions() {
   listTeam({ pageNum: 1, pageSize: 999, status: '0' }).then(response => {
     teamOptions.value = response.rows || [];
+  });
+}
+
+// 加载产能单元下拉
+function loadResourceOptions() {
+  listResource({ pageNum: 1, pageSize: 999, status: '0' }).then(response => {
+    resourceOptions.value = response.rows || [];
   });
 }
 
@@ -516,7 +908,7 @@ const defaultColumns = {
   productName: { label: '产品名称', visible: true },
   specModel: { label: '规格型号', visible: true },
   unit: { label: '单位', visible: true },
-  opSeq: { label: '工序序号', visible: true },
+  opSeq: { label: '工序顺序号', visible: true },
   processName: { label: '工序名称', visible: true },
   resourceName: { label: '产能单元', visible: true },
   teamName: { label: '班组', visible: true },
@@ -575,17 +967,21 @@ const startForm = reactive({
   unit: '',
   opSeq: undefined,
   processName: '',
+  resourceId: undefined,
   resourceName: '',
   teamId: undefined,
   teamName: '',
   planQty: 0,
   planStart: undefined,
   planEnd: undefined,
-  operatorName: ''
+  operatorName: '',
+  operateTime: ''
 });
 const startRules = {
-  teamId: [{ required: true, message: "请选择班组", trigger: "change" }],
-  operatorName: [{ required: true, message: "操作人员不能为空", trigger: "blur" }]
+  resourceName: [{ required: true, message: "请选择产能单元", trigger: "change" }],
+  teamName: [{ required: true, message: "请选择班组", trigger: "change" }],
+  operatorName: [{ required: true, message: "操作人员不能为空", trigger: "blur" }],
+  operateTime: [{ required: true, message: "操作时间不能为空", trigger: "change" }]
 };
 
 // 完工弹窗
@@ -640,6 +1036,9 @@ function getList() {
     loading.value = false;
     applySavedWidths();
     loadStatusCounts();
+    if (viewMode.value === 'grouped') {
+      buildGroupedList();
+    }
   });
 }
 
@@ -710,6 +1109,15 @@ function handleExport() {
 // ===== 业务操作 =====
 
 function handleStart(row) {
+  // 校验关联工单状态：暂停(7)或作废(8)时不允许开工
+  if (row.workOrderStatus === '7') {
+    proxy.$modal.msgWarning("关联工单[" + (row.workOrderNo || '') + "]已暂停，请先恢复工单后再开工");
+    return;
+  }
+  if (row.workOrderStatus === '8') {
+    proxy.$modal.msgWarning("关联工单[" + (row.workOrderNo || '') + "]已作废，派工单无法开工");
+    return;
+  }
   startForm.dispatchId = row.dispatchId;
   startForm.dispatchNo = row.dispatchNo;
   startForm.workOrderNo = row.workOrderNo;
@@ -719,6 +1127,7 @@ function handleStart(row) {
   startForm.unit = row.unit;
   startForm.opSeq = row.opSeq;
   startForm.processName = row.processName;
+  startForm.resourceId = row.resourceId;
   startForm.resourceName = row.resourceName;
   startForm.teamId = row.teamId;
   startForm.teamName = row.teamName;
@@ -727,13 +1136,98 @@ function handleStart(row) {
   startForm.planEnd = row.planEnd;
   // 默认取当前登录用户昵称
   startForm.operatorName = useUserStore().nickName;
+  // 默认取当前时间
+  startForm.operateTime = proxy.parseTime(new Date(), '{y}-{m}-{d} {h}:{i}:{s}');
   startOpen.value = true;
 }
 
-// ===== 开工-班组选择 =====
-function onStartTeamChange(val) {
-  const team = teamOptions.value.find(t => t.teamId === val);
-  startForm.teamName = team ? team.teamName : '';
+// ===== 开工-产能单元选择弹窗 =====
+const startResourcePickerOpen = ref(false)
+const startResourcePickerLoading = ref(false)
+const startResourcePickerList = ref([])
+const startResourcePickerTotal = ref(0)
+const startResourcePickerSelectedId = ref(null)
+const startResourcePickerSelectedRow = ref(null)
+const startResourcePickerQuery = reactive({ pageNum: 1, pageSize: 10, resourceName: undefined, lineName: undefined, status: '0' })
+
+function openStartResourcePicker() {
+  startResourcePickerOpen.value = true
+  startResourcePickerSelectedId.value = startForm.resourceId || null
+  startResourcePickerSelectedRow.value = null
+  startResourcePickerQuery.pageNum = 1
+  startResourcePickerQuery.resourceName = undefined
+  startResourcePickerQuery.lineName = undefined
+  getStartResourcePickerList()
+}
+function getStartResourcePickerList() {
+  startResourcePickerLoading.value = true
+  listResource(startResourcePickerQuery).then(res => {
+    startResourcePickerList.value = res.rows
+    startResourcePickerTotal.value = res.total
+    startResourcePickerLoading.value = false
+  }).catch(() => { startResourcePickerLoading.value = false })
+}
+function handleStartResourcePickerQuery() { startResourcePickerQuery.pageNum = 1; getStartResourcePickerList() }
+function resetStartResourcePickerQuery() { startResourcePickerQuery.resourceName = undefined; startResourcePickerQuery.lineName = undefined; handleStartResourcePickerQuery() }
+function onStartResourceRowClick(row) { startResourcePickerSelectedId.value = row.resourceId; startResourcePickerSelectedRow.value = row }
+function onStartResourceRowDblClick(row) { onStartResourceRowClick(row); confirmStartResourcePicker() }
+function confirmStartResourcePicker() {
+  if (!startResourcePickerSelectedRow.value) { proxy.$modal.msgWarning('请先选择产能单元'); return }
+  const row = startResourcePickerSelectedRow.value
+  startForm.resourceId = row.resourceId
+  startForm.resourceName = row.resourceName
+  startResourcePickerOpen.value = false
+  // 触发表单校验
+  proxy.$refs["startFormRef"] && proxy.$refs["startFormRef"].validateField('resourceName')
+}
+function clearStartResource() {
+  startForm.resourceId = undefined
+  startForm.resourceName = ''
+  proxy.$refs["startFormRef"] && proxy.$refs["startFormRef"].validateField('resourceName')
+}
+
+// ===== 开工-班组选择弹窗 =====
+const startTeamPickerOpen = ref(false)
+const startTeamPickerLoading = ref(false)
+const startTeamPickerList = ref([])
+const startTeamPickerTotal = ref(0)
+const startTeamPickerSelectedId = ref(null)
+const startTeamPickerSelectedRow = ref(null)
+const startTeamPickerQuery = reactive({ pageNum: 1, pageSize: 10, teamName: undefined, status: '0' })
+
+function openStartTeamPicker() {
+  startTeamPickerOpen.value = true
+  startTeamPickerSelectedId.value = startForm.teamId || null
+  startTeamPickerSelectedRow.value = null
+  startTeamPickerQuery.pageNum = 1
+  startTeamPickerQuery.teamName = undefined
+  getStartTeamPickerList()
+}
+function getStartTeamPickerList() {
+  startTeamPickerLoading.value = true
+  listTeam(startTeamPickerQuery).then(res => {
+    startTeamPickerList.value = res.rows
+    startTeamPickerTotal.value = res.total
+    startTeamPickerLoading.value = false
+  }).catch(() => { startTeamPickerLoading.value = false })
+}
+function handleStartTeamPickerQuery() { startTeamPickerQuery.pageNum = 1; getStartTeamPickerList() }
+function resetStartTeamPickerQuery() { startTeamPickerQuery.teamName = undefined; handleStartTeamPickerQuery() }
+function onStartTeamRowClick(row) { startTeamPickerSelectedId.value = row.teamId; startTeamPickerSelectedRow.value = row }
+function onStartTeamRowDblClick(row) { onStartTeamRowClick(row); confirmStartTeamPicker() }
+function confirmStartTeamPicker() {
+  if (!startTeamPickerSelectedRow.value) { proxy.$modal.msgWarning('请先选择班组'); return }
+  const row = startTeamPickerSelectedRow.value
+  startForm.teamId = row.teamId
+  startForm.teamName = row.teamName
+  startTeamPickerOpen.value = false
+  // 触发表单校验
+  proxy.$refs["startFormRef"] && proxy.$refs["startFormRef"].validateField('teamName')
+}
+function clearStartTeam() {
+  startForm.teamId = undefined
+  startForm.teamName = ''
+  proxy.$refs["startFormRef"] && proxy.$refs["startFormRef"].validateField('teamName')
 }
 
 function submitStart() {
@@ -741,8 +1235,11 @@ function submitStart() {
     if (valid) {
       startDispatch(startForm.dispatchId, {
         operatorName: startForm.operatorName,
+        operateTime: startForm.operateTime,
         teamId: startForm.teamId,
-        teamName: startForm.teamName
+        teamName: startForm.teamName,
+        resourceId: startForm.resourceId,
+        resourceName: startForm.resourceName
       }).then(() => {
         startOpen.value = false;
         getList();
@@ -768,9 +1265,9 @@ function handleFinish(row) {
   finishForm.planQty = row.planQty;
   finishForm.actualStart = row.actualStart;
   // 默认实际开始时间 = 开工时记录时间
-  finishForm.actualStartInput = row.actualStart ? parseTime(row.actualStart) : parseTime(new Date());
+  finishForm.actualStartInput = row.actualStart ? proxy.parseTime(row.actualStart) : proxy.parseTime(new Date());
   // 默认实际结束时间 = 当前时间
-  finishForm.actualEndInput = parseTime(new Date());
+  finishForm.actualEndInput = proxy.parseTime(new Date());
   finishForm.goodQty = row.planQty;
   finishForm.defectQty = 0;
   finishForm.remark = '';
@@ -799,7 +1296,7 @@ function submitFinish() {
         finishOpen.value = false;
         getList();
         loadStatusCounts();
-        proxy.$modal.msgSuccess("完工成功，已自动生成报工记录");
+        proxy.$modal.msgSuccess("完工成功，已自动生成报工记录，若为末道工序将自动完工工单");
       });
     }
   });
@@ -815,6 +1312,13 @@ function handleCancel(row) {
 }
 
 // ===== 字典辅助函数 =====
+/** 判断工单分组是否已完工（所有派工单都已完成或取消） */
+function isGroupFinished(group) {
+  if (!group || !group.items || group.items.length === 0) return false;
+  // 如果所有工序都已完成(2)或取消(3)，则视为已完工
+  return group.items.every(item => item.status === '2' || item.status === '3');
+}
+
 function statusLabel(status) {
   const item = mms_dispatch_status.value.find(d => d.value == status);
   return item ? item.label : '—';
@@ -847,6 +1351,7 @@ function statusTabClass(value) {
 }
 
 loadTeamOptions();
+loadResourceOptions();
 getList();
 </script>
 
@@ -916,7 +1421,7 @@ getList();
 .rd-detail-header-sub { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .rd-detail-header-divider { width: 1px; height: 16px; background: rgb(255 255 255 / 0.3); flex-shrink: 0; }
 .rd-detail-header-no { font-size: 12px; font-weight: 500; color: rgb(255 255 255 / 0.85); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.rd-page { max-width: 760px; margin: 0 auto; }
+.rd-page { max-width: 100%; margin: 0 auto; }
 .rd-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px 24px; }
 .rd-item { display: flex; align-items: center; gap: 12px; }
 .rd-item--full { grid-column: 1 / -1; }
@@ -952,4 +1457,69 @@ getList();
 .status-help-content .highlight-warning .highlight-card-title { color: #e6a23c; }
 .status-help-content .highlight-danger { background-color: #fef0f0; border-color: #fbc4c4; }
 .status-help-content .highlight-danger .highlight-card-title { color: #f56c6c; }
+/* ===== View Mode Switch Bar ===== */
+.mms-dispatch-page .view-mode-bar { display: flex; align-items: center; justify-content: flex-end; padding: 8px 20px; border-bottom: 1px solid var(--ink-200); background: var(--ink-50); }
+.mms-dispatch-page .view-mode-tabs { display: inline-flex; gap: 4px; padding: 3px; background: #fff; border: 1px solid var(--ink-200); border-radius: var(--r-sm); }
+.mms-dispatch-page .view-mode-tab { display: inline-flex; align-items: center; gap: 5px; height: 28px; padding: 0 12px; border: none; background: transparent; border-radius: 4px; font-size: 13px; color: var(--ink-500); cursor: pointer; transition: all .15s var(--ease-out); white-space: nowrap; }
+.mms-dispatch-page .view-mode-tab:hover { background: var(--ink-50); color: var(--ink-700); }
+.mms-dispatch-page .view-mode-tab.is-active { background: var(--brand-600); color: #fff; font-weight: 600; }
+.mms-dispatch-page .view-mode-tab.is-active .el-icon { color: #fff; }
+.mms-dispatch-page .view-mode-tab .el-icon { font-size: 14px; }
+/* ===== Grouped View ===== */
+.mms-dispatch-page .grouped-view { padding: 12px 20px; }
+.mms-dispatch-page .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 20px; color: var(--ink-400); }
+.mms-dispatch-page .empty-state .empty-icon { font-size: 48px; margin-bottom: 12px; }
+.mms-dispatch-page .empty-state p { font-size: 14px; margin: 0; }
+.mms-dispatch-page .wo-group { background: #fff; border: 1px solid var(--ink-200); border-radius: var(--r-md); margin-bottom: 10px; overflow: hidden; box-shadow: var(--shadow-card); transition: border-color .15s; }
+.mms-dispatch-page .wo-group:hover { border-color: var(--brand-200); }
+.mms-dispatch-page .wo-group-header { display: flex; align-items: center; gap: 12px; padding: 14px 16px; cursor: pointer; background: #fff; transition: background .15s; user-select: none; }
+.mms-dispatch-page .wo-group-header:hover { background: var(--ink-50); }
+.mms-dispatch-page .wo-group-toggle { flex: 0 0 auto; display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: var(--r-sm); background: var(--ink-100); color: var(--ink-500); transition: all .2s var(--ease-out); }
+.mms-dispatch-page .wo-group-header:hover .wo-group-toggle { background: var(--brand-100); color: var(--brand-600); }
+.mms-dispatch-page .wo-group-toggle .toggle-icon { font-size: 14px; transition: transform .2s var(--ease-out); }
+.mms-dispatch-page .wo-group-toggle .toggle-icon.is-expanded { transform: rotate(90deg); }
+.mms-dispatch-page .wo-group-main { flex: 1 1 auto; min-width: 0; }
+.mms-dispatch-page .wo-group-line1 { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; flex-wrap: wrap; }
+.mms-dispatch-page .wo-group-line1 .wo-no { font-size: 15px; font-weight: 700; color: var(--ink-900); font-variant-numeric: tabular-nums; }
+.mms-dispatch-page .wo-group-line1 .wo-product { font-size: 14px; font-weight: 600; color: var(--ink-700); }
+.mms-dispatch-page .wo-group-line1 .wo-code { font-size: 13px; font-variant-numeric: tabular-nums; }
+.mms-dispatch-page .wo-group-line1 .wo-spec { font-size: 13px; }
+.mms-dispatch-page .wo-group-line2 { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+/* Progress */
+.mms-dispatch-page .wo-progress { display: flex; align-items: center; gap: 8px; }
+.mms-dispatch-page .wo-progress-label { font-size: 12px; color: var(--ink-400); font-weight: 500; }
+.mms-dispatch-page .wo-progress-value { font-size: 13px; font-weight: 700; color: var(--ink-700); font-variant-numeric: tabular-nums; }
+.mms-dispatch-page .wo-progress-bar { width: 80px; height: 6px; background: var(--ink-100); border-radius: 999px; overflow: hidden; }
+.mms-dispatch-page .wo-progress-fill { height: 100%; background: linear-gradient(90deg, var(--green-500), #34d399); border-radius: 999px; transition: width .3s var(--ease-out); }
+/* Status chips */
+.mms-dispatch-page .wo-status-stats { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.mms-dispatch-page .stat-chip { display: inline-flex; align-items: center; gap: 3px; height: 22px; padding: 0 8px; border-radius: 999px; font-size: 12px; font-weight: 600; border: 1px solid transparent; white-space: nowrap; }
+.mms-dispatch-page .stat-chip.stat-pending { background: var(--amber-50); color: var(--amber-700); border-color: #fde68a; }
+.mms-dispatch-page .stat-chip.stat-running { background: var(--blue-50); color: var(--blue-700); border-color: #bfdbfe; }
+.mms-dispatch-page .stat-chip.stat-done { background: var(--green-50); color: var(--green-700); border-color: #a7f3d0; }
+.mms-dispatch-page .stat-chip.stat-cancel { background: var(--ink-100); color: var(--ink-500); border-color: var(--ink-200); }
+/* Qty stats */
+.mms-dispatch-page .wo-qty-stats { display: flex; align-items: center; gap: 12px; }
+.mms-dispatch-page .qty-item { display: inline-flex; align-items: center; gap: 4px; }
+.mms-dispatch-page .qty-label { font-size: 12px; color: var(--ink-400); font-weight: 500; }
+.mms-dispatch-page .qty-val { font-size: 13px; font-weight: 700; color: var(--ink-700); font-variant-numeric: tabular-nums; }
+.mms-dispatch-page .text-success { color: var(--green-700) !important; }
+.mms-dispatch-page .text-danger { color: var(--red-700) !important; }
+.mms-dispatch-page .text-in-progress { color: #6366f1 !important; }
+/* Time range */
+.mms-dispatch-page .wo-time-range { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--ink-400); font-variant-numeric: tabular-nums; }
+.mms-dispatch-page .wo-time-range .el-icon { font-size: 13px; }
+/* Group actions */
+.mms-dispatch-page .wo-group-actions { flex: 0 0 auto; }
+/* Group body (inner table) */
+.mms-dispatch-page .wo-group-body { border-top: 1px solid var(--ink-200); background: var(--ink-50); padding: 8px 12px 12px; }
+.mms-dispatch-page .wo-group-body .inner-table { --el-table-bg-color: #fff; --el-table-header-bg-color: var(--ink-50); --el-table-row-hover-bg-color: #fafbff; --el-table-border-color: transparent; --el-table-text-color: var(--ink-700); --el-table-header-text-color: var(--ink-500); }
+.mms-dispatch-page .wo-group-body .inner-table :deep(.el-table__header th) { border-right-color: transparent !important; background: var(--ink-50) !important; color: var(--ink-500); font-weight: 600; font-size: 13px; padding: 8px 12px; border-bottom: 1px solid var(--ink-200); }
+.mms-dispatch-page .wo-group-body .inner-table :deep(.el-table__body td) { border-right-color: transparent !important; padding: 8px 12px; border-bottom: 1px solid var(--ink-100); color: var(--ink-700); font-size: 13px; }
+.mms-dispatch-page .wo-group-body .inner-table :deep(.el-table__body tr:last-child td) { border-bottom: none; }
+.mms-dispatch-page .wo-group-body .inner-table :deep(.el-table__inner-wrapper::before) { display: none; }
+.mms-dispatch-page .wo-group-body .inner-table .badge { font-size: 12px; padding: 2px 7px; }
+/* Pagination in grouped view */
+.mms-dispatch-page .grouped-view + .pagination-container,
+.mms-dispatch-page .grouped-view .pagination-container { display: flex; align-items: center; justify-content: flex-end; padding: 14px 20px; background: #fff; }
 </style>

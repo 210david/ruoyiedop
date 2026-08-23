@@ -37,3 +37,11 @@ export function delQc(qcId) {
     method: 'delete'
   })
 }
+
+export function inspectQc(data) {
+  return request({
+    url: '/mms/qc/inspect',
+    method: 'put',
+    data: data
+  })
+}

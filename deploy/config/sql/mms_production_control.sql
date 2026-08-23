@@ -314,7 +314,7 @@ CREATE TABLE `mms_work_order` (
   `qualified_qty`   DECIMAL(18,3) DEFAULT 0.000            COMMENT '合格数量',
   `defect_qty`      DECIMAL(18,3) DEFAULT 0.000            COMMENT '不良数量',
   `priority`       VARCHAR(10)   DEFAULT '1'              COMMENT '优先级(0高 1中 2低)',
-  `status`          VARCHAR(10)   DEFAULT '0'              COMMENT '状态(0新建 1已下达 2执行中 3报工中 4待完工质检 5完工入库 6已关闭 7已暂停 8已作废)',
+  `status`          VARCHAR(10)   DEFAULT '0'              COMMENT '状态(0新建 1已下达 2执行中 3已完工 4已关闭 5已暂停 6已作废)',
   `audit_by`       VARCHAR(64)   DEFAULT ''               COMMENT '审批人',
   `audit_time`     DATETIME      DEFAULT NULL             COMMENT '审批时间',
   `audit_opinion`  VARCHAR(500)  DEFAULT NULL             COMMENT '审批意见',

@@ -18,10 +18,11 @@ public class MmsWorkReport extends BaseEntity {
     @Excel(name = "产能单元") private String resourceName;
     @Excel(name = "合格数") private BigDecimal goodQty;
     @Excel(name = "不良数") private BigDecimal defectQty;
-    @Excel(name = "工时") private BigDecimal workHours;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss") private Date reportTime;
     @Excel(name = "报工人") private String reportBy;
+    private Long teamId;
     @Excel(name = "班组") private String teamName;
+    private Long shiftId;
     @Excel(name = "班次") private String shiftName;
     @Excel(name = "首件") private String isFirstPiece;
     @Excel(name = "状态", readConverterExp = "0=待审核,1=已审核,2=已驳回") private String status;
@@ -51,14 +52,16 @@ public class MmsWorkReport extends BaseEntity {
     public void setGoodQty(BigDecimal goodQty) { this.goodQty = goodQty; }
     public BigDecimal getDefectQty() { return defectQty; }
     public void setDefectQty(BigDecimal defectQty) { this.defectQty = defectQty; }
-    public BigDecimal getWorkHours() { return workHours; }
-    public void setWorkHours(BigDecimal workHours) { this.workHours = workHours; }
     public Date getReportTime() { return reportTime; }
     public void setReportTime(Date reportTime) { this.reportTime = reportTime; }
     public String getReportBy() { return reportBy; }
     public void setReportBy(String reportBy) { this.reportBy = reportBy; }
+    public Long getTeamId() { return teamId; }
+    public void setTeamId(Long teamId) { this.teamId = teamId; }
     public String getTeamName() { return teamName; }
     public void setTeamName(String teamName) { this.teamName = teamName; }
+    public Long getShiftId() { return shiftId; }
+    public void setShiftId(Long shiftId) { this.shiftId = shiftId; }
     public String getShiftName() { return shiftName; }
     public void setShiftName(String shiftName) { this.shiftName = shiftName; }
     public String getIsFirstPiece() { return isFirstPiece; }

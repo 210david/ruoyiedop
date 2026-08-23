@@ -30,6 +30,9 @@ public class MmsDispatch extends BaseEntity
     @Excel(name = "工单编号")
     private String workOrderNo;
 
+    /** 关联工单状态（非持久化字段，仅用于前端展示，LEFT JOIN mms_work_order 获取） */
+    private String workOrderStatus;
+
     @Excel(name = "产品编码")
     private String productCode;
 
@@ -42,7 +45,7 @@ public class MmsDispatch extends BaseEntity
     @Excel(name = "单位")
     private String unit;
 
-    @Excel(name = "工序序号")
+    @Excel(name = "工序顺序号")
     private Integer opSeq;
 
     private Long processId;
@@ -99,6 +102,8 @@ public class MmsDispatch extends BaseEntity
     public void setWorkOrderId(Long workOrderId) { this.workOrderId = workOrderId; }
     public String getWorkOrderNo() { return workOrderNo; }
     public void setWorkOrderNo(String workOrderNo) { this.workOrderNo = workOrderNo; }
+    public String getWorkOrderStatus() { return workOrderStatus; }
+    public void setWorkOrderStatus(String workOrderStatus) { this.workOrderStatus = workOrderStatus; }
     public String getProductCode() { return productCode; }
     public void setProductCode(String productCode) { this.productCode = productCode; }
     public String getProductName() { return productName; }

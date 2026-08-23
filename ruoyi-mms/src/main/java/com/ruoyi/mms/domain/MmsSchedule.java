@@ -38,7 +38,7 @@ public class MmsSchedule extends BaseEntity
     @Excel(name = "产能单元")
     private String resourceName;
 
-    @Excel(name = "工序序号")
+    @Excel(name = "工序顺序号")
     private Integer opSeq;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")

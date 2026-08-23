@@ -75,4 +75,16 @@ public class MmsQcController extends BaseController
     {
         return toAjax(mmsQcService.deleteQcByIds(QcIds));
     }
+
+    /**
+     * 执行质检（提交质检结果）
+     * 质检员确认检验数据后提交检验结论
+     */
+    @Log(title = "质检-执行质检", businessType = BusinessType.UPDATE)
+    @PreAuthorize("@ss.hasPermi('mms:qc:edit')")
+    @PutMapping("/inspect")
+    public AjaxResult inspect(@RequestBody MmsQc qc)
+    {
+        return toAjax(mmsQcService.inspectQc(qc));
+    }
 }

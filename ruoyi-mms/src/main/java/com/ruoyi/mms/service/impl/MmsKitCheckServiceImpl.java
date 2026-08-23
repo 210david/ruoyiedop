@@ -548,12 +548,10 @@ public class MmsKitCheckServiceImpl implements IMmsKitCheckService
             case "0": return "新建";
             case "1": return "已下达";
             case "2": return "执行中";
-            case "3": return "报工中";
-            case "4": return "待完工质检";
-            case "5": return "完工入库";
-            case "6": return "已关闭";
-            case "7": return "已暂停";
-            case "8": return "已作废";
+            case "3": return "已完工";
+            case "4": return "已关闭";
+            case "5": return "已暂停";
+            case "6": return "已作废";
             default: return "未知(" + status + ")";
         }
     }

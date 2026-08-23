@@ -101,7 +101,7 @@
           <el-table-column label="流转卡号" prop="cardCode" key="cardCode" :width="colWidth('cardCode', 150)" resizable v-if="columns.cardCode.visible" />
           <el-table-column label="工单编号" prop="workOrderNo" key="workOrderNo" :width="colWidth('workOrderNo', 140)" resizable v-if="columns.workOrderNo.visible" />
           <el-table-column label="批次号" prop="batchNo" key="batchNo" :width="colWidth('batchNo', 130)" resizable v-if="columns.batchNo.visible" />
-          <el-table-column label="当前工序序号" prop="opSeq" key="opSeq" :width="colWidth('opSeq', 110)" resizable align="center" v-if="columns.opSeq.visible" />
+          <el-table-column label="当前工序顺序号" prop="opSeq" key="opSeq" :width="colWidth('opSeq', 110)" resizable align="center" v-if="columns.opSeq.visible" />
           <el-table-column label="当前工序" prop="processName" key="processName" :width="colWidth('processName', 140)" resizable show-overflow-tooltip v-if="columns.processName.visible" />
           <el-table-column label="状态" prop="status" key="status" :width="colWidth('status', 100)" resizable align="center" sortable="custom" v-if="columns.status.visible">
             <template #default="scope">
@@ -141,7 +141,7 @@
             <div class="rd-card-header" @click="toggleCard('c0')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg></span>基本信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c0 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
             <div class="rd-card-body" v-show="!collapsedCards.c0">
               <el-row :gutter="20"><el-col :span="12"><el-form-item label="流转卡号" prop="cardCode"><el-input v-model="form.cardCode" placeholder="自动生成" disabled /></el-form-item></el-col><el-col :span="12"><el-form-item label="工单编号" prop="workOrderNo"><el-input v-model="form.workOrderNo" placeholder="请输入" /></el-form-item></el-col></el-row>
-              <el-row :gutter="20"><el-col :span="12"><el-form-item label="批次号" prop="batchNo"><el-input v-model="form.batchNo" placeholder="请输入" /></el-form-item></el-col><el-col :span="12"><el-form-item label="当前工序序号" prop="opSeq"><el-input-number v-model="form.opSeq" :min="0" placeholder="请输入" style="width: 100%" /></el-form-item></el-col></el-row>
+              <el-row :gutter="20"><el-col :span="12"><el-form-item label="批次号" prop="batchNo"><el-input v-model="form.batchNo" placeholder="请输入" /></el-form-item></el-col><el-col :span="12"><el-form-item label="当前工序顺序号" prop="opSeq"><el-input-number v-model="form.opSeq" :min="0" placeholder="请输入" style="width: 100%" /></el-form-item></el-col></el-row>
               <el-row :gutter="20"><el-col :span="12"><el-form-item label="当前工序" prop="processName"><el-input v-model="form.processName" placeholder="请输入" /></el-form-item></el-col><el-col :span="12"><el-form-item label="状态" prop="status"><el-select v-model="form.status" placeholder="请选择"><el-option v-for="d in mms_flowcard_status" :key="d.value" :label="d.label" :value="d.value" /></el-select></el-form-item></el-col></el-row>
             </div>
           </section>
@@ -180,7 +180,7 @@
             <div class="rd-item"><span class="rd-label">流转卡号</span><div class="rd-value">{{ viewData.cardCode || '—' }}</div></div>
             <div class="rd-item"><span class="rd-label">工单编号</span><div class="rd-value">{{ viewData.workOrderNo || '—' }}</div></div>
             <div class="rd-item"><span class="rd-label">批次号</span><div class="rd-value">{{ viewData.batchNo || '—' }}</div></div>
-            <div class="rd-item"><span class="rd-label">当前工序序号</span><div class="rd-value">{{ viewData.opSeq != null ? viewData.opSeq : '—' }}</div></div>
+            <div class="rd-item"><span class="rd-label">当前工序顺序号</span><div class="rd-value">{{ viewData.opSeq != null ? viewData.opSeq : '—' }}</div></div>
             <div class="rd-item"><span class="rd-label">当前工序</span><div class="rd-value">{{ viewData.processName || '—' }}</div></div>
             <div class="rd-item"><span class="rd-label">状态</span><div class="rd-value"><span v-if="viewData.status" class="badge" :class="badgeClass(viewData.status)"><span class="dot"></span>{{ statusLabel(viewData.status) }}</span><span v-else class="text-muted">—</span></div></div>
             <div class="rd-item"><span class="rd-label">打印次数</span><div class="rd-value">{{ viewData.printCount != null ? viewData.printCount : 0 }}</div></div>
@@ -253,7 +253,7 @@
             <p>• <strong>流转卡号：</strong>流转卡的唯一标识编号，保存后由系统自动生成</p>
             <p>• <strong>工单编号：</strong>关联的生产工单编号<span style="color: #f56c6c;">*必填</span></p>
             <p>• <strong>批次号：</strong>在制品的批次编号，用于批次追溯<span style="color: #f56c6c;">*必填</span></p>
-            <p>• <strong>当前工序序号：</strong>当前所在工序的序号</p>
+            <p>• <strong>当前工序顺序号：</strong>当前所在工序的序号</p>
             <p>• <strong>当前工序：</strong>当前正在执行的工序名称</p>
             <p>• <strong>状态：</strong>流转卡的当前流转状态</p>
           </div>
@@ -347,7 +347,7 @@ const defaultColumns = {
   cardCode: { label: '流转卡号', visible: true },
   workOrderNo: { label: '工单编号', visible: true },
   batchNo: { label: '批次号', visible: true },
-  opSeq: { label: '当前工序序号', visible: true },
+  opSeq: { label: '当前工序顺序号', visible: true },
   processName: { label: '当前工序', visible: true },
   status: { label: '状态', visible: true },
   printCount: { label: '打印次数', visible: true },
