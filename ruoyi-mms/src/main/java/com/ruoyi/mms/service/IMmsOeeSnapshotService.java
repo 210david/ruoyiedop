@@ -7,4 +7,5 @@ public interface IMmsOeeSnapshotService
 {
     public List<MmsOeeSnapshot> selectOeeSnapshotList(MmsOeeSnapshot snapshot);
     public MmsOeeSnapshot selectOeeSnapshotById(Long snapshotId);
+    public long selectOeeSnapshotCount(MmsOeeSnapshot snapshot);
 }

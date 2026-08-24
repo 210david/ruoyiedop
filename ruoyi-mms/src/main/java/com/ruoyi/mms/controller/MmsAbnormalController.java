@@ -109,9 +109,7 @@ public class MmsAbnormalController extends BaseController
     public AjaxResult respond(@PathVariable("abnormalId") Long abnormalId,
             @RequestBody(required = false) com.ruoyi.mms.domain.MmsAbnormal body)
     {
-        String responseBy = body != null ? body.getResponseBy() : null;
-        java.util.Date responseTime = body != null ? body.getResponseTime() : null;
-        return toAjax(mmsAbnormalService.respondAbnormal(abnormalId, responseBy, responseTime));
+        return toAjax(mmsAbnormalService.respondAbnormal(abnormalId, body));
     }
 
     /**
@@ -125,10 +123,7 @@ public class MmsAbnormalController extends BaseController
     public AjaxResult resolve(@PathVariable("abnormalId") Long abnormalId,
             @RequestBody(required = false) com.ruoyi.mms.domain.MmsAbnormal body)
     {
-        String handleResult = body != null ? body.getHandleResult() : null;
-        String handleBy = body != null ? body.getHandleBy() : null;
-        java.util.Date handleTime = body != null ? body.getHandleTime() : null;
-        return toAjax(mmsAbnormalService.resolveAbnormal(abnormalId, handleResult, handleBy, handleTime));
+        return toAjax(mmsAbnormalService.resolveAbnormal(abnormalId, body));
     }
 
     /**

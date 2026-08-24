@@ -14,7 +14,7 @@ public class MmsQc extends BaseEntity {
     @Excel(name = "产品编码") private String productCode;
     @Excel(name = "产品名称") private String productName;
     @Excel(name = "规格型号") private String specModel;
-    @Excel(name = "单位") private String unit;
+    @Excel(name = "单位", readConverterExp = "0=个,1=件,2=箱,3=kg,4=吨,5=米,6=把,7=千米,8=厘米,9=套,10=台,11=条") private String unit;
     @Excel(name = "工单数量") private java.math.BigDecimal planQty;
     private Long processId;
     @Excel(name = "工序名称") private String processName;

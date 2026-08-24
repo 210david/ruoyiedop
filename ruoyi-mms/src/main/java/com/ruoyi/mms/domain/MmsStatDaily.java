@@ -17,7 +17,7 @@ public class MmsStatDaily extends BaseEntity
 
     private Long statId;
 
-    @Excel(name = "统计日期", dateFormat = "yyyy-MM-dd")
+    @Excel(name = "生产日期", dateFormat = "yyyy-MM-dd")
     @JsonFormat(pattern = "yyyy-MM-dd")
     private Date statDate;
 

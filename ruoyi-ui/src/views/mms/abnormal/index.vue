@@ -176,59 +176,154 @@
         </section>
         <section class="rd-card">
           <div class="rd-card-header" @click="toggleCard('vc1')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>异常详情</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
-          <div class="rd-card-body" v-show="!collapsedCards.vc1" style="display:block"><div class="rd-grid"><div class="rd-item"><span class="rd-label">异常类型</span><div class="rd-value"><dict-tag :options="mms_abnormal_type" :value="viewData.abnormalType" /></div></div><div class="rd-item"><span class="rd-label">严重等级</span><div class="rd-value"><dict-tag :options="mms_abnormal_severity" :value="viewData.severity" /></div></div><div class="rd-item"><span class="rd-label">响应人</span><div class="rd-value">{{ viewData.responseBy || '-' }}</div></div><div class="rd-item"><span class="rd-label">响应时间</span><div class="rd-value">{{ viewData.responseTime ? parseTime(viewData.responseTime) : '-' }}</div></div><div class="rd-item"><span class="rd-label">处理人</span><div class="rd-value">{{ viewData.handleBy || '-' }}</div></div><div class="rd-item"><span class="rd-label">处理时间</span><div class="rd-value">{{ viewData.handleTime ? parseTime(viewData.handleTime) : '-' }}</div></div></div></div>
+          <div class="rd-card-body" v-show="!collapsedCards.vc1" style="display:block"><div class="rd-grid"><div class="rd-item"><span class="rd-label">异常类型</span><div class="rd-value"><dict-tag :options="mms_abnormal_type" :value="viewData.abnormalType" /></div></div><div class="rd-item"><span class="rd-label">严重等级</span><div class="rd-value"><dict-tag :options="mms_abnormal_severity" :value="viewData.severity" /></div></div><div class="rd-item rd-item--full"><span class="rd-label">异常描述</span><div class="rd-value">{{ viewData.description || '-' }}</div></div><div class="rd-item"><span class="rd-label">上报人</span><div class="rd-value">{{ viewData.reportBy || '-' }}</div></div><div class="rd-item"><span class="rd-label">上报时间</span><div class="rd-value">{{ viewData.reportTime ? parseTime(viewData.reportTime) : '-' }}</div></div></div></div>
+        </section>
+        <section class="rd-card" v-if="viewData.status !== '0'">
+          <div class="rd-card-header" @click="toggleCard('vc3')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></span>响应信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc3 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.vc3" style="display:block"><div class="rd-grid"><div class="rd-item"><span class="rd-label">响应人</span><div class="rd-value">{{ viewData.responseBy || '-' }}</div></div><div class="rd-item"><span class="rd-label">响应时间</span><div class="rd-value">{{ viewData.responseTime ? parseTime(viewData.responseTime) : '-' }}</div></div><div class="rd-item rd-item--full"><span class="rd-label">响应措施</span><div class="rd-value">{{ viewData.responseMeasure || '-' }}</div></div><div class="rd-item"><span class="rd-label">影响范围</span><div class="rd-value">{{ viewData.impactScope || '-' }}</div></div><div class="rd-item"><span class="rd-label">预计恢复时间</span><div class="rd-value">{{ viewData.estimatedRestoreTime ? parseTime(viewData.estimatedRestoreTime) : '-' }}</div></div><div class="rd-item rd-item--full"><span class="rd-label">响应备注</span><div class="rd-value">{{ viewData.responseRemark || '-' }}</div></div></div></div>
+        </section>
+        <section class="rd-card" v-if="viewData.status === '2'">
+          <div class="rd-card-header" @click="toggleCard('vc4')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span>处理关闭信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc4 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.vc4" style="display:block"><div class="rd-grid"><div class="rd-item"><span class="rd-label">处理人</span><div class="rd-value">{{ viewData.handleBy || '-' }}</div></div><div class="rd-item"><span class="rd-label">处理时间</span><div class="rd-value">{{ viewData.handleTime ? parseTime(viewData.handleTime) : '-' }}</div></div><div class="rd-item"><span class="rd-label">关闭时间</span><div class="rd-value">{{ viewData.closeTime ? parseTime(viewData.closeTime) : '-' }}</div></div><div class="rd-item"><span class="rd-label">处理方式</span><div class="rd-value"><dict-tag :options="mms_abnormal_handle_method" :value="viewData.handleMethod" /></div></div><div class="rd-item rd-item--full"><span class="rd-label">处理结果</span><div class="rd-value">{{ viewData.handleResult || '-' }}</div></div><div class="rd-item rd-item--full"><span class="rd-label">根本原因</span><div class="rd-value">{{ viewData.rootCause || '-' }}</div></div><div class="rd-item rd-item--full"><span class="rd-label">预防措施</span><div class="rd-value">{{ viewData.preventiveMeasure || '-' }}</div></div><div class="rd-item"><span class="rd-label">停机时长</span><div class="rd-value">{{ viewData.downtimeMinutes != null ? viewData.downtimeMinutes + ' 分钟' : '-' }}</div></div><div class="rd-item"><span class="rd-label">是否需要追纠</span><div class="rd-value"><span v-if="viewData.needPursuit === '1'" class="badge red"><span class="dot"></span>是</span><span v-else class="badge gray"><span class="dot"></span>否</span></div></div></div></div>
         </section>
         <section class="rd-card">
-          <div class="rd-card-header" @click="toggleCard('vc2')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>描述信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
-          <div class="rd-card-body" v-show="!collapsedCards.vc2" style="display:block"><div class="rd-grid"><div class="rd-item rd-item--full"><span class="rd-label">异常描述</span><div class="rd-value">{{ viewData.description || '-' }}</div></div><div class="rd-item rd-item--full"><span class="rd-label">处理结果</span><div class="rd-value">{{ viewData.handleResult || '-' }}</div></div><div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value">{{ viewData.remark || '-' }}</div></div><div class="rd-item"><span class="rd-label">上报人</span><div class="rd-value">{{ viewData.reportBy || '-' }}</div></div><div class="rd-item"><span class="rd-label">上报时间</span><div class="rd-value">{{ viewData.reportTime ? parseTime(viewData.reportTime) : '-' }}</div></div><div class="rd-item"><span class="rd-label">创建时间</span><div class="rd-value">{{ viewData.createTime ? parseTime(viewData.createTime) : '-' }}</div></div></div></div>
+          <div class="rd-card-header" @click="toggleCard('vc2')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>其他信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.vc2" style="display:block"><div class="rd-grid"><div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value">{{ viewData.remark || '-' }}</div></div><div class="rd-item"><span class="rd-label">创建人</span><div class="rd-value">{{ viewData.createBy || '-' }}</div></div><div class="rd-item"><span class="rd-label">创建时间</span><div class="rd-value">{{ viewData.createTime ? parseTime(viewData.createTime) : '-' }}</div></div><div class="rd-item"><span class="rd-label">更新人</span><div class="rd-value">{{ viewData.updateBy || '-' }}</div></div><div class="rd-item"><span class="rd-label">更新时间</span><div class="rd-value">{{ viewData.updateTime ? parseTime(viewData.updateTime) : '-' }}</div></div></div></div>
         </section>
       </div>
       <template #footer><el-button @click="viewOpen = false">关 闭</el-button></template>
     </el-dialog>
 
     <!-- ===== 响应Dialog ===== -->
-    <el-dialog v-model="respondOpen" width="560px" append-to-body draggable class="rd-dialog">
+    <el-dialog v-model="respondOpen" width="780px" append-to-body draggable class="rd-dialog">
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
           <span class="rd-detail-header-title">异常响应</span>
         </div>
       </template>
-      <el-form ref="respondFormRef" :model="respondForm" :rules="respondRules" label-width="100px">
-        <el-form-item label="异常单号"><span class="rd-static-text">{{ respondForm.abnormalNo }}</span></el-form-item>
-        <el-form-item label="响应人" prop="responseBy">
-          <el-input v-model="respondForm.responseBy" readonly placeholder="请选择响应人" style="width: 100%" @click="openResponseByPicker">
-            <template #append><el-button icon="Search" @click="openResponseByPicker" /></template>
-            <template #suffix><el-icon v-if="respondForm.responseBy" class="rd-form-tip" style="cursor:pointer" @click.stop="respondForm.responseBy = ''"><CircleClose /></el-icon></template>
-          </el-input>
-        </el-form-item>
-        <el-form-item label="响应时间" prop="responseTime">
-          <el-date-picker v-model="respondForm.responseTime" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" placeholder="选择响应时间" style="width: 100%" />
-        </el-form-item>
+      <el-form ref="respondFormRef" :model="respondForm" :rules="respondRules" label-width="120px">
+        <div class="rd-page">
+          <section class="rd-card">
+            <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>基本信息</div></div>
+            <div class="rd-card-body" style="display:block"><div class="rd-grid"><div class="rd-item"><span class="rd-label">异常单号</span><div class="rd-value">{{ respondForm.abnormalNo || '-' }}</div></div><div class="rd-item"><span class="rd-label">工单号</span><div class="rd-value">{{ respondForm.workOrderNo || '-' }}</div></div><div class="rd-item"><span class="rd-label">产能单元</span><div class="rd-value">{{ respondForm.resourceName || '-' }}</div></div><div class="rd-item"><span class="rd-label">产品名称</span><div class="rd-value">{{ respondForm.productName || '-' }}</div></div><div class="rd-item"><span class="rd-label">异常类型</span><div class="rd-value"><dict-tag :options="mms_abnormal_type" :value="respondForm.abnormalType" /></div></div><div class="rd-item"><span class="rd-label">严重等级</span><div class="rd-value"><dict-tag :options="mms_abnormal_severity" :value="respondForm.severity" /></div></div><div class="rd-item"><span class="rd-label">上报人</span><div class="rd-value">{{ respondForm.reportBy || '-' }}</div></div><div class="rd-item"><span class="rd-label">上报时间</span><div class="rd-value">{{ respondForm.reportTime ? parseTime(respondForm.reportTime) : '-' }}</div></div><div class="rd-item rd-item--full"><span class="rd-label">异常描述</span><div class="rd-value" style="white-space: pre-wrap; line-height: 1.6">{{ respondForm.description || '-' }}</div></div></div></div>
+          </section>
+          <section class="rd-card">
+            <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span>响应信息</div></div>
+            <div class="rd-card-body" style="display:block">
+              <el-row :gutter="20">
+                <el-col :span="12">
+                  <el-form-item label="响应人" prop="responseBy">
+                    <el-input v-model="respondForm.responseBy" readonly placeholder="请选择响应人" style="width: 100%" @click="openResponseByPicker">
+                      <template #append><el-button icon="Search" @click="openResponseByPicker" /></template>
+                      <template #suffix><el-icon v-if="respondForm.responseBy" class="rd-form-tip" style="cursor:pointer" @click.stop="respondForm.responseBy = ''"><CircleClose /></el-icon></template>
+                    </el-input>
+                  </el-form-item>
+                </el-col>
+                <el-col :span="12">
+                  <el-form-item label="响应时间" prop="responseTime">
+                    <el-date-picker v-model="respondForm.responseTime" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" placeholder="选择响应时间" style="width: 100%" />
+                  </el-form-item>
+                </el-col>
+              </el-row>
+              <el-form-item label="响应措施" prop="responseMeasure">
+                <el-input v-model="respondForm.responseMeasure" type="textarea" :rows="3" placeholder="请输入初步应对措施，如：停机检查、切换备用设备、通知维修等" />
+              </el-form-item>
+              <el-row :gutter="20">
+                <el-col :span="12">
+                  <el-form-item label="影响范围" prop="impactScope">
+                    <el-input v-model="respondForm.impactScope" placeholder="请输入影响范围，如：产线A停机、批次200件受影响" />
+                  </el-form-item>
+                </el-col>
+                <el-col :span="12">
+                  <el-form-item label="预计恢复时间" prop="estimatedRestoreTime">
+                    <el-date-picker v-model="respondForm.estimatedRestoreTime" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" placeholder="选择预计恢复时间" style="width: 100%" />
+                  </el-form-item>
+                </el-col>
+              </el-row>
+              <el-form-item label="响应备注" prop="responseRemark">
+                <el-input v-model="respondForm.responseRemark" type="textarea" :rows="2" placeholder="请输入其他需要说明的事项" />
+              </el-form-item>
+            </div>
+          </section>
+        </div>
       </el-form>
       <template #footer><el-button type="primary" @click="submitRespond">确 定</el-button><el-button @click="respondOpen = false">取 消</el-button></template>
     </el-dialog>
 
     <!-- ===== 处理关闭Dialog ===== -->
-    <el-dialog v-model="resolveOpen" width="560px" append-to-body draggable class="rd-dialog">
+    <el-dialog v-model="resolveOpen" width="780px" append-to-body draggable class="rd-dialog">
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
           <span class="rd-detail-header-title">异常处理关闭</span>
         </div>
       </template>
-      <el-form ref="resolveFormRef" :model="resolveForm" :rules="resolveRules" label-width="100px">
-        <el-form-item label="异常单号"><span class="rd-static-text">{{ resolveForm.abnormalNo }}</span></el-form-item>
-        <el-form-item label="处理人" prop="handleBy">
-          <el-input v-model="resolveForm.handleBy" readonly placeholder="请选择处理人" style="width: 100%" @click="openHandleByPicker">
-            <template #append><el-button icon="Search" @click="openHandleByPicker" /></template>
-            <template #suffix><el-icon v-if="resolveForm.handleBy" class="rd-form-tip" style="cursor:pointer" @click.stop="resolveForm.handleBy = ''"><CircleClose /></el-icon></template>
-          </el-input>
-        </el-form-item>
-        <el-form-item label="处理时间" prop="handleTime">
-          <el-date-picker v-model="resolveForm.handleTime" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" placeholder="选择处理时间" style="width: 100%" />
-        </el-form-item>
-        <el-form-item label="处理结果" prop="handleResult"><el-input v-model="resolveForm.handleResult" type="textarea" :rows="3" placeholder="请输入处理结果" /></el-form-item>
+      <el-form ref="resolveFormRef" :model="resolveForm" :rules="resolveRules" label-width="120px">
+        <div class="rd-page">
+          <section class="rd-card">
+            <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>基本信息</div></div>
+            <div class="rd-card-body" style="display:block"><div class="rd-grid"><div class="rd-item"><span class="rd-label">异常单号</span><div class="rd-value">{{ resolveForm.abnormalNo || '-' }}</div></div><div class="rd-item"><span class="rd-label">工单号</span><div class="rd-value">{{ resolveForm.workOrderNo || '-' }}</div></div><div class="rd-item"><span class="rd-label">产能单元</span><div class="rd-value">{{ resolveForm.resourceName || '-' }}</div></div><div class="rd-item"><span class="rd-label">产品名称</span><div class="rd-value">{{ resolveForm.productName || '-' }}</div></div><div class="rd-item"><span class="rd-label">异常类型</span><div class="rd-value"><dict-tag :options="mms_abnormal_type" :value="resolveForm.abnormalType" /></div></div><div class="rd-item"><span class="rd-label">严重等级</span><div class="rd-value"><dict-tag :options="mms_abnormal_severity" :value="resolveForm.severity" /></div></div><div class="rd-item rd-item--full"><span class="rd-label">异常描述</span><div class="rd-value" style="white-space: pre-wrap; line-height: 1.6">{{ resolveForm.description || '-' }}</div></div></div></div>
+          </section>
+          <section class="rd-card">
+            <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></span>响应信息</div></div>
+            <div class="rd-card-body" style="display:block"><div class="rd-grid"><div class="rd-item"><span class="rd-label">响应人</span><div class="rd-value">{{ resolveForm.responseBy || '-' }}</div></div><div class="rd-item"><span class="rd-label">响应时间</span><div class="rd-value">{{ resolveForm.responseTime ? parseTime(resolveForm.responseTime) : '-' }}</div></div><div class="rd-item rd-item--full"><span class="rd-label">响应措施</span><div class="rd-value" style="white-space: pre-wrap; line-height: 1.6">{{ resolveForm.responseMeasure || '-' }}</div></div><div class="rd-item rd-item--full"><span class="rd-label">影响范围</span><div class="rd-value">{{ resolveForm.impactScope || '-' }}</div></div></div></div>
+          </section>
+          <section class="rd-card">
+            <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span>处理信息</div></div>
+            <div class="rd-card-body" style="display:block">
+              <el-row :gutter="20">
+                <el-col :span="12">
+                  <el-form-item label="处理人" prop="handleBy">
+                    <el-input v-model="resolveForm.handleBy" readonly placeholder="请选择处理人" style="width: 100%" @click="openHandleByPicker">
+                      <template #append><el-button icon="Search" @click="openHandleByPicker" /></template>
+                      <template #suffix><el-icon v-if="resolveForm.handleBy" class="rd-form-tip" style="cursor:pointer" @click.stop="resolveForm.handleBy = ''"><CircleClose /></el-icon></template>
+                    </el-input>
+                  </el-form-item>
+                </el-col>
+                <el-col :span="12">
+                  <el-form-item label="处理时间" prop="handleTime">
+                    <el-date-picker v-model="resolveForm.handleTime" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" placeholder="选择处理时间" style="width: 100%" />
+                  </el-form-item>
+                </el-col>
+              </el-row>
+              <el-form-item label="处理结果" prop="handleResult">
+                <el-input v-model="resolveForm.handleResult" type="textarea" :rows="3" placeholder="请输入处理结果描述" />
+              </el-form-item>
+              <el-form-item label="处理方式" prop="handleMethod">
+                <el-select v-model="resolveForm.handleMethod" placeholder="请选择处理方式" style="width: 100%">
+                  <el-option v-for="d in mms_abnormal_handle_method" :key="d.value" :label="d.label" :value="d.value" />
+                </el-select>
+              </el-form-item>
+            </div>
+          </section>
+          <section class="rd-card">
+            <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>根因分析与预防</div></div>
+            <div class="rd-card-body" style="display:block">
+              <el-form-item label="根本原因" prop="rootCause">
+                <el-input v-model="resolveForm.rootCause" type="textarea" :rows="2" placeholder="请输入异常根本原因分析" />
+              </el-form-item>
+              <el-form-item label="预防措施" prop="preventiveMeasure">
+                <el-input v-model="resolveForm.preventiveMeasure" type="textarea" :rows="2" placeholder="请输入后续预防措施建议" />
+              </el-form-item>
+              <el-row :gutter="20">
+                <el-col :span="12">
+                  <el-form-item label="停机时长(分钟)" prop="downtimeMinutes">
+                    <el-input-number v-model="resolveForm.downtimeMinutes" :min="0" :max="9999" placeholder="停机时长" style="width: 100%" />
+                  </el-form-item>
+                </el-col>
+                <el-col :span="12">
+                  <el-form-item label="是否需要追纠" prop="needPursuit">
+                    <el-radio-group v-model="resolveForm.needPursuit">
+                      <el-radio value="0">否</el-radio>
+                      <el-radio value="1">是</el-radio>
+                    </el-radio-group>
+                  </el-form-item>
+                </el-col>
+              </el-row>
+            </div>
+          </section>
+        </div>
       </el-form>
       <template #footer><el-button type="primary" @click="submitResolve">确 定</el-button><el-button @click="resolveOpen = false">取 消</el-button></template>
     </el-dialog>
@@ -346,9 +441,9 @@ import { useDetailCard } from '@/composables/useDetailCard'
 import { Search, Filter, RefreshLeft, ArrowRight, ArrowDown, WarningFilled, CircleClose } from '@element-plus/icons-vue'
 
 const { proxy } = getCurrentInstance();
-const { mms_abnormal_type, mms_abnormal_severity, mms_abnormal_status, mms_workorder_status, mms_resource_type, wms_unit } = proxy.useDict("mms_abnormal_type", "mms_abnormal_severity", "mms_abnormal_status", "mms_workorder_status", "mms_resource_type", "wms_unit");
+const { mms_abnormal_type, mms_abnormal_severity, mms_abnormal_status, mms_workorder_status, mms_resource_type, wms_unit, mms_abnormal_handle_method } = proxy.useDict("mms_abnormal_type", "mms_abnormal_severity", "mms_abnormal_status", "mms_workorder_status", "mms_resource_type", "wms_unit", "mms_abnormal_handle_method");
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('mms_abnormal_index')
-const { collapsedCards, toggleCard } = useDetailCard(["c0","c0a","c1","c2","vc0","vc0a","vc1","vc2"])
+const { collapsedCards, toggleCard } = useDetailCard(["c0","c0a","c1","c2","vc0","vc0a","vc1","vc2","vc3","vc4"])
 
 const dataList = ref([]); const open = ref(false); const viewOpen = ref(false); const viewData = ref({}); const loading = ref(true);
 const showSearch = ref(true);
@@ -392,8 +487,8 @@ const data = reactive({
   queryParams: { pageNum: 1, pageSize: 10, abnormalNo: undefined, workOrderNo: undefined, abnormalType: undefined, severity: undefined, status: undefined, resourceName: undefined, reportBy: undefined, params: {} },
   rules: { abnormalType: [{ required: true, message: "请选择异常类型", trigger: "change" }], severity: [{ required: true, message: "请选择严重等级", trigger: "change" }], description: [{ required: true, message: "请输入异常描述", trigger: "blur" }] },
   respondForm: {}, resolveForm: {},
-  respondRules: { responseBy: [{ required: true, message: '请选择响应人', trigger: 'change' }], responseTime: [{ required: true, message: '请选择响应时间', trigger: 'change' }] },
-  resolveRules: { handleBy: [{ required: true, message: '请选择处理人', trigger: 'change' }], handleTime: [{ required: true, message: '请选择处理时间', trigger: 'change' }] }
+  respondRules: { responseBy: [{ required: true, message: '请选择响应人', trigger: 'change' }], responseTime: [{ required: true, message: '请选择响应时间', trigger: 'change' }], responseMeasure: [{ required: true, message: '请输入响应措施', trigger: 'blur' }] },
+  resolveRules: { handleBy: [{ required: true, message: '请选择处理人', trigger: 'change' }], handleTime: [{ required: true, message: '请选择处理时间', trigger: 'change' }], handleResult: [{ required: true, message: '请输入处理结果', trigger: 'blur' }] }
 });
 const { queryParams, form, rules, respondForm, resolveForm, respondRules, resolveRules } = toRefs(data);
 
@@ -414,10 +509,10 @@ function submitForm() { proxy.$refs["formRef"].validate(valid => { if (valid) { 
 function cancel() { open.value = false; reset(); }
 function handleDelete(row) { const delIds = row.abnormalId || ids.value; proxy.$modal.confirm('是否确认删除选中的异常记录？').then(() => delAbnormal(delIds)).then(() => { getList(); proxy.$modal.msgSuccess("删除成功"); }).catch(() => {}); }
 function handleExport() { proxy.download("mms/abnormal/export", { ...queryParams.value }, `abnormal_${new Date().getTime()}.xlsx`); }
-function handleRespond(row) { respondForm.value = { abnormalId: row.abnormalId, abnormalNo: row.abnormalNo, responseBy: '', responseTime: proxy.parseTime(new Date(), '{y}-{m}-{d} {h}:{i}:{s}') }; respondOpen.value = true; }
-function submitRespond() { if (!respondForm.value.responseBy) { proxy.$modal.msgError('请选择响应人'); return; } respondAbnormal(respondForm.value.abnormalId, { responseBy: respondForm.value.responseBy, responseTime: respondForm.value.responseTime }).then(() => { respondOpen.value = false; getList(); proxy.$modal.msgSuccess("响应成功"); }); }
-function handleResolve(row) { resolveForm.value = { abnormalId: row.abnormalId, abnormalNo: row.abnormalNo, handleResult: '', handleBy: row.responseBy || '', handleTime: proxy.parseTime(new Date(), '{y}-{m}-{d} {h}:{i}:{s}') }; resolveOpen.value = true; }
-function submitResolve() { if (!resolveForm.value.handleBy) { proxy.$modal.msgError('请选择处理人'); return; } resolveAbnormal(resolveForm.value.abnormalId, { handleResult: resolveForm.value.handleResult, handleBy: resolveForm.value.handleBy, handleTime: resolveForm.value.handleTime }).then(() => { resolveOpen.value = false; getList(); proxy.$modal.msgSuccess("处理关闭成功，关联停机记录已自动恢复"); }); }
+function handleRespond(row) { respondForm.value = { abnormalId: row.abnormalId, abnormalNo: row.abnormalNo, workOrderNo: row.workOrderNo, resourceName: row.resourceName, productCode: row.productCode, productName: row.productName, specModel: row.specModel, unit: row.unit, abnormalType: row.abnormalType, severity: row.severity, description: row.description, reportBy: row.reportBy, reportTime: row.reportTime, responseBy: '', responseTime: proxy.parseTime(new Date(), '{y}-{m}-{d} {h}:{i}:{s}'), responseMeasure: '', impactScope: '', estimatedRestoreTime: null, responseRemark: '' }; respondOpen.value = true; }
+function submitRespond() { if (!respondForm.value.responseBy) { proxy.$modal.msgError('请选择响应人'); return; } if (!respondForm.value.responseMeasure) { proxy.$modal.msgError('请输入响应措施'); return; } respondAbnormal(respondForm.value.abnormalId, { responseBy: respondForm.value.responseBy, responseTime: respondForm.value.responseTime, responseMeasure: respondForm.value.responseMeasure, impactScope: respondForm.value.impactScope, estimatedRestoreTime: respondForm.value.estimatedRestoreTime, responseRemark: respondForm.value.responseRemark }).then(() => { respondOpen.value = false; getList(); proxy.$modal.msgSuccess("响应成功"); }); }
+function handleResolve(row) { resolveForm.value = { abnormalId: row.abnormalId, abnormalNo: row.abnormalNo, workOrderNo: row.workOrderNo, resourceName: row.resourceName, productCode: row.productCode, productName: row.productName, specModel: row.specModel, unit: row.unit, abnormalType: row.abnormalType, severity: row.severity, description: row.description, reportBy: row.reportBy, reportTime: row.reportTime, responseBy: row.responseBy, responseTime: row.responseTime, responseMeasure: row.responseMeasure, impactScope: row.impactScope, handleResult: '', handleBy: row.responseBy || '', handleTime: proxy.parseTime(new Date(), '{y}-{m}-{d} {h}:{i}:{s}'), handleMethod: '', rootCause: '', preventiveMeasure: '', downtimeMinutes: null, needPursuit: '0' }; resolveOpen.value = true; }
+function submitResolve() { if (!resolveForm.value.handleBy) { proxy.$modal.msgError('请选择处理人'); return; } if (!resolveForm.value.handleResult) { proxy.$modal.msgError('请输入处理结果'); return; } resolveAbnormal(resolveForm.value.abnormalId, { handleResult: resolveForm.value.handleResult, handleBy: resolveForm.value.handleBy, handleTime: resolveForm.value.handleTime, handleMethod: resolveForm.value.handleMethod, rootCause: resolveForm.value.rootCause, preventiveMeasure: resolveForm.value.preventiveMeasure, downtimeMinutes: resolveForm.value.downtimeMinutes, needPursuit: resolveForm.value.needPursuit }).then(() => { resolveOpen.value = false; getList(); proxy.$modal.msgSuccess("处理关闭成功，关联停机记录已自动恢复"); }); }
 function handleLinkDowntime(row) { proxy.$modal.confirm('确认为异常[' + row.abnormalNo + ']联动生成停机记录？将自动创建一条停机中状态的停机单。').then(() => linkDowntime(row.abnormalId)).then(res => { proxy.$modal.msgSuccess("停机记录已联动生成，单号：" + (res.data ? res.data : '')); getList(); }).catch(() => {}); }
 
 function dictLabel(dictRef, value) { if (value === null || value === undefined || value === '') return '—'; const arr = (dictRef && dictRef.value) ? dictRef.value : dictRef; if (!arr || !Array.isArray(arr)) return '—'; const item = arr.find(d => d.value == value); return item ? item.label : '—'; }

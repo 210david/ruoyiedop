@@ -20,10 +20,19 @@
         <result property="reportTime"     column="report_time"/>
         <result property="responseBy"     column="response_by"/>
         <result property="responseTime"     column="response_time"/>
+        <result property="responseMeasure"     column="response_measure"/>
+        <result property="impactScope"     column="impact_scope"/>
+        <result property="estimatedRestoreTime"     column="estimated_restore_time"/>
+        <result property="responseRemark"     column="response_remark"/>
         <result property="handleBy"     column="handle_by"/>
         <result property="handleTime"     column="handle_time"/>
         <result property="closeTime"     column="close_time"/>
         <result property="handleResult"     column="handle_result"/>
+        <result property="handleMethod"     column="handle_method"/>
+        <result property="rootCause"     column="root_cause"/>
+        <result property="preventiveMeasure"     column="preventive_measure"/>
+        <result property="downtimeMinutes"     column="downtime_minutes"/>
+        <result property="needPursuit"     column="need_pursuit"/>
         <result property="status"     column="status"/>
         <result property="delFlag"     column="del_flag"/>
         <result property="createBy"     column="create_by"/>
@@ -34,7 +43,7 @@
     </resultMap>
 
     <sql id="selectAbnormalVo">
-        SELECT abnormal_id, abnormal_no, work_order_id, work_order_no, resource_id, resource_name, product_code, product_name, spec_model, unit, abnormal_type, severity, description, report_by, report_time, response_by, response_time, handle_by, handle_time, close_time, handle_result, status, del_flag, create_by, create_time, update_by, update_time, remark
+        SELECT abnormal_id, abnormal_no, work_order_id, work_order_no, resource_id, resource_name, product_code, product_name, spec_model, unit, abnormal_type, severity, description, report_by, report_time, response_by, response_time, response_measure, impact_scope, estimated_restore_time, response_remark, handle_by, handle_time, close_time, handle_result, handle_method, root_cause, preventive_measure, downtime_minutes, need_pursuit, status, del_flag, create_by, create_time, update_by, update_time, remark
         FROM mms_abnormal
     </sql>
 
@@ -77,8 +86,17 @@
             report_time,
             response_by,
             response_time,
+            response_measure,
+            impact_scope,
+            estimated_restore_time,
+            response_remark,
             close_time,
             handle_result,
+            handle_method,
+            root_cause,
+            preventive_measure,
+            downtime_minutes,
+            need_pursuit,
             status,
             del_flag,
             create_by,
@@ -103,8 +121,17 @@
             #{reportTime},
             #{responseBy},
             #{responseTime},
+            #{responseMeasure},
+            #{impactScope},
+            #{estimatedRestoreTime},
+            #{responseRemark},
             #{closeTime},
             #{handleResult},
+            #{handleMethod},
+            #{rootCause},
+            #{preventiveMeasure},
+            #{downtimeMinutes},
+            #{needPursuit},
             #{status},
             #{delFlag},
             #{createBy},
@@ -133,10 +160,19 @@
             report_time = #{reportTime},
             response_by = #{responseBy},
             response_time = #{responseTime},
+            response_measure = #{responseMeasure},
+            impact_scope = #{impactScope},
+            estimated_restore_time = #{estimatedRestoreTime},
+            response_remark = #{responseRemark},
             handle_by = #{handleBy},
             handle_time = #{handleTime},
             close_time = #{closeTime},
             handle_result = #{handleResult},
+            handle_method = #{handleMethod},
+            root_cause = #{rootCause},
+            preventive_measure = #{preventiveMeasure},
+            downtime_minutes = #{downtimeMinutes},
+            need_pursuit = #{needPursuit},
             status = #{status},
             update_by = #{updateBy},
             update_time = #{updateTime},

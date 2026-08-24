@@ -18,12 +18,12 @@ public class MmsReturnMaterial extends BaseEntity {
     @Excel(name = "物料编码") private String materialCode;
     @Excel(name = "物料名称") private String materialName;
     @Excel(name = "规格型号") private String specModel;
-    @Excel(name = "单位") private String unit;
+    @Excel(name = "单位", readConverterExp = "0=个,1=件,2=箱,3=kg,4=吨,5=米,6=把,7=千米,8=厘米,9=套,10=台,11=条") private String unit;
     @Excel(name = "退料数量") private BigDecimal returnQty;
     @Excel(name = "退料原因") private String returnReason;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss") private Date returnTime;
     @Excel(name = "退料人") private String returnBy;
-    @Excel(name = "状态") private String status;
+    @Excel(name = "状态", readConverterExp = "0=待退料,1=已退料") private String status;
     private String delFlag;
 
     /** 领料单号（来源领料单，非持久化） */

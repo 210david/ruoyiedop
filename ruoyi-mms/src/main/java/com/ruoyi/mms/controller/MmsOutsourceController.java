@@ -71,4 +71,22 @@ public class MmsOutsourceController extends BaseController
     {
         return toAjax(mmsOutsourceService.deleteOutsourceByIds(outsourceIds));
     }
+
+    /** 发料外协 */
+    @Log(title = "外协管理", businessType = BusinessType.UPDATE)
+    @PreAuthorize("@ss.hasPermi('mms:outsource:edit')")
+    @PutMapping("/sendOut/{outsourceId}")
+    public AjaxResult sendOut(@PathVariable("outsourceId") Long outsourceId, @RequestBody MmsOutsource outsource)
+    {
+        return toAjax(mmsOutsourceService.sendOut(outsourceId, outsource));
+    }
+
+    /** 回厂验收 */
+    @Log(title = "外协管理", businessType = BusinessType.UPDATE)
+    @PreAuthorize("@ss.hasPermi('mms:outsource:edit')")
+    @PutMapping("/backAccept/{outsourceId}")
+    public AjaxResult backAccept(@PathVariable("outsourceId") Long outsourceId, @RequestBody MmsOutsource outsource)
+    {
+        return toAjax(mmsOutsourceService.backAccept(outsourceId, outsource));
+    }
 }

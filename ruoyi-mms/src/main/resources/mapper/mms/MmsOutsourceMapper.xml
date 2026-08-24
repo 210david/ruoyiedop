@@ -9,9 +9,15 @@
         <result property="workOrderNo" column="work_order_no"/>
         <result property="opSeq" column="op_seq"/>
         <result property="processName" column="process_name"/>
+        <result property="productId" column="product_id"/>
+        <result property="productCode" column="product_code"/>
+        <result property="productName" column="product_name"/>
+        <result property="specModel" column="spec_model"/>
+        <result property="unit" column="unit"/>
         <result property="supplierId" column="supplier_id"/>
         <result property="supplierName" column="supplier_name"/>
         <result property="outQty" column="out_qty"/>
+        <result property="planQty" column="plan_qty"/>
         <result property="unitPrice" column="unit_price"/>
         <result property="totalAmount" column="total_amount"/>
         <result property="outDate" column="out_date"/>
@@ -29,7 +35,7 @@
     </resultMap>
 
     <sql id="selectOutsourceVo">
-        SELECT outsource_id, outsource_no, work_order_id, work_order_no, op_seq, process_name, supplier_id, supplier_name, out_qty, unit_price, total_amount, out_date, plan_back_date, actual_back_date, back_qty, loss_qty, status, del_flag, create_by, create_time, update_by, update_time, remark
+        SELECT outsource_id, outsource_no, work_order_id, work_order_no, op_seq, process_name, product_id, product_code, product_name, spec_model, unit, supplier_id, supplier_name, plan_qty, out_qty, unit_price, total_amount, out_date, plan_back_date, actual_back_date, back_qty, loss_qty, status, del_flag, create_by, create_time, update_by, update_time, remark
         FROM mms_outsource
     </sql>
 
@@ -54,9 +60,9 @@
 
     <insert id="insertOutsource" parameterType="MmsOutsource" useGeneratedKeys="true" keyProperty="outsourceId">
         INSERT INTO mms_outsource (
-            outsource_no, work_order_id, work_order_no, op_seq, process_name, supplier_id, supplier_name, out_qty, unit_price, total_amount, out_date, plan_back_date, actual_back_date, back_qty, loss_qty, status, del_flag, create_by, create_time, update_by, update_time, remark
+            outsource_no, work_order_id, work_order_no, op_seq, process_name, product_id, product_code, product_name, spec_model, unit, supplier_id, supplier_name, plan_qty, out_qty, unit_price, total_amount, out_date, plan_back_date, actual_back_date, back_qty, loss_qty, status, del_flag, create_by, create_time, update_by, update_time, remark
         ) VALUES (
-            #{outsourceNo}, #{workOrderId}, #{workOrderNo}, #{opSeq}, #{processName}, #{supplierId}, #{supplierName}, #{outQty}, #{unitPrice}, #{totalAmount}, #{outDate}, #{planBackDate}, #{actualBackDate}, #{backQty}, #{lossQty}, #{status}, #{delFlag}, #{createBy}, sysdate(), #{updateBy}, #{updateTime}, #{remark}
+            #{outsourceNo}, #{workOrderId}, #{workOrderNo}, #{opSeq}, #{processName}, #{productId}, #{productCode}, #{productName}, #{specModel}, #{unit}, #{supplierId}, #{supplierName}, #{planQty}, #{outQty}, #{unitPrice}, #{totalAmount}, #{outDate}, #{planBackDate}, #{actualBackDate}, #{backQty}, #{lossQty}, #{status}, #{delFlag}, #{createBy}, sysdate(), #{updateBy}, #{updateTime}, #{remark}
         )
     </insert>
 
@@ -67,8 +73,14 @@
             work_order_no = #{workOrderNo},
             op_seq = #{opSeq},
             process_name = #{processName},
+            product_id = #{productId},
+            product_code = #{productCode},
+            product_name = #{productName},
+            spec_model = #{specModel},
+            unit = #{unit},
             supplier_id = #{supplierId},
             supplier_name = #{supplierName},
+            plan_qty = #{planQty},
             out_qty = #{outQty},
             unit_price = #{unitPrice},
             total_amount = #{totalAmount},

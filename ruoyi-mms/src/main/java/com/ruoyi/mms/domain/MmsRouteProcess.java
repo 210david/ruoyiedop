@@ -36,10 +36,10 @@ public class MmsRouteProcess extends BaseEntity
     @Excel(name = "准备时间")
     private BigDecimal prepTime;
 
-    @Excel(name = "是否关键工序")
+    @Excel(name = "是否关键工序", readConverterExp = "0=否,1=是")
     private String isKeyProcess;
 
-    @Excel(name = "是否外协")
+    @Excel(name = "是否外协", readConverterExp = "0=否,1=是")
     private String isOutsource;
 
     private String delFlag;

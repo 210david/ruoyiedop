@@ -15,4 +15,9 @@ public interface IMmsFinishReceiptService
     public int insertFinishReceipt(MmsFinishReceipt finishReceipt);
     public int updateFinishReceipt(MmsFinishReceipt finishReceipt);
     public int deleteFinishReceiptByIds(Long[] FinishIds);
+
+    /**
+     * 入库确认
+     */
+    public int confirmFinishReceipt(MmsFinishReceipt finishReceipt);
 }

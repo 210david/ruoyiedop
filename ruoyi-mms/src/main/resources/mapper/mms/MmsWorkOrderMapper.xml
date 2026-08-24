@@ -71,6 +71,7 @@
             <if test="priority != null and priority != ''"> AND priority = #{priority}</if>
             <if test="bomNo != null and bomNo != ''"> AND bom_no LIKE CONCAT('%', #{bomNo}, '%')</if>
             <if test="routeNo != null and routeNo != ''"> AND route_no LIKE CONCAT('%', #{routeNo}, '%')</if>
+            <if test="specModel != null and specModel != ''"> AND spec_model LIKE CONCAT('%', #{specModel}, '%')</if>
             <if test="resourceName != null and resourceName != ''"> AND resource_name LIKE CONCAT('%', #{resourceName}, '%')</if>
             <if test="params.beginTime != null and params.beginTime != ''"> AND date(create_time) &gt;= #{params.beginTime}</if>
             <if test="params.endTime != null and params.endTime != ''"> AND date(create_time) &lt;= #{params.endTime}</if>

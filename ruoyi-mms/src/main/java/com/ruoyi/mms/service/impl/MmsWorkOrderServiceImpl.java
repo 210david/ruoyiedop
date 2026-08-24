@@ -15,6 +15,7 @@ import com.ruoyi.mk.service.IMkNumberRuleService;
 import com.ruoyi.mms.domain.MmsBom;
 import com.ruoyi.mms.domain.MmsBomDetail;
 import com.ruoyi.mms.domain.MmsDispatch;
+import com.ruoyi.mms.domain.MmsFinishReceipt;
 import com.ruoyi.mms.domain.MmsQc;
 import com.ruoyi.mms.domain.MmsRoute;
 import com.ruoyi.mms.domain.MmsRouteProcess;
@@ -24,6 +25,7 @@ import com.ruoyi.mms.domain.MmsWoBomSnapshot;
 import com.ruoyi.mms.domain.MmsWoRouteSnapshot;
 import com.ruoyi.mms.mapper.MmsBomMapper;
 import com.ruoyi.mms.mapper.MmsDispatchMapper;
+import com.ruoyi.mms.mapper.MmsFinishReceiptMapper;
 import com.ruoyi.mms.mapper.MmsQcMapper;
 import com.ruoyi.mms.mapper.MmsRouteMapper;
 import com.ruoyi.mms.mapper.MmsScheduleMapper;
@@ -77,6 +79,9 @@ public class MmsWorkOrderServiceImpl implements IMmsWorkOrderService
 
     @Autowired
     private MmsQcMapper qcMapper;
+
+    @Autowired
+    private MmsFinishReceiptMapper finishReceiptMapper;
 
     // ========== 标准 CRUD ==========
 
@@ -543,6 +548,44 @@ public class MmsWorkOrderServiceImpl implements IMmsWorkOrderService
         qc.setCreateTime(now);
         qc.setRemark("工单完工自动生成，待质检员确认检验结果");
         qcMapper.insertQc(qc);
+
+        // ===== 自动创建完工入库单 =====
+        // 工单完工时自动创建完工入库单，预填充工单的产品信息和完工数据
+        // 入库单作为独立业务单据，入库人可在入库确认时补充批次号等信息
+        MmsFinishReceipt finishReceipt = new MmsFinishReceipt();
+        finishReceipt.setFinishNo(mkNumberRuleService.generateNumber("mms_finish_receipt"));
+        finishReceipt.setWorkOrderId(wo.getWorkOrderId());
+        finishReceipt.setWorkOrderNo(wo.getWorkOrderNo());
+        finishReceipt.setProductId(wo.getProductId());
+        finishReceipt.setProductCode(wo.getProductCode());
+        finishReceipt.setProductName(wo.getProductName());
+        finishReceipt.setSpecModel(wo.getSpecModel());
+        finishReceipt.setUnit(wo.getUnit());
+        finishReceipt.setPlanQty(wo.getPlanQty());
+        // 完工数量 = 工单的完工数量
+        BigDecimal finishedQty = wo.getFinishedQty() != null ? wo.getFinishedQty() : BigDecimal.ZERO;
+        finishReceipt.setFinishQty(finishedQty);
+        // 合格数量 = 工单的合格数量（复用上面已声明的 qualifiedQty）
+        finishReceipt.setQualifiedQty(qualifiedQty);
+        // 完工时间 = 工单实际完工时间
+        finishReceipt.setFinishTime(now);
+        // 完工人 = 当前操作人
+        finishReceipt.setFinishBy(username);
+        // 判断是否按期完工
+        if (wo.getPlanFinish() != null && now != null)
+        {
+            finishReceipt.setIsOnTime(now.before(wo.getPlanFinish()) || now.equals(wo.getPlanFinish()) ? "1" : "0");
+        }
+        else
+        {
+            finishReceipt.setIsOnTime("1");
+        }
+        finishReceipt.setStatus("0"); // 待入库
+        finishReceipt.setDelFlag("0");
+        finishReceipt.setCreateBy(username);
+        finishReceipt.setCreateTime(now);
+        finishReceipt.setRemark("工单完工自动生成");
+        finishReceiptMapper.insertFinishReceipt(finishReceipt);
 
         return rows;
     }

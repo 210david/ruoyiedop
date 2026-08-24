@@ -38,7 +38,7 @@
             </el-select>
           </div>
         </div>
-        <div class="field">
+        <div class="field" v-show="showAdvanced">
           <label>工单类型</label>
           <div class="control is-select">
             <el-select v-model="queryParams.orderType" placeholder="全部" clearable @change="handleQuery">
@@ -72,6 +72,12 @@
           <label>工艺路线</label>
           <div class="control">
             <el-input v-model="queryParams.routeNo" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>规格型号</label>
+          <div class="control">
+            <el-input v-model="queryParams.specModel" placeholder="请输入" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
         <div class="field" v-show="showAdvanced">
@@ -138,7 +144,7 @@
             <template #default="scope"><span v-if="scope.row.orderType" class="badge violet">{{ orderTypeLabel(scope.row.orderType) }}</span><span v-else class="text-muted">—</span></template>
           </el-table-column>
           <el-table-column label="来源类型" prop="sourceType" key="sourceType" :width="colWidth('sourceType', 100)" resizable align="center" v-if="columns.sourceType.visible">
-            <template #default="scope"><dict-tag :options="mms_work_order_source_type" :value="scope.row.sourceType" /></template>
+            <template #default="scope"><span v-if="scope.row.sourceType" class="badge amber">{{ sourceTypeLabel(scope.row.sourceType) }}</span><span v-else class="text-muted">—</span></template>
           </el-table-column>
           <el-table-column label="产品编码" prop="productCode" key="productCode" :width="colWidth('productCode', 130)" resizable v-if="columns.productCode.visible" />
           <el-table-column label="产品名称" prop="productName" key="productName" :width="colWidth('productName', 200)" resizable show-overflow-tooltip v-if="columns.productName.visible" />
@@ -1615,11 +1621,13 @@ const activeFilterCount = computed(() => {
   if (queryParams.value.workOrderNo) count++;
   if (queryParams.value.productCode) count++;
   if (queryParams.value.productName) count++;
+  if (queryParams.value.sourceType) count++;
   if (queryParams.value.orderType) count++;
   if (queryParams.value.status) count++;
   if (queryParams.value.priority) count++;
   if (queryParams.value.bomNo) count++;
   if (queryParams.value.routeNo) count++;
+  if (queryParams.value.specModel) count++;
   if (dateRange.value && dateRange.value.length === 2) count++;
   return count;
 });
@@ -1638,6 +1646,7 @@ const data = reactive({
     status: undefined,
     bomNo: undefined,
     routeNo: undefined,
+    specModel: undefined,
     params: {}
   },
   rules: {
@@ -1675,6 +1684,7 @@ function loadStatusCounts() {
   if (queryParams.value.priority) baseQuery.priority = queryParams.value.priority;
   if (queryParams.value.bomNo) baseQuery.bomNo = queryParams.value.bomNo;
   if (queryParams.value.routeNo) baseQuery.routeNo = queryParams.value.routeNo;
+  if (queryParams.value.specModel) baseQuery.specModel = queryParams.value.specModel;
   listWorkOrder(proxy.addDateRange(baseQuery, dateRange.value)).then(res => {
     const counts = { all: res.total };
     if (mms_workorder_status.value) {
@@ -1701,6 +1711,7 @@ function resetQuery() {
   queryParams.value.status = undefined;
   queryParams.value.bomNo = undefined;
   queryParams.value.routeNo = undefined;
+  queryParams.value.specModel = undefined;
   dateRange.value = [];
   queryParams.value.params = {};
   activeStatusTab.value = 'all';
@@ -2327,6 +2338,11 @@ function orderTypeLabel(type) {
   return item ? item.label : '—';
 }
 
+function sourceTypeLabel(type) {
+  const item = mms_work_order_source_type.value.find(d => d.value == type);
+  return item ? item.label : '—';
+}
+
 function unitLabel(unit) {
   const item = wms_unit.value.find(d => d.value == unit);
   return item ? item.label : '—';
@@ -2917,13 +2933,22 @@ getList();
 .rd-detail-header-sub { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .rd-detail-header-divider { width: 1px; height: 16px; background: rgb(255 255 255 / 0.3); flex-shrink: 0; }
 .rd-detail-header-no { font-size: 12px; font-weight: 500; color: rgb(255 255 255 / 0.85); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.rd-page { max-width: 912px; margin: 0 auto; }
+.rd-page { width: 100%; }
 .rd-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px 24px; }
 .rd-item { display: flex; align-items: center; gap: 12px; }
 .rd-item--full { grid-column: 1 / -1; }
 .rd-label { flex: 0 0 auto; min-width: 72px; display: flex; align-items: center; font-size: 14px; font-weight: 500; color: #6b7280; white-space: nowrap; }
 .rd-value { flex: 1 1 auto; font-size: 14px; font-weight: 500; color: #111827; line-height: 1.5; padding-left: 12px; border-left: 1px solid #e5e7eb; min-width: 0; }
 .rd-value--muted { color: #9ca3af; font-style: italic; }
+.rd-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; margin-bottom: 12px; overflow: hidden; }
+.rd-card-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; cursor: pointer; background: #f8fafc; border-bottom: 1px solid #e5e7eb; }
+.rd-card-header:hover { background: #f1f5f9; }
+.rd-card-title { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: #334155; }
+.rd-card-icon { display: flex; align-items: center; color: #6366f1; }
+.rd-collapse-btn { display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; border: none; background: transparent; cursor: pointer; color: #94a3b8; transition: transform .2s; }
+.rd-collapse-btn.is-collapsed { transform: rotate(180deg); }
+.rd-card-body { padding: 16px; }
+.text-muted { color: #94a3b8; }
 .mms-workorder-page .rd-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; margin-bottom: 12px; overflow: hidden; }
 .mms-workorder-page .rd-card-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; cursor: pointer; background: #f8fafc; border-bottom: 1px solid #e5e7eb; }
 .mms-workorder-page .rd-card-header:hover { background: #f1f5f9; }
@@ -2956,6 +2981,7 @@ getList();
 .wo-detail-tabs :deep(.el-tabs__item.is-active) { color: #4f46e5; }
 .wo-detail-tabs :deep(.el-tabs__active-bar) { background-color: #4f46e5; height: 2px; border-radius: 2px; }
 .wo-detail-tabs :deep(.el-tab-pane) { min-height: 200px; }
+.wo-detail-tabs { width: 100%; }
 
 /* ===== 进行中数量标注样式 ===== */
 .qty-output-cell { display: inline-flex; align-items: baseline; gap: 4px; }

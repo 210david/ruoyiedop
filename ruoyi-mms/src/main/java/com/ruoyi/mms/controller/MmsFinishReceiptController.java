@@ -75,4 +75,16 @@ public class MmsFinishReceiptController extends BaseController
     {
         return toAjax(mmsFinishReceiptService.deleteFinishReceiptByIds(FinishIds));
     }
+
+    /**
+     * 入库确认
+     */
+    @Log(title = "完工入库", businessType = BusinessType.UPDATE)
+    @PreAuthorize("@ss.hasPermi('mms:finish:confirm')")
+    @PutMapping("/confirm/{finishId}")
+    public AjaxResult confirm(@PathVariable("finishId") Long finishId, @RequestBody MmsFinishReceipt finish)
+    {
+        finish.setFinishId(finishId);
+        return toAjax(mmsFinishReceiptService.confirmFinishReceipt(finish));
+    }
 }

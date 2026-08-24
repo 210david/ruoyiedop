@@ -10,14 +10,18 @@
         <result property="productId"     column="product_id"/>
         <result property="productCode"     column="product_code"/>
         <result property="productName"     column="product_name"/>
+        <result property="specModel"     column="spec_model"/>
         <result property="unit"     column="unit"/>
+        <result property="planQty"     column="plan_qty"/>
         <result property="finishQty"     column="finish_qty"/>
         <result property="qualifiedQty"     column="qualified_qty"/>
         <result property="batchNo"     column="batch_no"/>
         <result property="finishTime"     column="finish_time"/>
         <result property="finishBy"     column="finish_by"/>
-        <result property="isOnTime"     column="is_on_time"/>
+                <result property="isOnTime"     column="is_on_time"/>
         <result property="status"     column="status"/>
+        <result property="inboundTime"     column="inbound_time"/>
+        <result property="inboundBy"     column="inbound_by"/>
         <result property="delFlag"     column="del_flag"/>
         <result property="createBy"     column="create_by"/>
         <result property="createTime"     column="create_time"/>
@@ -27,7 +31,7 @@
     </resultMap>
 
     <sql id="selectFinishReceiptVo">
-        SELECT finish_id, finish_no, work_order_id, work_order_no, product_id, product_code, product_name, unit, finish_qty, qualified_qty, batch_no, finish_time, finish_by, is_on_time, status, del_flag, create_by, create_time, update_by, update_time, remark
+        SELECT finish_id, finish_no, work_order_id, work_order_no, product_id, product_code, product_name, spec_model, unit, plan_qty, finish_qty, qualified_qty, batch_no, finish_time, finish_by, is_on_time, status, inbound_time, inbound_by, del_flag, create_by, create_time, update_by, update_time, remark
         FROM mms_finish_receipt
     </sql>
 
@@ -60,7 +64,9 @@
             product_id,
             product_code,
             product_name,
+            spec_model,
             unit,
+            plan_qty,
             finish_qty,
             qualified_qty,
             batch_no,
@@ -68,6 +74,8 @@
             finish_by,
             is_on_time,
             status,
+            inbound_time,
+            inbound_by,
             del_flag,
             create_by,
             create_time,
@@ -81,7 +89,9 @@
             #{productId},
             #{productCode},
             #{productName},
+            #{specModel},
             #{unit},
+            #{planQty},
             #{finishQty},
             #{qualifiedQty},
             #{batchNo},
@@ -89,6 +99,8 @@
             #{finishBy},
             #{isOnTime},
             #{status},
+            #{inboundTime},
+            #{inboundBy},
             #{delFlag},
             #{createBy},
             #{createTime},
@@ -106,7 +118,9 @@
             product_id = #{productId},
             product_code = #{productCode},
             product_name = #{productName},
+            spec_model = #{specModel},
             unit = #{unit},
+            plan_qty = #{planQty},
             finish_qty = #{finishQty},
             qualified_qty = #{qualifiedQty},
             batch_no = #{batchNo},
@@ -114,6 +128,8 @@
             finish_by = #{finishBy},
             is_on_time = #{isOnTime},
             status = #{status},
+            inbound_time = #{inboundTime},
+            inbound_by = #{inboundBy},
             update_by = #{updateBy},
             update_time = #{updateTime},
             remark = #{remark}

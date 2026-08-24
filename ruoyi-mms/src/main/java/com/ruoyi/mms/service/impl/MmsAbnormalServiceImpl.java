@@ -103,7 +103,7 @@ public class MmsAbnormalServiceImpl implements IMmsAbnormalService
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public int respondAbnormal(Long abnormalId, String responseBy, Date responseTime)
+    public int respondAbnormal(Long abnormalId, MmsAbnormal body)
     {
         MmsAbnormal abnormal = getAndCheckAbnormal(abnormalId);
         // 状态校验：只有待响应(0)可响应
@@ -112,14 +112,24 @@ public class MmsAbnormalServiceImpl implements IMmsAbnormalService
             throw new ServiceException("异常[" + abnormal.getAbnormalNo() + "]当前状态为" + statusName(abnormal.getStatus()) + "，只有待响应状态可响应");
         }
         abnormal.setStatus("1");
-        abnormal.setResponseBy(StringUtils.isNotEmpty(responseBy) ? responseBy : SecurityUtils.getUsername());
-        abnormal.setResponseTime(responseTime != null ? responseTime : new Date());
+        abnormal.setResponseBy(body != null && StringUtils.isNotEmpty(body.getResponseBy()) ? body.getResponseBy() : SecurityUtils.getUsername());
+        abnormal.setResponseTime(body != null && body.getResponseTime() != null ? body.getResponseTime() : new Date());
+        // 响应措施、影响范围、预计恢复时间、响应备注
+        if (body != null)
+        {
+            abnormal.setResponseMeasure(body.getResponseMeasure());
+            abnormal.setImpactScope(body.getImpactScope());
+            abnormal.setEstimatedRestoreTime(body.getEstimatedRestoreTime());
+            abnormal.setResponseRemark(body.getResponseRemark());
+        }
+        abnormal.setUpdateBy(SecurityUtils.getUsername());
+        abnormal.setUpdateTime(DateUtils.getNowDate());
         return abnormalMapper.updateAbnormal(abnormal);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public int resolveAbnormal(Long abnormalId, String handleResult, String handleBy, Date handleTime)
+    public int resolveAbnormal(Long abnormalId, MmsAbnormal body)
     {
         MmsAbnormal abnormal = getAndCheckAbnormal(abnormalId);
         // 状态校验：只有处理中(1)可关闭
@@ -128,11 +138,22 @@ public class MmsAbnormalServiceImpl implements IMmsAbnormalService
             throw new ServiceException("异常[" + abnormal.getAbnormalNo() + "]当前状态为" + statusName(abnormal.getStatus()) + "，只有处理中状态可关闭");
         }
         abnormal.setStatus("2");
-        abnormal.setHandleResult(handleResult);
+        // 处理结果、处理方式、根本原因、预防措施、停机时长、是否追纠
+        if (body != null)
+        {
+            abnormal.setHandleResult(body.getHandleResult());
+            abnormal.setHandleMethod(body.getHandleMethod());
+            abnormal.setRootCause(body.getRootCause());
+            abnormal.setPreventiveMeasure(body.getPreventiveMeasure());
+            abnormal.setDowntimeMinutes(body.getDowntimeMinutes());
+            abnormal.setNeedPursuit(body.getNeedPursuit() != null ? body.getNeedPursuit() : "0");
+        }
         // 处理人默认取响应人
-        abnormal.setHandleBy(StringUtils.isNotEmpty(handleBy) ? handleBy : abnormal.getResponseBy());
-        abnormal.setHandleTime(handleTime != null ? handleTime : new Date());
+        abnormal.setHandleBy(body != null && StringUtils.isNotEmpty(body.getHandleBy()) ? body.getHandleBy() : abnormal.getResponseBy());
+        abnormal.setHandleTime(body != null && body.getHandleTime() != null ? body.getHandleTime() : new Date());
         abnormal.setCloseTime(new Date());
+        abnormal.setUpdateBy(SecurityUtils.getUsername());
+        abnormal.setUpdateTime(DateUtils.getNowDate());
         int rows = abnormalMapper.updateAbnormal(abnormal);
         // 联动关闭停机记录
         closeLinkedDowntime(abnormalId);

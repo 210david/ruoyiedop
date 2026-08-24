@@ -24,4 +24,10 @@ public class MmsOeeSnapshotServiceImpl implements IMmsOeeSnapshotService
     {
         return oeeSnapshotMapper.selectOeeSnapshotById(snapshotId);
     }
+
+    @Override
+    public long selectOeeSnapshotCount(MmsOeeSnapshot snapshot)
+    {
+        return oeeSnapshotMapper.selectOeeSnapshotCount(snapshot);
+    }
 }

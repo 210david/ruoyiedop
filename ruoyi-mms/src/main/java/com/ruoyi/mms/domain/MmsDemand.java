@@ -37,7 +37,7 @@ public class MmsDemand extends BaseEntity
     @Excel(name = "规格型号")
     private String specModel;
 
-    @Excel(name = "单位")
+    @Excel(name = "单位", readConverterExp = "0=个,1=件,2=箱,3=kg,4=吨,5=米,6=把,7=千米,8=厘米,9=套,10=台,11=条")
     private String unit;
 
     @Excel(name = "需求数量")

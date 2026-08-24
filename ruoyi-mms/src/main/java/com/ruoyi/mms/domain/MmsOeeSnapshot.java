@@ -52,6 +52,9 @@ public class MmsOeeSnapshot extends BaseEntity
     @Excel(name = "OEE")
     private BigDecimal oee;
 
+    @Excel(name = "计划数量")
+    private BigDecimal planQty;
+
     @Excel(name = "合格数量")
     private BigDecimal goodQty;
 
@@ -84,6 +87,8 @@ public class MmsOeeSnapshot extends BaseEntity
     public void setQualityRate(BigDecimal qualityRate) { this.qualityRate = qualityRate; }
     public BigDecimal getOee() { return oee; }
     public void setOee(BigDecimal oee) { this.oee = oee; }
+    public BigDecimal getPlanQty() { return planQty; }
+    public void setPlanQty(BigDecimal planQty) { this.planQty = planQty; }
     public BigDecimal getGoodQty() { return goodQty; }
     public void setGoodQty(BigDecimal goodQty) { this.goodQty = goodQty; }
     public BigDecimal getDefectQty() { return defectQty; }

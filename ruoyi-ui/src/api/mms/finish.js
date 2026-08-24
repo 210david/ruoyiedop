@@ -41,3 +41,11 @@ export function updateFinishReceipt(data) {
   })
 }
 
+export function confirmFinishReceipt(finishId, data) {
+  return request({
+    url: '/mms/finish/confirm/' + finishId,
+    method: 'put',
+    data: data
+  })
+}
+

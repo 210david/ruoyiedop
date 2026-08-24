@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mms.mapper.MmsFinishAnalysisMapper">
+
+    <resultMap type="MmsFinishAnalysis" id="MmsFinishAnalysisResult">
+        <id     property="workOrderId"     column="work_order_id"/>
+        <result property="workOrderNo"     column="work_order_no"/>
+        <result property="productCode"     column="product_code"/>
+        <result property="productName"    column="product_name"/>
+        <result property="specModel"      column="spec_model"/>
+        <result property="unit"           column="unit"/>
+        <result property="planQty"        column="plan_qty"/>
+        <result property="finishQty"      column="finished_qty"/>
+        <result property="qualifiedQty"   column="qualified_qty"/>
+        <result property="defectQty"      column="defect_qty"/>
+        <result property="lossQty"        column="loss_qty"/>
+        <result property="lossRate"      column="loss_rate"/>
+        <result property="yieldRate"      column="yield_rate"/>
+        <result property="finishRate"    column="finish_rate"/>
+        <result property="qualifiedRate"  column="qualified_rate"/>
+        <result property="actualHours"   column="actual_hours"/>
+        <result property="plannedHours"  column="planned_hours"/>
+        <result property="hourAchieveRate" column="hour_achieve_rate"/>
+        <result property="resourceName"   column="resource_name"/>
+        <result property="status"        column="status"/>
+        <result property="planStart"     column="plan_start"/>
+        <result property="planFinish"    column="plan_finish"/>
+        <result property="actualStart"   column="actual_start"/>
+        <result property="actualFinish"   column="actual_finish"/>
+        <result property="isOnTime"      column="is_on_time"/>
+        <result property="reportCount"    column="report_count"/>
+    </resultMap>
+
+    <resultMap type="MmsFinishAnalysis" id="MmsFinishAnalysisSummaryResult">
+        <result property="workOrderCount"     column="work_order_count"/>
+        <result property="totalPlanQty"       column="total_plan_qty"/>
+        <result property="totalFinishQty"     column="total_finish_qty"/>
+        <result property="totalQualifiedQty"  column="total_qualified_qty"/>
+        <result property="totalLossQty"       column="total_loss_qty"/>
+        <result property="avgLossRate"        column="avg_loss_rate"/>
+        <result property="avgYieldRate"       column="avg_yield_rate"/>
+        <result property="avgFinishRate"      column="avg_finish_rate"/>
+        <result property="onTimeRate"         column="on_time_rate"/>
+    </resultMap>
+
+    <!--
+        工单完工分析明细查询
+        从 mms_work_order 主表联查完工入库和报工汇总数据
+        损耗量 = 完工数量 - 合格数量（口径：完工数量中不良部分为损耗）
+        收率/成材率 = 合格数量 / 完工数量 * 100
+        完工率 = 完工数量 / 计划数量 * 100
+        合格率 = 合格数量 / 完工数量 * 100
+        工时达成率 = 计划工时 / 实际工时 * 100
+    -->
+    <select id="selectFinishAnalysisList" parameterType="MmsFinishAnalysis" resultMap="MmsFinishAnalysisResult">
+        SELECT
+            wo.work_order_id,
+            wo.work_order_no,
+            wo.product_code,
+            wo.product_name,
+            wo.spec_model,
+            wo.unit,
+            wo.plan_qty,
+            wo.finished_qty,
+            wo.qualified_qty,
+            wo.defect_qty,
+            (wo.finished_qty - wo.qualified_qty) AS loss_qty,
+            CASE WHEN wo.finished_qty > 0 THEN ROUND((wo.finished_qty - wo.qualified_qty) / wo.finished_qty * 100, 2) ELSE 0 END AS loss_rate,
+            CASE WHEN wo.finished_qty > 0 THEN ROUND(wo.qualified_qty / wo.finished_qty * 100, 2) ELSE 0 END AS yield_rate,
+            CASE WHEN wo.plan_qty > 0 THEN ROUND(wo.finished_qty / wo.plan_qty * 100, 2) ELSE 0 END AS finish_rate,
+            CASE WHEN wo.finished_qty > 0 THEN ROUND(wo.qualified_qty / wo.finished_qty * 100, 2) ELSE 0 END AS qualified_rate,
+            rpt.actual_hours,
+            rpt.planned_hours,
+            CASE WHEN rpt.actual_hours > 0 THEN ROUND(rpt.planned_hours / rpt.actual_hours * 100, 2) ELSE 0 END AS hour_achieve_rate,
+            wo.resource_name,
+            wo.status,
+            wo.plan_start,
+            wo.plan_finish,
+            wo.actual_start,
+            wo.actual_finish,
+            CASE WHEN wo.actual_finish IS NOT NULL AND wo.plan_finish IS NOT NULL AND wo.actual_finish &lt;= wo.plan_finish THEN '1' ELSE '0' END AS is_on_time,
+            rpt.report_count
+        FROM mms_work_order wo
+        LEFT JOIN (
+            SELECT
+                r.work_order_id,
+                SUM(r.good_qty + r.defect_qty) AS actual_hours_placeholder,
+                -- 实际工时暂用报工数量替代（无独立工时字段时用0）
+                0 AS actual_hours,
+                0 AS planned_hours,
+                COUNT(*) AS report_count
+            FROM mms_work_report r
+            WHERE r.del_flag = '0' AND r.status = '1'
+            GROUP BY r.work_order_id
+        ) rpt ON rpt.work_order_id = wo.work_order_id
+        <where>
+            wo.del_flag = '0'
+            <if test="workOrderNo != null and workOrderNo != ''"> AND wo.work_order_no LIKE CONCAT('%', #{workOrderNo}, '%')</if>
+            <if test="productCode != null and productCode != ''"> AND wo.product_code LIKE CONCAT('%', #{productCode}, '%')</if>
+            <if test="productName != null and productName != ''"> AND wo.product_name LIKE CONCAT('%', #{productName}, '%')</if>
+            <if test="resourceName != null and resourceName != ''"> AND wo.resource_name LIKE CONCAT('%', #{resourceName}, '%')</if>
+            <if test="status != null and status != ''"> AND wo.status = #{status}</if>
+            <if test="isOnTime != null and isOnTime != ''">
+                <choose>
+                    <when test="isOnTime == '1'"> AND wo.actual_finish IS NOT NULL AND wo.plan_finish IS NOT NULL AND wo.actual_finish &lt;= wo.plan_finish</when>
+                    <when test="isOnTime == '0'"> AND (wo.actual_finish IS NULL OR wo.plan_finish IS NULL OR wo.actual_finish &gt; wo.plan_finish)</when>
+                </choose>
+            </if>
+            <if test="params.beginTime != null and params.beginTime != ''"> AND date(wo.actual_finish) &gt;= #{params.beginTime}</if>
+            <if test="params.endTime != null and params.endTime != ''"> AND date(wo.actual_finish) &lt;= #{params.endTime}</if>
+        </where>
+        ORDER BY wo.actual_finish DESC, wo.work_order_id DESC
+    </select>
+
+    <!-- 汇总统计行 -->
+    <select id="selectFinishAnalysisSummary" parameterType="MmsFinishAnalysis" resultMap="MmsFinishAnalysisSummaryResult">
+        SELECT
+            COUNT(*) AS work_order_count,
+            COALESCE(SUM(wo.plan_qty), 0) AS total_plan_qty,
+            COALESCE(SUM(wo.finished_qty), 0) AS total_finish_qty,
+            COALESCE(SUM(wo.qualified_qty), 0) AS total_qualified_qty,
+            COALESCE(SUM(wo.finished_qty - wo.qualified_qty), 0) AS total_loss_qty,
+            CASE WHEN SUM(wo.finished_qty) > 0 THEN ROUND(SUM(wo.finished_qty - wo.qualified_qty) / SUM(wo.finished_qty) * 100, 2) ELSE 0 END AS avg_loss_rate,
+            CASE WHEN SUM(wo.finished_qty) > 0 THEN ROUND(SUM(wo.qualified_qty) / SUM(wo.finished_qty) * 100, 2) ELSE 0 END AS avg_yield_rate,
+            CASE WHEN SUM(wo.plan_qty) > 0 THEN ROUND(SUM(wo.finished_qty) / SUM(wo.plan_qty) * 100, 2) ELSE 0 END AS avg_finish_rate,
+            CASE WHEN COUNT(*) > 0 THEN ROUND(SUM(CASE WHEN wo.actual_finish IS NOT NULL AND wo.plan_finish IS NOT NULL AND wo.actual_finish &lt;= wo.plan_finish THEN 1 ELSE 0 END) / COUNT(*) * 100, 2) ELSE 0 END AS on_time_rate
+        FROM mms_work_order wo
+        <where>
+            wo.del_flag = '0'
+            <if test="workOrderNo != null and workOrderNo != ''"> AND wo.work_order_no LIKE CONCAT('%', #{workOrderNo}, '%')</if>
+            <if test="productCode != null and productCode != ''"> AND wo.product_code LIKE CONCAT('%', #{productCode}, '%')</if>
+            <if test="productName != null and productName != ''"> AND wo.product_name LIKE CONCAT('%', #{productName}, '%')</if>
+            <if test="resourceName != null and resourceName != ''"> AND wo.resource_name LIKE CONCAT('%', #{resourceName}, '%')</if>
+            <if test="status != null and status != ''"> AND wo.status = #{status}</if>
+            <if test="isOnTime != null and isOnTime != ''">
+                <choose>
+                    <when test="isOnTime == '1'"> AND wo.actual_finish IS NOT NULL AND wo.plan_finish IS NOT NULL AND wo.actual_finish &lt;= wo.plan_finish</when>
+                    <when test="isOnTime == '0'"> AND (wo.actual_finish IS NULL OR wo.plan_finish IS NULL OR wo.actual_finish &gt; wo.plan_finish)</when>
+                </choose>
+            </if>
+            <if test="params.beginTime != null and params.beginTime != ''"> AND date(wo.actual_finish) &gt;= #{params.beginTime}</if>
+            <if test="params.endTime != null and params.endTime != ''"> AND date(wo.actual_finish) &lt;= #{params.endTime}</if>
+        </where>
+    </select>
+
+</mapper>

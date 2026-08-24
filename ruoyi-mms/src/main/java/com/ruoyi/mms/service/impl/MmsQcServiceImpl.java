@@ -47,6 +47,19 @@ public class MmsQcServiceImpl implements IMmsQcService
         {
             qc.setQcNo(mkNumberRuleService.generateNumber("mms_qc"));
         }
+        // 新增时检验数量/不良数/报废数量默认值处理（数据库字段NOT NULL）
+        if (qc.getInspectQty() == null)
+        {
+            qc.setInspectQty(0);
+        }
+        if (qc.getDefectQty() == null)
+        {
+            qc.setDefectQty(0);
+        }
+        if (qc.getScrapQty() == null)
+        {
+            qc.setScrapQty(0);
+        }
         qc.setDelFlag("0");
         qc.setCreateBy(SecurityUtils.getUsername());
         qc.setCreateTime(DateUtils.getNowDate());

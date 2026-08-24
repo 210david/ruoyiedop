@@ -3,36 +3,79 @@
 <mapper namespace="com.ruoyi.mms.mapper.MmsBatchTraceMapper">
 
     <resultMap type="MmsBatchTrace" id="MmsBatchTraceResult">
-        <id property="traceId" column="trace_id"/>
-        <result property="workOrderId" column="work_order_id"/>
-        <result property="opSeq" column="op_seq"/>
-        <result property="batchOut" column="batch_out"/>
-        <result property="batchIn" column="batch_in"/>
-        <result property="materialIn" column="material_in"/>
-        <result property="materialCode" column="material_code"/>
-        <result property="qtyUsed" column="qty_used"/>
-        <result property="createTime" column="create_time"/>
-        <result property="createBy" column="create_by"/>
+        <id     property="traceId"       column="trace_id"/>
+        <result property="workOrderId"   column="work_order_id"/>
+        <result property="batchOut"      column="batch_out"/>
+        <result property="productCode"  column="product_code"/>
+        <result property="productName"  column="product_name"/>
+        <result property="batchIn"       column="batch_in"/>
+        <result property="materialIn"    column="material_in"/>
+        <result property="materialCode"  column="material_code"/>
+        <result property="materialName"  column="material_name"/>
+        <result property="specModel"    column="spec_model"/>
+        <result property="unit"          column="unit"/>
+        <result property="qtyUsed"       column="qty_used"/>
     </resultMap>
 
-    <sql id="selectBatchTraceVo">
-        SELECT trace_id, work_order_id, op_seq, batch_out, batch_in, material_in, material_code, qty_used, create_time, create_by
-        FROM mms_batch_trace
-    </sql>
-
+    <!--
+        批次追溯 — 实时计算
+        数据来源：mms_kit_check_detail + mms_kit_check + mms_work_order + mms_return_material
+        产出批次(batch_out) = 工单号
+        投入批次(batch_in)  = 退料单号（无退料则显示 '领料-物料编码'）
+        使用数量 = 齐套需求量（required_qty），不扣减退料
+        物料名称/规格型号/单位 来自齐套明细表
+        产品编码/产品名称 来自工单表
+    -->
     <select id="selectBatchTraceList" parameterType="MmsBatchTrace" resultMap="MmsBatchTraceResult">
-        <include refid="selectBatchTraceVo"/>
+        SELECT
+            kd.detail_id AS trace_id,
+            wo.work_order_id,
+            wo.work_order_no AS batch_out,
+            wo.product_code,
+            wo.product_name,
+            COALESCE(rm.return_no, CONCAT('领料-', kd.material_code)) AS batch_in,
+            kd.material_id AS material_in,
+            kd.material_code,
+            kd.material_name,
+            kd.spec_model,
+            kd.unit,
+            kd.required_qty AS qty_used
+        FROM mms_kit_check_detail kd
+        INNER JOIN mms_kit_check kc ON kc.kit_id = kd.kit_id AND kc.del_flag = '0'
+        INNER JOIN mms_work_order wo ON wo.work_order_id = kc.work_order_id AND wo.del_flag = '0'
+        LEFT JOIN mms_return_material rm ON rm.work_order_id = wo.work_order_id
+            AND rm.material_id = kd.material_id AND rm.del_flag = '0'
         <where>
-            <if test="batchOut != null and batchOut != ''"> AND batch_out LIKE CONCAT('%', #{batchOut}, '%')</if>
-            <if test="batchIn != null and batchIn != ''"> AND batch_in LIKE CONCAT('%', #{batchIn}, '%')</if>
-            <if test="materialCode != null and materialCode != ''"> AND material_code LIKE CONCAT('%', #{materialCode}, '%')</if>
-            <if test="workOrderId != null"> AND work_order_id = #{workOrderId}</if>
+            kd.del_flag = '0'
+            <if test="workOrderId != null"> AND wo.work_order_id = #{workOrderId}</if>
+            <if test="batchOut != null and batchOut != ''"> AND wo.work_order_no LIKE CONCAT('%', #{batchOut}, '%')</if>
+            <if test="batchIn != null and batchIn != ''"> AND COALESCE(rm.return_no, CONCAT('领料-', kd.material_code)) LIKE CONCAT('%', #{batchIn}, '%')</if>
+            <if test="materialCode != null and materialCode != ''"> AND kd.material_code LIKE CONCAT('%', #{materialCode}, '%')</if>
         </where>
-        ORDER BY trace_id DESC
+        ORDER BY wo.work_order_id DESC, kd.detail_id
     </select>
 
     <select id="selectBatchTraceById" parameterType="Long" resultMap="MmsBatchTraceResult">
-        <include refid="selectBatchTraceVo"/>
-        WHERE trace_id = #{traceId}
+        SELECT
+            kd.detail_id AS trace_id,
+            wo.work_order_id,
+            wo.work_order_no AS batch_out,
+            wo.product_code,
+            wo.product_name,
+            COALESCE(rm.return_no, CONCAT('领料-', kd.material_code)) AS batch_in,
+            kd.material_id AS material_in,
+            kd.material_code,
+            kd.material_name,
+            kd.spec_model,
+            kd.unit,
+            kd.required_qty AS qty_used
+        FROM mms_kit_check_detail kd
+        INNER JOIN mms_kit_check kc ON kc.kit_id = kd.kit_id AND kc.del_flag = '0'
+        INNER JOIN mms_work_order wo ON wo.work_order_id = kc.work_order_id AND wo.del_flag = '0'
+        LEFT JOIN mms_return_material rm ON rm.work_order_id = wo.work_order_id
+            AND rm.material_id = kd.material_id AND rm.del_flag = '0'
+        WHERE kd.del_flag = '0' AND kd.detail_id = #{traceId}
+        ORDER BY wo.work_order_id DESC, kd.detail_id
     </select>
+
 </mapper>

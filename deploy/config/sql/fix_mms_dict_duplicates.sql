@@ -373,8 +373,7 @@ INSERT INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, css_cla
 INSERT INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, css_class, list_class, is_default, status, create_by, create_time, remark) VALUES
 (1, '待外协', '0', 'mms_outsource_status', '', 'info',    'Y', '0', 'admin', sysdate(), '待外协'),
 (2, '外协中', '1', 'mms_outsource_status', '', 'primary', 'N', '0', 'admin', sysdate(), '外协中'),
-(3, '已完成', '2', 'mms_outsource_status', '', 'success', 'N', '0', 'admin', sysdate(), '已完成'),
-(4, '已取消', '3', 'mms_outsource_status', '', 'danger',  'N', '0', 'admin', sysdate(), '已取消');
+(3, '已完成', '2', 'mms_outsource_status', '', 'success', 'N', '0', 'admin', sysdate(), '已完成');
 
 SET FOREIGN_KEY_CHECKS = 1;
 

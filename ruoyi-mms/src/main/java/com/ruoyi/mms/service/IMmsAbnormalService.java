@@ -22,10 +22,10 @@ public interface IMmsAbnormalService
     public int deleteAbnormalByIds(Long[] abnormalIds);
 
     /** 异常响应：0(待响应) → 1(处理中) */
-    public int respondAbnormal(Long abnormalId, String responseBy, java.util.Date responseTime);
+    public int respondAbnormal(Long abnormalId, com.ruoyi.mms.domain.MmsAbnormal body);
 
     /** 异常处理关闭：1(处理中) → 2(已关闭) */
-    public int resolveAbnormal(Long abnormalId, String handleResult, String handleBy, java.util.Date handleTime);
+    public int resolveAbnormal(Long abnormalId, com.ruoyi.mms.domain.MmsAbnormal body);
 
     /**
      * 联动生成停机记录

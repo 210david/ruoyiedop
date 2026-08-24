@@ -3,36 +3,70 @@
 <mapper namespace="com.ruoyi.mms.mapper.MmsStatDailyMapper">
 
     <resultMap type="MmsStatDaily" id="MmsStatDailyResult">
-        <id property="statId" column="stat_id"/>
-        <result property="statDate" column="stat_date"/>
-        <result property="workOrderCount" column="work_order_count"/>
-        <result property="completedCount" column="completed_count"/>
+        <id     property="statId"         column="stat_id"/>
+        <result property="statDate"       column="stat_date"/>
+        <result property="workOrderCount"  column="work_order_count"/>
+        <result property="completedCount"  column="completed_count"/>
         <result property="inProgressCount" column="in_progress_count"/>
-        <result property="abnormalCount" column="abnormal_count"/>
-        <result property="totalPlanQty" column="total_plan_qty"/>
-        <result property="totalGoodQty" column="total_good_qty"/>
-        <result property="totalDefectQty" column="total_defect_qty"/>
-        <result property="avgOee" column="avg_oee"/>
-        <result property="reportCount" column="report_count"/>
-        <result property="createTime" column="create_time"/>
+        <result property="abnormalCount"   column="abnormal_count"/>
+        <result property="totalPlanQty"    column="total_plan_qty"/>
+        <result property="totalGoodQty"    column="total_good_qty"/>
+        <result property="totalDefectQty"  column="total_defect_qty"/>
+        <result property="avgOee"          column="avg_oee"/>
+        <result property="reportCount"     column="report_count"/>
+        <result property="createTime"      column="create_time"/>
     </resultMap>
 
-    <sql id="selectStatDailyVo">
-        SELECT stat_id, stat_date, work_order_count, completed_count, in_progress_count, abnormal_count, total_plan_qty, total_good_qty, total_defect_qty, avg_oee, report_count, create_time
-        FROM mms_stat_daily
-    </sql>
-
+    <!--
+        生产日报 — 实时计算
+        数据来源：mms_work_order + mms_work_report
+        计划/合格/不良数量：直接从工单表SUM（工单上的qualified_qty/defect_qty是最终汇总值）
+        报工次数：LEFT JOIN报工子查询，用SUM聚合（不能用COALESCE取单行值）
+    -->
     <select id="selectStatDailyList" parameterType="MmsStatDaily" resultMap="MmsStatDailyResult">
-        <include refid="selectStatDailyVo"/>
+        SELECT
+            NULL AS stat_id,
+            DATE(wo.actual_start) AS stat_date,
+            COUNT(*) AS work_order_count,
+            SUM(CASE WHEN wo.actual_finish IS NOT NULL THEN 1 ELSE 0 END) AS completed_count,
+            SUM(CASE WHEN wo.actual_start IS NOT NULL AND wo.actual_finish IS NULL THEN 1 ELSE 0 END) AS in_progress_count,
+            SUM(CASE WHEN COALESCE(wo.defect_qty, 0) > 0 THEN 1 ELSE 0 END) AS abnormal_count,
+            COALESCE(SUM(wo.plan_qty), 0) AS total_plan_qty,
+            COALESCE(SUM(wo.qualified_qty), 0) AS total_good_qty,
+            COALESCE(SUM(wo.defect_qty), 0) AS total_defect_qty,
+            0 AS avg_oee,
+            COALESCE(SUM(rpt_sum.report_count), 0) AS report_count,
+            NULL AS create_time
+        FROM mms_work_order wo
+        LEFT JOIN (
+            SELECT r.work_order_id, COUNT(*) AS report_count
+            FROM mms_work_report r
+            WHERE r.del_flag = '0'
+            GROUP BY r.work_order_id
+        ) rpt_sum ON rpt_sum.work_order_id = wo.work_order_id
         <where>
-            <if test="params.beginTime != null and params.beginTime != ''"> AND stat_date &gt;= #{params.beginTime}</if>
-            <if test="params.endTime != null and params.endTime != ''"> AND stat_date &lt;= #{params.endTime}</if>
+            wo.del_flag = '0'
+            AND wo.actual_start IS NOT NULL
+            <if test="params.beginTime != null and params.beginTime != ''"> AND DATE(wo.actual_start) &gt;= #{params.beginTime}</if>
+            <if test="params.endTime != null and params.endTime != ''"> AND DATE(wo.actual_start) &lt;= #{params.endTime}</if>
         </where>
-        ORDER BY stat_date DESC
+        GROUP BY DATE(wo.actual_start)
+        ORDER BY DATE(wo.actual_start) DESC
     </select>
 
     <select id="selectStatDailyById" parameterType="Long" resultMap="MmsStatDailyResult">
-        <include refid="selectStatDailyVo"/>
-        WHERE stat_id = #{statId}
+        SELECT * FROM (
+            SELECT
+                NULL AS stat_id,
+                DATE(wo.actual_start) AS stat_date,
+                COUNT(*) AS work_order_count,
+                0 AS completed_count, 0 AS in_progress_count, 0 AS abnormal_count,
+                0 AS total_plan_qty, 0 AS total_good_qty, 0 AS total_defect_qty,
+                0 AS avg_oee, 0 AS report_count, NULL AS create_time
+            FROM mms_work_order wo
+            WHERE wo.del_flag = '0' AND wo.actual_start IS NOT NULL
+            GROUP BY DATE(wo.actual_start)
+        ) t WHERE t.stat_id = #{statId}
     </select>
+
 </mapper>

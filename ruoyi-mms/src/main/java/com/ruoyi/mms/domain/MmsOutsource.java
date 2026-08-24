@@ -31,10 +31,27 @@ public class MmsOutsource extends BaseEntity
     @Excel(name = "工序名称")
     private String processName;
 
+    private Long productId;
+
+    @Excel(name = "产品编码")
+    private String productCode;
+
+    @Excel(name = "产品名称")
+    private String productName;
+
+    @Excel(name = "规格型号")
+    private String specModel;
+
+    @Excel(name = "单位", readConverterExp = "0=个,1=件,2=箱,3=kg,4=吨,5=米,6=把,7=千米,8=厘米,9=套,10=台,11=条")
+    private String unit;
+
     private Long supplierId;
 
     @Excel(name = "供应商")
     private String supplierName;
+
+    @Excel(name = "工单计划数量")
+    private BigDecimal planQty;
 
     @Excel(name = "外协数量")
     private BigDecimal outQty;
@@ -80,10 +97,22 @@ public class MmsOutsource extends BaseEntity
     public void setOpSeq(Integer opSeq) { this.opSeq = opSeq; }
     public String getProcessName() { return processName; }
     public void setProcessName(String processName) { this.processName = processName; }
+    public Long getProductId() { return productId; }
+    public void setProductId(Long productId) { this.productId = productId; }
+    public String getProductCode() { return productCode; }
+    public void setProductCode(String productCode) { this.productCode = productCode; }
+    public String getProductName() { return productName; }
+    public void setProductName(String productName) { this.productName = productName; }
+    public String getSpecModel() { return specModel; }
+    public void setSpecModel(String specModel) { this.specModel = specModel; }
+    public String getUnit() { return unit; }
+    public void setUnit(String unit) { this.unit = unit; }
     public Long getSupplierId() { return supplierId; }
     public void setSupplierId(Long supplierId) { this.supplierId = supplierId; }
     public String getSupplierName() { return supplierName; }
     public void setSupplierName(String supplierName) { this.supplierName = supplierName; }
+    public BigDecimal getPlanQty() { return planQty; }
+    public void setPlanQty(BigDecimal planQty) { this.planQty = planQty; }
     public BigDecimal getOutQty() { return outQty; }
     public void setOutQty(BigDecimal outQty) { this.outQty = outQty; }
     public BigDecimal getUnitPrice() { return unitPrice; }

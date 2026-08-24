@@ -343,24 +343,17 @@
           <!-- 派工单信息 -->
           <section class="rd-card">
             <div class="rd-card-header" @click="toggleCard('sc0')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg></span>派工单信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.sc0 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
-            <div class="rd-card-body" v-show="!collapsedCards.sc0">
-              <el-row :gutter="20"><el-col :span="12"><el-form-item label="派工单号"><el-input :model-value="startForm.dispatchNo" disabled /></el-form-item></el-col><el-col :span="12"><el-form-item label="工单编号"><el-input :model-value="startForm.workOrderNo" disabled /></el-form-item></el-col></el-row>
-            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.sc0" style="display:block"><div class="rd-grid"><div class="rd-item"><span class="rd-label">派工单号</span><div class="rd-value">{{ startForm.dispatchNo || '-' }}</div></div><div class="rd-item"><span class="rd-label">工单编号</span><div class="rd-value">{{ startForm.workOrderNo || '-' }}</div></div></div></div>
           </section>
           <!-- 产品信息 -->
           <section class="rd-card">
             <div class="rd-card-header" @click="toggleCard('sc0a')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></span>产品信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.sc0a }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
-            <div class="rd-card-body" v-show="!collapsedCards.sc0a">
-              <el-row :gutter="20"><el-col :span="12"><el-form-item label="产品编码"><el-input :model-value="startForm.productCode" disabled /></el-form-item></el-col><el-col :span="12"><el-form-item label="产品名称"><el-input :model-value="startForm.productName" disabled /></el-form-item></el-col></el-row>
-              <el-row :gutter="20"><el-col :span="12"><el-form-item label="规格型号"><el-input :model-value="startForm.specModel" disabled /></el-form-item></el-col><el-col :span="12"><el-form-item label="单位"><el-input :model-value="unitLabel(startForm.unit)" disabled /></el-form-item></el-col></el-row>
-            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.sc0a" style="display:block"><div class="rd-grid"><div class="rd-item"><span class="rd-label">产品编码</span><div class="rd-value">{{ startForm.productCode || '-' }}</div></div><div class="rd-item"><span class="rd-label">产品名称</span><div class="rd-value">{{ startForm.productName || '-' }}</div></div><div class="rd-item"><span class="rd-label">规格型号</span><div class="rd-value">{{ startForm.specModel || '-' }}</div></div><div class="rd-item"><span class="rd-label">单位</span><div class="rd-value"><dict-tag :options="wms_unit" :value="startForm.unit" /></div></div></div></div>
           </section>
           <!-- 工序信息 -->
           <section class="rd-card">
             <div class="rd-card-header" @click="toggleCard('sc0b')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11H5a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h4"/><path d="M15 11h4a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-4"/><line x1="9" y1="13" x2="15" y2="13"/></svg></span>工序信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.sc0b }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
-            <div class="rd-card-body" v-show="!collapsedCards.sc0b">
-              <el-row :gutter="20"><el-col :span="12"><el-form-item label="工序顺序号"><el-input :model-value="startForm.opSeq" disabled /></el-form-item></el-col><el-col :span="12"><el-form-item label="工序名称"><el-input :model-value="startForm.processName" disabled /></el-form-item></el-col></el-row>
-            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.sc0b" style="display:block"><div class="rd-grid"><div class="rd-item"><span class="rd-label">工序顺序号</span><div class="rd-value">{{ startForm.opSeq != null ? startForm.opSeq : '-' }}</div></div><div class="rd-item"><span class="rd-label">工序名称</span><div class="rd-value">{{ startForm.processName || '-' }}</div></div></div></div>
           </section>
           <!-- 执行资源 -->
           <section class="rd-card">
@@ -372,15 +365,13 @@
           <!-- 计划信息 -->
           <section class="rd-card">
             <div class="rd-card-header" @click="toggleCard('sc1')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>计划信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.sc1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
-            <div class="rd-card-body" v-show="!collapsedCards.sc1">
-              <el-row :gutter="20"><el-col :span="8"><el-form-item label="计划数量"><el-input-number :model-value="startForm.planQty" :min="0" :precision="2" disabled style="width: 100%" /></el-form-item></el-col><el-col :span="8"><el-form-item label="计划开始"><el-input :model-value="startForm.planStart ? parseTime(startForm.planStart) : '—'" disabled /></el-form-item></el-col><el-col :span="8"><el-form-item label="计划结束"><el-input :model-value="startForm.planEnd ? parseTime(startForm.planEnd) : '—'" disabled /></el-form-item></el-col></el-row>
-            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.sc1" style="display:block"><div class="rd-grid"><div class="rd-item"><span class="rd-label">计划数量</span><div class="rd-value">{{ startForm.planQty != null ? startForm.planQty : '-' }}</div></div><div class="rd-item"><span class="rd-label">计划开始</span><div class="rd-value">{{ startForm.planStart ? parseTime(startForm.planStart) : '-' }}</div></div><div class="rd-item"><span class="rd-label">计划结束</span><div class="rd-value">{{ startForm.planEnd ? parseTime(startForm.planEnd) : '-' }}</div></div></div></div>
           </section>
           <!-- 开工确认 -->
           <section class="rd-card">
             <div class="rd-card-header" @click="toggleCard('sc2')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg></span>开工确认</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.sc2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
             <div class="rd-card-body" v-show="!collapsedCards.sc2">
-              <el-row :gutter="20"><el-col :span="12"><el-form-item label="操作人员" prop="operatorName"><el-input v-model="startForm.operatorName" placeholder="请输入操作人员" style="width: 100%" /></el-form-item></el-col><el-col :span="12"><el-form-item label="操作时间" prop="operateTime"><el-date-picker v-model="startForm.operateTime" type="datetime" placeholder="请选择操作时间" value-format="YYYY-MM-DD HH:mm:ss" style="width: 100%" /></el-form-item></el-col></el-row>
+              <el-row :gutter="20"><el-col :span="12"><el-form-item label="操作人员" prop="operatorName"><el-input v-model="startForm.operatorName" readonly placeholder="请选择操作人员" style="width: 100%" @click="openOperatorPicker"><template #append><el-button icon="Search" @click="openOperatorPicker" /></template><template #suffix><el-icon v-if="startForm.operatorName" class="rd-form-tip" style="cursor:pointer" @click.stop="startForm.operatorName = ''"><CircleClose /></el-icon></template></el-input></el-form-item></el-col><el-col :span="12"><el-form-item label="操作时间" prop="operateTime"><el-date-picker v-model="startForm.operateTime" type="datetime" placeholder="请选择操作时间" value-format="YYYY-MM-DD HH:mm:ss" style="width: 100%" /></el-form-item></el-col></el-row>
             </div>
           </section>
         </div>
@@ -455,6 +446,9 @@
       <template #footer><el-button @click="startTeamPickerOpen = false">取 消</el-button><el-button type="primary" @click="confirmStartTeamPicker" :disabled="!startTeamPickerSelectedId">确 定</el-button></template>
     </el-dialog>
 
+    <!-- ===== 开工-操作人员选择弹窗 ===== -->
+    <user-picker ref="operatorPickerRef" title="选择操作人员" @confirm="onOperatorPickerConfirm" />
+
     <!-- ===== 完工 Dialog ===== -->
     <el-dialog v-model="finishOpen" width="864px" append-to-body draggable class="rd-dialog">
       <template #header>
@@ -472,32 +466,22 @@
           <!-- 派工单信息 -->
           <section class="rd-card">
             <div class="rd-card-header" @click="toggleCard('fc0')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg></span>派工单信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.fc0 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
-            <div class="rd-card-body" v-show="!collapsedCards.fc0">
-              <el-row :gutter="20"><el-col :span="12"><el-form-item label="派工单号"><el-input :model-value="finishForm.dispatchNo" disabled /></el-form-item></el-col><el-col :span="12"><el-form-item label="工单编号"><el-input :model-value="finishForm.workOrderNo" disabled /></el-form-item></el-col></el-row>
-            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.fc0" style="display:block"><div class="rd-grid"><div class="rd-item"><span class="rd-label">派工单号</span><div class="rd-value">{{ finishForm.dispatchNo || '-' }}</div></div><div class="rd-item"><span class="rd-label">工单编号</span><div class="rd-value">{{ finishForm.workOrderNo || '-' }}</div></div></div></div>
           </section>
           <!-- 产品信息 -->
           <section class="rd-card">
             <div class="rd-card-header" @click="toggleCard('fc0a')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></span>产品信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.fc0a }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
-            <div class="rd-card-body" v-show="!collapsedCards.fc0a">
-              <el-row :gutter="20"><el-col :span="8"><el-form-item label="产品编码"><el-input :model-value="finishForm.productCode" disabled /></el-form-item></el-col><el-col :span="16"><el-form-item label="产品名称"><el-input :model-value="finishForm.productName" disabled /></el-form-item></el-col></el-row>
-              <el-row :gutter="20"><el-col :span="16"><el-form-item label="规格型号"><el-input :model-value="finishForm.specModel" disabled /></el-form-item></el-col><el-col :span="8"><el-form-item label="单位"><el-input :model-value="unitLabel(finishForm.unit)" disabled /></el-form-item></el-col></el-row>
-            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.fc0a" style="display:block"><div class="rd-grid"><div class="rd-item"><span class="rd-label">产品编码</span><div class="rd-value">{{ finishForm.productCode || '-' }}</div></div><div class="rd-item"><span class="rd-label">产品名称</span><div class="rd-value">{{ finishForm.productName || '-' }}</div></div><div class="rd-item"><span class="rd-label">规格型号</span><div class="rd-value">{{ finishForm.specModel || '-' }}</div></div><div class="rd-item"><span class="rd-label">单位</span><div class="rd-value"><dict-tag :options="wms_unit" :value="finishForm.unit" /></div></div></div></div>
           </section>
           <!-- 工序与资源 -->
           <section class="rd-card">
             <div class="rd-card-header" @click="toggleCard('fc0b')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11H5a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h4"/><path d="M15 11h4a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-4"/><line x1="9" y1="13" x2="15" y2="13"/></svg></span>工序与资源</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.fc0b }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
-            <div class="rd-card-body" v-show="!collapsedCards.fc0b">
-              <el-row :gutter="20"><el-col :span="8"><el-form-item label="工序顺序号"><el-input :model-value="finishForm.opSeq" disabled /></el-form-item></el-col><el-col :span="16"><el-form-item label="工序名称"><el-input :model-value="finishForm.processName" disabled /></el-form-item></el-col></el-row>
-              <el-row :gutter="20"><el-col :span="16"><el-form-item label="产能单元"><el-input :model-value="finishForm.resourceName" disabled /></el-form-item></el-col><el-col :span="8"><el-form-item label="班组"><el-input :model-value="finishForm.teamName" disabled /></el-form-item></el-col></el-row>
-            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.fc0b" style="display:block"><div class="rd-grid"><div class="rd-item"><span class="rd-label">工序顺序号</span><div class="rd-value">{{ finishForm.opSeq != null ? finishForm.opSeq : '-' }}</div></div><div class="rd-item"><span class="rd-label">工序名称</span><div class="rd-value">{{ finishForm.processName || '-' }}</div></div><div class="rd-item"><span class="rd-label">产能单元</span><div class="rd-value">{{ finishForm.resourceName || '-' }}</div></div><div class="rd-item"><span class="rd-label">班组</span><div class="rd-value">{{ finishForm.teamName || '-' }}</div></div></div></div>
           </section>
           <!-- 计划与进度 -->
           <section class="rd-card">
             <div class="rd-card-header" @click="toggleCard('fc0c')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>计划与进度</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.fc0c }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
-            <div class="rd-card-body" v-show="!collapsedCards.fc0c">
-              <el-row :gutter="20"><el-col :span="8"><el-form-item label="计划数量"><el-input-number :model-value="finishForm.planQty" :min="0" :precision="2" disabled style="width: 100%" /></el-form-item></el-col><el-col :span="8"><el-form-item label="开工时间"><el-input :model-value="finishForm.actualStart ? parseTime(finishForm.actualStart) : '—'" disabled /></el-form-item></el-col><el-col :span="8"><el-form-item label="当前状态"><el-input :model-value="'进行中'" disabled /></el-form-item></el-col></el-row>
-            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.fc0c" style="display:block"><div class="rd-grid"><div class="rd-item"><span class="rd-label">计划数量</span><div class="rd-value">{{ finishForm.planQty != null ? finishForm.planQty : '-' }}</div></div><div class="rd-item"><span class="rd-label">开工时间</span><div class="rd-value">{{ finishForm.actualStart ? parseTime(finishForm.actualStart) : '-' }}</div></div><div class="rd-item"><span class="rd-label">当前状态</span><div class="rd-value"><span class="badge blue"><span class="dot"></span>进行中</span></div></div></div></div>
           </section>
           <!-- 完工数据填报 -->
           <section class="rd-card">
@@ -771,31 +755,31 @@
           <div class="toolbar-divider"></div>
           <el-button type="warning" plain icon="Download" @click="handleReportExport" v-hasPermi="['mms:report:export']">导出</el-button>
         </div>
-        <div class="right"><right-toolbar v-model:showSearch="reportShowSearch" @queryTable="getReportList" /></div>
+        <div class="right"><right-toolbar v-model:showSearch="reportShowSearch" @queryTable="getReportList" :columns="reportColumns" storageKey="mms_report_columns" /></div>
       </div>
 
       <div class="table-wrap">
-        <el-table ref="reportTableRef" v-loading="reportLoading" :data="reportDataList" border @selection-change="handleReportSelectionChange" class="app-table">
+        <el-table ref="reportTableRef" v-loading="reportLoading" :data="reportDataList" border @selection-change="handleReportSelectionChange" @header-dragend="onReportHeaderDragEnd" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
-          <el-table-column label="报工单号" prop="reportNo" width="168" resizable />
-          <el-table-column label="工单号" prop="workOrderNo" width="168" resizable />
-          <el-table-column label="工序" prop="processName" width="120" resizable />
-          <el-table-column label="产能单元" prop="resourceName" width="144" resizable />
-          <el-table-column label="合格数" prop="goodQty" width="96" resizable align="center" />
-          <el-table-column label="不良数" prop="defectQty" width="96" resizable align="center">
+          <el-table-column label="报工单号" prop="reportNo" key="reportNo" :width="reportColWidth('reportNo', 168)" resizable show-overflow-tooltip v-if="reportColumns.reportNo.visible" />
+          <el-table-column label="工单号" prop="workOrderNo" key="workOrderNo" :width="reportColWidth('workOrderNo', 168)" resizable show-overflow-tooltip v-if="reportColumns.workOrderNo.visible" />
+          <el-table-column label="工序" prop="processName" key="processName" :width="reportColWidth('processName', 120)" resizable show-overflow-tooltip v-if="reportColumns.processName.visible" />
+          <el-table-column label="产能单元" prop="resourceName" key="resourceName" :width="reportColWidth('resourceName', 144)" resizable show-overflow-tooltip v-if="reportColumns.resourceName.visible" />
+          <el-table-column label="合格数" prop="goodQty" key="goodQty" :width="reportColWidth('goodQty', 96)" resizable align="center" v-if="reportColumns.goodQty.visible" />
+          <el-table-column label="不良数" prop="defectQty" key="defectQty" :width="reportColWidth('defectQty', 96)" resizable align="center" v-if="reportColumns.defectQty.visible">
             <template #default="scope"><span :style="{ color: scope.row.defectQty > 0 ? '#ef4444' : 'inherit', fontWeight: scope.row.defectQty > 0 ? 600 : 400 }">{{ scope.row.defectQty }}</span></template>
           </el-table-column>
-          <el-table-column label="是否首件" prop="isFirstPiece" width="108" resizable align="center">
+          <el-table-column label="是否首件" prop="isFirstPiece" key="isFirstPiece" :width="reportColWidth('isFirstPiece', 108)" resizable align="center" v-if="reportColumns.isFirstPiece.visible">
             <template #default="scope"><span v-if="scope.row.isFirstPiece" class="badge" :class="scope.row.isFirstPiece === '1' ? 'green' : 'gray'"><span class="dot"></span>{{ reportIsFirstPieceLabel(scope.row.isFirstPiece) }}</span><span v-else class="text-muted">—</span></template>
           </el-table-column>
-          <el-table-column label="报工人" prop="reportBy" width="108" resizable align="center" />
-          <el-table-column label="报工时间" prop="reportTime" width="192" resizable align="center">
+          <el-table-column label="报工人" prop="reportBy" key="reportBy" :width="reportColWidth('reportBy', 108)" resizable align="center" v-if="reportColumns.reportBy.visible" />
+          <el-table-column label="报工时间" prop="reportTime" key="reportTime" :width="reportColWidth('reportTime', 192)" resizable align="center" v-if="reportColumns.reportTime.visible">
             <template #default="scope"><span>{{ parseTime(scope.row.reportTime) }}</span></template>
           </el-table-column>
-          <el-table-column label="状态" prop="status" width="120" resizable align="center">
+          <el-table-column label="状态" prop="status" key="status" :width="reportColWidth('status', 120)" resizable align="center" v-if="reportColumns.status.visible">
             <template #default="scope"><span v-if="scope.row.status" class="badge" :class="reportBadgeClass(scope.row.status)"><span class="dot"></span>{{ reportStatusLabel(scope.row.status) }}</span><span v-else class="text-muted">—</span></template>
           </el-table-column>
-          <el-table-column label="来源" prop="source" width="120" resizable align="center">
+          <el-table-column label="来源" prop="source" key="source" :width="reportColWidth('source', 120)" resizable align="center" v-if="reportColumns.source.visible">
             <template #default="scope"><span v-if="scope.row.source" class="badge" :class="reportSourceBadgeClass(scope.row.source)"><span class="dot"></span>{{ reportSourceLabel(scope.row.source) }}</span><span v-else class="text-muted">—</span></template>
           </el-table-column>
           <el-table-column label="操作" width="200" align="center" fixed="right">
@@ -1108,10 +1092,12 @@ import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
 import { Search, Filter, RefreshLeft, ArrowDown, ArrowRight, WarningFilled, InfoFilled, CircleClose, Grid, List, Box, Calendar, Tickets } from '@element-plus/icons-vue'
 import useUserStore from '@/store/modules/user'
+import UserPicker from '@/components/UserPicker/index.vue'
 
 const { proxy } = getCurrentInstance();
 const { mms_dispatch_status, wms_unit, mms_report_status, mms_yes_no, mms_report_source, mms_workorder_status, mms_resource_type } = proxy.useDict("mms_dispatch_status", "wms_unit", "mms_report_status", "mms_yes_no", "mms_report_source", "mms_workorder_status", "mms_resource_type");
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('mms_dispatch_index')
+const { colWidth: reportColWidth, onHeaderDragEnd: onReportHeaderDragEnd, tableRef: reportTableRef, applySavedWidths: applyReportSavedWidths } = useColumnResize('mms_report_index')
 const { collapsedCards, toggleCard } = useDetailCard(["vc0","vc1","vc2","vc3","sc0","sc0a","sc0b","sc0c","sc1","sc2","fc0","fc0a","fc0b","fc0c","fc1","rvc0","rvc1","rvc2","rvc3","rc0","rc1","rc2","rc3"])
 
 // ===== 页面Tab切换 =====
@@ -1415,7 +1401,7 @@ const startForm = reactive({
 const startRules = {
   resourceName: [{ required: true, message: "请选择产能单元", trigger: "change" }],
   teamName: [{ required: true, message: "请选择班组", trigger: "change" }],
-  operatorName: [{ required: true, message: "操作人员不能为空", trigger: "blur" }],
+  operatorName: [{ required: true, message: "请选择操作人员", trigger: "change" }],
   operateTime: [{ required: true, message: "操作时间不能为空", trigger: "change" }]
 };
 
@@ -1574,6 +1560,15 @@ function handleStart(row) {
   // 默认取当前时间
   startForm.operateTime = proxy.parseTime(new Date(), '{y}-{m}-{d} {h}:{i}:{s}');
   startOpen.value = true;
+}
+
+// ===== 开工-操作人员选择 =====
+function openOperatorPicker() {
+  proxy.$refs.operatorPickerRef.open();
+}
+function onOperatorPickerConfirm(user) {
+  startForm.operatorName = user.nickName;
+  proxy.$refs["startFormRef"] && proxy.$refs["startFormRef"].validateField('operatorName');
 }
 
 // ===== 开工-产能单元选择弹窗 =====
@@ -1793,6 +1788,39 @@ getList();
 // ===== 报工记录 Tab 逻辑 =====
 // ============================================================
 
+// ===== 报工记录列显隐配置 =====
+const reportDefaultColumns = {
+  reportNo: { label: '报工单号', visible: true },
+  workOrderNo: { label: '工单号', visible: true },
+  processName: { label: '工序', visible: true },
+  resourceName: { label: '产能单元', visible: true },
+  goodQty: { label: '合格数', visible: true },
+  defectQty: { label: '不良数', visible: true },
+  isFirstPiece: { label: '是否首件', visible: true },
+  reportBy: { label: '报工人', visible: true },
+  reportTime: { label: '报工时间', visible: true },
+  status: { label: '状态', visible: true },
+  source: { label: '来源', visible: true }
+}
+function loadReportColumnVisibility() {
+  try {
+    const saved = localStorage.getItem('mms_report_columns')
+    if (saved) {
+      const parsed = JSON.parse(saved)
+      const result = {}
+      Object.keys(reportDefaultColumns).forEach(key => {
+        result[key] = {
+          label: reportDefaultColumns[key].label,
+          visible: parsed[key] !== undefined ? parsed[key] : reportDefaultColumns[key].visible
+        }
+      })
+      return result
+    }
+  } catch (e) {}
+  return { ...reportDefaultColumns }
+}
+const reportColumns = ref(loadReportColumnVisibility())
+
 const reportDataList = ref([]);
 const reportLoading = ref(true);
 const reportShowSearch = ref(true);
@@ -1847,6 +1875,7 @@ function getReportList() {
     reportDataList.value = response.rows;
     reportTotal.value = response.total;
     reportLoading.value = false;
+    applyReportSavedWidths();
     loadReportStatusCounts();
   });
 }

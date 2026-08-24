@@ -1,0 +1,100 @@
+Application Version: 3.9.2
+Spring Boot Version: 4.0.6
+////////////////////////////////////////////////////////////////////
+//                          _ooOoo_                               //
+//                         o8888888o                              //
+//                         88" . "88                              //
+//                         (| ^_^ |)                              //
+//                         O\  =  /O                              //
+//                      ____/`---'\____                           //
+//                    .'  \\|     |//  `.                         //
+//                   /  \\|||  :  |||//  \                        //
+//                  /  _||||| -:- |||||-  \                       //
+//                  |   | \\\  -  /// |   |                       //
+//                  | \_|  ''\---/''  |   |                       //
+//                  \  .-\__  `-`  ___/-. /                       //
+//                ___`. .'  /--.--\  `. . ___                     //
+//              ."" '<  `.___\_<|>_/___.'  >'"".                  //
+//            | | :  `- \`.;`\ _ /`;.`/ - ` : | |                 //
+//            \  \ `-.   \_ __\ /__ _/   .-` /  /                 //
+//      ========`-.____`-.___\_____/___.-`____.-'========         //
+//                           `=---='                              //
+//      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^        //
+//             佛祖保佑       永不宕机      永无BUG               //
+////////////////////////////////////////////////////////////////////
+20:31:12.962 [] [background-preinit] INFO  o.h.v.i.util.Version - [<clinit>,18] - HV000001: Hibernate Validator 9.0.1.Final
+20:31:13.047 [] [main] INFO  c.r.RuoYiApplication - [logStarting,54] - Starting RuoYiApplication using Java 17.0.4 with PID 14540 (E:\AIcode\EDOP\RuoYi\RuoYi-Vue3\ruoyi-admin\target\ruoyi-admin.jar started by Laptop in E:\AIcode\EDOP\RuoYi\RuoYi-Vue3\ruoyi-admin\target)
+20:31:13.047 [] [main] INFO  c.r.RuoYiApplication - [logStartupProfileInfo,658] - The following 1 profile is active: "druid"
+20:31:18.100 [] [main] INFO  o.a.c.h.Http11NioProtocol - [log,168] - Initializing ProtocolHandler ["http-nio-8081"]
+20:31:18.109 [] [main] INFO  o.a.c.c.StandardService - [log,168] - Starting service [Tomcat]
+20:31:18.110 [] [main] INFO  o.a.c.c.StandardEngine - [log,168] - Starting Servlet engine: [Apache Tomcat/11.0.21]
+20:31:20.140 [] [main] INFO  c.a.d.p.DruidDataSource - [init,865] - {dataSource-1} inited
+20:31:26.477 [] [main] INFO  o.q.c.SchedulerSignalerImpl - [<init>,62] - Initialized Scheduler Signaller of type: class org.quartz.core.SchedulerSignalerImpl
+20:31:26.479 [] [main] INFO  o.q.c.QuartzScheduler - [<init>,224] - Quartz Scheduler v2.5.2 created.
+20:31:26.482 [] [main] INFO  o.q.s.RAMJobStore - [initialize,152] - RAMJobStore initialized.
+20:31:26.485 [] [main] INFO  o.q.c.QuartzScheduler - [initialize,289] - Scheduler meta-data: Quartz Scheduler (v2.5.2) 'quartzScheduler' with instanceId 'NON_CLUSTERED'
+  Scheduler class: 'org.quartz.core.QuartzScheduler' - running locally.
+  NOT STARTED.
+  Currently in standby mode.
+  Number of jobs executed: 0
+  Using thread pool 'org.quartz.simpl.SimpleThreadPool' - with 10 threads.
+  Using job-store 'org.quartz.simpl.RAMJobStore' - which does not support persistence. and is not clustered.
+
+20:31:26.487 [] [main] INFO  o.q.c.QuartzScheduler - [setJobFactory,2250] - JobFactory set to: org.springframework.scheduling.quartz.SpringBeanJobFactory@78b5b2f9
+20:31:30.092 [] [main] INFO  o.a.c.h.Http11NioProtocol - [log,168] - Starting ProtocolHandler ["http-nio-8081"]
+20:31:30.129 [] [main] INFO  o.q.c.QuartzScheduler - [start,541] - Scheduler quartzScheduler_$_NON_CLUSTERED started.
+20:31:30.150 [] [main] INFO  c.r.RuoYiApplication - [logStarted,60] - Started RuoYiApplication in 17.661 seconds (process running for 18.585)
+20:31:30.156 [] [main] WARN  o.s.c.e.SpringDocAppInitializer - [init,83] - SpringDoc /v3/api-docs endpoint is enabled by default. To disable it in production, set the property 'springdoc.api-docs.enabled=false'
+(????)??  若依启动成功   ?(??`?)?  
+ .-------.       ____     __        
+ |  _ _   \      \   \   /  /    
+ | ( ' )  |       \  _. /  '       
+ |(_ o _) /        _( )_ .'         
+ | (_,_).' __  ___(_ o _)'          
+ |  |\ \  |  ||   |(_,_)'         
+ |  | \ `'   /|   `-'  /           
+ |  |  \    /  \      /           
+ ''-'   `'-'    `-..-'              
+20:31:53.929 [] [http-nio-8081-exec-1] INFO  o.a.c.c.C.[.[.[/] - [log,168] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+20:31:54.107 [b9cd54f4ddc04b08aba0865c4e8123a1] [http-nio-8081-exec-1] INFO  c.r.f.a.RateLimiterAspect - [doBefore,64] - 限制请求'5',当前请求'1',缓存key'rate_limit:127.0.0.1-com.ruoyi.web.controller.system.SysLoginController-login'
+20:31:54.371 [] [schedule-pool-2] INFO  sys-user - [run,58] - [127.0.0.1]内网IP[admin][Success][登录成功]
+20:31:54.436 [b9cd54f4ddc04b08aba0865c4e8123a1] [http-nio-8081-exec-1] INFO  c.r.f.w.s.SysLoginService - [handleConcurrentLogin,261] - 踢出用户[admin]最旧的登录session，token: d59df0b1-5e98-4f69-9a33-9e18028be1bb
+20:31:54.451 [] [schedule-pool-2] INFO  n.b.p.u.u.YauaaVersion - [logVersion,104] - Yauaa 8.1.1 (v8.1.1 @ 2026-03-20T07:34:20Z)
+20:31:54.566 [] [schedule-pool-2] INFO  n.b.p.u.c.ConfigLoader - [loadResources,309] - - Loaded 122 files in  105 ms using expression: classpath*:UserAgents/**/*.yaml
+20:31:55.687 [] [schedule-pool-2] INFO  n.b.p.u.a.UserAgentStringMatchMaker - [finalizeLoadingRules,282] - Building all needed matchers for the requested 11 fields.
+20:31:55.747 [b9cd54f4ddc04b08aba0865c4e8123a1] [http-nio-8081-exec-1] INFO  n.b.p.u.a.UserAgentStringMatchMaker - [initializeMatchers,336] - Initializing Analyzer data structures
+20:31:57.115 [b9cd54f4ddc04b08aba0865c4e8123a1] [http-nio-8081-exec-1] INFO  n.b.p.u.a.UserAgentStringMatchMaker - [initializeMatchers,347] - Built in 1367 msec : Hashmap 199731, Ranges map:3004
+20:32:48.292 [03075171c4a542dfb0de8360778e5e58] [http-nio-8081-exec-6] INFO  c.r.f.a.RateLimiterAspect - [doBefore,64] - 限制请求'5',当前请求'2',缓存key'rate_limit:127.0.0.1-com.ruoyi.web.controller.system.SysLoginController-login'
+20:32:48.440 [03075171c4a542dfb0de8360778e5e58] [http-nio-8081-exec-6] INFO  c.r.f.w.s.SysLoginService - [handleConcurrentLogin,261] - 踢出用户[admin]最旧的登录session，token: 3642b4c5-3cc7-44e7-90fa-de665a4e14f1
+20:32:48.446 [] [schedule-pool-1] INFO  sys-user - [run,58] - [127.0.0.1]内网IP[admin][Success][登录成功]
+20:33:53.352 [6d42176940944c7ab21c124c7ff45115] [http-nio-8081-exec-9] INFO  c.r.f.a.RateLimiterAspect - [doBefore,64] - 限制请求'5',当前请求'1',缓存key'rate_limit:127.0.0.1-com.ruoyi.web.controller.system.SysLoginController-login'
+20:33:53.479 [6d42176940944c7ab21c124c7ff45115] [http-nio-8081-exec-9] INFO  c.r.f.w.s.SysLoginService - [handleConcurrentLogin,261] - 踢出用户[admin]最旧的登录session，token: 05b67f9f-398f-497e-8578-b85f7ddddbd0
+20:33:53.485 [] [schedule-pool-6] INFO  sys-user - [run,58] - [127.0.0.1]内网IP[admin][Success][登录成功]
+20:34:47.669 [e80f0cf477944e9cb08f55d7f6115735] [http-nio-8081-exec-15] INFO  c.r.f.a.RateLimiterAspect - [doBefore,64] - 限制请求'5',当前请求'2',缓存key'rate_limit:127.0.0.1-com.ruoyi.web.controller.system.SysLoginController-login'
+20:34:47.855 [e80f0cf477944e9cb08f55d7f6115735] [http-nio-8081-exec-15] INFO  c.r.f.w.s.SysLoginService - [handleConcurrentLogin,261] - 踢出用户[admin]最旧的登录session，token: 569ce7ca-3a5b-4e77-933e-788505ea6e76
+20:34:47.867 [] [schedule-pool-7] INFO  sys-user - [run,58] - [127.0.0.1]内网IP[admin][Success][登录成功]
+20:35:00.011 [] [quartzScheduler_Worker-1] INFO  c.r.dms.task.DmsTask - [collectSimData,105] - ===== 开始执行设备数据采集模拟任务 =====
+20:35:00.042 [] [quartzScheduler_Worker-1] INFO  c.r.dms.task.DmsTask - [collectSimData,180] - ===== 设备数据采集模拟完成，共生成 6 条采集记录 =====
+20:35:20.395 [20254e7521ec49db935b9e9faf8a6459] [http-nio-8081-exec-29] INFO  c.r.f.a.RateLimiterAspect - [doBefore,64] - 限制请求'5',当前请求'1',缓存key'rate_limit:127.0.0.1-com.ruoyi.web.controller.system.SysLoginController-login'
+20:35:20.535 [20254e7521ec49db935b9e9faf8a6459] [http-nio-8081-exec-29] INFO  c.r.f.w.s.SysLoginService - [handleConcurrentLogin,261] - 踢出用户[admin]最旧的登录session，token: add322d6-bb31-4a2a-8c83-95c810069758
+20:35:20.541 [] [schedule-pool-9] INFO  sys-user - [run,58] - [127.0.0.1]内网IP[admin][Success][登录成功]
+20:36:30.158 [4077be64a05e494e95edc90221a7c481] [http-nio-8081-exec-35] INFO  c.r.f.a.RateLimiterAspect - [doBefore,64] - 限制请求'5',当前请求'1',缓存key'rate_limit:127.0.0.1-com.ruoyi.web.controller.system.SysLoginController-login'
+20:36:30.336 [4077be64a05e494e95edc90221a7c481] [http-nio-8081-exec-35] INFO  c.r.f.w.s.SysLoginService - [handleConcurrentLogin,261] - 踢出用户[admin]最旧的登录session，token: 9af32d3b-ec36-4029-9586-fdb0cc0f2c45
+20:36:30.349 [] [schedule-pool-4] INFO  sys-user - [run,58] - [127.0.0.1]内网IP[admin][Success][登录成功]
+20:38:48.805 [726c9368e8db4cf4a5b218a83d9117c4] [http-nio-8081-exec-63] INFO  c.r.f.a.RateLimiterAspect - [doBefore,64] - 限制请求'5',当前请求'1',缓存key'rate_limit:127.0.0.1-com.ruoyi.web.controller.system.SysLoginController-login'
+20:38:48.934 [726c9368e8db4cf4a5b218a83d9117c4] [http-nio-8081-exec-63] INFO  c.r.f.w.s.SysLoginService - [handleConcurrentLogin,261] - 踢出用户[admin]最旧的登录session，token: ee16255c-a354-49de-89c6-ac287f44256d
+20:38:48.945 [] [schedule-pool-3] INFO  sys-user - [run,58] - [127.0.0.1]内网IP[admin][Success][登录成功]
+20:38:54.191 [33f6d3380d704c679e8dea48433c3267] [http-nio-8081-exec-68] INFO  c.r.f.a.RateLimiterAspect - [doBefore,64] - 限制请求'5',当前请求'2',缓存key'rate_limit:127.0.0.1-com.ruoyi.web.controller.system.SysLoginController-login'
+20:38:54.368 [33f6d3380d704c679e8dea48433c3267] [http-nio-8081-exec-68] INFO  c.r.f.w.s.SysLoginService - [handleConcurrentLogin,261] - 踢出用户[admin]最旧的登录session，token: 53d632c4-2c8a-41a4-8e35-d41dff79873a
+20:38:54.372 [] [schedule-pool-9] INFO  sys-user - [run,58] - [127.0.0.1]内网IP[admin][Success][登录成功]
+20:39:24.115 [52b2606b879c4f318d0396d3a4802c1c] [http-nio-8081-exec-79] INFO  c.r.f.a.RateLimiterAspect - [doBefore,64] - 限制请求'5',当前请求'3',缓存key'rate_limit:127.0.0.1-com.ruoyi.web.controller.system.SysLoginController-login'
+20:39:24.244 [52b2606b879c4f318d0396d3a4802c1c] [http-nio-8081-exec-79] INFO  c.r.f.w.s.SysLoginService - [handleConcurrentLogin,261] - 踢出用户[admin]最旧的登录session，token: 3c3d4bde-7585-4df6-bcb4-d83a719ca9a0
+20:39:24.249 [] [schedule-pool-15] INFO  sys-user - [run,58] - [127.0.0.1]内网IP[admin][Success][登录成功]
+20:39:39.557 [ba5efe771da1441e8055acbb76f36d48] [http-nio-8081-exec-87] INFO  c.r.f.a.RateLimiterAspect - [doBefore,64] - 限制请求'5',当前请求'4',缓存key'rate_limit:127.0.0.1-com.ruoyi.web.controller.system.SysLoginController-login'
+20:39:39.732 [ba5efe771da1441e8055acbb76f36d48] [http-nio-8081-exec-87] INFO  c.r.f.w.s.SysLoginService - [handleConcurrentLogin,261] - 踢出用户[admin]最旧的登录session，token: 3e9adb07-1174-428a-9fe1-99441eb3c454
+20:39:39.745 [] [schedule-pool-1] INFO  sys-user - [run,58] - [127.0.0.1]内网IP[admin][Success][登录成功]
+20:40:00.017 [] [quartzScheduler_Worker-2] INFO  c.r.dms.task.DmsTask - [collectSimData,105] - ===== 开始执行设备数据采集模拟任务 =====
+20:40:00.040 [] [quartzScheduler_Worker-2] INFO  c.r.dms.task.DmsTask - [collectSimData,180] - ===== 设备数据采集模拟完成，共生成 6 条采集记录 =====
+20:40:35.114 [e124a70b113d40a79af6395e491d0ad9] [http-nio-8081-exec-26] INFO  c.r.f.a.RateLimiterAspect - [doBefore,64] - 限制请求'5',当前请求'1',缓存key'rate_limit:127.0.0.1-com.ruoyi.web.controller.system.SysLoginController-login'
+20:40:35.247 [e124a70b113d40a79af6395e491d0ad9] [http-nio-8081-exec-26] INFO  c.r.f.w.s.SysLoginService - [handleConcurrentLogin,261] - 踢出用户[admin]最旧的登录session，token: ba466656-809a-4feb-ad2e-2a81a552d527
+20:40:35.253 [] [schedule-pool-11] INFO  sys-user - [run,58] - [127.0.0.1]内网IP[admin][Success][登录成功]

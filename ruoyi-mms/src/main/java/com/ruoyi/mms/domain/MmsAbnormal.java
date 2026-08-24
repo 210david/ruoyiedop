@@ -4,6 +4,7 @@ import java.util.Date;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.ruoyi.common.annotation.Excel;
 import com.ruoyi.common.core.domain.BaseEntity;
+import com.ruoyi.common.annotation.Excel.ColumnType;
 
 public class MmsAbnormal extends BaseEntity {
     private static final long serialVersionUID = 1L;
@@ -16,7 +17,7 @@ public class MmsAbnormal extends BaseEntity {
     @Excel(name = "产品编号") private String productCode;
     @Excel(name = "产品名称") private String productName;
     @Excel(name = "规格型号") private String specModel;
-    @Excel(name = "单位") private String unit;
+    @Excel(name = "单位", readConverterExp = "0=个,1=件,2=箱,3=kg,4=吨,5=米,6=把,7=千米,8=厘米,9=套,10=台,11=条") private String unit;
     @Excel(name = "异常类型", readConverterExp = "0=设备,1=物料,2=质量,3=安全,4=其他") private String abnormalType;
     @Excel(name = "严重等级", readConverterExp = "0=一般,1=严重,2=紧急") private String severity;
     private String description;
@@ -24,10 +25,28 @@ public class MmsAbnormal extends BaseEntity {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss") private Date reportTime;
     private String responseBy;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss") private Date responseTime;
+    /** 响应措施（初步应对措施） */
+    private String responseMeasure;
+    /** 影响范围（对生产的影响描述） */
+    private String impactScope;
+    /** 预计恢复时间 */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss") private Date estimatedRestoreTime;
+    /** 响应备注 */
+    private String responseRemark;
     private String handleBy;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss") private Date handleTime;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss") private Date closeTime;
     private String handleResult;
+    /** 处理方式 */
+    private String handleMethod;
+    /** 根本原因分析 */
+    private String rootCause;
+    /** 预防措施 */
+    private String preventiveMeasure;
+    /** 实际停机时长(分钟) */
+    private Integer downtimeMinutes;
+    /** 是否需要追纠(0=否,1=是) */
+    private String needPursuit;
     @Excel(name = "状态", readConverterExp = "0=待响应,1=处理中,2=已关闭") private String status;
     private String delFlag;
 
@@ -65,6 +84,14 @@ public class MmsAbnormal extends BaseEntity {
     public void setResponseBy(String responseBy) { this.responseBy = responseBy; }
     public Date getResponseTime() { return responseTime; }
     public void setResponseTime(Date responseTime) { this.responseTime = responseTime; }
+    public String getResponseMeasure() { return responseMeasure; }
+    public void setResponseMeasure(String responseMeasure) { this.responseMeasure = responseMeasure; }
+    public String getImpactScope() { return impactScope; }
+    public void setImpactScope(String impactScope) { this.impactScope = impactScope; }
+    public Date getEstimatedRestoreTime() { return estimatedRestoreTime; }
+    public void setEstimatedRestoreTime(Date estimatedRestoreTime) { this.estimatedRestoreTime = estimatedRestoreTime; }
+    public String getResponseRemark() { return responseRemark; }
+    public void setResponseRemark(String responseRemark) { this.responseRemark = responseRemark; }
     public String getHandleBy() { return handleBy; }
     public void setHandleBy(String handleBy) { this.handleBy = handleBy; }
     public Date getHandleTime() { return handleTime; }
@@ -73,6 +100,16 @@ public class MmsAbnormal extends BaseEntity {
     public void setCloseTime(Date closeTime) { this.closeTime = closeTime; }
     public String getHandleResult() { return handleResult; }
     public void setHandleResult(String handleResult) { this.handleResult = handleResult; }
+    public String getHandleMethod() { return handleMethod; }
+    public void setHandleMethod(String handleMethod) { this.handleMethod = handleMethod; }
+    public String getRootCause() { return rootCause; }
+    public void setRootCause(String rootCause) { this.rootCause = rootCause; }
+    public String getPreventiveMeasure() { return preventiveMeasure; }
+    public void setPreventiveMeasure(String preventiveMeasure) { this.preventiveMeasure = preventiveMeasure; }
+    public Integer getDowntimeMinutes() { return downtimeMinutes; }
+    public void setDowntimeMinutes(Integer downtimeMinutes) { this.downtimeMinutes = downtimeMinutes; }
+    public String getNeedPursuit() { return needPursuit; }
+    public void setNeedPursuit(String needPursuit) { this.needPursuit = needPursuit; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
     public String getDelFlag() { return delFlag; }
