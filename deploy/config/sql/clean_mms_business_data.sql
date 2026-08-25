@@ -38,12 +38,7 @@ DELETE FROM mms_kit_check_detail;       -- 齐套明细
 DELETE FROM mms_kit_check;              -- 齐套主表
 
 -- ============================================================
--- 4. 流转卡
--- ============================================================
-DELETE FROM mms_flow_card;
-
--- ============================================================
--- 5. 领料/退料管理
+-- 4. 领料/退料管理
 -- ============================================================
 DELETE FROM mms_issue_detail;           -- 领料明细
 DELETE FROM mms_issue;                  -- 领料主表
@@ -121,7 +116,6 @@ ALTER TABLE mms_work_order_routing AUTO_INCREMENT = 1;
 ALTER TABLE mms_dispatch AUTO_INCREMENT = 1;
 ALTER TABLE mms_kit_check_detail AUTO_INCREMENT = 1;
 ALTER TABLE mms_kit_check AUTO_INCREMENT = 1;
-ALTER TABLE mms_flow_card AUTO_INCREMENT = 1;
 ALTER TABLE mms_issue_detail AUTO_INCREMENT = 1;
 ALTER TABLE mms_issue AUTO_INCREMENT = 1;
 ALTER TABLE mms_return_detail AUTO_INCREMENT = 1;

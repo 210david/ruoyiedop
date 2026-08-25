@@ -54,32 +54,32 @@
 
       <!-- Table -->
       <div class="table-wrap">
-        <el-table v-loading="loading" :data="noticeList" @selection-change="handleSelectionChange" border class="app-table">
+        <el-table ref="tableRef" v-loading="loading" :data="noticeList" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" border class="app-table">
 <el-table-column type="selection" width="55" align="center" />
 <el-table-column type="index" label="序号" width="85" align="center" />
-<el-table-column label="序号" align="center" prop="noticeId" width="100" v-if="columns.noticeId.visible" />
-          <el-table-column label="公告标题" align="center" :show-overflow-tooltip="true" v-if="columns.noticeTitle.visible">
+<el-table-column label="编号" align="center" prop="noticeId" :width="colWidth('noticeId', 100)" resizable v-if="columns.noticeId.visible" />
+          <el-table-column label="公告标题" align="center" prop="noticeTitle" :show-overflow-tooltip="true" :width="colWidth('noticeTitle', 200)" resizable v-if="columns.noticeTitle.visible">
             <template #default="scope">
               <a class="link-type" style="cursor:pointer" @click="handleViewData(scope.row)">{{ scope.row.noticeTitle }}</a>
             </template>
           </el-table-column>
-          <el-table-column label="公告类型" align="center" prop="noticeType" width="100" v-if="columns.noticeType.visible">
+          <el-table-column label="公告类型" align="center" prop="noticeType" :width="colWidth('noticeType', 100)" resizable v-if="columns.noticeType.visible">
             <template #default="scope">
               <dict-tag :options="sys_notice_type" :value="scope.row.noticeType" />
             </template>
           </el-table-column>
-          <el-table-column label="状态" align="center" prop="status" width="100" v-if="columns.status.visible">
+          <el-table-column label="状态" align="center" prop="status" :width="colWidth('status', 100)" resizable v-if="columns.status.visible">
             <template #default="scope">
               <dict-tag :options="sys_notice_status" :value="scope.row.status" />
             </template>
           </el-table-column>
-          <el-table-column label="创建者" align="center" prop="createBy" width="100" v-if="columns.createBy.visible" />
-          <el-table-column label="创建时间" align="center" prop="createTime" width="100" v-if="columns.createTime.visible">
+          <el-table-column label="创建者" align="center" prop="createBy" :width="colWidth('createBy', 100)" resizable v-if="columns.createBy.visible" />
+          <el-table-column label="创建时间" align="center" prop="createTime" :width="colWidth('createTime', 160)" resizable v-if="columns.createTime.visible">
             <template #default="scope">
               <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d}') }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+          <el-table-column label="操作" align="center" width="220" fixed="right" class-name="small-padding fixed-width">
             <template #default="scope">
               <el-button link type="primary" icon="User" @click="handleReadUsers(scope.row)" v-hasPermi="['system:notice:list']">阅读用户</el-button>
               <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['system:notice:edit']">修改</el-button>
@@ -188,6 +188,7 @@ import NoticeDetailView from "@/layout/components/HeaderNotice/DetailView"
 import ReadUsersDialog from "./ReadUsers"
 import { listNotice, getNotice, delNotice, addNotice, updateNotice } from "@/api/system/notice"
 import { Filter } from '@element-plus/icons-vue'
+import { useColumnResize } from '@/composables/useColumnResize'
 
 const { proxy } = getCurrentInstance()
 const { sys_notice_status, sys_notice_type } = useDict("sys_notice_status", "sys_notice_type")
@@ -202,14 +203,17 @@ const multiple = ref(true)
 const total = ref(0)
 const title = ref("")
 
+// ===== 列宽拖拽持久化 =====
+const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('sys_notice_index')
+
 // 列显隐配置
 const columns = ref({
-  noticeId: { label: '序号', visible: true },
-  noticeTitle: { label: '公告标题', visible: true },
-  noticeType: { label: '公告类型', visible: true },
-  status: { label: '状态', visible: true },
-  createBy: { label: '创建者', visible: true },
-  createTime: { label: '创建时间', visible: true }
+  noticeId: { label: '编号', visible: true, defaultWidth: 100 },
+  noticeTitle: { label: '公告标题', visible: true, defaultWidth: 200 },
+  noticeType: { label: '公告类型', visible: true, defaultWidth: 100 },
+  status: { label: '状态', visible: true, defaultWidth: 100 },
+  createBy: { label: '创建者', visible: true, defaultWidth: 100 },
+  createTime: { label: '创建时间', visible: true, defaultWidth: 160 }
 })
 
 const data = reactive({
@@ -243,6 +247,9 @@ function getList() {
   listNotice(queryParams.value).then(response => {
     noticeList.value = response.rows
     total.value = response.total
+    loading.value = false
+    applySavedWidths()
+  }).catch(() => {
     loading.value = false
   })
 }

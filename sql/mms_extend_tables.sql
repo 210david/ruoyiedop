@@ -1,7 +1,7 @@
 -- =====================================================
 -- MMS 生产管控模块 - 扩展表（补全方案中缺失的表）
 -- 执行时间: 2026-08-16
--- 说明: 补充工厂建模、编码规则、快照、流转卡、派工、
+-- 说明: 补充工厂建模、编码规则、快照、派工、
 --       批次谱系、停机、外协、排产、OEE、日报等表
 -- =====================================================
 
@@ -130,7 +130,6 @@ INSERT INTO mms_code_rule (rule_key, rule_name, prefix, date_fmt, seq_len, reset
 ('OUT', '外协单号',   'OUT', 'yyyyMMdd', 4, 'day',  '0', '0', 'admin', NOW(), '外协单编号'),
 ('SCH', '排产单号',   'SCH', 'yyyyMMdd', 4, 'day',  '0', '0', 'admin', NOW(), '排产单编号'),
 ('DM',  '需求单号',   'DM',  'yyyyMMdd', 4, 'day',  '0', '0', 'admin', NOW(), '需求池编号'),
-('FC',  '流转卡号',   'FC',  'yyyyMMdd', 4, 'day',  '0', '0', 'admin', NOW(), '流转卡编号'),
 ('KC',  '齐套检查号', 'KC',  'yyyyMMdd', 4, 'day',  '0', '0', 'admin', NOW(), '齐套检查编号')
 ON DUPLICATE KEY UPDATE rule_name = VALUES(rule_name);
 
@@ -207,31 +206,8 @@ CREATE TABLE mms_work_order_routing (
 ) ENGINE=InnoDB AUTO_INCREMENT=1;
 
 -- =====================
--- 五、流转卡
+-- 五、流转卡（已废弃，功能删除）
 -- =====================
-
-DROP TABLE IF EXISTS mms_flow_card;
-CREATE TABLE mms_flow_card (
-  card_id      BIGINT(20)  NOT NULL AUTO_INCREMENT,
-  card_code    VARCHAR(50) NOT NULL,
-  work_order_id BIGINT(20) NOT NULL,
-  work_order_no VARCHAR(50) DEFAULT '',
-  batch_no     VARCHAR(50) DEFAULT '',
-  op_seq       INT(4)     DEFAULT 0,
-  process_name VARCHAR(100) DEFAULT '',
-  status       CHAR(1)    DEFAULT '0',
-  qr_content   TEXT,
-  print_count  INT(4)     DEFAULT 0,
-  del_flag     CHAR(1)    DEFAULT '0',
-  create_by    VARCHAR(64) DEFAULT '',
-  create_time  DATETIME   DEFAULT NULL,
-  update_by    VARCHAR(64) DEFAULT '',
-  update_time  DATETIME   DEFAULT NULL,
-  remark       VARCHAR(500) DEFAULT NULL,
-  PRIMARY KEY (card_id),
-  UNIQUE KEY uk_card_code (card_code),
-  KEY idx_wo_id (work_order_id)
-) ENGINE=InnoDB AUTO_INCREMENT=1;
 
 -- =====================
 -- 六、派工单

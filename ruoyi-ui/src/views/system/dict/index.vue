@@ -63,28 +63,28 @@
 
        <!-- Table -->
        <div class="table-wrap">
-         <el-table v-loading="loading" :data="typeList" @selection-change="handleSelectionChange" border class="app-table">
+         <el-table ref="tableRef" v-loading="loading" :data="typeList" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" border class="app-table">
 <el-table-column type="selection" width="55" align="center" />
 <el-table-column type="index" label="序号" width="85" align="center" />
-<el-table-column label="字典编号" align="center" prop="dictId" v-if="columns.dictId.visible" />
-           <el-table-column label="字典名称" align="center" prop="dictName" :show-overflow-tooltip="true" v-if="columns.dictName.visible" />
-           <el-table-column label="字典类型" align="center" :show-overflow-tooltip="true" v-if="columns.dictType.visible">
+<el-table-column label="字典编号" align="center" prop="dictId" :width="colWidth('dictId', 120)" resizable v-if="columns.dictId.visible" />
+           <el-table-column label="字典名称" align="center" prop="dictName" :show-overflow-tooltip="true" :width="colWidth('dictName', 120)" resizable v-if="columns.dictName.visible" />
+           <el-table-column label="字典类型" align="center" prop="dictType" :show-overflow-tooltip="true" :width="colWidth('dictType', 140)" resizable v-if="columns.dictType.visible">
              <template #default="scope">
                <a class="link-type" style="cursor:pointer" @click="handleViewData(scope.row)">{{ scope.row.dictType }}</a>
              </template>
            </el-table-column>
-           <el-table-column label="状态" align="center" prop="status" v-if="columns.status.visible">
+           <el-table-column label="状态" align="center" prop="status" :width="colWidth('status', 100)" resizable v-if="columns.status.visible">
              <template #default="scope">
                <dict-tag :options="sys_normal_disable" :value="scope.row.status" />
              </template>
            </el-table-column>
-           <el-table-column label="备注" align="center" prop="remark" :show-overflow-tooltip="true" v-if="columns.remark.visible" />
-           <el-table-column label="创建时间" align="center" prop="createTime" width="180" v-if="columns.createTime.visible">
+           <el-table-column label="备注" align="center" prop="remark" :show-overflow-tooltip="true" :width="colWidth('remark', 200)" resizable v-if="columns.remark.visible" />
+           <el-table-column label="创建时间" align="center" prop="createTime" :width="colWidth('createTime', 180)" resizable v-if="columns.createTime.visible">
              <template #default="scope">
                <span>{{ parseTime(scope.row.createTime) }}</span>
              </template>
            </el-table-column>
-           <el-table-column label="操作" align="center" width="280" class-name="small-padding fixed-width">
+           <el-table-column label="操作" align="center" width="280" fixed="right" class-name="small-padding fixed-width">
              <template #default="scope">
                <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['system:dict:edit']">修改</el-button>
                <el-button link type="primary" icon="Operation" @click="handleDataList(scope.row)" v-hasPermi="['system:dict:edit']">列表</el-button>
@@ -179,6 +179,7 @@ import DictDataDrawer from './detail'
 import useDictStore from '@/store/modules/dict'
 import { listType, getType, delType, addType, updateType, refreshCache } from "@/api/system/dict/type"
 import { Filter } from '@element-plus/icons-vue'
+import { useColumnResize } from '@/composables/useColumnResize'
 
 const { proxy } = getCurrentInstance()
 const { sys_normal_disable } = useDict("sys_normal_disable")
@@ -196,16 +197,19 @@ const dateRange = ref([])
 
 // 列显隐配置
 const columns = ref({
-  dictId: { label: '字典编号', visible: true },
-  dictName: { label: '字典名称', visible: true },
-  dictType: { label: '字典类型', visible: true },
-  status: { label: '状态', visible: true },
-  remark: { label: '备注', visible: true },
-  createTime: { label: '创建时间', visible: true }
+  dictId: { label: '字典编号', visible: true, defaultWidth: 120 },
+  dictName: { label: '字典名称', visible: true, defaultWidth: 120 },
+  dictType: { label: '字典类型', visible: true, defaultWidth: 140 },
+  status: { label: '状态', visible: true, defaultWidth: 100 },
+  remark: { label: '备注', visible: true, defaultWidth: 200 },
+  createTime: { label: '创建时间', visible: true, defaultWidth: 180 }
 })
 
 const drawerVisible = ref(false)
 const drawerRow = ref({})
+
+// ===== 列宽拖拽持久化 =====
+const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('sys_dict_index')
 
 const data = reactive({
   form: {},
@@ -239,6 +243,9 @@ function getList() {
   listType(proxy.addDateRange(queryParams.value, dateRange.value)).then(response => {
     typeList.value = response.rows
     total.value = response.total
+    loading.value = false
+    applySavedWidths()
+  }).catch(() => {
     loading.value = false
   })
 }

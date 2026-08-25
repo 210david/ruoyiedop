@@ -63,25 +63,25 @@
 
       <!-- Table -->
       <div class="table-wrap">
-        <el-table v-loading="loading" :data="configList" @selection-change="handleSelectionChange" border class="app-table">
+        <el-table ref="tableRef" v-loading="loading" :data="configList" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" border class="app-table">
 <el-table-column type="selection" width="55" align="center" />
 <el-table-column type="index" label="序号" width="85" align="center" />
-<el-table-column label="参数主键" align="center" prop="configId" v-if="columns.configId.visible" />
-          <el-table-column label="参数名称" align="center" prop="configName" :show-overflow-tooltip="true" v-if="columns.configName.visible" />
-          <el-table-column label="参数键名" align="center" prop="configKey" :show-overflow-tooltip="true" v-if="columns.configKey.visible" />
-          <el-table-column label="参数键值" align="center" prop="configValue" :show-overflow-tooltip="true" v-if="columns.configValue.visible" />
-          <el-table-column label="系统内置" align="center" prop="configType" v-if="columns.configType.visible">
+<el-table-column label="参数主键" align="center" prop="configId" :width="colWidth('configId', 120)" resizable v-if="columns.configId.visible" />
+          <el-table-column label="参数名称" align="center" prop="configName" :show-overflow-tooltip="true" :width="colWidth('configName', 140)" resizable v-if="columns.configName.visible" />
+          <el-table-column label="参数键名" align="center" prop="configKey" :show-overflow-tooltip="true" :width="colWidth('configKey', 180)" resizable v-if="columns.configKey.visible" />
+          <el-table-column label="参数键值" align="center" prop="configValue" :show-overflow-tooltip="true" :width="colWidth('configValue', 180)" resizable v-if="columns.configValue.visible" />
+          <el-table-column label="系统内置" align="center" prop="configType" :width="colWidth('configType', 100)" resizable v-if="columns.configType.visible">
             <template #default="scope">
               <dict-tag :options="sys_yes_no" :value="scope.row.configType" />
             </template>
           </el-table-column>
-          <el-table-column label="备注" align="center" prop="remark" :show-overflow-tooltip="true" v-if="columns.remark.visible" />
-          <el-table-column label="创建时间" align="center" prop="createTime" width="180" v-if="columns.createTime.visible">
+          <el-table-column label="备注" align="center" prop="remark" :show-overflow-tooltip="true" :width="colWidth('remark', 200)" resizable v-if="columns.remark.visible" />
+          <el-table-column label="创建时间" align="center" prop="createTime" :width="colWidth('createTime', 180)" resizable v-if="columns.createTime.visible">
             <template #default="scope">
               <span>{{ parseTime(scope.row.createTime) }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="操作" align="center" width="150" class-name="small-padding fixed-width">
+          <el-table-column label="操作" align="center" width="150" fixed="right" class-name="small-padding fixed-width">
             <template #default="scope">
               <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['system:config:edit']">修改</el-button>
               <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['system:config:remove']">删除</el-button>
@@ -168,6 +168,7 @@
 <script setup name="Config">
 import { listConfig, getConfig, delConfig, addConfig, updateConfig, refreshCache } from "@/api/system/config"
 import { Filter } from '@element-plus/icons-vue'
+import { useColumnResize } from '@/composables/useColumnResize'
 
 const { proxy } = getCurrentInstance()
 const { sys_yes_no } = useDict("sys_yes_no")
@@ -183,15 +184,18 @@ const total = ref(0)
 const title = ref("")
 const dateRange = ref([])
 
+// ===== 列宽拖拽持久化 =====
+const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('sys_config_index')
+
 // 列显隐配置
 const columns = ref({
-  configId: { label: '参数主键', visible: true },
-  configName: { label: '参数名称', visible: true },
-  configKey: { label: '参数键名', visible: true },
-  configValue: { label: '参数键值', visible: true },
-  configType: { label: '系统内置', visible: true },
-  remark: { label: '备注', visible: true },
-  createTime: { label: '创建时间', visible: true }
+  configId: { label: '参数主键', visible: true, defaultWidth: 120 },
+  configName: { label: '参数名称', visible: true, defaultWidth: 140 },
+  configKey: { label: '参数键名', visible: true, defaultWidth: 180 },
+  configValue: { label: '参数键值', visible: true, defaultWidth: 180 },
+  configType: { label: '系统内置', visible: true, defaultWidth: 100 },
+  remark: { label: '备注', visible: true, defaultWidth: 200 },
+  createTime: { label: '创建时间', visible: true, defaultWidth: 180 }
 })
 
 const data = reactive({
@@ -227,6 +231,9 @@ function getList() {
   listConfig(proxy.addDateRange(queryParams.value, dateRange.value)).then(response => {
     configList.value = response.rows
     total.value = response.total
+    loading.value = false
+    applySavedWidths()
+  }).catch(() => {
     loading.value = false
   })
 }

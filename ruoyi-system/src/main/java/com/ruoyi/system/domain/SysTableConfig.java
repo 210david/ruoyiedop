@@ -34,6 +34,9 @@ public class SysTableConfig extends BaseEntity
     /** 列是否可见：true=可见，false=隐藏，null=未设置 */
     private Boolean colVisible;
 
+    /** 列顺序（从0开始，按数字排序决定列的左右位置），NULL表示未设置 */
+    private Integer colOrder;
+
     /** 配置类型：G=全局（管理员），U=个人（用户） */
     private String configType;
 
@@ -90,6 +93,16 @@ public class SysTableConfig extends BaseEntity
         this.colVisible = colVisible;
     }
 
+    public Integer getColOrder()
+    {
+        return colOrder;
+    }
+
+    public void setColOrder(Integer colOrder)
+    {
+        this.colOrder = colOrder;
+    }
+
     public String getConfigType()
     {
         return configType;
@@ -119,6 +132,7 @@ public class SysTableConfig extends BaseEntity
             .append("colProp", getColProp())
             .append("colWidth", getColWidth())
             .append("colVisible", getColVisible())
+            .append("colOrder", getColOrder())
             .append("configType", getConfigType())
             .append("userId", getUserId())
             .append("createBy", getCreateBy())

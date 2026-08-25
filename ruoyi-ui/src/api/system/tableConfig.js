@@ -40,6 +40,17 @@ export function saveColumnVisible(tableKey, colProp, colVisible) {
   })
 }
 
+// 保存单列列顺序配置
+export function saveColumnOrder(tableKey, colProp, colOrder) {
+  return request({
+    url: '/system/tableConfig/order',
+    method: 'post',
+    data: { tableKey, colProp, colOrder },
+    headers: { repeatSubmit: false },
+    suppressError: true
+  })
+}
+
 // 删除列宽配置
 export function delTableWidth(configId) {
   return request({

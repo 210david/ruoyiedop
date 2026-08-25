@@ -46,9 +46,11 @@ public class SysTableConfigController extends BaseController
         Long userId = getUserId();
         Map<String, Integer> widths = tableConfigService.getMergedWidths(tableKey, userId);
         Map<String, Boolean> columns = tableConfigService.getMergedVisibility(tableKey, userId);
+        Map<String, Integer> orders = tableConfigService.getMergedOrders(tableKey, userId);
         AjaxResult result = AjaxResult.success();
         result.put("widths", widths);
         result.put("columns", columns);
+        result.put("orders", orders);
         return result;
     }
 
@@ -96,6 +98,31 @@ public class SysTableConfigController extends BaseController
             config.getTableKey(),
             config.getColProp(),
             config.getColVisible(),
+            userId,
+            username
+        );
+        return success();
+    }
+
+    /**
+     * 保存单列列顺序配置
+     * 请求体: { "tableKey": "system_post_index", "colProp": "postName", "colOrder": 2 }
+     *
+     * 管理员 → 保存为全局配置（G）
+     * 普通用户 → 保存为个人配置（U）
+     *
+     * @param config 列顺序配置
+     * @return 结果
+     */
+    @PostMapping("/order")
+    public AjaxResult saveOrder(@RequestBody SysTableConfig config)
+    {
+        Long userId = getUserId();
+        String username = getUsername();
+        tableConfigService.saveColumnOrder(
+            config.getTableKey(),
+            config.getColProp(),
+            config.getColOrder(),
             userId,
             username
         );

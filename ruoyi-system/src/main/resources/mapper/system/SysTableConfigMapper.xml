@@ -10,6 +10,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="colProp"      column="col_prop"      />
         <result property="colWidth"     column="col_width"     />
         <result property="colVisible"   column="col_visible"   />
+        <result property="colOrder"      column="col_order"      />
         <result property="configType"   column="config_type"   />
         <result property="userId"       column="user_id"       />
         <result property="createBy"     column="create_by"     />
@@ -19,7 +20,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectConfigVo">
-        select config_id, table_key, col_prop, col_width, col_visible, config_type, user_id, create_by, create_time, update_by, update_time
+        select config_id, table_key, col_prop, col_width, col_visible, col_order, config_type, user_id, create_by, create_time, update_by, update_time
         from sys_table_config
     </sql>
 
@@ -54,6 +55,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="colProp != null and colProp != ''">col_prop,</if>
             <if test="colWidth != null">col_width,</if>
             <if test="colVisible != null">col_visible,</if>
+            <if test="colOrder != null">col_order,</if>
             <if test="configType != null and configType != ''">config_type,</if>
             <if test="userId != null">user_id,</if>
             <if test="createBy != null and createBy != ''">create_by,</if>
@@ -63,6 +65,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="colProp != null and colProp != ''">#{colProp},</if>
             <if test="colWidth != null">#{colWidth},</if>
             <if test="colVisible != null">#{colVisible},</if>
+            <if test="colOrder != null">#{colOrder},</if>
             <if test="configType != null and configType != ''">#{configType},</if>
             <if test="userId != null">#{userId},</if>
             <if test="createBy != null and createBy != ''">#{createBy},</if>
@@ -76,6 +79,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <set>
             <if test="colWidth != null">col_width = #{colWidth},</if>
             <if test="colVisible != null">col_visible = #{colVisible},</if>
+            <if test="colOrder != null">col_order = #{colOrder},</if>
             <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
             update_time = sysdate()
         </set>

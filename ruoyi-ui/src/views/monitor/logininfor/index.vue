@@ -62,22 +62,22 @@
 
       <!-- Table -->
       <div class="table-wrap">
-        <el-table ref="logininforRef" v-loading="loading" :data="logininforList" @selection-change="handleSelectionChange" :default-sort="defaultSort" @sort-change="handleSortChange" border class="app-table">
+        <el-table ref="tableRef" v-loading="loading" :data="logininforList" @selection-change="handleSelectionChange" :default-sort="defaultSort" @sort-change="handleSortChange" @header-dragend="onHeaderDragEnd" border class="app-table">
 <el-table-column type="selection" width="55" align="center" />
 <el-table-column type="index" label="序号" width="85" align="center" />
-<el-table-column label="访问编号" align="center" prop="infoId" v-if="columns.infoId.visible" />
-          <el-table-column label="用户名称" align="center" prop="userName" :show-overflow-tooltip="true" sortable="custom" :sort-orders="['descending', 'ascending']" v-if="columns.userName.visible" />
-          <el-table-column label="地址" align="center" prop="ipaddr" :show-overflow-tooltip="true" v-if="columns.ipaddr.visible" />
-          <el-table-column label="登录地点" align="center" prop="loginLocation" :show-overflow-tooltip="true" v-if="columns.loginLocation.visible" />
-          <el-table-column label="操作系统" align="center" prop="os" :show-overflow-tooltip="true" v-if="columns.os.visible" />
-          <el-table-column label="浏览器" align="center" prop="browser" :show-overflow-tooltip="true" v-if="columns.browser.visible" />
-          <el-table-column label="登录状态" align="center" prop="status" v-if="columns.status.visible">
+<el-table-column label="访问编号" align="center" prop="infoId" :width="colWidth('infoId', 120)" resizable v-if="columns.infoId.visible" />
+          <el-table-column label="用户名称" align="center" prop="userName" :show-overflow-tooltip="true" :width="colWidth('userName', 120)" resizable sortable="custom" :sort-orders="['descending', 'ascending']" v-if="columns.userName.visible" />
+          <el-table-column label="地址" align="center" prop="ipaddr" :show-overflow-tooltip="true" :width="colWidth('ipaddr', 130)" resizable v-if="columns.ipaddr.visible" />
+          <el-table-column label="登录地点" align="center" prop="loginLocation" :show-overflow-tooltip="true" :width="colWidth('loginLocation', 160)" resizable v-if="columns.loginLocation.visible" />
+          <el-table-column label="操作系统" align="center" prop="os" :show-overflow-tooltip="true" :width="colWidth('os', 130)" resizable v-if="columns.os.visible" />
+          <el-table-column label="浏览器" align="center" prop="browser" :show-overflow-tooltip="true" :width="colWidth('browser', 130)" resizable v-if="columns.browser.visible" />
+          <el-table-column label="登录状态" align="center" prop="status" :width="colWidth('status', 100)" resizable v-if="columns.status.visible">
             <template #default="scope">
               <dict-tag :options="sys_common_status" :value="scope.row.status" />
             </template>
           </el-table-column>
-          <el-table-column label="描述" align="center" prop="msg" :show-overflow-tooltip="true" v-if="columns.msg.visible" />
-          <el-table-column label="访问时间" align="center" prop="loginTime" sortable="custom" :sort-orders="['descending', 'ascending']" width="180" v-if="columns.loginTime.visible">
+          <el-table-column label="描述" align="center" prop="msg" :show-overflow-tooltip="true" :width="colWidth('msg', 150)" resizable v-if="columns.msg.visible" />
+          <el-table-column label="访问时间" align="center" prop="loginTime" :width="colWidth('loginTime', 180)" resizable sortable="custom" :sort-orders="['descending', 'ascending']" v-if="columns.loginTime.visible">
             <template #default="scope">
               <span>{{ parseTime(scope.row.loginTime) }}</span>
             </template>
@@ -99,6 +99,7 @@
 
 <script setup name="Logininfor">
 import { list, delLogininfor, cleanLogininfor, unlockLogininfor } from "@/api/monitor/logininfor"
+import { useColumnResize } from '@/composables/useColumnResize'
 
 const { proxy } = getCurrentInstance()
 const { sys_common_status } = useDict("sys_common_status")
@@ -114,17 +115,20 @@ const total = ref(0)
 const dateRange = ref([])
 const defaultSort = ref({ prop: "loginTime", order: "descending" })
 
+// ===== 列宽拖拽持久化 =====
+const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('sys_logininfor_index')
+
 // 列显隐配置
 const columns = ref({
-  infoId: { label: '访问编号', visible: true },
-  userName: { label: '用户名称', visible: true },
-  ipaddr: { label: '地址', visible: true },
-  loginLocation: { label: '登录地点', visible: true },
-  os: { label: '操作系统', visible: true },
-  browser: { label: '浏览器', visible: true },
-  status: { label: '登录状态', visible: true },
-  msg: { label: '描述', visible: true },
-  loginTime: { label: '访问时间', visible: true }
+  infoId: { label: '访问编号', visible: true, defaultWidth: 120 },
+  userName: { label: '用户名称', visible: true, defaultWidth: 120 },
+  ipaddr: { label: '地址', visible: true, defaultWidth: 130 },
+  loginLocation: { label: '登录地点', visible: true, defaultWidth: 160 },
+  os: { label: '操作系统', visible: true, defaultWidth: 130 },
+  browser: { label: '浏览器', visible: true, defaultWidth: 130 },
+  status: { label: '登录状态', visible: true, defaultWidth: 100 },
+  msg: { label: '描述', visible: true, defaultWidth: 150 },
+  loginTime: { label: '访问时间', visible: true, defaultWidth: 180 }
 })
 
 // 查询参数
@@ -153,6 +157,9 @@ function getList() {
   list(proxy.addDateRange(queryParams.value, dateRange.value)).then(response => {
     logininforList.value = response.rows
     total.value = response.total
+    loading.value = false
+    applySavedWidths()
+  }).catch(() => {
     loading.value = false
   })
 }

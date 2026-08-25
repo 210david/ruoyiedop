@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.SysMessageMapper">
+
+    <resultMap type="SysMessage" id="SysMessageResult">
+        <result property="messageId"      column="message_id"      />
+        <result property="messageTitle"   column="message_title"   />
+        <result property="messageType"    column="message_type"     />
+        <result property="messageContent" column="message_content"  />
+        <result property="messageLevel"   column="message_level"    />
+        <result property="bizSource"      column="biz_source"       />
+        <result property="bizId"          column="biz_id"           />
+        <result property="redirectUrl"    column="redirect_url"    />
+        <result property="recipientId"    column="recipient_id"     />
+        <result property="status"         column="status"          />
+        <result property="createBy"       column="create_by"       />
+        <result property="createTime"     column="create_time"     />
+        <result property="updateBy"       column="update_by"       />
+        <result property="updateTime"     column="update_time"     />
+        <result property="remark"         column="remark"          />
+        <result property="isRead"         column="is_read"         />
+        <result property="readTime"       column="read_time"       />
+    </resultMap>
+
+    <sql id="selectMessageVo">
+        select message_id, message_title, message_type, cast(message_content as char) as message_content,
+               message_level, biz_source, biz_id, redirect_url, recipient_id, status,
+               create_by, create_time, update_by, update_time, remark
+        from sys_message
+    </sql>
+
+    <select id="selectMessageById" parameterType="Long" resultMap="SysMessageResult">
+        <include refid="selectMessageVo"/>
+        where message_id = #{messageId}
+    </select>
+
+    <!-- 管理端列表查询（带当前用户已读状态） -->
+    <select id="selectMessageListWithReadStatus" resultMap="SysMessageResult">
+        select m.message_id, m.message_title, m.message_type, cast(m.message_content as char) as message_content,
+               m.message_level, m.biz_source, m.biz_id, m.redirect_url, m.recipient_id, m.status,
+               m.create_by, m.create_time, m.update_by, m.update_time, m.remark,
+               case when r.message_id is not null then true else false end as is_read,
+               r.read_time
+        from sys_message m
+        left join sys_message_read r
+            on r.message_id = m.message_id and r.user_id = #{userId}
+        <where>
+            m.status = '1'
+            and (m.recipient_id is null or m.recipient_id = #{message.recipientId})
+            <if test="message.messageTitle != null and message.messageTitle != ''">
+                AND m.message_title like concat('%', #{message.messageTitle}, '%')
+            </if>
+            <if test="message.messageType != null and message.messageType != ''">
+                AND m.message_type = #{message.messageType}
+            </if>
+            <if test="message.messageLevel != null and message.messageLevel != ''">
+                AND m.message_level = #{message.messageLevel}
+            </if>
+            <if test="message.bizSource != null and message.bizSource != ''">
+                AND m.biz_source = #{message.bizSource}
+            </if>
+            <if test="message.readStatus != null and message.readStatus != ''">
+                <if test='message.readStatus == "0"'>
+                    AND r.message_id is null
+                </if>
+                <if test='message.readStatus == "1"'>
+                    AND r.message_id is not null
+                </if>
+            </if>
+            <if test="message.params.beginTime != null and message.params.beginTime != ''">
+                AND date_format(m.create_time, '%Y-%m-%d') &gt;= date_format(#{message.params.beginTime}, '%Y-%m-%d')
+            </if>
+            <if test="message.params.endTime != null and message.params.endTime != ''">
+                AND date_format(m.create_time, '%Y-%m-%d') &lt;= date_format(#{message.params.endTime}, '%Y-%m-%d')
+            </if>
+        </where>
+        order by m.message_id desc
+    </select>
+
+    <insert id="insertMessage" parameterType="SysMessage" useGeneratedKeys="true" keyProperty="messageId">
+        insert into sys_message (
+            <if test="messageTitle != null and messageTitle != ''">message_title,</if>
+            <if test="messageType != null and messageType != ''">message_type,</if>
+            <if test="messageContent != null and messageContent != ''">message_content,</if>
+            <if test="messageLevel != null and messageLevel != ''">message_level,</if>
+            <if test="bizSource != null and bizSource != ''">biz_source,</if>
+            <if test="bizId != null">biz_id,</if>
+            <if test="redirectUrl != null and redirectUrl != ''">redirect_url,</if>
+            <if test="recipientId != null">recipient_id,</if>
+            <if test="status != null and status != ''">status,</if>
+            <if test="remark != null and remark != ''">remark,</if>
+            <if test="createBy != null and createBy != ''">create_by,</if>
+            create_time
+        ) values (
+            <if test="messageTitle != null and messageTitle != ''">#{messageTitle},</if>
+            <if test="messageType != null and messageType != ''">#{messageType},</if>
+            <if test="messageContent != null and messageContent != ''">#{messageContent},</if>
+            <if test="messageLevel != null and messageLevel != ''">#{messageLevel},</if>
+            <if test="bizSource != null and bizSource != ''">#{bizSource},</if>
+            <if test="bizId != null">#{bizId},</if>
+            <if test="redirectUrl != null and redirectUrl != ''">#{redirectUrl},</if>
+            <if test="recipientId != null">#{recipientId},</if>
+            <if test="status != null and status != ''">#{status},</if>
+            <if test="remark != null and remark != ''">#{remark},</if>
+            <if test="createBy != null and createBy != ''">#{createBy},</if>
+            sysdate()
+        )
+    </insert>
+
+    <!-- 查询当前用户未读消息数量 -->
+    <select id="selectUnreadCount" resultType="int">
+        select count(*) from sys_message m
+        where m.status = '1'
+        and (m.recipient_id is null or m.recipient_id = #{userId})
+        and not exists (select 1 from sys_message_read r where r.message_id = m.message_id and r.user_id = #{userId})
+    </select>
+
+    <!-- 查询带已读状态的消息列表（首页铃铛用） -->
+    <select id="selectMessageListTop" resultType="SysMessage">
+        select
+            m.message_id      as messageId,
+            m.message_title   as messageTitle,
+            m.message_type    as messageType,
+            m.message_level   as messageLevel,
+            m.biz_source      as bizSource,
+            m.biz_id          as bizId,
+            m.redirect_url    as redirectUrl,
+            m.message_content as messageContent,
+            m.create_by       as createBy,
+            m.create_time     as createTime,
+            case when r.message_id is not null then true else false end as isRead,
+            r.read_time       as readTime
+        from sys_message m
+        left join sys_message_read r
+            on r.message_id = m.message_id and r.user_id = #{userId}
+        where m.status = '1'
+        and (m.recipient_id is null or m.recipient_id = #{userId})
+        order by m.message_id desc
+        limit #{limit}
+    </select>
+
+    <!-- 新增已读记录（幂等） -->
+    <insert id="insertMessageRead">
+        insert ignore into sys_message_read (message_id, user_id, read_time)
+        values (#{messageId}, #{userId}, sysdate())
+    </insert>
+
+    <!-- 批量标记已读 -->
+    <insert id="insertMessageReadBatch">
+        insert ignore into sys_message_read (message_id, user_id, read_time)
+        values
+        <foreach collection="messageIds" item="messageId" separator=",">
+            (#{messageId}, #{userId}, sysdate())
+        </foreach>
+    </insert>
+
+</mapper>

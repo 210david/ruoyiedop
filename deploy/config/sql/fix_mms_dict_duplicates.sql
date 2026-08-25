@@ -181,12 +181,6 @@ SELECT '派工状态', 'mms_dispatch_status', '0', 'admin', sysdate(), '派工�
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_dict_type WHERE dict_type = 'mms_dispatch_status');
 UPDATE sys_dict_type SET dict_name = '派工状态', remark = '派工单状态' WHERE dict_type = 'mms_dispatch_status';
 
--- mms_flowcard_status
-INSERT INTO sys_dict_type (dict_name, dict_type, status, create_by, create_time, remark)
-SELECT '流转卡状态', 'mms_flowcard_status', '0', 'admin', sysdate(), '流转卡状态'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_dict_type WHERE dict_type = 'mms_flowcard_status');
-UPDATE sys_dict_type SET dict_name = '流转卡状态', remark = '流转卡状态' WHERE dict_type = 'mms_flowcard_status';
-
 -- mms_calendar_daytype
 INSERT INTO sys_dict_type (dict_name, dict_type, status, create_by, create_time, remark)
 SELECT '日历日期类型', 'mms_calendar_daytype', '0', 'admin', sysdate(), '生产日历日期类型'
@@ -350,12 +344,6 @@ INSERT INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, css_cla
 (2, '进行中', '1', 'mms_dispatch_status', '', 'primary', 'N', '0', 'admin', sysdate(), '进行中'),
 (3, '已完成', '2', 'mms_dispatch_status', '', 'success', 'N', '0', 'admin', sysdate(), '已完成'),
 (4, '已取消', '3', 'mms_dispatch_status', '', 'info',    'N', '0', 'admin', sysdate(), '已取消');
-
--- 流转卡状态
-INSERT INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, css_class, list_class, is_default, status, create_by, create_time, remark) VALUES
-(1, '在制', '0', 'mms_flowcard_status', '', 'primary', 'Y', '0', 'admin', sysdate(), '在制'),
-(2, '完工', '1', 'mms_flowcard_status', '', 'success', 'N', '0', 'admin', sysdate(), '完工'),
-(3, '报废', '2', 'mms_flowcard_status', '', 'danger',  'N', '0', 'admin', sysdate(), '报废');
 
 -- 日历日期类型
 INSERT INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, css_class, list_class, is_default, status, create_by, create_time, remark) VALUES

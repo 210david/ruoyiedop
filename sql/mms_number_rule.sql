@@ -85,7 +85,7 @@ AND `rule_code` IN (
     'mms_demand', 'mms_mps', 'mms_kit', 'mms_kit_check',
     'mms_work_order', 'mms_workorder', 'mms_issue', 'mms_return_material', 'mms_return',
     'mms_report', 'mms_work_report', 'mms_qc', 'mms_abnormal', 'mms_finish', 'mms_finish_receipt',
-    'mms_flow_card', 'mms_dispatch', 'mms_downtime', 'mms_outsource', 'mms_schedule'
+    'mms_dispatch', 'mms_downtime', 'mms_outsource', 'mms_schedule'
 );
 
 -- 如果旧版脚本使用了 date_pattern / reset_cycle 等旧列名，尝试迁移数据到新列名
@@ -185,11 +185,6 @@ WHERE NOT EXISTS (SELECT 1 FROM mk_number_rule WHERE rule_code='mms_shift');
 INSERT INTO `mk_number_rule` (`rule_code`, `module`, `rule_name`, `prefix`, `date_format`, `reset_type`, `seq_length`, `seq_start`, `step`, `current_seq`, `current_date_str`, `connector`, `status`, `create_by`, `create_time`, `remark`)
 SELECT 'mms_dispatch', 'mms', '派工单编号', 'DI', 'yyyyMMdd', '1', 4, 1, 1, 0, '', '-', '0', 'admin', sysdate(), '派工单编号，每日重置'
 WHERE NOT EXISTS (SELECT 1 FROM mk_number_rule WHERE rule_code='mms_dispatch');
-
--- 流程卡编号
-INSERT INTO `mk_number_rule` (`rule_code`, `module`, `rule_name`, `prefix`, `date_format`, `reset_type`, `seq_length`, `seq_start`, `step`, `current_seq`, `current_date_str`, `connector`, `status`, `create_by`, `create_time`, `remark`)
-SELECT 'mms_flow_card', 'mms', '流程卡编号', 'FC', 'yyyyMMdd', '1', 4, 1, 1, 0, '', '-', '0', 'admin', sysdate(), '流程卡编号，每日重置'
-WHERE NOT EXISTS (SELECT 1 FROM mk_number_rule WHERE rule_code='mms_flow_card');
 
 -- 停机记录编号
 INSERT INTO `mk_number_rule` (`rule_code`, `module`, `rule_name`, `prefix`, `date_format`, `reset_type`, `seq_length`, `seq_start`, `step`, `current_seq`, `current_date_str`, `connector`, `status`, `create_by`, `create_time`, `remark`)

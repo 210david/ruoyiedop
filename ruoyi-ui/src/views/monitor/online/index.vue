@@ -55,6 +55,7 @@
           v-loading="loading"
           :data="onlineList.slice((pageNum - 1) * pageSize, pageNum * pageSize)"
           @selection-change="handleSelectionChange"
+          @header-dragend="onHeaderDragEnd"
           border
           class="app-table"
         >

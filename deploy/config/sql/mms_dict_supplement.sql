@@ -284,7 +284,7 @@ ON DUPLICATE KEY UPDATE dict_label = VALUES(dict_label);
 -- redis-cli KEYS "sys_dict:*" | xargs redis-cli DEL
 
 -- ============================================================
--- 三、派工管理 & 流转卡字典补充
+-- 三、派工管理字典补充
 -- ============================================================
 
 -- 22. 派工状态字典（dispatch 页面使用）
@@ -299,17 +299,5 @@ INSERT INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, css_cla
 (4, '已取消', '3', 'mms_dispatch_status', '', 'info',    'N', '0', 'admin', sysdate(), '已取消')
 ON DUPLICATE KEY UPDATE dict_label = VALUES(dict_label);
 
--- 23. 流转卡状态字典（flowcard 页面使用）
-INSERT INTO sys_dict_type (dict_name, dict_type, status, create_by, create_time, remark)
-SELECT '流转卡状态', 'mms_flowcard_status', '0', 'admin', sysdate(), '流转卡状态'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_dict_type WHERE dict_type = 'mms_flowcard_status');
-
-INSERT INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, css_class, list_class, is_default, status, create_by, create_time, remark) VALUES
-(1, '在制', '0', 'mms_flowcard_status', '', 'primary', 'Y', '0', 'admin', sysdate(), '在制'),
-(2, '完工', '1', 'mms_flowcard_status', '', 'success', 'N', '0', 'admin', sysdate(), '完工'),
-(3, '报废', '2', 'mms_flowcard_status', '', 'danger',  'N', '0', 'admin', sysdate(), '报废')
-ON DUPLICATE KEY UPDATE dict_label = VALUES(dict_label);
-
 -- 清除新增字典的 Redis 缓存
 -- redis-cli DEL sys_dict:mms_dispatch_status
--- redis-cli DEL sys_dict:mms_flowcard_status

@@ -49,25 +49,25 @@
 
       <!-- Table -->
       <div class="table-wrap">
-        <el-table v-loading="loading" :data="openapiList" @selection-change="handleSelectionChange" border class="app-table">
+        <el-table ref="tableRef" v-loading="loading" :data="openapiList" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" border class="app-table">
 <el-table-column type="selection" width="55" align="center" />
 <el-table-column type="index" label="序号" width="85" align="center" />
-<el-table-column label="应用ID" align="center" prop="appId" width="80" v-if="columns.appId.visible" />
-          <el-table-column label="应用名称" align="center" prop="appName" v-if="columns.appName.visible" />
-          <el-table-column label="API Key" align="center" prop="appKey" show-overflow-tooltip v-if="columns.appKey.visible">
+<el-table-column label="应用ID" align="center" prop="appId" :width="colWidth('appId', 80)" resizable v-if="columns.appId.visible" />
+          <el-table-column label="应用名称" align="center" prop="appName" :show-overflow-tooltip="true" :width="colWidth('appName', 150)" resizable v-if="columns.appName.visible" />
+          <el-table-column label="API Key" align="center" prop="appKey" :show-overflow-tooltip="true" :width="colWidth('appKey', 200)" resizable v-if="columns.appKey.visible">
             <template #default="scope">
               <span style="font-family: monospace;">{{ scope.row.appKey }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="允许模块" align="center" prop="allowedModules" width="120" v-if="columns.allowedModules.visible" />
-          <el-table-column label="状态" align="center" prop="status" width="80" v-if="columns.status.visible">
+          <el-table-column label="允许模块" align="center" prop="allowedModules" :width="colWidth('allowedModules', 120)" resizable v-if="columns.allowedModules.visible" />
+          <el-table-column label="状态" align="center" prop="status" :width="colWidth('status', 80)" resizable v-if="columns.status.visible">
             <template #default="scope">
               <el-tag :type="scope.row.status === '0' ? 'success' : 'danger'">{{ scope.row.status === '0' ? '正常' : '停用' }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="创建时间" align="center" prop="createTime" width="160" v-if="columns.createTime.visible" />
-          <el-table-column label="备注" align="center" prop="remark" show-overflow-tooltip v-if="columns.remark.visible" />
-          <el-table-column label="操作" align="center" width="150" class-name="small-padding fixed-width">
+          <el-table-column label="创建时间" align="center" prop="createTime" :width="colWidth('createTime', 160)" resizable v-if="columns.createTime.visible" />
+          <el-table-column label="备注" align="center" prop="remark" :show-overflow-tooltip="true" :width="colWidth('remark', 200)" resizable v-if="columns.remark.visible" />
+          <el-table-column label="操作" align="center" width="150" fixed="right" class-name="small-padding fixed-width">
             <template #default="scope">
               <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['system:openapi:edit']">修改</el-button>
               <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['system:openapi:remove']">删除</el-button>
@@ -150,6 +150,7 @@
 <script setup>
 import { listOpenApi, getOpenApi, addOpenApi, updateOpenApi, delOpenApi } from '@/api/system/openapi'
 import { Filter } from '@element-plus/icons-vue'
+import { useColumnResize } from '@/composables/useColumnResize'
 
 const { proxy } = getCurrentInstance()
 
@@ -163,15 +164,18 @@ const multiple = ref(true)
 const total = ref(0)
 const title = ref('')
 
+// ===== 列宽拖拽持久化 =====
+const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('sys_openapi_index')
+
 // 列显隐配置
 const columns = ref({
-  appId: { label: '应用ID', visible: true },
-  appName: { label: '应用名称', visible: true },
-  appKey: { label: 'API Key', visible: true },
-  allowedModules: { label: '允许模块', visible: true },
-  status: { label: '状态', visible: true },
-  createTime: { label: '创建时间', visible: true },
-  remark: { label: '备注', visible: true }
+  appId: { label: '应用ID', visible: true, defaultWidth: 80 },
+  appName: { label: '应用名称', visible: true, defaultWidth: 150 },
+  appKey: { label: 'API Key', visible: true, defaultWidth: 200 },
+  allowedModules: { label: '允许模块', visible: true, defaultWidth: 120 },
+  status: { label: '状态', visible: true, defaultWidth: 80 },
+  createTime: { label: '创建时间', visible: true, defaultWidth: 160 },
+  remark: { label: '备注', visible: true, defaultWidth: 200 }
 })
 
 const data = reactive({
@@ -202,6 +206,9 @@ function getList() {
   listOpenApi(queryParams.value).then(res => {
     openapiList.value = res.rows
     total.value = res.total
+    loading.value = false
+    applySavedWidths()
+  }).catch(() => {
     loading.value = false
   })
 }

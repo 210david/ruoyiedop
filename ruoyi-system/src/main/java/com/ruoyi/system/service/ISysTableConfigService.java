@@ -55,6 +55,27 @@ public interface ISysTableConfigService
     public void saveColumnVisible(String tableKey, String colProp, Boolean colVisible, Long userId, String username);
 
     /**
+     * 获取某页面合并后的列顺序配置（个人覆盖全局）
+     *
+     * @param tableKey 页面标识
+     * @param userId 当前用户ID
+     * @return 列顺序映射 { colProp: order }
+     */
+    public Map<String, Integer> getMergedOrders(String tableKey, Long userId);
+
+    /**
+     * 保存列顺序配置
+     * 管理员保存为全局配置（G），普通用户保存为个人配置（U）
+     *
+     * @param tableKey 页面标识
+     * @param colProp 列属性名
+     * @param colOrder 列顺序
+     * @param userId 当前用户ID
+     * @param username 当前用户名
+     */
+    public void saveColumnOrder(String tableKey, String colProp, Integer colOrder, Long userId, String username);
+
+    /**
      * 根据主键删除
      *
      * @param configId 主键ID

@@ -56,24 +56,24 @@
 
       <!-- Table -->
       <div class="table-wrap">
-        <el-table v-loading="loading" :data="postList" @selection-change="handleSelectionChange" border class="app-table">
-<el-table-column type="selection" width="55" align="center" />
-<el-table-column type="index" label="序号" width="85" align="center" />
-<el-table-column label="岗位编号" align="center" prop="postId" v-if="columns.postId.visible" />
-          <el-table-column label="岗位编码" align="center" prop="postCode" v-if="columns.postCode.visible" />
-          <el-table-column label="岗位名称" align="center" prop="postName" v-if="columns.postName.visible" />
-          <el-table-column label="岗位排序" align="center" prop="postSort" v-if="columns.postSort.visible" />
-          <el-table-column label="状态" align="center" prop="status" v-if="columns.status.visible">
+        <el-table ref="tableRef" v-loading="loading" :data="postList" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" border class="app-table">
+          <el-table-column type="selection" width="55" align="center" />
+          <el-table-column type="index" label="序号" width="85" align="center" />
+          <el-table-column label="岗位编号" prop="postId" key="postId" :width="colWidth('postId', 120)" resizable align="center" v-if="columns.postId.visible" />
+          <el-table-column label="岗位编码" prop="postCode" key="postCode" :width="colWidth('postCode', 120)" resizable align="center" v-if="columns.postCode.visible" />
+          <el-table-column label="岗位名称" prop="postName" key="postName" :width="colWidth('postName', 120)" resizable align="center" v-if="columns.postName.visible" />
+          <el-table-column label="岗位排序" prop="postSort" key="postSort" :width="colWidth('postSort', 100)" resizable align="center" v-if="columns.postSort.visible" />
+          <el-table-column label="状态" prop="status" key="status" :width="colWidth('status', 100)" resizable align="center" v-if="columns.status.visible">
             <template #default="scope">
               <dict-tag :options="sys_normal_disable" :value="scope.row.status" />
             </template>
           </el-table-column>
-          <el-table-column label="创建时间" align="center" prop="createTime" width="180" v-if="columns.createTime.visible">
+          <el-table-column label="创建时间" prop="createTime" key="createTime" :width="colWidth('createTime', 180)" resizable align="center" v-if="columns.createTime.visible">
             <template #default="scope">
               <span>{{ parseTime(scope.row.createTime) }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="180" align="center" class-name="small-padding fixed-width">
+          <el-table-column label="操作" width="180" align="center" fixed="right" class-name="small-padding fixed-width">
             <template #default="scope">
               <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['system:post:edit']">修改</el-button>
               <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['system:post:remove']">删除</el-button>
@@ -162,6 +162,7 @@
 <script setup name="Post">
 import { listPost, addPost, delPost, getPost, updatePost } from "@/api/system/post"
 import { Filter } from '@element-plus/icons-vue'
+import { useColumnResize } from '@/composables/useColumnResize'
 
 const { proxy } = getCurrentInstance()
 const { sys_normal_disable } = useDict("sys_normal_disable")
@@ -176,7 +177,7 @@ const multiple = ref(true)
 const total = ref(0)
 const title = ref("")
 
-// 列显隐配置
+// 列显隐配置（与BOM页面一致，defaultWidth仅用于colWidth回退）
 const columns = ref({
   postId: { label: '岗位编号', visible: true },
   postCode: { label: '岗位编码', visible: true },
@@ -185,6 +186,9 @@ const columns = ref({
   status: { label: '状态', visible: true },
   createTime: { label: '创建时间', visible: true }
 })
+
+// ===== 列宽拖拽持久化（与BOM页面相同模式）=====
+const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('sys_post_index')
 
 const data = reactive({
   form: {},
@@ -218,6 +222,10 @@ function getList() {
   listPost(queryParams.value).then(response => {
     postList.value = response.rows
     total.value = response.total
+    loading.value = false
+    // 应用保存的列宽
+    applySavedWidths()
+  }).catch(() => {
     loading.value = false
   })
 }

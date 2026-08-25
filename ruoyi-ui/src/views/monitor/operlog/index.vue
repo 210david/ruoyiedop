@@ -79,34 +79,34 @@
 
       <!-- Table -->
       <div class="table-wrap">
-        <el-table ref="operlogRef" v-loading="loading" :data="operlogList" @selection-change="handleSelectionChange" :default-sort="defaultSort" @sort-change="handleSortChange" border class="app-table">
+        <el-table ref="tableRef" v-loading="loading" :data="operlogList" @selection-change="handleSelectionChange" :default-sort="defaultSort" @sort-change="handleSortChange" @header-dragend="onHeaderDragEnd" border class="app-table">
 <el-table-column type="selection" width="50" align="center" />
 <el-table-column type="index" label="序号" width="85" align="center" />
-<el-table-column label="日志编号" align="center" prop="operId" v-if="columns.operId.visible" />
-          <el-table-column label="系统模块" align="center" prop="title" :show-overflow-tooltip="true" v-if="columns.title.visible" />
-          <el-table-column label="操作类型" align="center" prop="businessType" v-if="columns.businessType.visible">
+<el-table-column label="日志编号" align="center" prop="operId" :width="colWidth('operId', 120)" resizable v-if="columns.operId.visible" />
+          <el-table-column label="系统模块" align="center" prop="title" :show-overflow-tooltip="true" :width="colWidth('title', 120)" resizable v-if="columns.title.visible" />
+          <el-table-column label="操作类型" align="center" prop="businessType" :width="colWidth('businessType', 100)" resizable v-if="columns.businessType.visible">
             <template #default="scope">
               <dict-tag :options="sys_oper_type" :value="scope.row.businessType" />
             </template>
           </el-table-column>
-          <el-table-column label="操作人员" align="center" width="110" prop="operName" :show-overflow-tooltip="true" sortable="custom" :sort-orders="['descending', 'ascending']" v-if="columns.operName.visible" />
-          <el-table-column label="操作地址" align="center" prop="operIp" width="130" :show-overflow-tooltip="true" v-if="columns.operIp.visible" />
-          <el-table-column label="操作状态" align="center" prop="status" v-if="columns.status.visible">
+          <el-table-column label="操作人员" align="center" prop="operName" :show-overflow-tooltip="true" :width="colWidth('operName', 110)" resizable sortable="custom" :sort-orders="['descending', 'ascending']" v-if="columns.operName.visible" />
+          <el-table-column label="操作地址" align="center" prop="operIp" :show-overflow-tooltip="true" :width="colWidth('operIp', 130)" resizable v-if="columns.operIp.visible" />
+          <el-table-column label="操作状态" align="center" prop="status" :width="colWidth('status', 100)" resizable v-if="columns.status.visible">
             <template #default="scope">
               <dict-tag :options="sys_common_status" :value="scope.row.status" />
             </template>
           </el-table-column>
-          <el-table-column label="操作日期" align="center" prop="operTime" width="180" sortable="custom" :sort-orders="['descending', 'ascending']" v-if="columns.operTime.visible">
+          <el-table-column label="操作日期" align="center" prop="operTime" :width="colWidth('operTime', 180)" resizable sortable="custom" :sort-orders="['descending', 'ascending']" v-if="columns.operTime.visible">
             <template #default="scope">
               <span>{{ parseTime(scope.row.operTime) }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="消耗时间" align="center" prop="costTime" width="110" :show-overflow-tooltip="true" sortable="custom" :sort-orders="['descending', 'ascending']" v-if="columns.costTime.visible">
+          <el-table-column label="消耗时间" align="center" prop="costTime" :show-overflow-tooltip="true" :width="colWidth('costTime', 110)" resizable sortable="custom" :sort-orders="['descending', 'ascending']" v-if="columns.costTime.visible">
             <template #default="scope">
               <span>{{ scope.row.costTime }}毫秒</span>
             </template>
           </el-table-column>
-          <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+          <el-table-column label="操作" align="center" width="100" fixed="right" class-name="small-padding fixed-width">
             <template #default="scope">
               <el-button link type="primary" icon="View" @click="handleDetail(scope.row, scope.index)" v-hasPermi="['monitor:operlog:query']">详细</el-button>
             </template>
@@ -132,6 +132,7 @@
 import OperlogDetail from './detail'
 import { list, delOperlog, cleanOperlog } from "@/api/monitor/operlog"
 import { Filter, ArrowDown } from '@element-plus/icons-vue'
+import { useColumnResize } from '@/composables/useColumnResize'
 
 const { proxy } = getCurrentInstance()
 const { sys_oper_type, sys_common_status } = useDict("sys_oper_type", "sys_common_status")
@@ -150,16 +151,19 @@ const title = ref("")
 const dateRange = ref([])
 const defaultSort = ref({ prop: "operTime", order: "descending" })
 
+// ===== 列宽拖拽持久化 =====
+const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('sys_operlog_index')
+
 // 列显隐配置
 const columns = ref({
-  operId: { label: '日志编号', visible: true },
-  title: { label: '系统模块', visible: true },
-  businessType: { label: '操作类型', visible: true },
-  operName: { label: '操作人员', visible: true },
-  operIp: { label: '操作地址', visible: true },
-  status: { label: '操作状态', visible: true },
-  operTime: { label: '操作日期', visible: true },
-  costTime: { label: '消耗时间', visible: true }
+  operId: { label: '日志编号', visible: true, defaultWidth: 120 },
+  title: { label: '系统模块', visible: true, defaultWidth: 120 },
+  businessType: { label: '操作类型', visible: true, defaultWidth: 100 },
+  operName: { label: '操作人员', visible: true, defaultWidth: 110 },
+  operIp: { label: '操作地址', visible: true, defaultWidth: 130 },
+  status: { label: '操作状态', visible: true, defaultWidth: 100 },
+  operTime: { label: '操作日期', visible: true, defaultWidth: 180 },
+  costTime: { label: '消耗时间', visible: true, defaultWidth: 110 }
 })
 
 const data = reactive({
@@ -194,6 +198,9 @@ function getList() {
   list(proxy.addDateRange(queryParams.value, dateRange.value)).then(response => {
     operlogList.value = response.rows
     total.value = response.total
+    loading.value = false
+    applySavedWidths()
+  }).catch(() => {
     loading.value = false
   })
 }
