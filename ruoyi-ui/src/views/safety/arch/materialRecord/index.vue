@@ -80,6 +80,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" v-loading="loading" :data="recordList" border @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
+          <el-table-column type="index" label="序号" width="85" align="center" />
           <el-table-column label="出入库单号" prop="recordCode" key="recordCode" :width="colWidth('recordCode', 160)" resizable show-overflow-tooltip v-if="columns.recordCode.visible" />
           <el-table-column label="危化品名称" prop="materialName" key="materialName" :width="colWidth('materialName', 160)" resizable show-overflow-tooltip v-if="columns.materialName.visible" />
           <el-table-column label="类型" prop="recordType" key="recordType" :width="colWidth('recordType', 80)" align="center" resizable v-if="columns.recordType.visible">

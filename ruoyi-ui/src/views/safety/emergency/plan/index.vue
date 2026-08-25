@@ -96,6 +96,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" v-loading="loading" :data="planList" border @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
+          <el-table-column type="index" label="序号" width="85" align="center" />
           <el-table-column label="预案编号" prop="planCode" key="planCode" :width="colWidth('planCode', 130)" resizable v-if="columns.planCode.visible" />
           <el-table-column label="预案名称" prop="planName" key="planName" :width="colWidth('planName', 200)" resizable show-overflow-tooltip v-if="columns.planName.visible" />
           <el-table-column label="预案类型" prop="planType" key="planType" :width="colWidth('planType', 110)" resizable align="center" v-if="columns.planType.visible">

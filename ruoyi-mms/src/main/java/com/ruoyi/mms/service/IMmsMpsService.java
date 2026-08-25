@@ -17,13 +17,13 @@ public interface IMmsMpsService
     public int updateMps(MmsMps mps);
     public int deleteMpsByIds(Long[] mpsIds);
 
-    /** 计划确认/提交审批：0(草稿) → 1(已确认) */
-    public int confirmMps(Long mpsId);
+    /** 计划提交审批：0(草稿) → 1(待审批) */
+    public int submitMps(Long mpsId);
 
-    /** 计划审批：1(已确认) → 2(已发布) 或 驳回→0(草稿) */
+    /** 计划审批：1(待审批) → 2(已审批) 或 驳回→0(草稿) */
     public int auditMps(Long mpsId, String status, String auditOpinion);
 
-    /** 计划发布（下达生成工单）：2(已发布) → 3(已下达)，返回生成的工单ID */
+    /** 计划下达（生成工单）：2(已审批) → 3(已下达)，返回生成的工单ID */
     public Long releaseMps(Long mpsId);
 
     /** 计划取消：非3(已下达) → 4(已取消) */

@@ -74,7 +74,8 @@
       <!-- Table -->
       <div class="table-wrap">
         <el-table ref="tableRef" border v-loading="loading" :data="list" @row-click="handleRowClick" highlight-current-row @header-dragend="onHeaderDragEnd" class="app-table">
-          <el-table-column label="盘点单号" prop="takeNo" key="takeNo" :width="colWidth('takeNo', 180)" resizable v-if="columns.takeNo.visible" />
+          <el-table-column type="index" label="序号" width="85" align="center" />
+<el-table-column label="盘点单号" prop="takeNo" key="takeNo" :width="colWidth('takeNo', 180)" resizable v-if="columns.takeNo.visible" />
           <el-table-column label="仓库" prop="warehouseName" key="warehouseName" :width="colWidth('warehouseName', 120)" resizable v-if="columns.warehouseName.visible" />
           <el-table-column label="库区" prop="areaName" key="areaName" :width="colWidth('areaName', 120)" resizable v-if="columns.areaName.visible" />
           <el-table-column label="盘点类型" prop="takeType" key="takeType" :width="colWidth('takeType', 100)" resizable align="center" v-if="columns.takeType.visible">

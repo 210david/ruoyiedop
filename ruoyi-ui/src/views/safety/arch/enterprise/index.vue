@@ -94,6 +94,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" v-loading="loading" :data="enterpriseList" border @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
+          <el-table-column type="index" label="序号" width="85" align="center" />
           <el-table-column label="企业名称" prop="enterpriseName" key="enterpriseName" :width="colWidth('enterpriseName', 200)" resizable sortable="custom" show-overflow-tooltip v-if="columns.enterpriseName.visible" />
           <el-table-column label="统一社会信用代码" prop="creditCode" key="creditCode" :width="colWidth('creditCode', 200)" resizable show-overflow-tooltip v-if="columns.creditCode.visible" />
           <el-table-column label="行业类别" prop="industryType" key="industryType" :width="colWidth('industryType', 120)" resizable align="center" v-if="columns.industryType.visible">

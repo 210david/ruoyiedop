@@ -112,8 +112,9 @@
       <!-- Table -->
       <div class="table-wrap">
         <el-table ref="tableRef" v-loading="loading" :data="list" border @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
-          <el-table-column type="selection" width="55" align="center" />
-          <el-table-column label="退货单号" prop="returnNo" key="returnNo" :width="colWidth('returnNo', 160)" resizable sortable="custom" v-if="columns.returnNo.visible">
+<el-table-column type="selection" width="55" align="center" />
+<el-table-column type="index" label="序号" width="85" align="center" />
+<el-table-column label="退货单号" prop="returnNo" key="returnNo" :width="colWidth('returnNo', 160)" resizable sortable="custom" v-if="columns.returnNo.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.returnNo }}</span></template>
           </el-table-column>
           <el-table-column label="收货单号" prop="receiveNo" key="receiveNo" :width="colWidth('receiveNo', 160)" resizable v-if="columns.receiveNo.visible">
@@ -229,7 +230,7 @@
             <div class="rd-card-header" @click="toggleCard('c2')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></span>退货明细</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
             <div class="rd-card-body" v-show="!collapsedCards.c2">
               <el-table :data="form.detailList" border size="small" empty-text="选择采购订单后，已收货的物料明细将自动带出">
-                <el-table-column label="序号" type="index" width="55" align="center" />
+                <el-table-column label="序号" type="index" width="85" align="center" />
                 <el-table-column label="物料编码" prop="materialCode" min-width="120" show-overflow-tooltip />
                 <el-table-column label="物料名称" prop="materialName" min-width="150" show-overflow-tooltip />
                 <el-table-column label="规格型号" prop="specModel" min-width="120" show-overflow-tooltip />
@@ -335,7 +336,7 @@
           <div class="rd-card-header" @click="toggleCard('v2')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></span>退货明细</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
           <div class="rd-card-body" v-show="!collapsedCards.v2">
             <el-table :data="viewData.detailList" border size="small">
-              <el-table-column label="序号" type="index" width="55" align="center" />
+              <el-table-column label="序号" type="index" width="85" align="center" />
               <el-table-column label="物料编码" prop="materialCode" min-width="120" />
               <el-table-column label="物料名称" prop="materialName" min-width="150" show-overflow-tooltip />
               <el-table-column label="规格型号" prop="specModel" min-width="120" show-overflow-tooltip />
@@ -425,7 +426,7 @@
           <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></span>退货明细</div></div>
           <div class="rd-card-body" style="display:block">
             <el-table :data="auditData.detailList" border size="small">
-              <el-table-column label="序号" type="index" width="55" align="center" />
+              <el-table-column label="序号" type="index" width="85" align="center" />
               <el-table-column label="物料编码" prop="materialCode" min-width="120" />
               <el-table-column label="物料名称" prop="materialName" min-width="150" show-overflow-tooltip />
               <el-table-column label="规格型号" prop="specModel" min-width="120" show-overflow-tooltip />

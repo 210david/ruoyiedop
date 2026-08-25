@@ -1,6 +1,6 @@
 -- 修复工单状态字典数据
 -- 先修复现有条目的label和list_class
-UPDATE sys_dict_data SET dict_label = '新建', list_class = 'info', dict_sort = 1 WHERE dict_type = 'mms_workorder_status' AND dict_value = '0';
+UPDATE sys_dict_data SET dict_label = '草稿', list_class = 'info', dict_sort = 1 WHERE dict_type = 'mms_workorder_status' AND dict_value = '0';
 UPDATE sys_dict_data SET dict_label = '已下达', list_class = 'primary', dict_sort = 2 WHERE dict_type = 'mms_workorder_status' AND dict_value = '1';
 UPDATE sys_dict_data SET dict_label = '执行中', list_class = 'success', dict_sort = 3 WHERE dict_type = 'mms_workorder_status' AND dict_value = '2';
 

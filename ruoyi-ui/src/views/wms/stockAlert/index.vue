@@ -67,6 +67,7 @@
     <!-- 预警列表 -->
     <el-table ref="tableRef" border v-loading="loading" :data="alertList" :row-class-name="rowClassName" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
       <el-table-column type="selection" width="55" align="center" />
+      <el-table-column type="index" label="序号" width="85" align="center" />
       <el-table-column label="预警类型" prop="alertType" :width="colWidth('alertType', 110)" resizable align="center">
         <template #default="scope">
           <el-tag :type="alertTagType(scope.row.alertType)" effect="dark" size="small">{{ alertLabel(scope.row.alertType) }}</el-tag>

@@ -88,6 +88,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" v-loading="loading" :data="workerList" border @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
+          <el-table-column type="index" label="序号" width="85" align="center" />
           <el-table-column label="姓名" prop="workerName" key="workerName" :width="colWidth('workerName', 120)" resizable v-if="columns.workerName.visible" />
           <el-table-column label="工号" prop="workerNo" key="workerNo" :width="colWidth('workerNo', 120)" resizable v-if="columns.workerNo.visible" />
           <el-table-column label="所属部门" prop="deptName" key="deptName" :width="colWidth('deptName', 140)" resizable show-overflow-tooltip v-if="columns.deptName.visible" />

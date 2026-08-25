@@ -101,6 +101,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" v-loading="loading" :data="dataList" border @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
+          <el-table-column type="index" label="序号" width="85" align="center" />
           <el-table-column label="班组编号" prop="teamCode" key="teamCode" :width="colWidth('teamCode', 140)" resizable v-if="columns.teamCode.visible" />
           <el-table-column label="班组名称" prop="teamName" key="teamName" :width="colWidth('teamName', 140)" resizable v-if="columns.teamName.visible" />
           <el-table-column label="产能单元" prop="resourceName" key="resourceName" :width="colWidth('resourceName', 140)" resizable show-overflow-tooltip v-if="columns.resourceName.visible" />

@@ -70,10 +70,7 @@ public class MmsFinishAnalysis extends BaseEntity
     @Excel(name = "工时达成率(%)")
     private BigDecimal hourAchieveRate;
 
-    @Excel(name = "产能单元")
-    private String resourceName;
-
-    @Excel(name = "状态", readConverterExp = "0=新建,1=已下达,2=执行中,3=已完工,4=已关闭,5=已暂停,6=已作废")
+    @Excel(name = "状态", readConverterExp = "0=草稿,1=已下达,2=执行中,3=已完工,4=已关闭,5=已暂停,6=已作废")
     private String status;
 
     @Excel(name = "计划开工", width = 30, dateFormat = "yyyy-MM-dd HH:mm:ss")
@@ -164,8 +161,6 @@ public class MmsFinishAnalysis extends BaseEntity
     public void setPlannedHours(BigDecimal plannedHours) { this.plannedHours = plannedHours; }
     public BigDecimal getHourAchieveRate() { return hourAchieveRate; }
     public void setHourAchieveRate(BigDecimal hourAchieveRate) { this.hourAchieveRate = hourAchieveRate; }
-    public String getResourceName() { return resourceName; }
-    public void setResourceName(String resourceName) { this.resourceName = resourceName; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
     public Date getPlanStart() { return planStart; }

@@ -81,9 +81,9 @@
 
       <div class="table-wrap">
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" class="app-table">
-          <el-table-column type="selection" width="55" align="center" />
-          <el-table-column label="文档编号" prop="docNo" key="docNo" :width="colWidth('docNo', 160)" resizable show-overflow-tooltip v-if="columns.docNo.visible" />
-          <el-table-column label="标题" prop="docTitle" key="docTitle" :width="colWidth('docTitle', 220)" resizable show-overflow-tooltip v-if="columns.docTitle.visible" />
+<el-table-column type="selection" width="55" align="center" />
+<el-table-column type="index" label="序号" width="85" align="center" />
+<el-table-column label="文档编号" prop="docNo" key="docNo" :width="colWidth('docNo', 160)" resizable show-overflow-tooltip v-if="columns.docNo.visible" />          <el-table-column label="标题" prop="docTitle" key="docTitle" :width="colWidth('docTitle', 220)" resizable show-overflow-tooltip v-if="columns.docTitle.visible" />
           <el-table-column label="分类" prop="docCategory" key="docCategory" :width="colWidth('docCategory', 120)" resizable align="center" v-if="columns.docCategory.visible"><template #default="scope"><span class="badge violet"><span class="dot"></span>{{ docCategoryLabel(scope.row.docCategory) }}</span></template></el-table-column>
           <el-table-column label="版本" prop="versionNo" key="versionNo" :width="colWidth('versionNo', 100)" resizable align="center" v-if="columns.versionNo.visible" />
           <el-table-column label="归属部门" prop="deptName" key="deptName" :width="colWidth('deptName', 140)" resizable show-overflow-tooltip v-if="columns.deptName.visible" />

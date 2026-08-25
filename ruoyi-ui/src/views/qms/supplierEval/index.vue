@@ -82,9 +82,9 @@
 
       <div class="table-wrap">
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" class="app-table">
-          <el-table-column type="selection" width="55" align="center" />
-          <el-table-column label="供应商名称" prop="supplierName" key="supplierName" :width="colWidth('supplierName', 200)" resizable show-overflow-tooltip v-if="columns.supplierName.visible" />
-          <el-table-column label="评价周期" prop="evalPeriod" key="evalPeriod" :width="colWidth('evalPeriod', 110)" resizable align="center" v-if="columns.evalPeriod.visible" />
+<el-table-column type="selection" width="55" align="center" />
+<el-table-column type="index" label="序号" width="85" align="center" />
+<el-table-column label="供应商名称" prop="supplierName" key="supplierName" :width="colWidth('supplierName', 200)" resizable show-overflow-tooltip v-if="columns.supplierName.visible" />          <el-table-column label="评价周期" prop="evalPeriod" key="evalPeriod" :width="colWidth('evalPeriod', 110)" resizable align="center" v-if="columns.evalPeriod.visible" />
           <el-table-column label="来料批次" prop="incomingTotal" key="incomingTotal" :width="colWidth('incomingTotal', 110)" resizable align="center" v-if="columns.incomingTotal.visible">
             <template #header><span>来料批次</span><el-tooltip content="自动统计该供应商在评价周期内的IQC来料检验任务总数（已判定状态）" placement="top"><el-icon class="col-tip"><QuestionFilled /></el-icon></el-tooltip></template>
           </el-table-column>

@@ -109,6 +109,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" v-loading="loading" :data="dataList" border @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
+          <el-table-column type="index" label="序号" width="85" align="center" />
           <el-table-column label="计划编号" prop="mpsNo" key="mpsNo" :width="colWidth('mpsNo', 140)" resizable v-if="columns.mpsNo.visible" />
           <el-table-column label="产品编码" prop="productCode" key="productCode" :width="colWidth('productCode', 130)" resizable v-if="columns.productCode.visible" />
           <el-table-column label="产品名称" prop="productName" key="productName" :width="colWidth('productName', 180)" resizable show-overflow-tooltip v-if="columns.productName.visible" />
@@ -137,9 +138,9 @@
             <template #default="scope">
               <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
               <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['mms:mps:edit']">修改</el-button>
-              <el-button v-if="scope.row.status === '0'" link type="primary" icon="Check" @click="handleConfirm(scope.row)" v-hasPermi="['mms:mps:confirm']">确认</el-button>
+              <el-button v-if="scope.row.status === '0'" link type="primary" icon="Promotion" @click="handleSubmit(scope.row)" v-hasPermi="['mms:mps:confirm']">提交审批</el-button>
               <el-button v-if="scope.row.status === '1'" link type="primary" icon="Aim" @click="handleAudit(scope.row)" v-hasPermi="['mms:mps:approve']">审批</el-button>
-              <el-button v-if="scope.row.status === '2'" link type="success" icon="Promotion" @click="handleRelease(scope.row)" v-hasPermi="['mms:mps:release']">发布</el-button>
+              <el-button v-if="scope.row.status === '2'" link type="success" icon="Document" @click="handleRelease(scope.row)" v-hasPermi="['mms:mps:release']">生成工单</el-button>
               <el-button v-if="scope.row.status !== '3' && scope.row.status !== '4'" link type="danger" icon="Close" @click="handleCancel(scope.row)" v-hasPermi="['mms:mps:cancel']">取消</el-button>
             </template>
           </el-table-column>
@@ -170,7 +171,7 @@
             <div class="rd-card-header" @click="toggleCard('c1')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7l-8-4-8 4 8 4 8-4z"/><path d="M4 7v10l8 4 8-4V7"/></svg></span>产品信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
             <div class="rd-card-body" v-show="!collapsedCards.c1">
               <el-row :gutter="20"><el-col :span="12"><el-form-item label="产品编码" prop="productCode"><el-input v-model="form.productCode" readonly placeholder="请选择物料" style="width: 100%" @click="openMaterialPicker"><template #append><el-button icon="Search" @click="openMaterialPicker" /></template><template #suffix><el-icon v-if="form.productCode" class="rd-form-tip" style="cursor:pointer" @click.stop="clearMaterial"><CircleClose /></el-icon></template></el-input></el-form-item></el-col><el-col :span="12"><el-form-item label="产品名称"><el-input v-model="form.productName" readonly placeholder="选择物料后自动带出" /></el-form-item></el-col></el-row>
-              <el-row :gutter="20"><el-col :span="12"><el-form-item label="规格型号"><el-input v-model="form.specModel" readonly placeholder="选择物料后自动带出" /></el-form-item></el-col><el-col :span="12"><el-form-item label="单位" prop="unit"><el-select v-model="form.unit" placeholder="请选择" style="width: 100%"><el-option v-for="d in wms_unit" :key="d.value" :label="d.label" :value="d.value" /></el-select></el-form-item></el-col></el-row>
+              <el-row :gutter="20"><el-col :span="12"><el-form-item label="规格型号"><el-input v-model="form.specModel" readonly placeholder="选择物料后自动带出" /></el-form-item></el-col><el-col :span="12"><el-form-item label="单位"><el-input v-model="unitLabel" readonly placeholder="选择物料后自动带出" /></el-form-item></el-col></el-row>
             </div>
           </section>
           <section class="rd-card">
@@ -383,45 +384,45 @@
         <div class="highlight-card highlight-primary">
           <div class="highlight-card-title">什么是主生产计划？</div>
           <div class="highlight-card-body">
-            <strong>主生产计划（MPS，Master Production Schedule）</strong>是生产管控中连接销售需求与生产执行的核心计划单据。MPS将生产需求按时间段分解为具体的生产计划，明确各产品的计划生产数量、计划开工和完工时间，经审批后发布生成生产工单。<br/><br/>
+            <strong>主生产计划（MPS，Master Production Schedule）</strong>是生产管控中连接销售需求与生产执行的核心计划单据。MPS将生产需求按时间段分解为具体的生产计划，明确各产品的计划生产数量、计划开工和完工时间，审批通过后下达生成生产工单。<br/><br/>
             MPS遵循 <strong>ERP/MES 标准计划体系</strong>，向上对接生产需求和销售订单，向下驱动工单排产，通过审批流程确保计划的准确性和可执行性。
           </div>
         </div>
         <h4>二、状态流转图</h4>
         <div class="status-flow">
-          <div class="flow-item"><el-tag type="info">草稿</el-tag><el-icon class="flow-arrow"><ArrowRight /></el-icon><el-tag size="small" type="primary">确认提交</el-tag><el-icon class="flow-arrow"><ArrowRight /></el-icon></div>
+          <div class="flow-item"><el-tag type="info">草稿</el-tag><el-icon class="flow-arrow"><ArrowRight /></el-icon><el-tag size="small" type="primary">提交审批</el-tag><el-icon class="flow-arrow"><ArrowRight /></el-icon></div>
           <div class="flow-item"><el-tag type="primary">待审批</el-tag><el-icon class="flow-arrow"><ArrowRight /></el-icon><el-tag size="small" type="primary">审批通过</el-tag><el-icon class="flow-arrow"><ArrowRight /></el-icon></div>
-          <div class="flow-item"><el-tag type="warning">已审批</el-tag><el-icon class="flow-arrow"><ArrowRight /></el-icon><el-tag size="small" type="primary">发布</el-tag><el-icon class="flow-arrow"><ArrowRight /></el-icon></div>
-          <div class="flow-item"><el-tag type="success">已发布</el-tag></div>
+          <div class="flow-item"><el-tag type="warning">已审批</el-tag><el-icon class="flow-arrow"><ArrowRight /></el-icon><el-tag size="small" type="primary">生成工单</el-tag><el-icon class="flow-arrow"><ArrowRight /></el-icon></div>
+          <div class="flow-item"><el-tag type="success">已下达</el-tag></div>
         </div>
         <div class="status-flow" style="margin-top:8px">
-          <div class="flow-item"><el-tag type="info">草稿/待审批</el-tag><el-icon class="flow-arrow"><ArrowRight /></el-icon><el-tag size="small" type="primary">取消</el-tag><el-icon class="flow-arrow"><ArrowRight /></el-icon></div>
+          <div class="flow-item"><el-tag type="info">草稿/待审批/已审批</el-tag><el-icon class="flow-arrow"><ArrowRight /></el-icon><el-tag size="small" type="primary">取消</el-tag><el-icon class="flow-arrow"><ArrowRight /></el-icon></div>
           <div class="flow-item"><el-tag type="danger">已取消</el-tag></div>
         </div>
         <h4>三、各状态说明</h4>
         <el-descriptions :column="1" border>
-          <el-descriptions-item label="草稿">计划新建后的初始状态，可修改计划内容、确认提交或取消</el-descriptions-item>
-          <el-descriptions-item label="待审批">计划已确认提交，等待审批通过或驳回</el-descriptions-item>
-          <el-descriptions-item label="已审批">计划已审批通过，可发布生成工单</el-descriptions-item>
-          <el-descriptions-item label="已发布">计划已发布，系统自动生成对应生产工单</el-descriptions-item>
+          <el-descriptions-item label="草稿">计划新建后的初始状态，可修改计划内容、提交审批或取消</el-descriptions-item>
+          <el-descriptions-item label="待审批">计划已提交审批，等待审批通过或驳回</el-descriptions-item>
+          <el-descriptions-item label="已审批">计划已审批通过，可下达生成工单</el-descriptions-item>
+          <el-descriptions-item label="已下达">计划已下达，系统自动生成对应生产工单</el-descriptions-item>
           <el-descriptions-item label="已取消">计划已取消，不再执行</el-descriptions-item>
         </el-descriptions>
         <h4>四、重点业务规则</h4>
         <div class="highlight-card highlight-warning">
           <div class="highlight-card-title">核心规则</div>
           <div class="highlight-card-body">
-            <p>• <strong>计划确认：</strong>草稿状态的计划确认后提交审批，进入待审批状态</p>
+            <p>• <strong>提交审批：</strong>草稿状态的计划提交后进入待审批状态，同时校验产品和计划数量等关键字段</p>
             <p>• <strong>计划审批：</strong>待审批的计划可通过审批进入已审批状态，或驳回回到草稿</p>
-            <p>• <strong>计划发布：</strong>已审批的计划发布后自动生成生产工单，进入已发布状态</p>
-            <p>• <strong>计划取消：</strong>非已发布、非已取消的计划可取消，取消后不可恢复</p>
+            <p>• <strong>计划下达：</strong>已审批的计划下达后自动生成生产工单，进入已下达状态</p>
+            <p>• <strong>计划取消：</strong>非已下达、非已取消的计划可取消，取消后不可恢复</p>
             <p>• <strong>优先级：</strong>支持高、中、低三个优先级，影响生产排程顺序</p>
           </div>
         </div>
         <h4>五、业务操作流程</h4>
         <el-timeline>
           <el-timeline-item type="primary" :hollow="true"><strong>创建计划：</strong>点击「新增」创建主生产计划，填写产品、计划数量和计划时间</el-timeline-item>
-          <el-timeline-item type="warning" :hollow="true"><strong>确认提交：</strong>草稿状态下点击「确认」提交审批，计划进入待审批状态</el-timeline-item>
-          <el-timeline-item type="success" :hollow="true"><strong>审批发布：</strong>审批通过后点击「发布」，系统自动生成生产工单</el-timeline-item>
+          <el-timeline-item type="warning" :hollow="true"><strong>提交审批：</strong>草稿状态下点击「提交审批」，计划进入待审批状态</el-timeline-item>
+          <el-timeline-item type="success" :hollow="true"><strong>审批下达：</strong>审批通过后点击「生成工单」，系统自动生成生产工单</el-timeline-item>
           <el-timeline-item type="danger" :hollow="true"><strong>取消计划：</strong>不再执行的计划可取消，取消后不可恢复</el-timeline-item>
         </el-timeline>
       </div>
@@ -433,7 +434,7 @@
 </template>
 
 <script setup name="Mps">
-import { listMps, getMps, addMps, updateMps, delMps, confirmMps, auditMps, releaseMps, cancelMps } from "@/api/mms/mps";
+import { listMps, getMps, addMps, updateMps, delMps, submitMps, auditMps, releaseMps, cancelMps } from "@/api/mms/mps";
 import { listDemand } from "@/api/mms/demand";
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
@@ -464,6 +465,13 @@ const showStatusHelp = ref(false);
 const auditOpen = ref(false);
 const auditData = ref({});
 const cancelOpen = ref(false);
+
+// 单位显示文本（字典值 → 中文标签）
+const unitLabel = computed(() => {
+  if (!form.value.unit) return '';
+  const item = wms_unit.value.find(d => d.value == form.value.unit);
+  return item ? item.label : form.value.unit;
+});
 
 const statusTabList = computed(() => {
   if (!mms_mps_status.value) return [];
@@ -531,7 +539,7 @@ const data = reactive({
   },
   rules: {
     productCode: [{ required: true, message: "请选择产品编码", trigger: "change" }],
-    unit: [{ required: true, message: "请选择单位", trigger: "change" }],
+    priority: [{ required: true, message: "请选择优先级", trigger: "change" }],
     planQty: [{ required: true, message: "请输入计划产量", trigger: "blur" }],
     periodStart: [{ required: true, message: "请选择计划期开始", trigger: "change" }],
     periodEnd: [{ required: true, message: "请选择计划期结束", trigger: "change" }]
@@ -643,8 +651,8 @@ function handleDelete(row) {
 function handleExport() { proxy.download("mms/mps/export", { ...queryParams.value }, `mps_${new Date().getTime()}.xlsx`); }
 
 // 业务操作
-function handleConfirm(row) {
-  proxy.$modal.confirm('是否确认提交计划"' + row.mpsNo + '"？').then(() => confirmMps(row.mpsId)).then(() => { getList(); proxy.$modal.msgSuccess("确认成功"); }).catch(() => {});
+function handleSubmit(row) {
+  proxy.$modal.confirm('是否提交计划"' + row.mpsNo + '"进行审批？').then(() => submitMps(row.mpsId)).then(() => { getList(); proxy.$modal.msgSuccess("提交成功"); }).catch(() => {});
 }
 function handleAudit(row) {
   const id = row.mpsId;
@@ -670,7 +678,7 @@ function submitAudit(passed) {
   });
 }
 function handleRelease(row) {
-  proxy.$modal.confirm('是否确认发布计划"' + row.mpsNo + '"？将自动生成工单。').then(() => releaseMps(row.mpsId)).then(() => { getList(); proxy.$modal.msgSuccess("发布成功，工单已生成"); }).catch(() => {});
+  proxy.$modal.confirm('是否确认下达计划"' + row.mpsNo + '"？将自动生成生产工单。').then(() => releaseMps(row.mpsId)).then(() => { getList(); proxy.$modal.msgSuccess("下达成功，工单已生成"); }).catch(() => {});
 }
 function handleCancel(row) {
   cancelForm.value = { mpsId: row.mpsId, mpsNo: row.mpsNo, cancelReason: "" };
@@ -757,6 +765,7 @@ function clearMaterial() {
   form.value.productCode = undefined
   form.value.productName = undefined
   form.value.specModel = undefined
+  form.value.unit = undefined
 }
 
 // ===== 字典辅助函数 =====
@@ -770,7 +779,7 @@ function badgeClass(status) {
     '0': 'gray',     // 草稿
     '1': 'amber',    // 待审批
     '2': 'blue',     // 已审批
-    '3': 'green',    // 已发布
+    '3': 'green',    // 已下达
     '4': 'gray'      // 已取消
   };
   return map[status] || 'gray';

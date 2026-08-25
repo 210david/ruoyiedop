@@ -69,6 +69,8 @@ public class SafetyTrainingAttendee extends BaseEntity
     private Integer attendCount;
     /** 非持久化：学时统计-合格次数 */
     private Integer passCount;
+    /** 非持久化：学时统计-达标状态（1=达标，0=未达标） */
+    private String complianceStatus;
 
     public Long getAttendeeId() { return attendeeId; }
     public void setAttendeeId(Long attendeeId) { this.attendeeId = attendeeId; }
@@ -108,4 +110,6 @@ public class SafetyTrainingAttendee extends BaseEntity
     public void setAttendCount(Integer attendCount) { this.attendCount = attendCount; }
     public Integer getPassCount() { return passCount; }
     public void setPassCount(Integer passCount) { this.passCount = passCount; }
+    public String getComplianceStatus() { return complianceStatus; }
+    public void setComplianceStatus(String complianceStatus) { this.complianceStatus = complianceStatus; }
 }

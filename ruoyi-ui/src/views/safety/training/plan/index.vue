@@ -112,7 +112,8 @@
       <div class="table-wrap">
         <el-table ref="tableRef" v-loading="loading" :data="planList" border @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
-          undefined resizable sortable="custom" v-if="columns.planCode.visible" />
+          <el-table-column type="index" label="序号" width="85" align="center" />
+          <el-table-column label="计划编号" prop="planCode" key="planCode" :width="colWidth('planCode', 156)" resizable sortable="custom" v-if="columns.planCode.visible" />
           <el-table-column label="计划名称" prop="planName" key="planName" :width="colWidth('planName', 240)" resizable show-overflow-tooltip v-if="columns.planName.visible" />
           <el-table-column label="计划类型" prop="planType" key="planType" :width="colWidth('planType', 132)" resizable align="center" v-if="columns.planType.visible">
             <template #default="scope">

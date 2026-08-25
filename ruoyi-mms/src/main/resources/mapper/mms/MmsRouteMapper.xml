@@ -199,4 +199,11 @@
         WHERE product_id = #{productId} AND status = '2' AND del_flag = '0'
     </select>
 
+    <!-- 根据产品ID查询已审核（生效）的工艺路线 -->
+    <select id="selectRouteByProductId" parameterType="Long" resultMap="MmsRouteResult">
+        <include refid="selectRouteVo"/>
+        WHERE product_id = #{productId} AND status = '2' AND del_flag = '0'
+        LIMIT 1
+    </select>
+
 </mapper>

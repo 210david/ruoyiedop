@@ -58,7 +58,8 @@
       <!-- Table -->
       <div class="table-wrap">
         <el-table ref="tableRef" border v-loading="loading" :data="list" highlight-current-row @header-dragend="onHeaderDragEnd" class="app-table">
-          <el-table-column label="出库单号" prop="orderNo" key="orderNo" :width="colWidth('orderNo', 200)" resizable v-if="columns.orderNo.visible" />
+          <el-table-column type="index" label="序号" width="85" align="center" />
+<el-table-column label="出库单号" prop="orderNo" key="orderNo" :width="colWidth('orderNo', 200)" resizable v-if="columns.orderNo.visible" />
           <el-table-column label="出库类型" prop="orderType" key="orderType" :width="colWidth('orderType', 100)" resizable align="center" v-if="columns.orderType.visible">
             <template #default="scope"><span class="badge violet">{{ orderTypeLabel(scope.row.orderType) }}</span></template>
           </el-table-column>

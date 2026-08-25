@@ -160,6 +160,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
+          <el-table-column type="index" label="序号" width="85" align="center" />
           <el-table-column label="供应商编码" prop="supplierCode" key="supplierCode" :width="colWidth('supplierCode', 150)" resizable sortable="custom" v-if="columns.supplierCode.visible" />
           <el-table-column label="供应商名称" prop="supplierName" key="supplierName" :width="colWidth('supplierName', 220)" resizable show-overflow-tooltip v-if="columns.supplierName.visible" />
           <el-table-column label="简称" prop="supplierShortName" key="supplierShortName" :width="colWidth('supplierShortName', 120)" resizable show-overflow-tooltip v-if="columns.supplierShortName.visible" />

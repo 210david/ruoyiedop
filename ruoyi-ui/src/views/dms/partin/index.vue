@@ -88,6 +88,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
+          <el-table-column type="index" label="序号" width="85" align="center" />
           <el-table-column label="单据号" prop="documentCode" key="documentCode" :width="colWidth('documentCode', 140)" resizable v-if="columns.documentCode.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.documentCode }}</span></template>
           </el-table-column>

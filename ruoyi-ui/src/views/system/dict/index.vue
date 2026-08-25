@@ -64,8 +64,9 @@
        <!-- Table -->
        <div class="table-wrap">
          <el-table v-loading="loading" :data="typeList" @selection-change="handleSelectionChange" border class="app-table">
-           <el-table-column type="selection" width="55" align="center" />
-           <el-table-column label="字典编号" align="center" prop="dictId" v-if="columns.dictId.visible" />
+<el-table-column type="selection" width="55" align="center" />
+<el-table-column type="index" label="序号" width="85" align="center" />
+<el-table-column label="字典编号" align="center" prop="dictId" v-if="columns.dictId.visible" />
            <el-table-column label="字典名称" align="center" prop="dictName" :show-overflow-tooltip="true" v-if="columns.dictName.visible" />
            <el-table-column label="字典类型" align="center" :show-overflow-tooltip="true" v-if="columns.dictType.visible">
              <template #default="scope">

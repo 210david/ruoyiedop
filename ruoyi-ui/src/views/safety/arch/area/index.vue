@@ -84,6 +84,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" v-loading="loading" :data="areaList" border @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
+          <el-table-column type="index" label="序号" width="85" align="center" />
           <el-table-column label="区域编码" prop="areaCode" key="areaCode" :width="colWidth('areaCode', 150)" resizable sortable="custom" v-if="columns.areaCode.visible" />
           <el-table-column label="区域名称" prop="areaName" key="areaName" :width="colWidth('areaName', 200)" resizable show-overflow-tooltip v-if="columns.areaName.visible" />
           <el-table-column label="节点类型" prop="nodeType" key="nodeType" :width="colWidth('nodeType', 120)" resizable align="center" v-if="columns.nodeType.visible">

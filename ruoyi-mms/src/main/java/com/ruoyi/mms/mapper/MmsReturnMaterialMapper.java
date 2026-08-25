@@ -20,4 +20,7 @@ public interface MmsReturnMaterialMapper {
 
     /** 查询某个领料单已退料的明细（只查已退料状态=1的退料单） */
     public List<MmsReturnDetail> selectReturnedDetailByIssueId(Long issueId);
+
+    /** 按工单号查询退料明细（按物料拆分） */
+    public List<java.util.Map<String, Object>> selectReturnDetailListByWorkOrderNo(String workOrderNo);
 }

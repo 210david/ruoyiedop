@@ -100,7 +100,8 @@
       <div class="table-wrap">
         <el-table ref="tableRef" v-loading="loading" :data="materialList" border @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
-          undefined resizable sortable="custom" show-overflow-tooltip v-if="columns.materialCode.visible" />
+          <el-table-column type="index" label="序号" width="85" align="center" />
+          <el-table-column label="危化品编号" prop="materialCode" key="materialCode" :width="colWidth('materialCode', 130)" resizable sortable="custom" show-overflow-tooltip v-if="columns.materialCode.visible" />
           <el-table-column label="危化品名称" prop="materialName" key="materialName" :width="colWidth('materialName', 180)" resizable show-overflow-tooltip v-if="columns.materialName.visible" />
           <el-table-column label="危化品分类" prop="hazardClass" key="hazardClass" :width="colWidth('hazardClass', 140)" resizable v-if="columns.hazardClass.visible">
             <template #header><span>危化品分类</span><el-tooltip content="依据《危险化学品目录》对危险化学品进行的分类编号，如第2.1类易燃气体、第3类易燃液体等" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></template>

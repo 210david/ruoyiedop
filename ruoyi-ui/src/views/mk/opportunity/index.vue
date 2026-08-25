@@ -132,6 +132,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
+          <el-table-column type="index" label="序号" width="85" align="center" />
           <el-table-column label="商机编号" prop="opportunityNo" key="opportunityNo" :width="colWidth('opportunityNo', 150)" resizable v-if="columns.opportunityNo.visible" />
           <el-table-column label="商机名称" prop="opportunityName" key="opportunityName" show-overflow-tooltip v-if="columns.opportunityName.visible" />
           <el-table-column label="客户名称" prop="customerName" key="customerName" show-overflow-tooltip v-if="columns.customerName.visible" />

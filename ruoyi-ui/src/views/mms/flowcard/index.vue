@@ -98,6 +98,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" v-loading="loading" :data="dataList" border @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
+          <el-table-column type="index" label="序号" width="85" align="center" />
           <el-table-column label="流转卡号" prop="cardCode" key="cardCode" :width="colWidth('cardCode', 150)" resizable v-if="columns.cardCode.visible" />
           <el-table-column label="工单编号" prop="workOrderNo" key="workOrderNo" :width="colWidth('workOrderNo', 140)" resizable v-if="columns.workOrderNo.visible" />
           <el-table-column label="批次号" prop="batchNo" key="batchNo" :width="colWidth('batchNo', 130)" resizable v-if="columns.batchNo.visible" />

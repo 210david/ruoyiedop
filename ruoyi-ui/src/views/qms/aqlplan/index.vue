@@ -72,9 +72,9 @@
 
       <div class="table-wrap">
         <el-table ref="tableRef" border v-loading="loading" :data="planList" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" class="app-table">
-          <el-table-column type="selection" width="55" align="center" />
-          <el-table-column label="方案ID" prop="planId" key="planId" :width="colWidth('planId', 80)" resizable align="center" v-if="columns.planId.visible" />
-          <el-table-column label="AQL等级" prop="aqlLevel" key="aqlLevel" :width="colWidth('aqlLevel', 100)" resizable align="center" v-if="columns.aqlLevel.visible" />
+<el-table-column type="selection" width="55" align="center" />
+<el-table-column type="index" label="序号" width="85" align="center" />
+<el-table-column label="方案ID" prop="planId" key="planId" :width="colWidth('planId', 80)" resizable align="center" v-if="columns.planId.visible" />          <el-table-column label="AQL等级" prop="aqlLevel" key="aqlLevel" :width="colWidth('aqlLevel', 100)" resizable align="center" v-if="columns.aqlLevel.visible" />
           <el-table-column label="字码" prop="codeLetter" key="codeLetter" :width="colWidth('codeLetter', 80)" resizable align="center" v-if="columns.codeLetter.visible" />
           <el-table-column label="样本量(n)" prop="sampleSize" key="sampleSize" :width="colWidth('sampleSize', 100)" resizable align="center" v-if="columns.sampleSize.visible" />
           <el-table-column label="接收数(Ac)" prop="acVal" key="acVal" :width="colWidth('acVal', 100)" resizable align="center" v-if="columns.acVal.visible" />

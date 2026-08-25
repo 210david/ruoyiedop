@@ -37,7 +37,7 @@ VALUES
 (2052, 2, '返工', '1', 'mms_order_type', '', 'warning', 'N', '0', 'admin', sysdate(), '', NULL, '返工工单'),
 (2053, 3, '外协', '2', 'mms_order_type', '', 'info', 'N', '0', 'admin', sysdate(), '', NULL, '外协工单'),
 -- 工单状态
-(2061, 1, '新建',       '0', 'mms_workorder_status', '', 'info', 'Y', '0', 'admin', sysdate(), '', NULL, '新建'),
+(2061, 1, '草稿',       '0', 'mms_workorder_status', '', 'info', 'Y', '0', 'admin', sysdate(), '', NULL, '草稿'),
 (2062, 2, '已下达',     '1', 'mms_workorder_status', '', 'primary', 'N', '0', 'admin', sysdate(), '', NULL, '已下达'),
 (2063, 3, '执行中',     '2', 'mms_workorder_status', '', 'success', 'N', '0', 'admin', sysdate(), '', NULL, '执行中'),
 (2064, 4, '已完工',     '3', 'mms_workorder_status', '', 'success', 'N', '0', 'admin', sysdate(), '', NULL, '已完工'),

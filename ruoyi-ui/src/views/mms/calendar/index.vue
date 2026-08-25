@@ -63,8 +63,9 @@
 
       <div class="table-wrap">
         <el-table v-loading="loading" :data="dataList" border @selection-change="handleSelectionChange" class="app-table">
-          <el-table-column type="selection" width="55" align="center" />
-          <el-table-column label="工作日期" prop="workDate" align="center" width="120">
+<el-table-column type="selection" width="55" align="center" />
+<el-table-column type="index" label="序号" width="85" align="center" />
+<el-table-column label="工作日期" prop="workDate" align="center" width="120">
             <template #default="scope"><span>{{ parseTime(scope.row.workDate, '{y}-{m}-{d}') }}</span></template>
           </el-table-column>
           <el-table-column label="日期类型" prop="dayType" align="center" width="100">

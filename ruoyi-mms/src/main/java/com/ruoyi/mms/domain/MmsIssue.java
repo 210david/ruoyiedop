@@ -72,6 +72,13 @@ public class MmsIssue extends BaseEntity
     /** 领料明细列表（批量领料） */
     private List<MmsIssueDetail> detailList;
 
+    /** 明细物料种类数（列表汇总，非持久化） */
+    private Integer detailCount;
+    /** 物料编码拼接（列表汇总，非持久化） */
+    private String materialCodes;
+    /** 物料名称拼接（列表汇总，非持久化） */
+    private String materialNames;
+
     public Long getIssueId() { return issueId; }
     public void setIssueId(Long issueId) { this.issueId = issueId; }
     public String getIssueNo() { return issueNo; }
@@ -110,4 +117,10 @@ public class MmsIssue extends BaseEntity
     public void setPlanQty(BigDecimal planQty) { this.planQty = planQty; }
     public List<MmsIssueDetail> getDetailList() { return detailList; }
     public void setDetailList(List<MmsIssueDetail> detailList) { this.detailList = detailList; }
+    public Integer getDetailCount() { return detailCount; }
+    public void setDetailCount(Integer detailCount) { this.detailCount = detailCount; }
+    public String getMaterialCodes() { return materialCodes; }
+    public void setMaterialCodes(String materialCodes) { this.materialCodes = materialCodes; }
+    public String getMaterialNames() { return materialNames; }
+    public void setMaterialNames(String materialNames) { this.materialNames = materialNames; }
 }

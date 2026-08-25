@@ -15,6 +15,7 @@
       <!-- Table -->
       <div class="table-wrap">
         <el-table ref="tableRef" border v-loading="loading" :data="list" @header-dragend="onHeaderDragEnd" class="app-table">
+          <el-table-column type="index" label="序号" width="85" align="center" />
           <el-table-column label="阶段编码" prop="stageCode" key="stageCode" :width="colWidth('stageCode', 120)" resizable v-if="columns.stageCode.visible" />
           <el-table-column label="阶段名称" prop="stageName" key="stageName" :width="colWidth('stageName', 120)" resizable v-if="columns.stageName.visible" />
           <el-table-column label="排序" prop="sort" key="sort" :width="colWidth('sort', 80)" resizable align="center" v-if="columns.sort.visible" />

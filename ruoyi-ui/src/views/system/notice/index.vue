@@ -55,8 +55,9 @@
       <!-- Table -->
       <div class="table-wrap">
         <el-table v-loading="loading" :data="noticeList" @selection-change="handleSelectionChange" border class="app-table">
-          <el-table-column type="selection" width="55" align="center" />
-          <el-table-column label="序号" align="center" prop="noticeId" width="100" v-if="columns.noticeId.visible" />
+<el-table-column type="selection" width="55" align="center" />
+<el-table-column type="index" label="序号" width="85" align="center" />
+<el-table-column label="序号" align="center" prop="noticeId" width="100" v-if="columns.noticeId.visible" />
           <el-table-column label="公告标题" align="center" :show-overflow-tooltip="true" v-if="columns.noticeTitle.visible">
             <template #default="scope">
               <a class="link-type" style="cursor:pointer" @click="handleViewData(scope.row)">{{ scope.row.noticeTitle }}</a>

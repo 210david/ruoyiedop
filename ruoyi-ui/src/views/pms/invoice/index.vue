@@ -113,6 +113,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" v-loading="loading" :data="list" border @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
+          <el-table-column type="index" label="序号" width="85" align="center" />
           <el-table-column label="结算单号" prop="invoiceNo" key="invoiceNo" :width="colWidth('invoiceNo', 180)" resizable sortable="custom" v-if="columns.invoiceNo.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.invoiceNo }}</span></template>
           </el-table-column>

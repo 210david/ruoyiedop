@@ -158,6 +158,7 @@
         </div>
       </template>
       <el-table ref="tableRef" border v-loading="alertLoading" :data="alertList" style="width: 100%" @header-dragend="onHeaderDragEnd">
+        <el-table-column type="index" label="序号" width="85" align="center" />
         <el-table-column label="物料编码" prop="materialCode" :width="colWidth('materialCode', 140)" resizable />
         <el-table-column label="物料名称" prop="materialName" show-overflow-tooltip min-width="180" />
         <el-table-column label="规格型号" prop="specModel" :width="colWidth('specModel', 160)" resizable show-overflow-tooltip />

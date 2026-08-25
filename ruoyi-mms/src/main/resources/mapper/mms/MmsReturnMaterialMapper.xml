@@ -27,6 +27,9 @@
         <result property="updateBy"     column="update_by"/>
         <result property="updateTime"     column="update_time"/>
         <result property="remark"     column="remark"/>
+        <result property="detailCount"     column="detail_count"/>
+        <result property="materialCodes"     column="material_codes"/>
+        <result property="materialNames"     column="material_names"/>
     </resultMap>
 
     <!-- 带明细的resultMap -->
@@ -51,9 +54,19 @@
 
     <sql id="selectReturnMaterialVo">
         SELECT r.return_id, r.return_no, r.issue_id, r.work_order_id, r.work_order_no, r.material_id, r.material_code, r.material_name, r.spec_model, r.unit, r.return_qty, r.return_reason, r.return_time, r.return_by, r.status, r.del_flag, r.create_by, r.create_time, r.update_by, r.update_time, r.remark,
-               i.issue_no AS issue_no
+               i.issue_no AS issue_no,
+               sub.detail_count, sub.material_codes, sub.material_names
         FROM mms_return_material r
         LEFT JOIN mms_issue i ON r.issue_id = i.issue_id
+        LEFT JOIN (
+            SELECT return_id,
+                   COUNT(*) AS detail_count,
+                   GROUP_CONCAT(material_code ORDER BY seq SEPARATOR ',') AS material_codes,
+                   GROUP_CONCAT(material_name ORDER BY seq SEPARATOR ',') AS material_names
+            FROM mms_return_detail
+            WHERE del_flag = '0'
+            GROUP BY return_id
+        ) sub ON r.return_id = sub.return_id
     </sql>
 
     <select id="selectReturnMaterialList" parameterType="MmsReturnMaterial" resultMap="MmsReturnMaterialResult">
@@ -62,8 +75,8 @@
             r.del_flag = '0'
             <if test="returnNo != null and returnNo != ''"> AND r.return_no LIKE CONCAT('%', #{returnNo}, '%')</if>
             <if test="workOrderNo != null and workOrderNo != ''"> AND r.work_order_no LIKE CONCAT('%', #{workOrderNo}, '%')</if>
-            <if test="materialCode != null and materialCode != ''"> AND r.material_code LIKE CONCAT('%', #{materialCode}, '%')</if>
-            <if test="materialName != null and materialName != ''"> AND r.material_name LIKE CONCAT('%', #{materialName}, '%')</if>
+            <if test="materialCode != null and materialCode != ''"> AND sub.material_codes LIKE CONCAT('%', #{materialCode}, '%')</if>
+            <if test="materialName != null and materialName != ''"> AND sub.material_names LIKE CONCAT('%', #{materialName}, '%')</if>
             <if test="status != null and status != ''"> AND r.status = #{status}</if>
             <if test="returnBy != null and returnBy != ''"> AND r.return_by LIKE CONCAT('%', #{returnBy}, '%')</if>
             <if test="params.beginTime != null and params.beginTime != ''"> AND date(r.create_time) &gt;= #{params.beginTime}</if>
@@ -205,4 +218,16 @@
           AND rd.del_flag = '0'
           AND rm.status = '1'
     </select>
+
+<!-- 按工单号查询退料明细（按物料拆分，每条明细一行） -->
+<select id="selectReturnDetailListByWorkOrderNo" parameterType="String" resultType="java.util.Map">
+SELECT d.detail_id, d.return_id, d.seq, d.material_id, d.material_code, d.material_name,
+d.spec_model, d.unit, d.return_qty,
+r.return_no, i.issue_no, r.work_order_no, r.return_time, r.return_by, r.status, r.create_time
+FROM mms_return_detail d
+INNER JOIN mms_return_material r ON d.return_id = r.return_id AND r.del_flag = '0'
+LEFT JOIN mms_issue i ON r.issue_id = i.issue_id
+WHERE d.del_flag = '0' AND r.work_order_no = #{workOrderNo}
+ORDER BY r.return_id DESC, d.seq ASC
+</select>
 </mapper>

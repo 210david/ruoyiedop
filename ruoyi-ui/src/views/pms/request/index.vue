@@ -126,8 +126,9 @@
       <!-- Table -->
       <div class="table-wrap">
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
-          <el-table-column type="selection" width="55" align="center" />
-          <el-table-column label="申请单号" prop="requestNo" key="requestNo" :width="colWidth('requestNo', 180)" resizable sortable="custom" v-if="columns.requestNo.visible" />
+<el-table-column type="selection" width="55" align="center" />
+<el-table-column type="index" label="序号" width="85" align="center" />
+<el-table-column label="申请单号" prop="requestNo" key="requestNo" :width="colWidth('requestNo', 180)" resizable sortable="custom" v-if="columns.requestNo.visible" />
           <el-table-column label="标题" prop="title" key="title" :width="colWidth('title', 240)" resizable show-overflow-tooltip v-if="columns.title.visible" />
           <el-table-column label="状态" prop="status" key="status" :width="colWidth('status', 120)" resizable align="center" sortable="custom" v-if="columns.status.visible">
             <template #default="scope"><span class="badge" :class="badgeClass(scope.row.status)"><span class="dot"></span>{{ statusLabel(scope.row.status) }}</span></template>
@@ -261,7 +262,7 @@
                 <el-col :span="1.5"><el-button type="primary" plain icon="Plus" size="small" @click="handleAddDetail">添加明细</el-button></el-col>
               </el-row>
               <el-table :data="form.detailList" border size="small">
-                <el-table-column label="序号" type="index" width="55" align="center" />
+                <el-table-column label="序号" type="index" width="85" align="center" />
                 <el-table-column label="物料" prop="materialId" min-width="200"><template #default="scope"><el-select v-model="scope.row.materialId" filterable clearable size="small" placeholder="请选择物料" style="width: 100%" @change="(val) => onMaterialChange(val, scope.$index)"><el-option v-for="m in materialOptions" :key="m.materialId" :label="m.materialCode + ' - ' + m.materialName" :value="m.materialId" /></el-select></template></el-table-column>
                 <el-table-column label="规格型号" prop="specModel" min-width="120"><template #default="scope"><span>{{ scope.row.specModel }}</span></template></el-table-column>
                 <el-table-column label="单位" prop="unit" width="90"><template #default="scope"><el-select v-model="scope.row.unit" size="small" placeholder="单位" style="width: 100%"><el-option v-for="d in wms_unit" :key="d.value" :label="d.label" :value="d.value" /></el-select></template></el-table-column>
@@ -357,7 +358,7 @@
           </div>
           <div class="rd-card-body" v-show="!collapsedCards.v2">
             <el-table :data="viewData.detailList" border size="small">
-              <el-table-column label="序号" type="index" width="55" align="center" />
+              <el-table-column label="序号" type="index" width="85" align="center" />
               <el-table-column label="物料编码" prop="materialCode" min-width="120" />
               <el-table-column label="物料名称" prop="materialName" min-width="150" show-overflow-tooltip />
               <el-table-column label="规格型号" prop="specModel" min-width="120" show-overflow-tooltip />
@@ -444,7 +445,7 @@
           <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></span>采购明细</div></div>
           <div class="rd-card-body" style="display:block">
             <el-table :data="auditData.detailList" border size="small">
-              <el-table-column label="序号" type="index" width="55" align="center" />
+              <el-table-column label="序号" type="index" width="85" align="center" />
               <el-table-column label="物料编码" prop="materialCode" min-width="120" />
               <el-table-column label="物料名称" prop="materialName" min-width="150" show-overflow-tooltip />
               <el-table-column label="规格型号" prop="specModel" min-width="120" show-overflow-tooltip />

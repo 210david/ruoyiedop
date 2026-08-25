@@ -123,6 +123,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
+          <el-table-column type="index" label="序号" width="85" align="center" />
           <el-table-column label="活动名称" prop="activityName" key="activityName" :width="colWidth('activityName', 200)" resizable show-overflow-tooltip v-if="!queryParams.activityId && columns.activityName.visible" />
           <el-table-column label="企业名称" prop="companyName" key="companyName" :width="colWidth('companyName', 180)" resizable show-overflow-tooltip v-if="columns.companyName.visible" />
           <el-table-column label="联系人" prop="contactName" key="contactName" :width="colWidth('contactName', 100)" resizable v-if="columns.contactName.visible" />

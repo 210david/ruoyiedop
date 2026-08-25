@@ -100,20 +100,20 @@ public class MmsMpsController extends BaseController
     // ========== 业务流程操作 ==========
 
     /**
-     * 计划确认/提交审批
-     * 状态：0(草稿) → 1(已确认)
+     * 计划提交审批
+     * 状态：0(草稿) → 1(待审批)
      */
-    @Log(title = "生产计划-确认", businessType = BusinessType.UPDATE)
+    @Log(title = "生产计划-提交审批", businessType = BusinessType.UPDATE)
     @PreAuthorize("@ss.hasPermi('mms:mps:confirm')")
-    @PutMapping("/confirm/{mpsId}")
-    public AjaxResult confirm(@PathVariable("mpsId") Long mpsId)
+    @PutMapping("/submit/{mpsId}")
+    public AjaxResult submit(@PathVariable("mpsId") Long mpsId)
     {
-        return toAjax(mmsMpsService.confirmMps(mpsId));
+        return toAjax(mmsMpsService.submitMps(mpsId));
     }
 
     /**
      * 计划审批
-     * 状态：1(已确认) → 2(已发布) 或 0(草稿-驳回)
+     * 状态：1(待审批) → 2(已审批) 或 0(草稿-驳回)
      */
     @Log(title = "生产计划-审批", businessType = BusinessType.UPDATE)
     @PreAuthorize("@ss.hasPermi('mms:mps:approve')")
@@ -126,10 +126,10 @@ public class MmsMpsController extends BaseController
     }
 
     /**
-     * 计划发布（下达生成工单）
-     * 状态：2(已发布) → 3(已下达)，自动生成工单
+     * 计划下达（生成工单）
+     * 状态：2(已审批) → 3(已下达)，自动生成工单
      */
-    @Log(title = "生产计划-发布", businessType = BusinessType.UPDATE)
+    @Log(title = "生产计划-下达", businessType = BusinessType.UPDATE)
     @PreAuthorize("@ss.hasPermi('mms:mps:release')")
     @PutMapping("/release/{mpsId}")
     public AjaxResult release(@PathVariable("mpsId") Long mpsId)

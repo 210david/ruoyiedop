@@ -35,6 +35,18 @@ public class MmsIssueController extends BaseController
         return getDataTable(list);
     }
 
+    /**
+     * 按工单号查询领料明细（按物料拆分，每条明细一行）
+     * 用于工单详情页的领料记录展示
+     * 注意：必须在 /{IssueId} 之前定义，否则路径会被通配匹配
+     */
+    @PreAuthorize("@ss.hasPermi('mms:issue:list')")
+    @GetMapping("/detailListByWorkOrder")
+    public AjaxResult detailListByWorkOrder(@RequestParam("workOrderNo") String workOrderNo)
+    {
+        return AjaxResult.success(mmsIssueService.selectIssueDetailListByWorkOrderNo(workOrderNo));
+    }
+
     @Log(title = "Issue", businessType = BusinessType.EXPORT)
     @PreAuthorize("@ss.hasPermi('mms:issue:export')")
     @PostMapping("/export")

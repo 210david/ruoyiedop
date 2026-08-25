@@ -48,9 +48,9 @@
       </div>
       <div class="table-wrap">
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" class="app-table">
-          <el-table-column type="selection" width="55" align="center" />
-          <el-table-column label="业务类型" prop="bizType" key="bizType" :width="colWidth('bizType', 130)" resizable align="center" v-if="columns.bizType.visible"><template #default="scope"><span class="badge" :class="bizTypeBadgeClass(scope.row.bizType)"><span class="dot"></span>{{ bizTypeLabel(scope.row.bizType) }}</span></template></el-table-column>
-          <el-table-column label="业务编号" prop="bizNo" key="bizNo" :width="colWidth('bizNo', 160)" resizable show-overflow-tooltip v-if="columns.bizNo.visible" />
+<el-table-column type="selection" width="55" align="center" />
+<el-table-column type="index" label="序号" width="85" align="center" />
+<el-table-column label="业务类型" prop="bizType" key="bizType" :width="colWidth('bizType', 130)" resizable align="center" v-if="columns.bizType.visible"><template #default="scope"><span class="badge" :class="bizTypeBadgeClass(scope.row.bizType)"><span class="dot"></span>{{ bizTypeLabel(scope.row.bizType) }}</span></template></el-table-column>          <el-table-column label="业务编号" prop="bizNo" key="bizNo" :width="colWidth('bizNo', 160)" resizable show-overflow-tooltip v-if="columns.bizNo.visible" />
           <el-table-column label="签名用户" prop="nickName" key="nickName" :width="colWidth('nickName', 120)" resizable v-if="columns.nickName.visible" />
           <el-table-column label="签名含义" prop="sigMeaning" key="sigMeaning" :width="colWidth('sigMeaning', 160)" resizable show-overflow-tooltip v-if="columns.sigMeaning.visible" />
           <el-table-column label="签名结果" prop="sigResult" key="sigResult" :width="colWidth('sigResult', 100)" resizable align="center" v-if="columns.sigResult.visible"><template #default="scope"><span class="badge" :class="sigResultBadgeClass(scope.row.sigResult)"><span class="dot"></span>{{ sigResultLabel(scope.row.sigResult) }}</span></template></el-table-column>

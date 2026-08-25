@@ -123,7 +123,7 @@ public class MmsWorkOrderController extends BaseController
 
     /**
      * 工单下达
-     * 状态：0(新建) → 1(已下达)
+     * 状态：0(草稿) → 1(已下达)
      * 事务内完成：校验状态、冻结BOM/工艺快照、生成首工序派工单、写入下达时间
      */
     @Log(title = "生产工单-下达", businessType = BusinessType.UPDATE)

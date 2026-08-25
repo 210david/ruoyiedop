@@ -117,6 +117,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
+          <el-table-column type="index" label="序号" width="85" align="center" />
           <el-table-column label="退货编号" prop="returnNo" key="returnNo" :width="colWidth('returnNo', 150)" resizable v-if="columns.returnNo.visible" />
           <el-table-column label="订单编号" prop="orderNo" key="orderNo" :width="colWidth('orderNo', 150)" resizable v-if="columns.orderNo.visible" />
           <el-table-column label="客户名称" prop="customerName" key="customerName" :width="colWidth('customerName', 180)" resizable show-overflow-tooltip v-if="columns.customerName.visible" />
@@ -320,7 +321,7 @@
             </div>
             <div class="rd-card-body" v-show="!collapsedCards.addItems">
               <el-table :data="addForm.detailList" border size="small" empty-text="选择订单后，物料明细将自动带出">
-                <el-table-column label="序号" type="index" width="55" align="center" />
+                <el-table-column label="序号" type="index" width="85" align="center" />
                 <el-table-column label="商品名称" prop="productName" min-width="150" show-overflow-tooltip />
                 <el-table-column label="规格型号" prop="productSpec" min-width="120" show-overflow-tooltip />
                 <el-table-column label="单位" prop="unit" width="80" align="center" />
@@ -517,7 +518,7 @@
             </div>
             <div class="rd-card-body" v-show="!collapsedCards.approveItems">
               <el-table :data="approveForm.detailList" border size="small">
-                <el-table-column label="序号" type="index" width="55" align="center" />
+                <el-table-column label="序号" type="index" width="85" align="center" />
                 <el-table-column label="商品名称" prop="productName" min-width="150" show-overflow-tooltip />
                 <el-table-column label="规格型号" prop="productSpec" min-width="120" show-overflow-tooltip />
                 <el-table-column label="单位" prop="unit" width="80" align="center" />
@@ -769,7 +770,7 @@
           </div>
           <div class="rd-card-body" v-show="!collapsedCards.viewItems">
             <el-table :data="viewForm.detailList" border size="small" v-if="viewForm.detailList && viewForm.detailList.length">
-              <el-table-column label="序号" type="index" width="55" align="center" />
+              <el-table-column label="序号" type="index" width="85" align="center" />
               <el-table-column label="商品名称" prop="productName" min-width="150" show-overflow-tooltip />
               <el-table-column label="规格型号" prop="productSpec" min-width="120" show-overflow-tooltip />
               <el-table-column label="单位" prop="unit" width="80" align="center" />

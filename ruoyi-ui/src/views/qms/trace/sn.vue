@@ -113,9 +113,9 @@
 
       <div class="table-wrap">
         <el-table ref="tableRef" border v-loading="loading" :data="snList" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" class="app-table">
-          <el-table-column type="selection" width="55" align="center" />
-          <el-table-column label="序列号" prop="snCode" key="snCode" :width="colWidth('snCode', 200)" resizable show-overflow-tooltip v-if="columns.snCode.visible">
-            <template #default="scope">
+<el-table-column type="selection" width="55" align="center" />
+<el-table-column type="index" label="序号" width="85" align="center" />
+<el-table-column label="序列号" prop="snCode" key="snCode" :width="colWidth('snCode', 200)" resizable show-overflow-tooltip v-if="columns.snCode.visible">            <template #default="scope">
               <el-link type="primary" @click="handleTrace(scope.row)">{{ scope.row.snCode }}</el-link>
             </template>
           </el-table-column>

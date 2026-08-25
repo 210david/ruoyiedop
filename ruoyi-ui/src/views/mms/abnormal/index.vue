@@ -77,6 +77,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" v-loading="loading" :data="dataList" border @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
+          <el-table-column type="index" label="序号" width="85" align="center" />
           <el-table-column label="异常单号" prop="abnormalNo" key="abnormalNo" :width="colWidth('abnormalNo', 140)" resizable v-if="columns.abnormalNo.visible" />
           <el-table-column label="工单号" prop="workOrderNo" key="workOrderNo" :width="colWidth('workOrderNo', 140)" resizable v-if="columns.workOrderNo.visible" />
           <el-table-column label="产能单元" prop="resourceName" key="resourceName" :width="colWidth('resourceName', 120)" resizable v-if="columns.resourceName.visible" />
@@ -128,7 +129,7 @@
             <div class="rd-card-header" @click="toggleCard('c0')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg></span>基本信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c0 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
             <div class="rd-card-body" v-show="!collapsedCards.c0">
               <el-row :gutter="20"><el-col :span="12"><el-form-item label="异常单号" prop="abnormalNo"><el-input v-model="form.abnormalNo" placeholder="自动生成" disabled /></el-form-item></el-col><el-col :span="12"><el-form-item label="工单号" prop="workOrderNo" :rules="[{ required: true, message: '请选择工单', trigger: 'change' }]"><el-input v-model="form.workOrderNo" readonly placeholder="请选择工单" style="width: 100%" @click="openWorkOrderPicker"><template #append><el-button icon="Search" @click="openWorkOrderPicker" /></template><template #suffix><el-icon v-if="form.workOrderNo" class="rd-form-tip" style="cursor:pointer" @click.stop="clearWorkOrder"><CircleClose /></el-icon></template></el-input></el-form-item></el-col></el-row>
-              <el-row :gutter="20"><el-col :span="12"><el-form-item label="产能单元" prop="resourceName" :rules="[{ required: true, message: '请选择产能单元', trigger: 'change' }]"><el-input v-model="form.resourceName" readonly placeholder="请选择产能单元" style="width: 100%" @click="openResourcePicker"><template #append><el-button icon="Search" @click="openResourcePicker" /></template><template #suffix><el-icon v-if="form.resourceName" class="rd-form-tip" style="cursor:pointer" @click.stop="clearResource"><CircleClose /></el-icon></template></el-input></el-form-item></el-col><el-col :span="12"><el-form-item label="上报人"><el-input v-model="form.reportBy" placeholder="保存时自动取当前用户" disabled /></el-form-item></el-col></el-row>
+              <el-row :gutter="20"><el-col :span="12"><el-form-item label="产能单元" prop="resourceName" :rules="[{ required: true, message: '请选择产能单元', trigger: 'change' }]"><el-input v-model="form.resourceName" readonly placeholder="请选择产能单元" style="width: 100%" @click="openResourcePicker"><template #append><el-button icon="Search" @click="openResourcePicker" /></template><template #suffix><el-icon v-if="form.resourceName" class="rd-form-tip" style="cursor:pointer" @click.stop="clearResource"><CircleClose /></el-icon></template></el-input></el-form-item></el-col><el-col :span="12"><el-form-item label="上报人" prop="reportBy" :rules="[{ required: true, message: '请选择上报人', trigger: 'change' }]"><el-input v-model="form.reportBy" readonly placeholder="请选择上报人" style="width: 100%" @click="openReportByPicker"><template #append><el-button icon="Search" @click="openReportByPicker" /></template><template #suffix><el-icon v-if="form.reportBy" class="rd-form-tip" style="cursor:pointer" @click.stop="clearReportBy"><CircleClose /></el-icon></template></el-input></el-form-item></el-col></el-row>
             </div>
           </section>
           <section class="rd-card">
@@ -184,7 +185,7 @@
         </section>
         <section class="rd-card" v-if="viewData.status === '2'">
           <div class="rd-card-header" @click="toggleCard('vc4')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span>处理关闭信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc4 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
-          <div class="rd-card-body" v-show="!collapsedCards.vc4" style="display:block"><div class="rd-grid"><div class="rd-item"><span class="rd-label">处理人</span><div class="rd-value">{{ viewData.handleBy || '-' }}</div></div><div class="rd-item"><span class="rd-label">处理时间</span><div class="rd-value">{{ viewData.handleTime ? parseTime(viewData.handleTime) : '-' }}</div></div><div class="rd-item"><span class="rd-label">关闭时间</span><div class="rd-value">{{ viewData.closeTime ? parseTime(viewData.closeTime) : '-' }}</div></div><div class="rd-item"><span class="rd-label">处理方式</span><div class="rd-value"><dict-tag :options="mms_abnormal_handle_method" :value="viewData.handleMethod" /></div></div><div class="rd-item rd-item--full"><span class="rd-label">处理结果</span><div class="rd-value">{{ viewData.handleResult || '-' }}</div></div><div class="rd-item rd-item--full"><span class="rd-label">根本原因</span><div class="rd-value">{{ viewData.rootCause || '-' }}</div></div><div class="rd-item rd-item--full"><span class="rd-label">预防措施</span><div class="rd-value">{{ viewData.preventiveMeasure || '-' }}</div></div><div class="rd-item"><span class="rd-label">停机时长</span><div class="rd-value">{{ viewData.downtimeMinutes != null ? viewData.downtimeMinutes + ' 分钟' : '-' }}</div></div><div class="rd-item"><span class="rd-label">是否需要追纠</span><div class="rd-value"><span v-if="viewData.needPursuit === '1'" class="badge red"><span class="dot"></span>是</span><span v-else class="badge gray"><span class="dot"></span>否</span></div></div></div></div>
+          <div class="rd-card-body" v-show="!collapsedCards.vc4" style="display:block"><div class="rd-grid"><div class="rd-item"><span class="rd-label">处理人</span><div class="rd-value">{{ viewData.handleBy || '-' }}</div></div><div class="rd-item"><span class="rd-label">处理时间</span><div class="rd-value">{{ viewData.handleTime ? parseTime(viewData.handleTime) : '-' }}</div></div><div class="rd-item"><span class="rd-label">关闭时间</span><div class="rd-value">{{ viewData.closeTime ? parseTime(viewData.closeTime) : '-' }}</div></div><div class="rd-item"><span class="rd-label">处理方式</span><div class="rd-value"><dict-tag :options="mms_abnormal_handle_method" :value="viewData.handleMethod" /></div></div><div class="rd-item rd-item--full"><span class="rd-label">处理结果</span><div class="rd-value">{{ viewData.handleResult || '-' }}</div></div><div class="rd-item rd-item--full"><span class="rd-label">根本原因</span><div class="rd-value">{{ viewData.rootCause || '-' }}</div></div><div class="rd-item rd-item--full"><span class="rd-label">预防措施</span><div class="rd-value">{{ viewData.preventiveMeasure || '-' }}</div></div><div class="rd-item"><span class="rd-label">停机时长</span><div class="rd-value">{{ viewData.downtimeHours != null ? viewData.downtimeHours + ' 小时' : '-' }}</div></div><div class="rd-item"><span class="rd-label">是否需要追纠</span><div class="rd-value"><span v-if="viewData.needPursuit === '1'" class="badge red"><span class="dot"></span>是</span><span v-else class="badge gray"><span class="dot"></span>否</span></div></div></div></div>
         </section>
         <section class="rd-card">
           <div class="rd-card-header" @click="toggleCard('vc2')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>其他信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
@@ -308,8 +309,8 @@
               </el-form-item>
               <el-row :gutter="20">
                 <el-col :span="12">
-                  <el-form-item label="停机时长(分钟)" prop="downtimeMinutes">
-                    <el-input-number v-model="resolveForm.downtimeMinutes" :min="0" :max="9999" placeholder="停机时长" style="width: 100%" />
+                  <el-form-item label="停机时长(小时)" prop="downtimeHours">
+                    <el-input-number v-model="resolveForm.downtimeHours" :min="0" :max="9999" :precision="2" :step="0.5" placeholder="停机时长" style="width: 100%" />
                   </el-form-item>
                 </el-col>
                 <el-col :span="12">
@@ -358,28 +359,22 @@
     <el-dialog v-model="resPickerOpen" width="780px" append-to-body draggable class="rd-dialog">
       <template #header><div class="rd-detail-header"><div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div><span class="rd-detail-header-title">选择产能单元</span></div></template>
       <div class="material-picker">
-        <div class="material-picker-search">
-          <el-input v-model="resPickerQuery.resourceCode" placeholder="资源编码" clearable size="small" style="width: 180px" @keyup.enter="handleResPickerQuery"><template #prefix><el-icon><Search /></el-icon></template></el-input>
-          <el-input v-model="resPickerQuery.resourceName" placeholder="产能单元" clearable size="small" style="width: 180px; margin-left: 8px" @keyup.enter="handleResPickerQuery" />
-          <el-button type="primary" plain icon="Search" size="small" style="margin-left: 8px" @click="handleResPickerQuery">查询</el-button>
-          <el-button icon="RefreshLeft" size="small" @click="resetResPickerQuery">重置</el-button>
-        </div>
         <div class="material-picker-table">
-          <el-table v-loading="resPickerLoading" :data="resPickerList" highlight-current-row @row-click="onResRowClick" @row-dblclick="onResRowDblClick" height="360" size="small" border>
+          <el-table v-loading="resPickerLoading" :data="resPickerList" highlight-current-row @row-click="onResRowClick" @row-dblclick="onResRowDblClick" height="400" size="small" border>
             <el-table-column width="45" align="center"><template #default="{ row }"><el-radio :model-value="resPickerSelectedId" :value="row.resourceId" @click.stop="onResRowClick(row)"><span /></el-radio></template></el-table-column>
-            <el-table-column label="资源编码" prop="resourceCode" width="130" show-overflow-tooltip />
-            <el-table-column label="产能单元" prop="resourceName" min-width="160" show-overflow-tooltip />
-            <el-table-column label="类型" prop="resourceType" width="90" align="center"><template #default="scope"><dict-tag :options="mms_resource_type" :value="scope.row.resourceType" /></template></el-table-column>
-            <el-table-column label="产线" prop="lineName" width="100" show-overflow-tooltip />
-            <el-table-column label="车间" prop="workshopName" width="100" show-overflow-tooltip />
+            <el-table-column label="序号" prop="stepSeq" width="60" align="center" />
+            <el-table-column label="工序编码" prop="processCode" width="120" show-overflow-tooltip />
+            <el-table-column label="工序名称" prop="processName" min-width="120" show-overflow-tooltip />
+            <el-table-column label="产能单元" prop="resourceName" min-width="140" show-overflow-tooltip />
           </el-table>
         </div>
-        <div class="material-picker-pager"><el-pagination v-model:current-page="resPickerQuery.pageNum" v-model:page-size="resPickerQuery.pageSize" :total="resPickerTotal" layout="total, prev, pager, next" small @current-change="getResPickerList" /></div>
+        <div v-if="!resPickerLoading && resPickerList.length === 0" style="text-align:center;padding:24px;color:var(--ink-500);font-size:14px">该工单的工序未关联产能单元</div>
       </div>
       <template #footer><el-button @click="resPickerOpen = false">取 消</el-button><el-button type="primary" @click="handleResPickerConfirm" :disabled="!resPickerSelectedId">确 定</el-button></template>
     </el-dialog>
 
     <!-- ===== 人员选择器 ===== -->
+    <user-picker ref="reportByUserPickerRef" title="选择上报人" @confirm="onReportByUserPickerConfirm" />
     <user-picker ref="responseUserPickerRef" title="选择响应人" @confirm="onResponseUserPickerConfirm" />
     <user-picker ref="handleUserPickerRef" title="选择处理人" @confirm="onHandleUserPickerConfirm" />
 
@@ -433,9 +428,9 @@
 
 <script setup name="Abnormal">
 import { listAbnormal, getAbnormal, addAbnormal, updateAbnormal, delAbnormal, respondAbnormal, resolveAbnormal, linkDowntime } from "@/api/mms/abnormal";
-import { listWorkOrder } from "@/api/mms/workorder";
-import { listResource } from "@/api/mms/resource";
+import { listWorkOrder, listWorkOrderProcesses } from "@/api/mms/workorder";
 import UserPicker from '@/components/UserPicker/index.vue'
+import useUserStore from '@/store/modules/user'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
 import { Search, Filter, RefreshLeft, ArrowRight, ArrowDown, WarningFilled, CircleClose } from '@element-plus/icons-vue'
@@ -501,8 +496,8 @@ function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum =
 function resetQuery() { queryParams.value.abnormalNo = undefined; queryParams.value.workOrderNo = undefined; queryParams.value.abnormalType = undefined; queryParams.value.severity = undefined; queryParams.value.status = undefined; queryParams.value.resourceName = undefined; queryParams.value.reportBy = undefined; dateRange.value = []; queryParams.value.params = {}; activeStatusTab.value = 'all'; handleQuery(); }
 function handleStatusTabClick(status) { activeStatusTab.value = status; queryParams.value.status = status === "all" ? undefined : status; handleQuery(); }
 function handleSelectionChange(selection) { ids.value = selection.map(item => item.abnormalId); single.value = selection.length !== 1; multiple.value = !selection.length; }
-function reset() { form.value = { abnormalNo: undefined, workOrderId: undefined, workOrderNo: undefined, resourceId: undefined, resourceName: undefined, productCode: undefined, productName: undefined, specModel: undefined, unit: undefined, abnormalType: undefined, severity: undefined, description: undefined, remark: undefined }; proxy.resetForm("formRef"); }
-function handleAdd() { reset(); open.value = true; title.value = "新增异常"; }
+function reset() { form.value = { abnormalNo: undefined, workOrderId: undefined, workOrderNo: undefined, resourceId: undefined, resourceName: undefined, productCode: undefined, productName: undefined, specModel: undefined, unit: undefined, abnormalType: undefined, severity: undefined, description: undefined, remark: undefined, reportBy: undefined }; proxy.resetForm("formRef"); }
+function handleAdd() { reset(); open.value = true; title.value = "新增异常"; const userStore = useUserStore(); form.value.reportBy = userStore.nickName || userStore.name; }
 function handleUpdate(row) { reset(); const id = row.abnormalId || ids.value[0]; getAbnormal(id).then(response => { form.value = response.data; open.value = true; title.value = "修改异常"; }); }
 function handleView(row) { const id = row.abnormalId || ids.value[0]; getAbnormal(id).then(response => { viewData.value = response.data; viewOpen.value = true; }); }
 function submitForm() { proxy.$refs["formRef"].validate(valid => { if (valid) { if (form.value.abnormalId != null) { updateAbnormal(form.value).then(() => { proxy.$modal.msgSuccess("修改成功"); open.value = false; getList(); }); } else { addAbnormal(form.value).then(() => { proxy.$modal.msgSuccess("新增成功"); open.value = false; getList(); }); } } }); }
@@ -511,8 +506,8 @@ function handleDelete(row) { const delIds = row.abnormalId || ids.value; proxy.$
 function handleExport() { proxy.download("mms/abnormal/export", { ...queryParams.value }, `abnormal_${new Date().getTime()}.xlsx`); }
 function handleRespond(row) { respondForm.value = { abnormalId: row.abnormalId, abnormalNo: row.abnormalNo, workOrderNo: row.workOrderNo, resourceName: row.resourceName, productCode: row.productCode, productName: row.productName, specModel: row.specModel, unit: row.unit, abnormalType: row.abnormalType, severity: row.severity, description: row.description, reportBy: row.reportBy, reportTime: row.reportTime, responseBy: '', responseTime: proxy.parseTime(new Date(), '{y}-{m}-{d} {h}:{i}:{s}'), responseMeasure: '', impactScope: '', estimatedRestoreTime: null, responseRemark: '' }; respondOpen.value = true; }
 function submitRespond() { if (!respondForm.value.responseBy) { proxy.$modal.msgError('请选择响应人'); return; } if (!respondForm.value.responseMeasure) { proxy.$modal.msgError('请输入响应措施'); return; } respondAbnormal(respondForm.value.abnormalId, { responseBy: respondForm.value.responseBy, responseTime: respondForm.value.responseTime, responseMeasure: respondForm.value.responseMeasure, impactScope: respondForm.value.impactScope, estimatedRestoreTime: respondForm.value.estimatedRestoreTime, responseRemark: respondForm.value.responseRemark }).then(() => { respondOpen.value = false; getList(); proxy.$modal.msgSuccess("响应成功"); }); }
-function handleResolve(row) { resolveForm.value = { abnormalId: row.abnormalId, abnormalNo: row.abnormalNo, workOrderNo: row.workOrderNo, resourceName: row.resourceName, productCode: row.productCode, productName: row.productName, specModel: row.specModel, unit: row.unit, abnormalType: row.abnormalType, severity: row.severity, description: row.description, reportBy: row.reportBy, reportTime: row.reportTime, responseBy: row.responseBy, responseTime: row.responseTime, responseMeasure: row.responseMeasure, impactScope: row.impactScope, handleResult: '', handleBy: row.responseBy || '', handleTime: proxy.parseTime(new Date(), '{y}-{m}-{d} {h}:{i}:{s}'), handleMethod: '', rootCause: '', preventiveMeasure: '', downtimeMinutes: null, needPursuit: '0' }; resolveOpen.value = true; }
-function submitResolve() { if (!resolveForm.value.handleBy) { proxy.$modal.msgError('请选择处理人'); return; } if (!resolveForm.value.handleResult) { proxy.$modal.msgError('请输入处理结果'); return; } resolveAbnormal(resolveForm.value.abnormalId, { handleResult: resolveForm.value.handleResult, handleBy: resolveForm.value.handleBy, handleTime: resolveForm.value.handleTime, handleMethod: resolveForm.value.handleMethod, rootCause: resolveForm.value.rootCause, preventiveMeasure: resolveForm.value.preventiveMeasure, downtimeMinutes: resolveForm.value.downtimeMinutes, needPursuit: resolveForm.value.needPursuit }).then(() => { resolveOpen.value = false; getList(); proxy.$modal.msgSuccess("处理关闭成功，关联停机记录已自动恢复"); }); }
+function handleResolve(row) { resolveForm.value = { abnormalId: row.abnormalId, abnormalNo: row.abnormalNo, workOrderNo: row.workOrderNo, resourceName: row.resourceName, productCode: row.productCode, productName: row.productName, specModel: row.specModel, unit: row.unit, abnormalType: row.abnormalType, severity: row.severity, description: row.description, reportBy: row.reportBy, reportTime: row.reportTime, responseBy: row.responseBy, responseTime: row.responseTime, responseMeasure: row.responseMeasure, impactScope: row.impactScope, handleResult: '', handleBy: row.responseBy || '', handleTime: proxy.parseTime(new Date(), '{y}-{m}-{d} {h}:{i}:{s}'), handleMethod: '', rootCause: '', preventiveMeasure: '', downtimeHours: null, needPursuit: '0' }; resolveOpen.value = true; }
+function submitResolve() { if (!resolveForm.value.handleBy) { proxy.$modal.msgError('请选择处理人'); return; } if (!resolveForm.value.handleResult) { proxy.$modal.msgError('请输入处理结果'); return; } resolveAbnormal(resolveForm.value.abnormalId, { handleResult: resolveForm.value.handleResult, handleBy: resolveForm.value.handleBy, handleTime: resolveForm.value.handleTime, handleMethod: resolveForm.value.handleMethod, rootCause: resolveForm.value.rootCause, preventiveMeasure: resolveForm.value.preventiveMeasure, downtimeHours: resolveForm.value.downtimeHours, needPursuit: resolveForm.value.needPursuit }).then(() => { resolveOpen.value = false; getList(); proxy.$modal.msgSuccess("处理关闭成功，关联停机记录已自动恢复"); }); }
 function handleLinkDowntime(row) { proxy.$modal.confirm('确认为异常[' + row.abnormalNo + ']联动生成停机记录？将自动创建一条停机中状态的停机单。').then(() => linkDowntime(row.abnormalId)).then(res => { proxy.$modal.msgSuccess("停机记录已联动生成，单号：" + (res.data ? res.data : '')); getList(); }).catch(() => {}); }
 
 function dictLabel(dictRef, value) { if (value === null || value === undefined || value === '') return '—'; const arr = (dictRef && dictRef.value) ? dictRef.value : dictRef; if (!arr || !Array.isArray(arr)) return '—'; const item = arr.find(d => d.value == value); return item ? item.label : '—'; }
@@ -541,18 +536,31 @@ function handleWoPickerConfirm() {
   form.value.productName = row.productName;
   form.value.specModel = row.specModel;
   form.value.unit = row.unit;
+  // 工单可能有多个工序对应不同产能单元，不自动带出，由用户手动选择
+  form.value.resourceId = undefined;
+  form.value.resourceName = undefined;
   woPickerOpen.value = false;
   proxy.$refs["formRef"] && proxy.$refs["formRef"].validateField('workOrderNo');
 }
-function clearWorkOrder() { form.value.workOrderId = undefined; form.value.workOrderNo = undefined; form.value.productCode = undefined; form.value.productName = undefined; form.value.specModel = undefined; form.value.unit = undefined; proxy.$refs["formRef"] && proxy.$refs["formRef"].validateField('workOrderNo'); }
+function clearWorkOrder() { form.value.workOrderId = undefined; form.value.workOrderNo = undefined; form.value.productCode = undefined; form.value.productName = undefined; form.value.specModel = undefined; form.value.unit = undefined; form.value.resourceId = undefined; form.value.resourceName = undefined; proxy.$refs["formRef"] && proxy.$refs["formRef"].validateField('workOrderNo'); proxy.$refs["formRef"] && proxy.$refs["formRef"].validateField('resourceName'); }
 
-// ===== 产能单元选择器 =====
-const resPickerOpen = ref(false); const resPickerLoading = ref(false); const resPickerList = ref([]); const resPickerTotal = ref(0); const resPickerSelectedId = ref(null); const resPickerSelectedRow = ref(null);
-const resPickerQuery = reactive({ pageNum: 1, pageSize: 10, resourceName: undefined, resourceCode: undefined, status: '0' });
-function openResourcePicker() { resPickerOpen.value = true; resPickerSelectedId.value = null; resPickerSelectedRow.value = null; resPickerQuery.pageNum = 1; resPickerQuery.resourceName = undefined; resPickerQuery.resourceCode = undefined; getResPickerList(); }
-function getResPickerList() { resPickerLoading.value = true; listResource(resPickerQuery).then(res => { resPickerList.value = res.rows; resPickerTotal.value = res.total; resPickerLoading.value = false; }).catch(() => { resPickerLoading.value = false; }); }
-function handleResPickerQuery() { resPickerQuery.pageNum = 1; getResPickerList(); }
-function resetResPickerQuery() { resPickerQuery.resourceName = undefined; resPickerQuery.resourceCode = undefined; handleResPickerQuery(); }
+// ===== 产能单元选择器（根据工单工序过滤） =====
+const resPickerOpen = ref(false); const resPickerLoading = ref(false); const resPickerList = ref([]); const resPickerSelectedId = ref(null); const resPickerSelectedRow = ref(null);
+function openResourcePicker() {
+  if (!form.value.workOrderId) { proxy.$modal.msgWarning('请先选择工单'); return; }
+  resPickerOpen.value = true;
+  resPickerSelectedId.value = form.value.resourceId || null;
+  resPickerSelectedRow.value = null;
+  getResPickerList();
+}
+function getResPickerList() {
+  resPickerLoading.value = true;
+  listWorkOrderProcesses(form.value.workOrderId).then(res => {
+    // 从工序快照中提取有产能单元的工序
+    resPickerList.value = (res.data || []).filter(p => p.resourceId);
+    resPickerLoading.value = false;
+  }).catch(() => { resPickerLoading.value = false; });
+}
 function onResRowClick(row) { resPickerSelectedId.value = row.resourceId; resPickerSelectedRow.value = row; }
 function onResRowDblClick(row) { onResRowClick(row); handleResPickerConfirm(); }
 function handleResPickerConfirm() {
@@ -564,6 +572,11 @@ function handleResPickerConfirm() {
   proxy.$refs["formRef"] && proxy.$refs["formRef"].validateField('resourceName');
 }
 function clearResource() { form.value.resourceId = undefined; form.value.resourceName = undefined; proxy.$refs["formRef"] && proxy.$refs["formRef"].validateField('resourceName'); }
+
+// ===== 上报人选择器 =====
+function openReportByPicker() { proxy.$refs.reportByUserPickerRef.open(); }
+function onReportByUserPickerConfirm(user) { form.value.reportBy = user.nickName; proxy.$refs["formRef"] && proxy.$refs["formRef"].validateField('reportBy'); }
+function clearReportBy() { form.value.reportBy = undefined; proxy.$refs["formRef"] && proxy.$refs["formRef"].validateField('reportBy'); }
 
 // ===== 响应人选择器 =====
 function openResponseByPicker() { proxy.$refs.responseUserPickerRef.open(); }

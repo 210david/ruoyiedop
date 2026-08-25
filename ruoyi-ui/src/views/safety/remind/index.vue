@@ -86,6 +86,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" v-loading="loading" :data="remindList" border @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
+          <el-table-column type="index" label="序号" width="85" align="center" />
           <el-table-column label="提醒类型" prop="remindType" key="remindType" :width="colWidth('remindType', 120)" resizable align="center" v-if="columns.remindType.visible">
             <template #default="scope"><span class="badge violet">{{ remindTypeLabel(scope.row.remindType) }}</span></template>
           </el-table-column>

@@ -1,5 +1,6 @@
 package com.ruoyi.mms.domain;
 
+import java.math.BigDecimal;
 import java.util.Date;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.ruoyi.common.annotation.Excel;
@@ -43,8 +44,8 @@ public class MmsAbnormal extends BaseEntity {
     private String rootCause;
     /** 预防措施 */
     private String preventiveMeasure;
-    /** 实际停机时长(分钟) */
-    private Integer downtimeMinutes;
+    /** 实际停机时长(小时) */
+    private BigDecimal downtimeHours;
     /** 是否需要追纠(0=否,1=是) */
     private String needPursuit;
     @Excel(name = "状态", readConverterExp = "0=待响应,1=处理中,2=已关闭") private String status;
@@ -106,8 +107,8 @@ public class MmsAbnormal extends BaseEntity {
     public void setRootCause(String rootCause) { this.rootCause = rootCause; }
     public String getPreventiveMeasure() { return preventiveMeasure; }
     public void setPreventiveMeasure(String preventiveMeasure) { this.preventiveMeasure = preventiveMeasure; }
-    public Integer getDowntimeMinutes() { return downtimeMinutes; }
-    public void setDowntimeMinutes(Integer downtimeMinutes) { this.downtimeMinutes = downtimeMinutes; }
+    public BigDecimal getDowntimeHours() { return downtimeHours; }
+    public void setDowntimeHours(BigDecimal downtimeHours) { this.downtimeHours = downtimeHours; }
     public String getNeedPursuit() { return needPursuit; }
     public void setNeedPursuit(String needPursuit) { this.needPursuit = needPursuit; }
     public String getStatus() { return status; }

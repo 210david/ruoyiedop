@@ -118,9 +118,9 @@
 
       <div class="table-wrap">
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" class="app-table">
-          <el-table-column type="selection" width="55" align="center" />
-          <el-table-column label="NCR编号" prop="ncrNo" key="ncrNo" :width="colWidth('ncrNo', 150)" resizable show-overflow-tooltip v-if="columns.ncrNo.visible">
-            <template #header><span>NCR编号</span><el-tooltip content="NCR（Non-Conformance Report）即不合格品报告编号，用于标识和追溯不合格品的全流程处理记录" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></template>
+<el-table-column type="selection" width="55" align="center" />
+<el-table-column type="index" label="序号" width="85" align="center" />
+<el-table-column label="NCR编号" prop="ncrNo" key="ncrNo" :width="colWidth('ncrNo', 150)" resizable show-overflow-tooltip v-if="columns.ncrNo.visible">            <template #header><span>NCR编号</span><el-tooltip content="NCR（Non-Conformance Report）即不合格品报告编号，用于标识和追溯不合格品的全流程处理记录" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></template>
           </el-table-column>
           <el-table-column label="来源类型" prop="sourceType" key="sourceType" :width="colWidth('sourceType', 100)" resizable align="center" v-if="columns.sourceType.visible">
             <template #default="scope"><span class="badge" :class="sourceTypeBadgeClass(scope.row.sourceType)"><span class="dot"></span>{{ sourceTypeLabel(scope.row.sourceType) }}</span></template>

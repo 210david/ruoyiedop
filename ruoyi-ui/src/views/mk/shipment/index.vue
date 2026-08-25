@@ -122,6 +122,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
+          <el-table-column type="index" label="序号" width="85" align="center" />
           <el-table-column label="发货单号" prop="shipmentNo" key="shipmentNo" :width="colWidth('shipmentNo', 160)" resizable v-if="columns.shipmentNo.visible" />
           <el-table-column label="订单编号" prop="orderNo" key="orderNo" :width="colWidth('orderNo', 160)" resizable v-if="columns.orderNo.visible" />
           <el-table-column label="客户名称" prop="customerName" key="customerName" :width="colWidth('customerName', 200)" resizable show-overflow-tooltip v-if="columns.customerName.visible" />
@@ -198,7 +199,7 @@
             <div class="rd-card-header" @click="toggleCard('c2')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></span>发货明细</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
             <div class="rd-card-body" v-show="!collapsedCards.c2">
               <el-table :data="form.detailList" border size="small" :header-cell-style="{ textAlign: 'center' }">
-                <el-table-column label="序号" type="index" width="55" align="center" />
+                <el-table-column label="序号" type="index" width="85" align="center" />
                 <el-table-column label="商品名称" prop="productName" min-width="150" show-overflow-tooltip />
                 <el-table-column label="规格型号" prop="productSpec" min-width="120" show-overflow-tooltip />
                 <el-table-column label="单位" prop="unit" width="80" align="center" />
@@ -305,7 +306,7 @@
           <div class="rd-card-header" @click="toggleCard('v2')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></span>发货明细</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
           <div class="rd-card-body" v-show="!collapsedCards.v2">
             <el-table :data="viewData.detailList" border size="small">
-              <el-table-column label="序号" type="index" width="55" align="center" />
+              <el-table-column label="序号" type="index" width="85" align="center" />
               <el-table-column label="商品名称" prop="productName" min-width="150" show-overflow-tooltip />
               <el-table-column label="规格型号" prop="productSpec" min-width="120" show-overflow-tooltip />
               <el-table-column label="单位" prop="unit" width="80" align="center" />
@@ -344,7 +345,7 @@
             <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></span>发货物料明细</div></div>
             <div class="rd-card-body">
               <el-table :data="confirmForm.detailList" border size="small" :header-cell-style="{ textAlign: 'center' }">
-                <el-table-column label="序号" type="index" width="55" align="center" />
+                <el-table-column label="序号" type="index" width="85" align="center" />
                 <el-table-column label="商品名称" prop="productName" min-width="150" show-overflow-tooltip />
                 <el-table-column label="规格型号" prop="productSpec" min-width="120" show-overflow-tooltip />
                 <el-table-column label="单位" prop="unit" width="80" align="center" />
@@ -464,7 +465,7 @@
             <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></span>退货明细</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.r2 }" aria-label="折叠" @click.stop="toggleCard('r2')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
             <div class="rd-card-body" v-show="!collapsedCards.r2">
               <el-table :data="returnForm.detailList" border size="small" :header-cell-style="{ textAlign: 'center' }">
-                <el-table-column label="序号" type="index" width="55" align="center" />
+                <el-table-column label="序号" type="index" width="85" align="center" />
                 <el-table-column label="商品名称" prop="productName" min-width="180" show-overflow-tooltip />
                 <el-table-column label="规格型号" prop="productSpec" min-width="144" show-overflow-tooltip />
                 <el-table-column label="单位" prop="unit" width="96" align="center" />

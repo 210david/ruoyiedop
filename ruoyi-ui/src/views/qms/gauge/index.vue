@@ -82,9 +82,9 @@
 
       <div class="table-wrap">
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" class="app-table">
-          <el-table-column type="selection" width="55" align="center" />
-          <el-table-column label="量检具编号" prop="gaugeNo" key="gaugeNo" :width="colWidth('gaugeNo', 140)" resizable show-overflow-tooltip v-if="columns.gaugeNo.visible" />
-          <el-table-column label="量检具名称" prop="gaugeName" key="gaugeName" :width="colWidth('gaugeName', 180)" resizable show-overflow-tooltip v-if="columns.gaugeName.visible" />
+<el-table-column type="selection" width="55" align="center" />
+<el-table-column type="index" label="序号" width="85" align="center" />
+<el-table-column label="量检具编号" prop="gaugeNo" key="gaugeNo" :width="colWidth('gaugeNo', 140)" resizable show-overflow-tooltip v-if="columns.gaugeNo.visible" />          <el-table-column label="量检具名称" prop="gaugeName" key="gaugeName" :width="colWidth('gaugeName', 180)" resizable show-overflow-tooltip v-if="columns.gaugeName.visible" />
           <el-table-column prop="gaugeType" key="gaugeType" :width="colWidth('gaugeType', 120)" resizable align="center" v-if="columns.gaugeType.visible">
             <template #header><span>类型</span><el-tooltip content="量检具分类大类：称量类（天平/水分仪等）、分析类（光谱仪/色谱仪等）、量具类（卡尺/千分尺/量块等）、监测类（温度记录仪等）" placement="top"><el-icon class="form-tip-icon"><QuestionFilled /></el-icon></el-tooltip></template>
             <template #default="scope"><span class="badge violet"><span class="dot"></span>{{ gaugeTypeLabel(scope.row.gaugeType) }}</span></template>

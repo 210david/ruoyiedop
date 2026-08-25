@@ -75,8 +75,9 @@
                <!-- Table -->
                <div class="table-wrap">
                   <el-table v-loading="loading" :data="roleList" @selection-change="handleSelectionChange" class="app-table">
-                     <el-table-column type="selection" width="55" align="center" />
-                     <el-table-column label="角色编号" prop="roleId" key="roleId" width="120" v-if="columns.roleId.visible" />
+<el-table-column type="selection" width="55" align="center" />
+<el-table-column type="index" label="序号" width="85" align="center" />
+<el-table-column label="角色编号" prop="roleId" key="roleId" width="120" v-if="columns.roleId.visible" />
                      <el-table-column label="角色名称" prop="roleName" key="roleName" :show-overflow-tooltip="true" width="150" v-if="columns.roleName.visible" />
                      <el-table-column label="角色分类" align="center" key="roleCategory" width="180" v-if="columns.roleCategory.visible">
                         <template #default="scope">

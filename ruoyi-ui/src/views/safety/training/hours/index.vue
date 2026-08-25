@@ -87,6 +87,7 @@
       <div class="toolbar">
         <div class="left">
           <span class="toolbar-title">学时明细</span>
+          <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['safety:training:hours:export']">导出</el-button>
         </div>
         <div class="right">
           <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="safety_training_hours_columns" />
@@ -96,6 +97,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" v-loading="loading" :data="hoursList" border @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
+          <el-table-column type="index" label="序号" width="85" align="center" />
           <el-table-column label="参训人员" prop="userName" key="userName" :width="colWidth('userName', 156)" resizable v-if="columns.userName.visible" />
           <el-table-column label="所属部门" prop="deptName" key="deptName" :width="colWidth('deptName', 192)" resizable show-overflow-tooltip v-if="columns.deptName.visible" />
           <el-table-column label="累计学时" prop="totalHours" key="totalHours" :width="colWidth('totalHours', 144)" resizable align="center" sortable="custom" v-if="columns.totalHours.visible">
@@ -136,7 +138,7 @@
 import { listHoursStatistics } from '@/api/safety/trainingAttendee'
 import { listDept } from '@/api/system/dept'
 import { useColumnResize } from '@/composables/useColumnResize'
-import { Search, Filter, RefreshLeft, ArrowDown } from '@element-plus/icons-vue'
+import { Search, Filter, RefreshLeft, ArrowDown, Download } from '@element-plus/icons-vue'
 
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('safety_training_hours_index')
@@ -208,10 +210,15 @@ function getList() {
     total.value = response.total
     loading.value = false
     applySavedWidths()
+  }).catch(() => {
+    loading.value = false
   })
 }
 function handleQuery() { showAdvanced.value = false; queryParams.pageNum = 1; getList() }
 function resetQuery() { queryParams.userName = undefined; queryParams.deptId = undefined; queryParams.complianceStatus = undefined; queryParams.isPass = undefined; dateRange.value = []; queryParams.params = {}; handleQuery() }
+
+/** 导出学时统计 */
+function handleExport() { proxy.download('safety/training/attendee/hours/export', { ...queryParams, params: queryParams.params }, `training_hours_${new Date().getTime()}.xlsx`) }
 
 function calcPassRate(row) {
   if (!row.attendCount || row.attendCount === 0) return 0
@@ -267,6 +274,7 @@ getList()
 .safety-training-hours-page .summary-label { font-size:13px; color:var(--ink-500); margin-bottom:4px; }
 .safety-training-hours-page .summary-value { font-size:24px; font-weight:700; color:var(--ink-900); }
 .safety-training-hours-page .toolbar { display:flex; align-items:center; justify-content:space-between; padding:12px 20px; border-bottom:1px solid var(--ink-200); background:var(--ink-50); }
+.safety-training-hours-page .toolbar .left { display:flex; align-items:center; gap:12px; }
 .safety-training-hours-page .toolbar-title { font-size:14px; font-weight:600; color:var(--ink-700); }
 .safety-training-hours-page .toolbar .right { display:flex; gap:8px; align-items:center; }
 .safety-training-hours-page .table-wrap { overflow-x:auto; }

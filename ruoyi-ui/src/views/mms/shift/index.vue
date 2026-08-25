@@ -88,6 +88,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" v-loading="loading" :data="dataList" border @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
+          <el-table-column type="index" label="序号" width="85" align="center" />
           <el-table-column label="班次编号" prop="shiftCode" key="shiftCode" :width="colWidth('shiftCode', 140)" resizable v-if="columns.shiftCode.visible" />
           <el-table-column label="班次名称" prop="shiftName" key="shiftName" :width="colWidth('shiftName', 140)" resizable v-if="columns.shiftName.visible" />
           <el-table-column label="开始时间" prop="startTime" key="startTime" :width="colWidth('startTime', 100)" resizable align="center" v-if="columns.startTime.visible" />

@@ -98,6 +98,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
+          <el-table-column type="index" label="序号" width="85" align="center" />
           <el-table-column label="供应商" prop="supplierName" key="supplierName" :width="colWidth('supplierName', 240)" resizable show-overflow-tooltip v-if="columns.supplierName.visible" />
           <el-table-column label="评估周期" prop="evalPeriod" key="evalPeriod" :width="colWidth('evalPeriod', 130)" resizable align="center" v-if="columns.evalPeriod.visible" />
           <el-table-column label="评估日期" prop="evalDate" key="evalDate" :width="colWidth('evalDate', 130)" resizable align="center" sortable="custom" :sort-orders="['descending', 'ascending']" v-if="columns.evalDate.visible" />

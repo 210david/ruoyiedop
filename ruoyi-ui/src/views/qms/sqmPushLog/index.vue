@@ -70,9 +70,9 @@
 
       <div class="table-wrap">
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" class="app-table">
-          <el-table-column type="selection" width="55" align="center" />
-          <el-table-column label="供应商" prop="supplierName" key="supplierName" :width="colWidth('supplierName', 180)" resizable show-overflow-tooltip v-if="columns.supplierName.visible" />
-          <el-table-column label="评价周期" prop="evalPeriod" key="evalPeriod" :width="colWidth('evalPeriod', 110)" resizable align="center" v-if="columns.evalPeriod.visible" />
+<el-table-column type="selection" width="55" align="center" />
+<el-table-column type="index" label="序号" width="85" align="center" />
+<el-table-column label="供应商" prop="supplierName" key="supplierName" :width="colWidth('supplierName', 180)" resizable show-overflow-tooltip v-if="columns.supplierName.visible" />          <el-table-column label="评价周期" prop="evalPeriod" key="evalPeriod" :width="colWidth('evalPeriod', 110)" resizable align="center" v-if="columns.evalPeriod.visible" />
           <el-table-column label="质量评分" prop="qualityScore" key="qualityScore" :width="colWidth('qualityScore', 100)" resizable align="center" v-if="columns.qualityScore.visible" />
           <el-table-column label="等级" prop="grade" key="grade" :width="colWidth('grade', 80)" resizable align="center" v-if="columns.grade.visible">
             <template #default="scope">

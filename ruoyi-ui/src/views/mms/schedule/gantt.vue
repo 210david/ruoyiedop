@@ -448,7 +448,7 @@
             <div class="help-list">
               <div class="help-list-item">
                 <span class="help-list-bullet">●</span>
-                <span class="help-list-text"><b>左侧栏</b>：待排产工单列表，显示状态为"新建"且尚未排产的工单。列表按优先级排序：高 → 中 → 低。</span>
+                <span class="help-list-text"><b>左侧栏</b>：待排产工单列表，显示状态为"草稿"且尚未排产的工单。列表按优先级排序：高 → 中 → 低。</span>
               </div>
               <div class="help-list-item">
                 <span class="help-list-bullet" style="color: #ef4444;">●</span>
@@ -653,7 +653,7 @@
                 <p>排产任务的时间格式需要精确到秒，系统会自动处理。如果反复出现，请检查后端服务是否正常运行。</p>
               </el-collapse-item>
               <el-collapse-item title="待排产列表中没有工单？" name="3">
-                <p>待排产列表只显示状态为「新建」且未排产的工单。如果工单已排产或状态已变更（如已下达），则不会显示。请到「工单管理」页面查看所有工单。</p>
+                <p>待排产列表只显示状态为「草稿」且未排产的工单。如果工单已排产或状态已变更（如已下达），则不会显示。请到「工单管理」页面查看所有工单。</p>
               </el-collapse-item>
             </el-collapse>
           </div>
@@ -891,7 +891,7 @@ function loadUnscheduledOrders() {
     // 全量已下达排产记录的工单ID集合（不受甘特图日期范围限制）
     const scheduledWoIds = new Set(idsRes.data || [])
     unscheduledOrders.value = (woRes.rows || [])
-      .filter(wo => wo.status === '0' || wo.status === '1') // 新建或已下达均可排产
+      .filter(wo => wo.status === '0' || wo.status === '1') // 草稿或已下达均可排产
       .filter(wo => !scheduledWoIds.has(wo.workOrderId))    // 排除已有已下达排产记录的
       .sort(sortByPriority)                                  // 按优先级排序：高→中→低
     filteredUnscheduled.value = [...unscheduledOrders.value]
@@ -1483,10 +1483,18 @@ function onGanttDrop(e) {
   }
 
   const resource = resourceList.value[yIndex]
-  const startTime = new Date(timePoint)
-  // 对齐到整点
-  startTime.setMinutes(0, 0, 0)
-  const endTime = new Date(startTime.getTime() + 1 * 60 * 60 * 1000)
+
+  // 排产默认时间优先取工单的计划时间；若工单无计划时间则取拖拽落点时间
+  let startTime, endTime
+  if (wo.planStart && wo.planFinish) {
+    startTime = new Date(wo.planStart)
+    endTime = new Date(wo.planFinish)
+  } else {
+    startTime = new Date(timePoint)
+    // 对齐到整点
+    startTime.setMinutes(0, 0, 0)
+    endTime = new Date(startTime.getTime() + 1 * 60 * 60 * 1000)
+  }
 
   // 弹出编辑弹窗，用户可手动调整排期时间
   scheduleForm.value = {

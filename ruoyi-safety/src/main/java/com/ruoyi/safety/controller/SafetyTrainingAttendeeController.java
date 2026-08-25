@@ -1,5 +1,6 @@
 package com.ruoyi.safety.controller;
 
+import java.math.BigDecimal;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -14,6 +15,7 @@ import com.ruoyi.common.core.page.TableDataInfo;
 import com.ruoyi.common.enums.BusinessType;
 import com.ruoyi.common.utils.poi.ExcelUtil;
 import com.ruoyi.safety.domain.SafetyTrainingAttendee;
+import com.ruoyi.safety.domain.vo.SafetyTrainingHoursExportVO;
 import com.ruoyi.safety.service.ISafetyTrainingAttendeeService;
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -41,6 +43,36 @@ public class SafetyTrainingAttendeeController extends BaseController
         startPage();
         List<SafetyTrainingAttendee> list = safetyTrainingAttendeeService.selectHoursStatistics(attendee);
         return getDataTable(list);
+    }
+
+    /** 学时统计导出 */
+    @Log(title = "学时统计", businessType = BusinessType.EXPORT)
+    @PreAuthorize("@ss.hasPermi('safety:training:hours:export')")
+    @PostMapping("/hours/export")
+    public void hoursExport(HttpServletResponse response, SafetyTrainingAttendee attendee)
+    {
+        List<SafetyTrainingAttendee> list = safetyTrainingAttendeeService.selectHoursStatistics(attendee);
+        // 转换为导出VO，与前端列表列保持一致
+        List<SafetyTrainingHoursExportVO> exportList = new java.util.ArrayList<>();
+        for (SafetyTrainingAttendee item : list)
+        {
+            SafetyTrainingHoursExportVO vo = new SafetyTrainingHoursExportVO();
+            vo.setUserName(item.getUserName());
+            vo.setDeptName(item.getDeptName());
+            vo.setTotalHours(item.getTotalHours() != null ? item.getTotalHours() : BigDecimal.ZERO);
+            vo.setAttendCount(item.getAttendCount() != null ? item.getAttendCount() : 0);
+            vo.setPassCount(item.getPassCount() != null ? item.getPassCount() : 0);
+            // 合格率
+            int attend = item.getAttendCount() != null ? item.getAttendCount() : 0;
+            int pass = item.getPassCount() != null ? item.getPassCount() : 0;
+            vo.setPassRate(attend > 0 ? Math.round((float) pass / attend * 100) : 0);
+            // 达标状态（年度标准24学时）
+            BigDecimal hours = item.getTotalHours() != null ? item.getTotalHours() : BigDecimal.ZERO;
+            vo.setComplianceStatus(hours.compareTo(BigDecimal.valueOf(24)) >= 0 ? "1" : "0");
+            exportList.add(vo);
+        }
+        ExcelUtil<SafetyTrainingHoursExportVO> util = new ExcelUtil<>(SafetyTrainingHoursExportVO.class);
+        util.exportExcel(response, exportList, "学时统计");
     }
 
     @Log(title = "参训人员", businessType = BusinessType.EXPORT)

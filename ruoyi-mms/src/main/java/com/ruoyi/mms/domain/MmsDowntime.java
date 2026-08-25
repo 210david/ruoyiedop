@@ -1,5 +1,6 @@
 package com.ruoyi.mms.domain;
 
+import java.math.BigDecimal;
 import java.util.Date;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.ruoyi.common.annotation.Excel;
@@ -43,8 +44,8 @@ public class MmsDowntime extends BaseEntity
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date endTime;
 
-    /** 停机类型（计划停机/故障停机/换型停机/物料停机/其他停机） */
-    @Excel(name = "停机类型", readConverterExp = "0=计划停机,1=故障停机,2=换型停机,3=物料停机,9=其他停机")
+    /** 停机类型（故障停机/换型停机/物料停机/其他停机） */
+    @Excel(name = "停机类型", readConverterExp = "1=故障停机,2=换型停机,3=物料停机,9=其他停机")
     private String dtType;
 
     /** 停机分类（0=计划停机,1=非计划停机）——EMS标准分类 */
@@ -58,12 +59,8 @@ public class MmsDowntime extends BaseEntity
     @Excel(name = "停机原因")
     private String reason;
 
-    @Excel(name = "停机时长(分钟)")
-    private Integer minutes;
-
-    /** 状态（0=停机中,1=已恢复） */
-    @Excel(name = "状态", readConverterExp = "0=停机中,1=已恢复")
-    private String status;
+    @Excel(name = "停机时长(小时)")
+    private BigDecimal hours;
 
     /** 上报人 */
     @Excel(name = "上报人")
@@ -107,10 +104,8 @@ public class MmsDowntime extends BaseEntity
     public void setDtLevel(String dtLevel) { this.dtLevel = dtLevel; }
     public String getReason() { return reason; }
     public void setReason(String reason) { this.reason = reason; }
-    public Integer getMinutes() { return minutes; }
-    public void setMinutes(Integer minutes) { this.minutes = minutes; }
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
+    public BigDecimal getHours() { return hours; }
+    public void setHours(BigDecimal hours) { this.hours = hours; }
     public String getReportBy() { return reportBy; }
     public void setReportBy(String reportBy) { this.reportBy = reportBy; }
     public String getHandleBy() { return handleBy; }

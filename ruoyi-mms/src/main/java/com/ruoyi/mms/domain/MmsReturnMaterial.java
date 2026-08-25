@@ -36,6 +36,13 @@ public class MmsReturnMaterial extends BaseEntity {
     /** 退料明细列表（批量退料） */
     private List<MmsReturnDetail> detailList;
 
+    /** 明细物料种类数（列表汇总，非持久化） */
+    private Integer detailCount;
+    /** 物料编码拼接（列表汇总，非持久化） */
+    private String materialCodes;
+    /** 物料名称拼接（列表汇总，非持久化） */
+    private String materialNames;
+
     public Long getReturnId() { return returnId; }
     public void setReturnId(Long returnId) { this.returnId = returnId; }
     public String getReturnNo() { return returnNo; }
@@ -76,4 +83,10 @@ public class MmsReturnMaterial extends BaseEntity {
     public void setProductName(String productName) { this.productName = productName; }
     public List<MmsReturnDetail> getDetailList() { return detailList; }
     public void setDetailList(List<MmsReturnDetail> detailList) { this.detailList = detailList; }
+    public Integer getDetailCount() { return detailCount; }
+    public void setDetailCount(Integer detailCount) { this.detailCount = detailCount; }
+    public String getMaterialCodes() { return materialCodes; }
+    public void setMaterialCodes(String materialCodes) { this.materialCodes = materialCodes; }
+    public String getMaterialNames() { return materialNames; }
+    public void setMaterialNames(String materialNames) { this.materialNames = materialNames; }
 }

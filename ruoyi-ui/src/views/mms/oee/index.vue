@@ -31,10 +31,11 @@
       </div>
       <div class="table-wrap">
         <el-table ref="tableRef" v-loading="loading" :data="dataList" border @header-dragend="onHeaderDragEnd" class="app-table">
-          <el-table-column type="index" label="序号" width="55" align="center" />
+          <el-table-column type="index" label="序号" width="85" align="center" />
           <el-table-column label="日期" prop="snapshotDate" key="snapshotDate" :width="colWidth('snapshotDate', 120)" resizable align="center" v-if="columns.snapshotDate.visible"><template #default="scope">{{ parseTime(scope.row.snapshotDate, '{y}-{m}-{d}') }}</template></el-table-column>
           <el-table-column label="产能单元" prop="resourceName" key="resourceName" :width="colWidth('resourceName', 140)" resizable show-overflow-tooltip v-if="columns.resourceName.visible" />
           <el-table-column label="工单编号" prop="workOrderNo" key="workOrderNo" :width="colWidth('workOrderNo', 140)" resizable v-if="columns.workOrderNo.visible" />
+          <el-table-column label="工序" prop="processName" key="processName" :width="colWidth('processName', 120)" resizable show-overflow-tooltip v-if="columns.processName.visible" />
           <el-table-column label="计划工时" prop="plannedHours" key="plannedHours" :width="colWidth('plannedHours', 100)" resizable align="center" v-if="columns.plannedHours.visible" />
           <el-table-column label="运行工时" prop="runHours" key="runHours" :width="colWidth('runHours', 100)" resizable align="center" v-if="columns.runHours.visible" />
           <el-table-column label="停机工时" prop="downtimeHours" key="downtimeHours" :width="colWidth('downtimeHours', 100)" resizable align="center" v-if="columns.downtimeHours.visible" />
@@ -68,25 +69,25 @@
         <div class="highlight-card highlight-warning">
           <div class="highlight-card-title">指标计算公式</div>
           <div class="highlight-card-body">
-            <p><strong>日期</strong> = 工单最近一次报工日期；无报工记录则取工单实际开工日期 <span style="color: #f56c6c;">*系统自动提取</span></p>
-            <p><strong>计划工时</strong> = 工单计划完工时间 − 计划开工时间（小时） <span style="color: #f56c6c;">*系统自动计算</span></p>
-            <p><strong>运行工时</strong> = 工单实际完工 − 实际开工（小时），未完工则取当前时间 <span style="color: #f56c6c;">*系统自动计算</span></p>
-            <p><strong>停机工时</strong> = 停机记录表（mms_downtime）中该工单的停机分钟数之和 ÷ 60，无记录则为0 <span style="color: #f56c6c;">*需录入停机记录</span></p>
-            <p><strong>可用率（Availability）</strong> = (运行工时 − 停机工时) ÷ 计划工时 × 100%</p>
-            <p><strong>表现率（Performance）</strong> = 完工数量 ÷ 计划数量 × 100%</p>
-            <p><strong>质量率（Quality Rate）</strong> = 合格数量 ÷ (合格数量 + 不良数量) × 100%</p>
+          <p><strong>日期</strong> = 该工序最近一次报工日期；无报工记录则取派工单实际开工日期 <span style="color: #f56c6c;">*系统自动提取</span></p>
+          <p><strong>计划工时</strong> = 派工单计划完工时间 − 计划开工时间（小时） <span style="color: #f56c6c;">*系统自动计算</span></p>
+          <p><strong>运行工时</strong> = 派工单实际完工 − 实际开工（小时），未完工则显示0（不计算） <span style="color: #f56c6c;">*系统自动计算</span></p>
+          <p><strong>停机工时</strong> = 停机记录表（mms_downtime）中该派工单的停机分钟数之和 ÷ 60，无记录则为0 <span style="color: #f56c6c;">*需录入停机记录</span></p>
+          <p><strong>可用率（Availability）</strong> = 已完工时 (运行工时 − 停机工时) ÷ 计划工时 × 100%，未完工时为0</p>
+          <p><strong>表现率（Performance）</strong> = 合格数量 ÷ 计划数量 × 100%</p>
+          <p><strong>质量率（Quality Rate）</strong> = 合格数量 ÷ (合格数量 + 不良数量) × 100%</p>
             <p><strong>OEE</strong> = 可用率 × 表现率 × 质量率 × 100%</p>
-            <p><strong>合格数量</strong> = 工单表 qualified_qty（工单最终汇总合格数） <span style="color: #f56c6c;">*系统自动提取</span></p>
-            <p><strong>不良数量</strong> = 工单表 defect_qty（工单最终汇总不良数） <span style="color: #f56c6c;">*系统自动提取</span></p>
+          <p><strong>合格数量</strong> = 派工单 good_qty（该工序合格数） <span style="color: #f56c6c;">*系统自动提取</span></p>
+          <p><strong>不良数量</strong> = 派工单 defect_qty（该工序不良数） <span style="color: #f56c6c;">*系统自动提取</span></p>
           </div>
         </div>
 
         <!-- 三、数据来源 -->
         <h4>三、数据来源</h4>
         <el-descriptions :column="1" border>
-          <el-descriptions-item label="工单表（mms_work_order）">提供日期（实际开工日期）、计划工时、计划数量、完工数量、合格数量、不良数量等基础数据</el-descriptions-item>
-          <el-descriptions-item label="报工表（mms_work_report）">提供最近一次报工日期，用于确定统计日期</el-descriptions-item>
-          <el-descriptions-item label="停机记录表（mms_downtime）">提供设备停机时长数据，按工单关联汇总停机分钟数</el-descriptions-item>
+          <el-descriptions-item label="派工单表（mms_dispatch）">提供工序、产能单元、计划工时、计划数量、合格数量、不良数量等基础数据，每个工序一条OEE记录</el-descriptions-item>
+          <el-descriptions-item label="报工表（mms_work_report）">提供该工序最近一次报工日期，用于确定统计日期</el-descriptions-item>
+          <el-descriptions-item label="停机记录表（mms_downtime）">提供设备停机时长数据，按派工单关联汇总停机分钟数</el-descriptions-item>
         </el-descriptions>
 
         <!-- 四、OEE等级判定 -->
@@ -119,6 +120,7 @@ const columns = reactive({
   snapshotDate: { label: '日期', visible: true },
   resourceName: { label: '产能单元', visible: true },
   workOrderNo: { label: '工单编号', visible: true },
+  processName: { label: '工序', visible: true },
   plannedHours: { label: '计划工时', visible: true },
   runHours: { label: '运行工时', visible: true },
   downtimeHours: { label: '停机工时', visible: true },

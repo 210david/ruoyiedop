@@ -86,6 +86,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
+          <el-table-column type="index" label="序号" width="85" align="center" />
           <el-table-column label="任务编号" prop="taskNo" key="taskNo" :width="colWidth('taskNo', 180)" resizable v-if="columns.taskNo.visible" />
           <el-table-column label="路线名称" prop="routeName" key="routeName" :width="colWidth('routeName', 200)" resizable show-overflow-tooltip v-if="columns.routeName.visible" />
           <el-table-column label="计划日期" prop="planDate" key="planDate" :width="colWidth('planDate', 130)" resizable align="center" v-if="columns.planDate.visible" />
@@ -219,7 +220,7 @@
           </div>
           <div class="rd-card-body" v-show="!collapsedCards.insp_common">
             <el-table :data="viewGroups.common" border size="small" @header-dragend="onHeaderDragEnd">
-              <el-table-column label="序号" width="60" align="center" type="index" />
+              <el-table-column label="序号" width="85" align="center" type="index" />
               <el-table-column label="检查项" prop="item" />
               <el-table-column label="结果" width="120" align="center">
                 <template #default="scope">
@@ -244,7 +245,7 @@
           </div>
           <div class="rd-card-body" v-show="!collapsedCards['insp_device_' + di]">
             <el-table :data="dg.items" border size="small" @header-dragend="onHeaderDragEnd">
-              <el-table-column label="序号" width="60" align="center" type="index" />
+              <el-table-column label="序号" width="85" align="center" type="index" />
               <el-table-column label="检查项" prop="item" />
               <el-table-column label="结果" width="120" align="center">
                 <template #default="scope">
@@ -316,7 +317,7 @@
           </div>
           <div class="rd-card-body" v-show="!collapsedCards.exec_common">
             <el-table :data="execGroups.common" border style="width: 100%" @header-dragend="onHeaderDragEnd">
-              <el-table-column label="序号" width="60" align="center" type="index" />
+              <el-table-column label="序号" width="85" align="center" type="index" />
               <el-table-column label="检查项" prop="item" min-width="180">
                 <template #default="scope"><span style="font-weight: 500">{{ scope.row.item }}</span></template>
               </el-table-column>
@@ -364,7 +365,7 @@
           </div>
           <div class="rd-card-body" v-show="!collapsedCards['exec_device_' + di]">
             <el-table :data="dg.items" border style="width: 100%" @header-dragend="onHeaderDragEnd">
-              <el-table-column label="序号" width="60" align="center" type="index" />
+              <el-table-column label="序号" width="85" align="center" type="index" />
               <el-table-column label="检查项" prop="item" min-width="180">
                 <template #default="scope"><span style="font-weight: 500">{{ scope.row.item }}</span></template>
               </el-table-column>

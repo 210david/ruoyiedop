@@ -12,6 +12,7 @@
     </el-row>
     <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
       <el-table-column type="selection" width="55" align="center" />
+      <el-table-column type="index" label="序号" width="85" align="center" />
       <el-table-column label="批次号" prop="waveNo" :width="colWidth('waveNo', 160)" resizable />
       <el-table-column label="批次名称" prop="waveName" show-overflow-tooltip />
       <el-table-column label="仓库" prop="warehouseName" :width="colWidth('warehouseName', 120)" resizable />

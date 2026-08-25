@@ -42,6 +42,18 @@ public class MmsReturnMaterialController extends BaseController
         return getDataTable(list);
     }
 
+    /**
+     * 按工单号查询退料明细（按物料拆分，每条明细一行）
+     * 用于工单详情页的退料记录展示
+     * 注意：必须在 /{ReturnId} 之前定义，否则路径会被通配匹配
+     */
+    @PreAuthorize("@ss.hasPermi('mms:return:list')")
+    @GetMapping("/detailListByWorkOrder")
+    public AjaxResult detailListByWorkOrder(@RequestParam("workOrderNo") String workOrderNo)
+    {
+        return AjaxResult.success(mmsReturnMaterialService.selectReturnDetailListByWorkOrderNo(workOrderNo));
+    }
+
     @Log(title = "ReturnMaterial", businessType = BusinessType.EXPORT)
     @PreAuthorize("@ss.hasPermi('mms:return:export')")
     @PostMapping("/export")

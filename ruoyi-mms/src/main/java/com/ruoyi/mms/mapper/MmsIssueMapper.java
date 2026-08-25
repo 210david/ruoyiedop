@@ -17,4 +17,7 @@ public interface MmsIssueMapper {
     public int insertIssueDetail(MmsIssueDetail detail);
     /** 删除领料明细（按领料单ID） */
     public int deleteIssueDetailByIssueId(Long issueId);
+
+    /** 按工单号查询领料明细（按物料拆分） */
+    public List<java.util.Map<String, Object>> selectIssueDetailListByWorkOrderNo(String workOrderNo);
 }

@@ -119,6 +119,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
+          <el-table-column type="index" label="序号" width="85" align="center" />
           <el-table-column label="合同编号" prop="contractNo" key="contractNo" :width="colWidth('contractNo', 180)" resizable sortable="custom" v-if="columns.contractNo.visible" />
           <el-table-column label="合同名称" prop="contractName" key="contractName" :width="colWidth('contractName', 240)" resizable show-overflow-tooltip v-if="columns.contractName.visible" />
           <el-table-column label="供应商" prop="supplierName" key="supplierName" :width="colWidth('supplierName', 240)" resizable show-overflow-tooltip v-if="columns.supplierName.visible" />

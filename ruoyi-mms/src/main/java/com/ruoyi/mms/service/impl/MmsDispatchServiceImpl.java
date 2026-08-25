@@ -263,10 +263,20 @@ public class MmsDispatchServiceImpl implements IMmsDispatchService
             {
                 throw new ServiceException("实际结束时间不能早于实际开始时间");
             }
+            // 校验实际结束不能早于计划开始时间
+            if (d.getPlanStart() != null && actualEnd.before(d.getPlanStart()))
+            {
+                throw new ServiceException("实际结束时间不能早于计划开始时间");
+            }
             d.setActualEnd(actualEnd);
         }
         else
         {
+            // 未填写实际结束时间时取当前时间，仍需校验不早于计划开始
+            if (d.getPlanStart() != null && now.before(d.getPlanStart()))
+            {
+                throw new ServiceException("当前时间早于计划开始时间，请手动选择实际结束时间");
+            }
             d.setActualEnd(now);
         }
 
@@ -611,7 +621,17 @@ public class MmsDispatchServiceImpl implements IMmsDispatchService
             return;
         }
         wo.setStatus("3"); // 已完工
-        wo.setActualFinish(now);
+        // 实际完工时间取所有派工单中最大的actual_end（即最后一道已完工工序的完工时间）
+        // 如果没有任何派工单有actual_end，则取当前时间
+        Date lastActualEnd = null;
+        for (MmsDispatch disp : allDispatches)
+        {
+            if (disp.getActualEnd() != null && (lastActualEnd == null || disp.getActualEnd().after(lastActualEnd)))
+            {
+                lastActualEnd = disp.getActualEnd();
+            }
+        }
+        wo.setActualFinish(lastActualEnd != null ? lastActualEnd : now);
         wo.setUpdateBy(username);
         wo.setUpdateTime(now);
         workOrderMapper.updateWorkOrder(wo);

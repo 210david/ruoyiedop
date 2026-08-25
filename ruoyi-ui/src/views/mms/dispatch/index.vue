@@ -343,17 +343,17 @@
           <!-- 派工单信息 -->
           <section class="rd-card">
             <div class="rd-card-header" @click="toggleCard('sc0')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg></span>派工单信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.sc0 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
-            <div class="rd-card-body" v-show="!collapsedCards.sc0" style="display:block"><div class="rd-grid"><div class="rd-item"><span class="rd-label">派工单号</span><div class="rd-value">{{ startForm.dispatchNo || '-' }}</div></div><div class="rd-item"><span class="rd-label">工单编号</span><div class="rd-value">{{ startForm.workOrderNo || '-' }}</div></div></div></div>
+            <div class="rd-card-body" v-show="!collapsedCards.sc0" style="display:block"><div class="rd-grid"><div class="rd-item"><span class="rd-label">派工单号</span><div class="rd-value">{{ startForm.dispatchNo || '-' }}</div></div><div class="rd-item"><span class="rd-label">工单编号</span><div class="rd-value">{{ startForm.workOrderNo || '-' }}</div></div><div class="rd-item"><span class="rd-label">工序顺序号</span><div class="rd-value">{{ startForm.opSeq != null ? startForm.opSeq : '-' }}</div></div><div class="rd-item"><span class="rd-label">工序名称</span><div class="rd-value">{{ startForm.processName || '-' }}</div></div></div></div>
           </section>
           <!-- 产品信息 -->
           <section class="rd-card">
             <div class="rd-card-header" @click="toggleCard('sc0a')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></span>产品信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.sc0a }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
             <div class="rd-card-body" v-show="!collapsedCards.sc0a" style="display:block"><div class="rd-grid"><div class="rd-item"><span class="rd-label">产品编码</span><div class="rd-value">{{ startForm.productCode || '-' }}</div></div><div class="rd-item"><span class="rd-label">产品名称</span><div class="rd-value">{{ startForm.productName || '-' }}</div></div><div class="rd-item"><span class="rd-label">规格型号</span><div class="rd-value">{{ startForm.specModel || '-' }}</div></div><div class="rd-item"><span class="rd-label">单位</span><div class="rd-value"><dict-tag :options="wms_unit" :value="startForm.unit" /></div></div></div></div>
           </section>
-          <!-- 工序信息 -->
+          <!-- 计划信息 -->
           <section class="rd-card">
-            <div class="rd-card-header" @click="toggleCard('sc0b')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11H5a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h4"/><path d="M15 11h4a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-4"/><line x1="9" y1="13" x2="15" y2="13"/></svg></span>工序信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.sc0b }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
-            <div class="rd-card-body" v-show="!collapsedCards.sc0b" style="display:block"><div class="rd-grid"><div class="rd-item"><span class="rd-label">工序顺序号</span><div class="rd-value">{{ startForm.opSeq != null ? startForm.opSeq : '-' }}</div></div><div class="rd-item"><span class="rd-label">工序名称</span><div class="rd-value">{{ startForm.processName || '-' }}</div></div></div></div>
+            <div class="rd-card-header" @click="toggleCard('sc1')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>计划信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.sc1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+            <div class="rd-card-body" v-show="!collapsedCards.sc1" style="display:block"><div class="rd-grid"><div class="rd-item rd-item--full"><span class="rd-label">计划数量</span><div class="rd-value">{{ startForm.planQty != null ? startForm.planQty : '-' }}</div></div><div class="rd-item"><span class="rd-label">计划开始</span><div class="rd-value">{{ startForm.planStart ? parseTime(startForm.planStart) : '-' }}</div></div><div class="rd-item"><span class="rd-label">计划结束</span><div class="rd-value">{{ startForm.planEnd ? parseTime(startForm.planEnd) : '-' }}</div></div></div></div>
           </section>
           <!-- 执行资源 -->
           <section class="rd-card">
@@ -361,11 +361,6 @@
             <div class="rd-card-body" v-show="!collapsedCards.sc0c">
               <el-row :gutter="20"><el-col :span="12"><el-form-item label="产能单元" prop="resourceName" required><el-input v-model="startForm.resourceName" readonly placeholder="请选择产能单元" style="width: 100%" @click="openStartResourcePicker"><template #append><el-button icon="Search" @click="openStartResourcePicker" /></template><template #suffix><el-icon v-if="startForm.resourceName" class="rd-form-tip" style="cursor:pointer" @click.stop="clearStartResource"><CircleClose /></el-icon></template></el-input></el-form-item></el-col><el-col :span="12"><el-form-item label="班组" prop="teamName" required><el-input v-model="startForm.teamName" readonly placeholder="请选择班组" style="width: 100%" @click="openStartTeamPicker"><template #append><el-button icon="Search" @click="openStartTeamPicker" /></template><template #suffix><el-icon v-if="startForm.teamName" class="rd-form-tip" style="cursor:pointer" @click.stop="clearStartTeam"><CircleClose /></el-icon></template></el-input></el-form-item></el-col></el-row>
             </div>
-          </section>
-          <!-- 计划信息 -->
-          <section class="rd-card">
-            <div class="rd-card-header" @click="toggleCard('sc1')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>计划信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.sc1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
-            <div class="rd-card-body" v-show="!collapsedCards.sc1" style="display:block"><div class="rd-grid"><div class="rd-item"><span class="rd-label">计划数量</span><div class="rd-value">{{ startForm.planQty != null ? startForm.planQty : '-' }}</div></div><div class="rd-item"><span class="rd-label">计划开始</span><div class="rd-value">{{ startForm.planStart ? parseTime(startForm.planStart) : '-' }}</div></div><div class="rd-item"><span class="rd-label">计划结束</span><div class="rd-value">{{ startForm.planEnd ? parseTime(startForm.planEnd) : '-' }}</div></div></div></div>
           </section>
           <!-- 开工确认 -->
           <section class="rd-card">
@@ -488,7 +483,7 @@
             <div class="rd-card-header" @click="toggleCard('fc1')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>完工数据填报</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.fc1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
             <div class="rd-card-body" v-show="!collapsedCards.fc1">
               <el-row :gutter="20"><el-col :span="12"><el-form-item label="实际开始" prop="actualStartInput"><el-date-picker v-model="finishForm.actualStartInput" type="datetime" placeholder="选择实际开始时间" value-format="YYYY-MM-DD HH:mm:ss" style="width: 100%" /></el-form-item></el-col><el-col :span="12"><el-form-item label="实际结束" prop="actualEndInput"><el-date-picker v-model="finishForm.actualEndInput" type="datetime" placeholder="选择实际结束时间" value-format="YYYY-MM-DD HH:mm:ss" style="width: 100%" /></el-form-item></el-col></el-row>
-              <el-row :gutter="20"><el-col :span="12"><el-form-item label="合格数量" prop="goodQty"><el-input-number v-model="finishForm.goodQty" :min="0" :precision="2" :max="finishForm.planQty" placeholder="请输入" style="width: 100%" /></el-form-item></el-col><el-col :span="12"><el-form-item label="不良数量" prop="defectQty"><el-input-number v-model="finishForm.defectQty" :min="0" :precision="2" :max="finishForm.planQty" placeholder="请输入" style="width: 100%" /></el-form-item></el-col></el-row>
+              <el-row :gutter="20"><el-col :span="12"><el-form-item label="合格数量" prop="goodQty"><el-input-number v-model="finishForm.goodQty" :min="0" :precision="2" placeholder="请输入" style="width: 100%" /></el-form-item></el-col><el-col :span="12"><el-form-item label="不良数量" prop="defectQty"><el-input-number v-model="finishForm.defectQty" :min="0" :precision="2" placeholder="请输入" style="width: 100%" /></el-form-item></el-col></el-row>
               <el-form-item label="完工备注"><el-input v-model="finishForm.remark" type="textarea" :rows="2" placeholder="不良原因、其他说明" /></el-form-item>
             </div>
           </section>
@@ -761,6 +756,7 @@
       <div class="table-wrap">
         <el-table ref="reportTableRef" v-loading="reportLoading" :data="reportDataList" border @selection-change="handleReportSelectionChange" @header-dragend="onReportHeaderDragEnd" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
+          <el-table-column type="index" label="序号" width="85" align="center" />
           <el-table-column label="报工单号" prop="reportNo" key="reportNo" :width="reportColWidth('reportNo', 168)" resizable show-overflow-tooltip v-if="reportColumns.reportNo.visible" />
           <el-table-column label="工单号" prop="workOrderNo" key="workOrderNo" :width="reportColWidth('workOrderNo', 168)" resizable show-overflow-tooltip v-if="reportColumns.workOrderNo.visible" />
           <el-table-column label="工序" prop="processName" key="processName" :width="reportColWidth('processName', 120)" resizable show-overflow-tooltip v-if="reportColumns.processName.visible" />
@@ -1420,9 +1416,11 @@ const finishForm = reactive({
   resourceName: '',
   teamName: '',
   planQty: 0,
+  planStart: undefined,         // 计划开始时间
+  planEnd: undefined,           // 计划结束时间
   actualStart: undefined,       // 开工时记录的时间（只读展示）
   actualStartInput: undefined,   // 完工时可编辑的实际开始时间
-  actualEndInput: undefined,      // 完工时可编辑的实际结束时间
+  actualEndInput: undefined,    // 完工时可编辑的实际结束时间
   goodQty: 0,
   defectQty: 0,
   remark: ''
@@ -1693,9 +1691,12 @@ function handleFinish(row) {
   finishForm.resourceName = row.resourceName;
   finishForm.teamName = row.teamName;
   finishForm.planQty = row.planQty;
+  finishForm.planStart = row.planStart;
+  finishForm.planEnd = row.planEnd;
   finishForm.actualStart = row.actualStart;
-  // 默认实际开始时间 = 开工时记录时间
-  finishForm.actualStartInput = row.actualStart ? proxy.parseTime(row.actualStart) : proxy.parseTime(new Date());
+  // 默认实际开始时间 = 计划开始时间，若没有则取开工记录时间，再没有取当前时间
+  finishForm.actualStartInput = row.planStart ? proxy.parseTime(row.planStart)
+    : (row.actualStart ? proxy.parseTime(row.actualStart) : proxy.parseTime(new Date()));
   // 默认实际结束时间 = 当前时间
   finishForm.actualEndInput = proxy.parseTime(new Date());
   finishForm.goodQty = row.planQty;
@@ -1713,6 +1714,15 @@ function submitFinish() {
         const end = new Date(finishForm.actualEndInput);
         if (end < start) {
           proxy.$modal.msgError("实际结束时间不能早于实际开始时间");
+          return;
+        }
+      }
+      // 前端校验实际结束时间不能早于计划开始时间
+      if (finishForm.planStart && finishForm.actualEndInput) {
+        const planStart = new Date(finishForm.planStart);
+        const end = new Date(finishForm.actualEndInput);
+        if (end < planStart) {
+          proxy.$modal.msgError("实际结束时间不能早于计划开始时间");
           return;
         }
       }

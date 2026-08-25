@@ -84,6 +84,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" v-loading="loading" :data="courseList" border @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
+          <el-table-column type="index" label="序号" width="85" align="center" />
           <el-table-column label="课程编号" prop="courseCode" key="courseCode" :width="colWidth('courseCode', 156)" resizable v-if="columns.courseCode.visible" />
           <el-table-column label="课程名称" prop="courseName" key="courseName" :width="colWidth('courseName', 240)" resizable show-overflow-tooltip v-if="columns.courseName.visible" />
           <el-table-column label="课程类别" prop="courseType" key="courseType" :width="colWidth('courseType', 132)" resizable align="center" v-if="columns.courseType.visible">

@@ -63,3 +63,12 @@ export function confirmReturnMaterial(data) {
     data: data
   })
 }
+
+// 按工单号查询退料明细（按物料拆分，每条明细一行）
+export function listReturnDetailByWorkOrder(workOrderNo) {
+  return request({
+    url: '/mms/return/detailListByWorkOrder',
+    method: 'get',
+    params: { workOrderNo }
+  })
+}

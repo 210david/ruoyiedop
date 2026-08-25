@@ -92,6 +92,7 @@
 
           <div class="table-wrap">
             <el-table ref="tableRef" v-if="refreshTable" v-loading="loading" :data="workshopList" row-key="workshopId" :default-expand-all="isExpandAll" :tree-props="{ children: 'children', hasChildren: 'hasChildren' }" border @header-dragend="onHeaderDragEnd" class="app-table">
+              <el-table-column type="index" label="序号" width="85" align="center" />
               <el-table-column prop="workshopName" label="节点名称" key="workshopName" :width="colWidth('workshopName', 220)" resizable v-if="columns.workshopName.visible" />
               <el-table-column prop="workshopCode" label="节点编码" key="workshopCode" :width="colWidth('workshopCode', 160)" resizable align="center" v-if="columns.workshopCode.visible" />
               <el-table-column label="层级类型" align="center" key="nodeType" :width="colWidth('nodeType', 120)" resizable v-if="columns.nodeType.visible">

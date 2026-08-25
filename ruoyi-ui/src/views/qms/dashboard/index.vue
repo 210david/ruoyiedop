@@ -79,8 +79,9 @@
             <span class="chart-panel__desc">最近10条检验记录</span>
           </div>
           <div class="chart-panel__body" style="padding: 0;">
-            <el-table :data="recentInspTasks" border size="small">
-              <el-table-column label="任务编号" prop="taskNo" min-width="140" />
+<el-table :data="recentInspTasks" border size="small">
+<el-table-column type="index" label="序号" width="85" align="center" />
+<el-table-column label="任务编号" prop="taskNo" min-width="140" />
               <el-table-column label="类型" prop="taskType" width="80" align="center">
                 <template #default="scope"><dict-tag :options="qms_insp_type" :value="scope.row.taskType" /></template>
               </el-table-column>
@@ -102,8 +103,9 @@
             <span class="chart-panel__desc">最近10条不合格品报告</span>
           </div>
           <div class="chart-panel__body" style="padding: 0;">
-            <el-table :data="recentNcrs" border size="small">
-              <el-table-column label="NCR编号" prop="ncrNo" min-width="140" />
+<el-table :data="recentNcrs" border size="small">
+<el-table-column type="index" label="序号" width="85" align="center" />
+<el-table-column label="NCR编号" prop="ncrNo" min-width="140" />
               <el-table-column label="物料" prop="materialName" min-width="160" show-overflow-tooltip />
               <el-table-column label="缺陷等级" prop="defectLevel" width="90" align="center">
                 <template #default="scope"><dict-tag :options="qms_defect_level" :value="scope.row.defectLevel" /></template>

@@ -41,7 +41,8 @@
       </div>
       <div class="table-wrap">
         <el-table ref="tableRef" border v-if="refreshTable" v-loading="loading" :data="categoryList" row-key="categoryId" :default-expand-all="isExpandAll" :tree-props="{ children: 'children', hasChildren: 'hasChildren' }" @header-dragend="onHeaderDragEnd" class="app-table">
-          <el-table-column label="分类名称" prop="categoryName" key="categoryName" :width="colWidth('categoryName', 260)" resizable v-if="columns.categoryName.visible" />
+          <el-table-column type="index" label="序号" width="85" align="center" />
+<el-table-column label="分类名称" prop="categoryName" key="categoryName" :width="colWidth('categoryName', 260)" resizable v-if="columns.categoryName.visible" />
           <el-table-column label="分类编码" prop="categoryCode" key="categoryCode" :width="colWidth('categoryCode', 160)" resizable align="center" v-if="columns.categoryCode.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.categoryCode }}</span></template>
           </el-table-column>

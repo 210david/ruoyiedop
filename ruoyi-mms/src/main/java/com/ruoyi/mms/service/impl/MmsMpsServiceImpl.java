@@ -11,11 +11,15 @@ import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.mk.service.IMkNumberRuleService;
+import com.ruoyi.mms.domain.MmsBom;
 import com.ruoyi.mms.domain.MmsMps;
 import com.ruoyi.mms.domain.MmsMpsAuditLog;
+import com.ruoyi.mms.domain.MmsRoute;
 import com.ruoyi.mms.domain.MmsWorkOrder;
+import com.ruoyi.mms.mapper.MmsBomMapper;
 import com.ruoyi.mms.mapper.MmsMpsAuditLogMapper;
 import com.ruoyi.mms.mapper.MmsMpsMapper;
+import com.ruoyi.mms.mapper.MmsRouteMapper;
 import com.ruoyi.mms.mapper.MmsWorkOrderMapper;
 import com.ruoyi.mms.service.IMmsMpsService;
 
@@ -23,7 +27,7 @@ import com.ruoyi.mms.service.IMmsMpsService;
  * 主生产计划 Service实现
  *
  * 计划状态机：
- * 0(草稿) → 1(已确认) → 2(已发布) → 3(已下达)
+ * 0(草稿) → 1(待审批) → 2(已审批) → 3(已下达，自动生成工单)
  *                ↓                       ↓
  *           4(已取消)              4(已取消)
  *
@@ -40,6 +44,12 @@ public class MmsMpsServiceImpl implements IMmsMpsService
 
     @Autowired
     private MmsWorkOrderMapper workOrderMapper;
+
+    @Autowired
+    private MmsBomMapper bomMapper;
+
+    @Autowired
+    private MmsRouteMapper routeMapper;
 
     @Autowired
     private IMkNumberRuleService mkNumberRuleService;
@@ -113,18 +123,18 @@ public class MmsMpsServiceImpl implements IMmsMpsService
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public int confirmMps(Long mpsId)
+    public int submitMps(Long mpsId)
     {
         MmsMps mps = getAndCheckMps(mpsId);
-        // 状态校验：只有草稿(0)可确认
+        // 状态校验：只有草稿(0)可提交审批
         if (!"0".equals(mps.getStatus()))
         {
-            throw new ServiceException("计划[" + mps.getMpsNo() + "]当前状态为" + statusName(mps.getStatus()) + "，只有草稿状态可确认");
+            throw new ServiceException("计划[" + mps.getMpsNo() + "]当前状态为" + statusName(mps.getStatus()) + "，只有草稿状态可提交审批");
         }
         // 校验关键字段
         if (mps.getProductId() == null)
         {
-            throw new ServiceException("计划未关联产品，无法确认");
+            throw new ServiceException("计划未关联产品，无法提交审批");
         }
         if (mps.getPlanQty() == null || mps.getPlanQty().compareTo(BigDecimal.ZERO) <= 0)
         {
@@ -140,15 +150,15 @@ public class MmsMpsServiceImpl implements IMmsMpsService
     public int auditMps(Long mpsId, String status, String auditOpinion)
     {
         MmsMps mps = getAndCheckMps(mpsId);
-        // 状态校验：只有已确认(1)可审批
+        // 状态校验：只有待审批(1)可审批
         if (!"1".equals(mps.getStatus()))
         {
-            throw new ServiceException("计划[" + mps.getMpsNo() + "]当前状态为" + statusName(mps.getStatus()) + "，只有已确认状态可审批");
+            throw new ServiceException("计划[" + mps.getMpsNo() + "]当前状态为" + statusName(mps.getStatus()) + "，只有待审批状态可审批");
         }
-        // status: "2"=通过(已发布), "0"=驳回(草稿)
+        // status: "2"=通过(→已审批), "0"=驳回(→草稿)
         if ("2".equals(status))
         {
-            mps.setStatus("2"); // 已发布
+            mps.setStatus("2"); // 已审批
         }
         else if ("0".equals(status))
         {
@@ -188,12 +198,12 @@ public class MmsMpsServiceImpl implements IMmsMpsService
     public Long releaseMps(Long mpsId)
     {
         MmsMps mps = getAndCheckMps(mpsId);
-        // 状态校验：只有已发布(2)可下达
+        // 状态校验：只有已审批(2)可下达
         if (!"2".equals(mps.getStatus()))
         {
-            throw new ServiceException("计划[" + mps.getMpsNo() + "]当前状态为" + statusName(mps.getStatus()) + "，只有已发布状态可下达");
+            throw new ServiceException("计划[" + mps.getMpsNo() + "]当前状态为" + statusName(mps.getStatus()) + "，只有已审批状态可下达");
         }
-        // 计划状态流转：2 → 3(已下达)
+        // 计划状态流转：2(已审批) → 3(已下达)，自动生成工单
         mps.setStatus("3");
         mps.setUpdateBy(SecurityUtils.getUsername());
         mpsMapper.updateMps(mps);
@@ -202,6 +212,7 @@ public class MmsMpsServiceImpl implements IMmsMpsService
         MmsWorkOrder wo = new MmsWorkOrder();
         wo.setWorkOrderNo(mkNumberRuleService.generateNumber("mms_work_order"));
         wo.setOrderType("0"); // 标准生产
+        wo.setSourceType("1"); // 计划生成
         wo.setMpsId(mps.getMpsId());
         wo.setMpsNo(mps.getMpsNo());
         wo.setDemandNo(mps.getDemandNo());
@@ -216,7 +227,21 @@ public class MmsMpsServiceImpl implements IMmsMpsService
         wo.setPlanStart(mps.getPeriodStart());
         wo.setPlanFinish(mps.getPeriodEnd());
         wo.setPriority(mps.getPriority());
-        wo.setStatus("0"); // 新建工单
+        // 自动关联BOM（查询该产品已发布的BOM）
+        MmsBom bom = bomMapper.selectBomByProductId(mps.getProductId());
+        if (bom != null)
+        {
+            wo.setBomId(bom.getBomId());
+            wo.setBomNo(bom.getBomNo());
+        }
+        // 自动关联工艺路线（查询该产品已审核的工艺路线）
+        MmsRoute route = routeMapper.selectRouteByProductId(mps.getProductId());
+        if (route != null)
+        {
+            wo.setRouteId(route.getRouteId());
+            wo.setRouteNo(route.getRouteNo());
+        }
+        wo.setStatus("0"); // 草稿工单
         wo.setFinishedQty(BigDecimal.ZERO);
         wo.setQualifiedQty(BigDecimal.ZERO);
         wo.setDefectQty(BigDecimal.ZERO);
@@ -275,8 +300,8 @@ public class MmsMpsServiceImpl implements IMmsMpsService
         switch (status)
         {
             case "0": return "草稿";
-            case "1": return "已确认";
-            case "2": return "已发布";
+            case "1": return "待审批";
+            case "2": return "已审批";
             case "3": return "已下达";
             case "4": return "已取消";
             default: return "未知(" + status + ")";

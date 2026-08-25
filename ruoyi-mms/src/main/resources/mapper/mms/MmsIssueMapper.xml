@@ -26,6 +26,9 @@
         <result property="productCode"     column="product_code"/>
         <result property="productName"     column="product_name"/>
         <result property="planQty"     column="plan_qty"/>
+        <result property="detailCount"     column="detail_count"/>
+        <result property="materialCodes"     column="material_codes"/>
+        <result property="materialNames"     column="material_names"/>
     </resultMap>
 
     <!-- 带明细的resultMap -->
@@ -52,9 +55,19 @@
 
     <sql id="selectIssueVo">
         SELECT i.issue_id, i.issue_no, i.work_order_id, i.work_order_no, i.material_id, i.material_code, i.material_name, i.spec_model, i.unit, i.issue_qty, i.batch_no, i.issue_time, i.issue_by, i.status, i.del_flag, i.create_by, i.create_time, i.update_by, i.update_time, i.remark,
-               wo.product_code, wo.product_name, wo.plan_qty
+               wo.product_code, wo.product_name, wo.plan_qty,
+               sub.detail_count, sub.material_codes, sub.material_names
         FROM mms_issue i
         LEFT JOIN mms_work_order wo ON i.work_order_id = wo.work_order_id
+        LEFT JOIN (
+            SELECT issue_id,
+                   COUNT(*) AS detail_count,
+                   GROUP_CONCAT(material_code ORDER BY seq SEPARATOR ',') AS material_codes,
+                   GROUP_CONCAT(material_name ORDER BY seq SEPARATOR ',') AS material_names
+            FROM mms_issue_detail
+            WHERE del_flag = '0'
+            GROUP BY issue_id
+        ) sub ON i.issue_id = sub.issue_id
     </sql>
 
     <select id="selectIssueList" parameterType="MmsIssue" resultMap="MmsIssueResult">
@@ -63,8 +76,8 @@
             i.del_flag = '0'
             <if test="issueNo != null and issueNo != ''"> AND i.issue_no LIKE CONCAT('%', #{issueNo}, '%')</if>
             <if test="workOrderNo != null and workOrderNo != ''"> AND i.work_order_no LIKE CONCAT('%', #{workOrderNo}, '%')</if>
-            <if test="materialCode != null and materialCode != ''"> AND i.material_code LIKE CONCAT('%', #{materialCode}, '%')</if>
-            <if test="materialName != null and materialName != ''"> AND i.material_name LIKE CONCAT('%', #{materialName}, '%')</if>
+            <if test="materialCode != null and materialCode != ''"> AND sub.material_codes LIKE CONCAT('%', #{materialCode}, '%')</if>
+            <if test="materialName != null and materialName != ''"> AND sub.material_names LIKE CONCAT('%', #{materialName}, '%')</if>
             <if test="status != null and status != ''"> AND i.status = #{status}</if>
             <if test="batchNo != null and batchNo != ''"> AND i.batch_no LIKE CONCAT('%', #{batchNo}, '%')</if>
             <if test="issueBy != null and issueBy != ''"> AND i.issue_by LIKE CONCAT('%', #{issueBy}, '%')</if>
@@ -187,4 +200,15 @@
     <delete id="deleteIssueDetailByIssueId" parameterType="Long">
         UPDATE mms_issue_detail SET del_flag = '2' WHERE issue_id = #{issueId}
     </delete>
+
+    <!-- 按工单号查询领料明细（按物料拆分，每条明细一行） -->
+    <select id="selectIssueDetailListByWorkOrderNo" parameterType="String" resultType="java.util.Map">
+        SELECT d.detail_id, d.issue_id, d.seq, d.material_id, d.material_code, d.material_name,
+               d.spec_model, d.unit, d.usage_qty, d.suggested_qty, d.issue_qty, d.batch_no,
+               i.issue_no, i.work_order_no, i.issue_time, i.issue_by, i.status, i.create_time
+        FROM mms_issue_detail d
+        INNER JOIN mms_issue i ON d.issue_id = i.issue_id AND i.del_flag = '0'
+        WHERE d.del_flag = '0' AND i.work_order_no = #{workOrderNo}
+        ORDER BY i.issue_id DESC, d.seq ASC
+    </select>
 </mapper>

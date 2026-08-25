@@ -64,8 +64,9 @@
       <!-- Table -->
       <div class="table-wrap">
         <el-table v-loading="loading" :data="configList" @selection-change="handleSelectionChange" border class="app-table">
-          <el-table-column type="selection" width="55" align="center" />
-          <el-table-column label="参数主键" align="center" prop="configId" v-if="columns.configId.visible" />
+<el-table-column type="selection" width="55" align="center" />
+<el-table-column type="index" label="序号" width="85" align="center" />
+<el-table-column label="参数主键" align="center" prop="configId" v-if="columns.configId.visible" />
           <el-table-column label="参数名称" align="center" prop="configName" :show-overflow-tooltip="true" v-if="columns.configName.visible" />
           <el-table-column label="参数键名" align="center" prop="configKey" :show-overflow-tooltip="true" v-if="columns.configKey.visible" />
           <el-table-column label="参数键值" align="center" prop="configValue" :show-overflow-tooltip="true" v-if="columns.configValue.visible" />

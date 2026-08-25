@@ -102,6 +102,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" v-loading="loading" :data="hazardList" border @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
+          <el-table-column type="index" label="序号" width="85" align="center" />
           <el-table-column label="隐患编号" prop="hazardCode" key="hazardCode" :width="colWidth('hazardCode', 160)" resizable show-overflow-tooltip v-if="columns.hazardCode.visible" />
           <el-table-column label="隐患描述" prop="hazardDesc" key="hazardDesc" :width="colWidth('hazardDesc', 220)" resizable show-overflow-tooltip v-if="columns.hazardDesc.visible" />
           <el-table-column label="隐患类型" prop="hazardType" key="hazardType" :width="colWidth('hazardType', 120)" resizable align="center" v-if="columns.hazardType.visible">

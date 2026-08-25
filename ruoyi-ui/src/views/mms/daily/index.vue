@@ -29,7 +29,7 @@
       </div>
       <div class="table-wrap">
         <el-table ref="tableRef" v-loading="loading" :data="dataList" border @header-dragend="onHeaderDragEnd" class="app-table">
-          <el-table-column type="index" label="序号" width="55" align="center" />
+          <el-table-column type="index" label="序号" width="85" align="center" />
           <el-table-column label="生产日期" prop="statDate" key="statDate" :width="colWidth('statDate', 120)" resizable align="center" v-if="columns.statDate.visible"><template #default="scope">{{ parseTime(scope.row.statDate, '{y}-{m}-{d}') }}</template></el-table-column>
           <el-table-column label="工单数" prop="workOrderCount" key="workOrderCount" :width="colWidth('workOrderCount', 100)" resizable align="center" v-if="columns.workOrderCount.visible" />
           <el-table-column label="已完工数" prop="completedCount" key="completedCount" :width="colWidth('completedCount', 100)" resizable align="center" v-if="columns.completedCount.visible" />

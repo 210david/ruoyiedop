@@ -46,7 +46,7 @@ public class MmsDashboardController extends BaseController
     /** 工单状态标签映射 */
     private static final Map<String, String> WO_STATUS_MAP = new LinkedHashMap<>();
     static {
-        WO_STATUS_MAP.put("0", "新建");
+        WO_STATUS_MAP.put("0", "草稿");
         WO_STATUS_MAP.put("1", "已下达");
         WO_STATUS_MAP.put("2", "执行中");
         WO_STATUS_MAP.put("3", "已完工");

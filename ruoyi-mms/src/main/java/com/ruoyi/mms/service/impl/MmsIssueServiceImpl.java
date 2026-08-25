@@ -231,4 +231,10 @@ public class MmsIssueServiceImpl implements IMmsIssueService
             }
         }
     }
+
+    @Override
+    public List<java.util.Map<String, Object>> selectIssueDetailListByWorkOrderNo(String workOrderNo)
+    {
+        return issueMapper.selectIssueDetailListByWorkOrderNo(workOrderNo);
+    }
 }

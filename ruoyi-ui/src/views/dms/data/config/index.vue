@@ -72,6 +72,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
+          <el-table-column type="index" label="序号" width="85" align="center" />
           <el-table-column label="设备名称" prop="equipmentName" key="equipmentName" :width="colWidth('equipmentName', 200)" resizable show-overflow-tooltip v-if="columns.equipmentName.visible" />
           <el-table-column label="采集模式" prop="collectMode" key="collectMode" :width="colWidth('collectMode', 120)" resizable align="center" v-if="columns.collectMode.visible">
             <template #default="scope">

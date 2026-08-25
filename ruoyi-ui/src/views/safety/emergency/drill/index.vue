@@ -79,6 +79,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" v-loading="loading" :data="drillList" border @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
+          <el-table-column type="index" label="序号" width="85" align="center" />
           <el-table-column label="演练编号" prop="drillCode" key="drillCode" :width="colWidth('drillCode', 130)" resizable v-if="columns.drillCode.visible" />
           <el-table-column label="演练名称" prop="drillName" key="drillName" :width="colWidth('drillName', 200)" resizable show-overflow-tooltip v-if="columns.drillName.visible" />
           <el-table-column label="演练类型" prop="drillType" key="drillType" :width="colWidth('drillType', 110)" resizable align="center" v-if="columns.drillType.visible">

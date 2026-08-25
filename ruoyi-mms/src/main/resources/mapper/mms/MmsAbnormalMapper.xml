@@ -31,7 +31,7 @@
         <result property="handleMethod"     column="handle_method"/>
         <result property="rootCause"     column="root_cause"/>
         <result property="preventiveMeasure"     column="preventive_measure"/>
-        <result property="downtimeMinutes"     column="downtime_minutes"/>
+        <result property="downtimeHours"     column="downtime_hours"/>
         <result property="needPursuit"     column="need_pursuit"/>
         <result property="status"     column="status"/>
         <result property="delFlag"     column="del_flag"/>
@@ -43,7 +43,7 @@
     </resultMap>
 
     <sql id="selectAbnormalVo">
-        SELECT abnormal_id, abnormal_no, work_order_id, work_order_no, resource_id, resource_name, product_code, product_name, spec_model, unit, abnormal_type, severity, description, report_by, report_time, response_by, response_time, response_measure, impact_scope, estimated_restore_time, response_remark, handle_by, handle_time, close_time, handle_result, handle_method, root_cause, preventive_measure, downtime_minutes, need_pursuit, status, del_flag, create_by, create_time, update_by, update_time, remark
+        SELECT abnormal_id, abnormal_no, work_order_id, work_order_no, resource_id, resource_name, product_code, product_name, spec_model, unit, abnormal_type, severity, description, report_by, report_time, response_by, response_time, response_measure, impact_scope, estimated_restore_time, response_remark, handle_by, handle_time, close_time, handle_result, handle_method, root_cause, preventive_measure, downtime_hours, need_pursuit, status, del_flag, create_by, create_time, update_by, update_time, remark
         FROM mms_abnormal
     </sql>
 
@@ -95,7 +95,7 @@
             handle_method,
             root_cause,
             preventive_measure,
-            downtime_minutes,
+            downtime_hours,
             need_pursuit,
             status,
             del_flag,
@@ -130,7 +130,7 @@
             #{handleMethod},
             #{rootCause},
             #{preventiveMeasure},
-            #{downtimeMinutes},
+            #{downtimeHours},
             #{needPursuit},
             #{status},
             #{delFlag},
@@ -171,7 +171,7 @@
             handle_method = #{handleMethod},
             root_cause = #{rootCause},
             preventive_measure = #{preventiveMeasure},
-            downtime_minutes = #{downtimeMinutes},
+            downtime_hours = #{downtimeHours},
             need_pursuit = #{needPursuit},
             status = #{status},
             update_by = #{updateBy},

@@ -232,7 +232,7 @@ SELECT '工单状态', 'mms_workorder_status', '0', 'admin', sysdate(), '生产�
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_dict_type WHERE dict_type = 'mms_workorder_status');
 
 INSERT INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, css_class, list_class, is_default, status, create_by, create_time, remark) VALUES
-(1, '新建',       '0', 'mms_workorder_status', '', 'info',    'Y', '0', 'admin', sysdate(), '新建状态'),
+(1, '草稿',       '0', 'mms_workorder_status', '', 'info',    'Y', '0', 'admin', sysdate(), '草稿状态'),
 (2, '已下达',     '1', 'mms_workorder_status', '', 'primary', 'N', '0', 'admin', sysdate(), '已下达'),
 (3, '执行中',     '2', 'mms_workorder_status', '', 'success', 'N', '0', 'admin', sysdate(), '执行中'),
 (4, '已完工',     '3', 'mms_workorder_status', '', 'success', 'N', '0', 'admin', sysdate(), '已完工'),

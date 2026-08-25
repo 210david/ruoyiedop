@@ -314,4 +314,10 @@ public class MmsReturnMaterialServiceImpl implements IMmsReturnMaterialService
             }
         }
     }
+
+    @Override
+    public List<java.util.Map<String, Object>> selectReturnDetailListByWorkOrderNo(String workOrderNo)
+    {
+        return returnMaterialMapper.selectReturnDetailListByWorkOrderNo(workOrderNo);
+    }
 }

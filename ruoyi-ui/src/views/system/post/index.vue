@@ -57,8 +57,9 @@
       <!-- Table -->
       <div class="table-wrap">
         <el-table v-loading="loading" :data="postList" @selection-change="handleSelectionChange" border class="app-table">
-          <el-table-column type="selection" width="55" align="center" />
-          <el-table-column label="岗位编号" align="center" prop="postId" v-if="columns.postId.visible" />
+<el-table-column type="selection" width="55" align="center" />
+<el-table-column type="index" label="序号" width="85" align="center" />
+<el-table-column label="岗位编号" align="center" prop="postId" v-if="columns.postId.visible" />
           <el-table-column label="岗位编码" align="center" prop="postCode" v-if="columns.postCode.visible" />
           <el-table-column label="岗位名称" align="center" prop="postName" v-if="columns.postName.visible" />
           <el-table-column label="岗位排序" align="center" prop="postSort" v-if="columns.postSort.visible" />

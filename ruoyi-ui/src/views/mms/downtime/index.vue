@@ -35,10 +35,6 @@
           <div class="control is-select"><el-select v-model="queryParams.dtLevel" placeholder="全部" clearable @change="handleQuery"><el-option v-for="d in mms_downtime_level" :key="d.value" :label="d.label" :value="d.value" /></el-select></div>
         </div>
         <div class="field" v-show="showAdvanced">
-          <label>状态</label>
-          <div class="control is-select"><el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery"><el-option v-for="d in mms_downtime_status" :key="d.value" :label="d.label" :value="d.value" /></el-select></div>
-        </div>
-        <div class="field" v-show="showAdvanced">
           <label>上报人</label>
           <div class="control"><el-input v-model="queryParams.reportBy" placeholder="请输入" clearable @keyup.enter="handleQuery" /></div>
         </div>
@@ -75,6 +71,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" v-loading="loading" :data="dataList" border @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
+          <el-table-column type="index" label="序号" width="85" align="center" />
           <el-table-column label="停机单号" prop="downtimeNo" key="downtimeNo" :width="colWidth('downtimeNo', 150)" resizable show-overflow-tooltip v-if="columns.downtimeNo.visible" />
           <el-table-column label="关联异常单号" prop="abnormalNo" key="abnormalNo" :width="colWidth('abnormalNo', 140)" resizable align="center" v-if="columns.abnormalNo.visible">
             <template #default="scope">
@@ -94,11 +91,8 @@
           </el-table-column>
           <el-table-column label="开始时间" prop="startTime" key="startTime" :width="colWidth('startTime', 160)" resizable align="center" v-if="columns.startTime.visible"><template #default="scope">{{ parseTime(scope.row.startTime) }}</template></el-table-column>
           <el-table-column label="结束时间" prop="endTime" key="endTime" :width="colWidth('endTime', 160)" resizable align="center" v-if="columns.endTime.visible"><template #default="scope">{{ scope.row.endTime ? parseTime(scope.row.endTime) : '—' }}</template></el-table-column>
-          <el-table-column label="停机时长(分)" prop="minutes" key="minutes" :width="colWidth('minutes', 110)" resizable align="center" v-if="columns.minutes.visible"><template #default="scope">{{ scope.row.minutes != null ? scope.row.minutes : '—' }}</template></el-table-column>
+          <el-table-column label="停机时长(小时)" prop="hours" key="hours" :width="colWidth('hours', 120)" resizable align="center" v-if="columns.hours.visible"><template #default="scope">{{ scope.row.hours != null ? scope.row.hours + ' 小时' : '—' }}</template></el-table-column>
           <el-table-column label="上报人" prop="reportBy" key="reportBy" :width="colWidth('reportBy', 90)" resizable align="center" v-if="columns.reportBy.visible" />
-          <el-table-column label="状态" prop="status" key="status" :width="colWidth('status', 90)" resizable align="center" v-if="columns.status.visible">
-            <template #default="scope"><span class="badge" :class="scope.row.status === '0' ? 'red' : 'green'"><span class="dot"></span>{{ scope.row.status === '0' ? '停机中' : '已恢复' }}</span></template>
-          </el-table-column>
           <el-table-column label="停机原因" prop="reason" key="reason" :width="colWidth('reason', 200)" resizable show-overflow-tooltip v-if="columns.reason.visible" />
           <el-table-column label="操作" width="200" align="center" fixed="right">
             <template #default="scope">
@@ -135,14 +129,15 @@
               </el-row>
               <el-row :gutter="20">
                 <el-col :span="12"><el-form-item label="停机级别" prop="dtLevel"><el-select v-model="form.dtLevel" placeholder="请选择" style="width: 100%"><el-option v-for="d in mms_downtime_level" :key="d.value" :label="d.label" :value="d.value" /></el-select></el-form-item></el-col>
-                <el-col :span="12"><el-form-item label="上报人" prop="reportBy"><el-input v-model="form.reportBy" placeholder="默认当前用户" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="上报人" prop="reportBy"><el-input v-model="form.reportBy" readonly placeholder="默认当前用户" style="width: 100%" @click="openReportByPicker"><template #append><el-button icon="Search" @click="openReportByPicker" /></template><template #suffix><el-icon v-if="form.reportBy" class="rd-form-tip" style="cursor:pointer" @click.stop="clearReportBy"><CircleClose /></el-icon></template></el-input></el-form-item></el-col>
               </el-row>
             </div>
           </section>
           <section class="rd-card">
             <div class="rd-card-header" @click="toggleCard('c1')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>停机详情</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
             <div class="rd-card-body" v-show="!collapsedCards.c1">
-              <el-row :gutter="20"><el-col :span="12"><el-form-item label="开始时间" prop="startTime"><el-date-picker v-model="form.startTime" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" placeholder="选择时间" style="width:100%" /></el-form-item></el-col><el-col :span="12"><el-form-item label="结束时间" prop="endTime"><el-date-picker v-model="form.endTime" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" placeholder="选择时间" style="width:100%" /></el-form-item></el-col></el-row>
+              <el-row :gutter="20"><el-col :span="12"><el-form-item label="开始时间" prop="startTime"><el-date-picker v-model="form.startTime" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" placeholder="选择时间" style="width:100%" @change="calcDowntimeHours" /></el-form-item></el-col><el-col :span="12"><el-form-item label="结束时间" prop="endTime"><el-date-picker v-model="form.endTime" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" placeholder="选择时间" style="width:100%" @change="calcDowntimeHours" /></el-form-item></el-col></el-row>
+              <el-row :gutter="20"><el-col :span="12"><el-form-item label="停机时长(小时)" label-width="120px"><el-input v-model="form.hours" placeholder="自动计算" disabled /></el-form-item></el-col></el-row>
             </div>
           </section>
           <section class="rd-card">
@@ -188,6 +183,9 @@
       <template #footer><el-button @click="resourcePickerOpen = false">取 消</el-button><el-button type="primary" @click="confirmResourcePicker" :disabled="!resourcePickerSelectedId">确 定</el-button></template>
     </el-dialog>
 
+    <!-- ===== 上报人选择弹窗 ===== -->
+    <user-picker ref="userPickerRef" title="选择上报人" @confirm="onReportByPickerConfirm" />
+
     <!-- ===== 查看详情弹窗 ===== -->
     <el-dialog v-model="viewOpen" width="820px" append-to-body draggable class="rd-dialog">
       <template #header>
@@ -200,11 +198,11 @@
       <div class="rd-page">
         <section class="rd-card">
           <div class="rd-card-header" @click="toggleCard('vc0')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg></span>基本信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc0 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
-          <div class="rd-card-body" v-show="!collapsedCards.vc0" style="display:block"><div class="rd-grid"><div class="rd-item"><span class="rd-label">停机单号</span><div class="rd-value">{{ viewData.downtimeNo || '—' }}</div></div><div class="rd-item"><span class="rd-label">关联异常单号</span><div class="rd-value"><span v-if="viewData.abnormalNo" class="badge blue"><span class="dot"></span>{{ viewData.abnormalNo }}</span><span v-else class="text-muted">无关联</span></div></div><div class="rd-item"><span class="rd-label">产能单元</span><div class="rd-value">{{ viewData.resourceName || '—' }}</div></div><div class="rd-item"><span class="rd-label">停机分类</span><div class="rd-value"><dict-tag :options="mms_downtime_category" :value="viewData.dtCategory" /></div></div><div class="rd-item"><span class="rd-label">停机级别</span><div class="rd-value"><dict-tag :options="mms_downtime_level" :value="viewData.dtLevel" /></div></div><div class="rd-item"><span class="rd-label">状态</span><div class="rd-value"><span v-if="viewData.status === '0'" class="badge red"><span class="dot"></span>停机中</span><span v-else-if="viewData.status === '1'" class="badge green"><span class="dot"></span>已恢复</span><span v-else class="text-muted">—</span></div></div></div></div>
+          <div class="rd-card-body" v-show="!collapsedCards.vc0" style="display:block"><div class="rd-grid"><div class="rd-item"><span class="rd-label">停机单号</span><div class="rd-value">{{ viewData.downtimeNo || '—' }}</div></div><div class="rd-item"><span class="rd-label">关联异常单号</span><div class="rd-value"><span v-if="viewData.abnormalNo" class="badge blue"><span class="dot"></span>{{ viewData.abnormalNo }}</span><span v-else class="text-muted">无关联</span></div></div><div class="rd-item"><span class="rd-label">产能单元</span><div class="rd-value">{{ viewData.resourceName || '—' }}</div></div><div class="rd-item"><span class="rd-label">停机分类</span><div class="rd-value"><dict-tag :options="mms_downtime_category" :value="viewData.dtCategory" /></div></div><div class="rd-item"><span class="rd-label">停机级别</span><div class="rd-value"><dict-tag :options="mms_downtime_level" :value="viewData.dtLevel" /></div></div></div></div>
         </section>
         <section class="rd-card">
           <div class="rd-card-header" @click="toggleCard('vc1')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>停机详情</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
-          <div class="rd-card-body" v-show="!collapsedCards.vc1" style="display:block"><div class="rd-grid"><div class="rd-item"><span class="rd-label">停机类型</span><div class="rd-value"><dict-tag :options="mms_downtime_type" :value="viewData.dtType" /></div></div><div class="rd-item"><span class="rd-label">停机时长</span><div class="rd-value">{{ viewData.minutes != null ? viewData.minutes + ' 分钟' : '—' }}</div></div><div class="rd-item"><span class="rd-label">开始时间</span><div class="rd-value">{{ viewData.startTime ? parseTime(viewData.startTime) : '—' }}</div></div><div class="rd-item"><span class="rd-label">结束时间</span><div class="rd-value">{{ viewData.endTime ? parseTime(viewData.endTime) : '—' }}</div></div></div></div>
+          <div class="rd-card-body" v-show="!collapsedCards.vc1" style="display:block"><div class="rd-grid"><div class="rd-item"><span class="rd-label">停机类型</span><div class="rd-value"><dict-tag :options="mms_downtime_type" :value="viewData.dtType" /></div></div><div class="rd-item"><span class="rd-label">停机时长</span><div class="rd-value">{{ viewData.hours != null ? viewData.hours + ' 小时' : '—' }}</div></div><div class="rd-item"><span class="rd-label">开始时间</span><div class="rd-value">{{ viewData.startTime ? parseTime(viewData.startTime) : '—' }}</div></div><div class="rd-item"><span class="rd-label">结束时间</span><div class="rd-value">{{ viewData.endTime ? parseTime(viewData.endTime) : '—' }}</div></div></div></div>
         </section>
         <section class="rd-card">
           <div class="rd-card-header" @click="toggleCard('vc2')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>描述信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
@@ -226,32 +224,18 @@
           </div>
         </div>
 
-        <h4>二、停机状态流转图</h4>
-        <div class="status-flow">
-          <div class="flow-item">
-            <el-tag type="danger">停机中</el-tag>
-            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
-            <el-tag size="small" type="primary">填写结束时间</el-tag>
-            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
-          </div>
-          <div class="flow-item">
-            <el-tag type="success">已恢复</el-tag>
-          </div>
-        </div>
-
-        <h4>三、各状态说明</h4>
+        <h4>二、停机记录说明</h4>
         <el-descriptions :column="1" border>
-          <el-descriptions-item label="停机中">设备/产线已停机，尚未恢复。可修改停机信息、填写结束时间恢复生产。填写结束时间后状态自动变为已恢复，系统自动计算停机时长</el-descriptions-item>
-          <el-descriptions-item label="已恢复">设备/产线已恢复生产，停机时长已自动计算。数据归档用于统计分析，不可再修改</el-descriptions-item>
+          <el-descriptions-item label="停机记录">记录设备/产线停机事件的完整信息，包括停机开始/结束时间、停机时长、停机类型、分类、级别和原因。填写结束时间后系统自动计算停机时长</el-descriptions-item>
         </el-descriptions>
 
-        <h4>四、新增/修改表单填写指南</h4>
+        <h4>三、新增/修改表单填写指南</h4>
         <div class="highlight-card highlight-warning">
           <div class="highlight-card-title">基本信息区</div>
           <div class="highlight-card-body">
             <p>• <strong>停机单号：</strong>停机记录的唯一标识编号，保存后由系统自动生成</p>
             <p>• <strong>产能单元：</strong>发生停机的设备/产线，点击输入框右侧搜索按钮弹框选择<span style="color: #f56c6c;">*必填</span></p>
-            <p>• <strong>停机类型：</strong>停机原因分类（计划停机/故障停机/换型停机/物料停机/其他停机）</p>
+            <p>• <strong>停机类型：</strong>停机原因分类（故障停机/换型停机/物料停机/其他停机）</p>
             <p>• <strong>停机分类：</strong>EMS标准分类（计划停机/非计划停机），用于OEE计算时区分可避免停机</p>
             <p>• <strong>停机级别：</strong>事件严重程度（一般/重要/紧急），影响处理优先级</p>
             <p>• <strong>上报人：</strong>默认当前登录用户，可修改</p>
@@ -261,7 +245,7 @@
           <div class="highlight-card-title">停机详情区</div>
           <div class="highlight-card-body">
             <p>• <strong>开始时间：</strong>停机开始的准确时间<span style="color: #f56c6c;">*必填</span></p>
-            <p>• <strong>结束时间：</strong>停机恢复的时间，填写后系统自动计算停机时长，状态变为已恢复</p>
+            <p>• <strong>结束时间：</strong>停机恢复的时间，填写后系统自动计算停机时长</p>
           </div>
         </div>
         <div class="highlight-card highlight-warning" style="margin-top: 12px;">
@@ -273,31 +257,30 @@
           </div>
         </div>
 
-        <h4>五、停机管理生命周期管控</h4>
+        <h4>四、停机管理业务规则</h4>
         <div class="highlight-card highlight-success">
           <div class="highlight-card-title">EMS标准停机管控机制</div>
           <div class="highlight-card-body">
-            <strong>停机管理生命周期管控</strong>遵循EMS标准处理机制，通过状态流转实现停机记录从创建到恢复的全过程管理。每个状态对应特定的可执行操作，确保设备停机事件有序可控、可追溯。停机时长的自动计算机制确保设备效率数据准确归集，停机分类和类型分类支持根因分析和持续改善。
+            <strong>停机管理</strong>遵循EMS标准处理机制，记录设备停机事件的全过程信息。停机时长的自动计算机制确保设备效率数据准确归集，停机分类和类型分类支持根因分析和持续改善。
           </div>
         </div>
         <div class="highlight-card highlight-warning" style="margin-top: 12px;">
-          <div class="highlight-card-title">异常处理规则</div>
+          <div class="highlight-card-title">业务规则</div>
           <div class="highlight-card-body">
-            <p>1. <strong>已恢复的停机记录无法修改：</strong>停机记录恢复后进入「已恢复」状态，数据归档不可再编辑</p>
-            <p>2. <strong>停机时长自动计算：</strong>填写结束时间后系统自动计算停机时长（分钟），无需手动输入</p>
-            <p>3. <strong>处理人自动记录：</strong>恢复停机时系统自动记录处理人为当前操作用户</p>
-            <p>4. <strong>停机分类影响OEE：</strong>计划停机（保养/换型）不计入设备损失，非计划停机（故障/物料）计入设备损失</p>
-            <p style="color: #e6a23c;"><strong>提示：</strong>停机记录的创建和恢复操作均记录操作日志，确保全流程可追溯</p>
+            <p>1. <strong>停机时长自动计算：</strong>填写结束时间后系统自动计算停机时长（小时），无需手动输入</p>
+            <p>2. <strong>处理人自动记录：</strong>填写结束时间时系统自动记录处理人为当前操作用户</p>
+            <p>3. <strong>停机分类影响OEE：</strong>计划停机（保养/换型）不计入设备损失，非计划停机（故障/物料）计入设备损失</p>
+            <p style="color: #e6a23c;"><strong>提示：</strong>停机记录的操作均记录操作日志，确保全流程可追溯</p>
           </div>
         </div>
 
-        <h4>六、业务操作流程</h4>
+        <h4>五、业务操作流程</h4>
         <el-timeline>
           <el-timeline-item type="danger" :hollow="true">
             <strong>记录停机：</strong>设备/产线停机时点击「新增」创建停机记录，选择产能单元、填写开始时间、停机类型、分类和级别
           </el-timeline-item>
           <el-timeline-item type="warning" :hollow="true">
-            <strong>记录恢复：</strong>停机结束后填写结束时间和处理结果，系统自动计算停机时长，状态变为已恢复，处理人自动记录
+            <strong>记录恢复：</strong>停机结束后填写结束时间和处理结果，系统自动计算停机时长，处理人自动记录
           </el-timeline-item>
           <el-timeline-item type="info" :hollow="true">
             <strong>查看详情：</strong>点击「查看」查看停机记录完整信息，包括停机时长、停机原因、处理结果等
@@ -318,8 +301,10 @@ import { listResource } from "@/api/mms/resource";
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
 import { Search, Filter, RefreshLeft, ArrowRight, ArrowDown, WarningFilled, CircleClose } from '@element-plus/icons-vue'
+import useUserStore from '@/store/modules/user'
+import UserPicker from '@/components/UserPicker/index.vue'
 const { proxy } = getCurrentInstance();
-const { mms_downtime_status, mms_downtime_type, mms_downtime_category, mms_downtime_level } = proxy.useDict("mms_downtime_status", "mms_downtime_type", "mms_downtime_category", "mms_downtime_level");
+const { mms_downtime_type, mms_downtime_category, mms_downtime_level } = proxy.useDict("mms_downtime_type", "mms_downtime_category", "mms_downtime_level");
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('mms_downtime_index')
 const { collapsedCards, toggleCard } = useDetailCard(["c0","c1","c2","vc0","vc1","vc2"])
 
@@ -347,9 +332,8 @@ const defaultColumns = {
   dtLevel: { label: '停机级别', visible: true },
   startTime: { label: '开始时间', visible: true },
   endTime: { label: '结束时间', visible: true },
-  minutes: { label: '停机时长(分)', visible: true },
+  hours: { label: '停机时长(小时)', visible: true },
   reportBy: { label: '上报人', visible: true },
-  status: { label: '状态', visible: true },
   reason: { label: '停机原因', visible: true }
 };
 
@@ -359,12 +343,12 @@ function loadColumnVisibility() {
 const columns = ref(loadColumnVisibility())
 
 const activeFilterCount = computed(() => {
-  let c = 0; if (queryParams.value.downtimeNo) c++; if (queryParams.value.resourceName) c++; if (queryParams.value.dtType) c++; if (queryParams.value.dtCategory) c++; if (queryParams.value.dtLevel) c++; if (queryParams.value.status) c++; if (queryParams.value.reportBy) c++; if (dateRange.value && dateRange.value.length === 2) c++; return c;
+  let c = 0; if (queryParams.value.downtimeNo) c++; if (queryParams.value.resourceName) c++; if (queryParams.value.dtType) c++; if (queryParams.value.dtCategory) c++; if (queryParams.value.dtLevel) c++; if (queryParams.value.reportBy) c++; if (dateRange.value && dateRange.value.length === 2) c++; return c;
 });
 
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, downtimeNo: undefined, resourceName: undefined, dtType: undefined, dtCategory: undefined, dtLevel: undefined, status: undefined, reportBy: undefined, params: {} },
+  queryParams: { pageNum: 1, pageSize: 10, downtimeNo: undefined, resourceName: undefined, dtType: undefined, dtCategory: undefined, dtLevel: undefined, reportBy: undefined, params: {} },
   rules: { resourceName: [{ required: true, message: "请选择产能单元", trigger: "change" }], startTime: [{ required: true, message: "请选择开始时间", trigger: "change" }], dtType: [{ required: true, message: "请选择停机类型", trigger: "change" }] }
 });
 const { queryParams, form, rules } = toRefs(data);
@@ -373,18 +357,18 @@ function getList() {
   loading.value = true;
   listDowntime(proxy.addDateRange(queryParams.value, dateRange.value)).then(res => { dataList.value = res.rows; total.value = res.total; loading.value = false; applySavedWidths(); loadTypeCounts(); });
 }
-function loadTypeCounts() { const baseQuery = { pageNum: 1, pageSize: 999 }; if (queryParams.value.downtimeNo) baseQuery.downtimeNo = queryParams.value.downtimeNo; if (queryParams.value.resourceName) baseQuery.resourceName = queryParams.value.resourceName; if (queryParams.value.dtCategory) baseQuery.dtCategory = queryParams.value.dtCategory; if (queryParams.value.dtLevel) baseQuery.dtLevel = queryParams.value.dtLevel; if (queryParams.value.status) baseQuery.status = queryParams.value.status; if (queryParams.value.reportBy) baseQuery.reportBy = queryParams.value.reportBy; listDowntime(proxy.addDateRange(baseQuery, dateRange.value)).then(res => { const counts = { all: res.total }; if (mms_downtime_type.value) { mms_downtime_type.value.forEach(d => { counts[d.value] = 0; }); (res.rows || []).forEach(r => { if (counts[r.dtType] !== undefined) counts[r.dtType]++; }); } typeCounts.value = counts; }).catch(() => {}); }
+function loadTypeCounts() { const baseQuery = { pageNum: 1, pageSize: 999 }; if (queryParams.value.downtimeNo) baseQuery.downtimeNo = queryParams.value.downtimeNo; if (queryParams.value.resourceName) baseQuery.resourceName = queryParams.value.resourceName; if (queryParams.value.dtCategory) baseQuery.dtCategory = queryParams.value.dtCategory; if (queryParams.value.dtLevel) baseQuery.dtLevel = queryParams.value.dtLevel; if (queryParams.value.reportBy) baseQuery.reportBy = queryParams.value.reportBy; listDowntime(proxy.addDateRange(baseQuery, dateRange.value)).then(res => { const counts = { all: res.total }; if (mms_downtime_type.value) { mms_downtime_type.value.forEach(d => { counts[d.value] = 0; }); (res.rows || []).forEach(r => { if (counts[r.dtType] !== undefined) counts[r.dtType]++; }); } typeCounts.value = counts; }).catch(() => {}); }
 function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList(); }
-function resetQuery() { queryParams.value.downtimeNo = undefined; queryParams.value.resourceName = undefined; queryParams.value.dtType = undefined; queryParams.value.dtCategory = undefined; queryParams.value.dtLevel = undefined; queryParams.value.status = undefined; queryParams.value.reportBy = undefined; dateRange.value = []; queryParams.value.params = {}; activeTypeTab.value = 'all'; handleQuery(); }
+function resetQuery() { queryParams.value.downtimeNo = undefined; queryParams.value.resourceName = undefined; queryParams.value.dtType = undefined; queryParams.value.dtCategory = undefined; queryParams.value.dtLevel = undefined; queryParams.value.reportBy = undefined; dateRange.value = []; queryParams.value.params = {}; activeTypeTab.value = 'all'; handleQuery(); }
 function handleTypeTabClick(type) { activeTypeTab.value = type; queryParams.value.dtType = type === "all" ? undefined : type; handleQuery(); }
 function handleSelectionChange(selection) { ids.value = selection.map(item => item.downtimeId); single.value = selection.length !== 1; multiple.value = !selection.length; }
-function reset() { form.value = { downtimeId: undefined, downtimeNo: undefined, resourceId: undefined, resourceName: undefined, startTime: undefined, endTime: undefined, dtType: undefined, dtCategory: '0', dtLevel: '0', reason: undefined, status: "0", reportBy: undefined, handleBy: undefined, handleResult: undefined, remark: undefined }; proxy.resetForm("formRef"); }
+function reset() { form.value = { downtimeId: undefined, downtimeNo: undefined, resourceId: undefined, resourceName: undefined, startTime: undefined, endTime: undefined, dtType: undefined, dtCategory: '0', dtLevel: '0', reason: undefined, reportBy: useUserStore().nickName, handleBy: undefined, handleResult: undefined, remark: undefined, hours: undefined }; proxy.resetForm("formRef"); }
 function handleAdd() { reset(); open.value = true; title.value = "新增停机记录"; }
 function handleUpdate(row) { reset(); const id = row.downtimeId || ids.value[0]; getDowntime(id).then(res => { form.value = res.data; open.value = true; title.value = "修改停机记录"; }); }
 function handleView(row) { const id = row.downtimeId || ids.value[0]; getDowntime(id).then(res => { viewData.value = res.data; viewOpen.value = true; }); }
 function submitForm() {
-  // 填写了结束时间时自动设为已恢复
-  if (form.value.endTime) { form.value.status = '1'; }
+  // 填写了结束时间时自动计算停机时长
+  if (form.value.endTime) { calcDowntimeHours(); }
   proxy.$refs["formRef"].validate(valid => {
     if (valid) {
       if (form.value.downtimeId != null) { updateDowntime(form.value).then(() => { proxy.$modal.msgSuccess("修改成功"); open.value = false; getList(); }); }
@@ -441,9 +425,36 @@ function clearResource() {
 }
 
 function dictLabel(dictRef, value) { if (value === null || value === undefined || value === '') return '—'; const arr = (dictRef && dictRef.value) ? dictRef.value : dictRef; if (!arr || !Array.isArray(arr)) return '—'; const item = arr.find(d => d.value == value); return item ? item.label : '—'; }
-function dtTypeBadgeClass(type) { const map = { '0': 'blue', '1': 'red', '2': 'amber', '3': 'amber', '9': 'gray' }; return map[type] || 'gray'; }
+
+// ===== 上报人弹框选择 =====
+function openReportByPicker() {
+  proxy.$refs.userPickerRef.open()
+}
+function onReportByPickerConfirm(user) {
+  form.value.reportBy = user.nickName
+}
+function clearReportBy() {
+  form.value.reportBy = undefined
+}
+
+// ===== 自动计算停机时长(小时) =====
+function calcDowntimeHours() {
+  if (form.value.startTime && form.value.endTime) {
+    const start = new Date(form.value.startTime).getTime()
+    const end = new Date(form.value.endTime).getTime()
+    if (end > start) {
+      const diffHours = (end - start) / (1000 * 60 * 60)
+      form.value.hours = diffHours.toFixed(2)
+    } else {
+      form.value.hours = undefined
+    }
+  } else {
+    form.value.hours = undefined
+  }
+}
+function dtTypeBadgeClass(type) { const map = { '1': 'red', '2': 'amber', '3': 'amber', '9': 'gray' }; return map[type] || 'gray'; }
 function dtLevelBadgeClass(level) { const map = { '0': 'blue', '1': 'amber', '2': 'red' }; return map[level] || 'gray'; }
-function typeTabClass(value) { const map = { '0': 'tab-audit', '1': 'tab-reject', '2': 'tab-draft', '3': 'tab-draft', '9': 'tab-void' }; return map[value] || ''; }
+function typeTabClass(value) { const map = { '1': 'tab-reject', '2': 'tab-draft', '3': 'tab-draft', '9': 'tab-void' }; return map[value] || ''; }
 
 getList();
 </script>

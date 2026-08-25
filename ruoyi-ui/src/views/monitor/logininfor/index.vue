@@ -63,8 +63,9 @@
       <!-- Table -->
       <div class="table-wrap">
         <el-table ref="logininforRef" v-loading="loading" :data="logininforList" @selection-change="handleSelectionChange" :default-sort="defaultSort" @sort-change="handleSortChange" border class="app-table">
-          <el-table-column type="selection" width="55" align="center" />
-          <el-table-column label="访问编号" align="center" prop="infoId" v-if="columns.infoId.visible" />
+<el-table-column type="selection" width="55" align="center" />
+<el-table-column type="index" label="序号" width="85" align="center" />
+<el-table-column label="访问编号" align="center" prop="infoId" v-if="columns.infoId.visible" />
           <el-table-column label="用户名称" align="center" prop="userName" :show-overflow-tooltip="true" sortable="custom" :sort-orders="['descending', 'ascending']" v-if="columns.userName.visible" />
           <el-table-column label="地址" align="center" prop="ipaddr" :show-overflow-tooltip="true" v-if="columns.ipaddr.visible" />
           <el-table-column label="登录地点" align="center" prop="loginLocation" :show-overflow-tooltip="true" v-if="columns.loginLocation.visible" />

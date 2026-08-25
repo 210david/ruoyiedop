@@ -86,6 +86,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" v-loading="loading" :data="riskList" border @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
+          <el-table-column type="index" label="序号" width="85" align="center" />
           <el-table-column label="风险点编号" prop="riskCode" key="riskCode" :width="colWidth('riskCode', 130)" resizable v-if="columns.riskCode.visible" />
           <el-table-column label="风险点名称" prop="riskName" key="riskName" :width="colWidth('riskName', 180)" resizable show-overflow-tooltip v-if="columns.riskName.visible" />
           <el-table-column label="所属区域" prop="areaName" key="areaName" :width="colWidth('areaName', 130)" resizable show-overflow-tooltip v-if="columns.areaName.visible" />

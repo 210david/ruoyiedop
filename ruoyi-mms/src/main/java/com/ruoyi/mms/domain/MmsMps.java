@@ -59,7 +59,7 @@ public class MmsMps extends BaseEntity
     @Excel(name = "优先级", readConverterExp = "0=高,1=中,2=低")
     private String priority;
 
-    @Excel(name = "状态", readConverterExp = "0=草稿,1=已确认,2=已发布,3=已取消")
+    @Excel(name = "状态", readConverterExp = "0=草稿,1=待审批,2=已审批,3=已下达,4=已取消")
     private String status;
 
     private String auditBy;

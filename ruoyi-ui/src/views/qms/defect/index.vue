@@ -59,9 +59,9 @@
       </div>
       <div class="table-wrap">
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" class="app-table">
-          <el-table-column type="selection" width="55" align="center" />
-          <el-table-column label="缺陷代码" prop="defectCode" key="defectCode" :width="colWidth('defectCode', 130)" resizable show-overflow-tooltip v-if="columns.defectCode.visible" />
-          <el-table-column label="缺陷名称" prop="defectName" key="defectName" :width="colWidth('defectName', 200)" resizable show-overflow-tooltip v-if="columns.defectName.visible" />
+<el-table-column type="selection" width="55" align="center" />
+<el-table-column type="index" label="序号" width="85" align="center" />
+<el-table-column label="缺陷代码" prop="defectCode" key="defectCode" :width="colWidth('defectCode', 130)" resizable show-overflow-tooltip v-if="columns.defectCode.visible" />          <el-table-column label="缺陷名称" prop="defectName" key="defectName" :width="colWidth('defectName', 200)" resizable show-overflow-tooltip v-if="columns.defectName.visible" />
           <el-table-column label="缺陷等级" prop="defectLevel" key="defectLevel" :width="colWidth('defectLevel', 110)" resizable align="center" v-if="columns.defectLevel.visible"><template #default="scope"><span class="badge" :class="defectBadgeClass(scope.row.defectLevel)"><span class="dot"></span>{{ defectLevelLabel(scope.row.defectLevel) }}</span></template></el-table-column>
           <el-table-column label="缺陷分类" prop="defectCategory" key="defectCategory" :width="colWidth('defectCategory', 120)" resizable align="center" v-if="columns.defectCategory.visible"><template #default="scope"><span class="badge violet"><span class="dot"></span>{{ defectCategoryLabel(scope.row.defectCategory) }}</span></template></el-table-column>
           <el-table-column label="状态" prop="status" key="status" :width="colWidth('status', 90)" resizable align="center" v-if="columns.status.visible"><template #default="scope"><span class="badge" :class="scope.row.status === '0' ? 'green' : 'gray'"><span class="dot"></span>{{ scope.row.status === '0' ? '正常' : '停用' }}</span></template></el-table-column>

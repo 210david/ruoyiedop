@@ -38,7 +38,7 @@ import com.ruoyi.mms.service.IMmsWorkOrderService;
  * 生产工单 Service实现
  *
  * 工单状态机（精简版，质检与入库解耦为独立业务）：
- * 0(新建) → 1(已下达) → 2(执行中) → 3(已完工) → 4(已关闭)
+ * 0(草稿) → 1(已下达) → 2(执行中) → 3(已完工) → 4(已关闭)
  *               ↓            ↓
  *           5(已暂停) ⇄ 1  5(已暂停)
  *
@@ -150,7 +150,7 @@ public class MmsWorkOrderServiceImpl implements IMmsWorkOrderService
             workOrder.setMpsId(null);
             workOrder.setMpsNo(null);
         }
-        // 新建工单默认状态为0(新建)
+        // 新建工单默认状态为0(草稿)
         if (StringUtils.isEmpty(workOrder.getStatus()))
         {
             workOrder.setStatus("0");
@@ -228,13 +228,13 @@ public class MmsWorkOrderServiceImpl implements IMmsWorkOrderService
     @Transactional(rollbackFor = Exception.class)
     public int deleteWorkOrderByIds(Long[] workOrderIds)
     {
-        // 校验：非新建状态的工单不允许删除
+        // 校验：非草稿状态的工单不允许删除
         for (Long id : workOrderIds)
         {
             MmsWorkOrder wo = workOrderMapper.selectWorkOrderById(id);
             if (wo != null && !"0".equals(wo.getStatus()) && !"6".equals(wo.getStatus()))
             {
-                throw new ServiceException("工单[" + wo.getWorkOrderNo() + "]非新建/作废状态，不允许删除");
+                throw new ServiceException("工单[" + wo.getWorkOrderNo() + "]非草稿/作废状态，不允许删除");
             }
         }
         // 删除工单前，同步取消关联的已下达排产记录
@@ -267,7 +267,7 @@ public class MmsWorkOrderServiceImpl implements IMmsWorkOrderService
         // ===== 步骤1：校验状态+BOM =====
         if (!"0".equals(wo.getStatus()))
         {
-            throw new ServiceException("工单[" + wo.getWorkOrderNo() + "]当前状态为" + statusName(wo.getStatus()) + "，只有新建状态可下达");
+            throw new ServiceException("工单[" + wo.getWorkOrderNo() + "]当前状态为" + statusName(wo.getStatus()) + "，只有草稿状态可下达");
         }
         if (wo.getBomId() == null)
         {
@@ -505,7 +505,23 @@ public class MmsWorkOrderServiceImpl implements IMmsWorkOrderService
         }
         // 工单完工 → 直接进入已完工(3)状态，质检和入库作为独立业务不卡住工单
         wo.setStatus("3");
-        wo.setActualFinish(new Date());
+        // 实际完工时间取所有派工单中最大的actual_end（即最后一道已完工工序的完工时间）
+        // 如果没有任何派工单完工（全部未开工），则取当前时间
+        MmsDispatch finQuery = new MmsDispatch();
+        finQuery.setWorkOrderId(workOrderId);
+        List<MmsDispatch> finDispatches = dispatchMapper.selectDispatchList(finQuery);
+        Date lastActualEnd = null;
+        if (finDispatches != null)
+        {
+            for (MmsDispatch disp : finDispatches)
+            {
+                if (disp.getActualEnd() != null && (lastActualEnd == null || disp.getActualEnd().after(lastActualEnd)))
+                {
+                    lastActualEnd = disp.getActualEnd();
+                }
+            }
+        }
+        wo.setActualFinish(lastActualEnd != null ? lastActualEnd : new Date());
         wo.setUpdateBy(SecurityUtils.getUsername());
         wo.setUpdateTime(DateUtils.getNowDate());
         int rows = workOrderMapper.updateWorkOrder(wo);
@@ -694,10 +710,10 @@ public class MmsWorkOrderServiceImpl implements IMmsWorkOrderService
     public Long splitWorkOrder(Long workOrderId, BigDecimal splitQty)
     {
         MmsWorkOrder wo = getAndCheckWorkOrder(workOrderId);
-        // 校验：只有新建(0)或已下达(1)状态可拆分
+        // 校验：只有草稿(0)或已下达(1)状态可拆分
         if (!"0".equals(wo.getStatus()) && !"1".equals(wo.getStatus()))
         {
-            throw new ServiceException("工单[" + wo.getWorkOrderNo() + "]当前状态为" + statusName(wo.getStatus()) + "，只有新建/已下达状态可拆分");
+            throw new ServiceException("工单[" + wo.getWorkOrderNo() + "]当前状态为" + statusName(wo.getStatus()) + "，只有草稿/已下达状态可拆分");
         }
         // 校验拆分数量
         if (splitQty == null || splitQty.compareTo(BigDecimal.ZERO) <= 0)
@@ -731,7 +747,7 @@ public class MmsWorkOrderServiceImpl implements IMmsWorkOrderService
         newWo.setPlanStart(wo.getPlanStart());
         newWo.setPlanFinish(wo.getPlanFinish());
         newWo.setPriority(wo.getPriority());
-        newWo.setStatus("0"); // 新工单为新建状态
+        newWo.setStatus("0"); // 新工单为草稿状态
         newWo.setFinishedQty(BigDecimal.ZERO);
         newWo.setQualifiedQty(BigDecimal.ZERO);
         newWo.setDefectQty(BigDecimal.ZERO);
@@ -801,7 +817,7 @@ public class MmsWorkOrderServiceImpl implements IMmsWorkOrderService
         reworkWo.setPlanStart(DateUtils.getNowDate());
         reworkWo.setPlanFinish(sourceWo.getPlanFinish());
         reworkWo.setPriority(sourceWo.getPriority());
-        reworkWo.setStatus("0"); // 新建状态，需重新下达
+        reworkWo.setStatus("0"); // 草稿状态，需重新下达
         reworkWo.setFinishedQty(BigDecimal.ZERO);
         reworkWo.setQualifiedQty(BigDecimal.ZERO);
         reworkWo.setDefectQty(BigDecimal.ZERO);
@@ -830,7 +846,7 @@ public class MmsWorkOrderServiceImpl implements IMmsWorkOrderService
         MmsWorkOrder wo = getAndCheckWorkOrder(workOrderId);
         if (!"0".equals(wo.getStatus()))
         {
-            throw new ServiceException("工单[" + wo.getWorkOrderNo() + "]当前状态为" + statusName(wo.getStatus()) + "，只有新建状态可下达");
+            throw new ServiceException("工单[" + wo.getWorkOrderNo() + "]当前状态为" + statusName(wo.getStatus()) + "，只有草稿状态可下达");
         }
 
         java.util.Map<String, Object> data = new java.util.HashMap<>();
@@ -983,7 +999,7 @@ public class MmsWorkOrderServiceImpl implements IMmsWorkOrderService
     {
         switch (status)
         {
-            case "0": return "新建";
+            case "0": return "草稿";
             case "1": return "已下达";
             case "2": return "执行中";
             case "3": return "已完工";

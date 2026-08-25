@@ -92,6 +92,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" :row-class-name="tableRowClassName" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
+          <el-table-column type="index" label="序号" width="85" align="center" />
           <el-table-column label="供应商" prop="supplierName" key="supplierName" :width="colWidth('supplierName', 240)" resizable show-overflow-tooltip v-if="columns.supplierName.visible" />
           <el-table-column label="资质名称" prop="qualName" key="qualName" :width="colWidth('qualName', 180)" resizable show-overflow-tooltip v-if="columns.qualName.visible" />
           <el-table-column label="资质类型" prop="qualType" key="qualType" :width="colWidth('qualType', 120)" resizable align="center" v-if="columns.qualType.visible"><template #default="scope"><span class="badge violet">{{ qualTypeLabel(scope.row.qualType) }}</span></template></el-table-column>

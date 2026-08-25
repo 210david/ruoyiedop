@@ -87,6 +87,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" v-loading="loading" :data="attendeeList" border @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
+          <el-table-column type="index" label="序号" width="85" align="center" />
           <el-table-column label="参训人员" prop="userName" key="userName" :width="colWidth('userName', 144)" resizable v-if="columns.userName.visible" />
           <el-table-column label="所属部门" prop="deptName" key="deptName" :width="colWidth('deptName', 168)" resizable show-overflow-tooltip v-if="columns.deptName.visible" />
           <el-table-column label="关联课程" prop="courseName" key="courseName" :width="colWidth('courseName', 216)" resizable show-overflow-tooltip v-if="columns.courseName.visible" />

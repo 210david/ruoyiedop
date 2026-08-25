@@ -205,8 +205,9 @@
               <span class="chart-panel__desc">最近创建的5条工单</span>
             </div>
             <div class="chart-panel__body" style="padding: 0; height: auto;">
-              <el-table :data="latestOrders" border stripe size="small">
-                <el-table-column label="工单编号" align="center" prop="workOrderNo" width="140" />
+<el-table :data="latestOrders" border stripe size="small">
+<el-table-column type="index" label="序号" width="85" align="center" />
+<el-table-column label="工单编号" align="center" prop="workOrderNo" width="140" />
                 <el-table-column label="产品名称" align="center" prop="productName" min-width="120" show-overflow-tooltip />
                 <el-table-column label="计划数量" align="center" prop="planQty" width="100" />
                 <el-table-column label="完工数量" align="center" prop="finishedQty" width="100" />

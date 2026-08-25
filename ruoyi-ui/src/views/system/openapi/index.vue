@@ -50,8 +50,9 @@
       <!-- Table -->
       <div class="table-wrap">
         <el-table v-loading="loading" :data="openapiList" @selection-change="handleSelectionChange" border class="app-table">
-          <el-table-column type="selection" width="55" align="center" />
-          <el-table-column label="应用ID" align="center" prop="appId" width="80" v-if="columns.appId.visible" />
+<el-table-column type="selection" width="55" align="center" />
+<el-table-column type="index" label="序号" width="85" align="center" />
+<el-table-column label="应用ID" align="center" prop="appId" width="80" v-if="columns.appId.visible" />
           <el-table-column label="应用名称" align="center" prop="appName" v-if="columns.appName.visible" />
           <el-table-column label="API Key" align="center" prop="appKey" show-overflow-tooltip v-if="columns.appKey.visible">
             <template #default="scope">

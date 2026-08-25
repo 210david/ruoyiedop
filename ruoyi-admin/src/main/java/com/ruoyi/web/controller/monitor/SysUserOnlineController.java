@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Date;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -40,7 +41,7 @@ public class SysUserOnlineController extends BaseController
 
     @PreAuthorize("@ss.hasPermi('monitor:online:list')")
     @GetMapping("/list")
-    public TableDataInfo list(String ipaddr, String userName)
+    public TableDataInfo list(String ipaddr, String userName, Date beginLoginTime, Date endLoginTime)
     {
         Collection<String> keys = redisCache.keys(CacheConstants.LOGIN_TOKEN_KEY + "*");
         List<SysUserOnline> userOnlineList = new ArrayList<SysUserOnline>();
@@ -66,6 +67,16 @@ public class SysUserOnlineController extends BaseController
         }
         Collections.reverse(userOnlineList);
         userOnlineList.removeAll(Collections.singleton(null));
+        // 按登录时间范围过滤
+        if (beginLoginTime != null || endLoginTime != null)
+        {
+            long beginTime = beginLoginTime != null ? beginLoginTime.getTime() : 0;
+            long endTime = endLoginTime != null ? endLoginTime.getTime() : Long.MAX_VALUE;
+            userOnlineList.removeIf(item -> item == null
+                    || item.getLoginTime() == null
+                    || item.getLoginTime() < beginTime
+                    || item.getLoginTime() > endTime);
+        }
         return getDataTable(userOnlineList);
     }
 

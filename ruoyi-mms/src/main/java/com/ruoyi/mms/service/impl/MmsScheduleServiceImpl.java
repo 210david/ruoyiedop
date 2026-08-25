@@ -130,14 +130,13 @@ public class MmsScheduleServiceImpl implements IMmsScheduleService
         schedule.setUpdateBy(SecurityUtils.getUsername());
         int rows = scheduleMapper.updateSchedule(schedule);
 
-        // 更新工单计划时间
+        // 排产只同步产能单元到工单，不覆盖工单的计划时间
+        // 工单计划时间是用户在工单管理页面填写的粗粒度计划，排产时间是产能单元级别的细粒度排程，两者是不同维度
         if (schedule.getWorkOrderId() != null)
         {
             MmsWorkOrder wo = workOrderMapper.selectWorkOrderById(schedule.getWorkOrderId());
             if (wo != null)
             {
-                wo.setPlanStart(schedule.getPlanStart());
-                wo.setPlanFinish(schedule.getPlanEnd());
                 wo.setResourceId(schedule.getResourceId());
                 wo.setResourceName(schedule.getResourceName());
                 wo.setUpdateBy(SecurityUtils.getUsername());
@@ -288,15 +287,14 @@ public class MmsScheduleServiceImpl implements IMmsScheduleService
                 schedule.setCreateTime(DateUtils.getNowDate());
                 scheduleMapper.insertSchedule(schedule);
             }
-            // 如果排产状态为已下达(0)，同步更新工单的计划时间+产能单元（不改工单状态）
+            // 如果排产状态为已下达(0)，只同步产能单元到工单（不改工单状态和计划时间）
+            // 工单计划时间是用户在工单管理页面填写的粗粒度计划，排产时间是产能单元级别的细粒度排程，两者是不同维度
             // 工单状态只由工单管理的下达操作推进，排产不越界修改
             if ("0".equals(schedule.getStatus()) && schedule.getWorkOrderId() != null)
             {
                 MmsWorkOrder wo = workOrderMapper.selectWorkOrderById(schedule.getWorkOrderId());
                 if (wo != null)
                 {
-                    wo.setPlanStart(schedule.getPlanStart());
-                    wo.setPlanFinish(schedule.getPlanEnd());
                     wo.setResourceId(schedule.getResourceId());
                     wo.setResourceName(schedule.getResourceName());
                     wo.setUpdateBy(SecurityUtils.getUsername());

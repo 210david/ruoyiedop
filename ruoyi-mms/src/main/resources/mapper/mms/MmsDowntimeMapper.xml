@@ -17,8 +17,7 @@
         <result property="dtCategory" column="dt_category"/>
         <result property="dtLevel" column="dt_level"/>
         <result property="reason" column="reason"/>
-        <result property="minutes" column="minutes"/>
-        <result property="status" column="status"/>
+        <result property="hours" column="hours"/>
         <result property="reportBy" column="report_by"/>
         <result property="handleBy" column="handle_by"/>
         <result property="handleResult" column="handle_result"/>
@@ -31,7 +30,7 @@
     </resultMap>
 
     <sql id="selectDowntimeVo">
-        SELECT downtime_id, downtime_no, dispatch_id, abnormal_id, abnormal_no, work_order_id, resource_id, resource_name, start_time, end_time, dt_type, dt_category, dt_level, reason, minutes, status, report_by, handle_by, handle_result, del_flag, create_by, create_time, update_by, update_time, remark
+        SELECT downtime_id, downtime_no, dispatch_id, abnormal_id, abnormal_no, work_order_id, resource_id, resource_name, start_time, end_time, dt_type, dt_category, dt_level, reason, hours, report_by, handle_by, handle_result, del_flag, create_by, create_time, update_by, update_time, remark
         FROM mms_downtime
     </sql>
 
@@ -45,7 +44,6 @@
             <if test="dtType != null and dtType != ''"> AND dt_type = #{dtType}</if>
             <if test="dtCategory != null and dtCategory != ''"> AND dt_category = #{dtCategory}</if>
             <if test="dtLevel != null and dtLevel != ''"> AND dt_level = #{dtLevel}</if>
-            <if test="status != null and status != ''"> AND status = #{status}</if>
             <if test="reportBy != null and reportBy != ''"> AND report_by LIKE CONCAT('%', #{reportBy}, '%')</if>
             <if test="params.beginTime != null and params.beginTime != ''"> AND date(start_time) &gt;= #{params.beginTime}</if>
             <if test="params.endTime != null and params.endTime != ''"> AND date(start_time) &lt;= #{params.endTime}</if>
@@ -60,9 +58,9 @@
 
     <insert id="insertDowntime" parameterType="MmsDowntime" useGeneratedKeys="true" keyProperty="downtimeId">
         INSERT INTO mms_downtime (
-            downtime_no, dispatch_id, abnormal_id, abnormal_no, work_order_id, resource_id, resource_name, start_time, end_time, dt_type, dt_category, dt_level, reason, minutes, status, report_by, handle_by, handle_result, del_flag, create_by, create_time, update_by, update_time, remark
+            downtime_no, dispatch_id, abnormal_id, abnormal_no, work_order_id, resource_id, resource_name, start_time, end_time, dt_type, dt_category, dt_level, reason, hours, report_by, handle_by, handle_result, del_flag, create_by, create_time, update_by, update_time, remark
         ) VALUES (
-            #{downtimeNo}, #{dispatchId}, #{abnormalId}, #{abnormalNo}, #{workOrderId}, #{resourceId}, #{resourceName}, #{startTime}, #{endTime}, #{dtType}, #{dtCategory}, #{dtLevel}, #{reason}, #{minutes}, #{status}, #{reportBy}, #{handleBy}, #{handleResult}, #{delFlag}, #{createBy}, sysdate(), #{updateBy}, #{updateTime}, #{remark}
+            #{downtimeNo}, #{dispatchId}, #{abnormalId}, #{abnormalNo}, #{workOrderId}, #{resourceId}, #{resourceName}, #{startTime}, #{endTime}, #{dtType}, #{dtCategory}, #{dtLevel}, #{reason}, #{hours}, #{reportBy}, #{handleBy}, #{handleResult}, #{delFlag}, #{createBy}, sysdate(), #{updateBy}, #{updateTime}, #{remark}
         )
     </insert>
 
@@ -81,8 +79,7 @@
             dt_category = #{dtCategory},
             dt_level = #{dtLevel},
             reason = #{reason},
-            minutes = #{minutes},
-            status = #{status},
+            hours = #{hours},
             report_by = #{reportBy},
             handle_by = #{handleBy},
             handle_result = #{handleResult},

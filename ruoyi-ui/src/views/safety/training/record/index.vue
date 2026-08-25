@@ -73,6 +73,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" v-loading="loading" :data="recordList" border @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
+          <el-table-column type="index" label="序号" width="85" align="center" />
           <el-table-column label="关联计划" key="planName" :width="colWidth('planName', 192)" resizable show-overflow-tooltip v-if="columns.planName.visible">
             <template #default="scope">
               <span v-if="scope.row.planId">{{ getPlanName(scope.row.planId) }}</span>

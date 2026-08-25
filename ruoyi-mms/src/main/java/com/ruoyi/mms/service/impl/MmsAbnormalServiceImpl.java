@@ -1,5 +1,7 @@
 package com.ruoyi.mms.service.impl;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -67,7 +69,7 @@ public class MmsAbnormalServiceImpl implements IMmsAbnormalService
         abnormal.setDelFlag("0");
         abnormal.setCreateBy(SecurityUtils.getUsername());
         abnormal.setCreateTime(DateUtils.getNowDate());
-        abnormal.setReportBy(SecurityUtils.getUsername());
+        abnormal.setReportBy(abnormal.getReportBy() != null ? abnormal.getReportBy() : SecurityUtils.getUsername());
         abnormal.setReportTime(new Date());
         return abnormalMapper.insertAbnormal(abnormal);
     }
@@ -145,7 +147,7 @@ public class MmsAbnormalServiceImpl implements IMmsAbnormalService
             abnormal.setHandleMethod(body.getHandleMethod());
             abnormal.setRootCause(body.getRootCause());
             abnormal.setPreventiveMeasure(body.getPreventiveMeasure());
-            abnormal.setDowntimeMinutes(body.getDowntimeMinutes());
+            abnormal.setDowntimeHours(body.getDowntimeHours());
             abnormal.setNeedPursuit(body.getNeedPursuit() != null ? body.getNeedPursuit() : "0");
         }
         // 处理人默认取响应人
@@ -202,7 +204,6 @@ public class MmsAbnormalServiceImpl implements IMmsAbnormalService
         downtime.setStartTime(abnormal.getReportTime() != null ? abnormal.getReportTime() : new Date());
         downtime.setDtType(mapAbnormalTypeToDowntimeType(abnormal.getAbnormalType()));
         downtime.setReason("[联动] " + (abnormal.getDescription() != null ? abnormal.getDescription() : ""));
-        downtime.setStatus("0"); // 停机中
         downtime.setDelFlag("0");
         downtime.setCreateBy(SecurityUtils.getUsername());
         downtime.setCreateTime(DateUtils.getNowDate());
@@ -222,14 +223,16 @@ public class MmsAbnormalServiceImpl implements IMmsAbnormalService
 
         for (MmsDowntime dt : linked)
         {
-            if ("0".equals(dt.getStatus())) // 只关闭停机中的
+            if (dt.getEndTime() == null) // 只关闭未结束的停机记录
             {
-                dt.setStatus("1"); // 已恢复
                 dt.setEndTime(new Date());
                 if (dt.getStartTime() != null)
                 {
                     long diff = dt.getEndTime().getTime() - dt.getStartTime().getTime();
-                    dt.setMinutes((int) (diff / (1000 * 60)));
+                    BigDecimal hours = BigDecimal.valueOf(diff)
+                            .divide(BigDecimal.valueOf(1000 * 60 * 60), 2, RoundingMode.HALF_UP);
+                    if (hours.compareTo(BigDecimal.ZERO) < 0) hours = BigDecimal.ZERO;
+                    dt.setHours(hours);
                 }
                 dt.setUpdateBy(SecurityUtils.getUsername());
                 downtimeMapper.updateDowntime(dt);
@@ -248,7 +251,7 @@ public class MmsAbnormalServiceImpl implements IMmsAbnormalService
         query.getParams().put("endTime", today);
         List<MmsDowntime> todayList = downtimeMapper.selectDowntimeList(query);
 
-        int totalMinutes = 0;
+        BigDecimal totalHours = BigDecimal.ZERO;
         int count = 0;
         int activeCount = 0;
         if (todayList != null)
@@ -256,11 +259,11 @@ public class MmsAbnormalServiceImpl implements IMmsAbnormalService
             for (MmsDowntime dt : todayList)
             {
                 count++;
-                if ("0".equals(dt.getStatus())) activeCount++;
-                if (dt.getMinutes() != null) totalMinutes += dt.getMinutes();
+                if (dt.getEndTime() == null) activeCount++;
+                if (dt.getHours() != null) totalHours = totalHours.add(dt.getHours());
             }
         }
-        stats.put("totalMinutes", totalMinutes);
+        stats.put("totalHours", totalHours);
         stats.put("count", count);
         stats.put("activeCount", activeCount);
         return stats;

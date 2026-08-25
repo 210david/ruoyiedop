@@ -27,4 +27,9 @@ public interface IMmsReturnMaterialService
      * 只查状态为已退料(1)的退料单中的明细
      */
     public List<MmsReturnDetail> selectReturnedQtyByIssueId(Long issueId);
+
+    /**
+     * 按工单号查询退料明细（按物料拆分，每条明细一行）
+     */
+    public List<java.util.Map<String, Object>> selectReturnDetailListByWorkOrderNo(String workOrderNo);
 }

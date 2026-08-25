@@ -1,5 +1,7 @@
 package com.ruoyi.mms.service.impl;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Date;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,19 +41,29 @@ public class MmsDowntimeServiceImpl implements IMmsDowntimeService
     @Transactional(rollbackFor = Exception.class)
     public int insertDowntime(MmsDowntime downtime)
     {
-        if (StringUtils.isEmpty(downtime.getStatus()))
-        {
-            downtime.setStatus("0");
-        }
         downtime.setDelFlag("0");
         if (StringUtils.isEmpty(downtime.getDowntimeNo()))
         {
             downtime.setDowntimeNo(mkNumberRuleService.generateNumber("mms_downtime"));
         }
-        // 默认上报人为当前用户
+        // 默认上报人为当前用户昵称
         if (StringUtils.isEmpty(downtime.getReportBy()))
         {
-            downtime.setReportBy(SecurityUtils.getUsername());
+            downtime.setReportBy(SecurityUtils.getLoginUser().getUser().getNickName());
+        }
+        // 填写了结束时间时自动计算停机时长
+        if (downtime.getEndTime() != null && downtime.getStartTime() != null)
+        {
+            long diff = downtime.getEndTime().getTime() - downtime.getStartTime().getTime();
+            BigDecimal hours = BigDecimal.valueOf(diff)
+                    .divide(BigDecimal.valueOf(1000 * 60 * 60), 2, RoundingMode.HALF_UP);
+            if (hours.compareTo(BigDecimal.ZERO) < 0) hours = BigDecimal.ZERO;
+            downtime.setHours(hours);
+            // 自动设置处理人为当前用户
+            if (StringUtils.isEmpty(downtime.getHandleBy()))
+            {
+                downtime.setHandleBy(SecurityUtils.getUsername());
+            }
         }
         downtime.setCreateBy(SecurityUtils.getUsername());
         downtime.setCreateTime(DateUtils.getNowDate());
@@ -62,8 +74,8 @@ public class MmsDowntimeServiceImpl implements IMmsDowntimeService
     @Transactional(rollbackFor = Exception.class)
     public int updateDowntime(MmsDowntime downtime)
     {
-        // 状态变为已恢复时，自动计算停机时长
-        if ("1".equals(downtime.getStatus()))
+        // 填写了结束时间时自动计算停机时长
+        if (downtime.getEndTime() != null)
         {
             // 如果开始时间为空，从数据库取已有值（防止前端传空覆盖）
             if (downtime.getStartTime() == null)
@@ -74,15 +86,17 @@ public class MmsDowntimeServiceImpl implements IMmsDowntimeService
                     downtime.setStartTime(existing.getStartTime());
                 }
             }
-            if (downtime.getEndTime() != null && downtime.getStartTime() != null)
+            if (downtime.getStartTime() != null)
             {
                 long diff = downtime.getEndTime().getTime() - downtime.getStartTime().getTime();
-                int minutes = (int) (diff / (1000 * 60));
+                // 转换为小时，保留2位小数
+                BigDecimal hours = BigDecimal.valueOf(diff)
+                        .divide(BigDecimal.valueOf(1000 * 60 * 60), 2, RoundingMode.HALF_UP);
                 // 防止负数时长（结束时间早于开始时间时取0）
-                if (minutes < 0) minutes = 0;
-                downtime.setMinutes(minutes);
+                if (hours.compareTo(BigDecimal.ZERO) < 0) hours = BigDecimal.ZERO;
+                downtime.setHours(hours);
             }
-            // 恢复时自动设置处理人为当前用户
+            // 自动设置处理人为当前用户
             if (StringUtils.isEmpty(downtime.getHandleBy()))
             {
                 downtime.setHandleBy(SecurityUtils.getUsername());

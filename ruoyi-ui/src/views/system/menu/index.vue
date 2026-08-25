@@ -87,6 +87,7 @@
             :tree-props="{ children: 'children', hasChildren: 'hasChildren' }"
             class="app-table"
          >
+         <el-table-column type="index" label="序号" width="85" align="center" />
          <el-table-column prop="menuName" label="菜单名称" :show-overflow-tooltip="true" width="220">
             <template #default="scope">
                <svg-icon :icon-class="scope.row.icon" />

@@ -104,9 +104,9 @@
 
       <div class="table-wrap">
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" class="app-table">
-          <el-table-column type="selection" width="55" align="center" />
-          <el-table-column label="评审编号" prop="mrNo" key="mrNo" :width="colWidth('mrNo', 160)" resizable show-overflow-tooltip v-if="columns.mrNo.visible" />
-          <el-table-column label="评审标题" prop="mrTitle" key="mrTitle" :width="colWidth('mrTitle', 220)" resizable show-overflow-tooltip v-if="columns.mrTitle.visible" />
+<el-table-column type="selection" width="55" align="center" />
+<el-table-column type="index" label="序号" width="85" align="center" />
+<el-table-column label="评审编号" prop="mrNo" key="mrNo" :width="colWidth('mrNo', 160)" resizable show-overflow-tooltip v-if="columns.mrNo.visible" />          <el-table-column label="评审标题" prop="mrTitle" key="mrTitle" :width="colWidth('mrTitle', 220)" resizable show-overflow-tooltip v-if="columns.mrTitle.visible" />
           <el-table-column label="年度" prop="mrYear" key="mrYear" :width="colWidth('mrYear', 80)" resizable align="center" v-if="columns.mrYear.visible" />
           <el-table-column label="评审日期" prop="mrDate" key="mrDate" :width="colWidth('mrDate', 120)" resizable align="center" v-if="columns.mrDate.visible"><template #default="scope"><span>{{ parseTime(scope.row.mrDate, '{y}-{m}-{d}') }}</span></template></el-table-column>
           <el-table-column label="主持人" prop="chairperson" key="chairperson" :width="colWidth('chairperson', 100)" resizable show-overflow-tooltip v-if="columns.chairperson.visible" />

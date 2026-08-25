@@ -160,9 +160,9 @@
 
       <div class="table-wrap">
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" class="app-table">
-          <el-table-column type="selection" width="55" align="center" />
-          <el-table-column label="投入批次" prop="parentBatchNo" key="parentBatchNo" :width="colWidth('parentBatchNo', 140)" resizable show-overflow-tooltip v-if="columns.parentBatchNo.visible">
-            <template #header><span>投入批次</span><el-tooltip content="投入原料或半成品的批次号，谱系链的上游批次" placement="top"><el-icon class="col-tip"><QuestionFilled /></el-icon></el-tooltip></template>
+<el-table-column type="selection" width="55" align="center" />
+<el-table-column type="index" label="序号" width="85" align="center" />
+<el-table-column label="投入批次" prop="parentBatchNo" key="parentBatchNo" :width="colWidth('parentBatchNo', 140)" resizable show-overflow-tooltip v-if="columns.parentBatchNo.visible">            <template #header><span>投入批次</span><el-tooltip content="投入原料或半成品的批次号，谱系链的上游批次" placement="top"><el-icon class="col-tip"><QuestionFilled /></el-icon></el-tooltip></template>
           </el-table-column>
           <el-table-column label="产出批次" prop="childBatchNo" key="childBatchNo" :width="colWidth('childBatchNo', 140)" resizable show-overflow-tooltip v-if="columns.childBatchNo.visible">
             <template #header><span>产出批次</span><el-tooltip content="产出半成品或成品的批次号，谱系链的下游批次。空值表示断点未登记" placement="top"><el-icon class="col-tip"><QuestionFilled /></el-icon></el-tooltip></template>
@@ -402,7 +402,7 @@
         <!-- 断点列表表格 -->
         <div class="break-table-wrap">
           <el-table :data="breakList" border v-loading="breakLoading" class="app-table" size="small">
-            <el-table-column label="序号" type="index" width="55" align="center" />
+            <el-table-column label="序号" type="index" width="85" align="center" />
             <el-table-column label="投入批次" prop="parentBatchNo" min-width="130" show-overflow-tooltip />
             <el-table-column label="工单号" prop="workOrderNo" min-width="110" show-overflow-tooltip />
             <el-table-column label="物料编码" prop="materialCode" min-width="110" show-overflow-tooltip />

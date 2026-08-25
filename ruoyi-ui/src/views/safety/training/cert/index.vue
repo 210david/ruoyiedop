@@ -94,6 +94,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" v-loading="loading" :data="certList" border @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
+          <el-table-column type="index" label="序号" width="85" align="center" />
           <el-table-column label="证书编号" prop="certNo" key="certNo" :width="colWidth('certNo', 156)" resizable v-if="columns.certNo.visible" />
           <el-table-column label="证书名称" prop="certName" key="certName" :width="colWidth('certName', 240)" resizable show-overflow-tooltip v-if="columns.certName.visible" />
           <el-table-column label="证书类型" prop="certType" key="certType" :width="colWidth('certType', 180)" resizable align="center" v-if="columns.certType.visible">

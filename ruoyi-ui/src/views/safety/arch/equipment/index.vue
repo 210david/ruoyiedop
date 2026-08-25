@@ -96,6 +96,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" v-loading="loading" :data="equipmentList" border @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
+          <el-table-column type="index" label="序号" width="85" align="center" />
           <el-table-column label="设备编号" prop="equipmentCode" key="equipmentCode" :width="colWidth('equipmentCode', 130)" resizable v-if="columns.equipmentCode.visible" />
           <el-table-column label="设备名称" prop="equipmentName" key="equipmentName" :width="colWidth('equipmentName', 180)" resizable show-overflow-tooltip v-if="columns.equipmentName.visible" />
           <el-table-column label="型号规格" prop="specModel" key="specModel" :width="colWidth('specModel', 160)" resizable show-overflow-tooltip v-if="columns.specModel.visible" />

@@ -100,7 +100,7 @@ public class MmsWorkOrder extends BaseEntity
     @Excel(name = "优先级", readConverterExp = "0=高,1=中,2=低")
     private String priority;
 
-    @Excel(name = "状态", readConverterExp = "0=新建,1=已下达,2=执行中,3=已完工,4=已关闭,5=已暂停,6=已作废")
+    @Excel(name = "状态", readConverterExp = "0=草稿,1=已下达,2=执行中,3=已完工,4=已关闭,5=已暂停,6=已作废")
     private String status;
 
     private String auditBy;

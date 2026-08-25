@@ -43,10 +43,10 @@ export function delMps(mpsId) {
   })
 }
 
-// 计划确认/提交审批
-export function confirmMps(mpsId) {
+// 计划提交审批
+export function submitMps(mpsId) {
   return request({
-    url: '/mms/mps/confirm/' + mpsId,
+    url: '/mms/mps/submit/' + mpsId,
     method: 'put'
   })
 }

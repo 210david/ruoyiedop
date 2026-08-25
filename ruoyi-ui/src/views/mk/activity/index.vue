@@ -134,6 +134,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
+          <el-table-column type="index" label="序号" width="85" align="center" />
           <el-table-column label="活动编号" prop="activityNo" key="activityNo" :width="colWidth('activityNo', 150)" resizable sortable="custom" v-if="columns.activityNo.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.activityNo }}</span></template>
           </el-table-column>

@@ -22,7 +22,7 @@ public interface IMmsWorkOrderService
     /** 审核日志 */
     public List<MmsWorkOrderAuditLog> selectAuditLogByWorkOrderId(Long workOrderId);
 
-    /** 工单下达：0(新建) → 1(已下达) */
+    /** 工单下达：0(草稿) → 1(已下达) */
     public int releaseWorkOrder(Long workOrderId);
 
     /** 工单下达预览：返回BOM明细+工艺工序，供前端弹窗展示 */

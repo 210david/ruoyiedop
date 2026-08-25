@@ -46,3 +46,12 @@ export function confirmIssue(data) {
     data: data
   })
 }
+
+// 按工单号查询领料明细（按物料拆分，每条明细一行）
+export function listIssueDetailByWorkOrder(workOrderNo) {
+  return request({
+    url: '/mms/issue/detailListByWorkOrder',
+    method: 'get',
+    params: { workOrderNo }
+  })
+}

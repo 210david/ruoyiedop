@@ -536,7 +536,7 @@ public class MmsKitCheckServiceImpl implements IMmsKitCheckService
 
     private boolean isValidWorkOrderStatus(String status)
     {
-        // 新建(0)、已下达(1)、执行中(2) 状态可做齐套检查
+        // 草稿(0)、已下达(1)、执行中(2) 状态可做齐套检查
         return "0".equals(status) || "1".equals(status) || "2".equals(status);
     }
 
@@ -545,7 +545,7 @@ public class MmsKitCheckServiceImpl implements IMmsKitCheckService
         if (status == null) return "未知";
         switch (status)
         {
-            case "0": return "新建";
+            case "0": return "草稿";
             case "1": return "已下达";
             case "2": return "执行中";
             case "3": return "已完工";

@@ -73,6 +73,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" v-loading="loading" :data="incidentList" border @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
+          <el-table-column type="index" label="序号" width="85" align="center" />
           <el-table-column label="事故编号" prop="incidentCode" key="incidentCode" :width="colWidth('incidentCode', 130)" resizable v-if="columns.incidentCode.visible" />
           <el-table-column label="事故等级" prop="incidentLevel" key="incidentLevel" :width="colWidth('incidentLevel', 110)" resizable align="center" v-if="columns.incidentLevel.visible">
             <template #default="scope">

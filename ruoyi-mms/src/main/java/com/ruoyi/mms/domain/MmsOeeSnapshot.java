@@ -17,6 +17,17 @@ public class MmsOeeSnapshot extends BaseEntity
 
     private Long snapshotId;
 
+    /** 派工单ID（工序维度） */
+    private Long dispatchId;
+
+    /** 工序顺序号 */
+    @Excel(name = "工序号")
+    private Integer opSeq;
+
+    /** 工序名称 */
+    @Excel(name = "工序名称")
+    private String processName;
+
     @Excel(name = "日期", dateFormat = "yyyy-MM-dd")
     @JsonFormat(pattern = "yyyy-MM-dd")
     private Date snapshotDate;
@@ -63,6 +74,12 @@ public class MmsOeeSnapshot extends BaseEntity
 
     public Long getSnapshotId() { return snapshotId; }
     public void setSnapshotId(Long snapshotId) { this.snapshotId = snapshotId; }
+    public Long getDispatchId() { return dispatchId; }
+    public void setDispatchId(Long dispatchId) { this.dispatchId = dispatchId; }
+    public Integer getOpSeq() { return opSeq; }
+    public void setOpSeq(Integer opSeq) { this.opSeq = opSeq; }
+    public String getProcessName() { return processName; }
+    public void setProcessName(String processName) { this.processName = processName; }
     public Date getSnapshotDate() { return snapshotDate; }
     public void setSnapshotDate(Date snapshotDate) { this.snapshotDate = snapshotDate; }
     public Long getResourceId() { return resourceId; }

@@ -7,7 +7,6 @@
         <div class="field"><label>工单编号</label><div class="control"><el-input v-model="queryParams.workOrderNo" placeholder="请输入" clearable @keyup.enter="handleQuery"><template #prefix><el-icon><Search /></el-icon></template></el-input></div></div>
         <div class="field"><label>产品编码</label><div class="control"><el-input v-model="queryParams.productCode" placeholder="请输入" clearable @keyup.enter="handleQuery" /></div></div>
         <div class="field"><label>产品名称</label><div class="control"><el-input v-model="queryParams.productName" placeholder="请输入" clearable @keyup.enter="handleQuery" /></div></div>
-        <div class="field" v-show="showAdvanced"><label>产能单元</label><div class="control"><el-input v-model="queryParams.resourceName" placeholder="请输入" clearable @keyup.enter="handleQuery" /></div></div>
         <div class="field" v-show="showAdvanced"><label>工单状态</label><div class="control is-select"><el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery"><el-option v-for="d in mms_workorder_status" :key="d.value" :label="d.label" :value="d.value" /></el-select></div></div>
         <div class="field" v-show="showAdvanced"><label>是否准时</label><div class="control is-select"><el-select v-model="queryParams.isOnTime" placeholder="全部" clearable @change="handleQuery"><el-option label="准时完工" value="1" /><el-option label="逾期完工" value="0" /></el-select></div></div>
         <div class="field" v-show="showAdvanced"><label>完工日期</label><div class="control"><el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" /></div></div>
@@ -77,20 +76,19 @@
       </div>
       <div class="table-wrap">
         <el-table ref="tableRef" v-loading="loading" :data="dataList" border @header-dragend="onHeaderDragEnd" class="app-table" show-summary :summary-method="getSummaryRow">
-          <el-table-column type="index" label="序号" width="55" align="center" />
+          <el-table-column type="index" label="序号" width="85" align="center" />
           <el-table-column label="工单号" prop="workOrderNo" key="workOrderNo" :width="colWidth('workOrderNo', 140)" resizable v-if="columns.workOrderNo.visible" />
           <el-table-column label="产品编码" prop="productCode" key="productCode" :width="colWidth('productCode', 130)" resizable v-if="columns.productCode.visible" />
           <el-table-column label="产品名称" prop="productName" key="productName" :width="colWidth('productName', 180)" resizable show-overflow-tooltip v-if="columns.productName.visible" />
           <el-table-column label="单位" prop="unit" key="unit" :width="colWidth('unit', 80)" resizable align="center" v-if="columns.unit.visible"><template #default="scope"><span v-if="scope.row.unit" class="badge violet">{{ unitLabel(scope.row.unit) }}</span><span v-else class="text-muted">—</span></template></el-table-column>
-          <el-table-column label="产能单元" prop="resourceName" key="resourceName" :width="colWidth('resourceName', 120)" resizable show-overflow-tooltip v-if="columns.resourceName.visible" />
           <el-table-column label="计划数量" prop="planQty" key="planQty" :width="colWidth('planQty', 100)" resizable align="center" v-if="columns.planQty.visible" />
           <el-table-column label="完工数量" prop="finishQty" key="finishQty" :width="colWidth('finishQty', 100)" resizable align="center" v-if="columns.finishQty.visible" />
           <el-table-column label="合格数量" prop="qualifiedQty" key="qualifiedQty" :width="colWidth('qualifiedQty', 100)" resizable align="center" v-if="columns.qualifiedQty.visible" />
           <el-table-column label="损耗量" prop="lossQty" key="lossQty" :width="colWidth('lossQty', 90)" resizable align="center" v-if="columns.lossQty.visible"><template #default="scope"><span v-if="scope.row.lossQty > 0" class="badge red"><span class="dot"></span>{{ scope.row.lossQty }}</span><span v-else class="text-muted">{{ scope.row.lossQty }}</span></template></el-table-column>
-          <el-table-column label="损耗率" prop="lossRate" key="lossRate" :width="colWidth('lossRate', 90)" resizable align="center" v-if="columns.lossRate.visible"><template #default="scope"><span :class="scope.row.lossRate > 5 ? 'text-danger' : ''">{{ scope.row.lossRate }}%</span></template></el-table-column>
-          <el-table-column label="收率" prop="yieldRate" key="yieldRate" :width="colWidth('yieldRate', 90)" resizable align="center" v-if="columns.yieldRate.visible"><template #default="scope"><span class="badge" :class="yieldBadge(scope.row.yieldRate)"><span class="dot"></span>{{ scope.row.yieldRate }}%</span></template></el-table-column>
-          <el-table-column label="完工率" prop="finishRate" key="finishRate" :width="colWidth('finishRate', 90)" resizable align="center" v-if="columns.finishRate.visible"><template #default="scope"><span class="badge" :class="finishBadge(scope.row.finishRate)"><span class="dot"></span>{{ scope.row.finishRate }}%</span></template></el-table-column>
-          <el-table-column label="合格率" prop="qualifiedRate" key="qualifiedRate" :width="colWidth('qualifiedRate', 90)" resizable align="center" v-if="columns.qualifiedRate.visible"><template #default="scope">{{ scope.row.qualifiedRate }}%</template></el-table-column>
+          <el-table-column label="损耗率" prop="lossRate" key="lossRate" :width="colWidth('lossRate', 90)" resizable align="center" v-if="columns.lossRate.visible"><template #default="scope"><el-tooltip v-if="!isFinished(scope.row.status)" :content="'工单未完工，此为中间工序数据，非最终损耗率'" placement="top"><span class="text-muted text-dashed">—</span></el-tooltip><span v-else :class="scope.row.lossRate > 5 ? 'text-danger' : ''">{{ scope.row.lossRate }}%</span></template></el-table-column>
+          <el-table-column label="收率" prop="yieldRate" key="yieldRate" :width="colWidth('yieldRate', 90)" resizable align="center" v-if="columns.yieldRate.visible"><template #default="scope"><el-tooltip v-if="!isFinished(scope.row.status)" :content="'工单未完工，此为中间工序数据，非最终收率'" placement="top"><span class="text-muted text-dashed">—</span></el-tooltip><span v-else class="badge" :class="yieldBadge(scope.row.yieldRate)"><span class="dot"></span>{{ scope.row.yieldRate }}%</span></template></el-table-column>
+          <el-table-column label="完工率" prop="finishRate" key="finishRate" :width="colWidth('finishRate', 90)" resizable align="center" v-if="columns.finishRate.visible"><template #default="scope"><el-tooltip v-if="!isFinished(scope.row.status) && scope.row.finishRate > 0" :content="'工单进行中，完工率反映当前进度'" placement="top"><span class="badge" :class="finishBadge(scope.row.finishRate)"><span class="dot"></span>{{ scope.row.finishRate }}%<small class="in-progress-tag">进行中</small></span></el-tooltip><span v-else-if="scope.row.finishRate === 0" class="text-muted">—</span><span v-else class="badge" :class="finishBadge(scope.row.finishRate)"><span class="dot"></span>{{ scope.row.finishRate }}%</span></template></el-table-column>
+          <el-table-column label="合格率" prop="qualifiedRate" key="qualifiedRate" :width="colWidth('qualifiedRate', 90)" resizable align="center" v-if="columns.qualifiedRate.visible"><template #default="scope"><el-tooltip v-if="!isFinished(scope.row.status)" :content="'工单未完工，此为中间工序数据，非最终合格率'" placement="top"><span class="text-muted text-dashed">—</span></el-tooltip><span v-else>{{ scope.row.qualifiedRate }}%</span></template></el-table-column>
           <el-table-column label="状态" prop="status" key="status" :width="colWidth('status', 90)" resizable align="center" v-if="columns.status.visible"><template #default="scope"><span v-if="scope.row.status" class="badge" :class="woStatusBadge(scope.row.status)"><span class="dot"></span>{{ dictLabel(mms_workorder_status, scope.row.status) }}</span></template></el-table-column>
           <el-table-column label="是否准时" prop="isOnTime" key="isOnTime" :width="colWidth('isOnTime', 90)" resizable align="center" v-if="columns.isOnTime.visible"><template #default="scope"><span v-if="scope.row.isOnTime === '1'" class="badge green"><span class="dot"></span>准时</span><span v-else-if="scope.row.isOnTime === '0'" class="badge red"><span class="dot"></span>逾期</span><span v-else class="text-muted">—</span></template></el-table-column>
           <el-table-column label="实际完工" prop="actualFinish" key="actualFinish" :width="colWidth('actualFinish', 150)" resizable align="center" v-if="columns.actualFinish.visible"><template #default="scope"><span>{{ parseTime(scope.row.actualFinish, '{y}-{m}-{d} {h}:{i}') }}</span></template></el-table-column>
@@ -121,8 +119,18 @@
             <p><strong>损耗率</strong> = 损耗量 ÷ 完工数量 × 100%（损耗量 = 完工数量 - 合格数量） <span style="color: #f56c6c;">*系统自动计算</span></p>
             <p><strong>收率/成材率</strong> = 合格数量 ÷ 完工数量 × 100% <span style="color: #f56c6c;">*系统自动计算</span></p>
             <p><strong>合格率</strong> = 合格数量 ÷ 完工数量 × 100% <span style="color: #f56c6c;">*系统自动计算</span></p>
-            <p><strong>准时完工率</strong> = 实际完工日期 ≤ 计划完工日期的工单数 ÷ 总工单数 × 100% <span style="color: #f56c6c;">*系统自动计算</span></p>
-            <p><strong>是否准时</strong> = 实际完工日期 ≤ 计划完工日期则为“准时”，否则为“逾期” <span style="color: #f56c6c;">*系统自动判定</span></p>
+            <p><strong>准时完工率</strong> = 实际完工日期 ≤ 计划完工日期的工单数 ÷ 已完工工单数 × 100% <span style="color: #f56c6c;">*系统自动计算</span></p>
+            <p><strong>是否准时</strong> = 仅对已完工/已关闭工单判定：实际完工日期 ≤ 计划完工日期为"准时"，否则为"逾期"；未完工工单显示"—" <span style="color: #f56c6c;">*系统自动判定</span></p>
+            <div class="highlight-card highlight-danger" style="margin-top: 12px;">
+              <div class="highlight-card-title">⚠ 未完工工单指标说明</div>
+              <div class="highlight-card-body">
+                <p>当工单状态为<strong>新建/已下达/执行中/已暂停</strong>时：</p>
+                <p>• <strong>完工率</strong>：仍然显示，反映当前生产进度（标注"进行中"）</p>
+                <p>• <strong>收率/损耗率/合格率</strong>：显示为"—"，因为这些指标基于最终完工数据才有意义</p>
+                <p>• <strong>损耗量/完工数量/合格数量</strong>：仍然显示，反映当前累计的实际数据</p>
+                <p>鼠标悬停在"—"上可查看详细说明。只有工单状态为<strong>已完工</strong>或<strong>已关闭</strong>时，各项率值才作为最终分析依据。</p>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -176,7 +184,6 @@ const columns = reactive({
   productCode: { label: '产品编码', visible: true },
   productName: { label: '产品名称', visible: true },
   unit: { label: '单位', visible: true },
-  resourceName: { label: '产能单元', visible: true },
   planQty: { label: '计划数量', visible: true },
   finishQty: { label: '完工数量', visible: true },
   qualifiedQty: { label: '合格数量', visible: true },
@@ -206,7 +213,6 @@ const data = reactive({
     workOrderNo: undefined,
     productCode: undefined,
     productName: undefined,
-    resourceName: undefined,
     status: undefined,
     isOnTime: undefined,
     params: {}
@@ -219,7 +225,6 @@ const activeFilterCount = computed(() => {
   if (queryParams.value.workOrderNo) c++
   if (queryParams.value.productCode) c++
   if (queryParams.value.productName) c++
-  if (queryParams.value.resourceName) c++
   if (queryParams.value.status) c++
   if (queryParams.value.isOnTime) c++
   if (dateRange.value && dateRange.value.length === 2) c++
@@ -255,7 +260,6 @@ function resetQuery() {
   queryParams.value.workOrderNo = undefined
   queryParams.value.productCode = undefined
   queryParams.value.productName = undefined
-  queryParams.value.resourceName = undefined
   queryParams.value.status = undefined
   queryParams.value.isOnTime = undefined
   dateRange.value = []
@@ -284,6 +288,10 @@ function unitLabel(unit) {
   if (unit === null || unit === undefined || unit === '') return '—'
   const item = wms_unit.value.find(d => d.value == unit)
   return item ? item.label : '—'
+}
+
+function isFinished(status) {
+  return status === '3' || status === '4'
 }
 
 function yieldBadge(val) {
@@ -376,7 +384,10 @@ getList()
 .badge.blue { background:var(--blue-50); color:var(--blue-700); border-color:#bfdbfe; } .badge.blue .dot { background:var(--blue-500); }
 .badge.violet { background:var(--brand-50); color:var(--brand-700); border-color:var(--brand-200); }
 .text-muted { color:var(--ink-400); font-size:13px; }
+.text-dashed { border-bottom: 1px dashed var(--ink-300); padding-bottom: 1px; cursor: help; }
 .text-danger { color:var(--red-700); font-weight:600; }
+.resource-names { font-size: 12.5px; color: var(--ink-700); line-height: 1.4; }
+.in-progress-tag { font-size: 10px; font-weight: 500; color: var(--amber-700); background: var(--amber-50); padding: 1px 4px; border-radius: 3px; margin-left: 4px; border: 1px solid #fde68a; }
 
 /* Status Tabs */
 .mms-finish-analysis-page .status-tabs { display: flex; align-items: center; gap: 12px; padding: 6px 10px 6px 12px; border-bottom: 1px solid var(--ink-200); background: #fff; }

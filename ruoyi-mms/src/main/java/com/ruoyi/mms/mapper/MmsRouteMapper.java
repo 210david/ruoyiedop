@@ -23,4 +23,9 @@ public interface MmsRouteMapper {
      * 用于唯一性校验：同一产品同一时间只能有一条已审核路线
      */
     public int countAuditedByProductId(Long productId);
+
+    /**
+     * 根据产品ID查询已审核（生效）的工艺路线
+     */
+    public MmsRoute selectRouteByProductId(Long productId);
 }

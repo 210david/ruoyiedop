@@ -106,9 +106,9 @@
 
       <div class="table-wrap">
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" class="app-table">
-          <el-table-column type="selection" width="55" align="center" />
-          <el-table-column label="任务编号" prop="taskNo" key="taskNo" :width="colWidth('taskNo', 150)" resizable show-overflow-tooltip v-if="columns.taskNo.visible" />
-          <el-table-column label="检验类型" prop="taskType" key="taskType" :width="colWidth('taskType', 100)" resizable align="center" v-if="columns.taskType.visible">
+<el-table-column type="selection" width="55" align="center" />
+<el-table-column type="index" label="序号" width="85" align="center" />
+<el-table-column label="任务编号" prop="taskNo" key="taskNo" :width="colWidth('taskNo', 150)" resizable show-overflow-tooltip v-if="columns.taskNo.visible" />          <el-table-column label="检验类型" prop="taskType" key="taskType" :width="colWidth('taskType', 100)" resizable align="center" v-if="columns.taskType.visible">
             <template #header><span>检验类型</span><el-tooltip content="检验类型包括IQC（来料检验）、IPQC（过程检验）、FQC（成品检验）、OQC（出货检验）等" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></template>
             <template #default="scope"><span class="badge violet">{{ inspTypeLabel(scope.row.taskType) }}</span></template>
           </el-table-column>

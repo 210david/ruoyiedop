@@ -4,6 +4,9 @@
 
     <resultMap type="MmsOeeSnapshot" id="MmsOeeSnapshotResult">
         <id     property="snapshotId"     column="snapshot_id"/>
+        <result property="dispatchId"     column="dispatch_id"/>
+        <result property="opSeq"          column="op_seq"/>
+        <result property="processName"   column="process_name"/>
         <result property="snapshotDate"    column="snapshot_date"/>
         <result property="resourceId"     column="resource_id"/>
         <result property="resourceName"    column="resource_name"/>
@@ -23,134 +26,142 @@
     </resultMap>
 
     <!--
-        OEE分析 — 实时计算
-        数据来源：mms_work_order + mms_work_report + mms_downtime
-        计算口径：
-          snapshot_date  = 报工日期（取最近一次报工日期），无报工则取实际开工日期
-          planned_hours  = 计划工时（plan_finish - plan_start 的小时差）
-          run_hours      = 实际运行工时（actual_finish - actual_start，无完工则取当前时间）
-          downtime_hours = 停机记录表汇总（SUM(minutes)/60），无记录则为0
-          availability   = (运行工时 - 停机工时) / 计划工时  [可用率 = 实际运行时间 / 计划生产时间]
-          performance    = 完工数量 / 计划数量  [表现率 = 实际产出 / 计划产出]
-          quality_rate   = 合格数量 / (合格数量 + 不良数量)  [质量率 = 合格产出 / 总产出]
+        OEE分析 — 实时计算（按工序/派工单维度）
+        数据来源：mms_dispatch + mms_work_report + mms_downtime
+        计算口径（每个工序一条OEE记录）：
+          snapshot_date  = 该工序最近一次报工日期，无报工则取派工单实际开工日期
+          planned_hours  = 派工单计划工时（plan_end - plan_start 的小时差）
+          run_hours      = 派工单实际运行工时（actual_end - actual_start），未完工则取0
+          downtime_hours = 该派工单的停机记录汇总（SUM(minutes)/60），无记录则为0
+          availability   = 已完工时 (运行工时 - 停机工时) / 计划工时，未完工时取0
+          performance    = 合格数量 / 计划数量
+          quality_rate   = 合格数量 / (合格数量 + 不良数量)
           oee            = availability * performance * quality_rate
-          good_qty       = 工单表 qualified_qty（合格数量，最终汇总值）
-          defect_qty     = 工单表 defect_qty（不良数量，最终汇总值）
-        注意：合格/不良/完工数量直接取工单表，不取报工表SUM（因报工表可能有多条记录导致累加重复）
+          good_qty       = 派工单 good_qty（合格数量）
+          defect_qty     = 派工单 defect_qty（不良数量）
+        注意：只统计已开工的工序（actual_start IS NOT NULL），未开工工序不显示
     -->
     <select id="selectOeeSnapshotList" parameterType="MmsOeeSnapshot" resultMap="MmsOeeSnapshotResult">
         SELECT
-            NULL AS snapshot_id,
-            COALESCE(rpt.stat_date, DATE(wo.actual_start)) AS snapshot_date,
-            wo.resource_id,
-            wo.resource_name,
-            wo.work_order_id,
-            wo.work_order_no,
-            ROUND(wo.planned_minutes / 60.0, 2) AS planned_hours,
-            ROUND(wo.run_minutes / 60.0, 2) AS run_hours,
+            d.dispatch_id AS snapshot_id,
+            d.dispatch_id,
+            d.op_seq,
+            d.process_name,
+            COALESCE(rpt.stat_date, DATE(d.actual_start)) AS snapshot_date,
+            d.resource_id,
+            d.resource_name,
+            d.work_order_id,
+            d.work_order_no,
+            ROUND(CASE WHEN d.plan_start IS NOT NULL AND d.plan_end IS NOT NULL
+                THEN TIMESTAMPDIFF(MINUTE, d.plan_start, d.plan_end) / 60.0
+                ELSE 0 END, 2) AS planned_hours,
+            ROUND(CASE WHEN d.actual_start IS NOT NULL AND d.actual_end IS NOT NULL
+                THEN TIMESTAMPDIFF(MINUTE, d.actual_start, d.actual_end) / 60.0
+                ELSE 0 END, 2) AS run_hours,
             COALESCE(dt.dt_hours, 0) AS downtime_hours,
-            CASE WHEN wo.planned_minutes > 0
-                THEN ROUND((wo.run_minutes - COALESCE(dt.dt_minutes, 0)) / wo.planned_minutes, 4)
+            CASE WHEN d.actual_end IS NOT NULL
+                    AND d.plan_start IS NOT NULL AND d.plan_end IS NOT NULL
+                    AND TIMESTAMPDIFF(MINUTE, d.plan_start, d.plan_end) > 0
+                THEN ROUND(
+                    (CASE WHEN d.actual_start IS NOT NULL AND d.actual_end IS NOT NULL
+                        THEN TIMESTAMPDIFF(MINUTE, d.actual_start, d.actual_end)
+                        ELSE 0 END
+                    - COALESCE(dt.dt_minutes, 0))
+                    / TIMESTAMPDIFF(MINUTE, d.plan_start, d.plan_end), 4)
                 ELSE 0
             END AS availability,
-            CASE WHEN wo.plan_qty > 0 AND wo.finished_qty > 0
-                THEN ROUND(wo.finished_qty / wo.plan_qty, 4)
+            CASE WHEN d.plan_qty > 0 AND d.good_qty > 0
+                THEN ROUND(d.good_qty / d.plan_qty, 4)
                 ELSE 0
             END AS performance,
-            CASE WHEN wo.finished_qty > 0
-                THEN ROUND(wo.qualified_qty / (wo.qualified_qty + wo.defect_qty), 4)
+            CASE WHEN d.good_qty > 0
+                THEN ROUND(d.good_qty / (d.good_qty + d.defect_qty), 4)
                 ELSE 0
             END AS quality_rate,
-            CASE WHEN wo.planned_minutes > 0 AND wo.plan_qty > 0 AND wo.finished_qty > 0
+            CASE WHEN d.actual_end IS NOT NULL
+                    AND d.plan_start IS NOT NULL AND d.plan_end IS NOT NULL
+                    AND TIMESTAMPDIFF(MINUTE, d.plan_start, d.plan_end) > 0
+                    AND d.plan_qty > 0 AND d.good_qty > 0
                 THEN ROUND(
-                    ((wo.run_minutes - COALESCE(dt.dt_minutes, 0)) / wo.planned_minutes)
-                    * (wo.finished_qty / wo.plan_qty)
-                    * (CASE WHEN (wo.qualified_qty + wo.defect_qty) > 0
-                        THEN wo.qualified_qty / (wo.qualified_qty + wo.defect_qty)
+                    ((CASE WHEN d.actual_start IS NOT NULL AND d.actual_end IS NOT NULL
+                        THEN TIMESTAMPDIFF(MINUTE, d.actual_start, d.actual_end)
+                        ELSE 0 END
+                    - COALESCE(dt.dt_minutes, 0))
+                    / TIMESTAMPDIFF(MINUTE, d.plan_start, d.plan_end))
+                    * (d.good_qty / d.plan_qty)
+                    * (CASE WHEN (d.good_qty + d.defect_qty) > 0
+                        THEN d.good_qty / (d.good_qty + d.defect_qty)
                         ELSE 0 END)
                 , 4)
                 ELSE 0
             END AS oee,
-            wo.qualified_qty AS good_qty,
-            wo.defect_qty AS defect_qty,
-            wo.plan_qty AS plan_qty,
-            wo.create_time
-        FROM (
-            SELECT
-                w.work_order_id, w.work_order_no, w.resource_id, w.resource_name,
-                w.plan_qty, w.qualified_qty, w.finished_qty, w.defect_qty,
-                w.actual_start, w.actual_finish, w.create_time, w.del_flag,
-                CASE WHEN w.plan_start IS NOT NULL AND w.plan_finish IS NOT NULL
-                    THEN TIMESTAMPDIFF(MINUTE, w.plan_start, w.plan_finish) ELSE 0
-                END AS planned_minutes,
-                CASE WHEN w.actual_start IS NOT NULL AND w.actual_finish IS NOT NULL
-                    THEN TIMESTAMPDIFF(MINUTE, w.actual_start, w.actual_finish)
-                    WHEN w.actual_start IS NOT NULL
-                    THEN TIMESTAMPDIFF(MINUTE, w.actual_start, NOW())
-                    ELSE 0
-                END AS run_minutes
-            FROM mms_work_order w
-            WHERE w.del_flag = '0' AND w.actual_start IS NOT NULL
-        ) wo
+            d.plan_qty AS plan_qty,
+            d.good_qty AS good_qty,
+            d.defect_qty AS defect_qty,
+            d.create_time
+        FROM mms_dispatch d
         LEFT JOIN (
             SELECT
                 r.work_order_id,
+                r.process_id,
                 MAX(DATE(r.report_time)) AS stat_date
             FROM mms_work_report r
             WHERE r.del_flag = '0'
-            GROUP BY r.work_order_id
-        ) rpt ON rpt.work_order_id = wo.work_order_id
+            GROUP BY r.work_order_id, r.process_id
+        ) rpt ON rpt.work_order_id = d.work_order_id AND rpt.process_id = d.process_id
         LEFT JOIN (
             SELECT
-                d.work_order_id,
-                SUM(d.minutes) AS dt_minutes,
-                ROUND(SUM(d.minutes) / 60.0, 2) AS dt_hours
-            FROM mms_downtime d
-            WHERE d.del_flag = '0'
-            GROUP BY d.work_order_id
-        ) dt ON dt.work_order_id = wo.work_order_id
+                dt.dispatch_id,
+                SUM(dt.minutes) AS dt_minutes,
+                ROUND(SUM(dt.minutes) / 60.0, 2) AS dt_hours
+            FROM mms_downtime dt
+            WHERE dt.del_flag = '0'
+            GROUP BY dt.dispatch_id
+        ) dt ON dt.dispatch_id = d.dispatch_id
         <where>
-            <if test="resourceName != null and resourceName != ''"> AND wo.resource_name LIKE CONCAT('%', #{resourceName}, '%')</if>
-            <if test="workOrderNo != null and workOrderNo != ''"> AND wo.work_order_no LIKE CONCAT('%', #{workOrderNo}, '%')</if>
-            <if test="params.beginTime != null and params.beginTime != ''"> AND COALESCE(rpt.stat_date, DATE(wo.actual_start)) &gt;= #{params.beginTime}</if>
-            <if test="params.endTime != null and params.endTime != ''"> AND COALESCE(rpt.stat_date, DATE(wo.actual_start)) &lt;= #{params.endTime}</if>
+            d.del_flag = '0' AND d.actual_start IS NOT NULL
+            <if test="resourceName != null and resourceName != ''"> AND d.resource_name LIKE CONCAT('%', #{resourceName}, '%')</if>
+            <if test="workOrderNo != null and workOrderNo != ''"> AND d.work_order_no LIKE CONCAT('%', #{workOrderNo}, '%')</if>
+            <if test="params.beginTime != null and params.beginTime != ''"> AND COALESCE(rpt.stat_date, DATE(d.actual_start)) &gt;= #{params.beginTime}</if>
+            <if test="params.endTime != null and params.endTime != ''"> AND COALESCE(rpt.stat_date, DATE(d.actual_start)) &lt;= #{params.endTime}</if>
         </where>
-        ORDER BY snapshot_date DESC, wo.work_order_id DESC
+        ORDER BY snapshot_date DESC, d.work_order_id DESC, d.op_seq ASC
     </select>
 
-    <!-- 简单COUNT查询（不走派生表，直接COUNT基表） -->
+    <!-- 简单COUNT查询（直接COUNT派工单表） -->
     <select id="selectOeeSnapshotCount" parameterType="MmsOeeSnapshot" resultType="long">
         SELECT COUNT(*)
-        FROM mms_work_order wo
+        FROM mms_dispatch d
         <where>
-            wo.del_flag = '0'
-            AND wo.actual_start IS NOT NULL
-            <if test="resourceName != null and resourceName != ''"> AND wo.resource_name LIKE CONCAT('%', #{resourceName}, '%')</if>
-            <if test="workOrderNo != null and workOrderNo != ''"> AND wo.work_order_no LIKE CONCAT('%', #{workOrderNo}, '%')</if>
-            <if test="params.beginTime != null and params.beginTime != ''"> AND DATE(wo.actual_start) &gt;= #{params.beginTime}</if>
-            <if test="params.endTime != null and params.endTime != ''"> AND DATE(wo.actual_start) &lt;= #{params.endTime}</if>
+            d.del_flag = '0' AND d.actual_start IS NOT NULL
+            <if test="resourceName != null and resourceName != ''"> AND d.resource_name LIKE CONCAT('%', #{resourceName}, '%')</if>
+            <if test="workOrderNo != null and workOrderNo != ''"> AND d.work_order_no LIKE CONCAT('%', #{workOrderNo}, '%')</if>
+            <if test="params.beginTime != null and params.beginTime != ''"> AND DATE(d.actual_start) &gt;= #{params.beginTime}</if>
+            <if test="params.endTime != null and params.endTime != ''"> AND DATE(d.actual_start) &lt;= #{params.endTime}</if>
         </where>
     </select>
 
     <select id="selectOeeSnapshotById" parameterType="Long" resultMap="MmsOeeSnapshotResult">
         SELECT * FROM (
             SELECT
-                NULL AS snapshot_id,
-                COALESCE(rpt.stat_date, DATE(wo.actual_start)) AS snapshot_date,
-                wo.resource_id, wo.resource_name, wo.work_order_id, wo.work_order_no,
+                d.dispatch_id AS snapshot_id,
+                d.dispatch_id,
+                d.op_seq,
+                d.process_name,
+                COALESCE(rpt.stat_date, DATE(d.actual_start)) AS snapshot_date,
+                d.resource_id, d.resource_name, d.work_order_id, d.work_order_no,
                 0 AS planned_hours, 0 AS run_hours, 0 AS downtime_hours,
                 0 AS availability, 0 AS performance, 0 AS quality_rate, 0 AS oee,
-                wo.qualified_qty AS good_qty,
-                wo.defect_qty AS defect_qty,
-                wo.create_time
-            FROM mms_work_order wo
+                d.plan_qty, d.good_qty, d.defect_qty,
+                d.create_time
+            FROM mms_dispatch d
             LEFT JOIN (
-                SELECT r.work_order_id, MAX(DATE(r.report_time)) AS stat_date
+                SELECT r.work_order_id, r.process_id, MAX(DATE(r.report_time)) AS stat_date
                 FROM mms_work_report r WHERE r.del_flag = '0'
-                GROUP BY r.work_order_id
-            ) rpt ON rpt.work_order_id = wo.work_order_id
-            WHERE wo.del_flag = '0' AND wo.actual_start IS NOT NULL
-        ) t WHERE t.work_order_id = #{snapshotId}
+                GROUP BY r.work_order_id, r.process_id
+            ) rpt ON rpt.work_order_id = d.work_order_id AND rpt.process_id = d.process_id
+            WHERE d.del_flag = '0' AND d.actual_start IS NOT NULL
+        ) t WHERE t.dispatch_id = #{snapshotId}
     </select>
 
 </mapper>

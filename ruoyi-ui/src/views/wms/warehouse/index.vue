@@ -91,7 +91,8 @@
       <!-- Table -->
       <div class="table-wrap">
         <el-table ref="tableRef" border v-if="refreshTable" v-loading="loading" :data="warehouseList" row-key="warehouseId" :default-expand-all="isExpandAll" :tree-props="{ children: 'children', hasChildren: 'hasChildren' }" @header-dragend="onHeaderDragEnd" class="app-table">
-          <el-table-column prop="warehouseCode" label="编码" key="warehouseCode" :width="colWidth('warehouseCode', 200)" resizable v-if="columns.warehouseCode.visible" />
+          <el-table-column type="index" label="序号" width="85" align="center" />
+<el-table-column prop="warehouseCode" label="编码" key="warehouseCode" :width="colWidth('warehouseCode', 200)" resizable v-if="columns.warehouseCode.visible" />
           <el-table-column prop="warehouseName" label="名称" key="warehouseName" :show-overflow-tooltip="true" v-if="columns.warehouseName.visible" />
           <el-table-column prop="nodeType" label="类型" key="nodeType" :width="colWidth('nodeType', 90)" resizable align="center" v-if="columns.nodeType.visible">
             <template #default="scope">

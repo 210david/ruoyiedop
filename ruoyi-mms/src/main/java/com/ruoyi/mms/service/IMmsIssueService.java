@@ -20,4 +20,9 @@ public interface IMmsIssueService
      * 确认领料：状态 0(待领料) → 1(已领料)，记录领料时间，可修改领料人和明细数量
      */
     public int confirmIssue(MmsIssue issue);
+
+    /**
+     * 按工单号查询领料明细（按物料拆分，每条明细一行）
+     */
+    public List<java.util.Map<String, Object>> selectIssueDetailListByWorkOrderNo(String workOrderNo);
 }
