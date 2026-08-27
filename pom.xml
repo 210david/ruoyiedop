@@ -219,6 +219,13 @@
                 <version>${ruoyi.version}</version>
             </dependency>
 
+            <!-- HR人力资源管理模块-->
+            <dependency>
+                <groupId>com.ruoyi</groupId>
+                <artifactId>ruoyi-hr</artifactId>
+                <version>${ruoyi.version}</version>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
 
@@ -236,6 +243,7 @@
         <module>ruoyi-qms</module>
         <module>ruoyi-safety</module>
         <module>ruoyi-mms</module>
+        <module>ruoyi-hr</module>
     </modules>
     <packaging>pom</packaging>
 

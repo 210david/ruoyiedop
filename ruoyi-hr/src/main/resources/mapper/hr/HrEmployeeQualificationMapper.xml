@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.hr.mapper.HrEmployeeQualificationMapper">
+
+    <resultMap type="HrEmployeeQualification" id="HrEmployeeQualificationResult">
+        <result property="qualificationId" column="qualification_id"/>
+        <result property="employeeId" column="employee_id"/>
+        <result property="qualType" column="qual_type"/>
+        <result property="qualName" column="qual_name"/>
+        <result property="qualNo" column="qual_no"/>
+        <result property="issueOrg" column="issue_org"/>
+        <result property="issueDate" column="issue_date"/>
+        <result property="validFrom" column="valid_from"/>
+        <result property="validTo" column="valid_to"/>
+        <result property="score" column="score"/>
+        <result property="status" column="status"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <sql id="selectVo">
+        SELECT qualification_id, employee_id, qual_type, qual_name, qual_no, issue_org, issue_date, valid_from, valid_to, score, status, del_flag, create_by, create_time, update_by, update_time, remark
+        FROM biz_hr_employee_qualification
+    </sql>
+
+    <select id="selectHrEmployeeQualificationList" parameterType="HrEmployeeQualification" resultMap="HrEmployeeQualificationResult">
+        <include refid="selectVo"/>
+        <where>
+            del_flag = '0'
+            <if test="employeeId != null"> AND employee_id = #{employeeId}</if>
+            <if test="qualType != null and qualType != ''"> AND qual_type LIKE CONCAT('%', #{qualType}, '%')</if>
+            <if test="qualName != null and qualName != ''"> AND qual_name LIKE CONCAT('%', #{qualName}, '%')</if>
+            <if test="qualNo != null and qualNo != ''"> AND qual_no LIKE CONCAT('%', #{qualNo}, '%')</if>
+            <if test="issueOrg != null and issueOrg != ''"> AND issue_org LIKE CONCAT('%', #{issueOrg}, '%')</if>
+            <if test="issueDate != null"> AND issue_date = #{issueDate}</if>
+            <if test="validFrom != null"> AND valid_from = #{validFrom}</if>
+            <if test="validTo != null"> AND valid_to = #{validTo}</if>
+            <if test="score != null and score != ''"> AND score LIKE CONCAT('%', #{score}, '%')</if>
+            <if test="employeeId != null"> AND employee_id = #{employeeId}</if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+
+    <select id="selectHrEmployeeQualificationByQualificationId" parameterType="Long" resultMap="HrEmployeeQualificationResult">
+        <include refid="selectVo"/> WHERE qualification_id = #{qualificationId} AND del_flag = '0'
+    </select>
+
+    <insert id="insertHrEmployeeQualification" parameterType="HrEmployeeQualification" useGeneratedKeys="true" keyProperty="qualificationId">
+        INSERT INTO biz_hr_employee_qualification (
+            employee_id, qual_type, qual_name, qual_no, issue_org, issue_date, valid_from, valid_to, score, status, del_flag, create_by, create_time, remark
+        ) VALUES (
+            #{employeeId}, #{qualType}, #{qualName}, #{qualNo}, #{issueOrg}, #{issueDate}, #{validFrom}, #{validTo}, #{score}, #{status}, #{delFlag}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateHrEmployeeQualification" parameterType="HrEmployeeQualification">
+        UPDATE biz_hr_employee_qualification
+        <set>
+            <if test="employeeId != null">employee_id = #{employeeId},</if>
+            <if test="qualType != null and qualType != ''">qual_type = #{qualType},</if>
+            <if test="qualName != null and qualName != ''">qual_name = #{qualName},</if>
+            <if test="qualNo != null and qualNo != ''">qual_no = #{qualNo},</if>
+            <if test="issueOrg != null and issueOrg != ''">issue_org = #{issueOrg},</if>
+            <if test="issueDate != null">issue_date = #{issueDate},</if>
+            <if test="validFrom != null">valid_from = #{validFrom},</if>
+            <if test="validTo != null">valid_to = #{validTo},</if>
+            <if test="score != null and score != ''">score = #{score},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE qualification_id = #{qualificationId}
+    </update>
+
+    <delete id="deleteHrEmployeeQualificationByQualificationId" parameterType="Long">
+        UPDATE biz_hr_employee_qualification SET del_flag = '2' WHERE qualification_id = #{qualificationId}
+    </delete>
+
+    <delete id="deleteHrEmployeeQualificationByIds" parameterType="Long">
+        UPDATE biz_hr_employee_qualification SET del_flag = '2' WHERE qualification_id IN
+        <foreach item="qualificationId" collection="array" open="(" separator="," close=")">#{qualificationId}</foreach>
+    </delete>
+
+</mapper>

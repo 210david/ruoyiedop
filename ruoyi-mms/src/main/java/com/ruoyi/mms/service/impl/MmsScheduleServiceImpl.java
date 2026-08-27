@@ -15,6 +15,7 @@ import com.ruoyi.mms.domain.MmsWorkOrder;
 import com.ruoyi.mms.mapper.MmsScheduleMapper;
 import com.ruoyi.mms.mapper.MmsWorkOrderMapper;
 import com.ruoyi.mms.service.IMmsScheduleService;
+import com.ruoyi.system.utils.MessageHelper;
 
 /**
  * 排产计划 Service实现
@@ -35,6 +36,9 @@ public class MmsScheduleServiceImpl implements IMmsScheduleService
 
     @Autowired
     private IMkNumberRuleService mkNumberRuleService;
+
+    @Autowired
+    private MessageHelper messageHelper;
 
     // ========== 标准 CRUD ==========
 
@@ -80,7 +84,13 @@ public class MmsScheduleServiceImpl implements IMmsScheduleService
         schedule.setDelFlag("0");
         schedule.setCreateBy(SecurityUtils.getUsername());
         schedule.setCreateTime(DateUtils.getNowDate());
-        return scheduleMapper.insertSchedule(schedule);
+        int rows = scheduleMapper.insertSchedule(schedule);
+        // 排产创建后，标记"工单已下达，请安排生产"消息为已处理
+        if (schedule.getWorkOrderId() != null)
+        {
+            messageHelper.markHandled("mms", schedule.getWorkOrderId());
+        }
+        return rows;
     }
 
     @Override
@@ -300,6 +310,8 @@ public class MmsScheduleServiceImpl implements IMmsScheduleService
                     wo.setUpdateBy(SecurityUtils.getUsername());
                     workOrderMapper.updateWorkOrder(wo);
                 }
+                // 批量排产后，标记"工单已下达，请安排生产"消息为已处理
+                messageHelper.markHandled("mms", schedule.getWorkOrderId());
             }
             count++;
         }

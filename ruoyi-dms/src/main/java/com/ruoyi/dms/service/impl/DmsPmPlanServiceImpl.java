@@ -9,6 +9,9 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONArray;
+import com.alibaba.fastjson2.JSONObject;
 import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.StringUtils;
@@ -233,10 +236,11 @@ public class DmsPmPlanServiceImpl implements IDmsPmPlanService
             workOrder.setCreateBy("system");
         }
 
-        // 将任务清单复制到工单（结构化为带完成状态的JSON）
-        if (StringUtils.isNotEmpty(plan.getTaskList()))
+        // 将任务清单复制到工单（规范化为带完成情况/备注的明细结构JSON，完工时逐项填写）
+        String normalizedTaskList = normalizeTaskChecklist(plan.getTaskList());
+        if (StringUtils.isNotEmpty(normalizedTaskList))
         {
-            workOrder.setTaskChecklist(plan.getTaskList());
+            workOrder.setTaskChecklist(normalizedTaskList);
         }
 
         // 关联设备
@@ -252,6 +256,65 @@ public class DmsPmPlanServiceImpl implements IDmsPmPlanService
         }
 
         return workOrder;
+    }
+
+    /**
+     * 规范化任务清单JSON：兼容纯文本、字符串数组、旧对象数组，
+     * 统一输出为明细结构 [{text, done, result, remark}]，供完工阶段逐项填写
+     */
+    private String normalizeTaskChecklist(String taskList)
+    {
+        if (StringUtils.isEmpty(taskList))
+        {
+            return null;
+        }
+        JSONArray normalized = new JSONArray();
+        try
+        {
+            JSONArray arr = JSON.parseArray(taskList);
+            for (Object item : arr)
+            {
+                String text = null;
+                if (item instanceof String)
+                {
+                    text = (String) item;
+                }
+                else if (item instanceof JSONObject)
+                {
+                    JSONObject src = (JSONObject) item;
+                    text = src.getString("text");
+                    if (text == null) text = src.getString("task");
+                    if (text == null) text = src.getString("name");
+                }
+                if (StringUtils.isNotEmpty(text))
+                {
+                    normalized.add(buildChecklistItem(text));
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            // 非JSON格式，按行拆分纯文本
+            for (String line : taskList.split("\r?\n"))
+            {
+                if (StringUtils.isNotEmpty(line.trim()))
+                {
+                    normalized.add(buildChecklistItem(line.trim()));
+                }
+            }
+        }
+        return normalized.isEmpty() ? null : normalized.toJSONString();
+    }
+
+    /** 构造单个任务清单明细项（完成情况待完工时填写：done=已完成 undone=未完成 na=不适用） */
+    private JSONObject buildChecklistItem(String text)
+    {
+        JSONObject obj = new JSONObject();
+        obj.put("text", text);
+        obj.put("done", false);
+        obj.put("result", "");
+        obj.put("remark", "");
+        return obj;
     }
 
     /**

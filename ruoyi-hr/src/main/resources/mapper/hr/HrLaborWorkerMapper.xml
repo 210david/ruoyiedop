@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.hr.mapper.HrLaborWorkerMapper">
+
+    <resultMap type="HrLaborWorker" id="HrLaborWorkerResult">
+        <result property="laborId" column="labor_id"/>
+        <result property="workerName" column="worker_name"/>
+        <result property="idCard" column="id_card"/>
+        <result property="phone" column="phone"/>
+        <result property="workerType" column="worker_type"/>
+        <result property="dispatchCompany" column="dispatch_company"/>
+        <result property="bankName" column="bank_name"/>
+        <result property="bankAccount" column="bank_account"/>
+        <result property="orgId" column="org_id"/>
+        <result property="positionName" column="position_name"/>
+        <result property="startDate" column="start_date"/>
+        <result property="endDate" column="end_date"/>
+        <result property="payType" column="pay_type"/>
+        <result property="dailyWage" column="daily_wage"/>
+        <result property="agreementNo" column="agreement_no"/>
+        <result property="toRegular" column="to_regular"/>
+        <result property="employeeId" column="employee_id"/>
+        <result property="status" column="status"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <sql id="selectVo">
+        SELECT labor_id, worker_name, id_card, phone, worker_type, dispatch_company, bank_name, bank_account, org_id, position_name, start_date, end_date, pay_type, daily_wage, agreement_no, to_regular, employee_id, status, del_flag, create_by, create_time, update_by, update_time, remark
+        FROM biz_hr_labor_worker
+    </sql>
+
+    <select id="selectHrLaborWorkerList" parameterType="HrLaborWorker" resultMap="HrLaborWorkerResult">
+        <include refid="selectVo"/>
+        <where>
+            del_flag = '0'
+            <if test="workerName != null and workerName != ''"> AND worker_name LIKE CONCAT('%', #{workerName}, '%')</if>
+            <if test="idCard != null and idCard != ''"> AND id_card LIKE CONCAT('%', #{idCard}, '%')</if>
+            <if test="phone != null and phone != ''"> AND phone LIKE CONCAT('%', #{phone}, '%')</if>
+            <if test="workerType != null and workerType != ''"> AND worker_type LIKE CONCAT('%', #{workerType}, '%')</if>
+            <if test="dispatchCompany != null and dispatchCompany != ''"> AND dispatch_company LIKE CONCAT('%', #{dispatchCompany}, '%')</if>
+            <if test="bankName != null and bankName != ''"> AND bank_name LIKE CONCAT('%', #{bankName}, '%')</if>
+            <if test="bankAccount != null and bankAccount != ''"> AND bank_account LIKE CONCAT('%', #{bankAccount}, '%')</if>
+            <if test="orgId != null"> AND org_id = #{orgId}</if>
+            <if test="positionName != null and positionName != ''"> AND position_name LIKE CONCAT('%', #{positionName}, '%')</if>
+            <if test="startDate != null"> AND start_date = #{startDate}</if>
+            <if test="endDate != null"> AND end_date = #{endDate}</if>
+            <if test="payType != null and payType != ''"> AND pay_type LIKE CONCAT('%', #{payType}, '%')</if>
+            <if test="dailyWage != null"> AND daily_wage = #{dailyWage}</if>
+            <if test="agreementNo != null and agreementNo != ''"> AND agreement_no LIKE CONCAT('%', #{agreementNo}, '%')</if>
+            <if test="toRegular != null and toRegular != ''"> AND to_regular LIKE CONCAT('%', #{toRegular}, '%')</if>
+            <if test="employeeId != null"> AND employee_id = #{employeeId}</if>
+            <if test="status != null and status != ''"> AND status LIKE CONCAT('%', #{status}, '%')</if>
+            <if test="delFlag != null and delFlag != ''"> AND del_flag LIKE CONCAT('%', #{delFlag}, '%')</if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+
+    <select id="selectHrLaborWorkerById" parameterType="Long" resultMap="HrLaborWorkerResult">
+        <include refid="selectVo"/> WHERE labor_id = #{laborId}
+    </select>
+
+    <insert id="insertHrLaborWorker" parameterType="HrLaborWorker" useGeneratedKeys="true" keyProperty="laborId">
+        INSERT INTO biz_hr_labor_worker (
+            worker_name, id_card, phone, worker_type, dispatch_company, bank_name, bank_account, org_id, position_name, start_date, end_date, pay_type, daily_wage, agreement_no, to_regular, employee_id, status, del_flag, create_by, create_time, remark
+        ) VALUES (
+            #{workerName}, #{idCard}, #{phone}, #{workerType}, #{dispatchCompany}, #{bankName}, #{bankAccount}, #{orgId}, #{positionName}, #{startDate}, #{endDate}, #{payType}, #{dailyWage}, #{agreementNo}, #{toRegular}, #{employeeId}, #{status}, #{delFlag}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateHrLaborWorker" parameterType="HrLaborWorker">
+        UPDATE biz_hr_labor_worker
+        <set>
+            <if test="workerName != null and workerName != ''">worker_name = #{workerName},</if>
+            <if test="idCard != null and idCard != ''">id_card = #{idCard},</if>
+            <if test="phone != null and phone != ''">phone = #{phone},</if>
+            <if test="workerType != null and workerType != ''">worker_type = #{workerType},</if>
+            <if test="dispatchCompany != null and dispatchCompany != ''">dispatch_company = #{dispatchCompany},</if>
+            <if test="bankName != null and bankName != ''">bank_name = #{bankName},</if>
+            <if test="bankAccount != null and bankAccount != ''">bank_account = #{bankAccount},</if>
+            <if test="orgId != null">org_id = #{orgId},</if>
+            <if test="positionName != null and positionName != ''">position_name = #{positionName},</if>
+            <if test="startDate != null">start_date = #{startDate},</if>
+            <if test="endDate != null">end_date = #{endDate},</if>
+            <if test="payType != null and payType != ''">pay_type = #{payType},</if>
+            <if test="dailyWage != null">daily_wage = #{dailyWage},</if>
+            <if test="agreementNo != null and agreementNo != ''">agreement_no = #{agreementNo},</if>
+            <if test="toRegular != null and toRegular != ''">to_regular = #{toRegular},</if>
+            <if test="employeeId != null">employee_id = #{employeeId},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="delFlag != null and delFlag != ''">del_flag = #{delFlag},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE labor_id = #{laborId}
+    </update>
+
+    <delete id="deleteHrLaborWorkerById" parameterType="Long">
+        UPDATE biz_hr_labor_worker SET del_flag = '2' WHERE labor_id = #{laborId}
+    </delete>
+
+    <delete id="deleteHrLaborWorkerByIds" parameterType="Long">
+        UPDATE biz_hr_labor_worker SET del_flag = '2' WHERE labor_id IN
+        <foreach item="laborId" collection="array" open="(" separator="," close=")">#{laborId}</foreach>
+    </delete>
+
+</mapper>

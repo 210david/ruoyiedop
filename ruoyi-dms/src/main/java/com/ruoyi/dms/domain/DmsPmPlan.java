@@ -25,12 +25,20 @@ public class DmsPmPlan extends BaseEntity
     /** 设备ID（为空则按分类） */
     private Long equipmentId;
 
+    /** 设备编号（关联查询） */
+    @Excel(name = "设备编号")
+    private String equipmentCode;
+
     /** 设备名称（关联查询） */
     @Excel(name = "关联设备")
     private String equipmentName;
 
     /** 设备分类ID */
     private Long categoryId;
+
+    /** 设备分类名称（关联查询） */
+    @Excel(name = "设备分类")
+    private String categoryName;
 
     /** 触发类型（字典 dms_pm_trigger_type） */
     @Excel(name = "触发类型", dictType = "dms_pm_trigger_type")
@@ -91,10 +99,14 @@ public class DmsPmPlan extends BaseEntity
     public void setPlanName(String planName) { this.planName = planName; }
     public Long getEquipmentId() { return equipmentId; }
     public void setEquipmentId(Long equipmentId) { this.equipmentId = equipmentId; }
+    public String getEquipmentCode() { return equipmentCode; }
+    public void setEquipmentCode(String equipmentCode) { this.equipmentCode = equipmentCode; }
     public String getEquipmentName() { return equipmentName; }
     public void setEquipmentName(String equipmentName) { this.equipmentName = equipmentName; }
     public Long getCategoryId() { return categoryId; }
     public void setCategoryId(Long categoryId) { this.categoryId = categoryId; }
+    public String getCategoryName() { return categoryName; }
+    public void setCategoryName(String categoryName) { this.categoryName = categoryName; }
     public String getTriggerType() { return triggerType; }
     public void setTriggerType(String triggerType) { this.triggerType = triggerType; }
     public Integer getCycleValue() { return cycleValue; }

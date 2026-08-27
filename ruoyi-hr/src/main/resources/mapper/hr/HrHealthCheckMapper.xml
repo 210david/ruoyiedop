@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.hr.mapper.HrHealthCheckMapper">
+
+    <resultMap type="HrHealthCheck" id="HrHealthCheckResult">
+        <result property="healthId" column="health_id"/>
+        <result property="employeeId" column="employee_id"/>
+        <result property="employeeName" column="employee_name"/>
+        <result property="employeeNo" column="employee_no"/>
+        <result property="checkType" column="check_type"/>
+        <result property="checkDate" column="check_date"/>
+        <result property="checkOrg" column="check_org"/>
+        <result property="hazardType" column="hazard_type"/>
+        <result property="checkResult" column="check_result"/>
+        <result property="conclusion" column="conclusion"/>
+        <result property="attachmentUrl" column="attachment_url"/>
+        <result property="nextCheckDate" column="next_check_date"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <sql id="selectVo">
+        SELECT health_id, employee_id, employee_name, employee_no, check_type, check_date, check_org, hazard_type, check_result, conclusion, attachment_url, next_check_date, del_flag, create_by, create_time, update_by, update_time, remark
+        FROM biz_hr_health_check
+    </sql>
+
+    <select id="selectHrHealthCheckList" parameterType="HrHealthCheck" resultMap="HrHealthCheckResult">
+        <include refid="selectVo"/>
+        <where>
+            del_flag = '0'
+            <if test="employeeId != null"> AND employee_id = #{employeeId}</if>
+            <if test="employeeName != null and employeeName != ''"> AND employee_name LIKE CONCAT('%', #{employeeName}, '%')</if>
+            <if test="employeeNo != null and employeeNo != ''"> AND employee_no LIKE CONCAT('%', #{employeeNo}, '%')</if>
+            <if test="checkType != null and checkType != ''"> AND check_type LIKE CONCAT('%', #{checkType}, '%')</if>
+            <if test="checkDate != null"> AND check_date = #{checkDate}</if>
+            <if test="checkOrg != null and checkOrg != ''"> AND check_org LIKE CONCAT('%', #{checkOrg}, '%')</if>
+            <if test="hazardType != null and hazardType != ''"> AND hazard_type LIKE CONCAT('%', #{hazardType}, '%')</if>
+            <if test="checkResult != null and checkResult != ''"> AND check_result LIKE CONCAT('%', #{checkResult}, '%')</if>
+            <if test="conclusion != null and conclusion != ''"> AND conclusion LIKE CONCAT('%', #{conclusion}, '%')</if>
+            <if test="attachmentUrl != null and attachmentUrl != ''"> AND attachment_url LIKE CONCAT('%', #{attachmentUrl}, '%')</if>
+            <if test="nextCheckDate != null"> AND next_check_date = #{nextCheckDate}</if>
+            <if test="delFlag != null and delFlag != ''"> AND del_flag LIKE CONCAT('%', #{delFlag}, '%')</if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+
+    <select id="selectHrHealthCheckById" parameterType="Long" resultMap="HrHealthCheckResult">
+        <include refid="selectVo"/> WHERE health_id = #{healthId}
+    </select>
+
+    <insert id="insertHrHealthCheck" parameterType="HrHealthCheck" useGeneratedKeys="true" keyProperty="healthId">
+        INSERT INTO biz_hr_health_check (
+            employee_id, employee_name, employee_no, check_type, check_date, check_org, hazard_type, check_result, conclusion, attachment_url, next_check_date, del_flag, create_by, create_time, remark
+        ) VALUES (
+            #{employeeId}, #{employeeName}, #{employeeNo}, #{checkType}, #{checkDate}, #{checkOrg}, #{hazardType}, #{checkResult}, #{conclusion}, #{attachmentUrl}, #{nextCheckDate}, #{delFlag}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateHrHealthCheck" parameterType="HrHealthCheck">
+        UPDATE biz_hr_health_check
+        <set>
+            <if test="employeeId != null">employee_id = #{employeeId},</if>
+            <if test="employeeName != null and employeeName != ''">employee_name = #{employeeName},</if>
+            <if test="employeeNo != null and employeeNo != ''">employee_no = #{employeeNo},</if>
+            <if test="checkType != null and checkType != ''">check_type = #{checkType},</if>
+            <if test="checkDate != null">check_date = #{checkDate},</if>
+            <if test="checkOrg != null and checkOrg != ''">check_org = #{checkOrg},</if>
+            <if test="hazardType != null and hazardType != ''">hazard_type = #{hazardType},</if>
+            <if test="checkResult != null and checkResult != ''">check_result = #{checkResult},</if>
+            <if test="conclusion != null and conclusion != ''">conclusion = #{conclusion},</if>
+            <if test="attachmentUrl != null and attachmentUrl != ''">attachment_url = #{attachmentUrl},</if>
+            <if test="nextCheckDate != null">next_check_date = #{nextCheckDate},</if>
+            <if test="delFlag != null and delFlag != ''">del_flag = #{delFlag},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE health_id = #{healthId}
+    </update>
+
+    <delete id="deleteHrHealthCheckById" parameterType="Long">
+        UPDATE biz_hr_health_check SET del_flag = '2' WHERE health_id = #{healthId}
+    </delete>
+
+    <delete id="deleteHrHealthCheckByIds" parameterType="Long">
+        UPDATE biz_hr_health_check SET del_flag = '2' WHERE health_id IN
+        <foreach item="healthId" collection="array" open="(" separator="," close=")">#{healthId}</foreach>
+    </delete>
+
+</mapper>

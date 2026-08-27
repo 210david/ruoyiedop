@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.hr.mapper.HrOvertimeMapper">
+
+    <resultMap type="HrOvertime" id="HrOvertimeResult">
+        <result property="overtimeId" column="overtime_id"/>
+        <result property="overtimeNo" column="overtime_no"/>
+        <result property="employeeId" column="employee_id"/>
+        <result property="employeeName" column="employee_name"/>
+        <result property="employeeNo" column="employee_no"/>
+        <result property="overtimeDate" column="overtime_date"/>
+        <result property="overtimeType" column="overtime_type"/>
+        <result property="startTime" column="start_time"/>
+        <result property="endTime" column="end_time"/>
+        <result property="overtimeHours" column="overtime_hours"/>
+        <result property="multiplier" column="multiplier"/>
+        <result property="compensationType" column="compensation_type"/>
+        <result property="reason" column="reason"/>
+        <result property="auditStatus" column="audit_status"/>
+        <result property="auditBy" column="audit_by"/>
+        <result property="auditTime" column="audit_time"/>
+        <result property="auditRemark" column="audit_remark"/>
+        <result property="status" column="status"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <sql id="selectVo">
+        SELECT overtime_id, overtime_no, employee_id, employee_name, employee_no, overtime_date, overtime_type, start_time, end_time, overtime_hours, multiplier, compensation_type, reason, audit_status, audit_by, audit_time, audit_remark, status, del_flag, create_by, create_time, update_by, update_time, remark
+        FROM biz_hr_overtime
+    </sql>
+
+    <select id="selectHrOvertimeList" parameterType="HrOvertime" resultMap="HrOvertimeResult">
+        <include refid="selectVo"/>
+        <where>
+            del_flag = '0'
+            <if test="overtimeNo != null and overtimeNo != ''"> AND overtime_no LIKE CONCAT('%', #{overtimeNo}, '%')</if>
+            <if test="employeeId != null"> AND employee_id = #{employeeId}</if>
+            <if test="employeeName != null and employeeName != ''"> AND employee_name LIKE CONCAT('%', #{employeeName}, '%')</if>
+            <if test="employeeNo != null and employeeNo != ''"> AND employee_no LIKE CONCAT('%', #{employeeNo}, '%')</if>
+            <if test="overtimeDate != null"> AND overtime_date = #{overtimeDate}</if>
+            <if test="overtimeType != null and overtimeType != ''"> AND overtime_type LIKE CONCAT('%', #{overtimeType}, '%')</if>
+            <if test="startTime != null"> AND start_time = #{startTime}</if>
+            <if test="endTime != null"> AND end_time = #{endTime}</if>
+            <if test="overtimeHours != null"> AND overtime_hours = #{overtimeHours}</if>
+            <if test="multiplier != null"> AND multiplier = #{multiplier}</if>
+            <if test="compensationType != null and compensationType != ''"> AND compensation_type LIKE CONCAT('%', #{compensationType}, '%')</if>
+            <if test="reason != null and reason != ''"> AND reason LIKE CONCAT('%', #{reason}, '%')</if>
+            <if test="auditStatus != null and auditStatus != ''"> AND audit_status LIKE CONCAT('%', #{auditStatus}, '%')</if>
+            <if test="auditBy != null and auditBy != ''"> AND audit_by LIKE CONCAT('%', #{auditBy}, '%')</if>
+            <if test="auditTime != null"> AND audit_time = #{auditTime}</if>
+            <if test="auditRemark != null and auditRemark != ''"> AND audit_remark LIKE CONCAT('%', #{auditRemark}, '%')</if>
+            <if test="status != null and status != ''"> AND status LIKE CONCAT('%', #{status}, '%')</if>
+            <if test="delFlag != null and delFlag != ''"> AND del_flag LIKE CONCAT('%', #{delFlag}, '%')</if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+
+    <select id="selectHrOvertimeById" parameterType="Long" resultMap="HrOvertimeResult">
+        <include refid="selectVo"/> WHERE overtime_id = #{overtimeId}
+    </select>
+
+    <insert id="insertHrOvertime" parameterType="HrOvertime" useGeneratedKeys="true" keyProperty="overtimeId">
+        INSERT INTO biz_hr_overtime (
+            overtime_no, employee_id, employee_name, employee_no, overtime_date, overtime_type, start_time, end_time, overtime_hours, multiplier, compensation_type, reason, audit_status, audit_by, audit_time, audit_remark, status, del_flag, create_by, create_time, remark
+        ) VALUES (
+            #{overtimeNo}, #{employeeId}, #{employeeName}, #{employeeNo}, #{overtimeDate}, #{overtimeType}, #{startTime}, #{endTime}, #{overtimeHours}, #{multiplier}, #{compensationType}, #{reason}, #{auditStatus}, #{auditBy}, #{auditTime}, #{auditRemark}, #{status}, #{delFlag}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateHrOvertime" parameterType="HrOvertime">
+        UPDATE biz_hr_overtime
+        <set>
+            <if test="overtimeNo != null and overtimeNo != ''">overtime_no = #{overtimeNo},</if>
+            <if test="employeeId != null">employee_id = #{employeeId},</if>
+            <if test="employeeName != null and employeeName != ''">employee_name = #{employeeName},</if>
+            <if test="employeeNo != null and employeeNo != ''">employee_no = #{employeeNo},</if>
+            <if test="overtimeDate != null">overtime_date = #{overtimeDate},</if>
+            <if test="overtimeType != null and overtimeType != ''">overtime_type = #{overtimeType},</if>
+            <if test="startTime != null">start_time = #{startTime},</if>
+            <if test="endTime != null">end_time = #{endTime},</if>
+            <if test="overtimeHours != null">overtime_hours = #{overtimeHours},</if>
+            <if test="multiplier != null">multiplier = #{multiplier},</if>
+            <if test="compensationType != null and compensationType != ''">compensation_type = #{compensationType},</if>
+            <if test="reason != null and reason != ''">reason = #{reason},</if>
+            <if test="auditStatus != null and auditStatus != ''">audit_status = #{auditStatus},</if>
+            <if test="auditBy != null and auditBy != ''">audit_by = #{auditBy},</if>
+            <if test="auditTime != null">audit_time = #{auditTime},</if>
+            <if test="auditRemark != null and auditRemark != ''">audit_remark = #{auditRemark},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="delFlag != null and delFlag != ''">del_flag = #{delFlag},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE overtime_id = #{overtimeId}
+    </update>
+
+    <delete id="deleteHrOvertimeById" parameterType="Long">
+        UPDATE biz_hr_overtime SET del_flag = '2' WHERE overtime_id = #{overtimeId}
+    </delete>
+
+    <delete id="deleteHrOvertimeByIds" parameterType="Long">
+        UPDATE biz_hr_overtime SET del_flag = '2' WHERE overtime_id IN
+        <foreach item="overtimeId" collection="array" open="(" separator="," close=")">#{overtimeId}</foreach>
+    </delete>
+
+</mapper>

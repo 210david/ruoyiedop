@@ -135,14 +135,16 @@
           <el-table-column label="出库单号" prop="outboundOrderNo" key="outboundOrderNo" :width="colWidth('outboundOrderNo', 140)" resizable show-overflow-tooltip v-if="columns.outboundOrderNo.visible" />
           <el-table-column label="发货人" prop="shipperName" key="shipperName" :width="colWidth('shipperName', 100)" resizable v-if="columns.shipperName.visible" />
           <el-table-column label="创建时间" prop="createTime" key="createTime" :width="colWidth('createTime', 160)" resizable align="center" v-if="columns.createTime.visible" />
-          <el-table-column label="操作" width="320" align="center" fixed="right">
+          <el-table-column label="操作" width="180" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
-              <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
-              <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['marketing:shipment:edit']" v-if="scope.row.status === '0'">修改</el-button>
-              <el-button link type="success" icon="Promotion" @click="handleConfirm(scope.row)" v-hasPermi="['marketing:shipment:deliver']" v-if="scope.row.status === '0'">确认发货</el-button>
-              <el-button link type="warning" icon="CircleCheck" @click="handleReceive(scope.row)" v-hasPermi="['marketing:shipment:receive']" v-if="scope.row.status === '1'">签收</el-button>
-              <el-button link type="danger" icon="RefreshLeft" @click="handleReturn(scope.row)" v-hasPermi="['marketing:return:add']" v-if="scope.row.status === '1' || scope.row.status === '2'">退货</el-button>
-              <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['marketing:shipment:remove']">删除</el-button>
+              <div class="action-btn-row">
+                <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
+                <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['marketing:shipment:edit']" v-if="scope.row.status === '0'">修改</el-button>
+                <el-button link type="success" icon="Promotion" @click="handleConfirm(scope.row)" v-hasPermi="['marketing:shipment:deliver']" v-if="scope.row.status === '0'">发货</el-button>
+                <el-button link type="warning" icon="CircleCheck" @click="handleReceive(scope.row)" v-hasPermi="['marketing:shipment:receive']" v-if="scope.row.status === '1'">签收</el-button>
+                <el-button link type="danger" icon="RefreshLeft" @click="handleReturn(scope.row)" v-hasPermi="['marketing:return:add']" v-if="scope.row.status === '1' || scope.row.status === '2'">退货</el-button>
+                <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['marketing:shipment:remove']">删除</el-button>
+              </div>
             </template>
           </el-table-column>
         </el-table>

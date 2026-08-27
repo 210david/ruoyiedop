@@ -12,6 +12,7 @@ import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.mk.service.IMkNumberRuleService;
+import com.ruoyi.system.utils.MessageHelper;
 import com.ruoyi.mms.domain.MmsDispatch;
 import com.ruoyi.mms.domain.MmsWorkOrder;
 import com.ruoyi.mms.domain.MmsWorkOrderAuditLog;
@@ -63,6 +64,9 @@ public class MmsDispatchServiceImpl implements IMmsDispatchService
     @Autowired
     private IMkNumberRuleService mkNumberRuleService;
 
+    @Autowired
+    private MessageHelper messageHelper;
+
     // ========== 标准 CRUD ==========
 
     @Override
@@ -100,7 +104,30 @@ public class MmsDispatchServiceImpl implements IMmsDispatchService
         }
         dispatch.setCreateBy(SecurityUtils.getUsername());
         dispatch.setCreateTime(DateUtils.getNowDate());
-        return dispatchMapper.insertDispatch(dispatch);
+        int rows = dispatchMapper.insertDispatch(dispatch);
+
+        // 发送消息中心提醒：派工单待开工，通知班组长
+        String processName = dispatch.getProcessName() != null ? dispatch.getProcessName() : "-";
+        String resourceName = dispatch.getResourceName() != null ? dispatch.getResourceName() : "-";
+        String content = "工序：" + processName
+                + "，产能单元：" + resourceName
+                + "，计划数量：" + (dispatch.getPlanQty() != null ? dispatch.getPlanQty() : "-")
+                + (dispatch.getUnit() != null ? dispatch.getUnit() : "")
+                + "，请安排开工。";
+        messageHelper.sendMessage(
+            "派工单" + dispatch.getDispatchNo() + "待开工",
+            content,
+            "4",   // 待办事项
+            "2",   // 重要
+            "mms",
+            dispatch.getDispatchId(),
+            "/mms/dispatch?id=" + dispatch.getDispatchId(),
+            "mms:dispatch:list",
+            "0",   // bizStatus: 待开工
+            "派工管理"
+        );
+
+        return rows;
     }
 
     @Override
@@ -554,6 +581,27 @@ public class MmsDispatchServiceImpl implements IMmsDispatchService
                         + (parallelCount > 1 ? "，并行" : "") + mergeDesc + "）");
                 dispatchMapper.insertDispatch(nextDispatch);
                 nextDispatches.add(nextDispatch);
+
+                // 发送消息中心提醒：自动生成的下一道工序派工单待开工
+                String nextProcessName = nextDispatch.getProcessName() != null ? nextDispatch.getProcessName() : "-";
+                String nextResourceName = nextDispatch.getResourceName() != null ? nextDispatch.getResourceName() : "-";
+                String nextContent = "工序：" + nextProcessName
+                        + "，产能单元：" + nextResourceName
+                        + "，计划数量：" + mergedQty
+                        + (nextDispatch.getUnit() != null ? nextDispatch.getUnit() : "")
+                        + "，前道工序已完工，请安排开工。";
+                messageHelper.sendMessage(
+                    "派工单" + nextDispatch.getDispatchNo() + "待开工",
+                    nextContent,
+                    "4",   // 待办事项
+                    "2",   // 重要
+                    "mms",
+                    nextDispatch.getDispatchId(),
+                    "/mms/dispatch?id=" + nextDispatch.getDispatchId(),
+                    "mms:dispatch:list",
+                    "0",   // bizStatus: 待开工
+                    "派工管理"
+                );
             }
         }
     }

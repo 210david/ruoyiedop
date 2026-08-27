@@ -129,13 +129,15 @@
           <el-table-column label="退款金额" prop="refundAmount" key="refundAmount" :width="colWidth('refundAmount', 120)" resizable align="right" v-if="columns.refundAmount.visible" />
           <el-table-column label="退款日期" prop="refundDate" key="refundDate" :width="colWidth('refundDate', 120)" resizable v-if="columns.refundDate.visible" />
           <el-table-column label="审批人" prop="approveBy" key="approveBy" :width="colWidth('approveBy', 100)" resizable v-if="columns.approveBy.visible" />
-          <el-table-column label="操作" width="300" align="center" fixed="right">
+          <el-table-column label="操作" width="180" align="center" fixed="right" class-name="col-action">
         <template #default="scope">
+          <div class="action-btn-row">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">详情</el-button>
-          <el-button v-if="scope.row.returnStatus === '4' || scope.row.returnStatus === '2'" link type="warning" icon="Edit" @click="handleEdit(scope.row)" v-hasPermi="['marketing:return:edit']">修改</el-button>
+          <el-button v-if="scope.row.returnStatus === '4' || scope.row.returnStatus === '2'" link type="primary" icon="Edit" @click="handleEdit(scope.row)" v-hasPermi="['marketing:return:edit']">修改</el-button>
           <el-button v-if="scope.row.returnStatus === '4' || scope.row.returnStatus === '2'" link type="success" icon="Promotion" @click="handleSubmit(scope.row)" v-hasPermi="['marketing:return:edit']">提交</el-button>
           <el-button v-if="scope.row.returnStatus === '0'" link type="success" icon="Check" @click="handleApprove(scope.row)" v-hasPermi="['marketing:return:approve']">审批</el-button>
           <el-button v-if="scope.row.returnStatus === '1'" link type="primary" icon="Money" @click="handleRefund(scope.row)" v-hasPermi="['marketing:return:refund']">退款</el-button>
+          </div>
         </template>
       </el-table-column>
     </el-table>

@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.hr.mapper.HrLeaveRequestMapper">
+
+    <resultMap type="HrLeaveRequest" id="HrLeaveRequestResult">
+        <result property="leaveReqId" column="leave_req_id"/>
+        <result property="leaveReqNo" column="leave_req_no"/>
+        <result property="employeeId" column="employee_id"/>
+        <result property="employeeName" column="employee_name"/>
+        <result property="employeeNo" column="employee_no"/>
+        <result property="leaveType" column="leave_type"/>
+        <result property="startTime" column="start_time"/>
+        <result property="endTime" column="end_time"/>
+        <result property="leaveDays" column="leave_days"/>
+        <result property="reason" column="reason"/>
+        <result property="attachmentUrl" column="attachment_url"/>
+        <result property="auditStatus" column="audit_status"/>
+        <result property="auditBy" column="audit_by"/>
+        <result property="auditTime" column="audit_time"/>
+        <result property="auditRemark" column="audit_remark"/>
+        <result property="status" column="status"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <sql id="selectVo">
+        SELECT leave_req_id, leave_req_no, employee_id, employee_name, employee_no, leave_type, start_time, end_time, leave_days, reason, attachment_url, audit_status, audit_by, audit_time, audit_remark, status, del_flag, create_by, create_time, update_by, update_time, remark
+        FROM biz_hr_leave_request
+    </sql>
+
+    <select id="selectHrLeaveRequestList" parameterType="HrLeaveRequest" resultMap="HrLeaveRequestResult">
+        <include refid="selectVo"/>
+        <where>
+            del_flag = '0'
+            <if test="leaveReqNo != null and leaveReqNo != ''"> AND leave_req_no LIKE CONCAT('%', #{leaveReqNo}, '%')</if>
+            <if test="employeeId != null"> AND employee_id = #{employeeId}</if>
+            <if test="employeeName != null and employeeName != ''"> AND employee_name LIKE CONCAT('%', #{employeeName}, '%')</if>
+            <if test="employeeNo != null and employeeNo != ''"> AND employee_no LIKE CONCAT('%', #{employeeNo}, '%')</if>
+            <if test="leaveType != null and leaveType != ''"> AND leave_type LIKE CONCAT('%', #{leaveType}, '%')</if>
+            <if test="startTime != null"> AND start_time = #{startTime}</if>
+            <if test="endTime != null"> AND end_time = #{endTime}</if>
+            <if test="leaveDays != null"> AND leave_days = #{leaveDays}</if>
+            <if test="reason != null and reason != ''"> AND reason LIKE CONCAT('%', #{reason}, '%')</if>
+            <if test="attachmentUrl != null and attachmentUrl != ''"> AND attachment_url LIKE CONCAT('%', #{attachmentUrl}, '%')</if>
+            <if test="auditStatus != null and auditStatus != ''"> AND audit_status LIKE CONCAT('%', #{auditStatus}, '%')</if>
+            <if test="auditBy != null and auditBy != ''"> AND audit_by LIKE CONCAT('%', #{auditBy}, '%')</if>
+            <if test="auditTime != null"> AND audit_time = #{auditTime}</if>
+            <if test="auditRemark != null and auditRemark != ''"> AND audit_remark LIKE CONCAT('%', #{auditRemark}, '%')</if>
+            <if test="status != null and status != ''"> AND status LIKE CONCAT('%', #{status}, '%')</if>
+            <if test="delFlag != null and delFlag != ''"> AND del_flag LIKE CONCAT('%', #{delFlag}, '%')</if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+
+    <select id="selectHrLeaveRequestById" parameterType="Long" resultMap="HrLeaveRequestResult">
+        <include refid="selectVo"/> WHERE leave_req_id = #{leaveReqId}
+    </select>
+
+    <insert id="insertHrLeaveRequest" parameterType="HrLeaveRequest" useGeneratedKeys="true" keyProperty="leaveReqId">
+        INSERT INTO biz_hr_leave_request (
+            leave_req_no, employee_id, employee_name, employee_no, leave_type, start_time, end_time, leave_days, reason, attachment_url, audit_status, audit_by, audit_time, audit_remark, status, del_flag, create_by, create_time, remark
+        ) VALUES (
+            #{leaveReqNo}, #{employeeId}, #{employeeName}, #{employeeNo}, #{leaveType}, #{startTime}, #{endTime}, #{leaveDays}, #{reason}, #{attachmentUrl}, #{auditStatus}, #{auditBy}, #{auditTime}, #{auditRemark}, #{status}, #{delFlag}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateHrLeaveRequest" parameterType="HrLeaveRequest">
+        UPDATE biz_hr_leave_request
+        <set>
+            <if test="leaveReqNo != null and leaveReqNo != ''">leave_req_no = #{leaveReqNo},</if>
+            <if test="employeeId != null">employee_id = #{employeeId},</if>
+            <if test="employeeName != null and employeeName != ''">employee_name = #{employeeName},</if>
+            <if test="employeeNo != null and employeeNo != ''">employee_no = #{employeeNo},</if>
+            <if test="leaveType != null and leaveType != ''">leave_type = #{leaveType},</if>
+            <if test="startTime != null">start_time = #{startTime},</if>
+            <if test="endTime != null">end_time = #{endTime},</if>
+            <if test="leaveDays != null">leave_days = #{leaveDays},</if>
+            <if test="reason != null and reason != ''">reason = #{reason},</if>
+            <if test="attachmentUrl != null and attachmentUrl != ''">attachment_url = #{attachmentUrl},</if>
+            <if test="auditStatus != null and auditStatus != ''">audit_status = #{auditStatus},</if>
+            <if test="auditBy != null and auditBy != ''">audit_by = #{auditBy},</if>
+            <if test="auditTime != null">audit_time = #{auditTime},</if>
+            <if test="auditRemark != null and auditRemark != ''">audit_remark = #{auditRemark},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="delFlag != null and delFlag != ''">del_flag = #{delFlag},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE leave_req_id = #{leaveReqId}
+    </update>
+
+    <delete id="deleteHrLeaveRequestById" parameterType="Long">
+        UPDATE biz_hr_leave_request SET del_flag = '2' WHERE leave_req_id = #{leaveReqId}
+    </delete>
+
+    <delete id="deleteHrLeaveRequestByIds" parameterType="Long">
+        UPDATE biz_hr_leave_request SET del_flag = '2' WHERE leave_req_id IN
+        <foreach item="leaveReqId" collection="array" open="(" separator="," close=")">#{leaveReqId}</foreach>
+    </delete>
+
+</mapper>

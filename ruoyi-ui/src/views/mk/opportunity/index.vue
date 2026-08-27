@@ -160,12 +160,13 @@
             </template>
           </el-table-column>
           <el-table-column label="负责人" prop="userName" key="userName" :width="colWidth('userName', 100)" resizable v-if="columns.userName.visible" />
-          <el-table-column label="操作" width="320" align="center" fixed="right">
+          <el-table-column label="操作" width="180" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
+              <div class="action-btn-row">
               <el-button link type="primary" icon="View" @click="handleView(scope.row)">详情</el-button>
               <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['marketing:opportunity:edit']">修改</el-button>
-              <el-dropdown v-if="scope.row.opportunityStatus === '0'" @command="(cmd) => handleAction(cmd, scope.row)" style="margin-left: 8px">
-                <el-button link type="primary">更多<el-icon class="el-icon--right"><ArrowDown /></el-icon></el-button>
+              <el-dropdown v-if="scope.row.opportunityStatus === '0'" @command="(cmd) => handleAction(cmd, scope.row)">
+                <el-button link type="primary" icon="ArrowDown">更多</el-button>
                 <template #dropdown>
                   <el-dropdown-menu>
                     <el-dropdown-item command="advance">推进阶段</el-dropdown-item>
@@ -175,7 +176,8 @@
                   </el-dropdown-menu>
                 </template>
               </el-dropdown>
-              <el-button v-if="scope.row.opportunityStatus !== '0'" link type="warning" @click="handleReopen(scope.row)">重开</el-button>
+              <el-button v-if="scope.row.opportunityStatus !== '0'" link type="warning" icon="RefreshLeft" @click="handleReopen(scope.row)">重开</el-button>
+              </div>
             </template>
           </el-table-column>
         </el-table>

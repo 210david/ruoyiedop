@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿<template>
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿<template>
   <div class="app-container mk-list-page">
     <!-- ===== Filter Card ===== -->
     <div class="surface filter-card" v-show="showSearch">
@@ -148,11 +148,13 @@
           </el-table-column>
           <el-table-column label="申请人" prop="receiveApplyUserName" key="receiveApplyUserName" :width="colWidth('receiveApplyUserName', 100)" resizable v-if="columns.receiveApplyUserName.visible" />
           <el-table-column label="申请时间" prop="receiveApplyTime" key="receiveApplyTime" :width="colWidth('receiveApplyTime', 160)" resizable sortable="custom" v-if="columns.receiveApplyTime.visible" />
-          <el-table-column label="操作" width="200" align="center" fixed="right">
+          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
-              <el-button link type="primary" icon="View" @click="handleView(scope.row)">详情</el-button>
-              <el-button link type="success" icon="Pointer" @click="handleReceive(scope.row)" v-hasPermi="['marketing:lead:pool:receive']" v-if="!scope.row.receiveStatus || scope.row.receiveStatus === '0' || scope.row.receiveStatus === '3'">申请领取</el-button>
-              <el-button link type="warning" icon="Check" @click="handleApprove(scope.row)" v-hasPermi="['marketing:lead:pool:approve']" v-if="scope.row.receiveStatus === '1'">审批</el-button>
+              <div class="action-btn-row">
+                <el-button link type="primary" icon="View" @click="handleView(scope.row)">详情</el-button>
+                <el-button link type="success" icon="Pointer" @click="handleReceive(scope.row)" v-hasPermi="['marketing:lead:pool:receive']" v-if="!scope.row.receiveStatus || scope.row.receiveStatus === '0' || scope.row.receiveStatus === '3'">申请</el-button>
+                <el-button link type="warning" icon="Check" @click="handleApprove(scope.row)" v-hasPermi="['marketing:lead:pool:approve']" v-if="scope.row.receiveStatus === '1'">审批</el-button>
+              </div>
             </template>
           </el-table-column>
         </el-table>

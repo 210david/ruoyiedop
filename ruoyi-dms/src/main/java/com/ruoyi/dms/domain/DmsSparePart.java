@@ -39,7 +39,10 @@ public class DmsSparePart extends BaseEntity
     /** 适用设备分类（JSON数组） */
     private String applicableCategory;
 
-    /** 供应商 */
+    /** 供应商ID */
+    private Long supplierId;
+
+    /** 供应商名称 */
     @Excel(name = "供应商")
     private String supplier;
 
@@ -72,6 +75,8 @@ public class DmsSparePart extends BaseEntity
     public void setUnit(String unit) { this.unit = unit; }
     public String getApplicableCategory() { return applicableCategory; }
     public void setApplicableCategory(String applicableCategory) { this.applicableCategory = applicableCategory; }
+    public Long getSupplierId() { return supplierId; }
+    public void setSupplierId(Long supplierId) { this.supplierId = supplierId; }
     public String getSupplier() { return supplier; }
     public void setSupplier(String supplier) { this.supplier = supplier; }
     public BigDecimal getStockMin() { return stockMin; }

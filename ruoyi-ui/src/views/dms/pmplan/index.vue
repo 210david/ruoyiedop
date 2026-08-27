@@ -128,11 +128,14 @@
               <span class="badge" :class="scope.row.status === '0' ? 'green' : 'gray'"><span class="dot"></span>{{ scope.row.status === '0' ? '正常' : '停用' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="220" align="center" fixed="right">
+          <el-table-column label="操作" width="200" align="center" fixed="right" class-name="col-action">
         <template #default="scope">
-          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['dms:pmplan:edit']">修改</el-button>
-          <el-button link type="success" @click="handleGenerate(scope.row)" v-if="scope.row.status === '0'">生成工单</el-button>
-          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['dms:pmplan:remove']">删除</el-button>
+          <div class="action-btn-row">
+            <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['dms:pmplan:query']">详情</el-button>
+            <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['dms:pmplan:edit']">修改</el-button>
+            <el-button link type="success" icon="Promotion" @click="handleGenerate(scope.row)" v-if="scope.row.status === '0'">生成</el-button>
+            <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['dms:pmplan:remove']">删除</el-button>
+          </div>
         </template>
       </el-table-column>
     </el-table>
@@ -177,7 +180,7 @@
     </template>
 
     <!-- 新增/修改弹窗 -->
-    <el-dialog v-model="open" width="780px" append-to-body draggable class="rd-dialog">
+    <el-dialog v-model="open" width="936px" append-to-body draggable class="rd-dialog" top="5vh">
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
@@ -195,12 +198,14 @@
           <div class="rd-card-body" v-show="!collapsedCards.c3">
         <el-row>
           <el-col :span="24"><el-form-item label="计划名称" prop="planName"><el-input v-model="form.planName" placeholder="请输入" /></el-form-item></el-col>
-          <el-col :span="12"><el-form-item label="关联设备" prop="equipmentId">
-            <el-select v-model="form.equipmentId" filterable clearable placeholder="请选择设备" style="width: 100%" @change="onEquipmentChange">
-              <el-option v-for="e in equipmentOptions" :key="e.equipmentId" :label="e.equipmentCode + ' - ' + e.equipmentName" :value="e.equipmentId" />
-            </el-select>
+          <el-col :span="12"><el-form-item label="设备编号" prop="equipmentId">
+            <el-input v-model="form.equipmentCode" readonly placeholder="请选择设备" style="width: 100%" @click="openEquipmentPicker">
+              <template #append><el-button icon="Search" @click="openEquipmentPicker" /></template>
+              <template #suffix><el-icon v-if="form.equipmentCode" class="clear-icon" @click.stop="clearEquipment"><CircleClose /></el-icon></template>
+            </el-input>
           </el-form-item></el-col>
-          <el-col :span="12"><el-form-item label="设备分类" prop="categoryName"><el-input v-model="form.categoryName" placeholder="自动带出" disabled /></el-form-item></el-col>
+          <el-col :span="12"><el-form-item label="设备名称"><el-input v-model="form.equipmentName" placeholder="选择设备后自动带出" disabled /></el-form-item></el-col>
+          <el-col :span="12"><el-form-item label="设备类型"><el-input v-model="form.categoryName" placeholder="选择设备后自动带出" disabled /></el-form-item></el-col>
         </el-row>
 
         <!-- 分组二：触发规则 -->
@@ -218,8 +223,18 @@
               <el-option v-for="d in dms_pm_trigger_type" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </el-form-item></el-col>
-          <el-col :span="6"><el-form-item label="周期值" prop="cycleValue"><el-input-number v-model="form.cycleValue" :min="1" controls-position="right" style="width: 100%" /></el-form-item></el-col>
-          <el-col :span="6"><el-form-item label="单位" prop="cycleUnit"><el-input v-model="form.cycleUnit" placeholder="天/月/小时" /></el-form-item></el-col>
+          <el-col :span="12"><el-form-item label="周期" prop="cycleValue">
+            <div class="cycle-composite">
+              <el-input-number v-model="form.cycleValue" :min="1" controls-position="right" style="width: 120px" />
+              <el-select v-model="form.cycleUnit" placeholder="单位" style="width: 90px">
+                <el-option label="天" value="天" />
+                <el-option label="周" value="周" />
+                <el-option label="月" value="月" />
+                <el-option label="小时" value="小时" />
+              </el-select>
+              <span class="cycle-suffix">每 {{ form.cycleValue || '?' }} {{ form.cycleUnit || '天' }} 执行一次</span>
+            </div>
+          </el-form-item></el-col>
           <el-col :span="12"><el-form-item label="提前天数" prop="advanceDays"><el-input-number v-model="form.advanceDays" :min="0" controls-position="right" style="width: 100%" /></el-form-item></el-col>
           <el-col :span="12"><el-form-item label="自动派工" prop="autoAssign">
             <el-radio-group v-model="form.autoAssign"><el-radio value="0">否</el-radio><el-radio value="1">是</el-radio></el-radio-group>
@@ -270,11 +285,16 @@
             </el-alert>
             <el-table v-if="sparePartItems.length > 0" :data="sparePartItems" border size="small" style="margin-bottom: 8px" @header-dragend="onHeaderDragEnd">
               <el-table-column label="序号" type="index" width="85" align="center" />
-              <el-table-column label="备件名称" min-width="200">
-                <template #default="{ row }">
-                  <el-select v-model="row.partId" filterable clearable placeholder="请选择备件" style="width: 100%" @change="(val) => onSparePartSelect(row, val)">
-                    <el-option v-for="p in getAvailableSpareParts(row.partId)" :key="p.partId" :label="p.partName + (p.specModel ? ' (' + p.specModel + ')' : '') + ' [库存:' + (p.currentStock || 0) + dictUnitLabel(p.unit) + ']'" :value="p.partId" />
-                  </el-select>
+              <el-table-column label="备件名称" min-width="220">
+                <template #default="{ row, $index }">
+                  <el-input :model-value="row.partName" readonly placeholder="请选择备件" style="width: 100%" @click="openPartPicker($index)">
+                    <template v-if="row.partId" #append>
+                      <el-button icon="CircleClose" @click.stop="clearSparePart($index)" />
+                    </template>
+                    <template v-else #append>
+                      <el-button icon="Search" @click.stop="openPartPicker($index)" />
+                    </template>
+                  </el-input>
                 </template>
               </el-table-column>
               <el-table-column label="数量" width="120" align="center">
@@ -291,7 +311,7 @@
                 </template>
               </el-table-column>
             </el-table>
-            <el-button type="primary" plain icon="Plus" size="small" @click="sparePartItems.push({ partId: undefined, partName: '', qty: 1, unit: '' })">添加备件</el-button>
+            <el-button type="primary" plain icon="Plus" size="small" @click="openPartPicker(-1)">添加备件</el-button>
           </div>
         </el-form-item>
 
@@ -321,6 +341,123 @@
     </el-dialog>
 
     <user-picker ref="userPickerRef" title="选择派工人员" @confirm="onUserPickerConfirm" />
+    <equipment-picker ref="equipmentPickerRef" title="选择设备" @confirm="onEquipmentPickerConfirm" />
+    <part-picker ref="partPickerRef" title="选择备件" @confirm="onPartPickerConfirm" />
+
+    <!-- 查看详情弹窗 -->
+    <el-dialog v-model="viewOpen" width="1080px" append-to-body draggable class="rd-dialog pmplan-detail-dialog" top="5vh">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+          <div class="rd-detail-header-main">
+            <div class="rd-detail-header-title">PM计划详情</div>
+            <div class="rd-detail-header-sub" v-if="viewForm.planName">
+              <div class="rd-detail-header-divider"></div>
+              <span class="rd-detail-header-no">{{ viewForm.planName }}</span>
+            </div>
+          </div>
+          <div class="rd-detail-header-tags" v-if="viewForm.status != null">
+            <el-tag :type="viewForm.status === '0' ? 'success' : 'info'" effect="dark" size="small">{{ viewForm.status === '0' ? '正常' : '停用' }}</el-tag>
+          </div>
+        </div>
+      </template>
+      <div v-loading="viewLoading" class="rd-page">
+        <!-- 基本信息 -->
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('v1')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>基本信息</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.v1">
+            <div class="rd-grid">
+              <div class="rd-item"><span class="rd-label"><span class="rd-label-dot"></span>计划名称</span><div class="rd-value">{{ viewForm.planName || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label"><span class="rd-label-dot"></span>设备编号</span><div class="rd-value">{{ viewForm.equipmentCode || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label"><span class="rd-label-dot"></span>设备名称</span><div class="rd-value">{{ viewForm.equipmentName || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label"><span class="rd-label-dot"></span>设备类型</span><div class="rd-value">{{ viewForm.categoryName || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label"><span class="rd-label-dot"></span>状态</span><div class="rd-value"><span class="badge" :class="viewForm.status === '0' ? 'green' : 'gray'"><span class="dot"></span>{{ viewForm.status === '0' ? '正常' : '停用' }}</span></div></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 触发规则 -->
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('v2')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>触发规则</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.v2">
+            <div class="rd-grid">
+              <div class="rd-item"><span class="rd-label"><span class="rd-label-dot"></span>触发类型</span><div class="rd-value"><span class="badge violet">{{ triggerTypeLabel(viewForm.triggerType) }}</span></div></div>
+              <div class="rd-item"><span class="rd-label"><span class="rd-label-dot"></span>周期</span><div class="rd-value">{{ viewForm.cycleValue || '-' }} {{ viewForm.cycleUnit || '' }}</div></div>
+              <div class="rd-item"><span class="rd-label"><span class="rd-label-dot"></span>提前天数</span><div class="rd-value">{{ viewForm.advanceDays != null ? viewForm.advanceDays + ' 天' : '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label"><span class="rd-label-dot"></span>自动派工</span><div class="rd-value"><span class="badge" :class="viewForm.autoAssign === '1' ? 'green' : 'gray'"><span class="dot"></span>{{ viewForm.autoAssign === '1' ? '是' : '否' }}</span></div></div>
+              <div class="rd-item" v-if="viewForm.autoAssign === '1'"><span class="rd-label"><span class="rd-label-dot"></span>派工人员</span><div class="rd-value">{{ viewForm.assigneeName || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label"><span class="rd-label-dot"></span>预估工时</span><div class="rd-value">{{ viewForm.estimatedHours != null ? viewForm.estimatedHours + ' 小时' : '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label"><span class="rd-label-dot"></span>上次执行</span><div class="rd-value">{{ formatDate(viewForm.lastExecuteTime) || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label"><span class="rd-label-dot"></span>下次执行</span><div class="rd-value" :style="isExpiredByDate(viewForm.nextExecuteTime) ? 'color: #f56c6c; font-weight: bold' : ''">{{ formatDate(viewForm.nextExecuteTime) || '-' }}</div></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 任务清单 -->
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('v3')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>任务清单</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v3 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.v3">
+            <div v-if="viewForm._taskItems && viewForm._taskItems.length > 0" class="task-checklist">
+              <div class="task-checklist-body">
+                <div v-for="(task, index) in viewForm._taskItems" :key="index" class="task-item">
+                  <el-icon class="task-icon-pending"><RemoveFilled /></el-icon>
+                  <span>{{ task.text }}</span>
+                </div>
+              </div>
+            </div>
+            <el-empty v-else description="暂无任务清单" :image-size="60" />
+          </div>
+        </section>
+
+        <!-- 备件清单 -->
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('v4')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></span>备件清单</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v4 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.v4">
+            <el-table v-if="viewForm._sparePartItems && viewForm._sparePartItems.length > 0" :data="viewForm._sparePartItems" border size="small">
+              <el-table-column label="序号" type="index" width="55" align="center" />
+              <el-table-column label="备件名称" prop="partName" min-width="200" show-overflow-tooltip />
+              <el-table-column label="数量" prop="qty" width="80" align="center" />
+              <el-table-column label="单位" width="70" align="center">
+                <template #default="{ row }">{{ dictUnitLabel(row.unit) }}</template>
+              </el-table-column>
+            </el-table>
+            <el-empty v-else description="暂无备件清单" :image-size="60" />
+          </div>
+        </section>
+
+        <!-- 系统信息 -->
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('v5')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>系统信息</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v5 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.v5">
+            <div class="rd-grid">
+              <div class="rd-item"><span class="rd-label"><span class="rd-label-dot"></span>创建人</span><div class="rd-value">{{ viewForm.createBy || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label"><span class="rd-label-dot"></span>创建时间</span><div class="rd-value">{{ viewForm.createTime || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label"><span class="rd-label-dot"></span>更新人</span><div class="rd-value">{{ viewForm.updateBy || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label"><span class="rd-label-dot"></span>更新时间</span><div class="rd-value">{{ viewForm.updateTime || '-' }}</div></div>
+              <div class="rd-item rd-item--full"><span class="rd-label"><span class="rd-label-dot"></span>备注</span><div class="rd-value">{{ viewForm.remark || '-' }}</div></div>
+            </div>
+          </div>
+        </section>
+      </div>
+      <template #footer>
+        <el-button @click="viewOpen = false">关 闭</el-button>
+      </template>
+    </el-dialog>
 
     <!-- 业务操作说明对话框 -->
     <el-dialog v-model="showStatusHelp" title="PM计划业务操作说明" width="720px" append-to-body>
@@ -408,12 +545,13 @@
 import { listPmplan, getPmplan, addPmplan, updatePmplan, delPmplan, generateWorkOrder, autoGeneratePm, getPmplanCalendar } from '@/api/dms/pmplan'
 import { listEquipment } from '@/api/dms/equipment'
 import { listUser } from '@/api/system/user'
-import { listSparepart } from '@/api/dms/sparepart'
 import UserPicker from '@/components/UserPicker/index.vue'
+import EquipmentPicker from '@/components/EquipmentPicker/index.vue'
+import PartPicker from '@/components/PartPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
-import { Search, Filter, RefreshLeft, Edit, Delete, Refresh, ArrowDown } from '@element-plus/icons-vue'
-const { collapsedCards, toggleCard } = useDetailCard(["c3","c2","c1","c0"])
+import { Search, Filter, RefreshLeft, Edit, Delete, Refresh, ArrowDown, View, CircleClose, RemoveFilled } from '@element-plus/icons-vue'
+const { collapsedCards, toggleCard } = useDetailCard(["c3","c2","c1","c0","v1","v2","v3","v4","v5"])
 
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('dms_pmplan_index')
@@ -436,7 +574,11 @@ const calendarData = ref([])
 const taskItems = ref([])
 const sparePartItems = ref([])
 const showStatusHelp = ref(false)
-const sparePartOptions = ref([])
+/** 备件选择弹框目标行下标（-1 表示追加新行） */
+const partPickerTargetIndex = ref(-1)
+const viewOpen = ref(false)
+const viewForm = ref({})
+const viewLoading = ref(false)
 
 const defaultColumns = {
   planName: { label: '计划名称', visible: true },
@@ -486,7 +628,7 @@ const data = reactive({
     planName: [{ required: true, message: '计划名称不能为空', trigger: 'blur' }],
     triggerType: [{ required: true, message: '触发类型不能为空', trigger: 'change' }],
     cycleValue: [{ required: true, message: '周期值不能为空', trigger: 'blur' }],
-    cycleUnit: [{ required: true, message: '周期单位不能为空', trigger: 'blur' }]
+    cycleUnit: [{ required: true, message: '周期单位不能为空', trigger: 'change' }]
   }
 })
 const { queryParams, form, rules } = toRefs(data)
@@ -501,23 +643,30 @@ function getEquipmentOptions() {
 function getUserList() {
   listUser({ pageNum: 1, pageSize: 9999 }).then(res => { userOptions.value = res.rows.filter(u => u.userId !== 1) })
 }
-function getSparePartList() {
-  listSparepart({ pageNum: 1, pageSize: 9999, status: '0' }).then(res => { sparePartOptions.value = res.rows })
+/** 打开备件选择弹窗（index 为 -1 时表示追加新行） */
+function openPartPicker(index) {
+  partPickerTargetIndex.value = index
+  const currentPartId = index >= 0 && sparePartItems.value[index] ? sparePartItems.value[index].partId : undefined
+  const excludedIds = sparePartItems.value.filter((_, i) => i !== index).map(i => i.partId).filter(Boolean)
+  proxy.$refs.partPickerRef.open(currentPartId, excludedIds)
 }
-/** 获取可选备件列表（排除已选的） */
-function getAvailableSpareParts(currentPartId) {
-  const selectedIds = sparePartItems.value.filter(i => i.partId && i.partId !== currentPartId).map(i => i.partId)
-  return sparePartOptions.value.filter(p => !selectedIds.includes(p.partId))
-}
-/** 选择备件后自动带出名称和单位 */
-function onSparePartSelect(row, partId) {
-  if (partId) {
-    const part = sparePartOptions.value.find(p => p.partId === partId)
-    if (part) {
-      row.partName = part.partName
-      row.unit = part.unit || ''
-    }
+/** 备件选择确认回调 — 自动带出名称和单位 */
+function onPartPickerConfirm(part) {
+  const idx = partPickerTargetIndex.value
+  if (idx >= 0 && idx < sparePartItems.value.length) {
+    const row = sparePartItems.value[idx]
+    row.partId = part.partId
+    row.partName = part.partName
+    row.unit = part.unit || ''
   } else {
+    sparePartItems.value.push({ partId: part.partId, partName: part.partName, qty: 1, unit: part.unit || '' })
+  }
+}
+/** 清除行内备件 */
+function clearSparePart(index) {
+  const row = sparePartItems.value[index]
+  if (row) {
+    row.partId = undefined
     row.partName = ''
     row.unit = ''
   }
@@ -528,17 +677,25 @@ function dictUnitLabel(val) {
   const dictItem = wms_unit.value.find(d => d.value === val)
   return dictItem ? dictItem.label : val
 }
-function onEquipmentChange(equipmentId) {
-  if (equipmentId) {
-    const equipment = equipmentOptions.value.find(e => e.equipmentId === equipmentId)
-    if (equipment) {
-      form.value.categoryId = equipment.categoryId
-      form.value.categoryName = equipment.categoryName
-    }
-  } else {
-    form.value.categoryId = undefined
-    form.value.categoryName = undefined
-  }
+/** 打开设备选择弹窗 */
+function openEquipmentPicker() {
+  proxy.$refs.equipmentPickerRef.open(form.value.equipmentId)
+}
+/** 设备选择确认回调 */
+function onEquipmentPickerConfirm(eq) {
+form.value.equipmentId = eq.equipmentId
+form.value.equipmentCode = eq.equipmentCode
+form.value.equipmentName = eq.equipmentName
+form.value.categoryId = eq.categoryId
+form.value.categoryName = eq.categoryName
+}
+/** 清除设备 */
+function clearEquipment() {
+form.value.equipmentId = undefined
+form.value.equipmentCode = undefined
+form.value.equipmentName = undefined
+form.value.categoryId = undefined
+form.value.categoryName = undefined
 }
 /** 打开人员选择弹窗 */
 function openUserPicker() {
@@ -595,12 +752,26 @@ function sparePartListToString(items) {
 }
 
 function reset() {
-  form.value = { planName: undefined, equipmentId: undefined, categoryId: undefined, categoryName: undefined, triggerType: '0', cycleValue: 30, cycleUnit: '天', taskList: undefined, sparePartList: undefined, estimatedHours: undefined, advanceDays: 3, autoAssign: '0', assigneeId: undefined, assigneeName: undefined, status: '0', remark: undefined }
+form.value = { planName: undefined, equipmentId: undefined, equipmentCode: undefined, equipmentName: undefined, categoryId: undefined, categoryName: undefined, triggerType: '0', cycleValue: 30, cycleUnit: '天', taskList: undefined, sparePartList: undefined, estimatedHours: undefined, advanceDays: 3, autoAssign: '0', assigneeId: undefined, assigneeName: undefined, status: '0', remark: undefined }
   taskItems.value = []
   sparePartItems.value = []
   proxy.resetForm('pmplanRef')
 }
 function handleAdd() { reset(); open.value = true; title.value = '新增PM计划' }
+function handleView(row) {
+  viewLoading.value = true
+  viewOpen.value = true
+  getPmplan(row.planId).then(res => {
+    viewForm.value = res.data
+    viewForm.value._taskItems = parseTaskList(res.data.taskList)
+    viewForm.value._sparePartItems = parseSparePartList(res.data.sparePartList)
+    // 按开发规范：分组内字段全为空时自动收缩
+    collapsedCards.v3 = !(viewForm.value._taskItems && viewForm.value._taskItems.length > 0)
+    collapsedCards.v4 = !(viewForm.value._sparePartItems && viewForm.value._sparePartItems.length > 0)
+    collapsedCards.v5 = !viewForm.value.createBy && !viewForm.value.createTime && !viewForm.value.updateBy && !viewForm.value.updateTime && !viewForm.value.remark
+    viewLoading.value = false
+  }).catch(() => { viewLoading.value = false })
+}
 function handleUpdate(row) {
   reset()
   getPmplan(row.planId || ids.value[0]).then(res => {
@@ -687,7 +858,6 @@ watch(viewMode, (val) => {
 
 getEquipmentOptions()
 getUserList()
-getSparePartList()
 getList()
 </script>
 
@@ -769,6 +939,13 @@ getList()
 .dms-pmplan-page .pagination-container :deep(.el-pagination .btn-prev), .dms-pmplan-page .pagination-container :deep(.el-pagination .btn-next) { border-radius:6px; border:1px solid var(--ink-200); background:#fff; min-width:32px; height:32px; }
 .dms-pmplan-page .pagination-container :deep(.el-pagination .btn-prev:hover), .dms-pmplan-page .pagination-container :deep(.el-pagination .btn-next:hover) { border-color:var(--brand-200); color:var(--brand-700); }
 .dms-pmplan-page .pagination-container :deep(.el-pagination .el-pagination__sizes .el-select__wrapper) { border-radius:6px; box-shadow:0 0 0 1px var(--ink-200) inset; }
+/* 操作列按钮对齐：每行2个按钮，flex-wrap 自动换行 */
+.dms-pmplan-page :deep(.col-action) { padding: 6px 4px !important; }
+.dms-pmplan-page :deep(.col-action .cell) { display: flex; justify-content: center; padding: 0; }
+.dms-pmplan-page .action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
+.dms-pmplan-page :deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
+.dms-pmplan-page :deep(.col-action .el-button + .el-button) { margin-left: 2px; }
+
 @media (max-width:1100px) { .dms-pmplan-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }
 @media (max-width:720px) { .dms-pmplan-page .filter-card .filter-bar { grid-template-columns:1fr; } .dms-pmplan-page .toolbar { flex-wrap:wrap; gap:10px; } }
 
@@ -827,6 +1004,24 @@ getList()
 .highlight-card-body { font-size: 13px; color: #606266; line-height: 1.6; }
 </style>
 
+<style>
+/* 新增/修改弹窗 body 滚动 */
+.rd-dialog:not(.pmplan-detail-dialog) .el-dialog__body {
+  max-height: 72vh;
+  overflow-y: auto;
+  padding: 16px 20px;
+}
+/* 详情弹窗 body 滚动 */
+.pmplan-detail-dialog .el-dialog__body {
+  max-height: 68vh;
+  overflow-y: auto;
+  padding: 16px 20px;
+}
+.pmplan-detail-dialog .el-dialog__header {
+  padding-bottom: 12px;
+}
+</style>
+
 <style scoped>
 .clear-icon {
   cursor: pointer;
@@ -835,5 +1030,71 @@ getList()
 }
 .clear-icon:hover {
   color: #909399;
+}
+/* 任务清单样式 */
+.task-checklist {
+  margin-top: 4px;
+}
+.task-checklist-body {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.task-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  background: #f5f7fa;
+  border: 1px solid #ebeef5;
+  font-size: 13px;
+}
+.task-icon-pending {
+  color: #c0c4cc;
+  font-size: 16px;
+}
+/* 周期组合控件 */
+.cycle-composite {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  width: 100%;
+}
+.cycle-composite :deep(.el-input-number) {
+  border-radius: 6px 0 0 6px;
+}
+.cycle-composite :deep(.el-input-number .el-input__wrapper) {
+  border-radius: 6px 0 0 6px;
+  box-shadow: 0 0 0 1px var(--ink-200) inset !important;
+}
+.cycle-composite :deep(.el-input-number.is-focused .el-input__wrapper) {
+  box-shadow: 0 0 0 1px var(--brand-500) inset !important;
+}
+.cycle-composite :deep(.el-select .el-select__wrapper) {
+  border-radius: 0 6px 6px 0;
+  box-shadow: 0 0 0 1px var(--ink-200) inset !important;
+  border-left: 0;
+  min-height: 32px;
+}
+.cycle-composite :deep(.el-select.is-focused .el-select__wrapper) {
+  box-shadow: 0 0 0 1px var(--brand-500) inset !important;
+}
+.cycle-suffix {
+  margin-left: 12px;
+  font-size: 13px;
+  color: var(--ink-500);
+  font-weight: 500;
+  white-space: nowrap;
+}
+.cycle-suffix::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--brand-500);
+  margin-right: 6px;
+  vertical-align: middle;
 }
 </style>

@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.hr.mapper.HrTempDailySettlementMapper">
+
+    <resultMap type="HrTempDailySettlement" id="HrTempDailySettlementResult">
+        <result property="settlementId" column="settlement_id"/>
+        <result property="settlementNo" column="settlement_no"/>
+        <result property="settlementDate" column="settlement_date"/>
+        <result property="laborId" column="labor_id"/>
+        <result property="workerName" column="worker_name"/>
+        <result property="attendDays" column="attend_days"/>
+        <result property="dailyWage" column="daily_wage"/>
+        <result property="pieceworkAmount" column="piecework_amount"/>
+        <result property="totalAmount" column="total_amount"/>
+        <result property="payStatus" column="pay_status"/>
+        <result property="payDate" column="pay_date"/>
+        <result property="payMethod" column="pay_method"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <sql id="selectVo">
+        SELECT settlement_id, settlement_no, settlement_date, labor_id, worker_name, attend_days, daily_wage, piecework_amount, total_amount, pay_status, pay_date, pay_method, del_flag, create_by, create_time, update_by, update_time, remark
+        FROM biz_hr_temp_daily_settlement
+    </sql>
+
+    <select id="selectHrTempDailySettlementList" parameterType="HrTempDailySettlement" resultMap="HrTempDailySettlementResult">
+        <include refid="selectVo"/>
+        <where>
+            del_flag = '0'
+            <if test="settlementNo != null and settlementNo != ''"> AND settlement_no LIKE CONCAT('%', #{settlementNo}, '%')</if>
+            <if test="settlementDate != null"> AND settlement_date = #{settlementDate}</if>
+            <if test="laborId != null"> AND labor_id = #{laborId}</if>
+            <if test="workerName != null and workerName != ''"> AND worker_name LIKE CONCAT('%', #{workerName}, '%')</if>
+            <if test="attendDays != null"> AND attend_days = #{attendDays}</if>
+            <if test="dailyWage != null"> AND daily_wage = #{dailyWage}</if>
+            <if test="pieceworkAmount != null"> AND piecework_amount = #{pieceworkAmount}</if>
+            <if test="totalAmount != null"> AND total_amount = #{totalAmount}</if>
+            <if test="payStatus != null and payStatus != ''"> AND pay_status LIKE CONCAT('%', #{payStatus}, '%')</if>
+            <if test="payDate != null"> AND pay_date = #{payDate}</if>
+            <if test="payMethod != null and payMethod != ''"> AND pay_method LIKE CONCAT('%', #{payMethod}, '%')</if>
+            <if test="delFlag != null and delFlag != ''"> AND del_flag LIKE CONCAT('%', #{delFlag}, '%')</if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+
+    <select id="selectHrTempDailySettlementById" parameterType="Long" resultMap="HrTempDailySettlementResult">
+        <include refid="selectVo"/> WHERE settlement_id = #{settlementId}
+    </select>
+
+    <insert id="insertHrTempDailySettlement" parameterType="HrTempDailySettlement" useGeneratedKeys="true" keyProperty="settlementId">
+        INSERT INTO biz_hr_temp_daily_settlement (
+            settlement_no, settlement_date, labor_id, worker_name, attend_days, daily_wage, piecework_amount, total_amount, pay_status, pay_date, pay_method, del_flag, create_by, create_time, remark
+        ) VALUES (
+            #{settlementNo}, #{settlementDate}, #{laborId}, #{workerName}, #{attendDays}, #{dailyWage}, #{pieceworkAmount}, #{totalAmount}, #{payStatus}, #{payDate}, #{payMethod}, #{delFlag}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateHrTempDailySettlement" parameterType="HrTempDailySettlement">
+        UPDATE biz_hr_temp_daily_settlement
+        <set>
+            <if test="settlementNo != null and settlementNo != ''">settlement_no = #{settlementNo},</if>
+            <if test="settlementDate != null">settlement_date = #{settlementDate},</if>
+            <if test="laborId != null">labor_id = #{laborId},</if>
+            <if test="workerName != null and workerName != ''">worker_name = #{workerName},</if>
+            <if test="attendDays != null">attend_days = #{attendDays},</if>
+            <if test="dailyWage != null">daily_wage = #{dailyWage},</if>
+            <if test="pieceworkAmount != null">piecework_amount = #{pieceworkAmount},</if>
+            <if test="totalAmount != null">total_amount = #{totalAmount},</if>
+            <if test="payStatus != null and payStatus != ''">pay_status = #{payStatus},</if>
+            <if test="payDate != null">pay_date = #{payDate},</if>
+            <if test="payMethod != null and payMethod != ''">pay_method = #{payMethod},</if>
+            <if test="delFlag != null and delFlag != ''">del_flag = #{delFlag},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE settlement_id = #{settlementId}
+    </update>
+
+    <delete id="deleteHrTempDailySettlementById" parameterType="Long">
+        UPDATE biz_hr_temp_daily_settlement SET del_flag = '2' WHERE settlement_id = #{settlementId}
+    </delete>
+
+    <delete id="deleteHrTempDailySettlementByIds" parameterType="Long">
+        UPDATE biz_hr_temp_daily_settlement SET del_flag = '2' WHERE settlement_id IN
+        <foreach item="settlementId" collection="array" open="(" separator="," close=")">#{settlementId}</foreach>
+    </delete>
+
+</mapper>

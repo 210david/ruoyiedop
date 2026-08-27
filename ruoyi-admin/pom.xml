@@ -96,6 +96,12 @@
             <artifactId>ruoyi-mms</artifactId>
         </dependency>
 
+        <!-- HR人力资源管理 -->
+        <dependency>
+            <groupId>com.ruoyi</groupId>
+            <artifactId>ruoyi-hr</artifactId>
+        </dependency>
+
     </dependencies>
 
     <build>

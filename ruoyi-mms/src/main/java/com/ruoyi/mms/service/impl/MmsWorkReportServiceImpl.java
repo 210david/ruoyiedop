@@ -16,6 +16,7 @@ import com.ruoyi.mms.domain.MmsWorkReport;
 import com.ruoyi.mms.mapper.MmsWorkOrderMapper;
 import com.ruoyi.mms.mapper.MmsWorkReportMapper;
 import com.ruoyi.mms.service.IMmsWorkReportService;
+import com.ruoyi.system.utils.MessageHelper;
 
 /**
  * 报工 Service实现
@@ -42,6 +43,9 @@ public class MmsWorkReportServiceImpl implements IMmsWorkReportService
 
     @Autowired
     private IMkNumberRuleService mkNumberRuleService;
+
+    @Autowired
+    private MessageHelper messageHelper;
 
     @Override
     public List<MmsWorkReport> selectWorkReportList(MmsWorkReport workReport)
@@ -103,7 +107,32 @@ public class MmsWorkReportServiceImpl implements IMmsWorkReportService
                 }
             }
         }
-        return workReportMapper.insertWorkReport(workReport);
+        int rows = workReportMapper.insertWorkReport(workReport);
+
+        // 发送消息：报工待审核
+        if (workReport.getWorkOrderId() != null)
+        {
+            MmsWorkOrder wo = workOrderMapper.selectWorkOrderById(workReport.getWorkOrderId());
+            if (wo != null)
+            {
+                String content = "报工数量：" + (workReport.getGoodQty() != null ? workReport.getGoodQty().toPlainString() : "0")
+                        + (wo.getUnit() != null ? wo.getUnit() : "")
+                        + "，请审核";
+                messageHelper.sendMessage(
+                    "工单" + wo.getWorkOrderNo() + "报工待审核",
+                    content,
+                    "3",   // 审批消息
+                    "2",   // 重要
+                    "mms",
+                    workReport.getReportId(),
+                    "/mms/execution/report?id=" + workReport.getReportId(),
+                    "mms:report:audit",
+                    "0",   // bizStatus: 待审核
+                    "报工管理"  // bizEntryName
+                );
+            }
+        }
+        return rows;
     }
 
     @Override

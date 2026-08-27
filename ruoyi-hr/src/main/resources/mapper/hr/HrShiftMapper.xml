@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.hr.mapper.HrShiftMapper">
+
+    <resultMap type="HrShift" id="HrShiftResult">
+        <result property="shiftId" column="shift_id"/>
+        <result property="shiftCode" column="shift_code"/>
+        <result property="shiftName" column="shift_name"/>
+        <result property="startTime" column="start_time"/>
+        <result property="endTime" column="end_time"/>
+        <result property="crossMidnight" column="cross_midnight"/>
+        <result property="workHours" column="work_hours"/>
+        <result property="restHours" column="rest_hours"/>
+        <result property="mealMinutes" column="meal_minutes"/>
+        <result property="nightShift" column="night_shift"/>
+        <result property="nightAllowance" column="night_allowance"/>
+        <result property="applicableTo" column="applicable_to"/>
+        <result property="orderNum" column="order_num"/>
+        <result property="status" column="status"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <sql id="selectVo">
+        SELECT shift_id, shift_code, shift_name, start_time, end_time, cross_midnight, work_hours, rest_hours, meal_minutes, night_shift, night_allowance, applicable_to, order_num, status, del_flag, create_by, create_time, update_by, update_time, remark
+        FROM biz_hr_shift
+    </sql>
+
+    <select id="selectHrShiftList" parameterType="HrShift" resultMap="HrShiftResult">
+        <include refid="selectVo"/>
+        <where>
+            del_flag = '0'
+            <if test="shiftCode != null and shiftCode != ''"> AND shift_code LIKE CONCAT('%', #{shiftCode}, '%')</if>
+            <if test="shiftName != null and shiftName != ''"> AND shift_name LIKE CONCAT('%', #{shiftName}, '%')</if>
+            <if test="startTime != null and startTime != ''"> AND start_time LIKE CONCAT('%', #{startTime}, '%')</if>
+            <if test="endTime != null and endTime != ''"> AND end_time LIKE CONCAT('%', #{endTime}, '%')</if>
+            <if test="crossMidnight != null"> AND cross_midnight = #{crossMidnight}</if>
+            <if test="workHours != null"> AND work_hours = #{workHours}</if>
+            <if test="restHours != null"> AND rest_hours = #{restHours}</if>
+            <if test="mealMinutes != null"> AND meal_minutes = #{mealMinutes}</if>
+            <if test="nightShift != null"> AND night_shift = #{nightShift}</if>
+            <if test="nightAllowance != null"> AND night_allowance = #{nightAllowance}</if>
+            <if test="applicableTo != null and applicableTo != ''"> AND applicable_to LIKE CONCAT('%', #{applicableTo}, '%')</if>
+            <if test="orderNum != null"> AND order_num = #{orderNum}</if>
+            <if test="status != null and status != ''"> AND status LIKE CONCAT('%', #{status}, '%')</if>
+            <if test="delFlag != null and delFlag != ''"> AND del_flag LIKE CONCAT('%', #{delFlag}, '%')</if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+
+    <select id="selectHrShiftById" parameterType="Long" resultMap="HrShiftResult">
+        <include refid="selectVo"/> WHERE shift_id = #{shiftId}
+    </select>
+
+    <insert id="insertHrShift" parameterType="HrShift" useGeneratedKeys="true" keyProperty="shiftId">
+        INSERT INTO biz_hr_shift (
+            shift_code, shift_name, start_time, end_time, cross_midnight, work_hours, rest_hours, meal_minutes, night_shift, night_allowance, applicable_to, order_num, status, del_flag, create_by, create_time, remark
+        ) VALUES (
+            #{shiftCode}, #{shiftName}, #{startTime}, #{endTime}, #{crossMidnight}, #{workHours}, #{restHours}, #{mealMinutes}, #{nightShift}, #{nightAllowance}, #{applicableTo}, #{orderNum}, #{status}, #{delFlag}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateHrShift" parameterType="HrShift">
+        UPDATE biz_hr_shift
+        <set>
+            <if test="shiftCode != null and shiftCode != ''">shift_code = #{shiftCode},</if>
+            <if test="shiftName != null and shiftName != ''">shift_name = #{shiftName},</if>
+            <if test="startTime != null and startTime != ''">start_time = #{startTime},</if>
+            <if test="endTime != null and endTime != ''">end_time = #{endTime},</if>
+            <if test="crossMidnight != null">cross_midnight = #{crossMidnight},</if>
+            <if test="workHours != null">work_hours = #{workHours},</if>
+            <if test="restHours != null">rest_hours = #{restHours},</if>
+            <if test="mealMinutes != null">meal_minutes = #{mealMinutes},</if>
+            <if test="nightShift != null">night_shift = #{nightShift},</if>
+            <if test="nightAllowance != null">night_allowance = #{nightAllowance},</if>
+            <if test="applicableTo != null and applicableTo != ''">applicable_to = #{applicableTo},</if>
+            <if test="orderNum != null">order_num = #{orderNum},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="delFlag != null and delFlag != ''">del_flag = #{delFlag},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE shift_id = #{shiftId}
+    </update>
+
+    <delete id="deleteHrShiftById" parameterType="Long">
+        UPDATE biz_hr_shift SET del_flag = '2' WHERE shift_id = #{shiftId}
+    </delete>
+
+    <delete id="deleteHrShiftByIds" parameterType="Long">
+        UPDATE biz_hr_shift SET del_flag = '2' WHERE shift_id IN
+        <foreach item="shiftId" collection="array" open="(" separator="," close=")">#{shiftId}</foreach>
+    </delete>
+
+</mapper>

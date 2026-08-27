@@ -20,6 +20,7 @@ create table sys_message (
   biz_id            bigint(20)      default null               comment '业务ID（关联的业务单据ID）',
   redirect_url      varchar(500)   default null               comment '跳转链接（点击消息后跳转的前端路由）',
   recipient_id      bigint(20)      default null               comment '接收人ID（为空则全员可见）',
+  recipient_role_key varchar(100)   default null               comment '接收角色权限标识（为空则全员可见，否则拥有该权限的用户可见）',
   status            char(1)         default '1'                comment '消息状态（0待发送 1已发送 2已撤回）',
   create_by         varchar(64)     default ''                 comment '创建者',
   create_time       datetime                                   comment '创建时间',
@@ -28,6 +29,7 @@ create table sys_message (
   remark            varchar(500)   default null               comment '备注',
   primary key (message_id),
   key idx_recipient (recipient_id),
+  key idx_recipient_role_key (recipient_role_key),
   key idx_status (status),
   key idx_create_time (create_time)
 ) engine=innodb auto_increment=1 comment='消息中心表';

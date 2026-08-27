@@ -111,12 +111,14 @@
           </el-table-column>
           <el-table-column label="总数量" prop="totalQty" key="totalQty" :width="colWidth('totalQty', 110)" resizable align="center" class-name="col-num" v-if="columns.totalQty.visible" />
           <el-table-column label="入库日期" prop="inboundDate" key="inboundDate" :width="colWidth('inboundDate', 130)" resizable align="center" v-if="columns.inboundDate.visible" />
-          <el-table-column label="操作" width="200" align="center" fixed="right">
+          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
-              <el-button link type="primary" icon="View" @click="handleDetail(scope.row)">详情</el-button>
-              <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['wms:inbound:edit']" v-if="scope.row.status === '0'">修改</el-button>
-              <el-button link type="primary" icon="Promotion" @click="handleSubmit(scope.row)" v-hasPermi="['wms:inbound:edit']" v-if="scope.row.status === '0'">提交</el-button>
-              <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['wms:inbound:remove']">删除</el-button>
+              <div class="action-btn-row">
+                <el-button link type="primary" icon="View" @click="handleDetail(scope.row)">详情</el-button>
+                <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['wms:inbound:edit']" v-if="scope.row.status === '0'">修改</el-button>
+                <el-button link type="primary" icon="Promotion" @click="handleSubmit(scope.row)" v-hasPermi="['wms:inbound:edit']" v-if="scope.row.status === '0'">提交</el-button>
+                <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['wms:inbound:remove']" v-if="scope.row.status === '0'">删除</el-button>
+              </div>
             </template>
           </el-table-column>
         </el-table>
@@ -169,8 +171,8 @@
             </div>
             <div class="rd-card-body" v-show="!collapsedCards.info">
               <el-row :gutter="16">
-                <el-col :span="8"><el-form-item label="供应商" prop="supplierId"><el-select v-model="form.supplierId" filterable clearable placeholder="请选择供应商" style="width:100%"><el-option v-for="s in supplierOptions" :key="s.supplierId" :label="s.supplierName" :value="s.supplierId" /></el-select></el-form-item></el-col>
-                <el-col :span="8"><el-form-item label="目标仓库" prop="warehouseId"><el-select v-model="form.warehouseId" filterable clearable placeholder="请选择仓库" style="width:100%"><el-option v-for="w in warehouseOptions" :key="w.warehouseId" :label="w.warehouseName" :value="w.warehouseId" /></el-select></el-form-item></el-col>
+                <el-col :span="8"><el-form-item label="供应商" prop="supplierId"><el-input v-model="form.supplierName" readonly placeholder="请选择供应商" style="width:100%" @click="openSupplierPicker"><template v-if="form.supplierName" #append><el-button icon="CircleClose" @click.stop="clearSupplier" /></template><template v-else #append><el-button icon="Search" @click="openSupplierPicker" /></template></el-input></el-form-item></el-col>
+                <el-col :span="8"><el-form-item label="目标仓库" prop="warehouseId"><el-input v-model="form.warehouseName" readonly placeholder="请选择仓库" style="width:100%" @click="openWarehousePicker"><template v-if="form.warehouseName" #append><el-button icon="CircleClose" @click.stop="clearWarehouse" /></template><template v-else #append><el-button icon="Search" @click="openWarehousePicker" /></template></el-input></el-form-item></el-col>
                 <el-col :span="8"><el-form-item label="入库日期" prop="inboundDate"><el-date-picker v-model="form.inboundDate" type="date" value-format="YYYY-MM-DD" style="width:100%" /></el-form-item></el-col>
               </el-row>
             </div>
@@ -189,7 +191,7 @@
                 <el-col :span="1.5"><el-button type="primary" plain icon="Plus" @click="handleAddDetail">添加明细</el-button></el-col>
               </el-row>
               <el-table :data="form.detailList" border @header-dragend="onHeaderDragEnd">
-                <el-table-column label="物料" min-width="200"><template #default="scope"><el-select v-model="scope.row.materialId" filterable clearable placeholder="请选择物料" style="width:100%" @change="handleMaterialChange(scope.$index, scope.row)"><el-option v-for="m in materialOptions" :key="m.materialId" :label="m.materialCode + ' - ' + m.materialName" :value="m.materialId" /></el-select></template></el-table-column>
+                <el-table-column label="物料" min-width="280"><template #default="scope"><el-input :model-value="scope.row.materialCode ? scope.row.materialCode + ' - ' + scope.row.materialName : ''" readonly size="small" placeholder="选择物料" @click="openMaterialPicker(scope.$index)"><template v-if="scope.row.materialCode" #append><el-button icon="CircleClose" size="small" @click.stop="clearMaterial(scope.$index)" /></template><template v-else #append><el-button icon="Search" size="small" @click="openMaterialPicker(scope.$index)" /></template></el-input></template></el-table-column>
                 <el-table-column label="计划数量" width="120"><template #default="scope"><el-input-number v-model="scope.row.planQty" :precision="2" :min="0" controls-position="right" style="width:100%" /></template></el-table-column>
                 <el-table-column label="批次号" width="130"><template #default="scope"><el-input v-model="scope.row.batchNo" :placeholder="scope.row.isBatchManage === '1' ? '批次号（必填）' : '批次号'" /></template></el-table-column>
                 <el-table-column label="生产日期" width="150"><template #default="scope"><el-date-picker v-model="scope.row.productionDate" type="date" value-format="YYYY-MM-DD" style="width:100%" :placeholder="scope.row.isExpiryManage === '1' ? '生产日期（必填）' : '生产日期'" /></template></el-table-column>
@@ -295,6 +297,13 @@
           </div>
         </section>
     </el-dialog>
+    <!-- 供应商选择器 -->
+    <supplier-picker ref="supplierPickerRef" title="选择供应商" @confirm="onSupplierPickerConfirm" />
+    <!-- 物料选择器 -->
+    <material-picker ref="materialPickerRef" title="选择物料" @confirm="onMaterialPickerConfirm" />
+    <!-- 仓库选择器 -->
+    <warehouse-picker ref="warehousePickerRef" title="选择仓库" @confirm="onWarehousePickerConfirm" />
+
     <!-- 业务操作说明对话框 -->
     <el-dialog v-model="showStatusHelp" title="入库单管理业务操作说明" width="720px" append-to-body>
       <div class="status-help-content">
@@ -381,17 +390,22 @@
 <script setup name="WmsInbound">
 import { listInbound, getInbound, addInbound, updateInbound, delInbound, submitInbound } from '@/api/wms/inbound'
 import { listWarehouse } from '@/api/wms/warehouse'
-import { listSupplier } from '@/api/wms/supplier'
-import { listMaterial } from '@/api/wms/material'
+import SupplierPicker from '@/components/SupplierPicker/index.vue'
+import MaterialPicker from '@/components/MaterialPicker/index.vue'
+import WarehousePicker from '@/components/WarehousePicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
-import { ArrowRight, ArrowDown, QuestionFilled, WarningFilled, Filter, Search } from '@element-plus/icons-vue'
+import { ArrowRight, ArrowDown, QuestionFilled, WarningFilled, Filter, Search, CircleClose } from '@element-plus/icons-vue'
 const { collapsedCards, toggleCard } = useDetailCard(['basic', 'info', 'detail', 'dBasic', 'dInfo', 'dDetail', 'dOther'])
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('wms_inbound_index')
 const { wms_inbound_type, wms_inbound_status, wms_unit } = proxy.useDict('wms_inbound_type', 'wms_inbound_status', 'wms_unit')
 const list = ref([]); const open = ref(false); const loading = ref(true); const showSearch = ref(true); const showAdvanced = ref(false); const ids = ref([]); const multiple = ref(true); const total = ref(0); const title = ref(''); const detailOpen = ref(false); const detailData = ref({}); const showStatusHelp = ref(false); const activeStatusTab = ref('all'); const statusCounts = ref({ all: 0 }); const dateRange = ref([]); const dateRangeCreateTime = ref([])
-const warehouseOptions = ref([]); const supplierOptions = ref([]); const materialOptions = ref([])
+const warehouseOptions = ref([])
+const supplierPickerRef = ref(null)
+const materialPickerRef = ref(null)
+const warehousePickerRef = ref(null)
+const currentDetailIndex = ref(-1)
 const defaultColumns = { orderNo: { label: '入库单号', visible: true }, orderType: { label: '入库类型', visible: true }, supplierName: { label: '供应商', visible: true }, warehouseName: { label: '目标仓库', visible: true }, status: { label: '状态', visible: true }, totalQty: { label: '总数量', visible: true }, inboundDate: { label: '入库日期', visible: true } }
 function loadColumnVisibility() { try { const saved = localStorage.getItem('wms_inbound_columns'); if (saved) { const parsed = JSON.parse(saved); const result = {}; Object.keys(defaultColumns).forEach(key => { result[key] = { label: defaultColumns[key].label, visible: parsed[key] !== undefined ? parsed[key] : defaultColumns[key].visible } }); return result } } catch (e) {} return { ...defaultColumns } }
 const columns = ref(loadColumnVisibility())
@@ -404,12 +418,15 @@ function getList() { loading.value = true; const params = proxy.addDateRange(pro
 function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
 function resetQuery() { queryParams.value.orderNo = undefined; queryParams.value.orderType = undefined; queryParams.value.warehouseId = undefined; queryParams.value.status = undefined; queryParams.value.params = {}; dateRange.value = []; dateRangeCreateTime.value = []; activeStatusTab.value = 'all'; handleQuery() }
 function handleSelectionChange(sel) { ids.value = sel.map(i => i.orderId); multiple.value = !sel.length }
-function reset() { form.value = { orderNo: undefined, orderType: '0', supplierId: undefined, warehouseId: undefined, inboundDate: today(), status: '0', remark: undefined, detailList: [] }; proxy.resetForm('inboundRef') }
+function reset() { form.value = { orderNo: undefined, orderType: '0', supplierId: undefined, supplierName: undefined, warehouseId: undefined, warehouseName: undefined, inboundDate: today(), status: '0', remark: undefined, detailList: [] }; proxy.resetForm('inboundRef') }
 function handleAdd() { reset(); open.value = true; title.value = '添加入库单' }
 function handleUpdate(row) { reset(); getInbound(row.orderId).then(res => { form.value = res.data; open.value = true; title.value = '修改入库单' }) }
 function handleDetail(row) { getInbound(row.orderId).then(res => { detailData.value = res.data; detailOpen.value = true }) }
-function handleAddDetail() { if (!form.value.detailList) form.value.detailList = []; form.value.detailList.push({ materialId: undefined, planQty: 0, batchNo: undefined, productionDate: undefined, unitPrice: 0, isBatchManage: '0', isExpiryManage: '0' }) }
-function handleMaterialChange(index, row) { const material = materialOptions.value.find(m => m.materialId === row.materialId); if (material) { row.isBatchManage = material.isBatchManage; row.isExpiryManage = material.isExpiryManage; row.unit = material.unit } }
+function handleAddDetail() { if (!form.value.detailList) form.value.detailList = []; form.value.detailList.push({ materialId: undefined, materialCode: '', materialName: '', planQty: 0, batchNo: undefined, productionDate: undefined, unitPrice: 0, isBatchManage: '0', isExpiryManage: '0', unit: '' }) }
+/* ===== 物料选择器 ===== */
+function openMaterialPicker(index) { currentDetailIndex.value = index; materialPickerRef.value.open(form.value.detailList[index].materialId) }
+function clearMaterial(index) { const d = form.value.detailList[index]; d.materialId = undefined; d.materialCode = ''; d.materialName = ''; d.isBatchManage = '0'; d.isExpiryManage = '0'; d.unit = '' }
+function onMaterialPickerConfirm(material) { if (currentDetailIndex.value >= 0) { const d = form.value.detailList[currentDetailIndex.value]; d.materialId = material.materialId; d.materialCode = material.materialCode; d.materialName = material.materialName; d.isBatchManage = material.isBatchManage || '0'; d.isExpiryManage = material.isExpiryManage || '0'; d.unit = material.unit || '' } }
 function handleDeleteDetail(index) { form.value.detailList.splice(index, 1) }
 function submitForm() {
   if (!validateDetailList()) return
@@ -447,9 +464,17 @@ function loadStatusCounts() { listInbound({ pageNum: 1, pageSize: 999 }).then(re
 function cancel() { open.value = false; reset() }
 function loadOptions() {
   listWarehouse({ status: '0', pageSize: 999 }).then(res => { warehouseOptions.value = res.rows })
-  listSupplier({ status: '0', pageSize: 999 }).then(res => { supplierOptions.value = res.rows })
-  listMaterial({ status: '0', pageSize: 999 }).then(res => { materialOptions.value = res.rows })
 }
+
+/* ===== 仓库选择器 ===== */
+function openWarehousePicker() { warehousePickerRef.value.open(form.value.warehouseId) }
+function clearWarehouse() { form.value.warehouseId = undefined; form.value.warehouseName = undefined }
+function onWarehousePickerConfirm(warehouse) { form.value.warehouseId = warehouse.warehouseId; form.value.warehouseName = warehouse.warehouseName }
+
+/* ===== 供应商选择器 ===== */
+function openSupplierPicker() { supplierPickerRef.value.open(form.value.supplierId) }
+function clearSupplier() { form.value.supplierId = undefined; form.value.supplierName = undefined }
+function onSupplierPickerConfirm(supplier) { form.value.supplierId = supplier.supplierId; form.value.supplierName = supplier.supplierName }
 loadOptions()
 getList()
 loadStatusCounts()

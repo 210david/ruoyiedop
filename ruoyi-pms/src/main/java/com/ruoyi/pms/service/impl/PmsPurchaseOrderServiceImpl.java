@@ -1,4 +1,5 @@
-package com.ruoyi.pms.service.impl;
+package com.ruoyi.pms.service.impl;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -19,6 +20,7 @@ import com.ruoyi.pms.mapper.PmsPurchaseOrderMapper;
 import com.ruoyi.pms.mapper.PmsOrderAuditLogMapper;
 import com.ruoyi.pms.service.IPmsPurchaseOrderService;
 import com.ruoyi.mk.service.IMkNumberRuleService;
+import com.ruoyi.system.utils.MessageHelper;
 
 /**
  * 采购订单 Service实现
@@ -36,6 +38,9 @@ public class PmsPurchaseOrderServiceImpl implements IPmsPurchaseOrderService
 
     @Autowired
     private IMkNumberRuleService mkNumberRuleService;
+
+    @Autowired
+    private MessageHelper messageHelper;
 
     @Override
     public List<PmsPurchaseOrder> selectPurchaseOrderList(PmsPurchaseOrder order)
@@ -183,7 +188,24 @@ public class PmsPurchaseOrderServiceImpl implements IPmsPurchaseOrderService
             throw new ServiceException("采购订单明细不能为空，无法提交");
         }
         order.setStatus("1");
-        return pmsPurchaseOrderMapper.updatePurchaseOrder(order);
+        int rows = pmsPurchaseOrderMapper.updatePurchaseOrder(order);
+
+        // 发送消息给有审批权限的角色
+        String content = "供应商：" + (order.getSupplierName() != null ? order.getSupplierName() : "-")
+                + "，金额：￥" + (order.getTotalAmount() != null ? order.getTotalAmount().toPlainString() : "0");
+        messageHelper.sendMessage(
+            "采购订单" + order.getOrderNo() + "待审批",
+            content,
+            "3",   // 审批消息
+            "2",   // 重要
+            "pms",
+            orderId,
+            "/pms/contract/order?id=" + orderId,
+            "pms:order:approve",
+"1",   // bizStatus: 待审批
+"采购订单"  // bizEntryName
+);
+        return rows;
     }
 
     @Override
@@ -222,6 +244,21 @@ public class PmsPurchaseOrderServiceImpl implements IPmsPurchaseOrderService
             auditLog.setAuditAction("2");
         }
         pmsOrderAuditLogMapper.insertAuditLog(auditLog);
+
+        // 发送审批结果消息给采购专员
+        String resultText = "2".equals(status) ? "已审批通过，请安排下单" : "被驳回，原因：" + (auditOpinion != null ? auditOpinion : "");
+        messageHelper.sendMessage(
+            "采购订单" + order.getOrderNo() + resultText,
+            "审批结果：" + resultText,
+            "1",   // 系统通知
+            "2".equals(status) ? "1" : "2",  // 通过=普通，驳回=重要
+            "pms",
+            orderId,
+            "/pms/contract/order?id=" + orderId,
+"pms:order:edit",
+            null,
+            "采购订单"  // bizEntryName
+);
 
         return rows;
     }

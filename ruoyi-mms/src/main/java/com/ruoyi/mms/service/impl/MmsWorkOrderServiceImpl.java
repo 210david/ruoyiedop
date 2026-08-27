@@ -33,6 +33,7 @@ import com.ruoyi.mms.mapper.MmsWoBomSnapshotMapper;
 import com.ruoyi.mms.mapper.MmsWoRouteSnapshotMapper;
 import com.ruoyi.mms.mapper.MmsWorkOrderMapper;
 import com.ruoyi.mms.service.IMmsWorkOrderService;
+import com.ruoyi.system.utils.MessageHelper;
 
 /**
  * 生产工单 Service实现
@@ -82,6 +83,9 @@ public class MmsWorkOrderServiceImpl implements IMmsWorkOrderService
 
     @Autowired
     private MmsFinishReceiptMapper finishReceiptMapper;
+
+    @Autowired
+    private MessageHelper messageHelper;
 
     // ========== 标准 CRUD ==========
 
@@ -428,6 +432,23 @@ public class MmsWorkOrderServiceImpl implements IMmsWorkOrderService
         }
         logRemark.append("）");
         insertAuditLog(workOrderId, wo.getWorkOrderNo(), "release", logRemark.toString());
+
+        // 发送消息：工单已下达，通知车间主任安排生产
+        String content = "产品：" + (wo.getProductName() != null ? wo.getProductName() : "-")
+                + "，计划量：" + (wo.getPlanQty() != null ? wo.getPlanQty().toPlainString() : "0")
+                + (wo.getUnit() != null ? wo.getUnit() : "");
+        messageHelper.sendMessage(
+            "工单" + wo.getWorkOrderNo() + "已下达，请安排生产",
+            content,
+            "4",   // 待办事项
+            "2",   // 重要
+            "mms",
+            workOrderId,
+            "/mms/plan/gantt?workOrderId=" + workOrderId,
+            "mms:schedule:list",
+            "0",   // bizStatus: 未排产
+            "排产工作台"  // bizEntryName
+        );
         return rows;
     }
 
@@ -603,6 +624,23 @@ public class MmsWorkOrderServiceImpl implements IMmsWorkOrderService
         finishReceipt.setRemark("工单完工自动生成");
         finishReceiptMapper.insertFinishReceipt(finishReceipt);
 
+        // 发送消息：工单已完工
+        String finishContent = "合格数：" + (wo.getQualifiedQty() != null ? wo.getQualifiedQty().toPlainString() : "0")
+                + "，报废数：" + (wo.getDefectQty() != null ? wo.getDefectQty().toPlainString() : "0");
+        messageHelper.sendMessage(
+            "工单" + wo.getWorkOrderNo() + "已完工",
+            finishContent,
+            "1",   // 系统通知
+            "1",   // 普通
+            "mms",
+            workOrderId,
+            "/mms/workorder-group/workorder?id=" + workOrderId,
+            "mms:workorder:list",
+            null,
+            "工单管理"  // bizEntryName
+        );
+        messageHelper.markHandled("mms", workOrderId);
+
         return rows;
     }
 
@@ -670,6 +708,22 @@ public class MmsWorkOrderServiceImpl implements IMmsWorkOrderService
                 ? "工单强制关闭" + (StringUtils.isNotEmpty(closeRemark) ? "：" + closeRemark : "")
                 : "工单关闭" + (StringUtils.isNotEmpty(closeRemark) ? "：" + closeRemark : "");
         insertAuditLog(workOrderId, wo.getWorkOrderNo(), logAction, logRemark);
+
+        // 发送消息：工单已关闭
+        messageHelper.sendMessage(
+            "工单" + wo.getWorkOrderNo() + "已关闭",
+            "工单已关闭" + (StringUtils.isNotEmpty(closeRemark) ? "，原因：" + closeRemark : ""),
+            "1",   // 系统通知
+            "1",   // 普通
+            "mms",
+            workOrderId,
+            "/mms/workorder-group/workorder?id=" + workOrderId,
+            "mms:workorder:list",
+            null,
+            "工单管理"  // bizEntryName
+        );
+        // 工单关闭，标记之前的消息为已处理
+        messageHelper.markHandled("mms", workOrderId);
         return rows;
     }
 
@@ -702,6 +756,22 @@ public class MmsWorkOrderServiceImpl implements IMmsWorkOrderService
         dispatchMapper.updateDispatchStatusByWorkOrder(workOrderId, "3", username);
 
         insertAuditLog(workOrderId, wo.getWorkOrderNo(), "cancel", "工单作废" + (StringUtils.isNotEmpty(cancelReason) ? "：" + cancelReason : ""));
+
+        // 发送消息：工单已作废
+        messageHelper.sendMessage(
+            "工单" + wo.getWorkOrderNo() + "已作废",
+            "工单已作废" + (StringUtils.isNotEmpty(cancelReason) ? "，原因：" + cancelReason : ""),
+            "1",   // 系统通知
+            "2",   // 重要
+            "mms",
+            workOrderId,
+            "/mms/workorder-group/workorder?id=" + workOrderId,
+            "mms:workorder:list",
+            null,
+            "工单管理"  // bizEntryName
+        );
+        // 工单作废，标记之前的消息为已处理
+        messageHelper.markHandled("mms", workOrderId);
         return rows;
     }
 

@@ -73,3 +73,7 @@ export function cancelWorkorder(orderId) {
 export function getWorkorderLog(orderId) {
   return request({ url: '/dms/workorder/log/' + orderId, method: 'get' })
 }
+
+export function countWorkorderStatus() {
+  return request({ url: '/dms/workorder/countByStatus', method: 'get' })
+}

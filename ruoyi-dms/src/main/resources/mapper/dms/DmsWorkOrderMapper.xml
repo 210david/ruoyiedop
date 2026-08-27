@@ -65,11 +65,15 @@
             del_flag = '0'
             <if test="orderNo != null and orderNo != ''"> AND order_no LIKE CONCAT('%', #{orderNo}, '%')</if>
             <if test="equipmentId != null"> AND equipment_id = #{equipmentId}</if>
+            <if test="equipmentCode != null and equipmentCode != ''"> AND equipment_code LIKE CONCAT('%', #{equipmentCode}, '%')</if>
             <if test="equipmentName != null and equipmentName != ''"> AND equipment_name LIKE CONCAT('%', #{equipmentName}, '%')</if>
             <if test="orderType != null and orderType != ''"> AND order_type = #{orderType}</if>
             <if test="orderStatus != null and orderStatus != ''"> AND order_status = #{orderStatus}</if>
             <if test="priority != null and priority != ''"> AND priority = #{priority}</if>
             <if test="assigneeId != null"> AND assignee_id = #{assigneeId}</if>
+            <if test="assigneeName != null and assigneeName != ''"> AND assignee_name LIKE CONCAT('%', #{assigneeName}, '%')</if>
+            <if test="params.beginReportTime != null and params.beginReportTime != ''"> AND report_time &gt;= #{params.beginReportTime}</if>
+            <if test="params.endReportTime != null and params.endReportTime != ''"> AND report_time &lt;= #{params.endReportTime}</if>
             <if test="reporterName != null and reporterName != ''"> AND reporter_name LIKE CONCAT('%', #{reporterName}, '%')</if>
             <if test="faultDescription != null and faultDescription != ''"> AND fault_description LIKE CONCAT('%', #{faultDescription}, '%')</if>
             <if test="remark != null and remark != ''"> AND remark LIKE CONCAT('%', #{remark}, '%')</if>
@@ -170,5 +174,16 @@
         UPDATE dms_work_order SET del_flag = '2' WHERE order_id IN
         <foreach item="orderId" collection="array" open="(" separator="," close=")">#{orderId}</foreach>
     </delete>
+
+    <select id="countAllWorkOrders" resultType="int">
+        SELECT COUNT(*) FROM dms_work_order WHERE del_flag = '0'
+    </select>
+
+    <select id="countByStatus" resultType="java.util.Map">
+        SELECT order_status AS orderStatus, COUNT(*) AS cnt
+        FROM dms_work_order
+        WHERE del_flag = '0'
+        GROUP BY order_status
+    </select>
 
 </mapper>

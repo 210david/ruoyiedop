@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.hr.mapper.HrPayrollBatchMapper">
+
+    <resultMap type="HrPayrollBatch" id="HrPayrollBatchResult">
+        <result property="batchId" column="batch_id"/>
+        <result property="batchNo" column="batch_no"/>
+        <result property="yearMonth" column="year_month"/>
+        <result property="batchName" column="batch_name"/>
+        <result property="payDate" column="pay_date"/>
+        <result property="bankName" column="bank_name"/>
+        <result property="totalCount" column="total_count"/>
+        <result property="totalAmount" column="total_amount"/>
+        <result property="auditStatus" column="audit_status"/>
+        <result property="auditBy" column="audit_by"/>
+        <result property="auditTime" column="audit_time"/>
+        <result property="auditRemark" column="audit_remark"/>
+        <result property="bankReceiptNo" column="bank_receipt_no"/>
+        <result property="sealedStatus" column="sealed_status"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <sql id="selectVo">
+        SELECT batch_id, batch_no, year_month, batch_name, pay_date, bank_name, total_count, total_amount, audit_status, audit_by, audit_time, audit_remark, bank_receipt_no, sealed_status, del_flag, create_by, create_time, update_by, update_time, remark
+        FROM biz_hr_payroll_batch
+    </sql>
+
+    <select id="selectHrPayrollBatchList" parameterType="HrPayrollBatch" resultMap="HrPayrollBatchResult">
+        <include refid="selectVo"/>
+        <where>
+            del_flag = '0'
+            <if test="batchNo != null and batchNo != ''"> AND batch_no LIKE CONCAT('%', #{batchNo}, '%')</if>
+            <if test="yearMonth != null and yearMonth != ''"> AND year_month LIKE CONCAT('%', #{yearMonth}, '%')</if>
+            <if test="batchName != null and batchName != ''"> AND batch_name LIKE CONCAT('%', #{batchName}, '%')</if>
+            <if test="payDate != null"> AND pay_date = #{payDate}</if>
+            <if test="bankName != null and bankName != ''"> AND bank_name LIKE CONCAT('%', #{bankName}, '%')</if>
+            <if test="totalCount != null"> AND total_count = #{totalCount}</if>
+            <if test="totalAmount != null"> AND total_amount = #{totalAmount}</if>
+            <if test="auditStatus != null and auditStatus != ''"> AND audit_status LIKE CONCAT('%', #{auditStatus}, '%')</if>
+            <if test="auditBy != null and auditBy != ''"> AND audit_by LIKE CONCAT('%', #{auditBy}, '%')</if>
+            <if test="auditTime != null"> AND audit_time = #{auditTime}</if>
+            <if test="auditRemark != null and auditRemark != ''"> AND audit_remark LIKE CONCAT('%', #{auditRemark}, '%')</if>
+            <if test="bankReceiptNo != null and bankReceiptNo != ''"> AND bank_receipt_no LIKE CONCAT('%', #{bankReceiptNo}, '%')</if>
+            <if test="sealedStatus != null and sealedStatus != ''"> AND sealed_status LIKE CONCAT('%', #{sealedStatus}, '%')</if>
+            <if test="delFlag != null and delFlag != ''"> AND del_flag LIKE CONCAT('%', #{delFlag}, '%')</if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+
+    <select id="selectHrPayrollBatchById" parameterType="Long" resultMap="HrPayrollBatchResult">
+        <include refid="selectVo"/> WHERE batch_id = #{batchId}
+    </select>
+
+    <insert id="insertHrPayrollBatch" parameterType="HrPayrollBatch" useGeneratedKeys="true" keyProperty="batchId">
+        INSERT INTO biz_hr_payroll_batch (
+            batch_no, year_month, batch_name, pay_date, bank_name, total_count, total_amount, audit_status, audit_by, audit_time, audit_remark, bank_receipt_no, sealed_status, del_flag, create_by, create_time, remark
+        ) VALUES (
+            #{batchNo}, #{yearMonth}, #{batchName}, #{payDate}, #{bankName}, #{totalCount}, #{totalAmount}, #{auditStatus}, #{auditBy}, #{auditTime}, #{auditRemark}, #{bankReceiptNo}, #{sealedStatus}, #{delFlag}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateHrPayrollBatch" parameterType="HrPayrollBatch">
+        UPDATE biz_hr_payroll_batch
+        <set>
+            <if test="batchNo != null and batchNo != ''">batch_no = #{batchNo},</if>
+            <if test="yearMonth != null and yearMonth != ''">year_month = #{yearMonth},</if>
+            <if test="batchName != null and batchName != ''">batch_name = #{batchName},</if>
+            <if test="payDate != null">pay_date = #{payDate},</if>
+            <if test="bankName != null and bankName != ''">bank_name = #{bankName},</if>
+            <if test="totalCount != null">total_count = #{totalCount},</if>
+            <if test="totalAmount != null">total_amount = #{totalAmount},</if>
+            <if test="auditStatus != null and auditStatus != ''">audit_status = #{auditStatus},</if>
+            <if test="auditBy != null and auditBy != ''">audit_by = #{auditBy},</if>
+            <if test="auditTime != null">audit_time = #{auditTime},</if>
+            <if test="auditRemark != null and auditRemark != ''">audit_remark = #{auditRemark},</if>
+            <if test="bankReceiptNo != null and bankReceiptNo != ''">bank_receipt_no = #{bankReceiptNo},</if>
+            <if test="sealedStatus != null and sealedStatus != ''">sealed_status = #{sealedStatus},</if>
+            <if test="delFlag != null and delFlag != ''">del_flag = #{delFlag},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE batch_id = #{batchId}
+    </update>
+
+    <delete id="deleteHrPayrollBatchById" parameterType="Long">
+        UPDATE biz_hr_payroll_batch SET del_flag = '2' WHERE batch_id = #{batchId}
+    </delete>
+
+    <delete id="deleteHrPayrollBatchByIds" parameterType="Long">
+        UPDATE biz_hr_payroll_batch SET del_flag = '2' WHERE batch_id IN
+        <foreach item="batchId" collection="array" open="(" separator="," close=")">#{batchId}</foreach>
+    </delete>
+
+</mapper>

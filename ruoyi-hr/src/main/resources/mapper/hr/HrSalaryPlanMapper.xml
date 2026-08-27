@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.hr.mapper.HrSalaryPlanMapper">
+
+    <resultMap type="HrSalaryPlan" id="HrSalaryPlanResult">
+        <result property="planId" column="plan_id"/>
+        <result property="planNo" column="plan_no"/>
+        <result property="employeeId" column="employee_id"/>
+        <result property="employeeName" column="employee_name"/>
+        <result property="employeeNo" column="employee_no"/>
+        <result property="planType" column="plan_type"/>
+        <result property="effectiveDate" column="effective_date"/>
+        <result property="basicSalary" column="basic_salary"/>
+        <result property="positionSalary" column="position_salary"/>
+        <result property="skillAllowance" column="skill_allowance"/>
+        <result property="seniorityPay" column="seniority_pay"/>
+        <result property="nightAllowance" column="night_allowance"/>
+        <result property="highTempAllowance" column="high_temp_allowance"/>
+        <result property="hazardAllowance" column="hazard_allowance"/>
+        <result property="mealAllowance" column="meal_allowance"/>
+        <result property="transportAllowance" column="transport_allowance"/>
+        <result property="fullAttendanceBonus" column="full_attendance_bonus"/>
+        <result property="performanceBonus" column="performance_bonus"/>
+        <result property="otherAllowance" column="other_allowance"/>
+        <result property="totalSalary" column="total_salary"/>
+        <result property="auditStatus" column="audit_status"/>
+        <result property="auditBy" column="audit_by"/>
+        <result property="auditTime" column="audit_time"/>
+        <result property="auditRemark" column="audit_remark"/>
+        <result property="status" column="status"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <sql id="selectVo">
+        SELECT plan_id, plan_no, employee_id, employee_name, employee_no, plan_type, effective_date, basic_salary, position_salary, skill_allowance, seniority_pay, night_allowance, high_temp_allowance, hazard_allowance, meal_allowance, transport_allowance, full_attendance_bonus, performance_bonus, other_allowance, total_salary, audit_status, audit_by, audit_time, audit_remark, status, del_flag, create_by, create_time, update_by, update_time, remark
+        FROM biz_hr_salary_plan
+    </sql>
+
+    <select id="selectHrSalaryPlanList" parameterType="HrSalaryPlan" resultMap="HrSalaryPlanResult">
+        <include refid="selectVo"/>
+        <where>
+            del_flag = '0'
+            <if test="planNo != null and planNo != ''"> AND plan_no LIKE CONCAT('%', #{planNo}, '%')</if>
+            <if test="employeeId != null"> AND employee_id = #{employeeId}</if>
+            <if test="employeeName != null and employeeName != ''"> AND employee_name LIKE CONCAT('%', #{employeeName}, '%')</if>
+            <if test="employeeNo != null and employeeNo != ''"> AND employee_no LIKE CONCAT('%', #{employeeNo}, '%')</if>
+            <if test="planType != null and planType != ''"> AND plan_type LIKE CONCAT('%', #{planType}, '%')</if>
+            <if test="effectiveDate != null"> AND effective_date = #{effectiveDate}</if>
+            <if test="basicSalary != null"> AND basic_salary = #{basicSalary}</if>
+            <if test="positionSalary != null"> AND position_salary = #{positionSalary}</if>
+            <if test="skillAllowance != null"> AND skill_allowance = #{skillAllowance}</if>
+            <if test="seniorityPay != null"> AND seniority_pay = #{seniorityPay}</if>
+            <if test="nightAllowance != null"> AND night_allowance = #{nightAllowance}</if>
+            <if test="highTempAllowance != null"> AND high_temp_allowance = #{highTempAllowance}</if>
+            <if test="hazardAllowance != null"> AND hazard_allowance = #{hazardAllowance}</if>
+            <if test="mealAllowance != null"> AND meal_allowance = #{mealAllowance}</if>
+            <if test="transportAllowance != null"> AND transport_allowance = #{transportAllowance}</if>
+            <if test="fullAttendanceBonus != null"> AND full_attendance_bonus = #{fullAttendanceBonus}</if>
+            <if test="performanceBonus != null"> AND performance_bonus = #{performanceBonus}</if>
+            <if test="otherAllowance != null"> AND other_allowance = #{otherAllowance}</if>
+            <if test="totalSalary != null"> AND total_salary = #{totalSalary}</if>
+            <if test="auditStatus != null and auditStatus != ''"> AND audit_status LIKE CONCAT('%', #{auditStatus}, '%')</if>
+            <if test="auditBy != null and auditBy != ''"> AND audit_by LIKE CONCAT('%', #{auditBy}, '%')</if>
+            <if test="auditTime != null"> AND audit_time = #{auditTime}</if>
+            <if test="auditRemark != null and auditRemark != ''"> AND audit_remark LIKE CONCAT('%', #{auditRemark}, '%')</if>
+            <if test="status != null and status != ''"> AND status LIKE CONCAT('%', #{status}, '%')</if>
+            <if test="delFlag != null and delFlag != ''"> AND del_flag LIKE CONCAT('%', #{delFlag}, '%')</if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+
+    <select id="selectHrSalaryPlanById" parameterType="Long" resultMap="HrSalaryPlanResult">
+        <include refid="selectVo"/> WHERE plan_id = #{planId}
+    </select>
+
+    <insert id="insertHrSalaryPlan" parameterType="HrSalaryPlan" useGeneratedKeys="true" keyProperty="planId">
+        INSERT INTO biz_hr_salary_plan (
+            plan_no, employee_id, employee_name, employee_no, plan_type, effective_date, basic_salary, position_salary, skill_allowance, seniority_pay, night_allowance, high_temp_allowance, hazard_allowance, meal_allowance, transport_allowance, full_attendance_bonus, performance_bonus, other_allowance, total_salary, audit_status, audit_by, audit_time, audit_remark, status, del_flag, create_by, create_time, remark
+        ) VALUES (
+            #{planNo}, #{employeeId}, #{employeeName}, #{employeeNo}, #{planType}, #{effectiveDate}, #{basicSalary}, #{positionSalary}, #{skillAllowance}, #{seniorityPay}, #{nightAllowance}, #{highTempAllowance}, #{hazardAllowance}, #{mealAllowance}, #{transportAllowance}, #{fullAttendanceBonus}, #{performanceBonus}, #{otherAllowance}, #{totalSalary}, #{auditStatus}, #{auditBy}, #{auditTime}, #{auditRemark}, #{status}, #{delFlag}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateHrSalaryPlan" parameterType="HrSalaryPlan">
+        UPDATE biz_hr_salary_plan
+        <set>
+            <if test="planNo != null and planNo != ''">plan_no = #{planNo},</if>
+            <if test="employeeId != null">employee_id = #{employeeId},</if>
+            <if test="employeeName != null and employeeName != ''">employee_name = #{employeeName},</if>
+            <if test="employeeNo != null and employeeNo != ''">employee_no = #{employeeNo},</if>
+            <if test="planType != null and planType != ''">plan_type = #{planType},</if>
+            <if test="effectiveDate != null">effective_date = #{effectiveDate},</if>
+            <if test="basicSalary != null">basic_salary = #{basicSalary},</if>
+            <if test="positionSalary != null">position_salary = #{positionSalary},</if>
+            <if test="skillAllowance != null">skill_allowance = #{skillAllowance},</if>
+            <if test="seniorityPay != null">seniority_pay = #{seniorityPay},</if>
+            <if test="nightAllowance != null">night_allowance = #{nightAllowance},</if>
+            <if test="highTempAllowance != null">high_temp_allowance = #{highTempAllowance},</if>
+            <if test="hazardAllowance != null">hazard_allowance = #{hazardAllowance},</if>
+            <if test="mealAllowance != null">meal_allowance = #{mealAllowance},</if>
+            <if test="transportAllowance != null">transport_allowance = #{transportAllowance},</if>
+            <if test="fullAttendanceBonus != null">full_attendance_bonus = #{fullAttendanceBonus},</if>
+            <if test="performanceBonus != null">performance_bonus = #{performanceBonus},</if>
+            <if test="otherAllowance != null">other_allowance = #{otherAllowance},</if>
+            <if test="totalSalary != null">total_salary = #{totalSalary},</if>
+            <if test="auditStatus != null and auditStatus != ''">audit_status = #{auditStatus},</if>
+            <if test="auditBy != null and auditBy != ''">audit_by = #{auditBy},</if>
+            <if test="auditTime != null">audit_time = #{auditTime},</if>
+            <if test="auditRemark != null and auditRemark != ''">audit_remark = #{auditRemark},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="delFlag != null and delFlag != ''">del_flag = #{delFlag},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE plan_id = #{planId}
+    </update>
+
+    <delete id="deleteHrSalaryPlanById" parameterType="Long">
+        UPDATE biz_hr_salary_plan SET del_flag = '2' WHERE plan_id = #{planId}
+    </delete>
+
+    <delete id="deleteHrSalaryPlanByIds" parameterType="Long">
+        UPDATE biz_hr_salary_plan SET del_flag = '2' WHERE plan_id IN
+        <foreach item="planId" collection="array" open="(" separator="," close=")">#{planId}</foreach>
+    </delete>
+
+</mapper>

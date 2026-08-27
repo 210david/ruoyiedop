@@ -86,10 +86,6 @@
     <div class="surface">
       <div class="toolbar">
         <div class="left">
-          <button type="button" class="btn-soft is-danger-outline" :disabled="multiple" @click="handleDelete" v-hasPermi="['dms:partalert:remove']">
-            <el-icon><Delete /></el-icon> 删除预警
-          </button>
-          <div class="toolbar-divider"></div>
           <button type="button" class="btn-soft is-outline" @click="handleExport" v-hasPermi="['dms:partalert:export']">
             <el-icon><Download /></el-icon> 导出预警
           </button>
@@ -129,11 +125,6 @@
           </el-table-column>
           <el-table-column label="存放位置" prop="storageLocation" key="storageLocation" :width="colWidth('storageLocation', 120)" resizable show-overflow-tooltip v-if="columns.storageLocation.visible" />
           <el-table-column label="供应商" prop="supplier" key="supplier" :width="colWidth('supplier', 120)" resizable show-overflow-tooltip v-if="columns.supplier.visible" />
-          <el-table-column label="操作" width="80" align="center" fixed="right">
-            <template #default="scope">
-              <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['dms:partalert:remove']">删除</el-button>
-            </template>
-          </el-table-column>
         </el-table>
       </div>
       <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />

@@ -179,6 +179,14 @@
 .wms-list-page .pagination-container .el-pagination .btn-prev:hover, .wms-list-page .pagination-container .el-pagination .btn-next:hover { border-color:var(--brand-200); color:var(--brand-700); }
 .wms-list-page .pagination-container .el-pagination .el-pagination__sizes .el-select__wrapper { border-radius:6px; box-shadow:0 0 0 1px var(--ink-200) inset; }
 
+/* ===== 操作列按钮布局规范（参考 list-page-style-guide 5.5 节）===== */
+/* 每行2个按钮，flex-wrap 自动换行，按钮自适应内容宽度 */
+.wms-list-page .app-table .col-action { padding: 6px 4px !important; }
+.wms-list-page .app-table .col-action .cell { display: flex; justify-content: center; padding: 0; }
+.wms-list-page .app-table .col-action .action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
+.wms-list-page .app-table .col-action .el-button { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
+.wms-list-page .app-table .col-action .el-button + .el-button { margin-left: 2px; }
+
 /* ===== Responsive ===== */
 @media (max-width:1100px) { .wms-list-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }
 @media (max-width:720px) { .wms-list-page .filter-card .filter-bar { grid-template-columns:1fr; } .wms-list-page .toolbar { flex-wrap:wrap; gap:10px; } .wms-list-page .status-tabs { padding:6px 8px; } }

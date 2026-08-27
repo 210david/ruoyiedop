@@ -10,6 +10,7 @@
         <result property="specModel"           column="spec_model"/>
         <result property="unit"                column="unit"/>
         <result property="applicableCategory"  column="applicable_category"/>
+        <result property="supplierId"          column="supplier_id"/>
         <result property="supplier"            column="supplier"/>
         <result property="stockMin"            column="stock_min"/>
         <result property="stockMax"            column="stock_max"/>
@@ -24,7 +25,7 @@
 
     <sql id="selectSparePartVo">
         SELECT part_id, part_code, part_name, part_type, spec_model, unit, applicable_category,
-               supplier, stock_min, stock_max, status, del_flag, create_by, create_time, update_by, update_time, remark
+               supplier_id, supplier, stock_min, stock_max, status, del_flag, create_by, create_time, update_by, update_time, remark
         FROM dms_spare_part
     </sql>
 
@@ -49,10 +50,10 @@
     <insert id="insertSparePart" parameterType="DmsSparePart" useGeneratedKeys="true" keyProperty="partId">
         INSERT INTO dms_spare_part (
             part_code, part_name, part_type, spec_model, unit, applicable_category,
-            supplier, stock_min, stock_max, status, del_flag, create_by, create_time, remark
+            supplier_id, supplier, stock_min, stock_max, status, del_flag, create_by, create_time, remark
         ) VALUES (
             #{partCode}, #{partName}, #{partType}, #{specModel}, #{unit}, #{applicableCategory},
-            #{supplier}, #{stockMin}, #{stockMax}, #{status}, '0', #{createBy}, sysdate(), #{remark}
+            #{supplierId}, #{supplier}, #{stockMin}, #{stockMax}, #{status}, '0', #{createBy}, sysdate(), #{remark}
         )
     </insert>
 
@@ -65,6 +66,7 @@
             <if test="specModel != null">spec_model = #{specModel},</if>
             <if test="unit != null">unit = #{unit},</if>
             <if test="applicableCategory != null">applicable_category = #{applicableCategory},</if>
+            <if test="supplierId != null">supplier_id = #{supplierId},</if>
             <if test="supplier != null">supplier = #{supplier},</if>
             <if test="stockMin != null">stock_min = #{stockMin},</if>
             <if test="stockMax != null">stock_max = #{stockMax},</if>

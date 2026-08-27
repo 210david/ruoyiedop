@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.hr.mapper.HrPayslipMapper">
+
+    <resultMap type="HrPayslip" id="HrPayslipResult">
+        <result property="payslipId" column="payslip_id"/>
+        <result property="yearMonth" column="year_month"/>
+        <result property="employeeId" column="employee_id"/>
+        <result property="employeeName" column="employee_name"/>
+        <result property="employeeNo" column="employee_no"/>
+        <result property="orgId" column="org_id"/>
+        <result property="basicSalary" column="basic_salary"/>
+        <result property="positionSalary" column="position_salary"/>
+        <result property="skillAllowance" column="skill_allowance"/>
+        <result property="seniorityPay" column="seniority_pay"/>
+        <result property="nightAllowance" column="night_allowance"/>
+        <result property="highTempAllowance" column="high_temp_allowance"/>
+        <result property="hazardAllowance" column="hazard_allowance"/>
+        <result property="mealAllowance" column="meal_allowance"/>
+        <result property="transportAllowance" column="transport_allowance"/>
+        <result property="fullAttendanceBonus" column="full_attendance_bonus"/>
+        <result property="pieceworkPay" column="piecework_pay"/>
+        <result property="overtimePay" column="overtime_pay"/>
+        <result property="performanceBonus" column="performance_bonus"/>
+        <result property="absenceDeduction" column="absence_deduction"/>
+        <result property="otherAdd" column="other_add"/>
+        <result property="otherDeduct" column="other_deduct"/>
+        <result property="grossSalary" column="gross_salary"/>
+        <result property="socialInsurance" column="social_insurance"/>
+        <result property="houseFund" column="house_fund"/>
+        <result property="incomeTax" column="income_tax"/>
+        <result property="otherDeduction" column="other_deduction"/>
+        <result property="netSalary" column="net_salary"/>
+        <result property="calcStatus" column="calc_status"/>
+        <result property="sealedBy" column="sealed_by"/>
+        <result property="sealedTime" column="sealed_time"/>
+        <result property="payDate" column="pay_date"/>
+        <result property="bankReceiptNo" column="bank_receipt_no"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <sql id="selectVo">
+        SELECT payslip_id, year_month, employee_id, employee_name, employee_no, org_id, basic_salary, position_salary, skill_allowance, seniority_pay, night_allowance, high_temp_allowance, hazard_allowance, meal_allowance, transport_allowance, full_attendance_bonus, piecework_pay, overtime_pay, performance_bonus, absence_deduction, other_add, other_deduct, gross_salary, social_insurance, house_fund, income_tax, other_deduction, net_salary, calc_status, sealed_by, sealed_time, pay_date, bank_receipt_no, del_flag, create_by, create_time, update_by, update_time, remark
+        FROM biz_hr_payslip
+    </sql>
+
+    <select id="selectHrPayslipList" parameterType="HrPayslip" resultMap="HrPayslipResult">
+        <include refid="selectVo"/>
+        <where>
+            del_flag = '0'
+            <if test="yearMonth != null and yearMonth != ''"> AND year_month LIKE CONCAT('%', #{yearMonth}, '%')</if>
+            <if test="employeeId != null"> AND employee_id = #{employeeId}</if>
+            <if test="employeeName != null and employeeName != ''"> AND employee_name LIKE CONCAT('%', #{employeeName}, '%')</if>
+            <if test="employeeNo != null and employeeNo != ''"> AND employee_no LIKE CONCAT('%', #{employeeNo}, '%')</if>
+            <if test="orgId != null"> AND org_id = #{orgId}</if>
+            <if test="basicSalary != null"> AND basic_salary = #{basicSalary}</if>
+            <if test="positionSalary != null"> AND position_salary = #{positionSalary}</if>
+            <if test="skillAllowance != null"> AND skill_allowance = #{skillAllowance}</if>
+            <if test="seniorityPay != null"> AND seniority_pay = #{seniorityPay}</if>
+            <if test="nightAllowance != null"> AND night_allowance = #{nightAllowance}</if>
+            <if test="highTempAllowance != null"> AND high_temp_allowance = #{highTempAllowance}</if>
+            <if test="hazardAllowance != null"> AND hazard_allowance = #{hazardAllowance}</if>
+            <if test="mealAllowance != null"> AND meal_allowance = #{mealAllowance}</if>
+            <if test="transportAllowance != null"> AND transport_allowance = #{transportAllowance}</if>
+            <if test="fullAttendanceBonus != null"> AND full_attendance_bonus = #{fullAttendanceBonus}</if>
+            <if test="pieceworkPay != null"> AND piecework_pay = #{pieceworkPay}</if>
+            <if test="overtimePay != null"> AND overtime_pay = #{overtimePay}</if>
+            <if test="performanceBonus != null"> AND performance_bonus = #{performanceBonus}</if>
+            <if test="absenceDeduction != null"> AND absence_deduction = #{absenceDeduction}</if>
+            <if test="otherAdd != null"> AND other_add = #{otherAdd}</if>
+            <if test="otherDeduct != null"> AND other_deduct = #{otherDeduct}</if>
+            <if test="grossSalary != null"> AND gross_salary = #{grossSalary}</if>
+            <if test="socialInsurance != null"> AND social_insurance = #{socialInsurance}</if>
+            <if test="houseFund != null"> AND house_fund = #{houseFund}</if>
+            <if test="incomeTax != null"> AND income_tax = #{incomeTax}</if>
+            <if test="otherDeduction != null"> AND other_deduction = #{otherDeduction}</if>
+            <if test="netSalary != null"> AND net_salary = #{netSalary}</if>
+            <if test="calcStatus != null and calcStatus != ''"> AND calc_status LIKE CONCAT('%', #{calcStatus}, '%')</if>
+            <if test="sealedBy != null and sealedBy != ''"> AND sealed_by LIKE CONCAT('%', #{sealedBy}, '%')</if>
+            <if test="sealedTime != null"> AND sealed_time = #{sealedTime}</if>
+            <if test="payDate != null"> AND pay_date = #{payDate}</if>
+            <if test="bankReceiptNo != null and bankReceiptNo != ''"> AND bank_receipt_no LIKE CONCAT('%', #{bankReceiptNo}, '%')</if>
+            <if test="delFlag != null and delFlag != ''"> AND del_flag LIKE CONCAT('%', #{delFlag}, '%')</if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+
+    <select id="selectHrPayslipById" parameterType="Long" resultMap="HrPayslipResult">
+        <include refid="selectVo"/> WHERE payslip_id = #{payslipId}
+    </select>
+
+    <insert id="insertHrPayslip" parameterType="HrPayslip" useGeneratedKeys="true" keyProperty="payslipId">
+        INSERT INTO biz_hr_payslip (
+            year_month, employee_id, employee_name, employee_no, org_id, basic_salary, position_salary, skill_allowance, seniority_pay, night_allowance, high_temp_allowance, hazard_allowance, meal_allowance, transport_allowance, full_attendance_bonus, piecework_pay, overtime_pay, performance_bonus, absence_deduction, other_add, other_deduct, gross_salary, social_insurance, house_fund, income_tax, other_deduction, net_salary, calc_status, sealed_by, sealed_time, pay_date, bank_receipt_no, del_flag, create_by, create_time, remark
+        ) VALUES (
+            #{yearMonth}, #{employeeId}, #{employeeName}, #{employeeNo}, #{orgId}, #{basicSalary}, #{positionSalary}, #{skillAllowance}, #{seniorityPay}, #{nightAllowance}, #{highTempAllowance}, #{hazardAllowance}, #{mealAllowance}, #{transportAllowance}, #{fullAttendanceBonus}, #{pieceworkPay}, #{overtimePay}, #{performanceBonus}, #{absenceDeduction}, #{otherAdd}, #{otherDeduct}, #{grossSalary}, #{socialInsurance}, #{houseFund}, #{incomeTax}, #{otherDeduction}, #{netSalary}, #{calcStatus}, #{sealedBy}, #{sealedTime}, #{payDate}, #{bankReceiptNo}, #{delFlag}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateHrPayslip" parameterType="HrPayslip">
+        UPDATE biz_hr_payslip
+        <set>
+            <if test="yearMonth != null and yearMonth != ''">year_month = #{yearMonth},</if>
+            <if test="employeeId != null">employee_id = #{employeeId},</if>
+            <if test="employeeName != null and employeeName != ''">employee_name = #{employeeName},</if>
+            <if test="employeeNo != null and employeeNo != ''">employee_no = #{employeeNo},</if>
+            <if test="orgId != null">org_id = #{orgId},</if>
+            <if test="basicSalary != null">basic_salary = #{basicSalary},</if>
+            <if test="positionSalary != null">position_salary = #{positionSalary},</if>
+            <if test="skillAllowance != null">skill_allowance = #{skillAllowance},</if>
+            <if test="seniorityPay != null">seniority_pay = #{seniorityPay},</if>
+            <if test="nightAllowance != null">night_allowance = #{nightAllowance},</if>
+            <if test="highTempAllowance != null">high_temp_allowance = #{highTempAllowance},</if>
+            <if test="hazardAllowance != null">hazard_allowance = #{hazardAllowance},</if>
+            <if test="mealAllowance != null">meal_allowance = #{mealAllowance},</if>
+            <if test="transportAllowance != null">transport_allowance = #{transportAllowance},</if>
+            <if test="fullAttendanceBonus != null">full_attendance_bonus = #{fullAttendanceBonus},</if>
+            <if test="pieceworkPay != null">piecework_pay = #{pieceworkPay},</if>
+            <if test="overtimePay != null">overtime_pay = #{overtimePay},</if>
+            <if test="performanceBonus != null">performance_bonus = #{performanceBonus},</if>
+            <if test="absenceDeduction != null">absence_deduction = #{absenceDeduction},</if>
+            <if test="otherAdd != null">other_add = #{otherAdd},</if>
+            <if test="otherDeduct != null">other_deduct = #{otherDeduct},</if>
+            <if test="grossSalary != null">gross_salary = #{grossSalary},</if>
+            <if test="socialInsurance != null">social_insurance = #{socialInsurance},</if>
+            <if test="houseFund != null">house_fund = #{houseFund},</if>
+            <if test="incomeTax != null">income_tax = #{incomeTax},</if>
+            <if test="otherDeduction != null">other_deduction = #{otherDeduction},</if>
+            <if test="netSalary != null">net_salary = #{netSalary},</if>
+            <if test="calcStatus != null and calcStatus != ''">calc_status = #{calcStatus},</if>
+            <if test="sealedBy != null and sealedBy != ''">sealed_by = #{sealedBy},</if>
+            <if test="sealedTime != null">sealed_time = #{sealedTime},</if>
+            <if test="payDate != null">pay_date = #{payDate},</if>
+            <if test="bankReceiptNo != null and bankReceiptNo != ''">bank_receipt_no = #{bankReceiptNo},</if>
+            <if test="delFlag != null and delFlag != ''">del_flag = #{delFlag},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE payslip_id = #{payslipId}
+    </update>
+
+    <delete id="deleteHrPayslipById" parameterType="Long">
+        UPDATE biz_hr_payslip SET del_flag = '2' WHERE payslip_id = #{payslipId}
+    </delete>
+
+    <delete id="deleteHrPayslipByIds" parameterType="Long">
+        UPDATE biz_hr_payslip SET del_flag = '2' WHERE payslip_id IN
+        <foreach item="payslipId" collection="array" open="(" separator="," close=")">#{payslipId}</foreach>
+    </delete>
+
+</mapper>

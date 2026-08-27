@@ -1,5 +1,5 @@
 <template>
-  <el-dialog v-model="visible" width="900px" append-to-body draggable class="rd-dialog">
+  <el-dialog v-model="visible" width="1080px" append-to-body draggable class="rd-dialog">
     <template #header>
       <div class="rd-detail-header">
         <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div>
@@ -11,7 +11,7 @@
       </div>
     </template>
     <div v-loading="loading" class="rd-page">
-      <el-tabs v-model="activeTab" class="equipment-detail-tabs">
+      <el-tabs v-model="activeTab" class="eq-detail-tabs">
         <!-- 页签一：设备详情 -->
         <el-tab-pane label="设备详情" name="detail">
       <!-- 基本信息 -->
@@ -107,39 +107,66 @@
       </section>
         </el-tab-pane>
 
-        <!-- 页签二：设备履历 -->
-        <el-tab-pane label="设备履历" name="history">
-          <el-tabs v-model="historyTab" type="border-card" class="history-sub-tabs">
-            <el-tab-pane label="工单记录" name="orders">
-              <el-table :data="historyOrders" border size="small" v-loading="historyLoading">
-                <el-table-column label="工单号" prop="orderNo" width="150" />
-                <el-table-column label="工单类型" prop="orderType" width="100" align="center">
-                  <template #default="scope"><dict-tag :options="dms_order_type" :value="scope.row.orderType" /></template>
-                </el-table-column>
-                <el-table-column label="故障描述" prop="faultDescription" show-overflow-tooltip />
-                <el-table-column label="状态" prop="orderStatus" width="90" align="center">
-                  <template #default="scope"><dict-tag :options="dms_order_status" :value="scope.row.orderStatus" /></template>
-                </el-table-column>
-                <el-table-column label="报修时间" prop="reportTime" width="150" align="center" />
-              </el-table>
-              <el-empty v-if="!historyLoading && historyOrders.length === 0" description="暂无工单记录" />
-            </el-tab-pane>
-            <el-tab-pane label="变更日志" name="logs">
-              <el-table :data="historyLogs" border size="small" v-loading="historyLoading">
-                <el-table-column label="变更类型" prop="changeType" width="100" align="center">
-                  <template #default="scope">
-                    <el-tag>{{ {0:'状态变更',1:'位置变更',2:'部门变更',3:'责任人变更',4:'调拨',5:'信息变更'}[scope.row.changeType] }}</el-tag>
-                  </template>
-                </el-table-column>
-                <el-table-column label="原值" prop="oldValue" width="80" />
-                <el-table-column label="新值" prop="newValue" width="80" />
-                <el-table-column label="变更原因" prop="changeReason" show-overflow-tooltip />
-                <el-table-column label="操作人" prop="operatorName" width="80" />
-                <el-table-column label="时间" prop="createTime" width="160" align="center" />
-              </el-table>
-              <el-empty v-if="!historyLoading && historyLogs.length === 0" description="暂无变更日志" />
-            </el-tab-pane>
-          </el-tabs>
+        <!-- 页签二：工单记录 -->
+        <el-tab-pane label="工单记录" name="orders">
+          <el-table :data="historyOrders" border size="small" v-loading="ordersLoading">
+            <el-table-column label="工单号" prop="orderNo" width="150" />
+            <el-table-column label="工单类型" prop="orderType" width="100" align="center">
+              <template #default="scope"><dict-tag :options="dms_order_type" :value="scope.row.orderType" /></template>
+            </el-table-column>
+            <el-table-column label="故障描述" prop="faultDescription" show-overflow-tooltip />
+            <el-table-column label="状态" prop="orderStatus" width="90" align="center">
+              <template #default="scope"><dict-tag :options="dms_order_status" :value="scope.row.orderStatus" /></template>
+            </el-table-column>
+            <el-table-column label="报修时间" prop="reportTime" width="150" align="center" />
+          </el-table>
+          <el-empty v-if="!ordersLoading && historyOrders.length === 0" description="暂无工单记录" />
+          <div class="eq-pagination" v-if="ordersTotal > 0">
+            <el-pagination
+              v-model:current-page="ordersQuery.pageNum"
+              v-model:page-size="ordersQuery.pageSize"
+              :page-sizes="[5, 10, 20]"
+              :total="ordersTotal"
+              layout="total, sizes, prev, pager, next"
+              @size-change="loadOrders"
+              @current-change="loadOrders"
+            />
+          </div>
+        </el-tab-pane>
+
+        <!-- 页签三：变更日志 -->
+        <el-tab-pane label="变更日志" name="logs">
+          <el-table :data="historyLogs" border size="small" v-loading="logsLoading">
+            <el-table-column label="变更类型" prop="changeType" width="100" align="center">
+              <template #default="scope">
+                <el-tag :type="changeTypeTag(scope.row.changeType)">
+                  {{ {0:'状态变更',1:'位置变更',2:'部门变更',3:'责任人变更',4:'调拨',5:'信息变更'}[scope.row.changeType] || '其他' }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="变更字段" prop="fieldLabel" width="120" align="center">
+              <template #default="scope">
+                {{ scope.row.fieldLabel || (scope.row.changeType === '5' ? '-' : '—') }}
+              </template>
+            </el-table-column>
+            <el-table-column label="原值" prop="oldValue" min-width="100" show-overflow-tooltip />
+            <el-table-column label="新值" prop="newValue" min-width="100" show-overflow-tooltip />
+            <el-table-column label="变更原因" prop="changeReason" min-width="120" show-overflow-tooltip />
+            <el-table-column label="操作人" prop="operatorName" width="80" align="center" />
+            <el-table-column label="时间" prop="createTime" width="160" align="center" />
+          </el-table>
+          <el-empty v-if="!logsLoading && historyLogs.length === 0" description="暂无变更日志" />
+          <div class="eq-pagination" v-if="logsTotal > 0">
+            <el-pagination
+              v-model:current-page="logsQuery.pageNum"
+              v-model:page-size="logsQuery.pageSize"
+              :page-sizes="[5, 10, 20]"
+              :total="logsTotal"
+              layout="total, sizes, prev, pager, next"
+              @size-change="loadLogs"
+              @current-change="loadLogs"
+            />
+          </div>
         </el-tab-pane>
       </el-tabs>
     </div>
@@ -162,17 +189,26 @@ const info = reactive({})
 const baseUrl = import.meta.env.VITE_APP_BASE_API
 
 const activeTab = ref('detail')
-const historyTab = ref('orders')
+/** 工单记录分页 */
 const historyOrders = ref([])
+const ordersLoading = ref(false)
+const ordersTotal = ref(0)
+const ordersQuery = reactive({ pageNum: 1, pageSize: 5 })
+const ordersLoaded = ref(false)
+
+/** 变更日志分页 */
 const historyLogs = ref([])
-const historyLoading = ref(false)
-const historyLoaded = ref(false)
+const logsLoading = ref(false)
+const logsTotal = ref(0)
+const logsQuery = reactive({ pageNum: 1, pageSize: 5 })
+const logsLoaded = ref(false)
 
 const open = async (equipmentId) => {
   visible.value = true
   loading.value = true
   activeTab.value = 'detail'
-  historyLoaded.value = false
+  ordersLoaded.value = false
+  logsLoaded.value = false
   try {
     const res = await getEquipment(equipmentId)
     Object.keys(info).forEach(k => { info[k] = undefined })
@@ -184,24 +220,44 @@ const open = async (equipmentId) => {
   }
 }
 
-/** 切换到履历页签时加载数据 */
+/** 切换页签时按需加载数据 */
 watch(activeTab, (val) => {
-  if (val === 'history' && !historyLoaded.value) {
-    loadHistory()
+  if (val === 'orders' && !ordersLoaded.value) {
+    loadOrders()
+  }
+  if (val === 'logs' && !logsLoaded.value) {
+    loadLogs()
   }
 })
 
-function loadHistory() {
-  historyLoading.value = true
-  historyLoaded.value = true
-  getEquipmentHistory(info.equipmentId).then(res => {
-    historyOrders.value = res.data || []
+/** 加载工单记录（分页） */
+function loadOrders() {
+  ordersLoading.value = true
+  ordersLoaded.value = true
+  getEquipmentHistory(info.equipmentId, ordersQuery).then(res => {
+    historyOrders.value = res.rows || []
+    ordersTotal.value = res.total || 0
   }).finally(() => {
-    historyLoading.value = false
+    ordersLoading.value = false
   })
-  listEquipmentLog({ equipmentId: info.equipmentId, pageNum: 1, pageSize: 100 }).then(res => {
+}
+
+/** 加载变更日志（分页） */
+function loadLogs() {
+  logsLoading.value = true
+  logsLoaded.value = true
+  listEquipmentLog({ equipmentId: info.equipmentId, ...logsQuery }).then(res => {
     historyLogs.value = res.rows || []
+    logsTotal.value = res.total || 0
+  }).finally(() => {
+    logsLoading.value = false
   })
+}
+
+/** 变更类型 tag 样式 */
+function changeTypeTag(type) {
+  const map = { '0': 'warning', '1': 'primary', '2': 'info', '3': 'info', '4': 'success', '5': '' }
+  return map[type] || ''
 }
 
 /** 金额千分位格式化 */
@@ -226,12 +282,22 @@ defineExpose({ open })
 </script>
 
 <style scoped>
-.equipment-detail-tabs :deep(.el-tabs__header) {
-  margin-bottom: 16px;
+/* ===== 详情页签样式（参考工单详情 .wo-detail-tabs） ===== */
+.eq-detail-tabs :deep(.el-tabs__header) { margin-bottom: 14px; }
+.eq-detail-tabs :deep(.el-tabs__nav-wrap::after) { height: 1px; background-color: #e2e8f0; }
+.eq-detail-tabs :deep(.el-tabs__item) { font-size: 14px; font-weight: 600; color: #64748b; padding: 0 20px; }
+.eq-detail-tabs :deep(.el-tabs__item.is-active) { color: #4f46e5; }
+.eq-detail-tabs :deep(.el-tabs__active-bar) { background-color: #4f46e5; height: 2px; border-radius: 2px; }
+.eq-detail-tabs :deep(.el-tab-pane) { min-height: 200px; }
+
+/* 分页容器 */
+.eq-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 12px 0 4px 0;
 }
-.history-sub-tabs {
-  min-height: 300px;
-}
+
 /* 金额高亮：红色 + 等宽数字 + 千分位 */
 .rd-amount {
   font-variant-numeric: tabular-nums;

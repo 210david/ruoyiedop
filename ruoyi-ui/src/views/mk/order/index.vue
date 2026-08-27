@@ -126,8 +126,9 @@
             </template>
           </el-table-column>
           <el-table-column label="负责人" prop="userName" key="userName" :width="colWidth('userName', 100)" resizable v-if="columns.userName.visible" />
-          <el-table-column label="操作" width="300" align="center" fixed="right">
+          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
         <template #default="scope">
+          <div class="action-btn-row">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">详情</el-button>
           <!-- 草稿/已驳回：提交 -->
           <el-button v-if="scope.row.orderStatus === '0' || scope.row.orderStatus === '5'" link type="success" icon="Promotion" @click="handleSubmit(scope.row)" v-hasPermi="['marketing:order:edit']">提交</el-button>
@@ -137,6 +138,7 @@
           <el-button v-if="scope.row.orderStatus === '0' || scope.row.orderStatus === '5'" link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['marketing:order:edit']">修改</el-button>
           <!-- 草稿/待审核/已审核/部分发货：作废 -->
           <el-button v-if="scope.row.orderStatus === '0' || scope.row.orderStatus === '1' || scope.row.orderStatus === '2' || scope.row.orderStatus === '3'" link type="danger" icon="CircleClose" @click="handleVoid(scope.row)" v-hasPermi="['marketing:order:cancel']">作废</el-button>
+          </div>
         </template>
       </el-table-column>
     </el-table>

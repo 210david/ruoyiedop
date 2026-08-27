@@ -86,6 +86,17 @@
 
     <!-- ===== Table Section ===== -->
     <div class="surface">
+      <!-- Status Tabs -->
+      <div class="status-tabs">
+        <div class="tabs-track">
+          <button class="status-tab" :class="{ 'is-active': activeStatusTab === 'all' }" @click="handleStatusTabClick('all')">
+            <span class="dot"></span><span>全部</span><span class="count">{{ statusCounts.all || 0 }}</span>
+          </button>
+          <button v-for="d in dms_equipment_status" :key="d.value" class="status-tab" :class="[statusTabClass(d.value), { 'is-active': activeStatusTab === d.value }]" @click="handleStatusTabClick(d.value)">
+            <span class="dot"></span><span>{{ d.label }}</span><span class="count">{{ statusCounts[d.value] || 0 }}</span>
+          </button>
+        </div>
+      </div>
       <div class="toolbar">
         <div class="left">
           <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['dms:equipment:add']">新增</el-button>
@@ -133,12 +144,14 @@
               <span class="badge" :class="scope.row.equipmentStatus === '0' ? 'green' : 'gray'"><span class="dot"></span>{{ equipmentStatusLabel(scope.row.equipmentStatus) }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="260" align="center" fixed="right">
+          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
-              <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['dms:equipment:query']">查看</el-button>
-              <el-button link type="primary" @click="handleScreen(scope.row)" v-hasPermi="['dms:equipment:query']">大屏</el-button>
-              <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['dms:equipment:edit']">修改</el-button>
-              <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['dms:equipment:remove']">删除</el-button>
+              <div class="action-btn-row">
+                <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['dms:equipment:query']">查看</el-button>
+                <el-button link type="primary" icon="Monitor" @click="handleScreen(scope.row)" v-hasPermi="['dms:equipment:query']">大屏</el-button>
+                <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['dms:equipment:edit']">修改</el-button>
+                <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['dms:equipment:remove']">删除</el-button>
+              </div>
             </template>
           </el-table-column>
         </el-table>
@@ -146,7 +159,7 @@
       <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
     </div>
 
-    <el-dialog v-model="open" width="800px" append-to-body draggable class="rd-dialog">
+    <el-dialog v-model="open" width="960px" append-to-body draggable class="rd-dialog">
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div>
@@ -341,6 +354,8 @@ const single = ref(true)
 const multiple = ref(true)
 const total = ref(0)
 const title = ref('')
+const activeStatusTab = ref('all')
+const statusCounts = ref({ all: 0 })
 
 const defaultColumns = {
   equipmentCode: { label: '设备编号', visible: true },
@@ -405,7 +420,15 @@ const data = reactive({
   form: {},
   queryParams: { pageNum: 1, pageSize: 10, equipmentCode: undefined, equipmentName: undefined, equipmentStatus: undefined, equipmentLevel: undefined, deptName: undefined, responsibleName: undefined, manufacturer: undefined, params: {} },
   rules: {
-    equipmentName: [{ required: true, message: '设备名称不能为空', trigger: 'blur' }]
+    equipmentName: [{ required: true, message: '设备名称不能为空', trigger: 'blur' }],
+    categoryId: [{ required: true, message: '设备分类不能为空', trigger: 'change' }],
+    equipmentStatus: [{ required: true, message: '设备状态不能为空', trigger: 'change' }],
+    equipmentLevel: [{ required: true, message: '设备等级不能为空', trigger: 'change' }],
+    model: [{ required: true, message: '型号不能为空', trigger: 'blur' }],
+    responsibleId: [{ required: true, message: '责任人不能为空', trigger: 'change' }],
+    deptId: [{ required: true, message: '使用部门不能为空', trigger: 'change' }],
+    purchaseDate: [{ required: true, message: '购置日期不能为空', trigger: 'change' }],
+    supplier: [{ required: true, message: '供应商不能为空', trigger: 'blur' }]
   }
 })
 const { queryParams, form, rules } = toRefs(data)
@@ -413,6 +436,23 @@ const { queryParams, form, rules } = toRefs(data)
 function getList() {
   loading.value = true
   listEquipment(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false; applySavedWidths() })
+}
+function loadStatusCounts() {
+  listEquipment({ pageNum: 1, pageSize: 999 }).then(res => {
+    const counts = { all: res.total }
+    ;(dms_equipment_status.value || []).forEach(d => { counts[d.value] = 0 })
+    ;(res.rows || []).forEach(r => { if (counts[r.equipmentStatus] !== undefined) counts[r.equipmentStatus]++ })
+    statusCounts.value = counts
+  }).catch(() => {})
+}
+function handleStatusTabClick(status) {
+  activeStatusTab.value = status
+  queryParams.value.equipmentStatus = status === 'all' ? undefined : status
+  handleQuery()
+}
+function statusTabClass(value) {
+  const map = { '0': 'tab-running', '1': 'tab-idle', '2': 'tab-repair', '3': 'tab-stopped', '4': 'tab-fault', '5': 'tab-scrapped' }
+  return map[value] || ''
 }
 function getCategoryTree() {
   listCategory().then(res => { categoryOptions.value = proxy.handleTree(res.data, 'categoryId') })
@@ -449,8 +489,8 @@ function clearDept() {
   form.value.deptId = undefined
   form.value.deptName = undefined
 }
-function handleQuery() { showAdvanced.value = false; queryParams.value.params = proxy.addDateRange(queryParams.value.params, dateRange.value, 'CreateTime'); queryParams.value.pageNum = 1; getList() }
-function resetQuery() { queryParams.value.equipmentCode = undefined; queryParams.value.equipmentName = undefined; queryParams.value.equipmentStatus = undefined; queryParams.value.equipmentLevel = undefined; queryParams.value.deptName = undefined; queryParams.value.responsibleName = undefined; queryParams.value.manufacturer = undefined; dateRange.value = []; queryParams.value.params = {}; proxy.resetForm('queryRef'); handleQuery() }
+function handleQuery() { showAdvanced.value = false; queryParams.value.params = proxy.addDateRange(queryParams.value.params, dateRange.value, 'CreateTime'); queryParams.value.pageNum = 1; getList(); loadStatusCounts() }
+function resetQuery() { queryParams.value.equipmentCode = undefined; queryParams.value.equipmentName = undefined; queryParams.value.equipmentStatus = undefined; queryParams.value.equipmentLevel = undefined; queryParams.value.deptName = undefined; queryParams.value.responsibleName = undefined; queryParams.value.manufacturer = undefined; dateRange.value = []; queryParams.value.params = {}; activeStatusTab.value = 'all'; proxy.resetForm('queryRef'); handleQuery() }
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.equipmentId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function reset() {
   form.value = {
@@ -493,6 +533,7 @@ function handleScreen(row) {
 }
 getCategoryTree()
 getList()
+loadStatusCounts()
 </script>
 
 <style scoped>
@@ -515,6 +556,41 @@ getList()
 
 /* ===== Surface Card ===== */
 .dms-equipment-page .surface { background:#fff; border:1px solid var(--ink-200); border-radius:var(--r-lg); box-shadow:var(--shadow-card); overflow:hidden; margin-bottom:8px; }
+
+/* ===== Status Tabs ===== */
+.dms-equipment-page .status-tabs { padding:12px 20px 0; }
+.dms-equipment-page .tabs-track { display:flex; align-items:center; gap:4px; flex-wrap:wrap; }
+.dms-equipment-page .status-tab { display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 12px; border-radius:var(--r-sm); font-size:14px; color:var(--ink-500); cursor:pointer; user-select:none; transition:all .15s var(--ease-out); white-space:nowrap; border:1px solid transparent; background:transparent; }
+.dms-equipment-page .status-tab .dot { width:6px; height:6px; border-radius:50%; background:var(--ink-300); }
+.dms-equipment-page .status-tab .count { font-size:12px; font-weight:600; padding:1px 6px; border-radius:999px; background:var(--ink-100); color:var(--ink-500); min-width:18px; text-align:center; line-height:1.4; font-feature-settings:"tnum" 1; }
+.dms-equipment-page .status-tab:hover { background:var(--ink-50); color:var(--ink-700); }
+.dms-equipment-page .status-tab.is-active { background:var(--brand-50); color:var(--brand-700); font-weight:600; border-color:var(--brand-200); }
+.dms-equipment-page .status-tab.is-active .count { background:var(--brand-600); color:#fff; }
+.dms-equipment-page .status-tab.is-active .dot { background:var(--brand-500); }
+/* 在用 - green */
+.dms-equipment-page .status-tab.tab-running .dot { background:var(--green-500); }
+.dms-equipment-page .status-tab.tab-running .count { background:var(--green-50); color:var(--green-700); }
+.dms-equipment-page .status-tab.is-active.tab-running .count { background:var(--green-500); color:#fff; }
+/* 闲置 - blue */
+.dms-equipment-page .status-tab.tab-idle .dot { background:var(--blue-500); }
+.dms-equipment-page .status-tab.tab-idle .count { background:var(--blue-50); color:var(--blue-700); }
+.dms-equipment-page .status-tab.is-active.tab-idle .count { background:var(--blue-500); color:#fff; }
+/* 维修中 - amber */
+.dms-equipment-page .status-tab.tab-repair .dot { background:var(--amber-500); }
+.dms-equipment-page .status-tab.tab-repair .count { background:var(--amber-50); color:var(--amber-700); }
+.dms-equipment-page .status-tab.is-active.tab-repair .count { background:var(--amber-500); color:#fff; }
+/* 停机 - violet */
+.dms-equipment-page .status-tab.tab-stopped .dot { background:#8b5cf6; }
+.dms-equipment-page .status-tab.tab-stopped .count { background:var(--violet-50); color:#7c3aed; }
+.dms-equipment-page .status-tab.is-active.tab-stopped .count { background:#8b5cf6; color:#fff; }
+/* 故障 - red */
+.dms-equipment-page .status-tab.tab-fault .dot { background:var(--red-500); }
+.dms-equipment-page .status-tab.tab-fault .count { background:var(--red-50); color:var(--red-700); }
+.dms-equipment-page .status-tab.is-active.tab-fault .count { background:var(--red-500); color:#fff; }
+/* 报废 - gray */
+.dms-equipment-page .status-tab.tab-scrapped .dot { background:var(--ink-400); }
+.dms-equipment-page .status-tab.tab-scrapped .count { background:var(--ink-100); color:var(--ink-500); }
+.dms-equipment-page .status-tab.is-active.tab-scrapped .count { background:var(--ink-400); color:#fff; }
 
 /* ===== Filter Card ===== */
 .dms-equipment-page .filter-card { padding:14px 20px 16px; }
@@ -595,6 +671,13 @@ getList()
 .dms-equipment-page .clear-icon { cursor:pointer; color:#c0c4cc; font-size:14px; }
 .dms-equipment-page .clear-icon:hover { color:#909399; }
 .dms-equipment-page :deep(.el-input.is-disabled .el-input__inner) { cursor:pointer; }
+
+/* 操作列按钮对齐：每行2个按钮，flex-wrap 自动换行 */
+.dms-equipment-page :deep(.col-action) { padding: 6px 4px !important; }
+.dms-equipment-page :deep(.col-action .cell) { display: flex; justify-content: center; padding: 0; }
+.dms-equipment-page .action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
+.dms-equipment-page :deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
+.dms-equipment-page :deep(.col-action .el-button + .el-button) { margin-left: 2px; }
 
 /* ===== Responsive ===== */
 @media (max-width:1100px) { .dms-equipment-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }

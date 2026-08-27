@@ -17,6 +17,7 @@ import com.ruoyi.qms.mapper.QmsNcrMapper;
 import com.ruoyi.qms.mapper.QmsComplaintMapper;
 import com.ruoyi.qms.service.IQmsCapaService;
 import com.ruoyi.mk.service.IMkNumberRuleService;
+import com.ruoyi.system.utils.MessageHelper;
 
 @Service
 public class QmsCapaServiceImpl implements IQmsCapaService {
@@ -31,6 +32,9 @@ public class QmsCapaServiceImpl implements IQmsCapaService {
 
     @Autowired
     private QmsComplaintMapper qmsComplaintMapper;
+
+    @Autowired
+    private MessageHelper messageHelper;
 
     @Override
     public List<QmsCapa> selectCapaList(QmsCapa capa) { return qmsCapaMapper.selectCapaList(capa); }
@@ -74,7 +78,24 @@ public class QmsCapaServiceImpl implements IQmsCapaService {
         QmsCapa update = new QmsCapa();
         update.setCapaId(capaId);
         update.setCapaStatus("1");
-        return qmsCapaMapper.updateCapa(update);
+        int rows = qmsCapaMapper.updateCapa(update);
+
+        // 发送消息：CAPA待处理
+        String sourceTypeText = getCapaSourceText(capa.getSourceType());
+        messageHelper.sendMessage(
+            "CAPA" + capa.getCapaNo() + "待处理",
+            "来源：" + sourceTypeText
+                    + "，标题：" + (capa.getTitle() != null ? capa.getTitle() : "-"),
+            "4",   // 待办事项
+            "2",   // 重要
+            "qms",
+            capaId,
+            "/qms/capa/list?id=" + capaId,
+            "qms:capa:edit",
+            "1",   // bizStatus: 处理中
+            "CAPA管理"  // bizEntryName
+        );
+        return rows;
     }
 
     @Override
@@ -173,5 +194,20 @@ public class QmsCapaServiceImpl implements IQmsCapaService {
         capa.setCapaNo(mkNumberRuleService.generateNumber("qms_capa", params));
         qmsCapaMapper.insertCapa(capa);
         return capa.getCapaId();
+    }
+
+    /**
+     * CAPA来源类型字典转换
+     */
+    private String getCapaSourceText(String sourceType)
+    {
+        if (sourceType == null) return "-";
+        switch (sourceType)
+        {
+            case "ncr": return "不合格品NCR";
+            case "complaint": return "客诉";
+            case "audit": return "内审不符合项";
+            default: return sourceType;
+        }
     }
 }

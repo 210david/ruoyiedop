@@ -187,8 +187,9 @@
             </template>
           </el-table-column>
           <el-table-column label="部门" prop="deptName" key="deptName" :width="colWidth('deptName', 120)" resizable v-if="columns.deptName.visible" />
-      <el-table-column label="操作" width="200" align="center" fixed="right">
+      <el-table-column label="操作" width="180" align="center" fixed="right" class-name="col-action">
         <template #default="scope">
+          <div class="action-btn-row">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">详情</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['marketing:customer:edit']">修改</el-button>
           <el-dropdown @command="(cmd) => handleCommand(cmd, scope.row)" trigger="click" v-hasPermi="['marketing:customer:edit']">
@@ -203,6 +204,7 @@
               </el-dropdown-menu>
             </template>
           </el-dropdown>
+          </div>
         </template>
       </el-table-column>
     </el-table>

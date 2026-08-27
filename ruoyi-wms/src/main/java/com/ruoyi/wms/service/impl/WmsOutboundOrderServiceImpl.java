@@ -1,4 +1,5 @@
-package com.ruoyi.wms.service.impl;
+package com.ruoyi.wms.service.impl;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -18,6 +19,7 @@ import com.ruoyi.wms.mapper.WmsOutboundOrderMapper;
 import com.ruoyi.wms.service.IWmsOutboundOrderService;
 import com.ruoyi.wms.service.IWmsInventoryService;
 import com.ruoyi.mk.service.IMkNumberRuleService;
+import com.ruoyi.system.utils.MessageHelper;
 
 @Service
 public class WmsOutboundOrderServiceImpl implements IWmsOutboundOrderService
@@ -30,6 +32,9 @@ public class WmsOutboundOrderServiceImpl implements IWmsOutboundOrderService
 
     @Autowired
     private IMkNumberRuleService mkNumberRuleService;
+
+    @Autowired
+    private MessageHelper messageHelper;
 
     @Override
     public List<WmsOutboundOrder> selectOutboundOrderList(WmsOutboundOrder order)
@@ -210,7 +215,19 @@ public class WmsOutboundOrderServiceImpl implements IWmsOutboundOrderService
             }
         }
         order.setStatus("1");
-        return wmsOutboundOrderMapper.updateOutboundOrder(order);
+        int rows = wmsOutboundOrderMapper.updateOutboundOrder(order);
+        // 发送消息：出库单已提交，请安排拣货
+        String outboundTypeText = getOutboundTypeText(order.getOrderType());
+        messageHelper.sendMessage(
+            "出库单" + order.getOrderNo() + "已提交，请安排拣货",
+            "出库类型：" + outboundTypeText + "，仓库：" + (order.getWarehouseName() != null ? order.getWarehouseName() : "") + "，总数量：" + order.getTotalQty(),
+            "4", "2", "wms", orderId,
+            "/wms/outbound/detail?id=" + orderId,
+            "wms:outbound:edit",
+            "1",  // bizStatus: 待拣货
+            "出库作业"  // bizEntryName
+        );
+        return rows;
     }
 
     @Override
@@ -271,7 +288,35 @@ public class WmsOutboundOrderServiceImpl implements IWmsOutboundOrderService
             order.setStatus("3");
             order.setCompleteDate(new Date());
             wmsOutboundOrderMapper.updateOutboundOrder(order);
+            // 发送消息：出库单拣货完成，请复核
+            messageHelper.sendMessage(
+                "出库单" + order.getOrderNo() + "拣货完成，请复核",
+                "",
+                "1", "1", "wms", orderId,
+                "/wms/outbound/check?id=" + orderId,
+                "wms:outbound:check",
+                null,
+                "扫码复核"  // bizEntryName
+            );
+            // 拣货完成，标记"请安排拣货"消息为已处理
+            messageHelper.markHandled("wms", orderId);
         }
         return 1;
+    }
+
+    /**
+     * 出库类型字典转换
+     */
+    private String getOutboundTypeText(String orderType)
+    {
+        if (orderType == null) return "-";
+        switch (orderType)
+        {
+            case "0": return "销售出库";
+            case "1": return "领料出库";
+            case "2": return "调拨出库";
+            case "3": return "退货出库";
+            default: return orderType;
+        }
     }
 }

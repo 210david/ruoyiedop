@@ -16,6 +16,7 @@ import com.ruoyi.pms.mapper.PmsPurchaseRequestMapper;
 import com.ruoyi.pms.mapper.PmsRequestAuditLogMapper;
 import com.ruoyi.pms.service.IPmsPurchaseRequestService;
 import com.ruoyi.mk.service.IMkNumberRuleService;
+import com.ruoyi.system.utils.MessageHelper;
 
 /**
  * 采购申请 Service实现
@@ -33,6 +34,9 @@ public class PmsPurchaseRequestServiceImpl implements IPmsPurchaseRequestService
 
     @Autowired
     private IMkNumberRuleService mkNumberRuleService;
+
+    @Autowired
+    private MessageHelper messageHelper;
 
     @Override
     public List<PmsPurchaseRequest> selectPurchaseRequestList(PmsPurchaseRequest request)
@@ -163,7 +167,23 @@ public class PmsPurchaseRequestServiceImpl implements IPmsPurchaseRequestService
             throw new ServiceException("采购申请明细不能为空，无法提交");
         }
         request.setStatus("1");
-        return pmsPurchaseRequestMapper.updatePurchaseRequest(request);
+        int rows = pmsPurchaseRequestMapper.updatePurchaseRequest(request);
+
+        // 发送消息给有审批权限的角色
+        String content = "申请部门：" + (request.getDeptName() != null ? request.getDeptName() : "-");
+        messageHelper.sendMessage(
+            "采购申请" + request.getRequestNo() + "待审批",
+            content,
+            "3",   // 审批消息
+            "2",   // 重要
+            "pms",
+            requestId,
+            "/pms/demand/request?id=" + requestId,
+            "pms:request:approve",
+"1",   // bizStatus: 待审批
+"采购申请"  // bizEntryName
+);
+        return rows;
     }
 
     @Override
@@ -197,6 +217,21 @@ public class PmsPurchaseRequestServiceImpl implements IPmsPurchaseRequestService
             auditLog.setAuditAction("2");
         }
         pmsRequestAuditLogMapper.insertAuditLog(auditLog);
+
+        // 发送审批结果消息
+        String resultText = "2".equals(status) ? "已审批通过，请生成采购订单" : "被驳回，原因：" + (auditOpinion != null ? auditOpinion : "");
+        String recipientRole = "2".equals(status) ? "pms:order:add" : "pms:request:edit";
+        messageHelper.sendMessage(
+            "采购申请" + request.getRequestNo() + resultText,
+            "审批结果：" + resultText,
+            "1",   // 系统通知
+            "2".equals(status) ? "1" : "2",  // 通过=普通，驳回=重要
+            "pms",
+            requestId,
+            "/pms/demand/request?id=" + requestId,
+recipientRole,
+            "采购申请"  // bizEntryName
+);
 
         return rows;
     }

@@ -84,7 +84,7 @@
             </template>
             <template #default="scope">
               <el-checkbox v-if="multiple" v-model="selectedUserIds" :value="scope.row.userId" @click.stop />
-              <el-radio v-else v-model="selectedUserId" :value="scope.row.userId" @click.stop>&nbsp;</el-radio>
+              <el-radio v-else v-model="selectedUserId" :value="scope.row.userId" @click.stop="onRowClick(scope.row)">&nbsp;</el-radio>
             </template>
           </el-table-column>
           <el-table-column label="姓名" prop="nickName" min-width="90" show-overflow-tooltip />

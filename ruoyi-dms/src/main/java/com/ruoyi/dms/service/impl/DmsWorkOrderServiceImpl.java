@@ -1,4 +1,5 @@
-package com.ruoyi.dms.service.impl;
+package com.ruoyi.dms.service.impl;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -24,6 +25,7 @@ import com.ruoyi.dms.service.IDmsWorkOrderService;
 import com.ruoyi.mk.service.IMkNumberRuleService;
 import com.ruoyi.system.domain.SysNotice;
 import com.ruoyi.system.service.ISysNoticeService;
+import com.ruoyi.system.utils.MessageHelper;
 
 @Service
 public class DmsWorkOrderServiceImpl implements IDmsWorkOrderService
@@ -42,6 +44,9 @@ public class DmsWorkOrderServiceImpl implements IDmsWorkOrderService
 
     @Autowired
     private IMkNumberRuleService mkNumberRuleService;
+
+    @Autowired
+    private MessageHelper messageHelper;
 
     /** SLA时效配置：优先级 → [响应分钟, 处理分钟] */
     private static final java.util.Map<String, int[]> SLA_CONFIG = new java.util.HashMap<>();
@@ -104,6 +109,24 @@ public class DmsWorkOrderServiceImpl implements IDmsWorkOrderService
                 + "，优先级：" + priorityText(workOrder.getPriority())
                 + "，请尽快派工处理。");
 
+        // 发送消息中心提醒：设备工单待处理
+        String orderTypeText = getOrderTypeText(workOrder.getOrderType());
+        String content = "设备：" + (workOrder.getEquipmentName() != null ? workOrder.getEquipmentName() : "-")
+                + "，故障类型：" + orderTypeText
+                + "，优先级：" + priorityText(workOrder.getPriority());
+        messageHelper.sendMessage(
+            "设备工单" + workOrder.getOrderNo() + "待处理",
+            content,
+            "4",   // 待办事项
+            "3",   // 紧急
+            "dms",
+            workOrder.getOrderId(),
+            "/dms/workorder/list?id=" + workOrder.getOrderId(),
+            "dms:workorder:list",
+            "0",   // bizStatus: 新建待派
+            "设备工单"  // bizEntryName
+        );
+
         return rows;
     }
 
@@ -117,6 +140,24 @@ public class DmsWorkOrderServiceImpl implements IDmsWorkOrderService
     public int deleteWorkOrderByIds(Long[] orderIds)
     {
         return dmsWorkOrderMapper.deleteWorkOrderByIds(orderIds);
+    }
+
+    @Override
+    public Map<String, Object> countByStatus()
+    {
+        Map<String, Object> result = new HashMap<>();
+        // 统计全部
+        result.put("all", dmsWorkOrderMapper.countAllWorkOrders());
+        // 按状态统计
+        List<Map<String, Object>> statusCounts = dmsWorkOrderMapper.countByStatus();
+        if (statusCounts != null) {
+            for (Map<String, Object> item : statusCounts) {
+                String status = String.valueOf(item.get("orderStatus"));
+                Object count = item.get("cnt");
+                result.put(status, count);
+            }
+        }
+        return result;
     }
 
     @Override
@@ -141,6 +182,28 @@ public class DmsWorkOrderServiceImpl implements IDmsWorkOrderService
                 + (db.getEquipmentName() != null ? "，设备：" + db.getEquipmentName() : "")
                 + "，请及时接单处理。");
 
+        // 派工后，标记"待派工"阶段的消息为已处理（新建待处理消息）
+        messageHelper.markHandled("dms", db.getOrderId());
+
+        // 发送消息中心提醒：设备工单已派工，通知维修员接单
+        String orderTypeText = getOrderTypeText(db.getOrderType());
+        String content = "设备：" + (db.getEquipmentName() != null ? db.getEquipmentName() : "-")
+                + "，故障类型：" + orderTypeText
+                + "，优先级：" + priorityText(db.getPriority())
+                + "，请及时接单处理。";
+        messageHelper.sendMessage(
+            "设备工单" + db.getOrderNo() + "已派工，请及时接单",
+            content,
+            "4",   // 待办事项
+            "3",   // 紧急
+            "dms",
+            db.getOrderId(),
+            "/dms/workorder/list?id=" + db.getOrderId(),
+            "dms:workorder:list",
+            "1",   // bizStatus: 已派工
+            "设备工单"
+        );
+
         return rows;
     }
 
@@ -164,6 +227,28 @@ public class DmsWorkOrderServiceImpl implements IDmsWorkOrderService
                 + (db.getEquipmentName() != null ? "，设备：" + db.getEquipmentName() : "")
                 + "，请及时接单处理。");
 
+        // 改派后，标记之前的派工消息为已处理
+        messageHelper.markHandled("dms", db.getOrderId());
+
+        // 发送消息中心提醒：设备工单已改派，通知新维修员接单
+        String orderTypeTextReassign = getOrderTypeText(db.getOrderType());
+        String contentReassign = "设备：" + (db.getEquipmentName() != null ? db.getEquipmentName() : "-")
+                + "，故障类型：" + orderTypeTextReassign
+                + "，原维修人：" + (db.getAssigneeName() != null ? db.getAssigneeName() : "-")
+                + "，请及时接单处理。";
+        messageHelper.sendMessage(
+            "设备工单" + db.getOrderNo() + "已改派给您，请及时接单",
+            contentReassign,
+            "4",   // 待办事项
+            "3",   // 紧急
+            "dms",
+            db.getOrderId(),
+            "/dms/workorder/list?id=" + db.getOrderId(),
+            "dms:workorder:list",
+            "1",   // bizStatus: 已派工
+            "设备工单"
+        );
+
         return rows;
     }
 
@@ -182,6 +267,9 @@ public class DmsWorkOrderServiceImpl implements IDmsWorkOrderService
 
         workOrderLogService.recordLog(orderId, db.getOrderNo(),
                 "1", "2", "accept", getCurrentUsername(), "接单");
+
+        // 接单后，标记"已派工待接单"阶段的消息为已处理
+        messageHelper.markHandled("dms", orderId);
 
         // 通知报修人
         sendWorkOrderNotice(db, "报修确认通知",
@@ -205,6 +293,9 @@ public class DmsWorkOrderServiceImpl implements IDmsWorkOrderService
         workOrderLogService.recordLog(orderId, db.getOrderNo(),
                 db.getOrderStatus(), "3", "process", getCurrentUsername(), "开始处理");
 
+        // 开始处理后，标记"待接单"阶段的消息为已处理
+        messageHelper.markHandled("dms", orderId);
+
         return rows;
     }
 
@@ -223,6 +314,9 @@ public class DmsWorkOrderServiceImpl implements IDmsWorkOrderService
                 "3", "4", "complete", getCurrentUsername(),
                 "完工" + (workOrder.getCompleteRemark() != null ? "：" + workOrder.getCompleteRemark() : ""));
 
+        // 完工后，标记"处理中"阶段的消息为已处理
+        messageHelper.markHandled("dms", workOrder.getOrderId());
+
         return rows;
     }
 
@@ -240,6 +334,9 @@ public class DmsWorkOrderServiceImpl implements IDmsWorkOrderService
         workOrderLogService.recordLog(workOrder.getOrderId(), db.getOrderNo(),
                 "4", "5", "verify", getCurrentUsername(),
                 "验收通过" + (workOrder.getRating() != null ? "，评分：" + workOrder.getRating() + "星" : ""));
+
+        // 验收通过 = 工单终态，标记该工单所有消息为已处理
+        messageHelper.markHandled("dms", workOrder.getOrderId());
 
         // 验收通过后，自动创建备件出库单并扣减库存
         String sparePartsUsed = db.getSparePartsUsed();
@@ -266,6 +363,9 @@ public class DmsWorkOrderServiceImpl implements IDmsWorkOrderService
                 "4", "7", "reject", getCurrentUsername(),
                 "驳回：" + (workOrder.getVerifyOpinion() != null ? workOrder.getVerifyOpinion() : ""));
 
+        // 驳回后，标记"待验收"阶段的消息为已处理
+        messageHelper.markHandled("dms", workOrder.getOrderId());
+
         // 通知维修人重做
         sendWorkOrderNotice(db, "工单驳回通知",
                 "工单「" + db.getOrderNo() + "」验收未通过，请重新处理。"
@@ -288,6 +388,9 @@ public class DmsWorkOrderServiceImpl implements IDmsWorkOrderService
 
         workOrderLogService.recordLog(orderId, db.getOrderNo(),
                 db.getOrderStatus(), "6", "cancel", getCurrentUsername(), "撤销");
+
+        // 撤销 = 工单终态，标记该工单所有消息为已处理
+        messageHelper.markHandled("dms", orderId);
 
         return rows;
     }
@@ -397,6 +500,23 @@ public class DmsWorkOrderServiceImpl implements IDmsWorkOrderService
             case "2": return "中";
             case "3": return "低";
             default: return priority;
+        }
+    }
+
+    /**
+     * 工单类型字典转换
+     */
+    private String getOrderTypeText(String orderType)
+    {
+        if (orderType == null) return "-";
+        switch (orderType)
+        {
+            case "0": return "故障报修";
+            case "1": return "PM维护";
+            case "2": return "点检整改";
+            case "3": return "临时任务";
+            case "4": return "改造安装";
+            default: return orderType;
         }
     }
 

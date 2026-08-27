@@ -156,8 +156,9 @@
             </template>
           </el-table-column>
           <el-table-column label="最后跟进" prop="lastFollowTime" key="lastFollowTime" :width="colWidth('lastFollowTime', 160)" resizable sortable="custom" v-if="columns.lastFollowTime.visible" />
-          <el-table-column label="操作" width="320" align="center" fixed="right">
+          <el-table-column label="操作" width="180" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
+              <div class="action-btn-row">
               <el-button link type="primary" icon="View" @click="handleView(scope.row)">详情</el-button>
               <el-button link type="primary" icon="ChatDotRound" @click="handleFollowUp(scope.row)" v-if="scope.row.leadStatus !== '4' && scope.row.leadStatus !== '5'" v-hasPermi="['marketing:lead:edit']">跟进</el-button>
               <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['marketing:lead:edit']">修改</el-button>
@@ -173,6 +174,7 @@
                   </el-dropdown-menu>
                 </template>
               </el-dropdown>
+              </div>
             </template>
           </el-table-column>
         </el-table>

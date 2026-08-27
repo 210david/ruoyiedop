@@ -16,6 +16,7 @@ import com.ruoyi.wms.mapper.WmsMoveOrderMapper;
 import com.ruoyi.wms.service.IWmsMoveOrderService;
 import com.ruoyi.wms.service.IWmsInventoryService;
 import com.ruoyi.mk.service.IMkNumberRuleService;
+import com.ruoyi.system.utils.MessageHelper;
 
 @Service
 public class WmsMoveOrderServiceImpl implements IWmsMoveOrderService
@@ -31,6 +32,9 @@ public class WmsMoveOrderServiceImpl implements IWmsMoveOrderService
 
     @Autowired
     private IMkNumberRuleService mkNumberRuleService;
+
+    @Autowired
+    private MessageHelper messageHelper;
 
     @Override
     public List<WmsMoveOrder> selectMoveOrderList(WmsMoveOrder move)
@@ -82,11 +86,24 @@ public class WmsMoveOrderServiceImpl implements IWmsMoveOrderService
             throw new ServiceException("源库位库存不足，可用数量：" + inv.getQty() + "，移库数量：" + move.getMoveQty());
         }
         move.setDelFlag("0");
+        move.setCreateBy(SecurityUtils.getUsername());
+        move.setCreateTime(new Date());
         if (move.getStatus() == null)
         {
             move.setStatus("0");
         }
-        return wmsMoveOrderMapper.insertMoveOrder(move);
+        int rows = wmsMoveOrderMapper.insertMoveOrder(move);
+        // 发送消息：移库单待审批
+        messageHelper.sendMessage(
+            "移库单" + move.getMoveNo() + "待审批",
+            "物料：" + (move.getMaterialName() != null ? move.getMaterialName() : "") + "，源库位：" + (move.getFromLocationCode() != null ? move.getFromLocationCode() : "") + " → 目标库位：" + (move.getToLocationCode() != null ? move.getToLocationCode() : "") + "，移库数量：" + move.getMoveQty(),
+            "3", "2", "wms", move.getMoveId(),
+            "/wms/move?id=" + move.getMoveId(),
+            "wms:move:edit",
+"0",  // bizStatus: 待审批
+            "移库管理"  // bizEntryName
+);
+        return rows;
     }
 
     @Override
@@ -114,7 +131,20 @@ public class WmsMoveOrderServiceImpl implements IWmsMoveOrderService
         move.setApproveBy(SecurityUtils.getUsername());
         move.setApproveTime(new Date());
         move.setApproveOpinion(approveOpinion);
-        return wmsMoveOrderMapper.updateMoveOrder(move);
+        int rows = wmsMoveOrderMapper.updateMoveOrder(move);
+        // 发送消息：移库单已审批通过
+        messageHelper.sendMessage(
+            "移库单" + move.getMoveNo() + "已审批通过，请执行移库",
+            "物料：" + (move.getMaterialName() != null ? move.getMaterialName() : "") + "，源库位：" + (move.getFromLocationCode() != null ? move.getFromLocationCode() : "") + " → 目标库位：" + (move.getToLocationCode() != null ? move.getToLocationCode() : "") + "，移库数量：" + move.getMoveQty(),
+            "1", "1", "wms", moveId,
+            "/wms/move?id=" + moveId,
+            "wms:move:edit",
+            null,
+            "移库管理"  // bizEntryName
+        );
+        // 移库审批通过，标记"待审批"消息为已处理
+        messageHelper.markHandled("wms", moveId);
+        return rows;
     }
 
     @Override
@@ -130,7 +160,20 @@ public class WmsMoveOrderServiceImpl implements IWmsMoveOrderService
         move.setApproveBy(SecurityUtils.getUsername());
         move.setApproveTime(new Date());
         move.setApproveOpinion(approveOpinion);
-        return wmsMoveOrderMapper.updateMoveOrder(move);
+        int rows = wmsMoveOrderMapper.updateMoveOrder(move);
+        // 发送消息：移库单已被驳回
+        messageHelper.sendMessage(
+            "移库单" + move.getMoveNo() + "审批被驳回",
+            "驳回原因：" + (approveOpinion != null ? approveOpinion : "无"),
+            "1", "2", "wms", moveId,
+            "/wms/move?id=" + moveId,
+            "wms:move:edit",
+            null,
+            "移库管理"  // bizEntryName
+        );
+        // 移库审批被驳回，标记"待审批"消息为已处理
+        messageHelper.markHandled("wms", moveId);
+        return rows;
     }
 
     @Override
@@ -170,6 +213,19 @@ public class WmsMoveOrderServiceImpl implements IWmsMoveOrderService
             throw new ServiceException("当前状态无法作废，只有待审批或已批准的移库单可以作废");
         }
         move.setStatus("3");
-        return wmsMoveOrderMapper.updateMoveOrder(move);
+        int rows = wmsMoveOrderMapper.updateMoveOrder(move);
+        // 发送消息：移库单已作废
+        messageHelper.sendMessage(
+            "移库单" + move.getMoveNo() + "已作废",
+            "",
+            "1", "2", "wms", moveId,
+            "/wms/move?id=" + moveId,
+            "wms:move:edit",
+            null,
+            "移库管理"  // bizEntryName
+        );
+        // 移库已作废，标记之前的消息为已处理
+        messageHelper.markHandled("wms", moveId);
+        return rows;
     }
 }

@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.hr.mapper.HrLeaveMapper">
+
+    <resultMap type="HrLeave" id="HrLeaveResult">
+        <result property="leaveId" column="leave_id"/>
+        <result property="leaveNo" column="leave_no"/>
+        <result property="employeeId" column="employee_id"/>
+        <result property="employeeName" column="employee_name"/>
+        <result property="employeeNo" column="employee_no"/>
+        <result property="leaveType" column="leave_type"/>
+        <result property="leaveDate" column="leave_date"/>
+        <result property="reason" column="reason"/>
+        <result property="handoverStatus" column="handover_status"/>
+        <result property="handoverRemark" column="handover_remark"/>
+        <result property="healthCheck" column="health_check"/>
+        <result property="compensationType" column="compensation_type"/>
+        <result property="compensationAmount" column="compensation_amount"/>
+        <result property="annualLeaveBalance" column="annual_leave_balance"/>
+        <result property="annualLeaveAmount" column="annual_leave_amount"/>
+        <result property="settlementAmount" column="settlement_amount"/>
+        <result property="certificateNo" column="certificate_no"/>
+        <result property="auditStatus" column="audit_status"/>
+        <result property="auditBy" column="audit_by"/>
+        <result property="auditTime" column="audit_time"/>
+        <result property="auditRemark" column="audit_remark"/>
+        <result property="status" column="status"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <sql id="selectVo">
+        SELECT leave_id, leave_no, employee_id, employee_name, employee_no, leave_type, leave_date, reason, handover_status, handover_remark, health_check, compensation_type, compensation_amount, annual_leave_balance, annual_leave_amount, settlement_amount, certificate_no, audit_status, audit_by, audit_time, audit_remark, status, del_flag, create_by, create_time, update_by, update_time, remark
+        FROM biz_hr_leave
+    </sql>
+
+    <select id="selectHrLeaveList" parameterType="HrLeave" resultMap="HrLeaveResult">
+        <include refid="selectVo"/>
+        <where>
+            del_flag = '0'
+            <if test="leaveNo != null and leaveNo != ''"> AND leave_no LIKE CONCAT('%', #{leaveNo}, '%')</if>
+            <if test="employeeId != null"> AND employee_id = #{employeeId}</if>
+            <if test="employeeName != null and employeeName != ''"> AND employee_name LIKE CONCAT('%', #{employeeName}, '%')</if>
+            <if test="employeeNo != null and employeeNo != ''"> AND employee_no LIKE CONCAT('%', #{employeeNo}, '%')</if>
+            <if test="leaveType != null and leaveType != ''"> AND leave_type LIKE CONCAT('%', #{leaveType}, '%')</if>
+            <if test="leaveDate != null"> AND leave_date = #{leaveDate}</if>
+            <if test="reason != null and reason != ''"> AND reason LIKE CONCAT('%', #{reason}, '%')</if>
+            <if test="handoverStatus != null and handoverStatus != ''"> AND handover_status LIKE CONCAT('%', #{handoverStatus}, '%')</if>
+            <if test="handoverRemark != null and handoverRemark != ''"> AND handover_remark LIKE CONCAT('%', #{handoverRemark}, '%')</if>
+            <if test="healthCheck != null and healthCheck != ''"> AND health_check LIKE CONCAT('%', #{healthCheck}, '%')</if>
+            <if test="compensationType != null and compensationType != ''"> AND compensation_type LIKE CONCAT('%', #{compensationType}, '%')</if>
+            <if test="compensationAmount != null"> AND compensation_amount = #{compensationAmount}</if>
+            <if test="annualLeaveBalance != null"> AND annual_leave_balance = #{annualLeaveBalance}</if>
+            <if test="annualLeaveAmount != null"> AND annual_leave_amount = #{annualLeaveAmount}</if>
+            <if test="settlementAmount != null"> AND settlement_amount = #{settlementAmount}</if>
+            <if test="certificateNo != null and certificateNo != ''"> AND certificate_no LIKE CONCAT('%', #{certificateNo}, '%')</if>
+            <if test="auditStatus != null and auditStatus != ''"> AND audit_status LIKE CONCAT('%', #{auditStatus}, '%')</if>
+            <if test="auditBy != null and auditBy != ''"> AND audit_by LIKE CONCAT('%', #{auditBy}, '%')</if>
+            <if test="auditTime != null"> AND audit_time = #{auditTime}</if>
+            <if test="auditRemark != null and auditRemark != ''"> AND audit_remark LIKE CONCAT('%', #{auditRemark}, '%')</if>
+            <if test="status != null and status != ''"> AND status LIKE CONCAT('%', #{status}, '%')</if>
+            <if test="delFlag != null and delFlag != ''"> AND del_flag LIKE CONCAT('%', #{delFlag}, '%')</if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+
+    <select id="selectHrLeaveById" parameterType="Long" resultMap="HrLeaveResult">
+        <include refid="selectVo"/> WHERE leave_id = #{leaveId}
+    </select>
+
+    <insert id="insertHrLeave" parameterType="HrLeave" useGeneratedKeys="true" keyProperty="leaveId">
+        INSERT INTO biz_hr_leave (
+            leave_no, employee_id, employee_name, employee_no, leave_type, leave_date, reason, handover_status, handover_remark, health_check, compensation_type, compensation_amount, annual_leave_balance, annual_leave_amount, settlement_amount, certificate_no, audit_status, audit_by, audit_time, audit_remark, status, del_flag, create_by, create_time, remark
+        ) VALUES (
+            #{leaveNo}, #{employeeId}, #{employeeName}, #{employeeNo}, #{leaveType}, #{leaveDate}, #{reason}, #{handoverStatus}, #{handoverRemark}, #{healthCheck}, #{compensationType}, #{compensationAmount}, #{annualLeaveBalance}, #{annualLeaveAmount}, #{settlementAmount}, #{certificateNo}, #{auditStatus}, #{auditBy}, #{auditTime}, #{auditRemark}, #{status}, #{delFlag}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateHrLeave" parameterType="HrLeave">
+        UPDATE biz_hr_leave
+        <set>
+            <if test="leaveNo != null and leaveNo != ''">leave_no = #{leaveNo},</if>
+            <if test="employeeId != null">employee_id = #{employeeId},</if>
+            <if test="employeeName != null and employeeName != ''">employee_name = #{employeeName},</if>
+            <if test="employeeNo != null and employeeNo != ''">employee_no = #{employeeNo},</if>
+            <if test="leaveType != null and leaveType != ''">leave_type = #{leaveType},</if>
+            <if test="leaveDate != null">leave_date = #{leaveDate},</if>
+            <if test="reason != null and reason != ''">reason = #{reason},</if>
+            <if test="handoverStatus != null and handoverStatus != ''">handover_status = #{handoverStatus},</if>
+            <if test="handoverRemark != null and handoverRemark != ''">handover_remark = #{handoverRemark},</if>
+            <if test="healthCheck != null and healthCheck != ''">health_check = #{healthCheck},</if>
+            <if test="compensationType != null and compensationType != ''">compensation_type = #{compensationType},</if>
+            <if test="compensationAmount != null">compensation_amount = #{compensationAmount},</if>
+            <if test="annualLeaveBalance != null">annual_leave_balance = #{annualLeaveBalance},</if>
+            <if test="annualLeaveAmount != null">annual_leave_amount = #{annualLeaveAmount},</if>
+            <if test="settlementAmount != null">settlement_amount = #{settlementAmount},</if>
+            <if test="certificateNo != null and certificateNo != ''">certificate_no = #{certificateNo},</if>
+            <if test="auditStatus != null and auditStatus != ''">audit_status = #{auditStatus},</if>
+            <if test="auditBy != null and auditBy != ''">audit_by = #{auditBy},</if>
+            <if test="auditTime != null">audit_time = #{auditTime},</if>
+            <if test="auditRemark != null and auditRemark != ''">audit_remark = #{auditRemark},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="delFlag != null and delFlag != ''">del_flag = #{delFlag},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE leave_id = #{leaveId}
+    </update>
+
+    <delete id="deleteHrLeaveById" parameterType="Long">
+        UPDATE biz_hr_leave SET del_flag = '2' WHERE leave_id = #{leaveId}
+    </delete>
+
+    <delete id="deleteHrLeaveByIds" parameterType="Long">
+        UPDATE biz_hr_leave SET del_flag = '2' WHERE leave_id IN
+        <foreach item="leaveId" collection="array" open="(" separator="," close=")">#{leaveId}</foreach>
+    </delete>
+
+</mapper>

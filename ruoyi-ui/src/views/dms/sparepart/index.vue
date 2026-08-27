@@ -73,16 +73,24 @@
 
     <!-- ===== Table Section ===== -->
     <div class="surface">
+      <!-- Type Tabs -->
+      <div class="status-tabs">
+        <div class="tabs-track">
+          <button class="status-tab" :class="{ 'is-active': activeTypeTab === 'all' }" @click="handleTypeTabClick('all')">
+            <span class="dot"></span><span>全部</span><span class="count">{{ typeCounts.all || 0 }}</span>
+          </button>
+          <button v-for="t in dms_part_type" :key="t.value" class="status-tab" :class="[typeTabClass(t.value), { 'is-active': activeTypeTab === t.value }]" @click="handleTypeTabClick(t.value)">
+            <span class="dot"></span><span>{{ t.label }}</span><span class="count">{{ typeCounts[t.value] || 0 }}</span>
+          </button>
+        </div>
+      </div>
+      <!-- Toolbar -->
       <div class="toolbar">
         <div class="left">
           <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['dms:sparepart:add']">新增</el-button>
           <button type="button" class="btn-soft is-outline" :disabled="single" @click="handleUpdate" v-hasPermi="['dms:sparepart:edit']">
             <el-icon><Edit /></el-icon> 修改
           </button>
-          <button type="button" class="btn-soft is-danger-outline" :disabled="multiple" @click="handleDelete" v-hasPermi="['dms:sparepart:remove']">
-            <el-icon><Delete /></el-icon> 删除
-          </button>
-          <div class="toolbar-divider"></div>
           <button type="button" class="btn-soft is-outline" @click="handleExport" v-hasPermi="['dms:sparepart:export']">
             <el-icon><Download /></el-icon> 导出
           </button>
@@ -119,10 +127,12 @@
             </template>
           </el-table-column>
           <el-table-column label="备注" prop="remark" key="remark" :width="colWidth('remark', 180)" resizable show-overflow-tooltip v-if="columns.remark.visible" />
-          <el-table-column label="操作" width="180" align="center" fixed="right">
+          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
-              <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['dms:sparepart:query']">查看</el-button>
-              <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['dms:sparepart:edit']">修改</el-button>
+              <div class="action-btn-row">
+                <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['dms:sparepart:query']">查看</el-button>
+                <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['dms:sparepart:edit']">修改</el-button>
+              </div>
             </template>
           </el-table-column>
         </el-table>
@@ -170,9 +180,14 @@
           </el-col>
           <el-col :span="12">
             <el-form-item label="供应商" prop="supplier">
-              <el-select v-model="form.supplier" filterable clearable placeholder="请选择供应商" style="width: 100%">
-                <el-option v-for="s in supplierOptions" :key="s.supplierId" :label="s.supplierName" :value="s.supplierName" />
-              </el-select>
+              <el-input v-model="form.supplier" readonly placeholder="请选择供应商" style="width: 100%" @click="openSupplierPicker">
+                <template v-if="form.supplier" #append>
+                  <el-button icon="CircleClose" @click.stop="clearSupplier" />
+                </template>
+                <template v-else #append>
+                  <el-button icon="Search" @click="openSupplierPicker" />
+                </template>
+              </el-input>
             </el-form-item>
           </el-col>
         </el-row>
@@ -219,12 +234,19 @@
         <el-button type="primary" @click="submitForm" v-if="!formDisabled">确 定</el-button>
       </template>
     </el-dialog>
+
+    <!-- 备件详情弹窗 -->
+    <DmsSparePartViewDrawer ref="sparepartViewRef" />
+
+    <!-- 供应商选择弹框 -->
+    <supplier-picker ref="supplierPickerRef" title="选择供应商" @confirm="onSupplierPickerConfirm" />
   </div>
 </template>
 
 <script setup name="DmsSparePart">
 import { listSparepart, getSparepart, addSparepart, updateSparepart, delSparepart } from '@/api/dms/sparepart'
-import { listSupplier } from '@/api/wms/supplier'
+import SupplierPicker from '@/components/SupplierPicker/index.vue'
+import DmsSparePartViewDrawer from './view.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
 import { Search, Filter, RefreshLeft, Edit, Delete, Download, ArrowDown } from '@element-plus/icons-vue'
@@ -235,7 +257,8 @@ const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResiz
 const { wms_unit, dms_part_type } = proxy.useDict('wms_unit', 'dms_part_type')
 
 const list = ref([])
-const supplierOptions = ref([])
+const supplierPickerRef = ref(null)
+const sparepartViewRef = ref(null)
 const open = ref(false)
 const loading = ref(true)
 const showSearch = ref(true)
@@ -245,6 +268,8 @@ const multiple = ref(true)
 const total = ref(0)
 const title = ref('')
 const formDisabled = ref(false)
+const activeTypeTab = ref('all')
+const typeCounts = ref({ all: 0 })
 
 const defaultColumns = {
   partCode: { label: '备件编号', visible: true },
@@ -301,19 +326,25 @@ const { queryParams, form, rules } = toRefs(data)
 
 function getList() {
   loading.value = true
-  listSparepart(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false; applySavedWidths() })
+  listSparepart(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false; applySavedWidths() }).catch(() => { loading.value = false })
 }
-/** 获取供应商列表 */
-function getSupplierList() {
-  listSupplier({ pageNum: 1, pageSize: 9999, status: '0' }).then(res => { supplierOptions.value = res.rows })
+function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList(); loadTypeCounts() }
+function resetQuery() { queryParams.value.partCode = undefined; queryParams.value.partName = undefined; queryParams.value.partType = undefined; queryParams.value.status = undefined; queryParams.value.specModel = undefined; queryParams.value.supplier = undefined; activeTypeTab.value = 'all'; handleQuery() }
+function handleTypeTabClick(type) { activeTypeTab.value = type; queryParams.value.partType = type === 'all' ? undefined : type; handleQuery() }
+function typeTabClass(value) { const map = { '0': 'tab-mechanical', '1': 'tab-electrical', '2': 'tab-hydraulic', '3': 'tab-instrument', '4': 'tab-consumable', '5': 'tab-other' }; return map[value] || '' }
+function loadTypeCounts() {
+  listSparepart({ pageNum: 1, pageSize: 9999 }).then(res => {
+    const counts = { all: res.total };
+    (dms_part_type.value || []).forEach(d => { counts[d.value] = 0 });
+    (res.rows || []).forEach(r => { if (counts[r.partType] !== undefined) counts[r.partType]++ });
+    typeCounts.value = counts
+  }).catch(() => {})
 }
-function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
-function resetQuery() { queryParams.value.partCode = undefined; queryParams.value.partName = undefined; queryParams.value.partType = undefined; queryParams.value.status = undefined; queryParams.value.specModel = undefined; queryParams.value.supplier = undefined; proxy.resetForm('queryRef'); handleQuery() }
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.partId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function reset() {
   form.value = {
     partCode: undefined, partName: undefined, partType: undefined, specModel: undefined, unit: undefined,
-    supplier: undefined, stockMin: undefined, stockMax: undefined, status: '0', remark: undefined
+    supplierId: undefined, supplier: undefined, stockMin: undefined, stockMax: undefined, status: '0', remark: undefined
   }
   proxy.resetForm('sparepartRef')
 }
@@ -328,10 +359,9 @@ function handleUpdate(row) {
   formDisabled.value = false
   getSparepart(row.partId || ids.value[0]).then(res => { form.value = res.data; open.value = true; title.value = '修改备件' })
 }
+/** 查看备件详情 */
 function handleView(row) {
-  reset()
-  formDisabled.value = true
-  getSparepart(row.partId).then(res => { form.value = res.data; open.value = true; title.value = '查看备件' })
+  sparepartViewRef.value?.open(row.partId)
 }
 function submitForm() {
   proxy.$refs['sparepartRef'].validate(valid => {
@@ -345,8 +375,23 @@ function handleDelete(row) { const partIds = row.partId || ids.value; proxy.$mod
 function handleExport() { proxy.download('dms/sparepart/export', { ...queryParams.value }, `sparepart_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 
+/** 打开供应商选择弹窗 */
+function openSupplierPicker() {
+  supplierPickerRef.value.open(form.value.supplierId)
+}
+/** 供应商选择确认回调 */
+function onSupplierPickerConfirm(supplier) {
+  form.value.supplierId = supplier.supplierId
+  form.value.supplier = supplier.supplierName
+}
+/** 清除供应商 */
+function clearSupplier() {
+  form.value.supplierId = undefined
+  form.value.supplier = undefined
+}
+
 getList()
-getSupplierList()
+loadTypeCounts()
 </script>
 
 <style scoped>
@@ -367,6 +412,36 @@ getSupplierList()
   color: var(--ink-900);
 }
 .dms-sparepart-page .surface { background:#fff; border:1px solid var(--ink-200); border-radius:var(--r-lg); box-shadow:var(--shadow-card); overflow:hidden; margin-bottom:8px; }
+
+/* ===== Type Tabs ===== */
+.dms-sparepart-page .status-tabs { display:flex; align-items:center; gap:12px; padding:6px 10px 6px 12px; border-bottom:1px solid var(--ink-200); background:#fff; }
+.dms-sparepart-page .tabs-track { display:flex; align-items:center; gap:4px; flex-wrap:wrap; }
+.dms-sparepart-page .status-tab { display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 12px; border-radius:var(--r-sm); font-size:14px; color:var(--ink-500); cursor:pointer; user-select:none; transition:all .15s var(--ease-out); white-space:nowrap; border:1px solid transparent; background:transparent; }
+.dms-sparepart-page .status-tab .dot { width:6px; height:6px; border-radius:50%; background:var(--ink-300); }
+.dms-sparepart-page .status-tab .count { font-size:12px; font-weight:600; padding:1px 6px; border-radius:999px; background:var(--ink-100); color:var(--ink-500); min-width:18px; text-align:center; line-height:1.4; font-feature-settings:"tnum" 1; }
+.dms-sparepart-page .status-tab:hover { background:var(--ink-50); color:var(--ink-700); }
+.dms-sparepart-page .status-tab.is-active { background:var(--brand-50); color:var(--brand-700); font-weight:600; border-color:var(--brand-200); }
+.dms-sparepart-page .status-tab.is-active .count { background:var(--brand-600); color:#fff; }
+.dms-sparepart-page .status-tab.is-active .dot { background:var(--brand-500); }
+/* 备件类别颜色 */
+.dms-sparepart-page .status-tab.tab-mechanical .dot { background:var(--amber-500); }
+.dms-sparepart-page .status-tab.tab-mechanical .count { background:var(--amber-50); color:var(--amber-700); }
+.dms-sparepart-page .status-tab.is-active.tab-mechanical .count { background:var(--amber-500); color:#fff; }
+.dms-sparepart-page .status-tab.tab-electrical .dot { background:var(--blue-500); }
+.dms-sparepart-page .status-tab.tab-electrical .count { background:var(--blue-50); color:var(--blue-700); }
+.dms-sparepart-page .status-tab.is-active.tab-electrical .count { background:var(--blue-500); color:#fff; }
+.dms-sparepart-page .status-tab.tab-hydraulic .dot { background:var(--green-500); }
+.dms-sparepart-page .status-tab.tab-hydraulic .count { background:var(--green-50); color:var(--green-700); }
+.dms-sparepart-page .status-tab.is-active.tab-hydraulic .count { background:var(--green-500); color:#fff; }
+.dms-sparepart-page .status-tab.tab-instrument .dot { background:#8b5cf6; }
+.dms-sparepart-page .status-tab.tab-instrument .count { background:var(--violet-50); color:#7c3aed; }
+.dms-sparepart-page .status-tab.is-active.tab-instrument .count { background:#8b5cf6; color:#fff; }
+.dms-sparepart-page .status-tab.tab-consumable .dot { background:#06b6d4; }
+.dms-sparepart-page .status-tab.tab-consumable .count { background:#ecfeff; color:#0e7490; }
+.dms-sparepart-page .status-tab.is-active.tab-consumable .count { background:#06b6d4; color:#fff; }
+.dms-sparepart-page .status-tab.tab-other .dot { background:var(--ink-400); }
+.dms-sparepart-page .status-tab.tab-other .count { background:var(--ink-100); color:var(--ink-500); }
+.dms-sparepart-page .status-tab.is-active.tab-other .count { background:var(--ink-400); color:#fff; }
 .dms-sparepart-page .filter-card { padding:14px 20px 16px; }
 .dms-sparepart-page .filter-card .filter-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
 .dms-sparepart-page .filter-card .filter-title { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--ink-700); }
@@ -430,6 +505,13 @@ getSupplierList()
 .dms-sparepart-page .pagination-container :deep(.el-pagination .btn-prev), .dms-sparepart-page .pagination-container :deep(.el-pagination .btn-next) { border-radius:6px; border:1px solid var(--ink-200); background:#fff; min-width:32px; height:32px; }
 .dms-sparepart-page .pagination-container :deep(.el-pagination .btn-prev:hover), .dms-sparepart-page .pagination-container :deep(.el-pagination .btn-next:hover) { border-color:var(--brand-200); color:var(--brand-700); }
 .dms-sparepart-page .pagination-container :deep(.el-pagination .el-pagination__sizes .el-select__wrapper) { border-radius:6px; box-shadow:0 0 0 1px var(--ink-200) inset; }
+/* 操作列按钮对齐：每行2个按钮，flex-wrap 自动换行 */
+.dms-sparepart-page :deep(.col-action) { padding: 6px 4px !important; }
+.dms-sparepart-page :deep(.col-action .cell) { display: flex; justify-content: center; padding: 0; }
+.dms-sparepart-page .action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
+.dms-sparepart-page :deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
+.dms-sparepart-page :deep(.col-action .el-button + .el-button) { margin-left: 2px; }
+
 @media (max-width:1100px) { .dms-sparepart-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }
 @media (max-width:720px) { .dms-sparepart-page .filter-card .filter-bar { grid-template-columns:1fr; } .dms-sparepart-page .toolbar { flex-wrap:wrap; gap:10px; } }
 </style>

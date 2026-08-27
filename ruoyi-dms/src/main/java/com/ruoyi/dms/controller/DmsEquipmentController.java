@@ -144,6 +144,7 @@ public class DmsEquipmentController extends BaseController
         log.setEquipmentCode(oldData.getEquipmentCode());
         log.setEquipmentName(oldData.getEquipmentName());
         log.setChangeType(changeType);
+        log.setFieldLabel(fieldLabel);
         log.setOldValue(oldVal);
         log.setNewValue(newVal);
         log.setChangeReason(fieldLabel + "变更");
@@ -192,14 +193,15 @@ public class DmsEquipmentController extends BaseController
         return getDataTable(list);
     }
 
-    /** 设备维修履历（关联工单） */
+    /** 设备维修履历（关联工单）- 分页查询 */
     @PreAuthorize("@ss.hasPermi('dms:equipment:query')")
     @GetMapping("/history/{equipmentId}")
-    public AjaxResult history(@PathVariable("equipmentId") Long equipmentId)
+    public TableDataInfo history(@PathVariable("equipmentId") Long equipmentId)
     {
+        startPage();
         DmsWorkOrder query = new DmsWorkOrder();
         query.setEquipmentId(equipmentId);
         List<DmsWorkOrder> orders = dmsWorkOrderMapper.selectWorkOrderList(query);
-        return AjaxResult.success(orders);
+        return getDataTable(orders);
     }
 }

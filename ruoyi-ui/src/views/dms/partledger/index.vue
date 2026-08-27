@@ -149,10 +149,12 @@
           <el-table-column label="存放位置" prop="storageLocation" key="storageLocation" :width="colWidth('storageLocation', 110)" resizable show-overflow-tooltip v-if="columns.storageLocation.visible" />
           <el-table-column label="供应商" prop="supplier" key="supplier" :width="colWidth('supplier', 110)" resizable show-overflow-tooltip v-if="columns.supplier.visible" />
           <el-table-column label="更新时间" prop="updateTime" key="updateTime" :width="colWidth('updateTime', 160)" resizable align="center" sortable="custom" v-if="columns.updateTime.visible" />
-          <el-table-column label="操作" width="130" align="center" fixed="right">
+          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
-              <el-button link type="primary" icon="View" @click="handleView(scope.row)">详情</el-button>
-              <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['dms:sparepart:remove']">删除</el-button>
+              <div class="action-btn-row">
+                <el-button link type="primary" icon="View" @click="handleView(scope.row)">详情</el-button>
+                <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['dms:sparepart:remove']">删除</el-button>
+              </div>
             </template>
           </el-table-column>
         </el-table>
@@ -461,6 +463,13 @@ getList()
 .dms-partledger-page .pagination-container :deep(.el-pagination .btn-prev), .dms-partledger-page .pagination-container :deep(.el-pagination .btn-next) { border-radius:6px; border:1px solid var(--ink-200); background:#fff; min-width:32px; height:32px; }
 .dms-partledger-page .pagination-container :deep(.el-pagination .btn-prev:hover), .dms-partledger-page .pagination-container :deep(.el-pagination .btn-next:hover) { border-color:var(--brand-200); color:var(--brand-700); }
 .dms-partledger-page .pagination-container :deep(.el-pagination .el-pagination__sizes .el-select__wrapper) { border-radius:6px; box-shadow:0 0 0 1px var(--ink-200) inset; }
+/* 操作列按钮对齐：每行2个按钮，flex-wrap 自动换行 */
+.dms-partledger-page :deep(.col-action) { padding: 6px 4px !important; }
+.dms-partledger-page :deep(.col-action .cell) { display: flex; justify-content: center; padding: 0; }
+.dms-partledger-page .action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
+.dms-partledger-page :deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
+.dms-partledger-page :deep(.col-action .el-button + .el-button) { margin-left: 2px; }
+
 @media (max-width:1100px) { .dms-partledger-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }
 @media (max-width:720px) { .dms-partledger-page .filter-card .filter-bar { grid-template-columns:1fr; } .dms-partledger-page .toolbar { flex-wrap:wrap; gap:10px; } }
 

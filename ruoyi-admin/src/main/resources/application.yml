@@ -152,7 +152,7 @@ xss:
   # 排除链接（多个用逗号分隔）
   excludes: /system/notice,/mk/invoice/recognize
   # 匹配链接
-  urlPatterns: /system/*,/monitor/*,/tool/*,/wms/*,/dms/*,/mk/*,/pms/*,/safety/*,/mms/*
+  urlPatterns: /system/*,/monitor/*,/tool/*,/wms/*,/dms/*,/mk/*,/pms/*,/safety/*,/mms/*,/hr/*
 
 # 采购管理模块配置
 pms:

@@ -86,13 +86,15 @@
           </el-table-column>
           <el-table-column label="总数量" prop="totalQty" key="totalQty" :width="colWidth('totalQty', 110)" resizable align="center" class-name="col-num" v-if="columns.totalQty.visible" />
           <el-table-column label="入库日期" prop="inboundDate" key="inboundDate" :width="colWidth('inboundDate', 130)" resizable align="center" v-if="columns.inboundDate.visible" />
-          <el-table-column label="操作" width="240" align="center" fixed="right">
-            <template #default="scope">
-              <el-button link type="primary" icon="View" @click="handleDetail(scope.row)">详情</el-button>
-              <el-button plain type="success" icon="Download" size="small" @click="handleDetail(scope.row)" v-if="scope.row.status === '1'">收货</el-button>
-              <el-button plain type="warning" icon="Upload" size="small" @click="handleDetail(scope.row)" v-if="scope.row.status === '2'">上架</el-button>
-            </template>
-          </el-table-column>
+          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
+<template #default="scope">
+<div class="action-btn-row">
+<el-button link type="primary" icon="View" @click="handleDetail(scope.row)">详情</el-button>
+<el-button link type="success" icon="Download" @click="handleDetail(scope.row)" v-if="scope.row.status === '1'">收货</el-button>
+<el-button link type="warning" icon="Upload" @click="handleDetail(scope.row)" v-if="scope.row.status === '2'">上架</el-button>
+</div>
+</template>
+</el-table-column>
         </el-table>
       </div>
       <div class="pagination-container">

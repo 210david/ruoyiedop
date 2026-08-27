@@ -28,8 +28,8 @@
 
       <!-- 触发器 -->
       <template #reference>
-        <div class="right-menu-item hover-effect notice-trigger" @click="goToMessageCenter">
-          <svg-icon icon-class="bell" />
+        <div class="notice-trigger" @click="goToMessageCenter">
+          <el-icon class="notice-icon"><Bell /></el-icon>
           <span v-if="messageStore.unreadCount > 0" class="notice-badge">{{ messageStore.unreadCount }}</span>
         </div>
       </template>
@@ -82,18 +82,14 @@ function goToMessageCenter() {
 
 // 预览消息详情（从铃铛弹窗点击）
 function previewNotice(item) {
-  // 通过 store 标记已读（会同步更新未读数）
-  if (!item.isRead) {
-    messageStore.markRead(item.messageId)
-  }
+  // 标记已读由 DetailView 内部统一处理，避免重复 POST
   proxy.$refs["messageViewRef"].open(item)
 }
 
 // 详情组件标记已读后的回调
-function onDetailRead(messageId) {
-  // store 已经在 DetailView 调用 markMessageRead 时更新了
-  // 但如果详情是从铃铛弹窗打开的，需要确保 store 知道
-  // 这里重新拉取确保数据一致
+function onDetailRead() {
+  // DetailView 已通过 store.markRead 更新了未读数
+  // 这里重新拉取确保铃铛弹窗列表数据一致
   messageStore.loadNoticeTop()
 }
 
@@ -106,23 +102,46 @@ function handleMarkAllRead() {
 <style lang="scss" scoped>
 .notice-trigger {
   position: relative;
-  transform: translateX(-6px);
-  .svg-icon { width: 1.2em; height: 1.2em; vertical-align: -0.2em; }
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 8px;
+  height: 36px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.25s, color 0.25s;
+  color: var(--navbar-text, #5a5e66);
+
+  &:hover {
+    background: var(--el-fill-color-light, rgba(0, 0, 0, 0.04));
+    color: var(--el-color-primary, #409eff);
+  }
+
+  .notice-icon {
+    font-size: 20px;
+    line-height: 1;
+  }
+
   .notice-badge {
     position: absolute;
-    top: 7px;
-    right: -3px;
+    top: 4px;
+    right: 2px;
     background: #f56c6c;
     color: #fff;
-    border-radius: 10px;
-    font-size: 10px;
-    height: 16px;
-    line-height: 16px;
-    padding: 0 4px;
-    min-width: 16px;
+    border-radius: 8px;
+    font-size: 9px;
+    line-height: 1;
+    height: 14px;
+    min-width: 14px;
+    padding: 0 3px;
     text-align: center;
     white-space: nowrap;
     pointer-events: none;
+    border: 1.5px solid var(--navbar-bg, #fff);
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 }
 .notice-popover { padding: 0 !important; }

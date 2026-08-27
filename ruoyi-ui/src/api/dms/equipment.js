@@ -20,8 +20,8 @@ export function delEquipment(equipmentId) {
   return request({ url: '/dms/equipment/' + equipmentId, method: 'delete' })
 }
 
-export function getEquipmentHistory(equipmentId) {
-  return request({ url: '/dms/equipment/history/' + equipmentId, method: 'get' })
+export function getEquipmentHistory(equipmentId, query) {
+  return request({ url: '/dms/equipment/history/' + equipmentId, method: 'get', params: query })
 }
 
 export function listEquipmentLog(query) {

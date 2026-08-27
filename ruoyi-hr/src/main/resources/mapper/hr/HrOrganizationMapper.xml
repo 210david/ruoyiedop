@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.hr.mapper.HrOrganizationMapper">
+
+    <resultMap type="HrOrganization" id="HrOrganizationResult">
+        <result property="orgId" column="org_id"/>
+        <result property="orgCode" column="org_code"/>
+        <result property="orgName" column="org_name"/>
+        <result property="parentId" column="parent_id"/>
+        <result property="orderNum" column="order_num"/>
+        <result property="orgLevel" column="org_level"/>
+        <result property="leaderId" column="leader_id"/>
+        <result property="leaderName" column="leader_name"/>
+        <result property="costCenter" column="cost_center"/>
+        <result property="attendanceOrg" column="attendance_org"/>
+        <result property="status" column="status"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <sql id="selectVo">
+        SELECT org_id, org_code, org_name, parent_id, order_num, org_level, leader_id, leader_name, cost_center, attendance_org, status, del_flag, create_by, create_time, update_by, update_time, remark
+        FROM biz_hr_organization
+    </sql>
+
+    <select id="selectHrOrganizationList" parameterType="HrOrganization" resultMap="HrOrganizationResult">
+        <include refid="selectVo"/>
+        <where>
+            del_flag = '0'
+            <if test="orgCode != null and orgCode != ''"> AND org_code LIKE CONCAT('%', #{orgCode}, '%')</if>
+            <if test="orgName != null and orgName != ''"> AND org_name LIKE CONCAT('%', #{orgName}, '%')</if>
+            <if test="parentId != null"> AND parent_id = #{parentId}</if>
+            <if test="orderNum != null"> AND order_num = #{orderNum}</if>
+            <if test="orgLevel != null"> AND org_level = #{orgLevel}</if>
+            <if test="leaderId != null"> AND leader_id = #{leaderId}</if>
+            <if test="leaderName != null and leaderName != ''"> AND leader_name LIKE CONCAT('%', #{leaderName}, '%')</if>
+            <if test="costCenter != null"> AND cost_center = #{costCenter}</if>
+            <if test="attendanceOrg != null"> AND attendance_org = #{attendanceOrg}</if>
+            <if test="status != null and status != ''"> AND status LIKE CONCAT('%', #{status}, '%')</if>
+            <if test="delFlag != null and delFlag != ''"> AND del_flag LIKE CONCAT('%', #{delFlag}, '%')</if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+
+    <select id="selectHrOrganizationById" parameterType="Long" resultMap="HrOrganizationResult">
+        <include refid="selectVo"/> WHERE org_id = #{orgId}
+    </select>
+
+    <insert id="insertHrOrganization" parameterType="HrOrganization" useGeneratedKeys="true" keyProperty="orgId">
+        INSERT INTO biz_hr_organization (
+            org_code, org_name, parent_id, order_num, org_level, leader_id, leader_name, cost_center, attendance_org, status, del_flag, create_by, create_time, remark
+        ) VALUES (
+            #{orgCode}, #{orgName}, #{parentId}, #{orderNum}, #{orgLevel}, #{leaderId}, #{leaderName}, #{costCenter}, #{attendanceOrg}, #{status}, #{delFlag}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateHrOrganization" parameterType="HrOrganization">
+        UPDATE biz_hr_organization
+        <set>
+            <if test="orgCode != null and orgCode != ''">org_code = #{orgCode},</if>
+            <if test="orgName != null and orgName != ''">org_name = #{orgName},</if>
+            <if test="parentId != null">parent_id = #{parentId},</if>
+            <if test="orderNum != null">order_num = #{orderNum},</if>
+            <if test="orgLevel != null">org_level = #{orgLevel},</if>
+            <if test="leaderId != null">leader_id = #{leaderId},</if>
+            <if test="leaderName != null and leaderName != ''">leader_name = #{leaderName},</if>
+            <if test="costCenter != null">cost_center = #{costCenter},</if>
+            <if test="attendanceOrg != null">attendance_org = #{attendanceOrg},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="delFlag != null and delFlag != ''">del_flag = #{delFlag},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE org_id = #{orgId}
+    </update>
+
+    <delete id="deleteHrOrganizationById" parameterType="Long">
+        UPDATE biz_hr_organization SET del_flag = '2' WHERE org_id = #{orgId}
+    </delete>
+
+    <delete id="deleteHrOrganizationByIds" parameterType="Long">
+        UPDATE biz_hr_organization SET del_flag = '2' WHERE org_id IN
+        <foreach item="orgId" collection="array" open="(" separator="," close=")">#{orgId}</foreach>
+    </delete>
+
+</mapper>

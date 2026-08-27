@@ -25,9 +25,15 @@ public class SysMessageServiceImpl implements ISysMessageService
     }
 
     @Override
-    public List<SysMessage> selectMessageListWithReadStatus(SysMessage message, Long userId)
+    public List<SysMessage> selectMessageListWithReadStatus(SysMessage message, Long userId, List<String> roleKeys)
     {
-        return messageMapper.selectMessageListWithReadStatus(message, userId);
+        return messageMapper.selectMessageListWithReadStatus(message, userId, roleKeys);
+    }
+
+    @Override
+    public long selectMessageListCount(SysMessage message, Long userId, List<String> roleKeys)
+    {
+        return messageMapper.selectMessageListCount(message, userId, roleKeys);
     }
 
     @Override
@@ -37,15 +43,15 @@ public class SysMessageServiceImpl implements ISysMessageService
     }
 
     @Override
-    public int selectUnreadCount(Long userId)
+    public int selectUnreadCount(Long userId, List<String> roleKeys)
     {
-        return messageMapper.selectUnreadCount(userId);
+        return messageMapper.selectUnreadCount(userId, roleKeys);
     }
 
     @Override
-    public List<SysMessage> selectMessageListTop(Long userId, int limit)
+    public List<SysMessage> selectMessageListTop(Long userId, List<String> roleKeys, int limit)
     {
-        return messageMapper.selectMessageListTop(userId, limit);
+        return messageMapper.selectMessageListTop(userId, roleKeys, limit);
     }
 
     @Override
@@ -62,5 +68,11 @@ public class SysMessageServiceImpl implements ISysMessageService
             return;
         }
         messageMapper.insertMessageReadBatch(userId, messageIds);
+    }
+
+    @Override
+    public void markHandled(String bizSource, Long bizId)
+    {
+        messageMapper.updateBizHandled(bizSource, bizId);
     }
 }

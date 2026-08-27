@@ -109,11 +109,13 @@
           <el-table-column label="互动内容" prop="content" key="content" show-overflow-tooltip v-if="columns.content.visible" />
           <el-table-column label="跟进人" prop="userName" key="userName" :width="colWidth('userName', 100)" resizable v-if="columns.userName.visible" />
           <el-table-column label="下次跟进" prop="nextTime" key="nextTime" :width="colWidth('nextTime', 160)" resizable sortable="custom" v-if="columns.nextTime.visible" />
-          <el-table-column label="操作" width="200" align="center" fixed="right">
+          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
-              <el-button link type="primary" icon="View" @click="handleView(scope.row)">详情</el-button>
-              <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['marketing:interaction:edit']">修改</el-button>
-              <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['marketing:interaction:remove']">删除</el-button>
+              <div class="action-btn-row">
+                <el-button link type="primary" icon="View" @click="handleView(scope.row)">详情</el-button>
+                <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['marketing:interaction:edit']">修改</el-button>
+                <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['marketing:interaction:remove']">删除</el-button>
+              </div>
             </template>
           </el-table-column>
         </el-table>

@@ -18,6 +18,7 @@ import com.ruoyi.qms.mapper.QmsNcrApproveLogMapper;
 import com.ruoyi.qms.service.IQmsNcrService;
 import com.ruoyi.qms.service.IQmsEsigRecordService;
 import com.ruoyi.mk.service.IMkNumberRuleService;
+import com.ruoyi.system.utils.MessageHelper;
 
 /**
  * 不合格品报告 Service实现
@@ -46,6 +47,9 @@ public class QmsNcrServiceImpl implements IQmsNcrService
 
     @Autowired
     private IMkNumberRuleService mkNumberRuleService;
+
+    @Autowired
+    private MessageHelper messageHelper;
 
     @Override
     public List<QmsNcr> selectNcrList(QmsNcr ncr)
@@ -164,6 +168,21 @@ public class QmsNcrServiceImpl implements IQmsNcrService
         log.setApproveTime(new Date());
         log.setCreateBy(SecurityUtils.getUsername());
         qmsNcrApproveLogMapper.insertApproveLog(log);
+        // 发送消息：NCR待评审
+        String content = "物料：" + (existing.getMaterialName() != null ? existing.getMaterialName() : "-")
+                + "，不合格数量：" + (existing.getDefectQty() != null ? existing.getDefectQty().toPlainString() : "0");
+        messageHelper.sendMessage(
+            "不合格品报告" + existing.getNcrNo() + "待评审",
+            content,
+            "3",   // 审批消息
+            "2",   // 重要
+            "qms",
+            ncrId,
+            "/qms/ncr/ncrlist?id=" + ncrId,
+            "qms:ncr:approve",
+"1",   // bizStatus: 待评审
+"NCR台账"  // bizEntryName
+);
         return 1;
     }
 
@@ -310,7 +329,22 @@ public class QmsNcrServiceImpl implements IQmsNcrService
         ncr.setDisposeRemark(ncr.getRemark());
         ncr.setNcrStatus("3");
         ncr.setCurrentNode(existing.getMaxNode() + 2);
-        return qmsNcrMapper.updateNcr(ncr);
+        int rows = qmsNcrMapper.updateNcr(ncr);
+
+        // 发送消息：NCR处置完成，待验证
+        messageHelper.sendMessage(
+            "不合格品报告" + existing.getNcrNo() + "处置已完成，请验证",
+            "处置方式：" + getDispositionText(ncr.getDisposition()),
+            "4",   // 待办事项
+            "2",   // 重要
+            "qms",
+            ncr.getNcrId(),
+            "/qms/ncr/ncrlist?id=" + ncr.getNcrId(),
+            "qms:ncr:edit",
+"3",   // bizStatus: 待验证
+"NCR台账"  // bizEntryName
+);
+        return rows;
     }
 
     @Override

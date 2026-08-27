@@ -1,6 +1,7 @@
 package com.ruoyi.dms.mapper;
 
 import java.util.List;
+import java.util.Map;
 import com.ruoyi.dms.domain.DmsWorkOrder;
 
 public interface DmsWorkOrderMapper
@@ -14,4 +15,10 @@ public interface DmsWorkOrderMapper
 
     /** 查询所有SLA超时的工单（未完结且超时未升级） */
     public List<DmsWorkOrder> selectSlaTimeoutOrders();
+
+    /** 统计全部工单数量 */
+    public int countAllWorkOrders();
+
+    /** 按状态统计工单数量 */
+    public List<Map<String, Object>> countByStatus();
 }

@@ -114,11 +114,13 @@
           <el-table-column label="领用人" prop="receiver" key="receiver" :width="colWidth('receiver', 100)" resizable v-if="columns.receiver.visible" />
           <el-table-column label="出库数量" prop="quantity" key="quantity" :width="colWidth('quantity', 90)" resizable align="center" v-if="columns.quantity.visible" />
           <el-table-column label="出库日期" prop="operateDate" key="operateDate" :width="colWidth('operateDate', 120)" resizable align="center" v-if="columns.operateDate.visible" />
-          <el-table-column label="操作" width="180" align="center" fixed="right">
+          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
         <template #default="scope">
-          <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['dms:partout:query']">查看</el-button>
-          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['dms:partout:edit']">修改</el-button>
-          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['dms:partstock:remove']">删除</el-button>
+          <div class="action-btn-row">
+            <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['dms:partout:query']">查看</el-button>
+            <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['dms:partout:edit']">修改</el-button>
+            <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['dms:partstock:remove']">删除</el-button>
+          </div>
         </template>
       </el-table-column>
     </el-table>
@@ -127,7 +129,7 @@
     </div>
 
     <!-- 新增出库弹窗 -->
-    <el-dialog v-model="open" width="600px" append-to-body draggable class="rd-dialog">
+    <el-dialog v-model="open" width="780px" append-to-body draggable class="rd-dialog">
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
@@ -167,9 +169,14 @@
         <el-row>
           <el-col :span="24">
             <el-form-item label="备件" prop="stockId">
-              <el-select v-model="form.stockId" filterable placeholder="请选择备件（仅显示有库存的）" style="width: 100%" @change="onPartChange" :disabled="!!form.recordId">
-                <el-option v-for="item in spareOptions" :key="item.stockId" :label="item.partCode + ' - ' + item.partName + '（' + (item.warehouseName || '默认') + '：' + (item.currentStock || 0) + '）'" :value="item.stockId" />
-              </el-select>
+              <el-input v-model="form.partName" readonly placeholder="请选择备件（仅显示有库存的）" style="width: 100%" @click="openSparePartPicker" :disabled="!!form.recordId">
+                <template v-if="form.partName && !form.recordId" #append>
+                  <el-button icon="CircleClose" @click.stop="clearSparePart" />
+                </template>
+                <template v-else #append>
+                  <el-button icon="Search" @click="openSparePartPicker" :disabled="!!form.recordId" />
+                </template>
+              </el-input>
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -251,6 +258,9 @@
 
     <!-- 领用部门选择弹窗 -->
     <dept-picker ref="deptPickerRef" title="选择领用部门" :disabled-ids="[100]" @confirm="onDeptPickerConfirm" />
+
+    <!-- 备件选择弹窗 -->
+    <spare-part-picker ref="sparePartPickerRef" title="选择备件" @confirm="onSparePartPickerConfirm" />
 
     <!-- 业务操作说明对话框 -->
     <el-dialog v-model="showStatusHelp" title="备件出库业务操作说明" width="720px" append-to-body>
@@ -336,9 +346,9 @@
 <script setup name="DmsPartOut">
 import { CircleClose, Search, Filter, RefreshLeft, Delete, Download, ArrowDown } from '@element-plus/icons-vue'
 import { listPartOut, addPartOut, delPartOut, getPartOut, updatePartOut } from '@/api/dms/partout'
-import { listPartLedger } from '@/api/dms/partledger'
 import UserPicker from '@/components/UserPicker/index.vue'
 import DeptPicker from '@/components/DeptPicker/index.vue'
+import SparePartPicker from '@/components/SparePartPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
 const { collapsedCards, toggleCard } = useDetailCard(["c3","c2","c1","c0"])
@@ -348,7 +358,6 @@ const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResiz
 const { dms_partout_type, wms_unit } = proxy.useDict('dms_partout_type', 'wms_unit')
 
 const list = ref([])
-const spareOptions = ref([])
 const open = ref(false)
 const loading = ref(true)
 const showSearch = ref(true)
@@ -446,7 +455,6 @@ function handleAdd() {
   reset(); open.value = true
   formDisabled.value = false
   title.value = '新增出库'
-  getSpareOptions()
 }
 function handleView(row) {
   reset(); formDisabled.value = true
@@ -454,7 +462,7 @@ function handleView(row) {
 }
 function handleUpdate(row) {
   reset(); formDisabled.value = false
-  getPartOut(row.recordId).then(res => { form.value = res.data; open.value = true; title.value = '修改出库记录'; getSpareOptions() })
+  getPartOut(row.recordId).then(res => { form.value = res.data; open.value = true; title.value = '修改出库记录' })
 }
 function reset() {
   form.value = {
@@ -494,21 +502,34 @@ function clearDept() {
   form.value.deptId = undefined
   form.value.supplierOrDept = undefined
 }
-function onPartChange(val) {
-  const item = spareOptions.value.find(i => i.stockId === val)
-  if (item) {
-    form.value.partId = item.partId
-    form.value.stockId = item.stockId
-    form.value.partCode = item.partCode
-    form.value.partName = item.partName
-    form.value.unit = item.unit || ''
-    form.value.currentStock = item.currentStock || 0
-    form.value.warehouseName = item.warehouseName || '备件库'
-    // 重置出库数量，确保不超过库存
-    if (form.value.quantity > form.value.currentStock) {
-      form.value.quantity = form.value.currentStock
-    }
+/** 打开备件选择弹窗 */
+function openSparePartPicker() {
+  if (form.value.recordId) return
+  proxy.$refs.sparePartPickerRef.open(form.value.stockId)
+}
+/** 备件选择确认回调 */
+function onSparePartPickerConfirm(part) {
+  form.value.stockId = part.stockId
+  form.value.partId = part.partId
+  form.value.partCode = part.partCode
+  form.value.partName = part.partName
+  form.value.unit = part.unit || ''
+  form.value.currentStock = part.currentStock || 0
+  form.value.warehouseName = part.warehouseName || '备件库'
+  // 重置出库数量，确保不超过库存
+  if (form.value.quantity > form.value.currentStock) {
+    form.value.quantity = form.value.currentStock
   }
+}
+/** 清除备件选择 */
+function clearSparePart() {
+  form.value.stockId = undefined
+  form.value.partId = undefined
+  form.value.partCode = undefined
+  form.value.partName = undefined
+  form.value.unit = undefined
+  form.value.currentStock = undefined
+  form.value.warehouseName = undefined
 }
 function submitForm() {
   proxy.$refs['partoutRef'].validate(valid => {
@@ -522,19 +543,11 @@ function cancel() { open.value = false; reset() }
 function handleExport() { proxy.download('dms/sparepart/partout/export', { ...proxy.addDateRange(queryParams.value, dateRange.value, 'OperateDate') }, `partout_${new Date().getTime()}.xlsx`) }
 function handleDelete(row) { const recordIds = row.recordId || ids.value; proxy.$modal.confirm('确认删除选中的出库记录？').then(() => delPartOut(recordIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
 
-/** 获取备件列表，只取库存大于0的 */
-function getSpareOptions() {
-  listPartLedger({ pageNum: 1, pageSize: 99999 }).then(res => {
-    spareOptions.value = (res.rows || []).filter(item => item.currentStock != null && Number(item.currentStock) > 0)
-  })
-}
-
 onActivated(() => {
   getList()
 })
 
 getList()
-getSpareOptions()
 </script>
 
 <style scoped>
@@ -617,6 +630,13 @@ getSpareOptions()
 .dms-partout-page .clear-icon { cursor:pointer; color:#c0c4cc; font-size:14px; }
 .dms-partout-page .clear-icon:hover { color:#909399; }
 .dms-partout-page :deep(.el-input.is-disabled .el-input__inner) { cursor:pointer; }
+/* 操作列按钮对齐：每行2个按钮，flex-wrap 自动换行 */
+.dms-partout-page :deep(.col-action) { padding: 6px 4px !important; }
+.dms-partout-page :deep(.col-action .cell) { display: flex; justify-content: center; padding: 0; }
+.dms-partout-page .action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
+.dms-partout-page :deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
+.dms-partout-page :deep(.col-action .el-button + .el-button) { margin-left: 2px; }
+
 @media (max-width:1100px) { .dms-partout-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }
 @media (max-width:720px) { .dms-partout-page .filter-card .filter-bar { grid-template-columns:1fr; } .dms-partout-page .toolbar { flex-wrap:wrap; gap:10px; } }
 

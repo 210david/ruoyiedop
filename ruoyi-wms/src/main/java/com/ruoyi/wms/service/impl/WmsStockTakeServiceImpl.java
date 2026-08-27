@@ -23,6 +23,7 @@ import com.ruoyi.wms.mapper.WmsStockTakeMapper;
 import com.ruoyi.wms.service.IWmsStockTakeService;
 import com.ruoyi.wms.service.IWmsInventoryService;
 import com.ruoyi.mk.service.IMkNumberRuleService;
+import com.ruoyi.system.utils.MessageHelper;
 
 @Service
 public class WmsStockTakeServiceImpl implements IWmsStockTakeService
@@ -38,6 +39,9 @@ public class WmsStockTakeServiceImpl implements IWmsStockTakeService
 
     @Autowired
     private IMkNumberRuleService mkNumberRuleService;
+
+    @Autowired
+    private MessageHelper messageHelper;
 
     @Override
     public List<WmsStockTake> selectStockTakeList(WmsStockTake take)
@@ -347,7 +351,22 @@ public class WmsStockTakeServiceImpl implements IWmsStockTakeService
         }
         take.setStatus("2");
         take.setEndTime(new Date());
-        return wmsStockTakeMapper.updateStockTake(take);
+        int rows = wmsStockTakeMapper.updateStockTake(take);
+        // 发送消息：盘点单待审批
+        String takeTypeName = "";
+        if ("0".equals(take.getTakeType())) takeTypeName = "全盘";
+        else if ("1".equals(take.getTakeType())) takeTypeName = "抽盘";
+        else if ("2".equals(take.getTakeType())) takeTypeName = "循环盘";
+        messageHelper.sendMessage(
+            "盘点单" + take.getTakeNo() + "待审批",
+            "盘点类型：" + takeTypeName + "，仓库：" + (take.getWarehouseName() != null ? take.getWarehouseName() : ""),
+            "3", "2", "wms", takeId,
+            "/wms/stocktake/task?id=" + takeId,
+            "wms:stocktake:edit",
+            "2",  // bizStatus: 待审批
+            "盘点作业"  // bizEntryName
+        );
+        return rows;
     }
 
     @Override
@@ -395,7 +414,23 @@ public class WmsStockTakeServiceImpl implements IWmsStockTakeService
         log.setApproveAction("pass");
         log.setApproveOpinion(approveOpinion);
         wmsStockTakeMapper.insertApproveLog(log);
-        return wmsStockTakeMapper.updateStockTake(take);
+        int rows = wmsStockTakeMapper.updateStockTake(take);
+        // 发送消息：盘点审批通过
+        int diffCount = 0;
+        for (WmsStockTakeDetail d : details)
+        {
+            if (d.getDiffQty() != null && d.getDiffQty().compareTo(BigDecimal.ZERO) != 0) diffCount++;
+        }
+        messageHelper.sendMessage(
+            "盘点单" + take.getTakeNo() + "审批通过",
+            diffCount > 0 ? "共有" + diffCount + "条差异已调整" : "无差异",
+            "1", "1", "wms", takeId,
+            "/wms/stocktake/task?id=" + takeId,
+            "wms:stocktake:edit",
+            null,
+            "盘点作业"  // bizEntryName
+        );
+        return rows;
     }
 
     @Override
@@ -430,7 +465,18 @@ public class WmsStockTakeServiceImpl implements IWmsStockTakeService
                 wmsStockTakeMapper.updateStockTakeDetail(d);
             }
         }
-        return wmsStockTakeMapper.updateStockTake(take);
+        int rows = wmsStockTakeMapper.updateStockTake(take);
+        // 发送消息：盘点审批被驳回
+        messageHelper.sendMessage(
+            "盘点单" + take.getTakeNo() + "审批被驳回",
+            "驳回原因：" + (approveOpinion != null ? approveOpinion : "无"),
+            "1", "2", "wms", takeId,
+            "/wms/stocktake/task?id=" + takeId,
+            "wms:stocktake:edit",
+            null,
+            "盘点作业"  // bizEntryName
+        );
+        return rows;
     }
 
     @Override

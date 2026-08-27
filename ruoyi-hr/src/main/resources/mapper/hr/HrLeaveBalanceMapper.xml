@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.hr.mapper.HrLeaveBalanceMapper">
+
+    <resultMap type="HrLeaveBalance" id="HrLeaveBalanceResult">
+        <result property="balanceId" column="balance_id"/>
+        <result property="employeeId" column="employee_id"/>
+        <result property="employeeName" column="employee_name"/>
+        <result property="leaveType" column="leave_type"/>
+        <result property="year" column="year"/>
+        <result property="totalDays" column="total_days"/>
+        <result property="usedDays" column="used_days"/>
+        <result property="remainingDays" column="remaining_days"/>
+        <result property="frozenDays" column="frozen_days"/>
+        <result property="expireDate" column="expire_date"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <sql id="selectVo">
+        SELECT balance_id, employee_id, employee_name, leave_type, year, total_days, used_days, remaining_days, frozen_days, expire_date, del_flag, create_by, create_time, update_by, update_time, remark
+        FROM biz_hr_leave_balance
+    </sql>
+
+    <select id="selectHrLeaveBalanceList" parameterType="HrLeaveBalance" resultMap="HrLeaveBalanceResult">
+        <include refid="selectVo"/>
+        <where>
+            del_flag = '0'
+            <if test="employeeId != null"> AND employee_id = #{employeeId}</if>
+            <if test="employeeName != null and employeeName != ''"> AND employee_name LIKE CONCAT('%', #{employeeName}, '%')</if>
+            <if test="leaveType != null and leaveType != ''"> AND leave_type LIKE CONCAT('%', #{leaveType}, '%')</if>
+            <if test="year != null"> AND year = #{year}</if>
+            <if test="totalDays != null"> AND total_days = #{totalDays}</if>
+            <if test="usedDays != null"> AND used_days = #{usedDays}</if>
+            <if test="remainingDays != null"> AND remaining_days = #{remainingDays}</if>
+            <if test="frozenDays != null"> AND frozen_days = #{frozenDays}</if>
+            <if test="expireDate != null"> AND expire_date = #{expireDate}</if>
+            <if test="delFlag != null and delFlag != ''"> AND del_flag LIKE CONCAT('%', #{delFlag}, '%')</if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+
+    <select id="selectHrLeaveBalanceById" parameterType="Long" resultMap="HrLeaveBalanceResult">
+        <include refid="selectVo"/> WHERE balance_id = #{balanceId}
+    </select>
+
+    <insert id="insertHrLeaveBalance" parameterType="HrLeaveBalance" useGeneratedKeys="true" keyProperty="balanceId">
+        INSERT INTO biz_hr_leave_balance (
+            employee_id, employee_name, leave_type, year, total_days, used_days, remaining_days, frozen_days, expire_date, del_flag, create_by, create_time, remark
+        ) VALUES (
+            #{employeeId}, #{employeeName}, #{leaveType}, #{year}, #{totalDays}, #{usedDays}, #{remainingDays}, #{frozenDays}, #{expireDate}, #{delFlag}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateHrLeaveBalance" parameterType="HrLeaveBalance">
+        UPDATE biz_hr_leave_balance
+        <set>
+            <if test="employeeId != null">employee_id = #{employeeId},</if>
+            <if test="employeeName != null and employeeName != ''">employee_name = #{employeeName},</if>
+            <if test="leaveType != null and leaveType != ''">leave_type = #{leaveType},</if>
+            <if test="year != null">year = #{year},</if>
+            <if test="totalDays != null">total_days = #{totalDays},</if>
+            <if test="usedDays != null">used_days = #{usedDays},</if>
+            <if test="remainingDays != null">remaining_days = #{remainingDays},</if>
+            <if test="frozenDays != null">frozen_days = #{frozenDays},</if>
+            <if test="expireDate != null">expire_date = #{expireDate},</if>
+            <if test="delFlag != null and delFlag != ''">del_flag = #{delFlag},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE balance_id = #{balanceId}
+    </update>
+
+    <delete id="deleteHrLeaveBalanceById" parameterType="Long">
+        UPDATE biz_hr_leave_balance SET del_flag = '2' WHERE balance_id = #{balanceId}
+    </delete>
+
+    <delete id="deleteHrLeaveBalanceByIds" parameterType="Long">
+        UPDATE biz_hr_leave_balance SET del_flag = '2' WHERE balance_id IN
+        <foreach item="balanceId" collection="array" open="(" separator="," close=")">#{balanceId}</foreach>
+    </delete>
+
+</mapper>

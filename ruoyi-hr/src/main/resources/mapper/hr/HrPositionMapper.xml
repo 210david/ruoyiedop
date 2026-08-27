@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.hr.mapper.HrPositionMapper">
+
+    <resultMap type="HrPosition" id="HrPositionResult">
+        <result property="positionId" column="position_id"/>
+        <result property="positionCode" column="position_code"/>
+        <result property="positionName" column="position_name"/>
+        <result property="positionSeq" column="position_seq"/>
+        <result property="positionLevel" column="position_level"/>
+        <result property="skillLevel" column="skill_level"/>
+        <result property="orgId" column="org_id"/>
+        <result property="headcount" column="headcount"/>
+        <result property="headcountEnabled" column="headcount_enabled"/>
+        <result property="requireCert" column="require_cert"/>
+        <result property="orderNum" column="order_num"/>
+        <result property="status" column="status"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <sql id="selectVo">
+        SELECT position_id, position_code, position_name, position_seq, position_level, skill_level, org_id, headcount, headcount_enabled, require_cert, order_num, status, del_flag, create_by, create_time, update_by, update_time, remark
+        FROM biz_hr_position
+    </sql>
+
+    <select id="selectHrPositionList" parameterType="HrPosition" resultMap="HrPositionResult">
+        <include refid="selectVo"/>
+        <where>
+            del_flag = '0'
+            <if test="positionCode != null and positionCode != ''"> AND position_code LIKE CONCAT('%', #{positionCode}, '%')</if>
+            <if test="positionName != null and positionName != ''"> AND position_name LIKE CONCAT('%', #{positionName}, '%')</if>
+            <if test="positionSeq != null and positionSeq != ''"> AND position_seq LIKE CONCAT('%', #{positionSeq}, '%')</if>
+            <if test="positionLevel != null and positionLevel != ''"> AND position_level LIKE CONCAT('%', #{positionLevel}, '%')</if>
+            <if test="skillLevel != null and skillLevel != ''"> AND skill_level LIKE CONCAT('%', #{skillLevel}, '%')</if>
+            <if test="orgId != null"> AND org_id = #{orgId}</if>
+            <if test="headcount != null"> AND headcount = #{headcount}</if>
+            <if test="headcountEnabled != null"> AND headcount_enabled = #{headcountEnabled}</if>
+            <if test="requireCert != null and requireCert != ''"> AND require_cert LIKE CONCAT('%', #{requireCert}, '%')</if>
+            <if test="orderNum != null"> AND order_num = #{orderNum}</if>
+            <if test="status != null and status != ''"> AND status LIKE CONCAT('%', #{status}, '%')</if>
+            <if test="delFlag != null and delFlag != ''"> AND del_flag LIKE CONCAT('%', #{delFlag}, '%')</if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+
+    <select id="selectHrPositionById" parameterType="Long" resultMap="HrPositionResult">
+        <include refid="selectVo"/> WHERE position_id = #{positionId}
+    </select>
+
+    <insert id="insertHrPosition" parameterType="HrPosition" useGeneratedKeys="true" keyProperty="positionId">
+        INSERT INTO biz_hr_position (
+            position_code, position_name, position_seq, position_level, skill_level, org_id, headcount, headcount_enabled, require_cert, order_num, status, del_flag, create_by, create_time, remark
+        ) VALUES (
+            #{positionCode}, #{positionName}, #{positionSeq}, #{positionLevel}, #{skillLevel}, #{orgId}, #{headcount}, #{headcountEnabled}, #{requireCert}, #{orderNum}, #{status}, #{delFlag}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateHrPosition" parameterType="HrPosition">
+        UPDATE biz_hr_position
+        <set>
+            <if test="positionCode != null and positionCode != ''">position_code = #{positionCode},</if>
+            <if test="positionName != null and positionName != ''">position_name = #{positionName},</if>
+            <if test="positionSeq != null and positionSeq != ''">position_seq = #{positionSeq},</if>
+            <if test="positionLevel != null and positionLevel != ''">position_level = #{positionLevel},</if>
+            <if test="skillLevel != null and skillLevel != ''">skill_level = #{skillLevel},</if>
+            <if test="orgId != null">org_id = #{orgId},</if>
+            <if test="headcount != null">headcount = #{headcount},</if>
+            <if test="headcountEnabled != null">headcount_enabled = #{headcountEnabled},</if>
+            <if test="requireCert != null and requireCert != ''">require_cert = #{requireCert},</if>
+            <if test="orderNum != null">order_num = #{orderNum},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="delFlag != null and delFlag != ''">del_flag = #{delFlag},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE position_id = #{positionId}
+    </update>
+
+    <delete id="deleteHrPositionById" parameterType="Long">
+        UPDATE biz_hr_position SET del_flag = '2' WHERE position_id = #{positionId}
+    </delete>
+
+    <delete id="deleteHrPositionByIds" parameterType="Long">
+        UPDATE biz_hr_position SET del_flag = '2' WHERE position_id IN
+        <foreach item="positionId" collection="array" open="(" separator="," close=")">#{positionId}</foreach>
+    </delete>
+
+</mapper>

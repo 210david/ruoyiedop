@@ -149,10 +149,12 @@
             <template #default="scope"><span class="rd-amount">￥{{ formatAmount(scope.row.totalAmount) }}</span></template>
           </el-table-column>
           <el-table-column label="最后更新" prop="updateTime" key="updateTime" :width="colWidth('updateTime', 160)" resizable sortable="custom" v-if="columns.updateTime.visible" />
-          <el-table-column label="操作" width="180" align="center" fixed="right">
+          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
-              <el-button link type="primary" icon="View" @click="handleView(scope.row)">详情</el-button>
-              <el-button link type="success" icon="Pointer" @click="handleClaim(scope.row)" v-hasPermi="['marketing:customer:claim']">领取</el-button>
+              <div class="action-btn-row">
+                <el-button link type="primary" icon="View" @click="handleView(scope.row)">详情</el-button>
+                <el-button link type="success" icon="Pointer" @click="handleClaim(scope.row)" v-hasPermi="['marketing:customer:claim']">领取</el-button>
+              </div>
             </template>
           </el-table-column>
         </el-table>

@@ -8,6 +8,7 @@
         <result property="equipmentCode"   column="equipment_code"/>
         <result property="equipmentName"   column="equipment_name"/>
         <result property="changeType"      column="change_type"/>
+        <result property="fieldLabel"     column="field_label"/>
         <result property="oldValue"        column="old_value"/>
         <result property="newValue"        column="new_value"/>
         <result property="changeReason"    column="change_reason"/>
@@ -16,7 +17,7 @@
     </resultMap>
 
     <select id="selectLogList" parameterType="DmsEquipmentLog" resultMap="DmsEquipmentLogResult">
-        SELECT log_id, equipment_id, equipment_code, equipment_name, change_type, old_value, new_value,
+        SELECT log_id, equipment_id, equipment_code, equipment_name, change_type, field_label, old_value, new_value,
                change_reason, operator_name, create_time
         FROM dms_equipment_log
         <where>
@@ -30,10 +31,10 @@
 
     <insert id="insertLog" parameterType="DmsEquipmentLog" useGeneratedKeys="true" keyProperty="logId">
         INSERT INTO dms_equipment_log (
-            equipment_id, equipment_code, equipment_name, change_type, old_value, new_value,
+            equipment_id, equipment_code, equipment_name, change_type, field_label, old_value, new_value,
             change_reason, operator_name, create_time
         ) VALUES (
-            #{equipmentId}, #{equipmentCode}, #{equipmentName}, #{changeType}, #{oldValue}, #{newValue},
+            #{equipmentId}, #{equipmentCode}, #{equipmentName}, #{changeType}, #{fieldLabel}, #{oldValue}, #{newValue},
             #{changeReason}, #{operatorName}, sysdate()
         )
     </insert>

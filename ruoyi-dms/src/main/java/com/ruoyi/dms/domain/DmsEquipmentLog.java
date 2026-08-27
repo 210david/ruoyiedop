@@ -25,6 +25,9 @@ public class DmsEquipmentLog extends BaseEntity
     @Excel(name = "变更类型", dictType = "dms_eq_change_type")
     private String changeType;
 
+    @Excel(name = "变更字段")
+    private String fieldLabel;
+
     private String oldValue;
     private String newValue;
 
@@ -47,6 +50,8 @@ public class DmsEquipmentLog extends BaseEntity
     public void setEquipmentName(String equipmentName) { this.equipmentName = equipmentName; }
     public String getChangeType() { return changeType; }
     public void setChangeType(String changeType) { this.changeType = changeType; }
+    public String getFieldLabel() { return fieldLabel; }
+    public void setFieldLabel(String fieldLabel) { this.fieldLabel = fieldLabel; }
     public String getOldValue() { return oldValue; }
     public void setOldValue(String oldValue) { this.oldValue = oldValue; }
     public String getNewValue() { return newValue; }

@@ -111,13 +111,15 @@
           <el-table-column label="计划日期" prop="planDate" key="planDate" :width="colWidth('planDate', 120)" resizable align="center" v-if="columns.planDate.visible" />
           <el-table-column label="备注" prop="remark" key="remark" :width="colWidth('remark', 200)" resizable :show-overflow-tooltip="true" v-if="columns.remark.visible" />
           <el-table-column label="创建时间" prop="createTime" key="createTime" :width="colWidth('createTime', 160)" resizable align="center" v-if="columns.createTime.visible" />
-          <el-table-column label="操作" width="300" align="center" fixed="right">
+          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
-              <el-button link type="primary" icon="View" @click="handleDetail(scope.row)">详情</el-button>
-              <el-button link type="primary" icon="VideoPlay" @click="handleStart(scope.row)" v-if="scope.row.status === '0'" v-hasPermi="['wms:stocktake:start']">开始</el-button>
-              <el-button link type="primary" icon="Check" @click="handleApprove(scope.row)" v-if="scope.row.status === '2'" v-hasPermi="['wms:stocktake:approve']">审批</el-button>
-              <el-button link type="danger" icon="CircleClose" @click="handleVoid(scope.row)" v-if="scope.row.status === '0' || scope.row.status === '1'" v-hasPermi="['wms:stocktake:void']">作废</el-button>
-              <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['wms:stocktake:remove']">删除</el-button>
+              <div class="action-btn-row">
+                <el-button link type="primary" icon="View" @click="handleDetail(scope.row)">详情</el-button>
+                <el-button link type="primary" icon="VideoPlay" @click="handleStart(scope.row)" v-if="scope.row.status === '0'" v-hasPermi="['wms:stocktake:start']">开始</el-button>
+                <el-button link type="primary" icon="Check" @click="handleApprove(scope.row)" v-if="scope.row.status === '2'" v-hasPermi="['wms:stocktake:approve']">审批</el-button>
+                <el-button link type="danger" icon="CircleClose" @click="handleVoid(scope.row)" v-if="scope.row.status === '0' || scope.row.status === '1'" v-hasPermi="['wms:stocktake:void']">作废</el-button>
+                <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['wms:stocktake:remove']">删除</el-button>
+              </div>
             </template>
           </el-table-column>
         </el-table>
@@ -143,8 +145,8 @@
             </div>
             <div class="rd-card-body" v-show="!collapsedCards.basic">
               <el-row :gutter="20">
-                <el-col :span="12"><el-form-item label="仓库" prop="warehouseId"><el-select v-model="form.warehouseId" filterable clearable placeholder="请选择仓库" style="width:100%" @change="onWarehouseChange"><el-option v-for="w in warehouseOptions" :key="w.warehouseId" :label="w.warehouseName" :value="w.warehouseId" /></el-select></el-form-item></el-col>
-                <el-col :span="12"><el-form-item label="库区" prop="areaId"><el-select v-model="form.areaId" filterable clearable placeholder="请选择库区（可选）" style="width:100%"><el-option v-for="a in areaOptions" :key="a.warehouseId" :label="a.warehouseName" :value="a.warehouseId" /></el-select></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="仓库" prop="warehouseId"><el-input v-model="form.warehouseName" readonly placeholder="请选择仓库" style="width:100%" @click="openWarehousePicker"><template v-if="form.warehouseName" #append><el-button icon="CircleClose" @click.stop="clearWarehouse" /></template><template v-else #append><el-button icon="Search" @click="openWarehousePicker" /></template></el-input></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="库区" prop="areaId"><el-input v-model="form.areaName" readonly placeholder="请选择库区（可选）" style="width:100%" :disabled="!form.warehouseId" @click="openAreaPicker"><template v-if="form.areaName" #append><el-button icon="CircleClose" @click.stop="clearArea" /></template><template v-else #append><el-button icon="Search" @click="openAreaPicker" /></template></el-input></el-form-item></el-col>
               </el-row>
             </div>
           </section>
@@ -382,6 +384,12 @@
       <template #footer><el-button type="primary" @click="submitDetailForm">确 定</el-button><el-button @click="submitOpen = false">取 消</el-button></template>
     </el-dialog>
 
+    <!-- 仓库选择器 -->
+    <warehouse-picker ref="warehousePickerRef" title="选择仓库" @confirm="onWarehousePickerConfirm" />
+
+    <!-- 库区选择器 -->
+    <area-picker ref="areaPickerRef" title="选择库区" @confirm="onAreaPickerConfirm" />
+
     <!-- 业务操作说明对话框 -->
     <el-dialog v-model="showStatusHelp" title="盘点任务业务操作说明" width="720px" append-to-body>
       <div class="status-help-content">
@@ -481,9 +489,11 @@
 <script setup name="WmsStockTake">
 import { listStockTake, getStockTake, addStockTake, delStockTake, startStockTake, submitStockTakeDetail, voidStockTake, approveStockTake, rejectStockTake, submitForApproval } from '@/api/wms/stocktake'
 import { listWarehouse, listArea } from '@/api/wms/warehouse'
+import WarehousePicker from '@/components/WarehousePicker/index.vue'
+import AreaPicker from '@/components/AreaPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
-import { ArrowRight, ArrowDown, QuestionFilled, WarningFilled, Filter, Search } from '@element-plus/icons-vue'
+import { ArrowRight, ArrowDown, QuestionFilled, WarningFilled, Filter, Search, CircleClose } from '@element-plus/icons-vue'
 const { collapsedCards, toggleCard } = useDetailCard(['basic', 'setting', 'other', 'dBasic', 'dDetail', 'dApprove', 'aBasic', 'aDetail', 'aOpinion', 'sMaterial', 'sBasic'])
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('wms_stocktake_index')
@@ -504,7 +514,7 @@ const approvePageList = computed(() => {
   const start = (approvePage.pageNum - 1) * approvePage.pageSize
   return list.slice(start, start + approvePage.pageSize)
 })
-const warehouseOptions = ref([]); const areaOptions = ref([]); const showStatusHelp = ref(false)
+const warehouseOptions = ref([]); const areaOptions = ref([]); const showStatusHelp = ref(false); const warehousePickerRef = ref(null); const areaPickerRef = ref(null)
 const defaultColumns = { takeNo: { label: '盘点单号', visible: true }, warehouseName: { label: '仓库', visible: true }, areaName: { label: '库区', visible: true }, takeType: { label: '盘点类型', visible: true }, status: { label: '状态', visible: true }, planDate: { label: '计划日期', visible: true }, remark: { label: '备注', visible: true }, createTime: { label: '创建时间', visible: true } }
 function loadColumnVisibility() { try { const saved = localStorage.getItem('wms_stocktake_columns'); if (saved) { const parsed = JSON.parse(saved); const result = {}; Object.keys(defaultColumns).forEach(key => { result[key] = { label: defaultColumns[key].label, visible: parsed[key] !== undefined ? parsed[key] : defaultColumns[key].visible } }); return result } } catch (e) {} return { ...defaultColumns } }
 const columns = ref(loadColumnVisibility())
@@ -516,7 +526,7 @@ function getList() { loading.value = true; const params = proxy.addDateRange(pro
 function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
 function resetQuery() { queryParams.value.takeNo = undefined; queryParams.value.warehouseId = undefined; queryParams.value.takeType = undefined; queryParams.value.status = undefined; queryParams.value.params = {}; dateRange.value = []; dateRangeCreateTime.value = []; activeStatusTab.value = 'all'; handleQuery() }
 function handleSelectionChange(sel) { ids.value = sel.map(i => i.takeId); multiple.value = !sel.length }
-function reset() { form.value = { warehouseId: undefined, areaId: undefined, takeType: '0', sampleRatio: 30, cycleNo: 1, planDate: undefined, remark: undefined }; areaOptions.value = []; proxy.resetForm('takeRef') }
+function reset() { form.value = { warehouseId: undefined, warehouseName: undefined, areaId: undefined, areaName: undefined, takeType: '0', sampleRatio: 30, cycleNo: 1, planDate: undefined, remark: undefined }; areaOptions.value = []; proxy.resetForm('takeRef') }
 function handleAdd() { reset(); open.value = true; title.value = '添加盘点单' }
 function submitForm() { proxy.$refs['takeRef'].validate(v => { if (v) { addStockTake(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList() }) } }) }
 function handleDetail(row) { getStockTake(row.takeId).then(res => { detailData.value = res.data; detailPage.pageNum = 1; detailOpen.value = true }) }
@@ -546,18 +556,44 @@ function takeTypeLabel(type) { const item = wms_take_type.value.find(d => d.valu
 function statusTabClass(value) { const map = { '0': 'tab-draft', '1': 'tab-audit', '2': 'tab-partial', '3': 'tab-done', '4': 'tab-void' }; return map[value] || '' }
 function handleStatusTabClick(status) { activeStatusTab.value = status; queryParams.value.status = status === 'all' ? undefined : status; handleQuery() }
 function handleStatusChange(val) { activeStatusTab.value = val ? val : 'all'; handleQuery() }
-function loadStatusCounts() { listStockTake({ pageNum: 1, pageSize: 999 }).then(res => { const counts = { all: res.total }; (res.rows || []).forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++ }); statusCounts.value = counts }).catch(() => {}) }
+function loadStatusCounts() {
+  listStockTake({ pageNum: 1, pageSize: 999 }).then(res => {
+    const counts = { all: res.total, '0': 0, '1': 0, '2': 0, '3': 0, '4': 0 };
+    (res.rows || []).forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++ });
+    statusCounts.value = counts
+  }).catch(() => {})
+}
 function onTakeTypeChange() {
   if (form.value.takeType === '1' && !form.value.sampleRatio) { form.value.sampleRatio = 30 }
   if (form.value.takeType === '2' && !form.value.cycleNo) { form.value.cycleNo = 1 }
 }
 function onWarehouseChange(warehouseId) {
   form.value.areaId = undefined
+  form.value.areaName = undefined
   if (warehouseId) {
     listArea({ warehouseId: warehouseId, status: '0', pageSize: 999 }).then(res => { areaOptions.value = res.rows })
   } else {
     areaOptions.value = []
   }
+}
+
+/* ===== 仓库选择器 ===== */
+function openWarehousePicker() { warehousePickerRef.value.open(form.value.warehouseId) }
+function clearWarehouse() { form.value.warehouseId = undefined; form.value.warehouseName = undefined; onWarehouseChange(undefined) }
+function onWarehousePickerConfirm(warehouse) { form.value.warehouseId = warehouse.warehouseId; form.value.warehouseName = warehouse.warehouseName; onWarehouseChange(warehouse.warehouseId) }
+
+/* ===== 库区选择器 ===== */
+function openAreaPicker() {
+  if (!form.value.warehouseId) { proxy.$modal.msgWarning('请先选择仓库'); return }
+  areaPickerRef.value.open(form.value.warehouseId, form.value.areaId)
+}
+function clearArea() {
+  form.value.areaId = undefined
+  form.value.areaName = undefined
+}
+function onAreaPickerConfirm(area) {
+  form.value.areaId = area.areaId
+  form.value.areaName = area.areaName
 }
 listWarehouse({ status: '0', pageSize: 999 }).then(res => { warehouseOptions.value = res.rows })
 getList()
@@ -566,6 +602,12 @@ loadStatusCounts()
 
 <style scoped>
 /* 页面特定样式 - 列表页面共享样式见 wms-list-page.scss */
+/* 操作列按钮对齐：每行2个按钮，flex-wrap 自动换行，按钮自适应内容宽度 */
+:deep(.col-action) { padding: 6px 4px !important; }
+:deep(.col-action .cell) { display: flex; justify-content: center; padding: 0; }
+.action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
+:deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
+:deep(.col-action .el-button + .el-button) { margin-left: 2px; }
 .status-help-content { max-height: 500px; overflow-y: auto; padding-right: 10px; }
 .status-help-content h4 { margin: 20px 0 12px 0; color: #303133; font-weight: 600; border-left: 4px solid #409eff; padding-left: 10px; }
 .status-help-content h4:first-child { margin-top: 0; }

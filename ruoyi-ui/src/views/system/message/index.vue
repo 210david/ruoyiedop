@@ -41,7 +41,7 @@
           </div>
         </div>
         <div class="field" v-show="showAdvanced">
-          <label>创建时间</label>
+          <label>通知时间</label>
           <div class="control">
             <el-date-picker v-model="dateRange" value-format="YYYY-MM-DD" type="daterange" range-separator="-" start-placeholder="开始" end-placeholder="结束" style="width: 100%" />
           </div>
@@ -77,7 +77,7 @@
       <!-- Toolbar -->
       <div class="toolbar">
         <div class="left">
-          <el-button type="primary" plain icon="Check" :disabled="!selectedUnreadIds.length" @click="handleBatchRead">批量已读</el-button>
+          <el-button type="primary" plain icon="Check" :disabled="!selectedUnreadIds.length" @click="handleBatchRead">标为已读</el-button>
         </div>
         <div class="right">
           <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="sys_message_columns" />
@@ -93,7 +93,7 @@
           <el-table-column label="消息ID" align="center" prop="messageId" :width="colWidth('messageId', 90)" resizable v-if="columns.messageId.visible" />
           <el-table-column label="消息标题" align="center" :show-overflow-tooltip="true" :width="colWidth('messageTitle', 200)" resizable v-if="columns.messageTitle.visible">
             <template #default="scope">
-              <a class="link-type" style="cursor:pointer" @click="handleViewData(scope.row)">{{ scope.row.messageTitle }}</a>
+              <a class="link-type" :class="{ 'is-handled': scope.row.bizHandled == '1' || scope.row.bizHandled === true }" style="cursor:pointer" @click="handleViewData(scope.row)">{{ scope.row.messageTitle }}</a>
             </template>
           </el-table-column>
           <el-table-column label="消息类型" align="center" prop="messageType" :width="colWidth('messageType', 100)" resizable v-if="columns.messageType.visible">
@@ -111,14 +111,15 @@
               <span class="badge amber">{{ bizSourceLabel(scope.row.bizSource) }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="阅读状态" align="center" :width="colWidth('readStatus', 100)" resizable v-if="columns.readStatus.visible">
+          <el-table-column label="状态" align="center" :width="colWidth('readStatus', 120)" resizable v-if="columns.readStatus.visible">
             <template #default="scope">
-              <span class="badge" :class="scope.row.isRead ? 'green' : 'gray'">
+              <span v-if="scope.row.bizHandled == '1' || scope.row.bizHandled === true" class="badge gray"><span class="dot"></span>已处理</span>
+              <span v-else class="badge" :class="scope.row.isRead ? 'green' : 'gray'">
                 <span class="dot"></span>{{ scope.row.isRead ? '已读' : '未读' }}
               </span>
             </template>
           </el-table-column>
-          <el-table-column label="创建时间" align="center" prop="createTime" :width="colWidth('createTime', 160)" resizable v-if="columns.createTime.visible">
+          <el-table-column label="通知时间" align="center" prop="createTime" :width="colWidth('createTime', 160)" resizable v-if="columns.createTime.visible">
             <template #default="scope">
               <span>{{ parseTime(scope.row.createTime) }}</span>
             </template>
@@ -184,7 +185,7 @@ const defaultColumns = {
   messageLevel: { label: '消息级别', visible: true },
   bizSource: { label: '业务来源', visible: true },
   readStatus: { label: '阅读状态', visible: true },
-  createTime: { label: '创建时间', visible: true }
+  createTime: { label: '通知时间', visible: true }
 }
 
 function loadColumnVisibility() {
@@ -231,9 +232,9 @@ const activeFilterCount = computed(() => {
   return count
 })
 
-// 选中的未读消息ID
+// 选中的未读消息ID（排除已处理的消息）
 const selectedUnreadIds = computed(() => {
-  return selectedRows.value.filter(r => !r.isRead).map(r => r.messageId)
+  return selectedRows.value.filter(r => !r.isRead && r.bizHandled != '1' && r.bizHandled !== true).map(r => r.messageId)
 })
 
 /** 状态页签样式映射 */
@@ -276,23 +277,21 @@ function getList() {
   })
 }
 
-/** 加载状态页签数量统计 */
+/** 加载状态页签数量统计（并行请求，只取total不取数据） */
 function loadStatusCounts() {
-  const baseQuery = { pageNum: 1, pageSize: 999 }
+  const baseQuery = { pageNum: 1, pageSize: 1 }
   if (queryParams.value.messageTitle) baseQuery.messageTitle = queryParams.value.messageTitle
   if (queryParams.value.messageType) baseQuery.messageType = queryParams.value.messageType
   if (queryParams.value.messageLevel) baseQuery.messageLevel = queryParams.value.messageLevel
   if (queryParams.value.bizSource) baseQuery.bizSource = queryParams.value.bizSource
-  // 查未读数量
-  baseQuery.readStatus = '0'
-  listMessage(proxy.addDateRange(baseQuery, dateRange.value)).then(res => {
-    const counts = { '0': res.total }
-    // 查已读数量
-    baseQuery.readStatus = '1'
-    listMessage(proxy.addDateRange(baseQuery, dateRange.value)).then(res2 => {
-      counts['1'] = res2.total
-      statusCounts.value = counts
-    })
+  // 并行查未读和已读数量
+  const unreadQuery = { ...baseQuery, readStatus: '0' }
+  const readQuery = { ...baseQuery, readStatus: '1' }
+  Promise.all([
+    listMessage(proxy.addDateRange(unreadQuery, dateRange.value)),
+    listMessage(proxy.addDateRange(readQuery, dateRange.value))
+  ]).then(([res1, res2]) => {
+    statusCounts.value = { '0': res1.total, '1': res2.total }
   }).catch(() => {})
 }
 
@@ -333,6 +332,8 @@ function handleBatchRead() {
   if (!ids.length) return
   messageStore.markReadAll(ids.join(',')).then(() => {
     proxy.$modal.msgSuccess('标记成功')
+    // 从后端重新拉取铃铛未读数，确保 HeaderNotice 的数字实时更新
+    messageStore.loadNoticeTop()
     getList()
   })
 }
@@ -344,15 +345,16 @@ function handleViewData(row) {
 
 /** 详情弹窗标记已读后的回调 */
 function onMessageRead(messageId) {
-  // 通知全局 store 刷新铃铛未读数（乐观更新已在 store 中处理）
-  messageStore.markRead(messageId)
-  // 立即更新当前列表中的对应行
+  // DetailView 已经通过 store.markRead 标记了已读，这里不需要重复调用
+  // 只做本地列表状态更新和计数刷新
   const item = messageList.value.find(m => m.messageId === messageId)
   if (item) {
     item.isRead = true
   }
   // 刷新页签计数
   loadStatusCounts()
+  // 从后端重新拉取铃铛未读数，确保 HeaderNotice 的数字实时更新
+  messageStore.loadNoticeTop()
   // 如果当前在未读页签，延迟刷新列表让该消息消失
   if (activeStatusTab.value === '0') {
     setTimeout(() => getList(), 300)
@@ -509,4 +511,7 @@ getList()
 /* ===== Responsive ===== */
 @media (max-width:1100px) { .sys-message-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }
 @media (max-width:720px) { .sys-message-page .filter-card .filter-bar { grid-template-columns:1fr; } .sys-message-page .toolbar { flex-wrap:wrap; gap:10px; } }
+
+/* ===== Handled Message ===== */
+.sys-message-page .is-handled { color: var(--ink-400) !important; }
 </style>

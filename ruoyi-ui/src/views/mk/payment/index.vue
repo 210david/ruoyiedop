@@ -186,11 +186,13 @@
               <span v-else style="color: var(--ink-400)">-</span>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="220" align="center" fixed="right">
+          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
-              <el-button link type="primary" icon="View" @click="handleView(scope.row)">详情</el-button>
-              <el-button link type="success" icon="Money" @click="handleRecord(scope.row)" v-if="scope.row.paymentStatus !== '1' && !hasPendingRecord(scope.row)" v-hasPermi="['marketing:payment:edit']">回款登记</el-button>
-              <el-button link type="warning" icon="Check" @click="handleConfirm(scope.row)" v-if="hasPendingRecord(scope.row)" v-hasPermi="['marketing:payment:confirm']">回款确认</el-button>
+              <div class="action-btn-row">
+                <el-button link type="primary" icon="View" @click="handleView(scope.row)">详情</el-button>
+                <el-button link type="success" icon="Money" @click="handleRecord(scope.row)" v-if="scope.row.paymentStatus !== '1' && !hasPendingRecord(scope.row)" v-hasPermi="['marketing:payment:edit']">登记</el-button>
+                <el-button link type="warning" icon="Check" @click="handleConfirm(scope.row)" v-if="hasPendingRecord(scope.row)" v-hasPermi="['marketing:payment:confirm']">确认</el-button>
+              </div>
             </template>
           </el-table-column>
         </el-table>

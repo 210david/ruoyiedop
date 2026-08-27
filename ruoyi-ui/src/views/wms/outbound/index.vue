@@ -110,14 +110,16 @@
           </el-table-column>
           <el-table-column label="总数量" prop="totalQty" key="totalQty" :width="colWidth('totalQty', 110)" resizable align="center" class-name="col-num" v-if="columns.totalQty.visible" />
           <el-table-column label="备注" prop="remark" key="remark" :width="colWidth('remark', 200)" resizable :show-overflow-tooltip="true" v-if="columns.remark.visible" />
-          <el-table-column label="操作" width="200" align="center" fixed="right">
-            <template #default="scope">
-              <el-button link type="primary" icon="View" @click="handleDetail(scope.row)">详情</el-button>
-              <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['wms:outbound:edit']" v-if="scope.row.status === '0'">修改</el-button>
-              <el-button link type="primary" icon="Promotion" @click="handleSubmit(scope.row)" v-hasPermi="['wms:outbound:edit']" v-if="scope.row.status === '0'">提交</el-button>
-              <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['wms:outbound:remove']">删除</el-button>
-            </template>
-          </el-table-column>
+<el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
+<template #default="scope">
+<div class="action-btn-row">
+<el-button link type="primary" icon="View" @click="handleDetail(scope.row)">详情</el-button>
+<el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['wms:outbound:edit']" v-if="scope.row.status === '0'">修改</el-button>
+<el-button link type="primary" icon="Promotion" @click="handleSubmit(scope.row)" v-hasPermi="['wms:outbound:edit']" v-if="scope.row.status === '0'">提交</el-button>
+<el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['wms:outbound:remove']" v-if="scope.row.status === '0'">删除</el-button>
+</div>
+</template>
+</el-table-column>
         </el-table>
       </div>
       <div class="pagination-container">
@@ -162,7 +164,7 @@
             </div>
             <div class="rd-card-body" v-show="!collapsedCards.info">
               <el-row :gutter="16">
-                <el-col :span="8"><el-form-item label="出库仓库" prop="warehouseId"><el-select v-model="form.warehouseId" filterable clearable placeholder="请选择仓库" style="width:100%" @change="onWarehouseChange"><el-option v-for="w in warehouseOptions" :key="w.warehouseId" :label="w.warehouseName" :value="w.warehouseId" /></el-select></el-form-item></el-col>
+                <el-col :span="8"><el-form-item label="出库仓库" prop="warehouseId"><el-input v-model="form.warehouseName" readonly placeholder="请选择仓库" style="width:100%" @click="openWarehousePicker"><template v-if="form.warehouseName" #append><el-button icon="CircleClose" @click.stop="clearWarehouse" /></template><template v-else #append><el-button icon="Search" @click="openWarehousePicker" /></template></el-input></el-form-item></el-col>
               </el-row>
             </div>
           </section>
@@ -176,7 +178,7 @@
               <el-alert v-if="!form.warehouseId" title="请先选择出库仓库，系统将加载该仓库的可用库存" type="info" :closable="false" show-icon style="margin-bottom: 10px" />
               <el-row :gutter="10" class="mb8"><el-col :span="1.5"><el-button type="primary" plain icon="Plus" @click="handleAddDetail" :disabled="!form.warehouseId">添加明细</el-button></el-col></el-row>
               <el-table :data="form.detailList" border @header-dragend="onHeaderDragEnd">
-                <el-table-column label="库存物料" min-width="280"><template #default="scope"><el-select v-model="scope.row.inventoryId" filterable clearable placeholder="请选择库存物料" style="width:100%" @change="handleInventoryChange(scope.$index, $event)"><el-option v-for="inv in inventoryOptions" :key="inv.inventoryId" :label="formatInventoryLabel(inv)" :value="inv.inventoryId" :disabled="isInventorySelected(inv.inventoryId, scope.$index)" /></el-select></template></el-table-column>
+                <el-table-column label="库存物料" min-width="220"><template #default="scope"><el-input v-model="scope.row.materialCode" readonly size="small" placeholder="选择库存物料" @click="openInventoryPicker(scope.$index)"><template v-if="scope.row.materialCode" #append><el-button icon="CircleClose" size="small" @click.stop="clearInventory(scope.$index)" /></template><template v-else #append><el-button icon="Search" size="small" @click="openInventoryPicker(scope.$index)" /></template></el-input></template></el-table-column>
                 <el-table-column label="物料编码" prop="materialCode" :width="colWidth('materialCode', 120)" resizable align="center" />
                 <el-table-column label="物料名称" prop="materialName" :width="colWidth('materialName', 150)" resizable show-overflow-tooltip align="center" />
                 <el-table-column label="规格型号" prop="specModel" :width="colWidth('specModel', 120)" resizable show-overflow-tooltip align="center" />
@@ -194,7 +196,13 @@
       <template #footer><el-button type="primary" @click="submitForm">确 定</el-button><el-button @click="cancel">取 消</el-button></template>
     </el-dialog>
 
-    <!-- 出库单详情对话框 -->
+<!-- 库存选择器 -->
+<inventory-picker ref="inventoryPickerRef" title="选择库存物料" @confirm="onInventoryPickerConfirm" />
+
+<!-- 仓库选择器 -->
+<warehouse-picker ref="warehousePickerRef" title="选择仓库" @confirm="onWarehousePickerConfirm" />
+
+<!-- 出库单详情对话框 -->
     <el-dialog v-model="detailOpen" width="1200px" append-to-body draggable class="rd-dialog">
       <template #header>
         <div class="rd-detail-header">
@@ -343,16 +351,20 @@
 <script setup name="WmsOutbound">
 import { listOutbound, getOutbound, addOutbound, updateOutbound, delOutbound, submitOutbound } from '@/api/wms/outbound'
 import { listWarehouse } from '@/api/wms/warehouse'
-import { listInventory } from '@/api/wms/inventory'
+import InventoryPicker from '@/components/InventoryPicker/index.vue'
+import WarehousePicker from '@/components/WarehousePicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
-import { ArrowRight, ArrowDown, QuestionFilled, WarningFilled, Filter, Search } from '@element-plus/icons-vue'
+import { ArrowRight, ArrowDown, QuestionFilled, WarningFilled, Filter, Search, CircleClose } from '@element-plus/icons-vue'
 const { collapsedCards, toggleCard } = useDetailCard(['basic', 'info', 'detail', 'dBasic', 'dInfo', 'dDetail'])
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('wms_outbound_index')
 const { wms_outbound_type, wms_outbound_status, wms_unit } = proxy.useDict('wms_outbound_type', 'wms_outbound_status', 'wms_unit')
 const list = ref([]); const open = ref(false); const loading = ref(true); const showSearch = ref(true); const showAdvanced = ref(false); const ids = ref([]); const multiple = ref(true); const total = ref(0); const title = ref(''); const detailOpen = ref(false); const detailData = ref({}); const showStatusHelp = ref(false); const activeStatusTab = ref('all'); const statusCounts = ref({ all: 0 }); const dateRange = ref([]); const dateRangeCreateTime = ref([])
-const warehouseOptions = ref([]); const inventoryOptions = ref([])
+const warehouseOptions = ref([])
+const inventoryPickerRef = ref(null)
+const warehousePickerRef = ref(null)
+const currentDetailIndex = ref(-1)
 const defaultColumns = { orderNo: { label: '出库单号', visible: true }, orderType: { label: '出库类型', visible: true }, warehouseName: { label: '出库仓库', visible: true }, status: { label: '状态', visible: true }, totalQty: { label: '总数量', visible: true }, remark: { label: '备注', visible: true } }
 function loadColumnVisibility() { try { const saved = localStorage.getItem('wms_outbound_columns'); if (saved) { const parsed = JSON.parse(saved); const result = {}; Object.keys(defaultColumns).forEach(key => { result[key] = { label: defaultColumns[key].label, visible: parsed[key] !== undefined ? parsed[key] : defaultColumns[key].visible } }); return result } } catch (e) {} return { ...defaultColumns } }
 const columns = ref(loadColumnVisibility())
@@ -365,18 +377,11 @@ function getList() { loading.value = true; const params = proxy.addDateRange(pro
 function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
 function resetQuery() { queryParams.value.orderNo = undefined; queryParams.value.orderType = undefined; queryParams.value.warehouseId = undefined; queryParams.value.status = undefined; queryParams.value.params = {}; dateRange.value = []; dateRangeCreateTime.value = []; activeStatusTab.value = 'all'; handleQuery() }
 function handleSelectionChange(sel) { ids.value = sel.map(i => i.orderId); multiple.value = !sel.length }
-function reset() { form.value = { orderNo: undefined, orderType: '0', warehouseId: undefined, outboundDate: today(), status: '0', remark: undefined, detailList: [] }; proxy.resetForm('outboundRef') }
+function reset() { form.value = { orderNo: undefined, orderType: '0', warehouseId: undefined, warehouseName: undefined, outboundDate: today(), status: '0', remark: undefined, detailList: [] }; proxy.resetForm('outboundRef') }
 function handleAdd() { reset(); open.value = true; title.value = '添加出库单' }
 function handleUpdate(row) { reset(); getOutbound(row.orderId).then(res => { form.value = res.data; open.value = true; title.value = '修改出库单'; onWarehouseChange(form.value.warehouseId) }) }
 function handleDetail(row) { getOutbound(row.orderId).then(res => { detailData.value = res.data; detailOpen.value = true }) }
 
-/** 格式化库存物料下拉框标签 */
-function formatInventoryLabel(inv) {
-  let label = inv.materialCode + ' - ' + inv.materialName
-  if (inv.batchNo) { label += ' [' + inv.batchNo + ']' }
-  if (inv.locationName) { label += ' (' + inv.locationName + ')' }
-  return label
-}
 
 /** 添加明细行 */
 function handleAddDetail() {
@@ -389,11 +394,29 @@ function handleAddDetail() {
 }
 function handleDeleteDetail(index) { form.value.detailList.splice(index, 1) }
 
-/** 选中库存物料时，自动带出所有字段 */
-function handleInventoryChange(index, inventoryId) {
-  const inv = inventoryOptions.value.find(i => i.inventoryId === inventoryId)
-  if (inv) {
-    const row = form.value.detailList[index]
+/* ===== 仓库选择器 ===== */
+function openWarehousePicker() { warehousePickerRef.value.open(form.value.warehouseId) }
+function clearWarehouse() { form.value.warehouseId = undefined; form.value.warehouseName = undefined; onWarehouseChange(undefined) }
+function onWarehousePickerConfirm(warehouse) { form.value.warehouseId = warehouse.warehouseId; form.value.warehouseName = warehouse.warehouseName; onWarehouseChange(warehouse.warehouseId) }
+
+/* ===== 库存物料选择器 ===== */
+function openInventoryPicker(index) {
+  if (!form.value.warehouseId) { proxy.$modal.msgWarning('请先选择出库仓库'); return }
+  currentDetailIndex.value = index
+  const excludedIds = (form.value.detailList || []).filter((_, i) => i !== index).map(d => d.inventoryId).filter(Boolean)
+  inventoryPickerRef.value.open(form.value.warehouseId, form.value.detailList[index].inventoryId, excludedIds)
+}
+function clearInventory(index) {
+  const row = form.value.detailList[index]
+  row.inventoryId = undefined; row.materialId = undefined; row.materialCode = ''; row.materialName = ''
+  row.specModel = ''; row.unit = ''; row.batchNo = ''
+  row.locationId = undefined; row.locationCode = ''; row.locationName = ''
+  row.availableQty = 0; row.planQty = 0
+}
+function onInventoryPickerConfirm(inv) {
+  if (currentDetailIndex.value >= 0) {
+    const row = form.value.detailList[currentDetailIndex.value]
+    row.inventoryId = inv.inventoryId
     row.materialId = inv.materialId
     row.materialCode = inv.materialCode
     row.materialName = inv.materialName
@@ -405,19 +428,7 @@ function handleInventoryChange(index, inventoryId) {
     row.locationName = inv.locationName
     row.availableQty = inv.qty
     row.planQty = inv.qty
-  } else {
-    const row = form.value.detailList[index]
-    row.materialId = undefined; row.materialCode = ''; row.materialName = ''
-    row.specModel = ''; row.unit = ''; row.batchNo = ''
-    row.locationId = undefined; row.locationCode = ''; row.locationName = ''
-    row.availableQty = 0; row.planQty = 0
   }
-}
-
-/** 判断库存是否已被其他行选中（防止重复出库同一库存） */
-function isInventorySelected(inventoryId, currentIndex) {
-  if (!form.value.detailList) return false
-  return form.value.detailList.some((r, i) => i !== currentIndex && r.inventoryId === inventoryId)
 }
 
 /** 校验出库数量不超过可用库存 */
@@ -467,22 +478,22 @@ function orderTypeLabel(type) { const item = wms_outbound_type.value.find(d => d
 function statusTabClass(value) { const map = { '0': 'tab-draft', '1': 'tab-audit', '2': 'tab-partial', '3': 'tab-done' }; return map[value] || '' }
 function handleStatusTabClick(status) { activeStatusTab.value = status; queryParams.value.status = status === 'all' ? undefined : status; handleQuery() }
 function handleStatusChange(val) { activeStatusTab.value = val ? val : 'all'; handleQuery() }
-function loadStatusCounts() { listOutbound({ pageNum: 1, pageSize: 999 }).then(res => { const counts = { all: res.total }; (res.rows || []).forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++ }); statusCounts.value = counts }).catch(() => {}) }
+function loadStatusCounts() {
+  listOutbound({ pageNum: 1, pageSize: 999 }).then(res => {
+    const counts = { all: res.total, '0': 0, '1': 0, '2': 0, '3': 0, '4': 0, '5': 0, '6': 0 };
+    (res.rows || []).forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++ });
+    statusCounts.value = counts
+  }).catch(() => {})
+}
 function cancel() { open.value = false; reset() }
 
-/** 仓库变更时加载该仓库的库存（仅可用数量>0的） */
+/** 仓库变更时清空明细 */
 function onWarehouseChange(warehouseId) {
-  inventoryOptions.value = []
   if (form.value.detailList) {
     form.value.detailList.forEach(d => {
       d.inventoryId = undefined; d.materialId = undefined; d.materialCode = ''
       d.materialName = ''; d.specModel = ''; d.unit = ''; d.batchNo = ''
       d.locationId = undefined; d.locationCode = ''; d.locationName = ''; d.availableQty = 0; d.planQty = 0
-    })
-  }
-  if (warehouseId) {
-    listInventory({ warehouseId: warehouseId, pageNum: 1, pageSize: 999 }).then(res => {
-      inventoryOptions.value = res.rows.filter(r => r.qty > 0)
     })
   }
 }

@@ -52,6 +52,13 @@ public class DmsWorkOrderController extends BaseController
         return AjaxResult.success(dmsWorkOrderService.selectWorkOrderById(orderId));
     }
 
+    @PreAuthorize("@ss.hasPermi('dms:workorder:list')")
+    @GetMapping("/countByStatus")
+    public AjaxResult countByStatus()
+    {
+        return AjaxResult.success(dmsWorkOrderService.countByStatus());
+    }
+
     @Log(title = "工单管理", businessType = BusinessType.INSERT)
     @PreAuthorize("@ss.hasPermi('dms:workorder:add')")
     @PostMapping

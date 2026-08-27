@@ -131,11 +131,13 @@
               </span>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="250" align="center" fixed="right">
+          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
         <template #default="scope">
+          <div class="action-btn-row">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">详情</el-button>
           <el-button v-if="scope.row.invoiceStatus === '1'" link type="danger" icon="CircleClose" @click="handleVoid(scope.row)" v-hasPermi="['marketing:invoice:void']">作废</el-button>
           <el-button v-if="scope.row.invoiceStatus === '1'" link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['marketing:invoice:edit']">修改</el-button>
+          </div>
         </template>
       </el-table-column>
     </el-table>

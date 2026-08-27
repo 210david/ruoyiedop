@@ -81,6 +81,17 @@
 
     <!-- ===== Table Section ===== -->
     <div class="surface">
+      <!-- Type Tabs -->
+      <div class="status-tabs">
+        <div class="tabs-track">
+          <button class="status-tab" :class="{ 'is-active': activeTypeTab === 'all' }" @click="handleTypeTabClick('all')">
+            <span class="dot"></span><span>全部</span><span class="count">{{ typeCounts.all || 0 }}</span>
+          </button>
+          <button v-for="t in wms_material_type" :key="t.value" class="status-tab" :class="[typeTabClass(t.value), { 'is-active': activeTypeTab === t.value }]" @click="handleTypeTabClick(t.value)">
+            <span class="dot"></span><span>{{ t.label }}</span><span class="count">{{ typeCounts[t.value] || 0 }}</span>
+          </button>
+        </div>
+      </div>
       <!-- Toolbar -->
       <div class="toolbar">
         <div class="left">
@@ -147,11 +158,13 @@
             </template>
           </el-table-column>
           <el-table-column label="创建时间" prop="createTime" key="createTime" :width="colWidth('createTime', 180)" resizable align="center" sortable="custom" v-if="columns.createTime.visible" />
-          <el-table-column label="操作" width="200" align="center" fixed="right">
+          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
-              <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
-              <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['wms:material:edit']">修改</el-button>
-              <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['wms:material:remove']">删除</el-button>
+              <div class="action-btn-row">
+                <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
+                <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['wms:material:edit']">修改</el-button>
+                <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['wms:material:remove']">删除</el-button>
+              </div>
             </template>
           </el-table-column>
         </el-table>
@@ -430,6 +443,8 @@ const single = ref(true)
 const multiple = ref(true)
 const total = ref(0)
 const title = ref('')
+const activeTypeTab = ref('all')
+const typeCounts = ref({ all: 0 })
 
 // 列显隐配置
 const defaultColumns = {
@@ -535,10 +550,21 @@ function unitLabel(unit) { const item = wms_unit.value.find(d => d.value == unit
 function handleQuery() {
   queryParams.value.pageNum = 1
   getList()
+  loadTypeCounts()
 }
 
 function resetQuery() {
-queryParams.value.materialCode = undefined; queryParams.value.materialName = undefined; queryParams.value.materialType = undefined; queryParams.value.isBatchManage = undefined; queryParams.value.isExpiryManage = undefined; queryParams.value.status = undefined; queryParams.value.params = {}; dateRange.value = []; handleQuery()
+queryParams.value.materialCode = undefined; queryParams.value.materialName = undefined; queryParams.value.materialType = undefined; queryParams.value.isBatchManage = undefined; queryParams.value.isExpiryManage = undefined; queryParams.value.status = undefined; queryParams.value.params = {}; dateRange.value = []; activeTypeTab.value = 'all'; handleQuery()
+}
+function handleTypeTabClick(type) { activeTypeTab.value = type; queryParams.value.materialType = type === 'all' ? undefined : type; handleQuery() }
+function typeTabClass(value) { const map = { '0': 'tab-raw', '1': 'tab-semi', '2': 'tab-product', '3': 'tab-aux', '4': 'tab-service', '5': 'tab-engineering' }; return map[value] || '' }
+function loadTypeCounts() {
+  listMaterial({ pageNum: 1, pageSize: 999 }).then(res => {
+    const counts = { all: res.total };
+    (wms_material_type.value || []).forEach(d => { counts[d.value] = 0 });
+    (res.rows || []).forEach(r => { if (counts[r.materialType] !== undefined) counts[r.materialType]++ });
+    typeCounts.value = counts
+  }).catch(() => {})
 }
 
 function handleSelectionChange(selection) {
@@ -634,6 +660,7 @@ function cancel() {
 }
 
 getList()
+loadTypeCounts()
 </script>
 
 <style scoped>
@@ -690,6 +717,36 @@ getList()
 .wms-material-page .field .control :deep(.el-date-editor .el-range-separator) { color:var(--ink-400); }
 .wms-material-page .field .control :deep(.el-date-editor .el-range__icon) { color:var(--ink-400); }
 
+/* ===== Type Tabs ===== */
+.wms-material-page .status-tabs { display:flex; align-items:center; gap:12px; padding:6px 10px 6px 12px; border-bottom:1px solid var(--ink-200); background:#fff; }
+.wms-material-page .tabs-track { display:flex; align-items:center; gap:4px; flex-wrap:wrap; }
+.wms-material-page .status-tab { display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 12px; border-radius:var(--r-sm); font-size:14px; color:var(--ink-500); cursor:pointer; user-select:none; transition:all .15s var(--ease-out); white-space:nowrap; border:1px solid transparent; background:transparent; }
+.wms-material-page .status-tab .dot { width:6px; height:6px; border-radius:50%; background:var(--ink-300); }
+.wms-material-page .status-tab .count { font-size:12px; font-weight:600; padding:1px 6px; border-radius:999px; background:var(--ink-100); color:var(--ink-500); min-width:18px; text-align:center; line-height:1.4; font-feature-settings:"tnum" 1; }
+.wms-material-page .status-tab:hover { background:var(--ink-50); color:var(--ink-700); }
+.wms-material-page .status-tab.is-active { background:var(--brand-50); color:var(--brand-700); font-weight:600; border-color:var(--brand-200); }
+.wms-material-page .status-tab.is-active .count { background:var(--brand-600); color:#fff; }
+.wms-material-page .status-tab.is-active .dot { background:var(--brand-500); }
+/* 物料类型颜色 */
+.wms-material-page .status-tab.tab-raw .dot { background:var(--amber-500); }
+.wms-material-page .status-tab.tab-raw .count { background:var(--amber-50); color:var(--amber-700); }
+.wms-material-page .status-tab.is-active.tab-raw .count { background:var(--amber-500); color:#fff; }
+.wms-material-page .status-tab.tab-semi .dot { background:var(--blue-500); }
+.wms-material-page .status-tab.tab-semi .count { background:var(--blue-50); color:var(--blue-700); }
+.wms-material-page .status-tab.is-active.tab-semi .count { background:var(--blue-500); color:#fff; }
+.wms-material-page .status-tab.tab-product .dot { background:var(--green-500); }
+.wms-material-page .status-tab.tab-product .count { background:var(--green-50); color:var(--green-700); }
+.wms-material-page .status-tab.is-active.tab-product .count { background:var(--green-500); color:#fff; }
+.wms-material-page .status-tab.tab-aux .dot { background:#8b5cf6; }
+.wms-material-page .status-tab.tab-aux .count { background:var(--violet-50); color:#7c3aed; }
+.wms-material-page .status-tab.is-active.tab-aux .count { background:#8b5cf6; color:#fff; }
+.wms-material-page .status-tab.tab-service .dot { background:#06b6d4; }
+.wms-material-page .status-tab.tab-service .count { background:#ecfeff; color:#0e7490; }
+.wms-material-page .status-tab.is-active.tab-service .count { background:#06b6d4; color:#fff; }
+.wms-material-page .status-tab.tab-engineering .dot { background:var(--ink-400); }
+.wms-material-page .status-tab.tab-engineering .count { background:var(--ink-100); color:var(--ink-500); }
+.wms-material-page .status-tab.is-active.tab-engineering .count { background:var(--ink-400); color:#fff; }
+
 /* ===== Toolbar ===== */
 .wms-material-page .toolbar { display:flex; align-items:center; justify-content:space-between; padding:12px 20px; border-bottom:1px solid var(--ink-200); background:var(--ink-50); }
 .wms-material-page .toolbar .left { display:flex; gap:8px; align-items:center; }
@@ -745,6 +802,13 @@ getList()
 .wms-material-page .pagination-container :deep(.el-pagination .el-pagination__sizes .el-select__wrapper) { border-radius:6px; box-shadow:0 0 0 1px var(--ink-200) inset; }
 
 /* ===== Responsive ===== */
+/* 操作列按钮对齐：每行2个按钮，flex-wrap 自动换行，按钮自适应内容宽度 */
+.wms-material-page :deep(.col-action) { padding: 6px 4px !important; }
+.wms-material-page :deep(.col-action .cell) { display: flex; justify-content: center; padding: 0; }
+.wms-material-page .action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
+.wms-material-page :deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
+.wms-material-page :deep(.col-action .el-button + .el-button) { margin-left: 2px; }
+
 @media (max-width:1100px) { .wms-material-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }
 @media (max-width:720px) { .wms-material-page .filter-card .filter-bar { grid-template-columns:1fr; } .wms-material-page .toolbar { flex-wrap:wrap; gap:10px; } }
 </style>

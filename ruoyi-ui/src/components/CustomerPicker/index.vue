@@ -41,7 +41,7 @@
         >
           <el-table-column width="45" align="center">
             <template #default="{ row }">
-              <el-radio :model-value="selectedId" :value="row.customerId" @click.stop><span /></el-radio>
+              <el-radio :model-value="selectedId" :value="row.customerId" @click.stop="onRowClick(row)"><span /></el-radio>
             </template>
           </el-table-column>
           <el-table-column label="客户编号" prop="customerNo" width="130" show-overflow-tooltip />

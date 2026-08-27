@@ -143,8 +143,9 @@
             <template #default="scope"><el-tag v-if="scope.row.leadId" type="success" size="small">已转</el-tag><span v-else>-</span></template>
           </el-table-column>
           <el-table-column label="签到时间" prop="signTime" key="signTime" :width="colWidth('signTime', 160)" resizable sortable="custom" v-if="columns.signTime.visible" />
-      <el-table-column label="操作" width="200" align="center" fixed="right">
+      <el-table-column label="操作" width="180" align="center" fixed="right" class-name="col-action">
         <template #default="scope">
+          <div class="action-btn-row">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">详情</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['marketing:participant:edit']">修改</el-button>
           <el-dropdown @command="(cmd) => handleCommand(cmd, scope.row)" trigger="click">
@@ -157,6 +158,7 @@
               </el-dropdown-menu>
             </template>
           </el-dropdown>
+          </div>
         </template>
       </el-table-column>
         </el-table>

@@ -41,12 +41,25 @@ public class SysMessage extends BaseEntity
     /** 接收人ID（为空则全员可见） */
     private Long recipientId;
 
+    /** 接收角色权限标识（为空则全员可见，否则只有拥有该权限的角色对应用户可见） */
+    private String recipientRoleKey;
+
     /** 消息状态（0待发送 1已发送 2已撤回） */
     private String status;
+
+    /** 消息创建时的业务状态（用于判断业务是否已流转过该提醒节点） */
+    private String bizStatus;
 
     /** 是否已读 */
     @JsonProperty("isRead")
     private boolean isRead;
+
+    /** 业务是否已处理（0未处理 1已处理，业务状态流转时更新） */
+    @JsonProperty("bizHandled")
+    private String bizHandled;
+
+    /** 业务处理入口名称（如：排产工作台、入库作业等，用于前端展示） */
+    private String bizEntryName;
 
     /** 阅读时间 */
     private java.util.Date readTime;
@@ -146,6 +159,16 @@ public class SysMessage extends BaseEntity
         this.recipientId = recipientId;
     }
 
+    public String getRecipientRoleKey()
+    {
+        return recipientRoleKey;
+    }
+
+    public void setRecipientRoleKey(String recipientRoleKey)
+    {
+        this.recipientRoleKey = recipientRoleKey;
+    }
+
     public String getStatus()
     {
         return status;
@@ -184,5 +207,35 @@ public class SysMessage extends BaseEntity
     public void setReadStatus(String readStatus)
     {
         this.readStatus = readStatus;
+    }
+
+    public String getBizStatus()
+    {
+        return bizStatus;
+    }
+
+    public void setBizStatus(String bizStatus)
+    {
+        this.bizStatus = bizStatus;
+    }
+
+    public String getBizHandled()
+    {
+        return bizHandled;
+    }
+
+    public void setBizHandled(String bizHandled)
+    {
+        this.bizHandled = bizHandled;
+    }
+
+    public String getBizEntryName()
+    {
+        return bizEntryName;
+    }
+
+    public void setBizEntryName(String bizEntryName)
+    {
+        this.bizEntryName = bizEntryName;
     }
 }

@@ -1,6 +1,7 @@
 package com.ruoyi.dms.service;
 
 import java.util.List;
+import java.util.Map;
 import com.ruoyi.dms.domain.DmsWorkOrder;
 
 public interface IDmsWorkOrderService
@@ -10,6 +11,9 @@ public interface IDmsWorkOrderService
     public int insertWorkOrder(DmsWorkOrder workOrder);
     public int updateWorkOrder(DmsWorkOrder workOrder);
     public int deleteWorkOrderByIds(Long[] orderIds);
+
+    /** 按状态统计工单数量 */
+    public Map<String, Object> countByStatus();
 
     /** 派工：0新建→1已派工 */
     public int dispatch(DmsWorkOrder workOrder);

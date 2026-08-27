@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.hr.mapper.HrSpecialDeductionMapper">
+
+    <resultMap type="HrSpecialDeduction" id="HrSpecialDeductionResult">
+        <result property="sdId" column="sd_id"/>
+        <result property="employeeId" column="employee_id"/>
+        <result property="employeeName" column="employee_name"/>
+        <result property="employeeNo" column="employee_no"/>
+        <result property="deductionType" column="deduction_type"/>
+        <result property="deductionAmount" column="deduction_amount"/>
+        <result property="effectiveDate" column="effective_date"/>
+        <result property="expiryDate" column="expiry_date"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <sql id="selectVo">
+        SELECT sd_id, employee_id, employee_name, employee_no, deduction_type, deduction_amount, effective_date, expiry_date, del_flag, create_by, create_time, update_by, update_time, remark
+        FROM biz_hr_special_deduction
+    </sql>
+
+    <select id="selectHrSpecialDeductionList" parameterType="HrSpecialDeduction" resultMap="HrSpecialDeductionResult">
+        <include refid="selectVo"/>
+        <where>
+            del_flag = '0'
+            <if test="employeeId != null"> AND employee_id = #{employeeId}</if>
+            <if test="employeeName != null and employeeName != ''"> AND employee_name LIKE CONCAT('%', #{employeeName}, '%')</if>
+            <if test="employeeNo != null and employeeNo != ''"> AND employee_no LIKE CONCAT('%', #{employeeNo}, '%')</if>
+            <if test="deductionType != null and deductionType != ''"> AND deduction_type LIKE CONCAT('%', #{deductionType}, '%')</if>
+            <if test="deductionAmount != null"> AND deduction_amount = #{deductionAmount}</if>
+            <if test="effectiveDate != null"> AND effective_date = #{effectiveDate}</if>
+            <if test="expiryDate != null"> AND expiry_date = #{expiryDate}</if>
+            <if test="delFlag != null and delFlag != ''"> AND del_flag LIKE CONCAT('%', #{delFlag}, '%')</if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+
+    <select id="selectHrSpecialDeductionById" parameterType="Long" resultMap="HrSpecialDeductionResult">
+        <include refid="selectVo"/> WHERE sd_id = #{sdId}
+    </select>
+
+    <insert id="insertHrSpecialDeduction" parameterType="HrSpecialDeduction" useGeneratedKeys="true" keyProperty="sdId">
+        INSERT INTO biz_hr_special_deduction (
+            employee_id, employee_name, employee_no, deduction_type, deduction_amount, effective_date, expiry_date, del_flag, create_by, create_time, remark
+        ) VALUES (
+            #{employeeId}, #{employeeName}, #{employeeNo}, #{deductionType}, #{deductionAmount}, #{effectiveDate}, #{expiryDate}, #{delFlag}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateHrSpecialDeduction" parameterType="HrSpecialDeduction">
+        UPDATE biz_hr_special_deduction
+        <set>
+            <if test="employeeId != null">employee_id = #{employeeId},</if>
+            <if test="employeeName != null and employeeName != ''">employee_name = #{employeeName},</if>
+            <if test="employeeNo != null and employeeNo != ''">employee_no = #{employeeNo},</if>
+            <if test="deductionType != null and deductionType != ''">deduction_type = #{deductionType},</if>
+            <if test="deductionAmount != null">deduction_amount = #{deductionAmount},</if>
+            <if test="effectiveDate != null">effective_date = #{effectiveDate},</if>
+            <if test="expiryDate != null">expiry_date = #{expiryDate},</if>
+            <if test="delFlag != null and delFlag != ''">del_flag = #{delFlag},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE sd_id = #{sdId}
+    </update>
+
+    <delete id="deleteHrSpecialDeductionById" parameterType="Long">
+        UPDATE biz_hr_special_deduction SET del_flag = '2' WHERE sd_id = #{sdId}
+    </delete>
+
+    <delete id="deleteHrSpecialDeductionByIds" parameterType="Long">
+        UPDATE biz_hr_special_deduction SET del_flag = '2' WHERE sd_id IN
+        <foreach item="sdId" collection="array" open="(" separator="," close=")">#{sdId}</foreach>
+    </delete>
+
+</mapper>

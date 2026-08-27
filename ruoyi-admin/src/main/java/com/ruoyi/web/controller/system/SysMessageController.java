@@ -1,6 +1,8 @@
 package com.ruoyi.web.controller.system;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
@@ -11,11 +13,16 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
+import com.github.pagehelper.PageHelper;
 import com.ruoyi.common.annotation.Log;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
+import com.ruoyi.common.core.domain.model.LoginUser;
 import com.ruoyi.common.core.page.TableDataInfo;
+import com.ruoyi.common.core.page.PageDomain;
+import com.ruoyi.common.core.page.TableSupport;
 import com.ruoyi.common.enums.BusinessType;
+import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.system.domain.SysMessage;
 import com.ruoyi.system.service.ISysMessageService;
 
@@ -33,16 +40,32 @@ public class SysMessageController extends BaseController
 
     /**
      * 获取消息列表（管理端，带当前用户已读状态）
+     * 按当前用户的角色权限过滤可见消息
      */
     @PreAuthorize("@ss.hasPermi('system:message:list')")
     @GetMapping("/list")
     public TableDataInfo list(SysMessage message)
     {
-        startPage();
+        // 禁用PageHelper自动COUNT：消息列表SQL包含bizStatusExpr复杂子查询，
+        // PageHelper生成的COUNT子查询通过Druid filter链时性能极差（16秒+），
+        // 改用手动查询简单基表COUNT
+        PageDomain pageDomain = TableSupport.buildPageRequest();
+        Integer pageNum = pageDomain.getPageNum();
+        Integer pageSize = pageDomain.getPageSize();
+        if (pageNum == null) pageNum = 1;
+        if (pageSize == null) pageSize = 10;
+        PageHelper.startPage(pageNum, pageSize, false);
         Long userId = getUserId();
-        message.setRecipientId(userId);
-        List<SysMessage> list = messageService.selectMessageListWithReadStatus(message, userId);
-        return getDataTable(list);
+        List<String> roleKeys = getCurrentUserPermissions();
+        List<SysMessage> list = messageService.selectMessageListWithReadStatus(message, userId, roleKeys);
+        // 手动查询总数（简单COUNT，不走派生表子查询）
+        long total = messageService.selectMessageListCount(message, userId, roleKeys);
+        TableDataInfo rspData = new TableDataInfo();
+        rspData.setCode(200);
+        rspData.setMsg("查询成功");
+        rspData.setRows(list);
+        rspData.setTotal(total);
+        return rspData;
     }
 
     /**
@@ -68,14 +91,16 @@ public class SysMessageController extends BaseController
 
     /**
      * 首页顶部消息列表（带当前用户已读状态，最多10条）
+     * 按当前用户的角色权限过滤可见消息
      */
     @GetMapping("/listTop")
     @ResponseBody
     public AjaxResult listTop()
     {
         Long userId = getUserId();
-        List<SysMessage> list = messageService.selectMessageListTop(userId, 10);
-        int unreadCount = messageService.selectUnreadCount(userId);
+        List<String> roleKeys = getCurrentUserPermissions();
+        List<SysMessage> list = messageService.selectMessageListTop(userId, roleKeys, 10);
+        int unreadCount = messageService.selectUnreadCount(userId, roleKeys);
         AjaxResult result = AjaxResult.success(list);
         result.put("unreadCount", unreadCount);
         return result;
@@ -104,5 +129,31 @@ public class SysMessageController extends BaseController
         Long[] messageIds = com.ruoyi.common.core.text.Convert.toLongArray(ids);
         messageService.markReadBatch(userId, messageIds);
         return success();
+    }
+
+    /**
+     * 获取当前登录用户的权限标识列表
+     * 用于消息的角色权限过滤
+     * admin用户（拥有*:*:*通配符权限）返回null，表示不做权限过滤
+     */
+    private List<String> getCurrentUserPermissions()
+    {
+        LoginUser loginUser = SecurityUtils.getLoginUser();
+        if (loginUser == null)
+        {
+            return new ArrayList<>();
+        }
+        Set<String> permissions = loginUser.getPermissions();
+        if (permissions == null || permissions.isEmpty())
+        {
+            return new ArrayList<>();
+        }
+        // 如果用户拥有通配符权限（admin），返回null表示不做权限过滤
+        if (permissions.contains("*:*:*"))
+        {
+            return null;
+        }
+        // 转为List供MyBatis使用
+        return new ArrayList<>(permissions);
     }
 }

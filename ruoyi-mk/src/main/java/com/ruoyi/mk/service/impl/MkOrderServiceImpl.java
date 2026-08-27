@@ -15,6 +15,7 @@ import com.ruoyi.mk.mapper.MkOrderMapper;
 import com.ruoyi.mk.mapper.MkOrderAuditLogMapper;
 import com.ruoyi.mk.service.IMkOrderService;
 import com.ruoyi.mk.service.IMkNumberRuleService;
+import com.ruoyi.system.utils.MessageHelper;
 
 /**
  * 订单 Service实现
@@ -40,6 +41,9 @@ public class MkOrderServiceImpl implements IMkOrderService
 
     @Autowired
     private IMkNumberRuleService mkNumberRuleService;
+
+    @Autowired
+    private MessageHelper messageHelper;
 
     @Override
     public List<MkOrder> selectOrderList(MkOrder order)
@@ -270,7 +274,24 @@ public class MkOrderServiceImpl implements IMkOrderService
         update.setOrderId(orderId);
         update.setOrderStatus("1");
         update.setUpdateBy(SecurityUtils.getUsername());
-        return mkOrderMapper.updateOrder(update);
+        int rows = mkOrderMapper.updateOrder(update);
+
+        // 发送消息：销售订单待审核
+        String content = "客户：" + (order.getCustomerName() != null ? order.getCustomerName() : "-")
+                + "，金额：￥" + (order.getOrderAmount() != null ? order.getOrderAmount().toPlainString() : "0");
+        messageHelper.sendMessage(
+            "销售订单" + order.getOrderNo() + "待审核",
+            content,
+            "3",   // 审批消息
+            "2",   // 重要
+            "mk",
+            orderId,
+            "/mk/contract/order?id=" + orderId,
+            "marketing:order:approve",
+"1",   // bizStatus: 待审核
+"销售订单"  // bizEntryName
+);
+        return rows;
     }
 
     @Override
@@ -292,7 +313,22 @@ public class MkOrderServiceImpl implements IMkOrderService
         update.setOrderStatus("6");
         update.setCancelReason(voidReason);
         update.setUpdateBy(SecurityUtils.getUsername());
-        return mkOrderMapper.updateOrder(update);
+        int rows = mkOrderMapper.updateOrder(update);
+
+        // 发送消息：销售订单作废
+        messageHelper.sendMessage(
+            "销售订单" + order.getOrderNo() + "已作废",
+            "作废原因：" + (voidReason != null ? voidReason : "-"),
+            "1",   // 系统通知
+            "2",   // 重要
+            "mk",
+            orderId,
+            "/mk/contract/order?id=" + orderId,
+"marketing:order:list",
+            null,
+            "销售订单"  // bizEntryName
+);
+        return rows;
     }
 
     @Override
@@ -334,6 +370,21 @@ public class MkOrderServiceImpl implements IMkOrderService
             auditLog.setAuditAction("2");
         }
         mkOrderAuditLogMapper.insertAuditLog(auditLog);
+
+        // 发送消息：审核结果通知销售专员
+        String resultText = "2".equals(status) ? "已审核通过，可安排发货" : "被驳回，原因：" + (auditOpinion != null ? auditOpinion : "");
+        messageHelper.sendMessage(
+            "销售订单" + order.getOrderNo() + resultText,
+            "审核结果：" + resultText,
+            "1",   // 系统通知
+            "2".equals(status) ? "1" : "2",  // 通过=普通，驳回=重要
+            "mk",
+            orderId,
+            "/mk/contract/order?id=" + orderId,
+"marketing:order:edit",
+            null,
+            "销售订单"  // bizEntryName
+);
 
         return rows;
     }

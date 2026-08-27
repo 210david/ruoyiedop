@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.hr.mapper.HrTaxRateMapper">
+
+    <resultMap type="HrTaxRate" id="HrTaxRateResult">
+        <result property="taxRateId" column="tax_rate_id"/>
+        <result property="level" column="level"/>
+        <result property="minAmount" column="min_amount"/>
+        <result property="maxAmount" column="max_amount"/>
+        <result property="rate" column="rate"/>
+        <result property="quickDeduction" column="quick_deduction"/>
+        <result property="effectiveDate" column="effective_date"/>
+        <result property="status" column="status"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <sql id="selectVo">
+        SELECT tax_rate_id, level, min_amount, max_amount, rate, quick_deduction, effective_date, status, del_flag, create_by, create_time, update_by, update_time, remark
+        FROM biz_hr_tax_rate
+    </sql>
+
+    <select id="selectHrTaxRateList" parameterType="HrTaxRate" resultMap="HrTaxRateResult">
+        <include refid="selectVo"/>
+        <where>
+            del_flag = '0'
+            <if test="level != null"> AND level = #{level}</if>
+            <if test="minAmount != null"> AND min_amount = #{minAmount}</if>
+            <if test="maxAmount != null"> AND max_amount = #{maxAmount}</if>
+            <if test="rate != null"> AND rate = #{rate}</if>
+            <if test="quickDeduction != null"> AND quick_deduction = #{quickDeduction}</if>
+            <if test="effectiveDate != null"> AND effective_date = #{effectiveDate}</if>
+            <if test="status != null and status != ''"> AND status LIKE CONCAT('%', #{status}, '%')</if>
+            <if test="delFlag != null and delFlag != ''"> AND del_flag LIKE CONCAT('%', #{delFlag}, '%')</if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+
+    <select id="selectHrTaxRateById" parameterType="Long" resultMap="HrTaxRateResult">
+        <include refid="selectVo"/> WHERE tax_rate_id = #{taxRateId}
+    </select>
+
+    <insert id="insertHrTaxRate" parameterType="HrTaxRate" useGeneratedKeys="true" keyProperty="taxRateId">
+        INSERT INTO biz_hr_tax_rate (
+            level, min_amount, max_amount, rate, quick_deduction, effective_date, status, del_flag, create_by, create_time, remark
+        ) VALUES (
+            #{level}, #{minAmount}, #{maxAmount}, #{rate}, #{quickDeduction}, #{effectiveDate}, #{status}, #{delFlag}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateHrTaxRate" parameterType="HrTaxRate">
+        UPDATE biz_hr_tax_rate
+        <set>
+            <if test="level != null">level = #{level},</if>
+            <if test="minAmount != null">min_amount = #{minAmount},</if>
+            <if test="maxAmount != null">max_amount = #{maxAmount},</if>
+            <if test="rate != null">rate = #{rate},</if>
+            <if test="quickDeduction != null">quick_deduction = #{quickDeduction},</if>
+            <if test="effectiveDate != null">effective_date = #{effectiveDate},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="delFlag != null and delFlag != ''">del_flag = #{delFlag},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE tax_rate_id = #{taxRateId}
+    </update>
+
+    <delete id="deleteHrTaxRateById" parameterType="Long">
+        UPDATE biz_hr_tax_rate SET del_flag = '2' WHERE tax_rate_id = #{taxRateId}
+    </delete>
+
+    <delete id="deleteHrTaxRateByIds" parameterType="Long">
+        UPDATE biz_hr_tax_rate SET del_flag = '2' WHERE tax_rate_id IN
+        <foreach item="taxRateId" collection="array" open="(" separator="," close=")">#{taxRateId}</foreach>
+    </delete>
+
+</mapper>

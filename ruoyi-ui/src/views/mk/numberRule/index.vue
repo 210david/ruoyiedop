@@ -116,12 +116,14 @@
             </template>
           </el-table-column>
           <el-table-column label="备注" prop="remark" key="remark" :width="colWidth('remark', 180)" resizable show-overflow-tooltip v-if="columns.remark.visible" />
-          <el-table-column label="操作" width="180" align="center" fixed="right">
-            <template #default="scope">
-              <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['marketing:numberRule:query']">查看</el-button>
-              <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['marketing:numberRule:edit']">修改</el-button>
-            </template>
-          </el-table-column>
+<el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
+<template #default="scope">
+<div class="action-btn-row">
+<el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['marketing:numberRule:query']">查看</el-button>
+<el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['marketing:numberRule:edit']">修改</el-button>
+</div>
+</template>
+</el-table-column>
         </el-table>
       </div>
       <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
@@ -811,6 +813,13 @@ getList()
 .mk-number-rule-page .badge.gray .dot { background:var(--ink-400); }
 @media (max-width:1100px) { .mk-number-rule-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }
 @media (max-width:720px) { .mk-number-rule-page .filter-card .filter-bar { grid-template-columns:1fr; } .mk-number-rule-page .toolbar { flex-wrap:wrap; gap:10px; } }
+/* 操作列按钮对齐：每行2个按钮，flex-wrap 自动换行，按钮自适应内容宽度 */
+.mk-number-rule-page :deep(.col-action) { padding: 6px 4px !important; }
+.mk-number-rule-page :deep(.col-action .cell) { display: flex; justify-content: center; padding: 0; }
+.mk-number-rule-page .action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
+.mk-number-rule-page :deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
+.mk-number-rule-page :deep(.col-action .el-button + .el-button) { margin-left: 2px; }
+
 .mk-number-rule-page .pagination-container { display:flex; align-items:center; justify-content:flex-end; padding:14px 20px; font-size:14px; color:var(--ink-500); background:#fff; border-top:1px solid transparent; }
 .mk-number-rule-page .pagination-container :deep(.el-pagination) { justify-content:flex-end; }
 .mk-number-rule-page .pagination-container :deep(.el-pagination .el-pager li) { border-radius:6px; border:1px solid var(--ink-200); background:#fff; min-width:32px; height:32px; line-height:32px; font-size:14px; color:var(--ink-700); margin:0 2px; }

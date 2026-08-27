@@ -2,24 +2,16 @@
   <div class="app-container dms-category-page">
     <!-- ===== Filter Card ===== -->
     <div class="surface filter-card" v-show="showSearch">
-      <div class="filter-head">
-        <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
-      </div>
-      <div class="filter-bar">
-        <div class="field">
-          <label>分类名称</label>
-          <div class="control">
-            <el-input v-model="queryParams.categoryName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+      <div class="filter-row">
+        <div class="filter-row-fields">
+          <div class="field-inline">
+            <label>分类名称</label>
+            <el-input v-model="queryParams.categoryName" placeholder="请输入" clearable @keyup.enter="handleQuery" style="width: 220px">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-      </div>
-      <div class="filter-actions">
-        <div class="filter-info">
-          <el-icon><Filter /></el-icon> 已选 {{ activeFilterCount }} 个条件，支持回车快速搜索
-        </div>
-        <div class="filter-buttons">
+        <div class="filter-row-buttons">
           <el-button icon="RefreshLeft" @click="resetQuery">重置</el-button>
           <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
         </div>
@@ -54,11 +46,13 @@
             </template>
           </el-table-column>
           <el-table-column label="创建时间" prop="createTime" key="createTime" :width="colWidth('createTime', 180)" resizable align="center" v-if="columns.createTime.visible" />
-          <el-table-column label="操作" width="200" align="center" fixed="right">
+          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
-              <el-button link type="primary" icon="Plus" @click="handleAdd(scope.row)" v-hasPermi="['dms:category:add']">新增</el-button>
-              <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['dms:category:edit']">修改</el-button>
-              <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['dms:category:remove']">删除</el-button>
+              <div class="action-btn-row">
+                <el-button link type="primary" icon="Plus" @click="handleAdd(scope.row)" v-hasPermi="['dms:category:add']">新增</el-button>
+                <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['dms:category:edit']">修改</el-button>
+                <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['dms:category:remove']">删除</el-button>
+              </div>
             </template>
           </el-table-column>
         </el-table>
@@ -128,7 +122,7 @@
 import { listCategory, getCategory, addCategory, updateCategory, delCategory } from '@/api/dms/category'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
-import { Search, Filter, RefreshLeft, Sort } from '@element-plus/icons-vue'
+import { Search, RefreshLeft, Sort } from '@element-plus/icons-vue'
 const { collapsedCards, toggleCard } = useDetailCard(["basic","other"])
 
 const { proxy } = getCurrentInstance()
@@ -166,11 +160,6 @@ function loadColumnVisibility() {
   return { ...defaultColumns }
 }
 const columns = ref(loadColumnVisibility())
-const activeFilterCount = computed(() => {
-  let count = 0
-  if (queryParams.value.categoryName) count++
-  return count
-})
 
 const data = reactive({
   form: {},
@@ -243,22 +232,17 @@ getList()
   color: var(--ink-900);
 }
 .dms-category-page .surface { background:#fff; border:1px solid var(--ink-200); border-radius:var(--r-lg); box-shadow:var(--shadow-card); overflow:hidden; margin-bottom:8px; }
-.dms-category-page .filter-card { padding:14px 20px 16px; }
-.dms-category-page .filter-card .filter-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
-.dms-category-page .filter-card .filter-title { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--ink-700); }
-.dms-category-page .filter-card .filter-title .glyph { width:4px; height:14px; background:var(--brand-600); border-radius:2px; }
-.dms-category-page .filter-card .filter-bar { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px 16px; }
-.dms-category-page .filter-card .filter-actions { display:flex; align-items:center; justify-content:space-between; margin-top:14px; padding-top:14px; border-top:1px dashed var(--ink-200); }
-.dms-category-page .filter-card .filter-info { font-size:13px; color:var(--ink-500); display:flex; align-items:center; gap:6px; }
-.dms-category-page .filter-card .filter-buttons { display:flex; gap:8px; }
-.dms-category-page .field { display:flex; flex-direction:column; gap:6px; }
-.dms-category-page .field label { font-size:14px; font-weight:500; color:var(--ink-700); }
-.dms-category-page .field .control { display:flex; align-items:center; height:36px; padding:0 12px; background:#fff; border:1px solid var(--ink-200); border-radius:var(--r-sm); transition:border-color .15s var(--ease-out), box-shadow .15s var(--ease-out); }
-.dms-category-page .field .control:focus-within { border-color:var(--brand-500); box-shadow:0 0 0 3px rgba(99,102,241,.15); }
-.dms-category-page .field .control :deep(.el-input__wrapper) { box-shadow:none !important; background:transparent !important; padding:0; height:34px; }
-.dms-category-page .field .control :deep(.el-input__inner) { border:0; background:transparent; font-size:14px; color:var(--ink-900); height:34px; line-height:34px; }
-.dms-category-page .field .control :deep(.el-input__inner::placeholder) { color:var(--ink-400); }
-.dms-category-page .field .control :deep(.el-input__prefix) { color:var(--ink-400); margin-right:4px; }
+.dms-category-page .filter-card { padding:12px 20px; }
+.dms-category-page .filter-card .filter-row { display:flex; align-items:center; justify-content:flex-start; gap:16px; flex-wrap:wrap; }
+.dms-category-page .filter-card .filter-row-fields { display:flex; align-items:center; gap:16px; flex-wrap:wrap; flex:1; }
+.dms-category-page .filter-card .filter-row-buttons { display:flex; align-items:center; gap:8px; }
+.dms-category-page .field-inline { display:flex; align-items:center; gap:8px; }
+.dms-category-page .field-inline label { font-size:14px; font-weight:500; color:var(--ink-700); white-space:nowrap; }
+.dms-category-page .field-inline :deep(.el-input__wrapper) { box-shadow:0 0 0 1px var(--ink-200) inset !important; border-radius:var(--r-sm); }
+.dms-category-page .field-inline :deep(.el-input__wrapper.is-focus) { box-shadow:0 0 0 1px var(--brand-500) inset !important; }
+.dms-category-page .field-inline :deep(.el-input__inner) { font-size:14px; color:var(--ink-900); height:34px; line-height:34px; }
+.dms-category-page .field-inline :deep(.el-input__inner::placeholder) { color:var(--ink-400); }
+.dms-category-page .field-inline :deep(.el-input__prefix) { color:var(--ink-400); margin-right:4px; }
 .dms-category-page .toolbar { display:flex; align-items:center; justify-content:space-between; padding:12px 20px; border-bottom:1px solid var(--ink-200); background:var(--ink-50); }
 .dms-category-page .toolbar .left { display:flex; gap:8px; align-items:center; }
 .dms-category-page .toolbar .right { display:flex; gap:8px; align-items:center; }
@@ -285,6 +269,12 @@ getList()
 .dms-category-page .badge.green .dot { background:var(--green-500); }
 .dms-category-page .badge.gray { background:var(--ink-100); color:var(--ink-500); border-color:var(--ink-200); }
 .dms-category-page .badge.gray .dot { background:var(--ink-400); }
-@media (max-width:1100px) { .dms-category-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }
-@media (max-width:720px) { .dms-category-page .filter-card .filter-bar { grid-template-columns:1fr; } }
+/* 操作列按钮对齐：每行2个按钮，flex-wrap 自动换行 */
+.dms-category-page :deep(.col-action) { padding: 6px 4px !important; }
+.dms-category-page :deep(.col-action .cell) { display: flex; justify-content: center; padding: 0; }
+.dms-category-page .action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
+.dms-category-page :deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
+.dms-category-page :deep(.col-action .el-button + .el-button) { margin-left: 2px; }
+
+@media (max-width:720px) { .dms-category-page .filter-card .filter-row { flex-direction:column; align-items:stretch; } .dms-category-page .filter-card .filter-row-fields { flex-direction:column; align-items:stretch; } .dms-category-page .field-inline { flex-direction:column; align-items:stretch; } .dms-category-page .field-inline :deep(.el-input) { width:100% !important; } }
 </style>

@@ -1,4 +1,5 @@
-package com.ruoyi.safety.service.impl;
+package com.ruoyi.safety.service.impl;
+
 import java.util.HashMap;
 
 
@@ -13,6 +14,7 @@ import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.mk.service.IMkNumberRuleService;
+import com.ruoyi.system.utils.MessageHelper;
 import com.ruoyi.safety.domain.SafetyHazard;
 import com.ruoyi.safety.domain.SafetyHazardAuditLog;
 import com.ruoyi.safety.mapper.SafetyHazardMapper;
@@ -28,6 +30,9 @@ public class SafetyHazardServiceImpl implements ISafetyHazardService
 
     @Autowired
     private SafetyHazardAuditLogMapper safetyHazardAuditLogMapper;
+
+    @Autowired
+    private MessageHelper messageHelper;
 
     @Autowired
     private IMkNumberRuleService mkNumberRuleService;
@@ -141,6 +146,20 @@ public class SafetyHazardServiceImpl implements ISafetyHazardService
         auditLog.setAuditRemark("提交隐患审批");
         safetyHazardAuditLogMapper.insertAuditLog(auditLog);
 
+        // 发送消息：隐患待审批
+        messageHelper.sendMessage(
+            "隐患" + hazard.getHazardCode() + "待审批",
+            "描述：" + (hazard.getHazardDesc() != null ? hazard.getHazardDesc() : "-"),
+            "3",   // 审批消息
+            "2",   // 重要
+            "safety",
+            hazardId,
+            "/safety/dualcontrol/hazard?id=" + hazardId,
+            "safety:hazard:approve",
+"0",   // bizStatus: 待审批
+"隐患管理"  // bizEntryName
+);
+
         return rows;
     }
 
@@ -205,6 +224,40 @@ public class SafetyHazardServiceImpl implements ISafetyHazardService
         auditLog.setAuditAction(safetyHazard.getApproveResult()); // 1=通过 2=驳回
         auditLog.setAuditRemark(safetyHazard.getApproveComment());
         safetyHazardAuditLogMapper.insertAuditLog(auditLog);
+
+        // 审批通过 → 通知整改人；驳回 → 通知提交人
+        if ("1".equals(safetyHazard.getApproveResult()))
+        {
+            // 审批通过，通知整改
+        messageHelper.sendMessage(
+            "隐患" + hazard.getHazardCode() + "待整改",
+            "整改期限：" + (hazard.getRectifyDeadline() != null ? hazard.getRectifyDeadline().toString() : "-"),
+            "4",   // 待办事项
+            "2",   // 重要
+            "safety",
+            safetyHazard.getHazardId(),
+            "/safety/dualcontrol/hazard?id=" + safetyHazard.getHazardId(),
+            "safety:hazard:rectify",
+"1",   // bizStatus: 待整改
+"隐患管理"  // bizEntryName
+);
+        }
+        else
+        {
+            // 审批驳回，通知提交人
+            messageHelper.sendMessage(
+                "隐患" + hazard.getHazardCode() + "审批被驳回",
+                "审批意见：" + (safetyHazard.getApproveComment() != null ? safetyHazard.getApproveComment() : "-"),
+                "1",   // 系统通知
+                "2",   // 重要
+                "safety",
+                safetyHazard.getHazardId(),
+                "/safety/dualcontrol/hazard?id=" + safetyHazard.getHazardId(),
+"safety:hazard:submit",
+null,
+"隐患管理"  // bizEntryName
+);
+        }
 
         return rows;
     }
@@ -273,6 +326,20 @@ public class SafetyHazardServiceImpl implements ISafetyHazardService
         auditLog.setAuditBy(SecurityUtils.getUsername());
         auditLog.setAuditRemark("整改完成：" + (safetyHazard.getRectifyDesc() != null ? safetyHazard.getRectifyDesc() : ""));
         safetyHazardAuditLogMapper.insertAuditLog(auditLog);
+
+        // 发送消息：隐患整改完成，请验收
+        messageHelper.sendMessage(
+            "隐患" + hazard.getHazardCode() + "整改完成，请验收",
+            "整改说明：" + (safetyHazard.getRectifyDesc() != null ? safetyHazard.getRectifyDesc() : "-"),
+            "4",   // 待办事项
+            "2",   // 重要
+            "safety",
+            safetyHazard.getHazardId(),
+            "/safety/dualcontrol/hazard?id=" + safetyHazard.getHazardId(),
+            "safety:hazard:verify",
+"2",   // bizStatus: 待验收
+"隐患管理"  // bizEntryName
+);
 
         return rows;
     }

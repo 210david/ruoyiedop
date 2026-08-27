@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.hr.mapper.HrPieceworkRecordMapper">
+
+    <resultMap type="HrPieceworkRecord" id="HrPieceworkRecordResult">
+        <result property="pwRecordId" column="pw_record_id"/>
+        <result property="pwRecordNo" column="pw_record_no"/>
+        <result property="recordDate" column="record_date"/>
+        <result property="employeeId" column="employee_id"/>
+        <result property="employeeName" column="employee_name"/>
+        <result property="orgId" column="org_id"/>
+        <result property="pwPlanId" column="pw_plan_id"/>
+        <result property="pwName" column="pw_name"/>
+        <result property="qualifiedQty" column="qualified_qty"/>
+        <result property="unqualifiedQty" column="unqualified_qty"/>
+        <result property="unitPrice" column="unit_price"/>
+        <result property="totalAmount" column="total_amount"/>
+        <result property="confirmStatus" column="confirm_status"/>
+        <result property="confirmBy" column="confirm_by"/>
+        <result property="confirmTime" column="confirm_time"/>
+        <result property="source" column="source"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <sql id="selectVo">
+        SELECT pw_record_id, pw_record_no, record_date, employee_id, employee_name, org_id, pw_plan_id, pw_name, qualified_qty, unqualified_qty, unit_price, total_amount, confirm_status, confirm_by, confirm_time, source, del_flag, create_by, create_time, update_by, update_time, remark
+        FROM biz_hr_piecework_record
+    </sql>
+
+    <select id="selectHrPieceworkRecordList" parameterType="HrPieceworkRecord" resultMap="HrPieceworkRecordResult">
+        <include refid="selectVo"/>
+        <where>
+            del_flag = '0'
+            <if test="pwRecordNo != null and pwRecordNo != ''"> AND pw_record_no LIKE CONCAT('%', #{pwRecordNo}, '%')</if>
+            <if test="recordDate != null"> AND record_date = #{recordDate}</if>
+            <if test="employeeId != null"> AND employee_id = #{employeeId}</if>
+            <if test="employeeName != null and employeeName != ''"> AND employee_name LIKE CONCAT('%', #{employeeName}, '%')</if>
+            <if test="orgId != null"> AND org_id = #{orgId}</if>
+            <if test="pwPlanId != null"> AND pw_plan_id = #{pwPlanId}</if>
+            <if test="pwName != null and pwName != ''"> AND pw_name LIKE CONCAT('%', #{pwName}, '%')</if>
+            <if test="qualifiedQty != null"> AND qualified_qty = #{qualifiedQty}</if>
+            <if test="unqualifiedQty != null"> AND unqualified_qty = #{unqualifiedQty}</if>
+            <if test="unitPrice != null"> AND unit_price = #{unitPrice}</if>
+            <if test="totalAmount != null"> AND total_amount = #{totalAmount}</if>
+            <if test="confirmStatus != null and confirmStatus != ''"> AND confirm_status LIKE CONCAT('%', #{confirmStatus}, '%')</if>
+            <if test="confirmBy != null and confirmBy != ''"> AND confirm_by LIKE CONCAT('%', #{confirmBy}, '%')</if>
+            <if test="confirmTime != null"> AND confirm_time = #{confirmTime}</if>
+            <if test="source != null and source != ''"> AND source LIKE CONCAT('%', #{source}, '%')</if>
+            <if test="delFlag != null and delFlag != ''"> AND del_flag LIKE CONCAT('%', #{delFlag}, '%')</if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+
+    <select id="selectHrPieceworkRecordById" parameterType="Long" resultMap="HrPieceworkRecordResult">
+        <include refid="selectVo"/> WHERE pw_record_id = #{pwRecordId}
+    </select>
+
+    <insert id="insertHrPieceworkRecord" parameterType="HrPieceworkRecord" useGeneratedKeys="true" keyProperty="pwRecordId">
+        INSERT INTO biz_hr_piecework_record (
+            pw_record_no, record_date, employee_id, employee_name, org_id, pw_plan_id, pw_name, qualified_qty, unqualified_qty, unit_price, total_amount, confirm_status, confirm_by, confirm_time, source, del_flag, create_by, create_time, remark
+        ) VALUES (
+            #{pwRecordNo}, #{recordDate}, #{employeeId}, #{employeeName}, #{orgId}, #{pwPlanId}, #{pwName}, #{qualifiedQty}, #{unqualifiedQty}, #{unitPrice}, #{totalAmount}, #{confirmStatus}, #{confirmBy}, #{confirmTime}, #{source}, #{delFlag}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateHrPieceworkRecord" parameterType="HrPieceworkRecord">
+        UPDATE biz_hr_piecework_record
+        <set>
+            <if test="pwRecordNo != null and pwRecordNo != ''">pw_record_no = #{pwRecordNo},</if>
+            <if test="recordDate != null">record_date = #{recordDate},</if>
+            <if test="employeeId != null">employee_id = #{employeeId},</if>
+            <if test="employeeName != null and employeeName != ''">employee_name = #{employeeName},</if>
+            <if test="orgId != null">org_id = #{orgId},</if>
+            <if test="pwPlanId != null">pw_plan_id = #{pwPlanId},</if>
+            <if test="pwName != null and pwName != ''">pw_name = #{pwName},</if>
+            <if test="qualifiedQty != null">qualified_qty = #{qualifiedQty},</if>
+            <if test="unqualifiedQty != null">unqualified_qty = #{unqualifiedQty},</if>
+            <if test="unitPrice != null">unit_price = #{unitPrice},</if>
+            <if test="totalAmount != null">total_amount = #{totalAmount},</if>
+            <if test="confirmStatus != null and confirmStatus != ''">confirm_status = #{confirmStatus},</if>
+            <if test="confirmBy != null and confirmBy != ''">confirm_by = #{confirmBy},</if>
+            <if test="confirmTime != null">confirm_time = #{confirmTime},</if>
+            <if test="source != null and source != ''">source = #{source},</if>
+            <if test="delFlag != null and delFlag != ''">del_flag = #{delFlag},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE pw_record_id = #{pwRecordId}
+    </update>
+
+    <delete id="deleteHrPieceworkRecordById" parameterType="Long">
+        UPDATE biz_hr_piecework_record SET del_flag = '2' WHERE pw_record_id = #{pwRecordId}
+    </delete>
+
+    <delete id="deleteHrPieceworkRecordByIds" parameterType="Long">
+        UPDATE biz_hr_piecework_record SET del_flag = '2' WHERE pw_record_id IN
+        <foreach item="pwRecordId" collection="array" open="(" separator="," close=")">#{pwRecordId}</foreach>
+    </delete>
+
+</mapper>

@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.hr.mapper.HrSocialSecurityMapper">
+
+    <resultMap type="HrSocialSecurity" id="HrSocialSecurityResult">
+        <result property="ssId" column="ss_id"/>
+        <result property="employeeId" column="employee_id"/>
+        <result property="employeeName" column="employee_name"/>
+        <result property="employeeNo" column="employee_no"/>
+        <result property="year" column="year"/>
+        <result property="baseAmount" column="base_amount"/>
+        <result property="pensionEmployer" column="pension_employer"/>
+        <result property="pensionEmployee" column="pension_employee"/>
+        <result property="medicalEmployer" column="medical_employer"/>
+        <result property="medicalEmployee" column="medical_employee"/>
+        <result property="unemploymentEmployer" column="unemployment_employer"/>
+        <result property="unemploymentEmployee" column="unemployment_employee"/>
+        <result property="injuryEmployer" column="injury_employer"/>
+        <result property="maternityEmployer" column="maternity_employer"/>
+        <result property="fundEmployer" column="fund_employer"/>
+        <result property="fundEmployee" column="fund_employee"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <sql id="selectVo">
+        SELECT ss_id, employee_id, employee_name, employee_no, year, base_amount, pension_employer, pension_employee, medical_employer, medical_employee, unemployment_employer, unemployment_employee, injury_employer, maternity_employer, fund_employer, fund_employee, del_flag, create_by, create_time, update_by, update_time, remark
+        FROM biz_hr_social_security
+    </sql>
+
+    <select id="selectHrSocialSecurityList" parameterType="HrSocialSecurity" resultMap="HrSocialSecurityResult">
+        <include refid="selectVo"/>
+        <where>
+            del_flag = '0'
+            <if test="employeeId != null"> AND employee_id = #{employeeId}</if>
+            <if test="employeeName != null and employeeName != ''"> AND employee_name LIKE CONCAT('%', #{employeeName}, '%')</if>
+            <if test="employeeNo != null and employeeNo != ''"> AND employee_no LIKE CONCAT('%', #{employeeNo}, '%')</if>
+            <if test="year != null"> AND year = #{year}</if>
+            <if test="baseAmount != null"> AND base_amount = #{baseAmount}</if>
+            <if test="pensionEmployer != null"> AND pension_employer = #{pensionEmployer}</if>
+            <if test="pensionEmployee != null"> AND pension_employee = #{pensionEmployee}</if>
+            <if test="medicalEmployer != null"> AND medical_employer = #{medicalEmployer}</if>
+            <if test="medicalEmployee != null"> AND medical_employee = #{medicalEmployee}</if>
+            <if test="unemploymentEmployer != null"> AND unemployment_employer = #{unemploymentEmployer}</if>
+            <if test="unemploymentEmployee != null"> AND unemployment_employee = #{unemploymentEmployee}</if>
+            <if test="injuryEmployer != null"> AND injury_employer = #{injuryEmployer}</if>
+            <if test="maternityEmployer != null"> AND maternity_employer = #{maternityEmployer}</if>
+            <if test="fundEmployer != null"> AND fund_employer = #{fundEmployer}</if>
+            <if test="fundEmployee != null"> AND fund_employee = #{fundEmployee}</if>
+            <if test="delFlag != null and delFlag != ''"> AND del_flag LIKE CONCAT('%', #{delFlag}, '%')</if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+
+    <select id="selectHrSocialSecurityById" parameterType="Long" resultMap="HrSocialSecurityResult">
+        <include refid="selectVo"/> WHERE ss_id = #{ssId}
+    </select>
+
+    <insert id="insertHrSocialSecurity" parameterType="HrSocialSecurity" useGeneratedKeys="true" keyProperty="ssId">
+        INSERT INTO biz_hr_social_security (
+            employee_id, employee_name, employee_no, year, base_amount, pension_employer, pension_employee, medical_employer, medical_employee, unemployment_employer, unemployment_employee, injury_employer, maternity_employer, fund_employer, fund_employee, del_flag, create_by, create_time, remark
+        ) VALUES (
+            #{employeeId}, #{employeeName}, #{employeeNo}, #{year}, #{baseAmount}, #{pensionEmployer}, #{pensionEmployee}, #{medicalEmployer}, #{medicalEmployee}, #{unemploymentEmployer}, #{unemploymentEmployee}, #{injuryEmployer}, #{maternityEmployer}, #{fundEmployer}, #{fundEmployee}, #{delFlag}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateHrSocialSecurity" parameterType="HrSocialSecurity">
+        UPDATE biz_hr_social_security
+        <set>
+            <if test="employeeId != null">employee_id = #{employeeId},</if>
+            <if test="employeeName != null and employeeName != ''">employee_name = #{employeeName},</if>
+            <if test="employeeNo != null and employeeNo != ''">employee_no = #{employeeNo},</if>
+            <if test="year != null">year = #{year},</if>
+            <if test="baseAmount != null">base_amount = #{baseAmount},</if>
+            <if test="pensionEmployer != null">pension_employer = #{pensionEmployer},</if>
+            <if test="pensionEmployee != null">pension_employee = #{pensionEmployee},</if>
+            <if test="medicalEmployer != null">medical_employer = #{medicalEmployer},</if>
+            <if test="medicalEmployee != null">medical_employee = #{medicalEmployee},</if>
+            <if test="unemploymentEmployer != null">unemployment_employer = #{unemploymentEmployer},</if>
+            <if test="unemploymentEmployee != null">unemployment_employee = #{unemploymentEmployee},</if>
+            <if test="injuryEmployer != null">injury_employer = #{injuryEmployer},</if>
+            <if test="maternityEmployer != null">maternity_employer = #{maternityEmployer},</if>
+            <if test="fundEmployer != null">fund_employer = #{fundEmployer},</if>
+            <if test="fundEmployee != null">fund_employee = #{fundEmployee},</if>
+            <if test="delFlag != null and delFlag != ''">del_flag = #{delFlag},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE ss_id = #{ssId}
+    </update>
+
+    <delete id="deleteHrSocialSecurityById" parameterType="Long">
+        UPDATE biz_hr_social_security SET del_flag = '2' WHERE ss_id = #{ssId}
+    </delete>
+
+    <delete id="deleteHrSocialSecurityByIds" parameterType="Long">
+        UPDATE biz_hr_social_security SET del_flag = '2' WHERE ss_id IN
+        <foreach item="ssId" collection="array" open="(" separator="," close=")">#{ssId}</foreach>
+    </delete>
+
+</mapper>

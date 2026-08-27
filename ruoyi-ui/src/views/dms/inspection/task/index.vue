@@ -100,11 +100,13 @@
             </template>
           </el-table-column>
           <el-table-column label="完成时间" prop="completeTime" key="completeTime" :width="colWidth('completeTime', 180)" resizable align="center" v-if="columns.completeTime.visible" />
-          <el-table-column label="操作" width="220" align="center" fixed="right">
+          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
-              <el-button v-if="scope.row.taskStatus === '0' || scope.row.taskStatus === '1'" link type="primary" icon="VideoPlay" @click="handleExecute(scope.row)">执行点检</el-button>
-              <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
-              <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['dms:inspection:task:remove']">删除</el-button>
+              <div class="action-btn-row">
+                <el-button v-if="scope.row.taskStatus === '0' || scope.row.taskStatus === '1'" link type="success" icon="VideoPlay" @click="handleExecute(scope.row)">执行</el-button>
+                <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
+                <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['dms:inspection:task:remove']">删除</el-button>
+              </div>
             </template>
           </el-table-column>
         </el-table>
@@ -135,9 +137,10 @@
               <el-row>
                 <el-col :span="12"><el-form-item label="任务编号" prop="taskNo"><el-input v-model="form.taskNo" placeholder="自动生成" disabled style="width: 100%" /></el-form-item></el-col>
                 <el-col :span="12"><el-form-item label="巡检路线" prop="routeId">
-                  <el-select v-model="form.routeId" filterable placeholder="请选择路线" style="width: 100%" @change="onRouteChange">
-                    <el-option v-for="r in routeOptions" :key="r.routeId" :label="r.routeName" :value="r.routeId" />
-                  </el-select>
+                  <el-input v-model="form.routeName" readonly placeholder="请选择巡检路线" style="width: 100%" @click="openRoutePicker">
+                    <template #append><el-button icon="Search" @click="openRoutePicker" /></template>
+                    <template #suffix><el-icon v-if="form.routeName" class="clear-icon" @click.stop="clearRoute"><CircleClose /></el-icon></template>
+                  </el-input>
                 </el-form-item></el-col>
                 <el-col :span="12"><el-form-item label="计划日期" prop="planDate"><el-date-picker v-model="form.planDate" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" style="width: 100%" /></el-form-item></el-col>
                 <el-col :span="12"><el-form-item label="点检人" prop="inspectorId">
@@ -434,6 +437,47 @@
     <!-- 点检人选择弹窗 -->
     <user-picker ref="userPickerRef" title="选择点检人" @confirm="onInspectorPickerConfirm" />
 
+    <!-- 巡检路线选择弹窗 -->
+    <el-dialog v-model="routePickerOpen" width="860px" append-to-body draggable class="rd-dialog" @open="onRoutePickerOpen">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="19" r="3"/><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"/><circle cx="18" cy="5" r="3"/></svg></div>
+          <span class="rd-detail-header-title">选择巡检路线</span>
+        </div>
+      </template>
+      <div class="route-picker">
+        <div class="route-picker-search">
+          <el-input v-model="routePickerQuery.routeName" placeholder="路线名称" clearable size="small" style="width: 200px" @keyup.enter="handleRoutePickerQuery">
+            <template #prefix><el-icon><Search /></el-icon></template>
+          </el-input>
+          <el-button type="primary" plain icon="Search" size="small" style="margin-left: 8px" @click="handleRoutePickerQuery">查询</el-button>
+          <el-button icon="RefreshLeft" size="small" @click="resetRoutePickerQuery">重置</el-button>
+        </div>
+        <div class="route-picker-table">
+          <el-table ref="routeTableRef" v-loading="routePickerLoading" :data="routePickerList" highlight-current-row @row-click="onRouteRowClick" @row-dblclick="onRouteRowDblClick" height="360" size="small">
+            <el-table-column width="45" align="center">
+              <template #default="{ row }">
+                <el-radio :model-value="routePickerSelectedId" :value="row.routeId" @click.stop="onRouteRowClick(row)"><span /></el-radio>
+              </template>
+            </el-table-column>
+            <el-table-column label="路线名称" prop="routeName" min-width="160" show-overflow-tooltip />
+            <el-table-column label="路线编码" prop="routeCode" width="140" show-overflow-tooltip />
+            <el-table-column label="部门" prop="deptName" width="110" show-overflow-tooltip />
+            <el-table-column label="周期" width="100" align="center">
+              <template #default="scope">{{ cycleTypeLabel(scope.row.cycleType) }} {{ scope.row.cycleValue }}天</template>
+            </el-table-column>
+          </el-table>
+        </div>
+        <div class="route-picker-pager">
+          <el-pagination v-model:current-page="routePickerQuery.pageNum" v-model:page-size="routePickerQuery.pageSize" :total="routePickerTotal" layout="total, prev, pager, next" small @current-change="getRoutePickerList" />
+        </div>
+      </div>
+      <template #footer>
+        <el-button @click="routePickerOpen = false">取 消</el-button>
+        <el-button type="primary" @click="confirmRoutePicker" :disabled="!routePickerSelectedId">确 定</el-button>
+      </template>
+    </el-dialog>
+
     <!-- 业务操作说明对话框 -->
     <el-dialog v-model="showStatusHelp" title="点检任务业务操作说明" width="720px" append-to-body>
       <div class="status-help-content">
@@ -535,6 +579,14 @@ const multiple = ref(true)
 const total = ref(0)
 const title = ref('')
 const routeOptions = ref([])
+const routePickerOpen = ref(false)
+const routePickerLoading = ref(false)
+const routePickerList = ref([])
+const routePickerTotal = ref(0)
+const routePickerSelectedId = ref(null)
+const routePickerSelectedRow = ref(null)
+const routeTableRef = ref()
+const routePickerQuery = reactive({ pageNum: 1, pageSize: 10, routeName: undefined, status: '0' })
 const execSaving = ref(false)
 const showStatusHelp = ref(false)
 
@@ -617,6 +669,72 @@ function handleAdd() { reset(); open.value = true; title.value = '新增点检�
 function onRouteChange(routeId) {
   const route = routeOptions.value.find(r => r.routeId === routeId)
   if (route) form.value.routeName = route.routeName
+}
+/** 打开巡检路线选择弹窗 */
+function openRoutePicker() {
+  routePickerOpen.value = true
+}
+/** 巡检路线弹窗打开时初始化 */
+function onRoutePickerOpen() {
+  routePickerQuery.routeName = undefined
+  routePickerQuery.pageNum = 1
+  routePickerSelectedId.value = form.value.routeId || null
+  routePickerSelectedRow.value = null
+  getRoutePickerList()
+}
+/** 加载巡检路线列表 */
+function getRoutePickerList() {
+  routePickerLoading.value = true
+  listRoute(routePickerQuery).then(res => {
+    routePickerList.value = res.rows
+    routePickerTotal.value = res.total
+    routePickerLoading.value = false
+    if (routePickerSelectedId.value) {
+      nextTick(() => {
+        if (routeTableRef.value) {
+          routeTableRef.value.setCurrentRow(routePickerList.value.find(r => r.routeId === routePickerSelectedId.value))
+        }
+      })
+    }
+  })
+}
+/** 巡检路线弹窗查询 */
+function handleRoutePickerQuery() {
+  routePickerQuery.pageNum = 1
+  getRoutePickerList()
+}
+/** 巡检路线弹窗重置 */
+function resetRoutePickerQuery() {
+  routePickerQuery.routeName = undefined
+  handleRoutePickerQuery()
+}
+/** 巡检路线弹窗行点击 */
+function onRouteRowClick(row) {
+  routePickerSelectedId.value = row.routeId
+  routePickerSelectedRow.value = row
+}
+/** 巡检路线弹窗行双击确认 */
+function onRouteRowDblClick(row) {
+  routePickerSelectedId.value = row.routeId
+  routePickerSelectedRow.value = row
+  confirmRoutePicker()
+}
+/** 巡检路线弹窗确认 */
+function confirmRoutePicker() {
+  if (!routePickerSelectedId.value) return
+  form.value.routeId = routePickerSelectedRow.value.routeId
+  form.value.routeName = routePickerSelectedRow.value.routeName
+  routePickerOpen.value = false
+}
+/** 清除巡检路线 */
+function clearRoute() {
+  form.value.routeId = undefined
+  form.value.routeName = undefined
+}
+/** 周期类型标签 */
+function cycleTypeLabel(val) {
+  const map = { '0': '日检', '1': '周检', '2': '月检', '3': '自定义' }
+  return map[val] || '-'
 }
 /** 打开点检人选择弹窗 */
 function openInspectorPicker() {
@@ -911,6 +1029,13 @@ getList()
 .dms-inspection-task-page .badge.violet { background:var(--violet-50); color:var(--brand-700); border-color:var(--brand-200); }
 .dms-inspection-task-page .badge.gray { background:var(--ink-100); color:var(--ink-500); border-color:var(--ink-200); }
 .dms-inspection-task-page .badge.gray .dot { background:var(--ink-400); }
+/* 操作列按钮对齐：每行2个按钮，flex-wrap 自动换行 */
+.dms-inspection-task-page :deep(.col-action) { padding: 6px 4px !important; }
+.dms-inspection-task-page :deep(.col-action .cell) { display: flex; justify-content: center; padding: 0; }
+.dms-inspection-task-page .action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
+.dms-inspection-task-page :deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
+.dms-inspection-task-page :deep(.col-action .el-button + .el-button) { margin-left: 2px; }
+
 @media (max-width:1100px) { .dms-inspection-task-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }
 @media (max-width:720px) { .dms-inspection-task-page .filter-card .filter-bar { grid-template-columns:1fr; } .dms-inspection-task-page .toolbar { flex-wrap:wrap; gap:10px; } }
 .dms-inspection-task-page .pagination-container { display:flex; align-items:center; justify-content:flex-end; padding:14px 20px; font-size:14px; color:var(--ink-500); background:#fff; border-top:1px solid transparent; }
@@ -981,4 +1106,13 @@ getList()
 :deep(.el-input.is-disabled .el-input__inner) {
   cursor: pointer;
 }
+
+/* 巡检路线选择弹窗 */
+.route-picker { display: flex; flex-direction: column; }
+.route-picker-search { display: flex; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 4px; }
+.route-picker-table { border: 1px solid #ebeef5; border-radius: 8px; overflow: hidden; }
+.route-picker-table :deep(.el-table__row) { cursor: pointer; }
+.route-picker-table :deep(.el-table__row:hover > td) { background: #f0f7ff; }
+.route-picker-table :deep(.el-table__row.is-current > td) { background: #e6f0fd; }
+.route-picker-pager { margin-top: 8px; display: flex; justify-content: flex-end; }
 </style>

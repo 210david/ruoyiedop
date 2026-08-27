@@ -1,4 +1,5 @@
-package com.ruoyi.wms.service.impl;
+package com.ruoyi.wms.service.impl;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -18,6 +19,7 @@ import com.ruoyi.wms.mapper.WmsInboundOrderMapper;
 import com.ruoyi.wms.service.IWmsInboundOrderService;
 import com.ruoyi.wms.service.IWmsInventoryService;
 import com.ruoyi.mk.service.IMkNumberRuleService;
+import com.ruoyi.system.utils.MessageHelper;
 
 @Service
 public class WmsInboundOrderServiceImpl implements IWmsInboundOrderService
@@ -30,6 +32,9 @@ public class WmsInboundOrderServiceImpl implements IWmsInboundOrderService
 
     @Autowired
     private IMkNumberRuleService mkNumberRuleService;
+
+    @Autowired
+    private MessageHelper messageHelper;
 
     @Override
     public List<WmsInboundOrder> selectInboundOrderList(WmsInboundOrder order)
@@ -193,7 +198,19 @@ public class WmsInboundOrderServiceImpl implements IWmsInboundOrderService
             throw new ServiceException("入库单明细不能为空，无法提交");
         }
         order.setStatus("1");
-        return wmsInboundOrderMapper.updateInboundOrder(order);
+        int rows = wmsInboundOrderMapper.updateInboundOrder(order);
+        // 发送消息：入库单已提交，请安排收货
+        String inboundTypeText = getInboundTypeText(order.getOrderType());
+        messageHelper.sendMessage(
+            "入库单" + order.getOrderNo() + "已提交，请安排收货",
+            "入库类型：" + inboundTypeText + "，仓库：" + (order.getWarehouseName() != null ? order.getWarehouseName() : "") + "，总数量：" + order.getTotalQty(),
+            "4", "2", "wms", orderId,
+            "/wms/inbound/detail?id=" + orderId,
+            "wms:inbound:edit",
+            "1",  // bizStatus: 待收货
+            "入库作业"  // bizEntryName
+        );
+        return rows;
     }
 
     @Override
@@ -317,6 +334,18 @@ public class WmsInboundOrderServiceImpl implements IWmsInboundOrderService
             order.setStatus("3");
             order.setCompleteDate(new Date());
             wmsInboundOrderMapper.updateInboundOrder(order);
+            // 发送消息：入库单已完成
+            messageHelper.sendMessage(
+                "入库单" + order.getOrderNo() + "上架完成",
+                "入库单已完成全部上架，仓库：" + (order.getWarehouseName() != null ? order.getWarehouseName() : ""),
+                "1", "1", "wms", orderId,
+                "/wms/inbound/order?id=" + orderId,
+                "wms:inbound:edit",
+                null,
+                "入库单管理"  // bizEntryName
+            );
+            // 入库完成，标记之前的消息为已处理
+            messageHelper.markHandled("wms", orderId);
             // 更新关联的收货单状态为已入库
             try
             {
@@ -329,5 +358,21 @@ public class WmsInboundOrderServiceImpl implements IWmsInboundOrderService
             }
         }
         return 1;
+    }
+
+    /**
+     * 入库类型字典转换
+     */
+    private String getInboundTypeText(String orderType)
+    {
+        if (orderType == null) return "-";
+        switch (orderType)
+        {
+            case "0": return "采购入库";
+            case "1": return "生产入库";
+            case "2": return "退货入库";
+            case "3": return "调拨入库";
+            default: return orderType;
+        }
     }
 }

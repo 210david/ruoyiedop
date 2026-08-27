@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.hr.mapper.HrScheduleMapper">
+
+    <resultMap type="HrSchedule" id="HrScheduleResult">
+        <result property="scheduleId" column="schedule_id"/>
+        <result property="scheduleDate" column="schedule_date"/>
+        <result property="employeeId" column="employee_id"/>
+        <result property="employeeName" column="employee_name"/>
+        <result property="employeeNo" column="employee_no"/>
+        <result property="orgId" column="org_id"/>
+        <result property="shiftId" column="shift_id"/>
+        <result property="shiftName" column="shift_name"/>
+        <result property="restDay" column="rest_day"/>
+        <result property="status" column="status"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <sql id="selectVo">
+        SELECT schedule_id, schedule_date, employee_id, employee_name, employee_no, org_id, shift_id, shift_name, rest_day, status, del_flag, create_by, create_time, update_by, update_time, remark
+        FROM biz_hr_schedule
+    </sql>
+
+    <select id="selectHrScheduleList" parameterType="HrSchedule" resultMap="HrScheduleResult">
+        <include refid="selectVo"/>
+        <where>
+            del_flag = '0'
+            <if test="scheduleDate != null"> AND schedule_date = #{scheduleDate}</if>
+            <if test="employeeId != null"> AND employee_id = #{employeeId}</if>
+            <if test="employeeName != null and employeeName != ''"> AND employee_name LIKE CONCAT('%', #{employeeName}, '%')</if>
+            <if test="employeeNo != null and employeeNo != ''"> AND employee_no LIKE CONCAT('%', #{employeeNo}, '%')</if>
+            <if test="orgId != null"> AND org_id = #{orgId}</if>
+            <if test="shiftId != null"> AND shift_id = #{shiftId}</if>
+            <if test="shiftName != null and shiftName != ''"> AND shift_name LIKE CONCAT('%', #{shiftName}, '%')</if>
+            <if test="restDay != null"> AND rest_day = #{restDay}</if>
+            <if test="status != null and status != ''"> AND status LIKE CONCAT('%', #{status}, '%')</if>
+            <if test="delFlag != null and delFlag != ''"> AND del_flag LIKE CONCAT('%', #{delFlag}, '%')</if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+
+    <select id="selectHrScheduleById" parameterType="Long" resultMap="HrScheduleResult">
+        <include refid="selectVo"/> WHERE schedule_id = #{scheduleId}
+    </select>
+
+    <insert id="insertHrSchedule" parameterType="HrSchedule" useGeneratedKeys="true" keyProperty="scheduleId">
+        INSERT INTO biz_hr_schedule (
+            schedule_date, employee_id, employee_name, employee_no, org_id, shift_id, shift_name, rest_day, status, del_flag, create_by, create_time, remark
+        ) VALUES (
+            #{scheduleDate}, #{employeeId}, #{employeeName}, #{employeeNo}, #{orgId}, #{shiftId}, #{shiftName}, #{restDay}, #{status}, #{delFlag}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateHrSchedule" parameterType="HrSchedule">
+        UPDATE biz_hr_schedule
+        <set>
+            <if test="scheduleDate != null">schedule_date = #{scheduleDate},</if>
+            <if test="employeeId != null">employee_id = #{employeeId},</if>
+            <if test="employeeName != null and employeeName != ''">employee_name = #{employeeName},</if>
+            <if test="employeeNo != null and employeeNo != ''">employee_no = #{employeeNo},</if>
+            <if test="orgId != null">org_id = #{orgId},</if>
+            <if test="shiftId != null">shift_id = #{shiftId},</if>
+            <if test="shiftName != null and shiftName != ''">shift_name = #{shiftName},</if>
+            <if test="restDay != null">rest_day = #{restDay},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="delFlag != null and delFlag != ''">del_flag = #{delFlag},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE schedule_id = #{scheduleId}
+    </update>
+
+    <delete id="deleteHrScheduleById" parameterType="Long">
+        UPDATE biz_hr_schedule SET del_flag = '2' WHERE schedule_id = #{scheduleId}
+    </delete>
+
+    <delete id="deleteHrScheduleByIds" parameterType="Long">
+        UPDATE biz_hr_schedule SET del_flag = '2' WHERE schedule_id IN
+        <foreach item="scheduleId" collection="array" open="(" separator="," close=")">#{scheduleId}</foreach>
+    </delete>
+
+</mapper>

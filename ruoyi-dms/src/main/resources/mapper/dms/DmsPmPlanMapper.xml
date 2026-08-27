@@ -6,8 +6,10 @@
         <result property="planId"            column="plan_id"/>
         <result property="planName"          column="plan_name"/>
         <result property="equipmentId"       column="equipment_id"/>
+        <result property="equipmentCode"     column="equipment_code"/>
         <result property="equipmentName"     column="equipment_name"/>
         <result property="categoryId"        column="category_id"/>
+        <result property="categoryName"      column="category_name"/>
         <result property="triggerType"       column="trigger_type"/>
         <result property="cycleValue"        column="cycle_value"/>
         <result property="cycleUnit"         column="cycle_unit"/>
@@ -30,13 +32,15 @@
     </resultMap>
 
     <sql id="selectPmPlanVo">
-        SELECT p.plan_id, p.plan_name, p.equipment_id, e.equipment_name, p.category_id,
+        SELECT p.plan_id, p.plan_name, p.equipment_id, e.equipment_code, e.equipment_name,
+               p.category_id, c.category_name,
                p.trigger_type, p.cycle_value, p.cycle_unit, p.task_list, p.spare_part_list,
                p.estimated_hours, p.advance_days, p.auto_assign, p.assignee_id, p.assignee_name,
                p.last_execute_time, p.next_execute_time,
                p.status, p.del_flag, p.create_by, p.create_time, p.update_by, p.update_time, p.remark
         FROM dms_pm_plan p
         LEFT JOIN dms_equipment e ON p.equipment_id = e.equipment_id
+        LEFT JOIN dms_equipment_category c ON p.category_id = c.category_id
     </sql>
 
     <select id="selectPmPlanList" parameterType="DmsPmPlan" resultMap="DmsPmPlanResult">

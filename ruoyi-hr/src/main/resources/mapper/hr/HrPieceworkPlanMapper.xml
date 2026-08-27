@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.hr.mapper.HrPieceworkPlanMapper">
+
+    <resultMap type="HrPieceworkPlan" id="HrPieceworkPlanResult">
+        <result property="pwPlanId" column="pw_plan_id"/>
+        <result property="pwCode" column="pw_code"/>
+        <result property="pwName" column="pw_name"/>
+        <result property="pwType" column="pw_type"/>
+        <result property="unit" column="unit"/>
+        <result property="unitPrice" column="unit_price"/>
+        <result property="productId" column="product_id"/>
+        <result property="processId" column="process_id"/>
+        <result property="orgId" column="org_id"/>
+        <result property="baseSalary" column="base_salary"/>
+        <result property="effectiveDate" column="effective_date"/>
+        <result property="expiryDate" column="expiry_date"/>
+        <result property="auditStatus" column="audit_status"/>
+        <result property="status" column="status"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <sql id="selectVo">
+        SELECT pw_plan_id, pw_code, pw_name, pw_type, unit, unit_price, product_id, process_id, org_id, base_salary, effective_date, expiry_date, audit_status, status, del_flag, create_by, create_time, update_by, update_time, remark
+        FROM biz_hr_piecework_plan
+    </sql>
+
+    <select id="selectHrPieceworkPlanList" parameterType="HrPieceworkPlan" resultMap="HrPieceworkPlanResult">
+        <include refid="selectVo"/>
+        <where>
+            del_flag = '0'
+            <if test="pwCode != null and pwCode != ''"> AND pw_code LIKE CONCAT('%', #{pwCode}, '%')</if>
+            <if test="pwName != null and pwName != ''"> AND pw_name LIKE CONCAT('%', #{pwName}, '%')</if>
+            <if test="pwType != null and pwType != ''"> AND pw_type LIKE CONCAT('%', #{pwType}, '%')</if>
+            <if test="unit != null and unit != ''"> AND unit LIKE CONCAT('%', #{unit}, '%')</if>
+            <if test="unitPrice != null"> AND unit_price = #{unitPrice}</if>
+            <if test="productId != null"> AND product_id = #{productId}</if>
+            <if test="processId != null"> AND process_id = #{processId}</if>
+            <if test="orgId != null"> AND org_id = #{orgId}</if>
+            <if test="baseSalary != null"> AND base_salary = #{baseSalary}</if>
+            <if test="effectiveDate != null"> AND effective_date = #{effectiveDate}</if>
+            <if test="expiryDate != null"> AND expiry_date = #{expiryDate}</if>
+            <if test="auditStatus != null and auditStatus != ''"> AND audit_status LIKE CONCAT('%', #{auditStatus}, '%')</if>
+            <if test="status != null and status != ''"> AND status LIKE CONCAT('%', #{status}, '%')</if>
+            <if test="delFlag != null and delFlag != ''"> AND del_flag LIKE CONCAT('%', #{delFlag}, '%')</if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+
+    <select id="selectHrPieceworkPlanById" parameterType="Long" resultMap="HrPieceworkPlanResult">
+        <include refid="selectVo"/> WHERE pw_plan_id = #{pwPlanId}
+    </select>
+
+    <insert id="insertHrPieceworkPlan" parameterType="HrPieceworkPlan" useGeneratedKeys="true" keyProperty="pwPlanId">
+        INSERT INTO biz_hr_piecework_plan (
+            pw_code, pw_name, pw_type, unit, unit_price, product_id, process_id, org_id, base_salary, effective_date, expiry_date, audit_status, status, del_flag, create_by, create_time, remark
+        ) VALUES (
+            #{pwCode}, #{pwName}, #{pwType}, #{unit}, #{unitPrice}, #{productId}, #{processId}, #{orgId}, #{baseSalary}, #{effectiveDate}, #{expiryDate}, #{auditStatus}, #{status}, #{delFlag}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateHrPieceworkPlan" parameterType="HrPieceworkPlan">
+        UPDATE biz_hr_piecework_plan
+        <set>
+            <if test="pwCode != null and pwCode != ''">pw_code = #{pwCode},</if>
+            <if test="pwName != null and pwName != ''">pw_name = #{pwName},</if>
+            <if test="pwType != null and pwType != ''">pw_type = #{pwType},</if>
+            <if test="unit != null and unit != ''">unit = #{unit},</if>
+            <if test="unitPrice != null">unit_price = #{unitPrice},</if>
+            <if test="productId != null">product_id = #{productId},</if>
+            <if test="processId != null">process_id = #{processId},</if>
+            <if test="orgId != null">org_id = #{orgId},</if>
+            <if test="baseSalary != null">base_salary = #{baseSalary},</if>
+            <if test="effectiveDate != null">effective_date = #{effectiveDate},</if>
+            <if test="expiryDate != null">expiry_date = #{expiryDate},</if>
+            <if test="auditStatus != null and auditStatus != ''">audit_status = #{auditStatus},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="delFlag != null and delFlag != ''">del_flag = #{delFlag},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE pw_plan_id = #{pwPlanId}
+    </update>
+
+    <delete id="deleteHrPieceworkPlanById" parameterType="Long">
+        UPDATE biz_hr_piecework_plan SET del_flag = '2' WHERE pw_plan_id = #{pwPlanId}
+    </delete>
+
+    <delete id="deleteHrPieceworkPlanByIds" parameterType="Long">
+        UPDATE biz_hr_piecework_plan SET del_flag = '2' WHERE pw_plan_id IN
+        <foreach item="pwPlanId" collection="array" open="(" separator="," close=")">#{pwPlanId}</foreach>
+    </delete>
+
+</mapper>

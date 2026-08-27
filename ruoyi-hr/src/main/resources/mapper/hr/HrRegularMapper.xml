@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.hr.mapper.HrRegularMapper">
+
+    <resultMap type="HrRegular" id="HrRegularResult">
+        <result property="regularId" column="regular_id"/>
+        <result property="regularNo" column="regular_no"/>
+        <result property="employeeId" column="employee_id"/>
+        <result property="employeeName" column="employee_name"/>
+        <result property="employeeNo" column="employee_no"/>
+        <result property="orgName" column="org_name"/>
+        <result property="positionName" column="position_name"/>
+        <result property="entryDate" column="entry_date"/>
+        <result property="regularDate" column="regular_date"/>
+        <result property="workPerformance" column="work_performance"/>
+        <result property="skillAssessment" column="skill_assessment"/>
+        <result property="attendanceRecord" column="attendance_record"/>
+        <result property="safetyViolation" column="safety_violation"/>
+        <result property="evaluationResult" column="evaluation_result"/>
+        <result property="auditStatus" column="audit_status"/>
+        <result property="auditBy" column="audit_by"/>
+        <result property="auditTime" column="audit_time"/>
+        <result property="auditRemark" column="audit_remark"/>
+        <result property="status" column="status"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <sql id="selectVo">
+        SELECT regular_id, regular_no, employee_id, employee_name, employee_no, org_name, position_name, entry_date, regular_date, work_performance, skill_assessment, attendance_record, safety_violation, evaluation_result, audit_status, audit_by, audit_time, audit_remark, status, del_flag, create_by, create_time, update_by, update_time, remark
+        FROM biz_hr_regular
+    </sql>
+
+    <select id="selectHrRegularList" parameterType="HrRegular" resultMap="HrRegularResult">
+        <include refid="selectVo"/>
+        <where>
+            del_flag = '0'
+            <if test="regularNo != null and regularNo != ''"> AND regular_no LIKE CONCAT('%', #{regularNo}, '%')</if>
+            <if test="employeeId != null"> AND employee_id = #{employeeId}</if>
+            <if test="employeeName != null and employeeName != ''"> AND employee_name LIKE CONCAT('%', #{employeeName}, '%')</if>
+            <if test="employeeNo != null and employeeNo != ''"> AND employee_no LIKE CONCAT('%', #{employeeNo}, '%')</if>
+            <if test="orgName != null and orgName != ''"> AND org_name LIKE CONCAT('%', #{orgName}, '%')</if>
+            <if test="positionName != null and positionName != ''"> AND position_name LIKE CONCAT('%', #{positionName}, '%')</if>
+            <if test="entryDate != null"> AND entry_date = #{entryDate}</if>
+            <if test="regularDate != null"> AND regular_date = #{regularDate}</if>
+            <if test="workPerformance != null and workPerformance != ''"> AND work_performance LIKE CONCAT('%', #{workPerformance}, '%')</if>
+            <if test="skillAssessment != null and skillAssessment != ''"> AND skill_assessment LIKE CONCAT('%', #{skillAssessment}, '%')</if>
+            <if test="attendanceRecord != null and attendanceRecord != ''"> AND attendance_record LIKE CONCAT('%', #{attendanceRecord}, '%')</if>
+            <if test="safetyViolation != null and safetyViolation != ''"> AND safety_violation LIKE CONCAT('%', #{safetyViolation}, '%')</if>
+            <if test="evaluationResult != null and evaluationResult != ''"> AND evaluation_result LIKE CONCAT('%', #{evaluationResult}, '%')</if>
+            <if test="auditStatus != null and auditStatus != ''"> AND audit_status LIKE CONCAT('%', #{auditStatus}, '%')</if>
+            <if test="auditBy != null and auditBy != ''"> AND audit_by LIKE CONCAT('%', #{auditBy}, '%')</if>
+            <if test="auditTime != null"> AND audit_time = #{auditTime}</if>
+            <if test="auditRemark != null and auditRemark != ''"> AND audit_remark LIKE CONCAT('%', #{auditRemark}, '%')</if>
+            <if test="status != null and status != ''"> AND status LIKE CONCAT('%', #{status}, '%')</if>
+            <if test="delFlag != null and delFlag != ''"> AND del_flag LIKE CONCAT('%', #{delFlag}, '%')</if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+
+    <select id="selectHrRegularById" parameterType="Long" resultMap="HrRegularResult">
+        <include refid="selectVo"/> WHERE regular_id = #{regularId}
+    </select>
+
+    <insert id="insertHrRegular" parameterType="HrRegular" useGeneratedKeys="true" keyProperty="regularId">
+        INSERT INTO biz_hr_regular (
+            regular_no, employee_id, employee_name, employee_no, org_name, position_name, entry_date, regular_date, work_performance, skill_assessment, attendance_record, safety_violation, evaluation_result, audit_status, audit_by, audit_time, audit_remark, status, del_flag, create_by, create_time, remark
+        ) VALUES (
+            #{regularNo}, #{employeeId}, #{employeeName}, #{employeeNo}, #{orgName}, #{positionName}, #{entryDate}, #{regularDate}, #{workPerformance}, #{skillAssessment}, #{attendanceRecord}, #{safetyViolation}, #{evaluationResult}, #{auditStatus}, #{auditBy}, #{auditTime}, #{auditRemark}, #{status}, #{delFlag}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateHrRegular" parameterType="HrRegular">
+        UPDATE biz_hr_regular
+        <set>
+            <if test="regularNo != null and regularNo != ''">regular_no = #{regularNo},</if>
+            <if test="employeeId != null">employee_id = #{employeeId},</if>
+            <if test="employeeName != null and employeeName != ''">employee_name = #{employeeName},</if>
+            <if test="employeeNo != null and employeeNo != ''">employee_no = #{employeeNo},</if>
+            <if test="orgName != null and orgName != ''">org_name = #{orgName},</if>
+            <if test="positionName != null and positionName != ''">position_name = #{positionName},</if>
+            <if test="entryDate != null">entry_date = #{entryDate},</if>
+            <if test="regularDate != null">regular_date = #{regularDate},</if>
+            <if test="workPerformance != null and workPerformance != ''">work_performance = #{workPerformance},</if>
+            <if test="skillAssessment != null and skillAssessment != ''">skill_assessment = #{skillAssessment},</if>
+            <if test="attendanceRecord != null and attendanceRecord != ''">attendance_record = #{attendanceRecord},</if>
+            <if test="safetyViolation != null and safetyViolation != ''">safety_violation = #{safetyViolation},</if>
+            <if test="evaluationResult != null and evaluationResult != ''">evaluation_result = #{evaluationResult},</if>
+            <if test="auditStatus != null and auditStatus != ''">audit_status = #{auditStatus},</if>
+            <if test="auditBy != null and auditBy != ''">audit_by = #{auditBy},</if>
+            <if test="auditTime != null">audit_time = #{auditTime},</if>
+            <if test="auditRemark != null and auditRemark != ''">audit_remark = #{auditRemark},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="delFlag != null and delFlag != ''">del_flag = #{delFlag},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE regular_id = #{regularId}
+    </update>
+
+    <delete id="deleteHrRegularById" parameterType="Long">
+        UPDATE biz_hr_regular SET del_flag = '2' WHERE regular_id = #{regularId}
+    </delete>
+
+    <delete id="deleteHrRegularByIds" parameterType="Long">
+        UPDATE biz_hr_regular SET del_flag = '2' WHERE regular_id IN
+        <foreach item="regularId" collection="array" open="(" separator="," close=")">#{regularId}</foreach>
+    </delete>
+
+</mapper>

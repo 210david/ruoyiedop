@@ -146,11 +146,13 @@
               </span>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="220" align="center">
+          <el-table-column label="操作" width="140" align="center" class-name="col-action">
             <template #default="scope">
-              <el-button v-if="scope.row.nodeType !== '3'" link type="primary" icon="Plus" @click="handleAdd(scope.row)" v-hasPermi="['wms:warehouse:add']">新增</el-button>
-              <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['wms:warehouse:edit']">修改</el-button>
-              <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['wms:warehouse:remove']">删除</el-button>
+              <div class="action-btn-row">
+                <el-button v-if="scope.row.nodeType !== '3'" link type="primary" icon="Plus" @click="handleAdd(scope.row)" v-hasPermi="['wms:warehouse:add']">新增</el-button>
+                <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['wms:warehouse:edit']">修改</el-button>
+                <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['wms:warehouse:remove']">删除</el-button>
+              </div>
             </template>
           </el-table-column>
         </el-table>
@@ -685,6 +687,13 @@ getList()
 .wms-warehouse-page .badge.violet { background:var(--violet-50); color:var(--brand-700); border-color:var(--brand-200); }
 .wms-warehouse-page .badge.gray { background:var(--ink-100); color:var(--ink-500); border-color:var(--ink-200); }
 .wms-warehouse-page .badge.gray .dot { background:var(--ink-400); }
+
+/* 操作列按钮对齐：每行2个按钮，flex-wrap 自动换行，按钮自适应内容宽度 */
+.wms-warehouse-page :deep(.col-action) { padding: 6px 4px !important; }
+.wms-warehouse-page :deep(.col-action .cell) { display: flex; justify-content: center; padding: 0; }
+.wms-warehouse-page .action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
+.wms-warehouse-page :deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
+.wms-warehouse-page :deep(.col-action .el-button + .el-button) { margin-left: 2px; }
 
 /* ===== Responsive ===== */
 @media (max-width:1100px) { .wms-warehouse-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }

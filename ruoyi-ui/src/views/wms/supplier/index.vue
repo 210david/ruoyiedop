@@ -173,11 +173,13 @@
           <el-table-column label="企业性质" prop="enterpriseNature" key="enterpriseNature" :width="colWidth('enterpriseNature', 100)" resizable align="center" v-if="columns.enterpriseNature.visible"><template #default="scope"><span class="badge amber">{{ enterpriseNatureLabel(scope.row.enterpriseNature) }}</span></template></el-table-column>
           <el-table-column label="状态" prop="status" key="status" :width="colWidth('status', 100)" resizable align="center" sortable="custom" v-if="columns.status.visible"><template #default="scope"><span class="badge" :class="badgeClass(scope.row.status)"><span class="dot"></span>{{ statusLabel(scope.row.status) }}</span></template></el-table-column>
           <el-table-column label="创建时间" prop="createTime" key="createTime" :width="colWidth('createTime', 160)" resizable align="center" sortable="custom" v-if="columns.createTime.visible" />
-          <el-table-column label="操作" width="200" align="center" fixed="right">
+          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
-              <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
-              <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['wms:supplier:edit']">修改</el-button>
-              <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['wms:supplier:remove']">删除</el-button>
+              <div class="action-btn-row">
+                <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
+                <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['wms:supplier:edit']">修改</el-button>
+                <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['wms:supplier:remove']">删除</el-button>
+              </div>
             </template>
           </el-table-column>
         </el-table>
@@ -948,6 +950,13 @@ getList()
 .wms-supplier-page .pagination-container :deep(.el-pagination .btn-prev), .wms-supplier-page .pagination-container :deep(.el-pagination .btn-next) { border-radius:6px; border:1px solid var(--ink-200); background:#fff; min-width:32px; height:32px; }
 .wms-supplier-page .pagination-container :deep(.el-pagination .btn-prev:hover), .wms-supplier-page .pagination-container :deep(.el-pagination .btn-next:hover) { border-color:var(--brand-200); color:var(--brand-700); }
 .wms-supplier-page .pagination-container :deep(.el-pagination .el-pagination__sizes .el-select__wrapper) { border-radius:6px; box-shadow:0 0 0 1px var(--ink-200) inset; }
+/* 操作列按钮对齐：每行2个按钮，flex-wrap 自动换行，按钮自适应内容宽度 */
+.wms-supplier-page :deep(.col-action) { padding: 6px 4px !important; }
+.wms-supplier-page :deep(.col-action .cell) { display: flex; justify-content: center; padding: 0; }
+.wms-supplier-page .action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
+.wms-supplier-page :deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
+.wms-supplier-page :deep(.col-action .el-button + .el-button) { margin-left: 2px; }
+
 @media (max-width:1100px) { .wms-supplier-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }
 @media (max-width:720px) { .wms-supplier-page .filter-card .filter-bar { grid-template-columns:1fr; } .wms-supplier-page .toolbar { flex-wrap:wrap; gap:10px; } .wms-supplier-page .status-tabs { padding:6px 8px; } }
 /* ===== Status Help Dialog ===== */

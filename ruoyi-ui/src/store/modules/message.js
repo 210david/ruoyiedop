@@ -15,7 +15,9 @@ export const useMessageStore = defineStore('message', {
     /** 是否正在加载 */
     loading: false,
     /** 最后一次刷新时间戳 */
-    lastRefreshAt: 0
+    lastRefreshAt: 0,
+    /** 正在标记已读的消息ID集合（防重入） */
+    markingIds: new Set()
   }),
   actions: {
     /**
@@ -45,6 +47,9 @@ export const useMessageStore = defineStore('message', {
      * @param {number} messageId
      */
     async markRead(messageId) {
+      // 防重入：如果该消息正在标记中，直接返回
+      if (this.markingIds.has(messageId)) return
+      this.markingIds.add(messageId)
       // 乐观更新：先本地减少未读数
       const item = this.noticeList.find(n => n.messageId === messageId)
       if (item && !item.isRead) {
@@ -54,9 +59,16 @@ export const useMessageStore = defineStore('message', {
       // 调用后端
       try {
         await markMessageRead(messageId)
+        // 后端调用成功后，如果该消息不在 noticeList 中（乐观更新未生效），
+        // 重新从后端拉取最新未读数，确保铃铛数字准确
+        if (!item) {
+          await this.loadNoticeTop()
+        }
       } catch (e) {
         // 失败则重新加载确保一致性
         await this.loadNoticeTop()
+      } finally {
+        this.markingIds.delete(messageId)
       }
     },
 

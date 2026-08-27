@@ -19,6 +19,14 @@
           </div>
         </div>
         <div class="field">
+          <label>仓库</label>
+          <div class="control">
+            <el-input v-model="queryParams.warehouseName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field">
           <label>盘点类型</label>
           <div class="control is-select">
             <el-select v-model="queryParams.takeType" placeholder="全部" clearable @change="handleQuery">
@@ -32,6 +40,30 @@
             <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
               <el-option v-for="d in wms_take_status" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>计划日期</label>
+          <div class="control">
+            <el-date-picker v-model="dateRangePlan" type="daterange" range-separator="-"
+              start-placeholder="开始日期" end-placeholder="结束日期"
+              value-format="YYYY-MM-DD" style="width: 100%" />
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>创建时间</label>
+          <div class="control">
+            <el-date-picker v-model="dateRangeCreate" type="daterange" range-separator="-"
+              start-placeholder="开始日期" end-placeholder="结束日期"
+              value-format="YYYY-MM-DD" style="width: 100%" />
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>创建人</label>
+          <div class="control">
+            <el-input v-model="queryParams.createBy" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
           </div>
         </div>
       </div>
@@ -89,11 +121,13 @@
           <el-table-column label="结束时间" prop="endTime" key="endTime" :width="colWidth('endTime', 160)" resizable align="center" v-if="columns.endTime.visible" />
           <el-table-column label="备注" prop="remark" key="remark" :width="colWidth('remark', 200)" resizable :show-overflow-tooltip="true" v-if="columns.remark.visible" />
           <el-table-column label="创建时间" prop="createTime" key="createTime" :width="colWidth('createTime', 160)" resizable align="center" v-if="columns.createTime.visible" />
-          <el-table-column label="操作" width="200" align="center" fixed="right">
+          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
-              <el-button link type="primary" icon="View" @click.stop="handleRowClick(scope.row)">详情</el-button>
-              <el-button link type="primary" icon="Edit" @click.stop="handleRowClick(scope.row)" v-if="scope.row.status === '1'" v-hasPermi="['wms:stocktake:input']">录入</el-button>
-              <el-button link type="primary" icon="Check" @click.stop="handleApprove(scope.row)" v-if="scope.row.status === '2'" v-hasPermi="['wms:stocktake:approve']">审批</el-button>
+              <div class="action-btn-row">
+                <el-button link type="primary" icon="View" @click.stop="handleRowClick(scope.row)">详情</el-button>
+                <el-button link type="primary" icon="Edit" @click.stop="handleRowClick(scope.row)" v-if="scope.row.status === '1'" v-hasPermi="['wms:stocktake:input']">录入</el-button>
+                <el-button link type="primary" icon="Check" @click.stop="handleApprove(scope.row)" v-if="scope.row.status === '2'" v-hasPermi="['wms:stocktake:approve']">审批</el-button>
+              </div>
             </template>
           </el-table-column>
         </el-table>
@@ -485,7 +519,7 @@ const statusCounts = ref({ all: 0 })
 const defaultColumns = { takeNo: { label: '盘点单号', visible: true }, warehouseName: { label: '仓库', visible: true }, areaName: { label: '库区', visible: true }, takeType: { label: '盘点类型', visible: true }, status: { label: '状态', visible: true }, planDate: { label: '计划日期', visible: true }, startTime: { label: '开始时间', visible: true }, endTime: { label: '结束时间', visible: true }, remark: { label: '备注', visible: true }, createTime: { label: '创建时间', visible: true } }
 function loadColumnVisibility() { try { const saved = localStorage.getItem('wms_stocktake_detail_columns'); if (saved) { const parsed = JSON.parse(saved); const result = {}; Object.keys(defaultColumns).forEach(key => { result[key] = { label: defaultColumns[key].label, visible: parsed[key] !== undefined ? parsed[key] : defaultColumns[key].visible } }); return result } } catch (e) {} return { ...defaultColumns } }
 const columns = ref(loadColumnVisibility())
-const activeFilterCount = computed(() => { let count = 0; if (queryParams.value.takeNo) count++; if (queryParams.value.takeType) count++; if (queryParams.value.status) count++; return count })
+const activeFilterCount = computed(() => { let count = 0; if (queryParams.value.takeNo) count++; if (queryParams.value.warehouseName) count++; if (queryParams.value.takeType) count++; if (queryParams.value.status) count++; if (queryParams.value.createBy) count++; if (dateRangePlan.value && dateRangePlan.value.length === 2) count++; if (dateRangeCreate.value && dateRangeCreate.value.length === 2) count++; return count })
 const statusTabList = computed(() => wms_take_status.value)
 // 批量录入前端分页
 const batchPage = reactive({ pageNum: 1, pageSize: 10 })
@@ -513,8 +547,10 @@ const submitRules = {
   diffReason: [{ validator: (rule, value, callback) => { if ((submitFormData.value.actualQty - submitFormData.value.bookQty) !== 0 && !value) { callback(new Error('存在差异时差异原因必填')) } else { callback() } }, trigger: 'blur' }]
 }
 
+const dateRangePlan = ref([])
+const dateRangeCreate = ref([])
 const data = reactive({
-  queryParams: { pageNum: 1, pageSize: 10, takeNo: undefined, takeType: undefined, status: undefined }
+  queryParams: { pageNum: 1, pageSize: 10, takeNo: undefined, warehouseName: undefined, takeType: undefined, status: undefined, createBy: undefined }
 })
 const { queryParams } = toRefs(data)
 
@@ -527,8 +563,8 @@ function getList() {
     applySavedWidths()
   })
 }
-function handleQuery() { queryParams.value.pageNum = 1; getList() }
-function resetQuery() { queryParams.value.takeNo = undefined; queryParams.value.takeType = undefined; queryParams.value.status = undefined; activeStatusTab.value = 'all'; handleQuery() }
+function handleQuery() { showAdvanced.value = false; proxy.addDateRange(queryParams.value, dateRangePlan.value, 'PlanDate'); proxy.addDateRange(queryParams.value, dateRangeCreate.value, 'CreateTime'); queryParams.value.pageNum = 1; getList() }
+function resetQuery() { queryParams.value.takeNo = undefined; queryParams.value.warehouseName = undefined; queryParams.value.takeType = undefined; queryParams.value.status = undefined; queryParams.value.createBy = undefined; dateRangePlan.value = []; dateRangeCreate.value = []; queryParams.value.params = {}; activeStatusTab.value = 'all'; handleQuery() }
 function handleRowClick(row) {
   getStockTake(row.takeId).then(res => {
     currentTake.value = res.data
@@ -655,7 +691,15 @@ function statusLabel(status) { const item = wms_take_status.value.find(d => d.va
 function takeTypeLabel(type) { const item = wms_take_type.value.find(d => d.value == type); return item ? item.label : '-' }
 function statusTabClass(value) { const map = { '0': 'tab-draft', '1': 'tab-audit', '2': 'tab-partial', '3': 'tab-done', '4': 'tab-void' }; return map[value] || '' }
 function handleStatusTabClick(status) { activeStatusTab.value = status; queryParams.value.status = status === 'all' ? undefined : status; handleQuery() }
-function loadStatusCounts() { listStockTake({ pageNum: 1, pageSize: 999 }).then(res => { const counts = { all: res.total }; (res.rows || []).forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++ }); statusCounts.value = counts }).catch(() => {}) }
+function loadStatusCounts() {
+  listStockTake({ pageNum: 1, pageSize: 999 }).then(res => {
+    const counts = { all: res.total, '0': 0, '1': 0, '2': 0, '3': 0, '4': 0 }
+    ;(res.rows || []).forEach(r => {
+      if (counts[r.status] !== undefined) counts[r.status]++
+    })
+    statusCounts.value = counts
+  }).catch(() => {})
+}
 
 // 初始化
 getList()
@@ -664,6 +708,12 @@ loadStatusCounts()
 
 <style scoped>
 /* 页面特定样式 - 列表页面共享样式见 wms-list-page.scss */
+/* 操作列按钮对齐：每行2个按钮，flex-wrap 自动换行，按钮自适应内容宽度 */
+:deep(.col-action) { padding: 6px 4px !important; }
+:deep(.col-action .cell) { display: flex; justify-content: center; padding: 0; }
+.action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
+:deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
+:deep(.col-action .el-button + .el-button) { margin-left: 2px; }
 .status-help-content { max-height: 500px; overflow-y: auto; padding-right: 10px; }
 .status-help-content h4 { margin: 20px 0 12px 0; color: #303133; font-weight: 600; border-left: 4px solid #409eff; padding-left: 10px; }
 .status-help-content h4:first-child { margin-top: 0; }

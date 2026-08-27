@@ -40,7 +40,7 @@
         >
           <el-table-column width="45" align="center">
             <template #default="{ row }">
-              <el-radio :model-value="selectedId" :value="row.materialId" @click.stop><span /></el-radio>
+              <el-radio :model-value="selectedId" :value="row.materialId" @click.stop="onRowClick(row)"><span /></el-radio>
             </template>
           </el-table-column>
           <el-table-column label="物料编码" prop="materialCode" width="140" show-overflow-tooltip />
@@ -186,7 +186,9 @@ function handleConfirm() {
     materialName: selectedRow.value.materialName,
     materialType: selectedRow.value.materialType,
     specModel: selectedRow.value.specModel,
-    unit: selectedRow.value.unit
+    unit: selectedRow.value.unit,
+    isBatchManage: selectedRow.value.isBatchManage || '0',
+    isExpiryManage: selectedRow.value.isExpiryManage || '0'
   })
   visible.value = false
 }

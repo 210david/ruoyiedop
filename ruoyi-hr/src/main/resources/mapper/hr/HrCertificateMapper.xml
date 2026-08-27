@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.hr.mapper.HrCertificateMapper">
+
+    <resultMap type="HrCertificate" id="HrCertificateResult">
+        <result property="certId" column="cert_id"/>
+        <result property="employeeId" column="employee_id"/>
+        <result property="employeeName" column="employee_name"/>
+        <result property="employeeNo" column="employee_no"/>
+        <result property="certType" column="cert_type"/>
+        <result property="certName" column="cert_name"/>
+        <result property="certNo" column="cert_no"/>
+        <result property="issueDate" column="issue_date"/>
+        <result property="validFrom" column="valid_from"/>
+        <result property="validTo" column="valid_to"/>
+        <result property="reviewDate" column="review_date"/>
+        <result property="issueOrg" column="issue_org"/>
+        <result property="attachmentUrl" column="attachment_url"/>
+        <result property="remindStatus" column="remind_status"/>
+        <result property="status" column="status"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <sql id="selectVo">
+        SELECT cert_id, employee_id, employee_name, employee_no, cert_type, cert_name, cert_no, issue_date, valid_from, valid_to, review_date, issue_org, attachment_url, remind_status, status, del_flag, create_by, create_time, update_by, update_time, remark
+        FROM biz_hr_certificate
+    </sql>
+
+    <select id="selectHrCertificateList" parameterType="HrCertificate" resultMap="HrCertificateResult">
+        <include refid="selectVo"/>
+        <where>
+            del_flag = '0'
+            <if test="employeeId != null"> AND employee_id = #{employeeId}</if>
+            <if test="employeeName != null and employeeName != ''"> AND employee_name LIKE CONCAT('%', #{employeeName}, '%')</if>
+            <if test="employeeNo != null and employeeNo != ''"> AND employee_no LIKE CONCAT('%', #{employeeNo}, '%')</if>
+            <if test="certType != null and certType != ''"> AND cert_type LIKE CONCAT('%', #{certType}, '%')</if>
+            <if test="certName != null and certName != ''"> AND cert_name LIKE CONCAT('%', #{certName}, '%')</if>
+            <if test="certNo != null and certNo != ''"> AND cert_no LIKE CONCAT('%', #{certNo}, '%')</if>
+            <if test="issueDate != null"> AND issue_date = #{issueDate}</if>
+            <if test="validFrom != null"> AND valid_from = #{validFrom}</if>
+            <if test="validTo != null"> AND valid_to = #{validTo}</if>
+            <if test="reviewDate != null"> AND review_date = #{reviewDate}</if>
+            <if test="issueOrg != null and issueOrg != ''"> AND issue_org LIKE CONCAT('%', #{issueOrg}, '%')</if>
+            <if test="attachmentUrl != null and attachmentUrl != ''"> AND attachment_url LIKE CONCAT('%', #{attachmentUrl}, '%')</if>
+            <if test="remindStatus != null and remindStatus != ''"> AND remind_status LIKE CONCAT('%', #{remindStatus}, '%')</if>
+            <if test="status != null and status != ''"> AND status LIKE CONCAT('%', #{status}, '%')</if>
+            <if test="delFlag != null and delFlag != ''"> AND del_flag LIKE CONCAT('%', #{delFlag}, '%')</if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+
+    <select id="selectHrCertificateById" parameterType="Long" resultMap="HrCertificateResult">
+        <include refid="selectVo"/> WHERE cert_id = #{certId}
+    </select>
+
+    <insert id="insertHrCertificate" parameterType="HrCertificate" useGeneratedKeys="true" keyProperty="certId">
+        INSERT INTO biz_hr_certificate (
+            employee_id, employee_name, employee_no, cert_type, cert_name, cert_no, issue_date, valid_from, valid_to, review_date, issue_org, attachment_url, remind_status, status, del_flag, create_by, create_time, remark
+        ) VALUES (
+            #{employeeId}, #{employeeName}, #{employeeNo}, #{certType}, #{certName}, #{certNo}, #{issueDate}, #{validFrom}, #{validTo}, #{reviewDate}, #{issueOrg}, #{attachmentUrl}, #{remindStatus}, #{status}, #{delFlag}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateHrCertificate" parameterType="HrCertificate">
+        UPDATE biz_hr_certificate
+        <set>
+            <if test="employeeId != null">employee_id = #{employeeId},</if>
+            <if test="employeeName != null and employeeName != ''">employee_name = #{employeeName},</if>
+            <if test="employeeNo != null and employeeNo != ''">employee_no = #{employeeNo},</if>
+            <if test="certType != null and certType != ''">cert_type = #{certType},</if>
+            <if test="certName != null and certName != ''">cert_name = #{certName},</if>
+            <if test="certNo != null and certNo != ''">cert_no = #{certNo},</if>
+            <if test="issueDate != null">issue_date = #{issueDate},</if>
+            <if test="validFrom != null">valid_from = #{validFrom},</if>
+            <if test="validTo != null">valid_to = #{validTo},</if>
+            <if test="reviewDate != null">review_date = #{reviewDate},</if>
+            <if test="issueOrg != null and issueOrg != ''">issue_org = #{issueOrg},</if>
+            <if test="attachmentUrl != null and attachmentUrl != ''">attachment_url = #{attachmentUrl},</if>
+            <if test="remindStatus != null and remindStatus != ''">remind_status = #{remindStatus},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="delFlag != null and delFlag != ''">del_flag = #{delFlag},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE cert_id = #{certId}
+    </update>
+
+    <delete id="deleteHrCertificateById" parameterType="Long">
+        UPDATE biz_hr_certificate SET del_flag = '2' WHERE cert_id = #{certId}
+    </delete>
+
+    <delete id="deleteHrCertificateByIds" parameterType="Long">
+        UPDATE biz_hr_certificate SET del_flag = '2' WHERE cert_id IN
+        <foreach item="certId" collection="array" open="(" separator="," close=")">#{certId}</foreach>
+    </delete>
+
+</mapper>

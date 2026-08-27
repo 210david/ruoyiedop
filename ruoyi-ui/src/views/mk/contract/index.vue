@@ -151,8 +151,9 @@
             </template>
           </el-table-column>
           <el-table-column label="负责人" prop="userName" key="userName" :width="colWidth('userName', 100)" resizable v-if="columns.userName.visible" />
-          <el-table-column label="操作" width="320" align="center" fixed="right">
+          <el-table-column label="操作" width="180" align="center" fixed="right" class-name="col-action">
         <template #default="scope">
+          <div class="action-btn-row">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">详情</el-button>
           <!-- 草稿：可修改 -->
           <el-button v-if="scope.row.contractStatus === '0'" link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['marketing:contract:edit']">修改</el-button>
@@ -168,6 +169,7 @@
           <el-button v-if="scope.row.contractStatus === '2' || scope.row.contractStatus === '3'" link type="primary" icon="RefreshRight" @click="handleRenew(scope.row)" v-hasPermi="['marketing:contract:renew']">续签</el-button>
           <!-- 已生效：终止 -->
           <el-button v-if="scope.row.contractStatus === '2'" link type="danger" icon="CircleClose" @click="handleTerminate(scope.row)" v-hasPermi="['marketing:contract:edit']">终止</el-button>
+          </div>
         </template>
       </el-table-column>
         </el-table>

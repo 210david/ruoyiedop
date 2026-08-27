@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.hr.mapper.HrSalaryItemMapper">
+
+    <resultMap type="HrSalaryItem" id="HrSalaryItemResult">
+        <result property="itemId" column="item_id"/>
+        <result property="itemCode" column="item_code"/>
+        <result property="itemName" column="item_name"/>
+        <result property="itemCategory" column="item_category"/>
+        <result property="calcRule" column="calc_rule"/>
+        <result property="isAdd" column="is_add"/>
+        <result property="industryTag" column="industry_tag"/>
+        <result property="orderNum" column="order_num"/>
+        <result property="status" column="status"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <sql id="selectVo">
+        SELECT item_id, item_code, item_name, item_category, calc_rule, is_add, industry_tag, order_num, status, del_flag, create_by, create_time, update_by, update_time, remark
+        FROM biz_hr_salary_item
+    </sql>
+
+    <select id="selectHrSalaryItemList" parameterType="HrSalaryItem" resultMap="HrSalaryItemResult">
+        <include refid="selectVo"/>
+        <where>
+            del_flag = '0'
+            <if test="itemCode != null and itemCode != ''"> AND item_code LIKE CONCAT('%', #{itemCode}, '%')</if>
+            <if test="itemName != null and itemName != ''"> AND item_name LIKE CONCAT('%', #{itemName}, '%')</if>
+            <if test="itemCategory != null and itemCategory != ''"> AND item_category LIKE CONCAT('%', #{itemCategory}, '%')</if>
+            <if test="calcRule != null and calcRule != ''"> AND calc_rule LIKE CONCAT('%', #{calcRule}, '%')</if>
+            <if test="isAdd != null"> AND is_add = #{isAdd}</if>
+            <if test="industryTag != null and industryTag != ''"> AND industry_tag LIKE CONCAT('%', #{industryTag}, '%')</if>
+            <if test="orderNum != null"> AND order_num = #{orderNum}</if>
+            <if test="status != null and status != ''"> AND status LIKE CONCAT('%', #{status}, '%')</if>
+            <if test="delFlag != null and delFlag != ''"> AND del_flag LIKE CONCAT('%', #{delFlag}, '%')</if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+
+    <select id="selectHrSalaryItemById" parameterType="Long" resultMap="HrSalaryItemResult">
+        <include refid="selectVo"/> WHERE item_id = #{itemId}
+    </select>
+
+    <insert id="insertHrSalaryItem" parameterType="HrSalaryItem" useGeneratedKeys="true" keyProperty="itemId">
+        INSERT INTO biz_hr_salary_item (
+            item_code, item_name, item_category, calc_rule, is_add, industry_tag, order_num, status, del_flag, create_by, create_time, remark
+        ) VALUES (
+            #{itemCode}, #{itemName}, #{itemCategory}, #{calcRule}, #{isAdd}, #{industryTag}, #{orderNum}, #{status}, #{delFlag}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateHrSalaryItem" parameterType="HrSalaryItem">
+        UPDATE biz_hr_salary_item
+        <set>
+            <if test="itemCode != null and itemCode != ''">item_code = #{itemCode},</if>
+            <if test="itemName != null and itemName != ''">item_name = #{itemName},</if>
+            <if test="itemCategory != null and itemCategory != ''">item_category = #{itemCategory},</if>
+            <if test="calcRule != null and calcRule != ''">calc_rule = #{calcRule},</if>
+            <if test="isAdd != null">is_add = #{isAdd},</if>
+            <if test="industryTag != null and industryTag != ''">industry_tag = #{industryTag},</if>
+            <if test="orderNum != null">order_num = #{orderNum},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="delFlag != null and delFlag != ''">del_flag = #{delFlag},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE item_id = #{itemId}
+    </update>
+
+    <delete id="deleteHrSalaryItemById" parameterType="Long">
+        UPDATE biz_hr_salary_item SET del_flag = '2' WHERE item_id = #{itemId}
+    </delete>
+
+    <delete id="deleteHrSalaryItemByIds" parameterType="Long">
+        UPDATE biz_hr_salary_item SET del_flag = '2' WHERE item_id IN
+        <foreach item="itemId" collection="array" open="(" separator="," close=")">#{itemId}</foreach>
+    </delete>
+
+</mapper>

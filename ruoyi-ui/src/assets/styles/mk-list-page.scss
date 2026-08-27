@@ -170,6 +170,13 @@
 .mk-list-page .badge.gray { background:var(--ink-100); color:var(--ink-500); border-color:var(--ink-200); }
 .mk-list-page .badge.gray .dot { background:var(--ink-400); }
 
+/* ===== Action Column (操作列对齐) ===== */
+.mk-list-page .col-action { padding: 6px 4px !important; }
+.mk-list-page .col-action .cell { display: flex; justify-content: center; padding: 0; }
+.mk-list-page .action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
+.mk-list-page .col-action .el-button { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
+.mk-list-page .col-action .el-button + .el-button { margin-left: 2px; }
+
 /* ===== Pagination ===== */
 .mk-list-page .pagination-container { display:flex; align-items:center; justify-content:flex-end; padding:14px 20px; font-size:14px; color:var(--ink-500); background:#fff; border-top:1px solid transparent; }
 .mk-list-page .pagination-container .el-pagination { justify-content:flex-end; }
