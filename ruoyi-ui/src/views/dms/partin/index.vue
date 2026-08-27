@@ -120,6 +120,80 @@
       <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
     </div>
 
+    <!-- 查看详情弹窗 -->
+    <el-dialog v-model="viewOpen" width="780px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div>
+          <div class="rd-detail-header-main">
+            <div class="rd-detail-header-title">入库记录详情</div>
+            <div class="rd-detail-header-sub" v-if="viewForm.documentCode">
+              <div class="rd-detail-header-divider"></div>
+              <span class="rd-detail-header-no">单据号：{{ viewForm.documentCode }}</span>
+            </div>
+          </div>
+        </div>
+      </template>
+      <div v-loading="viewLoading" class="rd-page">
+        <!-- 单据信息 -->
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('v3')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>单据信息</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v3 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.v3">
+            <div class="rd-grid">
+              <div class="rd-item"><span class="rd-label">单据号</span><div class="rd-value">{{ viewForm.documentCode || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">入库类型</span><div class="rd-value"><dict-tag :options="dms_partin_type" :value="viewForm.sourceType" /></div></div>
+              <div class="rd-item"><span class="rd-label">入库日期</span><div class="rd-value">{{ viewForm.operateDate || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">经办人</span><div class="rd-value">{{ viewForm.operatorName || '-' }}</div></div>
+            </div>
+          </div>
+        </section>
+        <!-- 备件信息 -->
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('v2')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></span>备件信息</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.v2">
+            <div class="rd-grid">
+              <div class="rd-item"><span class="rd-label">备件编号</span><div class="rd-value">{{ viewForm.partCode || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">备件名称</span><div class="rd-value">{{ viewForm.partName || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">供应商</span><div class="rd-value">{{ viewForm.supplierOrDept || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">单位</span><div class="rd-value"><dict-tag :options="wms_unit" :value="viewForm.unit" /></div></div>
+            </div>
+          </div>
+        </section>
+        <!-- 入库明细 -->
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('v1')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></span>入库明细</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.v1">
+            <div class="rd-grid">
+              <div class="rd-item"><span class="rd-label">仓库</span><div class="rd-value">{{ viewForm.warehouseName || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">存放位置</span><div class="rd-value">{{ viewForm.storageLocation || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">入库数量</span><div class="rd-value rd-amount">{{ viewForm.quantity != null ? viewForm.quantity : '-' }}</div></div>
+            </div>
+          </div>
+        </section>
+        <!-- 其他信息 -->
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('v0')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>其他信息</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v0 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.v0">
+            <div class="rd-grid">
+              <div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value">{{ viewForm.remark || '-' }}</div></div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </el-dialog>
+
     <!-- 新增入库弹窗 -->
     <el-dialog v-model="open" width="780px" append-to-body draggable class="rd-dialog">
       <template #header>
@@ -159,16 +233,21 @@
           </div>
           <div class="rd-card-body" v-show="!collapsedCards.c2">
         <el-row>
-          <el-col :span="24">
-            <el-form-item label="备件" prop="partId">
-              <el-input v-model="form.partName" readonly placeholder="请选择备件" style="width: 100%" @click="openSparepartPicker" :disabled="!!form.recordId">
-                <template v-if="form.partName && !form.recordId" #append>
+          <el-col :span="12">
+            <el-form-item label="备件编号" prop="partId">
+              <el-input v-model="form.partCode" readonly placeholder="请选择备件" style="width: 100%" @click="openSparepartPicker" :disabled="!!form.recordId">
+                <template v-if="form.partCode && !form.recordId" #append>
                   <el-button icon="CircleClose" @click.stop="clearSparepart" />
                 </template>
                 <template v-else #append>
                   <el-button icon="Search" @click="openSparepartPicker" :disabled="!!form.recordId" />
                 </template>
               </el-input>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="备件名称" prop="partName">
+              <el-input v-model="form.partName" placeholder="选择备件后自动带出" disabled />
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -231,8 +310,8 @@
       </template>
     </el-dialog>
 
-    <!-- 备件选择弹窗 -->
-    <sparepart-picker ref="sparepartPickerRef" title="选择备件" @confirm="onSparepartPickerConfirm" />
+    <!-- 备件选择弹窗（备件台账主数据） -->
+    <sparepart-picker ref="sparepartPickerRef" source="part" title="选择备件" @confirm="onSparepartPickerConfirm" />
 
     <!-- 业务操作说明对话框 -->
     <el-dialog v-model="showStatusHelp" title="备件入库业务操作说明" width="720px" append-to-body>
@@ -303,11 +382,12 @@
 
 <script setup name="DmsPartIn">
 import { listPartIn, addPartIn, delPartIn, getPartIn, updatePartIn } from '@/api/dms/partin'
+import { fetchAllPages, downloadCsv } from '@/utils/csvExport'
 import SparepartPicker from '@/components/SparepartPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
 import { Search, Filter, RefreshLeft, Delete, Download, ArrowDown, CircleClose } from '@element-plus/icons-vue'
-const { collapsedCards, toggleCard } = useDetailCard(["c3","c2","c1","c0"])
+const { collapsedCards, toggleCard } = useDetailCard(["c3","c2","c1","c0","v3","v2","v1","v0"])
 
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('dms_partin_index')
@@ -323,6 +403,9 @@ const multiple = ref(true)
 const total = ref(0)
 const title = ref('')
 const formDisabled = ref(false)
+const viewOpen = ref(false)
+const viewLoading = ref(false)
+const viewForm = ref({})
 const showStatusHelp = ref(false)
 
 const defaultColumns = {
@@ -401,8 +484,14 @@ function handleAdd() {
   title.value = '新增入库'
 }
 function handleView(row) {
-  reset(); formDisabled.value = true
-  getPartIn(row.recordId).then(res => { form.value = res.data; open.value = true; title.value = '查看入库记录' })
+  viewLoading.value = true
+  viewOpen.value = true
+  getPartIn(row.recordId).then(res => {
+    viewForm.value = res.data || {}
+    // 按开发规范：分组内字段全为空时自动收缩
+    collapsedCards.v0 = !viewForm.value.remark
+    viewLoading.value = false
+  }).catch(() => { viewLoading.value = false })
 }
 function handleUpdate(row) {
   reset(); formDisabled.value = false
@@ -428,10 +517,6 @@ function onSparepartPickerConfirm(part) {
   form.value.partName = part.partName
   form.value.unit = part.unit || ''
   form.value.supplierOrDept = part.supplier || ''
-  // 如果备件已有存放位置，自动带出
-  if (part.storageLocation) {
-    form.value.storageLocation = part.storageLocation
-  }
 }
 /** 清除备件 */
 function clearSparepart() {
@@ -450,7 +535,16 @@ function submitForm() {
   })
 }
 function cancel() { open.value = false; reset() }
-function handleExport() { proxy.download('dms/sparepart/partin/export', { ...proxy.addDateRange(queryParams.value, dateRange.value, 'OperateDate') }, `partin_${new Date().getTime()}.xlsx`) }
+/** 导出入库记录（与列表口径一致：含筛选条件、日期范围，导出全部页数据） */
+async function handleExport() {
+  const rows = await fetchAllPages(listPartIn, queryParams.value)
+  if (!rows.length) { proxy.$modal.msgWarning('当前筛选下无数据可导出'); return }
+  const headers = ['单据号', '备件编号', '备件名称', '单位', '入库类型', '供应商', '存放位置', '数量', '入库日期']
+  downloadCsv(`partin_${new Date().getTime()}`, headers, rows.map(i => [
+    i.documentCode, i.partCode, i.partName, unitLabel(i.unit), sourceTypeLabel(i.sourceType),
+    i.supplierOrDept || '', i.storageLocation || '', i.quantity != null ? i.quantity : '', i.operateDate || ''
+  ]))
+}
 function handleDelete(row) { const recordIds = row.recordId || ids.value; proxy.$modal.confirm('确认删除选中的入库记录？').then(() => delPartIn(recordIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
 
 onActivated(() => {

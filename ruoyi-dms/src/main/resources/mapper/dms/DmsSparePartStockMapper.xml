@@ -103,12 +103,14 @@
         <foreach item="stockId" collection="array" open="(" separator="," close=")">#{stockId}</foreach>
     </delete>
 
-    <!-- 库存预警查询 -->
+    <!-- 库存预警查询（仅预警异常数据：库存不足/低于下限/高于上限，不含等于下限、正常） -->
     <select id="selectStockAlertList" parameterType="DmsSparePartStock" resultMap="DmsSparePartStockResult">
         <include refid="selectStockVo"/>
         WHERE s.del_flag = '0' AND s.status = '0'
           AND (
-            (p.stock_min > 0 AND s.current_stock &lt;= p.stock_min)
+            s.current_stock &lt;= 0
+            OR
+            (p.stock_min &gt; 0 AND s.current_stock &lt; p.stock_min)
             OR
             (p.stock_max &gt; 0 AND s.current_stock &gt;= p.stock_max)
           )
@@ -117,7 +119,7 @@
         ORDER BY
           CASE
             WHEN s.current_stock &lt;= 0 THEN 0
-            WHEN p.stock_min &gt; 0 AND s.current_stock &lt;= p.stock_min THEN 1
+            WHEN p.stock_min &gt; 0 AND s.current_stock &lt; p.stock_min THEN 1
             ELSE 2
           END,
           s.current_stock ASC

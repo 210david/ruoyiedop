@@ -72,7 +72,7 @@
           <el-table-column type="index" label="序号" width="85" align="center" />
           <el-table-column label="路线名称" prop="routeName" key="routeName" :width="colWidth('routeName', 160)" resizable show-overflow-tooltip v-if="columns.routeName.visible" />
           <el-table-column label="路线编码" prop="routeCode" key="routeCode" :width="colWidth('routeCode', 180)" resizable show-overflow-tooltip v-if="columns.routeCode.visible" />
-          <el-table-column label="部门" prop="deptName" key="deptName" :width="colWidth('deptName', 120)" resizable v-if="columns.deptName.visible" />
+          <el-table-column label="责任部门" prop="deptName" key="deptName" :width="colWidth('deptName', 120)" resizable v-if="columns.deptName.visible" />
           <el-table-column label="周期" prop="cycleType" key="cycleType" :width="colWidth('cycleType', 140)" resizable align="center" v-if="columns.cycleType.visible">
             <template #default="scope">
               <span class="badge amber">{{ cycleTypeLabel(scope.row.cycleType) }}</span>
@@ -100,7 +100,7 @@
     </div>
 
     <!-- 新增/修改弹窗 -->
-    <el-dialog v-model="open" width="1080px" append-to-body draggable class="rd-dialog" top="5vh">
+    <el-dialog v-model="open" width="1080px" append-to-body draggable class="rd-dialog route-form-dialog" top="5vh">
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="19" r="3"/><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"/><circle cx="18" cy="5" r="3"/></svg></div>
@@ -118,8 +118,8 @@
             <el-row>
               <el-col :span="12"><el-form-item label="路线名称" prop="routeName"><el-input v-model="form.routeName" placeholder="请输入" /></el-form-item></el-col>
               <el-col :span="12"><el-form-item label="路线编码" prop="routeCode"><el-input v-model="form.routeCode" placeholder="保存后自动生成" disabled /></el-form-item></el-col>
-              <el-col :span="12"><el-form-item label="部门" prop="deptId">
-                <el-input v-model="form.deptName" readonly placeholder="请选择归属部门" style="width: 100%" @click="openDeptPicker">
+              <el-col :span="12"><el-form-item label="责任部门" prop="deptId">
+                <el-input v-model="form.deptName" readonly placeholder="请选择责任部门" style="width: 100%" @click="openDeptPicker">
                   <template #append><el-button icon="Search" @click="openDeptPicker" /></template>
                   <template #suffix><el-icon v-if="form.deptName" class="clear-icon" @click.stop="clearDept"><CircleClose /></el-icon></template>
                 </el-input>
@@ -172,10 +172,7 @@
           <div class="rd-card-body" v-show="!collapsedCards.c1">
             <el-table :data="form.commonItems" border style="width: 100%" size="small" @header-dragend="onHeaderDragEnd">
               <el-table-column label="序号" width="60" align="center"><template #default="scope">{{ scope.$index + 1 }}</template></el-table-column>
-              <el-table-column label="检查项" min-width="200"><template #default="scope"><el-input v-model="scope.row.item" placeholder="如：设备周围卫生" size="small" /></template></el-table-column>
-              <el-table-column label="类型" width="120" align="center"><template #default="scope"><el-select v-model="scope.row.type" size="small" placeholder="类型"><el-option label="打勾" value="check" /><el-option label="数值" value="number" /><el-option label="文本" value="text" /></el-select></template></el-table-column>
-              <el-table-column label="单位" width="80" align="center"><template #default="scope"><el-input v-model="scope.row.unit" placeholder="如℃/MPa" size="small" :disabled="scope.row.type !== 'number'" /></template></el-table-column>
-              <el-table-column label="异常必填说明" width="110" align="center"><template #default="scope"><el-switch v-model="scope.row.abnormalRequired" /></template></el-table-column>
+              <el-table-column label="点检项目名称" min-width="360"><template #default="scope"><el-input v-model="scope.row.item" placeholder="如：设备周围卫生、安全防护装置完好" size="small" /></template></el-table-column>
               <el-table-column label="操作" width="70" align="center"><template #default="scope"><el-button link type="danger" icon="Delete" size="small" @click="removeCommonItem(scope.$index)">删除</el-button></template></el-table-column>
             </el-table>
             <el-button type="primary" plain icon="Plus" size="small" style="margin-top: 8px" @click="addCommonItem">添加通用项</el-button>
@@ -196,10 +193,7 @@
                 </template>
                 <el-table :data="dev.items" border style="width: 100%" size="small" @header-dragend="onHeaderDragEnd">
                   <el-table-column label="序号" width="60" align="center"><template #default="scope">{{ scope.$index + 1 }}</template></el-table-column>
-                  <el-table-column label="检查项" min-width="200"><template #default="scope"><el-input v-model="scope.row.item" :placeholder="'如：检查' + dev.equipmentName + '温度'" size="small" /></template></el-table-column>
-                  <el-table-column label="类型" width="120" align="center"><template #default="scope"><el-select v-model="scope.row.type" size="small" placeholder="类型"><el-option label="打勾" value="check" /><el-option label="数值" value="number" /><el-option label="文本" value="text" /></el-select></template></el-table-column>
-                  <el-table-column label="单位" width="80" align="center"><template #default="scope"><el-input v-model="scope.row.unit" placeholder="如℃" size="small" :disabled="scope.row.type !== 'number'" /></template></el-table-column>
-                  <el-table-column label="异常必填说明" width="110" align="center"><template #default="scope"><el-switch v-model="scope.row.abnormalRequired" /></template></el-table-column>
+                  <el-table-column label="点检项目名称" min-width="360"><template #default="scope"><el-input v-model="scope.row.item" :placeholder="'如：检查' + dev.equipmentName + '运行温度是否正常'" size="small" /></template></el-table-column>
                   <el-table-column label="操作" width="70" align="center"><template #default="scope"><el-button link type="danger" icon="Delete" size="small" @click="removeDeviceItem(di, scope.$index)">删除</el-button></template></el-table-column>
                 </el-table>
                 <el-button type="primary" plain icon="Plus" size="small" style="margin-top: 8px" @click="addDeviceItem(di)">添加点检项</el-button>
@@ -221,15 +215,13 @@
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="19" r="3"/><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"/><circle cx="18" cy="5" r="3"/></svg></div>
-          <div class="rd-detail-header-main">
-            <div class="rd-detail-header-title">巡检路线详情</div>
-            <div class="rd-detail-header-sub" v-if="viewForm.routeName">
-              <div class="rd-detail-header-divider"></div>
-              <span class="rd-detail-header-no">{{ viewForm.routeName }}</span>
-            </div>
+          <span class="rd-detail-header-title">巡检路线详情</span>
+          <div class="rd-detail-header-sub" v-if="viewForm.routeCode">
+            <div class="rd-detail-header-divider"></div>
+            <span class="rd-detail-header-no">路线编码：{{ viewForm.routeCode }}</span>
           </div>
           <div class="rd-detail-header-tags" v-if="viewForm.status != null">
-            <span class="badge" :class="viewForm.status === '0' ? 'green' : 'gray'"><span class="dot"></span>{{ viewForm.status === '0' ? '正常' : '停用' }}</span>
+            <el-tag :type="viewForm.status === '0' ? 'success' : 'info'" effect="dark" size="small">{{ viewForm.status === '0' ? '正常' : '停用' }}</el-tag>
           </div>
         </div>
       </template>
@@ -243,8 +235,8 @@
             <div class="rd-grid">
               <div class="rd-item"><span class="rd-label"><span class="rd-label-dot"></span>路线名称</span><div class="rd-value">{{ viewForm.routeName || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label"><span class="rd-label-dot"></span>路线编码</span><div class="rd-value">{{ viewForm.routeCode || '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label"><span class="rd-label-dot"></span>归属部门</span><div class="rd-value">{{ viewForm.deptName || '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label"><span class="rd-label-dot"></span>状态</span><div class="rd-value"><span class="badge" :class="viewForm.status === '0' ? 'green' : 'gray'"><span class="dot"></span>{{ viewForm.status === '0' ? '正常' : '停用' }}</span></div></div>
+              <div class="rd-item"><span class="rd-label"><span class="rd-label-dot"></span>责任部门</span><div class="rd-value">{{ viewForm.deptName || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label"><span class="rd-label-dot"></span>状态</span><div class="rd-value"><el-tag :type="viewForm.status === '0' ? 'success' : 'info'" size="small">{{ viewForm.status === '0' ? '正常' : '停用' }}</el-tag></div></div>
             </div>
           </div>
         </section>
@@ -255,7 +247,7 @@
           </div>
           <div class="rd-card-body" v-show="!collapsedCards.v2">
             <div class="rd-grid">
-              <div class="rd-item"><span class="rd-label"><span class="rd-label-dot"></span>周期类型</span><div class="rd-value"><span class="badge amber">{{ cycleTypeLabel(viewForm.cycleType) }}</span></div></div>
+              <div class="rd-item"><span class="rd-label"><span class="rd-label-dot"></span>周期类型</span><div class="rd-value"><el-tag type="warning" size="small" effect="plain">{{ cycleTypeLabel(viewForm.cycleType) }}</el-tag></div></div>
               <div class="rd-item"><span class="rd-label"><span class="rd-label-dot"></span>周期值</span><div class="rd-value"><span style="font-weight: 600;">{{ viewForm.cycleValue || '-' }}</span> <span style="color: var(--ink-500); font-size: 13px;">天</span></div></div>
             </div>
             <div style="margin-top: 12px">
@@ -277,10 +269,7 @@
           <div class="rd-card-body" v-show="!collapsedCards.v3">
             <el-table :data="viewItems.common" border size="small">
               <el-table-column label="序号" type="index" width="60" align="center" />
-              <el-table-column label="检查项" prop="item" min-width="200" />
-              <el-table-column label="类型" width="100" align="center"><template #default="scope"><el-tag size="small" :type="scope.row.type === 'number' ? 'warning' : 'info'">{{ typeText(scope.row.type) }}</el-tag></template></el-table-column>
-              <el-table-column label="单位" prop="unit" width="80" align="center" />
-              <el-table-column label="异常必填说明" width="110" align="center"><template #default="scope"><el-tag size="small" :type="scope.row.abnormalRequired ? 'danger' : 'info'">{{ scope.row.abnormalRequired ? '是' : '否' }}</el-tag></template></el-table-column>
+              <el-table-column label="点检项目名称" prop="item" min-width="200" />
             </el-table>
           </div>
         </section>
@@ -292,10 +281,7 @@
           <div class="rd-card-body" v-show="!collapsedCards['vd' + di]">
             <el-table :data="dg.items" border size="small">
               <el-table-column label="序号" type="index" width="60" align="center" />
-              <el-table-column label="检查项" prop="item" min-width="200" />
-              <el-table-column label="类型" width="100" align="center"><template #default="scope"><el-tag size="small" :type="scope.row.type === 'number' ? 'warning' : 'info'">{{ typeText(scope.row.type) }}</el-tag></template></el-table-column>
-              <el-table-column label="单位" prop="unit" width="80" align="center" />
-              <el-table-column label="异常必填说明" width="110" align="center"><template #default="scope"><el-tag size="small" :type="scope.row.abnormalRequired ? 'danger' : 'info'">{{ scope.row.abnormalRequired ? '是' : '否' }}</el-tag></template></el-table-column>
+              <el-table-column label="点检项目名称" prop="item" min-width="200" />
             </el-table>
           </div>
         </section>
@@ -321,7 +307,7 @@
     </el-dialog>
 
     <!-- 部门选择弹窗 -->
-    <dept-picker ref="deptPickerRef" title="选择归属部门" :disabled-ids="[100]" @confirm="onDeptPickerConfirm" />
+    <dept-picker ref="deptPickerRef" title="选择责任部门" :disabled-ids="[100]" @confirm="onDeptPickerConfirm" />
 
     <!-- 设备选择弹窗（多选） -->
     <equipment-picker ref="equipmentPickerRef" title="选择巡检设备" :multiple="true" @confirm="onEquipmentPickerConfirm" />
@@ -340,10 +326,7 @@
         <el-descriptions :column="1" border>
           <el-descriptions-item label="通用点检项">所有巡检设备共用的检查项，如设备周围卫生、安全防护装置等</el-descriptions-item>
           <el-descriptions-item label="设备专属点检项">每台设备单独配置的检查项，如特定设备的温度、压力、振动等</el-descriptions-item>
-          <el-descriptions-item label="打勾类型">只需判断正常/异常的检查项，如"安全装置完好"</el-descriptions-item>
-          <el-descriptions-item label="数值类型">需填写具体数值的检查项，可设置单位（如℃/MPa），便于数据分析</el-descriptions-item>
-          <el-descriptions-item label="文本类型">需填写文字描述的检查项，如"外观描述"</el-descriptions-item>
-          <el-descriptions-item label="异常必填说明">开启后，该检查项标记为异常时必须填写异常说明</el-descriptions-item>
+          <el-descriptions-item label="点检项目名称">只需填写检查项名称，巡检执行时由点检人以文本形式填写实际巡检内容</el-descriptions-item>
         </el-descriptions>
         <h4>三、重点业务规则</h4>
         <el-row :gutter="16">
@@ -352,7 +335,7 @@
         </el-row>
         <h4>四、业务操作流程</h4>
         <el-timeline>
-          <el-timeline-item type="primary" :hollow="true"><strong>创建路线：</strong>填写路线名称、选择归属部门，设置巡检周期类型和值</el-timeline-item>
+          <el-timeline-item type="primary" :hollow="true"><strong>创建路线：</strong>填写路线名称、选择责任部门，设置巡检周期类型和值</el-timeline-item>
           <el-timeline-item type="info" :hollow="true"><strong>选择设备：</strong>多选巡检设备，选择顺序为巡检执行顺序</el-timeline-item>
           <el-timeline-item type="warning" :hollow="true"><strong>配置点检项：</strong>配置通用点检项（所有设备共用）和每台设备的专属点检项</el-timeline-item>
           <el-timeline-item type="success" :hollow="true"><strong>保存路线：</strong>保存后在点检任务模块中创建任务，点检人按路线配置执行点检</el-timeline-item>
@@ -398,7 +381,7 @@ const viewEquipmentList = ref([])
 const defaultColumns = {
   routeName: { label: '路线名称', visible: true },
   routeCode: { label: '路线编码', visible: true },
-  deptName: { label: '部门', visible: true },
+  deptName: { label: '责任部门', visible: true },
   cycleType: { label: '周期', visible: true },
   status: { label: '状态', visible: true }
 }
@@ -430,7 +413,6 @@ function cycleTypeLabel(val) {
   const item = dms_inspection_cycle.value.find(d => d.value == val)
   return item ? item.label : '-'
 }
-function typeText(type) { return { check: '打勾', number: '数值', text: '文本' }[type] || type }
 
 /** 周期类型联动默认值 */
 const cycleDefaultMap = { '0': 1, '1': 7, '2': 30 }
@@ -587,9 +569,9 @@ function syncDeviceItems() {
   activeDeviceTabs.value = form.value.deviceItems.map(d => d.equipmentId)
 }
 
-function addCommonItem() { form.value.commonItems.push({ item: '', type: 'check', unit: '', abnormalRequired: false }) }
+function addCommonItem() { form.value.commonItems.push({ item: '' }) }
 function removeCommonItem(index) { form.value.commonItems.splice(index, 1) }
-function addDeviceItem(di) { form.value.deviceItems[di].items.push({ item: '', type: 'check', unit: '', abnormalRequired: false }) }
+function addDeviceItem(di) { form.value.deviceItems[di].items.push({ item: '' }) }
 function removeDeviceItem(di, ii) { form.value.deviceItems[di].items.splice(ii, 1) }
 
 function submitForm() {
@@ -669,6 +651,8 @@ getList()
 .dms-inspection-route-page .app-table :deep(.el-table__inner-wrapper::before) { display:none; }
 .dms-inspection-route-page .app-table :deep(.el-table__border-left-patch) { display:none; }
 .dms-inspection-route-page .badge { display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:999px; font-size:13px; font-weight:600; line-height:1; border:1px solid transparent; }
+/* 详情弹窗：头部标签容器（与工单详情页一致，紧跟副标题居左） */
+.rd-detail-header-tags { display: flex; align-items: center; gap: 6px; }
 .dms-inspection-route-page .badge .dot { width:6px; height:6px; border-radius:50%; }
 .dms-inspection-route-page .badge.amber { background:var(--amber-50); color:var(--amber-700); border-color:#fde68a; }
 .dms-inspection-route-page .badge.amber .dot { background:var(--amber-500); }
@@ -709,18 +693,9 @@ getList()
 </style>
 
 <style>
-/* 新增/修改弹窗 body 滚动 */
-.rd-dialog:not(.route-detail-dialog) .el-dialog__body { max-height: 72vh; overflow-y: auto; padding: 16px 20px; }
-/* 详情弹窗 body 滚动 */
-.route-detail-dialog .el-dialog__body { max-height: 68vh; overflow-y: auto; padding: 16px 20px; }
-.route-detail-dialog .el-dialog__header { padding-bottom: 12px; }
-/* 详情卡片网格 */
-.rd-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px 32px; }
-.rd-item { display: flex; flex-direction: column; gap: 6px; }
-.rd-item--full { grid-column: 1 / -1; }
-.rd-label { font-size: 12px; color: #6b7280; font-weight: 500; letter-spacing: 0.025em; display: flex; align-items: center; gap: 6px; }
-.rd-label-dot { width: 4px; height: 4px; border-radius: 50%; background: #d1d5db; flex-shrink: 0; }
-.rd-value { font-size: 14px; color: #111827; padding-left: 12px; border-left: 2px solid #f3f4f6; min-height: 22px; }
+/* 本页弹窗 body 滚动（仅作用于本页两个弹窗，rd-* 规范类统一由全局 detail-page.scss 提供，页面不得重定义） */
+.route-form-dialog .el-dialog__body { max-height: 72vh; overflow-y: auto; }
+.route-detail-dialog .el-dialog__body { max-height: 68vh; overflow-y: auto; }
 
 .status-help-content { max-height: 500px; overflow-y: auto; padding-right: 10px; }
 .status-help-content h4 { margin: 20px 0 12px 0; color: #303133; font-weight: 600; border-left: 4px solid #409eff; padding-left: 10px; }

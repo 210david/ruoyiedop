@@ -114,14 +114,13 @@
               <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.edit_equipment }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
             </div>
             <div class="rd-card-body" v-show="!collapsedCards.edit_equipment">
-              <el-form-item label="关联设备" prop="equipmentId">
-                <el-select v-model="form.equipmentId" filterable clearable placeholder="请选择设备" style="width: 100%" @change="onEquipmentChange">
-                  <el-option v-for="e in equipmentOptions" :key="e.equipmentId" :label="e.equipmentCode + ' - ' + e.equipmentName" :value="e.equipmentId" />
-                </el-select>
-              </el-form-item>
               <el-row>
-                <el-col :span="12"><el-form-item label="设备编码"><el-input v-model="form.equipmentCode" placeholder="自动带出" disabled style="width: 100%" /></el-form-item></el-col>
-                <el-col :span="12"><el-form-item label="设备名称"><el-input v-model="form.equipmentName" placeholder="自动带出" disabled style="width: 100%" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="关联设备" prop="equipmentId">
+                  <el-input :model-value="form.equipmentCode" readonly placeholder="请选择设备" style="width: 100%" @click="openEquipmentPicker">
+                    <template #suffix><el-icon style="cursor: pointer" @click.stop="openEquipmentPicker"><Search /></el-icon></template>
+                  </el-input>
+                </el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="设备名称" prop="equipmentName"><el-input v-model="form.equipmentName" placeholder="自动带出" disabled style="width: 100%" /></el-form-item></el-col>
               </el-row>
             </div>
           </section>
@@ -241,22 +240,25 @@
         <el-button @click="viewOpen = false">关 闭</el-button>
       </template>
     </el-dialog>
+
+    <!-- 设备选择弹框 -->
+    <equipment-picker ref="equipmentPickerRef" title="选择采集设备" @confirm="onEquipmentPickerConfirm" />
   </div>
 </template>
 
 <script setup name="DmsDataRecord">
 import { listRecord, getRecord, addRecord, updateRecord, delRecord } from '@/api/dms/data'
-import { listEquipment } from '@/api/dms/equipment'
+import EquipmentPicker from '@/components/EquipmentPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
-const { collapsedCards, toggleCard } = useDetailCard(['view_equipment', 'view_runtime', 'view_params'])
+const { collapsedCards, toggleCard } = useDetailCard(['view_equipment', 'view_runtime', 'view_params', 'edit_equipment', 'edit_runtime', 'edit_params'])
 
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('dms_data_record_index')
 const { dms_run_status, dms_collect_mode } = proxy.useDict('dms_run_status', 'dms_collect_mode')
 
 const list = ref([])
-const equipmentOptions = ref([])
+const equipmentPickerRef = ref()
 const open = ref(false)
 const viewOpen = ref(false)
 const loading = ref(true)
@@ -321,32 +323,27 @@ const data = reactive({
   form: {},
   queryParams: { pageNum: 1, pageSize: 10, equipmentName: undefined, runStatus: undefined, collectMode: undefined },
   rules: {
-    equipmentName: [{ required: true, message: '设备名称不能为空', trigger: 'blur' }],
+    equipmentId: [{ required: true, message: '请选择关联设备', trigger: 'change' }],
     runStatus: [{ required: true, message: '运行状态不能为空', trigger: 'change' }]
   }
 })
 const { queryParams, form, rules } = toRefs(data)
 
 function getList() { loading.value = true; listRecord(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false; applySavedWidths() }) }
-function getEquipmentOptions() { listEquipment({ pageNum: 1, pageSize: 9999 }).then(res => { equipmentOptions.value = res.rows }) }
-function onEquipmentChange(equipmentId) {
-  if (equipmentId) {
-    const equipment = equipmentOptions.value.find(e => e.equipmentId === equipmentId)
-    if (equipment) {
-      form.value.equipmentCode = equipment.equipmentCode
-      form.value.equipmentName = equipment.equipmentName
-    }
-  } else {
-    form.value.equipmentCode = undefined
-    form.value.equipmentName = undefined
-  }
+/** 打开设备选择弹框 */
+function openEquipmentPicker() { equipmentPickerRef.value.open(form.value.equipmentId) }
+/** 设备选择确认：显示设备编号，自动带出名称 */
+function onEquipmentPickerConfirm(equipment) {
+  form.value.equipmentId = equipment.equipmentId
+  form.value.equipmentCode = equipment.equipmentCode
+  form.value.equipmentName = equipment.equipmentName
 }
 function handleQuery() { queryParams.value.pageNum = 1; getList() }
 function resetQuery() { proxy.resetForm('queryRef'); handleQuery() }
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.recordId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function reset() { form.value = { equipmentId: undefined, equipmentCode: undefined, equipmentName: undefined, runStatus: '0', runHours: 0, productCount: 0, param1Value: undefined, param2Value: undefined, param3Value: undefined, collectTime: new Date(), collectMode: '0' }; proxy.resetForm('recordRef') }
 function handleAdd() { reset(); title.value = '录入数据'; open.value = true }
-function handleUpdate(row) { reset(); getRecord(row.recordId || ids.value[0]).then(res => { form.value = res.data; if (form.value.equipmentId) { const equipment = equipmentOptions.value.find(e => e.equipmentId === form.value.equipmentId); if (equipment) { form.value.equipmentCode = equipment.equipmentCode; form.value.equipmentName = equipment.equipmentName } } title.value = '修改数据'; open.value = true }) }
+function handleUpdate(row) { reset(); getRecord(row.recordId || ids.value[0]).then(res => { form.value = res.data; title.value = '修改数据'; open.value = true }) }
 function submitForm() {
   proxy.$refs['recordRef'].validate(valid => {
     if (valid) {
@@ -358,7 +355,6 @@ function submitForm() {
 function handleDelete(row) { const recordIds = row.recordId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delRecord(recordIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
 function cancel() { open.value = false; reset() }
 function handleView(row) { getRecord(row.recordId).then(res => { viewForm.value = res.data; viewOpen.value = true }) }
-getEquipmentOptions()
 getList()
 </script>
 

@@ -15,6 +15,14 @@
           </div>
         </div>
         <div class="field">
+          <label>分类</label>
+          <div class="control">
+            <el-input v-model="queryParams.categoryName" placeholder="请输入分类，如：数控车床" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field">
           <label>关键词</label>
           <div class="control">
             <el-input v-model="queryParams.keywords" placeholder="请输入" clearable @keyup.enter="handleQuery">
@@ -61,15 +69,15 @@
             </template>
           </el-table-column>
           <el-table-column label="关键词" prop="keywords" key="keywords" :width="colWidth('keywords', 180)" resizable show-overflow-tooltip v-if="columns.keywords.visible" />
-          <el-table-column label="查看次数" prop="viewCount" key="viewCount" :width="colWidth('viewCount', 90)" resizable align="center" v-if="columns.viewCount.visible" />
           <el-table-column label="状态" prop="status" key="status" :width="colWidth('status', 100)" resizable align="center" v-if="columns.status.visible">
             <template #default="scope">
               <span class="badge" :class="scope.row.status === '0' ? 'green' : 'gray'"><span class="dot"></span>{{ scope.row.status === '0' ? '正常' : '停用' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
+          <el-table-column label="操作" width="200" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
               <div class="action-btn-row">
+                <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['dms:ai:faq:query']">查看</el-button>
                 <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['dms:ai:faq:edit']">修改</el-button>
                 <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['dms:ai:faq:remove']">删除</el-button>
               </div>
@@ -80,7 +88,7 @@
       <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
     </div>
 
-    <el-dialog v-model="open" width="680px" append-to-body draggable class="rd-dialog">
+    <el-dialog v-model="open" width="816px" append-to-body draggable class="rd-dialog">
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/><circle cx="12" cy="12" r="10"/></svg></div>
@@ -89,21 +97,40 @@
       </template>
       <el-form ref="faqRef" :model="form" :rules="rules" label-width="100px">
         <div class="rd-page">
+        <!-- 基本信息 -->
         <section class="rd-card">
           <div class="rd-card-header" @click="toggleCard('c0')">
-            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/><circle cx="12" cy="12" r="10"/></svg></span>FAQ信息</div>
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>基本信息</div>
             <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c0 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
           </div>
           <div class="rd-card-body" v-show="!collapsedCards.c0">
-        <el-form-item label="问题" prop="question"><el-input v-model="form.question" placeholder="请输入问题" /></el-form-item>
-        <el-form-item label="标准答案" prop="answer"><el-input v-model="form.answer" type="textarea" :rows="5" placeholder="请输入标准答案" /></el-form-item>
-        <el-row>
-          <el-col :span="12"><el-form-item label="分类" prop="categoryName"><el-input v-model="form.categoryName" placeholder="如：数控车床" /></el-form-item></el-col>
-          <el-col :span="12"><el-form-item label="状态" prop="status"><el-radio-group v-model="form.status"><el-radio value="0">正常</el-radio><el-radio value="1">停用</el-radio></el-radio-group></el-form-item></el-col>
-        </el-row>
-        <el-form-item label="关键词" prop="keywords"><el-input v-model="form.keywords" placeholder="多个关键词用逗号分隔，如：主轴,异响,温度" /></el-form-item>
-        <el-form-item label="备注" prop="remark"><el-input v-model="form.remark" type="textarea" placeholder="请输入" /></el-form-item>
-                </div>
+            <el-row>
+              <el-col :span="12"><el-form-item label="分类" prop="categoryName"><el-input v-model="form.categoryName" placeholder="如：数控车床" /></el-form-item></el-col>
+              <el-col :span="12"><el-form-item label="状态" prop="status"><el-radio-group v-model="form.status"><el-radio value="0">正常</el-radio><el-radio value="1">停用</el-radio></el-radio-group></el-form-item></el-col>
+            </el-row>
+            <el-form-item label="关键词" prop="keywords"><el-input v-model="form.keywords" placeholder="多个关键词用逗号分隔，如：主轴,异响,温度" /></el-form-item>
+          </div>
+        </section>
+        <!-- 内容信息 -->
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('c1')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>内容信息</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.c1">
+            <el-form-item label="问题" prop="question"><el-input v-model="form.question" placeholder="请输入问题" /></el-form-item>
+            <el-form-item label="标准答案" prop="answer"><el-input v-model="form.answer" type="textarea" :rows="5" placeholder="请输入标准答案" /></el-form-item>
+          </div>
+        </section>
+        <!-- 其他信息 -->
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('c2')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>其他信息</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.c2">
+            <el-form-item label="备注" prop="remark"><el-input v-model="form.remark" type="textarea" placeholder="请输入" /></el-form-item>
+          </div>
         </section>
         </div>
       </el-form>
@@ -112,6 +139,60 @@
         <el-button @click="cancel">取 消</el-button>
       </template>
     </el-dialog>
+    <!-- 查看详情对话框 -->
+    <el-dialog v-model="viewOpen" width="936px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div>
+          <span class="rd-detail-header-title">FAQ详情</span>
+          <div class="rd-detail-header-sub" v-if="viewData.categoryName">
+            <div class="rd-detail-header-divider"></div>
+            <span class="rd-detail-header-no">分类：{{ viewData.categoryName }}</span>
+          </div>
+        </div>
+      </template>
+      <div class="rd-page">
+        <!-- 基本信息 -->
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('v0')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/><circle cx="12" cy="12" r="10"/></svg></span>基本信息</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v0 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.v0">
+            <div class="rd-grid">
+              <div class="rd-item rd-item--full"><span class="rd-label">问题</span><div class="rd-value">{{ viewData.question || '-' }}</div></div>
+              <div class="rd-item rd-item--full"><span class="rd-label">关键词</span><div class="rd-value">{{ viewData.keywords || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">分类</span><div class="rd-value">{{ viewData.categoryName || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">状态</span><div class="rd-value"><el-tag :type="viewData.status === '0' ? 'success' : 'danger'" effect="light" size="small">{{ viewData.status === '0' ? '正常' : '停用' }}</el-tag></div></div>
+            </div>
+          </div>
+        </section>
+        <!-- 答案信息 -->
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('v1')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>标准答案</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.v1">
+            <div class="rd-item rd-item--full"><div class="rd-value rd-value--pre">{{ viewData.answer || '-' }}</div></div>
+          </div>
+        </section>
+        <!-- 其他信息 -->
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('v2')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>其他信息</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.v2">
+            <div class="rd-grid">
+              <div class="rd-item"><span class="rd-label">创建时间</span><div class="rd-value">{{ viewData.createTime || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">更新时间</span><div class="rd-value">{{ viewData.updateTime || '-' }}</div></div>
+              <div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value">{{ viewData.remark || '-' }}</div></div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -119,13 +200,15 @@
 import { listFaq, getFaq, addFaq, updateFaq, delFaq } from '@/api/dms/ai'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
-const { collapsedCards, toggleCard } = useDetailCard(["c0"])
+const { collapsedCards, toggleCard } = useDetailCard(["c0", "c1", "c2", "v0", "v1", "v2"])
 
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('dms_ai_faq_index')
 
 const list = ref([])
 const open = ref(false)
+const viewOpen = ref(false)
+const viewData = ref({})
 const loading = ref(true)
 const showSearch = ref(true)
 const ids = ref([])
@@ -138,7 +221,6 @@ const defaultColumns = {
   question: { label: '问题', visible: true },
   categoryName: { label: '分类', visible: true },
   keywords: { label: '关键词', visible: true },
-  viewCount: { label: '查看次数', visible: true },
   status: { label: '状态', visible: true }
 }
 function loadColumnVisibility() {
@@ -160,13 +242,14 @@ const columns = ref(loadColumnVisibility())
 const activeFilterCount = computed(() => {
   let count = 0
   if (queryParams.value.question) count++
+  if (queryParams.value.categoryName) count++
   if (queryParams.value.keywords) count++
   return count
 })
 
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, question: undefined, keywords: undefined },
+  queryParams: { pageNum: 1, pageSize: 10, question: undefined, categoryName: undefined, keywords: undefined },
   rules: {
     question: [{ required: true, message: '问题不能为空', trigger: 'blur' }],
     answer: [{ required: true, message: '标准答案不能为空', trigger: 'blur' }]
@@ -180,6 +263,10 @@ function resetQuery() { proxy.resetForm('queryRef'); handleQuery() }
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.faqId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function reset() { form.value = { question: undefined, answer: undefined, categoryName: undefined, keywords: undefined, status: '0', remark: undefined }; proxy.resetForm('faqRef') }
 function handleAdd() { reset(); open.value = true; title.value = '新增FAQ' }
+/** 查看详情 */
+function handleView(row) {
+  getFaq(row.faqId).then(res => { viewData.value = res.data; viewOpen.value = true })
+}
 function handleUpdate(row) { reset(); getFaq(row.faqId || ids.value[0]).then(res => { form.value = res.data; open.value = true; title.value = '修改FAQ' }) }
 function submitForm() {
   proxy.$refs['faqRef'].validate(valid => {
@@ -257,6 +344,8 @@ getList()
 .dms-ai-faq-page .badge.violet { background:var(--violet-50); color:var(--brand-700); border-color:var(--brand-200); }
 .dms-ai-faq-page .badge.gray { background:var(--ink-100); color:var(--ink-500); border-color:var(--ink-200); }
 .dms-ai-faq-page .badge.gray .dot { background:var(--ink-400); }
+/* 详情答案按原文换行展示（弹窗 append-to-body 脱离页面容器，选择器不带页面前缀） */
+.rd-value--pre { white-space: pre-wrap; word-break: break-word; line-height:1.8; background:var(--ink-50); border:1px solid var(--ink-100); border-left:3px solid var(--brand-500); border-radius:var(--r-sm); padding:12px 14px; }
 /* 操作列按钮对齐：每行2个按钮，flex-wrap 自动换行 */
 .dms-ai-faq-page :deep(.col-action) { padding: 6px 4px !important; }
 .dms-ai-faq-page :deep(.col-action .cell) { display: flex; justify-content: center; padding: 0; }

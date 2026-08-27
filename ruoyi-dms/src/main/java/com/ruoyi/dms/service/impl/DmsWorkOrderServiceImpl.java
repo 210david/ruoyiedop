@@ -93,14 +93,20 @@ public class DmsWorkOrderServiceImpl implements IDmsWorkOrderService
         workOrder.setSlaTimeoutStatus("0");
         workOrder.setSlaEscalated("0");
 
+        // createBy 为空时默认当前登录人（点检自动生成场景由调用方设置为点检人）
+        if (StringUtils.isEmpty(workOrder.getCreateBy()))
+        {
+            workOrder.setCreateBy(getCurrentUsername());
+        }
+
         // 根据优先级计算SLA截止时间
         calculateSlaDeadlines(workOrder);
 
         int rows = dmsWorkOrderMapper.insertWorkOrder(workOrder);
 
-        // 记录操作日志
+        // 记录操作日志：操作人优先取 createBy（点检自动生成的工单为点检人）
         workOrderLogService.recordLog(workOrder.getOrderId(), workOrder.getOrderNo(),
-                null, "0", "create", getCurrentUsername(), "工单创建");
+                null, "0", "create", workOrder.getCreateBy(), "工单创建");
 
         // 发送通知：新工单生成 → 通知维修组/维修员
         sendWorkOrderNotice(workOrder, "新工单通知",

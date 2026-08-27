@@ -420,6 +420,7 @@
 
 <script setup name="WmsMaterial">
 import { listMaterial, getMaterial, addMaterial, updateMaterial, delMaterial } from '@/api/wms/material'
+import { fetchAllPages, downloadCsv } from '@/utils/csvExport'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
 import ExcelImportDialog from '@/components/ExcelImportDialog'
@@ -646,8 +647,18 @@ function handleDelete(row) {
   }).catch(() => {})
 }
 
-function handleExport() {
-  proxy.download('wms/material/export', { ...proxy.addDateRange(queryParams.value, dateRange.value) }, `material_${new Date().getTime()}.xlsx`)
+/** 导出物料（与列表口径一致：含筛选条件，导出全部页数据） */
+async function handleExport() {
+  const rows = await fetchAllPages(listMaterial, proxy.addDateRange(queryParams.value, dateRange.value))
+  if (!rows.length) { proxy.$modal.msgWarning('当前筛选下无数据可导出'); return }
+  const headers = ['物料编码', '物料名称', '物料类型', '规格型号', '单位', '批次管理', '效期管理', '保质期(天)', '安全库存下限', '安全库存上限', '状态', '创建时间']
+  downloadCsv(`material_${new Date().getTime()}`, headers, rows.map(i => [
+    i.materialCode || '', i.materialName || '', materialTypeLabel(i.materialType), i.specModel || '', unitLabel(i.unit),
+    i.isBatchManage === '1' ? '是' : '否', i.isExpiryManage === '1' ? '是' : '否',
+    i.shelfLifeDays != null ? i.shelfLifeDays : '',
+    i.safetyStockMin != null ? i.safetyStockMin : '', i.safetyStockMax != null ? i.safetyStockMax : '',
+    i.status === '0' ? '正常' : '停用', i.createTime || ''
+  ]))
 }
 
 function handleImport() {

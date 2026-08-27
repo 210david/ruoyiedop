@@ -230,7 +230,7 @@
 
 <script setup name="DmsPartLedger">
 import { listPartLedger, delPartLedger } from '@/api/dms/partledger'
-import { getSparepart } from '@/api/dms/sparepart'
+import { fetchAllPages, downloadCsv } from '@/utils/csvExport'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
 import { Search, Filter, RefreshLeft, Delete, Download } from '@element-plus/icons-vue'
@@ -361,14 +361,24 @@ function handleQuery() { queryParams.value.pageNum = 1; getList() }
 function resetQuery() { queryParams.value.partCode = undefined; queryParams.value.partName = undefined; queryParams.value.partType = undefined; queryParams.value.stockStatus = undefined; proxy.resetForm('queryRef'); handleQuery() }
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.stockId); multiple.value = !selection.length }
 function handleDelete(row) { const stockIds = row.stockId || ids.value; proxy.$modal.confirm('确认删除选中的库存记录？（不会删除备件主数据）').then(() => delPartLedger(stockIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
-function handleExport() { proxy.download('dms/sparepart/export', { ...queryParams.value }, `partledger_${new Date().getTime()}.xlsx`) }
+/** 导出台账（与列表口径一致：含筛选条件、库存状态前端过滤，导出全部页数据） */
+async function handleExport() {
+  const rows = await fetchAllPages(listPartLedger, queryParams.value)
+  const filtered = queryParams.value.stockStatus ? rows.filter(i => getStockKey(i) === queryParams.value.stockStatus) : rows
+  if (!filtered.length) { proxy.$modal.msgWarning('当前筛选下无数据可导出'); return }
+  const headers = ['备件编号', '备件名称', '备件类别', '规格型号', '单位', '当前库存', '库存下限', '库存上限', '库存状态', '仓库', '存放位置', '供应商', '更新时间']
+  downloadCsv(`partledger_${new Date().getTime()}`, headers, filtered.map(i => [
+    i.partCode, i.partName, partTypeLabel(i.partType), i.specModel, unitLabel(i.unit),
+    i.currentStock != null ? i.currentStock : 0, i.stockMin != null ? i.stockMin : '', i.stockMax != null ? i.stockMax : '',
+    getStockText(i), i.warehouseName || '', i.storageLocation || '', i.supplier || '', i.updateTime || ''
+  ]))
+}
 
-/** 查看详情 */
+/** 查看详情（行数据来自库存台账关联查询，已含库存、仓库、存放位置字段） */
 function handleView(row) {
-  getSparepart(row.partId).then(res => {
-    viewData.value = res.data
-    viewOpen.value = true
-  })
+  // 关联查询中 status 为库存记录状态，备件状态映射在 partStatus
+  viewData.value = { ...row, status: row.partStatus || row.status }
+  viewOpen.value = true
 }
 
 onActivated(() => {

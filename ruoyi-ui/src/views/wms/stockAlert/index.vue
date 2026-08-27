@@ -126,6 +126,7 @@
 <script setup name="WmsStockAlert">
 import { listStockAlert, getStockAlertSummary, delStockAlert } from '@/api/wms/stockAlert'
 import { listWarehouse } from '@/api/wms/warehouse'
+import { fetchAllPages, downloadCsv } from '@/utils/csvExport'
 import { useColumnResize } from '@/composables/useColumnResize'
 
 const { proxy } = getCurrentInstance()
@@ -204,8 +205,26 @@ function handleTabClick(tab) {
   handleQuery()
 }
 
-function handleExport() {
-  proxy.download('wms/stockAlert/export', { ...queryParams.value }, `stock_alert_${new Date().getTime()}.xlsx`)
+/** 导出预警数据（与列表口径一致：含预警类型 Tab、筛选条件，导出全部页数据） */
+async function handleExport() {
+  const rows = await fetchAllPages(listStockAlert, queryParams.value)
+  if (!rows.length) { proxy.$modal.msgWarning('当前筛选下无数据可导出'); return }
+  const headers = ['预警类型', '物料编码', '物料名称', '规格型号', '物料类型', '单位', '仓库', '当前库存', '安全下限', '安全上限', '生产日期', '有效期', '距过期(天)', '预警说明']
+  downloadCsv(`stock_alert_${new Date().getTime()}`, headers, rows.map(i => [
+    alertLabel(i.alertType), i.materialCode || '', i.materialName || '', i.specModel || '',
+    dictText(wms_material_type, i.materialType), dictText(wms_unit, i.unit),
+    i.warehouseName || '—（汇总）', i.qty != null ? i.qty : '',
+    i.safetyStockMin != null ? i.safetyStockMin : '', i.safetyStockMax != null ? i.safetyStockMax : '',
+    i.productionDate || '', i.expiryDate || '', i.daysUntilExpiry != null ? i.daysUntilExpiry : '',
+    alertDesc(i)
+  ]))
+}
+
+/** 字典值转文字 */
+function dictText(dictRef, val) {
+  if (val === null || val === undefined || val === '') return ''
+  const item = dictRef.value.find(d => d.value == val)
+  return item ? item.label : String(val)
 }
 
 function handleSelectionChange(sel) {

@@ -40,16 +40,17 @@
         >
           <el-table-column width="45" align="center">
             <template #default="{ row }">
-              <el-radio :model-value="selectedId" :value="row.stockId" @click.stop="onRowClick(row)"><span /></el-radio>
+              <el-radio :model-value="selectedId" :value="isStock ? row.stockId : row.partId" @click.stop="onRowClick(row)"><span /></el-radio>
             </template>
           </el-table-column>
           <el-table-column label="备件编号" prop="partCode" width="140" show-overflow-tooltip />
           <el-table-column label="备件名称" prop="partName" min-width="160" show-overflow-tooltip />
           <el-table-column label="规格型号" prop="specModel" width="120" show-overflow-tooltip />
-          <el-table-column label="仓库" prop="warehouseName" width="110" show-overflow-tooltip />
-          <el-table-column label="库存数量" prop="currentStock" width="100" align="center">
+          <el-table-column v-if="isStock" label="仓库" prop="warehouseName" width="110" show-overflow-tooltip />
+          <el-table-column v-if="isStock" label="库存数量" prop="currentStock" width="100" align="center">
             <template #default="scope"><span class="badge green">{{ scope.row.currentStock }}</span></template>
           </el-table-column>
+          <el-table-column v-else label="供应商" prop="supplier" min-width="120" show-overflow-tooltip />
           <el-table-column label="单位" prop="unit" width="80" align="center">
             <template #default="scope"><span class="badge amber">{{ unitLabel(scope.row.unit) }}</span></template>
           </el-table-column>
@@ -76,6 +77,7 @@
 </template>
 
 <script setup>
+import { listSparepart } from '@/api/dms/sparepart'
 import { listPartLedger } from '@/api/dms/partledger'
 import { Search, RefreshLeft } from '@element-plus/icons-vue'
 
@@ -86,6 +88,11 @@ const props = defineProps({
   title: {
     type: String,
     default: '选择备件'
+  },
+  /** 数据源：part=备件台账（主数据） stock=备件库存台账（仅有库存） */
+  source: {
+    type: String,
+    default: 'part'
   }
 })
 
@@ -98,6 +105,9 @@ const total = ref(0)
 const selectedId = ref(null)
 const selectedRow = ref(null)
 const tableRef = ref()
+
+/** 是否库存台账数据源（出库场景，仅显示有库存的备件） */
+const isStock = computed(() => props.source === 'stock')
 
 const queryParams = reactive({
   pageNum: 1,
@@ -119,19 +129,25 @@ function onOpen() {
   getList()
 }
 
-/** 加载备件台账列表（仅库存大于0） */
+/** 加载备件列表（part=备件台账主数据 stock=库存台账且仅库存大于0） */
 function getList() {
   loading.value = true
-  listPartLedger(queryParams).then(res => {
-    // 仅显示库存大于0的备件
-    list.value = (res.rows || []).filter(item => item.currentStock != null && Number(item.currentStock) > 0)
-    total.value = list.value.length
+  const request = isStock.value ? listPartLedger : listSparepart
+  request(queryParams).then(res => {
+    let rows = res.rows || []
+    if (isStock.value) {
+      // 库存台账数据源仅显示库存大于0的备件
+      rows = rows.filter(item => item.currentStock != null && Number(item.currentStock) > 0)
+    }
+    list.value = rows
+    total.value = isStock.value ? rows.length : res.total
     loading.value = false
     // 回显选中行
     if (selectedId.value) {
       nextTick(() => {
         if (tableRef.value) {
-          tableRef.value.setCurrentRow(list.value.find(r => r.stockId === selectedId.value))
+          const idField = isStock.value ? 'stockId' : 'partId'
+          tableRef.value.setCurrentRow(list.value.find(r => r[idField] === selectedId.value))
         }
       })
     }
@@ -154,39 +170,28 @@ function resetQuery() {
 
 /** 行点击 - 选中 */
 function onRowClick(row) {
-  selectedId.value = row.stockId
+  selectedId.value = isStock.value ? row.stockId : row.partId
   selectedRow.value = row
 }
 
 /** 行双击 - 确认 */
 function onRowDblClick(row) {
-  selectedId.value = row.stockId
-  selectedRow.value = row
+  onRowClick(row)
   handleConfirm()
 }
 
-/** 确认选择 */
+/** 确认选择（回传整行数据，含 partId/partCode/partName/unit，库存台账还含 stockId/currentStock/warehouseName） */
 function handleConfirm() {
   if (!selectedId.value) return
-  emit('confirm', {
-    stockId: selectedRow.value.stockId,
-    partId: selectedRow.value.partId,
-    partCode: selectedRow.value.partCode,
-    partName: selectedRow.value.partName,
-    partType: selectedRow.value.partType,
-    specModel: selectedRow.value.specModel,
-    unit: selectedRow.value.unit,
-    currentStock: selectedRow.value.currentStock,
-    warehouseName: selectedRow.value.warehouseName || '备件库'
-  })
+  emit('confirm', { ...selectedRow.value })
   visible.value = false
 }
 
 /** 打开弹窗 */
-function open(currentStockId) {
+function open(currentId) {
   visible.value = true
-  if (currentStockId) {
-    selectedId.value = currentStockId
+  if (currentId) {
+    selectedId.value = currentId
   }
 }
 

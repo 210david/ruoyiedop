@@ -543,6 +543,7 @@
 <script setup name="WmsMove">
 import { listMove, getMove, addMove, delMove, approveMove, rejectMove, executeMove, voidMove } from '@/api/wms/move'
 import { listWarehouse, listLocation } from '@/api/wms/warehouse'
+import { fetchAllPages, downloadCsv } from '@/utils/csvExport'
 import InventoryPicker from '@/components/InventoryPicker/index.vue'
 import WarehousePicker from '@/components/WarehousePicker/index.vue'
 import LocationPicker from '@/components/LocationPicker/index.vue'
@@ -618,7 +619,23 @@ function confirmApprove(passed) {
 }
 function handleExecute(row) { proxy.$modal.confirm('确认执行移库？').then(() => executeMove(row.moveId)).then(() => { getList(); proxy.$modal.msgSuccess('执行完成') }).catch(() => {}) }
 function handleVoid(row) { proxy.$modal.confirm('确认作废该移库单？作废后不可恢复').then(() => voidMove(row.moveId)).then(() => { getList(); proxy.$modal.msgSuccess('已作废') }).catch(() => {}) }
-function handleExport() { proxy.download('wms/move/export', { ...proxy.addDateRange(queryParams.value, dateRange.value) }, `move_${new Date().getTime()}.xlsx`) }
+/** 导出移库单（与列表口径一致：含筛选条件，导出全部页数据） */
+async function handleExport() {
+  const rows = await fetchAllPages(listMove, proxy.addDateRange(queryParams.value, dateRange.value))
+  if (!rows.length) { proxy.$modal.msgWarning('当前筛选下无数据可导出'); return }
+  const headers = ['移库单号', '仓库', '物料编码', '物料名称', '单位', '批次号', '源库位', '目标库位', '移库数量', '状态']
+  downloadCsv(`move_${new Date().getTime()}`, headers, rows.map(i => [
+    i.moveNo || '', i.warehouseName || '', i.materialCode || '', i.materialName || '',
+    unitText(i.unit), i.batchNo || '', i.fromLocationName || '', i.toLocationName || '',
+    i.moveQty != null ? i.moveQty : '', statusLabel(i.status)
+  ]))
+}
+/** 字典值转文字 */
+function unitText(val) {
+  if (val === null || val === undefined || val === '') return ''
+  const item = wms_unit.value.find(d => d.value == val)
+  return item ? item.label : String(val)
+}
 function badgeClass(status) { const map = { '0': 'amber', '1': 'blue', '2': 'green', '3': 'red', '4': 'gray' }; return map[status] || 'gray' }
 function statusLabel(status) { const item = wms_move_status.value.find(d => d.value == status); return item ? item.label : '-' }
 function statusTabClass(value) { const map = { '0': 'tab-draft', '1': 'tab-audit', '2': 'tab-done', '3': 'tab-reject', '4': 'tab-void' }; return map[value] || '' }

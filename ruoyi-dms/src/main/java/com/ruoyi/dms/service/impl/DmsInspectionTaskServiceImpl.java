@@ -114,66 +114,172 @@ public class DmsInspectionTaskServiceImpl implements IDmsInspectionTaskService
         }
         int rows = dmsInspectionTaskMapper.updateTask(task);
 
-        // 如果存在异常项，自动生成工单
+        // 如果存在异常项，按设备自动生成工单：仅异常设备生成，且只带入该设备的异常项
         int abnormalCount = task.getAbnormalCount() != null ? task.getAbnormalCount() : 0;
         if (abnormalCount > 0)
         {
-            // 获取巡检路线，提取设备信息
-            DmsInspectionRoute route = null;
-            String equipmentNames = "";
-            if (db.getRouteId() != null)
-            {
-                route = dmsInspectionRouteMapper.selectRouteById(db.getRouteId());
-                if (route != null && route.getEquipmentIds() != null)
-                {
-                    equipmentNames = getEquipmentNames(route.getEquipmentIds());
-                }
-            }
-
-            // 解析异常项明细
-            String abnormalDetail = formatAbnormalDetail(task.getResultData());
-
-            // 构建格式化的故障描述
-            StringBuilder desc = new StringBuilder();
-            desc.append("【点检异常整改】\n");
-            desc.append("巡检路线：").append(db.getRouteName() != null ? db.getRouteName() : "—").append("\n");
-            desc.append("关联设备：").append(equipmentNames.isEmpty() ? "—" : equipmentNames).append("\n");
-            desc.append("点检人：").append(db.getInspectorName() != null ? db.getInspectorName() : "—").append("\n");
-            desc.append("异常项数：").append(abnormalCount).append("\n");
-            if (!abnormalDetail.isEmpty())
-            {
-                desc.append("\n异常明细：\n").append(abnormalDetail);
-            }
-
-            DmsWorkOrder workOrder = new DmsWorkOrder();
-            workOrder.setOrderType("2"); // 点检整改
-            workOrder.setFaultDescription(desc.toString());
-            workOrder.setEquipmentName(equipmentNames.isEmpty() ? null : equipmentNames);
-            workOrder.setPriority("1"); // 高优先级
-            workOrder.setOrderStatus("0"); // 新建
-            workOrder.setReportTime(new Date());
-            // 设置报修人：优先用点检人，为空时取当前操作人
-            if (task.getInspectorId() != null)
-            {
-                workOrder.setReporterId(task.getInspectorId());
-            }
-            else
-            {
-                try { workOrder.setReporterId(SecurityUtils.getUserId()); } catch (Exception e) { /* ignore */ }
-            }
-            String reporterName = task.getInspectorName();
-            if (reporterName == null || reporterName.isEmpty())
-            {
-                try { reporterName = SecurityUtils.getUsername(); } catch (Exception e) { reporterName = "system"; }
-            }
-            workOrder.setReporterName(reporterName);
-            workOrder.setRemark("由点检任务[" + db.getTaskNo() + "]自动生成(点检任务ID:" + task.getTaskId() + ")");
-            try { workOrder.setCreateBy(SecurityUtils.getUsername()); }
-            catch (Exception e) { workOrder.setCreateBy("system"); }
-            dmsWorkOrderService.insertWorkOrder(workOrder);
+            createWorkOrdersForAbnormal(task, db, abnormalCount);
         }
 
         return rows;
+    }
+
+    /**
+     * 按设备生成点检整改工单：
+     * 1. 仅存在异常项的设备才生成工单（一个设备一张工单）
+     * 2. 工单中只带入该设备的异常项目信息
+     * 3. 报修人与操作人（工单历史）均为点检人
+     * 旧格式结果（无设备结构）兜底生成单个工单
+     */
+    private void createWorkOrdersForAbnormal(DmsInspectionTask task, DmsInspectionTask db, int abnormalCount)
+    {
+        // 点检人：报修人 + 工单操作人
+        Long reporterId = task.getInspectorId() != null ? task.getInspectorId() : db.getInspectorId();
+        String reporterName = StringUtils.isNotEmpty(task.getInspectorName()) ? task.getInspectorName() : db.getInspectorName();
+        if (StringUtils.isEmpty(reporterName))
+        {
+            try { reporterName = SecurityUtils.getUsername(); } catch (Exception e) { reporterName = "system"; }
+        }
+
+        // 新格式：按设备分组生成
+        String resultData = task.getResultData();
+        if (StringUtils.isNotEmpty(resultData))
+        {
+            try
+            {
+                Object parsed = JSON.parse(resultData);
+                if (parsed instanceof JSONObject)
+                {
+                    JSONArray devices = ((JSONObject) parsed).getJSONArray("devices");
+                    if (devices != null && !devices.isEmpty())
+                    {
+                        int orderCount = 0;
+                        for (int d = 0; d < devices.size(); d++)
+                        {
+                            JSONObject dev = devices.getJSONObject(d);
+                            String detail = buildAbnormalDetailForDevice(dev);
+                            if (detail.isEmpty())
+                            {
+                                continue; // 无异常项的设备不生成工单
+                            }
+                            if (insertInspectionWorkOrder(task, db, dev.getLong("equipmentId"),
+                                    dev.getString("equipmentName"), detail, reporterId, reporterName))
+                            {
+                                orderCount++;
+                            }
+                        }
+                        if (orderCount > 0)
+                        {
+                            log.info("点检任务[{}]按设备生成{}张整改工单", db.getTaskNo(), orderCount);
+                            return;
+                        }
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                log.warn("解析点检结果失败，走兜底逻辑: {}", e.getMessage());
+            }
+        }
+
+        // 兜底：旧格式（扁平数组/仅common，无设备结构），生成单个工单
+        String equipmentNames = "";
+        if (db.getRouteId() != null)
+        {
+            DmsInspectionRoute route = dmsInspectionRouteMapper.selectRouteById(db.getRouteId());
+            if (route != null && route.getEquipmentIds() != null)
+            {
+                equipmentNames = getEquipmentNames(route.getEquipmentIds());
+            }
+        }
+        String abnormalDetail = formatAbnormalDetail(resultData);
+        insertInspectionWorkOrder(task, db, null, equipmentNames, abnormalDetail, reporterId, reporterName);
+    }
+
+    /**
+     * 构建单台设备的异常项明细（只包含标记为异常的项目）
+     * @return 异常明细文本；设备无异常项时返回空串
+     */
+    private String buildAbnormalDetailForDevice(JSONObject dev)
+    {
+        StringBuilder sb = new StringBuilder();
+        int index = 1;
+        JSONArray items = dev.getJSONArray("items");
+        if (items != null)
+        {
+            for (int i = 0; i < items.size(); i++)
+            {
+                JSONObject item = items.getJSONObject(i);
+                boolean isAbnormal = item.getBooleanValue("abnormal") || "abnormal".equals(item.getString("result"));
+                if (!isAbnormal) continue;
+                sb.append(index).append(". ").append(item.getString("item"));
+                String desc = item.getString("abnormalDesc");
+                if (StringUtils.isNotEmpty(desc))
+                {
+                    sb.append("\n   → 异常说明：").append(desc);
+                }
+                sb.append("\n");
+                index++;
+            }
+        }
+        return sb.toString();
+    }
+
+    /**
+     * 创建一张点检整改工单
+     * @param equipmentId 异常设备ID（兜底场景可为null）
+     * @param equipmentName 设备名称
+     * @param abnormalDetail 该设备的异常项明细
+     * @param reporterId/Name 点检人（报修人+操作人）
+     * @return 是否成功创建
+     */
+    private boolean insertInspectionWorkOrder(DmsInspectionTask task, DmsInspectionTask db, Long equipmentId,
+            String equipmentName, String abnormalDetail, Long reporterId, String reporterName)
+    {
+        try
+        {
+            // 补充设备编号/名称
+            String equipmentCode = null;
+            String equipmentDispName = equipmentName;
+            if (equipmentId != null)
+            {
+                DmsEquipment equipment = dmsEquipmentMapper.selectEquipmentById(equipmentId);
+                if (equipment != null)
+                {
+                    equipmentCode = equipment.getEquipmentCode();
+                    if (StringUtils.isEmpty(equipmentDispName))
+                    {
+                        equipmentDispName = equipment.getEquipmentName();
+                    }
+                }
+            }
+
+            // 故障描述只保留异常明细
+            String desc = StringUtils.isNotEmpty(abnormalDetail) ? abnormalDetail.trim() : "点检发现异常";
+
+            DmsWorkOrder workOrder = new DmsWorkOrder();
+            workOrder.setOrderType("2"); // 点检整改
+            workOrder.setFaultDescription(desc);
+            workOrder.setEquipmentId(equipmentId);
+            workOrder.setEquipmentCode(equipmentCode);
+            workOrder.setEquipmentName(StringUtils.isEmpty(equipmentDispName) ? null : equipmentDispName);
+            workOrder.setPriority("1"); // 高优先级
+            workOrder.setOrderStatus("0"); // 新建
+            workOrder.setReportTime(new Date());
+            // 报修人为点检人
+            workOrder.setReporterId(reporterId);
+            workOrder.setReporterName(reporterName);
+            // 工单操作历史的操作人（createBy）为点检人
+            workOrder.setCreateBy(reporterName);
+            workOrder.setRemark("由点检任务[" + db.getTaskNo() + "]自动生成(点检任务ID:" + task.getTaskId() + ")");
+            dmsWorkOrderService.insertWorkOrder(workOrder);
+            return true;
+        }
+        catch (Exception e)
+        {
+            log.error("点检任务[{}]生成整改工单失败: {}", db.getTaskNo(), e.getMessage());
+            return false;
+        }
     }
 
     /**

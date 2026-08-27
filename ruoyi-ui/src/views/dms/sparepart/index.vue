@@ -245,6 +245,7 @@
 
 <script setup name="DmsSparePart">
 import { listSparepart, getSparepart, addSparepart, updateSparepart, delSparepart } from '@/api/dms/sparepart'
+import { fetchAllPages, downloadCsv } from '@/utils/csvExport'
 import SupplierPicker from '@/components/SupplierPicker/index.vue'
 import DmsSparePartViewDrawer from './view.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
@@ -372,7 +373,17 @@ function submitForm() {
   })
 }
 function handleDelete(row) { const partIds = row.partId || ids.value; proxy.$modal.confirm('确认删除编号为"' + partIds + '"的数据？').then(() => delSparepart(partIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
-function handleExport() { proxy.download('dms/sparepart/export', { ...queryParams.value }, `sparepart_${new Date().getTime()}.xlsx`) }
+/** 导出备件台账（与列表口径一致：含筛选条件，导出全部页数据） */
+async function handleExport() {
+  const rows = await fetchAllPages(listSparepart, queryParams.value)
+  if (!rows.length) { proxy.$modal.msgWarning('当前筛选下无数据可导出'); return }
+  const headers = ['备件编号', '备件名称', '备件类别', '规格型号', '单位', '供应商', '库存下限', '库存上限', '状态', '备注']
+  downloadCsv(`sparepart_${new Date().getTime()}`, headers, rows.map(i => [
+    i.partCode, i.partName, partTypeLabel(i.partType), i.specModel, unitLabel(i.unit), i.supplier || '',
+    i.stockMin != null ? i.stockMin : '', i.stockMax != null ? i.stockMax : '',
+    i.status === '0' ? '正常' : '停用', i.remark || ''
+  ]))
+}
 function cancel() { open.value = false; reset() }
 
 /** 打开供应商选择弹窗 */

@@ -1,9 +1,9 @@
 <template>
   <div class="app-container dms-partalert-page">
-    <!-- 统计卡片 -->
+    <!-- 统计卡片（可点击，过滤下方列表） -->
     <el-row :gutter="16" class="mb8">
       <el-col :span="6">
-        <el-card shadow="hover" class="alert-card alert-danger">
+        <el-card shadow="hover" class="alert-card alert-danger" :class="{ 'is-active': activeStatus === 'all' }" @click="handleCardClick('all')">
           <div class="alert-card-body">
             <el-icon class="alert-icon"><WarningFilled /></el-icon>
             <div>
@@ -14,7 +14,7 @@
         </el-card>
       </el-col>
       <el-col :span="6">
-        <el-card shadow="hover" class="alert-card alert-warning">
+        <el-card shadow="hover" class="alert-card alert-warning" :class="{ 'is-active': activeStatus === 'shortage' }" @click="handleCardClick('shortage')">
           <div class="alert-card-body">
             <el-icon class="alert-icon"><CircleCloseFilled /></el-icon>
             <div>
@@ -25,7 +25,7 @@
         </el-card>
       </el-col>
       <el-col :span="6">
-        <el-card shadow="hover" class="alert-card alert-info">
+        <el-card shadow="hover" class="alert-card alert-info" :class="{ 'is-active': activeStatus === 'low' }" @click="handleCardClick('low')">
           <div class="alert-card-body">
             <el-icon class="alert-icon"><InfoFilled /></el-icon>
             <div>
@@ -36,7 +36,7 @@
         </el-card>
       </el-col>
       <el-col :span="6">
-        <el-card shadow="hover" class="alert-card alert-success">
+        <el-card shadow="hover" class="alert-card alert-success" :class="{ 'is-active': activeStatus === 'over' }" @click="handleCardClick('over')">
           <div class="alert-card-body">
             <el-icon class="alert-icon"><Goods /></el-icon>
             <div>
@@ -134,6 +134,7 @@
 
 <script setup name="DmsPartAlert">
 import { listPartAlert, delPartAlert } from '@/api/dms/partalert'
+import { fetchAllPages, downloadCsv } from '@/utils/csvExport'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { Search, Filter, RefreshLeft, Delete, Download } from '@element-plus/icons-vue'
 
@@ -152,6 +153,8 @@ const alertCount = ref(0)
 const shortageCount = ref(0)
 const lowStockCount = ref(0)
 const overStockCount = ref(0)
+/** 当前卡片筛选的预警状态：all=全部 shortage=库存不足 low=低于下限 over=高于上限 */
+const activeStatus = ref('all')
 
 const defaultColumns = {
   partCode: { label: '备件编号', visible: true },
@@ -200,23 +203,44 @@ const { queryParams } = toRefs(data)
 function getList() {
   loading.value = true
   listPartAlert(queryParams.value).then(res => {
-    list.value = res.rows
-    total.value = res.total
+    // 兜底过滤：正常状态的数据不参与预警展示（如库存恰好等于下限）
+    const rows = (res.rows || []).filter(i => getAlertKey(i) !== 'normal')
+    list.value = rows
+    total.value = rows.length
     loading.value = false
     applySavedWidths()
     // 统计
-    alertCount.value = res.total
-    shortageCount.value = res.rows.filter(i => (i.currentStock != null ? Number(i.currentStock) : 0) <= 0).length
-    lowStockCount.value = res.rows.filter(i => {
-      const s = i.currentStock != null ? Number(i.currentStock) : 0
-      const min = i.stockMin != null ? Number(i.stockMin) : 0
-      return s > 0 && s <= min
-    }).length
-    overStockCount.value = res.rows.filter(i => {
-      const s = i.currentStock != null ? Number(i.currentStock) : 0
-      const max = i.stockMax != null ? Number(i.stockMax) : 0
-      return max > 0 && s >= max
-    }).length
+    alertCount.value = rows.length
+    shortageCount.value = rows.filter(i => getAlertKey(i) === 'shortage').length
+    lowStockCount.value = rows.filter(i => getAlertKey(i) === 'low').length
+    overStockCount.value = rows.filter(i => getAlertKey(i) === 'over').length
+  })
+}
+
+/** 预警状态判定：shortage=库存不足(=0) low=低于下限(<min，不含等于) over=高于上限(>=max) */
+function getAlertKey(row) {
+  const s = row.currentStock != null ? Number(row.currentStock) : 0
+  const min = row.stockMin != null ? Number(row.stockMin) : 0
+  const max = row.stockMax != null ? Number(row.stockMax) : 0
+  if (s <= 0) return 'shortage'
+  if (min > 0 && s < min) return 'low'
+  if (max > 0 && s >= max) return 'over'
+  return 'normal'
+}
+
+/** 点击卡片按预警状态过滤列表 */
+function handleCardClick(status) {
+  activeStatus.value = activeStatus.value === status ? 'all' : status
+  applyCardFilter()
+}
+
+/** 根据卡片选中状态过滤列表数据 */
+function applyCardFilter() {
+  listPartAlert(queryParams.value).then(res => {
+    // 兜底过滤：正常状态的数据不参与预警展示
+    const rows = (res.rows || []).filter(i => getAlertKey(i) !== 'normal')
+    list.value = activeStatus.value === 'all' ? rows : rows.filter(i => getAlertKey(i) === activeStatus.value)
+    total.value = list.value.length
   })
 }
 function handleQuery() { queryParams.value.pageNum = 1; getList() }
@@ -224,12 +248,10 @@ function resetQuery() { queryParams.value.partCode = undefined; queryParams.valu
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.partId); multiple.value = !selection.length }
 
 function getAlertType(row) {
-  const s = row.currentStock != null ? Number(row.currentStock) : 0
-  const min = row.stockMin != null ? Number(row.stockMin) : 0
-  const max = row.stockMax != null ? Number(row.stockMax) : 0
-  if (s <= 0) return 'danger'
-  if (min > 0 && s <= min) return 'warning'
-  if (max > 0 && s >= max) return 'success'
+  const k = getAlertKey(row)
+  if (k === 'shortage') return 'danger'
+  if (k === 'low') return 'warning'
+  if (k === 'over') return 'success'
   return 'info'
 }
 function alertBadgeClass(row) {
@@ -240,25 +262,33 @@ function alertBadgeClass(row) {
   return 'gray'
 }
 function getAlertText(row) {
-  const s = row.currentStock != null ? Number(row.currentStock) : 0
-  const min = row.stockMin != null ? Number(row.stockMin) : 0
-  const max = row.stockMax != null ? Number(row.stockMax) : 0
-  if (s <= 0) return '库存不足'
-  if (min > 0 && s <= min) return '低于下限'
-  if (max > 0 && s >= max) return '高于上限'
+  const k = getAlertKey(row)
+  if (k === 'shortage') return '库存不足'
+  if (k === 'low') return '低于下限'
+  if (k === 'over') return '高于上限'
   return '正常'
 }
 function getStockClass(row) {
-  const s = row.currentStock != null ? Number(row.currentStock) : 0
-  const min = row.stockMin != null ? Number(row.stockMin) : 0
-  const max = row.stockMax != null ? Number(row.stockMax) : 0
-  if (s <= 0) return 'stock-danger'
-  if (min > 0 && s <= min) return 'stock-warning'
-  if (max > 0 && s >= max) return 'stock-over'
+  const k = getAlertKey(row)
+  if (k === 'shortage') return 'stock-danger'
+  if (k === 'low') return 'stock-warning'
+  if (k === 'over') return 'stock-over'
   return ''
 }
 
-function handleExport() { proxy.download('dms/sparepart/alert/export', { ...queryParams.value }, `partalert_${new Date().getTime()}.xlsx`) }
+/** 导出预警数据（与列表口径一致：含筛选条件、卡片过滤、排除正常状态，导出全部页数据） */
+async function handleExport() {
+  const all = await fetchAllPages(listPartAlert, queryParams.value)
+  let rows = all.filter(i => getAlertKey(i) !== 'normal')
+  if (activeStatus.value !== 'all') rows = rows.filter(i => getAlertKey(i) === activeStatus.value)
+  if (!rows.length) { proxy.$modal.msgWarning('当前筛选下无数据可导出'); return }
+  const headers = ['备件编号', '备件名称', '备件类别', '规格型号', '单位', '当前库存', '库存下限', '库存上限', '预警状态', '存放位置', '供应商']
+  downloadCsv(`partalert_${new Date().getTime()}`, headers, rows.map(i => [
+    i.partCode, i.partName, partTypeLabel(i.partType), i.specModel, unitLabel(i.unit),
+    i.currentStock != null ? i.currentStock : 0, i.stockMin != null ? i.stockMin : '', i.stockMax != null ? i.stockMax : '',
+    getAlertText(i), i.storageLocation || '', i.supplier || ''
+  ]))
+}
 function handleDelete(row) {
   const partIds = row.partId || ids.value
   proxy.$modal.confirm('确认删除选中的备件库存预警？\n删除后将清除该备件的安全库存上下限设置。').then(() => delPartAlert(partIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {})
@@ -360,7 +390,9 @@ getList()
 @media (max-width:720px) { .dms-partalert-page .filter-card .filter-bar { grid-template-columns:1fr; } .dms-partalert-page .toolbar { flex-wrap:wrap; gap:10px; } }
 
 /* ===== Alert Stat Cards ===== */
-.dms-partalert-page .alert-card { border-radius: var(--r-lg); }
+.dms-partalert-page .alert-card { border-radius: var(--r-lg); cursor: pointer; transition: transform .15s var(--ease-out), box-shadow .15s var(--ease-out); }
+.dms-partalert-page .alert-card:hover { transform: translateY(-2px); }
+.dms-partalert-page .alert-card.is-active { box-shadow: 0 0 0 2px var(--brand-500) inset, 0 4px 12px -2px rgba(99,102,241,.35); }
 .dms-partalert-page .alert-card-body { display: flex; align-items: center; gap: 12px; }
 .dms-partalert-page .alert-icon { font-size: 36px; }
 .dms-partalert-page .alert-num { font-size: 24px; font-weight: bold; }

@@ -156,6 +156,33 @@
               </el-row>
             </div>
           </section>
+          <!-- 巡检项目预览卡片：选择路线后自动生成 -->
+          <section class="rd-card" v-if="addPreviewGroups.length > 0">
+            <div class="rd-card-header" @click="toggleCard('add_preview')">
+              <div class="rd-card-title">
+                <span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></span>
+                巡检项目预览
+                <el-tag size="small" type="info" effect="plain" style="margin-left: 4px">{{ addPreviewTotal }}项</el-tag>
+              </div>
+              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.add_preview }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.add_preview">
+              <div v-for="(dg, di) in addPreviewGroups" :key="di" class="preview-device">
+                <div class="preview-device-title">
+                  <span class="preview-device-no">{{ di + 1 }}</span>
+                  <span class="preview-device-name">{{ dg.equipmentName }}</span>
+                  <el-tag size="small" type="info" effect="plain">{{ dg.items.length }}项</el-tag>
+                </div>
+                <div class="preview-items">
+                  <div v-for="(it, ii) in dg.items" :key="ii" class="preview-item">
+                    <span class="preview-item-no">{{ ii + 1 }}</span>
+                    <span class="preview-item-name">{{ it.item }}</span>
+                  </div>
+                </div>
+              </div>
+              <div class="preview-tip">以上为该路线的点检项配置，通用点检项已合并到每台设备；执行时由点检人逐台填写巡检内容。</div>
+            </div>
+          </section>
           <!-- 其他信息卡片 -->
           <section class="rd-card">
             <div class="rd-card-header" @click="toggleCard('add_other')">
@@ -203,46 +230,39 @@
               <div class="rd-item"><span class="rd-label">任务编号</span><div class="rd-value">{{ viewForm.taskNo || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">路线名称</span><div class="rd-value">{{ viewForm.routeName || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">计划日期</span><div class="rd-value">{{ viewForm.planDate || '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label">点检人</span><div class="rd-value">{{ viewForm.inspectorName || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">状态</span><div class="rd-value"><dict-tag :options="dms_inspection_status" :value="viewForm.taskStatus" /></div></div>
-              <div class="rd-item"><span class="rd-label">异常项数</span><div class="rd-value">{{ viewForm.abnormalCount || 0 }}</div></div>
+              <div class="rd-item"><span class="rd-label">异常项数</span><div class="rd-value">{{ viewForm.abnormalCount != null ? viewForm.abnormalCount : 0 }}</div></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 执行信息卡片 -->
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('insp_exec')">
+            <div class="rd-card-title">
+              <span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>
+              执行信息
+            </div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.insp_exec }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.insp_exec">
+            <div class="rd-grid">
+              <div class="rd-item"><span class="rd-label">点检人</span><div class="rd-value">{{ viewForm.inspectorName || '-' }}</div></div>
+            </div>
+            <div class="rd-grid" style="margin-top: 8px">
               <div class="rd-item"><span class="rd-label">开始时间</span><div class="rd-value">{{ viewForm.startTime || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">完成时间</span><div class="rd-value">{{ viewForm.completeTime || '-' }}</div></div>
             </div>
           </div>
         </section>
 
-        <!-- 通用检查项卡片 -->
-        <section class="rd-card" v-if="viewGroups.common.length > 0">
-          <div class="rd-card-header" @click="toggleCard('insp_common')">
-            <div class="rd-card-title">
-              <span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg></span>
-              通用检查项
-            </div>
-            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.insp_common }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
-          </div>
-          <div class="rd-card-body" v-show="!collapsedCards.insp_common">
-            <el-table :data="viewGroups.common" border size="small" @header-dragend="onHeaderDragEnd">
-              <el-table-column label="序号" width="85" align="center" type="index" />
-              <el-table-column label="检查项" prop="item" />
-              <el-table-column label="结果" width="120" align="center">
-                <template #default="scope">
-                  <el-tag v-if="scope.row.abnormal" type="danger" size="small">异常</el-tag>
-                  <span v-else-if="scope.row.value !== undefined">{{ scope.row.value }}{{ scope.row.unit ? ' ' + scope.row.unit : '' }}</span>
-                  <el-tag v-else type="success" size="small">正常</el-tag>
-                </template>
-              </el-table-column>
-              <el-table-column label="异常说明" prop="abnormalDesc" show-overflow-tooltip />
-            </el-table>
-          </div>
-        </section>
-
-        <!-- 设备检查项卡片 -->
+        <!-- 设备检查项卡片（含合并后的通用检查项） -->
         <section class="rd-card" v-for="(dg, di) in viewGroups.devices" :key="di">
           <div class="rd-card-header" @click="toggleCard('insp_device_' + di)">
             <div class="rd-card-title">
               <span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></span>
               {{ dg.equipmentName }}
+              <el-tag size="small" type="info" effect="plain" style="margin-left: 4px">{{ dg.items.length }}项</el-tag>
             </div>
             <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards['insp_device_' + di] }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
           </div>
@@ -250,10 +270,13 @@
             <el-table :data="dg.items" border size="small" @header-dragend="onHeaderDragEnd">
               <el-table-column label="序号" width="85" align="center" type="index" />
               <el-table-column label="检查项" prop="item" />
-              <el-table-column label="结果" width="120" align="center">
+              <el-table-column label="巡检内容" prop="value" min-width="160" show-overflow-tooltip>
+                <template #default="scope">{{ scope.row.value || '-' }}</template>
+              </el-table-column>
+              <el-table-column label="结果" width="100" align="center">
                 <template #default="scope">
-                  <el-tag v-if="scope.row.abnormal" type="danger" size="small">异常</el-tag>
-                  <span v-else-if="scope.row.value !== undefined">{{ scope.row.value }}{{ scope.row.unit ? ' ' + scope.row.unit : '' }}</span>
+                  <el-tag v-if="scope.row.abnormal === undefined" type="info" size="small">待点检</el-tag>
+                  <el-tag v-else-if="scope.row.abnormal" type="danger" size="small">异常</el-tag>
                   <el-tag v-else type="success" size="small">正常</el-tag>
                 </template>
               </el-table-column>
@@ -262,8 +285,8 @@
           </div>
         </section>
 
-        <!-- 点检照片卡片 -->
-        <section class="rd-card" v-if="viewForm.photoUrls">
+        <!-- 点检照片卡片（执行中/已完成时显示） -->
+        <section class="rd-card" v-if="viewForm.taskStatus === '1' || viewForm.taskStatus === '2'">
           <div class="rd-card-header" @click="toggleCard('insp_photos')">
             <div class="rd-card-title">
               <span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></span>
@@ -272,9 +295,12 @@
             <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.insp_photos }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
           </div>
           <div class="rd-card-body" v-show="!collapsedCards.insp_photos">
-            <div v-for="(url, i) in parsePhotos(viewForm.photoUrls)" :key="i" style="display: inline-block; margin-right: 8px">
-              <el-image :src="url" style="width: 120px; height: 120px" fit="cover" :preview-src-list="parsePhotos(viewForm.photoUrls)" />
+            <div v-if="parsePhotos(viewForm.photoUrls).length > 0">
+              <div v-for="(url, i) in parsePhotos(viewForm.photoUrls)" :key="i" style="display: inline-block; margin-right: 8px; margin-bottom: 8px">
+                <el-image :src="url" style="width: 120px; height: 120px; border-radius: 8px" fit="cover" :preview-src-list="parsePhotos(viewForm.photoUrls)" :initial-index="i" preview-teleported :z-index="3000" />
+              </div>
             </div>
+            <div v-else style="color: #999; font-size: 13px; padding: 8px 0">未上传照片</div>
           </div>
         </section>
       </div>
@@ -309,60 +335,13 @@
           </div>
         </section>
 
-        <!-- 通用检查项卡片 -->
-        <section class="rd-card" v-if="execGroups.common.length > 0">
-          <div class="rd-card-header" @click="toggleCard('exec_common')">
-            <div class="rd-card-title">
-              <span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg></span>
-              通用检查项
-            </div>
-            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.exec_common }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
-          </div>
-          <div class="rd-card-body" v-show="!collapsedCards.exec_common">
-            <el-table :data="execGroups.common" border style="width: 100%" @header-dragend="onHeaderDragEnd">
-              <el-table-column label="序号" width="85" align="center" type="index" />
-              <el-table-column label="检查项" prop="item" min-width="180">
-                <template #default="scope"><span style="font-weight: 500">{{ scope.row.item }}</span></template>
-              </el-table-column>
-              <el-table-column label="类型" width="90" align="center">
-                <template #default="scope"><el-tag size="small" :type="scope.row.type === 'number' ? 'warning' : 'info'">{{ typeText(scope.row.type) }}</el-tag></template>
-              </el-table-column>
-              <el-table-column label="检查结果" min-width="260" align="center">
-                <template #default="scope">
-                  <div v-if="scope.row.type === 'check'" style="display: flex; align-items: center; justify-content: center; gap: 12px">
-                    <el-radio-group v-model="scope.row.result">
-                      <el-radio-button value="ok">正常</el-radio-button>
-                      <el-radio-button value="abnormal">异常</el-radio-button>
-                    </el-radio-group>
-                  </div>
-                  <div v-else-if="scope.row.type === 'number'" style="display: flex; align-items: center; justify-content: center; gap: 10px">
-                    <el-input-number v-model="scope.row.value" :controls="false" style="width: 140px" placeholder="输入数值" />
-                    <span style="color: #999; min-width: 30px">{{ scope.row.unit }}</span>
-                    <el-checkbox v-model="scope.row.abnormal">异常</el-checkbox>
-                  </div>
-                  <div v-else style="display: flex; flex-direction: column; gap: 6px">
-                    <el-input v-model="scope.row.value" placeholder="输入文本" />
-                    <el-checkbox v-model="scope.row.abnormal">标记为异常</el-checkbox>
-                  </div>
-                </template>
-              </el-table-column>
-              <el-table-column label="异常说明" min-width="240">
-                <template #default="scope">
-                  <el-input v-model="scope.row.abnormalDesc" type="textarea" :rows="2"
-                    :placeholder="(scope.row.abnormal || scope.row.result === 'abnormal') ? '必填：请描述异常情况' : '无异常时可不填'"
-                    :required="scope.row.abnormal || scope.row.result === 'abnormal'" />
-                </template>
-              </el-table-column>
-            </el-table>
-          </div>
-        </section>
-
-        <!-- 设备检查项卡片 -->
+        <!-- 设备检查项卡片（含合并后的通用检查项） -->
         <section class="rd-card" v-for="(dg, di) in execGroups.devices" :key="di">
           <div class="rd-card-header" @click="toggleCard('exec_device_' + di)">
             <div class="rd-card-title">
               <span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></span>
               {{ dg.equipmentName }}
+              <el-tag size="small" type="info" effect="plain" style="margin-left: 4px">{{ dg.items.length }}项</el-tag>
             </div>
             <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards['exec_device_' + di] }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
           </div>
@@ -372,40 +351,28 @@
               <el-table-column label="检查项" prop="item" min-width="180">
                 <template #default="scope"><span style="font-weight: 500">{{ scope.row.item }}</span></template>
               </el-table-column>
-              <el-table-column label="类型" width="90" align="center">
-                <template #default="scope"><el-tag size="small" :type="scope.row.type === 'number' ? 'warning' : 'info'">{{ typeText(scope.row.type) }}</el-tag></template>
-              </el-table-column>
-              <el-table-column label="检查结果" min-width="260" align="center">
+              <el-table-column label="巡检内容" min-width="300">
                 <template #default="scope">
-                  <div v-if="scope.row.type === 'check'" style="display: flex; align-items: center; justify-content: center; gap: 12px">
-                    <el-radio-group v-model="scope.row.result">
-                      <el-radio-button value="ok">正常</el-radio-button>
-                      <el-radio-button value="abnormal">异常</el-radio-button>
-                    </el-radio-group>
-                  </div>
-                  <div v-else-if="scope.row.type === 'number'" style="display: flex; align-items: center; justify-content: center; gap: 10px">
-                    <el-input-number v-model="scope.row.value" :controls="false" style="width: 140px" placeholder="输入数值" />
-                    <span style="color: #999; min-width: 30px">{{ scope.row.unit }}</span>
-                    <el-checkbox v-model="scope.row.abnormal">异常</el-checkbox>
-                  </div>
-                  <div v-else style="display: flex; flex-direction: column; gap: 6px">
-                    <el-input v-model="scope.row.value" placeholder="输入文本" />
-                    <el-checkbox v-model="scope.row.abnormal">标记为异常</el-checkbox>
-                  </div>
+                  <el-input v-model="scope.row.value" type="textarea" :rows="2" placeholder="请填写实际巡检情况，如：运行正常、无渗漏异响" />
                 </template>
               </el-table-column>
-              <el-table-column label="异常说明" min-width="240">
+              <el-table-column label="是否异常" width="90" align="center">
+                <template #default="scope">
+                  <el-checkbox v-model="scope.row.abnormal" />
+                </template>
+              </el-table-column>
+              <el-table-column label="异常说明" min-width="220">
                 <template #default="scope">
                   <el-input v-model="scope.row.abnormalDesc" type="textarea" :rows="2"
-                    :placeholder="(scope.row.abnormal || scope.row.result === 'abnormal') ? '必填：请描述异常情况' : '无异常时可不填'"
-                    :required="scope.row.abnormal || scope.row.result === 'abnormal'" />
+                    :placeholder="scope.row.abnormal ? '必填：请描述异常情况' : '无异常时可不填'"
+                    :required="scope.row.abnormal" />
                 </template>
               </el-table-column>
             </el-table>
           </div>
         </section>
 
-        <div v-if="execGroups.common.length === 0 && execGroups.devices.length === 0" class="rd-empty" style="margin-bottom: 16px">
+        <div v-if="execGroups.devices.length === 0" class="rd-empty" style="margin-bottom: 16px">
           <svg class="rd-empty-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
           <p class="rd-empty-text">该路线未配置点检项，请先在巡检路线中配置</p>
         </div>
@@ -500,7 +467,7 @@
         <el-descriptions :column="1" border>
           <el-descriptions-item label="待执行">任务已创建，等待点检人执行。可新增、删除</el-descriptions-item>
           <el-descriptions-item label="执行中">点检人已开始执行点检，系统记录开始时间。可继续填写检查结果</el-descriptions-item>
-          <el-descriptions-item label="已完成">点检完成，提交检查结果后自动完成。若有异常项，系统自动生成整改工单</el-descriptions-item>
+          <el-descriptions-item label="已完成">点检完成，提交检查结果后自动完成。若有异常项，系统按异常设备自动生成整改工单（一个设备一张工单）</el-descriptions-item>
         </el-descriptions>
 
         <h4>三、重点业务规则</h4>
@@ -508,7 +475,7 @@
           <el-col :span="12">
             <div class="highlight-card highlight-danger">
               <div class="highlight-card-title">异常自动生成工单</div>
-              <div class="highlight-card-body">点检结果中标记为异常的检查项，提交后系统<strong>自动生成整改工单</strong>，无需手动创建</div>
+              <div class="highlight-card-body">仅存在异常项的设备生成工单（<strong>一个设备一张</strong>），工单只带入该设备的异常项，报修人为点检人</div>
             </div>
           </el-col>
           <el-col :span="12">
@@ -543,7 +510,7 @@
           <el-timeline-item type="info" :hollow="true">
             <strong>填写结果：</strong>逐项填写检查结果（正常/异常/数值/文本），异常项填写说明，可上传现场照片</el-timeline-item>
           <el-timeline-item type="success" :hollow="true">
-            <strong>提交完成：</strong>提交后任务完成。若有异常项，系统自动生成整改工单转入工单管理</el-timeline-item>
+            <strong>提交完成：</strong>提交后任务完成。若有异常项，系统按异常设备自动生成整改工单（报修人为点检人），转入工单管理</el-timeline-item>
         </el-timeline>
       </div>
       <template #footer>
@@ -555,13 +522,12 @@
 
 <script setup name="DmsInspectionTask">
 import { Plus, CircleClose, Search, Filter, RefreshLeft, ArrowDown } from '@element-plus/icons-vue'
-import { listTask, getTask, addTask, updateTask, delTask, completeTask, startTask } from '@/api/dms/inspection'
-import { listRoute } from '@/api/dms/inspection'
+import { listTask, getTask, addTask, updateTask, delTask, completeTask, startTask, listRoute, getRoute } from '@/api/dms/inspection'
 import UserPicker from '@/components/UserPicker/index.vue'
 import { getToken } from '@/utils/auth'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
-const { collapsedCards, toggleCard } = useDetailCard(['add_basic', 'add_other', 'insp_basic', 'insp_common', 'insp_photos', 'exec_basic', 'exec_common', 'exec_photos'])
+const { collapsedCards, toggleCard } = useDetailCard(['add_basic', 'add_preview', 'add_other', 'insp_basic', 'insp_exec', 'insp_photos', 'exec_basic', 'exec_photos'])
 
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('dms_inspection_task_index')
@@ -642,6 +608,9 @@ const viewGroups = ref({ common: [], devices: [] })
 const execForm = ref({})
 const execGroups = ref({ common: [], devices: [] })
 const execPhotoList = ref([])
+// 新增弹窗：巡检项目预览（选择路线后自动生成）
+const addPreviewGroups = ref([])
+const addPreviewTotal = computed(() => addPreviewGroups.value.reduce((s, d) => s + d.items.length, 0))
 const uploadUrl = ref(import.meta.env.VITE_APP_BASE_API + '/common/upload')
 const uploadHeaders = ref({ Authorization: 'Bearer ' + getToken() })
 
@@ -663,6 +632,7 @@ function handleSelectionChange(selection) { ids.value = selection.map(i => i.tas
 
 function reset() {
   form.value = { routeId: undefined, routeName: undefined, planDate: new Date().toISOString().slice(0, 10), inspectorId: undefined, inspectorName: undefined, taskStatus: '0', remark: undefined }
+  addPreviewGroups.value = []
   proxy.resetForm('taskRef')
 }
 function handleAdd() { reset(); open.value = true; title.value = '新增点检任务' }
@@ -725,11 +695,25 @@ function confirmRoutePicker() {
   form.value.routeId = routePickerSelectedRow.value.routeId
   form.value.routeName = routePickerSelectedRow.value.routeName
   routePickerOpen.value = false
+  loadAddPreview(form.value.routeId)
+}
+/** 加载路线模板生成巡检项目预览（通用项合并到每台设备，与执行界面一致） */
+function loadAddPreview(routeId) {
+  addPreviewGroups.value = []
+  if (!routeId) return
+  getRoute(routeId).then(r => {
+    const route = r.data
+    if (!route || !route.inspectionItems) return
+    try {
+      addPreviewGroups.value = buildGroups(JSON.parse(route.inspectionItems)).devices
+    } catch (e) { addPreviewGroups.value = [] }
+  }).catch(() => {})
 }
 /** 清除巡检路线 */
 function clearRoute() {
   form.value.routeId = undefined
   form.value.routeName = undefined
+  addPreviewGroups.value = []
 }
 /** 周期类型标签 */
 function cycleTypeLabel(val) {
@@ -764,19 +748,50 @@ function handleView(row) {
   getTask(row.taskId).then(res => {
     viewForm.value = res.data
     viewGroups.value = { common: [], devices: [] }
+    let hasResult = false
+    let parsed = null
     if (res.data.resultData) {
-      try {
-        const parsed = JSON.parse(res.data.resultData)
-        // 兼容旧格式（扁平数组）
-        if (Array.isArray(parsed)) {
-          viewGroups.value = { common: parsed, devices: [] }
-        } else {
-          viewGroups.value = {
-            common: parsed.common || [],
-            devices: parsed.devices || []
-          }
+      try { parsed = JSON.parse(res.data.resultData) } catch (e) { parsed = null }
+    }
+    if (parsed) {
+      if (Array.isArray(parsed)) {
+        // 旧扁平格式：合成一个通用分组
+        viewGroups.value = { common: [], devices: [{ equipmentId: undefined, equipmentName: '通用检查项', items: parsed.map(toViewItem) }] }
+      } else {
+        // 新格式 common 为空；旧格式 common 有值时合并到每台设备明细开头
+        const commonItems = (parsed.common || []).map(toViewItem)
+        const hasCommonFilled = commonItems.some(it => it.value !== undefined || it.abnormal !== undefined)
+        viewGroups.value = {
+          common: [],
+          devices: (parsed.devices || []).map(d => ({
+            equipmentId: d.equipmentId,
+            equipmentName: d.equipmentName,
+            items: hasCommonFilled
+              ? [...commonItems.map(c => ({ ...c })), ...(d.items || []).map(toViewItem)]
+              : (d.items || []).map(toViewItem)
+          }))
         }
-      } catch (e) { viewGroups.value = { common: [], devices: [] } }
+        // 只有通用项、没有设备结构时，合成通用分组
+        if (viewGroups.value.devices.length === 0 && commonItems.length > 0) {
+          viewGroups.value.devices = [{ equipmentId: undefined, equipmentName: '通用检查项', items: commonItems }]
+        }
+      }
+      // 有填写痕迹（巡检内容或结果判定）即视为已执行
+      hasResult = viewGroups.value.devices.some(dg => (dg.items || []).some(it =>
+        (it.value !== undefined && it.value !== null && it.value !== '') || it.abnormal !== undefined
+      ))
+    }
+    // 无结果（待执行/执行中）时，从路线详情取模板展示（结果显示"待点检"）
+    if (res.data.routeId && !hasResult) {
+      getRoute(res.data.routeId).then(r => {
+        const route = r.data
+        if (!route || !route.inspectionItems) return
+        try {
+          const built = buildGroups(JSON.parse(route.inspectionItems))
+          built.devices.forEach(dg => dg.items.forEach(it => { it.abnormal = undefined; it.value = undefined }))
+          viewGroups.value = built
+        } catch (e) { /* 忽略解析失败 */ }
+      }).catch(() => {})
     }
     viewOpen.value = true
   })
@@ -791,71 +806,112 @@ function handleExecute(row) {
       execPhotoList.value = []
       execGroups.value = { common: [], devices: [] }
 
-      // 从路线获取点检项模板
-      const route = routeOptions.value.find(r => r.routeId === res.data.routeId)
-      if (route && route.inspectionItems) {
-        try {
-          const parsed = JSON.parse(route.inspectionItems)
-          // 兼容旧格式（扁平数组）
-          if (Array.isArray(parsed)) {
-            execGroups.value = { common: initItems(parsed), devices: [] }
-          } else {
-            execGroups.value = {
-              common: initItems(parsed.common || []),
-              devices: (parsed.devices || []).map(d => ({
-                equipmentId: d.equipmentId,
-                equipmentName: d.equipmentName,
-                items: initItems(d.items || [])
-              }))
-            }
-          }
-        } catch (e) { execGroups.value = { common: [], devices: [] } }
-      }
-      // 如果没有模板，给一个默认通用项
-      if (execGroups.value.common.length === 0 && execGroups.value.devices.length === 0) {
-        execGroups.value.common = [{ item: '通用检查', type: 'check', unit: '', result: 'ok', value: undefined, abnormal: false, abnormalDesc: '' }]
-      }
+      // 从路线获取点检项模板（实时调用详情接口，避免使用页面加载时的过期缓存）
+      const loadTemplate = res.data.routeId
+        ? getRoute(res.data.routeId).then(r => r.data)
+        : Promise.resolve(null)
 
-      // 恢复之前的结果数据
-      if (res.data.resultData) {
-        try {
-          const prev = JSON.parse(res.data.resultData)
-          if (Array.isArray(prev)) {
-            prev.forEach((r, i) => { if (execGroups.value.common[i]) restoreItem(execGroups.value.common[i], r) })
-          } else {
-            (prev.common || []).forEach((r, i) => { if (execGroups.value.common[i]) restoreItem(execGroups.value.common[i], r) })
-            ;(prev.devices || []).forEach((d, di) => {
-              if (execGroups.value.devices[di]) {
-                d.items.forEach((r, ii) => { if (execGroups.value.devices[di].items[ii]) restoreItem(execGroups.value.devices[di].items[ii], r) })
-              }
-            })
-          }
-        } catch (e) {}
-      }
+      loadTemplate.then(route => {
+        if (route && route.inspectionItems) {
+          try {
+            execGroups.value = buildGroups(JSON.parse(route.inspectionItems))
+          } catch (e) { execGroups.value = { common: [], devices: [] } }
+        }
+        // 如果没有模板，给一个默认分组
+        if (execGroups.value.devices.length === 0) {
+          execGroups.value = { common: [], devices: [{ equipmentId: undefined, equipmentName: '通用检查项', items: [{ item: '通用检查', value: undefined, abnormal: false, abnormalDesc: '' }] }] }
+        }
 
-      execOpen.value = true
-      // 刷新列表以显示状态变化
-      getList()
+        // 恢复之前的结果数据
+        if (res.data.resultData) {
+          try {
+            restoreGroups(JSON.parse(res.data.resultData), execGroups.value)
+          } catch (e) {}
+        }
+
+        execOpen.value = true
+        // 刷新列表以显示状态变化
+        getList()
+      }).catch(() => {
+        // 路线获取失败时仍打开弹窗，给默认分组
+        if (execGroups.value.devices.length === 0) {
+          execGroups.value = { common: [], devices: [{ equipmentId: undefined, equipmentName: '通用检查项', items: [{ item: '通用检查', value: undefined, abnormal: false, abnormalDesc: '' }] }] }
+        }
+        execOpen.value = true
+        getList()
+      })
     })
   }).catch(() => {})
+}
+
+/**
+ * 构建点检分组：通用项合并到每台设备明细开头，执行人逐台填写
+ * 兼容旧格式（扁平数组）：合成一个"通用检查项"分组
+ */
+function buildGroups(parsed) {
+  if (Array.isArray(parsed)) {
+    return { common: [], devices: [{ equipmentId: undefined, equipmentName: '通用检查项', items: initItems(parsed) }] }
+  }
+  const commonItems = initItems(parsed.common || [])
+  const devices = (parsed.devices || []).map(d => ({
+    equipmentId: d.equipmentId,
+    equipmentName: d.equipmentName,
+    items: [...commonItems.map(c => ({ ...c })), ...initItems(d.items || [])]
+  }))
+  if (devices.length === 0 && commonItems.length > 0) {
+    return { common: [], devices: [{ equipmentId: undefined, equipmentName: '通用检查项', items: commonItems }] }
+  }
+  return { common: [], devices }
+}
+
+/**
+ * 恢复已填写的结果数据到当前分组
+ * 新格式：common 为空、devices 已含通用项，直接按索引恢复
+ * 旧格式：common 有值，恢复到每台设备前 N 项；设备项从第 N 项起恢复（错开通用项占位）
+ */
+function restoreGroups(prev, target) {
+  const isArray = Array.isArray(prev)
+  const prevCommon = isArray ? prev : (prev.common || [])
+  const prevDevices = isArray ? [] : (prev.devices || [])
+  const hasCommon = !isArray && prevCommon.length > 0
+  if (hasCommon) {
+    target.devices.forEach(dg => {
+      prevCommon.forEach((r, i) => { if (dg.items[i]) restoreItem(dg.items[i], r) })
+    })
+  }
+  prevDevices.forEach((d, di) => {
+    if (target.devices[di]) {
+      d.items.forEach((r, ii) => {
+        const t = target.devices[di].items[hasCommon ? prevCommon.length + ii : ii]
+        if (t) restoreItem(t, r)
+      })
+    }
+  })
 }
 
 function initItems(items) {
   return items.map(item => ({
     item: item.item || '',
-    type: item.type || 'check',
-    unit: item.unit || '',
-    abnormalRequired: item.abnormalRequired || false,
-    result: 'ok',
     value: undefined,
     abnormal: false,
     abnormalDesc: ''
   }))
 }
+// 详情视图项：value/abnormal 保留原值（undefined 表示待点检），兼容旧 check 类型的 result 标记
+function toViewItem(item) {
+  return {
+    item: item.item || '',
+    value: item.value,
+    abnormal: item.abnormal !== undefined
+      ? item.abnormal
+      : (item.result !== undefined ? item.result === 'abnormal' : undefined),
+    abnormalDesc: item.abnormalDesc || ''
+  }
+}
 function restoreItem(target, source) {
-  target.result = source.result || (source.abnormal ? 'abnormal' : 'ok')
+  // 兼容旧格式（check 类型用 result 标记异常）
   target.value = source.value
-  target.abnormal = source.abnormal || false
+  target.abnormal = source.abnormal || source.result === 'abnormal' || false
   target.abnormalDesc = source.abnormalDesc || ''
 }
 
@@ -870,29 +926,16 @@ function beforePhotoUpload(file) {
 
 function submitExecute() {
   let abnormalCount = 0
-  // 校验所有组的检查结果必填
-  const allGroups = [...execGroups.value.common, ...execGroups.value.devices.flatMap(d => d.items)]
+  // 校验所有设备分组的巡检内容必填
+  const allGroups = execGroups.value.devices.flatMap(d => d.items)
   for (const item of allGroups) {
-    // 检查结果必填校验
-    if (item.type === 'check') {
-      if (!item.result) {
-        proxy.$modal.msgError(`检查项「${item.item}」请选择检查结果（正常/异常）`)
-        return
-      }
-    } else if (item.type === 'number') {
-      if (item.value === undefined || item.value === null || item.value === '') {
-        proxy.$modal.msgError(`检查项「${item.item}」请填写检查数值`)
-        return
-      }
-    } else {
-      if (item.value === undefined || item.value === null || item.value === '') {
-        proxy.$modal.msgError(`检查项「${item.item}」请填写检查结果`)
-        return
-      }
+    // 巡检内容必填校验
+    if (item.value === undefined || item.value === null || item.value === '' || String(item.value).trim() === '') {
+      proxy.$modal.msgError(`检查项「${item.item}」请填写巡检内容`)
+      return
     }
     // 异常项必须有异常说明
-    const isAbnormal = item.abnormal || item.result === 'abnormal'
-    if (isAbnormal) {
+    if (item.abnormal) {
       abnormalCount++
       if (!item.abnormalDesc || item.abnormalDesc.trim() === '') {
         proxy.$modal.msgError(`检查项「${item.item}」标记为异常，请填写异常说明`)
@@ -902,21 +945,16 @@ function submitExecute() {
   }
 
   execSaving.value = true
-  // 构建嵌套结构的结果数据
+  // 构建结果数据：通用项已合并进各设备明细，common 置空
   const resultData = {
-    common: execGroups.value.common.map(item => ({
-      item: item.item, type: item.type, unit: item.unit,
-      result: item.result, value: item.value,
-      abnormal: item.abnormal || item.result === 'abnormal',
-      abnormalDesc: item.abnormalDesc
-    })),
+    common: [],
     devices: execGroups.value.devices.map(dg => ({
       equipmentId: dg.equipmentId,
       equipmentName: dg.equipmentName,
       items: dg.items.map(item => ({
-        item: item.item, type: item.type, unit: item.unit,
-        result: item.result, value: item.value,
-        abnormal: item.abnormal || item.result === 'abnormal',
+        item: item.item,
+        value: item.value,
+        abnormal: item.abnormal,
         abnormalDesc: item.abnormalDesc
       }))
     }))
@@ -936,14 +974,13 @@ function submitExecute() {
   }
 
   completeTask(submitData).then(() => {
-    proxy.$modal.msgSuccess(abnormalCount > 0 ? `点检完成，发现${abnormalCount}个异常项，已自动生成整改工单` : '点检完成，一切正常')
+    proxy.$modal.msgSuccess(abnormalCount > 0 ? `点检完成，发现${abnormalCount}个异常项，已为异常设备自动生成整改工单` : '点检完成，一切正常')
     execOpen.value = false
     execSaving.value = false
     getList()
   }).catch(() => { execSaving.value = false })
 }
 
-function typeText(type) { return { check: '打勾', number: '数值', text: '文本' }[type] || type }
 function parsePhotos(photoUrls) {
   if (!photoUrls) return []
   try {
@@ -1054,6 +1091,16 @@ getList()
 .clear-icon:hover {
   color: #909399;
 }
+/* 新增弹窗：巡检项目预览 */
+.preview-device { border: 1px solid var(--el-border-color-lighter, #e4e7ed); border-radius: 10px; padding: 12px 14px; margin-bottom: 12px; background: #fafbfc; }
+.preview-device-title { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.preview-device-no { width: 22px; height: 22px; border-radius: 50%; background: #eef2ff; color: #4f46e5; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.preview-device-name { font-size: 14px; font-weight: 600; color: #334155; }
+.preview-items { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 6px 12px; }
+.preview-item { display: flex; align-items: center; gap: 8px; padding: 6px 10px; background: #fff; border: 1px solid #f1f5f9; border-radius: 8px; font-size: 13px; color: #475569; }
+.preview-item-no { flex-shrink: 0; color: #94a3b8; font-size: 12px; min-width: 18px; text-align: right; }
+.preview-item-name { word-break: break-all; }
+.preview-tip { margin-top: 4px; font-size: 12.5px; color: #94a3b8; line-height: 1.6; }
 .status-help-content {
   max-height: 500px;
   overflow-y: auto;

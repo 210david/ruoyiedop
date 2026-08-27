@@ -28,6 +28,7 @@
         <include refid="selectFaqVo"/>
         <where> del_flag = '0'
             <if test="question != null and question != ''"> AND question LIKE CONCAT('%', #{question}, '%')</if>
+            <if test="categoryName != null and categoryName != ''"> AND category_name LIKE CONCAT('%', #{categoryName}, '%')</if>
             <if test="keywords != null and keywords != ''"> AND keywords LIKE CONCAT('%', #{keywords}, '%')</if>
             <if test="status != null and status != ''"> AND status = #{status}</if>
         </where>

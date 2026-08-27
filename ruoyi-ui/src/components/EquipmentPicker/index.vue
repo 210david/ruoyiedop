@@ -42,6 +42,7 @@
           ref="tableRef"
           v-loading="loading"
           :data="list"
+          row-key="equipmentId"
           highlight-current-row
           @row-click="onRowClick"
           @row-dblclick="onRowDblClick"
@@ -144,7 +145,6 @@ function getList() {
   listEquipment(queryParams).then(res => {
     list.value = res.rows
     total.value = res.total
-    loading.value = false
     if (props.multiple) {
       // 多选模式：回显已选中行的checkbox
       nextTick(() => {
@@ -166,6 +166,12 @@ function getList() {
         })
       }
     }
+  }).catch(() => {
+    // 请求失败（含会话过期）时清空列表，避免 loading 永久转圈
+    list.value = []
+    total.value = 0
+  }).finally(() => {
+    loading.value = false
   })
 }
 
@@ -183,9 +189,14 @@ function resetQuery() {
   handleQuery()
 }
 
-/** 行点击 - 选中（单选模式） */
-function onRowClick(row) {
-  if (props.multiple) return // 多选模式由 checkbox 处理
+/** 行点击 - 选中 */
+function onRowClick(row, column) {
+  if (props.multiple) {
+    // 多选模式：点击行任意位置切换勾选；点击勾选框列本身时由 checkbox 处理，避免双重切换
+    if (column && column.type === 'selection') return
+    if (tableRef.value) tableRef.value.toggleRowSelection(row)
+    return
+  }
   selectedId.value = row.equipmentId
   selectedRow.value = row
 }

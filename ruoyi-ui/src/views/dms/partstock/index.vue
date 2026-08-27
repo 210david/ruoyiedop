@@ -113,6 +113,7 @@
 
 <script setup name="DmsPartStock">
 import { listPartStock, delPartStock } from '@/api/dms/partstock'
+import { fetchAllPages, downloadCsv } from '@/utils/csvExport'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { Search, Filter, RefreshLeft, Delete, Download } from '@element-plus/icons-vue'
 
@@ -200,7 +201,17 @@ function getList() {
 function handleQuery() { queryParams.value.pageNum = 1; getList() }
 function resetQuery() { queryParams.value.documentCode = undefined; queryParams.value.moveType = undefined; queryParams.value.partCode = undefined; queryParams.value.supplierOrDept = undefined; proxy.resetForm('queryRef'); handleQuery() }
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.recordId); multiple.value = !selection.length }
-function handleExport() { proxy.download('dms/sparepart/partstock/export', { ...queryParams.value }, `partstock_${new Date().getTime()}.xlsx`) }
+/** 导出流水（与列表口径一致：含筛选条件，导出全部页数据） */
+async function handleExport() {
+  const rows = await fetchAllPages(listPartStock, queryParams.value)
+  if (!rows.length) { proxy.$modal.msgWarning('当前筛选下无数据可导出'); return }
+  const headers = ['单据号', '备件编号', '备件名称', '类型', '出入库类型', '供应商/部门', '数量', '变更前', '变更后', '操作人', '操作时间', '备注']
+  downloadCsv(`partstock_${new Date().getTime()}`, headers, rows.map(i => [
+    i.documentCode, i.partCode, i.partName, i.moveType === '0' ? '入库' : '出库', moveTypeLabel(i),
+    i.supplierOrDept || '', i.quantity != null ? i.quantity : '', i.beforeStock != null ? i.beforeStock : '', i.afterStock != null ? i.afterStock : '',
+    i.operatorName || '', i.createTime || '', i.remark || ''
+  ]))
+}
 function handleDelete(row) { const recordIds = row.recordId || ids.value; proxy.$modal.confirm('确认删除选中的流水记录？').then(() => delPartStock(recordIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
 
 onActivated(() => {

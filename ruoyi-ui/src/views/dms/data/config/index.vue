@@ -93,9 +93,10 @@
               <span class="badge" :class="scope.row.status === '0' ? 'green' : 'gray'"><span class="dot"></span>{{ scope.row.status === '0' ? '正常' : '停用' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
+          <el-table-column label="操作" width="180" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
               <div class="action-btn-row">
+                <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
                 <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['dms:data:config:edit']">修改</el-button>
                 <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['dms:data:config:remove']">删除</el-button>
               </div>
@@ -123,9 +124,9 @@
           <div class="rd-card-body" v-show="!collapsedCards.c2">
         <el-row>
           <el-col :span="12"><el-form-item label="关联设备" prop="equipmentId">
-            <el-select v-model="form.equipmentId" filterable clearable placeholder="请选择设备" style="width: 100%" @change="onEquipmentChange">
-              <el-option v-for="e in equipmentOptions" :key="e.equipmentId" :label="e.equipmentCode + ' - ' + e.equipmentName" :value="e.equipmentId" />
-            </el-select>
+            <el-input :model-value="form.equipmentCode" readonly placeholder="请选择设备" style="width: 100%" @click="openEquipmentPicker">
+              <template #suffix><el-icon style="cursor: pointer" @click.stop="openEquipmentPicker"><Search /></el-icon></template>
+            </el-input>
           </el-form-item></el-col>
           <el-col :span="12"><el-form-item label="设备名称" prop="equipmentName"><el-input v-model="form.equipmentName" placeholder="自动带出" disabled /></el-form-item></el-col>
         </el-row>
@@ -176,6 +177,71 @@
         <el-button @click="cancel">取 消</el-button>
       </template>
     </el-dialog>
+
+    <!-- 查看详情弹窗 -->
+    <el-dialog v-model="viewOpen" width="936px" append-to-body draggable class="rd-dialog" top="5vh">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg></div>
+          <span class="rd-detail-header-title">采集配置详情</span>
+          <div class="rd-detail-header-tags">
+            <el-tag :type="viewForm.status === '0' ? 'success' : 'info'" effect="dark">{{ viewForm.status === '0' ? '正常' : '停用' }}</el-tag>
+          </div>
+        </div>
+      </template>
+      <div class="rd-page">
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('v_equipment')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></span>设备信息</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v_equipment }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.v_equipment">
+            <div class="rd-grid">
+              <div class="rd-item"><span class="rd-label">设备编号</span><div class="rd-value">{{ viewForm.equipmentCode || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">设备名称</span><div class="rd-value">{{ viewForm.equipmentName || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">采集模式</span><div class="rd-value"><dict-tag :options="dms_collect_mode" :value="viewForm.collectMode" /></div></div>
+              <div class="rd-item"><span class="rd-label">状态</span><div class="rd-value">{{ viewForm.status === '0' ? '正常' : '停用' }}</div></div>
+              <div class="rd-item"><span class="rd-label">状态采集</span><div class="rd-value">{{ viewForm.collectStatus === '1' ? '开启' : '关闭' }}</div></div>
+              <div class="rd-item"><span class="rd-label">工时采集</span><div class="rd-value">{{ viewForm.collectHours === '1' ? '开启' : '关闭' }}</div></div>
+              <div class="rd-item"><span class="rd-label">产量采集</span><div class="rd-value">{{ viewForm.collectCount === '1' ? '开启' : '关闭' }}</div></div>
+            </div>
+          </div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('v_params')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>自定义参数配置</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v_params }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.v_params">
+            <el-table :data="viewParams" border size="small">
+              <el-table-column label="参数" width="80" align="center"><template #default="scope">参数{{ scope.$index + 1 }}</template></el-table-column>
+              <el-table-column label="参数名称" prop="name" min-width="140"><template #default="scope">{{ scope.row.name || '-' }}</template></el-table-column>
+              <el-table-column label="单位" prop="unit" width="100" align="center"><template #default="scope">{{ scope.row.unit || '-' }}</template></el-table-column>
+              <el-table-column label="告警下限" prop="alarmMin" width="110" align="center"><template #default="scope">{{ scope.row.alarmMin ?? '-' }}</template></el-table-column>
+              <el-table-column label="告警上限" prop="alarmMax" width="110" align="center"><template #default="scope">{{ scope.row.alarmMax ?? '-' }}</template></el-table-column>
+            </el-table>
+          </div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('v_other')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>其他</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v_other }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.v_other">
+            <div class="rd-grid">
+              <div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value">{{ viewForm.remark || '-' }}</div></div>
+              <div class="rd-item rd-item--full"><span class="rd-label">创建时间</span><div class="rd-value">{{ viewForm.createTime || '-' }}</div></div>
+            </div>
+          </div>
+        </section>
+      </div>
+      <template #footer>
+        <el-button @click="viewOpen = false">关 闭</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 设备选择弹框 -->
+    <equipment-picker ref="equipmentPickerRef" title="选择采集设备" @confirm="onEquipmentPickerConfirm" />
 
     <!-- 业务操作说明对话框 -->
     <el-dialog v-model="showStatusHelp" title="采集配置业务操作说明" width="720px" append-to-body>
@@ -266,9 +332,10 @@
 <script setup name="DmsDataConfig">
 import { listConfig, getConfig, addConfig, updateConfig, delConfig } from '@/api/dms/data'
 import { listEquipment } from '@/api/dms/equipment'
+import EquipmentPicker from '@/components/EquipmentPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
-const { collapsedCards, toggleCard } = useDetailCard(["c2","c1","c0"])
+const { collapsedCards, toggleCard } = useDetailCard(["c2","c1","c0","v_equipment","v_params","v_other"])
 
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('dms_data_config_index')
@@ -276,7 +343,9 @@ const { dms_collect_mode } = proxy.useDict('dms_collect_mode')
 
 const list = ref([])
 const equipmentOptions = ref([])
+const equipmentPickerRef = ref()
 const open = ref(false)
+const viewOpen = ref(false)
 const loading = ref(true)
 const showSearch = ref(true)
 const ids = ref([])
@@ -285,6 +354,15 @@ const multiple = ref(true)
 const total = ref(0)
 const title = ref('')
 const showStatusHelp = ref(false)
+const viewForm = ref({})
+const viewParams = computed(() => {
+  const f = viewForm.value || {}
+  return [
+    { name: f.param1Name, unit: f.param1Unit, alarmMin: f.param1AlarmMin, alarmMax: f.param1AlarmMax },
+    { name: f.param2Name, unit: f.param2Unit, alarmMin: f.param2AlarmMin, alarmMax: f.param2AlarmMax },
+    { name: f.param3Name, unit: f.param3Unit, alarmMin: f.param3AlarmMin, alarmMax: f.param3AlarmMax }
+  ]
+})
 
 const defaultColumns = {
   equipmentName: { label: '设备名称', visible: true },
@@ -327,33 +405,40 @@ const data = reactive({
   form: {},
   queryParams: { pageNum: 1, pageSize: 10, equipmentName: undefined, collectMode: undefined, status: undefined },
   rules: {
-    equipmentName: [{ required: true, message: '设备名称不能为空', trigger: 'blur' }],
+    equipmentId: [{ required: true, message: '请选择关联设备', trigger: 'change' }],
     collectMode: [{ required: true, message: '采集模式不能为空', trigger: 'change' }]
   }
 })
 const { queryParams, form, rules } = toRefs(data)
 
 function getList() { loading.value = true; listConfig(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false; applySavedWidths() }) }
-function getEquipmentOptions() { listEquipment({ pageNum: 1, pageSize: 9999 }).then(res => { equipmentOptions.value = res.rows }) }
-function onEquipmentChange(equipmentId) {
-  if (equipmentId) {
-    const equipment = equipmentOptions.value.find(e => e.equipmentId === equipmentId)
-    if (equipment) { form.value.equipmentName = equipment.equipmentName }
-  } else {
-    form.value.equipmentName = undefined
-  }
+function getEquipmentOptions() { listEquipment({ pageNum: 1, pageSize: 9999 }).then(res => { equipmentOptions.value = res.rows }).catch(() => { equipmentOptions.value = [] }) }
+/** 打开设备选择弹框 */
+function openEquipmentPicker() { equipmentPickerRef.value.open(form.value.equipmentId) }
+/** 设备选择确认：显示设备编号，自动带出名称 */
+function onEquipmentPickerConfirm(equipment) {
+  form.value.equipmentId = equipment.equipmentId
+  form.value.equipmentCode = equipment.equipmentCode
+  form.value.equipmentName = equipment.equipmentName
+}
+/** 根据设备ID回显编号（编辑/详情） */
+function resolveEquipmentCode(equipmentId) {
+  const equipment = equipmentOptions.value.find(e => e.equipmentId === equipmentId)
+  return equipment ? equipment.equipmentCode : ''
 }
 function handleQuery() { queryParams.value.pageNum = 1; getList() }
 function resetQuery() { proxy.resetForm('queryRef'); handleQuery() }
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.configId); single.value = selection.length !== 1; multiple.value = !selection.length }
-function reset() { form.value = { equipmentId: undefined, equipmentName: undefined, collectMode: '0', collectStatus: '1', collectHours: '1', collectCount: '0', param1Name: undefined, param1Unit: undefined, param1AlarmMin: undefined, param1AlarmMax: undefined, param2Name: undefined, param2Unit: undefined, param2AlarmMin: undefined, param2AlarmMax: undefined, param3Name: undefined, param3Unit: undefined, param3AlarmMin: undefined, param3AlarmMax: undefined, status: '0', remark: undefined }; proxy.resetForm('configRef') }
+function reset() { form.value = { equipmentId: undefined, equipmentCode: undefined, equipmentName: undefined, collectMode: '0', collectStatus: '1', collectHours: '1', collectCount: '0', param1Name: undefined, param1Unit: undefined, param1AlarmMin: undefined, param1AlarmMax: undefined, param2Name: undefined, param2Unit: undefined, param2AlarmMin: undefined, param2AlarmMax: undefined, param3Name: undefined, param3Unit: undefined, param3AlarmMin: undefined, param3AlarmMax: undefined, status: '0', remark: undefined }; proxy.resetForm('configRef') }
 function handleAdd() { reset(); open.value = true; title.value = '新增采集配置' }
-function handleUpdate(row) { reset(); getConfig(row.configId || ids.value[0]).then(res => { form.value = res.data; if (form.value.equipmentId) { const equipment = equipmentOptions.value.find(e => e.equipmentId === form.value.equipmentId); if (equipment) { form.value.equipmentName = equipment.equipmentName } } open.value = true; title.value = '修改采集配置' }) }
+function handleUpdate(row) { reset(); getConfig(row.configId || ids.value[0]).then(res => { form.value = res.data; form.value.equipmentCode = resolveEquipmentCode(form.value.equipmentId); open.value = true; title.value = '修改采集配置' }) }
+function handleView(row) { getConfig(row.configId).then(res => { viewForm.value = { ...res.data, equipmentCode: resolveEquipmentCode(res.data.equipmentId) }; viewOpen.value = true }) }
 function submitForm() {
   proxy.$refs['configRef'].validate(valid => {
     if (valid) {
-      if (form.value.configId != undefined) { updateConfig(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList() }) }
-      else { addConfig(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList() }) }
+      const submitData = { ...form.value, equipmentCode: undefined }
+      if (submitData.configId != undefined) { updateConfig(submitData).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList() }) }
+      else { addConfig(submitData).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList() }) }
     }
   })
 }

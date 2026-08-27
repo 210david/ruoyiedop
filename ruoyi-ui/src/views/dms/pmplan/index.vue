@@ -1,11 +1,17 @@
 <template>
   <div class="app-container dms-pmplan-page">
     <!-- 视图切换 -->
-    <el-radio-group v-model="viewMode" style="margin-bottom: 12px">
-      <el-radio-button value="list">列表视图</el-radio-button>
-      <el-radio-button value="calendar">日历视图</el-radio-button>
-      <el-radio-button value="timeline">时间线视图</el-radio-button>
-    </el-radio-group>
+    <div class="view-mode-bar">
+      <el-radio-group v-model="viewMode">
+        <el-radio-button value="list">列表视图</el-radio-button>
+        <el-radio-button value="calendar">日历视图</el-radio-button>
+        <el-radio-button value="timeline">时间线视图</el-radio-button>
+      </el-radio-group>
+      <button class="tip-pill" @click="showStatusHelp = true">
+        <el-icon><WarningFilled /></el-icon>
+        <span>业务操作说明</span>
+      </button>
+    </div>
 
     <!-- ===== 列表视图 ===== -->
     <template v-if="viewMode === 'list'">
@@ -148,10 +154,22 @@
     <template v-if="viewMode === 'calendar'">
       <el-calendar v-model="calendarDate">
         <template #date-cell="{ data }">
-          <div style="height: 100%; position: relative; overflow: hidden">
-            <div :class="data.isSelected ? 'is-selected' : ''">{{ data.day.split('-').slice(2).join('') }}</div>
-            <div v-for="item in getCalendarItems(data.day)" :key="item.planId" style="font-size: 11px; margin-top: 2px; padding: 1px 4px; border-radius: 3px; background: #e8f4ff; color: #409eff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer" @click="handleCalendarClick(item)">
-              {{ item.planName }}
+          <div class="cal-cell">
+            <div class="cal-day" :class="{ 'is-selected': data.isSelected }">{{ data.day.split('-').slice(2).join('') }}</div>
+            <div class="cal-plans">
+              <div v-for="item in getCalendarItems(data.day).slice(0, 3)" :key="item.planId" class="cal-plan" :title="item.planName" @click.stop="handleCalendarClick(item)">
+                {{ item.planName }}
+              </div>
+              <el-popover v-if="getCalendarItems(data.day).length > 3" placement="right" :width="320" trigger="click">
+                <template #reference>
+                  <div class="cal-more" @click.stop>还有 {{ getCalendarItems(data.day).length - 3 }} 项</div>
+                </template>
+                <div class="cal-pop-list">
+                  <div v-for="item in getCalendarItems(data.day)" :key="item.planId" class="cal-pop-item" :title="item.planName" @click="handleCalendarClick(item)">
+                    {{ item.planName }}
+                  </div>
+                </div>
+              </el-popover>
             </div>
           </div>
         </template>
@@ -550,7 +568,7 @@ import EquipmentPicker from '@/components/EquipmentPicker/index.vue'
 import PartPicker from '@/components/PartPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
-import { Search, Filter, RefreshLeft, Edit, Delete, Refresh, ArrowDown, View, CircleClose, RemoveFilled } from '@element-plus/icons-vue'
+import { Search, Filter, RefreshLeft, Edit, Delete, Refresh, ArrowDown, View, CircleClose, RemoveFilled, WarningFilled, ArrowRight } from '@element-plus/icons-vue'
 const { collapsedCards, toggleCard } = useDetailCard(["c3","c2","c1","c0","v1","v2","v3","v4","v5"])
 
 const { proxy } = getCurrentInstance()
@@ -827,14 +845,22 @@ function cancel() { open.value = false; reset() }
 function loadCalendarData() {
   getPmplanCalendar().then(res => { calendarData.value = res.data || [] })
 }
-function getCalendarItems(dayStr) {
-  return calendarData.value.filter(item => {
-    if (!item.nextExecuteTime) return false
-    return formatDate(item.nextExecuteTime).startsWith(dayStr)
+/** 按天分组索引，避免每个日历格重复 filter */
+const calendarItemsMap = computed(() => {
+  const map = {}
+  calendarData.value.forEach(item => {
+    if (!item.nextExecuteTime) return
+    const day = formatDate(item.nextExecuteTime).substring(0, 10)
+    ;(map[day] = map[day] || []).push(item)
   })
+  return map
+})
+function getCalendarItems(dayStr) {
+  return calendarItemsMap.value[dayStr] || []
 }
+/** 日历上点击计划：打开详情弹窗（rd 卡片规范），而非修改表单 */
 function handleCalendarClick(item) {
-  handleUpdate(item)
+  handleView(item)
 }
 function formatDate(dateStr) {
   if (!dateStr) return ''
@@ -949,6 +975,12 @@ getList()
 @media (max-width:1100px) { .dms-pmplan-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }
 @media (max-width:720px) { .dms-pmplan-page .filter-card .filter-bar { grid-template-columns:1fr; } .dms-pmplan-page .toolbar { flex-wrap:wrap; gap:10px; } }
 
+/* ===== 视图切换栏 + 业务操作说明入口 ===== */
+.dms-pmplan-page .view-mode-bar { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; flex-wrap:wrap; gap:10px; }
+.dms-pmplan-page .tip-pill { display: inline-flex; align-items: center; gap: 5px; height: 30px; padding: 0 10px; background: #fffaf0; border: 1px solid #fde68a; color: #92400e; border-radius: 999px; font-size: 13px; font-weight: 500; cursor: pointer; transition: all .15s var(--ease-out); flex-shrink: 0; white-space: nowrap; }
+.dms-pmplan-page .tip-pill:hover { background: var(--amber-50); border-color: var(--amber-500); color: #7c2d12; }
+.dms-pmplan-page .tip-pill .el-icon { font-size: 14px; color: var(--amber-700); }
+
 .is-selected {
   color: #1989fa;
   font-weight: bold;
@@ -1020,6 +1052,36 @@ getList()
 .pmplan-detail-dialog .el-dialog__header {
   padding-bottom: 12px;
 }
+</style>
+
+<style scoped>
+/* ===== 日历视图单元格 ===== */
+.cal-cell { height: 100%; display: flex; flex-direction: column; overflow: hidden; }
+.cal-day { font-size: 14px; }
+.cal-day.is-selected { color: var(--el-color-primary, #409eff); font-weight: 700; }
+.cal-plans { display: flex; flex-direction: column; gap: 2px; margin-top: 2px; overflow: hidden; }
+.cal-plan {
+  font-size: 11px; line-height: 1.5; padding: 1px 4px; border-radius: 3px;
+  background: #e8f4ff; color: #409eff;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  cursor: pointer; transition: background .15s ease;
+}
+.cal-plan:hover { background: #d4ecff; }
+.cal-more { font-size: 11px; line-height: 1.5; padding: 1px 4px; color: #909399; cursor: pointer; }
+.cal-more:hover { color: #409eff; }
+/* 弹出列表（popover 渲染在 body 上，样式需全局） */
+</style>
+
+<style>
+/* 日历"还有N项"弹出列表（popover 挂在 body，必须非 scoped） */
+.cal-pop-list { display: flex; flex-direction: column; gap: 4px; max-height: 260px; overflow-y: auto; }
+.cal-pop-item {
+  font-size: 13px; padding: 5px 8px; border-radius: 4px;
+  background: #f5f7fa; color: #303133;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  cursor: pointer; transition: all .15s ease;
+}
+.cal-pop-item:hover { background: #e8f4ff; color: #409eff; }
 </style>
 
 <style scoped>

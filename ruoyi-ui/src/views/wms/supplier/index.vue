@@ -476,6 +476,7 @@
 <script setup name="WmsSupplier">
 import { listSupplier, getSupplier, addSupplier, updateSupplier, delSupplier } from '@/api/wms/supplier'
 import { lookupEnterprise } from '@/api/pms/enterprise'
+import { fetchAllPages, downloadCsv } from '@/utils/csvExport'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard, formatAmount } from '@/composables/useDetailCard'
 import ExcelImportDialog from '@/components/ExcelImportDialog'
@@ -765,8 +766,17 @@ function handleDelete(row) {
   }).catch(() => {})
 }
 
-function handleExport() {
-  proxy.download('wms/supplier/export', { ...proxy.addDateRange(queryParams.value, dateRange.value, 'CreateTime') }, `supplier_${new Date().getTime()}.xlsx`)
+/** 导出供应商（与列表口径一致：含筛选条件，导出全部页数据） */
+async function handleExport() {
+  const rows = await fetchAllPages(listSupplier, queryParams.value)
+  if (!rows.length) { proxy.$modal.msgWarning('当前筛选下无数据可导出'); return }
+  const headers = ['供应商编码', '供应商名称', '简称', '类型', '等级', '统一信用代码', '联系人', '联系电话', '法人代表', '企业性质', '状态', '创建时间']
+  downloadCsv(`supplier_${new Date().getTime()}`, headers, rows.map(i => [
+    i.supplierCode || '', i.supplierName || '', i.supplierShortName || '',
+    supplierTypeLabel(i.supplierType), supplierLevelLabel(i.supplierLevel), i.unifiedCreditCode || '',
+    i.contactPerson || '', i.contactPhone || '', i.legalPerson || '',
+    enterpriseNatureLabel(i.enterpriseNature), statusLabel(i.status), i.createTime || ''
+  ]))
 }
 
 function handleImport() {

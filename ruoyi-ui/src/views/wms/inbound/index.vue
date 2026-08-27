@@ -390,6 +390,7 @@
 <script setup name="WmsInbound">
 import { listInbound, getInbound, addInbound, updateInbound, delInbound, submitInbound } from '@/api/wms/inbound'
 import { listWarehouse } from '@/api/wms/warehouse'
+import { fetchAllPages, downloadCsv } from '@/utils/csvExport'
 import SupplierPicker from '@/components/SupplierPicker/index.vue'
 import MaterialPicker from '@/components/MaterialPicker/index.vue'
 import WarehousePicker from '@/components/WarehousePicker/index.vue'
@@ -453,7 +454,17 @@ function validateDetailList() {
 }
 function handleDelete(row) { const orderIds = row.orderId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delInbound(orderIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
 function handleSubmit(row) { proxy.$modal.confirm('确认提交入库单「' + row.orderNo + '」？提交后将无法修改。').then(() => submitInbound(row.orderId)).then(() => { getList(); proxy.$modal.msgSuccess('提交成功') }).catch(() => {}) }
-function handleExport() { proxy.download('wms/inbound/export', { ...proxy.addDateRange(proxy.addDateRange(queryParams.value, dateRange.value, 'InboundDate'), dateRangeCreateTime.value, 'CreateTime') }, `inbound_${new Date().getTime()}.xlsx`) }
+/** 导出入库单（与列表口径一致：含筛选条件、日期范围，导出全部页数据） */
+async function handleExport() {
+  const params = proxy.addDateRange(proxy.addDateRange(queryParams.value, dateRange.value, 'InboundDate'), dateRangeCreateTime.value, 'CreateTime')
+  const rows = await fetchAllPages(listInbound, params)
+  if (!rows.length) { proxy.$modal.msgWarning('当前筛选下无数据可导出'); return }
+  const headers = ['入库单号', '入库类型', '供应商', '目标仓库', '状态', '总数量', '入库日期']
+  downloadCsv(`inbound_${new Date().getTime()}`, headers, rows.map(i => [
+    i.orderNo || '', orderTypeLabel(i.orderType), i.supplierName || '', i.warehouseName || '',
+    statusLabel(i.status), i.totalQty != null ? i.totalQty : '', i.inboundDate || ''
+  ]))
+}
 function badgeClass(status) { const map = { '0': 'amber', '1': 'blue', '2': 'violet', '3': 'green' }; return map[status] || 'gray' }
 function statusLabel(status) { const item = wms_inbound_status.value.find(d => d.value == status); return item ? item.label : '-' }
 function orderTypeLabel(type) { const item = wms_inbound_type.value.find(d => d.value == type); return item ? item.label : '-' }

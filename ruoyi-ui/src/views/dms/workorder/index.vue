@@ -383,7 +383,7 @@
               <div class="rd-item"><span class="rd-label">优先级</span><div class="rd-value"><dict-tag :options="dms_priority" :value="dispatchForm.priority" /></div></div>
               <div class="rd-item"><span class="rd-label">报修人</span><div class="rd-value">{{ dispatchForm.reporterName || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">报修时间</span><div class="rd-value">{{ dispatchForm.reportTime || '-' }}</div></div>
-              <div class="rd-item rd-item--full"><span class="rd-label">故障描述</span><div class="rd-value">{{ cleanFaultDescription(dispatchForm.faultDescription) || '-' }}</div></div>
+              <div class="rd-item rd-item--full"><span class="rd-label">故障描述</span><div class="rd-value desc-pre">{{ cleanFaultDescription(dispatchForm.faultDescription) || '-' }}</div></div>
             </div>
           </div>
         </section>
@@ -473,7 +473,7 @@
               <div class="rd-item"><span class="rd-label">设备名称</span><div class="rd-value">{{ completeForm.equipmentName || '—' }}</div></div>
               <div class="rd-item"><span class="rd-label">报修人</span><div class="rd-value">{{ completeForm.reporterName || '—' }}</div></div>
               <div class="rd-item"><span class="rd-label">报修时间</span><div class="rd-value">{{ completeForm.reportTime || '—' }}</div></div>
-              <div class="rd-item rd-item--full"><span class="rd-label">故障描述</span><div class="rd-value">{{ cleanFaultDescription(completeForm.faultDescription) || '—' }}</div></div>
+              <div class="rd-item rd-item--full"><span class="rd-label">故障描述</span><div class="rd-value desc-pre">{{ cleanFaultDescription(completeForm.faultDescription) || '—' }}</div></div>
             </div>
             <div v-if="completeTaskList.length > 0" class="task-checklist-block">
               <div class="task-table-toolbar">
@@ -599,7 +599,7 @@
               <div class="rd-item"><span class="rd-label">设备名称</span><div class="rd-value">{{ verifyForm.equipmentName || '—' }}</div></div>
               <div class="rd-item"><span class="rd-label">报修人</span><div class="rd-value">{{ verifyForm.reporterName || '—' }}</div></div>
               <div class="rd-item"><span class="rd-label">报修时间</span><div class="rd-value">{{ verifyForm.reportTime || '—' }}</div></div>
-              <div class="rd-item rd-item--full"><span class="rd-label">故障描述</span><div class="rd-value">{{ cleanFaultDescription(verifyForm.faultDescription) || '—' }}</div></div>
+              <div class="rd-item rd-item--full"><span class="rd-label">故障描述</span><div class="rd-value desc-pre">{{ cleanFaultDescription(verifyForm.faultDescription) || '—' }}</div></div>
             </div>
           </div>
         </section>
@@ -741,7 +741,7 @@
             <div class="rd-grid">
               <div class="rd-item"><span class="rd-label">设备编号</span><div class="rd-value">{{ viewForm.equipmentCode || '-' }}</div></div>
               <div class="rd-item rd-item--full"><span class="rd-label">设备名称</span><div class="rd-value">{{ viewForm.equipmentName || '-' }}</div></div>
-              <div class="rd-item rd-item--full"><span class="rd-label">故障描述</span><div class="rd-value">{{ cleanFaultDescription(viewForm.faultDescription) || '-' }}</div></div>
+              <div class="rd-item rd-item--full"><span class="rd-label">故障描述</span><div class="rd-value desc-pre">{{ cleanFaultDescription(viewForm.faultDescription) || '-' }}</div></div>
             </div>
           </div>
         </section>
@@ -890,7 +890,7 @@
               <div class="rd-item"><span class="rd-label">设备名称</span><div class="rd-value">{{ rejectForm.equipmentName || '—' }}</div></div>
               <div class="rd-item"><span class="rd-label">报修人</span><div class="rd-value">{{ rejectForm.reporterName || '—' }}</div></div>
               <div class="rd-item"><span class="rd-label">报修时间</span><div class="rd-value">{{ rejectForm.reportTime || '—' }}</div></div>
-              <div class="rd-item rd-item--full"><span class="rd-label">故障描述</span><div class="rd-value">{{ cleanFaultDescription(rejectForm.faultDescription) || '—' }}</div></div>
+              <div class="rd-item rd-item--full"><span class="rd-label">故障描述</span><div class="rd-value desc-pre">{{ cleanFaultDescription(rejectForm.faultDescription) || '—' }}</div></div>
             </div>
           </div>
         </section>
@@ -1639,6 +1639,13 @@ onActivated(() => {
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+/* 故障描述：保留换行格式（点检生成的描述含多行明细） */
+.desc-pre {
+  white-space: pre-line;
+  word-break: break-word;
+  line-height: 1.7;
 }
 
 /* SLA 超时警告样式 */
