@@ -143,9 +143,14 @@
           <div class="rd-card-body" v-show="!collapsedCards.i_interact">
             <el-row>
               <el-col :span="12"><el-form-item label="所属客户" prop="customerId">
-                <el-select v-model="form.customerId" filterable clearable placeholder="请选择客户" style="width: 100%" @change="onCustomerChange">
-                  <el-option v-for="c in customerOptions" :key="c.customerId" :label="c.customerName" :value="c.customerId" />
-                </el-select>
+                <el-input v-model="form.customerName" readonly placeholder="请选择客户" style="width: 100%" @click="openCustomerPicker">
+                  <template v-if="form.customerName" #append>
+                    <el-button icon="CircleClose" @click.stop="clearCustomer" />
+                  </template>
+                  <template v-else #append>
+                    <el-button icon="Search" @click="openCustomerPicker" />
+                  </template>
+                </el-input>
               </el-form-item></el-col>
               <el-col :span="12"><el-form-item label="联系人" prop="contactId">
                 <el-select v-model="form.contactId" filterable clearable placeholder="请选择联系人" style="width: 100%">
@@ -253,7 +258,13 @@
           </div>
         </section>
       </div>
+      <template #footer>
+        <el-button @click="viewOpen = false">关 闭</el-button>
+      </template>
     </el-dialog>
+
+    <!-- 客户选择弹窗 -->
+    <customer-picker ref="customerPickerRef" title="选择客户" @confirm="onCustomerPickerConfirm" />
 
     <!-- 跟进人选择弹窗 -->
     <user-picker ref="userPickerRef" title="选择跟进人" @confirm="onUserPickerConfirm" />
@@ -263,9 +274,9 @@
 <script setup name="MkInteraction">
 import { CircleClose, ArrowDown } from '@element-plus/icons-vue'
 import { listInteraction, getInteraction, addInteraction, updateInteraction, delInteraction } from '@/api/mk/interaction'
-import { listCustomer } from '@/api/mk/customer'
 import { listContact } from '@/api/mk/contact'
 import UserPicker from '@/components/UserPicker/index.vue'
+import CustomerPicker from '@/components/CustomerPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
 const { collapsedCards, toggleCard } = useDetailCard(['i_interact', 'i_follow', 'i_other', 'v_interact', 'v_follow', 'v_other'])
@@ -286,7 +297,6 @@ const single = ref(true)
 const multiple = ref(true)
 const total = ref(0)
 const title = ref('')
-const customerOptions = ref([])
 const contactOptions = ref([])
 const viewForm = ref({})
 
@@ -344,7 +354,6 @@ return count
 })
 
 function getList() { loading.value = true; listInteraction(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false; applySavedWidths() }).catch(() => { loading.value = false }) }
-function getCustomerOptions() { listCustomer({ pageNum: 1, pageSize: 9999 }).then(res => { customerOptions.value = res.rows }) }
 
 // badge样式方法
 function typeBadgeClass(type) {
@@ -355,10 +364,32 @@ function typeLabel(type) {
   const item = marketing_interaction_type.value.find(d => d.value == type)
   return item ? item.label : '-'
 }
-function onCustomerChange(customerId) {
+/** 加载指定客户下的联系人选项 */
+function loadContactOptions(customerId) {
   form.value.contactId = undefined
   if (customerId) { listContact({ customerId: customerId, pageNum: 1, pageSize: 9999 }).then(res => { contactOptions.value = res.rows }) }
   else { contactOptions.value = [] }
+}
+/** 打开客户选择弹窗 */
+function openCustomerPicker() {
+  proxy.$refs.customerPickerRef.open(form.value.customerId)
+}
+/** 客户选择确认回调 — 客户变更时联动刷新联系人 */
+function onCustomerPickerConfirm(customer) {
+  if (form.value.customerId !== customer.customerId) {
+    form.value.customerId = customer.customerId
+    form.value.customerName = customer.customerName
+    loadContactOptions(customer.customerId)
+  } else {
+    form.value.customerName = customer.customerName
+  }
+}
+/** 清除客户 — 同时清空联系人 */
+function clearCustomer() {
+  form.value.customerId = undefined
+  form.value.customerName = undefined
+  form.value.contactId = undefined
+  contactOptions.value = []
 }
 /** 打开跟进人选择弹窗 */
 function openUserPicker() {
@@ -379,7 +410,7 @@ function resetQuery() { queryParams.value.customerName = undefined; queryParams.
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.recordId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function reset() {
-  form.value = { customerId: undefined, contactId: undefined, opportunityId: undefined, leadId: undefined, interactType: undefined, interactTime: undefined, content: undefined, userId: undefined, userName: undefined, nextTime: undefined, nextContent: undefined, remark: undefined }
+  form.value = { customerId: undefined, customerName: undefined, contactId: undefined, opportunityId: undefined, leadId: undefined, interactType: undefined, interactTime: undefined, content: undefined, userId: undefined, userName: undefined, nextTime: undefined, nextContent: undefined, remark: undefined }
   contactOptions.value = []
   proxy.resetForm('interactionRef')
 }
@@ -388,9 +419,13 @@ function handleUpdate(row) {
   reset()
   getInteraction(row.recordId || ids.value[0]).then(res => {
     form.value = res.data
-    if (form.value.customerId) { listContact({ customerId: form.value.customerId, pageNum: 1, pageSize: 9999 }).then(r => { contactOptions.value = r.rows }) }
+    if (form.value.customerId) { loadContactOptionsForEdit(form.value.customerId) }
     open.value = true; title.value = '修改互动记录'
   })
+}
+/** 编辑回显时加载联系人选项（不重置已选联系人） */
+function loadContactOptionsForEdit(customerId) {
+  listContact({ customerId: customerId, pageNum: 1, pageSize: 9999 }).then(res => { contactOptions.value = res.rows })
 }
 function handleView(row) {
   getInteraction(row.recordId).then(res => {
@@ -409,7 +444,6 @@ function submitForm() {
 }
 function handleDelete(row) { const recordIds = row.recordId || ids.value; proxy.$modal.confirm('确认删除编号为"' + recordIds + '"的数据？').then(() => delInteraction(recordIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
 function cancel() { open.value = false; reset() }
-getCustomerOptions()
 getList()
 </script>
 

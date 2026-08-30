@@ -172,6 +172,9 @@
     </div>
     <!-- 文件预览弹窗 -->
     <file-preview ref="filePreviewRef" />
+    <template #footer>
+      <el-button @click="visible = false">关 闭</el-button>
+    </template>
   </el-dialog>
 </template>
 

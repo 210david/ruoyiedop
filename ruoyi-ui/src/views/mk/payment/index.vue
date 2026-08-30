@@ -337,14 +337,22 @@
             <div class="rd-card-body" v-show="!collapsedCards.addRelation">
               <el-row>
                 <el-col :span="12"><el-form-item label="关联客户" prop="customerId">
-                  <el-select v-model="addForm.customerId" filterable placeholder="请选择客户" style="width: 100%" @change="onCustomerChange">
-                    <el-option v-for="c in customerOptions" :key="c.customerId" :label="c.customerName" :value="c.customerId" />
-                  </el-select>
+                  <el-input v-model="addForm.customerName" readonly placeholder="请选择客户" style="width: 100%" @click="openCustomerPicker">
+                    <template v-if="addForm.customerName" #append>
+                      <el-button icon="CircleClose" @click.stop="clearCustomer" />
+                    </template>
+                    <template v-else #append>
+                      <el-button icon="Search" @click="openCustomerPicker" />
+                    </template>
+                  </el-input>
                 </el-form-item></el-col>
                 <el-col :span="12"><el-form-item label="关联合同" prop="contractId">
-                  <el-select v-model="addForm.contractId" filterable clearable placeholder="可选" style="width: 100%" @change="onContractChange">
-                    <el-option v-for="c in contractOptions" :key="c.contractId" :label="c.contractNo + ' - ' + c.contractName" :value="c.contractId" />
-                  </el-select>
+                  <el-input v-model="addForm.contractNo" readonly placeholder="可选" style="width: 100%" @click="openContractPicker">
+                    <template #append><el-button icon="Search" @click="openContractPicker" /></template>
+                    <template #suffix>
+                      <el-icon v-if="addForm.contractNo" class="clear-icon" @click.stop="clearContract"><CircleClose /></el-icon>
+                    </template>
+                  </el-input>
                 </el-form-item></el-col>
               </el-row>
             </div>
@@ -759,6 +767,9 @@
           </div>
         </section>
       </div>
+      <template #footer>
+        <el-button @click="viewOpen = false">关 闭</el-button>
+      </template>
     </el-dialog>
 
     <!-- 回款确认对话框 -->
@@ -847,16 +858,22 @@
     </el-dialog>
     <!-- 文件预览 -->
     <file-preview ref="filePreviewRef" />
+
+    <!-- 客户选择弹窗 -->
+    <customer-picker ref="customerPickerRef" title="选择客户" @confirm="onCustomerPickerConfirm" />
+
+    <!-- 合同选择弹窗 -->
+    <contract-picker ref="contractPickerRef" title="选择合同" @confirm="onContractPickerConfirm" />
   </div>
 </template>
 
 <script setup name="MkPayment">
 import { listPayment, getPayment, addPayment, delPayment, paymentStatistics, listPaymentRecord, addPaymentRecord, delPaymentRecord, confirmPaymentRecord } from '@/api/mk/payment'
-import { listContract } from '@/api/mk/contract'
-import { listCustomer } from '@/api/mk/customer'
+import ContractPicker from '@/components/ContractPicker/index.vue'
+import CustomerPicker from '@/components/CustomerPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard, formatMoney } from '@/composables/useDetailCard'
-import { ArrowRight, ArrowDown, Search, Filter, WarningFilled, Delete, Download, RefreshLeft } from '@element-plus/icons-vue'
+import { ArrowRight, ArrowDown, Search, CircleClose, Filter, WarningFilled, Delete, Download, RefreshLeft } from '@element-plus/icons-vue'
 
 const { proxy } = getCurrentInstance()
 const { marketing_payment_status, marketing_payment_method } = proxy.useDict('marketing_payment_status', 'marketing_payment_method')
@@ -879,8 +896,7 @@ const multiple = ref(true)
 const total = ref(0)
 const viewForm = ref({})
 const stats = ref(null)
-const customerOptions = ref([])
-const contractOptions = ref([])
+const title = ref('')
 const existingRecords = ref([])
 const recordForm = ref({})
 const recordFormData = ref({})
@@ -985,9 +1001,13 @@ function getList() {
 }
 
 function loadStatusCounts() {
-  listPayment({ pageNum: 1, pageSize: 999 }).then(res => {
-    const counts = { all: res.total, '0': 0, '1': 0, '2': 0 }
-    ;(res.rows || []).forEach(r => { if (counts[r.paymentStatus] !== undefined) counts[r.paymentStatus]++ })
+  // 基于当前筛选条件（剔除状态与分页）拉取全量数据统计，与列表筛选保持一致
+  const query = { ...queryParams.value, pageNum: 1, pageSize: 9999, paymentStatus: undefined, params: { ...queryParams.value.params } }
+  listPayment(query).then(res => {
+    const counts = { all: 0, '0': 0, '1': 0, '2': 0 }
+    const rows = res.rows || []
+    rows.forEach(r => { if (counts[r.paymentStatus] !== undefined) counts[r.paymentStatus]++ })
+    counts.all = rows.length
     statusCounts.value = counts
   }).catch(() => {})
 }
@@ -996,30 +1016,36 @@ function loadStats() {
   paymentStatistics().then(res => { stats.value = res.data }).catch(() => {})
 }
 
-function getCustomerOptions() {
-  listCustomer({ pageNum: 1, pageSize: 9999 }).then(res => { customerOptions.value = res.rows })
+/** 打开客户选择弹窗 */
+function openCustomerPicker() {
+  proxy.$refs.customerPickerRef.open(addForm.value.customerId)
+}
+/** 客户选择确认回调 */
+function onCustomerPickerConfirm(customer) {
+  addForm.value.customerId = customer.customerId
+  addForm.value.customerName = customer.customerName
+}
+/** 清除客户 */
+function clearCustomer() {
+  addForm.value.customerId = undefined
+  addForm.value.customerName = undefined
 }
 
-function getContractOptions() {
-  listContract({ pageNum: 1, pageSize: 9999 }).then(res => { contractOptions.value = res.rows })
+/** 打开合同选择弹窗 */
+function openContractPicker() {
+  proxy.$refs.contractPickerRef.open(addForm.value.contractId)
 }
-
-function onCustomerChange(customerId) {
-  if (customerId) {
-    const customer = customerOptions.value.find(c => c.customerId === customerId)
-    if (customer) addForm.value.customerName = customer.customerName
-  }
+/** 合同选择确认回调 */
+function onContractPickerConfirm(contract) {
+  addForm.value.contractId = contract.contractId
+  addForm.value.contractNo = contract.contractNo
+  addForm.value.customerId = contract.customerId
+  addForm.value.customerName = contract.customerName
 }
-
-function onContractChange(contractId) {
-  if (contractId) {
-    const contract = contractOptions.value.find(c => c.contractId === contractId)
-    if (contract) {
-      addForm.value.contractNo = contract.contractNo
-      addForm.value.customerId = contract.customerId
-      addForm.value.customerName = contract.customerName
-    }
-  }
+/** 清除合同 */
+function clearContract() {
+  addForm.value.contractId = undefined
+  addForm.value.contractNo = undefined
 }
 
 function handleQuery() { showAdvanced.value = false; queryParams.value.params = proxy.addDateRange(queryParams.value.params, dateRange.value, 'PlanDate'); queryParams.value.pageNum = 1; getList() }
@@ -1048,7 +1074,7 @@ function handleStatusTabClick(status) {
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.planId); single.value = selection.length !== 1; multiple.value = !selection.length }
 
 function handleAdd() {
-  addForm.value = { customerId: undefined, contractId: undefined, periodNo: 1, planAmount: 0, planDate: undefined, paymentMethod: '0', bankAccount: undefined, remark: undefined }
+  addForm.value = { customerId: undefined, customerName: undefined, contractId: undefined, periodNo: 1, planAmount: 0, planDate: undefined, paymentMethod: '0', bankAccount: undefined, remark: undefined }
   proxy.resetForm('addRef')
   addOpen.value = true
 }
@@ -1147,8 +1173,7 @@ function submitConfirm(confirmStatus) {
 
 function handleExport() { proxy.download('mk/payment/export', { ...proxy.addDateRange(queryParams.value, dateRange.value, 'PlanDate') }, `payment_${new Date().getTime()}.xlsx`) }
 
-getCustomerOptions()
-getContractOptions()
+getList()
 getList()
 loadStats()
 onActivated(() => { getList() })

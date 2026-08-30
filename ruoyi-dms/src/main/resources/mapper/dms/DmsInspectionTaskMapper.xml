@@ -11,6 +11,7 @@
         <result property="inspectorId"     column="inspector_id"/>
         <result property="inspectorName"   column="inspector_name"/>
         <result property="taskStatus"      column="task_status"/>
+        <result property="overdueFlag"     column="overdue_flag"/>
         <result property="startTime"       column="start_time"/>
         <result property="completeTime"    column="complete_time"/>
         <result property="abnormalCount"   column="abnormal_count"/>
@@ -26,7 +27,7 @@
 
     <sql id="selectTaskVo">
         SELECT task_id, task_no, route_id, route_name, plan_date, inspector_id, inspector_name,
-               task_status, start_time, complete_time, abnormal_count, result_data, photo_urls,
+               task_status, overdue_flag, start_time, complete_time, abnormal_count, result_data, photo_urls,
                del_flag, create_by, create_time, update_by, update_time, remark
         FROM dms_inspection_task
     </sql>
@@ -52,10 +53,10 @@
     <insert id="insertTask" parameterType="DmsInspectionTask" useGeneratedKeys="true" keyProperty="taskId">
         INSERT INTO dms_inspection_task (
             task_no, route_id, route_name, plan_date, inspector_id, inspector_name,
-            task_status, start_time, complete_time, abnormal_count, result_data, photo_urls, create_by, create_time, remark
+            task_status, overdue_flag, start_time, complete_time, abnormal_count, result_data, photo_urls, create_by, create_time, remark
         ) VALUES (
             #{taskNo}, #{routeId}, #{routeName}, #{planDate}, #{inspectorId}, #{inspectorName},
-            #{taskStatus}, #{startTime}, #{completeTime}, #{abnormalCount}, #{resultData}, #{photoUrls}, #{createBy}, sysdate(), #{remark}
+            #{taskStatus}, #{overdueFlag}, #{startTime}, #{completeTime}, #{abnormalCount}, #{resultData}, #{photoUrls}, #{createBy}, sysdate(), #{remark}
         )
     </insert>
 
@@ -68,6 +69,7 @@
             <if test="inspectorId != null">inspector_id = #{inspectorId},</if>
             <if test="inspectorName != null">inspector_name = #{inspectorName},</if>
             <if test="taskStatus != null and taskStatus != ''">task_status = #{taskStatus},</if>
+            <if test="overdueFlag != null and overdueFlag != ''">overdue_flag = #{overdueFlag},</if>
             <if test="startTime != null">start_time = #{startTime},</if>
             <if test="completeTime != null">complete_time = #{completeTime},</if>
             <if test="abnormalCount != null">abnormal_count = #{abnormalCount},</if>
@@ -92,11 +94,25 @@
           AND DATE(plan_date) = CURDATE()
     </select>
 
-    <!-- 查询所有待执行且已过期的点检任务 -->
+    <!-- 查询所有待执行且已过期、尚未标记逾期的点检任务 -->
     <select id="selectOverdueTasks" resultMap="DmsInspectionTaskResult">
         <include refid="selectTaskVo"/>
         WHERE del_flag = '0'
           AND task_status = '0'
           AND plan_date &lt; CURDATE()
+          AND (overdue_flag IS NULL OR overdue_flag != '1')
+    </select>
+
+    <!-- 统计全部点检任务数 -->
+    <select id="countAllTasks" resultType="int">
+        SELECT COUNT(*) FROM dms_inspection_task WHERE del_flag = '0'
+    </select>
+
+    <!-- 按状态统计点检任务数 -->
+    <select id="countTaskByStatus" resultType="java.util.Map">
+        SELECT task_status AS taskStatus, COUNT(*) AS cnt
+        FROM dms_inspection_task
+        WHERE del_flag = '0'
+        GROUP BY task_status
     </select>
 </mapper>

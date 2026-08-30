@@ -447,6 +447,9 @@
           </div>
         </section>
       </div>
+      <template #footer>
+        <el-button @click="viewOpen = false">关 闭</el-button>
+      </template>
     </el-dialog>
 
     <!-- 状态说明对话框 -->

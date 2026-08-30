@@ -112,6 +112,62 @@ public class WmsInventoryServiceImpl implements IWmsInventoryService
     public int reduceInventory(Long materialId, Long warehouseId, Long locationId, String batchNo,
                                BigDecimal qty, String changeType, String refOrderType, String refOrderNo, String createBy)
     {
+        // 如果指定了库位，走精确匹配
+        if (locationId != null)
+        {
+            return reduceInventoryExact(materialId, warehouseId, locationId, batchNo, qty, changeType, refOrderType, refOrderNo, createBy);
+        }
+        // 未指定库位，按 FIFO 从所有可用库存中扣减
+        String effectiveBatch = batchNo == null ? "" : batchNo;
+        List<WmsInventory> invList = wmsInventoryMapper.selectAvailableInventory(materialId, warehouseId, effectiveBatch);
+        if (invList == null || invList.isEmpty())
+        {
+            throw new ServiceException("库存不足，无法出库");
+        }
+        // 计算总可用量
+        BigDecimal totalAvailable = BigDecimal.ZERO;
+        for (WmsInventory inv : invList)
+        {
+            totalAvailable = totalAvailable.add(inv.getQty());
+        }
+        if (totalAvailable.compareTo(qty) < 0)
+        {
+            throw new ServiceException("库存不足，可用数量：" + totalAvailable + "，需要数量：" + qty);
+        }
+        // 按顺序逐条扣减
+        BigDecimal remaining = qty;
+        for (WmsInventory inv : invList)
+        {
+            if (remaining.compareTo(BigDecimal.ZERO) <= 0) break;
+            inv = wmsInventoryMapper.selectInventoryForUpdate(inv.getInventoryId());
+            BigDecimal beforeQty = inv.getQty();
+            BigDecimal deductQty = beforeQty.min(remaining);
+            inv.setQty(beforeQty.subtract(deductQty));
+            inv.setUpdateBy(createBy);
+            wmsInventoryMapper.updateInventory(inv);
+            // log
+            WmsInventoryLog log = new WmsInventoryLog();
+            log.setMaterialId(materialId);
+            log.setWarehouseId(warehouseId);
+            log.setLocationId(inv.getLocationId());
+            log.setBatchNo(inv.getBatchNo());
+            log.setChangeType(changeType);
+            log.setChangeQty(deductQty.negate());
+            log.setBeforeQty(beforeQty);
+            log.setAfterQty(beforeQty.subtract(deductQty));
+            log.setRefOrderType(refOrderType);
+            log.setRefOrderNo(refOrderNo);
+            log.setCreateBy(createBy);
+            wmsInventoryLogMapper.insertInventoryLog(log);
+            remaining = remaining.subtract(deductQty);
+        }
+        return 1;
+    }
+
+    /** 精确匹配库位+批次扣减库存（原有逻辑） */
+    private int reduceInventoryExact(Long materialId, Long warehouseId, Long locationId, String batchNo,
+                                     BigDecimal qty, String changeType, String refOrderType, String refOrderNo, String createBy)
+    {
         WmsInventory inv = wmsInventoryMapper.selectInventoryByUnique(materialId, warehouseId, locationId,
                 batchNo == null ? "" : batchNo);
         if (inv == null)
@@ -150,6 +206,61 @@ public class WmsInventoryServiceImpl implements IWmsInventoryService
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int lockInventory(Long materialId, Long warehouseId, Long locationId, String batchNo, BigDecimal qty, String refOrderType, String refOrderNo, String createBy)
+    {
+        // 如果指定了库位，走精确匹配
+        if (locationId != null)
+        {
+            return lockInventoryExact(materialId, warehouseId, locationId, batchNo, qty, refOrderType, refOrderNo, createBy);
+        }
+        // 未指定库位，按 FIFO 从所有可用库存中锁定
+        String effectiveBatch = batchNo == null ? "" : batchNo;
+        List<WmsInventory> invList = wmsInventoryMapper.selectAvailableInventory(materialId, warehouseId, effectiveBatch);
+        if (invList == null || invList.isEmpty())
+        {
+            throw new ServiceException("库存不存在，无法锁定");
+        }
+        // 计算总可用量
+        BigDecimal totalAvailable = BigDecimal.ZERO;
+        for (WmsInventory inv : invList)
+        {
+            totalAvailable = totalAvailable.add(inv.getQty());
+        }
+        if (totalAvailable.compareTo(qty) < 0)
+        {
+            throw new ServiceException("可用库存不足，无法锁定");
+        }
+        // 按顺序逐条锁定
+        BigDecimal remaining = qty;
+        for (WmsInventory inv : invList)
+        {
+            if (remaining.compareTo(BigDecimal.ZERO) <= 0) break;
+            inv = wmsInventoryMapper.selectInventoryForUpdate(inv.getInventoryId());
+            BigDecimal lockQty = inv.getQty().min(remaining);
+            inv.setQty(inv.getQty().subtract(lockQty));
+            inv.setLockQty(inv.getLockQty().add(lockQty));
+            inv.setUpdateBy(createBy);
+            wmsInventoryMapper.updateInventory(inv);
+            // log
+            WmsInventoryLog log = new WmsInventoryLog();
+            log.setMaterialId(materialId);
+            log.setWarehouseId(warehouseId);
+            log.setLocationId(inv.getLocationId());
+            log.setBatchNo(inv.getBatchNo());
+            log.setChangeType("6");
+            log.setChangeQty(lockQty);
+            log.setBeforeQty(inv.getQty().add(lockQty));
+            log.setAfterQty(inv.getQty());
+            log.setRefOrderType(refOrderType);
+            log.setRefOrderNo(refOrderNo);
+            log.setCreateBy(createBy);
+            wmsInventoryLogMapper.insertInventoryLog(log);
+            remaining = remaining.subtract(lockQty);
+        }
+        return 1;
+    }
+
+    /** 精确匹配库位+批次锁定库存（原有逻辑） */
+    private int lockInventoryExact(Long materialId, Long warehouseId, Long locationId, String batchNo, BigDecimal qty, String refOrderType, String refOrderNo, String createBy)
     {
         WmsInventory inv = wmsInventoryMapper.selectInventoryByUnique(materialId, warehouseId, locationId,
                 batchNo == null ? "" : batchNo);

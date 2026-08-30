@@ -133,16 +133,18 @@
           <el-table-column label="签订人" prop="signBy" key="signBy" :width="colWidth('signBy', 120)" resizable v-if="columns.signBy.visible" />
           <el-table-column label="变更次数" prop="changeCount" key="changeCount" :width="colWidth('changeCount', 90)" resizable align="center" v-if="columns.changeCount.visible" />
           <el-table-column label="创建时间" prop="createTime" key="createTime" :width="colWidth('createTime', 180)" resizable align="center" sortable="custom" v-if="columns.createTime.visible" />
-          <el-table-column label="操作" width="280" align="center" fixed="right">
+          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
-              <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
-              <el-button v-if="scope.row.status === '0' || scope.row.status === '6'" link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['pms:contract:edit']">修改</el-button>
-              <el-button v-if="scope.row.status === '0'" link type="warning" icon="Promotion" @click="handleSubmit(scope.row)" v-hasPermi="['pms:contract:edit']">提交审批</el-button>
-              <el-button v-if="scope.row.status === '5'" link type="warning" icon="DocumentChecked" @click="handleApprove(scope.row)" v-hasPermi="['pms:contract:audit']">审批</el-button>
-              <el-button v-if="scope.row.status === '1'" link type="primary" icon="Switch" @click="handleChange(scope.row)" v-hasPermi="['pms:contract:change']">变更</el-button>
-              <el-button v-if="scope.row.status === '1'" link type="danger" icon="CircleClose" @click="handleTerminate(scope.row)" v-hasPermi="['pms:contract:edit']">终止</el-button>
-              <el-button v-if="scope.row.status === '2'" link type="warning" icon="DocumentChecked" @click="handleView(scope.row, true)" v-hasPermi="['pms:contract:audit']">审核</el-button>
-              <el-button v-if="scope.row.status === '0' || scope.row.status === '6'" link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['pms:contract:remove']">删除</el-button>
+              <div class="action-btn-row">
+                <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
+                <el-button v-if="scope.row.status === '0' || scope.row.status === '6'" link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['pms:contract:edit']">修改</el-button>
+                <el-button v-if="scope.row.status === '0'" link type="warning" icon="Promotion" @click="handleSubmit(scope.row)" v-hasPermi="['pms:contract:edit']">提交审批</el-button>
+                <el-button v-if="scope.row.status === '5'" link type="warning" icon="DocumentChecked" @click="handleApprove(scope.row)" v-hasPermi="['pms:contract:audit']">审批</el-button>
+                <el-button v-if="scope.row.status === '1'" link type="primary" icon="Switch" @click="handleChange(scope.row)" v-hasPermi="['pms:contract:change']">变更</el-button>
+                <el-button v-if="scope.row.status === '1'" link type="danger" icon="CircleClose" @click="handleTerminate(scope.row)" v-hasPermi="['pms:contract:edit']">终止</el-button>
+                <el-button v-if="scope.row.status === '2'" link type="warning" icon="DocumentChecked" @click="handleView(scope.row, true)" v-hasPermi="['pms:contract:audit']">审核</el-button>
+                <el-button v-if="scope.row.status === '0' || scope.row.status === '6'" link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['pms:contract:remove']">删除</el-button>
+              </div>
             </template>
           </el-table-column>
         </el-table>
@@ -960,4 +962,11 @@ onActivated(() => { getList() })
 :deep(.el-timeline-item__node--info) {
   border-color: #909399;
 }
+
+/* 操作列按钮对齐：每行2个按钮，flex-wrap 自动换行，按钮自适应内容宽度 */
+:deep(.col-action) { padding: 6px 4px !important; }
+:deep(.col-action .cell) { display: flex; justify-content: center; padding: 0; }
+.action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
+:deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
+:deep(.col-action .el-button + .el-button) { margin-left: 2px; }
 </style>

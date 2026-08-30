@@ -180,7 +180,7 @@
     </div>
 
     <!-- 新增/修改对话框 -->
-    <el-dialog v-model="open" width="1200px" append-to-body draggable class="contract-form-dialog">
+    <el-dialog v-model="open" width="1200px" append-to-body draggable class="rd-dialog contract-form-dialog">
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon">
@@ -227,9 +227,14 @@
                   </el-select>
                 </el-form-item></el-col>
                 <el-col :span="8"><el-form-item label="关联客户" prop="customerId">
-                  <el-select v-model="form.customerId" filterable placeholder="请选择客户" style="width: 100%" @change="onCustomerChange">
-                    <el-option v-for="c in customerOptions" :key="c.customerId" :label="c.customerName" :value="c.customerId" />
-                  </el-select>
+                  <el-input v-model="form.customerName" readonly placeholder="请选择客户" style="width: 100%" @click="openCustomerPicker">
+                    <template v-if="form.customerName" #append>
+                      <el-button icon="CircleClose" @click.stop="clearCustomer" />
+                    </template>
+                    <template v-else #append>
+                      <el-button icon="Search" @click="openCustomerPicker" />
+                    </template>
+                  </el-input>
                 </el-form-item></el-col>
                 <el-col :span="8"><el-form-item label="合同金额" prop="contractAmount"><el-input-number v-model="form.contractAmount" :min="0" :precision="2" controls-position="right" style="width: 100%" /></el-form-item></el-col>
                 <el-col :span="8"><el-form-item label="付款方式" prop="paymentMethod">
@@ -337,36 +342,36 @@
               <el-row :gutter="10" class="mb8">
                 <el-col :span="1.5"><el-button type="primary" plain icon="Plus" size="small" @click="handleAddPlan">添加回款计划</el-button></el-col>
               </el-row>
-              <el-table border :data="form.paymentPlanList" size="small">
+              <el-table border :data="form.paymentPlanList" size="small" style="width: 100%">
                 <el-table-column label="期次" width="80" align="center">
                   <template #default="scope">
                     <el-input-number v-model="scope.row.periodNo" :min="1" :controls="false" size="small" style="width: 100%" />
                   </template>
                 </el-table-column>
-                <el-table-column label="计划回款金额" width="160" align="center">
+                <el-table-column label="计划回款金额" min-width="160" align="center">
                   <template #default="scope">
                     <el-input-number v-model="scope.row.planAmount" :min="0" :precision="2" :controls="false" size="small" style="width: 100%" />
                   </template>
                 </el-table-column>
-                <el-table-column label="计划回款日期" width="180" align="center">
+                <el-table-column label="计划回款日期" min-width="180" align="center">
                   <template #default="scope">
                     <el-date-picker v-model="scope.row.planDate" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" size="small" style="width: 100%" />
                   </template>
                 </el-table-column>
-                <el-table-column label="实际回款金额" width="160" align="center">
+                <el-table-column label="实际回款金额" min-width="160" align="center">
                   <template #default="scope">
                     <el-input-number v-model="scope.row.actualAmount" :min="0" :precision="2" :controls="false" size="small" style="width: 100%" />
                   </template>
                 </el-table-column>
-                <el-table-column label="实际回款日期" width="180" align="center">
+                <el-table-column label="实际回款日期" min-width="180" align="center">
                   <template #default="scope">
                     <el-date-picker v-model="scope.row.actualDate" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" size="small" style="width: 100%" />
                   </template>
                 </el-table-column>
-                <el-table-column label="状态" width="120" align="center">
+                <el-table-column label="状态" min-width="120" align="center">
                   <template #default="scope"><dict-tag :options="marketing_payment_status" :value="scope.row.paymentStatus" /></template>
                 </el-table-column>
-                <el-table-column label="操作" width="80" align="center">
+                <el-table-column label="操作" width="80" align="center" fixed="right">
                   <template #default="scope">
                     <el-button link type="danger" icon="Delete" size="small" @click="handleDeletePlan(scope.$index)">删除</el-button>
                   </template>
@@ -405,7 +410,7 @@
     </el-dialog>
 
     <!-- 查看详情对话框 -->
-    <el-dialog v-model="viewOpen" width="1100px" append-to-body draggable class="contract-detail-dialog">
+    <el-dialog v-model="viewOpen" width="1100px" append-to-body draggable class="rd-dialog contract-detail-dialog">
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon">
@@ -742,7 +747,7 @@
         <el-button @click="viewOpen = false">关 闭</el-button>
       </template>
     </el-dialog>
-    <el-dialog v-model="changeOpen" width="900px" append-to-body draggable class="contract-change-dialog">
+    <el-dialog v-model="changeOpen" width="900px" append-to-body draggable class="rd-dialog contract-change-dialog">
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon">
@@ -927,7 +932,7 @@
     </el-dialog>
 
     <!-- 合同续签对话框 -->
-    <el-dialog v-model="renewOpen" width="1100px" append-to-body draggable class="contract-renew-dialog">
+    <el-dialog v-model="renewOpen" width="1100px" append-to-body draggable class="rd-dialog contract-renew-dialog">
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon">
@@ -1082,7 +1087,7 @@
     </el-dialog>
 
     <!-- 合同审批对话框 -->
-    <el-dialog v-model="approveOpen" width="900px" append-to-body draggable class="contract-approve-dialog">
+    <el-dialog v-model="approveOpen" width="900px" append-to-body draggable class="rd-dialog contract-approve-dialog">
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon">
@@ -1290,6 +1295,9 @@
     <!-- 文件预览组件 -->
     <file-preview ref="filePreviewRef" />
 
+    <!-- 客户选择弹窗 -->
+    <customer-picker ref="customerPickerRef" title="选择客户" @confirm="onCustomerPickerConfirm" />
+
     <!-- 负责人选择弹窗 -->
     <user-picker ref="userPickerRef" title="选择负责人" @confirm="onUserPickerConfirm" />
 
@@ -1361,9 +1369,9 @@
 <script setup name="MkContract">
 import { CircleClose, ArrowRight, ArrowDown, QuestionFilled } from '@element-plus/icons-vue'
 import { listContract, getContract, addContract, updateContract, delContract, submitContract, approveContract, rejectContract, terminateContract, renewContract, submitContractChangeBatch, approveContractChangeByContractId } from '@/api/mk/contract'
-import { listCustomer } from '@/api/mk/customer'
 import UserPicker from '@/components/UserPicker/index.vue'
 import DeptPicker from '@/components/DeptPicker/index.vue'
+import CustomerPicker from '@/components/CustomerPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 
 const { proxy } = getCurrentInstance()
@@ -1386,7 +1394,6 @@ const single = ref(true)
 const multiple = ref(true)
 const total = ref(0)
 const title = ref('')
-const customerOptions = ref([])
 const viewForm = ref({})
 const terminateForm = ref({})
 const approveOpen = ref(false)
@@ -1474,8 +1481,19 @@ function getList() {
   loading.value = true
   listContract(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loadStatusCounts(); applySavedWidths() }).finally(() => { loading.value = false })
 }
-function getCustomerOptions() {
-  listCustomer({ pageNum: 1, pageSize: 9999 }).then(res => { customerOptions.value = res.rows })
+/** 打开客户选择弹窗 */
+function openCustomerPicker() {
+  proxy.$refs.customerPickerRef.open(form.value.customerId)
+}
+/** 客户选择确认回调 */
+function onCustomerPickerConfirm(customer) {
+  form.value.customerId = customer.customerId
+  form.value.customerName = customer.customerName
+}
+/** 清除客户 */
+function clearCustomer() {
+  form.value.customerId = undefined
+  form.value.customerName = undefined
 }
 
 /** 打开负责人选择弹窗 */
@@ -1509,14 +1527,6 @@ function onDeptPickerConfirm(dept) {
 function clearDept() {
   form.value.deptId = undefined
   form.value.deptName = undefined
-}
-function onCustomerChange(customerId) {
-  if (customerId) {
-    const customer = customerOptions.value.find(c => c.customerId === customerId)
-    if (customer) { form.value.customerName = customer.customerName }
-  } else {
-    form.value.customerName = undefined
-  }
 }
 function handleAddPlan() {
   if (!form.value.paymentPlanList) { form.value.paymentPlanList = [] }
@@ -1863,18 +1873,22 @@ function submitChange() {
 
 function handleExport() { proxy.download('mk/contract/export', { ...proxy.addDateRange(queryParams.value, dateRange.value, 'SignDate') }, `contract_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
-getCustomerOptions()
 getList()
 
 const statusTabList = computed(() => marketing_contract_status.value)
 function loadStatusCounts() {
-  const counts = { all: 0, '0': 0, '1': 0, '2': 0, '3': 0, '4': 0, '5': 0 }
-  list.value.forEach(row => {
-    const s = row.contractStatus
-    if (counts[s] !== undefined) counts[s]++
-  })
-  counts.all = total.value
-  statusCounts.value = counts
+  // 基于当前筛选条件（剔除状态与分页）拉取全量数据统计，避免仅统计当前页
+  const query = { ...queryParams.value, pageNum: 1, pageSize: 9999, contractStatus: undefined, params: { ...queryParams.value.params } }
+  listContract(query).then(res => {
+    const counts = { all: 0, '0': 0, '1': 0, '2': 0, '3': 0, '4': 0, '5': 0 }
+    const rows = res.rows || []
+    rows.forEach(row => {
+      const s = row.contractStatus
+      if (counts[s] !== undefined) counts[s]++
+    })
+    counts.all = rows.length
+    statusCounts.value = counts
+  }).catch(() => {})
 }
 function handleStatusTabClick(status) { activeStatusTab.value = status; queryParams.value.contractStatus = status === 'all' ? undefined : status; handleQuery() }
 function badgeClass(status) { const map = { '0': 'amber', '1': 'blue', '2': 'green', '3': 'gray', '4': 'red', '5': 'blue' }; return map[status] || 'gray' }
@@ -1952,7 +1966,7 @@ const showStatusHelp = ref(false)
 .rd-detail-header-divider { width: 1px; height: 16px; background: rgb(255 255 255 / 0.3); flex-shrink: 0; }
 .rd-detail-header-no { font-size: 12px; font-weight: 500; color: rgb(255 255 255 / 0.85); font-variant-numeric: tabular-nums; white-space: nowrap; }
 
-.rd-page { max-width: 1040px; margin: 0 auto; }
+.rd-page { max-width: 100%; margin: 0 auto; }
 
 .rd-card { background: #fff; border-radius: 12px; border: 1px solid #e5e7eb; box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); overflow: hidden; margin-bottom: 8px; transition: box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1); animation: rdFadeIn 0.4s ease-out forwards; }
 .rd-card:hover { box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); }

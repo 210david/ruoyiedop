@@ -186,9 +186,9 @@
             <div class="rd-card-body" v-show="!collapsedCards.c_activity">
               <el-row>
                 <el-col :span="24"><el-form-item label="所属活动" prop="activityId">
-                  <el-select v-model="form.activityId" filterable placeholder="请选择活动" style="width: 100%">
-                    <el-option v-for="a in activityOptions" :key="a.activityId" :label="a.activityName" :value="a.activityId" />
-                  </el-select>
+                  <el-input v-model="form.activityName" readonly placeholder="请选择所属活动" @click="openActivityPicker">
+                    <template #suffix><el-icon style="cursor: pointer"><Search /></el-icon></template>
+                  </el-input>
                 </el-form-item></el-col>
               </el-row>
             </div>
@@ -201,9 +201,9 @@
             <div class="rd-card-body" v-show="!collapsedCards.c_info">
               <el-row>
                 <el-col :span="24"><el-form-item label="从联系人库选">
-                  <el-select v-model="form.contactId" filterable clearable placeholder="选择后自动带出信息" style="width: 100%" @change="onContactSelect">
-                    <el-option v-for="c in contactOptions" :key="c.contactId" :label="c.name + ' (' + (c.customerName||'') + ')'" :value="c.contactId" />
-                  </el-select>
+                  <el-input v-model="form.contactDisplay" readonly clearable placeholder="点击选择后自动带出信息" @click="openContactPicker" @clear="clearContact">
+                    <template #suffix><el-icon style="cursor: pointer"><Search /></el-icon></template>
+                  </el-input>
                 </el-form-item></el-col>
                 <el-col :span="12"><el-form-item label="企业名称" prop="companyName"><el-input v-model="form.companyName" placeholder="请输入企业名称" /></el-form-item></el-col>
                 <el-col :span="12"><el-form-item label="联系人" prop="contactName"><el-input v-model="form.contactName" placeholder="请输入联系人姓名" /></el-form-item></el-col>
@@ -292,6 +292,9 @@
           </div>
         </section>
       </div>
+      <template #footer>
+        <el-button @click="viewOpen = false">关 闭</el-button>
+      </template>
     </el-dialog>
 
     <!-- 业务操作说明对话框 -->
@@ -335,6 +338,80 @@
         <el-button type="primary" @click="showStatusHelp = false">我知道了</el-button>
       </template>
     </el-dialog>
+
+    <!-- 活动选择弹框 -->
+    <el-dialog v-model="activityPickerOpen" width="860px" append-to-body draggable class="rd-dialog" @open="loadActivityPicker">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+          <span class="rd-detail-header-title">选择所属活动</span>
+        </div>
+      </template>
+      <div class="picker-search">
+        <el-input v-model="activityPickerQuery.activityName" placeholder="活动名称" clearable size="small" style="width: 200px" @keyup.enter="activityPickerQuery.pageNum = 1; loadActivityPicker()">
+          <template #prefix><el-icon><Search /></el-icon></template>
+        </el-input>
+        <el-select v-model="activityPickerQuery.activityStatus" placeholder="活动状态" clearable size="small" style="width: 130px; margin-left: 8px" @change="activityPickerQuery.pageNum = 1; loadActivityPicker()">
+          <el-option v-for="d in marketing_activity_status" :key="d.value" :label="d.label" :value="d.value" />
+        </el-select>
+        <el-button type="primary" plain icon="Search" size="small" style="margin-left: 8px" @click="activityPickerQuery.pageNum = 1; loadActivityPicker()">查询</el-button>
+      </div>
+      <div class="picker-table">
+        <el-table v-loading="activityPickerLoading" :data="activityPickerList" highlight-current-row height="360" size="small" @row-click="row => activityPickerSelected = row.activityId" @row-dblclick="row => confirmActivity(row)">
+          <el-table-column width="45" align="center">
+            <template #default="{ row }"><el-radio :model-value="activityPickerSelected" :value="row.activityId" @click.stop="activityPickerSelected = row.activityId"><span /></el-radio></template>
+          </el-table-column>
+          <el-table-column label="活动编号" prop="activityNo" width="140" show-overflow-tooltip />
+          <el-table-column label="活动名称" prop="activityName" min-width="180" show-overflow-tooltip />
+          <el-table-column label="状态" prop="activityStatus" width="90" align="center"><template #default="scope"><span class="badge" :class="activityBadgeClass(scope.row.activityStatus)"><span class="dot"></span>{{ activityStatusText(scope.row.activityStatus) }}</span></template></el-table-column>
+          <el-table-column label="开始时间" prop="startTime" width="160" />
+        </el-table>
+        <div class="picker-pagination">
+          <el-pagination v-show="activityPickerTotal > 0" background layout="total, prev, pager, next" :total="activityPickerTotal" :page-size="activityPickerQuery.pageSize" :current-page="activityPickerQuery.pageNum" @current-change="p => { activityPickerQuery.pageNum = p; loadActivityPicker() }" />
+        </div>
+      </div>
+      <template #footer>
+        <el-button type="primary" :disabled="!activityPickerSelected" @click="confirmActivity()">确 定</el-button>
+        <el-button @click="activityPickerOpen = false">取 消</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 联系人选择弹框 -->
+    <el-dialog v-model="contactPickerOpen" width="860px" append-to-body draggable class="rd-dialog" @open="loadContactPicker">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+          <span class="rd-detail-header-title">从联系人库选择</span>
+        </div>
+      </template>
+      <div class="picker-search">
+        <el-input v-model="contactPickerQuery.name" placeholder="联系人姓名" clearable size="small" style="width: 160px" @keyup.enter="contactPickerQuery.pageNum = 1; loadContactPicker()">
+          <template #prefix><el-icon><Search /></el-icon></template>
+        </el-input>
+        <el-input v-model="contactPickerQuery.phone" placeholder="手机号" clearable size="small" style="width: 150px; margin-left: 8px" @keyup.enter="contactPickerQuery.pageNum = 1; loadContactPicker()" />
+        <el-input v-model="contactPickerQuery.customerName" placeholder="所属客户" clearable size="small" style="width: 180px; margin-left: 8px" @keyup.enter="contactPickerQuery.pageNum = 1; loadContactPicker()" />
+        <el-button type="primary" plain icon="Search" size="small" style="margin-left: 8px" @click="contactPickerQuery.pageNum = 1; loadContactPicker()">查询</el-button>
+      </div>
+      <div class="picker-table">
+        <el-table v-loading="contactPickerLoading" :data="contactPickerList" highlight-current-row height="360" size="small" @row-click="row => contactPickerSelected = row.contactId" @row-dblclick="row => confirmContact(row)">
+          <el-table-column width="45" align="center">
+            <template #default="{ row }"><el-radio :model-value="contactPickerSelected" :value="row.contactId" @click.stop="contactPickerSelected = row.contactId"><span /></el-radio></template>
+          </el-table-column>
+          <el-table-column label="姓名" prop="name" width="100" />
+          <el-table-column label="所属客户" prop="customerName" min-width="160" show-overflow-tooltip />
+          <el-table-column label="职位" prop="position" width="110" show-overflow-tooltip />
+          <el-table-column label="手机号" prop="phone" width="130" />
+          <el-table-column label="邮箱" prop="email" min-width="160" show-overflow-tooltip />
+        </el-table>
+        <div class="picker-pagination">
+          <el-pagination v-show="contactPickerTotal > 0" background layout="total, prev, pager, next" :total="contactPickerTotal" :page-size="contactPickerQuery.pageSize" :current-page="contactPickerQuery.pageNum" @current-change="p => { contactPickerQuery.pageNum = p; loadContactPicker() }" />
+        </div>
+      </div>
+      <template #footer>
+        <el-button type="primary" :disabled="!contactPickerSelected" @click="confirmContact()">确 定</el-button>
+        <el-button @click="contactPickerOpen = false">取 消</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -349,7 +426,7 @@ const { collapsedCards, toggleCard } = useDetailCard(['c_activity', 'c_info', 'c
 
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('mk_participant_index')
-const { marketing_participate_status } = proxy.useDict('marketing_participate_status')
+const { marketing_participate_status, marketing_activity_status } = proxy.useDict('marketing_participate_status', 'marketing_activity_status')
 
 const list = ref([])
 const open = ref(false)
@@ -366,7 +443,6 @@ const multiple = ref(true)
 const total = ref(0)
 const title = ref('')
 const activityOptions = ref([])
-const contactOptions = ref([])
 const viewForm = ref({})
 
 const data = reactive({
@@ -434,9 +510,6 @@ function getList() {
 function getActivityOptions() {
   listActivity({ pageNum: 1, pageSize: 9999 }).then(res => { activityOptions.value = res.rows })
 }
-function getContactOptions() {
-  listContact({ pageNum: 1, pageSize: 9999 }).then(res => { contactOptions.value = res.rows })
-}
 function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; proxy.addDateRange(queryParams.value, dateRange.value, 'SignTime'); getList() }
 function resetQuery() {
 queryParams.value.activityId = undefined; queryParams.value.companyName = undefined; queryParams.value.participateStatus = undefined; queryParams.value.contactName = undefined; queryParams.value.contactPhone = undefined; queryParams.value.position = undefined; queryParams.value.params = {}; dateRange.value = []; activeStatusTab.value = 'all'; handleQuery()
@@ -444,9 +517,13 @@ queryParams.value.activityId = undefined; queryParams.value.companyName = undefi
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleStatusTabClick(status) { activeStatusTab.value = status; queryParams.value.participateStatus = status === 'all' ? undefined : status; handleQuery() }
 function loadStatusCounts() {
-  listParticipant({ pageNum: 1, pageSize: 999 }, { suppressError: true }).then(res => {
-    const counts = { all: res.total, '0': 0, '1': 0, '2': 0, '3': 0 }
-    ;(res.rows || []).forEach(r => { if (counts[r.participateStatus] !== undefined) counts[r.participateStatus]++ })
+  // 基于当前筛选条件（剔除状态与分页）拉取全量数据统计，与列表筛选保持一致
+  const query = { ...queryParams.value, pageNum: 1, pageSize: 9999, participateStatus: undefined, params: { ...queryParams.value.params } }
+  listParticipant(query, { suppressError: true }).then(res => {
+    const counts = { all: 0, '0': 0, '1': 0, '2': 0, '3': 0 }
+    const rows = res.rows || []
+    rows.forEach(r => { if (counts[r.participateStatus] !== undefined) counts[r.participateStatus]++ })
+    counts.all = rows.length
     statusCounts.value = counts
   }).catch(() => {})
 }
@@ -455,11 +532,16 @@ function badgeClass(status) { const map = { '0': 'amber', '1': 'blue', '2': 'gre
 function statusLabel(status) { const item = marketing_participate_status.value.find(d => d.value == status); return item ? item.label : '-' }
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.participantId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function reset() {
-  form.value = { activityId: undefined, leadId: undefined, contactId: undefined, companyName: undefined, contactName: undefined, contactPhone: undefined, contactEmail: undefined, position: undefined, participateStatus: '0', source: '0', signTime: undefined, remark: undefined }
+  form.value = { activityId: undefined, activityName: undefined, leadId: undefined, contactId: undefined, contactDisplay: undefined, companyName: undefined, contactName: undefined, contactPhone: undefined, contactEmail: undefined, position: undefined, participateStatus: '0', source: '0', signTime: undefined, remark: undefined }
   proxy.resetForm('participantRef')
 }
-function handleAdd() { reset(); if (contactOptions.value.length === 0) getContactOptions(); Object.keys(collapsedCards).forEach(k => { if (k.startsWith('c_')) collapsedCards[k] = false }); open.value = true; title.value = '新增活动参与人' }
-function handleUpdate(row) { reset(); if (contactOptions.value.length === 0) getContactOptions(); getParticipant(row.participantId || ids.value[0]).then(res => { form.value = res.data; Object.keys(collapsedCards).forEach(k => { if (k.startsWith('c_')) collapsedCards[k] = false }); open.value = true; title.value = '修改活动参与人' }) }
+function handleAdd() { reset(); Object.keys(collapsedCards).forEach(k => { if (k.startsWith('c_')) collapsedCards[k] = false }); open.value = true; title.value = '新增活动参与人' }
+function handleUpdate(row) { reset(); getParticipant(row.participantId || ids.value[0]).then(res => {
+  form.value = res.data
+  if (!form.value.activityName && form.value.activityId) { const a = activityOptions.value.find(i => i.activityId === form.value.activityId); if (a) form.value.activityName = a.activityName }
+  if (form.value.contactId && form.value.contactName) form.value.contactDisplay = form.value.contactName + '（' + (form.value.companyName || '-') + '）'
+  Object.keys(collapsedCards).forEach(k => { if (k.startsWith('c_')) collapsedCards[k] = false }); open.value = true; title.value = '修改活动参与人'
+}) }
 function handleView(row) {
   getParticipant(row.participantId).then(res => {
     viewForm.value = res.data
@@ -467,17 +549,62 @@ function handleView(row) {
     viewOpen.value = true
   })
 }
-function onContactSelect(contactId) {
-  if (contactId) {
-    const c = contactOptions.value.find(i => i.contactId === contactId)
-    if (c) {
-      form.value.companyName = c.customerName
-      form.value.contactName = c.name
-      form.value.contactPhone = c.phone
-      form.value.contactEmail = c.email
-      form.value.position = c.position
-    }
-  }
+// ===== 弹框选择：所属活动 =====
+const activityPickerOpen = ref(false)
+const activityPickerLoading = ref(false)
+const activityPickerList = ref([])
+const activityPickerTotal = ref(0)
+const activityPickerSelected = ref(null)
+const activityPickerQuery = reactive({ pageNum: 1, pageSize: 10, activityName: undefined, activityStatus: undefined })
+function openActivityPicker() { activityPickerSelected.value = form.value.activityId || null; activityPickerOpen.value = true }
+function loadActivityPicker() {
+  activityPickerLoading.value = true
+  listActivity({ ...activityPickerQuery }).then(res => {
+    activityPickerList.value = res.rows
+    activityPickerTotal.value = res.total
+  }).catch(() => { activityPickerList.value = []; activityPickerTotal.value = 0 }).finally(() => { activityPickerLoading.value = false })
+}
+function activityBadgeClass(status) { const map = { '0': 'amber', '1': 'blue', '2': 'green', '3': 'green', '4': 'gray', '5': 'red' }; return map[status] || 'gray' }
+function activityStatusText(status) { const item = marketing_activity_status.value.find(d => d.value == status); return item ? item.label : '-' }
+function confirmActivity(row) {
+  const target = row || activityPickerList.value.find(a => a.activityId === activityPickerSelected.value)
+  if (!target) return
+  form.value.activityId = target.activityId
+  form.value.activityName = target.activityName
+  activityPickerOpen.value = false
+  proxy.$refs['participantRef'] && proxy.$refs['participantRef'].validateField('activityId').catch(() => {})
+}
+
+// ===== 弹框选择：从联系人库选 =====
+const contactPickerOpen = ref(false)
+const contactPickerLoading = ref(false)
+const contactPickerList = ref([])
+const contactPickerTotal = ref(0)
+const contactPickerSelected = ref(null)
+const contactPickerQuery = reactive({ pageNum: 1, pageSize: 10, name: undefined, phone: undefined, customerName: undefined })
+function openContactPicker() { contactPickerSelected.value = form.value.contactId || null; contactPickerOpen.value = true }
+function loadContactPicker() {
+  contactPickerLoading.value = true
+  listContact({ ...contactPickerQuery }).then(res => {
+    contactPickerList.value = res.rows
+    contactPickerTotal.value = res.total
+  }).catch(() => { contactPickerList.value = []; contactPickerTotal.value = 0 }).finally(() => { contactPickerLoading.value = false })
+}
+function confirmContact(row) {
+  const target = row || contactPickerList.value.find(c => c.contactId === contactPickerSelected.value)
+  if (!target) return
+  form.value.contactId = target.contactId
+  form.value.contactDisplay = target.name + '（' + (target.customerName || '-') + '）'
+  form.value.companyName = target.customerName
+  form.value.contactName = target.name
+  form.value.contactPhone = target.phone
+  form.value.contactEmail = target.email
+  form.value.position = target.position
+  contactPickerOpen.value = false
+}
+function clearContact() {
+  form.value.contactId = undefined
+  form.value.contactDisplay = undefined
 }
 function submitForm() {
   proxy.$refs['participantRef'].validate(valid => {
@@ -562,4 +689,31 @@ getList()
   font-size: 13px;
   color: #606266;
 }
+/* 选择弹框样式 */
+.picker-search { margin-bottom: 12px; }
+.picker-table .picker-pagination { display: flex; justify-content: flex-end; margin-top: 10px; }
+.picker-table :deep(.el-table) { width: 100%; }
+/* 弹框内状态徽章（append-to-body 脱离页面级样式前缀） */
+.rd-dialog .badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  border: 1px solid transparent;
+}
+.rd-dialog .badge .dot { width: 6px; height: 6px; border-radius: 50%; }
+.rd-dialog .badge.amber { background: #fffbeb; color: #b45309; border-color: #fde68a; }
+.rd-dialog .badge.amber .dot { background: #f59e0b; }
+.rd-dialog .badge.blue { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+.rd-dialog .badge.blue .dot { background: #3b82f6; }
+.rd-dialog .badge.green { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+.rd-dialog .badge.green .dot { background: #10b981; }
+.rd-dialog .badge.gray { background: #f1f5f9; color: #64748b; border-color: #e2e8f0; }
+.rd-dialog .badge.gray .dot { background: #94a3b8; }
+.rd-dialog .badge.red { background: #fef2f2; color: #b91c1c; border-color: #fecaca; }
+.rd-dialog .badge.red .dot { background: #ef4444; }
 </style>

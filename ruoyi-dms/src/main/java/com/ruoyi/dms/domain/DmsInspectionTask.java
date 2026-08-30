@@ -18,6 +18,8 @@ public class DmsInspectionTask extends BaseEntity
     private Long inspectorId;
     @Excel(name = "点检人") private String inspectorName;
     @Excel(name = "状态", dictType = "dms_inspection_status") private String taskStatus;
+    /** 逾期标记（0=正常 1=已逾期），独立于业务状态，仅做显性标注 */
+    private String overdueFlag;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss") private Date startTime;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss") private Date completeTime;
     private Integer abnormalCount;
@@ -42,6 +44,8 @@ public class DmsInspectionTask extends BaseEntity
     public void setInspectorName(String inspectorName) { this.inspectorName = inspectorName; }
     public String getTaskStatus() { return taskStatus; }
     public void setTaskStatus(String taskStatus) { this.taskStatus = taskStatus; }
+    public String getOverdueFlag() { return overdueFlag; }
+    public void setOverdueFlag(String overdueFlag) { this.overdueFlag = overdueFlag; }
     public Date getStartTime() { return startTime; }
     public void setStartTime(Date startTime) { this.startTime = startTime; }
     public Date getCompleteTime() { return completeTime; }

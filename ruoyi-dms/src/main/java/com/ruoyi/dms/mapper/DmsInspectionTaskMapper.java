@@ -1,6 +1,7 @@
 package com.ruoyi.dms.mapper;
 
 import java.util.List;
+import java.util.Map;
 import com.ruoyi.dms.domain.DmsInspectionTask;
 
 public interface DmsInspectionTaskMapper
@@ -16,4 +17,10 @@ public interface DmsInspectionTaskMapper
     public int insertTask(DmsInspectionTask task);
     public int updateTask(DmsInspectionTask task);
     public int deleteTaskByIds(Long[] taskIds);
+
+    /** 统计全部点检任务数 */
+    public int countAllTasks();
+
+    /** 按状态统计点检任务数 */
+    public List<Map<String, Object>> countTaskByStatus();
 }

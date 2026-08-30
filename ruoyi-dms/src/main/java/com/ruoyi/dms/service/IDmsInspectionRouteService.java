@@ -1,6 +1,7 @@
 package com.ruoyi.dms.service;
 
 import java.util.List;
+import java.util.Map;
 import com.ruoyi.dms.domain.DmsInspectionRoute;
 
 public interface IDmsInspectionRouteService
@@ -10,4 +11,7 @@ public interface IDmsInspectionRouteService
     public int insertRoute(DmsInspectionRoute route);
     public int updateRoute(DmsInspectionRoute route);
     public int deleteRouteByIds(Long[] routeIds);
+
+    /** 按状态统计巡检路线数（含全部） */
+    public Map<String, Object> countRouteByStatus();
 }

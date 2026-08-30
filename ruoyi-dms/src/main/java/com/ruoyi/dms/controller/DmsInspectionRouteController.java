@@ -29,6 +29,13 @@ public class DmsInspectionRouteController extends BaseController
         return getDataTable(list);
     }
 
+    @PreAuthorize("@ss.hasPermi('dms:inspection:route:list')")
+    @GetMapping("/countByStatus")
+    public AjaxResult countByStatus()
+    {
+        return AjaxResult.success(dmsInspectionRouteService.countRouteByStatus());
+    }
+
     @PreAuthorize("@ss.hasPermi('dms:inspection:route:query')")
     @GetMapping("/{routeId}")
     public AjaxResult getInfo(@PathVariable Long routeId)

@@ -171,9 +171,12 @@
                 </el-col>
                 <el-col :span="12">
                   <el-form-item label="关联订单" prop="orderId">
-                    <el-select v-model="form.orderId" filterable clearable placeholder="请选择订单" style="width: 100%" @change="onOrderChange" :disabled="form.shipmentId != undefined">
-                      <el-option v-for="o in orderOptions" :key="o.orderId" :label="o.orderNo + (o.customerName ? ' - ' + o.customerName : '')" :value="o.orderId" />
-                    </el-select>
+                    <el-input v-model="form.orderNo" readonly placeholder="请选择订单" style="width: 100%" @click="openOrderPicker" :disabled="form.shipmentId != undefined">
+                      <template #append><el-button icon="Search" @click="openOrderPicker" :disabled="form.shipmentId != undefined" /></template>
+                      <template #suffix>
+                        <el-icon v-if="form.orderNo" class="clear-icon" @click.stop="clearOrder"><CircleClose /></el-icon>
+                      </template>
+                    </el-input>
                   </el-form-item>
                 </el-col>
               </el-row>
@@ -515,6 +518,9 @@
         <el-button @click="returnOpen = false">取 消</el-button>
       </template>
     </el-dialog>
+
+    <!-- 订单选择弹窗 -->
+    <order-picker ref="orderPickerRef" title="选择订单" :order-statuses="['2','3']" @confirm="onOrderPickerConfirm" />
   </div>
 </template>
 
@@ -524,7 +530,8 @@ import { listOrder, getOrder } from '@/api/mk/order'
 import { addReturn } from '@/api/mk/returnOrder'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard, formatMoney } from '@/composables/useDetailCard'
-import { ArrowDown } from '@element-plus/icons-vue'
+import { ArrowDown, CircleClose, Search } from '@element-plus/icons-vue'
+import OrderPicker from '@/components/OrderPicker/index.vue'
 
 const { proxy } = getCurrentInstance()
 const { marketing_shipment_status } = proxy.useDict('marketing_shipment_status')
@@ -546,13 +553,18 @@ const activeStatusTab = ref('all')
 const statusCounts = ref({ all: 0, '0': 0, '1': 0, '2': 0 })
 const statusTabList = computed(() => marketing_shipment_status.value)
 function loadStatusCounts() {
-  const counts = { all: 0, '0': 0, '1': 0, '2': 0 }
-  list.value.forEach(row => {
-    const s = row.status
-    if (counts[s] !== undefined) counts[s]++
-  })
-  counts.all = total.value
-  statusCounts.value = counts
+  // 基于当前筛选条件（剔除状态与分页）拉取全量数据统计，避免仅统计当前页
+  const query = { ...queryParams.value, pageNum: 1, pageSize: 9999, status: undefined, params: { ...queryParams.value.params } }
+  listShipment(query).then(res => {
+    const counts = { all: 0, '0': 0, '1': 0, '2': 0 }
+    const rows = res.rows || []
+    rows.forEach(row => {
+      const s = row.status
+      if (counts[s] !== undefined) counts[s]++
+    })
+    counts.all = rows.length
+    statusCounts.value = counts
+  }).catch(() => {})
 }
 function handleStatusTabClick(status) { activeStatusTab.value = status; queryParams.value.status = status === 'all' ? undefined : status; handleQuery() }
 function badgeClass(status) { const map = { '0': 'amber', '1': 'blue', '2': 'green' }; return map[status] || 'gray' }
@@ -560,12 +572,11 @@ function statusLabel(status) { const item = marketing_shipment_status.value.find
 function statusTabClass(value) { const map = { '0': 'tab-draft', '1': 'tab-audit', '2': 'tab-done' }; return map[value] || '' }
 const loading = ref(true)
 const showSearch = ref(true)
-const orderOptions = ref([])
+const title = ref('')
 const ids = ref([])
 const single = ref(true)
 const multiple = ref(true)
 const total = ref(0)
-const title = ref('')
 
 const confirmRules = {
   outboundOrderNo: [{ required: true, message: '请填写出库单号', trigger: 'blur' }],
@@ -718,30 +729,23 @@ function reset() {
 }
 
 /** 选择订单后自动带出客户、合同和明细 */
-function onOrderChange(val) {
-  if (!val) {
-    form.value.orderId = undefined
-    form.value.orderNo = undefined
-    form.value.customerName = undefined
-    form.value.contractNo = undefined
-    form.value.detailList = []
-    form.value.orderTotalQty = 0
-    form.value.orderShippedQty = 0
-    form.value.orderUnshippedQty = 0
-    return
-  }
-  getOrder(val).then(res => {
-    const order = res.data
-    form.value.orderId = order.orderId
-    form.value.orderNo = order.orderNo
-    form.value.customerId = order.customerId
-    form.value.customerName = order.customerName
-    form.value.contractId = order.contractId
-    form.value.contractNo = order.contractNo
-    // 计算订单总数量、已发数量、未发数量
+/** 打开订单选择弹窗 */
+function openOrderPicker() {
+  proxy.$refs.orderPickerRef.open(form.value.orderId)
+}
+/** 订单选择确认回调 — 自动带出客户、合同及订单明细 */
+function onOrderPickerConfirm(order) {
+  getOrder(order.orderId).then(res => {
+    const ord = res.data
+    form.value.orderId = ord.orderId
+    form.value.orderNo = ord.orderNo
+    form.value.customerId = ord.customerId
+    form.value.customerName = ord.customerName
+    form.value.contractId = ord.contractId
+    form.value.contractNo = ord.contractNo
     let orderTotal = 0, orderShipped = 0
-    if (order.itemList) {
-      order.itemList.forEach(item => {
+    if (ord.itemList) {
+      ord.itemList.forEach(item => {
         orderTotal += (item.quantity || 0)
         orderShipped += (item.shippedQty || 0)
       })
@@ -749,9 +753,8 @@ function onOrderChange(val) {
     form.value.orderTotalQty = parseFloat(orderTotal.toFixed(2))
     form.value.orderShippedQty = parseFloat(orderShipped.toFixed(2))
     form.value.orderUnshippedQty = parseFloat((orderTotal - orderShipped).toFixed(2))
-    // 从订单明细带出发货明细
-    if (order.itemList && order.itemList.length > 0) {
-      form.value.detailList = order.itemList.map(item => {
+    if (ord.itemList && ord.itemList.length > 0) {
+      form.value.detailList = ord.itemList.map(item => {
         const orderQty = parseFloat((item.quantity || 0).toFixed(2))
         const shippedQty = parseFloat((item.shippedQty || 0).toFixed(2))
         const unshippedQty = parseFloat((orderQty - shippedQty).toFixed(2))
@@ -773,18 +776,16 @@ function onOrderChange(val) {
     }
   })
 }
-
-/** 加载订单选项（已确认8、已发货2的订单可发货） */
-function loadOrderOptions() {
-  Promise.all([
-    listOrder({ pageNum: 1, pageSize: 999 }),
-    getInProgressOrderIds().catch(() => ({ data: [] }))
-  ]).then(([orderRes, inProgressRes]) => {
-    // 仅显示已审核(2)、部分发货(3)状态的订单
-    orderOptions.value = (orderRes.rows || []).filter(o =>
-      o.orderStatus === '2' || o.orderStatus === '3'
-    )
-  })
+/** 清除订单 */
+function clearOrder() {
+  form.value.orderId = undefined
+  form.value.orderNo = undefined
+  form.value.customerName = undefined
+  form.value.contractNo = undefined
+  form.value.detailList = []
+  form.value.orderTotalQty = 0
+  form.value.orderShippedQty = 0
+  form.value.orderUnshippedQty = 0
 }
 
 /** 删除明细行 */
@@ -1126,7 +1127,7 @@ function cancel() {
   reset()
 }
 
-loadOrderOptions()
+getList()
 getList()
 onActivated(() => { getList() })
 </script>

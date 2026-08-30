@@ -94,6 +94,9 @@
           <button type="button" class="btn-soft is-outline" @click="handleExport" v-hasPermi="['dms:sparepart:export']">
             <el-icon><Download /></el-icon> 导出
           </button>
+          <button type="button" class="btn-soft is-danger-outline" :disabled="multiple" @click="handleDelete" v-hasRole="['admin']">
+            <el-icon><Delete /></el-icon> 删除
+          </button>
         </div>
         <div class="right">
           <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="dms_sparepart_columns" />
@@ -127,11 +130,12 @@
             </template>
           </el-table-column>
           <el-table-column label="备注" prop="remark" key="remark" :width="colWidth('remark', 180)" resizable show-overflow-tooltip v-if="columns.remark.visible" />
-          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
+          <el-table-column label="操作" width="180" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
               <div class="action-btn-row">
                 <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['dms:sparepart:query']">查看</el-button>
                 <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['dms:sparepart:edit']">修改</el-button>
+                <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasRole="['admin']">删除</el-button>
               </div>
             </template>
           </el-table-column>
@@ -372,7 +376,7 @@ function submitForm() {
     }
   })
 }
-function handleDelete(row) { const partIds = row.partId || ids.value; proxy.$modal.confirm('确认删除编号为"' + partIds + '"的数据？').then(() => delSparepart(partIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleDelete(row) { const partIds = row?.partId || ids.value; const tip = Array.isArray(partIds) ? `选中的 ${partIds.length} 条数据` : `编号为"${partIds}"的数据`; proxy.$modal.confirm('确认删除' + tip + '？').then(() => delSparepart(partIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
 /** 导出备件台账（与列表口径一致：含筛选条件，导出全部页数据） */
 async function handleExport() {
   const rows = await fetchAllPages(listSparepart, queryParams.value)

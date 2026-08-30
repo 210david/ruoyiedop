@@ -215,7 +215,7 @@
     </div>
 
     <!-- 新增/修改对话框 -->
-    <el-dialog v-model="open" width="800px" append-to-body draggable class="rd-dialog">
+    <el-dialog v-model="open" width="960px" append-to-body draggable class="rd-dialog">
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
@@ -535,27 +535,8 @@
               </div>
               <div class="rd-card-body" v-show="!collapsedCards.v_other">
                 <div class="rd-grid">
-                  <div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value" :class="{ 'rd-value--muted': !viewForm.remark }">{{ viewForm.remark || '暂无' }}</div></div>
-                </div>
-              </div>
-            </section>
-            <section class="rd-card">
-              <div class="rd-card-header" @click="toggleCard('v_action')">
-                <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></span>状态与分配</div>
-                <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v_action }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
-              </div>
-              <div class="rd-card-body" v-show="!collapsedCards.v_action">
-                <div class="rd-grid">
                   <div class="rd-item"><span class="rd-label">当前状态</span><div class="rd-value"><dict-tag :options="marketing_customer_status" :value="viewForm.customerStatus" /></div></div>
-                  <div class="rd-item rd-item--full"><span class="rd-label">状态操作</span><div class="rd-value"><el-button size="small" type="primary" plain @click="handleViewStatusChange('1')" v-if="viewForm.customerStatus === '0'" v-hasPermi="['marketing:customer:edit']">转为签约</el-button>
-                    <el-button size="small" type="success" plain @click="handleViewStatusChange('2')" v-if="viewForm.customerStatus === '1'" v-hasPermi="['marketing:customer:edit']">转为合作中</el-button>
-                    <el-button size="small" type="warning" plain @click="handleViewStatusChange('3')" v-if="viewForm.customerStatus === '2'" v-hasPermi="['marketing:customer:edit']">暂停合作</el-button>
-                    <el-button size="small" type="success" plain @click="handleViewStatusChange('2')" v-if="viewForm.customerStatus === '3'" v-hasPermi="['marketing:customer:edit']">恢复合作</el-button>
-                    <el-button size="small" type="danger" plain @click="handleViewStatusChange('4')" v-if="['0','1','2','3'].includes(viewForm.customerStatus)" v-hasPermi="['marketing:customer:edit']">标记流失</el-button>
-                    <el-button size="small" type="primary" plain @click="handleViewStatusChange('0')" v-if="viewForm.customerStatus === '4'" v-hasPermi="['marketing:customer:edit']">重新激活</el-button></div></div>
-                  <div class="rd-item rd-item--full"><span class="rd-label">分配操作</span><div class="rd-value"><el-button size="small" type="primary" plain @click="handleViewAssign" v-if="viewForm.userId" v-hasPermi="['marketing:customer:assign']">转移分配</el-button>
-                    <el-button size="small" type="warning" plain @click="handleViewRelease" v-if="viewForm.userId" v-hasPermi="['marketing:customer:edit']">释放到公海</el-button>
-                    <el-button size="small" type="success" plain @click="handleViewClaim" v-if="!viewForm.userId" v-hasPermi="['marketing:customer:claim']">领取客户</el-button></div></div>
+                  <div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value" :class="{ 'rd-value--muted': !viewForm.remark }">{{ viewForm.remark || '暂无' }}</div></div>
                 </div>
               </div>
             </section>
@@ -677,6 +658,9 @@
           </el-tab-pane>
         </el-tabs>
       </div>
+      <template #footer>
+        <el-button @click="viewOpen = false">关 闭</el-button>
+      </template>
     </el-dialog>
 
     <!-- ===== 导入对话框 ===== -->
@@ -760,7 +744,7 @@ import DeptPicker from '@/components/DeptPicker/index.vue'
 import ExcelImportDialog from '@/components/ExcelImportDialog'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
-const { collapsedCards, toggleCard } = useDetailCard(["c_basic", "c_company", "c_address", "c_business", "c_owner", "c_other", "v_basic", "v_company", "v_business", "v_owner", "v_other", "v_action", "v_contacts", "v_opportunities", "v_contracts", "v_orders", "v_interactions", "v_activities"])
+const { collapsedCards, toggleCard } = useDetailCard(["c_basic", "c_company", "c_address", "c_business", "c_owner", "c_other", "v_basic", "v_company", "v_business", "v_owner", "v_other", "v_contacts", "v_opportunities", "v_contracts", "v_orders", "v_interactions", "v_activities"])
 
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('mk_customer_index')
@@ -931,9 +915,13 @@ queryParams.value.customerNo = undefined; queryParams.value.customerName = undef
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleStatusTabClick(status) { activeStatusTab.value = status; queryParams.value.customerStatus = status === 'all' ? undefined : status; handleQuery() }
 function loadStatusCounts() {
-  listCustomer({ pageNum: 1, pageSize: 999 }, { suppressError: true }).then(res => {
-    const counts = { all: res.total, '0': 0, '1': 0, '2': 0, '3': 0, '4': 0 }
-    ;(res.rows || []).forEach(r => { if (counts[r.customerStatus] !== undefined) counts[r.customerStatus]++ })
+  // 基于当前筛选条件（剔除状态与分页）拉取全量数据统计，与列表筛选保持一致
+  const query = { ...queryParams.value, pageNum: 1, pageSize: 9999, customerStatus: undefined, params: { ...queryParams.value.params } }
+  listCustomer(query, { suppressError: true }).then(res => {
+    const counts = { all: 0, '0': 0, '1': 0, '2': 0, '3': 0, '4': 0 }
+    const rows = res.rows || []
+    rows.forEach(r => { if (counts[r.customerStatus] !== undefined) counts[r.customerStatus]++ })
+    counts.all = rows.length
     statusCounts.value = counts
   }).catch(() => {})
 }
@@ -977,44 +965,6 @@ function loadRelations() {
 }
 /** 金额格式化 */
 function formatAmount(val) { if (val == null || val === '') return '-'; return Number(val).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }
-/** 详情页状态流转 */
-function handleViewStatusChange(status) {
-  proxy.$modal.confirm('确认将客户状态变更为"' + statusLabel(status) + '"？').then(() => {
-    changeCustomerStatus(viewForm.value.customerId, status).then(() => {
-      proxy.$modal.msgSuccess('状态变更成功')
-      getCustomer(viewForm.value.customerId).then(res => { viewForm.value = res.data })
-      getList()
-    })
-  }).catch(() => {})
-}
-/** 详情页分配 */
-function handleViewAssign() {
-  assignCustomerId.value = viewForm.value.customerId
-  assignUserId.value = viewForm.value.userId || null
-  assignUserName.value = viewForm.value.userName || null
-  assignUserDeptId.value = viewForm.value.deptId || null
-  assignOpen.value = true
-}
-/** 详情页释放到公海 */
-function handleViewRelease() {
-  proxy.$modal.confirm('确认将该客户释放到公海？释放后其他销售人员可以领取。').then(() => {
-    releaseToPool(viewForm.value.customerId).then(() => {
-      proxy.$modal.msgSuccess('已释放到公海')
-      getCustomer(viewForm.value.customerId).then(res => { viewForm.value = res.data })
-      getList()
-    })
-  }).catch(() => {})
-}
-/** 详情页领取客户 */
-function handleViewClaim() {
-  proxy.$modal.confirm('确认领取该客户？领取后您将成为该客户的负责人。').then(() => {
-    claimCustomer(viewForm.value.customerId).then(() => {
-      proxy.$modal.msgSuccess('领取成功')
-      getCustomer(viewForm.value.customerId).then(res => { viewForm.value = res.data })
-      getList()
-    })
-  }).catch(() => {})
-}
 function levelTagType(val) { return { '1': 'danger', '2': 'warning', '3': '', '4': 'info' }[val] || '' }
 function statusTagType(val) { return { '0': 'primary', '1': 'success', '2': 'success', '3': 'warning', '4': 'info' }[val] || '' }
 function submitForm() {

@@ -113,14 +113,16 @@
           <el-table-column label="定标金额" prop="awardAmount" key="awardAmount" :width="colWidth('awardAmount', 130)" resizable align="right" v-if="columns.awardAmount.visible"><template #default="scope"><span class="rd-amount">{{ formatMoney(scope.row.awardAmount) }}</span></template></el-table-column>
           <el-table-column label="定标供应商" align="center" prop="awardSupplierName" key="awardSupplierName" :width="colWidth('awardSupplierName', 160)" resizable show-overflow-tooltip v-if="columns.awardSupplierName.visible" />
           <el-table-column label="创建时间" align="center" prop="createTime" key="createTime" :width="colWidth('createTime', 180)" resizable sortable="custom" v-if="columns.createTime.visible" />
-          <el-table-column label="操作" align="center" width="330" fixed="right">
+          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
-              <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
-              <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-if="scope.row.status === '0'" v-hasPermi="['pms:inquiry:edit']">修改</el-button>
-              <el-button link type="success" icon="Promotion" @click="handlePublish(scope.row)" v-if="scope.row.status === '0'" v-hasPermi="['pms:inquiry:edit']">发布</el-button>
-              <el-button link type="warning" icon="CircleClose" @click="handleClose(scope.row)" v-if="scope.row.status === '1'" v-hasPermi="['pms:inquiry:edit']">截止</el-button>
-              <el-button link type="info" icon="EditPen" @click="handleAddQuotation(scope.row)" v-if="scope.row.status === '1' || scope.row.status === '2' || scope.row.status === '3'" v-hasPermi="['pms:inquiry:edit']">录入报价</el-button>
-              <el-button link type="primary" icon="Scale" @click="handleAward(scope.row)" v-if="scope.row.status === '1' || scope.row.status === '2' || scope.row.status === '3'" v-hasPermi="['pms:inquiry:edit']">{{ scope.row.status === '3' ? '继续定标' : '比价定标' }}</el-button>
+              <div class="action-btn-row">
+                <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
+                <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-if="scope.row.status === '0'" v-hasPermi="['pms:inquiry:edit']">修改</el-button>
+                <el-button link type="success" icon="Promotion" @click="handlePublish(scope.row)" v-if="scope.row.status === '0'" v-hasPermi="['pms:inquiry:edit']">发布</el-button>
+                <el-button link type="warning" icon="CircleClose" @click="handleClose(scope.row)" v-if="scope.row.status === '1'" v-hasPermi="['pms:inquiry:edit']">截止</el-button>
+                <el-button link type="info" icon="EditPen" @click="handleAddQuotation(scope.row)" v-if="scope.row.status === '1' || scope.row.status === '2' || scope.row.status === '3'" v-hasPermi="['pms:inquiry:edit']">录入报价</el-button>
+                <el-button link type="primary" icon="Scale" @click="handleAward(scope.row)" v-if="scope.row.status === '1' || scope.row.status === '2' || scope.row.status === '3'" v-hasPermi="['pms:inquiry:edit']">{{ scope.row.status === '3' ? '继续定标' : '比价定标' }}</el-button>
+              </div>
             </template>
           </el-table-column>
         </el-table>
@@ -241,6 +243,9 @@
           <div class="rd-card-body" v-show="!collapsedCards.v0" style="display:block"><div class="rd-grid"><div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value">{{ viewData.remark || '暂无备注' }}</div></div></div></div>
         </section>
       </div>
+      <template #footer>
+        <el-button @click="viewOpen = false">关 闭</el-button>
+      </template>
     </el-dialog>
 
     <!-- 录入报价对话框 -->
@@ -1142,4 +1147,11 @@ onActivated(() => { getList(); })
   background-color: transparent;
   border: 2px solid;
 }
+
+/* 操作列按钮对齐：每行2个按钮，flex-wrap 自动换行，按钮自适应内容宽度 */
+:deep(.col-action) { padding: 6px 4px !important; }
+:deep(.col-action .cell) { display: flex; justify-content: center; padding: 0; }
+.action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
+:deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
+:deep(.col-action .el-button + .el-button) { margin-left: 2px; }
 </style>

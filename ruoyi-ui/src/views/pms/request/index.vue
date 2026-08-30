@@ -144,12 +144,14 @@
           <el-table-column label="申请部门" prop="deptName" key="deptName" :width="colWidth('deptName', 140)" resizable show-overflow-tooltip v-if="columns.deptName.visible" />
           <el-table-column label="审批人" prop="auditBy" key="auditBy" :width="colWidth('auditBy', 120)" resizable v-if="columns.auditBy.visible" />
           <el-table-column label="创建时间" prop="createTime" key="createTime" :width="colWidth('createTime', 180)" resizable align="center" sortable="custom" v-if="columns.createTime.visible" />
-          <el-table-column label="操作" width="220" align="center" fixed="right">
+          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
-              <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
-              <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['pms:request:edit']" v-if="scope.row.status === '0' || scope.row.status === '3'">修改</el-button>
-              <el-button link type="primary" icon="Check" @click="handleAudit(scope.row)" v-hasPermi="['pms:request:approve']" v-if="scope.row.status === '0' || scope.row.status === '1'">审批</el-button>
-              <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['pms:request:remove']" v-if="scope.row.status === '0'">删除</el-button>
+              <div class="action-btn-row">
+                <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
+                <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['pms:request:edit']" v-if="scope.row.status === '0' || scope.row.status === '3'">修改</el-button>
+                <el-button link type="primary" icon="Check" @click="handleAudit(scope.row)" v-hasPermi="['pms:request:approve']" v-if="scope.row.status === '0' || scope.row.status === '1'">审批</el-button>
+                <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['pms:request:remove']" v-if="scope.row.status === '0'">删除</el-button>
+              </div>
             </template>
           </el-table-column>
         </el-table>
@@ -407,6 +409,9 @@
           </div>
         </section>
       </div>
+      <template #footer>
+        <el-button @click="viewOpen = false">关 闭</el-button>
+      </template>
     </el-dialog>
 
     <!-- 审核对话框 -->
@@ -1198,4 +1203,11 @@ onActivated(() => {
   color: #909399;
   font-size: 13px;
 }
+
+/* 操作列按钮对齐：每行2个按钮，flex-wrap 自动换行，按钮自适应内容宽度 */
+:deep(.col-action) { padding: 6px 4px !important; }
+:deep(.col-action .cell) { display: flex; justify-content: center; padding: 0; }
+.action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
+:deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
+:deep(.col-action .el-button + .el-button) { margin-left: 2px; }
 </style>

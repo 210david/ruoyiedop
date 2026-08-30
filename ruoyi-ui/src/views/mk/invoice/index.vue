@@ -257,19 +257,30 @@
             <div class="rd-card-body" v-show="!collapsedCards.relation">
               <el-row>
                 <el-col :span="12"><el-form-item label="关联客户" prop="customerId">
-                  <el-select v-model="form.customerId" filterable placeholder="请选择客户" style="width: 100%" @change="onCustomerChange">
-                    <el-option v-for="c in customerOptions" :key="c.customerId" :label="c.customerName" :value="c.customerId" />
-                  </el-select>
+                  <el-input v-model="form.customerName" readonly placeholder="请选择客户" style="width: 100%" @click="openCustomerPicker">
+                    <template v-if="form.customerName" #append>
+                      <el-button icon="CircleClose" @click.stop="clearCustomer" />
+                    </template>
+                    <template v-else #append>
+                      <el-button icon="Search" @click="openCustomerPicker" />
+                    </template>
+                  </el-input>
                 </el-form-item></el-col>
                 <el-col :span="12"><el-form-item label="关联订单" prop="orderId">
-                  <el-select v-model="form.orderId" filterable clearable placeholder="可选" style="width: 100%" @change="onOrderChange">
-                    <el-option v-for="o in orderOptions" :key="o.orderId" :label="o.orderNo + ' - ' + o.customerName" :value="o.orderId" />
-                  </el-select>
+                  <el-input v-model="form.orderNo" readonly placeholder="可选" style="width: 100%" @click="openOrderPicker">
+                    <template #append><el-button icon="Search" @click="openOrderPicker" /></template>
+                    <template #suffix>
+                      <el-icon v-if="form.orderNo" class="clear-icon" @click.stop="clearOrder"><CircleClose /></el-icon>
+                    </template>
+                  </el-input>
                 </el-form-item></el-col>
                 <el-col :span="12"><el-form-item label="关联合同" prop="contractId">
-                  <el-select v-model="form.contractId" filterable clearable placeholder="可选" style="width: 100%">
-                    <el-option v-for="c in contractOptions" :key="c.contractId" :label="c.contractNo + ' - ' + c.contractName" :value="c.contractId" />
-                  </el-select>
+                  <el-input v-model="form.contractNo" readonly placeholder="可选" style="width: 100%" @click="openContractPicker">
+                    <template #append><el-button icon="Search" @click="openContractPicker" /></template>
+                    <template #suffix>
+                      <el-icon v-if="form.contractNo" class="clear-icon" @click.stop="clearContract"><CircleClose /></el-icon>
+                    </template>
+                  </el-input>
                 </el-form-item></el-col>
               </el-row>
             </div>
@@ -467,20 +478,32 @@
           </div>
         </section>
       </div>
+      <template #footer>
+        <el-button @click="viewOpen = false">关 闭</el-button>
+      </template>
     </el-dialog>
     <!-- 文件预览 -->
     <file-preview ref="filePreviewRef" />
+
+    <!-- 客户选择弹窗 -->
+    <customer-picker ref="customerPickerRef" title="选择客户" @confirm="onCustomerPickerConfirm" />
+
+    <!-- 合同选择弹窗 -->
+    <contract-picker ref="contractPickerRef" title="选择合同" @confirm="onContractPickerConfirm" />
+
+    <!-- 订单选择弹窗 -->
+    <order-picker ref="orderPickerRef" title="选择订单" @confirm="onOrderPickerConfirm" />
   </div>
 </template>
 
 <script setup name="MkInvoice">
 import { listInvoice, getInvoice, addInvoice, updateInvoice, delInvoice, voidInvoice, recognizeInvoice } from '@/api/mk/invoice'
-import { listCustomer } from '@/api/mk/customer'
-import { listContract } from '@/api/mk/contract'
-import { listOrder } from '@/api/mk/order'
+import ContractPicker from '@/components/ContractPicker/index.vue'
+import OrderPicker from '@/components/OrderPicker/index.vue'
+import CustomerPicker from '@/components/CustomerPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import request from '@/utils/request'
-import { ArrowDown } from '@element-plus/icons-vue'
+import { ArrowDown, CircleClose, Search } from '@element-plus/icons-vue'
 
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('mk_invoice_index')
@@ -498,9 +521,6 @@ const multiple = ref(true)
 const total = ref(0)
 const title = ref('')
 const viewForm = ref({})
-const customerOptions = ref([])
-const contractOptions = ref([])
-const orderOptions = ref([])
 const recognizing = ref(false)
 const recognizedFields = ref([])
 const collapsedCards = reactive({ recognize: false, basic: false, relation: false, title: false, attachment: false })
@@ -568,13 +588,18 @@ const activeStatusTab = ref('all')
 const statusCounts = ref({ all: 0, '0': 0, '1': 0, '2': 0 })
 const statusTabList = computed(() => marketing_invoice_status.value)
 function loadStatusCounts() {
-  const counts = { all: 0, '0': 0, '1': 0, '2': 0 }
-  list.value.forEach(row => {
-    const s = row.invoiceStatus
-    if (counts[s] !== undefined) counts[s]++
-  })
-  counts.all = total.value
-  statusCounts.value = counts
+  // 基于当前筛选条件（剔除状态与分页）拉取全量数据统计，避免仅统计当前页
+  const query = { ...queryParams.value, pageNum: 1, pageSize: 9999, invoiceStatus: undefined, params: { ...queryParams.value.params } }
+  listInvoice(query).then(res => {
+    const counts = { all: 0, '0': 0, '1': 0, '2': 0 }
+    const rows = res.rows || []
+    rows.forEach(row => {
+      const s = row.invoiceStatus
+      if (counts[s] !== undefined) counts[s]++
+    })
+    counts.all = rows.length
+    statusCounts.value = counts
+  }).catch(() => {})
 }
 function handleStatusTabClick(status) { activeStatusTab.value = status; queryParams.value.invoiceStatus = status === 'all' ? undefined : status; handleQuery() }
 function badgeClass(status) { const map = { '0': 'amber', '1': 'green', '2': 'gray' }; return map[status] || 'gray' }
@@ -586,11 +611,53 @@ function typeLabel(type) { const item = marketing_invoice_type.value.find(d => d
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 
 function getList() { loading.value = true; listInvoice(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false; loadStatusCounts(); applySavedWidths() }).catch(() => { loading.value = false }) }
-function getCustomerOptions() { listCustomer({ pageNum: 1, pageSize: 9999 }).then(res => { customerOptions.value = res.rows }) }
-function getContractOptions() { listContract({ pageNum: 1, pageSize: 9999 }).then(res => { contractOptions.value = res.rows }) }
-function getOrderOptions() { listOrder({ pageNum: 1, pageSize: 9999 }).then(res => { orderOptions.value = res.rows }) }
-function onCustomerChange(customerId) { if (customerId) { const customer = customerOptions.value.find(c => c.customerId === customerId); if (customer) { form.value.customerName = customer.customerName; form.value.invoiceTitle = customer.customerName } } }
-function onOrderChange(orderId) { if (orderId) { const order = orderOptions.value.find(o => o.orderId === orderId); if (order) { form.value.orderNo = order.orderNo; form.value.customerId = order.customerId; form.value.customerName = order.customerName; form.value.invoiceAmount = order.orderAmount; form.value.invoiceTitle = order.customerName } } }
+/** 打开客户选择弹窗 */
+function openCustomerPicker() {
+  proxy.$refs.customerPickerRef.open(form.value.customerId)
+}
+/** 客户选择确认回调 — 同步发票抬头 */
+function onCustomerPickerConfirm(customer) {
+  form.value.customerId = customer.customerId
+  form.value.customerName = customer.customerName
+  form.value.invoiceTitle = customer.customerName
+}
+/** 清除客户 */
+function clearCustomer() {
+  form.value.customerId = undefined
+  form.value.customerName = undefined
+}
+/** 打开合同选择弹窗 */
+function openContractPicker() {
+  proxy.$refs.contractPickerRef.open(form.value.contractId)
+}
+/** 合同选择确认回调 */
+function onContractPickerConfirm(contract) {
+  form.value.contractId = contract.contractId
+  form.value.contractNo = contract.contractNo
+}
+/** 清除合同 */
+function clearContract() {
+  form.value.contractId = undefined
+  form.value.contractNo = undefined
+}
+/** 打开订单选择弹窗 */
+function openOrderPicker() {
+  proxy.$refs.orderPickerRef.open(form.value.orderId)
+}
+/** 订单选择确认回调 */
+function onOrderPickerConfirm(order) {
+  form.value.orderId = order.orderId
+  form.value.orderNo = order.orderNo
+  form.value.customerId = order.customerId
+  form.value.customerName = order.customerName
+  form.value.invoiceAmount = order.totalAmount
+  form.value.invoiceTitle = order.customerName
+}
+/** 清除订单 */
+function clearOrder() {
+  form.value.orderId = undefined
+  form.value.orderNo = undefined
+}
 function handleQuery() { showAdvanced.value = false; queryParams.value.params = proxy.addDateRange(queryParams.value.params, dateRange.value, 'InvoiceDate'); queryParams.value.pageNum = 1; getList() }
 function resetQuery() { queryParams.value.invoiceNo = undefined; queryParams.value.customerName = undefined; queryParams.value.invoiceType = undefined; queryParams.value.invoiceStatus = undefined; queryParams.value.invoiceTitle = undefined; dateRange.value = []; queryParams.value.params = {}; activeStatusTab.value = 'all'; handleQuery() }
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.invoiceId); single.value = selection.length !== 1; multiple.value = !selection.length }
@@ -657,7 +724,7 @@ function uploadAttachment(file) {
 function getFileName(name) { if (name.lastIndexOf('/') > -1) { return name.slice(name.lastIndexOf('/') + 1) } return name }
 function handlePreview(fileUrl) { proxy.$refs.filePreviewRef.open(fileUrl, getFileName(fileUrl)) }
 
-getCustomerOptions(); getContractOptions(); getOrderOptions(); getList()
+getList()
 </script>
 
 <style scoped>

@@ -248,17 +248,6 @@
                 </div>
               </div>
             </section>
-            <section class="rd-card">
-              <div class="rd-card-header" @click="toggleCard('v_action')">
-                <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></span>公海操作</div>
-                <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v_action }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
-              </div>
-              <div class="rd-card-body" v-show="!collapsedCards.v_action">
-                <div class="rd-grid">
-                  <div class="rd-item rd-item--full"><span class="rd-label">领取操作</span><div class="rd-value"><el-button size="small" type="success" plain icon="Pointer" @click="handleViewClaim" v-hasPermi="['marketing:customer:claim']">领取客户</el-button></div></div>
-                </div>
-              </div>
-            </section>
           </el-tab-pane>
           <el-tab-pane :label="`联系人 (${contacts.length})`" name="contacts">
             <section class="rd-card">
@@ -377,6 +366,9 @@
           </el-tab-pane>
         </el-tabs>
       </div>
+      <template #footer>
+        <el-button @click="viewOpen = false">关 闭</el-button>
+      </template>
     </el-dialog>
 
     <!-- 业务操作说明对话框 -->
@@ -427,7 +419,7 @@ import { listInteraction } from '@/api/mk/interaction'
 import { listParticipant } from '@/api/mk/participant'
 import { useDetailCard } from '@/composables/useDetailCard'
 import { useColumnResize } from '@/composables/useColumnResize'
-const { collapsedCards, toggleCard } = useDetailCard(["v_basic", "v_company", "v_business", "v_owner", "v_other", "v_action", "v_contacts", "v_opportunities", "v_contracts", "v_orders", "v_interactions", "v_activities"])
+const { collapsedCards, toggleCard } = useDetailCard(["v_basic", "v_company", "v_business", "v_owner", "v_other", "v_contacts", "v_opportunities", "v_contracts", "v_orders", "v_interactions", "v_activities"])
 
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('mk_customer_pool')
@@ -506,14 +498,19 @@ const activeStatusTab = ref('all')
 const statusCounts = ref({ all: 0 })
 const statusTabList = computed(() => marketing_customer_status.value)
 function loadStatusCounts() {
-  const counts = { all: 0 }
-  marketing_customer_status.value.forEach(d => { counts[d.value] = 0 })
-  list.value.forEach(row => {
-    const s = row.customerStatus
-    if (counts[s] !== undefined) counts[s]++
-  })
-  counts.all = total.value
-  statusCounts.value = counts
+  // 基于当前筛选条件（剔除状态与分页）拉取全量数据统计，避免仅统计当前页
+  const query = { ...queryParams.value, pageNum: 1, pageSize: 9999, customerStatus: undefined, params: { ...queryParams.value.params } }
+  listPublicPool(query).then(res => {
+    const counts = { all: 0 }
+    marketing_customer_status.value.forEach(d => { counts[d.value] = 0 })
+    const rows = res.rows || []
+    rows.forEach(row => {
+      const s = row.customerStatus
+      if (counts[s] !== undefined) counts[s]++
+    })
+    counts.all = rows.length
+    statusCounts.value = counts
+  }).catch(() => {})
 }
 function handleStatusTabClick(status) { activeStatusTab.value = status; queryParams.value.customerStatus = status === 'all' ? undefined : status; handleQuery() }
 function badgeClass(status) { const map = { '0': 'green', '1': 'amber', '2': 'red', '3': 'blue', '4': 'gray' }; return map[status] || 'gray' }
@@ -585,17 +582,6 @@ function handleClaim(row) {
     })
   }).catch(() => {})
 }
-/** 详情弹窗内领取客户 */
-function handleViewClaim() {
-  proxy.$modal.confirm('确认领取该客户？领取后您将成为该客户的负责人。').then(() => {
-    claimCustomer(viewForm.value.customerId).then(() => {
-      proxy.$modal.msgSuccess('领取成功')
-      viewOpen.value = false
-      getList()
-    })
-  }).catch(() => {})
-}
-
 function handleBatchClaim() {
   proxy.$modal.confirm('确认领取选中的 ' + ids.value.length + ' 个客户？').then(() => {
     const promises = ids.value.map(id => claimCustomer(id))

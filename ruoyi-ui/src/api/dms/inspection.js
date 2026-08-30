@@ -16,6 +16,9 @@ export function updateRoute(data) {
 export function delRoute(routeId) {
   return request({ url: '/dms/inspection/route/' + routeId, method: 'delete' })
 }
+export function countRouteByStatus() {
+  return request({ url: '/dms/inspection/route/countByStatus', method: 'get' })
+}
 
 // ===== 点检任务 =====
 export function listTask(query) {
@@ -38,4 +41,7 @@ export function completeTask(data) {
 }
 export function startTask(taskId) {
   return request({ url: '/dms/inspection/task/start/' + taskId, method: 'put' })
+}
+export function countTaskByStatus() {
+  return request({ url: '/dms/inspection/task/countByStatus', method: 'get' })
 }

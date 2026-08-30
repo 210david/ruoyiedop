@@ -64,7 +64,17 @@
     <div class="surface">
       <!-- Status Tabs + Tip Pill -->
       <div class="status-tabs">
-        <div class="tabs-track"></div>
+        <div class="tabs-track">
+          <button class="status-tab" :class="{ 'is-active': activeStatusTab === 'all' }" @click="handleStatusTabClick('all')">
+            <span class="dot"></span><span>全部</span><span class="count">{{ statusCounts.all || 0 }}</span>
+          </button>
+          <button v-for="s in statusTabList" :key="s.value"
+            class="status-tab"
+            :class="[statusTabClass(s.value), { 'is-active': activeStatusTab === s.value }]"
+            @click="handleStatusTabClick(s.value)">
+            <span class="dot"></span><span>{{ s.label }}</span><span class="count">{{ statusCounts[s.value] || 0 }}</span>
+          </button>
+        </div>
         <button class="tip-pill" @click="showStatusHelp = true">
           <el-icon><WarningFilled /></el-icon>
           <span>业务操作说明</span>
@@ -84,19 +94,30 @@
         </div>
       </div>
       <div class="table-wrap">
-        <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" class="app-table">
+        <el-table ref="tableRef" border v-loading="loading" :data="list" :row-class-name="tableRowClassName" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column type="index" label="序号" width="85" align="center" />
           <el-table-column label="任务编号" prop="taskNo" key="taskNo" :width="colWidth('taskNo', 180)" resizable v-if="columns.taskNo.visible" />
           <el-table-column label="路线名称" prop="routeName" key="routeName" :width="colWidth('routeName', 200)" resizable show-overflow-tooltip v-if="columns.routeName.visible" />
-          <el-table-column label="计划日期" prop="planDate" key="planDate" :width="colWidth('planDate', 130)" resizable align="center" v-if="columns.planDate.visible" />
+          <el-table-column label="计划日期" prop="planDate" key="planDate" :width="colWidth('planDate', 130)" resizable align="center" v-if="columns.planDate.visible">
+            <template #default="scope">
+              <span :class="{ 'plan-date-overdue': scope.row.overdueFlag === '1' }">{{ scope.row.planDate || '-' }}</span>
+            </template>
+          </el-table-column>
           <el-table-column label="点检人" prop="inspectorName" key="inspectorName" :width="colWidth('inspectorName', 100)" resizable v-if="columns.inspectorName.visible" />
           <el-table-column label="异常项" prop="abnormalCount" key="abnormalCount" :width="colWidth('abnormalCount', 80)" resizable align="center" v-if="columns.abnormalCount.visible">
             <template #default="scope"><span class="badge" :class="scope.row.abnormalCount > 0 ? 'red' : 'green'">{{ scope.row.abnormalCount || 0 }}</span></template>
           </el-table-column>
-          <el-table-column label="状态" prop="taskStatus" key="taskStatus" :width="colWidth('taskStatus', 100)" resizable align="center" v-if="columns.taskStatus.visible">
+          <el-table-column label="状态" prop="taskStatus" key="taskStatus" :width="colWidth('taskStatus', 130)" resizable align="center" v-if="columns.taskStatus.visible">
             <template #default="scope">
-              <span class="badge" :class="taskStatusBadge(scope.row.taskStatus)"><span class="dot"></span>{{ taskStatusLabel(scope.row.taskStatus) }}</span>
+              <div class="status-cell" :class="{ 'has-overdue': scope.row.overdueFlag === '1' }">
+                <span class="badge" :class="taskStatusBadge(scope.row.taskStatus)"><span class="dot"></span>{{ taskStatusLabel(scope.row.taskStatus) }}</span>
+                <span v-if="scope.row.overdueFlag === '1'" class="overdue-badge">
+                  <span class="overdue-pulse"></span>
+                  <svg class="overdue-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                  逾期
+                </span>
+              </div>
             </template>
           </el-table-column>
           <el-table-column label="完成时间" prop="completeTime" key="completeTime" :width="colWidth('completeTime', 180)" resizable align="center" v-if="columns.completeTime.visible" />
@@ -230,7 +251,7 @@
               <div class="rd-item"><span class="rd-label">任务编号</span><div class="rd-value">{{ viewForm.taskNo || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">路线名称</span><div class="rd-value">{{ viewForm.routeName || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">计划日期</span><div class="rd-value">{{ viewForm.planDate || '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label">状态</span><div class="rd-value"><dict-tag :options="dms_inspection_status" :value="viewForm.taskStatus" /></div></div>
+              <div class="rd-item"><span class="rd-label">状态</span><div class="rd-value"><dict-tag :options="dms_inspection_status" :value="viewForm.taskStatus" /><span v-if="viewForm.overdueFlag === '1'" class="overdue-badge overdue-badge-detail"><span class="overdue-pulse"></span><svg class="overdue-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>逾期</span></div></div>
               <div class="rd-item"><span class="rd-label">异常项数</span><div class="rd-value">{{ viewForm.abnormalCount != null ? viewForm.abnormalCount : 0 }}</div></div>
             </div>
           </div>
@@ -468,6 +489,7 @@
           <el-descriptions-item label="待执行">任务已创建，等待点检人执行。可新增、删除</el-descriptions-item>
           <el-descriptions-item label="执行中">点检人已开始执行点检，系统记录开始时间。可继续填写检查结果</el-descriptions-item>
           <el-descriptions-item label="已完成">点检完成，提交检查结果后自动完成。若有异常项，系统按异常设备自动生成整改工单（一个设备一张工单）</el-descriptions-item>
+          <el-descriptions-item label="逾期标记">计划日期已过且仍未完成的任务，系统每天凌晨自动标记为"逾期"（<span class="overdue-badge overdue-badge-inline"><span class="overdue-pulse"></span><svg class="overdue-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>逾期</span>）。逾期仅作显性提示，<strong>不影响任务执行</strong>，点检人仍可点击「执行」补做</el-descriptions-item>
         </el-descriptions>
 
         <h4>三、重点业务规则</h4>
@@ -522,7 +544,7 @@
 
 <script setup name="DmsInspectionTask">
 import { Plus, CircleClose, Search, Filter, RefreshLeft, ArrowDown } from '@element-plus/icons-vue'
-import { listTask, getTask, addTask, updateTask, delTask, completeTask, startTask, listRoute, getRoute } from '@/api/dms/inspection'
+import { listTask, getTask, addTask, updateTask, delTask, completeTask, startTask, listRoute, getRoute, countTaskByStatus } from '@/api/dms/inspection'
 import UserPicker from '@/components/UserPicker/index.vue'
 import { getToken } from '@/utils/auth'
 import { useColumnResize } from '@/composables/useColumnResize'
@@ -544,6 +566,31 @@ const single = ref(true)
 const multiple = ref(true)
 const total = ref(0)
 const title = ref('')
+// 状态页签
+const activeStatusTab = ref('all')
+const statusCounts = ref({})
+const statusTabList = computed(() => {
+  if (!dms_inspection_status.value || dms_inspection_status.value.length === 0) return []
+  return dms_inspection_status.value.filter(d => d.value !== undefined && d.value !== null).map(d => ({ label: d.label, value: d.value }))
+})
+function statusTabClass(status) {
+  const map = { '0': 'tab-amber', '1': 'tab-blue', '2': 'tab-green' }
+  return map[status] || 'tab-gray'
+}
+function handleStatusTabClick(status) {
+  activeStatusTab.value = status
+  if (status === 'all') {
+    queryParams.value.taskStatus = undefined
+  } else {
+    queryParams.value.taskStatus = status
+  }
+  handleQuery()
+}
+function loadStatusCounts() {
+  countTaskByStatus().then(res => {
+    statusCounts.value = res.data || {}
+  }).catch(() => {})
+}
 const routeOptions = ref([])
 const routePickerOpen = ref(false)
 const routePickerLoading = ref(false)
@@ -601,6 +648,10 @@ function taskStatusLabel(val) {
 function taskStatusBadge(val) {
   const map = { '0': 'amber', '1': 'blue', '2': 'green' }
   return map[val] || 'gray'
+}
+/** 逾期行添加高亮类名 */
+function tableRowClassName({ row }) {
+  return row.overdueFlag === '1' ? 'overdue-row' : ''
 }
 
 const viewForm = ref({})
@@ -737,10 +788,10 @@ function clearInspector() {
 
 function submitForm() {
   proxy.$refs['taskRef'].validate(valid => {
-    if (valid) { addTask(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList() }) }
+    if (valid) { addTask(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList(); loadStatusCounts() }) }
   })
 }
-function handleDelete(row) { const taskIds = row.taskId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delTask(taskIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleDelete(row) { const taskIds = row.taskId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delTask(taskIds)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
 function cancel() { open.value = false; reset() }
 
 // ===== 查看详情 =====
@@ -978,6 +1029,7 @@ function submitExecute() {
     execOpen.value = false
     execSaving.value = false
     getList()
+    loadStatusCounts()
   }).catch(() => { execSaving.value = false })
 }
 
@@ -995,6 +1047,7 @@ function parsePhotos(photoUrls) {
 
 getRouteOptions()
 getList()
+loadStatusCounts()
 </script>
 
 <style scoped>
@@ -1029,6 +1082,28 @@ getList()
 .dms-inspection-task-page .status-tabs { display:flex; align-items:center; gap:12px; padding:6px 10px 6px 12px; border-bottom:1px solid var(--ink-200); background:#fff; }
 .dms-inspection-task-page .tabs-track { display:flex; align-items:center; gap:4px; flex:1; min-width:0; overflow-x:auto; scrollbar-width:none; }
 .dms-inspection-task-page .tabs-track::-webkit-scrollbar { display:none; }
+.dms-inspection-task-page .status-tab { display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 12px; border-radius:var(--r-sm); font-size:14px; color:var(--ink-500); cursor:pointer; user-select:none; transition:all .15s var(--ease-out); white-space:nowrap; border:1px solid transparent; background:transparent; }
+.dms-inspection-task-page .status-tab .dot { width:6px; height:6px; border-radius:50%; background:var(--ink-300); }
+.dms-inspection-task-page .status-tab .count { font-size:12px; font-weight:600; padding:1px 6px; border-radius:999px; background:var(--ink-100); color:var(--ink-500); min-width:18px; text-align:center; line-height:1.4; font-feature-settings:"tnum" 1; }
+.dms-inspection-task-page .status-tab:hover { background:var(--ink-50); color:var(--ink-700); }
+.dms-inspection-task-page .status-tab.is-active { background:var(--brand-50); color:var(--brand-700); font-weight:600; border-color:var(--brand-200); }
+.dms-inspection-task-page .status-tab.is-active .count { background:var(--brand-600); color:#fff; }
+.dms-inspection-task-page .status-tab.is-active .dot { background:var(--brand-500); }
+.dms-inspection-task-page .status-tab.tab-amber .dot { background:var(--amber-500); }
+.dms-inspection-task-page .status-tab.tab-amber .count { background:var(--amber-50); color:var(--amber-700); }
+.dms-inspection-task-page .status-tab.is-active.tab-amber .count { background:var(--amber-500); color:#fff; }
+.dms-inspection-task-page .status-tab.tab-blue .dot { background:var(--blue-500); }
+.dms-inspection-task-page .status-tab.tab-blue .count { background:var(--blue-50); color:var(--blue-700); }
+.dms-inspection-task-page .status-tab.is-active.tab-blue .count { background:var(--blue-500); color:#fff; }
+.dms-inspection-task-page .status-tab.tab-green .dot { background:var(--green-500); }
+.dms-inspection-task-page .status-tab.tab-green .count { background:var(--green-50); color:var(--green-700); }
+.dms-inspection-task-page .status-tab.is-active.tab-green .count { background:var(--green-500); color:#fff; }
+.dms-inspection-task-page .status-tab.tab-red .dot { background:var(--red-500); }
+.dms-inspection-task-page .status-tab.tab-red .count { background:var(--red-50); color:var(--red-700); }
+.dms-inspection-task-page .status-tab.is-active.tab-red .count { background:var(--red-500); color:#fff; }
+.dms-inspection-task-page .status-tab.tab-gray .dot { background:var(--ink-400); }
+.dms-inspection-task-page .status-tab.tab-gray .count { background:var(--ink-100); color:var(--ink-500); }
+.dms-inspection-task-page .status-tab.is-active.tab-gray .count { background:var(--ink-400); color:#fff; }
 .dms-inspection-task-page .tip-pill { display:inline-flex; align-items:center; gap:5px; height:30px; padding:0 10px; background:#fffaf0; border:1px solid #fde68a; color:#92400e; border-radius:999px; font-size:13px; font-weight:500; cursor:pointer; transition:all .15s var(--ease-out); flex-shrink:0; white-space:nowrap; }
 .dms-inspection-task-page .tip-pill:hover { background:var(--amber-50); border-color:var(--amber-500); color:#7c2d12; }
 .dms-inspection-task-page .tip-pill .el-icon { font-size:14px; color:var(--amber-700); }
@@ -1066,6 +1141,70 @@ getList()
 .dms-inspection-task-page .badge.violet { background:var(--violet-50); color:var(--brand-700); border-color:var(--brand-200); }
 .dms-inspection-task-page .badge.gray { background:var(--ink-100); color:var(--ink-500); border-color:var(--ink-200); }
 .dms-inspection-task-page .badge.gray .dot { background:var(--ink-400); }
+
+/* ===== 逾期标记样式 ===== */
+/* 状态单元格容器 */
+.dms-inspection-task-page .status-cell { display:flex; flex-direction:column; align-items:center; gap:4px; }
+/* 逾期徽章 */
+.dms-inspection-task-page .overdue-badge {
+  display:inline-flex; align-items:center; gap:4px;
+  padding:2px 8px 2px 6px; border-radius:999px;
+  font-size:11.5px; font-weight:700; line-height:1.3;
+  color:#fff; background:linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  border:1px solid #b91c1c;
+  box-shadow:0 1px 4px rgba(239,68,68,.35);
+  white-space:nowrap; position:relative;
+}
+.dms-inspection-task-page .overdue-badge .overdue-icon {
+  width:12px; height:12px; flex-shrink:0;
+}
+/* 脉冲动画圆点 */
+.dms-inspection-task-page .overdue-pulse {
+  width:6px; height:6px; border-radius:50%; background:#fff;
+  flex-shrink:0; position:relative;
+}
+.dms-inspection-task-page .overdue-pulse::after {
+  content:''; position:absolute; inset:0; border-radius:50%;
+  background:#fff; animation:overdue-ping 1.8s cubic-bezier(0,0,.2,1) infinite;
+}
+@keyframes overdue-ping {
+  0% { transform:scale(1); opacity:.8; }
+  75%,100% { transform:scale(2.8); opacity:0; }
+}
+/* 详情弹窗中的逾期徽章 */
+.dms-inspection-task-page .overdue-badge-detail {
+  margin-left:6px; font-size:12.5px; padding:3px 10px 3px 8px;
+}
+.dms-inspection-task-page .overdue-badge-detail .overdue-icon { width:14px; height:14px; }
+/* 说明弹窗中的内联徽章 */
+.dms-inspection-task-page .overdue-badge-inline {
+  font-size:12px; padding:2px 8px 2px 6px; vertical-align:middle;
+}
+/* 计划日期逾期标红 */
+.dms-inspection-task-page .plan-date-overdue {
+  color:var(--red-700); font-weight:600;
+  position:relative;
+}
+.dms-inspection-task-page .plan-date-overdue::after {
+  content:''; position:absolute; left:0; right:0; bottom:-2px; height:2px;
+  background:linear-gradient(90deg, transparent, var(--red-500), transparent);
+}
+/* 逾期任务行高亮 */
+.dms-inspection-task-page :deep(.el-table__body tr.overdue-row > td) {
+  background:linear-gradient(90deg, rgba(254,242,242,.55) 0%, rgba(254,242,242,.2) 100%) !important;
+}
+.dms-inspection-task-page :deep(.el-table__body tr.overdue-row:hover > td) {
+  background:linear-gradient(90deg, rgba(254,202,202,.45) 0%, rgba(254,242,242,.3) 100%) !important;
+}
+/* 逾期行左侧红色指示条 */
+.dms-inspection-task-page :deep(.el-table__body tr.overdue-row > td:first-child) {
+  position:relative;
+}
+.dms-inspection-task-page :deep(.el-table__body tr.overdue-row > td:first-child)::before {
+  content:''; position:absolute; left:0; top:0; bottom:0; width:3px;
+  background:linear-gradient(180deg, #ef4444, #dc2626);
+  border-radius:0 2px 2px 0;
+}
 /* 操作列按钮对齐：每行2个按钮，flex-wrap 自动换行 */
 .dms-inspection-task-page :deep(.col-action) { padding: 6px 4px !important; }
 .dms-inspection-task-page :deep(.col-action .cell) { display: flex; justify-content: center; padding: 0; }

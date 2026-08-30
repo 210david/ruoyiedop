@@ -78,6 +78,15 @@ WHERE i.material_id = #{materialId} AND i.warehouse_id = #{warehouseId}
 AND i.location_id = #{locationId} AND i.batch_no = #{batchNo}
 </select>
 
+<!-- 按物料+仓库查询可用库存（FIFO：按创建时间升序），batchNo为空时查全部批次 -->
+<select id="selectAvailableInventory" resultMap="WmsInventoryResult">
+    <include refid="selectInventoryVo"/>
+    WHERE i.material_id = #{materialId} AND i.warehouse_id = #{warehouseId}
+    AND i.qty > 0 AND (i.del_flag IS NULL OR i.del_flag != '2')
+    <if test="batchNo != null and batchNo != ''"> AND i.batch_no = #{batchNo}</if>
+    ORDER BY i.create_time ASC, i.inventory_id ASC
+</select>
+
     <select id="selectInventoryForUpdate" parameterType="Long" resultMap="WmsInventoryResult">
         <include refid="selectInventoryVo"/> WHERE i.inventory_id = #{inventoryId} FOR UPDATE
     </select>

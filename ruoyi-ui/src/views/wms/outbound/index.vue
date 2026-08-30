@@ -263,6 +263,9 @@
             </el-table>
           </div>
         </section>
+      <template #footer>
+        <el-button @click="detailOpen = false">关 闭</el-button>
+      </template>
     </el-dialog>
 
     <!-- 业务操作说明对话框 -->

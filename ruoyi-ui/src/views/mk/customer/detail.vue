@@ -97,21 +97,12 @@
 
           <section class="rd-card">
             <div class="rd-card-header" @click="toggleCard('d_action')">
-              <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></span>状态与分配</div>
+              <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>状态与分配</div>
               <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.d_action }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
             </div>
             <div class="rd-card-body" v-show="!collapsedCards.d_action">
               <div class="rd-grid">
                 <div class="rd-item"><span class="rd-label">当前状态</span><div class="rd-value"><dict-tag :options="marketing_customer_status" :value="customer.customerStatus" /></div></div>
-                <div class="rd-item rd-item--full"><span class="rd-label">状态操作</span><div class="rd-value"><el-button size="small" type="primary" plain @click="handleStatusChange('1')" v-if="customer.customerStatus === '0'" v-hasPermi="['marketing:customer:edit']">转为签约</el-button>
-                  <el-button size="small" type="success" plain @click="handleStatusChange('2')" v-if="customer.customerStatus === '1'" v-hasPermi="['marketing:customer:edit']">转为合作中</el-button>
-                  <el-button size="small" type="warning" plain @click="handleStatusChange('3')" v-if="customer.customerStatus === '2'" v-hasPermi="['marketing:customer:edit']">暂停合作</el-button>
-                  <el-button size="small" type="success" plain @click="handleStatusChange('2')" v-if="customer.customerStatus === '3'" v-hasPermi="['marketing:customer:edit']">恢复合作</el-button>
-                  <el-button size="small" type="danger" plain @click="handleStatusChange('4')" v-if="['0','1','2','3'].includes(customer.customerStatus)" v-hasPermi="['marketing:customer:edit']">标记流失</el-button>
-                  <el-button size="small" type="primary" plain @click="handleStatusChange('0')" v-if="customer.customerStatus === '4'" v-hasPermi="['marketing:customer:edit']">重新激活</el-button></div></div>
-                <div class="rd-item rd-item--full"><span class="rd-label">分配操作</span><div class="rd-value"><el-button size="small" type="primary" plain @click="handleAssign" v-if="customer.userId" v-hasPermi="['marketing:customer:assign']">转移分配</el-button>
-                  <el-button size="small" type="warning" plain @click="handleRelease" v-if="customer.userId" v-hasPermi="['marketing:customer:edit']">释放到公海</el-button>
-                  <el-button size="small" type="success" plain @click="handleClaim" v-if="!customer.userId" v-hasPermi="['marketing:customer:claim']">领取客户</el-button></div></div>
               </div>
             </div>
           </section>
@@ -252,40 +243,18 @@
         </el-tab-pane>
       </el-tabs>
     </div>
-
-    <!-- 分配弹窗 -->
-    <el-dialog v-model="assignOpen" width="500px" append-to-body draggable class="rd-dialog">
-      <template #header>
-        <div class="rd-detail-header">
-          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
-          <span class="rd-detail-header-title">分配客户</span>
-        </div>
-      </template>
-      <el-form label-width="80px">
-        <el-form-item label="负责人">
-          <el-select v-model="assignUserId" filterable clearable placeholder="请选择（留空释放到公海）" style="width: 100%">
-            <el-option v-for="u in userOptions" :key="u.userId" :label="u.nickName" :value="u.userId" />
-          </el-select>
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button type="primary" @click="confirmAssign">确 定</el-button>
-        <el-button @click="assignOpen = false">取 消</el-button>
-      </template>
-    </el-dialog>
   </div>
 </template>
 
 <script setup name="MkCustomerDetail">
 import { useRoute, useRouter } from 'vue-router'
-import { getCustomer, changeCustomerStatus, assignCustomer, releaseToPool, claimCustomer } from '@/api/mk/customer'
+import { getCustomer } from '@/api/mk/customer'
 import { listContact } from '@/api/mk/contact'
 import { listOpportunity } from '@/api/mk/opportunity'
 import { listContract } from '@/api/mk/contract'
 import { listOrder } from '@/api/mk/order'
 import { listInteraction } from '@/api/mk/interaction'
 import { listParticipant } from '@/api/mk/participant'
-import { listUser } from '@/api/system/user'
 import { useDetailCard } from '@/composables/useDetailCard'
 
 const route = useRoute()
@@ -314,9 +283,6 @@ const contracts = ref([])
 const orders = ref([])
 const interactions = ref([])
 const activities = ref([])
-const userOptions = ref([])
-const assignOpen = ref(false)
-const assignUserId = ref(null)
 
 function levelTagType(val) {
   return { '1': 'danger', '2': 'warning', '3': '', '4': 'info' }[val] || ''
@@ -379,64 +345,8 @@ function getActivities() {
   })
 }
 
-function getUserOptions() {
-  listUser({ pageNum: 1, pageSize: 9999 }).then(res => {
-    userOptions.value = res.rows.filter(u => u.userId !== 1)
-  })
-}
-
 function goBack() { router.push('/mk/customer/list') }
 function handleEdit() { router.push('/mk/customer/list') }
-
-// 状态流转
-function handleStatusChange(status) {
-  const statusText = statusLabel(status)
-  proxy.$modal.confirm('确认将客户状态变更为"' + statusText + '"？').then(() => {
-    changeCustomerStatus(customerId, status).then(() => {
-      proxy.$modal.msgSuccess('状态变更成功')
-      getCustomerData()
-    })
-  }).catch(() => {})
-}
-
-// 分配/转移
-function handleAssign() {
-  assignUserId.value = customer.value.userId || null
-  assignOpen.value = true
-}
-function confirmAssign() {
-  const data = { userId: assignUserId.value }
-  const user = userOptions.value.find(u => u.userId === assignUserId.value)
-  if (user) {
-    data.deptId = user.deptId
-    data.userName = user.nickName
-  }
-  assignCustomer(customerId, data).then(() => {
-    proxy.$modal.msgSuccess('分配成功')
-    assignOpen.value = false
-    getCustomerData()
-  })
-}
-
-// 释放到公海
-function handleRelease() {
-  proxy.$modal.confirm('确认将该客户释放到公海？释放后其他销售人员可以领取。').then(() => {
-    releaseToPool(customerId).then(() => {
-      proxy.$modal.msgSuccess('已释放到公海')
-      getCustomerData()
-    })
-  }).catch(() => {})
-}
-
-// 领取客户
-function handleClaim() {
-  proxy.$modal.confirm('确认领取该客户？领取后您将成为该客户的负责人。').then(() => {
-    claimCustomer(customerId).then(() => {
-      proxy.$modal.msgSuccess('领取成功')
-      getCustomerData()
-    })
-  }).catch(() => {})
-}
 
 // 监听tab切换时加载对应数据
 watch(activeTab, (val) => {
@@ -449,7 +359,6 @@ watch(activeTab, (val) => {
 })
 
 getCustomerData()
-getUserOptions()
 </script>
 
 <style scoped>

@@ -470,8 +470,6 @@
         </el-tabs>
       </div>
       <template #footer>
-        <el-button type="primary" @click="handleEditFromView" v-hasPermi="['marketing:lead:edit']">编辑</el-button>
-        <el-button type="success" @click="handleConvertFromView" v-if="viewForm.leadStatus !== '4' && viewForm.leadStatus !== '5'" v-hasPermi="['marketing:lead:edit']">转化为客户</el-button>
         <el-button @click="viewOpen = false">关 闭</el-button>
       </template>
     </el-dialog>
@@ -800,14 +798,19 @@ const activeStatusTab = ref('all')
 const statusCounts = ref({ all: 0 })
 const statusTabList = computed(() => marketing_lead_status.value)
 function loadStatusCounts() {
-  const counts = { all: 0 }
-  marketing_lead_status.value.forEach(d => { counts[d.value] = 0 })
-  list.value.forEach(row => {
-    const s = row.leadStatus
-    if (counts[s] !== undefined) counts[s]++
+  // 基于当前筛选条件（剔除状态与分页）拉取全量数据统计，避免仅统计当前页
+  const query = { ...queryParams.value, pageNum: 1, pageSize: 9999, leadStatus: undefined, params: { ...queryParams.value.params } }
+  listLead(query).then(res => {
+    const counts = { all: 0 }
+    marketing_lead_status.value.forEach(d => { counts[d.value] = 0 })
+    const rows = res.rows || []
+    rows.forEach(row => {
+      const s = row.leadStatus
+      if (counts[s] !== undefined) counts[s]++
+    })
+    counts.all = rows.length
+    statusCounts.value = counts
   })
-  counts.all = total.value
-  statusCounts.value = counts
 }
 function handleStatusTabClick(status) { activeStatusTab.value = status; queryParams.value.leadStatus = status === 'all' ? undefined : status; handleQuery() }
 function badgeClass(status) { const map = { '0': 'amber', '1': 'blue', '2': 'green', '3': 'violet', '4': 'gray', '5': 'red' }; return map[status] || 'gray' }
@@ -1033,14 +1036,6 @@ function buildTimeline() {
     items.sort((a, b) => (b.time || '').localeCompare(a.time || ''))
     timelineList.value = items
   })
-}
-function handleEditFromView() {
-  viewOpen.value = false
-  handleUpdate(viewForm.value)
-}
-function handleConvertFromView() {
-  convertForm.value = { ...viewForm.value }
-  convertOpen.value = true
 }
 const customerDetailVisible = ref(false)
 const customerDetailId = ref(null)

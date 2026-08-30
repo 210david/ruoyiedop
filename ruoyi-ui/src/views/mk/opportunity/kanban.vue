@@ -306,6 +306,9 @@
           </el-tab-pane>
         </el-tabs>
       </div>
+      <template #footer>
+        <el-button @click="viewOpen = false">关 闭</el-button>
+      </template>
     </el-dialog>
 
     <!-- 业务操作说明对话框 -->

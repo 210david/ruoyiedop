@@ -46,7 +46,17 @@
     <!-- ===== Table Section ===== -->
     <div class="surface">
       <div class="status-tabs">
-        <div class="tabs-track"></div>
+        <div class="tabs-track">
+          <button class="status-tab" :class="{ 'is-active': activeStatusTab === 'all' }" @click="handleStatusTabClick('all')">
+            <span class="dot"></span><span>全部</span><span class="count">{{ statusCounts.all || 0 }}</span>
+          </button>
+          <button v-for="s in statusTabList" :key="s.value"
+            class="status-tab"
+            :class="[statusTabClass(s.value), { 'is-active': activeStatusTab === s.value }]"
+            @click="handleStatusTabClick(s.value)">
+            <span class="dot"></span><span>{{ s.label }}</span><span class="count">{{ statusCounts[s.value] || 0 }}</span>
+          </button>
+        </div>
         <button class="tip-pill" @click="showStatusHelp = true">
           <el-icon><WarningFilled /></el-icon>
           <span>业务操作说明</span>
@@ -348,7 +358,7 @@
 
 <script setup name="DmsInspectionRoute">
 import { CircleClose } from '@element-plus/icons-vue'
-import { listRoute, getRoute, addRoute, updateRoute, delRoute } from '@/api/dms/inspection'
+import { listRoute, getRoute, addRoute, updateRoute, delRoute, countRouteByStatus } from '@/api/dms/inspection'
 import { listEquipment } from '@/api/dms/equipment'
 import DeptPicker from '@/components/DeptPicker/index.vue'
 import EquipmentPicker from '@/components/EquipmentPicker/index.vue'
@@ -377,6 +387,31 @@ const viewForm = ref({})
 const viewLoading = ref(false)
 const viewItems = ref({ common: [], devices: [] })
 const viewEquipmentList = ref([])
+// 状态页签
+const activeStatusTab = ref('all')
+const statusCounts = ref({})
+const statusTabList = ref([
+  { label: '正常', value: '0' },
+  { label: '停用', value: '1' }
+])
+function statusTabClass(status) {
+  const map = { '0': 'tab-green', '1': 'tab-gray' }
+  return map[status] || 'tab-gray'
+}
+function handleStatusTabClick(status) {
+  activeStatusTab.value = status
+  if (status === 'all') {
+    queryParams.value.status = undefined
+  } else {
+    queryParams.value.status = status
+  }
+  handleQuery()
+}
+function loadStatusCounts() {
+  countRouteByStatus().then(res => {
+    statusCounts.value = res.data || {}
+  }).catch(() => {})
+}
 
 const defaultColumns = {
   routeName: { label: '路线名称', visible: true },
@@ -584,15 +619,16 @@ function submitForm() {
       }
       const hasItems = inspectionData.common.length > 0 || inspectionData.devices.some(d => d.items.length > 0)
       form.value.inspectionItems = hasItems ? JSON.stringify(inspectionData) : undefined
-      if (form.value.routeId != undefined) { updateRoute(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList() }) }
-      else { addRoute(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList() }) }
+      if (form.value.routeId != undefined) { updateRoute(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList(); loadStatusCounts() }) }
+      else { addRoute(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList(); loadStatusCounts() }) }
     }
   })
 }
-function handleDelete(row) { const routeIds = row.routeId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delRoute(routeIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleDelete(row) { const routeIds = row.routeId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delRoute(routeIds)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
 function cancel() { open.value = false; reset() }
 getEquipmentOptions()
 getList()
+loadStatusCounts()
 </script>
 
 <style scoped>
@@ -627,6 +663,19 @@ getList()
 .dms-inspection-route-page .status-tabs { display:flex; align-items:center; gap:12px; padding:6px 10px 6px 12px; border-bottom:1px solid var(--ink-200); background:#fff; }
 .dms-inspection-route-page .tabs-track { display:flex; align-items:center; gap:4px; flex:1; min-width:0; overflow-x:auto; scrollbar-width:none; }
 .dms-inspection-route-page .tabs-track::-webkit-scrollbar { display:none; }
+.dms-inspection-route-page .status-tab { display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 12px; border-radius:var(--r-sm); font-size:14px; color:var(--ink-500); cursor:pointer; user-select:none; transition:all .15s var(--ease-out); white-space:nowrap; border:1px solid transparent; background:transparent; }
+.dms-inspection-route-page .status-tab .dot { width:6px; height:6px; border-radius:50%; background:var(--ink-300); }
+.dms-inspection-route-page .status-tab .count { font-size:12px; font-weight:600; padding:1px 6px; border-radius:999px; background:var(--ink-100); color:var(--ink-500); min-width:18px; text-align:center; line-height:1.4; font-feature-settings:"tnum" 1; }
+.dms-inspection-route-page .status-tab:hover { background:var(--ink-50); color:var(--ink-700); }
+.dms-inspection-route-page .status-tab.is-active { background:var(--brand-50); color:var(--brand-700); font-weight:600; border-color:var(--brand-200); }
+.dms-inspection-route-page .status-tab.is-active .count { background:var(--brand-600); color:#fff; }
+.dms-inspection-route-page .status-tab.is-active .dot { background:var(--brand-500); }
+.dms-inspection-route-page .status-tab.tab-green .dot { background:var(--green-500); }
+.dms-inspection-route-page .status-tab.tab-green .count { background:var(--green-50); color:var(--green-700); }
+.dms-inspection-route-page .status-tab.is-active.tab-green .count { background:var(--green-500); color:#fff; }
+.dms-inspection-route-page .status-tab.tab-gray .dot { background:var(--ink-400); }
+.dms-inspection-route-page .status-tab.tab-gray .count { background:var(--ink-100); color:var(--ink-500); }
+.dms-inspection-route-page .status-tab.is-active.tab-gray .count { background:var(--ink-400); color:#fff; }
 .dms-inspection-route-page .tip-pill { display:inline-flex; align-items:center; gap:5px; height:30px; padding:0 10px; background:#fffaf0; border:1px solid #fde68a; color:#92400e; border-radius:999px; font-size:13px; font-weight:500; cursor:pointer; transition:all .15s var(--ease-out); flex-shrink:0; white-space:nowrap; }
 .dms-inspection-route-page .tip-pill:hover { background:var(--amber-50); border-color:var(--amber-500); color:#7c2d12; }
 .dms-inspection-route-page .tip-pill .el-icon { font-size:14px; color:var(--amber-700); }

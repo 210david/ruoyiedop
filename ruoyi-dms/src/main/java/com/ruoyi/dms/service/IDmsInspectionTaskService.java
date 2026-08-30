@@ -1,6 +1,7 @@
 package com.ruoyi.dms.service;
 
 import java.util.List;
+import java.util.Map;
 import com.ruoyi.dms.domain.DmsInspectionTask;
 
 public interface IDmsInspectionTaskService
@@ -22,4 +23,7 @@ public interface IDmsInspectionTaskService
 
     /** 将过期未完成的点检任务标记为逾期 */
     public int markOverdueTasks();
+
+    /** 按状态统计点检任务数（含全部） */
+    public Map<String, Object> countTaskByStatus();
 }

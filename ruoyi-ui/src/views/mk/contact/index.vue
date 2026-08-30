@@ -61,7 +61,7 @@
           </div>
         </div>
         <div class="field" v-show="showAdvanced">
-          <label>归属销售</label>
+          <label>销售人员</label>
           <div class="control">
             <el-input v-model="queryParams.ownerUserName" placeholder="请输入" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
@@ -150,7 +150,7 @@
               </span>
             </template>
           </el-table-column>
-          <el-table-column label="归属销售" prop="ownerUserName" key="ownerUserName" :width="colWidth('ownerUserName', 100)" resizable v-if="columns.ownerUserName.visible" />
+          <el-table-column label="销售人员" prop="ownerUserName" key="ownerUserName" :width="colWidth('ownerUserName', 100)" resizable v-if="columns.ownerUserName.visible" />
           <el-table-column label="下次联系时间" prop="nextContactTime" key="nextContactTime" :width="colWidth('nextContactTime', 160)" resizable sortable="custom" v-if="columns.nextContactTime.visible">
             <template #default="scope">
               <span :class="{ 'text-danger': isOverdue(scope.row) }">{{ scope.row.nextContactTime }}</span>
@@ -182,7 +182,7 @@
     </div>
 
     <!-- 新增/修改对话框 -->
-    <el-dialog v-model="open" width="750px" append-to-body draggable class="rd-dialog">
+    <el-dialog v-model="open" width="900px" append-to-body draggable class="rd-dialog">
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div>
@@ -190,63 +190,90 @@
         </div>
       </template>
       <el-form ref="contactRef" :model="form" :rules="rules" label-width="100px">
-        <el-collapse v-model="activeNames">
-          <el-collapse-item title="基本信息" name="basic">
-            <el-row>
-              <el-col :span="12"><el-form-item label="所属客户" prop="customerId">
-                <el-select v-model="form.customerId" filterable clearable placeholder="请选择客户" style="width: 100%">
-                  <el-option v-for="c in customerOptions" :key="c.customerId" :label="c.customerName" :value="c.customerId" />
-                </el-select>
-              </el-form-item></el-col>
-              <el-col :span="12"><el-form-item label="姓名" prop="name"><el-input v-model="form.name" placeholder="请输入姓名" @blur="onNameBlur" /></el-form-item></el-col>
-              <el-col :span="12"><el-form-item label="性别" prop="gender">
-                <el-radio-group v-model="form.gender"><el-radio value="0">男</el-radio><el-radio value="1">女</el-radio></el-radio-group>
-              </el-form-item></el-col>
-              <el-col :span="12"><el-form-item label="职位" prop="position"><el-input v-model="form.position" placeholder="请输入职位" /></el-form-item></el-col>
-            </el-row>
-          </el-collapse-item>
-          <el-collapse-item title="联系方式" name="contact">
-            <el-row>
-              <el-col :span="12"><el-form-item label="手机号" prop="phone"><el-input v-model="form.phone" placeholder="请输入手机号" @blur="onPhoneBlur" /></el-form-item></el-col>
-              <el-col :span="12"><el-form-item label="邮箱" prop="email"><el-input v-model="form.email" placeholder="请输入邮箱" @blur="onEmailBlur" /></el-form-item></el-col>
-              <el-col :span="12"><el-form-item label="微信号" prop="wechat"><el-input v-model="form.wechat" placeholder="请输入微信号" /></el-form-item></el-col>
-              <el-col :span="12"><el-form-item label="QQ号" prop="qq"><el-input v-model="form.qq" placeholder="请输入QQ号" /></el-form-item></el-col>
-            </el-row>
-          </el-collapse-item>
-          <el-collapse-item title="角色与特征" name="role">
-            <el-row>
-              <el-col :span="12"><el-form-item label="所属部门" prop="department"><el-input v-model="form.department" placeholder="请输入所属部门" /></el-form-item></el-col>
-              <el-col :span="12"><el-form-item label="角色标签" prop="roleTag">
-                <el-select v-model="form.roleTag" multiple placeholder="请选择" style="width: 100%">
-                  <el-option v-for="d in marketing_contact_role" :key="d.value" :label="d.label" :value="d.value" />
-                </el-select>
-              </el-form-item></el-col>
-              <el-col :span="12"><el-form-item label="关键联系人" prop="isKey">
-                <el-radio-group v-model="form.isKey"><el-radio value="0">否</el-radio><el-radio value="1">是</el-radio></el-radio-group>
-              </el-form-item></el-col>
-              <el-col :span="12"><el-form-item label="主要联系人" prop="isPrimary">
-                <el-radio-group v-model="form.isPrimary"><el-radio value="0">否</el-radio><el-radio value="1">是</el-radio></el-radio-group>
-              </el-form-item></el-col>
-              <el-col :span="12"><el-form-item label="归属销售" prop="ownerUserId">
-                <el-input v-model="form.ownerUserName" readonly placeholder="请选择归属销售" style="width: 100%" @click="openFormUserPicker">
-                  <template #append>
-                    <el-button icon="Search" @click="openFormUserPicker" />
-                  </template>
-                  <template #suffix>
-                    <el-icon v-if="form.ownerUserName" class="clear-icon" @click.stop="clearFormUser"><CircleClose /></el-icon>
-                  </template>
-                </el-input>
-              </el-form-item></el-col>
-              <el-col :span="12"><el-form-item label="下次联系时间" prop="nextContactTime">
-                <el-date-picker v-model="form.nextContactTime" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" placeholder="选择时间" style="width: 100%" />
-              </el-form-item></el-col>
-              <el-col :span="24"><el-form-item label="个人特点" prop="personalTrait"><el-input v-model="form.personalTrait" type="textarea" :rows="2" placeholder="请输入个人特征" /></el-form-item></el-col>
-            </el-row>
-          </el-collapse-item>
-          <el-collapse-item title="其他信息" name="other">
-            <el-form-item label="备注" prop="remark"><el-input v-model="form.remark" type="textarea" :rows="2" placeholder="请输入备注" /></el-form-item>
-          </el-collapse-item>
-        </el-collapse>
+        <div class="rd-page">
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('formBasic')">
+              <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>基本信息</div>
+              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.formBasic }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.formBasic">
+              <el-row>
+                <el-col :span="12"><el-form-item label="所属客户" prop="customerId">
+                  <el-input v-model="form.customerName" readonly placeholder="请选择客户" style="width: 100%" @click="openCustomerPicker">
+                    <template #append><el-button icon="Search" @click="openCustomerPicker" /></template>
+                    <template #suffix>
+                      <el-icon v-if="form.customerName" class="clear-icon" @click.stop="clearCustomer"><CircleClose /></el-icon>
+                    </template>
+                  </el-input>
+                </el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="姓名" prop="name"><el-input v-model="form.name" placeholder="请输入姓名" @blur="onNameBlur" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="性别" prop="gender">
+                  <el-radio-group v-model="form.gender"><el-radio value="0">男</el-radio><el-radio value="1">女</el-radio></el-radio-group>
+                </el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="职位" prop="position"><el-input v-model="form.position" placeholder="请输入职位" /></el-form-item></el-col>
+              </el-row>
+            </div>
+          </section>
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('formContact')">
+              <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></span>联系方式</div>
+              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.formContact }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.formContact">
+              <el-row>
+                <el-col :span="12"><el-form-item label="手机号" prop="phone"><el-input v-model="form.phone" placeholder="请输入手机号" @blur="onPhoneBlur" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="邮箱" prop="email"><el-input v-model="form.email" placeholder="请输入邮箱" @blur="onEmailBlur" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="微信号" prop="wechat"><el-input v-model="form.wechat" placeholder="请输入微信号" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="QQ号" prop="qq"><el-input v-model="form.qq" placeholder="请输入QQ号" /></el-form-item></el-col>
+              </el-row>
+            </div>
+          </section>
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('formRole')">
+              <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>角色与归属</div>
+              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.formRole }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.formRole">
+              <el-row>
+                <el-col :span="12"><el-form-item label="所属部门" prop="department"><el-input v-model="form.department" placeholder="请输入所属部门" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="角色标签" prop="roleTag">
+                  <el-select v-model="form.roleTag" multiple placeholder="请选择" style="width: 100%">
+                    <el-option v-for="d in marketing_contact_role" :key="d.value" :label="d.label" :value="d.value" />
+                  </el-select>
+                </el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="关键联系人" prop="isKey">
+                  <el-radio-group v-model="form.isKey"><el-radio value="0">否</el-radio><el-radio value="1">是</el-radio></el-radio-group>
+                </el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="主要联系人" prop="isPrimary">
+                  <el-radio-group v-model="form.isPrimary"><el-radio value="0">否</el-radio><el-radio value="1">是</el-radio></el-radio-group>
+                </el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="销售人员" prop="ownerUserId">
+                  <el-input v-model="form.ownerUserName" readonly placeholder="请选择销售人员" style="width: 100%" @click="openFormUserPicker">
+                    <template #append>
+                      <el-button icon="Search" @click="openFormUserPicker" />
+                    </template>
+                    <template #suffix>
+                      <el-icon v-if="form.ownerUserName" class="clear-icon" @click.stop="clearFormUser"><CircleClose /></el-icon>
+                    </template>
+                  </el-input>
+                </el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="下次联系时间" prop="nextContactTime">
+                  <el-date-picker v-model="form.nextContactTime" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" placeholder="选择时间" style="width: 100%" />
+                </el-form-item></el-col>
+                <el-col :span="24"><el-form-item label="个人特点" prop="personalTrait"><el-input v-model="form.personalTrait" type="textarea" :rows="2" placeholder="请输入个人特征" /></el-form-item></el-col>
+              </el-row>
+            </div>
+          </section>
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('formOther')">
+              <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>其他信息</div>
+              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.formOther }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.formOther">
+              <el-form-item label="备注" prop="remark"><el-input v-model="form.remark" type="textarea" :rows="2" placeholder="请输入备注" /></el-form-item>
+            </div>
+          </section>
+        </div>
       </el-form>
       <template #footer>
         <el-button type="primary" @click="submitForm">确 定</el-button>
@@ -289,7 +316,7 @@
         </div>
       </template>
       <el-form label-width="80px">
-        <el-form-item label="归属销售">
+        <el-form-item label="销售人员">
           <el-input v-model="assignUserName" readonly placeholder="请选择（留空释放到公海）" style="width: 100%" @click="openAssignUserPicker">
             <template #append>
               <el-button icon="Search" @click="openAssignUserPicker" />
@@ -333,9 +360,55 @@
       </template>
     </el-dialog>
 
+    <!-- 客户选择弹窗 -->
+    <el-dialog v-model="customerPickerOpen" width="860px" append-to-body draggable class="rd-dialog" @open="onCustomerPickerOpen">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M3 7l1.5-4h15L21 7M3 7v14M21 7v14M9 21v-7h6v7"/></svg></div>
+          <span class="rd-detail-header-title">选择所属客户</span>
+        </div>
+      </template>
+      <div class="customer-picker">
+        <div class="customer-picker-search">
+          <el-input v-model="customerPickerQuery.customerName" placeholder="企业名称" clearable size="small" style="width: 200px" @keyup.enter="handleCustomerPickerQuery">
+            <template #prefix><el-icon><Search /></el-icon></template>
+          </el-input>
+          <el-input v-model="customerPickerQuery.creditCode" placeholder="信用代码" clearable size="small" style="width: 200px; margin-left: 8px" @keyup.enter="handleCustomerPickerQuery">
+            <template #prefix><el-icon><Search /></el-icon></template>
+          </el-input>
+          <el-button type="primary" plain icon="Search" size="small" style="margin-left: 8px" @click="handleCustomerPickerQuery">查询</el-button>
+          <el-button icon="RefreshLeft" size="small" @click="resetCustomerPickerQuery">重置</el-button>
+        </div>
+        <div class="customer-picker-table">
+          <el-table ref="customerTableRef" v-loading="customerPickerLoading" :data="customerPickerList" highlight-current-row @row-click="onCustomerRowClick" @row-dblclick="onCustomerRowDblClick" height="360" size="small">
+            <el-table-column width="45" align="center">
+              <template #default="{ row }">
+                <el-radio :model-value="customerPickerSelectedId" :value="row.customerId" @click.stop="onCustomerRowClick(row)"><span /></el-radio>
+              </template>
+            </el-table-column>
+            <el-table-column label="企业名称" prop="customerName" min-width="180" show-overflow-tooltip />
+            <el-table-column label="信用代码" prop="creditCode" width="160" show-overflow-tooltip />
+            <el-table-column label="客户等级" width="100" align="center">
+              <template #default="scope">{{ levelLabel(scope.row.customerLevel) }}</template>
+            </el-table-column>
+            <el-table-column label="客户状态" width="100" align="center">
+              <template #default="scope">{{ statusLabel(scope.row.customerStatus) }}</template>
+            </el-table-column>
+          </el-table>
+        </div>
+        <div class="customer-picker-pager">
+          <el-pagination v-model:current-page="customerPickerQuery.pageNum" v-model:page-size="customerPickerQuery.pageSize" :total="customerPickerTotal" layout="total, prev, pager, next" small @current-change="getCustomerPickerList" />
+        </div>
+      </div>
+      <template #footer>
+        <el-button @click="customerPickerOpen = false">取 消</el-button>
+        <el-button type="primary" @click="confirmCustomerPicker" :disabled="!customerPickerSelectedId">确 定</el-button>
+      </template>
+    </el-dialog>
+
     <!-- 负责人选择弹窗 -->
-    <user-picker ref="formUserPickerRef" title="选择归属销售" @confirm="onFormUserPickerConfirm" />
-    <user-picker ref="assignUserPickerRef" title="选择归属销售" @confirm="onAssignUserPickerConfirm" />
+    <user-picker ref="formUserPickerRef" title="选择销售人员" @confirm="onFormUserPickerConfirm" />
+    <user-picker ref="assignUserPickerRef" title="选择销售人员" @confirm="onAssignUserPickerConfirm" />
 
     <!-- 详情弹窗 - Tab页 -->
     <el-dialog v-model="viewOpen" width="900px" append-to-body draggable class="rd-dialog" @open="loadContactRelations">
@@ -354,7 +427,7 @@
         </div>
       </template>
       <div class="rd-page">
-        <el-tabs v-model="detailTab">
+        <el-tabs v-model="detailTab" @tab-change="onDetailTabChange">
           <el-tab-pane label="基本信息" name="basic">
             <section class="rd-card">
               <div class="rd-card-header" @click="toggleCard('viewBasic')">
@@ -416,7 +489,7 @@
                 <div class="rd-grid">
                   <div class="rd-item"><span class="rd-label">关键联系人</span><div class="rd-value"><span class="badge" :class="viewForm.isKey === '1' ? 'red' : 'gray'"><span class="dot"></span>{{ viewForm.isKey === '1' ? '是' : '否' }}</span></div></div>
                   <div class="rd-item"><span class="rd-label">主要联系人</span><div class="rd-value"><span class="badge" :class="viewForm.isPrimary === '1' ? 'green' : 'gray'"><span class="dot"></span>{{ viewForm.isPrimary === '1' ? '是' : '否' }}</span></div></div>
-                  <div class="rd-item"><span class="rd-label">归属销售</span><div class="rd-value" :class="{ 'rd-value--muted': !viewForm.ownerUserName }">{{ viewForm.ownerUserName || '未分配' }}</div></div>
+                  <div class="rd-item"><span class="rd-label">销售人员</span><div class="rd-value" :class="{ 'rd-value--muted': !viewForm.ownerUserName }">{{ viewForm.ownerUserName || '未分配' }}</div></div>
                   <div class="rd-item"><span class="rd-label">最后联系</span><div class="rd-value">{{ viewForm.lastContactTime }}</div></div>
                   <div class="rd-item"><span class="rd-label">下次联系</span><div class="rd-value">{{ viewForm.nextContactTime }}</div></div>
                 </div>
@@ -495,7 +568,7 @@
                 </button>
               </div>
               <div class="rd-card-body" v-show="!collapsedCards.viewActivities">
-                <el-table :data="activityParticipants" border size="small" v-if="activityParticipants.length > 0">
+                <el-table ref="activitiesTableRef" :data="activityParticipants" border size="small" v-if="activityParticipants.length > 0">
                   <el-table-column label="活动名称" prop="activityName" show-overflow-tooltip />
                   <el-table-column label="企业名称" prop="companyName" width="180" show-overflow-tooltip />
                   <el-table-column label="参与状态" prop="participateStatus" width="100" align="center">
@@ -512,6 +585,9 @@
           </el-tab-pane>
         </el-tabs>
       </div>
+      <template #footer>
+        <el-button @click="viewOpen = false">关 闭</el-button>
+      </template>
     </el-dialog>
 
     <!-- 新增互动弹窗 -->
@@ -555,7 +631,7 @@
             <el-icon class="flow-arrow"><ArrowRight /></el-icon>
           </div>
           <div class="flow-item">
-            <el-tag type="primary">分配归属销售</el-tag>
+            <el-tag type="primary">分配销售人员</el-tag>
             <el-icon class="flow-arrow"><ArrowRight /></el-icon>
           </div>
           <div class="flow-item">
@@ -592,11 +668,11 @@ import { getToken } from '@/utils/auth'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
 import UserPicker from '@/components/UserPicker/index.vue'
-const { collapsedCards, toggleCard } = useDetailCard(['viewBasic', 'viewContact', 'viewOwner', 'viewOther', 'viewInteractions', 'viewActivities'])
+const { collapsedCards, toggleCard } = useDetailCard(['formBasic', 'formContact', 'formRole', 'formOther', 'viewBasic', 'viewContact', 'viewOwner', 'viewOther', 'viewInteractions', 'viewActivities'])
 
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('mk_contact_index')
-const { marketing_contact_role, marketing_interaction_type, marketing_participate_status } = proxy.useDict('marketing_contact_role', 'marketing_interaction_type', 'marketing_participate_status')
+const { marketing_contact_role, marketing_interaction_type, marketing_participate_status, marketing_customer_level, marketing_customer_status } = proxy.useDict('marketing_contact_role', 'marketing_interaction_type', 'marketing_participate_status', 'marketing_customer_level', 'marketing_customer_status')
 
 const list = ref([])
 const open = ref(false)
@@ -609,9 +685,7 @@ const single = ref(true)
 const multiple = ref(true)
 const total = ref(0)
 const title = ref('')
-const customerOptions = ref([])
 const userOptions = ref([])
-const activeNames = ref(['basic', 'contact', 'role', 'other'])
 const dupOpen = ref(false)
 const dupList = ref([])
 const currentForm = ref({})
@@ -657,7 +731,7 @@ const defaultColumns = {
   email: { label: '邮箱', visible: true },
   isKey: { label: '关键联系人', visible: true },
   isPrimary: { label: '主要联系人', visible: true },
-  ownerUserName: { label: '归属销售', visible: true },
+  ownerUserName: { label: '销售人员', visible: true },
   nextContactTime: { label: '下次联系时间', visible: true }
 }
 
@@ -694,7 +768,6 @@ return count
 })
 
 function getList() { loading.value = true; listContact(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false; applySavedWidths() }).catch(() => { loading.value = false }) }
-function getCustomerOptions() { listCustomer({ pageNum: 1, pageSize: 9999 }).then(res => { customerOptions.value = res.rows }) }
 function getUserOptions() { listUser({ pageNum: 1, pageSize: 9999 }).then(res => { userOptions.value = res.rows.filter(u => u.userId !== 1) }) }
 function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
 function resetQuery() {
@@ -704,7 +777,7 @@ function handleSortChange(column) { if (column.prop && column.order) { queryPara
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.contactId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function isOverdue(row) { return row.nextContactTime && new Date(row.nextContactTime) <= new Date(Date.now() + 86400000) }
 function reset() {
-  form.value = { customerId: undefined, name: undefined, gender: '0', position: undefined, department: undefined, roleTag: undefined, phone: undefined, email: undefined, wechat: undefined, qq: undefined, isKey: '0', isPrimary: '0', ownerUserId: undefined, ownerUserName: undefined, nextContactTime: undefined, personalTrait: undefined, remark: undefined }
+  form.value = { customerId: undefined, customerName: undefined, name: undefined, gender: '0', position: undefined, department: undefined, roleTag: undefined, phone: undefined, email: undefined, wechat: undefined, qq: undefined, isKey: '0', isPrimary: '0', ownerUserId: undefined, ownerUserName: undefined, nextContactTime: undefined, personalTrait: undefined, remark: undefined }
   proxy.resetForm('contactRef')
 }
 function handleAdd() { reset(); open.value = true; title.value = '新增联系人' }
@@ -724,7 +797,18 @@ function loadContactRelations() {
   })
   listParticipant({ contactPhone: viewForm.value.phone, pageNum: 1, pageSize: 999 }).then(res => {
     activityParticipants.value = (res.rows || []).filter(p => p.contactId == viewForm.value.contactId || p.contactPhone === viewForm.value.phone)
+    nextTick(() => {
+      if (activitiesTableRef.value) activitiesTableRef.value.doLayout()
+    })
   })
+}
+const activitiesTableRef = ref(null)
+function onDetailTabChange(name) {
+  if (name === 'activities') {
+    nextTick(() => {
+      if (activitiesTableRef.value) activitiesTableRef.value.doLayout()
+    })
+  }
 }
 function handleAddInteraction() {
   interactionForm.value = {
@@ -820,30 +904,30 @@ function handleAssign() {
   assignUserName.value = null
   assignOpen.value = true
 }
-/** 打开表单归属销售选择弹窗 */
+/** 打开表单销售人员选择弹窗 */
 function openFormUserPicker() {
   proxy.$refs.formUserPickerRef.open(form.value.ownerUserId)
 }
-/** 表单归属销售选择确认回调 */
+/** 表单销售人员选择确认回调 */
 function onFormUserPickerConfirm(user) {
   form.value.ownerUserId = user.userId
   form.value.ownerUserName = user.nickName
 }
-/** 清除表单归属销售 */
+/** 清除表单销售人员 */
 function clearFormUser() {
   form.value.ownerUserId = undefined
   form.value.ownerUserName = undefined
 }
-/** 打开分配归属销售选择弹窗 */
+/** 打开分配销售人员选择弹窗 */
 function openAssignUserPicker() {
   proxy.$refs.assignUserPickerRef.open(assignUserId.value)
 }
-/** 分配归属销售选择确认回调 */
+/** 分配销售人员选择确认回调 */
 function onAssignUserPickerConfirm(user) {
   assignUserId.value = user.userId
   assignUserName.value = user.nickName
 }
-/** 清除分配归属销售 */
+/** 清除分配销售人员 */
 function clearAssignUser() {
   assignUserId.value = null
   assignUserName.value = null
@@ -875,9 +959,94 @@ function handleImportError() {
   proxy.$modal.msgError('导入失败')
 }
 
-getCustomerOptions()
 getUserOptions()
 getList()
+
+// ===== 客户选择弹窗 =====
+const customerPickerOpen = ref(false)
+const customerPickerLoading = ref(false)
+const customerPickerList = ref([])
+const customerPickerTotal = ref(0)
+const customerPickerSelectedId = ref(null)
+const customerPickerSelectedRow = ref(null)
+const customerTableRef = ref(null)
+const customerPickerQuery = reactive({ pageNum: 1, pageSize: 10, customerName: undefined, creditCode: undefined, customerStatus: '0' })
+
+/** 打开客户选择弹窗 */
+function openCustomerPicker() {
+  customerPickerOpen.value = true
+}
+/** 弹窗打开时初始化 */
+function onCustomerPickerOpen() {
+  customerPickerQuery.customerName = undefined
+  customerPickerQuery.creditCode = undefined
+  customerPickerQuery.pageNum = 1
+  customerPickerSelectedId.value = form.value.customerId || null
+  customerPickerSelectedRow.value = null
+  getCustomerPickerList()
+}
+/** 加载客户列表 */
+function getCustomerPickerList() {
+  customerPickerLoading.value = true
+  listCustomer(customerPickerQuery).then(res => {
+    customerPickerList.value = res.rows
+    customerPickerTotal.value = res.total
+    customerPickerLoading.value = false
+    if (customerPickerSelectedId.value) {
+      nextTick(() => {
+        if (customerTableRef.value) {
+          customerTableRef.value.setCurrentRow(customerPickerList.value.find(r => r.customerId === customerPickerSelectedId.value))
+        }
+      })
+    }
+  }).catch(() => { customerPickerLoading.value = false })
+}
+/** 弹窗查询 */
+function handleCustomerPickerQuery() {
+  customerPickerQuery.pageNum = 1
+  getCustomerPickerList()
+}
+/** 弹窗重置 */
+function resetCustomerPickerQuery() {
+  customerPickerQuery.customerName = undefined
+  customerPickerQuery.creditCode = undefined
+  handleCustomerPickerQuery()
+}
+/** 行点击选中 */
+function onCustomerRowClick(row) {
+  customerPickerSelectedId.value = row.customerId
+  customerPickerSelectedRow.value = row
+}
+/** 行双击确认 */
+function onCustomerRowDblClick(row) {
+  onCustomerRowClick(row)
+  confirmCustomerPicker()
+}
+/** 确认选择 */
+function confirmCustomerPicker() {
+  if (!customerPickerSelectedRow.value) {
+    proxy.$modal.msgWarning('请选择一个客户')
+    return
+  }
+  form.value.customerId = customerPickerSelectedRow.value.customerId
+  form.value.customerName = customerPickerSelectedRow.value.customerName
+  customerPickerOpen.value = false
+}
+/** 清除所属客户 */
+function clearCustomer() {
+  form.value.customerId = undefined
+  form.value.customerName = undefined
+}
+/** 客户等级标签 */
+function levelLabel(level) {
+  const item = marketing_customer_level.value?.find(d => d.value == level)
+  return item ? item.label : '-'
+}
+/** 客户状态标签 */
+function statusLabel(status) {
+  const item = marketing_customer_status.value?.find(d => d.value == status)
+  return item ? item.label : '-'
+}
 
 const showStatusHelp = ref(false)
 </script>
@@ -899,6 +1068,14 @@ const showStatusHelp = ref(false)
 :deep(.el-input.is-disabled .el-input__inner) {
   cursor: pointer;
 }
+/* 客户选择弹窗 */
+.customer-picker { display: flex; flex-direction: column; }
+.customer-picker-search { display: flex; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 4px; }
+.customer-picker-table { border: 1px solid #ebeef5; border-radius: 8px; overflow: hidden; }
+.customer-picker-table :deep(.el-table__row) { cursor: pointer; }
+.customer-picker-table :deep(.el-table__row:hover > td) { background: #f0f7ff; }
+.customer-picker-table :deep(.el-table__row.is-current > td) { background: #e6f0fd; }
+.customer-picker-pager { margin-top: 8px; display: flex; justify-content: flex-end; }
 
 .status-help-content {
   max-height: 500px;
@@ -945,5 +1122,36 @@ const showStatusHelp = ref(false)
   line-height: 1.6;
   font-size: 13px;
   color: #606266;
+}
+</style>
+
+<!-- 非scoped样式：详情弹窗 append-to-body 后脱离 .mk-list-page 前缀，补充 rd-dialog 内徽章与 tabs 样式 -->
+<style>
+/* 状态徽章：弹窗 append-to-body 后脱离 mk-list-page 前缀，补充全局样式 */
+.rd-dialog .badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  border: 1px solid transparent;
+}
+.rd-dialog .badge .dot { width: 6px; height: 6px; border-radius: 50%; }
+.rd-dialog .badge.amber { background: #fffbeb; color: #b45309; border-color: #fde68a; }
+.rd-dialog .badge.amber .dot { background: #f59e0b; }
+.rd-dialog .badge.blue { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+.rd-dialog .badge.blue .dot { background: #3b82f6; }
+.rd-dialog .badge.green { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+.rd-dialog .badge.green .dot { background: #10b981; }
+.rd-dialog .badge.red { background: #fef2f2; color: #b91c1c; border-color: #fecaca; }
+.rd-dialog .badge.red .dot { background: #ef4444; }
+.rd-dialog .badge.gray { background: #f1f5f9; color: #64748b; border-color: #e2e8f0; }
+.rd-dialog .badge.gray .dot { background: #94a3b8; }
+/* 详情弹窗内 tabs 下的表格宽度塌陷修复：切换 tab 时让表格重算布局 */
+.rd-dialog .el-tabs__content {
+  width: 100%;
 }
 </style>

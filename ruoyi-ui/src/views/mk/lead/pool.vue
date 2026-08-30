@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿<template>
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿<template>
   <div class="app-container mk-list-page">
     <!-- ===== Filter Card ===== -->
     <div class="surface filter-card" v-show="showSearch">
@@ -303,8 +303,6 @@
         </el-tabs>
       </div>
       <template #footer>
-        <el-button type="success" icon="Pointer" @click="handleViewReceive" v-if="!viewForm.receiveStatus || viewForm.receiveStatus === '0' || viewForm.receiveStatus === '3'" v-hasPermi="['marketing:lead:pool:receive']">申请领取</el-button>
-        <el-button type="warning" icon="Check" @click="handleViewApprove" v-if="viewForm.receiveStatus === '1'" v-hasPermi="['marketing:lead:pool:approve']">审批</el-button>
         <el-button @click="viewOpen = false">关 闭</el-button>
       </template>
     </el-dialog>
@@ -481,13 +479,18 @@ const activeStatusTab = ref('all')
 const statusCounts = ref({ all: 0, '0': 0, '1': 0, '2': 0, '3': 0 })
 const statusTabList = computed(() => marketing_lead_receive_status.value)
 function loadStatusCounts() {
-  const counts = { all: 0, '0': 0, '1': 0, '2': 0, '3': 0 }
-  list.value.forEach(row => {
-    const s = row.receiveStatus || '0'
-    if (counts[s] !== undefined) counts[s]++
+  // 基于当前筛选条件（剔除状态与分页）拉取全量数据统计，避免仅统计当前页
+  const query = { ...queryParams.value, pageNum: 1, pageSize: 9999, receiveStatus: undefined, params: { ...queryParams.value.params } }
+  listLead(query).then(res => {
+    const counts = { all: 0, '0': 0, '1': 0, '2': 0, '3': 0 }
+    const rows = res.rows || []
+    rows.forEach(row => {
+      const s = row.receiveStatus || '0'
+      if (counts[s] !== undefined) counts[s]++
+    })
+    counts.all = rows.length
+    statusCounts.value = counts
   })
-  counts.all = total.value
-  statusCounts.value = counts
 }
 function handleStatusTabClick(status) { activeStatusTab.value = status; queryParams.value.receiveStatus = status === 'all' ? undefined : status; handleQuery() }
 function badgeClass(status) { const map = { '0': 'amber', '1': 'blue', '2': 'green', '3': 'red' }; return map[status] || 'gray' }
@@ -630,45 +633,6 @@ function buildTimeline() {
 function getInteractTypeLabel(type) {
   const item = marketing_interaction_type.value?.find(d => d.value === type)
   return item ? item.label : type
-}
-/** 详情弹窗内申请领取 */
-function handleViewReceive() {
-  proxy.$modal.confirm('确认申请领取线索"' + viewForm.value.companyName + '"？提交后需等待管理员审批。').then(() => {
-    receiveLead(viewForm.value.leadId, {}).then(() => {
-      getList()
-      proxy.$modal.msgSuccess('申请已提交，等待审批')
-      getLead(viewForm.value.leadId).then(res => { viewForm.value = res.data })
-    })
-  }).catch(() => {})
-}
-/** 详情弹窗内审批 */
-function handleViewApprove() {
-  approveForm.value = {
-    leadId: viewForm.value.leadId,
-    leadNo: viewForm.value.leadNo,
-    companyName: viewForm.value.companyName,
-    contactName: viewForm.value.contactName,
-    contactPhone: viewForm.value.contactPhone,
-    contactEmail: viewForm.value.contactEmail,
-    position: viewForm.value.position,
-    address: viewForm.value.address,
-    industry: viewForm.value.industry,
-    companySize: viewForm.value.companySize,
-    leadSource: viewForm.value.leadSource,
-    leadGrade: viewForm.value.leadGrade,
-    leadScore: viewForm.value.leadScore,
-    leadStatus: viewForm.value.leadStatus,
-    requirementDesc: viewForm.value.requirementDesc,
-    lastFollowTime: viewForm.value.lastFollowTime,
-    receiveStatus: viewForm.value.receiveStatus,
-    receiveApplyUserName: viewForm.value.receiveApplyUserName,
-    receiveApplyTime: viewForm.value.receiveApplyTime,
-    receiveRemark: undefined
-  }
-  Object.keys(collapsedCards).forEach(k => {
-    if (k.startsWith('a_')) collapsedCards[k] = false
-  })
-  approveOpen.value = true
 }
 function handleReceive(row) {
   proxy.$modal.confirm('确认申请领取线索"' + row.companyName + '"？提交后需等待管理员审批。').then(() => receiveLead(row.leadId, {})).then(() => { getList(); proxy.$modal.msgSuccess('申请已提交，等待审批') }).catch(() => {})

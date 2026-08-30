@@ -149,7 +149,7 @@
     </div>
 
     <!-- 新增/修改对话框 -->
-    <el-dialog v-model="open" width="1200px" append-to-body draggable class="order-form-dialog">
+    <el-dialog v-model="open" width="1200px" append-to-body draggable class="rd-dialog order-form-dialog">
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon">
@@ -198,17 +198,22 @@
                       <el-icon class="rd-form-tip"><question-filled /></el-icon>
                     </el-tooltip>
                   </template>
-                  <el-select v-model="form.contractId" filterable clearable placeholder="请选择合同" style="width: 100%" @change="onContractChange">
-                    <template #empty>
-                      <div class="rd-select-empty">暂无审批通过且已生效的合同</div>
+                  <el-input v-model="form.contractNo" readonly placeholder="请选择合同" style="width: 100%" @click="openContractPicker">
+                    <template #append><el-button icon="Search" @click="openContractPicker" /></template>
+                    <template #suffix>
+                      <el-icon v-if="form.contractNo" class="clear-icon" @click.stop="clearContract"><CircleClose /></el-icon>
                     </template>
-                    <el-option v-for="c in contractOptions" :key="c.contractId" :label="c.contractNo + ' - ' + c.contractName" :value="c.contractId" />
-                  </el-select>
+                  </el-input>
                 </el-form-item></el-col>
                 <el-col :span="8"><el-form-item label="关联客户" prop="customerId">
-                  <el-select v-model="form.customerId" filterable clearable placeholder="请选择客户" style="width: 100%" @change="onCustomerChange">
-                    <el-option v-for="c in customerOptions" :key="c.customerId" :label="c.customerName" :value="c.customerId" />
-                  </el-select>
+                  <el-input v-model="form.customerName" readonly placeholder="请选择客户" style="width: 100%" @click="openCustomerPicker">
+                    <template v-if="form.customerName" #append>
+                      <el-button icon="CircleClose" @click.stop="clearCustomer" />
+                    </template>
+                    <template v-else #append>
+                      <el-button icon="Search" @click="openCustomerPicker" />
+                    </template>
+                  </el-input>
                 </el-form-item></el-col>
                 <el-col :span="8"><el-form-item prop="orderAmount">
                   <template #label>
@@ -259,9 +264,10 @@
                 </el-table-column>
                 <el-table-column label="商品名称" min-width="180" align="center">
                   <template #default="scope">
-                    <el-select v-model="scope.row.materialId" filterable clearable size="small" placeholder="请选择商品" style="width: 100%" @change="(val) => onMaterialChange(val, scope.$index)">
-                      <el-option v-for="m in materialOptions" :key="m.materialId" :label="m.materialName" :value="m.materialId" :disabled="selectedMaterialIds.includes(m.materialId) && scope.row.materialId !== m.materialId" />
-                    </el-select>
+                    <el-input :model-value="scope.row.materialCode ? scope.row.materialCode + ' - ' + scope.row.productName : ''" readonly size="small" placeholder="选择商品" @click="openMaterialPicker(scope.$index)">
+                      <template v-if="scope.row.materialCode" #append><el-button icon="CircleClose" size="small" @click.stop="clearMaterial(scope.$index)" /></template>
+                      <template v-else #append><el-button icon="Search" size="small" @click="openMaterialPicker(scope.$index)" /></template>
+                    </el-input>
                   </template>
                 </el-table-column>
                 <el-table-column label="规格型号" width="140" align="center">
@@ -404,7 +410,7 @@
     </el-dialog>
 
     <!-- 查看详情对话框 -->
-    <el-dialog v-model="viewOpen" width="1200px" append-to-body draggable class="order-detail-dialog">
+    <el-dialog v-model="viewOpen" width="1200px" append-to-body draggable class="rd-dialog order-detail-dialog">
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon">
@@ -589,10 +595,13 @@
           </div>
         </section>
       </div>
+      <template #footer>
+        <el-button @click="viewOpen = false">关 闭</el-button>
+      </template>
     </el-dialog>
 
 <!-- 作废订单对话框 -->
-    <el-dialog v-model="voidOpen" width="720px" append-to-body draggable class="order-cancel-dialog">
+    <el-dialog v-model="voidOpen" width="720px" append-to-body draggable class="rd-dialog order-cancel-dialog">
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon">
@@ -668,7 +677,7 @@
     </el-dialog>
 
     <!-- 审核对话框 -->
-    <el-dialog v-model="auditOpen" width="1152px" append-to-body draggable class="order-audit-dialog">
+    <el-dialog v-model="auditOpen" width="1152px" append-to-body draggable class="rd-dialog order-audit-dialog">
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon">
@@ -776,11 +785,20 @@
       </template>
     </el-dialog>
 
+    <!-- 客户选择弹窗 -->
+    <customer-picker ref="customerPickerRef" title="选择客户" @confirm="onCustomerPickerConfirm" />
+
     <!-- 负责人选择弹窗 -->
     <user-picker ref="userPickerRef" title="选择负责人" @confirm="onUserPickerConfirm" />
 
     <!-- 部门选择弹窗 -->
     <dept-picker ref="deptPickerRef" title="选择所属部门" :disabled-ids="[100]" @confirm="onDeptPickerConfirm" />
+
+    <!-- 合同选择弹窗 -->
+    <contract-picker ref="contractPickerRef" title="选择合同" :contract-statuses="['2']" @confirm="onContractPickerConfirm" />
+
+    <!-- 商品选择弹窗 -->
+    <material-picker ref="materialPickerRef" title="选择商品" @confirm="onMaterialPickerConfirm" />
 
     <!-- 状态流转帮助对话框 -->
     <el-dialog v-model="showStatusHelp" title="订单管理业务操作说明" width="864px" append-to-body>
@@ -859,10 +877,13 @@
 import { CircleClose, ArrowRight, ArrowDown, QuestionFilled } from '@element-plus/icons-vue'
 import { listOrder, getOrder, addOrder, updateOrder, delOrder, submitOrder, voidOrder, auditOrder } from '@/api/mk/order'
 import { listContract } from '@/api/mk/contract'
-import { listCustomer } from '@/api/mk/customer'
+import { getCustomer } from '@/api/mk/customer'
 import { listMaterial } from '@/api/wms/material'
 import UserPicker from '@/components/UserPicker/index.vue'
 import DeptPicker from '@/components/DeptPicker/index.vue'
+import CustomerPicker from '@/components/CustomerPicker/index.vue'
+import ContractPicker from '@/components/ContractPicker/index.vue'
+import MaterialPicker from '@/components/MaterialPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 
 const { proxy } = getCurrentInstance()
@@ -880,9 +901,7 @@ const single = ref(true)
 const multiple = ref(true)
 const total = ref(0)
 const title = ref('')
-const customerOptions = ref([])
-const contractOptions = ref([])
-const materialOptions = ref([])
+const materialPickerIndex = ref(null)
 const viewForm = ref({})
 const voidForm = ref({})
 const auditOpen = ref(false)
@@ -895,13 +914,18 @@ const activeStatusTab = ref('all')
 const statusCounts = ref({ all: 0, '0': 0, '1': 0, '2': 0, '3': 0, '4': 0, '5': 0, '6': 0 })
 const statusTabList = computed(() => marketing_order_status.value)
 function loadStatusCounts() {
-  const counts = { all: 0, '0': 0, '1': 0, '2': 0, '3': 0, '4': 0, '5': 0, '6': 0 }
-  list.value.forEach(row => {
-    const s = row.orderStatus
-    if (counts[s] !== undefined) counts[s]++
-  })
-  counts.all = total.value
-  statusCounts.value = counts
+  // 基于当前筛选条件（剔除状态与分页）拉取全量数据统计，避免仅统计当前页
+  const query = { ...queryParams.value, pageNum: 1, pageSize: 9999, orderStatus: undefined, params: { ...queryParams.value.params } }
+  listOrder(query).then(res => {
+    const counts = { all: 0, '0': 0, '1': 0, '2': 0, '3': 0, '4': 0, '5': 0, '6': 0 }
+    const rows = res.rows || []
+    rows.forEach(row => {
+      const s = row.orderStatus
+      if (counts[s] !== undefined) counts[s]++
+    })
+    counts.all = rows.length
+    statusCounts.value = counts
+  }).catch(() => {})
 }
 function handleStatusTabClick(status) { activeStatusTab.value = status; queryParams.value.orderStatus = status === 'all' ? undefined : status; handleQuery() }
 function badgeClass(status) { const map = { '0': 'amber', '1': 'blue', '2': 'green', '3': 'violet', '4': 'green', '5': 'red', '6': 'gray' }; return map[status] || 'gray' }
@@ -967,18 +991,10 @@ const activeFilterCount = computed(() => {
 
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 
-const selectedMaterialIds = computed(() => {
-  if (!form.value.itemList) return []
-  return form.value.itemList.map(i => i.materialId).filter(id => id != null)
-})
-
 function getList() {
   loading.value = true
   listOrder(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false; loadStatusCounts(); applySavedWidths() }).catch(() => { loading.value = false })
 }
-function getCustomerOptions() { listCustomer({ pageNum: 1, pageSize: 9999 }).then(res => { customerOptions.value = res.rows }) }
-function getContractOptions() { listContract({ pageNum: 1, pageSize: 9999, contractStatus: '2' }).then(res => { contractOptions.value = res.rows }) }
-function getMaterialOptions() { listMaterial({ pageNum: 1, pageSize: 9999 }).then(res => { materialOptions.value = res.rows }) }
 
 /** 打开负责人选择弹窗 */
 function openUserPicker() {
@@ -1013,53 +1029,82 @@ function clearDept() {
   form.value.deptName = undefined
 }
 
-function onCustomerChange(customerId) {
-  if (customerId) {
-    const customer = customerOptions.value.find(c => c.customerId === customerId)
-    if (customer) {
-      form.value.customerName = customer.customerName
-      // 自动带出客户的负责人作为订单负责人
-      if (customer.userId) {
+/** 打开客户选择弹窗 */
+function openCustomerPicker() {
+  proxy.$refs.customerPickerRef.open(form.value.customerId)
+}
+/** 客户选择确认回调 — 自动带出客户的负责人作为订单负责人 */
+function onCustomerPickerConfirm(customer) {
+  form.value.customerId = customer.customerId
+  form.value.customerName = customer.customerName
+  if (customer.userId) {
+    form.value.userId = customer.userId
+    form.value.userName = customer.userName
+    if (customer.deptId) { form.value.deptId = customer.deptId; form.value.deptName = customer.deptName }
+  }
+}
+/** 清除客户 */
+function clearCustomer() {
+  form.value.customerId = undefined
+  form.value.customerName = undefined
+}
+/** 打开合同选择弹窗 */
+function openContractPicker() {
+  proxy.$refs.contractPickerRef.open(form.value.contractId)
+}
+/** 合同选择确认回调 — 自动带出客户及负责人信息 */
+function onContractPickerConfirm(contract) {
+  form.value.contractId = contract.contractId
+  form.value.contractNo = contract.contractNo
+  if (contract.customerId) {
+    form.value.customerId = contract.customerId
+    form.value.customerName = contract.customerName
+    getCustomer(contract.customerId).then(res => {
+      const customer = res.data
+      if (customer && customer.userId && !form.value.userId) {
         form.value.userId = customer.userId
         form.value.userName = customer.userName
         if (customer.deptId) { form.value.deptId = customer.deptId; form.value.deptName = customer.deptName }
       }
-    }
-  } else {
-    form.value.customerName = undefined
+    })
   }
 }
-function onContractChange(contractId) {
-  if (contractId) {
-    const contract = contractOptions.value.find(c => c.contractId === contractId)
-    if (contract) {
-      form.value.contractNo = contract.contractNo
-      // 自动带出客户信息
-      if (contract.customerId) {
-        form.value.customerId = contract.customerId
-        form.value.customerName = contract.customerName
-        // 自动带出客户的负责人作为订单负责人
-        const customer = customerOptions.value.find(c => c.customerId === contract.customerId)
-        if (customer && customer.userId) {
-          form.value.userId = customer.userId
-          form.value.userName = customer.userName
-          if (customer.deptId) { form.value.deptId = customer.deptId; form.value.deptName = customer.deptName }
-        }
-      }
-      // 若客户未带出负责人，则使用合同负责人
-      if (!form.value.userId && contract.userId) {
-        form.value.userId = contract.userId
-        form.value.userName = contract.userName
-        if (contract.deptId) { form.value.deptId = contract.deptId; form.value.deptName = contract.deptName }
-      }
-    }
-  } else {
-    form.value.contractNo = undefined
-  }
+/** 清除合同 */
+function clearContract() {
+  form.value.contractId = undefined
+  form.value.contractNo = undefined
 }
 function handleAddItem() { if (!form.value.itemList) { form.value.itemList = [] }; const lineNo = (form.value.itemList.length + 1) * 10; form.value.itemList.push({ lineNo, materialId: undefined, materialCode: undefined, productName: undefined, productSpec: undefined, unit: undefined, quantity: undefined, unitPrice: undefined, subtotal: undefined }) }
 function handleDeleteItem(index) { form.value.itemList.splice(index, 1); form.value.itemList.forEach((item, idx) => { item.lineNo = (idx + 1) * 10 }) }
-function onMaterialChange(materialId, index) { const material = materialOptions.value.find(m => m.materialId === materialId); if (material) { form.value.itemList[index].materialId = material.materialId; form.value.itemList[index].materialCode = material.materialCode; form.value.itemList[index].productName = material.materialName; form.value.itemList[index].productSpec = material.specModel; form.value.itemList[index].unit = material.unit } }
+/** 打开商品选择弹窗 */
+function openMaterialPicker(index) {
+  materialPickerIndex.value = index
+  proxy.$refs.materialPickerRef.open(form.value.itemList[index]?.materialId)
+}
+/** 商品选择确认回调 */
+function onMaterialPickerConfirm(material) {
+  const index = materialPickerIndex.value
+  if (index == null) return
+  const item = form.value.itemList[index]
+  if (item) {
+    item.materialId = material.materialId
+    item.materialCode = material.materialCode
+    item.productName = material.materialName
+    item.productSpec = material.specModel
+    item.unit = material.unit
+  }
+}
+/** 清除商品 */
+function clearMaterial(index) {
+  const item = form.value.itemList[index]
+  if (item) {
+    item.materialId = undefined
+    item.materialCode = undefined
+    item.productName = undefined
+    item.productSpec = undefined
+    item.unit = undefined
+  }
+}
 function calcSubtotal(index) { const item = form.value.itemList[index]; if (item && item.quantity != null && item.unitPrice != null) { item.subtotal = (item.quantity * item.unitPrice).toFixed(2) } else { item.subtotal = undefined }; const total = form.value.itemList.reduce((sum, i) => sum + (parseFloat(i.subtotal) || 0), 0); form.value.orderAmount = total.toFixed(2) }
 function handleQuery() { showAdvanced.value = false; queryParams.value.params = proxy.addDateRange(queryParams.value.params, dateRange.value, 'CreateTime'); queryParams.value.pageNum = 1; getList() }
 function resetQuery() { queryParams.value.orderNo = undefined; queryParams.value.customerName = undefined; queryParams.value.orderStatus = undefined; queryParams.value.contractNo = undefined; queryParams.value.userName = undefined; dateRange.value = []; queryParams.value.params = {}; activeStatusTab.value = 'all'; handleQuery() }
@@ -1084,7 +1129,7 @@ function submitVoid() { if (!voidForm.value.voidReason) { proxy.$modal.msgWarnin
 
 function handleExport() { proxy.download('mk/order/export', { ...proxy.addDateRange(queryParams.value, dateRange.value, 'CreateTime') }, `order_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
-getCustomerOptions(); getContractOptions(); getMaterialOptions(); getList()
+getList()
 </script>
 
 <style scoped>

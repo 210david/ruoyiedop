@@ -9,7 +9,6 @@
       </template>
       <template #extra>
         <el-button type="primary" @click="handleEdit" v-hasPermi="['marketing:lead:edit']">编辑</el-button>
-        <el-button type="success" @click="handleConvert" v-if="lead.leadStatus !== '4' && lead.leadStatus !== '5'" v-hasPermi="['marketing:lead:edit']">转化为客户</el-button>
         <el-button @click="goBack">返回列表</el-button>
       </template>
     </el-page-header>
@@ -61,14 +60,9 @@
           <div class="rd-item rd-item--full"><span class="rd-label">无效说明</span><div class="rd-value" :class="{ 'rd-value--muted': true }">{{ lead.ineffectiveRemark || '暂无' }}</div></div>
         </el-descriptions>
 
-        <!-- 状态流转操作 -->
+        <!-- 状态信息 -->
         <el-descriptions :column="3" border title="状态管理" class="info-group" v-if="lead.leadStatus !== '4' && lead.leadStatus !== '5'">
           <div class="rd-item"><span class="rd-label">当前状态</span><div class="rd-value"><dict-tag :options="marketing_lead_status" :value="lead.leadStatus" /></div></div>
-          <div class="rd-item rd-item--full"><span class="rd-label">状态操作</span><div class="rd-value"><el-button size="small" type="primary" plain @click="handleStatusChange('1')" v-if="lead.leadStatus === '0'" v-hasPermi="['marketing:lead:edit']">标记已联系</el-button>
-            <el-button size="small" type="success" plain @click="handleStatusChange('2')" v-if="lead.leadStatus === '0' || lead.leadStatus === '1'" v-hasPermi="['marketing:lead:edit']">标记有意向</el-button>
-            <el-button size="small" type="warning" plain @click="handleInvalidate" v-hasPermi="['marketing:lead:edit']">标记无效</el-button></div></div>
-          <div class="rd-item rd-item--full"><span class="rd-label">分配操作</span><div class="rd-value"><el-button size="small" type="primary" plain @click="handleAssign" v-if="lead.userId" v-hasPermi="['marketing:lead:assign']">转移分配</el-button>
-            <el-button size="small" type="warning" plain @click="handleRelease" v-if="lead.userId" v-hasPermi="['marketing:lead:edit']">退回公海</el-button></div></div>
         </el-descriptions>
 
         <div class="rd-grid">
@@ -116,55 +110,6 @@
       </el-tab-pane>
     </el-tabs>
 
-    <!-- 分配弹窗 -->
-    <el-dialog v-model="assignOpen" width="500px" append-to-body draggable class="rd-dialog">
-      <template #header>
-        <div class="rd-detail-header">
-          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
-          <span class="rd-detail-header-title">分配线索</span>
-        </div>
-      </template>
-      <el-form label-width="80px">
-        <el-form-item label="负责人">
-          <el-select v-model="assignUserId" filterable clearable placeholder="请选择负责人" style="width: 100%">
-            <el-option v-for="u in userOptions" :key="u.userId" :label="u.nickName" :value="u.userId" />
-          </el-select>
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button type="primary" @click="confirmAssign">确 定</el-button>
-        <el-button @click="assignOpen = false">取 消</el-button>
-      </template>
-    </el-dialog>
-
-    <!-- 无效标记弹窗 -->
-    <el-dialog v-model="invalidateOpen" width="500px" append-to-body draggable class="rd-dialog">
-      <template #header>
-        <div class="rd-detail-header">
-          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div>
-          <span class="rd-detail-header-title">标记线索无效</span>
-        </div>
-      </template>
-      <el-form ref="invalidateRef" :model="invalidateForm" label-width="80px">
-        <el-form-item label="无效原因" prop="ineffectiveReason">
-          <el-select v-model="invalidateForm.ineffectiveReason" placeholder="请选择无效原因" style="width: 100%">
-            <el-option label="电话空号/停机" value="phone_invalid" />
-            <el-option label="客户明确拒绝" value="rejected" />
-            <el-option label="需求不匹配" value="no_match" />
-            <el-option label="重复线索" value="duplicate" />
-            <el-option label="其他" value="other" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="无效说明" prop="ineffectiveRemark">
-          <el-input v-model="invalidateForm.ineffectiveRemark" type="textarea" :rows="3" placeholder="请输入无效说明（可选）" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button type="danger" @click="confirmInvalidate">确认标记无效</el-button>
-        <el-button @click="invalidateOpen = false">取 消</el-button>
-      </template>
-    </el-dialog>
-
     <!-- 快速新增跟进弹窗 -->
     <el-dialog v-model="interactionOpen" width="600px" append-to-body draggable class="rd-dialog">
       <template #header>
@@ -210,7 +155,7 @@
 
 <script setup name="MkLeadDetail">
 import { useRoute, useRouter } from 'vue-router'
-import { getLead, updateLead, convertLead, assignLead, releaseLeadToPool, invalidateLead, updateFollowTime, getLeadLog } from '@/api/mk/lead'
+import { getLead, updateFollowTime, getLeadLog } from '@/api/mk/lead'
 import { listInteraction, addInteraction } from '@/api/mk/interaction'
 import { listUser } from '@/api/system/user'
 import CustomerDetailDialog from '@/components/CustomerDetailDialog/index.vue'
@@ -235,14 +180,6 @@ const lead = ref({})
 const interactions = ref([])
 const timeline = ref([])
 const userOptions = ref([])
-
-// 分配相关
-const assignOpen = ref(false)
-const assignUserId = ref(null)
-
-// 无效标记
-const invalidateOpen = ref(false)
-const invalidateForm = ref({})
 
 // 新增跟进
 const interactionOpen = ref(false)
@@ -338,79 +275,6 @@ function handleEdit() { router.push('/mk/lead/list') }
 const customerDetailVisible = ref(false)
 const customerDetailId = ref(null)
 function goCustomerDetail(customerId) { customerDetailId.value = customerId; customerDetailVisible.value = true }
-
-// 状态流转
-function handleStatusChange(status) {
-  const statusText = statusLabel(status)
-  proxy.$modal.confirm('确认将线索状态变更为"' + statusText + '"？').then(() => {
-    updateLead({ leadId: leadId, leadStatus: status }).then(() => {
-      proxy.$modal.msgSuccess('状态变更成功')
-      getLeadData()
-    })
-  }).catch(() => {})
-}
-
-// 转化
-function handleConvert() {
-  proxy.$modal.confirm('确认将线索"' + lead.value.companyName + '"转化为客户？转化后将自动创建客户和联系人。').then(() => {
-    convertLead(leadId, {}).then(res => {
-proxy.$modal.msgSuccess('转化成功')
-getLeadData()
-// 弹窗打开新创建的客户详情
-if (res.convertCustomerId) {
-customerDetailId.value = res.convertCustomerId
-customerDetailVisible.value = true
-}
-    })
-  }).catch(() => {})
-}
-
-// 分配
-function handleAssign() {
-  assignUserId.value = lead.value.userId || null
-  assignOpen.value = true
-}
-function confirmAssign() {
-  const data = { userId: assignUserId.value }
-  const user = userOptions.value.find(u => u.userId === assignUserId.value)
-  if (user) {
-    data.deptId = user.deptId
-    data.userName = user.nickName
-    if (user.dept) data.deptName = user.dept.deptName
-  }
-  assignLead(leadId, data).then(() => {
-    proxy.$modal.msgSuccess('分配成功')
-    assignOpen.value = false
-    getLeadData()
-  })
-}
-
-// 退回公海
-function handleRelease() {
-  proxy.$modal.confirm('确认将该线索退回公海？退回后其他销售人员可以领取。').then(() => {
-    releaseLeadToPool(leadId).then(() => {
-      proxy.$modal.msgSuccess('已退回公海')
-      getLeadData()
-    })
-  }).catch(() => {})
-}
-
-// 标记无效
-function handleInvalidate() {
-  invalidateForm.value = { ineffectiveReason: undefined, ineffectiveRemark: undefined }
-  invalidateOpen.value = true
-}
-function confirmInvalidate() {
-  if (!invalidateForm.value.ineffectiveReason) {
-    proxy.$modal.msgWarning('请选择无效原因')
-    return
-  }
-  invalidateLead(leadId, invalidateForm.value).then(() => {
-    proxy.$modal.msgSuccess('已标记为无效')
-    invalidateOpen.value = false
-    getLeadData()
-  })
-}
 
 // 新增跟进
 function handleAddInteraction() {

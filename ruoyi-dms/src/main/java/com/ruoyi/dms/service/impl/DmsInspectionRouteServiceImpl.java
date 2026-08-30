@@ -46,6 +46,27 @@ public class DmsInspectionRouteServiceImpl implements IDmsInspectionRouteService
     public int deleteRouteByIds(Long[] routeIds) { return dmsInspectionRouteMapper.deleteRouteByIds(routeIds); }
 
     /**
+     * 按状态统计巡检路线数（含全部）
+     */
+    @Override
+    public Map<String, Object> countRouteByStatus()
+    {
+        Map<String, Object> result = new HashMap<>();
+        result.put("all", dmsInspectionRouteMapper.countAllRoutes());
+        List<Map<String, Object>> statusCounts = dmsInspectionRouteMapper.countRouteByStatus();
+        if (statusCounts != null)
+        {
+            for (Map<String, Object> item : statusCounts)
+            {
+                String status = String.valueOf(item.get("status"));
+                Object count = item.get("cnt");
+                result.put(status, count);
+            }
+        }
+        return result;
+    }
+
+    /**
      * 自动生成路线编码（使用编号规则服务）
      */
     private synchronized String generateRouteCode()

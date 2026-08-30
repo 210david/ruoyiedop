@@ -60,6 +60,7 @@ public class DmsInspectionTaskServiceImpl implements IDmsInspectionTaskService
             task.setTaskNo(mkNumberRuleService.generateNumber("dms_inspection_task"));
         }
         if (task.getTaskStatus() == null) task.setTaskStatus("0");
+        if (task.getOverdueFlag() == null) task.setOverdueFlag("0");
         return dmsInspectionTaskMapper.insertTask(task);
     }
     @Override
@@ -459,12 +460,34 @@ public class DmsInspectionTaskServiceImpl implements IDmsInspectionTaskService
         {
             DmsInspectionTask update = new DmsInspectionTask();
             update.setTaskId(task.getTaskId());
-            update.setTaskStatus("3");
+            // 仅标记逾期，不改变业务状态，任务仍可正常执行
+            update.setOverdueFlag("1");
             update.setUpdateBy("system");
             dmsInspectionTaskMapper.updateTask(update);
             count++;
         }
         return count;
+    }
+
+    /**
+     * 按状态统计点检任务数（含全部）
+     */
+    @Override
+    public java.util.Map<String, Object> countTaskByStatus()
+    {
+        java.util.Map<String, Object> result = new java.util.HashMap<>();
+        result.put("all", dmsInspectionTaskMapper.countAllTasks());
+        List<java.util.Map<String, Object>> statusCounts = dmsInspectionTaskMapper.countTaskByStatus();
+        if (statusCounts != null)
+        {
+            for (java.util.Map<String, Object> item : statusCounts)
+            {
+                String status = String.valueOf(item.get("taskStatus"));
+                Object count = item.get("cnt");
+                result.put(status, count);
+            }
+        }
+        return result;
     }
 
     private boolean shouldGenerateToday(DmsInspectionRoute route)

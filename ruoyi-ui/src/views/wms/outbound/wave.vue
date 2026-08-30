@@ -78,6 +78,9 @@
       </el-table>
           </div>
       </section>
+      <template #footer>
+        <el-button @click="detailOpen = false">关 闭</el-button>
+      </template>
     </el-dialog>
 
     <!-- 添加出库单对话框 -->

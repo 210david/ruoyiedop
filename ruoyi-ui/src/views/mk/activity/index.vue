@@ -208,7 +208,7 @@
     </div>
 
     <!-- 新增/修改对话框 -->
-    <el-dialog v-model="open" width="850px" append-to-body draggable class="rd-dialog">
+    <el-dialog v-model="open" width="1020px" append-to-body draggable class="rd-dialog">
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
@@ -371,82 +371,94 @@
     </el-dialog>
 
     <!-- 活动结算弹窗 -->
-    <el-dialog v-model="settleOpen" width="840px" append-to-body draggable class="rd-dialog">
+    <el-dialog v-model="settleOpen" width="840px" append-to-body draggable class="rd-dialog" top="5vh">
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
           <span class="rd-detail-header-title">活动结算</span>
         </div>
       </template>
-      <el-alert title="请填写活动实际效果数据，完成结算后可归档活动" type="info" :closable="false" show-icon style="margin-bottom: 20px" />
-      <div class="rd-grid" style="margin-bottom: 20px">
-        <div class="rd-item"><span class="rd-label">活动名称</span><div class="rd-value">{{ settleForm.activityName }}</div></div>
-        <div class="rd-item"><span class="rd-label">活动时间</span><div class="rd-value">{{ settleForm.startTime }} ~ {{ settleForm.endTime }}</div></div>
-        <div class="rd-item"><span class="rd-label">活动预算</span><div class="rd-value rd-amount rd-amount--negative">￥{{ formatAmount(settleForm.budget) }}</div></div>
-        <div class="rd-item"><span class="rd-label">目标人数</span><div class="rd-value">{{ settleForm.targetCount }} 人</div></div>
-      </div>
       <el-form ref="settleRef" :model="settleForm" label-width="100px">
         <div class="rd-page">
-        <section class="rd-card">
-          <div class="rd-card-header" @click="toggleCard('settleCost')">
-            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>费用与参与</div>
-            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.settleCost }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
-          </div>
-          <div class="rd-card-body" v-show="!collapsedCards.settleCost">
-            <el-row>
-              <el-col :span="12"><el-form-item label="实际花费" prop="cost">
-                <el-input-number v-model="settleForm.cost" :min="0" :precision="2" controls-position="right" style="width: 100%" />
-                <div class="settle-field-tip">活动实际支出的总费用</div>
-              </el-form-item></el-col>
-              <el-col :span="12"><el-form-item label="实际参与" prop="actualCount">
-                <el-input-number v-model="settleForm.actualCount" :min="0" controls-position="right" style="width: 100%" />
-                <div class="settle-field-tip">实际到场参与人数</div>
-              </el-form-item></el-col>
-            </el-row>
-          </div>
-        </section>
-        <section class="rd-card">
-          <div class="rd-card-header" @click="toggleCard('settleLead')">
-            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>线索转化</div>
-            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.settleLead }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
-          </div>
-          <div class="rd-card-body" v-show="!collapsedCards.settleLead">
-            <el-row>
-              <el-col :span="12"><el-form-item label="获取线索" prop="leadCount">
-                <el-input-number v-model="settleForm.leadCount" :min="0" controls-position="right" style="width: 100%" />
-                <div class="settle-field-tip">活动收集到的线索总数</div>
-              </el-form-item></el-col>
-              <el-col :span="12"><el-form-item prop="mqlCount">
-                <template #label><span>MQL阶段</span><el-tooltip content="MQL（Marketing Qualified Lead）营销合格线索：经过营销团队初步筛选，符合目标客户画像，有进一步培育价值的线索" placement="top"><el-icon style="margin-left: 2px; vertical-align: middle; color: #909399"><QuestionFilled /></el-icon></el-tooltip></template>
-                <el-input-number v-model="settleForm.mqlCount" :min="0" controls-position="right" style="width: 100%" />
-                <div class="settle-field-tip">营销合格线索数量</div>
-              </el-form-item></el-col>
-              <el-col :span="12"><el-form-item prop="sqlCount">
-                <template #label><span>SQL阶段</span><el-tooltip content="SQL（Sales Qualified Lead）销售合格线索：经过销售团队确认，有明确购买意向和预算，可进入销售跟进阶段的线索" placement="top"><el-icon style="margin-left: 2px; vertical-align: middle; color: #909399"><QuestionFilled /></el-icon></el-tooltip></template>
-                <el-input-number v-model="settleForm.sqlCount" :min="0" controls-position="right" style="width: 100%" />
-                <div class="settle-field-tip">销售合格线索数量</div>
-              </el-form-item></el-col>
-              <el-col :span="12"><el-form-item label="转化商机" prop="opportunityCount">
-                <el-input-number v-model="settleForm.opportunityCount" :min="0" controls-position="right" style="width: 100%" />
-                <div class="settle-field-tip">转化为商机的数量</div>
-              </el-form-item></el-col>
-            </el-row>
-          </div>
-        </section>
-        <section class="rd-card">
-          <div class="rd-card-header" @click="toggleCard('settleDeal')">
-            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>成交效果</div>
-            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.settleDeal }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
-          </div>
-          <div class="rd-card-body" v-show="!collapsedCards.settleDeal">
-            <el-row>
-              <el-col :span="12"><el-form-item label="成交金额" prop="dealAmount">
-                <el-input-number v-model="settleForm.dealAmount" :min="0" :precision="2" controls-position="right" style="width: 100%" />
-                <div class="settle-field-tip">活动带来的成交总金额</div>
-              </el-form-item></el-col>
-            </el-row>
-          </div>
-        </section>
+          <!-- 活动信息概览 -->
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('settleInfo')">
+              <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>活动信息</div>
+              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.settleInfo }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.settleInfo">
+              <el-alert title="请填写活动实际效果数据，完成结算后可归档活动" type="info" :closable="false" show-icon style="margin-bottom: 16px" />
+              <div class="rd-grid">
+                <div class="rd-item"><span class="rd-label">活动名称</span><div class="rd-value">{{ settleForm.activityName }}</div></div>
+                <div class="rd-item"><span class="rd-label">活动时间</span><div class="rd-value">{{ settleForm.startTime }} ~ {{ settleForm.endTime }}</div></div>
+                <div class="rd-item"><span class="rd-label">活动预算</span><div class="rd-value rd-amount rd-amount--negative">￥{{ formatAmount(settleForm.budget) }}</div></div>
+                <div class="rd-item"><span class="rd-label">目标人数</span><div class="rd-value">{{ settleForm.targetCount }} 人</div></div>
+              </div>
+            </div>
+          </section>
+          <!-- 费用与参与 -->
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('settleCost')">
+              <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>费用与参与</div>
+              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.settleCost }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.settleCost">
+              <el-row>
+                <el-col :span="12"><el-form-item label="实际花费" prop="cost">
+                  <el-input-number v-model="settleForm.cost" :min="0" :precision="2" controls-position="right" style="width: 100%" />
+                  <div class="settle-field-tip">活动实际支出的总费用</div>
+                </el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="实际参与" prop="actualCount">
+                  <el-input-number v-model="settleForm.actualCount" :min="0" controls-position="right" style="width: 100%" />
+                  <div class="settle-field-tip">实际到场参与人数</div>
+                </el-form-item></el-col>
+              </el-row>
+            </div>
+          </section>
+          <!-- 线索转化 -->
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('settleLead')">
+              <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>线索转化</div>
+              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.settleLead }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.settleLead">
+              <el-row>
+                <el-col :span="12"><el-form-item label="获取线索" prop="leadCount">
+                  <el-input-number v-model="settleForm.leadCount" :min="0" controls-position="right" style="width: 100%" />
+                  <div class="settle-field-tip">活动收集到的线索总数</div>
+                </el-form-item></el-col>
+                <el-col :span="12"><el-form-item prop="mqlCount">
+                  <template #label><span>MQL阶段</span><el-tooltip content="MQL（Marketing Qualified Lead）营销合格线索：经过营销团队初步筛选，符合目标客户画像，有进一步培育价值的线索" placement="top"><el-icon style="margin-left: 2px; vertical-align: middle; color: #909399"><QuestionFilled /></el-icon></el-tooltip></template>
+                  <el-input-number v-model="settleForm.mqlCount" :min="0" controls-position="right" style="width: 100%" />
+                  <div class="settle-field-tip">营销合格线索数量</div>
+                </el-form-item></el-col>
+                <el-col :span="12"><el-form-item prop="sqlCount">
+                  <template #label><span>SQL阶段</span><el-tooltip content="SQL（Sales Qualified Lead）销售合格线索：经过销售团队确认，有明确购买意向和预算，可进入销售跟进阶段的线索" placement="top"><el-icon style="margin-left: 2px; vertical-align: middle; color: #909399"><QuestionFilled /></el-icon></el-tooltip></template>
+                  <el-input-number v-model="settleForm.sqlCount" :min="0" controls-position="right" style="width: 100%" />
+                  <div class="settle-field-tip">销售合格线索数量</div>
+                </el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="转化商机" prop="opportunityCount">
+                  <el-input-number v-model="settleForm.opportunityCount" :min="0" controls-position="right" style="width: 100%" />
+                  <div class="settle-field-tip">转化为商机的数量</div>
+                </el-form-item></el-col>
+              </el-row>
+            </div>
+          </section>
+          <!-- 成交效果 -->
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('settleDeal')">
+              <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>成交效果</div>
+              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.settleDeal }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.settleDeal">
+              <el-row>
+                <el-col :span="12"><el-form-item label="成交金额" prop="dealAmount">
+                  <el-input-number v-model="settleForm.dealAmount" :min="0" :precision="2" controls-position="right" style="width: 100%" />
+                  <div class="settle-field-tip">活动带来的成交总金额</div>
+                </el-form-item></el-col>
+              </el-row>
+            </div>
+          </section>
         </div>
       </el-form>
       <template #footer>
@@ -567,7 +579,7 @@
         </div>
       </template>
       <div class="rd-page rd-page--wide">
-        <el-tabs v-model="viewDetailTab">
+        <el-tabs v-model="viewDetailTab" @tab-change="onViewTabChange">
           <!-- 基本信息 -->
           <el-tab-pane label="基本信息" name="basic">
             <section class="rd-card">
@@ -647,17 +659,25 @@
           <!-- 参与人 -->
           <el-tab-pane name="participants">
             <template #label>参与人<el-badge :value="viewParticipants.length" :hidden="viewParticipants.length === 0" class="ml5" /></template>
-            <el-row :gutter="10" class="mb8">
-              <el-col :span="1.5"><el-button type="primary" plain icon="Plus" size="small" @click="handleAddParticipant" v-hasPermi="['marketing:participant:add']">新增参与人</el-button></el-col>
-            </el-row>
-            <el-table :data="viewParticipants" border size="small">
-              <el-table-column label="客户名称" prop="companyName" show-overflow-tooltip />
-              <el-table-column label="联系人" prop="contactName" width="100" align="center" />
-              <el-table-column label="手机号" prop="contactPhone" width="130" align="center" />
-              <el-table-column label="职位" prop="position" width="100" align="center" />
-              <el-table-column label="状态" prop="participateStatus" width="90" align="center"><template #default="scope"><span class="badge" :class="partBadgeClass(scope.row.participateStatus)"><span class="dot"></span>{{ partStatusLabel(scope.row.participateStatus) }}</span></template></el-table-column>
-              <el-table-column label="操作" width="200" align="center"><template #default="scope"><el-button link type="primary" size="small" @click="handleSignIn(scope.row)" v-if="scope.row.participateStatus !== '1'" v-hasPermi="['marketing:participant:edit']">签到</el-button><el-button link type="primary" size="small" @click="handleConvertLead(scope.row)" v-if="!scope.row.leadId" v-hasPermi="['marketing:participant:convert']">转线索</el-button><el-tag v-if="scope.row.leadId" type="success" size="small">已转线索</el-tag></template></el-table-column>
-            </el-table>
+            <section class="rd-card">
+              <div class="rd-card-header" @click="toggleCard('viewParticipants')">
+                <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>参与人列表<el-tag size="small" effect="plain" style="margin-left: 4px">{{ viewParticipants.length }}人</el-tag></div>
+                <div style="display: flex; align-items: center; gap: 8px">
+                  <el-button type="primary" plain icon="Plus" size="small" @click="handleAddParticipant" v-hasPermi="['marketing:participant:add']">新增参与人</el-button>
+                  <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.viewParticipants }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+                </div>
+              </div>
+              <div class="rd-card-body" v-show="!collapsedCards.viewParticipants">
+                <el-table ref="viewParticipantsTableRef" :data="viewParticipants" border size="small">
+                  <el-table-column label="客户名称" prop="companyName" min-width="180" show-overflow-tooltip />
+                  <el-table-column label="联系人" prop="contactName" width="100" align="center" />
+                  <el-table-column label="手机号" prop="contactPhone" width="130" align="center" />
+                  <el-table-column label="职位" prop="position" width="100" align="center" />
+                  <el-table-column label="状态" prop="participateStatus" width="90" align="center"><template #default="scope"><span class="badge" :class="partBadgeClass(scope.row.participateStatus)"><span class="dot"></span>{{ partStatusLabel(scope.row.participateStatus) }}</span></template></el-table-column>
+                  <el-table-column label="操作" width="200" align="center"><template #default="scope"><el-button link type="primary" size="small" @click="handleSignIn(scope.row)" v-if="scope.row.participateStatus !== '1'" v-hasPermi="['marketing:participant:edit']">签到</el-button><el-button link type="primary" size="small" @click="handleConvertLead(scope.row)" v-if="!scope.row.leadId" v-hasPermi="['marketing:participant:convert']">转线索</el-button><el-tag v-if="scope.row.leadId" type="success" size="small">已转线索</el-tag></template></el-table-column>
+                </el-table>
+              </div>
+            </section>
           </el-tab-pane>
           <!-- 活动效果 -->
           <el-tab-pane label="活动效果" name="result">
@@ -732,6 +752,9 @@
           </el-tab-pane>
         </el-tabs>
       </div>
+      <template #footer>
+        <el-button @click="viewOpen = false">关 闭</el-button>
+      </template>
     </el-dialog>
 
     <!-- 复盘弹窗 -->
@@ -858,7 +881,7 @@ import UserPicker from '@/components/UserPicker/index.vue'
 import DeptPicker from '@/components/DeptPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard, formatAmount } from '@/composables/useDetailCard'
-const { collapsedCards, toggleCard } = useDetailCard(['basic', 'schedule', 'owner', 'detail', 'attachment', 'result', 'viewInfo', 'viewSchedule', 'viewOwner', 'viewDesc', 'viewAttach', 'viewResult', 'viewPromote', 'viewLogs', 'settleCost', 'settleLead', 'settleDeal'])
+const { collapsedCards, toggleCard } = useDetailCard(['basic', 'schedule', 'owner', 'detail', 'attachment', 'result', 'viewInfo', 'viewSchedule', 'viewOwner', 'viewDesc', 'viewAttach', 'viewParticipants', 'viewResult', 'viewPromote', 'viewLogs', 'settleInfo', 'settleCost', 'settleLead', 'settleDeal'])
 
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('mk_activity_index')
@@ -1055,14 +1078,20 @@ queryParams.value.activityNo = undefined; queryParams.value.activityName = undef
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleStatusTabClick(status) { activeStatusTab.value = status; queryParams.value.activityStatus = status === 'all' ? undefined : status; handleQuery() }
 function loadStatusCounts() {
-  listActivity({ pageNum: 1, pageSize: 999 }, { suppressError: true }).then(res => {
-    const counts = { all: res.total, '0': 0, '1': 0, '2': 0, '3': 0, '4': 0, '5': 0 }
-    ;(res.rows || []).forEach(r => { if (counts[r.activityStatus] !== undefined) counts[r.activityStatus]++ })
+  // 基于当前筛选条件（剔除状态与分页）拉取全量数据统计，与列表筛选保持一致
+  const query = { ...queryParams.value, pageNum: 1, pageSize: 9999, activityStatus: undefined, params: { ...queryParams.value.params } }
+  listActivity(query, { suppressError: true }).then(res => {
+    const counts = { all: 0, '0': 0, '1': 0, '2': 0, '3': 0, '4': 0, '5': 0 }
+    const rows = res.rows || []
+    rows.forEach(r => { if (counts[r.activityStatus] !== undefined) counts[r.activityStatus]++ })
+    counts.all = rows.length
     statusCounts.value = counts
   }).catch(() => {})
 }
 function statusTabClass(value) { const map = { '0': 'tab-draft', '1': 'tab-audit', '2': 'tab-done', '3': 'tab-done', '4': 'tab-void', '5': 'tab-reject' }; return map[value] || '' }
 function badgeClass(status) { const map = { '0': 'amber', '1': 'blue', '2': 'green', '3': 'green', '4': 'gray', '5': 'red' }; return map[status] || 'gray' }
+function partBadgeClass(status) { const map = { '0': 'amber', '1': 'green', '2': 'red' }; return map[status] || 'gray' }
+function partStatusLabel(status) { const map = { '0': '报名', '1': '已签到', '2': '未出席' }; return map[status] || '未知' }
 function statusLabel(status) { const item = marketing_activity_status.value.find(d => d.value == status); return item ? item.label : '-' }
 function typeBadgeClass(type) { const map = { '1': 'blue', '2': 'green', '3': 'violet', '4': 'amber' }; return map[type] || 'gray' }
 function typeLabel(type) { const item = marketing_activity_type.value.find(d => d.value == type); return item ? item.label : '-' }
@@ -1088,6 +1117,15 @@ function loadViewRelations() {
   getParticipantsByActivity(viewForm.value.activityId).then(res => { viewParticipants.value = res.data || [] })
   getActivityStatusLogs(viewForm.value.activityId).then(res => { viewStatusLogs.value = res.data || [] })
   loadViewPromoteUrl()
+}
+// 切换详情 tab 时重算参与人表格布局（修复隐藏 tab 中表格宽度塌陷）
+const viewParticipantsTableRef = ref(null)
+function onViewTabChange(name) {
+  if (name === 'participants') {
+    nextTick(() => {
+      if (viewParticipantsTableRef.value) viewParticipantsTableRef.value.doLayout()
+    })
+  }
 }
 function statusTagType(val) {
   const map = { '0': 'info', '1': 'primary', '2': 'success', '3': 'warning', '4': 'info', '5': 'danger' }
@@ -1539,4 +1577,31 @@ getList()
 .rd-dialog .rd-page--wide {
   max-width: none;
 }
+/* 详情弹窗内 tabs 下的表格宽度塌陷修复：切换 tab 时让表格重算布局 */
+.rd-dialog .el-tabs__content {
+  width: 100%;
+}
+/* 参与人状态徽章：弹窗 append-to-body 后脱离 mk-list-page 前缀，补充全局样式 */
+.rd-dialog .badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  border: 1px solid transparent;
+}
+.rd-dialog .badge .dot { width: 6px; height: 6px; border-radius: 50%; }
+.rd-dialog .badge.amber { background: #fffbeb; color: #b45309; border-color: #fde68a; }
+.rd-dialog .badge.amber .dot { background: #f59e0b; }
+.rd-dialog .badge.blue { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+.rd-dialog .badge.blue .dot { background: #3b82f6; }
+.rd-dialog .badge.green { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+.rd-dialog .badge.green .dot { background: #10b981; }
+.rd-dialog .badge.red { background: #fef2f2; color: #b91c1c; border-color: #fecaca; }
+.rd-dialog .badge.red .dot { background: #ef4444; }
+.rd-dialog .badge.gray { background: #f1f5f9; color: #64748b; border-color: #e2e8f0; }
+.rd-dialog .badge.gray .dot { background: #94a3b8; }
 </style>

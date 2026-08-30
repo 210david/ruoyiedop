@@ -29,6 +29,13 @@ public class DmsInspectionTaskController extends BaseController
         return getDataTable(list);
     }
 
+    @PreAuthorize("@ss.hasPermi('dms:inspection:task:list')")
+    @GetMapping("/countByStatus")
+    public AjaxResult countByStatus()
+    {
+        return AjaxResult.success(dmsInspectionTaskService.countTaskByStatus());
+    }
+
     @PreAuthorize("@ss.hasPermi('dms:inspection:task:query')")
     @GetMapping("/{taskId}")
     public AjaxResult getInfo(@PathVariable Long taskId)

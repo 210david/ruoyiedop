@@ -165,6 +165,9 @@
       </div>
       </div>
     </section>
+      <template #footer>
+        <el-button @click="detailOpen = false">关 闭</el-button>
+      </template>
     </el-dialog>
 
     <!-- 拣货对话框 -->

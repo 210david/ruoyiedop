@@ -280,9 +280,12 @@
               <el-row :gutter="20">
                 <el-col :span="24">
                   <el-form-item label="关联订单" prop="orderId">
-                    <el-select v-model="addForm.orderId" filterable clearable placeholder="请选择订单" style="width: 100%" @change="onOrderChange">
-                      <el-option v-for="o in orderOptions" :key="o.orderId" :label="o.orderNo + (o.customerName ? ' - ' + o.customerName : '')" :value="o.orderId" />
-                    </el-select>
+                    <el-input v-model="addForm.orderNo" readonly placeholder="请选择订单" style="width: 100%" @click="openOrderPicker">
+                      <template #append><el-button icon="Search" @click="openOrderPicker" /></template>
+                      <template #suffix>
+                        <el-icon v-if="addForm.orderNo" class="clear-icon" @click.stop="clearOrder"><CircleClose /></el-icon>
+                      </template>
+                    </el-input>
                   </el-form-item>
                 </el-col>
               </el-row>
@@ -914,7 +917,13 @@
           </div>
         </section>
       </div>
+      <template #footer>
+        <el-button @click="viewOpen = false">关 闭</el-button>
+      </template>
     </el-dialog>
+
+    <!-- 订单选择弹窗 -->
+    <order-picker ref="orderPickerRef" title="选择订单" @confirm="onOrderPickerConfirm" />
   </div>
 </template>
 
@@ -922,7 +931,8 @@
 import { listReturn, getReturn, delReturn, addReturn, updateReturn, submitReturn, approveReturn, refundReturn } from '@/api/mk/returnOrder'
 import { listOrder, getOrder } from '@/api/mk/order'
 import { useColumnResize } from '@/composables/useColumnResize'
-import { ArrowDown } from '@element-plus/icons-vue'
+import { ArrowDown, CircleClose, Search } from '@element-plus/icons-vue'
+import OrderPicker from '@/components/OrderPicker/index.vue'
 
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('mk_return_index')
@@ -942,13 +952,18 @@ const activeStatusTab = ref('all')
 const statusCounts = ref({ all: 0, '0': 0, '1': 0, '2': 0, '3': 0, '4': 0 })
 const statusTabList = computed(() => marketing_return_status.value)
 function loadStatusCounts() {
-  const counts = { all: 0, '0': 0, '1': 0, '2': 0, '3': 0, '4': 0 }
-  list.value.forEach(row => {
-    const s = row.returnStatus
-    if (counts[s] !== undefined) counts[s]++
-  })
-  counts.all = total.value
-  statusCounts.value = counts
+  // 基于当前筛选条件（剔除状态与分页）拉取全量数据统计，避免仅统计当前页
+  const query = { ...queryParams.value, pageNum: 1, pageSize: 9999, returnStatus: undefined, params: { ...queryParams.value.params } }
+  listReturn(query).then(res => {
+    const counts = { all: 0, '0': 0, '1': 0, '2': 0, '3': 0, '4': 0 }
+    const rows = res.rows || []
+    rows.forEach(row => {
+      const s = row.returnStatus
+      if (counts[s] !== undefined) counts[s]++
+    })
+    counts.all = rows.length
+    statusCounts.value = counts
+  }).catch(() => {})
 }
 function handleStatusTabClick(status) { activeStatusTab.value = status; queryParams.value.returnStatus = status === 'all' ? undefined : status; handleQuery() }
 function badgeClass(status) { const map = { '0': 'blue', '1': 'green', '2': 'amber', '3': 'gray', '4': 'red' }; return map[status] || 'gray' }
@@ -963,7 +978,7 @@ const addOpen = ref(false)
 const addForm = ref({})
 const addTitle = ref('新增退货')
 const isEdit = ref(false)
-const orderOptions = ref([])
+const title = ref('')
 const collapsedCards = reactive({ basic: false, reason: false, approve: false, refund: false, approveReturn: false, approveItems: false, approveReview: false, refundReturn: false, refundInfo: false, addOrder: false, addItems: false, addReturn: false, viewItems: false, editAudit: false, approveAudit: false, viewAudit: false })
 function toggleCard(name) { collapsedCards[name] = !collapsedCards[name] }
 
@@ -1096,29 +1111,20 @@ function handleEdit(row) {
 }
 
 /** 加载订单选项 */
-function loadOrderOptions() {
-  listOrder({ pageNum: 1, pageSize: 9999 }).then(res => { orderOptions.value = res.rows || [] })
+/** 打开订单选择弹窗 */
+function openOrderPicker() {
+  proxy.$refs.orderPickerRef.open(addForm.value.orderId)
 }
-
-/** 选择订单后自动带出客户信息和物料明细 */
-function onOrderChange(val) {
-  if (!val) {
-    addForm.value.orderId = undefined
-    addForm.value.orderNo = undefined
-    addForm.value.customerId = undefined
-    addForm.value.customerName = undefined
-    addForm.value.detailList = []
-    return
-  }
-  getOrder(val).then(res => {
-    const order = res.data
-    addForm.value.orderId = order.orderId
-    addForm.value.orderNo = order.orderNo
-    addForm.value.customerId = order.customerId
-    addForm.value.customerName = order.customerName
-    // 从订单明细带出退货明细
-    if (order.itemList && order.itemList.length > 0) {
-      addForm.value.detailList = order.itemList.map(item => ({
+/** 订单选择确认回调 — 自动带出客户信息和物料明细 */
+function onOrderPickerConfirm(order) {
+  getOrder(order.orderId).then(res => {
+    const ord = res.data
+    addForm.value.orderId = ord.orderId
+    addForm.value.orderNo = ord.orderNo
+    addForm.value.customerId = ord.customerId
+    addForm.value.customerName = ord.customerName
+    if (ord.itemList && ord.itemList.length > 0) {
+      addForm.value.detailList = ord.itemList.map(item => ({
         orderItemId: item.itemId,
         productName: item.productName,
         productSpec: item.productSpec,
@@ -1135,6 +1141,14 @@ function onOrderChange(val) {
       proxy.$modal.msgWarning('该订单暂无物料明细')
     }
   })
+}
+/** 清除订单 */
+function clearOrder() {
+  addForm.value.orderId = undefined
+  addForm.value.orderNo = undefined
+  addForm.value.customerId = undefined
+  addForm.value.customerName = undefined
+  addForm.value.detailList = []
 }
 
 /** 计算退货明细金额 */
@@ -1219,7 +1233,7 @@ function submitAdd() {
   })
 }
 
-loadOrderOptions()
+getList()
 getList()
 </script>
 

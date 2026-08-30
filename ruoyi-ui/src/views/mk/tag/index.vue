@@ -228,6 +228,9 @@
           </div>
         </section>
       </div>
+      <template #footer>
+        <el-button @click="viewOpen = false">关 闭</el-button>
+      </template>
     </el-dialog>
   </div>
 </template>
@@ -308,13 +311,18 @@ const activeStatusTab = ref('all')
 const statusCounts = ref({ all: 0, '0': 0, '1': 0 })
 const statusTabList = computed(() => sys_normal_disable.value)
 function loadStatusCounts() {
-  const counts = { all: 0, '0': 0, '1': 0 }
-  list.value.forEach(row => {
-    const s = row.status
-    if (counts[s] !== undefined) counts[s]++
-  })
-  counts.all = total.value
-  statusCounts.value = counts
+  // 基于当前筛选条件（剔除状态与分页）拉取全量数据统计，避免仅统计当前页
+  const query = { ...queryParams.value, pageNum: 1, pageSize: 9999, status: undefined, params: { ...queryParams.value.params } }
+  listTag(query).then(res => {
+    const counts = { all: 0, '0': 0, '1': 0 }
+    const rows = res.rows || []
+    rows.forEach(row => {
+      const s = row.status
+      if (counts[s] !== undefined) counts[s]++
+    })
+    counts.all = rows.length
+    statusCounts.value = counts
+  }).catch(() => {})
 }
 function handleStatusTabClick(status) { activeStatusTab.value = status; queryParams.value.status = status === 'all' ? undefined : status; handleQuery() }
 function badgeClass(status) { const map = { '0': 'green', '1': 'gray' }; return map[status] || 'gray' }

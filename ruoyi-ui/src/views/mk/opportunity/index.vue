@@ -210,9 +210,14 @@
                 <el-col :span="12"><el-form-item label="商机编号" prop="opportunityNo"><el-input v-model="form.opportunityNo" placeholder="保存后自动生成" disabled /></el-form-item></el-col>
                 <el-col :span="12"><el-form-item label="商机名称" prop="opportunityName"><el-input v-model="form.opportunityName" placeholder="请输入商机名称" /></el-form-item></el-col>
                 <el-col :span="12"><el-form-item label="所属客户" prop="customerId">
-                  <el-select v-model="form.customerId" filterable clearable placeholder="请选择客户" style="width: 100%" @change="onCustomerChange">
-                    <el-option v-for="c in customerOptions" :key="c.customerId" :label="c.customerName" :value="c.customerId" />
-                  </el-select>
+                  <el-input v-model="form.customerName" readonly placeholder="请选择客户" style="width: 100%" @click="openCustomerPicker">
+                    <template v-if="form.customerName" #append>
+                      <el-button icon="CircleClose" @click.stop="clearCustomer" />
+                    </template>
+                    <template v-else #append>
+                      <el-button icon="Search" @click="openCustomerPicker" />
+                    </template>
+                  </el-input>
                 </el-form-item></el-col>
                 <el-col :span="12"><el-form-item label="主要联系人" prop="contactId">
                   <el-select v-model="form.contactId" filterable clearable placeholder="请选择联系人" style="width: 100%">
@@ -584,6 +589,9 @@
           </el-tab-pane>
         </el-tabs>
       </div>
+      <template #footer>
+        <el-button @click="viewOpen = false">关 闭</el-button>
+      </template>
     </el-dialog>
 
     <!-- 阶段推进/赢单/输单弹窗 -->
@@ -679,6 +687,9 @@
       </template>
     </el-dialog>
 
+    <!-- 客户选择弹窗 -->
+    <customer-picker ref="customerPickerRef" title="选择客户" @confirm="onCustomerPickerConfirm" />
+
     <!-- 负责人选择弹窗 -->
     <user-picker ref="userPickerRef" title="选择负责人" @confirm="onUserPickerConfirm" />
 
@@ -738,10 +749,10 @@
 import { CircleClose, ArrowRight, QuestionFilled } from '@element-plus/icons-vue'
 import { listOpportunity, getOpportunity, addOpportunity, updateOpportunity, delOpportunity, advanceOpportunity, retreatOpportunity, winOpportunity, loseOpportunity, reopenOpportunity, getOpportunityRelations } from '@/api/mk/opportunity'
 import { listStage } from '@/api/mk/stage'
-import { listCustomer } from '@/api/mk/customer'
 import { listContact } from '@/api/mk/contact'
 import UserPicker from '@/components/UserPicker/index.vue'
 import DeptPicker from '@/components/DeptPicker/index.vue'
+import CustomerPicker from '@/components/CustomerPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
 const { collapsedCards, toggleCard } = useDetailCard(['c_basic', 'c_amount', 'c_solution', 'c_owner', 'c_other', 'viewBasic', 'viewAmount', 'viewSolution', 'viewOwner', 'viewOther', 'viewInteractions', 'viewStageLog', 'viewContracts', 'viewOrders', 'actionInfo', 'actionForm'])
@@ -761,14 +772,19 @@ const activeStatusTab = ref('all')
 const statusCounts = ref({ all: 0 })
 const statusTabList = computed(() => marketing_opportunity_status.value)
 function loadStatusCounts() {
-  const counts = { all: 0 }
-  marketing_opportunity_status.value.forEach(d => { counts[d.value] = 0 })
-  list.value.forEach(row => {
-    const s = row.opportunityStatus
-    if (counts[s] !== undefined) counts[s]++
-  })
-  counts.all = total.value
-  statusCounts.value = counts
+  // 基于当前筛选条件（剔除状态与分页）拉取全量数据统计，避免仅统计当前页
+  const query = { ...queryParams.value, pageNum: 1, pageSize: 9999, opportunityStatus: undefined, params: { ...queryParams.value.params } }
+  listOpportunity(query).then(res => {
+    const counts = { all: 0 }
+    marketing_opportunity_status.value.forEach(d => { counts[d.value] = 0 })
+    const rows = res.rows || []
+    rows.forEach(row => {
+      const s = row.opportunityStatus
+      if (counts[s] !== undefined) counts[s]++
+    })
+    counts.all = rows.length
+    statusCounts.value = counts
+  }).catch(() => {})
 }
 function handleStatusTabClick(status) { activeStatusTab.value = status; queryParams.value.opportunityStatus = status === 'all' ? undefined : status; handleQuery() }
 function badgeClass(status) { const map = { '0': 'blue', '1': 'green', '2': 'red', '3': 'amber' }; return map[status] || 'gray' }
@@ -780,7 +796,6 @@ const single = ref(true)
 const multiple = ref(true)
 const total = ref(0)
 const title = ref('')
-const customerOptions = ref([])
 const contactOptions = ref([])
 const stageOptions = ref([])
 const viewForm = ref({})
@@ -855,7 +870,6 @@ const activeFilterCount = computed(() => {
 })
 
 function getList() { loading.value = true; listOpportunity(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false; loadStatusCounts(); applySavedWidths() }).catch(() => { loading.value = false }) }
-function getCustomerOptions() { listCustomer({ pageNum: 1, pageSize: 9999 }).then(res => { customerOptions.value = res.rows }) }
 function getStageOptions() { listStage({ pageNum: 1, pageSize: 9999, status: '0' }).then(res => { stageOptions.value = res.rows }) }
 
 /** 打开负责人选择弹窗 */
@@ -891,10 +905,27 @@ function clearDept() {
   form.value.deptName = undefined
 }
 
-function onCustomerChange(customerId) {
+/** 打开客户选择弹窗 */
+function openCustomerPicker() {
+  proxy.$refs.customerPickerRef.open(form.value.customerId)
+}
+/** 客户选择确认回调 — 客户变更时联动刷新联系人 */
+function onCustomerPickerConfirm(customer) {
+  if (form.value.customerId !== customer.customerId) {
+    form.value.customerId = customer.customerId
+    form.value.customerName = customer.customerName
+    form.value.contactId = undefined
+    listContact({ customerId: customer.customerId, pageNum: 1, pageSize: 9999 }).then(res => { contactOptions.value = res.rows })
+  } else {
+    form.value.customerName = customer.customerName
+  }
+}
+/** 清除客户 — 同时清空联系人 */
+function clearCustomer() {
+  form.value.customerId = undefined
+  form.value.customerName = undefined
   form.value.contactId = undefined
-  if (customerId) { listContact({ customerId: customerId, pageNum: 1, pageSize: 9999 }).then(res => { contactOptions.value = res.rows }) }
-  else { contactOptions.value = [] }
+  contactOptions.value = []
 }
 function onStageChange(stageCode) {
   const stage = stageOptions.value.find(s => s.stageCode === stageCode)
@@ -905,7 +936,7 @@ function resetQuery() { queryParams.value.opportunityNo = undefined; queryParams
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.opportunityId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function reset() {
-  form.value = { opportunityNo: undefined, opportunityName: undefined, customerId: undefined, contactId: undefined, leadId: undefined, opportunitySource: undefined, expectedAmount: 0, expectedDate: undefined, stageCode: 'stage1', stageName: '初步接触', winRate: 10, weightedAmount: 0, opportunityStatus: '0', competitor: undefined, painPoint: undefined, solution: undefined, userId: undefined, userName: undefined, deptId: undefined, deptName: undefined, nextAction: undefined, nextTime: undefined, remark: undefined }
+  form.value = { opportunityNo: undefined, opportunityName: undefined, customerId: undefined, customerName: undefined, contactId: undefined, leadId: undefined, opportunitySource: undefined, expectedAmount: 0, expectedDate: undefined, stageCode: 'stage1', stageName: '初步接触', winRate: 10, weightedAmount: 0, opportunityStatus: '0', competitor: undefined, painPoint: undefined, solution: undefined, userId: undefined, userName: undefined, deptId: undefined, deptName: undefined, nextAction: undefined, nextTime: undefined, remark: undefined }
   contactOptions.value = []
   proxy.resetForm('opportunityRef')
 }
@@ -1005,7 +1036,6 @@ function getLogTagType(type) {
 /** 金额格式化：千分位 + 两位小数 */
 function formatAmount(val) { if (val == null || val === '') return '-'; return Number(val).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }
 
-getCustomerOptions()
 getStageOptions()
 getList()
 

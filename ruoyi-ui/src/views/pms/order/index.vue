@@ -160,13 +160,15 @@
             <template #default="scope"><span class="badge blue">{{ paymentMethodLabel(scope.row.paymentMethod) }}</span></template>
           </el-table-column>
           <el-table-column label="创建时间" prop="createTime" key="createTime" :width="colWidth('createTime', 180)" resizable align="center" sortable="custom" v-if="columns.createTime.visible" />
-          <el-table-column label="操作" width="330" align="center" fixed="right">
+          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
-              <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
-              <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['pms:order:edit']" v-if="scope.row.status === '0' || scope.row.status === '7'">修改</el-button>
-              <el-button link type="primary" icon="Promotion" @click="handleSubmit(scope.row)" v-hasPermi="['pms:order:edit']" v-if="scope.row.status === '0'">提交</el-button>
-              <el-button link type="primary" icon="Check" @click="handleAudit(scope.row)" v-hasPermi="['pms:order:approve']" v-if="scope.row.status === '1'">审批</el-button>
-              <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['pms:order:remove']" v-if="scope.row.status === '0'">删除</el-button>
+              <div class="action-btn-row">
+                <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
+                <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['pms:order:edit']" v-if="scope.row.status === '0' || scope.row.status === '7'">修改</el-button>
+                <el-button link type="primary" icon="Promotion" @click="handleSubmit(scope.row)" v-hasPermi="['pms:order:edit']" v-if="scope.row.status === '0'">提交</el-button>
+                <el-button link type="primary" icon="Check" @click="handleAudit(scope.row)" v-hasPermi="['pms:order:approve']" v-if="scope.row.status === '1'">审批</el-button>
+                <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['pms:order:remove']" v-if="scope.row.status === '0'">删除</el-button>
+              </div>
             </template>
           </el-table-column>
         </el-table>
@@ -1629,4 +1631,11 @@ onActivated(() => { getList() })
 :deep(.el-timeline-item__node--danger) {
   border-color: #f56c6c;
 }
+
+/* 操作列按钮对齐：每行2个按钮，flex-wrap 自动换行，按钮自适应内容宽度 */
+:deep(.col-action) { padding: 6px 4px !important; }
+:deep(.col-action .cell) { display: flex; justify-content: center; padding: 0; }
+.action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
+:deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
+:deep(.col-action .el-button + .el-button) { margin-left: 2px; }
 </style>

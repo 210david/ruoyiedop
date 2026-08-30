@@ -129,14 +129,16 @@
           <el-table-column label="不合格数量" prop="unqualifiedQty" key="unqualifiedQty" :width="colWidth('unqualifiedQty', 120)" resizable align="right" class-name="col-num" v-if="columns.unqualifiedQty.visible" />
           <el-table-column label="验收人" prop="inspectorName" key="inspectorName" :width="colWidth('inspectorName', 120)" resizable v-if="columns.inspectorName.visible" />
           <el-table-column label="创建时间" prop="createTime" key="createTime" :width="colWidth('createTime', 180)" resizable align="center" sortable="custom" v-if="columns.createTime.visible" />
-          <el-table-column label="操作" width="220" align="center" fixed="right">
+          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
-<el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
-<el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['pms:receive:edit']" v-if="scope.row.status === '0' || scope.row.status === '6'">修改</el-button>
-<el-button link type="primary" icon="Check" @click="handleInspect(scope.row)" v-hasPermi="['pms:receive:edit']" v-if="scope.row.status === '0'">验收</el-button>
-<el-button link type="success" icon="Checked" @click="handleAudit(scope.row)" v-hasPermi="['pms:receive:audit']" v-if="scope.row.status === '5'">审核</el-button>
-<el-button link type="warning" icon="RefreshLeft" @click="handleReturn(scope.row)" v-hasPermi="['pms:return:add']" v-if="(scope.row.status === '1' || scope.row.status === '2') && scope.row.unqualifiedQty > 0">退货</el-button>
-<el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['pms:receive:remove']" v-if="scope.row.status === '0'">删除</el-button>
+              <div class="action-btn-row">
+                <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
+                <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['pms:receive:edit']" v-if="scope.row.status === '0' || scope.row.status === '6'">修改</el-button>
+                <el-button link type="primary" icon="Check" @click="handleInspect(scope.row)" v-hasPermi="['pms:receive:edit']" v-if="scope.row.status === '0'">验收</el-button>
+                <el-button link type="success" icon="Checked" @click="handleAudit(scope.row)" v-hasPermi="['pms:receive:audit']" v-if="scope.row.status === '5'">审核</el-button>
+                <el-button link type="warning" icon="RefreshLeft" @click="handleReturn(scope.row)" v-hasPermi="['pms:return:add']" v-if="(scope.row.status === '1' || scope.row.status === '2') && scope.row.unqualifiedQty > 0">退货</el-button>
+                <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['pms:receive:remove']" v-if="scope.row.status === '0'">删除</el-button>
+              </div>
             </template>
           </el-table-column>
         </el-table>
@@ -1844,4 +1846,11 @@ onActivated(() => { getList() })
   border-top: 1px solid #e5e7eb;
   padding: 16px 24px;
 }
+
+/* 操作列按钮对齐：每行2个按钮，flex-wrap 自动换行，按钮自适应内容宽度 */
+:deep(.col-action) { padding: 6px 4px !important; }
+:deep(.col-action .cell) { display: flex; justify-content: center; padding: 0; }
+.action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
+:deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
+:deep(.col-action .el-button + .el-button) { margin-left: 2px; }
 </style>
