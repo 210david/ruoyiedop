@@ -112,8 +112,8 @@
         LEFT JOIN (
             SELECT
                 dt.dispatch_id,
-                SUM(dt.minutes) AS dt_minutes,
-                ROUND(SUM(dt.minutes) / 60.0, 2) AS dt_hours
+                COALESCE(SUM(dt.hours), 0) AS dt_minutes,
+                ROUND(COALESCE(SUM(dt.hours), 0), 2) AS dt_hours
             FROM mms_downtime dt
             WHERE dt.del_flag = '0'
             GROUP BY dt.dispatch_id

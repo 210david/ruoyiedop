@@ -46,6 +46,9 @@ public class MkOrder extends BaseEntity
     @Excel(name = "订单状态", dictType = "marketing_order_status")
     private String orderStatus;
 
+    /** 订单状态列表（用于多状态查询） */
+    private java.util.List<String> orderStatusList;
+
     /** 物流公司 */
     private String logisticsCompany;
 
@@ -123,6 +126,8 @@ private String deptName;
     public void setOrderAmount(BigDecimal orderAmount) { this.orderAmount = orderAmount; }
     public String getOrderStatus() { return orderStatus; }
     public void setOrderStatus(String orderStatus) { this.orderStatus = orderStatus; }
+    public java.util.List<String> getOrderStatusList() { return orderStatusList; }
+    public void setOrderStatusList(java.util.List<String> orderStatusList) { this.orderStatusList = orderStatusList; }
     public String getLogisticsCompany() { return logisticsCompany; }
     public void setLogisticsCompany(String logisticsCompany) { this.logisticsCompany = logisticsCompany; }
     public String getTrackingNo() { return trackingNo; }

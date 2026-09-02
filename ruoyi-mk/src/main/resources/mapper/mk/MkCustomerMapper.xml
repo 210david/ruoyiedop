@@ -63,6 +63,8 @@
             <if test="deptId != null"> AND c.dept_id = #{deptId}</if>
             <if test="params.beginCreateTime != null and params.beginCreateTime != ''"> AND c.create_time &gt;= #{params.beginCreateTime}</if>
             <if test="params.endCreateTime != null and params.endCreateTime != ''"> AND c.create_time &lt;= #{params.endCreateTime}</if>
+            <!-- 数据权限过滤（@DataScope 注入，如 AND (c.user_id = 2)） -->
+            <if test="params.dataScope != null and params.dataScope != ''"> AND ${params.dataScope}</if>
         </where>
         ORDER BY c.customer_id DESC
     </select>

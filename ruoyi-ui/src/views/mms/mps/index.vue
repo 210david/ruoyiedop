@@ -134,14 +134,16 @@
           <el-table-column label="创建时间" prop="createTime" key="createTime" :width="colWidth('createTime', 160)" resizable align="center" v-if="columns.createTime.visible">
             <template #default="scope"><span>{{ parseTime(scope.row.createTime) }}</span></template>
           </el-table-column>
-          <el-table-column label="操作" width="280" align="center" fixed="right">
+          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
-              <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
-              <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['mms:mps:edit']">修改</el-button>
-              <el-button v-if="scope.row.status === '0'" link type="primary" icon="Promotion" @click="handleSubmit(scope.row)" v-hasPermi="['mms:mps:confirm']">提交审批</el-button>
-              <el-button v-if="scope.row.status === '1'" link type="primary" icon="Aim" @click="handleAudit(scope.row)" v-hasPermi="['mms:mps:approve']">审批</el-button>
-              <el-button v-if="scope.row.status === '2'" link type="success" icon="Document" @click="handleRelease(scope.row)" v-hasPermi="['mms:mps:release']">生成工单</el-button>
-              <el-button v-if="scope.row.status !== '3' && scope.row.status !== '4'" link type="danger" icon="Close" @click="handleCancel(scope.row)" v-hasPermi="['mms:mps:cancel']">取消</el-button>
+              <div class="action-btn-row">
+                <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
+                <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['mms:mps:edit']">修改</el-button>
+                <el-button v-if="scope.row.status === '0'" link type="primary" icon="Promotion" @click="handleSubmit(scope.row)" v-hasPermi="['mms:mps:confirm']">提交审批</el-button>
+                <el-button v-if="scope.row.status === '1'" link type="primary" icon="Aim" @click="handleAudit(scope.row)" v-hasPermi="['mms:mps:approve']">审批</el-button>
+                <el-button v-if="scope.row.status === '2'" link type="success" icon="Document" @click="handleRelease(scope.row)" v-hasPermi="['mms:mps:release']">生成工单</el-button>
+                <el-button v-if="scope.row.status !== '3' && scope.row.status !== '4'" link type="danger" icon="Close" @click="handleCancel(scope.row)" v-hasPermi="['mms:mps:cancel']">取消</el-button>
+              </div>
             </template>
           </el-table-column>
         </el-table>
@@ -879,4 +881,11 @@ getList();
 .status-help-content .highlight-card p { margin:6px 0; line-height:1.6; font-size:13px; color:#606266; }
 @media (max-width:1100px) { .mms-mps-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }
 @media (max-width:720px) { .mms-mps-page .filter-card .filter-bar { grid-template-columns:1fr; } }
+
+/* 操作列按钮对齐：每行2个按钮，flex-wrap 自动换行，按钮自适应内容宽度 */
+:deep(.col-action) { padding: 6px 4px !important; }
+:deep(.col-action .cell) { display: flex; justify-content: center; padding: 0; }
+.action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
+:deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
+:deep(.col-action .el-button + .el-button) { margin-left: 2px; }
 </style>

@@ -7,13 +7,13 @@ import java.util.Date;
 import java.math.BigDecimal;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import java.util.List;
 
 public class HrLeave extends BaseEntity
 {
     private static final long serialVersionUID = 1L;
 
     private Long leaveId;
-    @NotBlank(message = "离职单号不能为空")
     @Excel(name = "离职单号")
     private String leaveNo;
     @NotNull(message = "员工ID不能为空")
@@ -109,4 +109,10 @@ public class HrLeave extends BaseEntity
     public void setStatus(String status) { this.status = status; }
     public String getDelFlag() { return delFlag; }
     public void setDelFlag(String delFlag) { this.delFlag = delFlag; }
+
+    /** 审核日志列表 */
+    private List<HrLeaveAuditLog> auditLogList;
+
+    public List<HrLeaveAuditLog> getAuditLogList() { return auditLogList; }
+    public void setAuditLogList(List<HrLeaveAuditLog> auditLogList) { this.auditLogList = auditLogList; }
 }

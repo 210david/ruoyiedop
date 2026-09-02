@@ -5,6 +5,7 @@ import com.ruoyi.common.annotation.Excel;
 import com.ruoyi.common.core.domain.BaseEntity;
 import java.util.Date;
 import java.math.BigDecimal;
+import java.util.List;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
@@ -13,7 +14,6 @@ public class HrTransfer extends BaseEntity
     private static final long serialVersionUID = 1L;
 
     private Long transferId;
-    @NotBlank(message = "调动单号不能为空")
     @Excel(name = "调动单号")
     private String transferNo;
     @NotNull(message = "员工ID不能为空")
@@ -41,9 +41,9 @@ public class HrTransfer extends BaseEntity
     private BigDecimal fromSalary;
     @Excel(name = "目标薪资")
     private BigDecimal toSalary;
-    @NotNull(message = "生效日期不能为空")
-    @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "生效日期")
+@NotNull(message = "申请日期不能为空")
+@JsonFormat(pattern = "yyyy-MM-dd")
+@Excel(name = "申请日期")
     private Date effectiveDate;
     @Excel(name = "调动原因")
     private String reason;
@@ -105,4 +105,10 @@ public class HrTransfer extends BaseEntity
     public void setStatus(String status) { this.status = status; }
     public String getDelFlag() { return delFlag; }
     public void setDelFlag(String delFlag) { this.delFlag = delFlag; }
+
+    /** 审核日志列表 */
+    private List<HrTransferAuditLog> auditLogList;
+
+    public List<HrTransferAuditLog> getAuditLogList() { return auditLogList; }
+    public void setAuditLogList(List<HrTransferAuditLog> auditLogList) { this.auditLogList = auditLogList; }
 }

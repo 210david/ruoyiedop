@@ -66,33 +66,14 @@ export function useColumnResize(storageKey) {
   }
 
   /**
-   * 将保存的列宽应用到表格（通过修改内部 columns 并 doLayout）
-   * 可在 onMounted / getList 后调用，对未绑定 :width 的列也生效
+   * 将保存的列宽应用到表格
+   * :width 绑定本身响应 savedWidths 变化，无需直接改内部 realWidth（直接改会导致表头/表体宽度不同步、横向滚动时对不齐）
+   * 这里只需在 nextTick 后触发 doLayout 让表格重新布局
    */
   function applySavedWidths() {
     nextTick(() => {
       const table = tableRef.value
-      if (!table) return
-      // 兼容 element-plus 不同版本：columns 可能在不同位置
-      const columns = table.columns || (table.store && table.store.states && table.store.states.columns
-        ? table.store.states.columns.value || table.store.states.columns
-        : []) || []
-      if (!columns.length) return
-
-      let changed = false
-      columns.forEach(col => {
-        const key = col.property || col.label
-        if (key && savedWidths.value[key]) {
-          const target = savedWidths.value[key]
-          // 仅在差异 > 1px 时才修改，避免无意义的 doLayout
-          if (Math.abs((col.realWidth || col.width || 0) - target) > 1) {
-            col.width = target
-            col.realWidth = target
-            changed = true
-          }
-        }
-      })
-      if (changed && typeof table.doLayout === 'function') {
+      if (table && typeof table.doLayout === 'function') {
         table.doLayout()
       }
     })

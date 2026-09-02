@@ -13,7 +13,6 @@ public class HrContract extends BaseEntity
     private static final long serialVersionUID = 1L;
 
     private Long contractId;
-    @NotBlank(message = "合同编号不能为空")
     @Excel(name = "合同编号")
     private String contractNo;
     @NotNull(message = "员工ID不能为空")

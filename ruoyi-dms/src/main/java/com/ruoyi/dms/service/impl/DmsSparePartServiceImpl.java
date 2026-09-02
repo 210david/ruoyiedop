@@ -21,6 +21,7 @@ import com.ruoyi.dms.mapper.DmsSparePartRecordMapper;
 import com.ruoyi.dms.mapper.DmsSparePartStockMapper;
 import com.ruoyi.dms.service.IDmsSparePartService;
 import com.ruoyi.mk.service.IMkNumberRuleService;
+import com.ruoyi.system.utils.MessageHelper;
 
 @Service
 public class DmsSparePartServiceImpl implements IDmsSparePartService
@@ -38,6 +39,9 @@ public class DmsSparePartServiceImpl implements IDmsSparePartService
 
     @Autowired
     private IMkNumberRuleService mkNumberRuleService;
+
+    @Autowired
+    private MessageHelper messageHelper;
 
     @Override
     public List<DmsSparePart> selectSparePartList(DmsSparePart sparePart)
@@ -206,7 +210,84 @@ public class DmsSparePartServiceImpl implements IDmsSparePartService
             }
         }
 
-        return dmsSparePartRecordMapper.insertRecord(record);
+        int rows = dmsSparePartRecordMapper.insertRecord(record);
+        if (rows > 0)
+        {
+            // 发送出入库消息提醒（DEF-03）
+            sendStockMoveMessage(record, part, isInbound, after);
+        }
+        return rows;
+    }
+
+    /**
+     * 发送备件出入库消息提醒（DEF-03）
+     * 消息规范（docs/消息提醒方案设计.md §2.7）：
+     *   备件入库通知：类型1-系统通知，级别1-普通，接收角色 dms:partin:list
+     *   备件出库通知：类型1-系统通知，级别1-普通，接收角色 dms:partout:list
+     * 出库后库存低于下限时额外发送库存不足预警：类型2-业务预警，级别2-重要，接收角色 dms:partstock:list
+     */
+    private void sendStockMoveMessage(DmsSparePartRecord record, DmsSparePart part, boolean isInbound, BigDecimal after)
+    {
+        try
+        {
+            String timeText = record.getOperateDate() != null ? new SimpleDateFormat("yyyy-MM-dd HH:mm").format(record.getOperateDate()) : "";
+            if (isInbound)
+            {
+                messageHelper.sendMessage(
+                    "备件入库通知",
+                    "备件[" + part.getPartName() + "]（" + part.getPartCode() + "）入库 " + record.getQuantity()
+                            + "，仓库：" + (record.getWarehouseName() != null ? record.getWarehouseName() : "备件库")
+                            + "，入库后库存：" + after + "，单据号：" + record.getDocumentCode() + "，时间：" + timeText,
+                    "1",   // 系统通知
+                    "1",   // 普通
+                    "dms",
+                    record.getRecordId(),
+                    "/dms/sparepart/partin",
+                    "dms:partin:list",
+                    null,
+                    "备件入库"
+                );
+            }
+            else
+            {
+                messageHelper.sendMessage(
+                    "备件出库通知",
+                    "备件[" + part.getPartName() + "]（" + part.getPartCode() + "）出库 " + record.getQuantity()
+                            + "，仓库：" + (record.getWarehouseName() != null ? record.getWarehouseName() : "备件库")
+                            + "，出库后库存：" + after + "，单据号：" + record.getDocumentCode() + "，时间：" + timeText,
+                    "1",   // 系统通知
+                    "1",   // 普通
+                    "dms",
+                    record.getRecordId(),
+                    "/dms/sparepart/partout",
+                    "dms:partout:list",
+                    null,
+                    "备件出库"
+                );
+            }
+
+            // 库存低于安全下限预警
+            if (!isInbound && part.getStockMin() != null && after.compareTo(part.getStockMin()) < 0)
+            {
+                messageHelper.sendMessage(
+                    "备件库存不足预警",
+                    "备件[" + part.getPartName() + "]（" + part.getPartCode() + "）当前库存 " + after
+                            + " 已低于安全库存下限 " + part.getStockMin() + "，请及时补货。",
+                    "2",   // 业务预警
+                    "2",   // 重要
+                    "dms",
+                    part.getPartId(),
+                    "/dms/dashboard/partflow",
+                    "dms:partstock:list",
+                    null,
+                    "库存流水报表"
+                );
+            }
+        }
+        catch (Exception e)
+        {
+            // 消息发送失败不影响主业务流程
+        }
     }
 
     @Override

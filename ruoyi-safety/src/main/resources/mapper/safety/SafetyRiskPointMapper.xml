@@ -152,4 +152,16 @@
         <foreach item="riskPointId" collection="array" open="(" separator="," close=")">#{riskPointId}</foreach>
     </delete>
 
+    <select id="countRiskPointByAreaId" parameterType="Long" resultType="int">
+        SELECT COUNT(1) FROM biz_safety_risk_point WHERE area_id = #{areaId} AND del_flag = '0'
+    </select>
+
+    <select id="countHazardByRiskPointId" parameterType="Long" resultType="int">
+        SELECT COUNT(1) FROM biz_safety_hazard WHERE risk_point_id = #{riskPointId} AND del_flag = '0'
+    </select>
+
+    <select id="countTaskByRiskPointId" parameterType="Long" resultType="int">
+        SELECT COUNT(1) FROM biz_safety_inspection_task WHERE risk_point_id = #{riskPointId} AND del_flag = '0'
+    </select>
+
 </mapper>

@@ -210,7 +210,7 @@ function getList() {
     total.value = response.total
     loading.value = false
     applySavedWidths()
-  }).catch(() => {
+  }).catch(error => { console.error(error) }).finally(() => { loading.value = false }).catch(() => {
     loading.value = false
   })
 }

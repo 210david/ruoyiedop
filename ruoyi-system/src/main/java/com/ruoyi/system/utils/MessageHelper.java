@@ -87,7 +87,17 @@ public class MessageHelper
             message.setBizStatus(bizStatus);
             message.setBizEntryName(bizEntryName);
             message.setStatus("1"); // 已发送/有效
-            message.setCreateBy(SecurityUtils.getUsername());
+            // 定时任务线程无登录上下文，降级为system
+            String username;
+            try
+            {
+                username = SecurityUtils.getUsername();
+            }
+            catch (Exception ex)
+            {
+                username = "system";
+            }
+            message.setCreateBy(username);
             messageService.insertMessage(message);
             log.info("消息已发送：[{}] bizSource={}, bizId={}, entry={}",
                     title, bizSource, bizId, bizEntryName);

@@ -76,20 +76,20 @@
           </div>
 
           <div class="table-wrap">
-          <el-table v-loading="loading" :data="userList" @selection-change="handleSelectionChange" class="app-table">
+          <el-table ref="tableRef" v-loading="loading" :data="userList" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" border class="app-table">
 <el-table-column type="selection" width="50" align="center" />
 <el-table-column type="index" label="序号" width="85" align="center" />
-<el-table-column label="用户编号" align="center" key="userId" prop="userId" v-if="columns.userId.visible" />
-          <el-table-column label="用户名称" align="center" key="userName" v-if="columns.userName.visible" :show-overflow-tooltip="true">
+<el-table-column label="用户编号" align="center" key="userId" prop="userId" :width="colWidth('userId', 120)" v-if="columns.userId.visible" />
+          <el-table-column label="用户名称" align="center" key="userName" prop="userName" v-if="columns.userName.visible" :show-overflow-tooltip="true" :width="colWidth('userName', 140)">
             <template #default="scope">
               <a class="link-type" style="cursor:pointer" @click="handleViewData(scope.row)">{{ scope.row.userName }}</a>
             </template>
          </el-table-column>
-          <el-table-column label="用户昵称" align="center" key="nickName" prop="nickName" v-if="columns.nickName.visible" :show-overflow-tooltip="true" />
-          <el-table-column label="部门" align="center" key="deptName" prop="dept.deptName" v-if="columns.deptName.visible" :show-overflow-tooltip="true" />
-          <el-table-column label="岗位" align="center" key="postName" prop="postName" v-if="columns.postName.visible" :show-overflow-tooltip="true" />
-          <el-table-column label="手机号码" align="center" key="phonenumber" prop="phonenumber" v-if="columns.phonenumber.visible" width="120" />
-          <el-table-column label="状态" align="center" key="status" v-if="columns.status.visible">
+          <el-table-column label="用户昵称" align="center" key="nickName" prop="nickName" v-if="columns.nickName.visible" :show-overflow-tooltip="true" :width="colWidth('nickName', 140)" />
+          <el-table-column label="部门" align="center" key="deptName" prop="dept.deptName" v-if="columns.deptName.visible" :show-overflow-tooltip="true" :width="colWidth('dept.deptName', 140)" />
+          <el-table-column label="岗位" align="center" key="postName" prop="postName" v-if="columns.postName.visible" :show-overflow-tooltip="true" :width="colWidth('postName', 120)" />
+          <el-table-column label="手机号码" align="center" key="phonenumber" prop="phonenumber" v-if="columns.phonenumber.visible" :width="colWidth('phonenumber', 120)" />
+          <el-table-column label="状态" align="center" key="status" prop="status" v-if="columns.status.visible" :width="colWidth('status', 90)">
             <template #default="scope">
               <el-switch
                 v-model="scope.row.status"
@@ -100,13 +100,14 @@
               ></el-switch>
             </template>
           </el-table-column>
-          <el-table-column label="创建时间" align="center" prop="createTime" v-if="columns.createTime.visible" width="160">
+          <el-table-column label="创建时间" align="center" prop="createTime" v-if="columns.createTime.visible" :width="colWidth('createTime', 160)">
             <template #default="scope">
               <span>{{ parseTime(scope.row.createTime) }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="操作" align="center" width="150" class-name="small-padding fixed-width">
+          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
+                <div class="action-btn-row">
               <el-tooltip content="修改" placement="top" v-if="scope.row.userId !== 1">
                 <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['system:user:edit']"></el-button>
               </el-tooltip>
@@ -119,6 +120,7 @@
               <el-tooltip content="分配角色" placement="top" v-if="scope.row.userId !== 1">
                 <el-button link type="primary" icon="CircleCheck" @click="handleAuthRole(scope.row)" v-hasPermi="['system:user:edit']"></el-button>
               </el-tooltip>
+                            </div>
             </template>
           </el-table-column>
           </el-table>
@@ -276,6 +278,7 @@ import TreePanel from "@/components/TreePanel"
 import ExcelImportDialog from "@/components/ExcelImportDialog"
 import UserViewDrawer from "./view"
 import { usePasswordRule } from "@/utils/passwordRule"
+import { useColumnResize } from '@/composables/useColumnResize'
 import { changeUserStatus, listUser, resetUserPwd, delUser, getUser, updateUser, addUser, deptTreeSelect } from "@/api/system/user"
 import { Search, Iphone, Filter, Edit, Delete, Upload, Download, RefreshLeft } from '@element-plus/icons-vue'
 
@@ -283,6 +286,8 @@ const router = useRouter()
 const { proxy } = getCurrentInstance()
 const { pwdValidator, pwdPromptValidator } = usePasswordRule()
 const { sys_normal_disable, sys_user_sex } = useDict("sys_normal_disable", "sys_user_sex")
+// 列宽拖拽持久化
+const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('sys_user_index')
 
 const userList = ref([])
 const open = ref(false)
@@ -347,6 +352,7 @@ function getList() {
     loading.value = false
     userList.value = res.rows
     total.value = res.total
+    applySavedWidths()
   })
 }
 
@@ -658,4 +664,11 @@ onMounted(() => {
 /* ===== Responsive ===== */
 @media (max-width:1100px) { .sys-user-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }
 @media (max-width:720px) { .sys-user-page .filter-card .filter-bar { grid-template-columns:1fr; } .sys-user-page .toolbar { flex-wrap:wrap; gap:10px; } }
+
+/* 操作列按钮对齐：每行2个按钮，flex-wrap 自动换行，按钮自适应内容宽度 */
+:deep(.col-action) { padding: 6px 4px !important; }
+:deep(.col-action .cell) { display: flex; justify-content: center; padding: 0; }
+.action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
+:deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
+:deep(.col-action .el-button + .el-button) { margin-left: 2px; }
 </style>

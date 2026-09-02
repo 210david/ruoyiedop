@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import com.ruoyi.common.annotation.DataScope;
 import org.springframework.transaction.annotation.Transactional;
 import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.DateUtils;
@@ -43,8 +44,9 @@ public class SafetyInspectionTaskServiceImpl implements ISafetyInspectionTaskSer
         return task;
     }
 
-    @Override
-    public List<SafetyInspectionTask> selectSafetyInspectionTaskList(SafetyInspectionTask safetyInspectionTask) { return safetyInspectionTaskMapper.selectSafetyInspectionTaskList(safetyInspectionTask); }
+@Override
+@DataScope(deptAlias = "d", userAlias = "su")
+public List<SafetyInspectionTask> selectSafetyInspectionTaskList(SafetyInspectionTask safetyInspectionTask) { return safetyInspectionTaskMapper.selectSafetyInspectionTaskList(safetyInspectionTask); }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -66,7 +68,10 @@ public class SafetyInspectionTaskServiceImpl implements ISafetyInspectionTaskSer
     }
 
     @Override
-    public int updateSafetyInspectionTask(SafetyInspectionTask safetyInspectionTask) { return safetyInspectionTaskMapper.updateSafetyInspectionTask(safetyInspectionTask); }
+    public int updateSafetyInspectionTask(SafetyInspectionTask safetyInspectionTask) {
+        // 通用编辑不允许直接修改状态，状态流转只能通过反馈/作废等专用接口
+        safetyInspectionTask.setTaskStatus(null);
+        return safetyInspectionTaskMapper.updateSafetyInspectionTask(safetyInspectionTask); }
 
     @Override
     public int deleteSafetyInspectionTaskByIds(Long[] taskIds) { return safetyInspectionTaskMapper.deleteSafetyInspectionTaskByIds(taskIds); }

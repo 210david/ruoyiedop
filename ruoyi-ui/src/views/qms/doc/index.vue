@@ -89,12 +89,14 @@
           <el-table-column label="归属部门" prop="deptName" key="deptName" :width="colWidth('deptName', 140)" resizable show-overflow-tooltip v-if="columns.deptName.visible" />
           <el-table-column label="状态" prop="docStatus" key="docStatus" :width="colWidth('docStatus', 100)" resizable align="center" v-if="columns.docStatus.visible"><template #default="scope"><span class="badge" :class="docStatusBadgeClass(scope.row.docStatus)"><span class="dot"></span>{{ docStatusLabel(scope.row.docStatus) }}</span></template></el-table-column>
           <el-table-column label="生效日期" prop="publishDate" key="publishDate" :width="colWidth('publishDate', 120)" resizable align="center" v-if="columns.publishDate.visible"><template #default="scope"><span>{{ parseTime(scope.row.publishDate, '{y}-{m}-{d}') }}</span></template></el-table-column>
-          <el-table-column label="操作" width="260" align="center">
+          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
-              <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
-              <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['qms:doc:edit']">修改</el-button>
-              <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['qms:doc:remove']">删除</el-button>
-              <el-button link type="warning" icon="CircleClose" @click="handleObsolete(scope.row)" v-if="scope.row.docStatus != '3'" v-hasPermi="['qms:doc:edit']">作废</el-button>
+              <div class="action-btn-row">
+                <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
+                <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['qms:doc:edit']">修改</el-button>
+                <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['qms:doc:remove']">删除</el-button>
+                <el-button link type="warning" icon="CircleClose" @click="handleObsolete(scope.row)" v-if="scope.row.docStatus != '3'" v-hasPermi="['qms:doc:edit']">作废</el-button>
+              </div>
             </template>
           </el-table-column>
         </el-table>
@@ -436,4 +438,11 @@ getList()
 .rd-card:nth-child(6) { animation-delay: 0.30s; }
 
 @media (max-width:768px) { .rd-grid { grid-template-columns: 1fr; } }
+
+/* 操作列按钮对齐：每行2个按钮，flex-wrap 自动换行，按钮自适应内容宽度 */
+:deep(.col-action) { padding: 6px 4px !important; }
+:deep(.col-action .cell) { display: flex; justify-content: center; padding: 0; }
+.action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
+:deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
+:deep(.col-action .el-button + .el-button) { margin-left: 2px; }
 </style>

@@ -156,7 +156,7 @@
               <span :class="{ 'text-danger': isOverdue(scope.row) }">{{ scope.row.nextContactTime }}</span>
             </template>
           </el-table-column>
-      <el-table-column label="操作" width="180" align="center" fixed="right" class-name="col-action">
+      <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
         <template #default="scope">
           <div class="action-btn-row">
           <el-button link type="primary" icon="View" @click="handleDetail(scope.row)">详情</el-button>
@@ -172,7 +172,7 @@
             </template>
           </el-dropdown>
           </div>
-        </template>
+            </template>
       </el-table-column>
     </el-table>
       </div>
@@ -295,7 +295,7 @@
         <el-table-column label="手机号" prop="phone" width="130" />
         <el-table-column label="邮箱" prop="email" />
         <el-table-column label="所属客户" prop="customerName" />
-        <el-table-column label="操作" width="100" align="center">
+        <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
           <template #default="scope">
             <el-button link type="primary" size="small" @click="handleMerge(scope.row)">合并到此</el-button>
           </template>
@@ -1154,4 +1154,11 @@ const showStatusHelp = ref(false)
 .rd-dialog .el-tabs__content {
   width: 100%;
 }
+
+/* 操作列按钮对齐：每行2个按钮，flex-wrap 自动换行，按钮自适应内容宽度 */
+:deep(.col-action) { padding: 6px 4px !important; }
+:deep(.col-action .cell) { display: flex; justify-content: center; padding: 0; }
+.action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
+:deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
+:deep(.col-action .el-button + .el-button) { margin-left: 2px; }
 </style>

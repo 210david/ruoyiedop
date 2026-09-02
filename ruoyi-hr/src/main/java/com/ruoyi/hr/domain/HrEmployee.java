@@ -12,7 +12,6 @@ public class HrEmployee extends BaseEntity
     private static final long serialVersionUID = 1L;
 
     private Long employeeId;
-    @NotBlank(message = "工号不能为空")
     @Excel(name = "工号")
     private String employeeNo;
     @NotBlank(message = "姓名不能为空")
@@ -58,6 +57,8 @@ public class HrEmployee extends BaseEntity
     private Integer companyWorkYears;
     @Excel(name = "所属组织ID")
     private Long orgId;
+    /** 所属部门名称（关联查询） */
+    private String orgName;
     @Excel(name = "岗位ID")
     private Long positionId;
     @Excel(name = "岗位名称")
@@ -91,18 +92,23 @@ public class HrEmployee extends BaseEntity
     private String houseFundNo;
     @Excel(name = "离职原因")
     private String leaveReason;
-    @Excel(name = "黑名单")
+    /** 黑名单标志（已废弃维护，保留字段兼容历史数据） */
     private String blacklistFlag;
-    @Excel(name = "黑名单原因")
+    /** 黑名单原因（已废弃维护，保留字段兼容历史数据） */
     private String blacklistReason;
-    @Excel(name = "关联用户ID")
     private Long userId;
-    @Excel(name = "照片URL")
+    /** 关联用户昵称（关联查询） */
+    private String userNickName;
     private String photo;
-    @Excel(name = "状态")
     private String status;
-    @Excel(name = "删除标志")
     private String delFlag;
+
+    /** 登录账号（页面提交用，不入库） */
+    private String userName;
+    /** 初始密码（页面提交用，不入库） */
+    private String password;
+    /** 角色（页面提交用，不入库） */
+    private Long[] roleIds;
 
     /** 明细子表 */
     private List<HrEmployeeFamily> familyList;
@@ -154,6 +160,8 @@ public class HrEmployee extends BaseEntity
     public void setCompanyWorkYears(Integer companyWorkYears) { this.companyWorkYears = companyWorkYears; }
     public Long getOrgId() { return orgId; }
     public void setOrgId(Long orgId) { this.orgId = orgId; }
+    public String getOrgName() { return orgName; }
+    public void setOrgName(String orgName) { this.orgName = orgName; }
     public Long getPositionId() { return positionId; }
     public void setPositionId(Long positionId) { this.positionId = positionId; }
     public String getPositionName() { return positionName; }
@@ -190,12 +198,46 @@ public class HrEmployee extends BaseEntity
     public void setBlacklistReason(String blacklistReason) { this.blacklistReason = blacklistReason; }
     public Long getUserId() { return userId; }
     public void setUserId(Long userId) { this.userId = userId; }
+    public String getUserNickName() { return userNickName; }
+    public void setUserNickName(String userNickName) { this.userNickName = userNickName; }
     public String getPhoto() { return photo; }
     public void setPhoto(String photo) { this.photo = photo; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
     public String getDelFlag() { return delFlag; }
     public void setDelFlag(String delFlag) { this.delFlag = delFlag; }
+public String getUserName() { return userName; }
+public void setUserName(String userName) { this.userName = userName; }
+
+/** 关联系统账号状态（sys_user.status，非表字段） */
+private String userStatus;
+
+/** 关联系统账号角色名（多个以、分隔，非表字段） */
+private String userRoles;
+
+/** 关联系统账号最近登录IP（非表字段） */
+private String userLoginIp;
+
+/** 关联系统账号最近登录时间（非表字段） */
+private Date userLoginDate;
+
+/** 关联系统账号创建时间（非表字段） */
+private Date userCreateTime;
+
+public String getUserStatus() { return userStatus; }
+public void setUserStatus(String userStatus) { this.userStatus = userStatus; }
+public String getUserRoles() { return userRoles; }
+public void setUserRoles(String userRoles) { this.userRoles = userRoles; }
+public String getUserLoginIp() { return userLoginIp; }
+public void setUserLoginIp(String userLoginIp) { this.userLoginIp = userLoginIp; }
+public Date getUserLoginDate() { return userLoginDate; }
+public void setUserLoginDate(Date userLoginDate) { this.userLoginDate = userLoginDate; }
+public Date getUserCreateTime() { return userCreateTime; }
+public void setUserCreateTime(Date userCreateTime) { this.userCreateTime = userCreateTime; }
+    public String getPassword() { return password; }
+    public void setPassword(String password) { this.password = password; }
+    public Long[] getRoleIds() { return roleIds; }
+    public void setRoleIds(Long[] roleIds) { this.roleIds = roleIds; }
     public List<HrEmployeeFamily> getFamilyList() { return familyList; }
     public void setFamilyList(List<HrEmployeeFamily> familyList) { this.familyList = familyList; }
     public List<HrEmployeeEducation> getEducationList() { return educationList; }

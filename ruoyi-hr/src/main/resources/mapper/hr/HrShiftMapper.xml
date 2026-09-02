@@ -33,7 +33,7 @@
     <select id="selectHrShiftList" parameterType="HrShift" resultMap="HrShiftResult">
         <include refid="selectVo"/>
         <where>
-            del_flag = '0'
+            (del_flag IS NULL OR del_flag = '0')
             <if test="shiftCode != null and shiftCode != ''"> AND shift_code LIKE CONCAT('%', #{shiftCode}, '%')</if>
             <if test="shiftName != null and shiftName != ''"> AND shift_name LIKE CONCAT('%', #{shiftName}, '%')</if>
             <if test="startTime != null and startTime != ''"> AND start_time LIKE CONCAT('%', #{startTime}, '%')</if>

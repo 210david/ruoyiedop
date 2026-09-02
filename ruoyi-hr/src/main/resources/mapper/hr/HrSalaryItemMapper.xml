@@ -28,7 +28,7 @@
     <select id="selectHrSalaryItemList" parameterType="HrSalaryItem" resultMap="HrSalaryItemResult">
         <include refid="selectVo"/>
         <where>
-            del_flag = '0'
+            (del_flag IS NULL OR del_flag = '0')
             <if test="itemCode != null and itemCode != ''"> AND item_code LIKE CONCAT('%', #{itemCode}, '%')</if>
             <if test="itemName != null and itemName != ''"> AND item_name LIKE CONCAT('%', #{itemName}, '%')</if>
             <if test="itemCategory != null and itemCategory != ''"> AND item_category LIKE CONCAT('%', #{itemCategory}, '%')</if>

@@ -9,6 +9,7 @@
         <result property="employeeName" column="employee_name"/>
         <result property="employeeNo" column="employee_no"/>
         <result property="orgId" column="org_id"/>
+        <result property="orgName" column="org_name"/>
         <result property="shiftId" column="shift_id"/>
         <result property="shiftName" column="shift_name"/>
         <result property="restDay" column="rest_day"/>
@@ -22,30 +23,34 @@
     </resultMap>
 
     <sql id="selectVo">
-        SELECT schedule_id, schedule_date, employee_id, employee_name, employee_no, org_id, shift_id, shift_name, rest_day, status, del_flag, create_by, create_time, update_by, update_time, remark
-        FROM biz_hr_schedule
+        SELECT t.schedule_id, t.schedule_date, t.employee_id, t.employee_name, t.employee_no, t.org_id, t.shift_id, t.shift_name, t.rest_day, t.status, t.del_flag, t.create_by, t.create_time, t.update_by, t.update_time, t.remark,
+        d.dept_name AS org_name
+        FROM biz_hr_schedule t
+        LEFT JOIN sys_dept d ON t.org_id = d.dept_id
     </sql>
 
     <select id="selectHrScheduleList" parameterType="HrSchedule" resultMap="HrScheduleResult">
         <include refid="selectVo"/>
         <where>
-            del_flag = '0'
-            <if test="scheduleDate != null"> AND schedule_date = #{scheduleDate}</if>
-            <if test="employeeId != null"> AND employee_id = #{employeeId}</if>
-            <if test="employeeName != null and employeeName != ''"> AND employee_name LIKE CONCAT('%', #{employeeName}, '%')</if>
-            <if test="employeeNo != null and employeeNo != ''"> AND employee_no LIKE CONCAT('%', #{employeeNo}, '%')</if>
-            <if test="orgId != null"> AND org_id = #{orgId}</if>
-            <if test="shiftId != null"> AND shift_id = #{shiftId}</if>
-            <if test="shiftName != null and shiftName != ''"> AND shift_name LIKE CONCAT('%', #{shiftName}, '%')</if>
-            <if test="restDay != null"> AND rest_day = #{restDay}</if>
-            <if test="status != null and status != ''"> AND status LIKE CONCAT('%', #{status}, '%')</if>
-            <if test="delFlag != null and delFlag != ''"> AND del_flag LIKE CONCAT('%', #{delFlag}, '%')</if>
+            t.(del_flag IS NULL OR del_flag = '0')
+            <if test="scheduleDate != null"> AND t.schedule_date = #{scheduleDate}</if>
+            <if test="params.beginScheduleDate != null and params.beginScheduleDate != ''"> AND t.schedule_date &gt;= #{params.beginScheduleDate}</if>
+            <if test="params.endScheduleDate != null and params.endScheduleDate != ''"> AND t.schedule_date &lt;= #{params.endScheduleDate}</if>
+            <if test="employeeId != null"> AND t.employee_id = #{employeeId}</if>
+            <if test="employeeName != null and employeeName != ''"> AND t.employee_name LIKE CONCAT('%', #{employeeName}, '%')</if>
+            <if test="employeeNo != null and employeeNo != ''"> AND t.employee_no LIKE CONCAT('%', #{employeeNo}, '%')</if>
+            <if test="orgId != null"> AND t.org_id = #{orgId}</if>
+            <if test="shiftId != null"> AND t.shift_id = #{shiftId}</if>
+            <if test="shiftName != null and shiftName != ''"> AND t.shift_name LIKE CONCAT('%', #{shiftName}, '%')</if>
+            <if test="restDay != null"> AND t.rest_day = #{restDay}</if>
+            <if test="status != null and status != ''"> AND t.status LIKE CONCAT('%', #{status}, '%')</if>
+            <if test="delFlag != null and delFlag != ''"> AND t.del_flag LIKE CONCAT('%', #{delFlag}, '%')</if>
         </where>
-        ORDER BY create_time DESC
+        ORDER BY t.create_time DESC
     </select>
 
     <select id="selectHrScheduleById" parameterType="Long" resultMap="HrScheduleResult">
-        <include refid="selectVo"/> WHERE schedule_id = #{scheduleId}
+        <include refid="selectVo"/> WHERE t.schedule_id = #{scheduleId}
     </select>
 
     <insert id="insertHrSchedule" parameterType="HrSchedule" useGeneratedKeys="true" keyProperty="scheduleId">

@@ -21,6 +21,8 @@ public class DmsDataCollectionConfig extends BaseEntity
     private String param3Name; private String param3Unit; private BigDecimal param3AlarmMin; private BigDecimal param3AlarmMax;
     @Excel(name = "状态", dictType = "sys_normal_disable") private String status;
     private String delFlag;
+    /** 设备访问密钥 */
+    private String accessKey;
 
     public Long getConfigId() { return configId; }
     public void setConfigId(Long configId) { this.configId = configId; }
@@ -64,4 +66,6 @@ public class DmsDataCollectionConfig extends BaseEntity
     public void setStatus(String status) { this.status = status; }
     public String getDelFlag() { return delFlag; }
     public void setDelFlag(String delFlag) { this.delFlag = delFlag; }
+    public String getAccessKey() { return accessKey; }
+    public void setAccessKey(String accessKey) { this.accessKey = accessKey; }
 }

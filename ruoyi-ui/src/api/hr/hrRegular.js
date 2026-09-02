@@ -42,3 +42,12 @@ export function delHrRegular(regularId) {
     method: 'delete'
   })
 }
+
+// 转正审批
+export function auditHrRegular(regularId, auditAction, auditRemark) {
+  return request({
+    url: '/hr/regular/audit/' + regularId,
+    method: 'put',
+    params: { auditAction, auditRemark }
+  })
+}

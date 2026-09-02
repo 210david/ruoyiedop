@@ -113,7 +113,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
-          <el-table-column type="index" label="序号" width="85" align="center" />
+          <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" resizable align="center" />
           <el-table-column label="供应商" prop="supplierName" key="supplierName" :width="colWidth('supplierName', 240)" resizable show-overflow-tooltip v-if="columns.supplierName.visible" />
           <el-table-column label="物料编码" prop="materialCode" key="materialCode" :width="colWidth('materialCode', 140)" resizable sortable="custom" :sort-orders="['descending','ascending']" v-if="columns.materialCode.visible" />
           <el-table-column label="物料名称" prop="materialName" key="materialName" :width="colWidth('materialName', 180)" resizable show-overflow-tooltip v-if="columns.materialName.visible" />
@@ -152,7 +152,7 @@
             <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.basic }"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
           </div>
           <div class="rd-card-body" v-show="!collapsedCards.basic">
-            <el-row :gutter="20"><el-col :span="12"><el-form-item label="供应商" prop="supplierId"><el-select v-model="form.supplierId" filterable placeholder="请选择供应商" style="width: 100%" @change="onSupplierChange"><el-option v-for="s in supplierOptions" :key="s.supplierId" :label="s.supplierName" :value="s.supplierId" /></el-select></el-form-item></el-col><el-col :span="12"><el-form-item label="物料" prop="materialId"><el-select v-model="form.materialId" filterable placeholder="请选择物料" style="width: 100%" @change="onMaterialChange"><el-option v-for="m in materialOptions" :key="m.materialId" :label="m.materialCode + ' - ' + m.materialName" :value="m.materialId" /></el-select></el-form-item></el-col></el-row>
+            <el-row :gutter="20"><el-col :span="12"><el-form-item label="供应商" prop="supplierId"><el-input v-model="form.supplierName" readonly placeholder="请选择供应商" style="width: 100%" @click="openSupplierPicker"><template v-if="form.supplierName" #append><el-button icon="CircleClose" @click.stop="clearSupplier" /></template><template v-else #append><el-button icon="Search" @click="openSupplierPicker" /></template></el-input></el-form-item></el-col><el-col :span="12"><el-form-item label="物料" prop="materialId"><el-input :model-value="form.materialCode ? form.materialCode + ' - ' + form.materialName : ''" readonly placeholder="请选择物料" style="width: 100%" @click="openMaterialPicker"><template v-if="form.materialName" #append><el-button icon="CircleClose" @click.stop="clearMaterial" /></template><template v-else #append><el-button icon="Search" @click="openMaterialPicker" /></template></el-input></el-form-item></el-col></el-row>
             <el-row :gutter="20"><el-col :span="12"><el-form-item label="物料编码"><el-input v-model="form.materialCode" placeholder="选择物料后自动带出" disabled /></el-form-item></el-col><el-col :span="12"><el-form-item label="物料名称"><el-input v-model="form.materialName" placeholder="选择物料后自动带出" disabled /></el-form-item></el-col></el-row>
             <el-row :gutter="20"><el-col :span="12"><el-form-item label="规格型号"><el-input v-model="form.specModel" placeholder="选择物料后自动带出" disabled /></el-form-item></el-col><el-col :span="12"><el-form-item label="单位" prop="unit"><el-select v-model="form.unit" placeholder="请选择" style="width: 100%"><el-option v-for="d in wms_unit" :key="d.value" :label="d.label" :value="d.value" /></el-select></el-form-item></el-col></el-row>
           </div>
@@ -233,13 +233,16 @@
         <el-button @click="viewOpen = false">关 闭</el-button>
       </template>
     </el-dialog>
+
+    <supplier-picker ref="supplierPickerRef" title="选择供应商" @confirm="onSupplierPickerConfirm" />
+    <material-picker ref="materialPickerRef" title="选择物料" @confirm="onMaterialPickerConfirm" />
   </div>
 </template>
 
 <script setup name="PmsCatalog">
 import { listCatalog, getCatalog, addCatalog, updateCatalog, delCatalog } from '@/api/pms/catalog'
-import { listSupplier } from '@/api/wms/supplier'
-import { listMaterial } from '@/api/wms/material'
+import SupplierPicker from '@/components/SupplierPicker/index.vue'
+import MaterialPicker from '@/components/MaterialPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard, formatAmount, formatMoney } from '@/composables/useDetailCard'
 import ExcelImportDialog from '@/components/ExcelImportDialog'
@@ -322,8 +325,8 @@ const single = ref(true)
 const multiple = ref(true)
 const total = ref(0)
 const title = ref('')
-const supplierOptions = ref([])
-const materialOptions = ref([])
+const supplierPickerRef = ref(null)
+const materialPickerRef = ref(null)
 const showAdvanced = ref(false)
 const dateRange = ref([])
 
@@ -341,10 +344,12 @@ function resetQuery() { queryParams.value.supplierName = undefined; queryParams.
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.catalogId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function reset() { form.value = { catalogId: undefined, supplierId: undefined, supplierName: undefined, materialId: undefined, materialCode: undefined, materialName: undefined, specModel: undefined, unit: undefined, unitPrice: undefined, taxRate: 13, minOrderQty: 1, deliveryCycle: undefined, currency: 'CNY', priceEffectiveDate: undefined, priceExpireDate: undefined, status: '1', remark: undefined }; proxy.resetForm('catalogRef') }
-function onSupplierChange(val) { const matched = supplierOptions.value.find(s => s.supplierId === val); form.value.supplierName = matched ? matched.supplierName : undefined }
-function loadSupplierOptions() { listSupplier({ pageNum: 1, pageSize: 999 }).then(res => { supplierOptions.value = res.rows || [] }) }
-function onMaterialChange(val) { const matched = materialOptions.value.find(m => m.materialId === val); if (matched) { form.value.materialCode = matched.materialCode; form.value.materialName = matched.materialName; form.value.specModel = matched.specModel; form.value.unit = matched.unit } }
-function loadMaterialOptions() { listMaterial({ pageNum: 1, pageSize: 999, status: '0' }).then(res => { materialOptions.value = res.rows || [] }) }
+function openSupplierPicker() { supplierPickerRef.value.open(form.value.supplierId) }
+function onSupplierPickerConfirm(supplier) { form.value.supplierId = supplier.supplierId; form.value.supplierName = supplier.supplierName }
+function clearSupplier() { form.value.supplierId = undefined; form.value.supplierName = undefined }
+function openMaterialPicker() { materialPickerRef.value.open(form.value.materialId) }
+function onMaterialPickerConfirm(material) { form.value.materialId = material.materialId; form.value.materialCode = material.materialCode; form.value.materialName = material.materialName; form.value.specModel = material.specModel; form.value.unit = material.unit }
+function clearMaterial() { form.value.materialId = undefined; form.value.materialCode = undefined; form.value.materialName = undefined; form.value.specModel = undefined; form.value.unit = undefined }
 function handleAdd() { reset(); open.value = true; title.value = '添加供货清单' }
 function handleUpdate(row) { reset(); getCatalog(row.catalogId).then(res => { form.value = res.data; open.value = true; title.value = '修改供货清单' }) }
 function handleView(row) { getCatalog(row.catalogId).then(res => { viewData.value = res.data; viewOpen.value = true }) }
@@ -354,8 +359,6 @@ function handleExport() { proxy.download('pms/catalog/export', { ...proxy.addDat
 function handleImport() { proxy.$refs['importRef'].open() }
 function cancel() { open.value = false; reset() }
 
-loadSupplierOptions()
-loadMaterialOptions()
 getList()
 onActivated(() => { getList() })
 </script>

@@ -25,14 +25,16 @@ public class HrAttendanceRecord extends BaseEntity
     private String employeeNo;
     @Excel(name = "组织ID")
     private Long orgId;
+    /** 部门名称（关联 sys_dept 回显，非表字段） */
+    private String orgName;
     @Excel(name = "班次ID")
     private Long shiftId;
     @Excel(name = "班次名称")
     private String shiftName;
-    @JsonFormat(pattern = "yyyy-MM-dd")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @Excel(name = "上班打卡")
     private Date clockIn;
-    @JsonFormat(pattern = "yyyy-MM-dd")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @Excel(name = "下班打卡")
     private Date clockOut;
     @Excel(name = "上班来源")
@@ -66,6 +68,8 @@ public class HrAttendanceRecord extends BaseEntity
     public void setEmployeeNo(String employeeNo) { this.employeeNo = employeeNo; }
     public Long getOrgId() { return orgId; }
     public void setOrgId(Long orgId) { this.orgId = orgId; }
+    public String getOrgName() { return orgName; }
+    public void setOrgName(String orgName) { this.orgName = orgName; }
     public Long getShiftId() { return shiftId; }
     public void setShiftId(Long shiftId) { this.shiftId = shiftId; }
     public String getShiftName() { return shiftName; }

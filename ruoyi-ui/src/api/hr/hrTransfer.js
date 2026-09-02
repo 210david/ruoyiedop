@@ -42,3 +42,12 @@ export function delHrTransfer(transferId) {
     method: 'delete'
   })
 }
+
+// 调动审批
+export function auditHrTransfer(transferId, auditAction, auditRemark) {
+  return request({
+    url: '/hr/transfer/audit/' + transferId,
+    method: 'put',
+    params: { auditAction, auditRemark }
+  })
+}

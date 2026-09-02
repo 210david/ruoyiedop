@@ -9,6 +9,7 @@
         <result property="employeeName" column="employee_name"/>
         <result property="employeeNo" column="employee_no"/>
         <result property="orgId" column="org_id"/>
+        <result property="orgName" column="org_name"/>
         <result property="attendDays" column="attend_days"/>
         <result property="lateCount" column="late_count"/>
         <result property="earlyCount" column="early_count"/>
@@ -29,37 +30,39 @@
     </resultMap>
 
     <sql id="selectVo">
-        SELECT monthly_id, year_month, employee_id, employee_name, employee_no, org_id, attend_days, late_count, early_count, absent_days, leave_days, overtime_hours, night_shift_count, high_temp_days, sealed_status, sealed_by, sealed_time, del_flag, create_by, create_time, update_by, update_time, remark
-        FROM biz_hr_attendance_monthly
+        SELECT t.monthly_id, t.year_month, t.employee_id, t.employee_name, t.employee_no, t.org_id, t.attend_days, t.late_count, t.early_count, t.absent_days, t.leave_days, t.overtime_hours, t.night_shift_count, t.high_temp_days, t.sealed_status, t.sealed_by, t.sealed_time, t.del_flag, t.create_by, t.create_time, t.update_by, t.update_time, t.remark,
+        d.dept_name AS org_name
+        FROM biz_hr_attendance_monthly t
+        LEFT JOIN sys_dept d ON t.org_id = d.dept_id
     </sql>
 
     <select id="selectHrAttendanceMonthlyList" parameterType="HrAttendanceMonthly" resultMap="HrAttendanceMonthlyResult">
         <include refid="selectVo"/>
         <where>
-            del_flag = '0'
-            <if test="yearMonth != null and yearMonth != ''"> AND year_month LIKE CONCAT('%', #{yearMonth}, '%')</if>
-            <if test="employeeId != null"> AND employee_id = #{employeeId}</if>
-            <if test="employeeName != null and employeeName != ''"> AND employee_name LIKE CONCAT('%', #{employeeName}, '%')</if>
-            <if test="employeeNo != null and employeeNo != ''"> AND employee_no LIKE CONCAT('%', #{employeeNo}, '%')</if>
-            <if test="orgId != null"> AND org_id = #{orgId}</if>
-            <if test="attendDays != null"> AND attend_days = #{attendDays}</if>
-            <if test="lateCount != null"> AND late_count = #{lateCount}</if>
-            <if test="earlyCount != null"> AND early_count = #{earlyCount}</if>
-            <if test="absentDays != null"> AND absent_days = #{absentDays}</if>
-            <if test="leaveDays != null"> AND leave_days = #{leaveDays}</if>
-            <if test="overtimeHours != null"> AND overtime_hours = #{overtimeHours}</if>
-            <if test="nightShiftCount != null"> AND night_shift_count = #{nightShiftCount}</if>
-            <if test="highTempDays != null"> AND high_temp_days = #{highTempDays}</if>
-            <if test="sealedStatus != null and sealedStatus != ''"> AND sealed_status LIKE CONCAT('%', #{sealedStatus}, '%')</if>
-            <if test="sealedBy != null and sealedBy != ''"> AND sealed_by LIKE CONCAT('%', #{sealedBy}, '%')</if>
-            <if test="sealedTime != null"> AND sealed_time = #{sealedTime}</if>
-            <if test="delFlag != null and delFlag != ''"> AND del_flag LIKE CONCAT('%', #{delFlag}, '%')</if>
+            t.(del_flag IS NULL OR del_flag = '0')
+            <if test="yearMonth != null and yearMonth != ''"> AND t.year_month LIKE CONCAT('%', #{yearMonth}, '%')</if>
+            <if test="employeeId != null"> AND t.employee_id = #{employeeId}</if>
+            <if test="employeeName != null and employeeName != ''"> AND t.employee_name LIKE CONCAT('%', #{employeeName}, '%')</if>
+            <if test="employeeNo != null and employeeNo != ''"> AND t.employee_no LIKE CONCAT('%', #{employeeNo}, '%')</if>
+            <if test="orgId != null"> AND t.org_id = #{orgId}</if>
+            <if test="attendDays != null"> AND t.attend_days = #{attendDays}</if>
+            <if test="lateCount != null"> AND t.late_count = #{lateCount}</if>
+            <if test="earlyCount != null"> AND t.early_count = #{earlyCount}</if>
+            <if test="absentDays != null"> AND t.absent_days = #{absentDays}</if>
+            <if test="leaveDays != null"> AND t.leave_days = #{leaveDays}</if>
+            <if test="overtimeHours != null"> AND t.overtime_hours = #{overtimeHours}</if>
+            <if test="nightShiftCount != null"> AND t.night_shift_count = #{nightShiftCount}</if>
+            <if test="highTempDays != null"> AND t.high_temp_days = #{highTempDays}</if>
+            <if test="sealedStatus != null and sealedStatus != ''"> AND t.sealed_status LIKE CONCAT('%', #{sealedStatus}, '%')</if>
+            <if test="sealedBy != null and sealedBy != ''"> AND t.sealed_by LIKE CONCAT('%', #{sealedBy}, '%')</if>
+            <if test="sealedTime != null"> AND t.sealed_time = #{sealedTime}</if>
+            <if test="delFlag != null and delFlag != ''"> AND t.del_flag LIKE CONCAT('%', #{delFlag}, '%')</if>
         </where>
-        ORDER BY create_time DESC
+        ORDER BY t.create_time DESC
     </select>
 
     <select id="selectHrAttendanceMonthlyById" parameterType="Long" resultMap="HrAttendanceMonthlyResult">
-        <include refid="selectVo"/> WHERE monthly_id = #{monthlyId}
+        <include refid="selectVo"/> WHERE t.monthly_id = #{monthlyId}
     </select>
 
     <insert id="insertHrAttendanceMonthly" parameterType="HrAttendanceMonthly" useGeneratedKeys="true" keyProperty="monthlyId">

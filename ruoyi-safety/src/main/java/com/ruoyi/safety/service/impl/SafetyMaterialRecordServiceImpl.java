@@ -113,19 +113,126 @@ public class SafetyMaterialRecordServiceImpl implements ISafetyMaterialRecordSer
     @Transactional
     public int updateSafetyMaterialRecord(SafetyMaterialRecord record)
     {
-        // 编辑出入库记录时不自动调整库存（避免库存计算混乱）
-        // 如需调整库存，请通过新增冲正记录来处理
+        SafetyMaterialRecord old = safetyMaterialRecordMapper.selectSafetyMaterialRecordById(record.getRecordId());
+        if (old == null)
+        {
+            throw new ServiceException("出入库记录不存在");
+        }
+        BigDecimal oldQty = old.getQuantity() != null ? old.getQuantity() : BigDecimal.ZERO;
+        String oldType = old.getRecordType();
+
+        // 新值：未传时沿用原值
+        BigDecimal newQty = record.getQuantity() != null ? record.getQuantity() : oldQty;
+        if (newQty.compareTo(BigDecimal.ZERO) <= 0)
+        {
+            throw new ServiceException("数量必须大于0");
+        }
+        String newType = StringUtils.isNotEmpty(record.getRecordType()) ? record.getRecordType() : oldType;
+        if (!"1".equals(newType) && !"2".equals(newType))
+        {
+            throw new ServiceException("记录类型无效（1=入库 2=出库）");
+        }
+
+        Long oldMaterialId = old.getMaterialId();
+        Long newMaterialId = record.getMaterialId() != null ? record.getMaterialId() : oldMaterialId;
+
+        if (!oldMaterialId.equals(newMaterialId) || !oldType.equals(newType) || oldQty.compareTo(newQty) != 0)
+        {
+            // 先冲销旧记录对旧物料的影响
+            SafetyMaterial oldMaterial = safetyMaterialMapper.selectSafetyMaterialById(oldMaterialId);
+            if (oldMaterial == null)
+            {
+                throw new ServiceException("危化品不存在");
+            }
+            BigDecimal oldStock = oldMaterial.getCurrentStock() != null ? oldMaterial.getCurrentStock() : BigDecimal.ZERO;
+            BigDecimal oldEffect = "1".equals(oldType) ? oldQty : oldQty.negate();
+            BigDecimal revertedStock = oldStock.subtract(oldEffect);
+            if (revertedStock.compareTo(BigDecimal.ZERO) < 0)
+            {
+                throw new ServiceException("冲销后库存不能为负（当前库存：" + oldStock + "）");
+            }
+
+            BigDecimal baseStock;
+            if (oldMaterialId.equals(newMaterialId))
+            {
+                baseStock = revertedStock;
+            }
+            else
+            {
+                // 换了物料：先回滚旧物料库存
+                safetyMaterialService_updateCurrentStock(oldMaterialId, revertedStock);
+                SafetyMaterial newMaterial = safetyMaterialMapper.selectSafetyMaterialById(newMaterialId);
+                if (newMaterial == null)
+                {
+                    throw new ServiceException("危化品不存在");
+                }
+                baseStock = newMaterial.getCurrentStock() != null ? newMaterial.getCurrentStock() : BigDecimal.ZERO;
+            }
+
+            // 再应用新值
+            BigDecimal afterStock;
+            if ("1".equals(newType))
+            {
+                afterStock = baseStock.add(newQty);
+            }
+            else
+            {
+                afterStock = baseStock.subtract(newQty);
+                if (afterStock.compareTo(BigDecimal.ZERO) < 0)
+                {
+                    throw new ServiceException("出库数量不能超过当前库存（当前库存：" + baseStock + "）");
+                }
+            }
+            safetyMaterialService_updateCurrentStock(newMaterialId, afterStock);
+
+            // 保证记录自身账实自洽
+            record.setBeforeStock(baseStock);
+            record.setAfterStock(afterStock);
+            record.setMaterialId(newMaterialId);
+        }
+
         return safetyMaterialRecordMapper.updateSafetyMaterialRecord(record);
     }
 
     @Override
+    @Transactional
     public int deleteSafetyMaterialRecordByIds(Long[] recordIds) {
+        for (Long recordId : recordIds)
+        {
+            revertRecordStock(recordId);
+        }
         return safetyMaterialRecordMapper.deleteSafetyMaterialRecordByIds(recordIds);
     }
 
     @Override
+    @Transactional
     public int deleteSafetyMaterialRecordById(Long recordId) {
+        revertRecordStock(recordId);
         return safetyMaterialRecordMapper.deleteSafetyMaterialRecordById(recordId);
+    }
+
+    /** 删除出入库记录时冲正库存 */
+    private void revertRecordStock(Long recordId)
+    {
+        SafetyMaterialRecord old = safetyMaterialRecordMapper.selectSafetyMaterialRecordById(recordId);
+        if (old == null)
+        {
+            return;
+        }
+        SafetyMaterial material = safetyMaterialMapper.selectSafetyMaterialById(old.getMaterialId());
+        if (material == null)
+        {
+            return;
+        }
+        BigDecimal qty = old.getQuantity() != null ? old.getQuantity() : BigDecimal.ZERO;
+        BigDecimal stock = material.getCurrentStock() != null ? material.getCurrentStock() : BigDecimal.ZERO;
+        // 入库删除则扣减，出库删除则回补
+        BigDecimal reverted = "1".equals(old.getRecordType()) ? stock.subtract(qty) : stock.add(qty);
+        if (reverted.compareTo(BigDecimal.ZERO) < 0)
+        {
+            throw new ServiceException("冲正后库存不能为负（当前库存：" + stock + "），请先核对库存");
+        }
+        safetyMaterialService_updateCurrentStock(old.getMaterialId(), reverted);
     }
 
     /** 调用SafetyMaterialService更新库存 */

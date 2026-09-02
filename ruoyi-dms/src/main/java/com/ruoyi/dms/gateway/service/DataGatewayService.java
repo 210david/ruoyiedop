@@ -33,4 +33,9 @@ public interface DataGatewayService {
      * 获取设备ID通过设备编码
      */
     Long getEquipmentIdByCode(String deviceCode);
+
+    /**
+     * 设备密钥变更后刷新缓存（新密钥生效）
+     */
+    void refreshAccessKeyCache(String deviceCode);
 }

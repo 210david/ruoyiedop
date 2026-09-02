@@ -144,15 +144,17 @@
           </el-table-column>
           <el-table-column label="报告人" prop="discovererName" key="discovererName" :width="colWidth('discovererName', 100)" resizable align="center" v-if="columns.discovererName.visible" />
           <el-table-column label="报告时间" prop="discoverTime" key="discoverTime" :width="colWidth('discoverTime', 160)" resizable align="center" v-if="columns.discoverTime.visible" />
-          <el-table-column label="操作" width="280" align="center" fixed="right">
+          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
-              <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
-              <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['qms:ncr:edit']" v-if="scope.row.ncrStatus === '0'">修改</el-button>
-              <el-button link type="warning" icon="Promotion" @click="handleSubmitReview(scope.row)" v-hasPermi="['qms:ncr:edit']" v-if="scope.row.ncrStatus === '0'">提交评审</el-button>
-              <el-button link type="success" icon="Check" @click="handleApprove(scope.row)" v-hasPermi="['qms:ncr:approve']" v-if="scope.row.ncrStatus === '1'">审批</el-button>
-              <el-button link type="warning" icon="Tools" @click="handleDisposition(scope.row)" v-hasPermi="['qms:ncr:edit']" v-if="scope.row.ncrStatus === '2'">处置</el-button>
-              <el-button link type="success" icon="Check" @click="handleVerify(scope.row)" v-hasPermi="['qms:ncr:approve']" v-if="scope.row.ncrStatus === '3'">验证</el-button>
-              <el-button link type="info" icon="CircleClose" @click="handleClose(scope.row)" v-hasPermi="['qms:ncr:approve']" v-if="scope.row.ncrStatus === '3'">关闭</el-button>
+              <div class="action-btn-row">
+                <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
+                <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['qms:ncr:edit']" v-if="scope.row.ncrStatus === '0'">修改</el-button>
+                <el-button link type="warning" icon="Promotion" @click="handleSubmitReview(scope.row)" v-hasPermi="['qms:ncr:edit']" v-if="scope.row.ncrStatus === '0'">提交评审</el-button>
+                <el-button link type="success" icon="Check" @click="handleApprove(scope.row)" v-hasPermi="['qms:ncr:approve']" v-if="scope.row.ncrStatus === '1'">审批</el-button>
+                <el-button link type="warning" icon="Tools" @click="handleDisposition(scope.row)" v-hasPermi="['qms:ncr:edit']" v-if="scope.row.ncrStatus === '2'">处置</el-button>
+                <el-button link type="success" icon="Check" @click="handleVerify(scope.row)" v-hasPermi="['qms:ncr:approve']" v-if="scope.row.ncrStatus === '3'">验证</el-button>
+                <el-button link type="info" icon="CircleClose" @click="handleClose(scope.row)" v-hasPermi="['qms:ncr:approve']" v-if="scope.row.ncrStatus === '3'">关闭</el-button>
+              </div>
             </template>
           </el-table-column>
         </el-table>
@@ -191,7 +193,7 @@
                 <el-col :span="12"><el-form-item label="物料名称" prop="materialName"><el-input v-model="form.materialName" readonly placeholder="选择物料后自动带出" /></el-form-item></el-col>
               </el-row>
               <el-row :gutter="20">
-                <el-col :span="12"><el-form-item label="供应商" prop="supplierId"><el-select v-model="form.supplierId" filterable clearable placeholder="请选择供应商" style="width: 100%" @change="onSupplierChange"><el-option v-for="s in supplierOptions" :key="s.supplierId" :label="s.supplierName" :value="s.supplierId" /></el-select></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="供应商" prop="supplierId"><el-input v-model="form.supplierName" readonly placeholder="请选择供应商" style="width: 100%" @click="onSupplierFieldClick"><template v-if="form.supplierName" #append><el-button icon="CircleClose" @click.stop="clearSupplier" /></template><template v-else #append><el-button icon="Search" @click="openSupplierPicker" /></template></el-input></el-form-item></el-col>
                 <el-col :span="12"><el-form-item label="不合格数量" prop="defectQty"><el-input-number v-model="form.defectQty" :min="0" :precision="0" style="width: 100%" /></el-form-item></el-col>
               </el-row>
             </div>
@@ -594,6 +596,9 @@
     <!-- 人员选择器 -->
     <user-picker ref="userPickerRef" title="选择报告人" @confirm="onUserPickerConfirm" />
 
+    <!-- 供应商选择器 -->
+    <supplier-picker ref="supplierPickerRef" title="选择供应商" @confirm="onSupplierPickerConfirm" />
+
     <!-- 业务操作说明对话框 -->
     <el-dialog v-model="showStatusHelp" title="NCR台账业务操作说明" width="820px" append-to-body>
       <div class="status-help-content">
@@ -676,12 +681,12 @@
 
 <script setup name="QmsNcr">
 import { listNcr, getNcr, addNcr, updateNcr, delNcr, verifyNcr, closeNcr, submitReview, approveNcr, rejectNcr, submitDisposition } from '@/api/qms/ncr'
-import { listSupplier } from '@/api/wms/supplier'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
 import { QuestionFilled, ArrowRight, CircleClose } from '@element-plus/icons-vue'
 const { collapsedCards, toggleCard } = useDetailCard(['c0','c1','c2','c3','c4','v0','v1','v2','v3','v4','a0','a1','a2','a3','d0','d1','d2','d3','vf0','vf1','vf2','vf3','vf4'])
 import MaterialPicker from '@/components/MaterialPicker/index.vue'
+import SupplierPicker from '@/components/SupplierPicker/index.vue'
 import UserPicker from '@/components/UserPicker/index.vue'
 
 const { proxy } = getCurrentInstance()
@@ -710,9 +715,9 @@ const showStatusHelp = ref(false)
 const activeStatusTab = ref('all')
 const statusCounts = ref({ all: 0, '0': 0, '1': 0, '2': 0, '3': 0, '4': 0, '5': 0 })
 const statusTabList = computed(() => qms_ncr_status.value)
-const supplierOptions = ref([])
 const materialPickerRef = ref()
 const userPickerRef = ref()
+const supplierPickerRef = ref()
 
 const defaultColumns = {
   ncrNo: { label: 'NCR编号', visible: true },
@@ -1097,15 +1102,24 @@ function clearMaterial() {
 }
 
 /* ===== 供应商选择 ===== */
-function loadSupplierOptions() {
-  listSupplier({ pageNum: 1, pageSize: 999, status: '0' }).then(res => {
-    supplierOptions.value = res.rows || []
-  }).catch(() => {})
+function onSupplierFieldClick(e) {
+  // 点击的是右侧清空按钮时不打开弹窗（el-button 的 .stop 无法阻止原生冒泡）
+  if (e.target && e.target.closest && e.target.closest('.el-input-group__append')) return
+  openSupplierPicker()
 }
 
-function onSupplierChange(val) {
-  const supplier = supplierOptions.value.find(s => s.supplierId === val)
-  form.value.supplierName = supplier ? supplier.supplierName : undefined
+function openSupplierPicker() {
+  supplierPickerRef.value.open(form.value.supplierId)
+}
+
+function onSupplierPickerConfirm(supplier) {
+  form.value.supplierId = supplier.supplierId
+  form.value.supplierName = supplier.supplierName
+}
+
+function clearSupplier() {
+  form.value.supplierId = undefined
+  form.value.supplierName = undefined
 }
 
 /* ===== 报告人选择器 ===== */
@@ -1126,7 +1140,6 @@ function clearDiscoverer() {
 }
 
 /* ===== 初始化 ===== */
-loadSupplierOptions()
 getList()
 </script>
 
@@ -1245,4 +1258,11 @@ getList()
 .status-help-content .highlight-warning { background-color: #fdf6ec; border-color: #f5dab1; }
 .status-help-content .highlight-warning .highlight-card-title { color: #e6a23c; }
 @media (max-width:720px) { .qms-ncr-page .toolbar { flex-wrap:wrap; gap:10px; } .qms-ncr-page .status-tabs { padding:6px 8px; } }
+
+/* 操作列按钮对齐：每行2个按钮，flex-wrap 自动换行，按钮自适应内容宽度 */
+:deep(.col-action) { padding: 6px 4px !important; }
+:deep(.col-action .cell) { display: flex; justify-content: center; padding: 0; }
+.action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
+:deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
+:deep(.col-action .el-button + .el-button) { margin-left: 2px; }
 </style>

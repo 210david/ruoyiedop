@@ -111,11 +111,13 @@
           <el-table-column label="处理人" prop="handleBy" key="handleBy" :width="colWidth('handleBy', 100)" resizable v-if="columns.handleBy.visible" />
           <el-table-column label="处理时间" prop="handleTime" key="handleTime" :width="colWidth('handleTime', 160)" resizable align="center" v-if="columns.handleTime.visible" />
           <el-table-column label="处理结果" prop="handleResult" key="handleResult" :width="colWidth('handleResult', 150)" resizable show-overflow-tooltip v-if="columns.handleResult.visible" />
-          <el-table-column label="操作" width="200" align="center" fixed="right">
+          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
-              <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['safety:remind:query']">查看</el-button>
-              <el-button v-if="scope.row.remindStatus === '0' || scope.row.remindStatus === '1'" link type="primary" icon="Check" @click="handleHandle(scope.row)" v-hasPermi="['safety:remind:handle']">处理</el-button>
-              <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['safety:remind:handle']">删除</el-button>
+              <div class="action-btn-row">
+                <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['safety:remind:query']">查看</el-button>
+                <el-button v-if="scope.row.remindStatus === '0' || scope.row.remindStatus === '1'" link type="primary" icon="Check" @click="handleHandle(scope.row)" v-hasPermi="['safety:remind:handle']">处理</el-button>
+                <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['safety:remind:handle']">删除</el-button>
+              </div>
             </template>
           </el-table-column>
         </el-table>
@@ -281,7 +283,7 @@ function getList() {
     total.value = response.total
     loading.value = false
     applySavedWidths()
-  })
+  }).catch(error => { console.error(error) }).finally(() => { loading.value = false })
 }
 function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
 function resetQuery() { queryParams.value.remindType = undefined; queryParams.value.remindStatus = undefined; queryParams.value.relatedName = undefined; queryParams.value.toPersonName = undefined; queryParams.value.handleBy = undefined; dateRange.value = []; createTimeRange.value = []; queryParams.value.params = {}; handleQuery() }
@@ -333,7 +335,7 @@ function handleView(row) {
   })
 }
 
-function handleExport() { proxy.download('safety/remind/export', { ...queryParams }, `remind_${new Date().getTime()}.xlsx`) }
+function handleExport() { proxy.download('safety/remind/export', { ...queryParams.value }, `remind_${new Date().getTime()}.xlsx`) }
 function handleDelete(row) {
   const remindIds = row.remindId || ids.value
   proxy.$modal.confirm('是否确认删除提醒？').then(function() {
@@ -392,4 +394,11 @@ getList()
 .safety-remind-page .pagination-container { display:flex; align-items:center; justify-content:flex-end; padding:14px 20px; background:#fff; }
 @media (max-width:1100px) { .safety-remind-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }
 @media (max-width:720px) { .safety-remind-page .filter-card .filter-bar { grid-template-columns:1fr; } }
+
+/* 操作列按钮对齐：每行2个按钮，flex-wrap 自动换行，按钮自适应内容宽度 */
+:deep(.col-action) { padding: 6px 4px !important; }
+:deep(.col-action .cell) { display: flex; justify-content: center; padding: 0; }
+.action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
+:deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
+:deep(.col-action .el-button + .el-button) { margin-left: 2px; }
 </style>

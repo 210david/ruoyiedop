@@ -151,23 +151,25 @@
     </insert>
 
     <update id="updateIssue" parameterType="MmsIssue">
-        UPDATE mms_issue SET
-            issue_no = #{issueNo},
-            work_order_id = #{workOrderId},
-            work_order_no = #{workOrderNo},
-            material_id = #{materialId},
-            material_code = #{materialCode},
-            material_name = #{materialName},
-            spec_model = #{specModel},
-            unit = #{unit},
-            issue_qty = #{issueQty},
-            batch_no = #{batchNo},
-            issue_time = #{issueTime},
-            issue_by = #{issueBy},
-            status = #{status},
-            update_by = #{updateBy},
-            update_time = #{updateTime},
-            remark = #{remark}
+        UPDATE mms_issue
+        <set>
+            <if test="issueNo != null">issue_no = #{issueNo},</if>
+            <if test="workOrderId != null">work_order_id = #{workOrderId},</if>
+            <if test="workOrderNo != null">work_order_no = #{workOrderNo},</if>
+            <if test="materialId != null">material_id = #{materialId},</if>
+            <if test="materialCode != null">material_code = #{materialCode},</if>
+            <if test="materialName != null">material_name = #{materialName},</if>
+            <if test="specModel != null">spec_model = #{specModel},</if>
+            <if test="unit != null">unit = #{unit},</if>
+            <if test="issueQty != null">issue_qty = #{issueQty},</if>
+            <if test="batchNo != null">batch_no = #{batchNo},</if>
+            <if test="issueTime != null">issue_time = #{issueTime},</if>
+            <if test="issueBy != null">issue_by = #{issueBy},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </set>
         WHERE issue_id = #{issueId}
     </update>
 

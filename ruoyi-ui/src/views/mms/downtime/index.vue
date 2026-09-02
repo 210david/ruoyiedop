@@ -94,11 +94,13 @@
           <el-table-column label="停机时长(小时)" prop="hours" key="hours" :width="colWidth('hours', 120)" resizable align="center" v-if="columns.hours.visible"><template #default="scope">{{ scope.row.hours != null ? scope.row.hours + ' 小时' : '—' }}</template></el-table-column>
           <el-table-column label="上报人" prop="reportBy" key="reportBy" :width="colWidth('reportBy', 90)" resizable align="center" v-if="columns.reportBy.visible" />
           <el-table-column label="停机原因" prop="reason" key="reason" :width="colWidth('reason', 200)" resizable show-overflow-tooltip v-if="columns.reason.visible" />
-          <el-table-column label="操作" width="200" align="center" fixed="right">
+          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
-              <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
-              <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['mms:downtime:edit']">修改</el-button>
-              <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['mms:downtime:remove']">删除</el-button>
+              <div class="action-btn-row">
+                <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
+                <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['mms:downtime:edit']">修改</el-button>
+                <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['mms:downtime:remove']">删除</el-button>
+              </div>
             </template>
           </el-table-column>
         </el-table>
@@ -563,4 +565,11 @@ getList();
 .status-help-content .highlight-danger .highlight-card-title{color:#f56c6c}
 @media(max-width:1100px){.mms-downtime-page .filter-card .filter-bar{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:720px){.mms-downtime-page .filter-card .filter-bar{grid-template-columns:1fr}}
+
+/* 操作列按钮对齐：每行2个按钮，flex-wrap 自动换行，按钮自适应内容宽度 */
+:deep(.col-action) { padding: 6px 4px !important; }
+:deep(.col-action .cell) { display: flex; justify-content: center; padding: 0; }
+.action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
+:deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
+:deep(.col-action .el-button + .el-button) { margin-left: 2px; }
 </style>

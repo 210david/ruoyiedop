@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.ruoyi.common.annotation.Excel;
 import com.ruoyi.common.core.domain.BaseEntity;
 import java.util.Date;
+import java.util.List;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
@@ -12,7 +13,6 @@ public class HrRegular extends BaseEntity
     private static final long serialVersionUID = 1L;
 
     private Long regularId;
-    @NotBlank(message = "转正单号不能为空")
     @Excel(name = "转正单号")
     private String regularNo;
     @NotNull(message = "员工ID不能为空")
@@ -56,6 +56,9 @@ public class HrRegular extends BaseEntity
     @Excel(name = "删除标志")
     private String delFlag;
 
+    /** 审核记录 */
+    private List<HrRegularAuditLog> auditLogList;
+
     public Long getRegularId() { return regularId; }
     public void setRegularId(Long regularId) { this.regularId = regularId; }
     public String getRegularNo() { return regularNo; }
@@ -96,4 +99,6 @@ public class HrRegular extends BaseEntity
     public void setStatus(String status) { this.status = status; }
     public String getDelFlag() { return delFlag; }
     public void setDelFlag(String delFlag) { this.delFlag = delFlag; }
+    public List<HrRegularAuditLog> getAuditLogList() { return auditLogList; }
+    public void setAuditLogList(List<HrRegularAuditLog> auditLogList) { this.auditLogList = auditLogList; }
 }

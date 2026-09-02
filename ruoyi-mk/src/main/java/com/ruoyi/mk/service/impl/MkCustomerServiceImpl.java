@@ -4,6 +4,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.ruoyi.common.annotation.DataScope;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.mk.domain.MkCustomer;
@@ -25,7 +26,13 @@ public class MkCustomerServiceImpl implements IMkCustomerService
     @Autowired
     private IMkNumberRuleService mkNumberRuleService;
 
+    /**
+     * 查询企业客户列表（已分配客户）。
+     * 接入数据权限：按角色 data_scope 过滤（销售代表仅本人、销售经理本部门及以下等），
+     * admin 及“全部数据”角色不受影响。别名 c 对应 mk_customer 表（含 user_id/dept_id）。
+     */
     @Override
+    @DataScope(userAlias = "c", deptAlias = "c")
     public List<MkCustomer> selectCustomerList(MkCustomer customer)
     {
         return mkCustomerMapper.selectCustomerList(customer);

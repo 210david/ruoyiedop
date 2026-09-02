@@ -3,7 +3,12 @@ package com.ruoyi.dms.gateway.controller;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.core.page.TableDataInfo;
+import com.ruoyi.dms.domain.DmsDataCollectionConfig;
+import com.ruoyi.dms.domain.DmsEquipment;
 import com.ruoyi.dms.gateway.manager.AdapterManager;
+import com.ruoyi.dms.gateway.service.DataGatewayService;
+import com.ruoyi.dms.mapper.DmsEquipmentMapper;
+import com.ruoyi.dms.service.IDmsDataCollectionConfigService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +31,15 @@ public class GatewayAdminController extends BaseController {
 
     @Autowired
     private AdapterManager adapterManager;
+
+    @Autowired
+    private DataGatewayService dataGatewayService;
+
+    @Autowired
+    private IDmsDataCollectionConfigService configService;
+
+    @Autowired
+    private DmsEquipmentMapper equipmentMapper;
 
     /**
      * 获取所有适配器状态
@@ -156,14 +170,29 @@ public class GatewayAdminController extends BaseController {
     }
 
     /**
-     * 生成设备接入密钥
+     * 生成设备接入密钥（生成并持久化到采集配置表）
      */
     @ApiOperation("生成设备接入密钥")
     @PreAuthorize("@ss.hasPermi('dms:data:config:edit')")
     @PostMapping("/device/{equipmentId}/key")
     public AjaxResult generateAccessKey(@PathVariable Long equipmentId) {
-        // TODO: 生成并保存设备访问密钥
+        DmsDataCollectionConfig config = configService.selectConfigByEquipmentId(equipmentId);
+        if (config == null) {
+            return AjaxResult.error("该设备未配置采集信息，请先创建数据采集配置");
+        }
+
         String accessKey = "sk_" + generateRandomKey();
+        DmsDataCollectionConfig update = new DmsDataCollectionConfig();
+        update.setConfigId(config.getConfigId());
+        update.setAccessKey(accessKey);
+        update.setUpdateBy(getUsername());
+        configService.updateConfig(update);
+
+        // 密钥变更后刷新缓存，立即生效
+        DmsEquipment equipment = equipmentMapper.selectEquipmentById(equipmentId);
+        if (equipment != null) {
+            dataGatewayService.refreshAccessKeyCache(equipment.getEquipmentCode());
+        }
 
         Map<String, Object> result = new HashMap<>();
         result.put("equipmentId", equipmentId);

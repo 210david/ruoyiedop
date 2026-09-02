@@ -13,6 +13,7 @@
         <result property="param2Name" column="param2_name"/><result property="param2Unit" column="param2_unit"/><result property="param2AlarmMin" column="param2_alarm_min"/><result property="param2AlarmMax" column="param2_alarm_max"/>
         <result property="param3Name" column="param3_name"/><result property="param3Unit" column="param3_unit"/><result property="param3AlarmMin" column="param3_alarm_min"/><result property="param3AlarmMax" column="param3_alarm_max"/>
         <result property="status" column="status"/><result property="delFlag" column="del_flag"/>
+        <result property="accessKey" column="access_key"/>
         <result property="createBy" column="create_by"/><result property="createTime" column="create_time"/><result property="updateBy" column="update_by"/><result property="updateTime" column="update_time"/><result property="remark" column="remark"/>
     </resultMap>
 
@@ -21,7 +22,7 @@
                param1_name, param1_unit, param1_alarm_min, param1_alarm_max,
                param2_name, param2_unit, param2_alarm_min, param2_alarm_max,
                param3_name, param3_unit, param3_alarm_min, param3_alarm_max,
-               status, del_flag, create_by, create_time, update_by, update_time, remark
+               status, del_flag, access_key, create_by, create_time, update_by, update_time, remark
         FROM dms_data_collection_config
     </sql>
 
@@ -38,19 +39,23 @@
         <include refid="selectConfigVo"/> WHERE config_id = #{configId}
     </select>
 
+    <select id="selectConfigByEquipmentId" parameterType="Long" resultMap="DmsDataCollectionConfigResult">
+        <include refid="selectConfigVo"/> WHERE equipment_id = #{equipmentId} AND del_flag = '0' LIMIT 1
+    </select>
+
     <insert id="insertConfig" parameterType="DmsDataCollectionConfig" useGeneratedKeys="true" keyProperty="configId">
         INSERT INTO dms_data_collection_config (
             equipment_id, equipment_name, collect_mode, collect_status, collect_hours, collect_count,
             param1_name, param1_unit, param1_alarm_min, param1_alarm_max,
             param2_name, param2_unit, param2_alarm_min, param2_alarm_max,
             param3_name, param3_unit, param3_alarm_min, param3_alarm_max,
-            status, create_by, create_time, remark
+            status, access_key, create_by, create_time, remark
         ) VALUES (
             #{equipmentId}, #{equipmentName}, #{collectMode}, #{collectStatus}, #{collectHours}, #{collectCount},
             #{param1Name}, #{param1Unit}, #{param1AlarmMin}, #{param1AlarmMax},
             #{param2Name}, #{param2Unit}, #{param2AlarmMin}, #{param2AlarmMax},
             #{param3Name}, #{param3Unit}, #{param3AlarmMin}, #{param3AlarmMax},
-            #{status}, #{createBy}, sysdate(), #{remark}
+            #{status}, #{accessKey}, #{createBy}, sysdate(), #{remark}
         )
     </insert>
 
@@ -76,6 +81,7 @@
             <if test="param3AlarmMin != null">param3_alarm_min = #{param3AlarmMin},</if>
             <if test="param3AlarmMax != null">param3_alarm_max = #{param3AlarmMax},</if>
             <if test="status != null and status != ''">status = #{status},</if>
+            <if test="accessKey != null and accessKey != ''">access_key = #{accessKey},</if>
             <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
             <if test="remark != null">remark = #{remark},</if>
             update_time = sysdate()

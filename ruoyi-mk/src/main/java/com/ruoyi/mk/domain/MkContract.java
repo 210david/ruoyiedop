@@ -68,6 +68,9 @@ public class MkContract extends BaseEntity
     @Excel(name = "合同状态", dictType = "marketing_contract_status")
     private String contractStatus;
 
+    /** 合同状态列表（用于多状态查询） */
+    private java.util.List<String> contractStatusList;
+
     /** 负责人ID */
     private Long userId;
 
@@ -123,6 +126,8 @@ private String deptName;
     public void setPaymentMethod(String paymentMethod) { this.paymentMethod = paymentMethod; }
     public String getContractStatus() { return contractStatus; }
     public void setContractStatus(String contractStatus) { this.contractStatus = contractStatus; }
+    public java.util.List<String> getContractStatusList() { return contractStatusList; }
+    public void setContractStatusList(java.util.List<String> contractStatusList) { this.contractStatusList = contractStatusList; }
     public Long getUserId() { return userId; }
     public void setUserId(Long userId) { this.userId = userId; }
     public String getUserName() { return userName; }

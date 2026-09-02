@@ -187,19 +187,21 @@
           <el-table-column label="创建时间" prop="createTime" key="createTime" :width="colWidth('createTime', 160)" resizable align="center" v-if="columns.createTime.visible">
             <template #default="scope"><span>{{ parseTime(scope.row.createTime) }}</span></template>
           </el-table-column>
-          <el-table-column label="操作" width="380" align="center" fixed="right">
+          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
-              <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['mms:workorder:query']">详情</el-button>
-              <el-button v-if="scope.row.status === '0'" link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['mms:workorder:edit']">修改</el-button>
-              <el-button v-if="scope.row.status === '0'" link type="success" icon="Promotion" @click="handleRelease(scope.row)" v-hasPermi="['mms:workorder:release']">下达</el-button>
-              <el-button v-if="scope.row.status === '0' || scope.row.status === '1'" link type="primary" icon="MagicStick" @click="handleKitCheck(scope.row)" v-hasPermi="['mms:kit:add']">齐套检查</el-button>
-              <el-button v-if="scope.row.status === '1' || scope.row.status === '2'" link type="warning" icon="VideoPause" @click="handlePause(scope.row)" v-hasPermi="['mms:workorder:pause']">暂停</el-button>
-              <el-button v-if="scope.row.status === '5'" link type="success" icon="VideoPlay" @click="handleResume(scope.row)" v-hasPermi="['mms:workorder:resume']">恢复</el-button>
-              <el-button v-if="scope.row.status === '2'" link type="primary" icon="CircleCheck" @click="handleFinish(scope.row)" v-hasPermi="['mms:workorder:finish']">完工</el-button>
-              <el-button v-if="scope.row.status === '2'" link type="warning" icon="CircleClose" @click="handleForceClose(scope.row)" v-hasPermi="['mms:workorder:close']">强制关闭</el-button>
-              <el-button v-if="scope.row.status === '3'" link type="success" icon="Lock" @click="handleClose(scope.row)" v-hasPermi="['mms:workorder:close']">关闭</el-button>
-              <el-button v-if="scope.row.status === '3' || scope.row.status === '4'" link type="warning" icon="RefreshLeft" @click="handleRework(scope.row)" v-hasPermi="['mms:workorder:edit']">返工</el-button>
-              <el-button v-if="scope.row.status !== '4' && scope.row.status !== '6'" link type="danger" icon="Close" @click="handleCancel(scope.row)" v-hasPermi="['mms:workorder:cancel']">作废</el-button>
+              <div class="action-btn-row">
+                <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['mms:workorder:query']">详情</el-button>
+                <el-button v-if="scope.row.status === '0'" link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['mms:workorder:edit']">修改</el-button>
+                <el-button v-if="scope.row.status === '0'" link type="success" icon="Promotion" @click="handleRelease(scope.row)" v-hasPermi="['mms:workorder:release']">下达</el-button>
+                <el-button v-if="scope.row.status === '0' || scope.row.status === '1'" link type="primary" icon="MagicStick" @click="handleKitCheck(scope.row)" v-hasPermi="['mms:kit:add']">齐套检查</el-button>
+                <el-button v-if="scope.row.status === '1' || scope.row.status === '2'" link type="warning" icon="VideoPause" @click="handlePause(scope.row)" v-hasPermi="['mms:workorder:pause']">暂停</el-button>
+                <el-button v-if="scope.row.status === '5'" link type="success" icon="VideoPlay" @click="handleResume(scope.row)" v-hasPermi="['mms:workorder:resume']">恢复</el-button>
+                <el-button v-if="scope.row.status === '2'" link type="primary" icon="CircleCheck" @click="handleFinish(scope.row)" v-hasPermi="['mms:workorder:finish']">完工</el-button>
+                <el-button v-if="scope.row.status === '2'" link type="warning" icon="CircleClose" @click="handleForceClose(scope.row)" v-hasPermi="['mms:workorder:close']">强制关闭</el-button>
+                <el-button v-if="scope.row.status === '3'" link type="success" icon="Lock" @click="handleClose(scope.row)" v-hasPermi="['mms:workorder:close']">关闭</el-button>
+                <el-button v-if="scope.row.status === '3' || scope.row.status === '4'" link type="warning" icon="RefreshLeft" @click="handleRework(scope.row)" v-hasPermi="['mms:workorder:edit']">返工</el-button>
+                <el-button v-if="scope.row.status !== '4' && scope.row.status !== '6'" link type="danger" icon="Close" @click="handleCancel(scope.row)" v-hasPermi="['mms:workorder:cancel']">作废</el-button>
+              </div>
             </template>
           </el-table-column>
         </el-table>
@@ -3074,4 +3076,11 @@ getList();
 .proc-qty--green { color: var(--green-700) !important; }
 .proc-qty--red { color: var(--red-700) !important; }
 .proc-qty--blue { color: var(--brand-600) !important; }
+
+/* 操作列按钮对齐：每行2个按钮，flex-wrap 自动换行，按钮自适应内容宽度 */
+:deep(.col-action) { padding: 6px 4px !important; }
+:deep(.col-action .cell) { display: flex; justify-content: center; padding: 0; }
+.action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
+:deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
+:deep(.col-action .el-button + .el-button) { margin-left: 2px; }
 </style>

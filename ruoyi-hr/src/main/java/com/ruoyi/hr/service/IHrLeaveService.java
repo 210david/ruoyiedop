@@ -10,4 +10,5 @@ public interface IHrLeaveService {
     public int updateHrLeave(HrLeave hrLeave);
     public int deleteHrLeaveByIds(Long[] leaveIds);
     public int deleteHrLeaveById(Long leaveId);
+    public int auditHrLeave(Long leaveId, String auditAction, String auditRemark);
 }

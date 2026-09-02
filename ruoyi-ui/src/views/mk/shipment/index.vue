@@ -135,7 +135,7 @@
           <el-table-column label="出库单号" prop="outboundOrderNo" key="outboundOrderNo" :width="colWidth('outboundOrderNo', 140)" resizable show-overflow-tooltip v-if="columns.outboundOrderNo.visible" />
           <el-table-column label="发货人" prop="shipperName" key="shipperName" :width="colWidth('shipperName', 100)" resizable v-if="columns.shipperName.visible" />
           <el-table-column label="创建时间" prop="createTime" key="createTime" :width="colWidth('createTime', 160)" resizable align="center" v-if="columns.createTime.visible" />
-          <el-table-column label="操作" width="180" align="center" fixed="right" class-name="col-action">
+          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
               <div class="action-btn-row">
                 <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
@@ -1206,4 +1206,11 @@ onActivated(() => { getList() })
 :deep(.el-timeline-item__node--info) {
   border-color: #909399;
 }
+
+/* 操作列按钮对齐：每行2个按钮，flex-wrap 自动换行，按钮自适应内容宽度 */
+:deep(.col-action) { padding: 6px 4px !important; }
+:deep(.col-action .cell) { display: flex; justify-content: center; padding: 0; }
+.action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
+:deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
+:deep(.col-action .el-button + .el-button) { margin-left: 2px; }
 </style>

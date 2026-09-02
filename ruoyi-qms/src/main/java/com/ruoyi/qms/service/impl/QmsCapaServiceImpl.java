@@ -80,10 +80,10 @@ public class QmsCapaServiceImpl implements IQmsCapaService {
         update.setCapaStatus("1");
         int rows = qmsCapaMapper.updateCapa(update);
 
-        // 发送消息：CAPA待处理
+        // 发送消息：CAPA待处理（capaNo已含CAPA前缀，标题使用业务名称+编号，避免重复）
         String sourceTypeText = getCapaSourceText(capa.getSourceType());
         messageHelper.sendMessage(
-            "CAPA" + capa.getCapaNo() + "待处理",
+            "纠正措施" + capa.getCapaNo() + "待处理",
             "来源：" + sourceTypeText
                     + "，标题：" + (capa.getTitle() != null ? capa.getTitle() : "-"),
             "4",   // 待办事项

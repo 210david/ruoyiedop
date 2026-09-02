@@ -57,9 +57,11 @@
           <el-table-column label="签名意见" prop="sigOpinion" key="sigOpinion" :width="colWidth('sigOpinion', 200)" resizable show-overflow-tooltip v-if="columns.sigOpinion.visible" />
           <el-table-column label="IP地址" prop="sigIp" key="sigIp" :width="colWidth('sigIp', 130)" resizable v-if="columns.sigIp.visible" />
           <el-table-column label="签名时间" prop="sigTime" key="sigTime" :width="colWidth('sigTime', 160)" resizable align="center" v-if="columns.sigTime.visible" />
-          <el-table-column label="操作" width="100" align="center" fixed="right">
+          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
-              <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['qms:esig:remove']">删除</el-button>
+              <div class="action-btn-row">
+                <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['qms:esig:remove']">删除</el-button>
+              </div>
             </template>
           </el-table-column>
         </el-table>
@@ -198,4 +200,11 @@ onActivated(() => { getList() })
 .qms-esig-page .pagination-container { display:flex; align-items:center; justify-content:flex-end; padding:14px 20px; font-size:14px; color:var(--ink-500); background:#fff; }
 @media (max-width:1100px) { .qms-esig-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }
 @media (max-width:720px) { .qms-esig-page .filter-card .filter-bar { grid-template-columns:1fr; } }
+
+/* 操作列按钮对齐：每行2个按钮，flex-wrap 自动换行，按钮自适应内容宽度 */
+:deep(.col-action) { padding: 6px 4px !important; }
+:deep(.col-action .cell) { display: flex; justify-content: center; padding: 0; }
+.action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
+:deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
+:deep(.col-action .el-button + .el-button) { margin-left: 2px; }
 </style>

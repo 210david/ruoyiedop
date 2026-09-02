@@ -94,37 +94,42 @@
                <div class="table-wrap">
                   <el-table
                      v-if="refreshTable"
+                     ref="tableRef"
                      v-loading="loading"
                      :data="deptList"
                      row-key="deptId"
                      :default-expand-all="isExpandAll"
                      :tree-props="{ children: 'children', hasChildren: 'hasChildren' }"
+                     @header-dragend="onHeaderDragEnd"
+                     border
                      class="app-table"
                   >
                      <el-table-column type="index" label="序号" width="85" align="center" />
-                     <el-table-column prop="deptName" label="部门名称" width="260" v-if="columns.deptName.visible"></el-table-column>
-                     <el-table-column prop="orderNum" label="排序" width="200" v-if="columns.orderNum.visible">
+                     <el-table-column prop="deptName" label="部门名称" :width="colWidth('deptName', 260)" v-if="columns.deptName.visible"></el-table-column>
+                     <el-table-column prop="orderNum" label="排序" :width="colWidth('orderNum', 200)" v-if="columns.orderNum.visible">
                         <template #default="scope">
                            <el-input-number v-model="scope.row.orderNum" controls-position="right" :min="0" style="width: 88px" />
                         </template>
                      </el-table-column>
-                     <el-table-column prop="status" label="状态" width="100" v-if="columns.status.visible">
+                     <el-table-column prop="status" label="状态" :width="colWidth('status', 100)" v-if="columns.status.visible">
                         <template #default="scope">
                            <dict-tag :options="sys_normal_disable" :value="scope.row.status" />
                         </template>
                      </el-table-column>
-                     <el-table-column label="创建时间" align="center" prop="createTime" width="200" v-if="columns.createTime.visible">
+                     <el-table-column label="创建时间" align="center" prop="createTime" :width="colWidth('createTime', 200)" v-if="columns.createTime.visible">
                         <template #default="scope">
                            <span>{{ parseTime(scope.row.createTime) }}</span>
                         </template>
                      </el-table-column>
-                     <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
-                        <template #default="scope">
-                           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['system:dept:edit']">修改</el-button>
-                           <el-button link type="primary" icon="Plus" @click="handleAdd(scope.row)" v-hasPermi="['system:dept:add']">新增</el-button>
-                           <el-button v-if="scope.row.parentId != 0" link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['system:dept:remove']">删除</el-button>
-                        </template>
-                     </el-table-column>
+          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
+            <template #default="scope">
+              <div class="action-btn-row">
+                <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['system:dept:edit']">修改</el-button>
+                <el-button link type="primary" icon="Plus" @click="handleAdd(scope.row)" v-hasPermi="['system:dept:add']">新增</el-button>
+                <el-button v-if="scope.row.parentId != 0" link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['system:dept:remove']">删除</el-button>
+              </div>
+            </template>
+          </el-table-column>
                   </el-table>
                </div>
             </div>
@@ -240,9 +245,12 @@ import TreePanel from "@/components/TreePanel"
 import { listDept, getDept, delDept, addDept, updateDept, updateDeptSort, listDeptExcludeChild } from "@/api/system/dept"
 import { deptTreeSelect } from "@/api/system/user"
 import { Search, Filter } from '@element-plus/icons-vue'
+import { useColumnResize } from '@/composables/useColumnResize'
 
 const { proxy } = getCurrentInstance()
 const { sys_normal_disable } = useDict("sys_normal_disable")
+// 列宽拖拽持久化
+const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('sys_dept_index')
 
 const deptList = ref([])
 const open = ref(false)
@@ -301,6 +309,7 @@ function getList() {
     }
     recordOriginalOrders(deptList.value)
     loading.value = false
+    applySavedWidths()
   })
 }
 
@@ -551,4 +560,11 @@ onMounted(() => {
 /* ===== Responsive ===== */
 @media (max-width:1100px) { .sys-dept-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }
 @media (max-width:720px) { .sys-dept-page .filter-card .filter-bar { grid-template-columns:1fr; } .sys-dept-page .toolbar { flex-wrap:wrap; gap:10px; } }
+
+/* 操作列按钮对齐：每行2个按钮，flex-wrap 自动换行，按钮自适应内容宽度 */
+:deep(.col-action) { padding: 6px 4px !important; }
+:deep(.col-action .cell) { display: flex; justify-content: center; padding: 0; }
+.action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
+:deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
+:deep(.col-action .el-button + .el-button) { margin-left: 2px; }
 </style>

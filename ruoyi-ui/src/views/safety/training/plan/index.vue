@@ -163,15 +163,17 @@
               </span>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="384" align="center" fixed="right">
+          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
-              <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['safety:training:plan:query']">查看</el-button>
-              <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-if="scope.row.planStatus === '0' || scope.row.planStatus === '3'" v-hasPermi="['safety:training:plan:edit']">修改</el-button>
-              <el-button link type="primary" icon="Document" @click="handleViewRecords(scope.row)" v-if="scope.row.planStatus === '1' || scope.row.planStatus === '2'">培训记录</el-button>
-              <el-button link type="success" @click="handleStart(scope.row)" v-if="scope.row.planStatus === '0'" v-hasPermi="['safety:training:plan:edit']">开始执行</el-button>
-              <el-button link type="success" @click="handleComplete(scope.row)" v-if="scope.row.planStatus === '1'" v-hasPermi="['safety:training:plan:edit']">完成</el-button>
-              <el-button link type="warning" @click="handleCancel(scope.row)" v-if="scope.row.planStatus === '0' || scope.row.planStatus === '1'" v-hasPermi="['safety:training:plan:edit']">取消</el-button>
-              <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-if="scope.row.planStatus === '0' || scope.row.planStatus === '3'" v-hasPermi="['safety:training:plan:remove']">删除</el-button>
+              <div class="action-btn-row">
+                <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['safety:training:plan:query']">查看</el-button>
+                <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-if="scope.row.planStatus === '0' || scope.row.planStatus === '3'" v-hasPermi="['safety:training:plan:edit']">修改</el-button>
+                <el-button link type="primary" icon="Document" @click="handleViewRecords(scope.row)" v-if="scope.row.planStatus === '1' || scope.row.planStatus === '2'">培训记录</el-button>
+                <el-button link type="success" @click="handleStart(scope.row)" v-if="scope.row.planStatus === '0'" v-hasPermi="['safety:training:plan:edit']">开始执行</el-button>
+                <el-button link type="success" @click="handleComplete(scope.row)" v-if="scope.row.planStatus === '1'" v-hasPermi="['safety:training:plan:edit']">完成</el-button>
+                <el-button link type="warning" @click="handleCancel(scope.row)" v-if="scope.row.planStatus === '0' || scope.row.planStatus === '1'" v-hasPermi="['safety:training:plan:edit']">取消</el-button>
+                <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-if="scope.row.planStatus === '0' || scope.row.planStatus === '3'" v-hasPermi="['safety:training:plan:remove']">删除</el-button>
+              </div>
             </template>
           </el-table-column>
         </el-table>
@@ -470,7 +472,7 @@ const statusCounts = computed(() => {
 function getList() {
   loading.value = true
   proxy.addDateRange(queryParams.value, dateRange.value)
-  listTrainingPlan(queryParams.value).then(response => { planList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths() })
+  listTrainingPlan(queryParams.value).then(response => { planList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths() }).catch(error => { console.error(error) }).finally(() => { loading.value = false })
 }
 function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
 function resetQuery() { queryParams.value.planName = undefined; queryParams.value.planCode = undefined; queryParams.value.planType = undefined; queryParams.value.planStatus = undefined; queryParams.value.planYear = undefined; dateRange.value = []; queryParams.value.params = {}; handleQuery() }
@@ -682,4 +684,11 @@ getList()
 /* 查看弹窗中参训人员列表 */
 .view-persons-list { display:flex; flex-wrap:wrap; gap:8px; margin-top:4px; }
 .view-person-item { display:flex; align-items:center; gap:8px; padding:6px 12px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; }
+
+/* 操作列按钮对齐：每行2个按钮，flex-wrap 自动换行，按钮自适应内容宽度 */
+:deep(.col-action) { padding: 6px 4px !important; }
+:deep(.col-action .cell) { display: flex; justify-content: center; padding: 0; }
+.action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
+:deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
+:deep(.col-action .el-button + .el-button) { margin-left: 2px; }
 </style>

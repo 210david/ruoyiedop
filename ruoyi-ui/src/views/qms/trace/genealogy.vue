@@ -198,13 +198,15 @@
               <span v-else class="badge green"><span class="dot"></span>否</span>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="150" align="center" fixed="right">
-            <template #default="scope">
-              <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
-              <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['qms:genealogy:edit']">修改</el-button>
-              <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['qms:genealogy:remove']">删除</el-button>
-            </template>
-          </el-table-column>
+<el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
+<template #default="scope">
+<div class="action-btn-row">
+<el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
+<el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['qms:genealogy:edit']">修改</el-button>
+<el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['qms:genealogy:remove']">删除</el-button>
+</div>
+</template>
+</el-table-column>
         </el-table>
       </div>
       <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
@@ -946,4 +948,11 @@ loadSupplierOptions()
 .break-dialog-body .app-table :deep(.el-table__row:hover > td) { background: #fafbff !important; }
 .break-dialog-body .app-table :deep(.el-table__inner-wrapper::before) { display: none; }
 @media (max-width: 768px) { .break-dialog-body .break-filter-bar { flex-direction: column; } .break-dialog-body .break-field { flex: 1 1 100%; } }
+
+/* 操作列按钮对齐：每行2个按钮，flex-wrap 自动换行，按钮自适应内容宽度 */
+:deep(.col-action) { padding: 6px 4px !important; }
+:deep(.col-action .cell) { display: flex; justify-content: center; padding: 0; }
+.action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
+:deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
+:deep(.col-action .el-button + .el-button) { margin-left: 2px; }
 </style>

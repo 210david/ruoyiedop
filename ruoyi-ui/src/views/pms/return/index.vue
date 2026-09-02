@@ -113,7 +113,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" v-loading="loading" :data="list" border @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
 <el-table-column type="selection" width="55" align="center" />
-<el-table-column type="index" label="序号" width="85" align="center" />
+<el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" resizable align="center" />
 <el-table-column label="退货单号" prop="returnNo" key="returnNo" :width="colWidth('returnNo', 160)" resizable sortable="custom" v-if="columns.returnNo.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.returnNo }}</span></template>
           </el-table-column>
@@ -185,9 +185,10 @@
               <el-row :gutter="20">
                 <el-col :span="12">
                   <el-form-item label="采购单号" prop="orderId">
-                    <el-select v-model="form.orderId" filterable placeholder="请选择采购订单" style="width: 100%" @change="onOrderChange" :disabled="!!form.receiveId">
-                      <el-option v-for="o in orderOptions" :key="o.orderId" :label="o.orderNo" :value="o.orderId" />
-                    </el-select>
+                    <el-input v-model="form.orderNo" readonly placeholder="请选择采购订单" style="width: 100%" :disabled="!!form.receiveId" @click="openOrderPicker">
+                      <template v-if="form.orderNo" #append><el-button icon="CircleClose" @click.stop="clearOrder" /></template>
+                      <template v-else #append><el-button icon="Search" @click="openOrderPicker" /></template>
+                    </el-input>
                   </el-form-item>
                 </el-col>
               </el-row>
@@ -205,9 +206,10 @@
                 </el-col>
                 <el-col :span="12">
                   <el-form-item label="供应商" prop="supplierId">
-                    <el-select v-model="form.supplierId" filterable placeholder="请选择供应商" style="width: 100%" @change="onSupplierChange">
-                      <el-option v-for="s in supplierOptions" :key="s.supplierId" :label="s.supplierName" :value="s.supplierId" />
-                    </el-select>
+                    <el-input v-model="form.supplierName" readonly placeholder="请选择供应商" style="width: 100%" @click="openSupplierPicker">
+                      <template v-if="form.supplierName" #append><el-button icon="CircleClose" @click.stop="clearSupplier" /></template>
+                      <template v-else #append><el-button icon="Search" @click="openSupplierPicker" /></template>
+                    </el-input>
                   </el-form-item>
                 </el-col>
               </el-row>
@@ -221,7 +223,10 @@
                 </el-col>
                 <el-col :span="12">
                   <el-form-item label="经办人" prop="handlerName">
-                    <el-input v-model="form.handlerName" placeholder="请输入经办人" />
+                    <el-input v-model="form.handlerName" readonly placeholder="请选择经办人" style="width: 100%" @click="openHandlerPicker">
+                      <template v-if="form.handlerName" #append><el-button icon="CircleClose" @click.stop="clearHandler" /></template>
+                      <template v-else #append><el-button icon="Search" @click="openHandlerPicker" /></template>
+                    </el-input>
                   </el-form-item>
                 </el-col>
               </el-row>
@@ -549,18 +554,28 @@
         <el-button type="primary" @click="showStatusHelp = false">我知道了</el-button>
       </template>
     </el-dialog>
+
+    <supplier-picker ref="supplierPickerRef" title="选择供应商" @confirm="onSupplierPickerConfirm" />
+    <!-- 采购订单选择弹框 -->
+    <order-picker ref="orderPickerRef" title="选择采购订单" :statuses="['2', '3', '4', '5']" :exclude-ids="inProgressReturnOrderIds" hint="仅显示可退货的采购订单（已审批 / 已下单 / 部分到货 / 已完成，且不存在进行中的退货单）" @confirm="onOrderPickerConfirm" />
+    <!-- 经办人选择弹窗 -->
+    <user-picker ref="userPickerRef" title="选择经办人" @confirm="onHandlerPickerConfirm" />
   </div>
 </template>
 
 <script setup name="PmsReturn">
 import { listReturn, getReturn, addReturn, updateReturn, delReturn, submitReturn, auditReturn, getInProgressReturnOrderIds } from '@/api/pms/return'
-import { listOrder, getOrder } from '@/api/pms/order'
+import { getOrder } from '@/api/pms/order'
 import { ArrowRight, ArrowDown, QuestionFilled, CircleClose, Plus, Edit, Delete, Download, RefreshLeft, WarningFilled, User, Calendar, OfficeBuilding, Search, Filter } from '@element-plus/icons-vue'
-import { listSupplier } from '@/api/wms/supplier'
+import SupplierPicker from '@/components/SupplierPicker/index.vue'
+import OrderPicker from '@/components/OrderPicker/index.vue'
+import UserPicker from '@/components/UserPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard, formatAmount, formatMoney } from '@/composables/useDetailCard'
+import useUserStore from '@/store/modules/user'
 
 const { proxy } = getCurrentInstance()
+const userStore = useUserStore()
 const { pms_return_status, pms_return_type, wms_unit } = proxy.useDict('pms_return_status', 'pms_return_type', 'wms_unit')
 
 const { collapsedCards, toggleCard } = useDetailCard(["c1","c4","c2","c0","c5","v1","v3","v2","v4","v5","a4","a5"])
@@ -576,8 +591,10 @@ const loading = ref(true)
 const showSearch = ref(true)
 const showAdvanced = ref(false)
 const dateRange = ref([])
-const supplierOptions = ref([])
-const orderOptions = ref([])
+const supplierPickerRef = ref(null)
+const orderPickerRef = ref(null)
+const userPickerRef = ref(null)
+const inProgressReturnOrderIds = ref([])
 const ids = ref([])
 const single = ref(true)
 const multiple = ref(true)
@@ -651,22 +668,35 @@ function resetQuery() {
 }
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.returnId); single.value = selection.length !== 1; multiple.value = !selection.length }
-function reset() { form.value = { returnId: undefined, returnNo: undefined, receiveId: undefined, receiveNo: undefined, orderId: undefined, orderNo: undefined, supplierId: undefined, supplierName: undefined, status: '0', returnType: '0', returnDate: undefined, totalQty: 0, totalAmount: 0, reason: undefined, handlerName: undefined, remark: undefined, detailList: [] }; proxy.resetForm('returnRef') }
-function onSupplierChange(val) { const matched = supplierOptions.value.find(s => s.supplierId === val); form.value.supplierName = matched ? matched.supplierName : undefined }
-function loadSupplierOptions() { listSupplier({ pageNum: 1, pageSize: 999 }).then(res => { supplierOptions.value = res.rows || [] }) }
-function loadOrderOptions() {
-  Promise.all([
-    listOrder({ pageNum: 1, pageSize: 999 }),
-    getInProgressReturnOrderIds().catch(() => ({ data: [] }))
-  ]).then(([orderRes, inProgressRes]) => {
-    const inProgressIds = (inProgressRes && inProgressRes.data) || []
-    orderOptions.value = (orderRes.rows || []).filter(o =>
-      ['2','3','4','5'].includes(o.status) && !inProgressIds.includes(o.orderId)
-    )
-  })
+function reset() { form.value = { returnId: undefined, returnNo: undefined, receiveId: undefined, receiveNo: undefined, orderId: undefined, orderNo: undefined, supplierId: undefined, supplierName: undefined, status: '0', returnType: '0', returnDate: undefined, totalQty: 0, totalAmount: 0, reason: undefined, handlerId: userStore.id || undefined, handlerName: userStore.nickName || undefined, remark: undefined, detailList: [] }; proxy.resetForm('returnRef') }
+function openSupplierPicker() { supplierPickerRef.value.open(form.value.supplierId) }
+function onSupplierPickerConfirm(supplier) { form.value.supplierId = supplier.supplierId; form.value.supplierName = supplier.supplierName }
+function clearSupplier() { form.value.supplierId = undefined; form.value.supplierName = undefined }
+/** 打开采购订单选择弹窗 */
+function openOrderPicker() {
+  if (form.value.receiveId) return
+  orderPickerRef.value.open(form.value.orderId)
 }
-function onOrderChange(orderId) {
-  if (!orderId) { form.value.detailList = []; return }
+
+/** 采购订单选择确认回调 — 带出供应商和已收货物料明细 */
+function onOrderPickerConfirm(order) {
+  form.value.orderId = order.orderId
+  form.value.orderNo = order.orderNo
+  form.value.supplierId = order.supplierId
+  form.value.supplierName = order.supplierName
+  applyOrderDetail(order.orderId)
+}
+
+/** 清除采购订单 — 同时清除已带出的退货明细 */
+function clearOrder() {
+  form.value.orderId = undefined
+  form.value.orderNo = undefined
+  form.value.detailList = []
+}
+
+/** 根据采购订单带出已收货的物料明细 */
+function applyOrderDetail(orderId) {
+  if (!orderId) return
   getOrder(orderId).then(res => {
     const order = res.data
     form.value.orderNo = order.orderNo
@@ -682,7 +712,33 @@ function onOrderChange(orderId) {
     }
   })
 }
-function handleAdd() { reset(); loadOrderOptions(); open.value = true; title.value = '添加退货单' }
+
+/** 加载有进行中退货单的订单ID（用于订单选择弹框排除） */
+function loadInProgressReturnOrderIds() {
+  getInProgressReturnOrderIds().then(res => {
+    inProgressReturnOrderIds.value = res.data || []
+  }).catch(() => {
+    inProgressReturnOrderIds.value = []
+  })
+}
+
+/** 打开经办人选择弹窗 */
+function openHandlerPicker() {
+  userPickerRef.value.open(form.value.handlerId)
+}
+
+/** 经办人选择确认回调 */
+function onHandlerPickerConfirm(user) {
+  form.value.handlerId = user.userId
+  form.value.handlerName = user.nickName
+}
+
+/** 清除经办人 */
+function clearHandler() {
+  form.value.handlerId = undefined
+  form.value.handlerName = undefined
+}
+function handleAdd() { reset(); loadInProgressReturnOrderIds(); open.value = true; title.value = '添加退货单' }
 function handleUpdate(row) { 
   let returnId = row && row.returnId ? row.returnId : (ids.value && ids.value.length > 0 ? ids.value[0] : null);
   if (!returnId || typeof returnId !== 'number') {
@@ -774,9 +830,8 @@ function avatarStyle(name) {
 
 getList()
 loadStatusCounts()
-loadSupplierOptions()
-loadOrderOptions()
-onActivated(() => { getList(); loadOrderOptions() })
+loadInProgressReturnOrderIds()
+onActivated(() => { getList(); loadInProgressReturnOrderIds() })
 </script>
 
 <style scoped>

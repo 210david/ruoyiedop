@@ -20,10 +20,28 @@ public class HrLeaveBalanceServiceImpl implements IHrLeaveBalanceService
     public List<HrLeaveBalance> selectHrLeaveBalanceList(HrLeaveBalance hrLeaveBalance) { return hrLeaveBalanceMapper.selectHrLeaveBalanceList(hrLeaveBalance); }
 
     @Override
-    public int insertHrLeaveBalance(HrLeaveBalance hrLeaveBalance) { return hrLeaveBalanceMapper.insertHrLeaveBalance(hrLeaveBalance); }
+    public int insertHrLeaveBalance(HrLeaveBalance hrLeaveBalance)
+    {
+        computeRemainingDays(hrLeaveBalance);
+        return hrLeaveBalanceMapper.insertHrLeaveBalance(hrLeaveBalance);
+    }
 
     @Override
-    public int updateHrLeaveBalance(HrLeaveBalance hrLeaveBalance) { return hrLeaveBalanceMapper.updateHrLeaveBalance(hrLeaveBalance); }
+    public int updateHrLeaveBalance(HrLeaveBalance hrLeaveBalance)
+    {
+        computeRemainingDays(hrLeaveBalance);
+        return hrLeaveBalanceMapper.updateHrLeaveBalance(hrLeaveBalance);
+    }
+
+    /** 剩余天数 = 总额度 - 已休天数（服务端兑底） */
+    private void computeRemainingDays(HrLeaveBalance balance)
+    {
+        if (balance.getTotalDays() == null || balance.getUsedDays() == null)
+        {
+            return;
+        }
+        balance.setRemainingDays(balance.getTotalDays().subtract(balance.getUsedDays()));
+    }
 
     @Override
     public int deleteHrLeaveBalanceByIds(Long[] balanceIds) { return hrLeaveBalanceMapper.deleteHrLeaveBalanceByIds(balanceIds); }

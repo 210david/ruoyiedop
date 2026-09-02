@@ -113,11 +113,13 @@
           <el-table-column label="安全负责人" prop="safetyManager" key="safetyManager" :width="colWidth('safetyManager', 120)" resizable show-overflow-tooltip v-if="columns.safetyManager.visible" />
           <el-table-column label="安全管理机构" prop="safetyOrg" key="safetyOrg" :width="colWidth('safetyOrg', 150)" resizable show-overflow-tooltip v-if="columns.safetyOrg.visible" />
           <el-table-column label="属地监管单位" prop="superviseDept" key="superviseDept" :width="colWidth('superviseDept', 150)" resizable show-overflow-tooltip v-if="columns.superviseDept.visible" />
-          <el-table-column label="操作" width="240" align="center" fixed="right">
+          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
-              <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['safety:enterprise:query']">查看</el-button>
-              <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['safety:enterprise:edit']">修改</el-button>
-              <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['safety:enterprise:remove']">删除</el-button>
+              <div class="action-btn-row">
+                <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['safety:enterprise:query']">查看</el-button>
+                <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['safety:enterprise:edit']">修改</el-button>
+                <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['safety:enterprise:remove']">删除</el-button>
+              </div>
             </template>
           </el-table-column>
         </el-table>
@@ -312,7 +314,7 @@ function getList() {
     total.value = response.total
     loading.value = false
     applySavedWidths()
-  })
+  }).catch(error => { console.error(error) }).finally(() => { loading.value = false })
 }
 
 function handleQuery() { showAdvanced.value = false; proxy.addDateRange(queryParams.value, dateRange.value); queryParams.value.pageNum = 1; getList() }
@@ -452,4 +454,11 @@ getList()
 @media (max-width:720px) { .safety-enterprise-page .filter-card .filter-bar { grid-template-columns:1fr; } .safety-enterprise-page .toolbar { flex-wrap:wrap; gap:10px; } }
 .clear-icon { cursor: pointer; color: #c0c4cc; font-size: 14px; }
 .clear-icon:hover { color: #909399; }
+
+/* 操作列按钮对齐：每行2个按钮，flex-wrap 自动换行，按钮自适应内容宽度 */
+:deep(.col-action) { padding: 6px 4px !important; }
+:deep(.col-action .cell) { display: flex; justify-content: center; padding: 0; }
+.action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
+:deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
+:deep(.col-action .el-button + .el-button) { margin-left: 2px; }
 </style>

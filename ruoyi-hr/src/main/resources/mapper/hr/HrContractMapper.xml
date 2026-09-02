@@ -34,16 +34,22 @@
 
     <select id="selectHrContractList" parameterType="HrContract" resultMap="HrContractResult">
         <include refid="selectVo"/>
-        <where>
-            del_flag = '0'
-            <if test="contractNo != null and contractNo != ''"> AND contract_no LIKE CONCAT('%', #{contractNo}, '%')</if>
+<where>
+(del_flag IS NULL OR del_flag = '0')
+<if test="contractNo != null and contractNo != ''"> AND contract_no LIKE CONCAT('%', #{contractNo}, '%')</if>
             <if test="employeeId != null"> AND employee_id = #{employeeId}</if>
             <if test="employeeName != null and employeeName != ''"> AND employee_name LIKE CONCAT('%', #{employeeName}, '%')</if>
             <if test="employeeNo != null and employeeNo != ''"> AND employee_no LIKE CONCAT('%', #{employeeNo}, '%')</if>
             <if test="contractType != null and contractType != ''"> AND contract_type LIKE CONCAT('%', #{contractType}, '%')</if>
             <if test="startDate != null"> AND start_date = #{startDate}</if>
+            <if test="params.beginStartDate != null and params.beginStartDate != ''"> AND start_date &gt;= #{params.beginStartDate}</if>
+            <if test="params.endStartDate != null and params.endStartDate != ''"> AND start_date &lt;= #{params.endStartDate}</if>
             <if test="endDate != null"> AND end_date = #{endDate}</if>
+            <if test="params.beginEndDate != null and params.beginEndDate != ''"> AND end_date &gt;= #{params.beginEndDate}</if>
+            <if test="params.endEndDate != null and params.endEndDate != ''"> AND end_date &lt;= #{params.endEndDate}</if>
             <if test="signDate != null"> AND sign_date = #{signDate}</if>
+            <if test="params.beginSignDate != null and params.beginSignDate != ''"> AND sign_date &gt;= #{params.beginSignDate}</if>
+            <if test="params.endSignDate != null and params.endSignDate != ''"> AND sign_date &lt;= #{params.endSignDate}</if>
             <if test="probationMonths != null"> AND probation_months = #{probationMonths}</if>
             <if test="probationSalary != null"> AND probation_salary = #{probationSalary}</if>
             <if test="regularSalary != null"> AND regular_salary = #{regularSalary}</if>

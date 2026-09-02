@@ -13,7 +13,6 @@ public class HrPieceworkRecord extends BaseEntity
     private static final long serialVersionUID = 1L;
 
     private Long pwRecordId;
-    @NotBlank(message = "报工单号不能为空")
     @Excel(name = "报工单号")
     private String pwRecordNo;
     @NotNull(message = "报工日期不能为空")
@@ -26,6 +25,8 @@ public class HrPieceworkRecord extends BaseEntity
     private String employeeName;
     @Excel(name = "班组组织ID")
     private Long orgId;
+    /** 部门名称（关联 sys_dept 回显，非表字段） */
+    private String orgName;
     @NotNull(message = "计件方案ID不能为空")
     @Excel(name = "计件方案ID")
     private Long pwPlanId;
@@ -64,6 +65,8 @@ public class HrPieceworkRecord extends BaseEntity
     public void setEmployeeName(String employeeName) { this.employeeName = employeeName; }
     public Long getOrgId() { return orgId; }
     public void setOrgId(Long orgId) { this.orgId = orgId; }
+    public String getOrgName() { return orgName; }
+    public void setOrgName(String orgName) { this.orgName = orgName; }
     public Long getPwPlanId() { return pwPlanId; }
     public void setPwPlanId(Long pwPlanId) { this.pwPlanId = pwPlanId; }
     public String getPwName() { return pwName; }

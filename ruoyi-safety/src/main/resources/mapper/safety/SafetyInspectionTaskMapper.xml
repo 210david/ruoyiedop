@@ -25,30 +25,33 @@
     </resultMap>
 
     <sql id="selectVo">
-        SELECT task_id, task_code, task_type, task_name, risk_point_id, plan_date, executor_id, executor_name,
-               task_status, inspect_result, hazard_count, inspect_time, enterprise_id, del_flag,
-               create_by, create_time, update_by, update_time, remark
-        FROM biz_safety_inspection_task
+        SELECT t.task_id, t.task_code, t.task_type, t.task_name, t.risk_point_id, t.plan_date, t.executor_id, t.executor_name,
+               t.task_status, t.inspect_result, t.hazard_count, t.inspect_time, t.enterprise_id, t.del_flag,
+               t.create_by, t.create_time, t.update_by, t.update_time, t.remark
+        FROM biz_safety_inspection_task t
+        LEFT JOIN sys_user su ON t.executor_id = su.user_id
+        LEFT JOIN sys_dept d ON su.dept_id = d.dept_id
     </sql>
 
     <select id="selectSafetyInspectionTaskList" parameterType="SafetyInspectionTask" resultMap="SafetyInspectionTaskResult">
         <include refid="selectVo"/>
         <where>
-            del_flag = '0'
-            <if test="taskCode != null and taskCode != ''"> AND task_code LIKE CONCAT('%', #{taskCode}, '%')</if>
-            <if test="taskName != null and taskName != ''"> AND task_name LIKE CONCAT('%', #{taskName}, '%')</if>
-            <if test="taskType != null and taskType != ''"> AND task_type = #{taskType}</if>
-            <if test="taskStatus != null and taskStatus != ''"> AND task_status = #{taskStatus}</if>
-            <if test="executorId != null"> AND executor_id = #{executorId}</if>
-            <if test="executorName != null and executorName != ''"> AND executor_name LIKE CONCAT('%', #{executorName}, '%')</if>
-            <if test="params.beginTime != null and params.beginTime != ''"> AND date_format(plan_date,'%y%m%d') &gt;= date_format(#{params.beginTime},'%y%m%d')</if>
-            <if test="params.endTime != null and params.endTime != ''"> AND date_format(plan_date,'%y%m%d') &lt;= date_format(#{params.endTime},'%y%m%d')</if>
+            t.del_flag = '0'
+            <if test="taskCode != null and taskCode != ''"> AND t.task_code LIKE CONCAT('%', #{taskCode}, '%')</if>
+            <if test="taskName != null and taskName != ''"> AND t.task_name LIKE CONCAT('%', #{taskName}, '%')</if>
+            <if test="taskType != null and taskType != ''"> AND t.task_type = #{taskType}</if>
+            <if test="taskStatus != null and taskStatus != ''"> AND t.task_status = #{taskStatus}</if>
+            <if test="executorId != null"> AND t.executor_id = #{executorId}</if>
+            <if test="executorName != null and executorName != ''"> AND t.executor_name LIKE CONCAT('%', #{executorName}, '%')</if>
+            <if test="params.beginTime != null and params.beginTime != ''"> AND date_format(t.plan_date,'%y%m%d') &gt;= date_format(#{params.beginTime},'%y%m%d')</if>
+            <if test="params.endTime != null and params.endTime != ''"> AND date_format(t.plan_date,'%y%m%d') &lt;= date_format(#{params.endTime},'%y%m%d')</if>
+            ${params.dataScope}
         </where>
-        ORDER BY plan_date DESC
+        ORDER BY t.plan_date DESC
     </select>
 
     <select id="selectSafetyInspectionTaskById" parameterType="Long" resultMap="SafetyInspectionTaskResult">
-        <include refid="selectVo"/> WHERE task_id = #{taskId}
+        <include refid="selectVo"/> WHERE t.task_id = #{taskId}
     </select>
 
     <insert id="insertSafetyInspectionTask" parameterType="SafetyInspectionTask" useGeneratedKeys="true" keyProperty="taskId">

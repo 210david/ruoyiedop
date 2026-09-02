@@ -205,14 +205,16 @@
               <el-table-column label="计划结束" prop="planEnd" :width="innerColWidth('planEnd', 160)" resizable align="center">
                 <template #default="scope"><span>{{ parseTime(scope.row.planEnd) }}</span></template>
               </el-table-column>
-              <el-table-column label="操作" width="190" align="center" fixed="right">
-                <template #default="scope">
-                  <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['mms:dispatch:query']">详情</el-button>
-                  <el-button v-if="scope.row.status === '0'" link type="success" icon="VideoPlay" @click="handleStart(scope.row)" v-hasPermi="['mms:dispatch:start']">开工</el-button>
-                  <el-button v-if="scope.row.status === '1'" link type="primary" icon="CircleCheck" @click="handleFinish(scope.row)" v-hasPermi="['mms:dispatch:finish']">完工</el-button>
-                  <el-button v-if="scope.row.status === '0' || scope.row.status === '1'" link type="danger" icon="Close" @click="handleCancel(scope.row)" v-hasPermi="['mms:dispatch:cancel']">取消</el-button>
-                </template>
-              </el-table-column>
+          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
+            <template #default="scope">
+              <div class="action-btn-row">
+                <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['mms:dispatch:query']">详情</el-button>
+                <el-button v-if="scope.row.status === '0'" link type="success" icon="VideoPlay" @click="handleStart(scope.row)" v-hasPermi="['mms:dispatch:start']">开工</el-button>
+                <el-button v-if="scope.row.status === '1'" link type="primary" icon="CircleCheck" @click="handleFinish(scope.row)" v-hasPermi="['mms:dispatch:finish']">完工</el-button>
+                <el-button v-if="scope.row.status === '0' || scope.row.status === '1'" link type="danger" icon="Close" @click="handleCancel(scope.row)" v-hasPermi="['mms:dispatch:cancel']">取消</el-button>
+              </div>
+            </template>
+          </el-table-column>
             </el-table>
           </div>
         </div>
@@ -2409,4 +2411,11 @@ function handleReportShiftPickerConfirm() {
 .mms-dispatch-page .report-info-banner .report-info-title { display: block; font-size: 14px; font-weight: 700; color: #1d4ed8; margin-bottom: 4px; }
 .mms-dispatch-page .report-info-banner .report-info-desc { display: block; font-size: 13px; color: #475569; line-height: 1.6; }
 .mms-dispatch-page .report-info-banner .report-info-desc .emph { font-weight: 600; color: #2563eb; }
+
+/* 操作列按钮对齐：每行2个按钮，flex-wrap 自动换行，按钮自适应内容宽度 */
+:deep(.col-action) { padding: 6px 4px !important; }
+:deep(.col-action .cell) { display: flex; justify-content: center; padding: 0; }
+.action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
+:deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
+:deep(.col-action .el-button + .el-button) { margin-left: 2px; }
 </style>

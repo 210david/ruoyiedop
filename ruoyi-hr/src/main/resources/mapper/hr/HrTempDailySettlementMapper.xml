@@ -31,9 +31,11 @@
     <select id="selectHrTempDailySettlementList" parameterType="HrTempDailySettlement" resultMap="HrTempDailySettlementResult">
         <include refid="selectVo"/>
         <where>
-            del_flag = '0'
+            (del_flag IS NULL OR del_flag = '0')
             <if test="settlementNo != null and settlementNo != ''"> AND settlement_no LIKE CONCAT('%', #{settlementNo}, '%')</if>
             <if test="settlementDate != null"> AND settlement_date = #{settlementDate}</if>
+            <if test="params.beginSettlementDate != null and params.beginSettlementDate != ''"> AND settlement_date &gt;= #{params.beginSettlementDate}</if>
+            <if test="params.endSettlementDate != null and params.endSettlementDate != ''"> AND settlement_date &lt;= #{params.endSettlementDate}</if>
             <if test="laborId != null"> AND labor_id = #{laborId}</if>
             <if test="workerName != null and workerName != ''"> AND worker_name LIKE CONCAT('%', #{workerName}, '%')</if>
             <if test="attendDays != null"> AND attend_days = #{attendDays}</if>

@@ -113,7 +113,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" v-loading="loading" :data="list" border @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
-          <el-table-column type="index" label="序号" width="85" align="center" />
+          <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" resizable align="center" />
           <el-table-column label="结算单号" prop="invoiceNo" key="invoiceNo" :width="colWidth('invoiceNo', 180)" resizable sortable="custom" v-if="columns.invoiceNo.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.invoiceNo }}</span></template>
           </el-table-column>
@@ -219,27 +219,30 @@
                 </el-col>
                 <el-col :span="12">
                   <el-form-item label="关联合同" prop="contractId">
-                    <el-select v-model="form.contractId" filterable clearable placeholder="请选择合同（可选）" style="width: 100%" @change="onContractChange">
-                      <el-option v-for="c in contractOptions" :key="c.contractId" :label="c.contractNo" :value="c.contractId" />
-                    </el-select>
+                    <el-input v-model="form.contractNo" readonly placeholder="请选择合同（可选）" style="width: 100%" @click="openContractPicker">
+                      <template v-if="form.contractNo" #append><el-button icon="CircleClose" @click.stop="clearContract" /></template>
+                      <template v-else #append><el-button icon="Search" @click="openContractPicker" /></template>
+                    </el-input>
                   </el-form-item>
                 </el-col>
               </el-row>
               <el-row :gutter="20">
                 <el-col :span="12">
                   <el-form-item label="采购单号" prop="orderId">
-                    <el-select v-model="form.orderId" filterable clearable placeholder="请选择采购订单（可选）" style="width: 100%" @change="onOrderChange">
-                      <el-option v-for="o in orderOptions" :key="o.orderId" :label="o.orderNo" :value="o.orderId" />
-                    </el-select>
+                    <el-input v-model="form.orderNo" readonly placeholder="请选择采购订单（可选）" style="width: 100%" @click="openOrderPicker">
+                      <template v-if="form.orderNo" #append><el-button icon="CircleClose" @click.stop="clearOrder" /></template>
+                      <template v-else #append><el-button icon="Search" @click="openOrderPicker" /></template>
+                    </el-input>
                   </el-form-item>
                 </el-col>
               </el-row>
               <el-row :gutter="20">
                 <el-col :span="12">
                   <el-form-item label="供应商" prop="supplierId">
-                    <el-select v-model="form.supplierId" filterable placeholder="请选择供应商" style="width: 100%" @change="onSupplierChange">
-                      <el-option v-for="s in supplierOptions" :key="s.supplierId" :label="s.supplierName" :value="s.supplierId" />
-                    </el-select>
+                    <el-input v-model="form.supplierName" readonly placeholder="请选择供应商" style="width: 100%" @click="openSupplierPicker">
+                      <template v-if="form.supplierName" #append><el-button icon="CircleClose" @click.stop="clearSupplier" /></template>
+                      <template v-else #append><el-button icon="Search" @click="openSupplierPicker" /></template>
+                    </el-input>
                   </el-form-item>
                 </el-col>
               </el-row>
@@ -1004,15 +1007,22 @@
     </el-dialog>
     <!-- 文件预览 -->
     <file-preview ref="filePreviewRef" />
+    <!-- 供应商选择弹框 -->
+    <supplier-picker ref="supplierPickerRef" title="选择供应商" @confirm="onSupplierPickerConfirm" />
+    <!-- 采购合同选择弹框 -->
+    <contract-picker ref="contractPickerRef" title="选择采购合同" :statuses="['1', '2', '3', '4']" hint="仅显示有效合同（排除草稿 / 已作废 / 已驳回）" @confirm="onContractPickerConfirm" />
+    <!-- 采购订单选择弹框 -->
+    <order-picker ref="orderPickerRef" title="选择采购订单" :statuses="['2', '3', '4', '5']" hint="仅显示已审批 / 已下单 / 部分到货 / 已完成的采购订单" @confirm="onOrderPickerConfirm" />
   </div>
 </template>
 
 <script setup name="PmsInvoice">
 import { listInvoice, getInvoice, addInvoice, updateInvoice, delInvoice, submitInvoice, auditInvoice, payInvoice, threeWayMatch, recognizeInvoice } from '@/api/pms/invoice'
-import { listContract } from '@/api/pms/contract'
-import { listOrder, getOrder } from '@/api/pms/order'
-import { listSupplier } from '@/api/wms/supplier'
+import { getOrder } from '@/api/pms/order'
 import request from '@/utils/request'
+import SupplierPicker from '@/components/SupplierPicker/index.vue'
+import ContractPicker from '@/components/ContractPicker/index.vue'
+import OrderPicker from '@/components/OrderPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard, formatAmount, formatMoney } from '@/composables/useDetailCard'
 import { ArrowDown, Search, OfficeBuilding, Document, Filter, Edit, Delete, Download, WarningFilled, ArrowRight, CircleCheck, CircleClose, QuestionFilled } from '@element-plus/icons-vue'
@@ -1051,9 +1061,9 @@ const loading = ref(true)
 const showSearch = ref(true)
 const showAdvanced = ref(false)
 const dateRange = ref([])
-const supplierOptions = ref([])
-const contractOptions = ref([])
-const orderOptions = ref([])
+const supplierPickerRef = ref(null)
+const contractPickerRef = ref(null)
+const orderPickerRef = ref(null)
 const ocrLoading = ref(false)
 const recognizing = ref(false)
 const recognizedFields = ref([])
@@ -1133,17 +1143,49 @@ function resetQuery() {
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.invoiceId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function reset() { form.value = { invoiceId: undefined, invoiceNo: undefined, contractId: undefined, contractNo: undefined, orderId: undefined, orderNo: undefined, supplierId: undefined, supplierName: undefined, status: '0', invoiceType: '0', invoiceNumber: undefined, invoiceDate: undefined, invoiceTitle: undefined, taxNumber: undefined, invoiceImageUrl: undefined, invoiceAttachment: undefined, taxRate: 0, taxAmount: 0, totalAmount: 0, paymentAmount: 0, payAmount: 0, paymentDate: undefined, paymentMethod: '0', bankName: undefined, bankAccount: undefined, remark: undefined }; proxy.resetForm('invoiceRef'); recognizedFields.value = [] }
-function onSupplierChange(val) { const matched = supplierOptions.value.find(s => s.supplierId === val); form.value.supplierName = matched ? matched.supplierName : undefined }
-function loadSupplierOptions() { listSupplier({ pageNum: 1, pageSize: 999 }).then(res => { supplierOptions.value = res.rows || [] }) }
-function loadContractOptions() { listContract({ pageNum: 1, pageSize: 999 }).then(res => { contractOptions.value = (res.rows || []).filter(c => !['0','5','6'].includes(c.status)) }) }
-function onContractChange(contractId) {
-  if (!contractId) { form.value.contractNo = undefined; return }
-  const matched = contractOptions.value.find(c => c.contractId === contractId)
-  if (matched) { form.value.contractNo = matched.contractNo; form.value.supplierId = matched.supplierId; form.value.supplierName = matched.supplierName }
+function openSupplierPicker() { supplierPickerRef.value.open(form.value.supplierId) }
+function onSupplierPickerConfirm(supplier) { form.value.supplierId = supplier.supplierId; form.value.supplierName = supplier.supplierName }
+function clearSupplier() { form.value.supplierId = undefined; form.value.supplierName = undefined }
+/** 打开合同选择弹窗 */
+function openContractPicker() {
+  contractPickerRef.value.open(form.value.contractId)
 }
-function loadOrderOptions() { listOrder({ pageNum: 1, pageSize: 999 }).then(res => { orderOptions.value = (res.rows || []).filter(o => ['2','3','4','5'].includes(o.status)) }) }
-function onOrderChange(orderId) {
-  if (!orderId) { form.value.orderNo = undefined; return }
+
+/** 合同选择确认回调 — 带出合同编号和供应商 */
+function onContractPickerConfirm(contract) {
+  form.value.contractId = contract.contractId
+  form.value.contractNo = contract.contractNo
+  form.value.supplierId = contract.supplierId
+  form.value.supplierName = contract.supplierName
+}
+
+/** 清除合同 */
+function clearContract() {
+  form.value.contractId = undefined
+  form.value.contractNo = undefined
+}
+
+/** 打开采购订单选择弹窗 */
+function openOrderPicker() {
+  orderPickerRef.value.open(form.value.orderId)
+}
+
+/** 采购订单选择确认回调 — 带出订单号、供应商并反填关联合同 */
+function onOrderPickerConfirm(order) {
+  form.value.orderId = order.orderId
+  form.value.orderNo = order.orderNo
+  applyOrderDetail(order.orderId)
+}
+
+/** 清除采购订单 */
+function clearOrder() {
+  form.value.orderId = undefined
+  form.value.orderNo = undefined
+}
+
+/** 根据采购订单带出供应商并反填关联合同 */
+function applyOrderDetail(orderId) {
+  if (!orderId) return
   getOrder(orderId).then(res => {
     const order = res.data
     form.value.orderNo = order.orderNo
@@ -1267,9 +1309,6 @@ function invoiceTypeLabel(type) { const item = pms_invoice_type.value.find(d => 
 function statusTabClass(value) { const map = { '0': 'tab-draft', '1': 'tab-audit', '2': 'tab-approved', '3': 'tab-done', '5': 'tab-reject', '6': 'tab-partial' }; return map[value] || '' }
 
 getList()
-loadSupplierOptions()
-loadContractOptions()
-loadOrderOptions()
 onActivated(() => { getList() })
 </script>
 

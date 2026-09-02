@@ -174,7 +174,7 @@
             <template #default="scope"><span class="rd-amount">{{ formatAmount(scope.row.dealAmount) }}</span></template>
           </el-table-column>
           <el-table-column label="负责人" prop="userName" key="userName" :width="colWidth('userName', 100)" resizable v-if="columns.userName.visible" />
-      <el-table-column label="操作" width="180" align="center" fixed="right" class-name="col-action">
+      <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
         <template #default="scope">
           <div class="action-btn-row">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">详情</el-button>
@@ -198,7 +198,7 @@
             </template>
           </el-dropdown>
           </div>
-        </template>
+            </template>
       </el-table-column>
         </el-table>
       </div>
@@ -674,7 +674,7 @@
                   <el-table-column label="手机号" prop="contactPhone" width="130" align="center" />
                   <el-table-column label="职位" prop="position" width="100" align="center" />
                   <el-table-column label="状态" prop="participateStatus" width="90" align="center"><template #default="scope"><span class="badge" :class="partBadgeClass(scope.row.participateStatus)"><span class="dot"></span>{{ partStatusLabel(scope.row.participateStatus) }}</span></template></el-table-column>
-                  <el-table-column label="操作" width="200" align="center"><template #default="scope"><el-button link type="primary" size="small" @click="handleSignIn(scope.row)" v-if="scope.row.participateStatus !== '1'" v-hasPermi="['marketing:participant:edit']">签到</el-button><el-button link type="primary" size="small" @click="handleConvertLead(scope.row)" v-if="!scope.row.leadId" v-hasPermi="['marketing:participant:convert']">转线索</el-button><el-tag v-if="scope.row.leadId" type="success" size="small">已转线索</el-tag></template></el-table-column>
+                  <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action"><template #default="scope"><el-button link type="primary" size="small" @click="handleSignIn(scope.row)" v-if="scope.row.participateStatus !== '1'" v-hasPermi="['marketing:participant:edit']">签到</el-button><el-button link type="primary" size="small" @click="handleConvertLead(scope.row)" v-if="!scope.row.leadId" v-hasPermi="['marketing:participant:convert']">转线索</el-button><el-tag v-if="scope.row.leadId" type="success" size="small">已转线索</el-tag></template></el-table-column>
                 </el-table>
               </div>
             </section>
@@ -1604,4 +1604,11 @@ getList()
 .rd-dialog .badge.red .dot { background: #ef4444; }
 .rd-dialog .badge.gray { background: #f1f5f9; color: #64748b; border-color: #e2e8f0; }
 .rd-dialog .badge.gray .dot { background: #94a3b8; }
+
+/* 操作列按钮对齐：每行2个按钮，flex-wrap 自动换行，按钮自适应内容宽度 */
+:deep(.col-action) { padding: 6px 4px !important; }
+:deep(.col-action .cell) { display: flex; justify-content: center; padding: 0; }
+.action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
+:deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
+:deep(.col-action .el-button + .el-button) { margin-left: 2px; }
 </style>

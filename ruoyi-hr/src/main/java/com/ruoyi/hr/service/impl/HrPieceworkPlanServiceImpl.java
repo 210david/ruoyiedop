@@ -3,15 +3,20 @@ package com.ruoyi.hr.service.impl;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.hr.domain.HrPieceworkPlan;
 import com.ruoyi.hr.mapper.HrPieceworkPlanMapper;
 import com.ruoyi.hr.service.IHrPieceworkPlanService;
+import com.ruoyi.mk.service.IMkNumberRuleService;
 
 @Service
 public class HrPieceworkPlanServiceImpl implements IHrPieceworkPlanService
 {
     @Autowired
     private HrPieceworkPlanMapper hrPieceworkPlanMapper;
+
+    @Autowired
+    private IMkNumberRuleService mkNumberRuleService;
 
     @Override
     public HrPieceworkPlan selectHrPieceworkPlanById(Long pwPlanId) { return hrPieceworkPlanMapper.selectHrPieceworkPlanById(pwPlanId); }
@@ -20,7 +25,14 @@ public class HrPieceworkPlanServiceImpl implements IHrPieceworkPlanService
     public List<HrPieceworkPlan> selectHrPieceworkPlanList(HrPieceworkPlan hrPieceworkPlan) { return hrPieceworkPlanMapper.selectHrPieceworkPlanList(hrPieceworkPlan); }
 
     @Override
-    public int insertHrPieceworkPlan(HrPieceworkPlan hrPieceworkPlan) { return hrPieceworkPlanMapper.insertHrPieceworkPlan(hrPieceworkPlan); }
+    public int insertHrPieceworkPlan(HrPieceworkPlan hrPieceworkPlan)
+    {
+        if (StringUtils.isEmpty(hrPieceworkPlan.getPwCode()))
+        {
+            hrPieceworkPlan.setPwCode(mkNumberRuleService.generateNumber("hr_piecework_plan"));
+        }
+        return hrPieceworkPlanMapper.insertHrPieceworkPlan(hrPieceworkPlan);
+    }
 
     @Override
     public int updateHrPieceworkPlan(HrPieceworkPlan hrPieceworkPlan) { return hrPieceworkPlanMapper.updateHrPieceworkPlan(hrPieceworkPlan); }

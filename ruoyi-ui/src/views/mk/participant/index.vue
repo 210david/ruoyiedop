@@ -143,7 +143,7 @@
             <template #default="scope"><el-tag v-if="scope.row.leadId" type="success" size="small">已转</el-tag><span v-else>-</span></template>
           </el-table-column>
           <el-table-column label="签到时间" prop="signTime" key="signTime" :width="colWidth('signTime', 160)" resizable sortable="custom" v-if="columns.signTime.visible" />
-      <el-table-column label="操作" width="180" align="center" fixed="right" class-name="col-action">
+      <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
         <template #default="scope">
           <div class="action-btn-row">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">详情</el-button>
@@ -159,7 +159,7 @@
             </template>
           </el-dropdown>
           </div>
-        </template>
+            </template>
       </el-table-column>
         </el-table>
       </div>
@@ -716,4 +716,11 @@ getList()
 .rd-dialog .badge.gray .dot { background: #94a3b8; }
 .rd-dialog .badge.red { background: #fef2f2; color: #b91c1c; border-color: #fecaca; }
 .rd-dialog .badge.red .dot { background: #ef4444; }
+
+/* 操作列按钮对齐：每行2个按钮，flex-wrap 自动换行，按钮自适应内容宽度 */
+:deep(.col-action) { padding: 6px 4px !important; }
+:deep(.col-action .cell) { display: flex; justify-content: center; padding: 0; }
+.action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
+:deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
+:deep(.col-action .el-button + .el-button) { margin-left: 2px; }
 </style>

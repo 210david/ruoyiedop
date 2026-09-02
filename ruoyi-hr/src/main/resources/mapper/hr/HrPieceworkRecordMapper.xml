@@ -9,6 +9,7 @@
         <result property="employeeId" column="employee_id"/>
         <result property="employeeName" column="employee_name"/>
         <result property="orgId" column="org_id"/>
+        <result property="orgName" column="org_name"/>
         <result property="pwPlanId" column="pw_plan_id"/>
         <result property="pwName" column="pw_name"/>
         <result property="qualifiedQty" column="qualified_qty"/>
@@ -28,36 +29,40 @@
     </resultMap>
 
     <sql id="selectVo">
-        SELECT pw_record_id, pw_record_no, record_date, employee_id, employee_name, org_id, pw_plan_id, pw_name, qualified_qty, unqualified_qty, unit_price, total_amount, confirm_status, confirm_by, confirm_time, source, del_flag, create_by, create_time, update_by, update_time, remark
-        FROM biz_hr_piecework_record
+        SELECT t.pw_record_id, t.pw_record_no, t.record_date, t.employee_id, t.employee_name, t.org_id, t.pw_plan_id, t.pw_name, t.qualified_qty, t.unqualified_qty, t.unit_price, t.total_amount, t.confirm_status, t.confirm_by, t.confirm_time, t.source, t.del_flag, t.create_by, t.create_time, t.update_by, t.update_time, t.remark,
+        d.dept_name AS org_name
+        FROM biz_hr_piecework_record t
+        LEFT JOIN sys_dept d ON t.org_id = d.dept_id
     </sql>
 
     <select id="selectHrPieceworkRecordList" parameterType="HrPieceworkRecord" resultMap="HrPieceworkRecordResult">
         <include refid="selectVo"/>
         <where>
-            del_flag = '0'
-            <if test="pwRecordNo != null and pwRecordNo != ''"> AND pw_record_no LIKE CONCAT('%', #{pwRecordNo}, '%')</if>
-            <if test="recordDate != null"> AND record_date = #{recordDate}</if>
-            <if test="employeeId != null"> AND employee_id = #{employeeId}</if>
-            <if test="employeeName != null and employeeName != ''"> AND employee_name LIKE CONCAT('%', #{employeeName}, '%')</if>
-            <if test="orgId != null"> AND org_id = #{orgId}</if>
-            <if test="pwPlanId != null"> AND pw_plan_id = #{pwPlanId}</if>
-            <if test="pwName != null and pwName != ''"> AND pw_name LIKE CONCAT('%', #{pwName}, '%')</if>
-            <if test="qualifiedQty != null"> AND qualified_qty = #{qualifiedQty}</if>
-            <if test="unqualifiedQty != null"> AND unqualified_qty = #{unqualifiedQty}</if>
-            <if test="unitPrice != null"> AND unit_price = #{unitPrice}</if>
-            <if test="totalAmount != null"> AND total_amount = #{totalAmount}</if>
-            <if test="confirmStatus != null and confirmStatus != ''"> AND confirm_status LIKE CONCAT('%', #{confirmStatus}, '%')</if>
-            <if test="confirmBy != null and confirmBy != ''"> AND confirm_by LIKE CONCAT('%', #{confirmBy}, '%')</if>
-            <if test="confirmTime != null"> AND confirm_time = #{confirmTime}</if>
-            <if test="source != null and source != ''"> AND source LIKE CONCAT('%', #{source}, '%')</if>
-            <if test="delFlag != null and delFlag != ''"> AND del_flag LIKE CONCAT('%', #{delFlag}, '%')</if>
+            t.(del_flag IS NULL OR del_flag = '0')
+            <if test="pwRecordNo != null and pwRecordNo != ''"> AND t.pw_record_no LIKE CONCAT('%', #{pwRecordNo}, '%')</if>
+            <if test="recordDate != null"> AND t.record_date = #{recordDate}</if>
+            <if test="params.beginRecordDate != null and params.beginRecordDate != ''"> AND t.record_date &gt;= #{params.beginRecordDate}</if>
+            <if test="params.endRecordDate != null and params.endRecordDate != ''"> AND t.record_date &lt;= #{params.endRecordDate}</if>
+            <if test="employeeId != null"> AND t.employee_id = #{employeeId}</if>
+            <if test="employeeName != null and employeeName != ''"> AND t.employee_name LIKE CONCAT('%', #{employeeName}, '%')</if>
+            <if test="orgId != null"> AND t.org_id = #{orgId}</if>
+            <if test="pwPlanId != null"> AND t.pw_plan_id = #{pwPlanId}</if>
+            <if test="pwName != null and pwName != ''"> AND t.pw_name LIKE CONCAT('%', #{pwName}, '%')</if>
+            <if test="qualifiedQty != null"> AND t.qualified_qty = #{qualifiedQty}</if>
+            <if test="unqualifiedQty != null"> AND t.unqualified_qty = #{unqualifiedQty}</if>
+            <if test="unitPrice != null"> AND t.unit_price = #{unitPrice}</if>
+            <if test="totalAmount != null"> AND t.total_amount = #{totalAmount}</if>
+            <if test="confirmStatus != null and confirmStatus != ''"> AND t.confirm_status LIKE CONCAT('%', #{confirmStatus}, '%')</if>
+            <if test="confirmBy != null and confirmBy != ''"> AND t.confirm_by LIKE CONCAT('%', #{confirmBy}, '%')</if>
+            <if test="confirmTime != null"> AND t.confirm_time = #{confirmTime}</if>
+            <if test="source != null and source != ''"> AND t.source LIKE CONCAT('%', #{source}, '%')</if>
+            <if test="delFlag != null and delFlag != ''"> AND t.del_flag LIKE CONCAT('%', #{delFlag}, '%')</if>
         </where>
-        ORDER BY create_time DESC
+        ORDER BY t.create_time DESC
     </select>
 
     <select id="selectHrPieceworkRecordById" parameterType="Long" resultMap="HrPieceworkRecordResult">
-        <include refid="selectVo"/> WHERE pw_record_id = #{pwRecordId}
+        <include refid="selectVo"/> WHERE t.pw_record_id = #{pwRecordId}
     </select>
 
     <insert id="insertHrPieceworkRecord" parameterType="HrPieceworkRecord" useGeneratedKeys="true" keyProperty="pwRecordId">

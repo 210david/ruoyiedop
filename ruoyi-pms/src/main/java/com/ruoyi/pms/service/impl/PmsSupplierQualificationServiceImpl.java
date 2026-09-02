@@ -40,9 +40,10 @@ public class PmsSupplierQualificationServiceImpl implements IPmsSupplierQualific
     public int insertQualification(PmsSupplierQualification qualification)
     {
         qualification.setDelFlag("0");
+        // 新增资质默认进入待审核(0)状态，保证"新增→审核→生效"管控链路可达
         if (qualification.getStatus() == null)
         {
-            qualification.setStatus("1");
+            qualification.setStatus("0");
         }
         return pmsSupplierQualificationMapper.insertQualification(qualification);
     }
@@ -73,6 +74,11 @@ public class PmsSupplierQualificationServiceImpl implements IPmsSupplierQualific
         if (!"0".equals(qualification.getStatus()))
         {
             throw new ServiceException("只有待审核状态的资质才能审核");
+        }
+        // 审核目标状态只允许：1=审核通过(生效) 2=已驳回
+        if (!"1".equals(status) && !"2".equals(status))
+        {
+            throw new ServiceException("审核结果只允许通过(1)或驳回(2)");
         }
         qualification.setStatus(status);
         qualification.setAuditBy(SecurityUtils.getUsername());

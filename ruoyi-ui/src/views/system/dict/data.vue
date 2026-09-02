@@ -86,35 +86,37 @@
          <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
       </el-row>
 
-      <el-table v-loading="loading" :data="dataList" @selection-change="handleSelectionChange">
+      <el-table ref="tableRef" v-loading="loading" :data="dataList" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" border>
 <el-table-column type="selection" width="55" align="center" />
 <el-table-column type="index" label="序号" width="85" align="center" />
-<el-table-column label="字典编码" align="center" prop="dictCode" />
-         <el-table-column label="字典标签" align="center" prop="dictLabel">
+<el-table-column label="字典编码" align="center" prop="dictCode" :width="colWidth('dictCode', 120)" />
+         <el-table-column label="字典标签" align="center" prop="dictLabel" :width="colWidth('dictLabel', 140)">
             <template #default="scope">
                <span v-if="(scope.row.listClass == '' || scope.row.listClass == 'default') && (scope.row.cssClass == '' || scope.row.cssClass == null)">{{ scope.row.dictLabel }}</span>
                <el-tag v-else :type="scope.row.listClass == 'primary' ? '' : scope.row.listClass" :class="scope.row.cssClass">{{ scope.row.dictLabel }}</el-tag>
             </template>
          </el-table-column>
-         <el-table-column label="字典键值" align="center" prop="dictValue" />
-         <el-table-column label="字典排序" align="center" prop="dictSort" />
-         <el-table-column label="状态" align="center" prop="status">
+         <el-table-column label="字典键值" align="center" prop="dictValue" :width="colWidth('dictValue', 120)" />
+         <el-table-column label="字典排序" align="center" prop="dictSort" :width="colWidth('dictSort', 100)" />
+         <el-table-column label="状态" align="center" prop="status" :width="colWidth('status', 90)">
             <template #default="scope">
                <dict-tag :options="sys_normal_disable" :value="scope.row.status" />
             </template>
          </el-table-column>
-         <el-table-column label="备注" align="center" prop="remark" :show-overflow-tooltip="true" />
-         <el-table-column label="创建时间" align="center" prop="createTime" width="180">
+         <el-table-column label="备注" align="center" prop="remark" :show-overflow-tooltip="true" :width="colWidth('remark', 200)" />
+         <el-table-column label="创建时间" align="center" prop="createTime" :width="colWidth('createTime', 180)">
             <template #default="scope">
                <span>{{ parseTime(scope.row.createTime) }}</span>
             </template>
          </el-table-column>
-         <el-table-column label="操作" align="center" width="160" class-name="small-padding fixed-width">
+          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
-               <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['system:dict:edit']">修改</el-button>
-               <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['system:dict:remove']">删除</el-button>
+              <div class="action-btn-row">
+                <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['system:dict:edit']">修改</el-button>
+                <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['system:dict:remove']">删除</el-button>
+              </div>
             </template>
-         </el-table-column>
+          </el-table-column>
       </el-table>
 
       <pagination
@@ -180,9 +182,12 @@
 import useDictStore from '@/store/modules/dict'
 import { optionselect as getDictOptionselect, getType } from "@/api/system/dict/type"
 import { listData, getData, delData, addData, updateData, checkDictValueUnique, checkDictLabelUnique } from "@/api/system/dict/data"
+import { useColumnResize } from '@/composables/useColumnResize'
 
 const { proxy } = getCurrentInstance()
 const { sys_normal_disable } = useDict("sys_normal_disable")
+// 列宽拖拽持久化
+const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('sys_dict_data_index')
 
 const dataList = ref([])
 const open = ref(false)
@@ -277,6 +282,7 @@ function getList() {
     dataList.value = response.rows
     total.value = response.total
     loading.value = false
+    applySavedWidths()
   })
 }
 
@@ -391,3 +397,12 @@ function handleExport() {
 getTypes(route.params && route.params.dictId)
 getTypeList()
 </script>
+
+<style scoped>
+/* 操作列按钮对齐：每行2个按钮，flex-wrap 自动换行，按钮自适应内容宽度 */
+:deep(.col-action) { padding: 6px 4px !important; }
+:deep(.col-action .cell) { display: flex; justify-content: center; padding: 0; }
+.action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
+:deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
+:deep(.col-action .el-button + .el-button) { margin-left: 2px; }
+</style>

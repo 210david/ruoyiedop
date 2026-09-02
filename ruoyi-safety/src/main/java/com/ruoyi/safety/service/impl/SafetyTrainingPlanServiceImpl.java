@@ -40,7 +40,10 @@ public class SafetyTrainingPlanServiceImpl implements ISafetyTrainingPlanService
         return safetyTrainingPlanMapper.insertSafetyTrainingPlan(safetyTrainingPlan); }
 
     @Override
-    public int updateSafetyTrainingPlan(SafetyTrainingPlan safetyTrainingPlan) { return safetyTrainingPlanMapper.updateSafetyTrainingPlan(safetyTrainingPlan); }
+    public int updateSafetyTrainingPlan(SafetyTrainingPlan safetyTrainingPlan) {
+        // 通用编辑不允许直接修改状态，状态流转只能通过开始/完成/取消专用接口
+        safetyTrainingPlan.setPlanStatus(null);
+        return safetyTrainingPlanMapper.updateSafetyTrainingPlan(safetyTrainingPlan); }
 
     @Override
     public int deleteSafetyTrainingPlanByIds(Long[] planIds) { return safetyTrainingPlanMapper.deleteSafetyTrainingPlanByIds(planIds); }

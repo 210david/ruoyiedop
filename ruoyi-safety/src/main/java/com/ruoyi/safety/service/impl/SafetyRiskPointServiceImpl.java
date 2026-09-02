@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.mk.service.IMkNumberRuleService;
@@ -53,10 +54,34 @@ public class SafetyRiskPointServiceImpl implements ISafetyRiskPointService
     }
 
     @Override
-    public int deleteSafetyRiskPointByIds(Long[] riskPointIds) { return safetyRiskPointMapper.deleteSafetyRiskPointByIds(riskPointIds); }
+    public int deleteSafetyRiskPointByIds(Long[] riskPointIds)
+    {
+        checkRiskPointDeletable(riskPointIds);
+        return safetyRiskPointMapper.deleteSafetyRiskPointByIds(riskPointIds);
+    }
 
     @Override
-    public int deleteSafetyRiskPointById(Long riskPointId) { return safetyRiskPointMapper.deleteSafetyRiskPointById(riskPointId); }
+    public int deleteSafetyRiskPointById(Long riskPointId)
+    {
+        checkRiskPointDeletable(new Long[]{ riskPointId });
+        return safetyRiskPointMapper.deleteSafetyRiskPointById(riskPointId);
+    }
+
+    /** 删除前校验风险点是否被隐患/排查任务引用 */
+    private void checkRiskPointDeletable(Long[] riskPointIds)
+    {
+        for (Long riskPointId : riskPointIds)
+        {
+            if (safetyRiskPointMapper.countHazardByRiskPointId(riskPointId) > 0)
+            {
+                throw new ServiceException("删除失败，该风险点存在关联隐患，请先处理关联隐患");
+            }
+            if (safetyRiskPointMapper.countTaskByRiskPointId(riskPointId) > 0)
+            {
+                throw new ServiceException("删除失败，该风险点存在关联排查任务，请先处理关联任务");
+            }
+        }
+    }
 
     @Override
     public List<Map<String, Object>> selectFourColorMapData(Long enterpriseId)

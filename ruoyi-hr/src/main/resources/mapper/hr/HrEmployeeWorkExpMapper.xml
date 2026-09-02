@@ -28,7 +28,7 @@
     <select id="selectHrEmployeeWorkExpList" parameterType="HrEmployeeWorkExp" resultMap="HrEmployeeWorkExpResult">
         <include refid="selectVo"/>
         <where>
-            del_flag = '0'
+            (del_flag IS NULL OR del_flag = '0')
             <if test="employeeId != null"> AND employee_id = #{employeeId}</if>
             <if test="startDate != null"> AND start_date = #{startDate}</if>
             <if test="endDate != null"> AND end_date = #{endDate}</if>
@@ -42,7 +42,7 @@
     </select>
 
     <select id="selectHrEmployeeWorkExpByWorkExpId" parameterType="Long" resultMap="HrEmployeeWorkExpResult">
-        <include refid="selectVo"/> WHERE work_exp_id = #{workExpId} AND del_flag = '0'
+        <include refid="selectVo"/> WHERE work_exp_id = #{workExpId} AND (del_flag IS NULL OR del_flag = '0')
     </select>
 
     <insert id="insertHrEmployeeWorkExp" parameterType="HrEmployeeWorkExp" useGeneratedKeys="true" keyProperty="workExpId">
@@ -78,6 +78,10 @@
     <delete id="deleteHrEmployeeWorkExpByIds" parameterType="Long">
         UPDATE biz_hr_employee_work_exp SET del_flag = '2' WHERE work_exp_id IN
         <foreach item="workExpId" collection="array" open="(" separator="," close=")">#{workExpId}</foreach>
+    </delete>
+
+    <delete id="deleteHrEmployeeWorkExpByEmployeeId" parameterType="Long">
+        UPDATE biz_hr_employee_work_exp SET del_flag = '2' WHERE employee_id = #{employeeId}
     </delete>
 
 </mapper>

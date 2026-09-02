@@ -37,7 +37,7 @@
     <select id="selectHrOvertimeList" parameterType="HrOvertime" resultMap="HrOvertimeResult">
         <include refid="selectVo"/>
         <where>
-            del_flag = '0'
+            (del_flag IS NULL OR del_flag = '0')
             <if test="overtimeNo != null and overtimeNo != ''"> AND overtime_no LIKE CONCAT('%', #{overtimeNo}, '%')</if>
             <if test="employeeId != null"> AND employee_id = #{employeeId}</if>
             <if test="employeeName != null and employeeName != ''"> AND employee_name LIKE CONCAT('%', #{employeeName}, '%')</if>
@@ -46,6 +46,12 @@
             <if test="overtimeType != null and overtimeType != ''"> AND overtime_type LIKE CONCAT('%', #{overtimeType}, '%')</if>
             <if test="startTime != null"> AND start_time = #{startTime}</if>
             <if test="endTime != null"> AND end_time = #{endTime}</if>
+            <if test="params.beginOvertimeDate != null and params.beginOvertimeDate != ''"> AND overtime_date &gt;= #{params.beginOvertimeDate}</if>
+            <if test="params.endOvertimeDate != null and params.endOvertimeDate != ''"> AND overtime_date &lt;= #{params.endOvertimeDate}</if>
+            <if test="params.beginStartTime != null and params.beginStartTime != ''"> AND start_time &gt;= #{params.beginStartTime}</if>
+            <if test="params.endStartTime != null and params.endStartTime != ''"> AND start_time &lt;= #{params.endStartTime}</if>
+            <if test="params.beginEndTime != null and params.beginEndTime != ''"> AND end_time &gt;= #{params.beginEndTime}</if>
+            <if test="params.endEndTime != null and params.endEndTime != ''"> AND end_time &lt;= #{params.endEndTime}</if>
             <if test="overtimeHours != null"> AND overtime_hours = #{overtimeHours}</if>
             <if test="multiplier != null"> AND multiplier = #{multiplier}</if>
             <if test="compensationType != null and compensationType != ''"> AND compensation_type LIKE CONCAT('%', #{compensationType}, '%')</if>

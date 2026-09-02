@@ -127,7 +127,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
 <el-table-column type="selection" width="55" align="center" />
-<el-table-column type="index" label="序号" width="85" align="center" />
+<el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" resizable align="center" />
 <el-table-column label="申请单号" prop="requestNo" key="requestNo" :width="colWidth('requestNo', 180)" resizable sortable="custom" v-if="columns.requestNo.visible" />
           <el-table-column label="标题" prop="title" key="title" :width="colWidth('title', 240)" resizable show-overflow-tooltip v-if="columns.title.visible" />
           <el-table-column label="状态" prop="status" key="status" :width="colWidth('status', 120)" resizable align="center" sortable="custom" v-if="columns.status.visible">
@@ -236,12 +236,10 @@
                         <el-icon class="rd-form-tip"><question-filled /></el-icon>
                       </el-tooltip>
                     </template>
-                    <el-select v-model="form.planId" clearable filterable placeholder="可选，选择后自动带出明细" style="width: 100%" @change="onPlanChange">
-                      <template #empty>
-                        <div class="rd-select-empty">暂无审批通过的采购计划</div>
-                      </template>
-                      <el-option v-for="p in planOptions" :key="p.planId" :label="p.planNo + ' - ' + p.title" :value="p.planId" />
-                    </el-select>
+                    <el-input :model-value="form.planNo ? form.planNo + ' - ' + (form.planTitle || '') : ''" readonly placeholder="可选，选择后自动带出明细" style="width: 100%" @click="openPlanPicker">
+                      <template v-if="form.planNo" #append><el-button icon="CircleClose" @click.stop="clearPlan" /></template>
+                      <template v-else #append><el-button icon="Search" @click="openPlanPicker" /></template>
+                    </el-input>
                   </el-form-item>
                 </el-col>
               </el-row>
@@ -265,7 +263,7 @@
               </el-row>
               <el-table :data="form.detailList" border size="small">
                 <el-table-column label="序号" type="index" width="85" align="center" />
-                <el-table-column label="物料" prop="materialId" min-width="200"><template #default="scope"><el-select v-model="scope.row.materialId" filterable clearable size="small" placeholder="请选择物料" style="width: 100%" @change="(val) => onMaterialChange(val, scope.$index)"><el-option v-for="m in materialOptions" :key="m.materialId" :label="m.materialCode + ' - ' + m.materialName" :value="m.materialId" /></el-select></template></el-table-column>
+                <el-table-column label="物料" prop="materialId" min-width="200"><template #default="scope"><el-input :model-value="scope.row.materialCode ? scope.row.materialCode + ' - ' + scope.row.materialName : ''" readonly size="small" placeholder="请选择物料" style="width: 100%" @click="openMaterialPicker(scope.$index)"><template v-if="scope.row.materialCode" #append><el-button icon="CircleClose" size="small" @click.stop="clearMaterial(scope.$index)" /></template><template v-else #append><el-button icon="Search" size="small" @click="openMaterialPicker(scope.$index)" /></template></el-input></template></el-table-column>
                 <el-table-column label="规格型号" prop="specModel" min-width="120"><template #default="scope"><span>{{ scope.row.specModel }}</span></template></el-table-column>
                 <el-table-column label="单位" prop="unit" width="90"><template #default="scope"><el-select v-model="scope.row.unit" size="small" placeholder="单位" style="width: 100%"><el-option v-for="d in wms_unit" :key="d.value" :label="d.label" :value="d.value" /></el-select></template></el-table-column>
                 <el-table-column label="数量" prop="qty" width="100"><template #default="scope"><el-input-number v-model="scope.row.qty" :precision="2" :min="0" :controls="false" size="small" style="width: 90px" @change="calcDetailAmount(scope.row)" /></template></el-table-column>
@@ -627,15 +625,20 @@
         <el-button type="primary" @click="showStatusHelp = false">我知道了</el-button>
       </template>
     </el-dialog>
+    <!-- 物料选择弹框 -->
+    <material-picker ref="materialPickerRef" title="选择物料" @confirm="onMaterialPickerConfirm" />
+    <!-- 采购计划选择弹框 -->
+    <plan-picker ref="planPickerRef" title="选择采购计划" @confirm="onPlanPickerConfirm" />
   </div>
 </template>
 
 <script setup name="PmsRequest">
 import { listRequest, getRequest, addRequest, updateRequest, delRequest, auditRequest } from '@/api/pms/request'
-import { listPlan, getPlan } from '@/api/pms/plan'
+import { getPlan } from '@/api/pms/plan'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard, formatAmount, formatMoney } from '@/composables/useDetailCard'
-import { listMaterial } from '@/api/wms/material'
+import MaterialPicker from '@/components/MaterialPicker/index.vue'
+import PlanPicker from '@/components/PlanPicker/index.vue'
 import UserPicker from '@/components/UserPicker/index.vue'
 import { CircleClose, QuestionFilled } from '@element-plus/icons-vue'
 import { ArrowRight } from '@element-plus/icons-vue'
@@ -743,8 +746,9 @@ const single = ref(true)
 const multiple = ref(true)
 const total = ref(0)
 const title = ref('')
-const materialOptions = ref([])
-const planOptions = ref([])
+const materialPickerRef = ref(null)
+const currentDetailIndex = ref(-1)
+const planPickerRef = ref(null)
 const auditOpen = ref(false)
 const auditData = ref({})
 const auditForm = ref({ requestId: undefined, auditOpinion: null })
@@ -812,12 +816,23 @@ function handleSortChange(column) {
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.requestId); single.value = selection.length !== 1; multiple.value = !selection.length }
 
 function reset() {
-  form.value = { requestId: undefined, requestNo: undefined, title: undefined, status: '0', priority: '0', expectDate: undefined, purpose: undefined, totalAmount: 0, requesterId: undefined, requesterName: undefined, deptId: undefined, deptName: undefined, planId: undefined, planNo: undefined, remark: undefined, detailList: [] }
+  form.value = { requestId: undefined, requestNo: undefined, title: undefined, status: '0', priority: '0', expectDate: undefined, purpose: undefined, totalAmount: 0, requesterId: undefined, requesterName: undefined, deptId: undefined, deptName: undefined, planId: undefined, planNo: undefined, planTitle: undefined, remark: undefined, detailList: [] }
   proxy.resetForm('requestRef')
 }
 
 function handleAdd() { reset(); open.value = true; title.value = '添加采购申请' }
-function handleUpdate(row) { reset(); getRequest(row.requestId || ids.value[0]).then(res => { form.value = res.data; open.value = true; title.value = '修改采购申请' }) }
+function handleUpdate(row) {
+  reset()
+  getRequest(row.requestId || ids.value[0]).then(res => {
+    form.value = res.data
+    open.value = true
+    title.value = '修改采购申请'
+    // 后端未返回计划标题时，补充查询以完整展示"计划编号 - 计划标题"
+    if (form.value.planNo && !form.value.planTitle) {
+      getPlan(form.value.planId).then(r => { if (r.data) form.value.planTitle = r.data.title })
+    }
+  })
+}
 function handleView(row) { getRequest(row.requestId).then(res => { viewData.value = res.data; viewOpen.value = true }) }
 
 function calcDetailAmount(row) {
@@ -835,56 +850,79 @@ function handleAddDetail() {
 }
 
 /** 选择物料后自动带出物料信息 */
-function onMaterialChange(val, index) {
-  const matched = materialOptions.value.find(m => m.materialId === val)
-  if (matched) {
-    form.value.detailList[index].materialCode = matched.materialCode
-    form.value.detailList[index].materialName = matched.materialName
-    form.value.detailList[index].specModel = matched.specModel
-    form.value.detailList[index].unit = matched.unit
+function openMaterialPicker(index) {
+  currentDetailIndex.value = index
+  materialPickerRef.value.open(form.value.detailList[index].materialId)
+}
+function onMaterialPickerConfirm(material) {
+  if (currentDetailIndex.value >= 0) {
+    const d = form.value.detailList[currentDetailIndex.value]
+    d.materialId = material.materialId
+    d.materialCode = material.materialCode
+    d.materialName = material.materialName
+    d.specModel = material.specModel || ''
+    d.unit = material.unit || ''
   }
 }
-
-/** 加载物料主数据选项 */
-function loadMaterialOptions() {
-  listMaterial({ pageNum: 1, pageSize: 999, status: '0' }).then(res => {
-    materialOptions.value = res.rows || []
-  })
+function clearMaterial(index) {
+  const d = form.value.detailList[index]
+  d.materialId = null
+  d.materialCode = ''
+  d.materialName = ''
+  d.specModel = ''
+  d.unit = ''
 }
 
-/** 加载已审批通过的采购计划选项 */
-function loadPlanOptions() {
-  listPlan({ pageNum: 1, pageSize: 999, status: '2' }).then(res => {
-    planOptions.value = res.rows || []
-  })
+/** 打开采购计划选择弹框 */
+function openPlanPicker() {
+  planPickerRef.value.open(form.value.planId)
 }
 
-/** 选择采购计划后自动带出明细 */
+/** 弹框确认选择采购计划后自动带出明细 */
+function onPlanPickerConfirm(plan) {
+  applyPlanDetail(plan)
+}
+
+/** 清空已选采购计划 */
+function clearPlan() {
+  form.value.planId = undefined
+  form.value.planNo = undefined
+  form.value.planTitle = undefined
+}
+
+/** 选择采购计划后自动带出明细（planId 用于路由预选场景） */
 function onPlanChange(val) {
   if (!val) {
     form.value.planId = undefined
     form.value.planNo = undefined
+    form.value.planTitle = undefined
     return
   }
   getPlan(val).then(res => {
-    const plan = res.data
-    form.value.planId = plan.planId
-    form.value.planNo = plan.planNo
-    // 自动带出计划明细为采购申请明细
-    if (plan.detailList && plan.detailList.length > 0) {
-      form.value.detailList = plan.detailList.map(d => ({
-        materialId: d.materialId,
-        materialCode: d.materialCode,
-        materialName: d.materialName,
-        specModel: d.specification,
-        unit: d.unit,
-        qty: d.planQuantity,
-        estimatedPrice: d.budgetPrice,
-        estimatedAmount: d.budgetAmount
-      }))
-      calcDetailAmount({})
-    }
+    applyPlanDetail(res.data)
   })
+}
+
+/** 应用采购计划数据并带出明细 */
+function applyPlanDetail(plan) {
+  if (!plan) return
+  form.value.planId = plan.planId
+  form.value.planNo = plan.planNo
+  form.value.planTitle = plan.title
+  // 自动带出计划明细为采购申请明细
+  if (plan.detailList && plan.detailList.length > 0) {
+    form.value.detailList = plan.detailList.map(d => ({
+      materialId: d.materialId,
+      materialCode: d.materialCode,
+      materialName: d.materialName,
+      specModel: d.specification,
+      unit: d.unit,
+      qty: d.planQuantity,
+      estimatedPrice: d.budgetPrice,
+      estimatedAmount: d.budgetAmount
+    }))
+    calcDetailAmount({})
+  }
 }
 
 function handleDeleteDetail(index) { form.value.detailList.splice(index, 1); calcDetailAmount({}) }
@@ -955,8 +993,6 @@ function clearRequester() {
   form.value.deptName = undefined
 }
 
-loadMaterialOptions()
-loadPlanOptions()
 getList()
 
 /** 从采购计划页面跳转过来时，自动打开新增弹窗并预选计划 */

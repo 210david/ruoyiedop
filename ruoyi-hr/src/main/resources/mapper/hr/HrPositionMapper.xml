@@ -31,7 +31,7 @@
     <select id="selectHrPositionList" parameterType="HrPosition" resultMap="HrPositionResult">
         <include refid="selectVo"/>
         <where>
-            del_flag = '0'
+            (del_flag IS NULL OR del_flag = '0')
             <if test="positionCode != null and positionCode != ''"> AND position_code LIKE CONCAT('%', #{positionCode}, '%')</if>
             <if test="positionName != null and positionName != ''"> AND position_name LIKE CONCAT('%', #{positionName}, '%')</if>
             <if test="positionSeq != null and positionSeq != ''"> AND position_seq LIKE CONCAT('%', #{positionSeq}, '%')</if>

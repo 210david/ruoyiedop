@@ -10,4 +10,5 @@ public interface IHrEntryService {
     public int updateHrEntry(HrEntry hrEntry);
     public int deleteHrEntryByIds(Long[] entryIds);
     public int deleteHrEntryById(Long entryId);
+    public int auditHrEntry(Long entryId, String auditAction, String auditRemark);
 }

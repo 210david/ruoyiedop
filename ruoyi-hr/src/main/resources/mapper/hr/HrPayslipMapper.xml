@@ -9,6 +9,7 @@
         <result property="employeeName" column="employee_name"/>
         <result property="employeeNo" column="employee_no"/>
         <result property="orgId" column="org_id"/>
+        <result property="orgName" column="org_name"/>
         <result property="basicSalary" column="basic_salary"/>
         <result property="positionSalary" column="position_salary"/>
         <result property="skillAllowance" column="skill_allowance"/>
@@ -45,53 +46,55 @@
     </resultMap>
 
     <sql id="selectVo">
-        SELECT payslip_id, year_month, employee_id, employee_name, employee_no, org_id, basic_salary, position_salary, skill_allowance, seniority_pay, night_allowance, high_temp_allowance, hazard_allowance, meal_allowance, transport_allowance, full_attendance_bonus, piecework_pay, overtime_pay, performance_bonus, absence_deduction, other_add, other_deduct, gross_salary, social_insurance, house_fund, income_tax, other_deduction, net_salary, calc_status, sealed_by, sealed_time, pay_date, bank_receipt_no, del_flag, create_by, create_time, update_by, update_time, remark
-        FROM biz_hr_payslip
+        SELECT t.payslip_id, t.year_month, t.employee_id, t.employee_name, t.employee_no, t.org_id, t.basic_salary, t.position_salary, t.skill_allowance, t.seniority_pay, t.night_allowance, t.high_temp_allowance, t.hazard_allowance, t.meal_allowance, t.transport_allowance, t.full_attendance_bonus, t.piecework_pay, t.overtime_pay, t.performance_bonus, t.absence_deduction, t.other_add, t.other_deduct, t.gross_salary, t.social_insurance, t.house_fund, t.income_tax, t.other_deduction, t.net_salary, t.calc_status, t.sealed_by, t.sealed_time, t.pay_date, t.bank_receipt_no, t.del_flag, t.create_by, t.create_time, t.update_by, t.update_time, t.remark,
+        d.dept_name AS org_name
+        FROM biz_hr_payslip t
+        LEFT JOIN sys_dept d ON t.org_id = d.dept_id
     </sql>
 
     <select id="selectHrPayslipList" parameterType="HrPayslip" resultMap="HrPayslipResult">
         <include refid="selectVo"/>
         <where>
-            del_flag = '0'
-            <if test="yearMonth != null and yearMonth != ''"> AND year_month LIKE CONCAT('%', #{yearMonth}, '%')</if>
-            <if test="employeeId != null"> AND employee_id = #{employeeId}</if>
-            <if test="employeeName != null and employeeName != ''"> AND employee_name LIKE CONCAT('%', #{employeeName}, '%')</if>
-            <if test="employeeNo != null and employeeNo != ''"> AND employee_no LIKE CONCAT('%', #{employeeNo}, '%')</if>
-            <if test="orgId != null"> AND org_id = #{orgId}</if>
-            <if test="basicSalary != null"> AND basic_salary = #{basicSalary}</if>
-            <if test="positionSalary != null"> AND position_salary = #{positionSalary}</if>
-            <if test="skillAllowance != null"> AND skill_allowance = #{skillAllowance}</if>
-            <if test="seniorityPay != null"> AND seniority_pay = #{seniorityPay}</if>
-            <if test="nightAllowance != null"> AND night_allowance = #{nightAllowance}</if>
-            <if test="highTempAllowance != null"> AND high_temp_allowance = #{highTempAllowance}</if>
-            <if test="hazardAllowance != null"> AND hazard_allowance = #{hazardAllowance}</if>
-            <if test="mealAllowance != null"> AND meal_allowance = #{mealAllowance}</if>
-            <if test="transportAllowance != null"> AND transport_allowance = #{transportAllowance}</if>
-            <if test="fullAttendanceBonus != null"> AND full_attendance_bonus = #{fullAttendanceBonus}</if>
-            <if test="pieceworkPay != null"> AND piecework_pay = #{pieceworkPay}</if>
-            <if test="overtimePay != null"> AND overtime_pay = #{overtimePay}</if>
-            <if test="performanceBonus != null"> AND performance_bonus = #{performanceBonus}</if>
-            <if test="absenceDeduction != null"> AND absence_deduction = #{absenceDeduction}</if>
-            <if test="otherAdd != null"> AND other_add = #{otherAdd}</if>
-            <if test="otherDeduct != null"> AND other_deduct = #{otherDeduct}</if>
-            <if test="grossSalary != null"> AND gross_salary = #{grossSalary}</if>
-            <if test="socialInsurance != null"> AND social_insurance = #{socialInsurance}</if>
-            <if test="houseFund != null"> AND house_fund = #{houseFund}</if>
-            <if test="incomeTax != null"> AND income_tax = #{incomeTax}</if>
-            <if test="otherDeduction != null"> AND other_deduction = #{otherDeduction}</if>
-            <if test="netSalary != null"> AND net_salary = #{netSalary}</if>
-            <if test="calcStatus != null and calcStatus != ''"> AND calc_status LIKE CONCAT('%', #{calcStatus}, '%')</if>
-            <if test="sealedBy != null and sealedBy != ''"> AND sealed_by LIKE CONCAT('%', #{sealedBy}, '%')</if>
-            <if test="sealedTime != null"> AND sealed_time = #{sealedTime}</if>
-            <if test="payDate != null"> AND pay_date = #{payDate}</if>
-            <if test="bankReceiptNo != null and bankReceiptNo != ''"> AND bank_receipt_no LIKE CONCAT('%', #{bankReceiptNo}, '%')</if>
-            <if test="delFlag != null and delFlag != ''"> AND del_flag LIKE CONCAT('%', #{delFlag}, '%')</if>
+            t.(del_flag IS NULL OR del_flag = '0')
+            <if test="yearMonth != null and yearMonth != ''"> AND t.year_month LIKE CONCAT('%', #{yearMonth}, '%')</if>
+            <if test="employeeId != null"> AND t.employee_id = #{employeeId}</if>
+            <if test="employeeName != null and employeeName != ''"> AND t.employee_name LIKE CONCAT('%', #{employeeName}, '%')</if>
+            <if test="employeeNo != null and employeeNo != ''"> AND t.employee_no LIKE CONCAT('%', #{employeeNo}, '%')</if>
+            <if test="orgId != null"> AND t.org_id = #{orgId}</if>
+            <if test="basicSalary != null"> AND t.basic_salary = #{basicSalary}</if>
+            <if test="positionSalary != null"> AND t.position_salary = #{positionSalary}</if>
+            <if test="skillAllowance != null"> AND t.skill_allowance = #{skillAllowance}</if>
+            <if test="seniorityPay != null"> AND t.seniority_pay = #{seniorityPay}</if>
+            <if test="nightAllowance != null"> AND t.night_allowance = #{nightAllowance}</if>
+            <if test="highTempAllowance != null"> AND t.high_temp_allowance = #{highTempAllowance}</if>
+            <if test="hazardAllowance != null"> AND t.hazard_allowance = #{hazardAllowance}</if>
+            <if test="mealAllowance != null"> AND t.meal_allowance = #{mealAllowance}</if>
+            <if test="transportAllowance != null"> AND t.transport_allowance = #{transportAllowance}</if>
+            <if test="fullAttendanceBonus != null"> AND t.full_attendance_bonus = #{fullAttendanceBonus}</if>
+            <if test="pieceworkPay != null"> AND t.piecework_pay = #{pieceworkPay}</if>
+            <if test="overtimePay != null"> AND t.overtime_pay = #{overtimePay}</if>
+            <if test="performanceBonus != null"> AND t.performance_bonus = #{performanceBonus}</if>
+            <if test="absenceDeduction != null"> AND t.absence_deduction = #{absenceDeduction}</if>
+            <if test="otherAdd != null"> AND t.other_add = #{otherAdd}</if>
+            <if test="otherDeduct != null"> AND t.other_deduct = #{otherDeduct}</if>
+            <if test="grossSalary != null"> AND t.gross_salary = #{grossSalary}</if>
+            <if test="socialInsurance != null"> AND t.social_insurance = #{socialInsurance}</if>
+            <if test="houseFund != null"> AND t.house_fund = #{houseFund}</if>
+            <if test="incomeTax != null"> AND t.income_tax = #{incomeTax}</if>
+            <if test="otherDeduction != null"> AND t.other_deduction = #{otherDeduction}</if>
+            <if test="netSalary != null"> AND t.net_salary = #{netSalary}</if>
+            <if test="calcStatus != null and calcStatus != ''"> AND t.calc_status LIKE CONCAT('%', #{calcStatus}, '%')</if>
+            <if test="sealedBy != null and sealedBy != ''"> AND t.sealed_by LIKE CONCAT('%', #{sealedBy}, '%')</if>
+            <if test="sealedTime != null"> AND t.sealed_time = #{sealedTime}</if>
+            <if test="payDate != null"> AND t.pay_date = #{payDate}</if>
+            <if test="bankReceiptNo != null and bankReceiptNo != ''"> AND t.bank_receipt_no LIKE CONCAT('%', #{bankReceiptNo}, '%')</if>
+            <if test="delFlag != null and delFlag != ''"> AND t.del_flag LIKE CONCAT('%', #{delFlag}, '%')</if>
         </where>
-        ORDER BY create_time DESC
+        ORDER BY t.create_time DESC
     </select>
 
     <select id="selectHrPayslipById" parameterType="Long" resultMap="HrPayslipResult">
-        <include refid="selectVo"/> WHERE payslip_id = #{payslipId}
+        <include refid="selectVo"/> WHERE t.payslip_id = #{payslipId}
     </select>
 
     <insert id="insertHrPayslip" parameterType="HrPayslip" useGeneratedKeys="true" keyProperty="payslipId">

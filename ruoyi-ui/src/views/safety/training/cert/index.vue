@@ -116,11 +116,13 @@
               </span>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="216" align="center" fixed="right">
+          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
-              <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['safety:training:cert:query']">查看</el-button>
-              <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['safety:training:cert:edit']">修改</el-button>
-              <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['safety:training:cert:remove']">删除</el-button>
+              <div class="action-btn-row">
+                <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['safety:training:cert:query']">查看</el-button>
+                <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['safety:training:cert:edit']">修改</el-button>
+                <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['safety:training:cert:remove']">删除</el-button>
+              </div>
             </template>
           </el-table-column>
         </el-table>
@@ -345,7 +347,7 @@ downloadFile(url)
 function getList() {
   loading.value = true
   proxy.addDateRange(queryParams.value, dateRange.value)
-  listTrainingCert(queryParams.value).then(response => { certList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths() })
+  listTrainingCert(queryParams.value).then(response => { certList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths() }).catch(error => { console.error(error) }).finally(() => { loading.value = false })
 }
 function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
 function resetQuery() { queryParams.value.certNo = undefined; queryParams.value.certName = undefined; queryParams.value.certType = undefined; queryParams.value.userName = undefined; queryParams.value.deptName = undefined; queryParams.value.issueOrg = undefined; queryParams.value.status = undefined; dateRange.value = []; queryParams.value.params = {}; handleQuery() }
@@ -439,4 +441,11 @@ getList()
 @media (max-width:720px) { .safety-training-cert-page .filter-card .filter-bar { grid-template-columns:1fr; } }
 .clear-icon { cursor: pointer; color: #c0c4cc; font-size: 14px; }
 .clear-icon:hover { color: #909399; }
+
+/* 操作列按钮对齐：每行2个按钮，flex-wrap 自动换行，按钮自适应内容宽度 */
+:deep(.col-action) { padding: 6px 4px !important; }
+:deep(.col-action .cell) { display: flex; justify-content: center; padding: 0; }
+.action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
+:deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
+:deep(.col-action .el-button + .el-button) { margin-left: 2px; }
 </style>

@@ -131,11 +131,13 @@
           <el-table-column label="状态" prop="participateStatus" width="90" align="center">
             <template #default="scope"><dict-tag :options="marketing_participate_status" :value="scope.row.participateStatus" /></template>
           </el-table-column>
-          <el-table-column label="操作" width="200" align="center">
+          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
-              <el-button link type="primary" size="small" @click="handleSignIn(scope.row)" v-if="scope.row.participateStatus !== '1'" v-hasPermi="['marketing:participant:edit']">签到</el-button>
-              <el-button link type="primary" size="small" @click="handleConvertLead(scope.row)" v-if="!scope.row.leadId" v-hasPermi="['marketing:participant:convert']">转线索</el-button>
-              <el-tag v-if="scope.row.leadId" type="success" size="small">已转线索</el-tag>
+              <div class="action-btn-row">
+                <el-button link type="primary" size="small" @click="handleSignIn(scope.row)" v-if="scope.row.participateStatus !== '1'" v-hasPermi="['marketing:participant:edit']">签到</el-button>
+                <el-button link type="primary" size="small" @click="handleConvertLead(scope.row)" v-if="!scope.row.leadId" v-hasPermi="['marketing:participant:convert']">转线索</el-button>
+                <el-tag v-if="scope.row.leadId" type="success" size="small">已转线索</el-tag>
+              </div>
             </template>
           </el-table-column>
         </el-table>
@@ -569,4 +571,11 @@ function openPromotePage() {
   flex-shrink: 0;
   padding-right: 8px;
 }
+
+/* 操作列按钮对齐：每行2个按钮，flex-wrap 自动换行，按钮自适应内容宽度 */
+:deep(.col-action) { padding: 6px 4px !important; }
+:deep(.col-action .cell) { display: flex; justify-content: center; padding: 0; }
+.action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
+:deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
+:deep(.col-action .el-button + .el-button) { margin-left: 2px; }
 </style>

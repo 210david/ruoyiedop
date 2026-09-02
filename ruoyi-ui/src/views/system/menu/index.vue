@@ -80,21 +80,24 @@
       <div class="table-wrap">
          <el-table
             v-if="refreshTable"
+            ref="tableRef"
             v-loading="loading"
             :data="menuList"
             row-key="menuId"
             :default-expand-all="isExpandAll"
             :tree-props="{ children: 'children', hasChildren: 'hasChildren' }"
+            @header-dragend="onHeaderDragEnd"
+            border
             class="app-table"
          >
          <el-table-column type="index" label="序号" width="85" align="center" />
-         <el-table-column prop="menuName" label="菜单名称" :show-overflow-tooltip="true" width="220">
+         <el-table-column prop="menuName" label="菜单名称" :show-overflow-tooltip="true" :width="colWidth('menuName', 220)">
             <template #default="scope">
                <svg-icon :icon-class="scope.row.icon" />
                <span class="ml5">{{ scope.row.menuName }}</span>
             </template>
          </el-table-column>
-         <el-table-column prop="menuName" label="类型" :show-overflow-tooltip="true" width="100">
+         <el-table-column prop="menuType" label="类型" :show-overflow-tooltip="true" :width="colWidth('menuType', 100)">
             <template #default="scope">
                <el-tag v-if="scope.row.menuType === 'M' && scope.row.isFrame === '0'" type="danger" size="small">外链</el-tag>
                <el-tag v-else-if="scope.row.menuType === 'M'" type="primary" size="small">目录</el-tag>
@@ -103,7 +106,7 @@
                <el-tag v-else-if="scope.row.menuType === 'F'" type="warning" size="small">按钮</el-tag>
             </template>
          </el-table-column>
-         <el-table-column prop="orderNum" label="排序" width="200">
+         <el-table-column prop="orderNum" label="排序" :width="colWidth('orderNum', 200)">
             <template #default="scope">
                <div class="sort-cell" @click="editingSortId = scope.row.menuId">
                   <el-input-number
@@ -121,18 +124,20 @@
          </el-table-column>
          <el-table-column prop="perms" label="权限标识" :show-overflow-tooltip="true" />
          <el-table-column prop="component" label="组件路径" :show-overflow-tooltip="true" />
-         <el-table-column prop="status" label="状态" width="80">
+         <el-table-column prop="status" label="状态" :width="colWidth('status', 80)">
             <template #default="scope">
                <dict-tag :options="sys_normal_disable" :value="scope.row.status" />
             </template>
          </el-table-column>
-         <el-table-column label="操作" align="center" width="210" class-name="small-padding fixed-width">
+          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
-               <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['system:menu:edit']">修改</el-button>
-               <el-button link type="primary" icon="Plus" @click="handleAdd(scope.row)" v-hasPermi="['system:menu:add']">新增</el-button>
-               <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['system:menu:remove']">删除</el-button>
+              <div class="action-btn-row">
+                <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['system:menu:edit']">修改</el-button>
+                <el-button link type="primary" icon="Plus" @click="handleAdd(scope.row)" v-hasPermi="['system:menu:add']">新增</el-button>
+                <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['system:menu:remove']">删除</el-button>
+              </div>
             </template>
-         </el-table-column>
+          </el-table-column>
       </el-table>
       </div>
     </div>
@@ -388,9 +393,12 @@
 import { addMenu, delMenu, getMenu, listMenu, updateMenu, updateMenuSort } from "@/api/system/menu"
 import SvgIcon from "@/components/SvgIcon"
 import IconSelect from "@/components/IconSelect"
+import { useColumnResize } from '@/composables/useColumnResize'
 
 const { proxy } = getCurrentInstance()
 const { sys_show_hide, sys_normal_disable } = useDict("sys_show_hide", "sys_normal_disable")
+// 列宽拖拽持久化
+const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('sys_menu_index')
 
 const menuList = ref([])
 const open = ref(false)
@@ -461,6 +469,7 @@ function getList() {
     rawMenuList.value = proxy.handleTree(response.data, "menuId")
     applyButtonFilter()
     loading.value = false
+    applySavedWidths()
   })
 }
 
@@ -888,4 +897,11 @@ getList()
     gap:10px;
   }
 }
+
+/* 操作列按钮对齐：每行2个按钮，flex-wrap 自动换行，按钮自适应内容宽度 */
+:deep(.col-action) { padding: 6px 4px !important; }
+:deep(.col-action .cell) { display: flex; justify-content: center; padding: 0; }
+.action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
+:deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
+:deep(.col-action .el-button + .el-button) { margin-left: 2px; }
 </style>

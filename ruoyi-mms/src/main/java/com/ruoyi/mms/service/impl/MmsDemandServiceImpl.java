@@ -55,11 +55,16 @@ public class MmsDemandServiceImpl implements IMmsDemandService
     @Transactional(rollbackFor = Exception.class)
     public int insertDemand(MmsDemand demand)
     {
-        // 自动生成需求计划编号
-        if (StringUtils.isEmpty(demand.getDemandNo()))
-        {
-            demand.setDemandNo(mkNumberRuleService.generateNumber("mms_demand"));
-        }
+// 自动生成需求计划编号
+if (StringUtils.isEmpty(demand.getDemandNo()))
+{
+demand.setDemandNo(mkNumberRuleService.generateNumber("mms_demand"));
+}
+// 状态默认为草稿，避免未传status时数据不可用
+if (StringUtils.isEmpty(demand.getStatus()))
+{
+demand.setStatus("0");
+}
         demand.setDelFlag("0");
         demand.setCreateBy(SecurityUtils.getUsername());
         demand.setCreateTime(DateUtils.getNowDate());
@@ -146,6 +151,10 @@ public class MmsDemandServiceImpl implements IMmsDemandService
         if (demand.getDemandQty() == null || demand.getDemandQty().compareTo(BigDecimal.ZERO) <= 0)
         {
             throw new ServiceException("需求数量必须大于0");
+        }
+        if (demand.getRequireDate() == null)
+        {
+            throw new ServiceException("需求[" + demand.getDemandNo() + "]缺少需求日期，无法转计划");
         }
 
         // 创建MPS计划（草稿状态）

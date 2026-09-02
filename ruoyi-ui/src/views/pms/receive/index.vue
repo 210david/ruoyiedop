@@ -112,7 +112,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" v-loading="loading" :data="list" border @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
 <el-table-column type="selection" width="55" align="center" />
-<el-table-column type="index" label="序号" width="85" align="center" />
+<el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" resizable align="center" />
 <el-table-column label="收货单号" prop="receiveNo" key="receiveNo" :width="colWidth('receiveNo', 180)" resizable sortable="custom" v-if="columns.receiveNo.visible" />
           <el-table-column label="采购单号" prop="orderNo" key="orderNo" :width="colWidth('orderNo', 180)" resizable v-if="columns.orderNo.visible" />
           <el-table-column label="供应商" prop="supplierName" key="supplierName" :width="colWidth('supplierName', 240)" resizable show-overflow-tooltip v-if="columns.supplierName.visible" />
@@ -166,9 +166,10 @@
                 </el-col>
                 <el-col :span="12">
                   <el-form-item label="采购单号" prop="orderId">
-                    <el-select v-model="form.orderId" filterable clearable placeholder="请选择采购订单" style="width: 100%" @change="onOrderChange">
-                      <el-option v-for="o in orderOptions" :key="o.orderId" :label="o.orderNo" :value="o.orderId" />
-                    </el-select>
+                    <el-input v-model="form.orderNo" readonly placeholder="请选择采购订单" style="width: 100%" @click="openOrderPicker">
+                      <template v-if="form.orderNo" #append><el-button icon="CircleClose" @click.stop="clearOrder" /></template>
+                      <template v-else #append><el-button icon="Search" @click="openOrderPicker" /></template>
+                    </el-input>
                   </el-form-item>
                 </el-col>
               </el-row>
@@ -187,9 +188,10 @@
               <el-row :gutter="20">
                 <el-col :span="12">
                   <el-form-item label="入库仓库" prop="warehouseId">
-                    <el-select v-model="form.warehouseId" filterable placeholder="请选择入库仓库" style="width: 100%">
-                      <el-option v-for="w in warehouseOptions" :key="w.warehouseId" :label="w.warehouseName" :value="w.warehouseId" />
-                    </el-select>
+                    <el-input v-model="form.warehouseName" readonly placeholder="请选择入库仓库" style="width: 100%" @click="openWarehousePicker">
+                      <template v-if="form.warehouseName" #append><el-button icon="CircleClose" @click.stop="clearWarehouse" /></template>
+                      <template v-else #append><el-button icon="Search" @click="openWarehousePicker" /></template>
+                    </el-input>
                   </el-form-item>
                 </el-col>
                 <el-col :span="12">
@@ -233,9 +235,10 @@
                 <el-table-column label="序号" type="index" width="85" align="center" />
                 <el-table-column label="物料" prop="materialId" min-width="200">
                   <template #default="scope">
-                    <el-select v-model="scope.row.materialId" filterable clearable size="small" placeholder="请选择物料" style="width: 100%" @change="(val) => onMaterialChange(val, scope.$index)">
-                      <el-option v-for="m in materialOptions" :key="m.materialId" :label="m.materialCode + ' - ' + m.materialName" :value="m.materialId" />
-                    </el-select>
+                    <el-input :model-value="scope.row.materialCode ? scope.row.materialCode + ' - ' + scope.row.materialName : ''" readonly size="small" placeholder="请选择物料" style="width: 100%" @click="openMaterialPicker(scope.$index)">
+                      <template v-if="scope.row.materialCode" #append><el-button icon="CircleClose" size="small" @click.stop="clearMaterial(scope.$index)" /></template>
+                      <template v-else #append><el-button icon="Search" size="small" @click="openMaterialPicker(scope.$index)" /></template>
+                    </el-input>
                   </template>
                 </el-table-column>
                 <el-table-column label="规格型号" prop="specModel" min-width="120">
@@ -326,7 +329,7 @@
               <div class="rd-item"><span class="rd-label">收货单号</span><div class="rd-value">{{ viewData.receiveNo || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">采购单号</span><div class="rd-value">{{ viewData.orderNo || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">供应商</span><div class="rd-value">{{ viewData.supplierName || '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label">入库仓库</span><div class="rd-value">{{ viewData.warehouseName || (warehouseOptions.find(w => w.warehouseId === viewData.warehouseId)?.warehouseName) || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">入库仓库</span><div class="rd-value">{{ viewData.warehouseName || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">状态</span><div class="rd-value"><dict-tag :options="pms_receive_status" :value="viewData.status" /></div></div>
               <div class="rd-item"><span class="rd-label">收货日期</span><div class="rd-value">{{ viewData.receiveDate || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">应收总数量</span><div class="rd-value">{{ viewData.totalQty || '-' }}</div></div>
@@ -489,7 +492,7 @@
               </div>
               <div class="rd-item">
                 <span class="rd-label"><span class="rd-label-dot"></span>入库仓库</span>
-                <div class="rd-value">{{ auditData.warehouseName || (warehouseOptions.find(w => w.warehouseId === auditData.warehouseId)?.warehouseName) || '-' }}</div>
+                <div class="rd-value">{{ auditData.warehouseName || '-' }}</div>
               </div>
               <div class="rd-item">
                 <span class="rd-label"><span class="rd-label-dot"></span>收货日期</span>
@@ -766,18 +769,25 @@
         <el-button type="primary" @click="showStatusHelp = false">我知道了</el-button>
       </template>
     </el-dialog>
+    <!-- 物料选择弹框 -->
+    <material-picker ref="materialPickerRef" title="选择物料" @confirm="onMaterialPickerConfirm" />
+    <!-- 采购订单选择弹框 -->
+    <order-picker ref="orderPickerRef" title="选择采购订单" :statuses="['2', '3', '4']" :exclude-ids="inProgressOrderIds" hint="仅显示可收货的采购订单（已审批 / 已下单 / 部分到货，且不存在进行中的收货单）" @confirm="onOrderPickerConfirm" />
+    <!-- 入库仓库选择弹框 -->
+    <warehouse-picker ref="warehousePickerRef" title="选择入库仓库" @confirm="onWarehousePickerConfirm" />
   </div>
 </template>
 
 <script setup name="PmsReceive">
 import { listReceive, getReceive, addReceive, updateReceive, delReceive, inspectReceive, auditReceive, getInProgressOrderIds } from '@/api/pms/receive'
 import { addReturn } from '@/api/pms/return'
-import { listOrder, getOrder } from '@/api/pms/order'
-import { listMaterial } from '@/api/wms/material'
-import { listWarehouse } from '@/api/wms/warehouse'
+import { getOrder } from '@/api/pms/order'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard, formatAmount, formatMoney } from '@/composables/useDetailCard'
 import UserPicker from '@/components/UserPicker/index.vue'
+import MaterialPicker from '@/components/MaterialPicker/index.vue'
+import OrderPicker from '@/components/OrderPicker/index.vue'
+import WarehousePicker from '@/components/WarehousePicker/index.vue'
 import { CircleClose, ArrowRight, QuestionFilled, CircleCheck, ArrowDown, Search, Document, OfficeBuilding, User, Filter, Edit, Delete, Download, WarningFilled, MoreFilled } from '@element-plus/icons-vue'
 import { ElMessageBox } from 'element-plus'
 
@@ -844,9 +854,11 @@ const loading = ref(true)
 const showSearch = ref(true)
 const showAdvanced = ref(false)
 const dateRange = ref([])
-const orderOptions = ref([])
-const materialOptions = ref([])
-const warehouseOptions = ref([])
+const orderPickerRef = ref(null)
+const warehousePickerRef = ref(null)
+const inProgressOrderIds = ref([])
+const materialPickerRef = ref(null)
+const currentDetailIndex = ref(-1)
 /** 保存自动带出时的物料明细快照，用于提交时检测是否有修改 */
 const originalDetailList = ref([])
 const ids = ref([])
@@ -1015,6 +1027,7 @@ function reset() {
     inspectorId: undefined,
     inspectorName: undefined,
     warehouseId: undefined,
+    warehouseName: undefined,
     remark: undefined,
     detailList: []
   }
@@ -1022,19 +1035,36 @@ function reset() {
   proxy.resetForm('receiveRef')
 }
 
-/** 选择采购订单后自动带出供应商、采购员（作为验收人）和物料明细 */
-function onOrderChange(val) {
-  if (!val) {
-    form.value.orderId = undefined
-    form.value.orderNo = undefined
-    form.value.supplierId = undefined
-    form.value.supplierName = undefined
-    form.value.inspectorId = undefined
-    form.value.inspectorName = undefined
-    form.value.detailList = []
-    return
-  }
-  getOrder(val).then(res => {
+/** 打开采购订单选择弹窗 */
+function openOrderPicker() {
+  orderPickerRef.value.open(form.value.orderId)
+}
+
+/** 采购订单选择确认回调 — 带出供应商、采购员（作为验收人）和物料明细 */
+function onOrderPickerConfirm(order) {
+  form.value.orderId = order.orderId
+  form.value.orderNo = order.orderNo
+  form.value.supplierId = order.supplierId
+  form.value.supplierName = order.supplierName
+  applyOrderDetail(order.orderId)
+}
+
+/** 清除采购订单 — 同时清除联动带出的供应商、验收人和物料明细 */
+function clearOrder() {
+  form.value.orderId = undefined
+  form.value.orderNo = undefined
+  form.value.supplierId = undefined
+  form.value.supplierName = undefined
+  form.value.inspectorId = undefined
+  form.value.inspectorName = undefined
+  form.value.detailList = []
+  originalDetailList.value = []
+}
+
+/** 根据采购订单带出验收人、应收/已收数量和物料明细 */
+function applyOrderDetail(orderId) {
+  if (!orderId) return
+  getOrder(orderId).then(res => {
     const order = res.data
     form.value.orderId = order.orderId
     form.value.orderNo = order.orderNo
@@ -1084,42 +1114,52 @@ function onOrderChange(val) {
 }
 
 /** 选择物料后自动带出物料信息 */
-function onMaterialChange(val, index) {
-  const matched = materialOptions.value.find(m => m.materialId === val)
-  if (matched) {
-    form.value.detailList[index].materialCode = matched.materialCode
-    form.value.detailList[index].materialName = matched.materialName
-    form.value.detailList[index].specModel = matched.specModel || matched.specification
-    form.value.detailList[index].unit = matched.unit
+function openMaterialPicker(index) {
+  currentDetailIndex.value = index
+  materialPickerRef.value.open(form.value.detailList[index].materialId)
+}
+function onMaterialPickerConfirm(material) {
+  if (currentDetailIndex.value >= 0) {
+    const d = form.value.detailList[currentDetailIndex.value]
+    d.materialId = material.materialId
+    d.materialCode = material.materialCode
+    d.materialName = material.materialName
+    d.specModel = material.specModel || ''
+    d.unit = material.unit || ''
   }
 }
-
-/** 加载采购订单选项（已审批/已下单/部分到货的订单可收货，排除有进行中收货单的订单） */
-function loadOrderOptions() {
-  Promise.all([
-    listOrder({ pageNum: 1, pageSize: 999 }),
-    getInProgressOrderIds().catch(() => ({ data: [] }))
-  ]).then(([orderRes, inProgressRes]) => {
-    // 仅显示已审批(2)、已下单(3)、部分到货(4)状态的订单
-    const inProgressIds = (inProgressRes && inProgressRes.data) || []
-    orderOptions.value = (orderRes.rows || []).filter(o =>
-      (o.status === '2' || o.status === '3' || o.status === '4') &&
-      !inProgressIds.includes(o.orderId)
-    )
-  })
+function clearMaterial(index) {
+  const d = form.value.detailList[index]
+  d.materialId = null
+  d.materialCode = ''
+  d.materialName = ''
+  d.specModel = ''
+  d.unit = ''
 }
 
-/** 加载物料主数据选项 */
-function loadMaterialOptions() {
-  listMaterial({ pageNum: 1, pageSize: 999, status: '0' }).then(res => {
-    materialOptions.value = res.rows || []
-  })
+/** 打开入库仓库选择弹窗 */
+function openWarehousePicker() {
+  warehousePickerRef.value.open(form.value.warehouseId)
 }
 
-/** 加载仓库选项 */
-function loadWarehouseOptions() {
-  listWarehouse({ pageNum: 1, pageSize: 999 }).then(res => {
-    warehouseOptions.value = res.rows || []
+/** 仓库选择确认回调 */
+function onWarehousePickerConfirm(warehouse) {
+  form.value.warehouseId = warehouse.warehouseId
+  form.value.warehouseName = warehouse.warehouseName
+}
+
+/** 清除仓库 */
+function clearWarehouse() {
+  form.value.warehouseId = undefined
+  form.value.warehouseName = undefined
+}
+
+/** 加载有进行中收货单的订单ID（用于订单选择弹框排除） */
+function loadInProgressOrderIds() {
+  getInProgressOrderIds().then(res => {
+    inProgressOrderIds.value = res.data || []
+  }).catch(() => {
+    inProgressOrderIds.value = []
   })
 }
 
@@ -1545,9 +1585,7 @@ function clearInspector() {
   form.value.inspectorName = undefined
 }
 
-loadOrderOptions()
-loadMaterialOptions()
-loadWarehouseOptions()
+loadInProgressOrderIds()
 getList()
 onActivated(() => { getList() })
 </script>

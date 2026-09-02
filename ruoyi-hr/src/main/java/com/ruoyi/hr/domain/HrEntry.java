@@ -5,6 +5,8 @@ import com.ruoyi.common.annotation.Excel;
 import com.ruoyi.common.core.domain.BaseEntity;
 import java.util.Date;
 import java.math.BigDecimal;
+import java.util.List;
+import com.ruoyi.hr.domain.HrEntryAuditLog;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
@@ -13,7 +15,6 @@ public class HrEntry extends BaseEntity
     private static final long serialVersionUID = 1L;
 
     private Long entryId;
-    @NotBlank(message = "入职单号不能为空")
     @Excel(name = "入职单号")
     private String entryNo;
     @NotBlank(message = "姓名不能为空")
@@ -121,4 +122,10 @@ public class HrEntry extends BaseEntity
     public void setStatus(String status) { this.status = status; }
     public String getDelFlag() { return delFlag; }
     public void setDelFlag(String delFlag) { this.delFlag = delFlag; }
+
+    /** 审核日志列表 */
+    private List<HrEntryAuditLog> auditLogList;
+
+    public List<HrEntryAuditLog> getAuditLogList() { return auditLogList; }
+    public void setAuditLogList(List<HrEntryAuditLog> auditLogList) { this.auditLogList = auditLogList; }
 }

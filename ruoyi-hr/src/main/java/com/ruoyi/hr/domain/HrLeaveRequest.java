@@ -13,7 +13,6 @@ public class HrLeaveRequest extends BaseEntity
     private static final long serialVersionUID = 1L;
 
     private Long leaveReqId;
-    @NotBlank(message = "请假单号不能为空")
     @Excel(name = "请假单号")
     private String leaveReqNo;
     @NotNull(message = "员工ID不能为空")

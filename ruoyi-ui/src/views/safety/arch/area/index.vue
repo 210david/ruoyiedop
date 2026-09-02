@@ -100,11 +100,13 @@
           </el-table-column>
           <el-table-column label="安全责任人" prop="safetyPersonName" key="safetyPersonName" :width="colWidth('safetyPersonName', 120)" resizable v-if="columns.safetyPersonName.visible" />
           <el-table-column label="备注" prop="remark" key="remark" :width="colWidth('remark', 180)" resizable show-overflow-tooltip v-if="columns.remark.visible" />
-          <el-table-column label="操作" width="230" align="center" fixed="right">
+          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
-              <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['safety:area:query']">查看</el-button>
-              <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['safety:area:edit']">修改</el-button>
-              <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['safety:area:remove']">删除</el-button>
+              <div class="action-btn-row">
+                <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['safety:area:query']">查看</el-button>
+                <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['safety:area:edit']">修改</el-button>
+                <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['safety:area:remove']">删除</el-button>
+              </div>
             </template>
           </el-table-column>
         </el-table>
@@ -275,7 +277,7 @@ const activeFilterCount = computed(() => {
   return count
 })
 
-function getList() { loading.value = true; listArea(queryParams.value).then(response => { areaList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths() }) }
+function getList() { loading.value = true; listArea(queryParams.value).then(response => { areaList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths() }).catch(error => { console.error(error) }).finally(() => { loading.value = false }) }
 function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
 function resetQuery() { queryParams.value.areaName = undefined; queryParams.value.areaCode = undefined; queryParams.value.nodeType = undefined; queryParams.value.areaType = undefined; queryParams.value.status = undefined; queryParams.value.safetyPersonName = undefined; queryParams.value.params = {}; handleQuery() }
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
@@ -358,4 +360,11 @@ getList()
 @media (max-width:720px) { .safety-area-page .filter-card .filter-bar { grid-template-columns:1fr; } }
 .clear-icon { cursor: pointer; color: #c0c4cc; font-size: 14px; }
 .clear-icon:hover { color: #909399; }
+
+/* 操作列按钮对齐：每行2个按钮，flex-wrap 自动换行，按钮自适应内容宽度 */
+:deep(.col-action) { padding: 6px 4px !important; }
+:deep(.col-action .cell) { display: flex; justify-content: center; padding: 0; }
+.action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
+:deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
+:deep(.col-action .el-button + .el-button) { margin-left: 2px; }
 </style>

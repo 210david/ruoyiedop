@@ -7,6 +7,7 @@ public interface DmsDataCollectionConfigMapper
 {
     public List<DmsDataCollectionConfig> selectConfigList(DmsDataCollectionConfig config);
     public DmsDataCollectionConfig selectConfigById(Long configId);
+    public DmsDataCollectionConfig selectConfigByEquipmentId(Long equipmentId);
     public int insertConfig(DmsDataCollectionConfig config);
     public int updateConfig(DmsDataCollectionConfig config);
     public int deleteConfigByIds(Long[] configIds);

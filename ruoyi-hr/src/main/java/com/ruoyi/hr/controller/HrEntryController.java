@@ -14,6 +14,8 @@ import com.ruoyi.common.utils.poi.ExcelUtil;
 import com.ruoyi.hr.domain.HrEntry;
 import com.ruoyi.hr.service.IHrEntryService;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @RestController
 @RequestMapping("/hr/entry")
@@ -70,5 +72,13 @@ public class HrEntryController extends BaseController
     public AjaxResult remove(@PathVariable Long[] entryIds)
     {
         return toAjax(hrEntryService.deleteHrEntryByIds(entryIds));
+    }
+
+    @PreAuthorize("@ss.hasPermi('hr:entry:audit')")
+    @Log(title = "入职审核", businessType = BusinessType.UPDATE)
+    @PutMapping("/audit/{entryId}")
+    public AjaxResult audit(@PathVariable Long entryId, @RequestParam String auditAction, @RequestParam(required = false) String auditRemark)
+    {
+        return toAjax(hrEntryService.auditHrEntry(entryId, auditAction, auditRemark));
     }
 }

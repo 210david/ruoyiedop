@@ -10,4 +10,5 @@ public interface HrEmployeeQualificationMapper {
     public int updateHrEmployeeQualification(HrEmployeeQualification hrEmployeeQualification);
     public int deleteHrEmployeeQualificationByQualificationId(Long qualificationId);
     public int deleteHrEmployeeQualificationByIds(Long[] qualificationIds);
+public int deleteHrEmployeeQualificationByEmployeeId(Long employeeId);
 }

@@ -13,7 +13,6 @@ public class HrPieceworkPlan extends BaseEntity
     private static final long serialVersionUID = 1L;
 
     private Long pwPlanId;
-    @NotBlank(message = "计件编码不能为空")
     @Excel(name = "计件编码")
     private String pwCode;
     @NotBlank(message = "计件名称不能为空")
@@ -32,6 +31,8 @@ public class HrPieceworkPlan extends BaseEntity
     private Long processId;
     @Excel(name = "适用组织ID")
     private Long orgId;
+    /** 部门名称（关联 sys_dept 回显，非表字段） */
+    private String orgName;
     @Excel(name = "保底工资")
     private BigDecimal baseSalary;
     @NotNull(message = "生效日期不能为空")
@@ -66,6 +67,8 @@ public class HrPieceworkPlan extends BaseEntity
     public void setProcessId(Long processId) { this.processId = processId; }
     public Long getOrgId() { return orgId; }
     public void setOrgId(Long orgId) { this.orgId = orgId; }
+    public String getOrgName() { return orgName; }
+    public void setOrgName(String orgName) { this.orgName = orgName; }
     public BigDecimal getBaseSalary() { return baseSalary; }
     public void setBaseSalary(BigDecimal baseSalary) { this.baseSalary = baseSalary; }
     public Date getEffectiveDate() { return effectiveDate; }

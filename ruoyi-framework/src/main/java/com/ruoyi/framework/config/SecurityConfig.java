@@ -106,6 +106,8 @@ public class SecurityConfig
                     .requestMatchers("/swagger-ui.html", "/v3/api-docs/**", "/swagger-ui/**", "/druid/**").permitAll()
                     // 开放接口，跳过JWT鉴权，由OpenApiInterceptor校验API Key
                     .requestMatchers("/openapi/**").permitAll()
+                    // 设备数据采集网关接口，跳过JWT鉴权，由DataGatewayService.validateAccessKey校验设备访问密钥
+                    .requestMatchers("/api/dms/gateway/**").permitAll()
                     // 除上面外的所有请求全部需要鉴权认证
                     .anyRequest().authenticated();
             })

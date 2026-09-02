@@ -10,7 +10,6 @@ public class HrPosition extends BaseEntity
     private static final long serialVersionUID = 1L;
 
     private Long positionId;
-    @NotBlank(message = "岗位编码不能为空")
     @Excel(name = "岗位编码")
     private String positionCode;
     @NotBlank(message = "岗位名称不能为空")

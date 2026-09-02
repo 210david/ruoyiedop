@@ -14,6 +14,7 @@ import com.ruoyi.common.utils.poi.ExcelUtil;
 import com.ruoyi.hr.domain.HrLeave;
 import com.ruoyi.hr.service.IHrLeaveService;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @RestController
 @RequestMapping("/hr/leave")
@@ -70,5 +71,13 @@ public class HrLeaveController extends BaseController
     public AjaxResult remove(@PathVariable Long[] leaveIds)
     {
         return toAjax(hrLeaveService.deleteHrLeaveByIds(leaveIds));
+    }
+
+    @PreAuthorize("@ss.hasPermi('hr:leave:audit')")
+    @Log(title = "离职审核", businessType = BusinessType.UPDATE)
+    @PutMapping("/audit/{leaveId}")
+    public AjaxResult audit(@PathVariable Long leaveId, @RequestParam String auditAction, @RequestParam(required = false) String auditRemark)
+    {
+        return toAjax(hrLeaveService.auditHrLeave(leaveId, auditAction, auditRemark));
     }
 }

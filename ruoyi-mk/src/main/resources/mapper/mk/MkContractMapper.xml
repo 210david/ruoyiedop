@@ -49,6 +49,10 @@
             <if test="contractName != null and contractName != ''"> AND co.contract_name LIKE CONCAT('%', #{contractName}, '%')</if>
             <if test="contractType != null and contractType != ''"> AND co.contract_type = #{contractType}</if>
             <if test="contractStatus != null and contractStatus != ''"> AND co.contract_status = #{contractStatus}</if>
+            <if test="contractStatusList != null and contractStatusList.size() > 0">
+                AND co.contract_status IN
+                <foreach item="st" collection="contractStatusList" open="(" separator="," close=")">#{st}</foreach>
+            </if>
             <if test="customerId != null"> AND co.customer_id = #{customerId}</if>
             <if test="opportunityId != null"> AND co.opportunity_id = #{opportunityId}</if>
             <if test="customerName != null and customerName != ''"> AND c.customer_name LIKE CONCAT('%', #{customerName}, '%')</if>

@@ -143,8 +143,10 @@
 
     <!-- P3-12: 批量更新活动负责人 -->
     <update id="batchUpdateOwner">
-        UPDATE mk_activity SET user_id = #{userId}, user_name = #{userName}, dept_id = #{deptId}, owner_phone = #{ownerPhone},
-        update_by = #{updateBy}, update_time = sysdate()
+<!-- 修复：原 SQL 引用 #{ownerPhone}（接口未声明该参数）和 user_name（表中不存在该列），均导致批量更换负责人必现 500；
+mk_activity 表负责人仅有 user_id/dept_id，无姓名列，故不更新 user_name/owner_phone -->
+UPDATE mk_activity SET user_id = #{userId}, dept_id = #{deptId},
+update_by = #{updateBy}, update_time = sysdate()
         WHERE activity_id IN
         <foreach item="id" collection="activityIds" open="(" separator="," close=")">#{id}</foreach>
     </update>

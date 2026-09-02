@@ -10,4 +10,5 @@ public interface IHrRegularService {
     public int updateHrRegular(HrRegular hrRegular);
     public int deleteHrRegularByIds(Long[] regularIds);
     public int deleteHrRegularById(Long regularId);
+    public int auditHrRegular(Long regularId, String auditAction, String auditRemark);
 }

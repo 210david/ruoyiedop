@@ -116,17 +116,19 @@
               <el-table-column label="状态" prop="capaStatus" key="capaStatus" :width="colWidth('capaStatus', 100)" resizable align="center" v-if="columns.capaStatus.visible"><template #default="scope"><span class="badge" :class="capaStatusBadgeClass(scope.row.capaStatus)"><span class="dot"></span>{{ capaStatusLabel(scope.row.capaStatus) }}</span></template></el-table-column>
               <el-table-column label="责任人" prop="responsiblePerson" key="responsiblePerson" :width="colWidth('responsiblePerson', 100)" resizable show-overflow-tooltip v-if="columns.responsiblePerson.visible" />
               <el-table-column label="计划关闭" prop="planCloseTime" key="planCloseTime" :width="colWidth('planCloseTime', 120)" resizable align="center" v-if="columns.planCloseTime.visible"><template #default="scope"><span>{{ parseTime(scope.row.planCloseTime, '{y}-{m}-{d}') }}</span></template></el-table-column>
-              <el-table-column label="操作" width="300" align="center" fixed="right">
-                <template #default="scope">
-                  <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
-                  <el-button v-if="scope.row.capaStatus === '0' || scope.row.capaStatus === '4'" link type="primary" icon="Promotion" @click="handleSubmit(scope.row)" v-hasPermi="['qms:capa:edit']">提交</el-button>
-                  <el-button v-if="scope.row.capaStatus === '1'" link type="primary" icon="Promotion" @click="handleSubmitVerify(scope.row)" v-hasPermi="['qms:capa:edit']">提交验证</el-button>
-                  <el-button v-if="scope.row.capaStatus === '2'" link type="success" icon="CircleCheck" @click="handleClose(scope.row)" v-hasPermi="['qms:capa:close']">关闭</el-button>
-                  <el-button v-if="scope.row.capaStatus === '2'" link type="warning" icon="CircleClose" @click="handleReject(scope.row)" v-hasPermi="['qms:capa:close']">驳回</el-button>
-                  <el-button v-if="scope.row.capaStatus !== '3'" link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['qms:capa:edit']">修改</el-button>
-                  <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['qms:capa:remove']">删除</el-button>
-                </template>
-              </el-table-column>
+          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
+            <template #default="scope">
+              <div class="action-btn-row">
+                <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
+                <el-button v-if="scope.row.capaStatus === '0' || scope.row.capaStatus === '4'" link type="primary" icon="Promotion" @click="handleSubmit(scope.row)" v-hasPermi="['qms:capa:edit']">提交</el-button>
+                <el-button v-if="scope.row.capaStatus === '1'" link type="primary" icon="Promotion" @click="handleSubmitVerify(scope.row)" v-hasPermi="['qms:capa:edit']">提交验证</el-button>
+                <el-button v-if="scope.row.capaStatus === '2'" link type="success" icon="CircleCheck" @click="handleClose(scope.row)" v-hasPermi="['qms:capa:close']">关闭</el-button>
+                <el-button v-if="scope.row.capaStatus === '2'" link type="warning" icon="CircleClose" @click="handleReject(scope.row)" v-hasPermi="['qms:capa:close']">驳回</el-button>
+                <el-button v-if="scope.row.capaStatus !== '3'" link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['qms:capa:edit']">修改</el-button>
+                <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['qms:capa:remove']">删除</el-button>
+              </div>
+            </template>
+          </el-table-column>
             </el-table>
           </div>
           <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
@@ -873,4 +875,11 @@ getList()
 .rd-card:nth-child(6) { animation-delay: 0.30s; }
 
 @media (max-width:768px) { .rd-grid { grid-template-columns: 1fr; } }
+
+/* 操作列按钮对齐：每行2个按钮，flex-wrap 自动换行，按钮自适应内容宽度 */
+:deep(.col-action) { padding: 6px 4px !important; }
+:deep(.col-action .cell) { display: flex; justify-content: center; padding: 0; }
+.action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
+:deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
+:deep(.col-action .el-button + .el-button) { margin-left: 2px; }
 </style>

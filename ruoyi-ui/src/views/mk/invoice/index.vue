@@ -489,10 +489,10 @@
     <customer-picker ref="customerPickerRef" title="选择客户" @confirm="onCustomerPickerConfirm" />
 
     <!-- 合同选择弹窗 -->
-    <contract-picker ref="contractPickerRef" title="选择合同" @confirm="onContractPickerConfirm" />
+    <contract-picker ref="contractPickerRef" title="选择合同" :contract-statuses="['2']" @confirm="onContractPickerConfirm" />
 
     <!-- 订单选择弹窗 -->
-    <order-picker ref="orderPickerRef" title="选择订单" @confirm="onOrderPickerConfirm" />
+    <order-picker ref="orderPickerRef" title="选择订单" :order-statuses="['2','3','4']" @confirm="onOrderPickerConfirm" />
   </div>
 </template>
 
@@ -735,4 +735,11 @@ getList()
 .recognize-tip { color: #909399; font-size: 13px; }
 .recognized-info { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px; }
 .recognized-tag { margin: 0; }
+
+/* 操作列按钮对齐：每行2个按钮，flex-wrap 自动换行，按钮自适应内容宽度 */
+:deep(.col-action) { padding: 6px 4px !important; }
+:deep(.col-action .cell) { display: flex; justify-content: center; padding: 0; }
+.action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
+:deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
+:deep(.col-action .el-button + .el-button) { margin-left: 2px; }
 </style>

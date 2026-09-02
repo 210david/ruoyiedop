@@ -27,13 +27,15 @@
     <select id="selectHrTaxRateList" parameterType="HrTaxRate" resultMap="HrTaxRateResult">
         <include refid="selectVo"/>
         <where>
-            del_flag = '0'
+            (del_flag IS NULL OR del_flag = '0')
             <if test="level != null"> AND level = #{level}</if>
             <if test="minAmount != null"> AND min_amount = #{minAmount}</if>
             <if test="maxAmount != null"> AND max_amount = #{maxAmount}</if>
             <if test="rate != null"> AND rate = #{rate}</if>
             <if test="quickDeduction != null"> AND quick_deduction = #{quickDeduction}</if>
             <if test="effectiveDate != null"> AND effective_date = #{effectiveDate}</if>
+            <if test="params.beginEffectiveDate != null and params.beginEffectiveDate != ''"> AND effective_date &gt;= #{params.beginEffectiveDate}</if>
+            <if test="params.endEffectiveDate != null and params.endEffectiveDate != ''"> AND effective_date &lt;= #{params.endEffectiveDate}</if>
             <if test="status != null and status != ''"> AND status LIKE CONCAT('%', #{status}, '%')</if>
             <if test="delFlag != null and delFlag != ''"> AND del_flag LIKE CONCAT('%', #{delFlag}, '%')</if>
         </where>

@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.ruoyi.common.annotation.DataScope;
 import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.common.utils.SecurityUtils;
@@ -48,10 +49,11 @@ public class SafetyHazardServiceImpl implements ISafetyHazardService
         return hazard;
     }
 
-    @Override
-    public List<SafetyHazard> selectSafetyHazardList(SafetyHazard safetyHazard)
-    {
-        return safetyHazardMapper.selectSafetyHazardList(safetyHazard);
+@Override
+@DataScope(deptAlias = "d")
+public List<SafetyHazard> selectSafetyHazardList(SafetyHazard safetyHazard)
+{
+return safetyHazardMapper.selectSafetyHazardList(safetyHazard);
     }
 
     @Override
@@ -78,19 +80,43 @@ public class SafetyHazardServiceImpl implements ISafetyHazardService
     @Override
     public int updateSafetyHazard(SafetyHazard safetyHazard)
     {
+        // 通用编辑不允许直接修改状态，状态流转只能通过 submit/approve/start/rectify/verify 专用接口
+        safetyHazard.setHazardStatus(null);
         return safetyHazardMapper.updateSafetyHazard(safetyHazard);
     }
 
     @Override
     public int deleteSafetyHazardByIds(Long[] hazardIds)
     {
+        checkHazardDeletable(hazardIds);
         return safetyHazardMapper.deleteSafetyHazardByIds(hazardIds);
     }
 
     @Override
     public int deleteSafetyHazardById(Long hazardId)
     {
+        checkHazardDeletable(new Long[]{ hazardId });
         return safetyHazardMapper.deleteSafetyHazardById(hazardId);
+    }
+
+    /**
+     * 删除前校验：仅草稿(0)或审批驳回(2)状态的隐患允许删除，避免流转中数据被误删
+     */
+    private void checkHazardDeletable(Long[] hazardIds)
+    {
+        for (Long hazardId : hazardIds)
+        {
+            SafetyHazard hazard = safetyHazardMapper.selectSafetyHazardById(hazardId);
+            if (hazard == null)
+            {
+                continue;
+            }
+            String status = hazard.getHazardStatus();
+            if (!"0".equals(status) && !"2".equals(status))
+            {
+                throw new ServiceException("隐患【" + hazard.getHazardCode() + "】正在流转中，不允许删除");
+            }
+        }
     }
 
     @Override

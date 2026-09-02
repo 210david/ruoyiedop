@@ -10,4 +10,5 @@ public interface HrEmployeeWorkExpMapper {
     public int updateHrEmployeeWorkExp(HrEmployeeWorkExp hrEmployeeWorkExp);
     public int deleteHrEmployeeWorkExpByWorkExpId(Long workExpId);
     public int deleteHrEmployeeWorkExpByIds(Long[] workExpIds);
+public int deleteHrEmployeeWorkExpByEmployeeId(Long employeeId);
 }

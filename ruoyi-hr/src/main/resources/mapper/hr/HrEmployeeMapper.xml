@@ -25,6 +25,7 @@
         <result property="socialWorkYears" column="social_work_years"/>
         <result property="companyWorkYears" column="company_work_years"/>
         <result property="orgId" column="org_id"/>
+        <result property="orgName" column="org_name"/>
         <result property="positionId" column="position_id"/>
         <result property="positionName" column="position_name"/>
         <result property="skillLevel" column="skill_level"/>
@@ -43,6 +44,13 @@
         <result property="blacklistFlag" column="blacklist_flag"/>
         <result property="blacklistReason" column="blacklist_reason"/>
         <result property="userId" column="user_id"/>
+        <result property="userNickName" column="user_nick_name"/>
+        <result property="userName" column="user_name"/>
+        <result property="userStatus" column="user_status"/>
+        <result property="userRoles" column="user_roles"/>
+        <result property="userLoginIp" column="user_login_ip"/>
+        <result property="userLoginDate" column="user_login_date"/>
+        <result property="userCreateTime" column="user_create_time"/>
         <result property="photo" column="photo"/>
         <result property="status" column="status"/>
         <result property="delFlag" column="del_flag"/>
@@ -54,62 +62,83 @@
     </resultMap>
 
     <sql id="selectVo">
-        SELECT employee_id, employee_no, employee_name, gender, id_card, birthday, nation, politics_status, marital_status, phone, email, emergency_contact, emergency_phone, native_place, address, edu_level, graduation_school, major, graduation_date, social_work_years, company_work_years, org_id, position_id, position_name, skill_level, work_type, employee_type, entry_date, regular_date, leave_date, employee_status, bank_name, bank_account, social_security_no, social_security_status, house_fund_no, leave_reason, blacklist_flag, blacklist_reason, user_id, photo, status, del_flag, create_by, create_time, update_by, update_time, remark
-        FROM biz_hr_employee
+        SELECT e.*, d.dept_name AS org_name
+        FROM biz_hr_employee e
+        LEFT JOIN sys_dept d ON e.org_id = d.dept_id
     </sql>
 
     <select id="selectHrEmployeeList" parameterType="HrEmployee" resultMap="HrEmployeeResult">
         <include refid="selectVo"/>
         <where>
-            del_flag = '0'
-            <if test="employeeNo != null and employeeNo != ''"> AND employee_no LIKE CONCAT('%', #{employeeNo}, '%')</if>
-            <if test="employeeName != null and employeeName != ''"> AND employee_name LIKE CONCAT('%', #{employeeName}, '%')</if>
-            <if test="gender != null and gender != ''"> AND gender LIKE CONCAT('%', #{gender}, '%')</if>
-            <if test="idCard != null and idCard != ''"> AND id_card LIKE CONCAT('%', #{idCard}, '%')</if>
-            <if test="birthday != null"> AND birthday = #{birthday}</if>
-            <if test="nation != null and nation != ''"> AND nation LIKE CONCAT('%', #{nation}, '%')</if>
-            <if test="politicsStatus != null and politicsStatus != ''"> AND politics_status LIKE CONCAT('%', #{politicsStatus}, '%')</if>
-            <if test="maritalStatus != null and maritalStatus != ''"> AND marital_status LIKE CONCAT('%', #{maritalStatus}, '%')</if>
-            <if test="phone != null and phone != ''"> AND phone LIKE CONCAT('%', #{phone}, '%')</if>
-            <if test="email != null and email != ''"> AND email LIKE CONCAT('%', #{email}, '%')</if>
-            <if test="emergencyContact != null and emergencyContact != ''"> AND emergency_contact LIKE CONCAT('%', #{emergencyContact}, '%')</if>
-            <if test="emergencyPhone != null and emergencyPhone != ''"> AND emergency_phone LIKE CONCAT('%', #{emergencyPhone}, '%')</if>
-            <if test="nativePlace != null and nativePlace != ''"> AND native_place LIKE CONCAT('%', #{nativePlace}, '%')</if>
-            <if test="address != null and address != ''"> AND address LIKE CONCAT('%', #{address}, '%')</if>
-            <if test="eduLevel != null and eduLevel != ''"> AND edu_level LIKE CONCAT('%', #{eduLevel}, '%')</if>
-            <if test="graduationSchool != null and graduationSchool != ''"> AND graduation_school LIKE CONCAT('%', #{graduationSchool}, '%')</if>
-            <if test="major != null and major != ''"> AND major LIKE CONCAT('%', #{major}, '%')</if>
-            <if test="graduationDate != null"> AND graduation_date = #{graduationDate}</if>
-            <if test="socialWorkYears != null"> AND social_work_years = #{socialWorkYears}</if>
-            <if test="companyWorkYears != null"> AND company_work_years = #{companyWorkYears}</if>
-            <if test="orgId != null"> AND org_id = #{orgId}</if>
-            <if test="positionId != null"> AND position_id = #{positionId}</if>
-            <if test="positionName != null and positionName != ''"> AND position_name LIKE CONCAT('%', #{positionName}, '%')</if>
-            <if test="skillLevel != null and skillLevel != ''"> AND skill_level LIKE CONCAT('%', #{skillLevel}, '%')</if>
-            <if test="workType != null and workType != ''"> AND work_type LIKE CONCAT('%', #{workType}, '%')</if>
-            <if test="employeeType != null and employeeType != ''"> AND employee_type LIKE CONCAT('%', #{employeeType}, '%')</if>
-            <if test="entryDate != null"> AND entry_date = #{entryDate}</if>
-            <if test="regularDate != null"> AND regular_date = #{regularDate}</if>
-            <if test="leaveDate != null"> AND leave_date = #{leaveDate}</if>
-            <if test="employeeStatus != null and employeeStatus != ''"> AND employee_status LIKE CONCAT('%', #{employeeStatus}, '%')</if>
-            <if test="bankName != null and bankName != ''"> AND bank_name LIKE CONCAT('%', #{bankName}, '%')</if>
-            <if test="bankAccount != null and bankAccount != ''"> AND bank_account LIKE CONCAT('%', #{bankAccount}, '%')</if>
-            <if test="socialSecurityNo != null and socialSecurityNo != ''"> AND social_security_no LIKE CONCAT('%', #{socialSecurityNo}, '%')</if>
-            <if test="socialSecurityStatus != null and socialSecurityStatus != ''"> AND social_security_status LIKE CONCAT('%', #{socialSecurityStatus}, '%')</if>
-            <if test="houseFundNo != null and houseFundNo != ''"> AND house_fund_no LIKE CONCAT('%', #{houseFundNo}, '%')</if>
-            <if test="leaveReason != null and leaveReason != ''"> AND leave_reason LIKE CONCAT('%', #{leaveReason}, '%')</if>
-            <if test="blacklistFlag != null and blacklistFlag != ''"> AND blacklist_flag LIKE CONCAT('%', #{blacklistFlag}, '%')</if>
-            <if test="blacklistReason != null and blacklistReason != ''"> AND blacklist_reason LIKE CONCAT('%', #{blacklistReason}, '%')</if>
-            <if test="userId != null"> AND user_id = #{userId}</if>
-            <if test="photo != null and photo != ''"> AND photo LIKE CONCAT('%', #{photo}, '%')</if>
-            <if test="status != null and status != ''"> AND status LIKE CONCAT('%', #{status}, '%')</if>
-            <if test="delFlag != null and delFlag != ''"> AND del_flag LIKE CONCAT('%', #{delFlag}, '%')</if>
+            e.(del_flag IS NULL OR del_flag = '0')
+            <if test="params != null and params.activeOnly != null and &quot;true&quot;.equals(params.activeOnly)"> AND e.employee_status IN ('0', '1') AND (blacklist_flag IS NULL OR e.blacklist_flag = '0')</if>
+            <if test="employeeNo != null and employeeNo != ''"> AND e.employee_no LIKE CONCAT('%', #{employeeNo}, '%')</if>
+            <if test="employeeName != null and employeeName != ''"> AND e.employee_name LIKE CONCAT('%', #{employeeName}, '%')</if>
+            <if test="gender != null and gender != ''"> AND e.gender LIKE CONCAT('%', #{gender}, '%')</if>
+            <if test="idCard != null and idCard != ''"> AND e.id_card LIKE CONCAT('%', #{idCard}, '%')</if>
+            <if test="birthday != null"> AND e.birthday = #{birthday}</if>
+            <if test="nation != null and nation != ''"> AND e.nation LIKE CONCAT('%', #{nation}, '%')</if>
+            <if test="politicsStatus != null and politicsStatus != ''"> AND e.politics_status LIKE CONCAT('%', #{politicsStatus}, '%')</if>
+            <if test="maritalStatus != null and maritalStatus != ''"> AND e.marital_status LIKE CONCAT('%', #{maritalStatus}, '%')</if>
+            <if test="phone != null and phone != ''"> AND e.phone LIKE CONCAT('%', #{phone}, '%')</if>
+            <if test="email != null and email != ''"> AND e.email LIKE CONCAT('%', #{email}, '%')</if>
+            <if test="emergencyContact != null and emergencyContact != ''"> AND e.emergency_contact LIKE CONCAT('%', #{emergencyContact}, '%')</if>
+            <if test="emergencyPhone != null and emergencyPhone != ''"> AND e.emergency_phone LIKE CONCAT('%', #{emergencyPhone}, '%')</if>
+            <if test="nativePlace != null and nativePlace != ''"> AND e.native_place LIKE CONCAT('%', #{nativePlace}, '%')</if>
+            <if test="address != null and address != ''"> AND e.address LIKE CONCAT('%', #{address}, '%')</if>
+            <if test="eduLevel != null and eduLevel != ''"> AND e.edu_level LIKE CONCAT('%', #{eduLevel}, '%')</if>
+            <if test="graduationSchool != null and graduationSchool != ''"> AND e.graduation_school LIKE CONCAT('%', #{graduationSchool}, '%')</if>
+            <if test="major != null and major != ''"> AND e.major LIKE CONCAT('%', #{major}, '%')</if>
+            <if test="graduationDate != null"> AND e.graduation_date = #{graduationDate}</if>
+            <if test="socialWorkYears != null"> AND e.social_work_years = #{socialWorkYears}</if>
+            <if test="companyWorkYears != null"> AND e.company_work_years = #{companyWorkYears}</if>
+            <if test="orgId != null"> AND e.org_id = #{orgId}</if>
+            <if test="positionId != null"> AND e.position_id = #{positionId}</if>
+            <if test="positionName != null and positionName != ''"> AND e.position_name LIKE CONCAT('%', #{positionName}, '%')</if>
+            <if test="skillLevel != null and skillLevel != ''"> AND e.skill_level LIKE CONCAT('%', #{skillLevel}, '%')</if>
+            <if test="workType != null and workType != ''"> AND e.work_type LIKE CONCAT('%', #{workType}, '%')</if>
+            <if test="employeeType != null and employeeType != ''"> AND e.employee_type LIKE CONCAT('%', #{employeeType}, '%')</if>
+            <if test="entryDate != null"> AND e.entry_date = #{entryDate}</if>
+            <if test="params.beginEntryDate != null and params.beginEntryDate != ''"> AND e.entry_date &gt;= #{params.beginEntryDate}</if>
+            <if test="params.endEntryDate != null and params.endEntryDate != ''"> AND e.entry_date &lt;= #{params.endEntryDate}</if>
+            <if test="regularDate != null"> AND e.regular_date = #{regularDate}</if>
+            <if test="leaveDate != null"> AND e.leave_date = #{leaveDate}</if>
+            <if test="employeeStatus != null and employeeStatus != ''"> AND e.employee_status LIKE CONCAT('%', #{employeeStatus}, '%')</if>
+            <if test="bankName != null and bankName != ''"> AND e.bank_name LIKE CONCAT('%', #{bankName}, '%')</if>
+            <if test="bankAccount != null and bankAccount != ''"> AND e.bank_account LIKE CONCAT('%', #{bankAccount}, '%')</if>
+            <if test="socialSecurityNo != null and socialSecurityNo != ''"> AND e.social_security_no LIKE CONCAT('%', #{socialSecurityNo}, '%')</if>
+            <if test="socialSecurityStatus != null and socialSecurityStatus != ''"> AND e.social_security_status LIKE CONCAT('%', #{socialSecurityStatus}, '%')</if>
+            <if test="houseFundNo != null and houseFundNo != ''"> AND e.house_fund_no LIKE CONCAT('%', #{houseFundNo}, '%')</if>
+            <if test="leaveReason != null and leaveReason != ''"> AND e.leave_reason LIKE CONCAT('%', #{leaveReason}, '%')</if>
+            <if test="blacklistFlag != null and blacklistFlag != ''"> AND e.blacklist_flag LIKE CONCAT('%', #{blacklistFlag}, '%')</if>
+            <if test="blacklistReason != null and blacklistReason != ''"> AND e.blacklist_reason LIKE CONCAT('%', #{blacklistReason}, '%')</if>
+            <if test="userId != null"> AND e.user_id = #{userId}</if>
+            <if test="photo != null and photo != ''"> AND e.photo LIKE CONCAT('%', #{photo}, '%')</if>
+            <if test="status != null and status != ''"> AND e.status LIKE CONCAT('%', #{status}, '%')</if>
+            <if test="delFlag != null and delFlag != ''"> AND e.del_flag LIKE CONCAT('%', #{delFlag}, '%')</if>
         </where>
-        ORDER BY create_time DESC
+        ORDER BY e.create_time DESC
     </select>
 
     <select id="selectHrEmployeeById" parameterType="Long" resultMap="HrEmployeeResult">
-        <include refid="selectVo"/> WHERE employee_id = #{employeeId}
+        SELECT e.*, d.dept_name AS org_name,
+               u.user_name AS user_name, u.nick_name AS user_nick_name, u.status AS user_status,
+               u.login_ip AS user_login_ip, u.login_date AS user_login_date, u.create_time AS user_create_time,
+               (SELECT GROUP_CONCAT(r.role_name SEPARATOR '、') FROM sys_user_role ur
+                 JOIN sys_role r ON ur.role_id = r.role_id
+                 WHERE ur.user_id = e.user_id AND r.(del_flag IS NULL OR del_flag = '0')) AS user_roles
+        FROM biz_hr_employee e
+        LEFT JOIN sys_dept d ON e.org_id = d.dept_id
+        LEFT JOIN sys_user u ON e.user_id = u.user_id
+        WHERE e.employee_id = #{employeeId}
+    </select>
+
+    <select id="selectHrEmployeeByEmployeeNo" parameterType="String" resultMap="HrEmployeeResult">
+        <include refid="selectVo"/> WHERE employee_no = #{employeeNo} AND (del_flag IS NULL OR del_flag = '0')
+    </select>
+
+    <select id="selectHrEmployeeByIdCard" parameterType="String" resultMap="HrEmployeeResult">
+        <include refid="selectVo"/> WHERE id_card = #{idCard} AND (del_flag IS NULL OR del_flag = '0')
     </select>
 
     <insert id="insertHrEmployee" parameterType="HrEmployee" useGeneratedKeys="true" keyProperty="employeeId">

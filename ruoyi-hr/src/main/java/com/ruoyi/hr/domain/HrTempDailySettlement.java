@@ -13,7 +13,6 @@ public class HrTempDailySettlement extends BaseEntity
     private static final long serialVersionUID = 1L;
 
     private Long settlementId;
-    @NotBlank(message = "结算单号不能为空")
     @Excel(name = "结算单号")
     private String settlementNo;
     @NotNull(message = "结算日期不能为空")

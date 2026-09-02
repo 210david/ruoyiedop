@@ -96,11 +96,13 @@
             <template #default="scope"><span class="rd-amount">{{ formatMoney(scope.row.economicLoss) }}</span></template>
           </el-table-column>
           <el-table-column label="报告人" prop="reportPerson" key="reportPerson" :width="colWidth('reportPerson', 100)" resizable v-if="columns.reportPerson.visible" />
-          <el-table-column label="操作" width="240" align="center" fixed="right">
+          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
-              <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['safety:emergency:incident:query']">查看</el-button>
-              <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['safety:emergency:incident:edit']">修改</el-button>
-              <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['safety:emergency:incident:remove']">删除</el-button>
+              <div class="action-btn-row">
+                <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['safety:emergency:incident:query']">查看</el-button>
+                <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['safety:emergency:incident:edit']">修改</el-button>
+                <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['safety:emergency:incident:remove']">删除</el-button>
+              </div>
             </template>
           </el-table-column>
         </el-table>
@@ -305,7 +307,7 @@ const activeFilterCount = computed(() => {
   return count
 })
 
-function getList() { loading.value = true; listIncident(queryParams.value).then(response => { incidentList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths() }) }
+function getList() { loading.value = true; listIncident(queryParams.value).then(response => { incidentList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths() }).catch(error => { console.error(error) }).finally(() => { loading.value = false }) }
 function handleQuery() { showAdvanced.value = false; proxy.addDateRange(queryParams.value, dateRange.value); queryParams.value.pageNum = 1; getList() }
 function resetQuery() { queryParams.value.incidentCode = undefined; queryParams.value.incidentLevel = undefined; queryParams.value.incidentLocation = undefined; queryParams.value.reportPerson = undefined; dateRange.value = []; queryParams.value.params = {}; handleQuery() }
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
@@ -321,7 +323,7 @@ function submitForm() {
     }
   })
 }
-function handleExport() { proxy.download('safety/emergency/incident/export', { ...queryParams }, `incident_${new Date().getTime()}.xlsx`) }
+function handleExport() { proxy.download('safety/emergency/incident/export', { ...queryParams.value }, `incident_${new Date().getTime()}.xlsx`) }
 function handleDelete(row) { const incidentIds = row.incidentId || ids.value; proxy.$modal.confirm('是否确认删除事故记录？').then(function() { return delIncident(incidentIds) }).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
 function cancel() { open.value = false; reset() }
 function reset() {
@@ -394,4 +396,11 @@ getList()
 @media (max-width:720px) { .safety-incident-page .filter-card .filter-bar { grid-template-columns:1fr; } }
 .clear-icon { cursor: pointer; color: #c0c4cc; font-size: 14px; }
 .clear-icon:hover { color: #909399; }
+
+/* 操作列按钮对齐：每行2个按钮，flex-wrap 自动换行，按钮自适应内容宽度 */
+:deep(.col-action) { padding: 6px 4px !important; }
+:deep(.col-action .cell) { display: flex; justify-content: center; padding: 0; }
+.action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
+:deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
+:deep(.col-action .el-button + .el-button) { margin-left: 2px; }
 </style>

@@ -97,7 +97,7 @@
       <!-- Table -->
       <div class="table-wrap">
         <el-table ref="tableRef" border v-loading="loading" :data="priceCompareList" :row-class-name="rowClassName" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
-          <el-table-column type="index" label="序号" width="85" align="center" />
+          <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" resizable align="center" />
           <el-table-column label="询价单号" prop="inquiryNo" key="inquiryNo" :width="colWidth('inquiryNo', 180)" resizable sortable="custom" v-if="columns.inquiryNo.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.inquiryNo }}</span></template>
           </el-table-column>

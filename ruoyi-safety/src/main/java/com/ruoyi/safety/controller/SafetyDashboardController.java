@@ -28,13 +28,13 @@ public class SafetyDashboardController extends BaseController
     public AjaxResult stats()
     {
         Map<String, Object> data = new HashMap<>();
-        // 隐患统计
+        // 隐患统计（状态对齐字典 safety_hazard_status：1待审批 2审批驳回 3待整改 4整改中 5待验收 6已闭环 7超期未整改）
         data.put("hazardTotal", safetyHazardService.countHazardsByStatus(null));
-        data.put("hazardPending", safetyHazardService.countHazardsByStatus("1"));
-        data.put("hazardRectifying", safetyHazardService.countHazardsByStatus("2"));
-        data.put("hazardVerifying", safetyHazardService.countHazardsByStatus("3"));
-        data.put("hazardClosed", safetyHazardService.countHazardsByStatus("4"));
-        data.put("hazardOverdue", safetyHazardService.countHazardsByStatus("5"));
+        data.put("hazardPending", safetyHazardService.countHazardsByStatus("3"));
+        data.put("hazardRectifying", safetyHazardService.countHazardsByStatus("4"));
+        data.put("hazardVerifying", safetyHazardService.countHazardsByStatus("5"));
+        data.put("hazardClosed", safetyHazardService.countHazardsByStatus("6"));
+        data.put("hazardOverdue", safetyHazardService.countHazardsByStatus("7"));
         // 风险统计
         data.put("riskRed", safetyRiskPointService.countByRiskLevel("4"));
         data.put("riskOrange", safetyRiskPointService.countByRiskLevel("3"));

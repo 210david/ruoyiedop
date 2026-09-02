@@ -10,7 +10,6 @@ public class HrSalaryItem extends BaseEntity
     private static final long serialVersionUID = 1L;
 
     private Long itemId;
-    @NotBlank(message = "编码不能为空")
     @Excel(name = "编码")
     private String itemCode;
     @NotBlank(message = "名称不能为空")

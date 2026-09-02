@@ -9,6 +9,7 @@
         <result property="employeeName" column="employee_name"/>
         <result property="employeeNo" column="employee_no"/>
         <result property="orgId" column="org_id"/>
+        <result property="orgName" column="org_name"/>
         <result property="shiftId" column="shift_id"/>
         <result property="shiftName" column="shift_name"/>
         <result property="clockIn" column="clock_in"/>
@@ -29,38 +30,42 @@
     </resultMap>
 
     <sql id="selectVo">
-        SELECT record_id, record_date, employee_id, employee_name, employee_no, org_id, shift_id, shift_name, clock_in, clock_out, clock_in_source, clock_out_source, late_minutes, early_minutes, attendance_status, overtime_hours, night_shift, remark, del_flag, create_by, create_time, update_by, update_time
-        FROM biz_hr_attendance_record
+        SELECT t.record_id, t.record_date, t.employee_id, t.employee_name, t.employee_no, t.org_id, t.shift_id, t.shift_name, t.clock_in, t.clock_out, t.clock_in_source, t.clock_out_source, t.late_minutes, t.early_minutes, t.attendance_status, t.overtime_hours, t.night_shift, t.remark, t.del_flag, t.create_by, t.create_time, t.update_by, t.update_time,
+        d.dept_name AS org_name
+        FROM biz_hr_attendance_record t
+        LEFT JOIN sys_dept d ON t.org_id = d.dept_id
     </sql>
 
     <select id="selectHrAttendanceRecordList" parameterType="HrAttendanceRecord" resultMap="HrAttendanceRecordResult">
         <include refid="selectVo"/>
         <where>
-            del_flag = '0'
-            <if test="recordDate != null"> AND record_date = #{recordDate}</if>
-            <if test="employeeId != null"> AND employee_id = #{employeeId}</if>
-            <if test="employeeName != null and employeeName != ''"> AND employee_name LIKE CONCAT('%', #{employeeName}, '%')</if>
-            <if test="employeeNo != null and employeeNo != ''"> AND employee_no LIKE CONCAT('%', #{employeeNo}, '%')</if>
-            <if test="orgId != null"> AND org_id = #{orgId}</if>
-            <if test="shiftId != null"> AND shift_id = #{shiftId}</if>
-            <if test="shiftName != null and shiftName != ''"> AND shift_name LIKE CONCAT('%', #{shiftName}, '%')</if>
-            <if test="clockIn != null"> AND clock_in = #{clockIn}</if>
-            <if test="clockOut != null"> AND clock_out = #{clockOut}</if>
-            <if test="clockInSource != null and clockInSource != ''"> AND clock_in_source LIKE CONCAT('%', #{clockInSource}, '%')</if>
-            <if test="clockOutSource != null and clockOutSource != ''"> AND clock_out_source LIKE CONCAT('%', #{clockOutSource}, '%')</if>
-            <if test="lateMinutes != null"> AND late_minutes = #{lateMinutes}</if>
-            <if test="earlyMinutes != null"> AND early_minutes = #{earlyMinutes}</if>
-            <if test="attendanceStatus != null and attendanceStatus != ''"> AND attendance_status LIKE CONCAT('%', #{attendanceStatus}, '%')</if>
-            <if test="overtimeHours != null"> AND overtime_hours = #{overtimeHours}</if>
-            <if test="nightShift != null"> AND night_shift = #{nightShift}</if>
-            <if test="remark != null and remark != ''"> AND remark LIKE CONCAT('%', #{remark}, '%')</if>
-            <if test="delFlag != null and delFlag != ''"> AND del_flag LIKE CONCAT('%', #{delFlag}, '%')</if>
+            t.(del_flag IS NULL OR del_flag = '0')
+            <if test="recordDate != null"> AND t.record_date = #{recordDate}</if>
+            <if test="params.beginRecordDate != null and params.beginRecordDate != ''"> AND t.record_date &gt;= #{params.beginRecordDate}</if>
+            <if test="params.endRecordDate != null and params.endRecordDate != ''"> AND t.record_date &lt;= #{params.endRecordDate}</if>
+            <if test="employeeId != null"> AND t.employee_id = #{employeeId}</if>
+            <if test="employeeName != null and employeeName != ''"> AND t.employee_name LIKE CONCAT('%', #{employeeName}, '%')</if>
+            <if test="employeeNo != null and employeeNo != ''"> AND t.employee_no LIKE CONCAT('%', #{employeeNo}, '%')</if>
+            <if test="orgId != null"> AND t.org_id = #{orgId}</if>
+            <if test="shiftId != null"> AND t.shift_id = #{shiftId}</if>
+            <if test="shiftName != null and shiftName != ''"> AND t.shift_name LIKE CONCAT('%', #{shiftName}, '%')</if>
+            <if test="clockIn != null"> AND t.clock_in = #{clockIn}</if>
+            <if test="clockOut != null"> AND t.clock_out = #{clockOut}</if>
+            <if test="clockInSource != null and clockInSource != ''"> AND t.clock_in_source LIKE CONCAT('%', #{clockInSource}, '%')</if>
+            <if test="clockOutSource != null and clockOutSource != ''"> AND t.clock_out_source LIKE CONCAT('%', #{clockOutSource}, '%')</if>
+            <if test="lateMinutes != null"> AND t.late_minutes = #{lateMinutes}</if>
+            <if test="earlyMinutes != null"> AND t.early_minutes = #{earlyMinutes}</if>
+            <if test="attendanceStatus != null and attendanceStatus != ''"> AND t.attendance_status LIKE CONCAT('%', #{attendanceStatus}, '%')</if>
+            <if test="overtimeHours != null"> AND t.overtime_hours = #{overtimeHours}</if>
+            <if test="nightShift != null"> AND t.night_shift = #{nightShift}</if>
+            <if test="remark != null and remark != ''"> AND t.remark LIKE CONCAT('%', #{remark}, '%')</if>
+            <if test="delFlag != null and delFlag != ''"> AND t.del_flag LIKE CONCAT('%', #{delFlag}, '%')</if>
         </where>
-        ORDER BY create_time DESC
+        ORDER BY t.create_time DESC
     </select>
 
     <select id="selectHrAttendanceRecordById" parameterType="Long" resultMap="HrAttendanceRecordResult">
-        <include refid="selectVo"/> WHERE record_id = #{recordId}
+        <include refid="selectVo"/> WHERE t.record_id = #{recordId}
     </select>
 
     <insert id="insertHrAttendanceRecord" parameterType="HrAttendanceRecord" useGeneratedKeys="true" keyProperty="recordId">

@@ -111,28 +111,30 @@
     </insert>
 
     <update id="updateFinishReceipt" parameterType="MmsFinishReceipt">
-        UPDATE mms_finish_receipt SET
-            finish_no = #{finishNo},
-            work_order_id = #{workOrderId},
-            work_order_no = #{workOrderNo},
-            product_id = #{productId},
-            product_code = #{productCode},
-            product_name = #{productName},
-            spec_model = #{specModel},
-            unit = #{unit},
-            plan_qty = #{planQty},
-            finish_qty = #{finishQty},
-            qualified_qty = #{qualifiedQty},
-            batch_no = #{batchNo},
-            finish_time = #{finishTime},
-            finish_by = #{finishBy},
-            is_on_time = #{isOnTime},
-            status = #{status},
-            inbound_time = #{inboundTime},
-            inbound_by = #{inboundBy},
-            update_by = #{updateBy},
-            update_time = #{updateTime},
-            remark = #{remark}
+        UPDATE mms_finish_receipt
+        <set>
+            <if test="finishNo != null">finish_no = #{finishNo},</if>
+            <if test="workOrderId != null">work_order_id = #{workOrderId},</if>
+            <if test="workOrderNo != null">work_order_no = #{workOrderNo},</if>
+            <if test="productId != null">product_id = #{productId},</if>
+            <if test="productCode != null">product_code = #{productCode},</if>
+            <if test="productName != null">product_name = #{productName},</if>
+            <if test="specModel != null">spec_model = #{specModel},</if>
+            <if test="unit != null">unit = #{unit},</if>
+            <if test="planQty != null">plan_qty = #{planQty},</if>
+            <if test="finishQty != null">finish_qty = #{finishQty},</if>
+            <if test="qualifiedQty != null">qualified_qty = #{qualifiedQty},</if>
+            <if test="batchNo != null">batch_no = #{batchNo},</if>
+            <if test="finishTime != null">finish_time = #{finishTime},</if>
+            <if test="finishBy != null">finish_by = #{finishBy},</if>
+            <if test="isOnTime != null">is_on_time = #{isOnTime},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="inboundTime != null">inbound_time = #{inboundTime},</if>
+            <if test="inboundBy != null">inbound_by = #{inboundBy},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </set>
         WHERE finish_id = #{finishId}
     </update>
 

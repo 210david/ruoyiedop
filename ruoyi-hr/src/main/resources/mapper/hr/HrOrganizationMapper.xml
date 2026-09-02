@@ -30,7 +30,7 @@
     <select id="selectHrOrganizationList" parameterType="HrOrganization" resultMap="HrOrganizationResult">
         <include refid="selectVo"/>
         <where>
-            del_flag = '0'
+            (del_flag IS NULL OR del_flag = '0')
             <if test="orgCode != null and orgCode != ''"> AND org_code LIKE CONCAT('%', #{orgCode}, '%')</if>
             <if test="orgName != null and orgName != ''"> AND org_name LIKE CONCAT('%', #{orgName}, '%')</if>
             <if test="parentId != null"> AND parent_id = #{parentId}</if>

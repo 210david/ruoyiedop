@@ -35,7 +35,7 @@
     <select id="selectHrSocialSecurityList" parameterType="HrSocialSecurity" resultMap="HrSocialSecurityResult">
         <include refid="selectVo"/>
         <where>
-            del_flag = '0'
+            (del_flag IS NULL OR del_flag = '0')
             <if test="employeeId != null"> AND employee_id = #{employeeId}</if>
             <if test="employeeName != null and employeeName != ''"> AND employee_name LIKE CONCAT('%', #{employeeName}, '%')</if>
             <if test="employeeNo != null and employeeNo != ''"> AND employee_no LIKE CONCAT('%', #{employeeNo}, '%')</if>

@@ -154,14 +154,16 @@
           <el-table-column label="复检" prop="isRecheck" key="isRecheck" :width="colWidth('isRecheck', 70)" resizable align="center" v-if="columns.isRecheck.visible">
             <template #default="scope"><span v-if="scope.row.isRecheck === '1'" class="badge orange"><span class="dot"></span>是</span><span v-else>-</span></template>
           </el-table-column>
-          <el-table-column label="操作" width="240" align="center" fixed="right">
+          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
-              <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
-              <el-button link type="primary" icon="Printer" @click="handlePrintReport(scope.row)" v-hasPermi="['qms:task:query']" v-if="scope.row.taskStatus === '2'">打印</el-button>
-              <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['qms:task:edit']" v-if="scope.row.taskStatus === '0'">修改</el-button>
-              <el-button link type="success" icon="Check" @click="handleInspect(scope.row)" v-hasPermi="['qms:task:inspect']" v-if="scope.row.taskStatus === '0' || scope.row.taskStatus === '1'">录入</el-button>
-              <el-button link type="warning" icon="Refresh" @click="handleRecheck(scope.row)" v-hasPermi="['qms:task:add']" v-if="scope.row.taskStatus === '2' && scope.row.inspectResult === '2' && scope.row.isRecheck !== '1'">复检</el-button>
-              <el-button link type="danger" icon="CircleClose" @click="handleVoid(scope.row)" v-hasPermi="['qms:task:edit']" v-if="scope.row.taskStatus === '0' || scope.row.taskStatus === '1'">作废</el-button>
+              <div class="action-btn-row">
+                <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
+                <el-button link type="primary" icon="Printer" @click="handlePrintReport(scope.row)" v-hasPermi="['qms:task:query']" v-if="scope.row.taskStatus === '2'">打印</el-button>
+                <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['qms:task:edit']" v-if="scope.row.taskStatus === '0'">修改</el-button>
+                <el-button link type="success" icon="Check" @click="handleInspect(scope.row)" v-hasPermi="['qms:task:inspect']" v-if="scope.row.taskStatus === '0' || scope.row.taskStatus === '1'">录入</el-button>
+                <el-button link type="warning" icon="Refresh" @click="handleRecheck(scope.row)" v-hasPermi="['qms:task:add']" v-if="scope.row.taskStatus === '2' && scope.row.inspectResult === '2' && scope.row.isRecheck !== '1'">复检</el-button>
+                <el-button link type="danger" icon="CircleClose" @click="handleVoid(scope.row)" v-hasPermi="['qms:task:edit']" v-if="scope.row.taskStatus === '0' || scope.row.taskStatus === '1'">作废</el-button>
+              </div>
             </template>
           </el-table-column>
         </el-table>
@@ -200,7 +202,7 @@
                 <el-col :span="12"><el-form-item label="物料名称" prop="materialName"><el-input v-model="form.materialName" readonly placeholder="选择物料后自动带出" /></el-form-item></el-col>
               </el-row>
               <el-row :gutter="20">
-                <el-col :span="12"><el-form-item label="供应商" prop="supplierName"><el-select v-model="form.supplierId" filterable clearable placeholder="请选择供应商" style="width: 100%" @change="onSupplierChange"><el-option v-for="s in supplierOptions" :key="s.supplierId" :label="s.supplierName" :value="s.supplierId" /></el-select></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="供应商" prop="supplierName"><el-input v-model="form.supplierName" readonly placeholder="请选择供应商" style="width: 100%" @click="openSupplierPicker"><template v-if="form.supplierName" #append><el-button icon="CircleClose" @click.stop="clearSupplier" /></template><template v-else #append><el-button icon="Search" @click="openSupplierPicker" /></template></el-input></el-form-item></el-col>
                 <el-col :span="12"><el-form-item label="批次号" prop="batchNo" required><el-input v-model="form.batchNo" placeholder="请输入" /></el-form-item></el-col>
               </el-row>
             </div>
@@ -215,7 +217,7 @@
                 <el-col :span="6"><el-form-item prop="inspectMethod"><template #label><span>检验水平</span><el-tooltip content="检验水平决定了批量与样本量之间的关系。OQC出货检验默认使用S-4（特殊检验水平，样本量小）；IQC/IPQC/FQC默认使用II（一般检验水平，标准样本量）。检验水平越高样本量越大，检验判别能力越强" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></template><el-select v-model="form.inspectMethod" style="width: 100%"><el-option label="S-1（特殊-极小）" value="S-1" /><el-option label="S-2（特殊-小）" value="S-2" /><el-option label="S-3（特殊-中）" value="S-3" /><el-option label="S-4（特殊-大）" value="S-4" /><el-option label="I（一般-低）" value="I" /><el-option label="II（一般-标准）" value="II" /><el-option label="III（一般-高）" value="III" /></el-select></el-form-item></el-col>
               </el-row>
               <el-row :gutter="20">
-                <el-col :span="12"><el-form-item label="量检具" prop="gaugeId"><el-select v-model="form.gaugeId" filterable clearable placeholder="请选择" style="width: 100%" @change="onGaugeChange"><el-option v-for="g in gaugeOptions" :key="g.gaugeId" :label="g.gaugeNo ? g.gaugeNo + ' - ' + g.gaugeName : g.gaugeName" :value="g.gaugeId" /></el-select></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="量检具" prop="gaugeId"><el-input :model-value="gaugeDisplay" readonly placeholder="请选择量检具" style="width: 100%" @click="openGaugePicker"><template v-if="form.gaugeName" #append><el-button icon="CircleClose" @click.stop="clearGauge" /></template><template v-else #append><el-button icon="Search" @click="openGaugePicker" /></template></el-input></el-form-item></el-col>
                 <el-col :span="12"><el-form-item label="检验员" prop="inspectorName" required><el-input v-model="form.inspectorName" readonly placeholder="请选择检验员" style="width: 100%" @click="openUserPicker"><template #append><el-button icon="Search" @click="openUserPicker" /></template><template #suffix><el-icon v-if="form.inspectorName" class="clear-icon" @click.stop="clearInspector"><CircleClose /></el-icon></template></el-input></el-form-item></el-col>
               </el-row>
             </div>
@@ -517,6 +519,12 @@
     <!-- User Picker -->
     <user-picker ref="userPickerRef" title="选择检验员" @confirm="onUserPickerConfirm" />
 
+    <!-- Supplier Picker -->
+    <supplier-picker ref="supplierPickerRef" title="选择供应商" @confirm="onSupplierPickerConfirm" />
+
+    <!-- Gauge Picker -->
+    <gauge-picker ref="gaugePickerRef" title="选择量检具" hint="仅显示在用状态的量检具" @confirm="onGaugePickerConfirm" />
+
     <!-- Inspect Result Dialog -->
     <el-dialog v-model="inspectOpen" width="1360px" append-to-body draggable class="rd-dialog">
       <template #header>
@@ -602,13 +610,14 @@
 
 <script setup name="QmsTask">
 import { listTask, getTask, addTask, updateTask, delTask, saveInspectResult, saveInspectDraft, createRecheckTask, voidTask, startInspect, getStatusCounts } from '@/api/qms/task'
-import { listGauge } from '@/api/qms/gauge'
+import { listGauge, getGauge } from '@/api/qms/gauge'
 import { listDefect } from '@/api/qms/defect'
 import { listStd } from '@/api/qms/std'
-import { listSupplier } from '@/api/wms/supplier'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
 import MaterialPicker from '@/components/MaterialPicker/index.vue'
+import SupplierPicker from '@/components/SupplierPicker/index.vue'
+import GaugePicker from '@/components/GaugePicker/index.vue'
 import UserPicker from '@/components/UserPicker/index.vue'
 import { QuestionFilled, ArrowRight, CircleClose } from '@element-plus/icons-vue'
 
@@ -679,12 +688,12 @@ const single = ref(true)
 const multiple = ref(true)
 const total = ref(0)
 const title = ref('')
-const gaugeOptions = ref([])
 const defectOptions = ref([])
 const stdOptions = ref([])
-const supplierOptions = ref([])
 const materialPickerRef = ref()
 const userPickerRef = ref()
+const supplierPickerRef = ref()
+const gaugePickerRef = ref()
 
 const data = reactive({
   form: {},
@@ -819,10 +828,8 @@ function handleQuery() { queryParams.value.pageNum = 1; getList() }
 function resetQuery() { queryParams.value.taskNo = undefined; queryParams.value.taskType = undefined; queryParams.value.taskStatus = undefined; queryParams.value.inspectResult = undefined; queryParams.value.materialCode = undefined; queryParams.value.batchNo = undefined; queryParams.value.params = {}; activeStatusTab.value = 'all'; handleQuery() }
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.taskId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function reset() { form.value = { taskId: undefined, taskNo: undefined, taskType: 'IQC', sourceType: undefined, sourceNo: undefined, materialId: undefined, materialCode: undefined, materialName: undefined, supplierId: undefined, supplierName: undefined, batchNo: undefined, inspectQty: undefined, aqlLevel: '2.5', inspectLevel: '1', inspectMethod: undefined, gaugeId: undefined, gaugeName: undefined, gaugeNo: undefined, inspectorId: undefined, inspectorName: undefined, status: '0', remark: undefined }; proxy.resetForm('taskRef') }
-function loadGaugeOptions() { listGauge({ pageNum: 1, pageSize: 999, gaugeStatus: '0' }).then(res => { gaugeOptions.value = res.rows || [] }) }
 function loadDefectOptions() { listDefect({ pageNum: 1, pageSize: 999, status: '0' }).then(res => { defectOptions.value = res.rows || [] }) }
 function loadStdOptions() { listStd({ pageNum: 1, pageSize: 999, status: '0' }).then(res => { stdOptions.value = res.rows || [] }) }
-function loadSupplierOptions() { listSupplier({ pageNum: 1, pageSize: 999, status: '0' }).then(res => { supplierOptions.value = res.rows || [] }) }
 function onStdChange(row, val) {
   if (val) {
     const std = stdOptions.value.find(s => s.stdId === val)
@@ -847,25 +854,25 @@ function onMaterialPickerConfirm(material) { form.value.materialId = material.ma
 /** 清空物料 */
 function clearMaterial() { form.value.materialId = undefined; form.value.materialCode = undefined; form.value.materialName = undefined }
 
-/** 供应商选择变更 */
-function onSupplierChange(val) {
-  if (val) {
-    const supplier = supplierOptions.value.find(s => s.supplierId === val)
-    if (supplier) { form.value.supplierName = supplier.supplierName }
-  } else {
-    form.value.supplierName = undefined
-  }
-}
+/** 打开供应商选择弹窗 */
+function openSupplierPicker() { supplierPickerRef.value.open(form.value.supplierId) }
+/** 供应商选择确认回调 */
+function onSupplierPickerConfirm(supplier) { form.value.supplierId = supplier.supplierId; form.value.supplierName = supplier.supplierName }
+/** 清空供应商 */
+function clearSupplier() { form.value.supplierId = undefined; form.value.supplierName = undefined }
 
-/** 量检具选择变更 — 同时带出名称和编号 */
-function onGaugeChange(val) {
-  if (val) {
-    const gauge = gaugeOptions.value.find(g => g.gaugeId == val)
-    if (gauge) { form.value.gaugeName = gauge.gaugeName; form.value.gaugeNo = gauge.gaugeNo }
-  } else {
-    form.value.gaugeName = undefined; form.value.gaugeNo = undefined
-  }
-}
+/** 打开量检具选择弹窗 */
+function openGaugePicker() { gaugePickerRef.value.open(form.value.gaugeId) }
+/** 量检具选择确认回调 — 同时带出名称和编号 */
+function onGaugePickerConfirm(gauge) { form.value.gaugeId = gauge.gaugeId; form.value.gaugeNo = gauge.gaugeNo; form.value.gaugeName = gauge.gaugeName }
+/** 清空量检具 */
+function clearGauge() { form.value.gaugeId = undefined; form.value.gaugeNo = undefined; form.value.gaugeName = undefined }
+
+/** 量检具显示值：编号 - 名称 */
+const gaugeDisplay = computed(() => {
+  if (!form.value.gaugeName) return ''
+  return form.value.gaugeNo ? form.value.gaugeNo + ' - ' + form.value.gaugeName : form.value.gaugeName
+})
 
 /** 打开检验员选择弹窗 */
 function openUserPicker() { userPickerRef.value.open(form.value.inspectorId) }
@@ -875,7 +882,7 @@ function onUserPickerConfirm(user) { form.value.inspectorId = user.userId; form.
 function clearInspector() { form.value.inspectorId = undefined; form.value.inspectorName = undefined }
 
 function handleAdd() { reset(); open.value = true; title.value = '添加检验任务' }
-function handleUpdate(row) { reset(); getTask(row.taskId || ids.value[0]).then(res => { form.value = res.data; syncGaugeInfo(); open.value = true; title.value = '修改检验任务' }) }
+function handleUpdate(row) { reset(); getTask(row.taskId || ids.value[0]).then(res => { form.value = res.data; open.value = true; title.value = '修改检验任务' }) }
 function handleView(row) { getTask(row.taskId).then(res => { viewData.value = res.data; syncViewGaugeInfo(); viewOpen.value = true }) }
 function handlePrintReport(row) { proxy.$router.push({ path: '/qms/task-report/index', query: { taskId: row.taskId } }) }
 function handleInspect(row) {
@@ -910,8 +917,6 @@ function handleVoid(row) {
 function submitForm() {
   proxy.$refs['taskRef'].validate(valid => {
     if (valid) {
-      // 提交前确保量检具名称和编号与ID同步
-      syncGaugeInfo()
       if (form.value.taskId != undefined) {
         updateTask(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList() })
       } else {
@@ -944,29 +949,21 @@ function handleSaveDraft() {
   }).catch(() => {})
 }
 function handleDelete(row) { const taskIds = row.taskId || ids.value; proxy.$modal.confirm('确认删除编号为"' + taskIds + '"的数据？').then(() => delTask(taskIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
-/** 同步量检具信息：根据gaugeId从选项列表中补全gaugeName和gaugeNo */
-function syncGaugeInfo() {
-  if (form.value.gaugeId) {
-    const gauge = gaugeOptions.value.find(g => g.gaugeId == form.value.gaugeId)
-    if (gauge) { form.value.gaugeName = gauge.gaugeName; form.value.gaugeNo = gauge.gaugeNo }
-  }
-}
-
-/** 详情页同步量检具信息：根据gaugeId从选项列表中补全gaugeName和gaugeNo */
+/** 详情页补全量检具信息：根据gaugeId查询补全gaugeName和gaugeNo */
 function syncViewGaugeInfo() {
   if (viewData.value.gaugeId && (!viewData.value.gaugeName || !viewData.value.gaugeNo)) {
-    const gauge = gaugeOptions.value.find(g => g.gaugeId == viewData.value.gaugeId)
-    if (gauge) { viewData.value.gaugeName = gauge.gaugeName; viewData.value.gaugeNo = gauge.gaugeNo }
+    getGauge(viewData.value.gaugeId).then(res => {
+      const gauge = res.data
+      if (gauge) { viewData.value.gaugeName = gauge.gaugeName; viewData.value.gaugeNo = gauge.gaugeNo }
+    })
   }
 }
 
 function handleExport() { proxy.download('qms/task/export', { ...queryParams.value }, `task_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 
-loadGaugeOptions()
 loadDefectOptions()
 loadStdOptions()
-loadSupplierOptions()
 getList()
 onActivated(() => { getList() })
 </script>
@@ -1101,4 +1098,11 @@ onActivated(() => { getList() })
 .status-help-content .highlight-danger .highlight-card-title { color: #f56c6c; }
 
 @media (max-width:720px) { .qms-task-page .status-tabs { padding:6px 8px; } }
+
+/* 操作列按钮对齐：每行2个按钮，flex-wrap 自动换行，按钮自适应内容宽度 */
+:deep(.col-action) { padding: 6px 4px !important; }
+:deep(.col-action .cell) { display: flex; justify-content: center; padding: 0; }
+.action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
+:deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
+:deep(.col-action .el-button + .el-button) { margin-left: 2px; }
 </style>

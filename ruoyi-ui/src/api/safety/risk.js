@@ -43,15 +43,6 @@ export function delRiskPoint(riskPointId) {
   })
 }
 
-// 计算LEC风险值
-export function calculateLEC(data) {
-  return request({
-    url: '/safety/risk/calculate',
-    method: 'post',
-    data: data
-  })
-}
-
 // 获取四色图数据
 export function getFourColorMap(enterpriseId) {
   return request({

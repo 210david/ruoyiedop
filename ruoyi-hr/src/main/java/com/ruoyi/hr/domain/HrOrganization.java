@@ -10,7 +10,6 @@ public class HrOrganization extends BaseEntity
     private static final long serialVersionUID = 1L;
 
     private Long orgId;
-    @NotBlank(message = "组织编码不能为空")
     @Excel(name = "组织编码")
     private String orgCode;
     @NotBlank(message = "组织名称不能为空")

@@ -113,11 +113,13 @@
             <template #header><span>等级</span><el-tooltip content="系统自动评级：A(≥90分) B(80-89分) C(70-79分) D(小于70分)" placement="top"><el-icon class="col-tip"><QuestionFilled /></el-icon></el-tooltip></template>
             <template #default="scope"><span class="badge blue"><span class="dot"></span>{{ gradeLabel(scope.row.grade) }}</span></template>
           </el-table-column>
-          <el-table-column label="操作" width="200" align="center">
+          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
-              <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
-              <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['qms:supplierEval:edit']">修改</el-button>
-              <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['qms:supplierEval:remove']">删除</el-button>
+              <div class="action-btn-row">
+                <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
+                <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['qms:supplierEval:edit']">修改</el-button>
+                <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['qms:supplierEval:remove']">删除</el-button>
+              </div>
             </template>
           </el-table-column>
         </el-table>
@@ -183,7 +185,7 @@
             <div class="rd-card-header" @click="toggleCard('e_basic')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="6" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>基本信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.e_basic }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
             <div class="rd-card-body" v-show="!collapsedCards.e_basic">
               <el-row :gutter="24">
-                <el-col :span="12"><el-form-item label="供应商" prop="supplierId"><el-select v-model="form.supplierId" filterable clearable placeholder="请选择供应商" style="width: 100%" @change="onSupplierChange"><el-option v-for="s in supplierOptions" :key="s.supplierId" :label="s.supplierName" :value="s.supplierId" /></el-select></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="供应商" prop="supplierId"><el-input v-model="form.supplierName" readonly placeholder="请选择供应商" style="width: 100%" @click="onSupplierFieldClick"><template v-if="form.supplierName" #append><el-button icon="CircleClose" @click.stop="clearSupplier" /></template><template v-else #append><el-button icon="Search" @click="openSupplierPicker" /></template></el-input></el-form-item></el-col>
                 <el-col :span="12"><el-form-item prop="evalPeriod"><template #label><span>评价周期</span><el-tooltip content="选择需要评价的月份，系统将根据该周期自动统计IQC来料检验数据" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></template><el-date-picker v-model="form.evalPeriod" type="month" placeholder="请选择评价周期" value-format="YYYY-MM" style="width: 100%" @change="fetchBatchStats" /></el-form-item></el-col>
               </el-row>
               <el-row :gutter="24">
@@ -246,6 +248,9 @@
       </el-form>
       <template #footer><div class="dialog-footer"><el-button type="primary" @click="submitForm">确 定</el-button><el-button @click="cancel">取 消</el-button></div></template>
     </el-dialog>
+
+    <!-- 供应商选择器 -->
+    <supplier-picker ref="supplierPickerRef" title="选择供应商" @confirm="onSupplierPickerConfirm" />
 
     <!-- 业务操作说明对话框 -->
     <el-dialog v-model="showStatusHelp" title="供应商质量评价业务操作说明" width="760px" append-to-body>
@@ -336,7 +341,7 @@
 
 <script setup name="QmsSupplierEval">
 import { listSupplierEval, getSupplierEval, addSupplierEval, updateSupplierEval, delSupplierEval, getBatchStats } from '@/api/qms/supplierEval'
-import { listSupplier } from '@/api/wms/supplier'
+import SupplierPicker from '@/components/SupplierPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('qms_supplierEval_index')
@@ -344,7 +349,7 @@ const { collapsedCards, toggleCard } = useDetailCard(['v_basic', 'v_batch', 'v_s
 const { proxy } = getCurrentInstance()
 const { qms_supplier_grade: gradeOptions } = proxy.useDict('qms_supplier_grade')
 
-const supplierOptions = ref([])
+const supplierPickerRef = ref()
 const list = ref([])
 const loading = ref(true)
 const showSearch = ref(true)
@@ -376,8 +381,14 @@ const activeFilterCount = computed(() => {
   return count
 })
 
-function loadSupplierOptions() { listSupplier({ status: '0', pageNum: 1, pageSize: 999 }).then(res => { supplierOptions.value = res.rows || [] }) }
-function onSupplierChange(supplierId) { const supplier = supplierOptions.value.find(s => s.supplierId === supplierId); form.value.supplierName = supplier ? supplier.supplierName : undefined; fetchBatchStats() }
+function onSupplierFieldClick(e) {
+  // 点击的是右侧清空按钮时不打开弹窗（el-button 的 .stop 无法阻止原生冒泡）
+  if (e.target && e.target.closest && e.target.closest('.el-input-group__append')) return
+  openSupplierPicker()
+}
+function openSupplierPicker() { supplierPickerRef.value.open(form.value.supplierId) }
+function onSupplierPickerConfirm(supplier) { form.value.supplierId = supplier.supplierId; form.value.supplierName = supplier.supplierName; fetchBatchStats() }
+function clearSupplier() { form.value.supplierId = undefined; form.value.supplierName = undefined; fetchBatchStats() }
 function fetchBatchStats() {
   if (!form.value.supplierId || !form.value.evalPeriod) return
   batchLoading.value = true
@@ -434,7 +445,6 @@ watch(() => [form.value.qualityScore, form.value.deliveryScore, form.value.servi
   }
 }, { deep: true })
 function gradeLabel(val) { const item = gradeOptions.value.find(d => d.value == val); return item ? item.label : '-' }
-loadSupplierOptions()
 getList()
 </script>
 
@@ -597,4 +607,11 @@ getList()
 .status-help-content .grade-c .grade-badge { background: #e6a23c; color: #fff; }
 .status-help-content .grade-d { background: #fef0f0; }
 .status-help-content .grade-d .grade-badge { background: #f56c6c; color: #fff; }
+
+/* 操作列按钮对齐：每行2个按钮，flex-wrap 自动换行，按钮自适应内容宽度 */
+:deep(.col-action) { padding: 6px 4px !important; }
+:deep(.col-action .cell) { display: flex; justify-content: center; padding: 0; }
+.action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
+:deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
+:deep(.col-action .el-button + .el-button) { margin-left: 2px; }
 </style>

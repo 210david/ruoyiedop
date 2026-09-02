@@ -53,7 +53,8 @@ public class MkInvoiceServiceImpl implements IMkInvoiceService
     {
         if (invoice.getInvoiceStatus() == null)
         {
-            invoice.setInvoiceStatus("1");
+            // 修复：默认应为“待开票(0)”，否则新开发票永远无法执行“开票”动作（issueInvoice 要求状态 0）
+            invoice.setInvoiceStatus("0");
         }
         if (invoice.getTaxRate() == null)
         {

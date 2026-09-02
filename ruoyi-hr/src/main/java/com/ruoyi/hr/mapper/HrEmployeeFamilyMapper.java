@@ -10,4 +10,5 @@ public interface HrEmployeeFamilyMapper {
     public int updateHrEmployeeFamily(HrEmployeeFamily hrEmployeeFamily);
     public int deleteHrEmployeeFamilyByFamilyId(Long familyId);
     public int deleteHrEmployeeFamilyByIds(Long[] familyIds);
+public int deleteHrEmployeeFamilyByEmployeeId(Long employeeId);
 }

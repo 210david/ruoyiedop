@@ -8,6 +8,7 @@ import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.mk.service.IMkNumberRuleService;
 import com.ruoyi.safety.domain.SafetyArea;
 import com.ruoyi.safety.mapper.SafetyAreaMapper;
+import com.ruoyi.safety.mapper.SafetyRiskPointMapper;
 import com.ruoyi.safety.service.ISafetyAreaService;
 
 @Service
@@ -18,6 +19,9 @@ public class SafetyAreaServiceImpl implements ISafetyAreaService
 
     @Autowired
     private IMkNumberRuleService mkNumberRuleService;
+
+    @Autowired
+    private SafetyRiskPointMapper safetyRiskPointMapper;
 
     @Override
     public SafetyArea selectSafetyAreaById(Long areaId)
@@ -56,6 +60,10 @@ public class SafetyAreaServiceImpl implements ISafetyAreaService
             {
                 throw new ServiceException("删除失败，存在子区域，请先删除子区域");
             }
+            if (safetyRiskPointMapper.countRiskPointByAreaId(areaId) > 0)
+            {
+                throw new ServiceException("删除失败，该区域下存在风险点，请先处理关联风险点");
+            }
         }
         return safetyAreaMapper.deleteSafetyAreaByIds(areaIds);
     }
@@ -66,6 +74,10 @@ public class SafetyAreaServiceImpl implements ISafetyAreaService
         if (safetyAreaMapper.countChildByParentId(areaId) > 0)
         {
             throw new ServiceException("删除失败，存在子区域，请先删除子区域");
+        }
+        if (safetyRiskPointMapper.countRiskPointByAreaId(areaId) > 0)
+        {
+            throw new ServiceException("删除失败，该区域下存在风险点，请先处理关联风险点");
         }
         return safetyAreaMapper.deleteSafetyAreaById(areaId);
     }

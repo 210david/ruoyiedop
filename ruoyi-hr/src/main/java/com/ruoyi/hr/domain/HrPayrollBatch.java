@@ -12,7 +12,6 @@ public class HrPayrollBatch extends BaseEntity
     private static final long serialVersionUID = 1L;
 
     private Long batchId;
-    @NotBlank(message = "批次编号不能为空")
     @Excel(name = "批次编号")
     private String batchNo;
     @NotBlank(message = "年月不能为空")

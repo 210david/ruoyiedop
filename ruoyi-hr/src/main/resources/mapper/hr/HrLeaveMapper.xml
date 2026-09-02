@@ -41,13 +41,15 @@
     <select id="selectHrLeaveList" parameterType="HrLeave" resultMap="HrLeaveResult">
         <include refid="selectVo"/>
         <where>
-            del_flag = '0'
+            (del_flag IS NULL OR del_flag = '0')
             <if test="leaveNo != null and leaveNo != ''"> AND leave_no LIKE CONCAT('%', #{leaveNo}, '%')</if>
             <if test="employeeId != null"> AND employee_id = #{employeeId}</if>
             <if test="employeeName != null and employeeName != ''"> AND employee_name LIKE CONCAT('%', #{employeeName}, '%')</if>
             <if test="employeeNo != null and employeeNo != ''"> AND employee_no LIKE CONCAT('%', #{employeeNo}, '%')</if>
             <if test="leaveType != null and leaveType != ''"> AND leave_type LIKE CONCAT('%', #{leaveType}, '%')</if>
             <if test="leaveDate != null"> AND leave_date = #{leaveDate}</if>
+            <if test="params.beginLeaveDate != null and params.beginLeaveDate != ''"> AND leave_date &gt;= #{params.beginLeaveDate}</if>
+            <if test="params.endLeaveDate != null and params.endLeaveDate != ''"> AND leave_date &lt;= #{params.endLeaveDate}</if>
             <if test="reason != null and reason != ''"> AND reason LIKE CONCAT('%', #{reason}, '%')</if>
             <if test="handoverStatus != null and handoverStatus != ''"> AND handover_status LIKE CONCAT('%', #{handoverStatus}, '%')</if>
             <if test="handoverRemark != null and handoverRemark != ''"> AND handover_remark LIKE CONCAT('%', #{handoverRemark}, '%')</if>
@@ -58,7 +60,7 @@
             <if test="annualLeaveAmount != null"> AND annual_leave_amount = #{annualLeaveAmount}</if>
             <if test="settlementAmount != null"> AND settlement_amount = #{settlementAmount}</if>
             <if test="certificateNo != null and certificateNo != ''"> AND certificate_no LIKE CONCAT('%', #{certificateNo}, '%')</if>
-            <if test="auditStatus != null and auditStatus != ''"> AND audit_status LIKE CONCAT('%', #{auditStatus}, '%')</if>
+            <if test="auditStatus != null and auditStatus != ''"> AND audit_status = #{auditStatus}</if>
             <if test="auditBy != null and auditBy != ''"> AND audit_by LIKE CONCAT('%', #{auditBy}, '%')</if>
             <if test="auditTime != null"> AND audit_time = #{auditTime}</if>
             <if test="auditRemark != null and auditRemark != ''"> AND audit_remark LIKE CONCAT('%', #{auditRemark}, '%')</if>

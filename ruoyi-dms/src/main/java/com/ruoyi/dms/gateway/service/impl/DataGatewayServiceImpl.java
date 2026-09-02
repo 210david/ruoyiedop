@@ -1,6 +1,7 @@
 package com.ruoyi.dms.gateway.service.impl;
 
 import com.ruoyi.common.exception.ServiceException;
+import com.ruoyi.dms.domain.DmsDataCollectionConfig;
 import com.ruoyi.dms.domain.DmsDataRecord;
 import com.ruoyi.dms.domain.DmsEquipment;
 import com.ruoyi.dms.gateway.dto.DataPacket;
@@ -87,30 +88,47 @@ public class DataGatewayServiceImpl implements DataGatewayService {
 
     @Override
     public boolean validateAccessKey(String deviceCode, String accessKey) {
-        // 先从缓存查
-        String cacheKey = ACCESS_KEY_PREFIX + deviceCode;
-        String cachedKey = (String) getCache(cacheKey);
-
-        if (cachedKey != null) {
-            return cachedKey.equals(accessKey);
-        }
-
-        // 从数据库验证
-        DmsEquipment equipment = equipmentMapper.selectEquipmentByCode(deviceCode);
-        if (equipment == null || "2".equals(equipment.getDelFlag())) {
+        if (deviceCode == null || accessKey == null || accessKey.isEmpty()) {
             return false;
         }
+        // 先从缓存查数据库中存储的密钥
+        String cacheKey = ACCESS_KEY_PREFIX + deviceCode;
+        String cachedKey = (String) getCache(cacheKey);
+        String storedKey = cachedKey;
 
-        // TODO: 实际应从设备配置表中获取accessKey进行比对
-        // 这里简化处理，实际项目中需要完善
-        boolean valid = true; // equipment.getAccessKey().equals(accessKey);
-
-        if (valid) {
-            // 缓存1小时
-            setCache(cacheKey, accessKey, 1, TimeUnit.HOURS);
+        if (storedKey == null) {
+            // 从数据库验证：按设备编码找到设备，再从采集配置表读取密钥比对
+            DmsEquipment equipment = equipmentMapper.selectEquipmentByCode(deviceCode);
+            if (equipment == null || "2".equals(equipment.getDelFlag())) {
+                return false;
+            }
+            DmsDataCollectionConfig config = configService.selectConfigByEquipmentId(equipment.getEquipmentId());
+            if (config == null || config.getAccessKey() == null || config.getAccessKey().isEmpty()) {
+                // 未配置密钥的设备拒绝访问
+                return false;
+            }
+            storedKey = config.getAccessKey();
+            // 缓存数据库中存储的密钥1小时
+            setCache(cacheKey, storedKey, 1, TimeUnit.HOURS);
         }
 
-        return valid;
+        return storedKey.equals(accessKey);
+    }
+
+    @Override
+    public void refreshAccessKeyCache(String deviceCode) {
+        if (deviceCode == null) {
+            return;
+        }
+        String cacheKey = ACCESS_KEY_PREFIX + deviceCode;
+        if (redisTemplate != null) {
+            try {
+                redisTemplate.delete(cacheKey);
+            } catch (Exception e) {
+                log.warn("Redis删除密钥缓存失败: {}", e.getMessage());
+            }
+        }
+        localCache.remove(cacheKey);
     }
 
     @Override

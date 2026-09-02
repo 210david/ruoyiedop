@@ -34,7 +34,7 @@
     <select id="selectHrCertificateList" parameterType="HrCertificate" resultMap="HrCertificateResult">
         <include refid="selectVo"/>
         <where>
-            del_flag = '0'
+            (del_flag IS NULL OR del_flag = '0')
             <if test="employeeId != null"> AND employee_id = #{employeeId}</if>
             <if test="employeeName != null and employeeName != ''"> AND employee_name LIKE CONCAT('%', #{employeeName}, '%')</if>
             <if test="employeeNo != null and employeeNo != ''"> AND employee_no LIKE CONCAT('%', #{employeeNo}, '%')</if>
@@ -42,7 +42,11 @@
             <if test="certName != null and certName != ''"> AND cert_name LIKE CONCAT('%', #{certName}, '%')</if>
             <if test="certNo != null and certNo != ''"> AND cert_no LIKE CONCAT('%', #{certNo}, '%')</if>
             <if test="issueDate != null"> AND issue_date = #{issueDate}</if>
+            <if test="params.beginIssueDate != null and params.beginIssueDate != ''"> AND issue_date &gt;= #{params.beginIssueDate}</if>
+            <if test="params.endIssueDate != null and params.endIssueDate != ''"> AND issue_date &lt;= #{params.endIssueDate}</if>
             <if test="validFrom != null"> AND valid_from = #{validFrom}</if>
+            <if test="params.beginValidFrom != null and params.beginValidFrom != ''"> AND valid_from &gt;= #{params.beginValidFrom}</if>
+            <if test="params.endValidFrom != null and params.endValidFrom != ''"> AND valid_from &lt;= #{params.endValidFrom}</if>
             <if test="validTo != null"> AND valid_to = #{validTo}</if>
             <if test="reviewDate != null"> AND review_date = #{reviewDate}</if>
             <if test="issueOrg != null and issueOrg != ''"> AND issue_org LIKE CONCAT('%', #{issueOrg}, '%')</if>

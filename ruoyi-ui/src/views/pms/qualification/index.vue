@@ -92,7 +92,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" :row-class-name="tableRowClassName" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
-          <el-table-column type="index" label="序号" width="85" align="center" />
+          <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" resizable align="center" />
           <el-table-column label="供应商" prop="supplierName" key="supplierName" :width="colWidth('supplierName', 240)" resizable show-overflow-tooltip v-if="columns.supplierName.visible" />
           <el-table-column label="资质名称" prop="qualName" key="qualName" :width="colWidth('qualName', 180)" resizable show-overflow-tooltip v-if="columns.qualName.visible" />
           <el-table-column label="资质类型" prop="qualType" key="qualType" :width="colWidth('qualType', 120)" resizable align="center" v-if="columns.qualType.visible"><template #default="scope"><span class="badge violet">{{ qualTypeLabel(scope.row.qualType) }}</span></template></el-table-column>
@@ -101,10 +101,11 @@
           <el-table-column label="有效期至" prop="expireDate" key="expireDate" :width="colWidth('expireDate', 150)" resizable align="center" v-if="columns.expireDate.visible"><template #default="scope"><span :class="{ 'rd-expire-warn': isExpiringSoon(scope.row), 'rd-expire-alert': isExpired(scope.row) }">{{ scope.row.expireDate }}</span><el-tag v-if="isExpired(scope.row)" type="danger" size="small" style="margin-left: 4px">已过期</el-tag><el-tag v-else-if="isExpiringSoon(scope.row)" type="warning" size="small" style="margin-left: 4px">即将过期</el-tag></template></el-table-column>
           <el-table-column label="状态" prop="status" key="status" :width="colWidth('status', 120)" resizable align="center" v-if="columns.status.visible"><template #default="scope"><span class="badge" :class="badgeClass(scope.row.status)"><span class="dot"></span>{{ statusLabel(scope.row.status) }}</span></template></el-table-column>
           <el-table-column label="创建时间" prop="createTime" key="createTime" :width="colWidth('createTime', 180)" resizable align="center" sortable="custom" v-if="columns.createTime.visible" />
-          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
+          <el-table-column label="操作" width="200" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
               <div class="action-btn-row">
                 <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
+                <el-button v-if="scope.row.status === '0'" link type="warning" icon="Checked" @click="handleAudit(scope.row)" v-hasPermi="['pms:qualification:audit']">审核</el-button>
                 <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['pms:qualification:edit']">修改</el-button>
                 <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['pms:qualification:remove']">删除</el-button>
               </div>
@@ -126,7 +127,7 @@
             <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.basic }"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
           </div>
           <div class="rd-card-body" v-show="!collapsedCards.basic">
-            <el-row :gutter="20"><el-col :span="12"><el-form-item label="供应商" prop="supplierId"><el-select v-model="form.supplierId" filterable placeholder="请选择供应商" style="width: 100%" @change="onSupplierChange"><el-option v-for="s in supplierOptions" :key="s.supplierId" :label="s.supplierName" :value="s.supplierId" /></el-select></el-form-item></el-col><el-col :span="12"><el-form-item label="资质名称" prop="qualName"><el-input v-model="form.qualName" placeholder="请输入" /></el-form-item></el-col></el-row>
+            <el-row :gutter="20"><el-col :span="12"><el-form-item label="供应商" prop="supplierId"><el-input v-model="form.supplierName" readonly placeholder="请选择供应商" style="width: 100%" @click="openSupplierPicker"><template v-if="form.supplierName" #append><el-button icon="CircleClose" @click.stop="clearSupplier" /></template><template v-else #append><el-button icon="Search" @click="openSupplierPicker" /></template></el-input></el-form-item></el-col><el-col :span="12"><el-form-item label="资质名称" prop="qualName"><el-input v-model="form.qualName" placeholder="请输入" /></el-form-item></el-col></el-row>
             <el-row :gutter="20"><el-col :span="12"><el-form-item label="资质类型" prop="qualType"><el-select v-model="form.qualType" placeholder="请选择" style="width: 100%"><el-option v-for="d in pms_qual_type" :key="d.value" :label="d.label" :value="d.value" /></el-select></el-form-item></el-col><el-col :span="12"><el-form-item label="资质编号" prop="qualCode"><el-input v-model="form.qualCode" placeholder="请输入" /></el-form-item></el-col></el-row>
           </div>
         </section>
@@ -211,14 +212,32 @@
       </template>
     </el-dialog>
 
+    <el-dialog v-model="auditOpen" width="520px" append-to-body draggable class="rd-dialog">
+      <template #header><div class="rd-detail-header"><div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div><span class="rd-detail-header-title">资质审核</span><div class="rd-detail-header-sub" v-if="auditForm.qualCode"><div class="rd-detail-header-divider"></div><span class="rd-detail-header-no">编号：{{ auditForm.qualCode }}</span></div></div></template>
+      <el-form ref="auditRef" :model="auditForm" :rules="auditRules" label-width="110px">
+        <el-form-item label="资质名称"><span>{{ auditForm.qualName }}</span></el-form-item>
+        <el-form-item label="供应商"><span>{{ auditForm.supplierName }}</span></el-form-item>
+        <el-form-item label="审核结果" prop="status">
+          <el-radio-group v-model="auditForm.status">
+            <el-radio value="1">通过（生效）</el-radio>
+            <el-radio value="2">驳回</el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item label="审核意见" prop="auditRemark"><el-input v-model="auditForm.auditRemark" type="textarea" :rows="3" placeholder="请输入审核意见" /></el-form-item>
+      </el-form>
+      <template #footer><el-button type="primary" @click="submitAudit">确 定</el-button><el-button @click="auditOpen = false">取 消</el-button></template>
+    </el-dialog>
+
     <file-preview ref="filePreviewRef" />
+
+    <supplier-picker ref="supplierPickerRef" title="选择供应商" @confirm="onSupplierPickerConfirm" />
 
   </div>
 </template>
 
 <script setup name="PmsQualification">
-import { listQualification, getQualification, addQualification, updateQualification, delQualification } from '@/api/pms/qualification'
-import { listSupplier } from '@/api/wms/supplier'
+import { listQualification, getQualification, addQualification, updateQualification, delQualification, auditQualification } from '@/api/pms/qualification'
+import SupplierPicker from '@/components/SupplierPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
 import useDictStore from '@/store/modules/dict'
@@ -261,7 +280,7 @@ function loadColumnVisibility() {
 const columns = ref(loadColumnVisibility())
 
 function badgeClass(status) {
-  const map = { '0': 'green', '1': 'gray' }
+  const map = { '0': 'gray', '1': 'green', '2': 'red', '3': 'gray' }
   return map[status] || 'gray'
 }
 function statusLabel(status) {
@@ -295,10 +314,29 @@ const single = ref(true)
 const multiple = ref(true)
 const total = ref(0)
 const title = ref('')
-const supplierOptions = ref([])
+const supplierPickerRef = ref(null)
 const baseUrl = import.meta.env.VITE_APP_BASE_API
 const showAdvanced = ref(false)
 const dateRange = ref([])
+const auditOpen = ref(false)
+const auditForm = ref({ qualId: undefined, qualName: undefined, qualCode: undefined, supplierName: undefined, status: '1', auditRemark: undefined })
+const auditRules = { status: [{ required: true, message: '请选择审核结果', trigger: 'change' }] }
+
+function handleAudit(row) {
+  auditForm.value = { qualId: row.qualId, qualName: row.qualName, qualCode: row.qualCode, supplierName: row.supplierName, status: '1', auditRemark: undefined }
+  auditOpen.value = true
+}
+function submitAudit() {
+  proxy.$refs['auditRef'].validate(valid => {
+    if (valid) {
+      auditQualification(auditForm.value.qualId, auditForm.value.status, auditForm.value.auditRemark).then(() => {
+        proxy.$modal.msgSuccess(auditForm.value.status === '1' ? '审核通过' : '已驳回')
+        auditOpen.value = false
+        getList()
+      })
+    }
+  })
+}
 
 const data = reactive({
   form: {},
@@ -312,9 +350,10 @@ function handleQuery() { queryParams.value.pageNum = 1; proxy.addDateRange(query
 function resetQuery() { queryParams.value.supplierName = undefined; queryParams.value.qualName = undefined; queryParams.value.qualType = undefined; queryParams.value.status = undefined; queryParams.value.qualCode = undefined; queryParams.value.params = {}; dateRange.value = []; handleQuery() }
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.qualId); single.value = selection.length !== 1; multiple.value = !selection.length }
-function reset() { form.value = { qualId: undefined, supplierId: undefined, supplierName: undefined, qualName: undefined, qualType: undefined, qualCode: undefined, issueDate: undefined, expireDate: undefined, status: '1', fileUrl: undefined, fileName: undefined, remark: undefined }; proxy.resetForm('qualRef') }
-function onSupplierChange(val) { const matched = supplierOptions.value.find(s => s.supplierId === val); form.value.supplierName = matched ? matched.supplierName : undefined }
-function loadSupplierOptions() { listSupplier({ pageNum: 1, pageSize: 999 }).then(res => { supplierOptions.value = res.rows || [] }) }
+function reset() { form.value = { qualId: undefined, supplierId: undefined, supplierName: undefined, qualName: undefined, qualType: undefined, qualCode: undefined, issueDate: undefined, expireDate: undefined, status: '0', fileUrl: undefined, fileName: undefined, remark: undefined }; proxy.resetForm('qualRef') }
+function openSupplierPicker() { supplierPickerRef.value.open(form.value.supplierId) }
+function onSupplierPickerConfirm(supplier) { form.value.supplierId = supplier.supplierId; form.value.supplierName = supplier.supplierName }
+function clearSupplier() { form.value.supplierId = undefined; form.value.supplierName = undefined }
 function getFileName(url) { if (url.lastIndexOf('/') > -1) { return url.slice(url.lastIndexOf('/') + 1) } return url }
 function handlePreview(fileUrl) { proxy.$refs.filePreviewRef.open(fileUrl, getFileName(fileUrl)) }
 function handleFileDownload(url) {
@@ -346,7 +385,6 @@ function tableRowClassName({ row }) {
   return ''
 }
 
-loadSupplierOptions()
 getList()
 </script>
 
@@ -427,6 +465,8 @@ getList()
 .pms-qualification-page .badge.violet { background:var(--violet-50); color:var(--brand-700); border-color:var(--brand-200); }
 .pms-qualification-page .badge.gray { background:var(--ink-100); color:var(--ink-500); border-color:var(--ink-200); }
 .pms-qualification-page .badge.gray .dot { background:var(--ink-400); }
+.pms-qualification-page .badge.red { background:var(--red-50); color:var(--red-700); border-color:#fecaca; }
+.pms-qualification-page .badge.red .dot { background:var(--red-500); }
 .pms-qualification-page .pagination-container { display:flex; align-items:center; justify-content:flex-end; padding:14px 20px; font-size:14px; color:var(--ink-500); background:#fff; border-top:1px solid transparent; }
 .pms-qualification-page .pagination-container :deep(.el-pagination) { justify-content:flex-end; }
 .pms-qualification-page .pagination-container :deep(.el-pagination .el-pager li) { border-radius:6px; border:1px solid var(--ink-200); background:#fff; min-width:32px; height:32px; line-height:32px; font-size:14px; color:var(--ink-700); margin:0 2px; }

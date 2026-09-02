@@ -30,6 +30,8 @@ public class HrLaborWorker extends BaseEntity
     private String bankAccount;
     @Excel(name = "分配组织ID")
     private Long orgId;
+    /** 部门名称（关联 sys_dept 回显，非表字段） */
+    private String orgName;
     @Excel(name = "岗位")
     private String positionName;
     @NotNull(message = "用工开始日期不能为空")
@@ -49,6 +51,8 @@ public class HrLaborWorker extends BaseEntity
     private String toRegular;
     @Excel(name = "转正后员工ID")
     private Long employeeId;
+    /** 转正后员工姓名（关联 biz_hr_employee 回显，非表字段） */
+    private String employeeName;
     @Excel(name = "状态")
     private String status;
     @Excel(name = "删除标志")
@@ -72,6 +76,8 @@ public class HrLaborWorker extends BaseEntity
     public void setBankAccount(String bankAccount) { this.bankAccount = bankAccount; }
     public Long getOrgId() { return orgId; }
     public void setOrgId(Long orgId) { this.orgId = orgId; }
+    public String getOrgName() { return orgName; }
+    public void setOrgName(String orgName) { this.orgName = orgName; }
     public String getPositionName() { return positionName; }
     public void setPositionName(String positionName) { this.positionName = positionName; }
     public Date getStartDate() { return startDate; }
@@ -88,6 +94,8 @@ public class HrLaborWorker extends BaseEntity
     public void setToRegular(String toRegular) { this.toRegular = toRegular; }
     public Long getEmployeeId() { return employeeId; }
     public void setEmployeeId(Long employeeId) { this.employeeId = employeeId; }
+    public String getEmployeeName() { return employeeName; }
+    public void setEmployeeName(String employeeName) { this.employeeName = employeeName; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
     public String getDelFlag() { return delFlag; }

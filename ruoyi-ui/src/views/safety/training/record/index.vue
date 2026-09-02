@@ -93,11 +93,13 @@
               <span>{{ scope.row.attendeeCount || 0 }} 人</span>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="200" align="center" fixed="right">
+          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
-              <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['safety:training:record:query']">查看</el-button>
-              <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['safety:training:record:edit']">修改</el-button>
-              <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['safety:training:record:remove']">删除</el-button>
+              <div class="action-btn-row">
+                <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['safety:training:record:query']">查看</el-button>
+                <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['safety:training:record:edit']">修改</el-button>
+                <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['safety:training:record:remove']">删除</el-button>
+              </div>
             </template>
           </el-table-column>
         </el-table>
@@ -408,7 +410,7 @@ function getList() {
     total.value = response.total
     loading.value = false
     applySavedWidths()
-  })
+  }).catch(error => { console.error(error) }).finally(() => { loading.value = false })
 }
 function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
 function resetQuery() { queryParams.value.courseName = undefined; queryParams.value.courseType = undefined; queryParams.value.planId = undefined; queryParams.value.trainingLocation = undefined; queryParams.value.trainer = undefined; dateRange.value = []; queryParams.value.params = {}; handleQuery() }
@@ -624,4 +626,11 @@ getList()
 .plan-linked-banner { display: flex; align-items: center; gap: 6px; padding: 8px 16px; background: var(--brand-50); border: 1px solid var(--brand-200); border-radius: 8px; margin-bottom: 12px; font-size: 13px; color: var(--brand-700); }
 .safety-training-record-page .plan-linked-banner { display:flex; align-items:center; gap:8px; padding:10px 16px; background:var(--blue-50); border:1px solid #bfdbfe; border-radius:var(--r-sm); margin-bottom:12px; font-size:13px; color:var(--blue-700); }
 .safety-training-record-page .plan-linked-banner strong { font-weight:600; }
+
+/* 操作列按钮对齐：每行2个按钮，flex-wrap 自动换行，按钮自适应内容宽度 */
+:deep(.col-action) { padding: 6px 4px !important; }
+:deep(.col-action .cell) { display: flex; justify-content: center; padding: 0; }
+.action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
+:deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
+:deep(.col-action .el-button + .el-button) { margin-left: 2px; }
 </style>

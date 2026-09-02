@@ -157,7 +157,20 @@ public class WmsInboundOrderServiceImpl implements IWmsInboundOrderService
         {
             throw new ServiceException("入库明细不存在");
         }
-        target.setReceivedQty(target.getReceivedQty().add(receivedQty));
+        if (receivedQty == null || receivedQty.compareTo(BigDecimal.ZERO) <= 0)
+        {
+            throw new ServiceException("收货数量必须大于0");
+        }
+        // 校验累计收货数量不能超过计划数量（防止超收破坏账实一致性）
+        BigDecimal planQty = target.getPlanQty() == null ? BigDecimal.ZERO : target.getPlanQty();
+        BigDecimal alreadyReceived = target.getReceivedQty() == null ? BigDecimal.ZERO : target.getReceivedQty();
+        if (alreadyReceived.add(receivedQty).compareTo(planQty) > 0)
+        {
+            throw new ServiceException("累计收货数量不能超过计划数量，计划：" + planQty.stripTrailingZeros().toPlainString()
+                    + "，已收：" + alreadyReceived.stripTrailingZeros().toPlainString()
+                    + "，本次：" + receivedQty.stripTrailingZeros().toPlainString());
+        }
+        target.setReceivedQty(alreadyReceived.add(receivedQty));
         wmsInboundOrderMapper.updateInboundDetail(target);
 
         // check if all received

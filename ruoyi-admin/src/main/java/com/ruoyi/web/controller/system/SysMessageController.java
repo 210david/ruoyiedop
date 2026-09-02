@@ -69,12 +69,22 @@ public class SysMessageController extends BaseController
     }
 
     /**
-     * 根据消息ID获取详细信息
+     * 根据消息ID获取详细信息（仅允许访问当前用户角色可见的消息）
      */
     @GetMapping(value = "/{messageId}")
     public AjaxResult getInfo(@PathVariable Long messageId)
     {
-        return success(messageService.selectMessageById(messageId));
+        SysMessage message = messageService.selectMessageById(messageId);
+        if (message == null)
+        {
+            return error("消息不存在");
+        }
+        if (!hasMessageAccess(message))
+        {
+            // IMP-01：越权访问返回403语义
+            return AjaxResult.error(403, "无权访问该消息");
+        }
+        return success(message);
     }
 
     /**
@@ -107,19 +117,29 @@ public class SysMessageController extends BaseController
     }
 
     /**
-     * 标记消息已读
+     * 标记消息已读（仅允许操作当前用户角色可见的消息）
      */
     @PostMapping("/markRead")
     @ResponseBody
     public AjaxResult markRead(Long messageId)
     {
+        SysMessage message = messageService.selectMessageById(messageId);
+        if (message == null)
+        {
+            return error("消息不存在");
+        }
+        if (!hasMessageAccess(message))
+        {
+            // IMP-01：越权操作返回403语义
+            return AjaxResult.error(403, "无权操作该消息");
+        }
         Long userId = getUserId();
         messageService.markRead(messageId, userId);
         return success();
     }
 
     /**
-     * 批量标记已读
+     * 批量标记已读（自动过滤掉当前用户不可见的消息）
      */
     @PostMapping("/markReadAll")
     @ResponseBody
@@ -127,6 +147,19 @@ public class SysMessageController extends BaseController
     {
         Long userId = getUserId();
         Long[] messageIds = com.ruoyi.common.core.text.Convert.toLongArray(ids);
+        if (messageIds != null && messageIds.length > 0)
+        {
+            java.util.List<Long> accessible = new ArrayList<>();
+            for (Long mid : messageIds)
+            {
+                SysMessage message = messageService.selectMessageById(mid);
+                if (message != null && hasMessageAccess(message))
+                {
+                    accessible.add(mid);
+                }
+            }
+            messageIds = accessible.toArray(new Long[0]);
+        }
         messageService.markReadBatch(userId, messageIds);
         return success();
     }
@@ -155,5 +188,27 @@ public class SysMessageController extends BaseController
         }
         // 转为List供MyBatis使用
         return new ArrayList<>(permissions);
+    }
+
+    /**
+     * 校验当前用户是否有权访问指定消息
+     * 可见性规则与列表查询一致：admin全量可见；
+     * 其他用户仅可见 recipient_role_key 为空（广播）或属于自身角色的消息
+     */
+    private boolean hasMessageAccess(SysMessage message)
+    {
+        List<String> roleKeys = getCurrentUserPermissions();
+        if (roleKeys == null)
+        {
+            // admin用户全量可见
+            return true;
+        }
+        String rk = message.getRecipientRoleKey();
+        if (rk == null || rk.isEmpty())
+        {
+            // 广播消息，所有登录用户可见
+            return true;
+        }
+        return roleKeys.contains(rk);
     }
 }

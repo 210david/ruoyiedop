@@ -57,6 +57,19 @@ public class MkOpportunityServiceImpl implements IMkOpportunityService
     @Override
     public int insertOpportunity(MkOpportunity opportunity)
     {
+        // 必填项校验：转为友好业务提示，避免 DB 非空约束导致的 500 系统异常（如 expected_date NOT NULL）
+        if (opportunity.getCustomerId() == null)
+        {
+            throw new ServiceException("请选择关联客户");
+        }
+        if (opportunity.getExpectedAmount() == null)
+        {
+            throw new ServiceException("请填写预计成交金额");
+        }
+        if (opportunity.getExpectedDate() == null)
+        {
+            throw new ServiceException("请填写预计成交日期");
+        }
         opportunity.setDelFlag("0");
         if (opportunity.getOpportunityStatus() == null)
         {

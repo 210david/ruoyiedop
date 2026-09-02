@@ -24,6 +24,8 @@ public class HrSchedule extends BaseEntity
     private String employeeNo;
     @Excel(name = "组织ID")
     private Long orgId;
+    /** 部门名称（关联 sys_dept 回显，非表字段） */
+    private String orgName;
     @Excel(name = "班次ID")
     private Long shiftId;
     @Excel(name = "班次名称")
@@ -47,6 +49,8 @@ public class HrSchedule extends BaseEntity
     public void setEmployeeNo(String employeeNo) { this.employeeNo = employeeNo; }
     public Long getOrgId() { return orgId; }
     public void setOrgId(Long orgId) { this.orgId = orgId; }
+    public String getOrgName() { return orgName; }
+    public void setOrgName(String orgName) { this.orgName = orgName; }
     public Long getShiftId() { return shiftId; }
     public void setShiftId(Long shiftId) { this.shiftId = shiftId; }
     public String getShiftName() { return shiftName; }

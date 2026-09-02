@@ -13,7 +13,6 @@ public class HrSalaryPlan extends BaseEntity
     private static final long serialVersionUID = 1L;
 
     private Long planId;
-    @NotBlank(message = "定薪单号不能为空")
     @Excel(name = "定薪单号")
     private String planNo;
     @NotNull(message = "员工ID不能为空")

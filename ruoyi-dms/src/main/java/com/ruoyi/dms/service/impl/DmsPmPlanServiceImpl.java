@@ -24,6 +24,7 @@ import com.ruoyi.dms.service.IDmsPmPlanService;
 import com.ruoyi.dms.service.IDmsWorkOrderService;
 import com.ruoyi.system.domain.SysNotice;
 import com.ruoyi.system.service.ISysNoticeService;
+import com.ruoyi.system.utils.MessageHelper;
 
 @Service
 public class DmsPmPlanServiceImpl implements IDmsPmPlanService
@@ -39,6 +40,9 @@ public class DmsPmPlanServiceImpl implements IDmsPmPlanService
 
     @Autowired
     private ISysNoticeService sysNoticeService;
+
+    @Autowired
+    private MessageHelper messageHelper;
 
     @Override
     public List<DmsPmPlan> selectPmPlanList(DmsPmPlan pmPlan)
@@ -118,6 +122,9 @@ public class DmsPmPlanServiceImpl implements IDmsPmPlanService
         // 发送系统通知
         sendPmNotification(plan, workOrder, "PM计划「" + plan.getPlanName() + "」已生成工单「" + workOrder.getOrderNo() + "」");
 
+        // 发送消息中心提醒：设备保养到期（DEF-03）
+        sendPmDueMessage(plan, workOrder, "");
+
         return 1;
     }
 
@@ -168,6 +175,9 @@ public class DmsPmPlanServiceImpl implements IDmsPmPlanService
 
                 // 发送通知
                 sendPmNotification(plan, workOrder, "【定时任务】PM计划「" + plan.getPlanName() + "」已自动生成工单「" + workOrder.getOrderNo() + "」");
+
+                // 发送消息中心提醒：设备保养到期（DEF-03）
+                sendPmDueMessage(plan, workOrder, "【定时任务】");
 
                 count++;
             }
@@ -337,6 +347,39 @@ public class DmsPmPlanServiceImpl implements IDmsPmPlanService
         catch (Exception e)
         {
             System.err.println("发送PM通知失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 发送消息中心提醒：设备保养到期（DEF-03）
+     * 消息规范（docs/消息提醒方案设计.md §2.7）：类型2-业务预警，级别2-重要，
+     * 接收角色 dms:pmplan:list，跳转 /dms/pm/plan
+     */
+    private void sendPmDueMessage(DmsPmPlan plan, DmsWorkOrder workOrder, String prefix)
+    {
+        try
+        {
+            String title = "设备保养到期提醒";
+            String content = prefix + "PM计划「" + plan.getPlanName() + "」保养到期"
+                    + "，已生成保养工单「" + workOrder.getOrderNo() + "」"
+                    + "，设备：" + (plan.getEquipmentName() != null ? plan.getEquipmentName() : "-")
+                    + "，请及时安排保养。";
+            messageHelper.sendMessage(
+                title,
+                content,
+                "2",   // 业务预警
+                "2",   // 重要
+                "dms",
+                plan.getPlanId(),
+                "/dms/pm/plan?equipId=" + (plan.getEquipmentId() != null ? plan.getEquipmentId() : ""),
+                "dms:pmplan:list",
+                "0",   // bizStatus: 工单新建待派
+                "PM保养计划"
+            );
+        }
+        catch (Exception e)
+        {
+            System.err.println("发送设备保养到期消息失败: " + e.getMessage());
         }
     }
 

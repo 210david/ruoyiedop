@@ -1,6 +1,7 @@
 package com.ruoyi.hr.service;
 
 import java.util.List;
+import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.hr.domain.HrEmployee;
 
 public interface IHrEmployeeService {
@@ -10,4 +11,5 @@ public interface IHrEmployeeService {
     public int updateHrEmployee(HrEmployee hrEmployee);
     public int deleteHrEmployeeByIds(Long[] employeeIds);
     public int deleteHrEmployeeById(Long employeeId);
+    public AjaxResult importHrEmployee(List<HrEmployee> employeeList, Boolean isUpdateSupport, String updateKey, String operName);
 }

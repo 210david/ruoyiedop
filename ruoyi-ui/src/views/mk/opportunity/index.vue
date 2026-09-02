@@ -160,7 +160,7 @@
             </template>
           </el-table-column>
           <el-table-column label="负责人" prop="userName" key="userName" :width="colWidth('userName', 100)" resizable v-if="columns.userName.visible" />
-          <el-table-column label="操作" width="180" align="center" fixed="right" class-name="col-action">
+          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
               <div class="action-btn-row">
               <el-button link type="primary" icon="View" @click="handleView(scope.row)">详情</el-button>
@@ -1101,4 +1101,11 @@ const showStatusHelp = ref(false)
   font-size: 13px;
   color: #606266;
 }
+
+/* 操作列按钮对齐：每行2个按钮，flex-wrap 自动换行，按钮自适应内容宽度 */
+:deep(.col-action) { padding: 6px 4px !important; }
+:deep(.col-action .cell) { display: flex; justify-content: center; padding: 0; }
+.action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
+:deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
+:deep(.col-action .el-button + .el-button) { margin-left: 2px; }
 </style>

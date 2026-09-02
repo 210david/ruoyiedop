@@ -121,7 +121,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" border v-loading="loading" :data="planList" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
 <el-table-column type="selection" width="55" align="center" />
-<el-table-column type="index" label="序号" width="85" align="center" />
+<el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" resizable align="center" />
 <el-table-column label="计划单号" prop="planNo" key="planNo" :width="colWidth('planNo', 180)" resizable sortable="custom" v-if="columns.planNo.visible" />
           <el-table-column label="计划标题" prop="title" key="title" :width="colWidth('title', 240)" resizable show-overflow-tooltip v-if="columns.title.visible" />
           <el-table-column label="计划类型" prop="planType" key="planType" :width="colWidth('planType', 120)" resizable align="center" v-if="columns.planType.visible">
@@ -251,7 +251,7 @@
               </el-row>
               <el-table :data="form.detailList" border size="small">
                 <el-table-column label="序号" type="index" width="85" align="center" />
-                <el-table-column label="物料" prop="materialId" min-width="200"><template #default="scope"><el-select v-model="scope.row.materialId" filterable clearable size="small" placeholder="请选择物料" style="width: 100%" @change="(val) => onMaterialChange(val, scope.$index)"><el-option v-for="m in materialOptions" :key="m.materialId" :label="m.materialCode + ' - ' + m.materialName" :value="m.materialId" /></el-select></template></el-table-column>
+                <el-table-column label="物料" prop="materialId" min-width="200"><template #default="scope"><el-input :model-value="scope.row.materialCode ? scope.row.materialCode + ' - ' + scope.row.materialName : ''" readonly size="small" placeholder="请选择物料" style="width: 100%" @click="openMaterialPicker(scope.$index)"><template v-if="scope.row.materialCode" #append><el-button icon="CircleClose" size="small" @click.stop="clearMaterial(scope.$index)" /></template><template v-else #append><el-button icon="Search" size="small" @click="openMaterialPicker(scope.$index)" /></template></el-input></template></el-table-column>
                 <el-table-column label="规格型号" prop="specification" min-width="120"><template #default="scope"><span>{{ scope.row.specification }}</span></template></el-table-column>
                 <el-table-column label="单位" prop="unit" width="90"><template #default="scope"><el-select v-model="scope.row.unit" size="small" placeholder="单位" style="width: 100%"><el-option v-for="d in wms_unit" :key="d.value" :label="d.label" :value="d.value" /></el-select></template></el-table-column>
                 <el-table-column label="计划数量" prop="planQuantity" width="110"><template #default="scope"><el-input-number v-model="scope.row.planQuantity" :precision="2" :min="0" :controls="false" size="small" style="width: 90px" @change="calculateAmount(scope.row)" /></template></el-table-column>
@@ -630,6 +630,8 @@
         <el-button type="primary" @click="showStatusHelp = false">我知道了</el-button>
       </template>
     </el-dialog>
+    <!-- 物料选择弹框 -->
+    <material-picker ref="materialPickerRef" title="选择物料" @confirm="onMaterialPickerConfirm" />
   </div>
 </template>
 
@@ -638,7 +640,7 @@ import { listPlan, getPlan, delPlan, addPlan, updatePlan, auditPlan, closePlan }
 import { getUserProfile } from "@/api/system/user";
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard, formatAmount, formatMoney } from '@/composables/useDetailCard'
-import { listMaterial } from '@/api/wms/material'
+import MaterialPicker from '@/components/MaterialPicker/index.vue'
 import UserPicker from '@/components/UserPicker/index.vue'
 import { CircleClose, QuestionFilled, ArrowRight } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
@@ -750,7 +752,8 @@ const single = ref(true);
 const multiple = ref(true);
 const total = ref(0);
 const title = ref("");
-const materialOptions = ref([]);
+const materialPickerRef = ref(null);
+const currentDetailIndex = ref(-1);
 
 const data = reactive({
   form: {
@@ -1025,21 +1028,27 @@ function handleAddDetail() {
 }
 
 /** 选择物料后自动带出物料信息 */
-function onMaterialChange(val, index) {
-  const matched = materialOptions.value.find(m => m.materialId === val);
-  if (matched) {
-    form.value.detailList[index].materialCode = matched.materialCode;
-    form.value.detailList[index].materialName = matched.materialName;
-    form.value.detailList[index].specification = matched.specModel;
-    form.value.detailList[index].unit = matched.unit;
+function openMaterialPicker(index) {
+  currentDetailIndex.value = index;
+  materialPickerRef.value.open(form.value.detailList[index].materialId);
+}
+function onMaterialPickerConfirm(material) {
+  if (currentDetailIndex.value >= 0) {
+    const d = form.value.detailList[currentDetailIndex.value];
+    d.materialId = material.materialId;
+    d.materialCode = material.materialCode;
+    d.materialName = material.materialName;
+    d.specification = material.specModel || '';
+    d.unit = material.unit || '';
   }
 }
-
-/** 加载物料主数据选项 */
-function loadMaterialOptions() {
-  listMaterial({ pageNum: 1, pageSize: 999, status: '0' }).then(res => {
-    materialOptions.value = res.rows || [];
-  });
+function clearMaterial(index) {
+  const d = form.value.detailList[index];
+  d.materialId = null;
+  d.materialCode = '';
+  d.materialName = '';
+  d.specification = '';
+  d.unit = '';
 }
 
 /** 删除明细 */
@@ -1102,7 +1111,6 @@ function clearPlanner() {
   form.value.deptName = undefined
 }
 
-loadMaterialOptions();
 getList();
 onActivated(() => { getList(); })
 </script>

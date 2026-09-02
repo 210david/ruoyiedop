@@ -203,9 +203,12 @@ public class PmsInquiryServiceImpl implements IPmsInquiryService
         {
             throw new ServiceException("询价单不存在");
         }
-        if (!"2".equals(inquiry.getStatus()) && !"1".equals(inquiry.getStatus()))
+        // 允许询价中(1)/已截止(2)/比价中(3)状态比价：录入报价后单据自动进入比价中，
+        // 若不放行状态3将导致"报价→比价"链路死锁，比价操作永远无法执行
+        if (!"2".equals(inquiry.getStatus()) && !"1".equals(inquiry.getStatus())
+                && !"3".equals(inquiry.getStatus()))
         {
-            throw new ServiceException("只有已截止或询价中状态的询价单才能比价");
+            throw new ServiceException("只有询价中、已截止或比价中状态的询价单才能比价");
         }
         // 校验是否有报价
         List<PmsQuotation> quotations = pmsQuotationMapper.selectQuotationByInquiryId(inquiryId);

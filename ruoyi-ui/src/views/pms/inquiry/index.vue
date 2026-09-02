@@ -101,7 +101,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" border v-loading="loading" :data="inquiryList" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
-          <el-table-column type="index" label="序号" width="85" align="center" />
+          <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" resizable align="center" />
           <el-table-column label="询价单号" align="center" prop="inquiryNo" key="inquiryNo" :width="colWidth('inquiryNo', 180)" resizable sortable="custom" v-if="columns.inquiryNo.visible" />
           <el-table-column label="询价标题" align="center" prop="title" key="title" :width="colWidth('title', 240)" resizable show-overflow-tooltip v-if="columns.title.visible" />
           <el-table-column label="物料名称" align="center" prop="materialName" key="materialName" :width="colWidth('materialName', 160)" resizable show-overflow-tooltip v-if="columns.materialName.visible" />
@@ -159,9 +159,10 @@
               <el-row :gutter="20">
                 <el-col :span="24">
                   <el-form-item label="物料" prop="materialId" :rules="[{ required: true, message: '请选择物料', trigger: 'change' }]">
-                    <el-select v-model="form.materialId" filterable placeholder="请选择物料" style="width: 100%" @change="onMaterialChange">
-                      <el-option v-for="m in filteredMaterialOptions" :key="m.materialId" :label="m.materialCode + ' - ' + m.materialName" :value="m.materialId" />
-                    </el-select>
+                    <el-input :model-value="form.materialCode ? form.materialCode + ' - ' + form.materialName : ''" readonly placeholder="请选择物料" style="width: 100%" @click="openMaterialPicker">
+                      <template v-if="form.materialName" #append><el-button icon="CircleClose" @click.stop="clearMaterial" /></template>
+                      <template v-else #append><el-button icon="Search" @click="openMaterialPicker" /></template>
+                    </el-input>
                   </el-form-item>
                 </el-col>
               </el-row>
@@ -267,7 +268,7 @@
           <section class="rd-card">
             <div class="rd-card-header" @click="toggleCard('q1')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>供应商信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.q1 }" type="button" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
             <div class="rd-card-body" v-show="!collapsedCards.q1">
-              <el-row :gutter="20"><el-col :span="12"><el-form-item label="供应商" prop="supplierId"><el-select v-model="quotationForm.supplierId" filterable placeholder="请选择供应商" style="width: 100%" @change="onSupplierChange"><el-option v-for="s in supplierOptions" :key="s.supplierId" :label="s.supplierName + (quotedSupplierIds.includes(s.supplierId) ? '（已报价）' : '')" :value="s.supplierId" :disabled="quotedSupplierIds.includes(s.supplierId)" /></el-select></el-form-item></el-col><el-col :span="12"><el-form-item label="联系人"><el-input v-model="quotationForm.contactName" placeholder="请输入联系人" /></el-form-item></el-col></el-row>
+              <el-row :gutter="20"><el-col :span="12"><el-form-item label="供应商" prop="supplierId"><el-input v-model="quotationForm.supplierName" readonly placeholder="请选择供应商" style="width: 100%" @click="openSupplierPicker"><template v-if="quotationForm.supplierName" #append><el-button icon="CircleClose" @click.stop="clearSupplier" /></template><template v-else #append><el-button icon="Search" @click="openSupplierPicker" /></template></el-input></el-form-item></el-col><el-col :span="12"><el-form-item label="联系人"><el-input v-model="quotationForm.contactName" placeholder="请输入联系人" /></el-form-item></el-col></el-row>
               <el-row :gutter="20"><el-col :span="12"><el-form-item label="联系电话"><el-input v-model="quotationForm.contactPhone" placeholder="请输入联系电话" /></el-form-item></el-col></el-row>
             </div>
           </section>
@@ -477,13 +478,17 @@
       </div>
       <template #footer><el-button type="primary" @click="submitAward" :disabled="!awardForm.supplierId">确认定标</el-button><el-button @click="awardOpen = false">取 消</el-button></template>
     </el-dialog>
+    <!-- 供应商选择弹框 -->
+    <supplier-picker ref="supplierPickerRef" title="选择供应商" @confirm="onSupplierPickerConfirm" />
+    <!-- 物料选择弹框（按采购类型过滤） -->
+    <material-picker ref="materialPickerRef" title="选择物料" :material-types="allowedMaterialTypes" @confirm="onMaterialPickerConfirm" />
   </div>
 </template>
 
 <script setup name="PmsInquiry">
 import { listInquiry, getInquiry, delInquiry, addInquiry, updateInquiry, publishInquiry, closeInquiry, compareInquiry, awardInquiry, addQuotation } from "@/api/pms/inquiry";
-import { listMaterial } from '@/api/wms/material'
-import { listSupplier } from '@/api/wms/supplier'
+import SupplierPicker from '@/components/SupplierPicker/index.vue'
+import MaterialPicker from '@/components/MaterialPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard, formatAmount, formatMoney } from '@/composables/useDetailCard'
 import { QuestionFilled, ArrowRight } from '@element-plus/icons-vue'
@@ -573,8 +578,8 @@ const awardOpen = ref(false);
 const quotationOpen = ref(false);
 const loading = ref(true);
 const showSearch = ref(true);
-const materialOptions = ref([]);
-const supplierOptions = ref([]);
+const materialPickerRef = ref(null);
+const supplierPickerRef = ref(null);
 const ids = ref([]);
 const single = ref(true);
 const multiple = ref(true);
@@ -602,18 +607,18 @@ const computedEstimateAmount = computed(() => {
   return (qty * price).toFixed(2);
 });
 
-/** 根据采购类型过滤物料选项 */
-const filteredMaterialOptions = computed(() => {
+/** 根据采购类型限制可选物料类型 */
+const allowedMaterialTypes = computed(() => {
   const purchaseType = form.value.purchaseType;
   if (purchaseType === '1') {
-    // 服务：只显示服务类物料（materialType='4'）
-    return materialOptions.value.filter(m => m.materialType === '4');
+    // 服务：仅服务类物料（materialType='4'）
+    return ['4'];
   } else if (purchaseType === '2') {
-    // 工程：只显示工程类物料（materialType='5'）
-    return materialOptions.value.filter(m => m.materialType === '5');
+    // 工程：仅工程类物料（materialType='5'）
+    return ['5'];
   } else {
-    // 物资：显示原材料/半成品/成品/辅料（0/1/2/3）
-    return materialOptions.value.filter(m => m.materialType !== '4' && m.materialType !== '5');
+    // 物资：原材料/半成品/成品/辅料（0/1/2/3）
+    return ['0', '1', '2', '3'];
   }
 });
 
@@ -798,23 +803,21 @@ async function handleAddQuotation(row) {
     quotationForm.quantity = d.quantity;
     quotationForm.maxPrice = d.maxPrice;
   }
-  await loadSupplierOptions();
   quotationOpen.value = true;
 }
 
-function onSupplierChange(val) {
-  if (val && quotedSupplierIds.value.includes(val)) {
+function openSupplierPicker() { supplierPickerRef.value.open(quotationForm.supplierId) }
+function onSupplierPickerConfirm(supplier) {
+  if (quotedSupplierIds.value.includes(supplier.supplierId)) {
     proxy.$modal.msgError('该供应商已对此询价单报过价，不能重复报价');
-    quotationForm.supplierId = null;
-    quotationForm.supplierName = null;
     return;
   }
-  const s = supplierOptions.value.find(s => s.supplierId === val);
-      if (s) {
-        quotationForm.supplierName = s.supplierName;
-        if (s.contactName) quotationForm.contactName = s.contactName;
-      }
+  quotationForm.supplierId = supplier.supplierId;
+  quotationForm.supplierName = supplier.supplierName;
+  if (supplier.contactPerson) quotationForm.contactName = supplier.contactPerson;
+  if (supplier.contactPhone) quotationForm.contactPhone = supplier.contactPhone;
 }
+function clearSupplier() { quotationForm.supplierId = null; quotationForm.supplierName = null; }
 
 function calcQuotationTotal() {
   quotationForm.totalAmount = (Number(quotationForm.quantity) || 0) * (Number(quotationForm.price) || 0);
@@ -911,15 +914,15 @@ function submitAward() {
   });
 }
 
-function onMaterialChange(val) {
-  const matched = materialOptions.value.find(m => m.materialId === val);
-  if (matched) {
-    form.value.materialCode = matched.materialCode;
-    form.value.materialName = matched.materialName;
-    form.value.specification = matched.specModel;
-    form.value.unit = matched.unit;
-  }
+function openMaterialPicker() { materialPickerRef.value.open(form.value.materialId) }
+function onMaterialPickerConfirm(material) {
+  form.value.materialId = material.materialId;
+  form.value.materialCode = material.materialCode;
+  form.value.materialName = material.materialName;
+  form.value.specification = material.specModel;
+  form.value.unit = material.unit;
 }
+function clearMaterial() { form.value.materialId = null; form.value.materialCode = ''; form.value.materialName = ''; form.value.specification = ''; form.value.unit = ''; }
 
 /** 采购类型变化时清空已选物料 */
 watch(() => form.value.purchaseType, () => {
@@ -930,15 +933,6 @@ watch(() => form.value.purchaseType, () => {
   form.value.unit = '';
 });
 
-function loadMaterialOptions() {
-  listMaterial({ pageNum: 1, pageSize: 999, status: '0' }).then(res => { materialOptions.value = res.rows || []; });
-}
-
-function loadSupplierOptions() {
-  return listSupplier({ pageNum: 1, pageSize: 999, status: '0' }).then(res => { supplierOptions.value = res.rows || []; });
-}
-
-loadMaterialOptions();
 getList();
 onActivated(() => { getList(); })
 </script>

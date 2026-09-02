@@ -133,7 +133,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
-          <el-table-column label="序号" type="index" width="55" align="center" />
+          <el-table-column label="序号" type="index" key="序号" :width="colWidth('序号', 55)" resizable align="center" />
           <el-table-column label="采购单号" prop="orderNo" key="orderNo" :width="colWidth('orderNo', 180)" resizable sortable="custom" v-if="columns.orderNo.visible" />
           <el-table-column label="关联合同" prop="contractNo" key="contractNo" :width="colWidth('contractNo', 140)" resizable v-if="columns.contractNo.visible" />
           <el-table-column label="关联申请单号" prop="requestNo" key="requestNo" :width="colWidth('requestNo', 140)" resizable v-if="columns.requestNo.visible" />
@@ -231,12 +231,10 @@
                         <el-icon class="rd-form-tip"><question-filled /></el-icon>
                       </el-tooltip>
                     </template>
-                    <el-select v-model="form.contractId" filterable clearable placeholder="请选择合同" style="width: 100%" @change="onContractChange">
-                      <template #empty>
-                        <div class="rd-select-empty">暂无审批通过且已生效的合同</div>
-                      </template>
-                      <el-option v-for="c in contractOptions" :key="c.contractId" :label="c.contractNo + ' - ' + c.contractName" :value="c.contractId" />
-                    </el-select>
+                    <el-input v-model="form.contractNo" readonly placeholder="请选择合同" style="width: 100%" @click="openContractPicker">
+                      <template v-if="form.contractNo" #append><el-button icon="CircleClose" @click.stop="clearContract" /></template>
+                      <template v-else #append><el-button icon="Search" @click="openContractPicker" /></template>
+                    </el-input>
                   </el-form-item>
                 </el-col>
                 <el-col :span="12">
@@ -247,12 +245,10 @@
                         <el-icon class="rd-form-tip"><question-filled /></el-icon>
                       </el-tooltip>
                     </template>
-                    <el-select v-model="form.requestId" filterable clearable placeholder="可选，选择后自动带出明细" style="width: 100%" @change="onRequestChange">
-                      <template #empty>
-                        <div class="rd-select-empty">暂无审批通过的采购申请</div>
-                      </template>
-                      <el-option v-for="r in requestOptions" :key="r.requestId" :label="r.requestNo" :value="r.requestId" />
-                    </el-select>
+                    <el-input v-model="form.requestNo" readonly placeholder="可选，选择后自动带出明细" style="width: 100%" @click="openRequestPicker">
+                      <template v-if="form.requestNo" #append><el-button icon="CircleClose" @click.stop="clearRequest" /></template>
+                      <template v-else #append><el-button icon="Search" @click="openRequestPicker" /></template>
+                    </el-input>
                   </el-form-item>
                 </el-col>
               </el-row>
@@ -343,9 +339,10 @@
                 <el-table-column label="序号" type="index" width="85" align="center" />
                 <el-table-column label="物料" prop="materialId" min-width="200">
                   <template #default="scope">
-                    <el-select v-model="scope.row.materialId" filterable clearable size="small" placeholder="请选择物料" style="width: 100%" @change="(val) => onMaterialChange(val, scope.$index)">
-                      <el-option v-for="m in materialOptions" :key="m.materialId" :label="m.materialCode + ' - ' + m.materialName" :value="m.materialId" />
-                    </el-select>
+                    <el-input :model-value="scope.row.materialCode ? scope.row.materialCode + ' - ' + scope.row.materialName : ''" readonly size="small" placeholder="请选择物料" style="width: 100%" @click="openMaterialPicker(scope.$index)">
+                      <template v-if="scope.row.materialCode" #append><el-button icon="CircleClose" size="small" @click.stop="clearMaterial(scope.$index)" /></template>
+                      <template v-else #append><el-button icon="Search" size="small" @click="openMaterialPicker(scope.$index)" /></template>
+                    </el-input>
                   </template>
                 </el-table-column>
                 <el-table-column label="规格型号" prop="specModel" min-width="120">
@@ -810,19 +807,26 @@
 
     <!-- 采购员选择弹窗 -->
     <user-picker ref="userPickerRef" title="选择采购员" @confirm="onUserPickerConfirm" />
+    <!-- 物料选择弹框 -->
+    <material-picker ref="materialPickerRef" title="选择物料" @confirm="onMaterialPickerConfirm" />
+    <!-- 采购合同选择弹框 -->
+    <contract-picker ref="contractPickerRef" title="选择采购合同" status="1" @confirm="onContractPickerConfirm" />
+    <!-- 采购申请单选择弹框 -->
+    <request-picker ref="requestPickerRef" title="选择采购申请单" status="2" @confirm="onRequestPickerConfirm" />
   </div>
 </template>
 
 <script setup name="PmsOrder">
 import { listOrder, getOrder, addOrder, updateOrder, delOrder, submitOrder, auditOrder } from '@/api/pms/order'
-import { listContract } from '@/api/pms/contract'
-import { listRequest, getRequest } from '@/api/pms/request'
+import { getRequest } from '@/api/pms/request'
 import { listReceive, getReceive } from '@/api/pms/receive'
 import { listInvoice } from '@/api/pms/invoice'
-import { listMaterial } from '@/api/wms/material'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard, formatAmount, formatMoney } from '@/composables/useDetailCard'
 import UserPicker from '@/components/UserPicker/index.vue'
+import MaterialPicker from '@/components/MaterialPicker/index.vue'
+import ContractPicker from '@/components/ContractPicker/index.vue'
+import RequestPicker from '@/components/RequestPicker/index.vue'
 import { CircleClose, ArrowRight, ArrowDown, QuestionFilled, Search, Filter, WarningFilled, Edit, Delete, Download } from '@element-plus/icons-vue'
 
 const { proxy } = getCurrentInstance()
@@ -927,9 +931,10 @@ const multiple = ref(true)
 const total = ref(0)
 const title = ref('')
 const dateRange = ref([])
-const contractOptions = ref([])
-const requestOptions = ref([])
-const materialOptions = ref([])
+const contractPickerRef = ref(null)
+const requestPickerRef = ref(null)
+const materialPickerRef = ref(null)
+const currentDetailIndex = ref(-1)
 
 const data = reactive({
   form: {},
@@ -1174,60 +1179,79 @@ function handleDeleteDetail(index) {
 }
 
 /** 选择物料后自动带出物料信息 */
-function onMaterialChange(val, index) {
-  const matched = materialOptions.value.find(m => m.materialId === val)
-  if (matched) {
-    form.value.detailList[index].materialCode = matched.materialCode
-    form.value.detailList[index].materialName = matched.materialName
-    form.value.detailList[index].specModel = matched.specModel || matched.specification
-    form.value.detailList[index].unit = matched.unit
+function openMaterialPicker(index) {
+  currentDetailIndex.value = index
+  materialPickerRef.value.open(form.value.detailList[index].materialId)
+}
+function onMaterialPickerConfirm(material) {
+  if (currentDetailIndex.value >= 0) {
+    const d = form.value.detailList[currentDetailIndex.value]
+    d.materialId = material.materialId
+    d.materialCode = material.materialCode
+    d.materialName = material.materialName
+    d.specModel = material.specModel || ''
+    d.unit = material.unit || ''
+  }
+}
+function clearMaterial(index) {
+  const d = form.value.detailList[index]
+  d.materialId = null
+  d.materialCode = ''
+  d.materialName = ''
+  d.specModel = ''
+  d.unit = ''
+}
+
+/** 打开合同选择弹窗 */
+function openContractPicker() {
+  contractPickerRef.value.open(form.value.contractId)
+}
+
+/** 合同选择确认回调 — 带出供应商及关联申请单号、物料明细 */
+function onContractPickerConfirm(contract) {
+  form.value.contractId = contract.contractId
+  form.value.contractNo = contract.contractNo
+  // 带出供应商
+  if (contract.supplierId) {
+    form.value.supplierId = contract.supplierId
+    form.value.supplierName = contract.supplierName
+  }
+  // 带出关联申请单号及物料明细
+  if (contract.orderId) {
+    form.value.requestId = contract.orderId
+    form.value.requestNo = contract.orderNo
+    applyRequestDetail(contract.orderId)
   }
 }
 
-/** 加载物料主数据选项 */
-function loadMaterialOptions() {
-  listMaterial({ pageNum: 1, pageSize: 999, status: '0' }).then(res => {
-    materialOptions.value = res.rows || []
-  })
+/** 清除合同 */
+function clearContract() {
+  form.value.contractId = undefined
+  form.value.contractNo = undefined
 }
 
-/** 选择合同后自动带出关联申请单号和供应商 */
-function onContractChange(val) {
-  if (!val) {
-    form.value.contractId = undefined
-    form.value.contractNo = undefined
-    return
-  }
-  const matched = contractOptions.value.find(c => c.contractId === val)
-  if (matched) {
-    form.value.contractNo = matched.contractNo
-    // 带出供应商
-    if (matched.supplierId) {
-      form.value.supplierId = matched.supplierId
-      form.value.supplierName = matched.supplierName
-    }
-    // 带出关联申请单号及物料明细
-    if (matched.orderId) {
-      form.value.requestId = matched.orderId
-      form.value.requestNo = matched.orderNo
-      onRequestChange(matched.orderId)
-    }
-  }
+/** 打开采购申请选择弹窗 */
+function openRequestPicker() {
+  requestPickerRef.value.open(form.value.requestId)
 }
 
-/** 选择采购申请后自动带出申请单号和物料明细 */
-function onRequestChange(val) {
-  if (!val) {
-    form.value.requestId = undefined
-    form.value.requestNo = undefined
-    return
-  }
-  const matched = requestOptions.value.find(r => r.requestId === val)
-  if (matched) {
-    form.value.requestNo = matched.requestNo
-  }
-  // 获取采购申请详情，带出物料明细
-  getRequest(val).then(res => {
+/** 采购申请选择确认回调 — 带出申请单号和物料明细 */
+function onRequestPickerConfirm(request) {
+  form.value.requestId = request.requestId
+  form.value.requestNo = request.requestNo
+  applyRequestDetail(request.requestId)
+}
+
+/** 清除采购申请 */
+function clearRequest() {
+  form.value.requestId = undefined
+  form.value.requestNo = undefined
+}
+
+/** 获取采购申请详情，带出物料明细 */
+function applyRequestDetail(requestId) {
+  if (!requestId) return
+  getRequest(requestId).then(res => {
     const requestData = res.data
     if (requestData.detailList && requestData.detailList.length > 0) {
       // 如果已有明细，提示用户是否覆盖
@@ -1273,20 +1297,6 @@ function onPaymentMethodChange(val) {
     default:
       form.value.paymentDays = 0
   }
-}
-
-/** 加载合同选项（仅审批通过且已生效的合同） */
-function loadContractOptions() {
-  listContract({ pageNum: 1, pageSize: 999, status: '1' }).then(res => {
-    contractOptions.value = res.rows || []
-  })
-}
-
-/** 加载采购申请选项（仅已审批通过的申请单） */
-function loadRequestOptions() {
-  listRequest({ pageNum: 1, pageSize: 999, status: '2' }).then(res => {
-    requestOptions.value = res.rows || []
-  })
 }
 
 function submitForm() {
@@ -1385,9 +1395,6 @@ function clearBuyer() {
   form.value.deptName = undefined
 }
 
-loadContractOptions()
-loadRequestOptions()
-loadMaterialOptions()
 getList()
 onActivated(() => { getList() })
 </script>

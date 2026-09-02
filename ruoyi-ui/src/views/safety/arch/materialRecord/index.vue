@@ -97,10 +97,13 @@
           <el-table-column label="出入库时间" prop="recordTime" key="recordTime" :width="colWidth('recordTime', 160)" align="center" resizable sortable="custom" v-if="columns.recordTime.visible">
             <template #default="scope">{{ parseTime(scope.row.recordTime, '{y}-{m}-{d} {h}:{i}') }}</template>
           </el-table-column>
-          <el-table-column label="操作" width="180" align="center" fixed="right">
+          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
-              <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['safety:materialRecord:query']">查看</el-button>
-              <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['safety:materialRecord:remove']">删除</el-button>
+              <div class="action-btn-row">
+                <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['safety:materialRecord:query']">查看</el-button>
+                <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['safety:materialRecord:edit']">修改</el-button>
+                <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['safety:materialRecord:remove']">删除</el-button>
+              </div>
             </template>
           </el-table-column>
         </el-table>
@@ -184,7 +187,7 @@
 </template>
 
 <script setup name="SafetyMaterialRecord">
-import { listMaterialRecord, getMaterialRecord, addMaterialRecord, delMaterialRecord } from '@/api/safety/materialRecord'
+import { listMaterialRecord, getMaterialRecord, addMaterialRecord, updateMaterialRecord, delMaterialRecord } from '@/api/safety/materialRecord'
 import { listMaterial } from '@/api/safety/material'
 import UserPicker from '@/components/UserPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
@@ -261,7 +264,7 @@ function getList() {
   loading.value = true
   proxy.addDateRange(queryParams.value, dateRange.value, 'RecordTime')
   proxy.addDateRange(queryParams.value, createTimeRange.value, 'CreateTime')
-  listMaterialRecord(queryParams.value).then(response => { recordList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths() })
+  listMaterialRecord(queryParams.value).then(response => { recordList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths() }).catch(error => { console.error(error) }).finally(() => { loading.value = false })
 }
 function handleQuery() {
   queryParams.value.pageNum = 1
@@ -284,15 +287,16 @@ function handleSortChange(column) { if (column.prop && column.order) { queryPara
 function handleSelectionChange(selection) { ids.value = selection.map(item => item.recordId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function handleAdd() { reset(); collapsedCards.c0 = false; collapsedCards.c1 = false; open.value = true; title.value = '新增出入库记录'; form.value.recordType = '1'; form.value.recordTime = parseTime(new Date(), '{y}-{m}-{d} {h}:{i}:{s}') }
 function handleView(row) { const recordId = row.recordId || ids.value[0]; getMaterialRecord(recordId).then(response => { viewData.value = response.data; viewOpen.value = true }) }
+function handleUpdate(row) { const recordId = row.recordId || ids.value[0]; getMaterialRecord(recordId).then(response => { reset(); form.value = { ...response.data }; collapsedCards.c0 = false; collapsedCards.c1 = false; open.value = true; title.value = '修改出入库记录' }) }
 function submitForm() {
   proxy.$refs['recordRef'].validate(valid => {
     if (valid) {
-      if (form.value.recordId != undefined) { /* edit not supported for stock dynamics */ }
+      if (form.value.recordId != undefined) { updateMaterialRecord(form.value).then(() => { proxy.$modal.msgSuccess('修改成功，库存已同步调整'); open.value = false; getList(); loadMaterials() }) }
       else { addMaterialRecord(form.value).then(() => { proxy.$modal.msgSuccess('新增成功，库存已自动更新'); open.value = false; getList(); loadMaterials() }) }
     }
   })
 }
-function handleDelete(row) { const recordIds = row.recordId || ids.value; proxy.$modal.confirm('是否确认删除该出入库记录？').then(function() { return delMaterialRecord(recordIds) }).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleDelete(row) { const recordIds = row.recordId || ids.value; proxy.$modal.confirm('是否确认删除该出入库记录？删除后库存将自动冲正').then(function() { return delMaterialRecord(recordIds) }).then(() => { getList(); loadMaterials(); proxy.$modal.msgSuccess('删除成功，库存已冲正') }).catch(() => {}) }
 function handleExport() { proxy.download('safety/materialRecord/export', { ...queryParams.value }, `materialRecord_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 function reset() { form.value = { recordId: undefined, recordCode: undefined, materialId: undefined, recordType: '1', quantity: undefined, supplierName: undefined, recipient: undefined, purpose: undefined, batchNo: undefined, recordTime: undefined, remark: undefined }; proxy.resetForm('recordRef') }
@@ -356,4 +360,11 @@ getList()
 @media (max-width:720px) { .safety-record-page .filter-card .filter-bar { grid-template-columns:1fr; } }
 .safety-record-page .clear-icon { cursor:pointer; color:var(--ink-400); }
 .safety-record-page .clear-icon:hover { color:var(--ink-700); }
+
+/* 操作列按钮对齐：每行2个按钮，flex-wrap 自动换行，按钮自适应内容宽度 */
+:deep(.col-action) { padding: 6px 4px !important; }
+:deep(.col-action .cell) { display: flex; justify-content: center; padding: 0; }
+.action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
+:deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
+:deep(.col-action .el-button + .el-button) { margin-left: 2px; }
 </style>

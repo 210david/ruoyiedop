@@ -13,6 +13,9 @@ import com.ruoyi.common.enums.BusinessType;
 import com.ruoyi.safety.domain.SafetyRemind;
 import com.ruoyi.safety.service.ISafetyRemindService;
 
+import jakarta.servlet.http.HttpServletResponse;
+import com.ruoyi.common.utils.poi.ExcelUtil;
+
 @RestController
 @RequestMapping("/safety/remind")
 public class SafetyRemindController extends BaseController
@@ -27,6 +30,16 @@ public class SafetyRemindController extends BaseController
         startPage();
         List<SafetyRemind> list = safetyRemindService.selectSafetyRemindList(remind);
         return getDataTable(list);
+    }
+
+    @PreAuthorize("@ss.hasPermi('safety:remind:export')")
+    @Log(title = "到期提醒", businessType = BusinessType.EXPORT)
+    @PostMapping("/export")
+    public void export(HttpServletResponse response, SafetyRemind remind)
+    {
+        List<SafetyRemind> list = safetyRemindService.selectSafetyRemindList(remind);
+        ExcelUtil<SafetyRemind> util = new ExcelUtil<>(SafetyRemind.class);
+        util.exportExcel(response, list, "到期提醒数据");
     }
 
     @PreAuthorize("@ss.hasPermi('safety:remind:query')")

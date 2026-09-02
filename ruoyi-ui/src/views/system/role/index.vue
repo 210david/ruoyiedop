@@ -74,21 +74,21 @@
 
                <!-- Table -->
                <div class="table-wrap">
-                  <el-table v-loading="loading" :data="roleList" @selection-change="handleSelectionChange" class="app-table">
+                  <el-table ref="tableRef" v-loading="loading" :data="roleList" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" border class="app-table">
 <el-table-column type="selection" width="55" align="center" />
 <el-table-column type="index" label="序号" width="85" align="center" />
-<el-table-column label="角色编号" prop="roleId" key="roleId" width="120" v-if="columns.roleId.visible" />
-                     <el-table-column label="角色名称" prop="roleName" key="roleName" :show-overflow-tooltip="true" width="150" v-if="columns.roleName.visible" />
-                     <el-table-column label="角色分类" align="center" key="roleCategory" width="180" v-if="columns.roleCategory.visible">
+<el-table-column label="角色编号" prop="roleId" key="roleId" :width="colWidth('roleId', 120)" v-if="columns.roleId.visible" />
+                     <el-table-column label="角色名称" prop="roleName" key="roleName" :show-overflow-tooltip="true" :width="colWidth('roleName', 150)" v-if="columns.roleName.visible" />
+                     <el-table-column label="角色分类" align="center" key="roleCategory" prop="roleCategory" :width="colWidth('roleCategory', 180)" v-if="columns.roleCategory.visible">
                         <template #default="scope">
                            <div class="category-tags">
                               <el-tag v-for="cat in parseCategoryList(scope.row.roleCategory)" :key="cat" :type="getCategoryTagType(cat)" size="small" style="margin: 2px;">{{ getCategoryLabel(cat) }}</el-tag>
                            </div>
                         </template>
                      </el-table-column>
-                     <el-table-column label="权限字符" prop="roleKey" key="roleKey" :show-overflow-tooltip="true" width="150" v-if="columns.roleKey.visible" />
-                     <el-table-column label="显示顺序" prop="roleSort" key="roleSort" width="100" v-if="columns.roleSort.visible" />
-                     <el-table-column label="状态" align="center" key="status" width="100" v-if="columns.status.visible">
+                     <el-table-column label="权限字符" prop="roleKey" key="roleKey" :show-overflow-tooltip="true" :width="colWidth('roleKey', 150)" v-if="columns.roleKey.visible" />
+                     <el-table-column label="显示顺序" prop="roleSort" key="roleSort" :width="colWidth('roleSort', 100)" v-if="columns.roleSort.visible" />
+                     <el-table-column label="状态" align="center" key="status" prop="status" :width="colWidth('status', 100)" v-if="columns.status.visible">
                         <template #default="scope">
                            <el-switch
                               v-model="scope.row.status"
@@ -98,13 +98,14 @@
                            ></el-switch>
                         </template>
                      </el-table-column>
-                     <el-table-column label="创建时间" align="center" prop="createTime" key="createTime" v-if="columns.createTime.visible">
+                     <el-table-column label="创建时间" align="center" prop="createTime" key="createTime" v-if="columns.createTime.visible" :width="colWidth('createTime', 160)">
                         <template #default="scope">
                            <span>{{ parseTime(scope.row.createTime) }}</span>
                         </template>
                      </el-table-column>
-                     <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+                     <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
                         <template #default="scope">
+                <div class="action-btn-row">
                            <el-tooltip content="修改" placement="top" v-if="scope.row.roleId !== 1">
                               <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['system:role:edit']"></el-button>
                            </el-tooltip>
@@ -117,7 +118,8 @@
                            <el-tooltip content="分配用户" placement="top" v-if="scope.row.roleId !== 1">
                               <el-button link type="primary" icon="User" @click="handleAuthUser(scope.row)" v-hasPermi="['system:role:edit']"></el-button>
                            </el-tooltip>
-                        </template>
+                                        </div>
+            </template>
                      </el-table-column>
                   </el-table>
                </div>
@@ -335,10 +337,13 @@ import { addRole, changeRoleStatus, dataScope, delRole, getRole, listRole, updat
 import { roleMenuTreeselect, treeselect as menuTreeselect } from "@/api/system/menu"
 import { Search, Key, Filter, Edit, Delete, Download, RefreshLeft } from "@element-plus/icons-vue"
 import { pinyin } from 'pinyin-pro'
+import { useColumnResize } from '@/composables/useColumnResize'
 
 const router = useRouter()
 const { proxy } = getCurrentInstance()
 const { sys_normal_disable, sys_role_category } = useDict("sys_normal_disable", "sys_role_category")
+// 列宽拖拽持久化
+const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('sys_role_index')
 
 const roleList = ref([])
 const open = ref(false)
@@ -456,6 +461,7 @@ function getList() {
     roleList.value = response.rows
     total.value = response.total
     loading.value = false
+    applySavedWidths()
   })
 }
 
@@ -926,4 +932,11 @@ watch(() => sys_role_category.value, (val) => {
 /* ===== Responsive ===== */
 @media (max-width:1100px) { .sys-role-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } .role-form-dialog .role-form-grid { grid-template-columns: 1fr; } .role-form-dialog .form-right-col { border-left: none; border-top: 1px solid var(--ink-200); padding-left: 0; padding-top: 16px; } }
 @media (max-width:720px) { .sys-role-page .filter-card .filter-bar { grid-template-columns:1fr; } .sys-role-page .toolbar { flex-wrap:wrap; gap:10px; } }
+
+/* 操作列按钮对齐：每行2个按钮，flex-wrap 自动换行，按钮自适应内容宽度 */
+:deep(.col-action) { padding: 6px 4px !important; }
+:deep(.col-action .cell) { display: flex; justify-content: center; padding: 0; }
+.action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
+:deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
+:deep(.col-action .el-button + .el-button) { margin-left: 2px; }
 </style>

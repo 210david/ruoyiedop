@@ -51,14 +51,16 @@
           <el-table-column label="总工时(h)" prop="totalStdTime" key="totalStdTime" :width="colWidth('totalStdTime', 100)" resizable align="center" v-if="columns.totalStdTime.visible"><template #default="scope"><span>{{ scope.row.totalStdTime != null ? scope.row.totalStdTime : '—' }}</span></template></el-table-column>
           <el-table-column label="状态" prop="status" key="status" :width="colWidth('status', 100)" resizable align="center" v-if="columns.status.visible"><template #default="scope"><span v-if="scope.row.status" class="badge" :class="badgeClass(scope.row.status)"><span class="dot"></span>{{ statusLabel(scope.row.status) }}</span><span v-else class="text-muted">—</span></template></el-table-column>
           <el-table-column label="创建时间" prop="createTime" key="createTime" :width="colWidth('createTime', 160)" resizable align="center" v-if="columns.createTime.visible"><template #default="scope"><span>{{ parseTime(scope.row.createTime) }}</span></template></el-table-column>
-          <el-table-column label="操作" width="280" align="center" fixed="right">
+          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
-              <el-button link type="primary" icon="View" @click.stop="handleView(scope.row)">详情</el-button>
-              <el-button link type="primary" icon="Edit" @click.stop="handleUpdate(scope.row)" v-if="scope.row.status === '0' || scope.row.status === '1' || scope.row.status === '4'" v-hasPermi="['mms:route:edit']">修改</el-button>
-              <el-button link type="success" icon="CircleCheck" @click.stop="handleEnable(scope.row)" v-if="scope.row.status === '0' || scope.row.status === '3' || scope.row.status === '4'" v-hasPermi="['mms:route:status']">提交审核</el-button>
-              <el-button link type="warning" icon="Check" @click.stop="handleAudit(scope.row)" v-if="scope.row.status === '1'" v-hasPermi="['mms:route:status']">审核</el-button>
-              <el-button link type="danger" icon="CircleClose" @click.stop="handleDisable(scope.row)" v-if="scope.row.status === '0' || scope.row.status === '1' || scope.row.status === '2'" v-hasPermi="['mms:route:status']">停用</el-button>
-              <el-button link type="info" icon="CopyDocument" @click.stop="handleCopy(scope.row)" v-hasPermi="['mms:route:copy']">复制</el-button>
+              <div class="action-btn-row">
+                <el-button link type="primary" icon="View" @click.stop="handleView(scope.row)">详情</el-button>
+                <el-button link type="primary" icon="Edit" @click.stop="handleUpdate(scope.row)" v-if="scope.row.status === '0' || scope.row.status === '1' || scope.row.status === '4'" v-hasPermi="['mms:route:edit']">修改</el-button>
+                <el-button link type="success" icon="CircleCheck" @click.stop="handleEnable(scope.row)" v-if="scope.row.status === '0' || scope.row.status === '3' || scope.row.status === '4'" v-hasPermi="['mms:route:status']">提交审核</el-button>
+                <el-button link type="warning" icon="Check" @click.stop="handleAudit(scope.row)" v-if="scope.row.status === '1'" v-hasPermi="['mms:route:status']">审核</el-button>
+                <el-button link type="danger" icon="CircleClose" @click.stop="handleDisable(scope.row)" v-if="scope.row.status === '0' || scope.row.status === '1' || scope.row.status === '2'" v-hasPermi="['mms:route:status']">停用</el-button>
+                <el-button link type="info" icon="CopyDocument" @click.stop="handleCopy(scope.row)" v-hasPermi="['mms:route:copy']">复制</el-button>
+              </div>
             </template>
           </el-table-column>
         </el-table>
@@ -1240,4 +1242,11 @@ getList();
 
 @media(max-width:1100px){.filter-card .filter-bar{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:720px){.filter-card .filter-bar{grid-template-columns:1fr}}
+
+/* 操作列按钮对齐：每行2个按钮，flex-wrap 自动换行，按钮自适应内容宽度 */
+:deep(.col-action) { padding: 6px 4px !important; }
+:deep(.col-action .cell) { display: flex; justify-content: center; padding: 0; }
+.action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
+:deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
+:deep(.col-action .el-button + .el-button) { margin-left: 2px; }
 </style>

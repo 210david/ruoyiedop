@@ -52,8 +52,9 @@
                h.verify_person_id, h.verify_person, h.verify_time, h.verify_result, h.verify_comment,
                h.approve_person_id, h.approve_person, h.approve_time, h.approve_result, h.approve_comment,
                h.enterprise_id, h.del_flag, h.create_by, h.create_time, h.update_by, h.update_time, h.remark
-        FROM biz_safety_hazard h
-    </sql>
+FROM biz_safety_hazard h
+LEFT JOIN sys_dept d ON h.dept_id = d.dept_id
+</sql>
 
     <select id="selectSafetyHazardList" parameterType="SafetyHazard" resultMap="SafetyHazardResult">
         <include refid="selectSafetyHazardVo"/>
@@ -74,6 +75,7 @@
             <if test="params.endTime != null and params.endTime != ''">
                 AND date_format(h.discover_time,'%y%m%d') &lt;= date_format(#{params.endTime},'%y%m%d')
             </if>
+            ${params.dataScope}
         </where>
         ORDER BY h.discover_time DESC
     </select>
@@ -93,7 +95,7 @@
                COUNT(1) as total,
                SUM(CASE WHEN hazard_level = '1' THEN 1 ELSE 0 END) as general,
                SUM(CASE WHEN hazard_level = '2' THEN 1 ELSE 0 END) as major,
-               SUM(CASE WHEN hazard_status = '4' THEN 1 ELSE 0 END) as closed
+               SUM(CASE WHEN hazard_status = '6' THEN 1 ELSE 0 END) as closed
         FROM biz_safety_hazard
         WHERE del_flag = '0'
           AND discover_time &gt;= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)

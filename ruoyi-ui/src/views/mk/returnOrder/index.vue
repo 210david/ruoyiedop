@@ -129,7 +129,7 @@
           <el-table-column label="退款金额" prop="refundAmount" key="refundAmount" :width="colWidth('refundAmount', 120)" resizable align="right" v-if="columns.refundAmount.visible" />
           <el-table-column label="退款日期" prop="refundDate" key="refundDate" :width="colWidth('refundDate', 120)" resizable v-if="columns.refundDate.visible" />
           <el-table-column label="审批人" prop="approveBy" key="approveBy" :width="colWidth('approveBy', 100)" resizable v-if="columns.approveBy.visible" />
-          <el-table-column label="操作" width="180" align="center" fixed="right" class-name="col-action">
+          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
         <template #default="scope">
           <div class="action-btn-row">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">详情</el-button>
@@ -923,7 +923,7 @@
     </el-dialog>
 
     <!-- 订单选择弹窗 -->
-    <order-picker ref="orderPickerRef" title="选择订单" @confirm="onOrderPickerConfirm" />
+    <order-picker ref="orderPickerRef" title="选择订单" :order-statuses="['2','3','4']" @confirm="onOrderPickerConfirm" />
   </div>
 </template>
 
@@ -1307,4 +1307,11 @@ getList()
 :deep(.el-timeline-item__node--info) {
   border-color: #909399;
 }
+
+/* 操作列按钮对齐：每行2个按钮，flex-wrap 自动换行，按钮自适应内容宽度 */
+:deep(.col-action) { padding: 6px 4px !important; }
+:deep(.col-action .cell) { display: flex; justify-content: center; padding: 0; }
+.action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
+:deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
+:deep(.col-action .el-button + .el-button) { margin-left: 2px; }
 </style>

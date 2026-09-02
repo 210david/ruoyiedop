@@ -31,12 +31,14 @@
     <select id="selectHrHealthCheckList" parameterType="HrHealthCheck" resultMap="HrHealthCheckResult">
         <include refid="selectVo"/>
         <where>
-            del_flag = '0'
+            (del_flag IS NULL OR del_flag = '0')
             <if test="employeeId != null"> AND employee_id = #{employeeId}</if>
             <if test="employeeName != null and employeeName != ''"> AND employee_name LIKE CONCAT('%', #{employeeName}, '%')</if>
             <if test="employeeNo != null and employeeNo != ''"> AND employee_no LIKE CONCAT('%', #{employeeNo}, '%')</if>
             <if test="checkType != null and checkType != ''"> AND check_type LIKE CONCAT('%', #{checkType}, '%')</if>
             <if test="checkDate != null"> AND check_date = #{checkDate}</if>
+            <if test="params.beginCheckDate != null and params.beginCheckDate != ''"> AND check_date &gt;= #{params.beginCheckDate}</if>
+            <if test="params.endCheckDate != null and params.endCheckDate != ''"> AND check_date &lt;= #{params.endCheckDate}</if>
             <if test="checkOrg != null and checkOrg != ''"> AND check_org LIKE CONCAT('%', #{checkOrg}, '%')</if>
             <if test="hazardType != null and hazardType != ''"> AND hazard_type LIKE CONCAT('%', #{hazardType}, '%')</if>
             <if test="checkResult != null and checkResult != ''"> AND check_result LIKE CONCAT('%', #{checkResult}, '%')</if>

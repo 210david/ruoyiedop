@@ -55,13 +55,15 @@
           <el-table-column label="状态" prop="status" key="status" :width="colWidth('status', 90)" resizable align="center" v-if="columns.status.visible">
             <template #default="scope"><span v-if="scope.row.status" class="badge" :class="badgeClass(scope.row.status)"><span class="dot"></span>{{ statusLabel(scope.row.status) }}</span><span v-else class="text-muted">—</span></template>
           </el-table-column>
-          <el-table-column label="操作" width="280" align="center" fixed="right">
+          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
-              <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
-              <el-button v-if="scope.row.status === '0'" link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['mms:outsource:edit']">修改</el-button>
-              <el-button v-if="scope.row.status === '0'" link type="success" icon="Promotion" @click="handleSendOut(scope.row)" v-hasPermi="['mms:outsource:edit']">发料外协</el-button>
-              <el-button v-if="scope.row.status === '1'" link type="warning" icon="CircleCheck" @click="handleBackAccept(scope.row)" v-hasPermi="['mms:outsource:edit']">回厂验收</el-button>
-              <el-button v-if="scope.row.status === '0'" link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['mms:outsource:remove']">删除</el-button>
+              <div class="action-btn-row">
+                <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
+                <el-button v-if="scope.row.status === '0'" link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['mms:outsource:edit']">修改</el-button>
+                <el-button v-if="scope.row.status === '0'" link type="success" icon="Promotion" @click="handleSendOut(scope.row)" v-hasPermi="['mms:outsource:edit']">发料外协</el-button>
+                <el-button v-if="scope.row.status === '1'" link type="warning" icon="CircleCheck" @click="handleBackAccept(scope.row)" v-hasPermi="['mms:outsource:edit']">回厂验收</el-button>
+                <el-button v-if="scope.row.status === '0'" link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['mms:outsource:remove']">删除</el-button>
+              </div>
             </template>
           </el-table-column>
         </el-table>
@@ -821,4 +823,11 @@ getList();
 .material-picker-table :deep(.el-table__row:hover > td) { background: #f0f7ff; }
 .material-picker-table :deep(.el-table__row.is-current > td) { background: #e6f0fd; }
 .material-picker-pager { margin-top: 8px; display: flex; justify-content: flex-end; }
+
+/* 操作列按钮对齐：每行2个按钮，flex-wrap 自动换行，按钮自适应内容宽度 */
+:deep(.col-action) { padding: 6px 4px !important; }
+:deep(.col-action .cell) { display: flex; justify-content: center; padding: 0; }
+.action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
+:deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
+:deep(.col-action .el-button + .el-button) { margin-left: 2px; }
 </style>

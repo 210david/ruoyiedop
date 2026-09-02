@@ -523,7 +523,8 @@ public class QmsInspTaskServiceImpl implements IQmsInspTaskService
         QmsNcr ncr = new QmsNcr();
         ncr.setSourceType("inspection");
         ncr.setSourceId(inspTask.getTaskId());
-        ncr.setSourceNo(inspTask.getTaskNo());
+        // 来源单号取库中任务的taskNo：判定请求体仅含taskId/itemList，inspTask.taskNo恒为空
+        ncr.setSourceNo(existing.getTaskNo());
         ncr.setTaskId(inspTask.getTaskId());
         ncr.setMaterialId(existing.getMaterialId());
         ncr.setMaterialCode(existing.getMaterialCode());

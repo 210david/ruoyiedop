@@ -25,6 +25,8 @@ public class HrPayslip extends BaseEntity
     private String employeeNo;
     @Excel(name = "组织ID")
     private Long orgId;
+    /** 部门名称（关联 sys_dept 回显，非表字段） */
+    private String orgName;
     @Excel(name = "基本工资")
     private BigDecimal basicSalary;
     @Excel(name = "岗位工资")
@@ -96,6 +98,8 @@ public class HrPayslip extends BaseEntity
     public void setEmployeeNo(String employeeNo) { this.employeeNo = employeeNo; }
     public Long getOrgId() { return orgId; }
     public void setOrgId(Long orgId) { this.orgId = orgId; }
+    public String getOrgName() { return orgName; }
+    public void setOrgName(String orgName) { this.orgName = orgName; }
     public BigDecimal getBasicSalary() { return basicSalary; }
     public void setBasicSalary(BigDecimal basicSalary) { this.basicSalary = basicSalary; }
     public BigDecimal getPositionSalary() { return positionSalary; }

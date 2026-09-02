@@ -98,7 +98,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
-          <el-table-column type="index" label="序号" width="85" align="center" />
+          <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" resizable align="center" />
           <el-table-column label="供应商" prop="supplierName" key="supplierName" :width="colWidth('supplierName', 240)" resizable show-overflow-tooltip v-if="columns.supplierName.visible" />
           <el-table-column label="评估周期" prop="evalPeriod" key="evalPeriod" :width="colWidth('evalPeriod', 130)" resizable align="center" v-if="columns.evalPeriod.visible" />
           <el-table-column label="评估日期" prop="evalDate" key="evalDate" :width="colWidth('evalDate', 130)" resizable align="center" sortable="custom" :sort-orders="['descending', 'ascending']" v-if="columns.evalDate.visible" />
@@ -140,7 +140,7 @@
           <div class="rd-card-header" @click="toggleCard('basic')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>基本信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.basic }" type="button"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
           <div class="rd-card-body" v-show="!collapsedCards.basic">
             <el-row :gutter="20">
-              <el-col :span="12"><el-form-item label="供应商" prop="supplierId"><el-select v-model="form.supplierId" filterable placeholder="请选择供应商" style="width: 100%" @change="onSupplierChange"><el-option v-for="s in supplierOptions" :key="s.supplierId" :label="s.supplierName" :value="s.supplierId" /></el-select></el-form-item></el-col>
+              <el-col :span="12"><el-form-item label="供应商" prop="supplierId"><el-input v-model="form.supplierName" readonly placeholder="请选择供应商" style="width: 100%" @click="openSupplierPicker"><template v-if="form.supplierName" #append><el-button icon="CircleClose" @click.stop="clearSupplier" /></template><template v-else #append><el-button icon="Search" @click="openSupplierPicker" /></template></el-input></el-form-item></el-col>
               <el-col :span="12"><el-form-item label="评估周期" prop="evalPeriod"><el-input v-model="form.evalPeriod" placeholder="如2026-Q3" /></el-form-item></el-col>
             </el-row>
             <el-row :gutter="20">
@@ -432,12 +432,15 @@
     <!-- ===== 人员选择弹框 ===== -->
     <user-picker ref="userPickerRef" title="选择评估人" @confirm="onUserPickerConfirm" />
 
+    <!-- ===== 供应商选择弹框 ===== -->
+    <supplier-picker ref="supplierPickerRef" title="选择供应商" @confirm="onSupplierPickerConfirm" />
+
   </div>
 </template>
 
 <script setup name="PmsEval">
 import { listEval, getEval, addEval, updateEval, delEval, auditEval } from '@/api/pms/eval'
-import { listSupplier } from '@/api/wms/supplier'
+import SupplierPicker from '@/components/SupplierPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
 import useUserStore from '@/store/modules/user'
@@ -519,7 +522,7 @@ const single = ref(true)
 const multiple = ref(true)
 const total = ref(0)
 const title = ref('')
-const supplierOptions = ref([])
+const supplierPickerRef = ref(null)
 
 const data = reactive({
   form: {},
@@ -663,8 +666,9 @@ function reset() {
   }
   proxy.resetForm('evalRef')
 }
-function onSupplierChange(val) { const matched = supplierOptions.value.find(s => s.supplierId === val); form.value.supplierName = matched ? matched.supplierName : undefined }
-function loadSupplierOptions() { listSupplier({ pageNum: 1, pageSize: 999 }).then(res => { supplierOptions.value = res.rows || [] }) }
+function openSupplierPicker() { supplierPickerRef.value.open(form.value.supplierId) }
+function onSupplierPickerConfirm(supplier) { form.value.supplierId = supplier.supplierId; form.value.supplierName = supplier.supplierName }
+function clearSupplier() { form.value.supplierId = undefined; form.value.supplierName = undefined }
 function handleAdd() { reset(); open.value = true; title.value = '添加供应商评估' }
 function handleUpdate(row) {
   reset()
@@ -749,7 +753,6 @@ function clearEvaluator() {
   form.value.evaluatorName = undefined
 }
 
-loadSupplierOptions()
 getList()
 onActivated(() => { getList() })
 </script>

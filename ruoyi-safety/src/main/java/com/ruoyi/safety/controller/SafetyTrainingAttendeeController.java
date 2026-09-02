@@ -148,6 +148,8 @@ public class SafetyTrainingAttendeeController extends BaseController
     }
 
     /** 导入模板 */
+    @PreAuthorize("@ss.hasPermi('safety:training:attendee:import')")
+    @Log(title = "参训人员", businessType = BusinessType.EXPORT)
     @PostMapping("/importTemplate")
     public void importTemplate(HttpServletResponse response)
     {

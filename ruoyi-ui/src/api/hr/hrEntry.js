@@ -42,3 +42,12 @@ export function delHrEntry(entryId) {
     method: 'delete'
   })
 }
+
+// 入职审批
+export function auditHrEntry(entryId, auditAction, auditRemark) {
+  return request({
+    url: '/hr/entry/audit/' + entryId,
+    method: 'put',
+    params: { auditAction, auditRemark }
+  })
+}

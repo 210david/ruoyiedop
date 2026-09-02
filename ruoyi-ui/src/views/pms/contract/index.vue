@@ -119,7 +119,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
-          <el-table-column type="index" label="序号" width="85" align="center" />
+          <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" resizable align="center" />
           <el-table-column label="合同编号" prop="contractNo" key="contractNo" :width="colWidth('contractNo', 180)" resizable sortable="custom" v-if="columns.contractNo.visible" />
           <el-table-column label="合同名称" prop="contractName" key="contractName" :width="colWidth('contractName', 240)" resizable show-overflow-tooltip v-if="columns.contractName.visible" />
           <el-table-column label="供应商" prop="supplierName" key="supplierName" :width="colWidth('supplierName', 240)" resizable show-overflow-tooltip v-if="columns.supplierName.visible" />
@@ -161,7 +161,7 @@
           <div class="rd-card-header" @click="toggleCard('basic')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>基本信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.basic }"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
           <div class="rd-card-body" v-show="!collapsedCards.basic">
             <el-row :gutter="20"><el-col :span="12"><el-form-item label="合同编号" prop="contractNo"><el-input v-model="form.contractNo" placeholder="保存后自动生成" disabled /></el-form-item></el-col><el-col :span="12"><el-form-item label="合同名称" prop="contractName"><el-input v-model="form.contractName" placeholder="请输入" /></el-form-item></el-col></el-row>
-            <el-row :gutter="20"><el-col :span="12"><el-form-item label="供应商" prop="supplierId"><el-select v-model="form.supplierId" filterable placeholder="请选择供应商" style="width: 100%" @change="onSupplierChange"><el-option v-for="s in supplierOptions" :key="s.supplierId" :label="s.supplierName" :value="s.supplierId" /></el-select></el-form-item></el-col><el-col :span="12"><el-form-item label="关联采购申请单号" prop="orderId"><el-select v-model="form.orderId" filterable clearable placeholder="请选择采购申请单号" style="width: 100%" @change="onRequestChange"><el-option v-for="r in requestOptions" :key="r.requestId" :label="r.requestNo" :value="r.requestId" /></el-select></el-form-item></el-col></el-row>
+            <el-row :gutter="20"><el-col :span="12"><el-form-item label="供应商" prop="supplierId"><el-input v-model="form.supplierName" readonly placeholder="请选择供应商" style="width: 100%" @click="openSupplierPicker"><template v-if="form.supplierName" #append><el-button icon="CircleClose" @click.stop="clearSupplier" /></template><template v-else #append><el-button icon="Search" @click="openSupplierPicker" /></template></el-input></el-form-item></el-col><el-col :span="12"><el-form-item label="关联采购申请单号" prop="orderId"><el-input v-model="form.orderNo" readonly placeholder="请选择采购申请单号" style="width: 100%" @click="openRequestPicker"><template v-if="form.orderNo" #append><el-button icon="CircleClose" @click.stop="clearRequest" /></template><template v-else #append><el-button icon="Search" @click="openRequestPicker" /></template></el-input></el-form-item></el-col></el-row>
             <el-row :gutter="20"><el-col :span="12"><el-form-item label="合同类型" prop="contractType"><el-select v-model="form.contractType" placeholder="请选择" style="width: 100%"><el-option v-for="d in pms_contract_type" :key="d.value" :label="d.label" :value="d.value" /></el-select></el-form-item></el-col></el-row>
           </div>
         </section>
@@ -581,13 +581,16 @@
         <el-button type="primary" @click="showStatusHelp = false">我知道了</el-button>
       </template>
     </el-dialog>
+
+    <supplier-picker ref="supplierPickerRef" title="选择供应商" @confirm="onSupplierPickerConfirm" />
+<request-picker ref="requestPickerRef" title="选择采购申请单" @confirm="onRequestPickerConfirm" />
   </div>
 </template>
 
 <script setup name="PmsContract">
 import { listContract, getContract, addContract, updateContract, delContract, addContractChange, submitContract, auditContract, auditContractChange, auditContractChangeByContractId, terminateContract } from '@/api/pms/contract'
-import { listRequest } from '@/api/pms/request'
-import { listSupplier } from '@/api/wms/supplier'
+import SupplierPicker from '@/components/SupplierPicker/index.vue'
+import RequestPicker from '@/components/RequestPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard, formatMoney } from '@/composables/useDetailCard'
 import { ArrowRight, ArrowDown, QuestionFilled, Search, Filter, WarningFilled, Edit, Delete, Download } from '@element-plus/icons-vue'
@@ -695,8 +698,8 @@ const single = ref(true)
 const multiple = ref(true)
 const total = ref(0)
 const title = ref('')
-const supplierOptions = ref([])
-const requestOptions = ref([])
+const supplierPickerRef = ref(null)
+const requestPickerRef = ref(null)
 const baseUrl = import.meta.env.VITE_APP_BASE_API
 
 const data = reactive({
@@ -728,10 +731,12 @@ function resetQuery() { queryParams.value.contractNo = undefined; queryParams.va
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.contractId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function reset() { form.value = { contractId: undefined, contractNo: undefined, contractName: undefined, orderId: undefined, orderNo: undefined, supplierId: undefined, supplierName: undefined, status: '0', contractType: '0', signDate: undefined, effectiveDate: undefined, expireDate: undefined, contractAmount: 0, paymentTerms: undefined, deliveryTerms: undefined, signBy: undefined, signDepartment: undefined, partyA: undefined, partyB: undefined, fileUrl: undefined, fileName: undefined, remark: undefined }; proxy.resetForm('contractRef') }
-function onSupplierChange(val) { const matched = supplierOptions.value.find(s => s.supplierId === val); form.value.supplierName = matched ? matched.supplierName : undefined }
-function onRequestChange(val) { const matched = requestOptions.value.find(r => r.requestId === val); form.value.orderNo = matched ? matched.requestNo : undefined }
-function loadSupplierOptions() { listSupplier({ pageNum: 1, pageSize: 999 }).then(res => { supplierOptions.value = res.rows || [] }) }
-function loadRequestOptions() { listRequest({ pageNum: 1, pageSize: 999 }).then(res => { requestOptions.value = res.rows || [] }) }
+function openSupplierPicker() { supplierPickerRef.value.open(form.value.supplierId) }
+function onSupplierPickerConfirm(supplier) { form.value.supplierId = supplier.supplierId; form.value.supplierName = supplier.supplierName }
+function clearSupplier() { form.value.supplierId = undefined; form.value.supplierName = undefined }
+function openRequestPicker() { requestPickerRef.value.open(form.value.orderId) }
+function onRequestPickerConfirm(request) { form.value.orderId = request.requestId; form.value.orderNo = request.requestNo }
+function clearRequest() { form.value.orderId = undefined; form.value.orderNo = undefined }
 function getFileName(url) { if (url.lastIndexOf('/') > -1) { return url.slice(url.lastIndexOf('/') + 1) } return url }
 function handlePreview(fileUrl) { proxy.$refs.filePreviewRef.open(fileUrl, getFileName(fileUrl)) }
 function handleAdd() { reset(); open.value = true; title.value = '添加采购合同' }
@@ -754,8 +759,6 @@ function handleDelete(row) { const contractIds = row.contractId || ids.value; pr
 function handleExport() { proxy.download('pms/contract/export', { ...proxy.addDateRange(queryParams.value, dateRange.value, 'SignDate') }, `contract_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 
-loadSupplierOptions()
-loadRequestOptions()
 getList()
 onActivated(() => { getList() })
 </script>

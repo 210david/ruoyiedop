@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import com.ruoyi.common.annotation.Log;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
@@ -39,6 +40,27 @@ public class HrEmployeeController extends BaseController
         List<HrEmployee> list = hrEmployeeService.selectHrEmployeeList(hrEmployee);
         ExcelUtil<HrEmployee> util = new ExcelUtil<>(HrEmployee.class);
         util.exportExcel(response, list, "员工档案");
+    }
+
+    @Log(title = "员工档案", businessType = BusinessType.IMPORT)
+    @PreAuthorize("@ss.hasPermi('hr:employee:import')")
+    @PostMapping("/importData")
+    public AjaxResult importData(MultipartFile file, boolean updateSupport,
+            @RequestParam(value = "updateKey", required = false, defaultValue = "employeeNo") String updateKey) throws Exception
+    {
+        ExcelUtil<HrEmployee> util = new ExcelUtil<>(HrEmployee.class);
+        List<HrEmployee> list = util.importExcel(file.getInputStream());
+        String operName = getUsername();
+        return hrEmployeeService.importHrEmployee(list, updateSupport, updateKey, operName);
+    }
+
+    @PostMapping("/importTemplate")
+    public void importTemplate(HttpServletResponse response)
+    {
+        ExcelUtil<HrEmployee> util = new ExcelUtil<>(HrEmployee.class);
+        // 排除黑名单/关联用户/照片等无需导入的字段，使导入模板与新建表单一致
+        util.excludeFields = new String[]{"blacklistFlag", "blacklistReason", "userId", "photo", "status", "delFlag"};
+        util.importTemplateExcel(response, "员工档案数据");
     }
 
     @PreAuthorize("@ss.hasPermi('hr:employee:query')")

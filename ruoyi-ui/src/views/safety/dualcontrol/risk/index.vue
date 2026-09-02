@@ -127,11 +127,13 @@
               <span class="badge" :class="scope.row.isMajorHazard === '1' ? 'red' : 'gray'"><span class="dot"></span>{{ scope.row.isMajorHazard === '1' ? '是' : '否' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="240" align="center" fixed="right">
+          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
-              <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['safety:risk:query']">查看</el-button>
-              <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['safety:risk:edit']">修改</el-button>
-              <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['safety:risk:remove']">删除</el-button>
+              <div class="action-btn-row">
+                <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['safety:risk:query']">查看</el-button>
+                <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['safety:risk:edit']">修改</el-button>
+                <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['safety:risk:remove']">删除</el-button>
+              </div>
             </template>
           </el-table-column>
         </el-table>
@@ -175,9 +177,9 @@
             <div class="rd-card-header" @click="toggleCard('c1')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>LEC风险评价</div><el-tooltip content="LEC评价法是一种半定量风险评价方法，通过L（可能性）、E（暴露频率）、C（后果严重度）三个因素计算D值（危险性），公式为D=L×E×C" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
             <div class="rd-card-body" v-show="!collapsedCards.c1">
               <el-row :gutter="20">
-                <el-col :span="6"><el-form-item prop="lValue"><template #label><span>L值</span><el-tooltip content="LEC法中的L值，表示事故发生的可能性（Likelihood），取值范围0.1~10，数值越大表示事故发生的可能性越大" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></template><el-input-number v-model="form.lValue" :precision="2" :step="0.1" :min="0" :controls="false" style="width: 100%" @change="calcD" /></el-form-item></el-col>
-                <el-col :span="6"><el-form-item prop="eValue"><template #label><span>E值</span><el-tooltip content="LEC法中的E值，表示人员暴露于危险环境中的频繁程度（Exposure），取值范围0.5~10，数值越大表示暴露越频繁" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></template><el-input-number v-model="form.eValue" :precision="2" :step="0.5" :min="0" :controls="false" style="width: 100%" @change="calcD" /></el-form-item></el-col>
-                <el-col :span="6"><el-form-item prop="cValue"><template #label><span>C值</span><el-tooltip content="LEC法中的C值，表示事故产生的后果严重程度（Consequence），取值范围1~100，数值越大表示后果越严重" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></template><el-input-number v-model="form.cValue" :precision="2" :step="1" :min="0" :controls="false" style="width: 100%" @change="calcD" /></el-form-item></el-col>
+                <el-col :span="6"><el-form-item prop="lValue"><template #label><span>L值</span><el-tooltip content="LEC法中的L值，表示事故发生的可能性（Likelihood），取值范围0.1~10，数值越大表示事故发生的可能性越大" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></template><el-input-number v-model="form.lValue" :precision="2" :step="0.1" :min="0.1" :max="10" :controls="false" style="width: 100%" @change="calcD" /></el-form-item></el-col>
+                <el-col :span="6"><el-form-item prop="eValue"><template #label><span>E值</span><el-tooltip content="LEC法中的E值，表示人员暴露于危险环境中的频繁程度（Exposure），取值范围0.5~10，数值越大表示暴露越频繁" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></template><el-input-number v-model="form.eValue" :precision="2" :step="0.5" :min="0.5" :max="10" :controls="false" style="width: 100%" @change="calcD" /></el-form-item></el-col>
+                <el-col :span="6"><el-form-item prop="cValue"><template #label><span>C值</span><el-tooltip content="LEC法中的C值，表示事故产生的后果严重程度（Consequence），取值范围1~100，数值越大表示后果越严重" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></template><el-input-number v-model="form.cValue" :precision="2" :step="1" :min="1" :max="100" :controls="false" style="width: 100%" @change="calcD" /></el-form-item></el-col>
                 <el-col :span="6"><el-form-item prop="dValue"><template #label><span>D值</span><el-tooltip content="LEC法中的D值，即危险性分值（Danger），D = L × E × C。D值≥320为重大风险，160~319为较大风险，70~159为一般风险，<70为低风险" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></template><el-input-number v-model="form.dValue" :precision="2" :min="0" :controls="false" style="width: 100%" disabled /></el-form-item></el-col>
               </el-row>
               <el-row :gutter="20">
@@ -409,7 +411,7 @@ const activeFilterCount = computed(() => {
   return count
 })
 
-function getList() { loading.value = true; listRiskPoint(queryParams.value).then(response => { riskList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths() }) }
+function getList() { loading.value = true; listRiskPoint(queryParams.value).then(response => { riskList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths() }).catch(error => { console.error(error) }).finally(() => { loading.value = false }) }
 function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
 function resetQuery() { queryParams.value.riskName = undefined; queryParams.value.riskCode = undefined; queryParams.value.riskLevel = undefined; queryParams.value.controlLevel = undefined; queryParams.value.accidentType = undefined; queryParams.value.status = undefined; queryParams.value.params = {}; handleQuery() }
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
@@ -549,4 +551,11 @@ getList()
 @media (max-width:720px) { .safety-risk-page .filter-card .filter-bar { grid-template-columns:1fr; } }
 .clear-icon { cursor: pointer; color: #c0c4cc; font-size: 14px; }
 .clear-icon:hover { color: #909399; }
+
+/* 操作列按钮对齐：每行2个按钮，flex-wrap 自动换行，按钮自适应内容宽度 */
+:deep(.col-action) { padding: 6px 4px !important; }
+:deep(.col-action .cell) { display: flex; justify-content: center; padding: 0; }
+.action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
+:deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
+:deep(.col-action .el-button + .el-button) { margin-left: 2px; }
 </style>

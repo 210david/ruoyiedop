@@ -304,7 +304,7 @@
     </el-dialog>
 
     <!-- 新增回款计划对话框 -->
-    <el-dialog v-model="addOpen" width="800px" append-to-body draggable class="rd-dialog">
+    <el-dialog v-model="addOpen" width="960px" append-to-body draggable class="rd-dialog">
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon">
@@ -863,7 +863,7 @@
     <customer-picker ref="customerPickerRef" title="选择客户" @confirm="onCustomerPickerConfirm" />
 
     <!-- 合同选择弹窗 -->
-    <contract-picker ref="contractPickerRef" title="选择合同" @confirm="onContractPickerConfirm" />
+    <contract-picker ref="contractPickerRef" title="选择合同" :contract-statuses="['2']" @confirm="onContractPickerConfirm" />
   </div>
 </template>
 
@@ -1355,4 +1355,11 @@ onActivated(() => { getList() })
 :deep(.el-timeline-item__node--danger) { border-color:#f56c6c; }
 :deep(.el-timeline-item__node--info) { border-color:#909399; }
 /* 卡片式样式使用全局 detail-page.scss */
+
+/* 操作列按钮对齐：每行2个按钮，flex-wrap 自动换行，按钮自适应内容宽度 */
+:deep(.col-action) { padding: 6px 4px !important; }
+:deep(.col-action .cell) { display: flex; justify-content: center; padding: 0; }
+.action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
+:deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
+:deep(.col-action .el-button + .el-button) { margin-left: 2px; }
 </style>

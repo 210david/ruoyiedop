@@ -72,6 +72,10 @@
             o.del_flag = '0'
             <if test="orderNo != null and orderNo != ''"> AND o.order_no LIKE CONCAT('%', #{orderNo}, '%')</if>
             <if test="orderStatus != null and orderStatus != ''"> AND o.order_status = #{orderStatus}</if>
+            <if test="orderStatusList != null and orderStatusList.size() > 0">
+                AND o.order_status IN
+                <foreach item="st" collection="orderStatusList" open="(" separator="," close=")">#{st}</foreach>
+            </if>
             <if test="customerId != null"> AND o.customer_id = #{customerId}</if>
             <if test="contractId != null"> AND o.contract_id = #{contractId}</if>
             <if test="customerName != null and customerName != ''"> AND c.customer_name LIKE CONCAT('%', #{customerName}, '%')</if>

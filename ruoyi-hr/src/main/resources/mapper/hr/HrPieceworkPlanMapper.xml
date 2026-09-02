@@ -12,6 +12,7 @@
         <result property="productId" column="product_id"/>
         <result property="processId" column="process_id"/>
         <result property="orgId" column="org_id"/>
+        <result property="orgName" column="org_name"/>
         <result property="baseSalary" column="base_salary"/>
         <result property="effectiveDate" column="effective_date"/>
         <result property="expiryDate" column="expiry_date"/>
@@ -26,34 +27,38 @@
     </resultMap>
 
     <sql id="selectVo">
-        SELECT pw_plan_id, pw_code, pw_name, pw_type, unit, unit_price, product_id, process_id, org_id, base_salary, effective_date, expiry_date, audit_status, status, del_flag, create_by, create_time, update_by, update_time, remark
-        FROM biz_hr_piecework_plan
+        SELECT t.pw_plan_id, t.pw_code, t.pw_name, t.pw_type, t.unit, t.unit_price, t.product_id, t.process_id, t.org_id, t.base_salary, t.effective_date, t.expiry_date, t.audit_status, t.status, t.del_flag, t.create_by, t.create_time, t.update_by, t.update_time, t.remark,
+        d.dept_name AS org_name
+        FROM biz_hr_piecework_plan t
+        LEFT JOIN sys_dept d ON t.org_id = d.dept_id
     </sql>
 
     <select id="selectHrPieceworkPlanList" parameterType="HrPieceworkPlan" resultMap="HrPieceworkPlanResult">
         <include refid="selectVo"/>
         <where>
-            del_flag = '0'
-            <if test="pwCode != null and pwCode != ''"> AND pw_code LIKE CONCAT('%', #{pwCode}, '%')</if>
-            <if test="pwName != null and pwName != ''"> AND pw_name LIKE CONCAT('%', #{pwName}, '%')</if>
-            <if test="pwType != null and pwType != ''"> AND pw_type LIKE CONCAT('%', #{pwType}, '%')</if>
-            <if test="unit != null and unit != ''"> AND unit LIKE CONCAT('%', #{unit}, '%')</if>
-            <if test="unitPrice != null"> AND unit_price = #{unitPrice}</if>
-            <if test="productId != null"> AND product_id = #{productId}</if>
-            <if test="processId != null"> AND process_id = #{processId}</if>
-            <if test="orgId != null"> AND org_id = #{orgId}</if>
-            <if test="baseSalary != null"> AND base_salary = #{baseSalary}</if>
-            <if test="effectiveDate != null"> AND effective_date = #{effectiveDate}</if>
-            <if test="expiryDate != null"> AND expiry_date = #{expiryDate}</if>
-            <if test="auditStatus != null and auditStatus != ''"> AND audit_status LIKE CONCAT('%', #{auditStatus}, '%')</if>
-            <if test="status != null and status != ''"> AND status LIKE CONCAT('%', #{status}, '%')</if>
-            <if test="delFlag != null and delFlag != ''"> AND del_flag LIKE CONCAT('%', #{delFlag}, '%')</if>
+            t.(del_flag IS NULL OR del_flag = '0')
+            <if test="pwCode != null and pwCode != ''"> AND t.pw_code LIKE CONCAT('%', #{pwCode}, '%')</if>
+            <if test="pwName != null and pwName != ''"> AND t.pw_name LIKE CONCAT('%', #{pwName}, '%')</if>
+            <if test="pwType != null and pwType != ''"> AND t.pw_type LIKE CONCAT('%', #{pwType}, '%')</if>
+            <if test="unit != null and unit != ''"> AND t.unit LIKE CONCAT('%', #{unit}, '%')</if>
+            <if test="unitPrice != null"> AND t.unit_price = #{unitPrice}</if>
+            <if test="productId != null"> AND t.product_id = #{productId}</if>
+            <if test="processId != null"> AND t.process_id = #{processId}</if>
+            <if test="orgId != null"> AND t.org_id = #{orgId}</if>
+            <if test="baseSalary != null"> AND t.base_salary = #{baseSalary}</if>
+            <if test="effectiveDate != null"> AND t.effective_date = #{effectiveDate}</if>
+            <if test="params.beginEffectiveDate != null and params.beginEffectiveDate != ''"> AND t.effective_date &gt;= #{params.beginEffectiveDate}</if>
+            <if test="params.endEffectiveDate != null and params.endEffectiveDate != ''"> AND t.effective_date &lt;= #{params.endEffectiveDate}</if>
+            <if test="expiryDate != null"> AND t.expiry_date = #{expiryDate}</if>
+            <if test="auditStatus != null and auditStatus != ''"> AND t.audit_status LIKE CONCAT('%', #{auditStatus}, '%')</if>
+            <if test="status != null and status != ''"> AND t.status LIKE CONCAT('%', #{status}, '%')</if>
+            <if test="delFlag != null and delFlag != ''"> AND t.del_flag LIKE CONCAT('%', #{delFlag}, '%')</if>
         </where>
-        ORDER BY create_time DESC
+        ORDER BY t.create_time DESC
     </select>
 
     <select id="selectHrPieceworkPlanById" parameterType="Long" resultMap="HrPieceworkPlanResult">
-        <include refid="selectVo"/> WHERE pw_plan_id = #{pwPlanId}
+        <include refid="selectVo"/> WHERE t.pw_plan_id = #{pwPlanId}
     </select>
 
     <insert id="insertHrPieceworkPlan" parameterType="HrPieceworkPlan" useGeneratedKeys="true" keyProperty="pwPlanId">

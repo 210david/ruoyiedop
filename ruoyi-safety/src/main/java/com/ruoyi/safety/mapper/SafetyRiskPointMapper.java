@@ -11,6 +11,9 @@ public interface SafetyRiskPointMapper {
     public int updateSafetyRiskPoint(SafetyRiskPoint safetyRiskPoint);
     public int deleteSafetyRiskPointByIds(Long[] riskPointIds);
     public int deleteSafetyRiskPointById(Long riskPointId);
+public int countRiskPointByAreaId(Long areaId);
+public int countHazardByRiskPointId(Long riskPointId);
+public int countTaskByRiskPointId(Long riskPointId);
     public List<Map<String, Object>> selectFourColorMapData(Long enterpriseId);
     public int countByRiskLevel(String riskLevel);
 }

@@ -123,13 +123,15 @@
           </el-table-column>
           <el-table-column label="隐患数" prop="hazardCount" key="hazardCount" :width="colWidth('hazardCount', 80)" resizable align="center" v-if="columns.hazardCount.visible" />
           <el-table-column label="检查时间" prop="inspectTime" key="inspectTime" :width="colWidth('inspectTime', 160)" resizable align="center" v-if="columns.inspectTime.visible" />
-          <el-table-column label="操作" width="360" align="center" fixed="right">
+          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
-              <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['safety:task:query']">查看</el-button>
-              <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-if="scope.row.taskStatus === '0'" v-hasPermi="['safety:task:edit']">修改</el-button>
-              <el-button link type="success" icon="Check" @click="handleFeedback(scope.row)" v-if="scope.row.taskStatus === '0' || scope.row.taskStatus === '1'" v-hasPermi="['safety:task:edit']">执行反馈</el-button>
-              <el-button link type="warning" icon="CircleClose" @click="handleCancel(scope.row)" v-if="scope.row.taskStatus === '0' || scope.row.taskStatus === '1'" v-hasPermi="['safety:task:edit']">作废</el-button>
-              <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['safety:task:remove']">删除</el-button>
+              <div class="action-btn-row">
+                <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['safety:task:query']">查看</el-button>
+                <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-if="scope.row.taskStatus === '0'" v-hasPermi="['safety:task:edit']">修改</el-button>
+                <el-button link type="success" icon="Check" @click="handleFeedback(scope.row)" v-if="scope.row.taskStatus === '0' || scope.row.taskStatus === '1'" v-hasPermi="['safety:task:edit']">执行反馈</el-button>
+                <el-button link type="warning" icon="CircleClose" @click="handleCancel(scope.row)" v-if="scope.row.taskStatus === '0' || scope.row.taskStatus === '1'" v-hasPermi="['safety:task:edit']">作废</el-button>
+                <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['safety:task:remove']">删除</el-button>
+              </div>
             </template>
           </el-table-column>
         </el-table>
@@ -674,7 +676,7 @@ function loadStatusCounts() {
 }
 function statusTabClass(value) { const map = { '0': 'tab-draft', '1': 'tab-audit', '2': 'tab-done', '3': 'tab-void' }; return map[value] || '' }
 
-function getList() { loading.value = true; listTask(proxy.addDateRange(queryParams.value, dateRange.value)).then(response => { taskList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths(); loadStatusCounts() }) }
+function getList() { loading.value = true; listTask(proxy.addDateRange(queryParams.value, dateRange.value)).then(response => { taskList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths(); loadStatusCounts() }).catch(error => { console.error(error) }).finally(() => { loading.value = false }) }
 function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
 function resetQuery() { queryParams.value.taskName = undefined; queryParams.value.taskCode = undefined; queryParams.value.taskStatus = undefined; queryParams.value.taskType = undefined; queryParams.value.executorName = undefined; dateRange.value = []; queryParams.value.params = {}; activeStatusTab.value = 'all'; handleQuery() }
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
@@ -933,4 +935,11 @@ getList()
 .status-help-content .highlight-warning .highlight-card-title { color: #e6a23c; }
 .status-help-content .highlight-danger { background-color: #fef0f0; border-color: #fbc4c4; }
 .status-help-content .highlight-danger .highlight-card-title { color: #f56c6c; }
+
+/* 操作列按钮对齐：每行2个按钮，flex-wrap 自动换行，按钮自适应内容宽度 */
+:deep(.col-action) { padding: 6px 4px !important; }
+:deep(.col-action .cell) { display: flex; justify-content: center; padding: 0; }
+.action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
+:deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
+:deep(.col-action .el-button + .el-button) { margin-left: 2px; }
 </style>

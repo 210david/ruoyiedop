@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.safety.domain.SafetyTrainingAttendee;
 import com.ruoyi.safety.domain.SafetyTrainingCert;
@@ -43,6 +44,7 @@ public class SafetyTrainingAttendeeServiceImpl implements ISafetyTrainingAttende
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public int batchInsertAttendee(List<SafetyTrainingAttendee> attendeeList)
     {
         if (attendeeList == null || attendeeList.isEmpty())
@@ -89,9 +91,10 @@ public class SafetyTrainingAttendeeServiceImpl implements ISafetyTrainingAttende
     @Override
     public List<SafetyTrainingAttendee> selectHoursStatistics(SafetyTrainingAttendee safetyTrainingAttendee) { return safetyTrainingAttendeeMapper.selectHoursStatistics(safetyTrainingAttendee); }
 
-    @Override
-    public String importAttendee(List<SafetyTrainingAttendee> list, boolean updateSupport, String operName)
-    {
+@Override
+@Transactional(rollbackFor = Exception.class)
+public String importAttendee(List<SafetyTrainingAttendee> list, boolean updateSupport, String operName)
+{
         if (list == null || list.isEmpty())
         {
             throw new ServiceException("导入数据不能为空");
@@ -162,10 +165,11 @@ public class SafetyTrainingAttendeeServiceImpl implements ISafetyTrainingAttende
         }
     }
 
-    @SuppressWarnings("unchecked")
-    @Override
-    public int batchUpdateExamScore(Map<String, Object> payload)
-    {
+@SuppressWarnings("unchecked")
+@Override
+@Transactional(rollbackFor = Exception.class)
+public int batchUpdateExamScore(Map<String, Object> payload)
+{
         List<?> rawIds = (List<?>) payload.get("attendeeIds");
         if (rawIds == null || rawIds.isEmpty())
         {

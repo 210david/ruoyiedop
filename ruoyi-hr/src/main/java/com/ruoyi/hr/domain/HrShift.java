@@ -11,7 +11,6 @@ public class HrShift extends BaseEntity
     private static final long serialVersionUID = 1L;
 
     private Long shiftId;
-    @NotBlank(message = "班次编码不能为空")
     @Excel(name = "班次编码")
     private String shiftCode;
     @NotBlank(message = "班次名称不能为空")

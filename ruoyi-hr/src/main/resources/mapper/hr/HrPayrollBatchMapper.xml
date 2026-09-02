@@ -33,11 +33,13 @@
     <select id="selectHrPayrollBatchList" parameterType="HrPayrollBatch" resultMap="HrPayrollBatchResult">
         <include refid="selectVo"/>
         <where>
-            del_flag = '0'
+            (del_flag IS NULL OR del_flag = '0')
             <if test="batchNo != null and batchNo != ''"> AND batch_no LIKE CONCAT('%', #{batchNo}, '%')</if>
             <if test="yearMonth != null and yearMonth != ''"> AND year_month LIKE CONCAT('%', #{yearMonth}, '%')</if>
             <if test="batchName != null and batchName != ''"> AND batch_name LIKE CONCAT('%', #{batchName}, '%')</if>
             <if test="payDate != null"> AND pay_date = #{payDate}</if>
+            <if test="params.beginPayDate != null and params.beginPayDate != ''"> AND pay_date &gt;= #{params.beginPayDate}</if>
+            <if test="params.endPayDate != null and params.endPayDate != ''"> AND pay_date &lt;= #{params.endPayDate}</if>
             <if test="bankName != null and bankName != ''"> AND bank_name LIKE CONCAT('%', #{bankName}, '%')</if>
             <if test="totalCount != null"> AND total_count = #{totalCount}</if>
             <if test="totalAmount != null"> AND total_amount = #{totalAmount}</if>

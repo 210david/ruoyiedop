@@ -13,7 +13,6 @@ public class HrOvertime extends BaseEntity
     private static final long serialVersionUID = 1L;
 
     private Long overtimeId;
-    @NotBlank(message = "加班单号不能为空")
     @Excel(name = "加班单号")
     private String overtimeNo;
     @NotNull(message = "员工ID不能为空")

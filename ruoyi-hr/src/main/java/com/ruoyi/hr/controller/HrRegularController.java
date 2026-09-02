@@ -71,4 +71,12 @@ public class HrRegularController extends BaseController
     {
         return toAjax(hrRegularService.deleteHrRegularByIds(regularIds));
     }
+
+    @PreAuthorize("@ss.hasPermi('hr:regular:audit')")
+    @Log(title = "转正审核", businessType = BusinessType.UPDATE)
+    @PutMapping("/audit/{regularId}")
+    public AjaxResult audit(@PathVariable Long regularId, @RequestParam String auditAction, @RequestParam(required = false) String auditRemark)
+    {
+        return toAjax(hrRegularService.auditHrRegular(regularId, auditAction, auditRemark));
+    }
 }

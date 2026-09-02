@@ -25,6 +25,7 @@ import com.ruoyi.dms.mapper.DmsInspectionTaskMapper;
 import com.ruoyi.dms.service.IDmsInspectionTaskService;
 import com.ruoyi.dms.service.IDmsWorkOrderService;
 import com.ruoyi.mk.service.IMkNumberRuleService;
+import com.ruoyi.system.utils.MessageHelper;
 
 @Service
 public class DmsInspectionTaskServiceImpl implements IDmsInspectionTaskService
@@ -45,6 +46,9 @@ public class DmsInspectionTaskServiceImpl implements IDmsInspectionTaskService
 
     @Autowired
     private IMkNumberRuleService mkNumberRuleService;
+
+    @Autowired
+    private MessageHelper messageHelper;
 
     @Override
     public List<DmsInspectionTask> selectTaskList(DmsInspectionTask task) { return dmsInspectionTaskMapper.selectTaskList(task); }
@@ -184,17 +188,42 @@ public class DmsInspectionTaskServiceImpl implements IDmsInspectionTaskService
         }
 
         // 兜底：旧格式（扁平数组/仅common，无设备结构），生成单个工单
+        // OBS-02修复：回填路线上的首台设备，避免工单设备信息缺失
         String equipmentNames = "";
+        Long fallbackEquipmentId = null;
+        String fallbackEquipmentName = null;
         if (db.getRouteId() != null)
         {
             DmsInspectionRoute route = dmsInspectionRouteMapper.selectRouteById(db.getRouteId());
-            if (route != null && route.getEquipmentIds() != null)
+            if (route != null && StringUtils.isNotEmpty(route.getEquipmentIds()))
             {
+                try
+                {
+                    JSONArray routeIds = JSON.parseArray(route.getEquipmentIds());
+                    if (routeIds != null && !routeIds.isEmpty())
+                    {
+                        fallbackEquipmentId = routeIds.getLong(0);
+                        if (fallbackEquipmentId != null)
+                        {
+                            DmsEquipment fallbackEquipment = dmsEquipmentMapper.selectEquipmentById(fallbackEquipmentId);
+                            if (fallbackEquipment != null)
+                            {
+                                fallbackEquipmentName = fallbackEquipment.getEquipmentName();
+                            }
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    log.warn("解析路线设备ID失败: {}", e.getMessage());
+                }
                 equipmentNames = getEquipmentNames(route.getEquipmentIds());
             }
         }
         String abnormalDetail = formatAbnormalDetail(resultData);
-        insertInspectionWorkOrder(task, db, null, equipmentNames, abnormalDetail, reporterId, reporterName);
+        insertInspectionWorkOrder(task, db, fallbackEquipmentId,
+                StringUtils.isNotEmpty(fallbackEquipmentName) ? fallbackEquipmentName : equipmentNames,
+                abnormalDetail, reporterId, reporterName);
     }
 
     /**
@@ -465,8 +494,44 @@ public class DmsInspectionTaskServiceImpl implements IDmsInspectionTaskService
             update.setUpdateBy("system");
             dmsInspectionTaskMapper.updateTask(update);
             count++;
+
+            // 发送消息中心提醒：设备巡检逾期（DEF-03）
+            sendInspectionOverdueMessage(task);
         }
         return count;
+    }
+
+    /**
+     * 发送消息中心提醒：设备巡检逾期（DEF-03）
+     * 消息规范（docs/消息提醒方案设计.md §2.7）：类型4-待办事项，级别1-普通，
+     * 接收角色 dms:inspection:task:list，跳转 /dms/inspection/task
+     */
+    private void sendInspectionOverdueMessage(DmsInspectionTask task)
+    {
+        try
+        {
+            String title = "设备巡检逾期提醒";
+            String content = "点检任务[" + task.getTaskNo() + "]已逾期未完成"
+                    + "，路线：" + (task.getRouteName() != null ? task.getRouteName() : "-")
+                    + "，计划日期：" + (task.getPlanDate() != null ? new SimpleDateFormat("yyyy-MM-dd").format(task.getPlanDate()) : "-")
+                    + "，请尽快执行点检。";
+            messageHelper.sendMessage(
+                title,
+                content,
+                "4",   // 待办事项
+                "1",   // 普通
+                "dms",
+                task.getTaskId(),
+                "/dms/inspection/task?id=" + task.getTaskId(),
+                "dms:inspection:task:list",
+                "0",   // bizStatus: 待执行
+                "点检任务"
+            );
+        }
+        catch (Exception e)
+        {
+            log.error("发送设备巡检逾期消息失败: taskId={}", task.getTaskId(), e);
+        }
     }
 
     /**

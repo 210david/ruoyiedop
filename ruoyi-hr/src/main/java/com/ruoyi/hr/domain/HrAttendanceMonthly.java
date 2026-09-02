@@ -25,6 +25,8 @@ public class HrAttendanceMonthly extends BaseEntity
     private String employeeNo;
     @Excel(name = "组织ID")
     private Long orgId;
+    /** 部门名称（关联 sys_dept 回显，非表字段） */
+    private String orgName;
     @Excel(name = "出勤天数")
     private BigDecimal attendDays;
     @Excel(name = "迟到次数")
@@ -63,6 +65,8 @@ public class HrAttendanceMonthly extends BaseEntity
     public void setEmployeeNo(String employeeNo) { this.employeeNo = employeeNo; }
     public Long getOrgId() { return orgId; }
     public void setOrgId(Long orgId) { this.orgId = orgId; }
+    public String getOrgName() { return orgName; }
+    public void setOrgName(String orgName) { this.orgName = orgName; }
     public BigDecimal getAttendDays() { return attendDays; }
     public void setAttendDays(BigDecimal attendDays) { this.attendDays = attendDays; }
     public Integer getLateCount() { return lateCount; }
