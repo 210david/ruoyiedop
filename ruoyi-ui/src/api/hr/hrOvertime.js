@@ -42,3 +42,12 @@ export function delHrOvertime(overtimeId) {
     method: 'delete'
   })
 }
+
+// 加班审批
+export function auditHrOvertime(overtimeId, auditAction, auditRemark) {
+  return request({
+    url: '/hr/overtime/audit/' + overtimeId,
+    method: 'put',
+    params: { auditAction, auditRemark }
+  })
+}

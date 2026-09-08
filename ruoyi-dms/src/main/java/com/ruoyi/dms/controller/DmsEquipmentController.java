@@ -60,6 +60,11 @@ public class DmsEquipmentController extends BaseController
     {
         ExcelUtil<DmsEquipment> util = new ExcelUtil<>(DmsEquipment.class);
         List<DmsEquipment> list = util.importExcel(file.getInputStream());
+        if (list == null || list.isEmpty() || list.stream().allMatch(java.util.Objects::isNull))
+        {
+            return AjaxResult.error("导入失败！请使用系统提供的标准模板填写数据，不要使用非模板格式的文件。");
+        }
+        list.removeIf(java.util.Objects::isNull);
         String operName = getUsername();
         return dmsEquipmentService.importEquipment(list, updateSupport, updateKey, operName);
     }

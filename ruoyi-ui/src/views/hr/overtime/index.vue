@@ -35,6 +35,14 @@
           </div>
         </div>
         <div class="field">
+          <label>部门</label>
+          <div class="control">
+            <el-input v-model="queryParams.deptName" placeholder="请输入部门名称" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field">
           <label>审批状态</label>
           <div class="control is-select">
             <el-select v-model="queryParams.auditStatus" placeholder="全部" clearable @change="handleQuery">
@@ -109,6 +117,7 @@
           <el-table-column label="工号" prop="employeeNo" key="employeeNo" align="center" :width="colWidth('employeeNo', 120)" resizable v-if="columns.employeeNo.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.employeeNo }}</span></template>
           </el-table-column>
+          <el-table-column label="部门" prop="deptName" key="deptName" align="center" :width="colWidth('deptName', 120)" resizable v-if="columns.deptName.visible" />
           <el-table-column label="加班日期" prop="overtimeDate" key="overtimeDate" align="center" :width="colWidth('overtimeDate', 120)" resizable v-if="columns.overtimeDate.visible" />
           <el-table-column label="加班类型" prop="overtimeType" key="overtimeType" align="center" :width="colWidth('overtimeType', 120)" resizable v-if="columns.overtimeType.visible">
             <template #default="scope">
@@ -122,11 +131,12 @@
               <span class="badge" :class="auditStatusClass(scope.row.auditStatus)"><span class="dot"></span>{{ auditStatusLabel(scope.row.auditStatus) }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
+          <el-table-column label="操作" width="190" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
               <div class="action-btn-row">
                 <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['hr:overtime:query']">详情</el-button>
                 <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['hr:overtime:edit']">修改</el-button>
+                <el-button link type="warning" icon="Finished" @click="handleAudit(scope.row)" v-if="scope.row.auditStatus === '0'" v-hasPermi="['hr:overtime:audit']">审批</el-button>
                 <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['hr:overtime:remove']">删除</el-button>
               </div>
             </template>
@@ -175,6 +185,11 @@
             <el-input v-model="form.employeeNo" placeholder="请输入工号" />
           </el-form-item>
         </el-col>
+        <el-col :span="12">
+          <el-form-item label="部门" prop="deptName">
+            <el-input v-model="form.deptName" placeholder="选择人员后自动带出" readonly />
+          </el-form-item>
+        </el-col>
               </el-row>
             </div>
           </section>
@@ -197,12 +212,17 @@
         </el-col>
         <el-col :span="12">
           <el-form-item label="开始时间" prop="startTime">
-            <el-date-picker v-model="form.startTime" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" placeholder="选择日期时间" style="width: 100%" />
+            <el-time-picker v-model="form.startTime" value-format="HH:mm:ss" placeholder="选择时间" format="HH:mm" style="width: 100%" />
           </el-form-item>
         </el-col>
         <el-col :span="12">
           <el-form-item label="结束时间" prop="endTime">
-            <el-date-picker v-model="form.endTime" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" placeholder="选择日期时间，保存时自动计算加班小时" style="width: 100%" />
+            <el-time-picker v-model="form.endTime" value-format="HH:mm:ss" placeholder="选择时间" format="HH:mm" style="width: 100%" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="24">
+          <el-form-item label="加班小时" prop="overtimeHours">
+            <el-input :model-value="computedOvertimeHours != null ? computedOvertimeHours + ' 小时' : ''" disabled placeholder="根据起止时间自动计算" />
           </el-form-item>
         </el-col>
               </el-row>
@@ -221,6 +241,35 @@
           </el-form-item>
         </el-col>
               </el-row>
+            </div>
+          </section>
+          <section class="rd-card" v-if="form.auditLogList && form.auditLogList.length">
+            <div class="rd-card-header" @click="toggleCard('e2')">
+              <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>审核记录</div>
+              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.e2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.e2" style="display:block">
+              <el-alert v-if="form.auditStatus === '2'" type="warning" :closable="false" show-icon class="reject-alert">
+                <template #title>该记录已被驳回，请根据审核意见修改后重新提交</template>
+              </el-alert>
+              <div class="rd-timeline">
+                <div class="rd-timeline-item" v-for="log in form.auditLogList" :key="log.logId">
+                  <div class="rd-timeline-dot" :class="{ 'rd-timeline-dot--success': log.auditAction === '1', 'rd-timeline-dot--error': log.auditAction === '2' }"></div>
+                  <div class="rd-timeline-content">
+                    <div class="rd-timeline-header">
+                      <span class="rd-timeline-title">
+                        <el-tag v-if="log.auditAction === '1'" type="success" size="small" effect="light" round>审核通过</el-tag>
+                        <el-tag v-else-if="log.auditAction === '2'" type="danger" size="small" effect="light" round>审核驳回</el-tag>
+                      </span>
+                      <span class="rd-timeline-time">{{ log.auditTime }}</span>
+                    </div>
+                    <div class="rd-timeline-body">
+                      <div class="rd-item"><span class="rd-label">审核人</span><div class="rd-value">{{ log.auditBy || '-' }}</div></div>
+                    </div>
+                    <div class="rd-timeline-comment" v-if="log.auditRemark"><strong>审核意见：</strong>{{ log.auditRemark }}</div>
+                  </div>
+                </div>
+              </div>
             </div>
           </section>
         </div>
@@ -256,6 +305,7 @@
               <div class="rd-item"><span class="rd-label">加班单号</span><div class="rd-value">{{ viewData.overtimeNo || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">员工姓名</span><div class="rd-value">{{ viewData.employeeName || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">工号</span><div class="rd-value">{{ viewData.employeeNo || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">部门</span><div class="rd-value">{{ viewData.deptName || '-' }}</div></div>
             </div>
           </div>
         </section>
@@ -275,20 +325,6 @@
           </div>
         </section>
         <section class="rd-card">
-          <div class="rd-card-header" @click="toggleCard('c2')">
-            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span>审批信息</div>
-            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
-          </div>
-          <div class="rd-card-body" v-show="!collapsedCards.c2" style="display:block">
-            <div class="rd-grid">
-              <div class="rd-item"><span class="rd-label">审批状态</span><div class="rd-value">{{ auditStatusLabel(viewData.auditStatus) }}</div></div>
-              <div class="rd-item"><span class="rd-label">审批人</span><div class="rd-value">{{ viewData.auditBy || '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label">审批时间</span><div class="rd-value">{{ viewData.auditTime || '-' }}</div></div>
-              <div class="rd-item rd-item--full"><span class="rd-label">审批意见</span><div class="rd-value">{{ viewData.auditRemark || '-' }}</div></div>
-            </div>
-          </div>
-        </section>
-        <section class="rd-card">
           <div class="rd-card-header" @click="toggleCard('c3')">
             <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>其他信息</div>
             <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c3 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
@@ -299,9 +335,102 @@
             </div>
           </div>
         </section>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('c2')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>审核记录</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" style="display:block" v-show="!collapsedCards.c2">
+            <el-alert v-if="viewData.auditStatus === '2'" type="warning" :closable="false" show-icon class="reject-alert">
+              <template #title>该记录已被驳回，请根据审核意见修改后重新提交</template>
+            </el-alert>
+            <div class="rd-timeline" v-if="viewAuditLogs().length">
+              <div class="rd-timeline-item" v-for="(log, idx) in viewAuditLogs()" :key="idx">
+                <div class="rd-timeline-dot" :class="{ 'rd-timeline-dot--success': log.auditAction === '1', 'rd-timeline-dot--error': log.auditAction === '2' }"></div>
+                <div class="rd-timeline-content">
+                  <div class="rd-timeline-header">
+                    <span class="rd-timeline-title">
+                      <el-tag v-if="log.auditAction === '1'" type="success" size="small" effect="light" round>审核通过</el-tag>
+                      <el-tag v-else-if="log.auditAction === '2'" type="danger" size="small" effect="light" round>审核驳回</el-tag>
+                    </span>
+                    <span class="rd-timeline-time">{{ log.auditTime || '-' }}</span>
+                  </div>
+                  <div class="rd-timeline-body">
+                    <div class="rd-item"><span class="rd-label">审核人</span><div class="rd-value">{{ log.auditBy || '-' }}</div></div>
+                  </div>
+                  <div class="rd-timeline-comment" v-if="log.auditRemark"><strong>审核意见：</strong>{{ log.auditRemark }}</div>
+                </div>
+              </div>
+            </div>
+            <div class="rd-empty" v-else>
+              <svg class="rd-empty-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+              <p class="rd-empty-text">暂无审核记录</p>
+            </div>
+          </div>
+        </section>
       </div>
       <template #footer>
         <el-button @click="viewOpen = false">关 闭</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- ===== 审批弹窗 ===== -->
+    <el-dialog v-model="auditOpen" width="912px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+          <div class="rd-detail-header-main">
+            <div class="rd-detail-header-title">加班审批</div>
+            <div class="rd-detail-header-sub" v-if="auditData.overtimeNo">
+              <div class="rd-detail-header-divider"></div>
+              <span class="rd-detail-header-no">加班单号：{{ auditData.overtimeNo }}</span>
+            </div>
+          </div>
+        </div>
+      </template>
+      <div class="rd-page">
+        <section class="rd-card">
+          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>基本信息</div></div>
+          <div class="rd-card-body" style="display:block">
+            <div class="rd-grid">
+              <div class="rd-item"><span class="rd-label">加班单号</span><div class="rd-value">{{ auditData.overtimeNo || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">姓名</span><div class="rd-value">{{ auditData.employeeName || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">工号</span><div class="rd-value">{{ auditData.employeeNo || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">部门</span><div class="rd-value">{{ auditData.deptName || '-' }}</div></div>
+            </div>
+          </div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>加班信息</div></div>
+          <div class="rd-card-body" style="display:block">
+            <div class="rd-grid">
+              <div class="rd-item"><span class="rd-label">加班类型</span><div class="rd-value"><dict-tag :options="overtimeTypeOptions" :value="auditData.overtimeType"/></div></div>
+              <div class="rd-item"><span class="rd-label">加班日期</span><div class="rd-value">{{ auditData.overtimeDate || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">开始时间</span><div class="rd-value">{{ auditData.startTime || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">结束时间</span><div class="rd-value">{{ auditData.endTime || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">加班小时</span><div class="rd-value">{{ auditData.overtimeHours != null ? auditData.overtimeHours : '-' }}</div></div>
+            </div>
+          </div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>其他信息</div></div>
+          <div class="rd-card-body" style="display:block">
+            <div class="rd-grid">
+              <div class="rd-item rd-item--full"><span class="rd-label">加班原因</span><div class="rd-value">{{ auditData.reason || '-' }}</div></div>
+            </div>
+          </div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>审批意见</div></div>
+          <div class="rd-card-body" style="display:block">
+            <el-input v-model="auditData.auditRemark" type="textarea" :rows="4" maxlength="500" show-word-limit placeholder="请输入审批意见，驳回时建议填写驳回原因" />
+          </div>
+        </section>
+      </div>
+      <template #footer>
+        <el-button type="success" :loading="auditSubmitting" @click="submitAudit('1')">通 过</el-button>
+        <el-button type="danger" :loading="auditSubmitting" @click="submitAudit('2')">驳 回</el-button>
+        <el-button @click="auditOpen = false">取 消</el-button>
       </template>
     </el-dialog>
 
@@ -311,7 +440,7 @@
 </template>
 
 <script setup name="HrOvertime">
-import { listHrOvertime, getHrOvertime, addHrOvertime, updateHrOvertime, delHrOvertime } from '@/api/hr/hrOvertime'
+import { listHrOvertime, getHrOvertime, addHrOvertime, updateHrOvertime, delHrOvertime, auditHrOvertime } from '@/api/hr/hrOvertime'
 import { useColumnResize } from '@/composables/useColumnResize'
 import EmployeePicker from '@/components/EmployeePicker';
 
@@ -324,6 +453,9 @@ const hrOvertimeList = ref([])
 const open = ref(false)
 const viewOpen = ref(false)
 const viewData = ref({})
+const auditOpen = ref(false)
+const auditSubmitting = ref(false)
+const auditData = ref({})
 const loading = ref(true)
 const showSearch = ref(true)
 const ids = ref([])
@@ -335,7 +467,7 @@ const showAdvanced = ref(false)
 const overtimeDateRange = ref([])
 const startTimeRange = ref([])
 const endTimeRange = ref([])
-const collapsedCards = reactive({ c0: false, c1: false, c2: false, c3: false })
+const collapsedCards = reactive({ c0: false, c1: false, c2: false, c3: false, e0: false, e1: false, e2: false, e3: false })
 
 /** 列宽拖拽持久化 */
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('hr_overtime_index')
@@ -345,6 +477,7 @@ const defaultColumns = {
   overtimeNo: { label: '加班单号', visible: true },
   employeeName: { label: '员工姓名', visible: true },
   employeeNo: { label: '工号', visible: true },
+  deptName: { label: '部门', visible: true },
   overtimeDate: { label: '加班日期', visible: true },
   overtimeType: { label: '加班类型', visible: true },
   startTime: { label: '开始时间', visible: true },
@@ -394,6 +527,7 @@ const activeFilterCount = computed(() => {
   if (queryParams.value.overtimeNo) count++
   if (queryParams.value.employeeName) count++
   if (queryParams.value.employeeNo) count++
+  if (queryParams.value.deptName) count++
   if (queryParams.value.auditStatus) count++
   if (queryParams.value.overtimeType) count++
   if (overtimeDateRange.value && overtimeDateRange.value.length === 2) count++
@@ -404,16 +538,51 @@ const activeFilterCount = computed(() => {
 
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, overtimeNo: undefined, employeeId: undefined, employeeName: undefined, employeeNo: undefined, overtimeType: undefined, auditStatus: undefined },
+  queryParams: { pageNum: 1, pageSize: 10, overtimeNo: undefined, employeeId: undefined, employeeName: undefined, employeeNo: undefined, deptName: undefined, overtimeType: undefined, auditStatus: undefined },
   rules: {
     employeeId: [{ required: true, message: '请选择人员', trigger: 'change' }],
     overtimeDate: [{ required: true, message: '加班日期不能为空', trigger: 'blur' }],
     startTime: [{ required: true, message: '开始时间不能为空', trigger: 'blur' }],
-    endTime: [{ required: true, message: '结束时间不能为空', trigger: 'blur' }],
-    overtimeHours: [{ required: true, message: '加班小时不能为空', trigger: 'blur' }]
+    endTime: [
+      { required: true, message: '结束时间不能为空', trigger: 'blur' },
+      {
+        validator: (rule, value, callback) => {
+          if (value && form.value.startTime) {
+            const s = new Date('2000-01-01 ' + form.value.startTime)
+            const e = new Date('2000-01-01 ' + value)
+            if (!isNaN(s.getTime()) && !isNaN(e.getTime()) && e <= s) {
+              callback(new Error('结束时间不能早于开始时间'))
+            } else {
+              callback()
+            }
+          } else {
+            callback()
+          }
+        },
+        trigger: 'blur'
+      }
+    ],
+    overtimeHours: [],
+    reason: [{ required: true, message: '加班原因不能为空', trigger: 'blur' }]
   }
 })
 const { queryParams, form, rules } = toRefs(data)
+
+/** 根据开始/结束时间自动计算加班小时（实时显示，纯时间+加班日期） */
+const computedOvertimeHours = computed(() => {
+  const f = form.value
+  if (!f.startTime || !f.endTime) return null
+  // startTime/endTime 为 HH:mm:ss 格式，需结合 overtimeDate 拼成完整 datetime
+  const dateStr = f.overtimeDate || '1970-01-01'
+  const s = new Date((dateStr + ' ' + f.startTime).replace(/-/g, '/')).getTime()
+  const e = new Date((dateStr + ' ' + f.endTime).replace(/-/g, '/')).getTime()
+  if (isNaN(s) || isNaN(e)) return null
+  // 支持跨天：结束时间小于开始时间时，结束时间加一天
+  let diff = e - s
+  if (diff <= 0) diff += 24 * 3600000
+  // 最小单位0.5小时，向上取整
+  return Math.ceil(diff / 3600000 * 2) / 2
+})
 
 /** ===== 人员弹框选择 ===== */
 const employeePickerRef = ref(null)
@@ -423,8 +592,12 @@ function onEmployeePickerConfirm(emp) {
   const f = form.value;
   f.employeeId = emp.employeeId;
   f.employeeName = emp.employeeName;
-  // 档案信息自动带出：仅填充本页面表单中存在的字段
-  const auto = { idCard: emp.idCard, gender: emp.gender, phone: emp.phone, email: emp.email, orgId: emp.orgId, orgName: emp.orgName, positionId: emp.positionId, positionName: emp.positionName };
+  // 档案信息自动带出：工号、部门等字段
+  f.employeeNo = emp.employeeNo;
+  f.deptId = emp.orgId;
+  f.deptName = emp.orgName;
+  // 其他档案信息自动带出：仅填充本页面表单中存在的字段
+  const auto = { idCard: emp.idCard, gender: emp.gender, phone: emp.phone, email: emp.email, positionId: emp.positionId, positionName: emp.positionName };
   Object.keys(auto).forEach(k => { if (k in f && auto[k] !== null && auto[k] !== undefined) f[k] = auto[k]; });
 }
 function onEmployeeFieldClick(e) {
@@ -460,6 +633,7 @@ function resetQuery() {
   queryParams.value.overtimeNo = undefined
   queryParams.value.employeeName = undefined
   queryParams.value.employeeNo = undefined
+  queryParams.value.deptName = undefined
   queryParams.value.auditStatus = undefined
   queryParams.value.overtimeType = undefined
   overtimeDateRange.value = []
@@ -485,6 +659,8 @@ function reset() {
     employeeId: undefined,
     employeeName: undefined,
     employeeNo: undefined,
+    deptId: undefined,
+    deptName: undefined,
     overtimeDate: undefined,
     overtimeType: undefined,
     startTime: undefined,
@@ -509,7 +685,11 @@ function handleUpdate(row) {
   reset()
   const overtimeId = row.overtimeId || ids.value[0]
   getHrOvertime(overtimeId).then(response => {
-    form.value = response.data
+    const d = response.data
+    // 从完整 datetime 中提取时间部分用于编辑表单
+    if (d.startTime && d.startTime.length > 8) d.startTime = d.startTime.substring(11)
+    if (d.endTime && d.endTime.length > 8) d.endTime = d.endTime.substring(11)
+    form.value = d
     open.value = true
     title.value = '修改加班'
   })
@@ -518,9 +698,16 @@ function handleUpdate(row) {
 function handleView(row) {
   const overtimeId = row.overtimeId
   getHrOvertime(overtimeId).then(response => {
-    viewData.value = response.data
+    viewData.value = response.data || {}
     viewOpen.value = true
+  }).catch(() => {
+    proxy.$modal.msgError('获取详情失败')
   })
+}
+
+/** 详情弹窗：获取审核日志列表（安全访问，防止 viewData 为空时报错） */
+function viewAuditLogs() {
+  return viewData.value && viewData.value.auditLogList ? viewData.value.auditLogList : []
 }
 
 function submitForm() {
@@ -544,13 +731,22 @@ function submitForm() {
   })
 }
 
-/** 根据开始/结束时间自动计算加班小时（跨天支持） */
+/** 根据开始/结束时间自动计算加班小时（纯时间+加班日期，跨天支持） */
 function computeOvertimeHours(f) {
   if (!f.startTime || !f.endTime) return
-  const s = new Date(String(f.startTime).replace(/-/g, '/')).getTime()
-  const e = new Date(String(f.endTime).replace(/-/g, '/')).getTime()
-  if (isNaN(s) || isNaN(e) || e <= s) return
-  f.overtimeHours = Math.round((e - s) / 3600000 * 100) / 100
+  const dateStr = f.overtimeDate || '1970-01-01'
+  const s = new Date((dateStr + ' ' + f.startTime).replace(/-/g, '/')).getTime()
+  const e = new Date((dateStr + ' ' + f.endTime).replace(/-/g, '/')).getTime()
+  if (isNaN(s) || isNaN(e)) return
+let diff = e - s
+if (diff <= 0) diff += 24 * 3600000
+// 最小单位0.5小时，向上取整
+f.overtimeHours = Math.ceil(diff / 3600000 * 2) / 2
+  // 提交给后端时拼接完整 datetime
+  if (f.overtimeDate) {
+    f.startTime = f.overtimeDate + ' ' + f.startTime
+    f.endTime = f.overtimeDate + ' ' + f.endTime
+  }
 }
 
 function handleDelete(row) {
@@ -570,6 +766,44 @@ function handleExport() {
 function cancel() {
   open.value = false
   reset()
+}
+
+/** 审批 */
+function handleAudit(row) {
+  getHrOvertime(row.overtimeId).then(response => {
+    const d = response.data || {}
+    auditData.value = {
+      overtimeId: d.overtimeId,
+      overtimeNo: d.overtimeNo,
+      employeeName: d.employeeName,
+      employeeNo: d.employeeNo,
+      deptName: d.deptName,
+      overtimeType: d.overtimeType,
+      overtimeDate: d.overtimeDate,
+      startTime: d.startTime,
+      endTime: d.endTime,
+      overtimeHours: d.overtimeHours,
+      reason: d.reason,
+      auditStatus: d.auditStatus,
+      auditRemark: '',
+  auditLogList: d.auditLogList || []
+    }
+    auditOpen.value = true
+  })
+}
+function submitAudit(action) {
+  if (action === '2' && !auditData.value.auditRemark) {
+    proxy.$modal.msgWarning('驳回时请填写审批意见')
+    return
+  }
+  auditSubmitting.value = true
+  auditHrOvertime(auditData.value.overtimeId, action, auditData.value.auditRemark).then(() => {
+    proxy.$modal.msgSuccess(action === '1' ? '审批通过' : '已驳回')
+    auditOpen.value = false
+    getList()
+  }).finally(() => {
+    auditSubmitting.value = false
+  })
 }
 
 getList()
@@ -720,4 +954,24 @@ getList()
 /* ===== Responsive ===== */
 @media (max-width:1100px) { .hr-overtime-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }
 @media (max-width:720px) { .hr-overtime-page .filter-card .filter-bar { grid-template-columns:1fr; } .hr-overtime-page .toolbar { flex-wrap:wrap; gap:10px; } }
+
+/* ===== 驳回提示 ===== */
+.reject-alert { margin-bottom: 16px; }
+
+/* ===== 审核记录时间轴 ===== */
+.hr-overtime-page .rd-timeline { position: relative; padding-left: 24px; }
+.hr-overtime-page .rd-timeline::before { content: ''; position: absolute; left: 10px; top: 8px; bottom: 8px; width: 2px; background: linear-gradient(to bottom, #d1d5db, #e5e7eb); border-radius: 1px; }
+.hr-overtime-page .rd-timeline-item { position: relative; padding-bottom: 10px; }
+.hr-overtime-page .rd-timeline-item:last-child { padding-bottom: 0; }
+.hr-overtime-page .rd-timeline-dot { position: absolute; left: -24px; top: 4px; width: 20px; height: 20px; border-radius: 50%; background: #fff; border: 3px solid #9ca3af; display: flex; align-items: center; justify-content: center; z-index: 1; }
+.hr-overtime-page .rd-timeline-dot--success { border-color: #10b981; box-shadow: 0 0 0 4px #ecfdf5; }
+.hr-overtime-page .rd-timeline-dot--error { border-color: #ef4444; box-shadow: 0 0 0 4px #fef2f2; }
+.hr-overtime-page .rd-timeline-content { background: #f9fafb; border-radius: 10px; padding: 10px; border: 1px solid #f3f4f6; }
+.hr-overtime-page .rd-timeline-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.hr-overtime-page .rd-timeline-title { display: flex; align-items: center; gap: 6px; }
+.hr-overtime-page .rd-timeline-time { font-size: 12px; color: #9ca3af; }
+.hr-overtime-page .rd-timeline-body { display: flex; gap: 12px; }
+.hr-overtime-page .rd-timeline-body .rd-item { flex: 1; }
+.hr-overtime-page .rd-timeline-comment { font-size: 13px; color: #6b7280; padding-top: 4px; border-top: 1px dashed #e5e7eb; margin-top: 6px; }
+
 </style>

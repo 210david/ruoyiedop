@@ -19,6 +19,8 @@ public class HrHealthCheck extends BaseEntity
     private String employeeName;
     @Excel(name = "工号")
     private String employeeNo;
+    @Excel(name = "部门")
+    private String deptName;
     @NotBlank(message = "体检类型不能为空")
     @Excel(name = "体检类型")
     private String checkType;
@@ -50,6 +52,8 @@ public class HrHealthCheck extends BaseEntity
     public void setEmployeeName(String employeeName) { this.employeeName = employeeName; }
     public String getEmployeeNo() { return employeeNo; }
     public void setEmployeeNo(String employeeNo) { this.employeeNo = employeeNo; }
+    public String getDeptName() { return deptName; }
+    public void setDeptName(String deptName) { this.deptName = deptName; }
     public String getCheckType() { return checkType; }
     public void setCheckType(String checkType) { this.checkType = checkType; }
     public Date getCheckDate() { return checkDate; }

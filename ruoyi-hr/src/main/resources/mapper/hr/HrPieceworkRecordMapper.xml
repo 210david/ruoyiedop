@@ -38,7 +38,7 @@
     <select id="selectHrPieceworkRecordList" parameterType="HrPieceworkRecord" resultMap="HrPieceworkRecordResult">
         <include refid="selectVo"/>
         <where>
-            t.(del_flag IS NULL OR del_flag = '0')
+            (t.del_flag IS NULL OR t.del_flag = '0')
             <if test="pwRecordNo != null and pwRecordNo != ''"> AND t.pw_record_no LIKE CONCAT('%', #{pwRecordNo}, '%')</if>
             <if test="recordDate != null"> AND t.record_date = #{recordDate}</if>
             <if test="params.beginRecordDate != null and params.beginRecordDate != ''"> AND t.record_date &gt;= #{params.beginRecordDate}</if>

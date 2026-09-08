@@ -98,8 +98,12 @@ public class WmsStockTakeController extends BaseController
     {
         ExcelUtil<WmsStockTakeDetail> util = new ExcelUtil<>(WmsStockTakeDetail.class);
         List<WmsStockTakeDetail> detailList = util.importExcel(file.getInputStream());
-        String message = wmsStockTakeService.importDetail(takeId, detailList);
-        return AjaxResult.success(message);
+        if (detailList == null || detailList.isEmpty() || detailList.stream().allMatch(java.util.Objects::isNull))
+        {
+            return AjaxResult.error("导入失败！请使用系统提供的标准模板填写数据，不要使用非模板格式的文件。");
+        }
+        detailList.removeIf(java.util.Objects::isNull);
+        return wmsStockTakeService.importDetail(takeId, detailList);
     }
 
     @Log(title = "导出盘点明细模板", businessType = BusinessType.EXPORT)

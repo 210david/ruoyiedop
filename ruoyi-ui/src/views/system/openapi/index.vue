@@ -51,7 +51,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" v-loading="loading" :data="openapiList" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" border class="app-table">
 <el-table-column type="selection" width="55" align="center" />
-<el-table-column type="index" label="序号" width="85" align="center" />
+<el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
 <el-table-column label="应用ID" align="center" prop="appId" :width="colWidth('appId', 80)" resizable v-if="columns.appId.visible" />
           <el-table-column label="应用名称" align="center" prop="appName" :show-overflow-tooltip="true" :width="colWidth('appName', 150)" resizable v-if="columns.appName.visible" />
           <el-table-column label="API Key" align="center" prop="appKey" :show-overflow-tooltip="true" :width="colWidth('appKey', 200)" resizable v-if="columns.appKey.visible">

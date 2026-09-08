@@ -107,7 +107,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
-          <el-table-column type="index" label="序号" width="85" align="center" />
+          <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
           <el-table-column label="计划名称" prop="planName" key="planName" :width="colWidth('planName', 180)" resizable show-overflow-tooltip v-if="columns.planName.visible" />
           <el-table-column label="关联设备" prop="equipmentName" key="equipmentName" :width="colWidth('equipmentName', 160)" resizable show-overflow-tooltip v-if="columns.equipmentName.visible" />
           <el-table-column label="触发类型" prop="triggerType" key="triggerType" :width="colWidth('triggerType', 130)" resizable align="center" v-if="columns.triggerType.visible">
@@ -302,7 +302,7 @@
               <template #title>预先配置本次维护需要准备的备件及数量，生成工单时自动带入</template>
             </el-alert>
             <el-table v-if="sparePartItems.length > 0" :data="sparePartItems" border size="small" style="margin-bottom: 8px" @header-dragend="onHeaderDragEnd">
-              <el-table-column label="序号" type="index" width="85" align="center" />
+              <el-table-column label="序号" type="index" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
               <el-table-column label="备件名称" min-width="220">
                 <template #default="{ row, $index }">
                   <el-input :model-value="row.partName" readonly placeholder="请选择备件" style="width: 100%" @click="openPartPicker($index)">
@@ -444,7 +444,7 @@
           </div>
           <div class="rd-card-body" v-show="!collapsedCards.v4">
             <el-table v-if="viewForm._sparePartItems && viewForm._sparePartItems.length > 0" :data="viewForm._sparePartItems" border size="small">
-              <el-table-column label="序号" type="index" width="55" align="center" />
+              <el-table-column label="序号" type="index" key="序号" :width="colWidth('序号', 55)" align="center" resizable />
               <el-table-column label="备件名称" prop="partName" min-width="200" show-overflow-tooltip />
               <el-table-column label="数量" prop="qty" width="80" align="center" />
               <el-table-column label="单位" width="70" align="center">

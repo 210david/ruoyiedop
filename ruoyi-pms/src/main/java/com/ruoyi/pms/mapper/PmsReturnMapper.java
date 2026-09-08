@@ -26,4 +26,12 @@ public interface PmsReturnMapper
      * 用于前端过滤，避免同一订单同时存在多个进行中的退货单
      */
     public List<Long> selectInProgressReturnOrderIds();
+
+    /**
+     * 统计同一收货单下进行中的退货单数量
+     * 进行中 = 状态为草稿(0)、待审批(1)、已审批(2)、已驳回(5)
+     * 用于收货单维度校验：一张收货单同一时间只允许存在一个进行中的退货单
+     * （一个采购订单可分批多次收货，各收货单的不合格品可各自独立退货）
+     */
+    public int countInProgressReturnByReceiveId(Long receiveId);
 }

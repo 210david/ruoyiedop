@@ -102,7 +102,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" v-loading="loading" :data="hazardList" border @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
-          <el-table-column type="index" label="序号" width="85" align="center" />
+          <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
           <el-table-column label="隐患编号" prop="hazardCode" key="hazardCode" :width="colWidth('hazardCode', 160)" resizable show-overflow-tooltip v-if="columns.hazardCode.visible" />
           <el-table-column label="隐患描述" prop="hazardDesc" key="hazardDesc" :width="colWidth('hazardDesc', 220)" resizable show-overflow-tooltip v-if="columns.hazardDesc.visible" />
           <el-table-column label="隐患类型" prop="hazardType" key="hazardType" :width="colWidth('hazardType', 120)" resizable align="center" v-if="columns.hazardType.visible">
@@ -331,27 +331,80 @@
     </el-dialog>
 
     <!-- 验收对话框 -->
-    <el-dialog v-model="verifyOpen" width="700px" append-to-body draggable class="rd-dialog">
+    <el-dialog v-model="verifyOpen" width="800px" append-to-body draggable class="rd-dialog">
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
           <span class="rd-detail-header-title">隐患验收</span>
+          <div class="rd-detail-header-sub" v-if="verifyHazardData.hazardCode">
+            <span class="rd-detail-header-divider"></span>
+            <span class="rd-detail-header-no">编号：{{ verifyHazardData.hazardCode }}</span>
+            <dict-tag :options="safety_hazard_status" :value="verifyHazardData.hazardStatus" />
+          </div>
         </div>
       </template>
-      <el-form ref="verifyRef" :model="verifyForm" :rules="verifyRules" label-width="100px">
-        <div class="rd-page">
+      <div class="rd-page">
+        <!-- 隐患基本信息 -->
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('v_basic')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>隐患信息</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v_basic }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.v_basic">
+            <div class="rd-grid">
+              <div class="rd-item rd-item--full"><span class="rd-label">隐患描述</span><div class="rd-value" :class="{ 'rd-value--muted': !verifyHazardData.hazardDesc }">{{ verifyHazardData.hazardDesc || '暂无' }}</div></div>
+              <div class="rd-item"><span class="rd-label">隐患类型</span><div class="rd-value"><dict-tag :options="safety_hazard_type" :value="verifyHazardData.hazardType" /></div></div>
+              <div class="rd-item"><span class="rd-label">隐患等级</span><div class="rd-value"><dict-tag :options="safety_hazard_level" :value="verifyHazardData.hazardLevel" /></div></div>
+              <div class="rd-item"><span class="rd-label">隐患来源</span><div class="rd-value"><dict-tag :options="safety_hazard_source" :value="verifyHazardData.sourceType" /></div></div>
+              <div class="rd-item"><span class="rd-label">发现人</span><div class="rd-value" :class="{ 'rd-value--muted': !verifyHazardData.discoverPerson }">{{ verifyHazardData.discoverPerson || '暂无' }}</div></div>
+              <div class="rd-item"><span class="rd-label">发现时间</span><div class="rd-value" :class="{ 'rd-value--muted': !verifyHazardData.discoverTime }">{{ verifyHazardData.discoverTime || '暂无' }}</div></div>
+              <div class="rd-item rd-item--full" v-if="verifyHazardData.photos"><span class="rd-label">隐患图片</span><div class="rd-value"><image-preview :src="verifyHazardData.photos" :width="100" :height="100" /></div></div>
+            </div>
+          </div>
+        </section>
+        <!-- 责任分配 -->
+        <section class="rd-card" v-if="verifyHazardData.personName || verifyHazardData.deptName || verifyHazardData.rectifyReq || verifyHazardData.rectifyDeadline">
+          <div class="rd-card-header" @click="toggleCard('v_assign')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>责任分配</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v_assign }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.v_assign">
+            <div class="rd-grid">
+              <div class="rd-item"><span class="rd-label">责任人</span><div class="rd-value" :class="{ 'rd-value--muted': !verifyHazardData.personName }">{{ verifyHazardData.personName || '暂无' }}</div></div>
+              <div class="rd-item"><span class="rd-label">责任部门</span><div class="rd-value" :class="{ 'rd-value--muted': !verifyHazardData.deptName }">{{ verifyHazardData.deptName || '暂无' }}</div></div>
+              <div class="rd-item"><span class="rd-label">整改期限</span><div class="rd-value" :class="{ 'rd-value--muted': !verifyHazardData.rectifyDeadline }">{{ verifyHazardData.rectifyDeadline || '暂无' }}</div></div>
+              <div class="rd-item rd-item--full"><span class="rd-label">整改要求</span><div class="rd-value" :class="{ 'rd-value--muted': !verifyHazardData.rectifyReq }">{{ verifyHazardData.rectifyReq || '暂无' }}</div></div>
+            </div>
+          </div>
+        </section>
+        <!-- 整改信息 -->
+        <section class="rd-card" v-if="verifyHazardData.rectifyDesc || verifyHazardData.rectifyTime || verifyHazardData.rectifyPhotos">
+          <div class="rd-card-header" @click="toggleCard('v_rectify')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></span>整改信息</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v_rectify }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.v_rectify">
+            <div class="rd-grid">
+              <div class="rd-item rd-item--full"><span class="rd-label">整改说明</span><div class="rd-value" :class="{ 'rd-value--muted': !verifyHazardData.rectifyDesc }">{{ verifyHazardData.rectifyDesc || '暂无' }}</div></div>
+              <div class="rd-item"><span class="rd-label">整改时间</span><div class="rd-value" :class="{ 'rd-value--muted': !verifyHazardData.rectifyTime }">{{ verifyHazardData.rectifyTime || '暂无' }}</div></div>
+              <div class="rd-item rd-item--full" v-if="verifyHazardData.rectifyPhotos"><span class="rd-label">整改后图片</span><div class="rd-value"><image-preview :src="verifyHazardData.rectifyPhotos" :width="100" :height="100" /></div></div>
+            </div>
+          </div>
+        </section>
+        <!-- 验收信息 -->
+        <el-form ref="verifyRef" :model="verifyForm" :rules="verifyRules" label-width="100px">
           <section class="rd-card">
-            <div class="rd-card-header" @click="toggleCard('c4')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>验收信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c4 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
-            <div class="rd-card-body" v-show="!collapsedCards.c4">
+            <div class="rd-card-header" @click="toggleCard('v_verify')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>验收信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v_verify }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+            <div class="rd-card-body" v-show="!collapsedCards.v_verify">
               <el-row :gutter="20">
                 <el-col :span="12"><el-form-item label="验收日期" prop="verifyTime"><el-date-picker v-model="verifyForm.verifyTime" type="date" placeholder="选择日期" value-format="YYYY-MM-DD" style="width: 100%" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="验收结果" prop="verifyResult"><el-radio-group v-model="verifyForm.verifyResult"><el-radio value="1">通过</el-radio><el-radio value="2">不通过</el-radio></el-radio-group></el-form-item></el-col>
               </el-row>
-              <el-form-item label="验收结果" prop="verifyResult"><el-radio-group v-model="verifyForm.verifyResult"><el-radio value="1">通过</el-radio><el-radio value="2">不通过</el-radio></el-radio-group></el-form-item>
               <el-form-item label="验收意见" prop="verifyComment"><el-input v-model="verifyForm.verifyComment" type="textarea" :rows="3" placeholder="请输入验收意见" /></el-form-item>
             </div>
           </section>
-        </div>
-      </el-form>
+        </el-form>
+      </div>
       <template #footer><div class="dialog-footer"><el-button type="primary" @click="submitVerify">确认验收</el-button><el-button @click="verifyOpen = false">取 消</el-button></div></template>
     </el-dialog>
 
@@ -546,7 +599,7 @@ import { ArrowDown, Search, Filter, RefreshLeft, CircleClose, WarningFilled, Arr
 const { proxy } = getCurrentInstance()
 const { safety_hazard_type, safety_hazard_level, safety_hazard_source, safety_hazard_status } = proxy.useDict('safety_hazard_type', 'safety_hazard_level', 'safety_hazard_source', 'safety_hazard_status')
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('safety_hazard_index')
-const { collapsedCards, toggleCard } = useDetailCard(["c0","c1","c2","c3","c4","c5","c_audit","a_basic","a_assign","a_audit","a_remark","c_reject","c_rectify","vc0","vc1","vc2","vc3","vc4"])
+const { collapsedCards, toggleCard } = useDetailCard(["c0","c1","c2","c3","c4","c5","c_audit","a_basic","a_assign","a_audit","a_remark","c_reject","c_rectify","vc0","vc1","vc2","vc3","vc4","v_basic","v_assign","v_rectify","v_verify"])
 
 const hazardList = ref([])
 const open = ref(false)
@@ -556,6 +609,7 @@ const rectifyOpen = ref(false)
 const rectifyTitle = ref('隐患整改')
 const rectifyRejectInfo = ref(null)
 const verifyOpen = ref(false)
+const verifyHazardData = ref({})
 const approveOpen = ref(false)
 const approveHazardData = ref({})
 const loading = ref(true)
@@ -682,7 +736,18 @@ function confirmApprove(result) {
 }
 function handleStartRectify(row) { rectifyForm.value.hazardId = row.hazardId; rectifyForm.value.personName = row.personName; rectifyForm.value.rectifyTime = parseToday(); rectifyForm.value.rectifyDesc = row.rectifyDesc || ''; rectifyForm.value.rectifyPhotos = row.rectifyPhotos || ''; rectifyRejectInfo.value = (row.hazardStatus === '4' && row.verifyResult === '2') ? { comment: row.verifyComment, person: row.verifyPerson, time: row.verifyTime } : null; rectifyTitle.value = rectifyRejectInfo.value ? '重新整改' : '隐患整改'; rectifyOpen.value = true }
 function submitRectify() { proxy.$refs['rectifyRef'].validate(valid => { if (valid) { submitRectifyApi(rectifyForm.value).then(() => { proxy.$modal.msgSuccess('整改提交成功'); rectifyOpen.value = false; getList() }) } }) }
-function handleVerify(row) { verifyForm.value.hazardId = row.hazardId; verifyForm.value.verifyTime = parseToday(); verifyForm.value.verifyResult = ''; verifyForm.value.verifyComment = ''; verifyOpen.value = true }
+function handleVerify(row) {
+  verifyForm.value = { hazardId: row.hazardId, verifyTime: parseToday(), verifyResult: '', verifyComment: '' }
+  verifyHazardData.value = {}
+  collapsedCards.v_basic = false
+  collapsedCards.v_assign = false
+  collapsedCards.v_rectify = false
+  collapsedCards.v_verify = false
+  getHazard(row.hazardId).then(res => {
+    verifyHazardData.value = res.data
+    verifyOpen.value = true
+  })
+}
 function submitVerify() { proxy.$refs['verifyRef'].validate(valid => { if (valid) { verifyHazardApi(verifyForm.value).then(() => { proxy.$modal.msgSuccess('验收完成'); verifyOpen.value = false; getList() }) } }) }
 
 function submitForm() {

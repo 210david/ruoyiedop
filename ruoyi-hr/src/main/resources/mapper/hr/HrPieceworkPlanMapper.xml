@@ -36,7 +36,7 @@
     <select id="selectHrPieceworkPlanList" parameterType="HrPieceworkPlan" resultMap="HrPieceworkPlanResult">
         <include refid="selectVo"/>
         <where>
-            t.(del_flag IS NULL OR del_flag = '0')
+            (t.del_flag IS NULL OR t.del_flag = '0')
             <if test="pwCode != null and pwCode != ''"> AND t.pw_code LIKE CONCAT('%', #{pwCode}, '%')</if>
             <if test="pwName != null and pwName != ''"> AND t.pw_name LIKE CONCAT('%', #{pwName}, '%')</if>
             <if test="pwType != null and pwType != ''"> AND t.pw_type LIKE CONCAT('%', #{pwType}, '%')</if>

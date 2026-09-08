@@ -163,8 +163,12 @@ public class MkContactController extends BaseController
     {
         ExcelUtil<MkContact> util = new ExcelUtil<>(MkContact.class);
         List<MkContact> contactList = util.importExcel(file.getInputStream());
-        String message = mkContactService.importContacts(contactList, updateSupport, getUsername());
-        return AjaxResult.success(message);
+        if (contactList == null || contactList.isEmpty() || contactList.stream().allMatch(java.util.Objects::isNull))
+        {
+            return AjaxResult.error("导入失败！请使用系统提供的标准模板填写数据，不要使用非模板格式的文件。");
+        }
+        contactList.removeIf(java.util.Objects::isNull);
+        return mkContactService.importContacts(contactList, updateSupport, getUsername());
     }
 
     // ==================== P3-14: 跟进提醒 ====================

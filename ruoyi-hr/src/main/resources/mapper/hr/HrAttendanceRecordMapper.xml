@@ -12,6 +12,8 @@
         <result property="orgName" column="org_name"/>
         <result property="shiftId" column="shift_id"/>
         <result property="shiftName" column="shift_name"/>
+        <result property="shiftStartTime" column="shift_start_time"/>
+        <result property="shiftEndTime" column="shift_end_time"/>
         <result property="clockIn" column="clock_in"/>
         <result property="clockOut" column="clock_out"/>
         <result property="clockInSource" column="clock_in_source"/>
@@ -31,15 +33,18 @@
 
     <sql id="selectVo">
         SELECT t.record_id, t.record_date, t.employee_id, t.employee_name, t.employee_no, t.org_id, t.shift_id, t.shift_name, t.clock_in, t.clock_out, t.clock_in_source, t.clock_out_source, t.late_minutes, t.early_minutes, t.attendance_status, t.overtime_hours, t.night_shift, t.remark, t.del_flag, t.create_by, t.create_time, t.update_by, t.update_time,
-        d.dept_name AS org_name
+        d.dept_name AS org_name,
+        s.start_time AS shift_start_time,
+        s.end_time AS shift_end_time
         FROM biz_hr_attendance_record t
         LEFT JOIN sys_dept d ON t.org_id = d.dept_id
+        LEFT JOIN biz_hr_shift s ON t.shift_id = s.shift_id
     </sql>
 
     <select id="selectHrAttendanceRecordList" parameterType="HrAttendanceRecord" resultMap="HrAttendanceRecordResult">
         <include refid="selectVo"/>
         <where>
-            t.(del_flag IS NULL OR del_flag = '0')
+            (t.del_flag IS NULL OR t.del_flag = '0')
             <if test="recordDate != null"> AND t.record_date = #{recordDate}</if>
             <if test="params.beginRecordDate != null and params.beginRecordDate != ''"> AND t.record_date &gt;= #{params.beginRecordDate}</if>
             <if test="params.endRecordDate != null and params.endRecordDate != ''"> AND t.record_date &lt;= #{params.endRecordDate}</if>
@@ -86,8 +91,8 @@
             <if test="orgId != null">org_id = #{orgId},</if>
             <if test="shiftId != null">shift_id = #{shiftId},</if>
             <if test="shiftName != null and shiftName != ''">shift_name = #{shiftName},</if>
-            <if test="clockIn != null">clock_in = #{clockIn},</if>
-            <if test="clockOut != null">clock_out = #{clockOut},</if>
+            clock_in = #{clockIn},
+            clock_out = #{clockOut},
             <if test="clockInSource != null and clockInSource != ''">clock_in_source = #{clockInSource},</if>
             <if test="clockOutSource != null and clockOutSource != ''">clock_out_source = #{clockOutSource},</if>
             <if test="lateMinutes != null">late_minutes = #{lateMinutes},</if>
@@ -102,6 +107,15 @@
         </set>
         WHERE record_id = #{recordId}
     </update>
+
+    <!-- 根据工号+日期查询已有考勤记录（导入时判重） -->
+    <select id="selectByEmployeeNoAndDate" resultMap="HrAttendanceRecordResult">
+        SELECT t.record_id, t.record_date, t.employee_id, t.employee_name, t.employee_no, t.org_id, t.shift_id, t.shift_name, t.clock_in, t.clock_out, t.clock_in_source, t.clock_out_source, t.late_minutes, t.early_minutes, t.attendance_status, t.overtime_hours, t.night_shift, t.remark, t.del_flag, t.create_by, t.create_time, t.update_by, t.update_time
+        FROM biz_hr_attendance_record t
+        WHERE t.employee_no = #{employeeNo} AND t.record_date = #{recordDate}
+          AND (t.del_flag IS NULL OR t.del_flag = '0')
+        LIMIT 1
+    </select>
 
     <delete id="deleteHrAttendanceRecordById" parameterType="Long">
         UPDATE biz_hr_attendance_record SET del_flag = '2' WHERE record_id = #{recordId}

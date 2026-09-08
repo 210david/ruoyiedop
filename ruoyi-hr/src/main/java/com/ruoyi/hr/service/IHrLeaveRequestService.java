@@ -10,4 +10,7 @@ public interface IHrLeaveRequestService {
     public int updateHrLeaveRequest(HrLeaveRequest hrLeaveRequest);
     public int deleteHrLeaveRequestByIds(Long[] leaveReqIds);
     public int deleteHrLeaveRequestById(Long leaveReqId);
+
+    /** 请假审批 */
+    public int auditLeaveRequest(Long leaveReqId, String auditAction, String auditRemark);
 }

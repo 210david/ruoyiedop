@@ -336,7 +336,7 @@
                 <el-col :span="1.5"><el-button type="primary" plain icon="Plus" size="small" @click="handleAddDetail">添加明细</el-button></el-col>
               </el-row>
               <el-table :data="form.detailList" border size="small">
-                <el-table-column label="序号" type="index" width="85" align="center" />
+                <el-table-column label="序号" type="index" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
                 <el-table-column label="物料" prop="materialId" min-width="200">
                   <template #default="scope">
                     <el-input :model-value="scope.row.materialCode ? scope.row.materialCode + ' - ' + scope.row.materialName : ''" readonly size="small" placeholder="请选择物料" style="width: 100%" @click="openMaterialPicker(scope.$index)">
@@ -509,7 +509,7 @@
           </div>
           <div class="rd-card-body" v-show="!collapsedCards.v2">
             <el-table :data="viewData.detailList" border size="small">
-              <el-table-column label="序号" type="index" width="85" align="center" />
+              <el-table-column label="序号" type="index" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
               <el-table-column label="物料编码" prop="materialCode" min-width="120" />
               <el-table-column label="物料名称" prop="materialName" min-width="150" show-overflow-tooltip />
               <el-table-column label="规格型号" prop="specModel" min-width="120" show-overflow-tooltip />
@@ -657,7 +657,7 @@
           <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></span>订单明细</div></div>
           <div class="rd-card-body" style="display:block">
             <el-table :data="auditData.detailList" border size="small">
-              <el-table-column label="序号" type="index" width="85" align="center" />
+              <el-table-column label="序号" type="index" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
               <el-table-column label="物料编码" prop="materialCode" min-width="120" />
               <el-table-column label="物料名称" prop="materialName" min-width="150" show-overflow-tooltip />
               <el-table-column label="规格型号" prop="specModel" min-width="120" show-overflow-tooltip />

@@ -24,11 +24,19 @@
         </el-input>
       </div>
 
-      <!-- 已选部门信息 -->
-      <div class="dept-picker-selected" v-if="selectedDept">
+      <!-- 已选部门信息（单选模式） -->
+      <div class="dept-picker-selected" v-if="!multiple && selectedDept">
         <el-tag type="success" effect="light" size="small" closable @close="clearSelection">
           <el-icon style="vertical-align: -1px; margin-right: 2px;"><OfficeBuilding /></el-icon>
           {{ selectedDept.label }}
+        </el-tag>
+      </div>
+
+      <!-- 已选部门信息（多选模式） -->
+      <div class="dept-picker-selected" v-if="multiple && selectedDeptList.length > 0">
+        <el-tag v-for="d in selectedDeptList" :key="d.id" type="success" effect="light" size="small" closable @close="removeDept(d)" style="margin-right: 4px; margin-bottom: 4px;">
+          <el-icon style="vertical-align: -1px; margin-right: 2px;"><OfficeBuilding /></el-icon>
+          {{ d.label }}
         </el-tag>
       </div>
 
@@ -39,19 +47,30 @@
           :data="treeData"
           :props="{ label: 'label', children: 'children', disabled: 'disabled' }"
           node-key="id"
+          :show-checkbox="multiple"
           :expand-on-click-node="false"
           :default-expand-all="true"
           :filter-node-method="filterDeptNode"
           highlight-current
           @node-click="onNodeClick"
+          @check="onCheck"
         >
           <template #default="{ data }">
             <div
               class="dept-tree-node"
-              :class="{ 'is-selected': data.id === selectedDeptId, 'is-disabled': data.disabled }"
+              :class="{ 'is-selected': !multiple && data.id === selectedDeptId, 'is-disabled': data.disabled }"
               @dblclick="onNodeDblClick(data)"
             >
+              <!-- 多选模式：el-tree checkbox 自动渲染 -->
+              <span v-if="multiple" class="dept-tree-node-content">
+                <span class="node-icon-badge" :class="data.disabled ? 'node-icon-badge--company' : (data.children && data.children.length ? 'node-icon-badge--dept' : 'node-icon-badge--leaf')">
+                  <el-icon><OfficeBuilding v-if="data.disabled" /><Folder v-else-if="data.children && data.children.length" /><Document v-else /></el-icon>
+                </span>
+                <span class="dept-tree-node-label" :title="data.label">{{ data.label }}</span>
+              </span>
+              <!-- 单选模式 -->
               <el-radio
+                v-else
                 v-model="selectedDeptId"
                 :value="data.id"
                 :disabled="data.disabled"
@@ -71,12 +90,13 @@
 
       <div class="dept-picker-tip">
         <el-icon><InfoFilled /></el-icon>
-        <span>点击节点选中，双击节点确认选择</span>
+        <span v-if="multiple">勾选节点进行多选，点击确定完成选择</span>
+        <span v-else>点击节点选中，双击节点确认选择</span>
       </div>
     </div>
     <template #footer>
       <el-button @click="visible = false">取 消</el-button>
-      <el-button type="primary" @click="handleConfirm" :disabled="!selectedDeptId">确 定</el-button>
+      <el-button type="primary" @click="handleConfirm" :disabled="multiple ? selectedDeptList.length === 0 : !selectedDeptId">确 定</el-button>
     </template>
   </el-dialog>
 </template>
@@ -88,6 +108,11 @@ const props = defineProps({
   title: {
     type: String,
     default: '选择部门'
+  },
+  /** 是否多选模式 */
+  multiple: {
+    type: Boolean,
+    default: false
   },
   /** 需要禁用选择的部门ID列表（如根公司，显示但不可选） */
   disabledIds: {
@@ -103,6 +128,7 @@ const deptOptions = ref([])
 const deptKeyword = ref('')
 const selectedDeptId = ref(null)
 const selectedDept = ref(null)
+const selectedDeptList = ref([])
 
 const deptTreeRef = ref()
 
@@ -142,6 +168,7 @@ function onOpen() {
   deptKeyword.value = ''
   selectedDeptId.value = null
   selectedDept.value = null
+  selectedDeptList.value = []
   loadDeptTree()
 }
 
@@ -149,6 +176,13 @@ function onOpen() {
 function loadDeptTree() {
   deptTreeSelect().then(res => {
     deptOptions.value = res.data
+    // 多选模式下回显已选
+    if (props.multiple && selectedDeptList.value.length > 0) {
+      nextTick(() => {
+        const ids = selectedDeptList.value.map(d => d.id)
+        deptTreeRef.value?.setCheckedKeys(ids)
+      })
+    }
   })
 }
 
@@ -164,21 +198,28 @@ function findNode(nodes, id) {
   return null
 }
 
-/** 节点点击 - 选中（被禁用的节点不可选） */
+/** 节点点击 - 单选模式选中（被禁用的节点不可选） */
 function onNodeClick(data) {
+  if (props.multiple) return
   if (data.disabled) return
   selectedDeptId.value = data.id
 }
 
-/** 节点双击 - 确认（被禁用的节点不可选） */
+/** 多选模式 checkbox 变化 */
+function onCheck(data, { checkedNodes }) {
+  selectedDeptList.value = checkedNodes.filter(n => !n.disabled)
+}
+
+/** 节点双击 - 确认（单选模式，被禁用的节点不可选） */
 function onNodeDblClick(data) {
+  if (props.multiple) return
   if (data.disabled) return
   selectedDeptId.value = data.id
   selectedDept.value = data
   handleConfirm()
 }
 
-/** 清除选择 */
+/** 清除选择（单选模式） */
 function clearSelection() {
   selectedDeptId.value = null
   selectedDept.value = null
@@ -187,15 +228,25 @@ function clearSelection() {
   }
 }
 
+/** 移除单个已选部门（多选模式） */
+function removeDept(dept) {
+  selectedDeptList.value = selectedDeptList.value.filter(d => d.id !== dept.id)
+  if (deptTreeRef.value) {
+    deptTreeRef.value.setChecked(dept.id, false, true)
+  }
+}
+
 /** 确认选择 */
 function handleConfirm() {
-  if (!selectedDeptId.value) return
-  const node = findNode(treeData.value, selectedDeptId.value)
-  if (node) {
-    emit('confirm', {
-      deptId: node.id,
-      deptName: node.label
-    })
+  if (props.multiple) {
+    const result = selectedDeptList.value.map(d => ({ deptId: d.id, deptName: d.label }))
+    emit('confirm', result)
+  } else {
+    if (!selectedDeptId.value) return
+    const node = findNode(treeData.value, selectedDeptId.value)
+    if (node) {
+      emit('confirm', { deptId: node.id, deptName: node.label })
+    }
   }
   visible.value = false
 }
@@ -204,12 +255,30 @@ function handleConfirm() {
 function open(currentDeptId) {
   visible.value = true
   if (currentDeptId) {
-    nextTick(() => {
-      selectedDeptId.value = currentDeptId
-      if (deptTreeRef.value) {
-        deptTreeRef.value.setCurrentKey(currentDeptId)
-      }
-    })
+    if (props.multiple && Array.isArray(currentDeptId)) {
+      // 多选模式：传入ID数组
+      const ids = currentDeptId
+      nextTick(() => {
+        selectedDeptList.value = []
+        ids.forEach(id => {
+          const node = findNode(treeData.value, id)
+          if (node && !node.disabled) {
+            selectedDeptList.value.push(node)
+          }
+        })
+        if (deptTreeRef.value) {
+          deptTreeRef.value.setCheckedKeys(ids)
+        }
+      })
+    } else if (!props.multiple) {
+      // 单选模式
+      nextTick(() => {
+        selectedDeptId.value = currentDeptId
+        if (deptTreeRef.value) {
+          deptTreeRef.value.setCurrentKey(currentDeptId)
+        }
+      })
+    }
   }
 }
 
@@ -230,6 +299,8 @@ defineExpose({ open })
 .dept-picker-selected {
   margin-bottom: 10px;
   min-height: 24px;
+  display: flex;
+  flex-wrap: wrap;
 }
 
 .dept-picker-tree {

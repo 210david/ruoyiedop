@@ -121,7 +121,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
-          <el-table-column type="index" label="序号" width="85" align="center" />
+          <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
           <el-table-column label="设备编号" prop="equipmentCode" key="equipmentCode" :width="colWidth('equipmentCode', 130)" resizable v-if="columns.equipmentCode.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.equipmentCode }}</span></template>
           </el-table-column>
@@ -315,6 +315,7 @@
       template-file-name="equipment_template"
       update-support-label="是否更新已经存在的设备数据"
       :tips="importTips"
+      :column-labels="importColumnLabels"
       :update-key-options="updateKeyOptions"
       default-update-key="equipmentName"
       @success="getList"
@@ -410,6 +411,16 @@ const importTips = [
   '如勾选「更新已存在数据」，需选择匹配字段：按设备名称、设备编号、资产编号或序列号匹配',
   '导入结果将显示每条数据的处理情况，失败数据可修正后重新导入'
 ]
+const importColumnLabels = {
+  equipmentCode: '设备编号',
+  equipmentName: '设备名称',
+  model: '型号',
+  assetCode: '资产编号',
+  serialNumber: '序列号',
+  manufacturer: '制造商',
+  result: '结果',
+  errorReason: '失败原因'
+}
 const updateKeyOptions = [
   { value: 'equipmentName', label: '设备名称' },
   { value: 'equipmentCode', label: '设备编号' },

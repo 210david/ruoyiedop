@@ -42,3 +42,12 @@ export function delHrLeaveRequest(leaveReqId) {
     method: 'delete'
   })
 }
+
+// 请假审批
+export function auditHrLeaveRequest(leaveReqId, auditAction, auditRemark) {
+  return request({
+    url: '/hr/leaveRequest/audit/' + leaveReqId,
+    method: 'put',
+    params: { auditAction, auditRemark }
+  })
+}

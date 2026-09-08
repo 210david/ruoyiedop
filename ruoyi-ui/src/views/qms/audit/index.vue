@@ -105,7 +105,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" class="app-table">
 <el-table-column type="selection" width="55" align="center" />
-<el-table-column type="index" label="序号" width="85" align="center" />
+<el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
 <el-table-column label="审核编号" prop="auditPlanNo" key="auditPlanNo" :width="colWidth('auditPlanNo', 160)" resizable show-overflow-tooltip v-if="columns.auditPlanNo.visible" />          <el-table-column label="审核标题" prop="auditTitle" key="auditTitle" :width="colWidth('auditTitle', 220)" resizable show-overflow-tooltip v-if="columns.auditTitle.visible" />
           <el-table-column label="年度" prop="auditYear" key="auditYear" :width="colWidth('auditYear', 80)" resizable align="center" v-if="columns.auditYear.visible" />
           <el-table-column label="主审" prop="leadAuditor" key="leadAuditor" :width="colWidth('leadAuditor', 100)" resizable show-overflow-tooltip v-if="columns.leadAuditor.visible" />

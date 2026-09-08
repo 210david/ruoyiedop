@@ -87,9 +87,9 @@
          <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
       </el-row>
 
-      <el-table v-loading="loading" :data="jobList" @selection-change="handleSelectionChange">
+      <el-table ref="tableRef" v-loading="loading" :data="jobList" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
 <el-table-column type="selection" width="55" align="center" />
-<el-table-column type="index" label="序号" width="85" align="center" />
+<el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" resizable align="center" />
 <el-table-column label="任务编号" width="100" align="center" prop="jobId" />
          <el-table-column label="任务名称" align="center" :show-overflow-tooltip="true">
             <template #default="scope">
@@ -243,12 +243,14 @@
 import Crontab from '@/components/Crontab'
 import JobDetail from './detail'
 import { listJob, getJob, delJob, addJob, updateJob, runJob, changeJobStatus } from "@/api/monitor/job"
+import { useColumnResize } from '@/composables/useColumnResize'
 
 const router = useRouter()
 const { proxy } = getCurrentInstance()
 const { sys_job_group, sys_job_status } = useDict("sys_job_group", "sys_job_status")
 
 const jobList = ref([])
+const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('monitor_job_index')
 const open = ref(false)
 const loading = ref(true)
 const showSearch = ref(true)

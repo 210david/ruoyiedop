@@ -19,6 +19,8 @@ public class HrCertificate extends BaseEntity
     private String employeeName;
     @Excel(name = "工号")
     private String employeeNo;
+    @Excel(name = "部门")
+    private String deptName;
     @NotBlank(message = "证书类别不能为空")
     @Excel(name = "证书类别")
     private String certType;
@@ -59,6 +61,8 @@ public class HrCertificate extends BaseEntity
     public void setEmployeeName(String employeeName) { this.employeeName = employeeName; }
     public String getEmployeeNo() { return employeeNo; }
     public void setEmployeeNo(String employeeNo) { this.employeeNo = employeeNo; }
+    public String getDeptName() { return deptName; }
+    public void setDeptName(String deptName) { this.deptName = deptName; }
     public String getCertType() { return certType; }
     public void setCertType(String certType) { this.certType = certType; }
     public String getCertName() { return certName; }

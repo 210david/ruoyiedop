@@ -32,14 +32,6 @@
             <el-date-picker v-model="recordDateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
           </div>
         </div>
-        <div class="field">
-          <label>班次名称</label>
-          <div class="control">
-            <el-input v-model="queryParams.shiftName" placeholder="请输入班次名称" clearable @keyup.enter="handleQuery">
-              <template #prefix><el-icon><Search /></el-icon></template>
-            </el-input>
-          </div>
-        </div>
         <div class="field" v-show="showAdvanced">
           <label>考勤状态</label>
           <div class="control">
@@ -72,8 +64,15 @@
             <el-icon><Delete /></el-icon> 删除
           </button>
           <div class="toolbar-divider"></div>
+          <button type="button" class="btn-soft is-outline" @click="handleImport" v-hasPermi="['hr:attendance:import']">
+            <el-icon><Upload /></el-icon> 考勤机导入
+          </button>
           <button type="button" class="btn-soft is-outline" @click="handleExport" v-hasPermi="['hr:attendance:export']">
             <el-icon><Download /></el-icon> 导出
+          </button>
+          <div class="toolbar-divider"></div>
+          <button type="button" class="btn-soft is-outline" @click="handleRecalculate" v-hasPermi="['hr:attendance:edit']">
+            <el-icon><Refresh /></el-icon> 重算状态
           </button>
         </div>
         <div class="right"><right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="hr_attendance_columns"></right-toolbar></div>
@@ -87,8 +86,28 @@
           <el-table-column label="工号" prop="employeeNo" key="employeeNo" align="center" :width="colWidth('employeeNo', 120)" resizable v-if="columns.employeeNo.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.employeeNo }}</span></template>
           </el-table-column>
-          <el-table-column label="班次名称" prop="shiftName" key="shiftName" align="center" :width="colWidth('shiftName', 120)" resizable v-if="columns.shiftName.visible" />
-          <el-table-column label="上班打卡" prop="clockIn" key="clockIn" align="center" :width="colWidth('clockIn', 130)" resizable v-if="columns.clockIn.visible" />
+          <el-table-column label="上班打卡" prop="clockIn" key="clockIn" align="center" :width="colWidth('clockIn', 120)" resizable v-if="columns.clockIn.visible">
+            <template #default="scope">
+              <div class="clock-cell">
+                <span class="col-mono">{{ formatClockTime(scope.row.clockIn) }}</span>
+                <el-tag v-if="scope.row.clockInSource === '1'" type="warning" size="small" effect="plain" style="margin-left: 4px">补卡</el-tag>
+                <el-tag v-else-if="scope.row.clockInSource === '3'" type="success" size="small" effect="plain" style="margin-left: 4px">外出</el-tag>
+                <el-tag v-else-if="scope.row.clockInSource === '4'" type="primary" size="small" effect="plain" style="margin-left: 4px">出差</el-tag>
+                <el-tag v-else-if="scope.row.clockInSource === '2'" type="info" size="small" effect="plain" style="margin-left: 4px">手动</el-tag>
+              </div>
+            </template>
+          </el-table-column>
+          <el-table-column label="下班打卡" prop="clockOut" key="clockOut" align="center" :width="colWidth('clockOut', 120)" resizable v-if="columns.clockOut.visible">
+            <template #default="scope">
+              <div class="clock-cell">
+                <span class="col-mono">{{ formatClockTime(scope.row.clockOut) }}</span>
+                <el-tag v-if="scope.row.clockOutSource === '1'" type="warning" size="small" effect="plain" style="margin-left: 4px">补卡</el-tag>
+                <el-tag v-else-if="scope.row.clockOutSource === '3'" type="success" size="small" effect="plain" style="margin-left: 4px">外出</el-tag>
+                <el-tag v-else-if="scope.row.clockOutSource === '4'" type="primary" size="small" effect="plain" style="margin-left: 4px">出差</el-tag>
+                <el-tag v-else-if="scope.row.clockOutSource === '2'" type="info" size="small" effect="plain" style="margin-left: 4px">手动</el-tag>
+              </div>
+            </template>
+          </el-table-column>
           <el-table-column label="考勤状态" prop="attendanceStatus" key="attendanceStatus" align="center" :width="colWidth('attendanceStatus', 110)" resizable v-if="columns.attendanceStatus.visible">
             <template #default="scope">
               <span class="badge" :class="attendanceStatusClass(scope.row.attendanceStatus)"><span class="dot"></span>{{ attendanceStatusLabel(scope.row.attendanceStatus) }}</span>
@@ -127,7 +146,7 @@
             </div>
             <div class="rd-card-body" v-show="!collapsedCards.e0">
               <el-row :gutter="20">
-                <el-col :span="12"><el-form-item label="考勤日期" prop="recordDate"><el-date-picker v-model="form.recordDate" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" style="width: 100%" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="考勤日期" prop="recordDate"><el-date-picker v-model="form.recordDate" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" style="width: 100%" @change="autoMatchSchedule" /></el-form-item></el-col>
                 <el-col :span="12"><el-form-item label="姓名" prop="employeeId">
                   <el-input :model-value="form.employeeName" readonly placeholder="请选择人员">
                     <template #append>
@@ -136,15 +155,14 @@
                     </template>
                   </el-input>
                 </el-form-item></el-col>
-                <el-col :span="12"><el-form-item label="工号" prop="employeeNo"><el-input v-model="form.employeeNo" placeholder="请输入工号" /></el-form-item></el-col>
-                <el-col :span="12"><el-form-item label="部门" prop="orgId">
-                  <el-input :model-value="form.orgName" readonly placeholder="请选择部门">
-                    <template #append>
-                      <el-button v-if="form.orgId" icon="CircleClose" @click="onOrgFieldClick" />
-                      <el-button v-else icon="Search" @click="onOrgFieldClick" />
-                    </template>
-                  </el-input>
+                <el-col :span="12"><el-form-item label="工号" prop="employeeNo"><el-input v-model="form.employeeNo" placeholder="选择人员后自动带出" readonly /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="部门" prop="orgId"><el-input :model-value="form.orgName" readonly placeholder="选择人员后自动带出" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="班次" prop="shiftId">
+                  <el-select v-model="form.shiftId" placeholder="请选择班次" clearable style="width: 100%" @change="onShiftChange">
+                    <el-option v-for="s in shiftOptions" :key="s.shiftId" :label="`${s.shiftName}（${s.startTime}-${s.endTime}）`" :value="s.shiftId" />
+                  </el-select>
                 </el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="标准上下班"><el-input :model-value="form.shiftStartTime && form.shiftEndTime ? `${form.shiftStartTime} - ${form.shiftEndTime}` : ''" readonly placeholder="选择班次后自动带出" /></el-form-item></el-col>
               </el-row>
             </div>
           </section>
@@ -155,9 +173,8 @@
             </div>
             <div class="rd-card-body" v-show="!collapsedCards.e1">
               <el-row :gutter="20">
-                <el-col :span="12"><el-form-item label="班次" prop="shiftId"><el-select v-model="form.shiftId" placeholder="请选择班次" clearable style="width: 100%" @change="onShiftChange"><el-option v-for="s in shiftOptions" :key="s.shiftId" :label="s.shiftName" :value="s.shiftId" /></el-select></el-form-item></el-col>
-                <el-col :span="12"><el-form-item label="上班打卡" prop="clockIn"><el-date-picker v-model="form.clockIn" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" placeholder="选择日期时间" style="width: 100%" /></el-form-item></el-col>
-                <el-col :span="12"><el-form-item label="下班打卡" prop="clockOut"><el-date-picker v-model="form.clockOut" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" placeholder="选择日期时间" style="width: 100%" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="上班打卡" prop="clockIn"><el-time-picker v-model="form.clockIn" format="HH:mm" value-format="HH:mm" placeholder="选择打卡时间" style="width: 100%" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="下班打卡" prop="clockOut"><el-time-picker v-model="form.clockOut" format="HH:mm" value-format="HH:mm" placeholder="选择打卡时间" style="width: 100%" /></el-form-item></el-col>
               </el-row>
             </div>
           </section>
@@ -168,9 +185,13 @@
             </div>
             <div class="rd-card-body" v-show="!collapsedCards.e2">
               <el-row :gutter="20">
-                <el-col :span="12"><el-form-item label="考勤状态" prop="attendanceStatus"><el-select v-model="form.attendanceStatus" placeholder="请选择" clearable style="width: 100%"><el-option v-for="d in attendanceStatusOptions" :key="d.value" :label="d.label" :value="d.value" /></el-select></el-form-item></el-col>
-                <el-col :span="12"><el-form-item label="迟到分钟" prop="lateMinutes"><el-input-number v-model="form.lateMinutes" :precision="0" :min="0" controls-position="right" style="width: 100%" /></el-form-item></el-col>
-                <el-col :span="12"><el-form-item label="早退分钟" prop="earlyMinutes"><el-input-number v-model="form.earlyMinutes" :precision="0" :min="0" controls-position="right" style="width: 100%" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="考勤状态" prop="attendanceStatus">
+                  <el-select v-model="form.attendanceStatus" placeholder="填写打卡时间后自动计算" clearable style="width: 100%" :disabled="!!form.clockIn || !!form.clockOut">
+                    <el-option v-for="d in attendanceStatusOptions" :key="d.value" :label="d.label" :value="d.value" />
+                  </el-select>
+                </el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="迟到分钟" prop="lateMinutes"><el-input-number v-model="form.lateMinutes" :precision="0" :min="0" controls-position="right" style="width: 100%" :disabled="!!form.clockIn || !!form.clockOut" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="早退分钟" prop="earlyMinutes"><el-input-number v-model="form.earlyMinutes" :precision="0" :min="0" controls-position="right" style="width: 100%" :disabled="!!form.clockIn || !!form.clockOut" /></el-form-item></el-col>
               </el-row>
             </div>
           </section>
@@ -218,6 +239,8 @@
               <div class="rd-item"><span class="rd-label">考勤日期</span><div class="rd-value">{{ viewData.recordDate || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">员工姓名</span><div class="rd-value">{{ viewData.employeeName || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">工号</span><div class="rd-value">{{ viewData.employeeNo || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">部门</span><div class="rd-value">{{ viewData.orgName || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">班次</span><div class="rd-value">{{ viewData.shiftName || '-' }}<template v-if="viewData.shiftStartTime">（{{ viewData.shiftStartTime }}-{{ viewData.shiftEndTime }}）</template></div></div>
             </div>
           </div>
         </section>
@@ -228,9 +251,8 @@
           </div>
           <div class="rd-card-body" v-show="!collapsedCards.c1" style="display:block">
             <div class="rd-grid">
-              <div class="rd-item"><span class="rd-label">班次名称</span><div class="rd-value">{{ viewData.shiftName || '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label">上班打卡</span><div class="rd-value">{{ viewData.clockIn || '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label">下班打卡</span><div class="rd-value">{{ viewData.clockOut || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">上班打卡</span><div class="rd-value">{{ formatClockTime(viewData.clockIn) }}<el-tag v-if="viewData.clockInSource === '1'" type="warning" size="small" effect="plain" style="margin-left: 6px">补卡</el-tag><el-tag v-else-if="viewData.clockInSource === '3'" type="success" size="small" effect="plain" style="margin-left: 6px">外出</el-tag><el-tag v-else-if="viewData.clockInSource === '4'" type="primary" size="small" effect="plain" style="margin-left: 6px">出差</el-tag><el-tag v-else-if="viewData.clockInSource === '2'" type="info" size="small" effect="plain" style="margin-left: 6px">手动</el-tag></div></div>
+              <div class="rd-item"><span class="rd-label">下班打卡</span><div class="rd-value">{{ formatClockTime(viewData.clockOut) }}<el-tag v-if="viewData.clockOutSource === '1'" type="warning" size="small" effect="plain" style="margin-left: 6px">补卡</el-tag><el-tag v-else-if="viewData.clockOutSource === '3'" type="success" size="small" effect="plain" style="margin-left: 6px">外出</el-tag><el-tag v-else-if="viewData.clockOutSource === '4'" type="primary" size="small" effect="plain" style="margin-left: 6px">出差</el-tag><el-tag v-else-if="viewData.clockOutSource === '2'" type="info" size="small" effect="plain" style="margin-left: 6px">手动</el-tag></div></div>
             </div>
           </div>
         </section>
@@ -268,15 +290,30 @@
     <employee-picker ref="employeePickerRef" title="选择人员" @confirm="onEmployeePickerConfirm" />
     <!-- 部门选择弹窗 -->
     <dept-picker ref="orgPickerRef" title="选择部门" @confirm="onOrgPickerConfirm" />
+    <!-- 考勤机导入弹窗 -->
+    <excel-import-dialog
+      ref="importRef"
+      title="考勤机数据导入"
+      action="/hr/attendance/importData"
+      template-action="/hr/attendance/importTemplate"
+      template-file-name="hr_attendance_import_template"
+      update-support-label="是否更新已存在的考勤记录"
+      :tips="importTips"
+      :column-labels="importColumnLabels"
+      @success="getList"
+    />
   </div>
 </template>
 
 <script setup name="HrAttendanceRecord">
-import { listHrAttendanceRecord, getHrAttendanceRecord, addHrAttendanceRecord, updateHrAttendanceRecord, delHrAttendanceRecord } from '@/api/hr/hrAttendanceRecord'
+import { listHrAttendanceRecord, getHrAttendanceRecord, addHrAttendanceRecord, updateHrAttendanceRecord, delHrAttendanceRecord, recalculateAttendance } from '@/api/hr/hrAttendanceRecord'
 import { listHrShift } from '@/api/hr/hrShift'
+import { listHrSchedule } from '@/api/hr/hrSchedule'
 import { useColumnResize } from '@/composables/useColumnResize'
 import EmployeePicker from '@/components/EmployeePicker';
 import DeptPicker from '@/components/DeptPicker';
+import ExcelImportDialog from '@/components/ExcelImportDialog';
+import { Refresh } from '@element-plus/icons-vue'
 
 const { proxy } = getCurrentInstance()
 const { hr_attendance_status: attendanceStatusOptions } = proxy.useDict('hr_attendance_status')
@@ -287,6 +324,7 @@ const viewOpen = ref(false)
 const viewData = ref({})
 const loading = ref(true)
 const showSearch = ref(true)
+const shiftOptions = ref([])
 const ids = ref([])
 const single = ref(true)
 const multiple = ref(true)
@@ -304,8 +342,8 @@ const defaultColumns = {
   recordDate: { label: '考勤日期', visible: true },
   employeeName: { label: '员工姓名', visible: true },
   employeeNo: { label: '工号', visible: true },
-  shiftName: { label: '班次名称', visible: true },
   clockIn: { label: '上班打卡', visible: true },
+  clockOut: { label: '下班打卡', visible: true },
   attendanceStatus: { label: '考勤状态', visible: true }
 }
 function loadColumnVisibility() {
@@ -324,14 +362,21 @@ function loadColumnVisibility() {
 }
 const columns = ref(loadColumnVisibility())
 
-/** 考勤状态徽章映射（兼容字典编码与历史中文值） */
+/** 格式化打卡时间：后端返回 YYYY-MM-DD HH:mm:ss，列表只显示 HH:mm */
+function formatClockTime(v) {
+  if (!v) return '-'
+  if (v.length >= 16) return v.substring(11, 16)
+  return v
+}
+
+/** 考勤状态徽章映射 */
 function attendanceStatusClass(v) {
-  const map = { '0': 'green', '正常': 'green', '1': 'amber', '迟到': 'amber', '2': 'amber', '早退': 'amber', '3': 'red', '旷工': 'red', '缺勤': 'red', '4': 'amber', '漏卡': 'amber', '5': 'blue', '请假': 'blue', '6': 'violet', '出差': 'violet', '7': 'violet', '加班': 'violet' }
+  const map = { '0': 'green', '1': 'amber', '2': 'amber', '3': 'red', '4': 'amber' }
   return map[v] || 'gray'
 }
 function attendanceStatusLabel(v) {
   if (v === undefined || v === null || v === '') return '-'
-  const map = { '0': '正常', '1': '迟到', '2': '早退', '3': '旷工', '4': '漏卡', '5': '请假', '6': '出差', '7': '加班' }
+  const map = { '0': '正常', '1': '迟到', '2': '早退', '3': '旷工', '4': '漏卡' }
   return map[v] || String(v)
 }
 
@@ -340,20 +385,133 @@ const activeFilterCount = computed(() => {
   if (queryParams.value.employeeName) count++
   if (queryParams.value.employeeNo) count++
   if (recordDateRange.value && recordDateRange.value.length === 2) count++
-  if (queryParams.value.shiftName) count++
   if (queryParams.value.attendanceStatus) count++
   return count
 })
 
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, employeeId: undefined, employeeName: undefined, employeeNo: undefined, shiftName: undefined, attendanceStatus: undefined },
+  queryParams: { pageNum: 1, pageSize: 10, employeeId: undefined, employeeName: undefined, employeeNo: undefined, attendanceStatus: undefined },
   rules: {
     recordDate: [{ required: true, message: '考勤日期不能为空', trigger: 'blur' }],
     employeeId: [{ required: true, message: '请选择人员', trigger: 'change' }]
   }
 })
 const { queryParams, form, rules } = toRefs(data)
+
+/** ===== 考勤结果自动计算 ===== */
+/** 迟到宽限分钟数（与班次引擎规则一致：5分钟内不计迟到） */
+const LATE_GRACE_MINUTES = 5
+
+/** 根据打卡时间自动计算考勤状态、迟到/早退分钟（基于班次标准时间） */
+function computeAttendanceResult() {
+  const f = form.value
+  if (!f.clockIn && !f.clockOut) return
+
+  // 打卡时间格式为 HH:mm，直接转换为分钟数
+  const toMinutes = (timeStr) => {
+    if (!timeStr || !timeStr.includes(':')) return null
+    const [h, m] = timeStr.split(':').map(Number)
+    return h * 60 + m
+  }
+
+  // 从班次的开始/结束时间获取标准上下班时间
+  const standardIn = toMinutes(f.shiftStartTime)
+  const standardOut = toMinutes(f.shiftEndTime)
+
+  let late = 0
+  let early = 0
+
+  if (f.clockIn && standardIn !== null) {
+    const clockInMin = toMinutes(f.clockIn)
+    if (clockInMin !== null) {
+      const diff = clockInMin - standardIn
+      if (diff > LATE_GRACE_MINUTES) {
+        late = diff
+      }
+    }
+  }
+
+  if (f.clockOut && standardOut !== null) {
+    const clockOutMin = toMinutes(f.clockOut)
+    if (clockOutMin !== null) {
+      const diff = standardOut - clockOutMin
+      if (diff > LATE_GRACE_MINUTES) {
+        early = diff
+      }
+    }
+  }
+
+  f.lateMinutes = late
+  f.earlyMinutes = early
+
+  // 自动判定考勤状态
+  if (late > 0 && early > 0) {
+    f.attendanceStatus = '1'  // 迟到+早退同时存在，标记迟到
+  } else if (late > 0) {
+    f.attendanceStatus = '1'  // 迟到
+  } else if (early > 0) {
+    f.attendanceStatus = '2'  // 早退
+  } else if (f.clockIn && f.clockOut) {
+    f.attendanceStatus = '0'  // 正常
+  } else {
+    f.attendanceStatus = '4'  // 漏卡
+  }
+}
+
+watch(() => form.value.clockIn, () => { if (open.value) computeAttendanceResult() })
+watch(() => form.value.clockOut, () => { if (open.value) computeAttendanceResult() })
+watch(() => form.value.shiftId, () => { if (open.value) computeAttendanceResult() })
+
+/** ===== 班次选择 ===== */
+/** 加载班次列表 */
+function loadShiftOptions() {
+  listHrShift({ pageNum: 1, pageSize: 999, status: '0' }).then(response => {
+    shiftOptions.value = response.rows || []
+  })
+}
+
+/** 选择班次后自动带出上下班标准时间 */
+function onShiftChange(shiftId) {
+  const f = form.value
+  if (!shiftId) {
+    f.shiftId = undefined
+    f.shiftName = undefined
+    f.shiftStartTime = undefined
+    f.shiftEndTime = undefined
+    return
+  }
+  const shift = shiftOptions.value.find(s => s.shiftId === shiftId)
+  if (shift) {
+    f.shiftName = shift.shiftName
+    f.shiftStartTime = shift.startTime
+    f.shiftEndTime = shift.endTime
+  }
+}
+
+/** 选人员+选考勤日期后自动匹配排班班次 */
+function autoMatchSchedule() {
+const f = form.value
+if (!f.employeeNo || !f.recordDate) return
+listHrSchedule({ employeeNo: f.employeeNo, scheduleDate: f.recordDate, pageNum: 1, pageSize: 1 }).then(response => {
+if (response.rows && response.rows.length > 0) {
+const schedule = response.rows[0]
+if (schedule.shiftId) {
+f.shiftId = schedule.shiftId
+f.shiftName = schedule.shiftName
+onShiftChange(schedule.shiftId)
+}
+} else {
+// 无排班时自动使用默认班次
+const defaultShift = shiftOptions.value.find(s => s.isDefault === 1)
+if (defaultShift) {
+f.shiftId = defaultShift.shiftId
+f.shiftName = defaultShift.shiftName
+onShiftChange(defaultShift.shiftId)
+}
+}
+})
+}
 
 /** ===== 人员/部门/岗位弹框选择 ===== */
 const employeePickerRef = ref(null)
@@ -364,9 +522,11 @@ function onEmployeePickerConfirm(emp) {
   const f = form.value;
   f.employeeId = emp.employeeId;
   f.employeeName = emp.employeeName;
-  // 档案信息自动带出：仅填充本页面表单中存在的字段
-  const auto = { idCard: emp.idCard, gender: emp.gender, phone: emp.phone, email: emp.email, orgId: emp.orgId, orgName: emp.orgName, positionId: emp.positionId, positionName: emp.positionName };
+  // 档案信息自动带出：工号、部门等字段自动填充
+  const auto = { employeeNo: emp.employeeNo, idCard: emp.idCard, gender: emp.gender, phone: emp.phone, email: emp.email, orgId: emp.orgId, orgName: emp.orgName, positionId: emp.positionId, positionName: emp.positionName };
   Object.keys(auto).forEach(k => { if (k in f && auto[k] !== null && auto[k] !== undefined) f[k] = auto[k]; });
+  // 选人员后如果有考勤日期，自动匹配排班
+  autoMatchSchedule()
 }
 function onEmployeeFieldClick(e) {
   if (e && e.target && e.target.closest && e.target.closest('.el-input-group__append')) {
@@ -385,18 +545,6 @@ function onOrgFieldClick(e) {
     return;
   }
   openOrgPicker();
-}
-
-/** ===== 班次下拉 ===== */
-const shiftOptions = ref([])
-function loadShiftOptions() {
-  listHrShift({ pageNum: 1, pageSize: 100 }).then(res => {
-    shiftOptions.value = res.rows || []
-  })
-}
-function onShiftChange(shiftId) {
-  const s = (shiftOptions.value || []).find(i => i.shiftId === shiftId)
-  form.value.shiftName = s ? s.shiftName : undefined
 }
 
 function getList() {
@@ -420,7 +568,6 @@ function handleQuery() {
 function resetQuery() {
   queryParams.value.employeeName = undefined
   queryParams.value.employeeNo = undefined
-  queryParams.value.shiftName = undefined
   queryParams.value.attendanceStatus = undefined
   recordDateRange.value = []
   queryParams.value.params = {}
@@ -444,8 +591,11 @@ function reset() {
     employeeName: undefined,
     employeeNo: undefined,
     orgId: undefined,
+    orgName: undefined,
     shiftId: undefined,
     shiftName: undefined,
+    shiftStartTime: undefined,
+    shiftEndTime: undefined,
     clockIn: undefined,
     clockOut: undefined,
     lateMinutes: undefined,
@@ -458,15 +608,21 @@ function reset() {
 
 function handleAdd() {
   reset()
+  loadShiftOptions()
   open.value = true
   title.value = '新增考勤记录'
 }
 
 function handleUpdate(row) {
   reset()
+  loadShiftOptions()
   const recordId = row.recordId || ids.value[0]
   getHrAttendanceRecord(recordId).then(response => {
-    form.value = response.data
+    const d = response.data
+    // 后端返回的打卡时间是 YYYY-MM-DD HH:mm:ss，截取 HH:mm 给 time-picker
+    if (d.clockIn && d.clockIn.length >= 16) d.clockIn = d.clockIn.substring(11, 16)
+    if (d.clockOut && d.clockOut.length >= 16) d.clockOut = d.clockOut.substring(11, 16)
+    form.value = d
     open.value = true
     title.value = '修改考勤记录'
   })
@@ -483,14 +639,26 @@ function handleView(row) {
 function submitForm() {
   proxy.$refs['hrAttendanceRecordRef'].validate(valid => {
     if (valid) {
-      if (form.value.recordId != undefined) {
-        updateHrAttendanceRecord(form.value).then(() => {
+      // 提交前将 HH:mm 拼成完整的 DATETIME 格式（日期取考勤日期）
+      const submitData = { ...form.value }
+      // 清除非表字段（仅用于前端显示，不需要传给后端）
+      delete submitData.shiftStartTime
+      delete submitData.shiftEndTime
+      delete submitData.orgName
+      if (submitData.clockIn && submitData.clockIn.length === 5) {
+        submitData.clockIn = (submitData.recordDate || '1970-01-01') + ' ' + submitData.clockIn + ':00'
+      }
+      if (submitData.clockOut && submitData.clockOut.length === 5) {
+        submitData.clockOut = (submitData.recordDate || '1970-01-01') + ' ' + submitData.clockOut + ':00'
+      }
+      if (submitData.recordId != undefined) {
+        updateHrAttendanceRecord(submitData).then(() => {
           proxy.$modal.msgSuccess('修改成功')
           open.value = false
           getList()
         })
       } else {
-        addHrAttendanceRecord(form.value).then(() => {
+        addHrAttendanceRecord(submitData).then(() => {
           proxy.$modal.msgSuccess('新增成功')
           open.value = false
           getList()
@@ -514,12 +682,49 @@ function handleExport() {
   proxy.download('hr/attendance/export', { ...queryParams.value }, `hrAttendanceRecord_${new Date().getTime()}.xlsx`)
 }
 
+/** 重算考勤状态：根据当前筛选条件批量重新计算 */
+function handleRecalculate() {
+  proxy.$modal.confirm('将根据当前筛选条件批量重算考勤状态（迟到/早退/状态），是否继续？').then(() => {
+    loading.value = true
+    recalculateAttendance({ ...queryParams.value }).then(res => {
+      proxy.$modal.msgSuccess(res.msg || '重算成功')
+      getList()
+    }).catch(() => {
+      loading.value = false
+    })
+  }).catch(() => {})
+}
+
 function cancel() {
   open.value = false
   reset()
 }
 
-loadShiftOptions()
+/** ===== 考勤机导入 ===== */
+const importRef = ref(null)
+const importTips = [
+  '文件格式：工号、姓名、打卡时间（yyyy-MM-dd HH:mm:ss）、考勤机号',
+  '系统自动按工号+日期分组，取最早打卡为上班、最晚打卡为下班',
+  '工号必须与员工档案中的工号一致，否则该行导入失败',
+  '班次信息自动从排班表匹配（无需手动选择）',
+  '如勾选「更新已存在数据」，同一天同一工号的已有记录将被覆盖更新',
+  '导入结果将显示每条数据的处理情况，失败数据可修正后重新导入'
+]
+const importColumnLabels = {
+  employeeNo: '工号',
+  employeeName: '姓名',
+  recordDate: '考勤日期',
+  clockIn: '上班打卡',
+  clockOut: '下班打卡',
+  clockTime: '打卡时间',
+  machineNo: '考勤机号',
+  result: '结果',
+  errorReason: '失败原因'
+}
+function handleImport() {
+  proxy.$refs['importRef'].open()
+}
+
 getList()
 </script>
 
@@ -600,6 +805,7 @@ getList()
 .hr-attendance-page .app-table :deep(.el-table__inner-wrapper::before) { display:none; }
 .hr-attendance-page .app-table :deep(.el-table__border-left-patch) { display:none; }
 .hr-attendance-page .app-table .col-mono { font-family:ui-monospace,"JetBrains Mono","SF Mono",Menlo,monospace; font-size:14px; color:var(--ink-700); letter-spacing:-.01em; }
+.hr-attendance-page .app-table .clock-cell { display:inline-flex; align-items:center; gap:2px; }
 
 /* ===== Badge ===== */
 .hr-attendance-page .badge { display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:999px; font-size:13px; font-weight:600; line-height:1; border:1px solid transparent; }

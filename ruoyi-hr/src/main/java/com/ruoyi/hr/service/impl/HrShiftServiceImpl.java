@@ -32,6 +32,11 @@ public class HrShiftServiceImpl implements IHrShiftService
             hrShift.setShiftCode(mkNumberRuleService.generateNumber("hr_shift"));
         }
         computeShiftFields(hrShift);
+        // 如果设为默认班次，清除其他班次的默认标记
+        if (hrShift.getIsDefault() != null && hrShift.getIsDefault() == 1)
+        {
+            hrShiftMapper.clearDefaultFlag(hrShift.getShiftId());
+        }
         return hrShiftMapper.insertHrShift(hrShift);
     }
 
@@ -39,10 +44,15 @@ public class HrShiftServiceImpl implements IHrShiftService
     public int updateHrShift(HrShift hrShift)
     {
         computeShiftFields(hrShift);
+        // 如果设为默认班次，清除其他班次的默认标记
+        if (hrShift.getIsDefault() != null && hrShift.getIsDefault() == 1)
+        {
+            hrShiftMapper.clearDefaultFlag(hrShift.getShiftId());
+        }
         return hrShiftMapper.updateHrShift(hrShift);
     }
 
-    /** 根据上下班时间自动计算跨零点与工作时长 */
+    /** 根据上下班时间自动计算跨零点；工作时长仅在未手动填写时自动计算 */
     private void computeShiftFields(HrShift shift)
     {
         if (shift.getStartTime() == null || shift.getEndTime() == null || !shift.getStartTime().contains(":") || !shift.getEndTime().contains(":"))
@@ -58,7 +68,11 @@ public class HrShiftServiceImpl implements IHrShiftService
             if (e == 0) { e = 1440; }
             shift.setCrossMidnight(e < s ? 1 : 0);
             if (e < s) { e += 1440; }
-            shift.setWorkHours(java.math.BigDecimal.valueOf(Math.round((e - s) * 100.0 / 60.0) / 100.0));
+            // 工作时长：用户手动填写了则保留，否则自动计算
+            if (shift.getWorkHours() == null)
+            {
+                shift.setWorkHours(java.math.BigDecimal.valueOf(Math.round((e - s) * 100.0 / 60.0) / 100.0));
+            }
         }
         catch (NumberFormatException ignored) { }
     }
@@ -68,4 +82,7 @@ public class HrShiftServiceImpl implements IHrShiftService
 
     @Override
     public int deleteHrShiftById(Long shiftId) { return hrShiftMapper.deleteHrShiftById(shiftId); }
+
+    @Override
+    public HrShift selectDefaultShift() { return hrShiftMapper.selectDefaultShift(); }
 }

@@ -42,3 +42,20 @@ export function delHrAttendanceMonthly(monthlyId) {
     method: 'delete'
   })
 }
+// ========== 月报自动生成 / 封账 ==========
+
+// 按年月自动汇总生成月报（日考勤打卡 + 已审批请假单）
+export function generateMonthly(yearMonth) {
+  return request({
+    url: '/hr/monthly/generate/' + yearMonth,
+    method: 'post'
+  })
+}
+
+// 下钻：某员工当月考勤明细（打卡记录 + 已审批请假/外出/出差单）
+export function getMonthlyDetail(employeeId, yearMonth) {
+  return request({
+    url: '/hr/monthly/detail/' + employeeId + '/' + yearMonth,
+    method: 'get'
+  })
+}

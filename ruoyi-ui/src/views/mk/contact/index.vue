@@ -116,7 +116,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
-          <el-table-column type="index" label="序号" width="85" align="center" />
+          <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
           <el-table-column label="所属客户" prop="customerName" key="customerName" :width="colWidth('customerName', 180)" resizable show-overflow-tooltip v-if="columns.customerName.visible">
             <template #default="scope">
               <span>{{ scope.row.customerName }}</span>
@@ -334,31 +334,16 @@
     </el-dialog>
 
         <!-- 导入弹窗 -->
-    <el-dialog v-model="importOpen" width="500px" append-to-body draggable class="rd-dialog">
-      <template #header>
-        <div class="rd-detail-header">
-          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
-          <span class="rd-detail-header-title">联系人导入</span>
-        </div>
-      </template>
-      <el-upload ref="uploadRef" :limit="1" accept=".xlsx, .xls" :auto-upload="false" :action="importUrl" :headers="headers" :on-success="handleImportSuccess" :on-error="handleImportError" drag>
-        <el-icon class="el-icon--upload"><upload-filled /></el-icon>
-        <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
-        <template #tip>
-          <div class="el-upload__tip text-center">
-            <span>仅允许导入xls、xlsx格式文件。</span>
-            <el-button type="primary" link @click="handleDownloadTemplate">下载模板</el-button>
-          </div>
-        </template>
-      </el-upload>
-      <div class="mt16">
-        <el-checkbox v-model="importUpdateSupport">如果已存在相同手机号/邮箱，则更新数据</el-checkbox>
-      </div>
-      <template #footer>
-        <el-button type="primary" @click="submitImport">确 定</el-button>
-        <el-button @click="importOpen = false">取 消</el-button>
-      </template>
-    </el-dialog>
+    <excel-import-dialog
+      ref="importRef"
+      title="联系人导入"
+      action="/mk/contact/importData"
+      template-action="/mk/contact/importTemplate"
+      template-file-name="contact_template"
+      update-support-label="如果已存在相同手机号/邮箱，则更新数据"
+      :column-labels="{ name: '姓名', phone: '手机号', email: '邮箱', result: '结果', errorReason: '失败原因' }"
+      @success="getList"
+    />
 
     <!-- 客户选择弹窗 -->
     <el-dialog v-model="customerPickerOpen" width="860px" append-to-body draggable class="rd-dialog" @open="onCustomerPickerOpen">
@@ -665,6 +650,7 @@ import { listParticipant } from '@/api/mk/participant'
 import { listCustomer } from '@/api/mk/customer'
 import { listUser } from '@/api/system/user'
 import { getToken } from '@/utils/auth'
+import ExcelImportDialog from '@/components/ExcelImportDialog'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
 import UserPicker from '@/components/UserPicker/index.vue'
@@ -693,9 +679,6 @@ const assignOpen = ref(false)
 const assignUserId = ref(null)
 const assignUserName = ref(null)
 const assignContactId = ref(null)
-const importOpen = ref(false)
-const importUpdateSupport = ref(false)
-const importUrl = ref(import.meta.env.VITE_APP_BASE_API + '/mk/contact/importData')
 const headers = ref({ Authorization: 'Bearer ' + getToken() })
 const viewOpen = ref(false)
 const viewForm = ref({})
@@ -941,23 +924,7 @@ function confirmAssign() {
 }
 
 // P3-13: 导入
-function handleImport() { importOpen.value = true }
-function handleDownloadTemplate() { proxy.download('mk/contact/importTemplate', {}, `contact_template_${new Date().getTime()}.xlsx`) }
-function submitImport() {
-  proxy.$refs['uploadRef'].submit()
-}
-function handleImportSuccess(res) {
-  if (res.code === 200) {
-    proxy.$modal.msgSuccess(res.msg)
-    importOpen.value = false
-    getList()
-  } else {
-    proxy.$modal.msgError(res.msg)
-  }
-}
-function handleImportError() {
-  proxy.$modal.msgError('导入失败')
-}
+function handleImport() { proxy.$refs['importRef'].open() }
 
 getUserOptions()
 getList()

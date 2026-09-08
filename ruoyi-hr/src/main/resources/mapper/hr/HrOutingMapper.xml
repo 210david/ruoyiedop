@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.hr.mapper.HrOutingMapper">
+
+    <resultMap type="HrOuting" id="HrOutingResult">
+        <result property="outingId" column="outing_id"/>
+        <result property="outingNo" column="outing_no"/>
+        <result property="employeeId" column="employee_id"/>
+        <result property="employeeName" column="employee_name"/>
+        <result property="employeeNo" column="employee_no"/>
+        <result property="deptId" column="dept_id"/>
+        <result property="deptName" column="dept_name"/>
+        <result property="outingDate" column="outing_date"/>
+        <result property="startTime" column="start_time"/>
+        <result property="endTime" column="end_time"/>
+        <result property="destination" column="destination"/>
+        <result property="reason" column="reason"/>
+        <result property="transportMode" column="transport_mode"/>
+        <result property="expectedReturnTime" column="expected_return_time"/>
+        <result property="attachmentUrl" column="attachment_url"/>
+        <result property="auditStatus" column="audit_status"/>
+        <result property="auditBy" column="audit_by"/>
+        <result property="auditTime" column="audit_time"/>
+        <result property="auditRemark" column="audit_remark"/>
+        <result property="status" column="status"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <sql id="selectVo">
+        SELECT outing_id, outing_no, employee_id, employee_name, employee_no, dept_id, dept_name, outing_date, start_time, end_time, destination, reason, transport_mode, expected_return_time, attachment_url, audit_status, audit_by, audit_time, audit_remark, status, del_flag, create_by, create_time, update_by, update_time, remark
+        FROM biz_hr_outing
+    </sql>
+
+    <select id="selectHrOutingList" parameterType="HrOuting" resultMap="HrOutingResult">
+        <include refid="selectVo"/>
+        <where>
+            (del_flag IS NULL OR del_flag = '0')
+            <if test="outingNo != null and outingNo != ''"> AND outing_no LIKE CONCAT('%', #{outingNo}, '%')</if>
+            <if test="employeeId != null"> AND employee_id = #{employeeId}</if>
+            <if test="employeeName != null and employeeName != ''"> AND employee_name LIKE CONCAT('%', #{employeeName}, '%')</if>
+            <if test="employeeNo != null and employeeNo != ''"> AND employee_no LIKE CONCAT('%', #{employeeNo}, '%')</if>
+            <if test="deptId != null"> AND dept_id = #{deptId}</if>
+            <if test="deptName != null and deptName != ''"> AND dept_name LIKE CONCAT('%', #{deptName}, '%')</if>
+            <if test="outingDate != null"> AND outing_date = #{outingDate}</if>
+            <if test="params.beginOutingDate != null and params.beginOutingDate != ''"> AND outing_date &gt;= #{params.beginOutingDate}</if>
+            <if test="params.endOutingDate != null and params.endOutingDate != ''"> AND outing_date &lt;= #{params.endOutingDate}</if>
+            <if test="destination != null and destination != ''"> AND destination LIKE CONCAT('%', #{destination}, '%')</if>
+            <if test="reason != null and reason != ''"> AND reason LIKE CONCAT('%', #{reason}, '%')</if>
+            <if test="transportMode != null and transportMode != ''"> AND transport_mode = #{transportMode}</if>
+            <if test="auditStatus != null and auditStatus != ''"> AND audit_status = #{auditStatus}</if>
+            <if test="auditBy != null and auditBy != ''"> AND audit_by LIKE CONCAT('%', #{auditBy}, '%')</if>
+            <if test="status != null and status != ''"> AND status = #{status}</if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+
+    <select id="selectHrOutingById" parameterType="Long" resultMap="HrOutingResult">
+        <include refid="selectVo"/> WHERE outing_id = #{outingId}
+    </select>
+
+    <insert id="insertHrOuting" parameterType="HrOuting" useGeneratedKeys="true" keyProperty="outingId">
+        INSERT INTO biz_hr_outing (
+            outing_no, employee_id, employee_name, employee_no, dept_id, dept_name, outing_date, start_time, end_time, destination, reason, transport_mode, expected_return_time, attachment_url, audit_status, audit_by, audit_time, audit_remark, status, del_flag, create_by, create_time, remark
+        ) VALUES (
+            #{outingNo}, #{employeeId}, #{employeeName}, #{employeeNo}, #{deptId}, #{deptName}, #{outingDate}, #{startTime}, #{endTime}, #{destination}, #{reason}, #{transportMode}, #{expectedReturnTime}, #{attachmentUrl}, #{auditStatus}, #{auditBy}, #{auditTime}, #{auditRemark}, #{status}, #{delFlag}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateHrOuting" parameterType="HrOuting">
+        UPDATE biz_hr_outing
+        <set>
+            <if test="outingNo != null and outingNo != ''">outing_no = #{outingNo},</if>
+            <if test="employeeId != null">employee_id = #{employeeId},</if>
+            <if test="employeeName != null and employeeName != ''">employee_name = #{employeeName},</if>
+            <if test="employeeNo != null and employeeNo != ''">employee_no = #{employeeNo},</if>
+            <if test="deptId != null">dept_id = #{deptId},</if>
+            <if test="deptName != null and deptName != ''">dept_name = #{deptName},</if>
+            <if test="outingDate != null">outing_date = #{outingDate},</if>
+            <if test="startTime != null">start_time = #{startTime},</if>
+            <if test="endTime != null">end_time = #{endTime},</if>
+            <if test="destination != null and destination != ''">destination = #{destination},</if>
+            <if test="reason != null and reason != ''">reason = #{reason},</if>
+            <if test="transportMode != null and transportMode != ''">transport_mode = #{transportMode},</if>
+            <if test="expectedReturnTime != null">expected_return_time = #{expectedReturnTime},</if>
+            <if test="attachmentUrl != null and attachmentUrl != ''">attachment_url = #{attachmentUrl},</if>
+            <if test="auditStatus != null and auditStatus != ''">audit_status = #{auditStatus},</if>
+            <if test="auditBy != null and auditBy != ''">audit_by = #{auditBy},</if>
+            <if test="auditTime != null">audit_time = #{auditTime},</if>
+            <if test="auditRemark != null and auditRemark != ''">audit_remark = #{auditRemark},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="delFlag != null and delFlag != ''">del_flag = #{delFlag},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE outing_id = #{outingId}
+    </update>
+
+    <delete id="deleteHrOutingById" parameterType="Long">
+        UPDATE biz_hr_outing SET del_flag = '2' WHERE outing_id = #{outingId}
+    </delete>
+
+    <delete id="deleteHrOutingByIds" parameterType="Long">
+        UPDATE biz_hr_outing SET del_flag = '2' WHERE outing_id IN
+        <foreach item="outingId" collection="array" open="(" separator="," close=")">#{outingId}</foreach>
+    </delete>
+
+</mapper>

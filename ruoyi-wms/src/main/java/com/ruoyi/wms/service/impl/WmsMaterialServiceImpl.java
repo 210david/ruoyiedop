@@ -1,6 +1,8 @@
 package com.ruoyi.wms.service.impl;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -114,8 +116,8 @@ public class WmsMaterialServiceImpl implements IWmsMaterialService
         }
         int successNum = 0;
         int failureNum = 0;
-        StringBuilder successMsg = new StringBuilder();
-        StringBuilder failureMsg = new StringBuilder();
+        List<Map<String, Object>> successList = new ArrayList<>();
+        List<Map<String, Object>> failureList = new ArrayList<>();
         for (WmsMaterial row : materialList)
         {
             try
@@ -147,12 +149,12 @@ public class WmsMaterialServiceImpl implements IWmsMaterialService
                         row.setUpdateBy(operName);
                         wmsMaterialMapper.updateMaterial(row);
                         successNum++;
-                        successMsg.append("<br/>" + successNum + "、物料 " + row.getMaterialName() + "（" + getMatchFieldLabel(updateKey) + ": " + matchValue + "）更新成功");
+                        successList.add(buildSuccessItem(row, "更新成功"));
                     }
                     else
                     {
                         failureNum++;
-                        failureMsg.append("<br/>" + failureNum + "、物料 " + row.getMaterialName() + " 已存在（" + getMatchFieldLabel(updateKey) + ": " + matchValue + "）");
+                        failureList.add(buildFailureItem(row, "物料已存在（" + getMatchFieldLabel(updateKey) + ": " + matchValue + "），未勾选更新选项"));
                     }
                 }
                 else
@@ -175,36 +177,68 @@ public class WmsMaterialServiceImpl implements IWmsMaterialService
                     row.setCreateBy(operName);
                     wmsMaterialMapper.insertMaterial(row);
                     successNum++;
-                    successMsg.append("<br/>" + successNum + "、物料 " + row.getMaterialName() + " 导入成功");
+                    successList.add(buildSuccessItem(row, "导入成功"));
                 }
             }
             catch (Exception e)
             {
                 failureNum++;
-                failureMsg.append("<br/>" + failureNum + "、物料 " + (StringUtils.isNotEmpty(row.getMaterialName()) ? row.getMaterialName() : "(名称为空)") + " 导入失败：" + e.getMessage());
+                String errMsg = e.getMessage();
+                if (errMsg != null && errMsg.length() > 200) { errMsg = errMsg.substring(0, 200) + "..."; }
+                failureList.add(buildFailureItem(row, errMsg != null ? errMsg : "未知错误"));
             }
         }
 
-        // 构建返回结果（不抛异常，返回成功和失败的明细）
-        StringBuilder resultMsg = new StringBuilder();
-        if (successNum > 0)
-        {
-            resultMsg.append(successMsg.toString());
-        }
-        if (failureNum > 0)
-        {
-            resultMsg.append(failureMsg.toString());
-        }
-
-        AjaxResult ajax = AjaxResult.success(resultMsg.toString());
+        // 构建返回结果（结构化明细）
+        AjaxResult ajax = AjaxResult.success();
         ajax.put("successNum", successNum);
         ajax.put("failureNum", failureNum);
+        ajax.put("successList", successList);
+        ajax.put("failureList", failureList);
         if (failureNum > 0 && successNum == 0)
         {
-            // 全部失败时标记 code
             ajax.put("code", 500);
+            ajax.put("msg", "导入失败，共 " + failureNum + " 条数据异常");
+        }
+        else if (failureNum > 0)
+        {
+            ajax.put("msg", "部分导入成功：成功 " + successNum + " 条，失败 " + failureNum + " 条");
+        }
+        else
+        {
+            ajax.put("msg", "导入成功，共 " + successNum + " 条");
         }
         return ajax;
+    }
+
+    /**
+     * 构建成功明细项
+     */
+    private Map<String, Object> buildSuccessItem(WmsMaterial row, String result)
+    {
+        Map<String, Object> item = new LinkedHashMap<>();
+        item.put("materialCode", row.getMaterialCode() != null ? row.getMaterialCode() : "");
+        item.put("materialName", row.getMaterialName() != null ? row.getMaterialName() : "");
+        item.put("specModel", row.getSpecModel() != null ? row.getSpecModel() : "");
+        item.put("unit", row.getUnit() != null ? row.getUnit() : "");
+        item.put("materialType", row.getMaterialType() != null ? row.getMaterialType() : "");
+        item.put("result", result);
+        return item;
+    }
+
+    /**
+     * 构建失败明细项
+     */
+    private Map<String, Object> buildFailureItem(WmsMaterial row, String errorReason)
+    {
+        Map<String, Object> item = new LinkedHashMap<>();
+        item.put("materialCode", row.getMaterialCode() != null ? row.getMaterialCode() : "");
+        item.put("materialName", row.getMaterialName() != null ? row.getMaterialName() : "");
+        item.put("specModel", row.getSpecModel() != null ? row.getSpecModel() : "");
+        item.put("unit", row.getUnit() != null ? row.getUnit() : "");
+        item.put("materialType", row.getMaterialType() != null ? row.getMaterialType() : "");
+        item.put("errorReason", errorReason);
+        return item;
     }
 
     /**

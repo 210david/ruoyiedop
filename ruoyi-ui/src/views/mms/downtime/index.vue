@@ -71,7 +71,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" v-loading="loading" :data="dataList" border @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
-          <el-table-column type="index" label="序号" width="85" align="center" />
+          <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
           <el-table-column label="停机单号" prop="downtimeNo" key="downtimeNo" :width="colWidth('downtimeNo', 150)" resizable show-overflow-tooltip v-if="columns.downtimeNo.visible" />
           <el-table-column label="关联异常单号" prop="abnormalNo" key="abnormalNo" :width="colWidth('abnormalNo', 140)" resizable align="center" v-if="columns.abnormalNo.visible">
             <template #default="scope">

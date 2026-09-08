@@ -71,4 +71,20 @@ public class HrLeaveRequestController extends BaseController
     {
         return toAjax(hrLeaveRequestService.deleteHrLeaveRequestByIds(leaveReqIds));
     }
+
+    /**
+     * 请假审批
+     * @param leaveReqId 请假单ID
+     * @param auditAction 审批动作：1=通过, 2=驳回
+     * @param auditRemark 审批意见
+     */
+    @PreAuthorize("@ss.hasPermi('hr:leaveRequest:audit')")
+    @Log(title = "请假审批", businessType = BusinessType.UPDATE)
+    @PutMapping("/audit/{leaveReqId}")
+    public AjaxResult audit(@PathVariable Long leaveReqId,
+                           @RequestParam String auditAction,
+                           @RequestParam(required = false) String auditRemark)
+    {
+        return toAjax(hrLeaveRequestService.auditLeaveRequest(leaveReqId, auditAction, auditRemark));
+    }
 }

@@ -11,6 +11,8 @@ public class HrSocialSecurity extends BaseEntity
     private static final long serialVersionUID = 1L;
 
     private Long ssId;
+    /** 社保方案ID（非空时比例继承方案，自身比例字段仅作个别覆盖） */
+    private Long planId;
     @NotNull(message = "员工ID不能为空")
     @Excel(name = "员工ID")
     private Long employeeId;
@@ -46,6 +48,9 @@ public class HrSocialSecurity extends BaseEntity
     private BigDecimal fundEmployee;
     @Excel(name = "删除标志")
     private String delFlag;
+
+    public Long getPlanId() { return planId; }
+    public void setPlanId(Long planId) { this.planId = planId; }
 
     public Long getSsId() { return ssId; }
     public void setSsId(Long ssId) { this.ssId = ssId; }

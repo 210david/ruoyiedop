@@ -413,8 +413,8 @@ public class MmsBomServiceImpl implements IMmsBomService
 
         int successNum = 0;
         int failureNum = 0;
-        StringBuilder successMsg = new StringBuilder();
-        StringBuilder failureMsg = new StringBuilder();
+        List<Map<String, Object>> successList = new ArrayList<>();
+        List<Map<String, Object>> failureList = new ArrayList<>();
 
         for (Map.Entry<String, List<MmsBomImport>> entry : groupedMap.entrySet())
         {
@@ -455,9 +455,12 @@ public class MmsBomServiceImpl implements IMmsBomService
                     if (!isUpdateSupport)
                     {
                         failureNum++;
-                        failureMsg.append("<br/>").append(failureNum).append("、BOM ")
-                            .append(firstRow.getBomName()).append("（产品：").append(firstRow.getProductCode())
-                            .append("，版本：").append(firstRow.getVersion()).append("）已存在");
+                        Map<String, Object> item = new LinkedHashMap<>();
+                        item.put("bomName", firstRow.getBomName() != null ? firstRow.getBomName() : "");
+                        item.put("productCode", productCode);
+                        item.put("version", version);
+                        item.put("errorReason", "BOM已存在，未勾选更新选项");
+                        failureList.add(item);
                         continue;
                     }
                     // 更新模式：删除旧BOM后重新创建
@@ -530,37 +533,47 @@ public class MmsBomServiceImpl implements IMmsBomService
                 insertBomDetails(bom);
 
                 successNum++;
-                successMsg.append("<br/>").append(successNum).append("、BOM ")
-                    .append(bom.getBomName()).append("（产品：").append(bom.getProductCode())
-                    .append("，版本：").append(bom.getVersion()).append("）导入成功，含")
-                    .append(detailList.size()).append("条明细");
+                Map<String, Object> item = new LinkedHashMap<>();
+                item.put("bomName", bom.getBomName());
+                item.put("productCode", bom.getProductCode());
+                item.put("productName", bom.getProductName() != null ? bom.getProductName() : "");
+                item.put("version", bom.getVersion());
+                item.put("result", "导入成功，含" + detailList.size() + "条明细");
+                successList.add(item);
             }
             catch (Exception e)
             {
                 failureNum++;
-                failureMsg.append("<br/>").append(failureNum).append("、BOM（产品：")
-                    .append(productCode).append("，版本：").append(version)
-                    .append("）导入失败：").append(e.getMessage());
+                String errMsg = e.getMessage();
+                if (errMsg != null && errMsg.length() > 200) { errMsg = errMsg.substring(0, 200) + "..."; }
+                Map<String, Object> item = new LinkedHashMap<>();
+                item.put("bomName", "");
+                item.put("productCode", productCode);
+                item.put("productName", "");
+                item.put("version", version);
+                item.put("errorReason", errMsg != null ? errMsg : "未知错误");
+                failureList.add(item);
             }
         }
 
-        // 构建返回结果
-        StringBuilder resultMsg = new StringBuilder();
-        if (successNum > 0)
-        {
-            resultMsg.append(successMsg);
-        }
-        if (failureNum > 0)
-        {
-            resultMsg.append(failureMsg);
-        }
-
-        AjaxResult ajax = AjaxResult.success(resultMsg.toString());
+        // 构建返回结果（结构化明细）
+        AjaxResult ajax = AjaxResult.success();
         ajax.put("successNum", successNum);
         ajax.put("failureNum", failureNum);
+        ajax.put("successList", successList);
+        ajax.put("failureList", failureList);
         if (failureNum > 0 && successNum == 0)
         {
             ajax.put("code", 500);
+            ajax.put("msg", "导入失败，共 " + failureNum + " 条数据异常");
+        }
+        else if (failureNum > 0)
+        {
+            ajax.put("msg", "部分导入成功：成功 " + successNum + " 条，失败 " + failureNum + " 条");
+        }
+        else
+        {
+            ajax.put("msg", "导入成功，共 " + successNum + " 条");
         }
         return ajax;
     }

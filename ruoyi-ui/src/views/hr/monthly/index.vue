@@ -9,13 +9,25 @@
         <div class="field">
           <label>年月</label>
           <div class="control">
-            <el-date-picker v-model="queryParams.yearMonth" type="month" value-format="YYYY-MM" placeholder="选择年月" style="width: 100%" />
+            <el-date-picker v-model="queryParams.yearMonth" type="month" value-format="YYYY-MM" placeholder="选择年月" :clearable="false" @change="handleQuery" style="width: 100%" />
+          </div>
+        </div>
+        <div class="field">
+          <label>部门</label>
+          <div class="control">
+            <el-input :model-value="queryParams.deptName" readonly placeholder="请选择部门" @click="deptFilterRef && deptFilterRef.open()">
+              <template #prefix><el-icon><OfficeBuilding /></el-icon></template>
+              <template #append>
+                <el-button v-if="queryParams.deptId" icon="CircleClose" @click="clearDeptFilter" />
+                <el-button v-else icon="Search" @click="deptFilterRef && deptFilterRef.open()" />
+              </template>
+            </el-input>
           </div>
         </div>
         <div class="field">
           <label>员工姓名</label>
           <div class="control">
-            <el-input v-model="queryParams.employeeName" placeholder="请输入员工姓名" clearable @keyup.enter="handleQuery">
+            <el-input v-model="queryParams.employeeName" placeholder="请输入员工姓名" clearable @keyup="e => { if (e.key === 'Enter') handleQuery() }" @change="handleQuery" @clear="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
@@ -23,7 +35,7 @@
         <div class="field">
           <label>工号</label>
           <div class="control">
-            <el-input v-model="queryParams.employeeNo" placeholder="请输入工号" clearable @keyup.enter="handleQuery">
+            <el-input v-model="queryParams.employeeNo" placeholder="请输入工号" clearable @keyup="e => { if (e.key === 'Enter') handleQuery() }" @change="handleQuery" @clear="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
@@ -44,10 +56,10 @@
     <div class="surface">
       <div class="toolbar">
         <div class="left">
+          <el-button type="primary" @click="handleGenerate" v-hasPermi="['hr:monthly:generate']">
+            <el-icon><MagicStick /></el-icon> 生成{{ currentMonthLabel }}月报
+          </el-button>
           <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['hr:monthly:add']">新增</el-button>
-          <button type="button" class="btn-soft is-outline" :disabled="single" @click="handleUpdate" v-hasPermi="['hr:monthly:edit']">
-            <el-icon><Edit /></el-icon> 修改
-          </button>
           <button type="button" class="btn-soft is-danger-outline" :disabled="multiple" @click="handleDelete" v-hasPermi="['hr:monthly:remove']">
             <el-icon><Delete /></el-icon> 删除
           </button>
@@ -69,14 +81,61 @@
           <el-table-column label="工号" prop="employeeNo" key="employeeNo" align="center" :width="colWidth('employeeNo', 120)" resizable v-if="columns.employeeNo.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.employeeNo }}</span></template>
           </el-table-column>
-          <el-table-column label="出勤天数" prop="attendDays" key="attendDays" align="center" :width="colWidth('attendDays', 110)" resizable v-if="columns.attendDays.visible" />
-          <el-table-column label="迟到次数" prop="lateCount" key="lateCount" align="center" :width="colWidth('lateCount', 110)" resizable v-if="columns.lateCount.visible" />
-          <el-table-column label="早退次数" prop="earlyCount" key="earlyCount" align="center" :width="colWidth('earlyCount', 110)" resizable v-if="columns.earlyCount.visible" />
-          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
+          <el-table-column label="部门" prop="deptName" key="deptName" align="center" :width="colWidth('deptName', 140)" resizable show-overflow-tooltip v-if="columns.deptName.visible">
+            <template #default="scope">{{ scope.row.deptName || scope.row.orgName || '-' }}</template>
+          </el-table-column>
+                    <el-table-column label="应出勤天数" prop="requiredDays" key="requiredDays" align="center" :width="colWidth('requiredDays', 120)" resizable v-if="columns.requiredDays.visible">
+            <template #default="scope"><span class="col-mono" style="font-weight:600">{{ scope.row.requiredDays ?? '-' }}</span></template>
+          </el-table-column>
+          <el-table-column label="实际出勤天数" prop="attendDays" key="attendDays" align="center" :width="colWidth('attendDays', 110)" resizable v-if="columns.attendDays.visible">
+            <template #default="scope">
+              <el-link type="primary" :underline="false" @click="showDetail(scope.row, 'attend')">{{ scope.row.attendDays ?? 0 }}</el-link>
+            </template>
+          </el-table-column>
+          <el-table-column label="旷工天数" prop="absentDays" key="absentDays" align="center" :width="colWidth('absentDays', 110)" resizable v-if="columns.absentDays.visible">
+            <template #default="scope">
+              <el-link type="primary" :underline="false" @click="showDetail(scope.row, 'absent')">{{ scope.row.absentDays ?? 0 }}</el-link>
+            </template>
+          </el-table-column>
+
+          <el-table-column label="请假天数" prop="leaveDays" key="leaveDays" align="center" :width="colWidth('leaveDays', 110)" resizable v-if="columns.leaveDays.visible">
+            <template #default="scope">
+              <el-link type="primary" :underline="false" @click="showDetail(scope.row, 'leave')">{{ scope.row.leaveDays ?? 0 }}</el-link>
+            </template>
+          </el-table-column>
+
+         <el-table-column label="迟到次数" prop="lateCount" key="lateCount" align="center" :width="colWidth('lateCount', 110)" resizable v-if="columns.lateCount.visible">
+            <template #default="scope">
+              <el-link type="primary" :underline="false" @click="showDetail(scope.row, 'late')">{{ scope.row.lateCount ?? 0 }}</el-link>
+            </template>
+          </el-table-column>
+
+         <el-table-column label="早退次数" prop="earlyCount" key="earlyCount" align="center" :width="colWidth('earlyCount', 110)" resizable v-if="columns.earlyCount.visible">
+            <template #default="scope">
+              <el-link type="primary" :underline="false" @click="showDetail(scope.row, 'early')">{{ scope.row.earlyCount ?? 0 }}</el-link>
+            </template>
+          </el-table-column>
+
+          <el-table-column label="外出天数" prop="outingDays" key="outingDays" align="center" :width="colWidth('outingDays', 110)" resizable v-if="columns.outingDays.visible">
+            <template #default="scope">
+              <el-link type="primary" :underline="false" @click="showDetail(scope.row, 'outing')">{{ scope.row.outingDays ?? 0 }}</el-link>
+            </template>
+          </el-table-column>
+          <el-table-column label="出差天数" prop="tripDays" key="tripDays" align="center" :width="colWidth('tripDays', 110)" resizable v-if="columns.tripDays.visible">
+            <template #default="scope">
+              <el-link type="primary" :underline="false" @click="showDetail(scope.row, 'trip')">{{ scope.row.tripDays ?? 0 }}</el-link>
+            </template>
+          </el-table-column>
+          <el-table-column label="加班小时" prop="overtimeHours" key="overtimeHours" align="center" :width="colWidth('overtimeHours', 110)" resizable v-if="columns.overtimeHours.visible">
+            <template #default="scope">
+              <el-link type="primary" :underline="false" @click="showDetail(scope.row, 'overtime')">{{ scope.row.overtimeHours ?? 0 }}</el-link>
+            </template>
+          </el-table-column>
+            <el-table-column label="操作" width="150" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
               <div class="action-btn-row">
                 <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['hr:monthly:query']">详情</el-button>
-                <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['hr:monthly:edit']">修改</el-button>
+                <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['hr:monthly:edit']">修正</el-button>
                 <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['hr:monthly:remove']">删除</el-button>
               </div>
             </template>
@@ -133,7 +192,8 @@
             </div>
             <div class="rd-card-body" v-show="!collapsedCards.e1">
               <el-row :gutter="20">
-                <el-col :span="12"><el-form-item label="出勤天数" prop="attendDays"><el-input-number v-model="form.attendDays" :precision="2" :min="0" controls-position="right" style="width: 100%" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="应出勤天数" prop="requiredDays"><el-input-number v-model="form.requiredDays" :precision="2" :min="0" controls-position="right" style="width: 100%" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="实际出勤" prop="attendDays"><el-input-number v-model="form.attendDays" :precision="2" :min="0" controls-position="right" style="width: 100%" /></el-form-item></el-col>
                 <el-col :span="12"><el-form-item label="迟到次数" prop="lateCount"><el-input-number v-model="form.lateCount" :precision="0" :min="0" controls-position="right" style="width: 100%" /></el-form-item></el-col>
                 <el-col :span="12"><el-form-item label="早退次数" prop="earlyCount"><el-input-number v-model="form.earlyCount" :precision="0" :min="0" controls-position="right" style="width: 100%" /></el-form-item></el-col>
                 <el-col :span="12"><el-form-item label="请假天数" prop="leaveDays"><el-input-number v-model="form.leaveDays" :precision="2" :min="0" controls-position="right" style="width: 100%" /></el-form-item></el-col>
@@ -149,19 +209,8 @@
               <el-row :gutter="20">
                 <el-col :span="12"><el-form-item label="加班小时" prop="overtimeHours"><el-input-number v-model="form.overtimeHours" :precision="2" :min="0" controls-position="right" style="width: 100%" /></el-form-item></el-col>
                 <el-col :span="12"><el-form-item label="旷工天数" prop="absentDays"><el-input-number v-model="form.absentDays" :precision="2" :min="0" controls-position="right" style="width: 100%" /></el-form-item></el-col>
-              </el-row>
-            </div>
-          </section>
-          <section class="rd-card">
-            <div class="rd-card-header" @click="toggleCard('e3')">
-              <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>封账信息</div>
-              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.e3 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
-            </div>
-            <div class="rd-card-body" v-show="!collapsedCards.e3">
-              <el-row :gutter="20">
-                <el-col :span="12"><el-form-item label="封账状态" prop="sealedStatus"><el-select v-model="form.sealedStatus" placeholder="请选择" clearable style="width: 100%"><el-option v-for="d in sealedStatusOptions" :key="d.value" :label="d.label" :value="d.value" /></el-select></el-form-item></el-col>
-                <el-col :span="12"><el-form-item label="封账人" prop="sealedBy"><el-input v-model="form.sealedBy" placeholder="请输入封账人" /></el-form-item></el-col>
-                <el-col :span="12"><el-form-item label="封账时间" prop="sealedTime"><el-date-picker v-model="form.sealedTime" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" style="width: 100%" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="外出天数" prop="outingDays"><el-input-number v-model="form.outingDays" :precision="2" :min="0" controls-position="right" style="width: 100%" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="出差天数" prop="tripDays"><el-input-number v-model="form.tripDays" :precision="2" :min="0" controls-position="right" style="width: 100%" /></el-form-item></el-col>
               </el-row>
             </div>
           </section>
@@ -209,7 +258,8 @@
           </div>
           <div class="rd-card-body" v-show="!collapsedCards.c1" style="display:block">
             <div class="rd-grid">
-              <div class="rd-item"><span class="rd-label">出勤天数</span><div class="rd-value">{{ viewData.attendDays != null ? viewData.attendDays : '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">应出勤天数</span><div class="rd-value">{{ viewData.requiredDays != null ? viewData.requiredDays : '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">实际出勤天数</span><div class="rd-value">{{ viewData.attendDays != null ? viewData.attendDays : '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">迟到次数</span><div class="rd-value">{{ viewData.lateCount != null ? viewData.lateCount : '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">早退次数</span><div class="rd-value">{{ viewData.earlyCount != null ? viewData.earlyCount : '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">请假天数</span><div class="rd-value">{{ viewData.leaveDays != null ? viewData.leaveDays : '-' }}</div></div>
@@ -225,19 +275,8 @@
             <div class="rd-grid">
               <div class="rd-item"><span class="rd-label">加班小时</span><div class="rd-value">{{ viewData.overtimeHours != null ? viewData.overtimeHours : '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">旷工天数</span><div class="rd-value">{{ viewData.absentDays != null ? viewData.absentDays : '-' }}</div></div>
-            </div>
-          </div>
-        </section>
-        <section class="rd-card">
-          <div class="rd-card-header" @click="toggleCard('c3')">
-            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>封账信息</div>
-            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c3 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
-          </div>
-          <div class="rd-card-body" v-show="!collapsedCards.c3" style="display:block">
-            <div class="rd-grid">
-              <div class="rd-item"><span class="rd-label">封账状态</span><div class="rd-value"><dict-tag :options="sealedStatusOptions" :value="viewData.sealedStatus"/></div></div>
-              <div class="rd-item"><span class="rd-label">封账人</span><div class="rd-value">{{ viewData.sealedBy || '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label">封账时间</span><div class="rd-value">{{ viewData.sealedTime || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">外出天数</span><div class="rd-value">{{ viewData.outingDays != null ? viewData.outingDays : '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">出差天数</span><div class="rd-value">{{ viewData.tripDays != null ? viewData.tripDays : '-' }}</div></div>
             </div>
           </div>
         </section>
@@ -262,17 +301,174 @@
     <employee-picker ref="employeePickerRef" title="选择人员" @confirm="onEmployeePickerConfirm" />
     <!-- 部门选择弹窗 -->
     <dept-picker ref="orgPickerRef" title="选择部门" @confirm="onOrgPickerConfirm" />
+    <dept-picker ref="deptFilterRef" title="选择筛选部门" @confirm="onDeptFilterConfirm" />
   </div>
+
+    <!-- ===== 考勤下钻明细弹框（按字段只显示对应数据） ===== -->
+    <el-dialog v-model="detailOpen" :title="detailTitle" width="1150px" append-to-body draggable class="rd-dialog">
+      <div class="rd-page" style="padding-top:0">
+        <section class="rd-card" style="margin-bottom:0">
+          <div class="rd-card-header">
+            <div class="rd-card-title">
+              <span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>
+              {{ detailRow.employeeName }} · {{ detailRow.yearMonth }} · {{ detailTypeLabel }}
+            </div>
+          </div>
+          <div class="rd-card-body" style="padding:0">
+            <!-- 实际出勤 / 旷工 / 迟到 / 早退：日打卡明细（按类型过滤） -->
+            <el-table v-if="['attend','absent','late','early'].includes(detailType)" :data="pagedRecords" border stripe size="default" style="width:100%" @sort-change="onDetailSortChange" :header-cell-style="{background:'#f8fafc',color:'#334155',fontWeight:600}">
+              <el-table-column label="序号" type="index" :index="(i) => (detailPage.pageNum - 1) * detailPage.pageSize + i + 1" width="60" align="center" />
+              <el-table-column label="日期" prop="recordDate" width="120" align="center" sortable :default-sort="{ prop: 'recordDate', order: 'ascending' }" />
+              <el-table-column label="班次" prop="shiftName" min-width="120" align="center" />
+              <el-table-column label="上班打卡" width="140" align="center">
+                <template #default="scope">
+                  {{ formatClockTime(scope.row.clockIn) }}
+                  <el-tag v-if="String(scope.row.clockInSource) === '1'" type="warning" size="small" effect="plain" style="margin-left:2px">补</el-tag>
+                  <el-tag v-else-if="String(scope.row.clockInSource) === '3'" type="success" size="small" effect="plain" style="margin-left:2px">外出</el-tag>
+                  <el-tag v-else-if="String(scope.row.clockInSource) === '4'" type="primary" size="small" effect="plain" style="margin-left:2px">出差</el-tag>
+                  <el-tag v-else-if="String(scope.row.clockInSource) === '2'" type="info" size="small" effect="plain" style="margin-left:2px">手动</el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column label="下班打卡" width="140" align="center">
+                <template #default="scope">
+                  {{ formatClockTime(scope.row.clockOut) }}
+                  <el-tag v-if="String(scope.row.clockOutSource) === '1'" type="warning" size="small" effect="plain" style="margin-left:2px">补</el-tag>
+                  <el-tag v-else-if="String(scope.row.clockOutSource) === '3'" type="success" size="small" effect="plain" style="margin-left:2px">外出</el-tag>
+                  <el-tag v-else-if="String(scope.row.clockOutSource) === '4'" type="primary" size="small" effect="plain" style="margin-left:2px">出差</el-tag>
+                  <el-tag v-else-if="String(scope.row.clockOutSource) === '2'" type="info" size="small" effect="plain" style="margin-left:2px">手动</el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column label="状态" prop="attendanceStatus" width="90" align="center">
+                <template #default="scope"><el-tag :type="attendanceTagType(scope.row.attendanceStatus)" size="small">{{ attendanceStatusText(scope.row.attendanceStatus) }}</el-tag></template>
+              </el-table-column>
+              <el-table-column v-if="detailType === 'absent'" label="旷工说明" prop="remark" min-width="220" show-overflow-tooltip />
+              <el-table-column label="迟到(分)" prop="lateMinutes" width="90" align="center" />
+              <el-table-column label="早退(分)" prop="earlyMinutes" width="90" align="center" />
+              <el-table-column label="加班(h)" prop="overtimeHours" width="90" align="center" />
+              <template #empty><el-empty description="当月无此类记录" :image-size="80" /></template>
+            </el-table>
+            <!-- 请假：请假单列表 -->
+            <el-table v-else-if="detailType==='leave'" :data="pagedLeaveList" border stripe size="default" style="width:100%" @sort-change="onDetailSortChange" :header-cell-style="{background:'#f8fafc',color:'#334155',fontWeight:600}">
+              <el-table-column label="序号" type="index" :index="(i) => (detailPage.pageNum - 1) * detailPage.pageSize + i + 1" width="60" align="center" />
+              <el-table-column label="请假单号" prop="leaveReqNo" min-width="150" align="center" />
+              <el-table-column label="假别" prop="leaveType" width="100" align="center">
+                <template #default="scope"><dict-tag :options="hrLeaveTypeOptions" :value="scope.row.leaveType" /></template>
+              </el-table-column>
+              <el-table-column label="开始时间" prop="startTime" width="160" align="center" sortable />
+              <el-table-column label="结束时间" prop="endTime" width="160" align="center" />
+              <el-table-column label="请假天数" prop="leaveDays" width="100" align="center" />
+              <el-table-column label="请假原因" prop="reason" min-width="180" show-overflow-tooltip />
+              <template #empty><el-empty description="当月无请假记录" :image-size="80" /></template>
+            </el-table>
+            <!-- 外出：外出单列表 -->
+            <el-table v-else-if="detailType==='outing'" :data="detailData.outings || []" border stripe size="default" style="width:100%" :header-cell-style="{background:'#f8fafc',color:'#334155',fontWeight:600}">
+              <el-table-column label="序号" type="index" width="60" align="center" />
+              <el-table-column label="外出单号" prop="outingNo" min-width="150" align="center" />
+              <el-table-column label="外出日期" prop="outingDate" width="120" align="center" />
+              <el-table-column label="开始时间" prop="startTime" width="150" align="center" />
+              <el-table-column label="结束时间" prop="endTime" width="150" align="center" />
+              <el-table-column label="外出地点" prop="destination" min-width="140" show-overflow-tooltip />
+              <el-table-column label="外出事由" prop="reason" min-width="160" show-overflow-tooltip />
+              <template #empty><el-empty description="当月无外出记录" :image-size="80" /></template>
+            </el-table>
+            <!-- 出差：出差单列表 -->
+            <el-table v-else-if="detailType==='trip'" :data="detailData.trips || []" border stripe size="default" style="width:100%" :header-cell-style="{background:'#f8fafc',color:'#334155',fontWeight:600}">
+              <el-table-column label="序号" type="index" width="60" align="center" />
+              <el-table-column label="出差单号" prop="tripNo" min-width="150" align="center" />
+              <el-table-column label="出发日期" prop="departureDate" width="120" align="center" />
+              <el-table-column label="返回日期" prop="actualReturnDate" width="120" align="center">
+                <template #default="scope">{{ scope.row.actualReturnDate || scope.row.expectedReturnDate || '-' }}</template>
+              </el-table-column>
+              <el-table-column label="出差天数" prop="tripDays" width="90" align="center" />
+              <el-table-column label="出差事由" prop="reason" min-width="160" show-overflow-tooltip />
+              <template #empty><el-empty description="当月无出差记录" :image-size="80" /></template>
+            </el-table>
+            <!-- 加班：优先展示加班审批单，也展示打卡记录中的加班 -->
+            <div v-else-if="detailType==='overtime'">
+              <!-- 加班审批单列表 -->
+              <div v-if="(detailData.overtimes || []).length > 0" style="margin-bottom:4px">
+                <div style="font-size:13px;font-weight:600;color:#334155;padding:8px 12px;background:#f8fafc;border-radius:6px 6px 0 0;border:1px solid #e2e8f0;border-bottom:0">加班审批单</div>
+                <el-table :data="detailData.overtimes || []" border stripe size="default" style="width:100%" :header-cell-style="{background:'#f8fafc',color:'#334155',fontWeight:600}">
+                  <el-table-column label="序号" type="index" width="60" align="center" />
+                  <el-table-column label="加班单号" prop="overtimeNo" min-width="150" align="center" />
+                  <el-table-column label="加班日期" prop="overtimeDate" width="120" align="center" />
+                  <el-table-column label="开始时间" prop="startTime" width="160" align="center" />
+                  <el-table-column label="结束时间" prop="endTime" width="160" align="center" />
+                  <el-table-column label="加班(h)" prop="overtimeHours" width="100" align="center">
+                    <template #default="scope"><span style="font-weight:600">{{ scope.row.overtimeHours ?? 0 }}</span></template>
+                  </el-table-column>
+                  <el-table-column label="加班类型" prop="overtimeType" width="100" align="center" />
+                  <el-table-column label="补偿方式" prop="compensationType" width="100" align="center" />
+                  <el-table-column label="加班原因" prop="reason" min-width="160" show-overflow-tooltip />
+                </el-table>
+              </div>
+              <!-- 打卡加班记录 -->
+              <div v-if="pagedRecords.length > 0" style="margin-top:8px">
+                <div style="font-size:13px;font-weight:600;color:#334155;padding:8px 12px;background:#f8fafc;border-radius:6px 6px 0 0;border:1px solid #e2e8f0;border-bottom:0">打卡加班记录</div>
+                <el-table :data="pagedRecords" border stripe size="default" style="width:100%" @sort-change="onDetailSortChange" :header-cell-style="{background:'#f8fafc',color:'#334155',fontWeight:600}">
+                  <el-table-column label="序号" type="index" :index="(i) => (detailPage.pageNum - 1) * detailPage.pageSize + i + 1" width="60" align="center" />
+                  <el-table-column label="日期" prop="recordDate" width="120" align="center" sortable :default-sort="{ prop: 'recordDate', order: 'ascending' }" />
+                  <el-table-column label="班次" prop="shiftName" min-width="120" align="center" />
+                  <el-table-column label="上班打卡" width="140" align="center">
+                    <template #default="scope">
+                      {{ formatClockTime(scope.row.clockIn) }}
+                      <el-tag v-if="String(scope.row.clockInSource) === '1'" type="warning" size="small" effect="plain" style="margin-left:2px">补</el-tag>
+                      <el-tag v-else-if="String(scope.row.clockInSource) === '3'" type="success" size="small" effect="plain" style="margin-left:2px">外出</el-tag>
+                      <el-tag v-else-if="String(scope.row.clockInSource) === '4'" type="primary" size="small" effect="plain" style="margin-left:2px">出差</el-tag>
+                      <el-tag v-else-if="String(scope.row.clockInSource) === '2'" type="info" size="small" effect="plain" style="margin-left:2px">手动</el-tag>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="下班打卡" width="140" align="center">
+                    <template #default="scope">
+                      {{ formatClockTime(scope.row.clockOut) }}
+                      <el-tag v-if="String(scope.row.clockOutSource) === '1'" type="warning" size="small" effect="plain" style="margin-left:2px">补</el-tag>
+                      <el-tag v-else-if="String(scope.row.clockOutSource) === '3'" type="success" size="small" effect="plain" style="margin-left:2px">外出</el-tag>
+                      <el-tag v-else-if="String(scope.row.clockOutSource) === '4'" type="primary" size="small" effect="plain" style="margin-left:2px">出差</el-tag>
+                      <el-tag v-else-if="String(scope.row.clockOutSource) === '2'" type="info" size="small" effect="plain" style="margin-left:2px">手动</el-tag>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="加班(h)" prop="overtimeHours" width="100" align="center">
+                    <template #default="scope"><span style="font-weight:600">{{ scope.row.overtimeHours ?? 0 }}</span></template>
+                  </el-table-column>
+                </el-table>
+              </div>
+              <el-empty v-if="(detailData.overtimes || []).length === 0 && pagedRecords.length === 0" description="当月无加班记录" :image-size="80" />
+            </div>
+            <div class="detail-pagination" style="display:flex;justify-content:flex-end;padding:12px 16px 4px">
+              <el-pagination
+                v-model:current-page="detailPage.pageNum"
+                v-model:page-size="detailPage.pageSize"
+                :page-sizes="[10, 20, 50, 100]"
+                :total="detailTotal"
+                layout="total, sizes, prev, pager, next, jumper"
+                background
+                small
+              />
+            </div>
+          </div>
+        </section>
+      </div>
+      <template #footer>
+        <div style="display:flex;justify-content:space-between;align-items:center;width:100%">
+          <span style="font-size:13px;color:#94a3b8">共 {{ detailTotal }} 条记录</span>
+          <el-button type="primary" icon="Close" @click="detailOpen = false">关 闭</el-button>
+        </div>
+      </template>
+    </el-dialog>
+
 </template>
 
 <script setup name="HrAttendanceMonthly">
-import { listHrAttendanceMonthly, getHrAttendanceMonthly, addHrAttendanceMonthly, updateHrAttendanceMonthly, delHrAttendanceMonthly } from '@/api/hr/hrAttendanceMonthly'
+import { listHrAttendanceMonthly, getHrAttendanceMonthly, addHrAttendanceMonthly, updateHrAttendanceMonthly, delHrAttendanceMonthly, generateMonthly } from '@/api/hr/hrAttendanceMonthly'
+import { MagicStick, OfficeBuilding } from '@element-plus/icons-vue'
+import { getMonthlyDetail } from '@/api/hr/hrAttendanceMonthly'
+import { useDict } from '@/utils/dict'
 import { useColumnResize } from '@/composables/useColumnResize'
 import EmployeePicker from '@/components/EmployeePicker';
 import DeptPicker from '@/components/DeptPicker';
 
 const { proxy } = getCurrentInstance()
-const { hr_sealed_status: sealedStatusOptions } = proxy.useDict('hr_sealed_status')
+const { hr_leave_type: hrLeaveTypeOptions } = proxy.useDict('hr_leave_type')
 
 const hrAttendanceMonthlyList = ref([])
 const open = ref(false)
@@ -293,11 +489,18 @@ const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResiz
 /** 列显隐配置 */
 const defaultColumns = {
   yearMonth: { label: '年月', visible: true },
+  deptName: { label: '部门', visible: true },
   employeeName: { label: '员工姓名', visible: true },
   employeeNo: { label: '工号', visible: true },
-  attendDays: { label: '出勤天数', visible: true },
+  requiredDays: { label: '应出勤天数', visible: true },
+  attendDays: { label: '实际出勤天数', visible: true },
+  absentDays: { label: '旷工天数', visible: true },
+  leaveDays: { label: '请假天数', visible: true },
   lateCount: { label: '迟到次数', visible: true },
-  earlyCount: { label: '早退次数', visible: true }
+  earlyCount: { label: '早退次数', visible: true },
+  outingDays: { label: '外出天数', visible: false },
+  tripDays: { label: '出差天数', visible: false },
+  overtimeHours: { label: '加班小时', visible: false }
 }
 function loadColumnVisibility() {
   try {
@@ -318,6 +521,7 @@ const columns = ref(loadColumnVisibility())
 const activeFilterCount = computed(() => {
   let count = 0
   if (queryParams.value.yearMonth) count++
+  if (queryParams.value.deptId) count++
   if (queryParams.value.employeeName) count++
   if (queryParams.value.employeeNo) count++
   return count
@@ -325,7 +529,7 @@ const activeFilterCount = computed(() => {
 
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, yearMonth: undefined, employeeId: undefined, employeeName: undefined, employeeNo: undefined },
+  queryParams: { pageNum: 1, pageSize: 10, yearMonth: undefined, deptId: undefined, deptName: undefined, employeeId: undefined, employeeName: undefined, employeeNo: undefined },
   rules: {
     yearMonth: [{ required: true, message: '年月不能为空', trigger: 'blur' }],
     employeeId: [{ required: true, message: '请选择人员', trigger: 'change' }]
@@ -365,6 +569,22 @@ function onOrgFieldClick(e) {
   openOrgPicker();
 }
 
+/** 搜索按钮：重置页码后查询 */
+function handleQuery() {
+  queryParams.value.pageNum = 1
+  getList()
+}
+
+/** 重置筛选条件 */
+function resetQuery() {
+  queryParams.value.pageNum = 1
+  queryParams.value.deptId = undefined
+  queryParams.value.deptName = undefined
+  queryParams.value.employeeName = undefined
+  queryParams.value.employeeNo = undefined
+  handleQuery()
+}
+
 function getList() {
   loading.value = true
   listHrAttendanceMonthly(queryParams.value).then(response => {
@@ -375,17 +595,132 @@ function getList() {
   })
 }
 
-function handleQuery() {
-  queryParams.value.pageNum = 1
-  getList()
+/** 部门筛选 */
+const deptFilterRef = ref(null)
+function onDeptFilterConfirm(dept) {
+  queryParams.value.deptId = dept.deptId
+  queryParams.value.deptName = dept.deptName
+  handleQuery()
+}
+function clearDeptFilter() {
+  queryParams.value.deptId = undefined
+  queryParams.value.deptName = undefined
+  handleQuery()
 }
 
-function resetQuery() {
-  queryParams.value.yearMonth = undefined
-  queryParams.value.employeeName = undefined
-  queryParams.value.employeeNo = undefined
-  queryParams.value.params = {}
-  handleQuery()
+/** ===== 考勤下钻明细（按字段类型只显示对应数据） ===== */
+const detailOpen = ref(false)
+const detailType = ref('attend')
+const detailRow = ref({})
+const detailData = ref({})
+const attendanceStatusMap = { '0': '正常', '1': '迟到', '2': '早退', '3': '旷工', '4': '漏卡', '5': '请假', '6': '出差', '7': '加班' }
+function attendanceStatusText(v) { return attendanceStatusMap[String(v)] || String(v ?? '-') }
+/** 打卡列只显示时间部分（日期已在明细表的"日期"列展示） */
+function formatClockTime(v) {
+  if (!v) return '-'
+  const str = String(v).replace('T', ' ')
+  const m = str.match(/\d{2}:\d{2}(:\d{2})?$/)
+  return m ? m[0] : str
+}
+function attendanceTagType(v) {
+  return { '0': 'success', '1': 'warning', '2': 'warning', '3': 'danger', '4': 'danger', '5': 'info', '6': 'info', '7': 'primary' }[String(v)] || 'info'
+}
+/** 各下钻类型对应的标题与日打卡状态过滤 */
+const detailTypeMeta = {
+  attend: { label: '实际出勤明细', status: ['0', '1', '2', '4'] },
+  absent: { label: '旷工明细', status: ['3', '4'] },
+  late: { label: '迟到明细', status: ['1'] },
+  early: { label: '早退明细', status: ['2'] },
+  leave: { label: '请假明细', status: null },
+  outing: { label: '外出明细', status: null },
+  trip: { label: '出差明细', status: null },
+  overtime: { label: '加班明细', status: ['0', '1', '2'] }
+}
+const detailTypeLabel = computed(() => (detailTypeMeta[detailType.value] || {}).label || '')
+/** 弹框分页（前端分页） */
+const detailPage = reactive({ pageNum: 1, pageSize: 10 })
+const pagedRecords = computed(() => {
+  const list = detailRecords.value
+  const start = (detailPage.pageNum - 1) * detailPage.pageSize
+  return list.slice(start, start + detailPage.pageSize)
+})
+const pagedLeaveList = computed(() => {
+  const list = [...(detailData.value.leaves || [])].sort((a, b) => String(a.startTime).localeCompare(String(b.startTime)))
+  if (detailSortOrder.value === 'descending') list.reverse()
+  const start = (detailPage.pageNum - 1) * detailPage.pageSize
+  return list.slice(start, start + detailPage.pageSize)
+})
+const detailTotal = computed(() => {
+  if (detailType.value === 'leave') return (detailData.value.leaves || []).length
+  if (detailType.value === 'outing') return (detailData.value.outings || []).length
+  if (detailType.value === 'trip') return (detailData.value.trips || []).length
+  if (detailType.value === 'overtime') return (detailData.value.overtimes || []).length + detailRecords.value.length
+  return detailRecords.value.length
+})
+const detailTitle = computed(() => '考勤明细 - ' + (detailRow.value.employeeName || '') + '（' + (detailRow.value.yearMonth || '') + '）')
+/** 日打卡明细按状态过滤：出勤/旷工/迟到/早退只看对应记录 */
+/** 明细排序方向：null=默认(升序)，'ascending'/'descending' */
+const detailSortOrder = ref('ascending')
+const detailRecords = computed(() => {
+  // 旷工：后端直接生成旷工日虚拟明细（含全天无打卡/漏卡缺半天备注）
+  if (detailType.value === 'absent') {
+    const list = detailData.value.absentRecords || []
+    const sorted = [...list].sort((a, b) => String(a.recordDate).localeCompare(String(b.recordDate)))
+    return detailSortOrder.value === 'descending' ? sorted.reverse() : sorted
+  }
+  // 加班：打卡明细中加班小时>0 的记录
+  if (detailType.value === 'overtime') {
+    const list = (detailData.value.records || []).filter(r => r.overtimeHours != null && Number(r.overtimeHours) > 0)
+    const sorted = [...list].sort((a, b) => String(a.recordDate).localeCompare(String(b.recordDate)))
+    return detailSortOrder.value === 'descending' ? sorted.reverse() : sorted
+  }
+  const list = detailData.value.records || []
+  const meta = detailTypeMeta[detailType.value]
+  const filtered = (!meta || !meta.status) ? list : list.filter(r => meta.status.includes(String(r.attendanceStatus)))
+  // 日期全集排序（保证跨页顺序稳定），默认升序
+  const sorted = [...filtered].sort((a, b) => String(a.recordDate).localeCompare(String(b.recordDate)))
+  return detailSortOrder.value === 'descending' ? sorted.reverse() : sorted
+})
+function onDetailSortChange({ order }) {
+  detailSortOrder.value = order || 'ascending'
+  detailPage.pageNum = 1
+}
+function showDetail(row, field) {
+  detailRow.value = row
+  detailType.value = field
+  detailPage.pageNum = 1
+  getMonthlyDetail(row.employeeId, row.yearMonth).then(res => {
+    detailData.value = res.data || {}
+    detailOpen.value = true
+  })
+}
+
+/** ===== 月报自动生成 ===== */
+
+// 当前操作的月份：筛选条件里的年月；未选则默认上个月（月底出上月月报的业务惯例）
+const currentMonth = computed(() => {
+  const ym = queryParams.value.yearMonth
+  if (ym && /^\d{4}-\d{2}$/.test(ym)) return ym
+  const d = new Date()
+  d.setDate(1)
+  d.setMonth(d.getMonth() - 1)
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0')
+})
+const currentMonthLabel = computed(() => currentMonth.value ? `（${currentMonth.value}）` : '')
+
+// 生成月报：一键按当前月份（筛选年月，默认上个月）自动汇总
+function handleGenerate() {
+  doGenerate(currentMonth.value)
+}
+
+function doGenerate(ym) {
+  proxy.$modal.confirm('将按「日考勤打卡 + 已审批请假/加班/外出/出差单」自动汇总生成月报，是否继续？').then(() => {
+    generateMonthly(ym).then(res => {
+      const d = res.data || {}
+      proxy.$modal.msgSuccess('生成完成：' + (d.total ?? 0) + ' 人（考勤记录 ' + (d.recordCount ?? 0) + ' 条，请假 ' + (d.leaveCount ?? 0) + ' 张，加班 ' + (d.overtimeCount ?? 0) + ' 张，外出 ' + (d.outingCount ?? 0) + ' 张，出差 ' + (d.tripCount ?? 0) + ' 张）')
+      getList()
+    })
+  }).catch(() => {})
 }
 
 function handleSelectionChange(selection) {
@@ -405,11 +740,14 @@ function reset() {
     employeeName: undefined,
     employeeNo: undefined,
     orgId: undefined,
+    requiredDays: undefined,
     attendDays: undefined,
     lateCount: undefined,
     earlyCount: undefined,
     absentDays: undefined,
     leaveDays: undefined,
+    outingDays: undefined,
+    tripDays: undefined,
     overtimeHours: undefined,
     sealedStatus: undefined,
     sealedBy: undefined,
@@ -629,4 +967,32 @@ getList()
 /* ===== Responsive ===== */
 @media (max-width:1100px) { .hr-monthly-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }
 @media (max-width:720px) { .hr-monthly-page .filter-card .filter-bar { grid-template-columns:1fr; } .hr-monthly-page .toolbar { flex-wrap:wrap; gap:10px; } }
+
+/* ===== 考勤下钻明细弹框增强 ===== */
+/* 右上角关闭按钮放大提亮（append-to-body 弹窗须用全局选择器） */
+.el-dialog.rd-dialog .el-dialog__headerbtn {
+  width: 44px;
+  height: 44px;
+  top: 10px;
+  right: 12px;
+}
+.el-dialog.rd-dialog .el-dialog__headerbtn .el-dialog__close {
+  font-size: 22px;
+  color: #ffffff;
+  font-weight: 700;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+  opacity: 0.95;
+}
+.el-dialog.rd-dialog .el-dialog__headerbtn:hover .el-dialog__close {
+  transform: scale(1.2);
+  opacity: 1;
+}
+/* 弹框内卡片铺满 */
+.el-dialog.rd-dialog .rd-page > .rd-card {
+  width: 100%;
+}
+/* 分页器右对齐区域 */
+.detail-pagination {
+  border-top: 1px solid #f1f5f9;
+}
 </style>

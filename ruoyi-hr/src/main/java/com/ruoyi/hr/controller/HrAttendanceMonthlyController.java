@@ -14,6 +14,7 @@ import com.ruoyi.common.utils.poi.ExcelUtil;
 import com.ruoyi.hr.domain.HrAttendanceMonthly;
 import com.ruoyi.hr.service.IHrAttendanceMonthlyService;
 import jakarta.servlet.http.HttpServletResponse;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/hr/monthly")
@@ -54,6 +55,24 @@ public class HrAttendanceMonthlyController extends BaseController
     public AjaxResult add(@Validated @RequestBody HrAttendanceMonthly hrAttendanceMonthly)
     {
         return toAjax(hrAttendanceMonthlyService.insertHrAttendanceMonthly(hrAttendanceMonthly));
+    }
+
+    /** 下钻：查看某员工当月考勤明细（打卡记录 + 已审批请假/外出/出差单） */
+    @PreAuthorize("@ss.hasPermi('hr:monthly:query')")
+    @GetMapping(value = "/detail/{employeeId}/{yearMonth}")
+    public AjaxResult detail(@PathVariable("employeeId") Long employeeId, @PathVariable("yearMonth") String yearMonth)
+    {
+        Map<String, Object> data = hrAttendanceMonthlyService.detail(employeeId, yearMonth);
+        return AjaxResult.success(data);
+    }
+
+    /** 按年月自动汇总生成月报（日考勤打卡 + 已审批请假单） */
+    @PreAuthorize("@ss.hasPermi('hr:monthly:generate')")
+    @Log(title = "考勤月报生成", businessType = BusinessType.INSERT)
+    @PostMapping(value = "/generate/{yearMonth}")
+    public AjaxResult generate(@PathVariable("yearMonth") String yearMonth)
+    {
+        return AjaxResult.success(hrAttendanceMonthlyService.generate(yearMonth, getUsername()));
     }
 
     @PreAuthorize("@ss.hasPermi('hr:monthly:edit')")

@@ -10,4 +10,7 @@ public interface IHrOvertimeService {
     public int updateHrOvertime(HrOvertime hrOvertime);
     public int deleteHrOvertimeByIds(Long[] overtimeIds);
     public int deleteHrOvertimeById(Long overtimeId);
+
+    /** 加班审批（auditAction: 1=通过, 2=驳回） */
+    public int auditHrOvertime(Long overtimeId, String auditAction, String auditRemark);
 }

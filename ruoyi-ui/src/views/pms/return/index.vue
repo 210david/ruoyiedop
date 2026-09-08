@@ -43,6 +43,22 @@
           </div>
         </div>
         <div class="field" v-show="showAdvanced">
+          <label>收货单号</label>
+          <div class="control">
+            <el-input v-model="queryParams.receiveNo" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Document /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>采购订单号</label>
+          <div class="control">
+            <el-input v-model="queryParams.orderNo" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Document /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
           <label>经办人</label>
           <div class="control">
             <el-input v-model="queryParams.handlerName" placeholder="请输入" clearable @keyup.enter="handleQuery">
@@ -237,7 +253,7 @@
             <div class="rd-card-header" @click="toggleCard('c2')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></span>退货明细</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
             <div class="rd-card-body" v-show="!collapsedCards.c2">
               <el-table :data="form.detailList" border size="small" empty-text="选择采购订单后，已收货的物料明细将自动带出">
-                <el-table-column label="序号" type="index" width="85" align="center" />
+                <el-table-column label="序号" type="index" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
                 <el-table-column label="物料编码" prop="materialCode" min-width="120" show-overflow-tooltip />
                 <el-table-column label="物料名称" prop="materialName" min-width="150" show-overflow-tooltip />
                 <el-table-column label="规格型号" prop="specModel" min-width="120" show-overflow-tooltip />
@@ -343,7 +359,7 @@
           <div class="rd-card-header" @click="toggleCard('v2')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></span>退货明细</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
           <div class="rd-card-body" v-show="!collapsedCards.v2">
             <el-table :data="viewData.detailList" border size="small">
-              <el-table-column label="序号" type="index" width="85" align="center" />
+              <el-table-column label="序号" type="index" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
               <el-table-column label="物料编码" prop="materialCode" min-width="120" />
               <el-table-column label="物料名称" prop="materialName" min-width="150" show-overflow-tooltip />
               <el-table-column label="规格型号" prop="specModel" min-width="120" show-overflow-tooltip />
@@ -433,7 +449,7 @@
           <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></span>退货明细</div></div>
           <div class="rd-card-body" style="display:block">
             <el-table :data="auditData.detailList" border size="small">
-              <el-table-column label="序号" type="index" width="85" align="center" />
+              <el-table-column label="序号" type="index" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
               <el-table-column label="物料编码" prop="materialCode" min-width="120" />
               <el-table-column label="物料名称" prop="materialName" min-width="150" show-overflow-tooltip />
               <el-table-column label="规格型号" prop="specModel" min-width="120" show-overflow-tooltip />
@@ -566,7 +582,7 @@
 <script setup name="PmsReturn">
 import { listReturn, getReturn, addReturn, updateReturn, delReturn, submitReturn, auditReturn, getInProgressReturnOrderIds } from '@/api/pms/return'
 import { getOrder } from '@/api/pms/order'
-import { ArrowRight, ArrowDown, QuestionFilled, CircleClose, Plus, Edit, Delete, Download, RefreshLeft, WarningFilled, User, Calendar, OfficeBuilding, Search, Filter } from '@element-plus/icons-vue'
+import { ArrowRight, ArrowDown, QuestionFilled, CircleClose, Plus, Edit, Delete, Download, RefreshLeft, WarningFilled, User, Calendar, OfficeBuilding, Search, Filter, Document } from '@element-plus/icons-vue'
 import SupplierPicker from '@/components/SupplierPicker/index.vue'
 import OrderPicker from '@/components/OrderPicker/index.vue'
 import UserPicker from '@/components/UserPicker/index.vue'
@@ -642,7 +658,7 @@ const columns = ref(loadColumnVisibility())
 
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, returnNo: undefined, supplierName: undefined, status: undefined, returnType: undefined, handlerName: undefined, params: {} },
+  queryParams: { pageNum: 1, pageSize: 10, returnNo: undefined, receiveNo: undefined, orderNo: undefined, supplierName: undefined, status: undefined, returnType: undefined, handlerName: undefined, params: {} },
   auditForm: { returnId: null, auditOpinion: null },
   rules: { orderId: [{ required: true, message: '请选择采购订单', trigger: 'change' }] },
   auditRules: { auditOpinion: [{ required: true, message: '请输入审批意见', trigger: 'blur' }] }
@@ -653,6 +669,8 @@ const statusTabList = computed(() => pms_return_status.value)
 const activeFilterCount = computed(() => {
   let count = 0
   if (queryParams.value.returnNo) count++
+  if (queryParams.value.receiveNo) count++
+  if (queryParams.value.orderNo) count++
   if (queryParams.value.supplierName) count++
   if (queryParams.value.status) count++
   if (queryParams.value.returnType) count++
@@ -664,7 +682,7 @@ const activeFilterCount = computed(() => {
 function getList() { loading.value = true; listReturn(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false; loadStatusCounts(); applySavedWidths() }) }
 function handleQuery() { showAdvanced.value = false; proxy.addDateRange(queryParams.value, dateRange.value); queryParams.value.pageNum = 1; getList() }
 function resetQuery() {
-  queryParams.value.returnNo = undefined; queryParams.value.supplierName = undefined; queryParams.value.status = undefined; queryParams.value.returnType = undefined; queryParams.value.handlerName = undefined; dateRange.value = []; queryParams.value.params = {}; activeStatusTab.value = 'all'; handleQuery()
+  queryParams.value.returnNo = undefined; queryParams.value.receiveNo = undefined; queryParams.value.orderNo = undefined; queryParams.value.supplierName = undefined; queryParams.value.status = undefined; queryParams.value.returnType = undefined; queryParams.value.handlerName = undefined; dateRange.value = []; queryParams.value.params = {}; activeStatusTab.value = 'all'; handleQuery()
 }
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.returnId); single.value = selection.length !== 1; multiple.value = !selection.length }

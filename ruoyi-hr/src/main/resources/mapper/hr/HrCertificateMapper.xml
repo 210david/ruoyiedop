@@ -7,6 +7,7 @@
         <result property="employeeId" column="employee_id"/>
         <result property="employeeName" column="employee_name"/>
         <result property="employeeNo" column="employee_no"/>
+        <result property="deptName" column="dept_name"/>
         <result property="certType" column="cert_type"/>
         <result property="certName" column="cert_name"/>
         <result property="certNo" column="cert_no"/>
@@ -27,7 +28,7 @@
     </resultMap>
 
     <sql id="selectVo">
-        SELECT cert_id, employee_id, employee_name, employee_no, cert_type, cert_name, cert_no, issue_date, valid_from, valid_to, review_date, issue_org, attachment_url, remind_status, status, del_flag, create_by, create_time, update_by, update_time, remark
+        SELECT cert_id, employee_id, employee_name, employee_no, dept_name, cert_type, cert_name, cert_no, issue_date, valid_from, valid_to, review_date, issue_org, attachment_url, remind_status, status, del_flag, create_by, create_time, update_by, update_time, remark
         FROM biz_hr_certificate
     </sql>
 
@@ -64,9 +65,9 @@
 
     <insert id="insertHrCertificate" parameterType="HrCertificate" useGeneratedKeys="true" keyProperty="certId">
         INSERT INTO biz_hr_certificate (
-            employee_id, employee_name, employee_no, cert_type, cert_name, cert_no, issue_date, valid_from, valid_to, review_date, issue_org, attachment_url, remind_status, status, del_flag, create_by, create_time, remark
+            employee_id, employee_name, employee_no, dept_name, cert_type, cert_name, cert_no, issue_date, valid_from, valid_to, review_date, issue_org, attachment_url, remind_status, status, del_flag, create_by, create_time, remark
         ) VALUES (
-            #{employeeId}, #{employeeName}, #{employeeNo}, #{certType}, #{certName}, #{certNo}, #{issueDate}, #{validFrom}, #{validTo}, #{reviewDate}, #{issueOrg}, #{attachmentUrl}, #{remindStatus}, #{status}, #{delFlag}, #{createBy}, sysdate(), #{remark}
+            #{employeeId}, #{employeeName}, #{employeeNo}, #{deptName}, #{certType}, #{certName}, #{certNo}, #{issueDate}, #{validFrom}, #{validTo}, #{reviewDate}, #{issueOrg}, #{attachmentUrl}, #{remindStatus}, #{status}, #{delFlag}, #{createBy}, sysdate(), #{remark}
         )
     </insert>
 
@@ -76,6 +77,7 @@
             <if test="employeeId != null">employee_id = #{employeeId},</if>
             <if test="employeeName != null and employeeName != ''">employee_name = #{employeeName},</if>
             <if test="employeeNo != null and employeeNo != ''">employee_no = #{employeeNo},</if>
+            <if test="deptName != null and deptName != ''">dept_name = #{deptName},</if>
             <if test="certType != null and certType != ''">cert_type = #{certType},</if>
             <if test="certName != null and certName != ''">cert_name = #{certName},</if>
             <if test="certNo != null and certNo != ''">cert_no = #{certNo},</if>

@@ -104,7 +104,7 @@
                      border
                      class="app-table"
                   >
-                     <el-table-column type="index" label="序号" width="85" align="center" />
+                     <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
                      <el-table-column prop="deptName" label="部门名称" :width="colWidth('deptName', 260)" v-if="columns.deptName.visible"></el-table-column>
                      <el-table-column prop="orderNum" label="排序" :width="colWidth('orderNum', 200)" v-if="columns.orderNum.visible">
                         <template #default="scope">

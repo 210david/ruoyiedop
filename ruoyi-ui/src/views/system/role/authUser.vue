@@ -57,9 +57,9 @@
          <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
       </el-row>
 
-      <el-table v-loading="loading" :data="userList" @selection-change="handleSelectionChange">
+      <el-table ref="tableRef" v-loading="loading" :data="userList" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
 <el-table-column type="selection" width="55" align="center" />
-<el-table-column type="index" label="序号" width="85" align="center" />
+<el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" resizable align="center" />
 <el-table-column label="用户名称" prop="userName" :show-overflow-tooltip="true" />
          <el-table-column label="用户昵称" prop="nickName" :show-overflow-tooltip="true" />
          <el-table-column label="邮箱" prop="email" :show-overflow-tooltip="true" />
@@ -97,9 +97,11 @@
 <script setup name="AuthUser">
 import selectUser from "./selectUser"
 import { allocatedUserList, authUserCancel, authUserCancelAll } from "@/api/system/role"
+import { useColumnResize } from '@/composables/useColumnResize'
 
 const route = useRoute()
 const { proxy } = getCurrentInstance()
+const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('sys_role_authUser_index')
 const { sys_normal_disable } = useDict("sys_normal_disable")
 
 const userList = ref([])

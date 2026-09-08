@@ -78,7 +78,7 @@
           <div class="table-wrap">
           <el-table ref="tableRef" v-loading="loading" :data="userList" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" border class="app-table">
 <el-table-column type="selection" width="50" align="center" />
-<el-table-column type="index" label="序号" width="85" align="center" />
+<el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
 <el-table-column label="用户编号" align="center" key="userId" prop="userId" :width="colWidth('userId', 120)" v-if="columns.userId.visible" />
           <el-table-column label="用户名称" align="center" key="userName" prop="userName" v-if="columns.userName.visible" :show-overflow-tooltip="true" :width="colWidth('userName', 140)">
             <template #default="scope">
@@ -269,7 +269,7 @@
     <!-- 用户详情抽屉 -->
     <user-view-drawer ref="userViewRef" />
     <!-- 用户导入对话框 -->
-    <excel-import-dialog ref="importUserRef" title="用户导入" action="/system/user/importData" template-action="/system/user/importTemplate" template-file-name="user_template" update-support-label="是否更新已经存在的用户数据" @success="getList" />
+    <excel-import-dialog ref="importUserRef" title="用户导入" action="/system/user/importData" template-action="/system/user/importTemplate" template-file-name="user_template" update-support-label="是否更新已经存在的用户数据" :tips="importTips" @success="getList" />
   </div>
 </template>
 
@@ -477,6 +477,12 @@ function handleViewData(row) {
 }
 
 /** 导入按钮操作 */
+const importTips = [
+  '请先下载导入模板，按模板格式填写数据。',
+  '登录名称、用户名称、部门编号为必填字段。',
+  '如勾选更新选项，已存在的用户账号将被覆盖更新。',
+  '导入后用户初始密码为系统配置的默认密码。'
+]
 function handleImport() {
   proxy.$refs["importUserRef"].open()
 }

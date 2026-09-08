@@ -1,6 +1,7 @@
 package com.ruoyi.mk.service;
 
 import java.util.List;
+import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.mk.domain.MkLead;
 import com.ruoyi.mk.domain.MkLeadLog;
 
@@ -35,7 +36,7 @@ public interface IMkLeadService
     /** 释放线索到公海 */
     public int releaseToPool(Long leadId);
     /** 导入线索 */
-    public String importLead(List<MkLead> leadList, Boolean isUpdateSupport, String operName);
+    public AjaxResult importLead(List<MkLead> leadList, Boolean isUpdateSupport, String operName);
 
     // ====== P2: 无效线索 + 跟进时间 ======
     /** 标记线索无效 */

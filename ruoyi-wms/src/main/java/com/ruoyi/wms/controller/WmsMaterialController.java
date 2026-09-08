@@ -50,6 +50,11 @@ public class WmsMaterialController extends BaseController
     {
         ExcelUtil<WmsMaterial> util = new ExcelUtil<>(WmsMaterial.class);
         List<WmsMaterial> list = util.importExcel(file.getInputStream());
+        if (list == null || list.isEmpty() || list.stream().allMatch(java.util.Objects::isNull))
+        {
+            return AjaxResult.error("导入失败！请使用系统提供的标准模板填写数据，不要使用非模板格式的文件。");
+        }
+        list.removeIf(java.util.Objects::isNull);
         String operName = getUsername();
         return wmsMaterialService.importMaterial(list, updateSupport, updateKey, operName);
     }

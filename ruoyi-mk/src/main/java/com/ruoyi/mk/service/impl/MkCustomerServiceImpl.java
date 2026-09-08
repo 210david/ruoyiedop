@@ -1,6 +1,9 @@
 package com.ruoyi.mk.service.impl;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -170,8 +173,8 @@ public class MkCustomerServiceImpl implements IMkCustomerService
         }
         int successNum = 0;
         int failureNum = 0;
-        StringBuilder successMsg = new StringBuilder();
-        StringBuilder failureMsg = new StringBuilder();
+        List<Map<String, Object>> successList = new ArrayList<>();
+        List<Map<String, Object>> failureList = new ArrayList<>();
         for (MkCustomer row : customerList)
         {
             try
@@ -203,12 +206,12 @@ public class MkCustomerServiceImpl implements IMkCustomerService
                         row.setUpdateBy(operName);
                         mkCustomerMapper.updateCustomer(row);
                         successNum++;
-                        successMsg.append("<br/>" + successNum + "、企业名称 " + row.getCustomerName() + "（" + getMatchFieldLabel(updateKey) + ": " + matchValue + "）更新成功");
+                        successList.add(buildSuccessItem(row, "更新成功"));
                     }
                     else
                     {
                         failureNum++;
-                        failureMsg.append("<br/>" + failureNum + "、企业名称 " + row.getCustomerName() + " 已存在（" + getMatchFieldLabel(updateKey) + ": " + matchValue + "）");
+                        failureList.add(buildFailureItem(row, "客户已存在（" + getMatchFieldLabel(updateKey) + ": " + matchValue + "），未勾选更新选项"));
                     }
                 }
                 else
@@ -227,36 +230,64 @@ public class MkCustomerServiceImpl implements IMkCustomerService
                     row.setCreateBy(operName);
                     mkCustomerMapper.insertCustomer(row);
                     successNum++;
-                    successMsg.append("<br/>" + successNum + "、企业名称 " + row.getCustomerName() + " 导入成功");
+                    successList.add(buildSuccessItem(row, "导入成功"));
                 }
             }
             catch (Exception e)
             {
                 failureNum++;
-                failureMsg.append("<br/>" + failureNum + "、企业名称 " + (StringUtils.isNotEmpty(row.getCustomerName()) ? row.getCustomerName() : "(名称为空)") + " 导入失败：" + e.getMessage());
+                String errMsg = e.getMessage();
+                if (errMsg != null && errMsg.length() > 200) { errMsg = errMsg.substring(0, 200) + "..."; }
+                failureList.add(buildFailureItem(row, errMsg != null ? errMsg : "未知错误"));
             }
         }
 
-        // 构建返回结果（不抛异常，返回成功和失败的明细）
-        StringBuilder resultMsg = new StringBuilder();
-        if (successNum > 0)
-        {
-            resultMsg.append(successMsg.toString());
-        }
-        if (failureNum > 0)
-        {
-            resultMsg.append(failureMsg.toString());
-        }
-
-        AjaxResult ajax = AjaxResult.success(resultMsg.toString());
+        // 构建返回结果（结构化明细）
+        AjaxResult ajax = AjaxResult.success();
         ajax.put("successNum", successNum);
         ajax.put("failureNum", failureNum);
+        ajax.put("successList", successList);
+        ajax.put("failureList", failureList);
         if (failureNum > 0 && successNum == 0)
         {
-            // 全部失败时标记 code
             ajax.put("code", 500);
+            ajax.put("msg", "导入失败，共 " + failureNum + " 条数据异常");
+        }
+        else if (failureNum > 0)
+        {
+            ajax.put("msg", "部分导入成功：成功 " + successNum + " 条，失败 " + failureNum + " 条");
+        }
+        else
+        {
+            ajax.put("msg", "导入成功，共 " + successNum + " 条");
         }
         return ajax;
+    }
+
+    /**
+     * 构建成功明细项
+     */
+    private Map<String, Object> buildSuccessItem(MkCustomer row, String result)
+    {
+        Map<String, Object> item = new LinkedHashMap<>();
+        item.put("customerNo", row.getCustomerNo() != null ? row.getCustomerNo() : "");
+        item.put("customerName", row.getCustomerName() != null ? row.getCustomerName() : "");
+        item.put("customerLevel", row.getCustomerLevel() != null ? row.getCustomerLevel() : "");
+        item.put("result", result);
+        return item;
+    }
+
+    /**
+     * 构建失败明细项
+     */
+    private Map<String, Object> buildFailureItem(MkCustomer row, String errorReason)
+    {
+        Map<String, Object> item = new LinkedHashMap<>();
+        item.put("customerNo", row.getCustomerNo() != null ? row.getCustomerNo() : "");
+        item.put("customerName", row.getCustomerName() != null ? row.getCustomerName() : "");
+        item.put("customerLevel", row.getCustomerLevel() != null ? row.getCustomerLevel() : "");
+        item.put("errorReason", errorReason);
+        return item;
     }
 
     /**

@@ -96,9 +96,9 @@
          <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
       </el-row>
 
-      <el-table v-loading="loading" :data="jobLogList" @selection-change="handleSelectionChange">
+      <el-table ref="tableRef" v-loading="loading" :data="jobLogList" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
 <el-table-column type="selection" width="55" align="center" />
-<el-table-column type="index" label="序号" width="85" align="center" />
+<el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" resizable align="center" />
 <el-table-column label="日志编号" width="80" align="center" prop="jobLogId" />
          <el-table-column label="任务名称" align="center" prop="jobName" :show-overflow-tooltip="true" />
          <el-table-column label="任务组名" align="center" prop="jobGroup" :show-overflow-tooltip="true">
@@ -142,11 +142,13 @@
 import JobDetail from './detail'
 import { getJob } from "@/api/monitor/job"
 import { listJobLog, delJobLog, cleanJobLog } from "@/api/monitor/jobLog"
+import { useColumnResize } from '@/composables/useColumnResize'
 
 const { proxy } = getCurrentInstance()
 const { sys_common_status, sys_job_group } = useDict("sys_common_status", "sys_job_group")
 
 const jobLogList = ref([])
+const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('monitor_jobLog_index')
 const open = ref(false)
 const loading = ref(true)
 const showSearch = ref(true)

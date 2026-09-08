@@ -10,4 +10,8 @@ public interface HrShiftMapper {
     public int updateHrShift(HrShift hrShift);
     public int deleteHrShiftByIds(Long[] shiftIds);
     public int deleteHrShiftById(Long shiftId);
+    /** 查询默认班次 */
+    public HrShift selectDefaultShift();
+    /** 清除其他班次的默认标记 */
+    public int clearDefaultFlag(Long shiftId);
 }

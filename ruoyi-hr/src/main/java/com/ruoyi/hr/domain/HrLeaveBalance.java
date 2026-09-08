@@ -14,12 +14,16 @@ public class HrLeaveBalance extends BaseEntity
 
     private Long balanceId;
     @NotNull(message = "员工ID不能为空")
-    @Excel(name = "员工ID")
     private Long employeeId;
+    @Excel(name = "工号")
+    private String employeeNo;
     @Excel(name = "员工姓名")
     private String employeeName;
+    @Excel(name = "部门")
+    private String deptName;
+    private Long deptId;
     @NotBlank(message = "假别不能为空")
-    @Excel(name = "假别")
+    @Excel(name = "假期类别", readConverterExp = "1=事假,2=病假,3=年假,4=婚假,5=产假,6=陪产假,7=丧假,8=工伤假,9=调休")
     private String leaveType;
     @NotNull(message = "年度不能为空")
     @Excel(name = "年度")
@@ -33,17 +37,21 @@ public class HrLeaveBalance extends BaseEntity
     @Excel(name = "冻结天数")
     private BigDecimal frozenDays;
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "过期日期")
     private Date expireDate;
-    @Excel(name = "删除标志")
     private String delFlag;
 
     public Long getBalanceId() { return balanceId; }
     public void setBalanceId(Long balanceId) { this.balanceId = balanceId; }
     public Long getEmployeeId() { return employeeId; }
     public void setEmployeeId(Long employeeId) { this.employeeId = employeeId; }
+    public String getEmployeeNo() { return employeeNo; }
+    public void setEmployeeNo(String employeeNo) { this.employeeNo = employeeNo; }
     public String getEmployeeName() { return employeeName; }
     public void setEmployeeName(String employeeName) { this.employeeName = employeeName; }
+    public String getDeptName() { return deptName; }
+    public void setDeptName(String deptName) { this.deptName = deptName; }
+    public Long getDeptId() { return deptId; }
+    public void setDeptId(Long deptId) { this.deptId = deptId; }
     public String getLeaveType() { return leaveType; }
     public void setLeaveType(String leaveType) { this.leaveType = leaveType; }
     public Integer getYear() { return year; }

@@ -58,7 +58,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" v-loading="loading" :data="postList" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" border class="app-table">
           <el-table-column type="selection" width="55" align="center" />
-          <el-table-column type="index" label="序号" width="85" align="center" />
+          <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
           <el-table-column label="岗位编号" prop="postId" key="postId" :width="colWidth('postId', 120)" resizable align="center" v-if="columns.postId.visible" />
           <el-table-column label="岗位编码" prop="postCode" key="postCode" :width="colWidth('postCode', 120)" resizable align="center" v-if="columns.postCode.visible" />
           <el-table-column label="岗位名称" prop="postName" key="postName" :width="colWidth('postName', 120)" resizable align="center" v-if="columns.postName.visible" />

@@ -66,6 +66,11 @@ public class MkCustomerController extends BaseController
     {
         ExcelUtil<MkCustomer> util = new ExcelUtil<>(MkCustomer.class);
         List<MkCustomer> customerList = util.importExcel(file.getInputStream());
+        if (customerList == null || customerList.isEmpty() || customerList.stream().allMatch(java.util.Objects::isNull))
+        {
+            return AjaxResult.error("导入失败！请使用系统提供的标准模板填写数据，不要使用非模板格式的文件。");
+        }
+        customerList.removeIf(java.util.Objects::isNull);
         String operName = SecurityUtils.getUsername();
         return mkCustomerService.importCustomer(customerList, updateSupport, updateKey, operName);
     }

@@ -10,11 +10,17 @@
         <result property="employeeNo" column="employee_no"/>
         <result property="orgId" column="org_id"/>
         <result property="orgName" column="org_name"/>
+        <result property="deptId" column="dept_id"/>
+        <result property="deptName" column="dept_name"/>
         <result property="attendDays" column="attend_days"/>
         <result property="lateCount" column="late_count"/>
         <result property="earlyCount" column="early_count"/>
         <result property="absentDays" column="absent_days"/>
         <result property="leaveDays" column="leave_days"/>
+        <result property="outingDays" column="outing_days"/>
+        <result property="tripDays" column="trip_days"/>
+        <result property="requiredDays" column="required_days"/>
+        <result property="actualDays" column="actual_days"/>
         <result property="overtimeHours" column="overtime_hours"/>
         <result property="nightShiftCount" column="night_shift_count"/>
         <result property="highTempDays" column="high_temp_days"/>
@@ -30,7 +36,8 @@
     </resultMap>
 
     <sql id="selectVo">
-        SELECT t.monthly_id, t.year_month, t.employee_id, t.employee_name, t.employee_no, t.org_id, t.attend_days, t.late_count, t.early_count, t.absent_days, t.leave_days, t.overtime_hours, t.night_shift_count, t.high_temp_days, t.sealed_status, t.sealed_by, t.sealed_time, t.del_flag, t.create_by, t.create_time, t.update_by, t.update_time, t.remark,
+        SELECT t.monthly_id, t.`year_month`, t.employee_id, t.employee_name, t.employee_no, t.org_id, t.attend_days, t.late_count, t.early_count, t.absent_days, t.leave_days, t.outing_days, t.trip_days, t.required_days, t.actual_days, t.overtime_hours, t.night_shift_count, t.high_temp_days, t.sealed_status, t.sealed_by, t.sealed_time, t.del_flag, t.create_by, t.create_time, t.update_by, t.update_time, t.remark,
+        t.dept_id, t.dept_name,
         d.dept_name AS org_name
         FROM biz_hr_attendance_monthly t
         LEFT JOIN sys_dept d ON t.org_id = d.dept_id
@@ -39,12 +46,13 @@
     <select id="selectHrAttendanceMonthlyList" parameterType="HrAttendanceMonthly" resultMap="HrAttendanceMonthlyResult">
         <include refid="selectVo"/>
         <where>
-            t.(del_flag IS NULL OR del_flag = '0')
-            <if test="yearMonth != null and yearMonth != ''"> AND t.year_month LIKE CONCAT('%', #{yearMonth}, '%')</if>
+            (t.del_flag IS NULL OR t.del_flag = '0')
+            <if test="yearMonth != null and yearMonth != ''"> AND t.`year_month` LIKE CONCAT('%', #{yearMonth}, '%')</if>
             <if test="employeeId != null"> AND t.employee_id = #{employeeId}</if>
             <if test="employeeName != null and employeeName != ''"> AND t.employee_name LIKE CONCAT('%', #{employeeName}, '%')</if>
             <if test="employeeNo != null and employeeNo != ''"> AND t.employee_no LIKE CONCAT('%', #{employeeNo}, '%')</if>
             <if test="orgId != null"> AND t.org_id = #{orgId}</if>
+            <if test="deptId != null"> AND t.dept_id = #{deptId}</if>
             <if test="attendDays != null"> AND t.attend_days = #{attendDays}</if>
             <if test="lateCount != null"> AND t.late_count = #{lateCount}</if>
             <if test="earlyCount != null"> AND t.early_count = #{earlyCount}</if>
@@ -67,25 +75,31 @@
 
     <insert id="insertHrAttendanceMonthly" parameterType="HrAttendanceMonthly" useGeneratedKeys="true" keyProperty="monthlyId">
         INSERT INTO biz_hr_attendance_monthly (
-            year_month, employee_id, employee_name, employee_no, org_id, attend_days, late_count, early_count, absent_days, leave_days, overtime_hours, night_shift_count, high_temp_days, sealed_status, sealed_by, sealed_time, del_flag, create_by, create_time, remark
+            `year_month`, employee_id, employee_name, employee_no, org_id, dept_id, dept_name, attend_days, late_count, early_count, absent_days, leave_days, outing_days, trip_days, required_days, actual_days, overtime_hours, night_shift_count, high_temp_days, sealed_status, sealed_by, sealed_time, del_flag, create_by, create_time, remark
         ) VALUES (
-            #{yearMonth}, #{employeeId}, #{employeeName}, #{employeeNo}, #{orgId}, #{attendDays}, #{lateCount}, #{earlyCount}, #{absentDays}, #{leaveDays}, #{overtimeHours}, #{nightShiftCount}, #{highTempDays}, #{sealedStatus}, #{sealedBy}, #{sealedTime}, #{delFlag}, #{createBy}, sysdate(), #{remark}
+            #{yearMonth}, #{employeeId}, #{employeeName}, #{employeeNo}, #{orgId}, #{deptId}, #{deptName}, #{attendDays}, #{lateCount}, #{earlyCount}, #{absentDays}, #{leaveDays}, #{outingDays}, #{tripDays}, #{requiredDays}, #{actualDays}, #{overtimeHours}, #{nightShiftCount}, #{highTempDays}, #{sealedStatus}, #{sealedBy}, #{sealedTime}, #{delFlag}, #{createBy}, sysdate(), #{remark}
         )
     </insert>
 
     <update id="updateHrAttendanceMonthly" parameterType="HrAttendanceMonthly">
         UPDATE biz_hr_attendance_monthly
         <set>
-            <if test="yearMonth != null and yearMonth != ''">year_month = #{yearMonth},</if>
+            <if test="yearMonth != null and yearMonth != ''">`year_month` = #{yearMonth},</if>
             <if test="employeeId != null">employee_id = #{employeeId},</if>
             <if test="employeeName != null and employeeName != ''">employee_name = #{employeeName},</if>
             <if test="employeeNo != null and employeeNo != ''">employee_no = #{employeeNo},</if>
             <if test="orgId != null">org_id = #{orgId},</if>
+            <if test="deptId != null">dept_id = #{deptId},</if>
+            <if test="deptName != null and deptName != ''">dept_name = #{deptName},</if>
             <if test="attendDays != null">attend_days = #{attendDays},</if>
             <if test="lateCount != null">late_count = #{lateCount},</if>
             <if test="earlyCount != null">early_count = #{earlyCount},</if>
             <if test="absentDays != null">absent_days = #{absentDays},</if>
             <if test="leaveDays != null">leave_days = #{leaveDays},</if>
+            <if test="outingDays != null">outing_days = #{outingDays},</if>
+            <if test="tripDays != null">trip_days = #{tripDays},</if>
+            <if test="requiredDays != null">required_days = #{requiredDays},</if>
+            <if test="actualDays != null">actual_days = #{actualDays},</if>
             <if test="overtimeHours != null">overtime_hours = #{overtimeHours},</if>
             <if test="nightShiftCount != null">night_shift_count = #{nightShiftCount},</if>
             <if test="highTempDays != null">high_temp_days = #{highTempDays},</if>

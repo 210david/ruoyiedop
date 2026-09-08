@@ -143,7 +143,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
-          <el-table-column type="index" label="序号" width="85" align="center" />
+          <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
           <el-table-column label="客户编号" prop="customerNo" key="customerNo" :width="colWidth('customerNo', 150)" resizable sortable="custom" v-if="columns.customerNo.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.customerNo }}</span></template>
           </el-table-column>
@@ -672,6 +672,7 @@
       template-file-name="customer_template"
       update-support-label="是否更新已经存在的客户数据"
       :tips="importTips"
+      :column-labels="importColumnLabels"
       :update-key-options="updateKeyOptions"
       default-update-key="customerName"
       @success="getList"
@@ -805,6 +806,13 @@ const importTips = [
   '如勾选「更新已存在数据」，需选择匹配字段：按企业名称、统一信用代码或客户编号匹配',
   '导入结果将显示每条数据的处理情况，失败数据可修正后重新导入'
 ]
+const importColumnLabels = {
+  customerNo: '客户编号',
+  customerName: '企业名称',
+  customerLevel: '客户等级',
+  result: '结果',
+  errorReason: '失败原因'
+}
 const updateKeyOptions = [
   { value: 'customerName', label: '企业名称' },
   { value: 'creditCode', label: '统一社会信用代码' },

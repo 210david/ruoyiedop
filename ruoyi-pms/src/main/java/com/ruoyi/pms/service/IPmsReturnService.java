@@ -28,4 +28,10 @@ public interface IPmsReturnService
      * 用于前端过滤，避免同一订单同时存在多个进行中的退货单
      */
     public List<Long> selectInProgressReturnOrderIds();
+
+    /**
+     * 统计同一收货单下进行中的退货单数量（草稿/待审批/已审批/已驳回）
+     * 用于收货单维度校验：一张收货单同一时间只允许一个进行中的退货单
+     */
+    public int countInProgressReturnByReceiveId(Long receiveId);
 }

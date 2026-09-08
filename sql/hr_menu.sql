@@ -97,6 +97,8 @@ INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, is_frame
 SET @p = LAST_INSERT_ID();
 INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark) VALUES ('考勤查询', @p, 1, '#', '', 1, 0, 'F', '0', '0', 'hr:attendance:query', '#', 'admin', sysdate(), '');
 INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark) VALUES ('考勤修改', @p, 2, '#', '', 1, 0, 'F', '0', '0', 'hr:attendance:edit', '#', 'admin', sysdate(), '');
+INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark) VALUES ('考勤导入', @p, 3, '#', '', 1, 0, 'F', '0', '0', 'hr:attendance:import', '#', 'admin', sysdate(), '');
+INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark) VALUES ('考勤导出', @p, 4, '#', '', 1, 0, 'F', '0', '0', 'hr:attendance:export', '#', 'admin', sysdate(), '');
 
 -- 请假管理
 INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark) VALUES ('请假管理', @hrMenuId, 12, 'leaveRequest', 'hr/leaveRequest/index', 1, 0, 'C', '0', '0', 'hr:leaveRequest:list', 'edit', 'admin', sysdate(), '');

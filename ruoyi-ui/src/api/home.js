@@ -7,3 +7,20 @@ export function getDashboard() {
     method: 'get'
   })
 }
+
+// 获取当前用户门户首页模块显示配置
+export function getHomeLayout() {
+  return request({
+    url: '/home/layout',
+    method: 'get'
+  })
+}
+
+// 保存当前用户门户首页模块显示配置
+export function saveHomeLayout(moduleCodes) {
+  return request({
+    url: '/home/layout',
+    method: 'put',
+    data: { moduleCodes }
+  })
+}

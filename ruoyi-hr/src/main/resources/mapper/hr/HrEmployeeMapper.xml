@@ -70,7 +70,7 @@
     <select id="selectHrEmployeeList" parameterType="HrEmployee" resultMap="HrEmployeeResult">
         <include refid="selectVo"/>
         <where>
-            e.(del_flag IS NULL OR del_flag = '0')
+            (e.del_flag IS NULL OR e.del_flag = '0')
             <if test="params != null and params.activeOnly != null and &quot;true&quot;.equals(params.activeOnly)"> AND e.employee_status IN ('0', '1') AND (blacklist_flag IS NULL OR e.blacklist_flag = '0')</if>
             <if test="employeeNo != null and employeeNo != ''"> AND e.employee_no LIKE CONCAT('%', #{employeeNo}, '%')</if>
             <if test="employeeName != null and employeeName != ''"> AND e.employee_name LIKE CONCAT('%', #{employeeName}, '%')</if>
@@ -126,7 +126,7 @@
                u.login_ip AS user_login_ip, u.login_date AS user_login_date, u.create_time AS user_create_time,
                (SELECT GROUP_CONCAT(r.role_name SEPARATOR '、') FROM sys_user_role ur
                  JOIN sys_role r ON ur.role_id = r.role_id
-                 WHERE ur.user_id = e.user_id AND r.(del_flag IS NULL OR del_flag = '0')) AS user_roles
+                 WHERE ur.user_id = e.user_id AND (r.del_flag IS NULL OR r.del_flag = '0')) AS user_roles
         FROM biz_hr_employee e
         LEFT JOIN sys_dept d ON e.org_id = d.dept_id
         LEFT JOIN sys_user u ON e.user_id = u.user_id
@@ -134,11 +134,11 @@
     </select>
 
     <select id="selectHrEmployeeByEmployeeNo" parameterType="String" resultMap="HrEmployeeResult">
-        <include refid="selectVo"/> WHERE employee_no = #{employeeNo} AND (del_flag IS NULL OR del_flag = '0')
+        <include refid="selectVo"/> WHERE e.employee_no = #{employeeNo} AND (e.del_flag IS NULL OR e.del_flag = '0')
     </select>
 
     <select id="selectHrEmployeeByIdCard" parameterType="String" resultMap="HrEmployeeResult">
-        <include refid="selectVo"/> WHERE id_card = #{idCard} AND (del_flag IS NULL OR del_flag = '0')
+        <include refid="selectVo"/> WHERE e.id_card = #{idCard} AND (e.del_flag IS NULL OR e.del_flag = '0')
     </select>
 
     <insert id="insertHrEmployee" parameterType="HrEmployee" useGeneratedKeys="true" keyProperty="employeeId">

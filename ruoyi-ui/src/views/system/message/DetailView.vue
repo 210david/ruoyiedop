@@ -236,9 +236,13 @@ function handleRedirect() {
       if (k) query[decodeURIComponent(k)] = v ? decodeURIComponent(v) : ''
     })
   }
-  // 检查路由是否存在
+  // 检查路由是否存在：catch-all 404 路由（/:pathMatch(.*)*）解析后 matched 数组非空，
+  // 但属于通配兜底，需通过比对解析出的完整路径与输入路径是否一致来识别
   const resolved = router.resolve(path)
-  if (resolved.matched.length === 0 || resolved.matched.some(r => r.name === 'NotFound')) {
+  const normalized = path.endsWith('/') && path !== '/' ? path.replace(/\/+$/, '') : path
+  const matchedPath = resolved.matched.length > 0 ? resolved.matched[resolved.matched.length - 1].path : ''
+  const isCatchAll = matchedPath.includes(':pathMatch')
+  if (resolved.matched.length === 0 || isCatchAll) {
     ElMessage.warning('处理页面暂未配置，请联系管理员')
     return
   }

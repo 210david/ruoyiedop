@@ -19,6 +19,7 @@ SELECT * FROM (
   UNION ALL SELECT 'hr_salary_plan', 'hr', '定薪单号', 'DX', 'yyyyMMdd', '1', 4, 1, 1, 0, '-', '0', 'admin', NOW(), '人力资源-薪资方案'
   UNION ALL SELECT 'hr_salary_item', 'hr', '薪资项目编码', 'XM', '', '0', 4, 1, 1, 0, '-', '0', 'admin', NOW(), '人力资源-薪资项目'
   UNION ALL SELECT 'hr_shift', 'hr', '班次编码', 'BC', '', '0', 4, 1, 1, 0, '-', '0', 'admin', NOW(), '人力资源-班次管理'
+  UNION ALL SELECT 'hr_schedule_template', 'hr', '排班模板编码', 'RT', '', '0', 4, 1, 1, 0, '-', '0', 'admin', NOW(), '人力资源-排班模板'
   UNION ALL SELECT 'hr_position', 'hr', '岗位编码', 'GW', '', '0', 4, 1, 1, 0, '-', '0', 'admin', NOW(), '人力资源-岗位管理'
   UNION ALL SELECT 'hr_organization', 'hr', '组织编码', 'ORGC', '', '0', 4, 1, 1, 0, '-', '0', 'admin', NOW(), '人力资源-组织管理'
   UNION ALL SELECT 'hr_employee', 'hr', '员工工号', 'EMP', '', '0', 4, 1, 1, 46, '-', '0', 'admin', NOW(), '人力资源-员工管理（当前序号接续已有 EMP0001~EMP0046）'

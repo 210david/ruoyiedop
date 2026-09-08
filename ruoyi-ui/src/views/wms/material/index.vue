@@ -119,7 +119,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" v-loading="loading" :data="materialList" border @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
-          <el-table-column type="index" label="序号" width="85" align="center" />
+          <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" resizable align="center" />
           <el-table-column label="物料编码" prop="materialCode" key="materialCode" :width="colWidth('materialCode', 180)" resizable sortable="custom" v-if="columns.materialCode.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.materialCode }}</span></template>
           </el-table-column>
@@ -183,6 +183,7 @@
       template-file-name="material_template"
       update-support-label="是否更新已经存在的物料数据"
       :tips="importTips"
+      :column-labels="importColumnLabels"
       :update-key-options="updateKeyOptions"
       default-update-key="materialName"
       @success="getList"
@@ -490,6 +491,15 @@ const importTips = [
   '如勾选「更新已存在数据」，需选择匹配字段：按名称或编码匹配',
   '导入结果将显示每条数据的处理情况，失败数据可修正后重新导入'
 ]
+const importColumnLabels = {
+  materialCode: '物料编码',
+  materialName: '物料名称',
+  specModel: '规格型号',
+  unit: '计量单位',
+  materialType: '物料类型',
+  result: '结果',
+  errorReason: '失败原因'
+}
 const updateKeyOptions = [
   { value: 'materialName', label: '物料名称' },
   { value: 'materialCode', label: '物料编码' }

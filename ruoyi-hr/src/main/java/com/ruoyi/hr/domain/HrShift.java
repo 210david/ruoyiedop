@@ -40,6 +40,8 @@ public class HrShift extends BaseEntity
     private Integer orderNum;
     @Excel(name = "状态")
     private String status;
+    @Excel(name = "默认班次", readConverterExp = "0=否,1=是")
+    private Integer isDefault;
     @Excel(name = "删除标志")
     private String delFlag;
 
@@ -71,6 +73,8 @@ public class HrShift extends BaseEntity
     public void setOrderNum(Integer orderNum) { this.orderNum = orderNum; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+    public Integer getIsDefault() { return isDefault; }
+    public void setIsDefault(Integer isDefault) { this.isDefault = isDefault; }
     public String getDelFlag() { return delFlag; }
     public void setDelFlag(String delFlag) { this.delFlag = delFlag; }
 }

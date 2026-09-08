@@ -10,4 +10,6 @@ public interface IHrSpecialDeductionService {
     public int updateHrSpecialDeduction(HrSpecialDeduction hrSpecialDeduction);
     public int deleteHrSpecialDeductionByIds(Long[] sdIds);
     public int deleteHrSpecialDeductionById(Long sdId);
+    /** 批量导入：按工号匹配员工，同员工+项目+生效日期更新或新增 */
+    public com.ruoyi.common.core.domain.AjaxResult importSpecialDeduction(java.util.List<HrSpecialDeduction> list, boolean updateSupport, String operName);
 }

@@ -97,7 +97,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" v-loading="loading" :data="hoursList" border @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
-          <el-table-column type="index" label="序号" width="85" align="center" />
+          <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
           <el-table-column label="参训人员" prop="userName" key="userName" :width="colWidth('userName', 156)" resizable v-if="columns.userName.visible" />
           <el-table-column label="所属部门" prop="deptName" key="deptName" :width="colWidth('deptName', 192)" resizable show-overflow-tooltip v-if="columns.deptName.visible" />
           <el-table-column label="累计学时" prop="totalHours" key="totalHours" :width="colWidth('totalHours', 144)" resizable align="center" sortable="custom" v-if="columns.totalHours.visible">

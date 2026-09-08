@@ -79,7 +79,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
-          <el-table-column type="index" label="序号" width="85" align="center" />
+          <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
           <el-table-column label="路线名称" prop="routeName" key="routeName" :width="colWidth('routeName', 160)" resizable show-overflow-tooltip v-if="columns.routeName.visible" />
           <el-table-column label="路线编码" prop="routeCode" key="routeCode" :width="colWidth('routeCode', 180)" resizable show-overflow-tooltip v-if="columns.routeCode.visible" />
           <el-table-column label="责任部门" prop="deptName" key="deptName" :width="colWidth('deptName', 120)" resizable v-if="columns.deptName.visible" />
@@ -278,7 +278,7 @@
           </div>
           <div class="rd-card-body" v-show="!collapsedCards.v3">
             <el-table :data="viewItems.common" border size="small">
-              <el-table-column label="序号" type="index" width="60" align="center" />
+              <el-table-column label="序号" type="index" key="序号" :width="colWidth('序号', 60)" align="center" resizable />
               <el-table-column label="点检项目名称" prop="item" min-width="200" />
             </el-table>
           </div>
@@ -290,7 +290,7 @@
           </div>
           <div class="rd-card-body" v-show="!collapsedCards['vd' + di]">
             <el-table :data="dg.items" border size="small">
-              <el-table-column label="序号" type="index" width="60" align="center" />
+              <el-table-column label="序号" type="index" key="序号" :width="colWidth('序号', 60)" align="center" resizable />
               <el-table-column label="点检项目名称" prop="item" min-width="200" />
             </el-table>
           </div>

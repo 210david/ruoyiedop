@@ -8,6 +8,8 @@
         <result property="employeeId" column="employee_id"/>
         <result property="employeeName" column="employee_name"/>
         <result property="employeeNo" column="employee_no"/>
+        <result property="deptId" column="dept_id"/>
+        <result property="deptName" column="dept_name"/>
         <result property="overtimeDate" column="overtime_date"/>
         <result property="overtimeType" column="overtime_type"/>
         <result property="startTime" column="start_time"/>
@@ -30,7 +32,7 @@
     </resultMap>
 
     <sql id="selectVo">
-        SELECT overtime_id, overtime_no, employee_id, employee_name, employee_no, overtime_date, overtime_type, start_time, end_time, overtime_hours, multiplier, compensation_type, reason, audit_status, audit_by, audit_time, audit_remark, status, del_flag, create_by, create_time, update_by, update_time, remark
+        SELECT overtime_id, overtime_no, employee_id, employee_name, employee_no, dept_id, dept_name, overtime_date, overtime_type, start_time, end_time, overtime_hours, multiplier, compensation_type, reason, audit_status, audit_by, audit_time, audit_remark, status, del_flag, create_by, create_time, update_by, update_time, remark
         FROM biz_hr_overtime
     </sql>
 
@@ -42,6 +44,8 @@
             <if test="employeeId != null"> AND employee_id = #{employeeId}</if>
             <if test="employeeName != null and employeeName != ''"> AND employee_name LIKE CONCAT('%', #{employeeName}, '%')</if>
             <if test="employeeNo != null and employeeNo != ''"> AND employee_no LIKE CONCAT('%', #{employeeNo}, '%')</if>
+            <if test="deptId != null"> AND dept_id = #{deptId}</if>
+            <if test="deptName != null and deptName != ''"> AND dept_name LIKE CONCAT('%', #{deptName}, '%')</if>
             <if test="overtimeDate != null"> AND overtime_date = #{overtimeDate}</if>
             <if test="overtimeType != null and overtimeType != ''"> AND overtime_type LIKE CONCAT('%', #{overtimeType}, '%')</if>
             <if test="startTime != null"> AND start_time = #{startTime}</if>
@@ -72,9 +76,9 @@
 
     <insert id="insertHrOvertime" parameterType="HrOvertime" useGeneratedKeys="true" keyProperty="overtimeId">
         INSERT INTO biz_hr_overtime (
-            overtime_no, employee_id, employee_name, employee_no, overtime_date, overtime_type, start_time, end_time, overtime_hours, multiplier, compensation_type, reason, audit_status, audit_by, audit_time, audit_remark, status, del_flag, create_by, create_time, remark
+            overtime_no, employee_id, employee_name, employee_no, dept_id, dept_name, overtime_date, overtime_type, start_time, end_time, overtime_hours, multiplier, compensation_type, reason, audit_status, audit_by, audit_time, audit_remark, status, del_flag, create_by, create_time, remark
         ) VALUES (
-            #{overtimeNo}, #{employeeId}, #{employeeName}, #{employeeNo}, #{overtimeDate}, #{overtimeType}, #{startTime}, #{endTime}, #{overtimeHours}, #{multiplier}, #{compensationType}, #{reason}, #{auditStatus}, #{auditBy}, #{auditTime}, #{auditRemark}, #{status}, #{delFlag}, #{createBy}, sysdate(), #{remark}
+            #{overtimeNo}, #{employeeId}, #{employeeName}, #{employeeNo}, #{deptId}, #{deptName}, #{overtimeDate}, #{overtimeType}, #{startTime}, #{endTime}, #{overtimeHours}, #{multiplier}, #{compensationType}, #{reason}, #{auditStatus}, #{auditBy}, #{auditTime}, #{auditRemark}, #{status}, #{delFlag}, #{createBy}, sysdate(), #{remark}
         )
     </insert>
 
@@ -85,6 +89,8 @@
             <if test="employeeId != null">employee_id = #{employeeId},</if>
             <if test="employeeName != null and employeeName != ''">employee_name = #{employeeName},</if>
             <if test="employeeNo != null and employeeNo != ''">employee_no = #{employeeNo},</if>
+            <if test="deptId != null">dept_id = #{deptId},</if>
+            <if test="deptName != null and deptName != ''">dept_name = #{deptName},</if>
             <if test="overtimeDate != null">overtime_date = #{overtimeDate},</if>
             <if test="overtimeType != null and overtimeType != ''">overtime_type = #{overtimeType},</if>
             <if test="startTime != null">start_time = #{startTime},</if>

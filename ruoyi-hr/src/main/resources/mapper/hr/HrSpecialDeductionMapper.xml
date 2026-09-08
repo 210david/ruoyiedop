@@ -83,4 +83,13 @@
         <foreach item="sdId" collection="array" open="(" separator="," close=")">#{sdId}</foreach>
     </delete>
 
+    <select id="sumMonthlyDeduction" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(deduction_amount), 0)
+        FROM biz_hr_special_deduction
+        WHERE employee_id = #{employeeId}
+          AND (del_flag IS NULL OR del_flag = '0')
+          AND effective_date &lt;= #{onDate}
+          AND (expiry_date IS NULL OR expiry_date &gt;= #{onDate})
+    </select>
+
 </mapper>

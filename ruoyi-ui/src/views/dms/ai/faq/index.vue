@@ -61,7 +61,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
-          <el-table-column type="index" label="序号" width="85" align="center" />
+          <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
           <el-table-column label="问题" prop="question" key="question" :width="colWidth('question', 300)" resizable show-overflow-tooltip v-if="columns.question.visible" />
           <el-table-column label="分类" prop="categoryName" key="categoryName" :width="colWidth('categoryName', 120)" resizable v-if="columns.categoryName.visible">
             <template #default="scope">

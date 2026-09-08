@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.ruoyi.common.annotation.Excel;
 import com.ruoyi.common.core.domain.BaseEntity;
 import java.util.Date;
+import java.util.List;
 import java.math.BigDecimal;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -22,6 +23,10 @@ public class HrLeaveRequest extends BaseEntity
     private String employeeName;
     @Excel(name = "工号")
     private String employeeNo;
+    @Excel(name = "部门ID")
+    private Long deptId;
+    @Excel(name = "部门名称")
+    private String deptName;
     @NotBlank(message = "假别不能为空")
     @Excel(name = "假别")
     private String leaveType;
@@ -54,6 +59,14 @@ public class HrLeaveRequest extends BaseEntity
     @Excel(name = "删除标志")
     private String delFlag;
 
+    /* ===== 假期余额关联字段（查询时从 biz_hr_leave_balance JOIN 带出）===== */
+    @Excel(name = "剩余天数")
+    private BigDecimal remainingDays;
+    @Excel(name = "总额度")
+    private BigDecimal totalDays;
+    @Excel(name = "已休天数")
+    private BigDecimal usedDays;
+
     public Long getLeaveReqId() { return leaveReqId; }
     public void setLeaveReqId(Long leaveReqId) { this.leaveReqId = leaveReqId; }
     public String getLeaveReqNo() { return leaveReqNo; }
@@ -64,6 +77,10 @@ public class HrLeaveRequest extends BaseEntity
     public void setEmployeeName(String employeeName) { this.employeeName = employeeName; }
     public String getEmployeeNo() { return employeeNo; }
     public void setEmployeeNo(String employeeNo) { this.employeeNo = employeeNo; }
+    public Long getDeptId() { return deptId; }
+    public void setDeptId(Long deptId) { this.deptId = deptId; }
+    public String getDeptName() { return deptName; }
+    public void setDeptName(String deptName) { this.deptName = deptName; }
     public String getLeaveType() { return leaveType; }
     public void setLeaveType(String leaveType) { this.leaveType = leaveType; }
     public Date getStartTime() { return startTime; }
@@ -88,4 +105,17 @@ public class HrLeaveRequest extends BaseEntity
     public void setStatus(String status) { this.status = status; }
     public String getDelFlag() { return delFlag; }
     public void setDelFlag(String delFlag) { this.delFlag = delFlag; }
+
+    public BigDecimal getRemainingDays() { return remainingDays; }
+    public void setRemainingDays(BigDecimal remainingDays) { this.remainingDays = remainingDays; }
+    public BigDecimal getTotalDays() { return totalDays; }
+    public void setTotalDays(BigDecimal totalDays) { this.totalDays = totalDays; }
+    public BigDecimal getUsedDays() { return usedDays; }
+    public void setUsedDays(BigDecimal usedDays) { this.usedDays = usedDays; }
+
+    /** 审核日志列表 */
+    private List<HrLeaveRequestAuditLog> auditLogList;
+
+    public List<HrLeaveRequestAuditLog> getAuditLogList() { return auditLogList; }
+    public void setAuditLogList(List<HrLeaveRequestAuditLog> auditLogList) { this.auditLogList = auditLogList; }
 }

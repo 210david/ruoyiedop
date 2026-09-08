@@ -1,10 +1,14 @@
 package com.ruoyi.mk.service.impl;
 
 import java.util.Date;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.StringUtils;
@@ -378,16 +382,16 @@ return rows;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public String importLead(List<MkLead> leadList, Boolean isUpdateSupport, String operName)
+    public AjaxResult importLead(List<MkLead> leadList, Boolean isUpdateSupport, String operName)
     {
         if (StringUtils.isNull(leadList) || leadList.size() == 0)
         {
-            throw new ServiceException("导入线索数据不能为空！");
+            return AjaxResult.error("导入线索数据不能为空！");
         }
         int successNum = 0;
         int failureNum = 0;
-        StringBuilder successMsg = new StringBuilder();
-        StringBuilder failureMsg = new StringBuilder();
+        List<Map<String, Object>> successList = new ArrayList<>();
+        List<Map<String, Object>> failureList = new ArrayList<>();
         for (MkLead row : leadList)
         {
             try
@@ -410,12 +414,12 @@ return rows;
                         mkLeadMapper.updateLead(row);
                         logLeadAction(row.getLeadId(), "status_change", "导入更新线索");
                         successNum++;
-                        successMsg.append("<br/>" + successNum + "、企业名称 " + row.getCompanyName() + " 更新成功");
+                        successList.add(buildSuccessItem(row, "更新成功"));
                     }
                     else
                     {
                         failureNum++;
-                        failureMsg.append("<br/>" + failureNum + "、企业名称 " + row.getCompanyName() + " 已存在");
+                        failureList.add(buildFailureItem(row, "线索已存在，未勾选更新选项"));
                     }
                 }
                 else
@@ -446,25 +450,65 @@ return rows;
                     mkLeadMapper.insertLead(row);
                     logLeadAction(row.getLeadId(), "create", "导入创建线索：" + row.getCompanyName());
                     successNum++;
-                    successMsg.append("<br/>" + successNum + "、企业名称 " + row.getCompanyName() + " 导入成功");
+                    successList.add(buildSuccessItem(row, "导入成功"));
                 }
             }
             catch (Exception e)
             {
                 failureNum++;
-                failureMsg.append("<br/>" + failureNum + "、企业名称 " + row.getCompanyName() + " 导入失败：" + e.getMessage());
+                String errMsg = e.getMessage();
+                if (errMsg != null && errMsg.length() > 200) { errMsg = errMsg.substring(0, 200) + "..."; }
+                failureList.add(buildFailureItem(row, errMsg != null ? errMsg : "未知错误"));
             }
         }
-        if (failureNum > 0)
+        // 构建返回结果（结构化明细）
+        AjaxResult ajax = AjaxResult.success();
+        ajax.put("successNum", successNum);
+        ajax.put("failureNum", failureNum);
+        ajax.put("successList", successList);
+        ajax.put("failureList", failureList);
+        if (failureNum > 0 && successNum == 0)
         {
-            failureMsg.insert(0, "导入失败！共 " + failureNum + " 条数据格式不正确，错误如下：");
-            throw new ServiceException(failureMsg.toString());
+            ajax.put("code", 500);
+            ajax.put("msg", "导入失败，共 " + failureNum + " 条数据异常");
+        }
+        else if (failureNum > 0)
+        {
+            ajax.put("msg", "部分导入成功：成功 " + successNum + " 条，失败 " + failureNum + " 条");
         }
         else
         {
-            successMsg.insert(0, "恭喜您，数据已全部导入成功！共 " + successNum + " 条，数据如下：");
+            ajax.put("msg", "导入成功，共 " + successNum + " 条");
         }
-        return successMsg.toString();
+        return ajax;
+    }
+
+    /**
+     * 构建成功明细项
+     */
+    private Map<String, Object> buildSuccessItem(MkLead row, String result)
+    {
+        Map<String, Object> item = new LinkedHashMap<>();
+        item.put("leadNo", row.getLeadNo() != null ? row.getLeadNo() : "");
+        item.put("companyName", row.getCompanyName() != null ? row.getCompanyName() : "");
+        item.put("contactName", row.getContactName() != null ? row.getContactName() : "");
+        item.put("contactPhone", row.getContactPhone() != null ? row.getContactPhone() : "");
+        item.put("result", result);
+        return item;
+    }
+
+    /**
+     * 构建失败明细项
+     */
+    private Map<String, Object> buildFailureItem(MkLead row, String errorReason)
+    {
+        Map<String, Object> item = new LinkedHashMap<>();
+        item.put("leadNo", row.getLeadNo() != null ? row.getLeadNo() : "");
+        item.put("companyName", row.getCompanyName() != null ? row.getCompanyName() : "");
+        item.put("contactName", row.getContactName() != null ? row.getContactName() : "");
+        item.put("contactPhone", row.getContactPhone() != null ? row.getContactPhone() : "");
+        item.put("errorReason", errorReason);
+        return item;
     }
 
     // ====== P2: 无效线索 + 跟进时间 ======

@@ -31,6 +31,10 @@ public class HrAttendanceRecord extends BaseEntity
     private Long shiftId;
     @Excel(name = "班次名称")
     private String shiftName;
+    /** 班次开始时间（关联 biz_hr_shift 回显，非表字段） */
+    private String shiftStartTime;
+    /** 班次结束时间（关联 biz_hr_shift 回显，非表字段） */
+    private String shiftEndTime;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @Excel(name = "上班打卡")
     private Date clockIn;
@@ -74,6 +78,10 @@ public class HrAttendanceRecord extends BaseEntity
     public void setShiftId(Long shiftId) { this.shiftId = shiftId; }
     public String getShiftName() { return shiftName; }
     public void setShiftName(String shiftName) { this.shiftName = shiftName; }
+    public String getShiftStartTime() { return shiftStartTime; }
+    public void setShiftStartTime(String shiftStartTime) { this.shiftStartTime = shiftStartTime; }
+    public String getShiftEndTime() { return shiftEndTime; }
+    public void setShiftEndTime(String shiftEndTime) { this.shiftEndTime = shiftEndTime; }
     public Date getClockIn() { return clockIn; }
     public void setClockIn(Date clockIn) { this.clockIn = clockIn; }
     public Date getClockOut() { return clockOut; }

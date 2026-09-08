@@ -142,9 +142,13 @@ public class SafetyTrainingAttendeeController extends BaseController
     {
         ExcelUtil<SafetyTrainingAttendee> util = new ExcelUtil<>(SafetyTrainingAttendee.class);
         List<SafetyTrainingAttendee> list = util.importExcel(file.getInputStream());
+        if (list == null || list.isEmpty() || list.stream().allMatch(java.util.Objects::isNull))
+        {
+            return AjaxResult.error("导入失败！请使用系统提供的标准模板填写数据，不要使用非模板格式的文件。");
+        }
+        list.removeIf(java.util.Objects::isNull);
         String operName = getUsername();
-        String message = safetyTrainingAttendeeService.importAttendee(list, updateSupport, operName);
-        return success(message);
+        return safetyTrainingAttendeeService.importAttendee(list, updateSupport, operName);
     }
 
     /** 导入模板 */

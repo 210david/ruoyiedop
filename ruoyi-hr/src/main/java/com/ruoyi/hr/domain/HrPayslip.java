@@ -71,6 +71,12 @@ public class HrPayslip extends BaseEntity
     private BigDecimal otherDeduction;
     @Excel(name = "实发工资")
     private BigDecimal netSalary;
+    /** 累计应纳税所得额（年初至本月，累计预扣法） */
+    @Excel(name = "累计应纳税所得额")
+    private BigDecimal cumulativeTaxableIncome;
+    /** 累计应预扣税额（年初至本月，累计预扣法） */
+    @Excel(name = "累计应预扣税额")
+    private BigDecimal cumulativeTaxWithheld;
     @Excel(name = "状态")
     private String calcStatus;
     @Excel(name = "锁定人")
@@ -144,6 +150,10 @@ public class HrPayslip extends BaseEntity
     public void setOtherDeduction(BigDecimal otherDeduction) { this.otherDeduction = otherDeduction; }
     public BigDecimal getNetSalary() { return netSalary; }
     public void setNetSalary(BigDecimal netSalary) { this.netSalary = netSalary; }
+    public BigDecimal getCumulativeTaxableIncome() { return cumulativeTaxableIncome; }
+    public void setCumulativeTaxableIncome(BigDecimal cumulativeTaxableIncome) { this.cumulativeTaxableIncome = cumulativeTaxableIncome; }
+    public BigDecimal getCumulativeTaxWithheld() { return cumulativeTaxWithheld; }
+    public void setCumulativeTaxWithheld(BigDecimal cumulativeTaxWithheld) { this.cumulativeTaxWithheld = cumulativeTaxWithheld; }
     public String getCalcStatus() { return calcStatus; }
     public void setCalcStatus(String calcStatus) { this.calcStatus = calcStatus; }
     public String getSealedBy() { return sealedBy; }

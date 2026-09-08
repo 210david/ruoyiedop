@@ -139,7 +139,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" v-loading="loading" :data="dataList" border @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
-          <el-table-column type="index" label="序号" width="85" align="center" />
+          <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
           <el-table-column label="工单编号" prop="workOrderNo" key="workOrderNo" :width="colWidth('workOrderNo', 150)" resizable v-if="columns.workOrderNo.visible" />
           <el-table-column label="工单类型" prop="orderType" key="orderType" :width="colWidth('orderType', 100)" resizable align="center" v-if="columns.orderType.visible">
             <template #default="scope"><span v-if="scope.row.orderType" class="badge violet">{{ orderTypeLabel(scope.row.orderType) }}</span><span v-else class="text-muted">—</span></template>
@@ -873,7 +873,7 @@
             <div class="rd-card-header" @click="toggleCard('vc_issue')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></span>领料记录</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc_issue }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
             <div class="rd-card-body" v-show="!collapsedCards.vc_issue" style="padding:0">
               <el-table v-loading="viewIssueLoading" :data="viewIssuePagedList" border size="small" style="width: 100%" max-height="400" empty-text="暂无领料明细">
-                <el-table-column label="序号" type="index" width="85" align="center" :index="i => (viewIssuePageNum - 1) * viewIssuePageSize + i + 1" />
+                <el-table-column label="序号" type="index" key="序号" :width="colWidth('序号', 85)" align="center" :index="i = resizable> (viewIssuePageNum - 1) * viewIssuePageSize + i + 1" />
                 <el-table-column label="领料编号" prop="issue_no" min-width="140" show-overflow-tooltip />
                 <el-table-column label="物料编码" prop="material_code" min-width="130" show-overflow-tooltip />
                 <el-table-column label="物料名称" prop="material_name" min-width="180" show-overflow-tooltip />
@@ -907,7 +907,7 @@
             <div class="rd-card-header" @click="toggleCard('vc_return')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg></span>退料记录</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc_return }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
             <div class="rd-card-body" v-show="!collapsedCards.vc_return" style="padding:0">
               <el-table v-loading="viewReturnLoading" :data="viewReturnPagedList" border size="small" style="width: 100%" max-height="400" empty-text="暂无退料明细">
-                <el-table-column label="序号" type="index" width="85" align="center" :index="i => (viewReturnPageNum - 1) * viewReturnPageSize + i + 1" />
+                <el-table-column label="序号" type="index" key="序号" :width="colWidth('序号', 85)" align="center" :index="i = resizable> (viewReturnPageNum - 1) * viewReturnPageSize + i + 1" />
                 <el-table-column label="退料编号" prop="return_no" min-width="140" show-overflow-tooltip />
                 <el-table-column label="领料单号" prop="issue_no" min-width="140" show-overflow-tooltip />
                 <el-table-column label="物料编码" prop="material_code" min-width="130" show-overflow-tooltip />
@@ -942,7 +942,7 @@
             <div class="rd-card-header" @click="toggleCard('vc_qc')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>质量检验</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc_qc }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
             <div class="rd-card-body" v-show="!collapsedCards.vc_qc" style="padding:0">
               <el-table v-loading="viewQcLoading" :data="viewQcTaskList" border size="small" style="width: 100%" max-height="400" empty-text="暂无质检记录">
-                <el-table-column label="序号" type="index" width="85" align="center" />
+                <el-table-column label="序号" type="index" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
                 <el-table-column label="质检编号" prop="qcNo" min-width="140" show-overflow-tooltip />
                 <el-table-column label="检验类型" width="100" align="center">
                   <template #default="scope"><span v-if="scope.row.qcType" class="badge blue"><span class="dot"></span>{{ qcTypeLabel(scope.row.qcType) }}</span><span v-else class="text-muted">—</span></template>
@@ -980,7 +980,7 @@
             <div class="rd-card-header" @click="toggleCard('vc_finish')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></span>完工入库</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc_finish }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
             <div class="rd-card-body" v-show="!collapsedCards.vc_finish" style="padding:0">
               <el-table v-loading="viewFinishLoading" :data="viewFinishList" border size="small" style="width: 100%" max-height="400" empty-text="暂无完工入库记录">
-                <el-table-column label="序号" type="index" width="85" align="center" />
+                <el-table-column label="序号" type="index" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
                 <el-table-column label="入库单号" prop="finishNo" min-width="140" show-overflow-tooltip />
                 <el-table-column label="产品编码" prop="productCode" min-width="130" show-overflow-tooltip />
                 <el-table-column label="产品名称" prop="productName" min-width="160" show-overflow-tooltip />

@@ -168,9 +168,13 @@ public class MkLeadController extends BaseController
     {
         ExcelUtil<MkLead> util = new ExcelUtil<>(MkLead.class);
         List<MkLead> leadList = util.importExcel(file.getInputStream());
+        if (leadList == null || leadList.isEmpty() || leadList.stream().allMatch(java.util.Objects::isNull))
+        {
+            return AjaxResult.error("导入失败！请使用系统提供的标准模板填写数据，不要使用非模板格式的文件。");
+        }
+        leadList.removeIf(java.util.Objects::isNull);
         String operName = SecurityUtils.getUsername();
-        String message = mkLeadService.importLead(leadList, updateSupport, operName);
-        return AjaxResult.success(message);
+        return mkLeadService.importLead(leadList, updateSupport, operName);
     }
 
     /** 线索导入模板下载 */

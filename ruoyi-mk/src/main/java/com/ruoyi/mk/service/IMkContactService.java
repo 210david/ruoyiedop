@@ -1,6 +1,7 @@
 package com.ruoyi.mk.service;
 
 import java.util.List;
+import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.mk.domain.MkContact;
 
 /**
@@ -38,5 +39,5 @@ public interface IMkContactService
     public List<MkContact> selectFollowUpReminders(Long userId);
 
     /** P3-13: 批量导入联系人 */
-    public String importContacts(List<MkContact> contactList, Boolean isUpdateSupport, String operName);
+    public AjaxResult importContacts(List<MkContact> contactList, Boolean isUpdateSupport, String operName);
 }

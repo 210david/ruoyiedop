@@ -56,7 +56,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" v-loading="loading" :data="noticeList" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" border class="app-table">
 <el-table-column type="selection" width="55" align="center" />
-<el-table-column type="index" label="序号" width="85" align="center" />
+<el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
 <el-table-column label="编号" align="center" prop="noticeId" :width="colWidth('noticeId', 100)" resizable v-if="columns.noticeId.visible" />
           <el-table-column label="公告标题" align="center" prop="noticeTitle" :show-overflow-tooltip="true" :width="colWidth('noticeTitle', 200)" resizable v-if="columns.noticeTitle.visible">
             <template #default="scope">

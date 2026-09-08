@@ -84,6 +84,11 @@ public class SysUserController extends BaseController
     {
         ExcelUtil<SysUser> util = new ExcelUtil<SysUser>(SysUser.class);
         List<SysUser> userList = util.importExcel(file.getInputStream());
+        if (userList == null || userList.isEmpty() || userList.stream().allMatch(java.util.Objects::isNull))
+        {
+            return AjaxResult.error("导入失败！请使用系统提供的标准模板填写数据，不要使用非模板格式的文件。");
+        }
+        userList.removeIf(java.util.Objects::isNull);
         String operName = getUsername();
         String message = userService.importUser(userList, updateSupport, operName);
         return success(message);

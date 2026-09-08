@@ -6,10 +6,12 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.StringUtils;
@@ -240,16 +242,16 @@ public class WmsStockTakeServiceImpl implements IWmsStockTakeService
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public String importDetail(Long takeId, List<WmsStockTakeDetail> importList)
+    public AjaxResult importDetail(Long takeId, List<WmsStockTakeDetail> importList)
     {
         WmsStockTake take = wmsStockTakeMapper.selectStockTakeById(takeId);
         if (take == null || !"1".equals(take.getStatus()))
         {
-            throw new ServiceException("盘点单状态不正确，无法录入");
+            return AjaxResult.error("盘点单状态不正确，无法录入");
         }
         if (importList == null || importList.isEmpty())
         {
-            throw new ServiceException("导入数据不能为空");
+            return AjaxResult.error("导入数据不能为空");
         }
         // 获取全部明细，按物料编码+库位编码+批次号建立索引
         List<WmsStockTakeDetail> existingDetails = wmsStockTakeMapper.selectStockTakeDetailByTakeId(takeId);
@@ -261,14 +263,21 @@ public class WmsStockTakeServiceImpl implements IWmsStockTakeService
         }
         int successCount = 0;
         int failCount = 0;
-        StringBuilder failMsg = new StringBuilder();
+        List<Map<String, Object>> successList = new ArrayList<>();
+        List<Map<String, Object>> failureList = new ArrayList<>();
         for (WmsStockTakeDetail importItem : importList)
         {
             String materialCode = importItem.getMaterialCode();
             if (StringUtils.isEmpty(materialCode) || importItem.getActualQty() == null)
             {
                 failCount++;
-                failMsg.append("<br/>物料编码或实盘数量为空，跳过");
+                Map<String, Object> item = new LinkedHashMap<>();
+                item.put("materialCode", materialCode != null ? materialCode : "");
+                item.put("locationCode", importItem.getLocationCode() != null ? importItem.getLocationCode() : "");
+                item.put("batchNo", importItem.getBatchNo() != null ? importItem.getBatchNo() : "");
+                item.put("actualQty", importItem.getActualQty() != null ? importItem.getActualQty().toString() : "");
+                item.put("errorReason", "物料编码或实盘数量为空");
+                failureList.add(item);
                 continue;
             }
             String key = buildMatchKey(materialCode, importItem.getLocationCode(), importItem.getBatchNo());
@@ -276,16 +285,13 @@ public class WmsStockTakeServiceImpl implements IWmsStockTakeService
             if (detail == null)
             {
                 failCount++;
-                failMsg.append("<br/>物料编码[").append(materialCode).append("]");
-                if (StringUtils.isNotEmpty(importItem.getLocationCode()))
-                {
-                    failMsg.append("库位[").append(importItem.getLocationCode()).append("]");
-                }
-                if (StringUtils.isNotEmpty(importItem.getBatchNo()))
-                {
-                    failMsg.append("批次[").append(importItem.getBatchNo()).append("]");
-                }
-                failMsg.append("未匹配到盘点明细");
+                Map<String, Object> item = new LinkedHashMap<>();
+                item.put("materialCode", materialCode);
+                item.put("locationCode", importItem.getLocationCode() != null ? importItem.getLocationCode() : "");
+                item.put("batchNo", importItem.getBatchNo() != null ? importItem.getBatchNo() : "");
+                item.put("actualQty", importItem.getActualQty().toString());
+                item.put("errorReason", "未匹配到盘点明细");
+                failureList.add(item);
                 continue;
             }
             detail.setActualQty(importItem.getActualQty());
@@ -295,30 +301,48 @@ public class WmsStockTakeServiceImpl implements IWmsStockTakeService
             if (detail.getDiffQty().compareTo(BigDecimal.ZERO) != 0 && StringUtils.isEmpty(importItem.getDiffReason()))
             {
                 failCount++;
-                failMsg.append("<br/>物料编码[").append(materialCode).append("]");
-                if (StringUtils.isNotEmpty(importItem.getLocationCode()))
-                {
-                    failMsg.append("库位[").append(importItem.getLocationCode()).append("]");
-                }
-                if (StringUtils.isNotEmpty(importItem.getBatchNo()))
-                {
-                    failMsg.append("批次[").append(importItem.getBatchNo()).append("]");
-                }
-                failMsg.append("存在差异（差异数量：").append(detail.getDiffQty()).append("），未填写差异原因");
+                Map<String, Object> item = new LinkedHashMap<>();
+                item.put("materialCode", materialCode);
+                item.put("locationCode", importItem.getLocationCode() != null ? importItem.getLocationCode() : "");
+                item.put("batchNo", importItem.getBatchNo() != null ? importItem.getBatchNo() : "");
+                item.put("actualQty", importItem.getActualQty().toString());
+                item.put("errorReason", "存在差异（差异数量：" + detail.getDiffQty() + "），未填写差异原因");
+                failureList.add(item);
                 continue;
             }
             detail.setStatus("1");
             wmsStockTakeMapper.updateStockTakeDetail(detail);
             successCount++;
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("materialCode", materialCode);
+            item.put("locationCode", importItem.getLocationCode() != null ? importItem.getLocationCode() : "");
+            item.put("batchNo", importItem.getBatchNo() != null ? importItem.getBatchNo() : "");
+            item.put("bookQty", detail.getBookQty() != null ? detail.getBookQty().toString() : "");
+            item.put("actualQty", detail.getActualQty().toString());
+            item.put("diffQty", detail.getDiffQty() != null ? detail.getDiffQty().toString() : "");
+            item.put("result", "录入成功");
+            successList.add(item);
         }
-        StringBuilder result = new StringBuilder();
-        result.append("导入完成：成功").append(successCount).append("条");
-        if (failCount > 0)
+        // 构建返回结果（结构化明细）
+        AjaxResult ajax = AjaxResult.success();
+        ajax.put("successNum", successCount);
+        ajax.put("failureNum", failCount);
+        ajax.put("successList", successList);
+        ajax.put("failureList", failureList);
+        if (failCount > 0 && successCount == 0)
         {
-            result.append("，失败").append(failCount).append("条");
-            result.append(failMsg.toString());
+            ajax.put("code", 500);
+            ajax.put("msg", "导入失败，共 " + failCount + " 条数据异常");
         }
-        return result.toString();
+        else if (failCount > 0)
+        {
+            ajax.put("msg", "部分导入成功：成功 " + successCount + " 条，失败 " + failCount + " 条");
+        }
+        else
+        {
+            ajax.put("msg", "导入成功，共 " + successCount + " 条");
+        }
+        return ajax;
     }
 
     private String buildMatchKey(String materialCode, String locationCode, String batchNo)

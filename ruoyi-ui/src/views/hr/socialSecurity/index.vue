@@ -57,6 +57,9 @@
           <button type="button" class="btn-soft is-outline" @click="handleExport" v-hasPermi="['hr:socialSecurity:export']">
             <el-icon><Download /></el-icon> 导出
           </button>
+          <button type="button" class="btn-soft is-outline" @click="handleBatchInit" v-hasPermi="['hr:socialSecurity:batchInit']">
+            <el-icon><MagicStick /></el-icon> 批量初始化
+          </button>
         </div>
         <div class="right"><right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="hr_socialsecurity_columns"></right-toolbar></div>
       </div>
@@ -69,10 +72,19 @@
             <template #default="scope"><span class="col-mono">{{ scope.row.employeeNo }}</span></template>
           </el-table-column>
           <el-table-column label="年度" prop="year" key="year" align="center" :width="colWidth('year', 90)" resizable v-if="columns.year.visible" />
+          <el-table-column label="社保方案" prop="planId" key="planId" align="center" :width="colWidth('planId', 130)" resizable v-if="columns.planId.visible">
+            <template #default="scope">{{ planName(scope.row.planId) }}</template>
+          </el-table-column>
           <el-table-column label="缴费基数" prop="baseAmount" key="baseAmount" align="center" :width="colWidth('baseAmount', 130)" resizable v-if="columns.baseAmount.visible" />
-          <el-table-column label="养老单位比例" prop="pensionEmployer" key="pensionEmployer" align="center" :width="colWidth('pensionEmployer', 130)" resizable v-if="columns.pensionEmployer.visible" />
-          <el-table-column label="养老个人比例" prop="pensionEmployee" key="pensionEmployee" align="center" :width="colWidth('pensionEmployee', 130)" resizable v-if="columns.pensionEmployee.visible" />
-          <el-table-column label="医疗单位比例" prop="medicalEmployer" key="medicalEmployer" align="center" :width="colWidth('medicalEmployer', 130)" resizable v-if="columns.medicalEmployer.visible" />
+          <el-table-column label="个人养老比例" prop="pensionEmployee" key="pensionEmployee" align="center" :width="colWidth('pensionEmployee', 120)" resizable v-if="columns.pensionEmployee.visible">
+            <template #default="scope">{{ ratioText(scope.row, 'pensionEmployee') }}</template>
+          </el-table-column>
+          <el-table-column label="个人医疗比例" prop="medicalEmployee" key="medicalEmployee" align="center" :width="colWidth('medicalEmployee', 120)" resizable v-if="columns.medicalEmployee.visible">
+            <template #default="scope">{{ ratioText(scope.row, 'medicalEmployee') }}</template>
+          </el-table-column>
+          <el-table-column label="个人公积金比例" prop="fundEmployee" key="fundEmployee" align="center" :width="colWidth('fundEmployee', 130)" resizable v-if="columns.fundEmployee.visible">
+            <template #default="scope">{{ ratioText(scope.row, 'fundEmployee') }}</template>
+          </el-table-column>
           <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
               <div class="action-btn-row">
@@ -97,7 +109,7 @@
           <span class="rd-detail-header-title">{{ title }}</span>
         </div>
       </template>
-      <el-form ref="hrSocialSecurityRef" :model="form" :rules="rules" label-width="100px">
+      <el-form ref="hrSocialSecurityRef" :model="form" :rules="rules" label-width="130px">
         <div class="rd-page">
           <!-- 卡片：基本信息 -->
           <section class="rd-card">
@@ -115,8 +127,11 @@
                     </template>
                   </el-input>
                 </el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="部门" prop="orgName"><el-input :model-value="form.orgName" readonly placeholder="选择人员后自动带出" /></el-form-item></el-col>
                 <el-col :span="12"><el-form-item label="工号" prop="employeeNo"><el-input v-model="form.employeeNo" placeholder="请输入工号" /></el-form-item></el-col>
-                <el-col :span="12"><el-form-item label="年度" prop="year"><el-input-number v-model="form.year" :precision="0" :min="0" controls-position="right" style="width: 100%" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="年度" prop="year">
+                  <el-date-picker v-model="form.year" type="year" placeholder="选择年度" value-format="YYYY" style="width: 100%" />
+                </el-form-item></el-col>
               </el-row>
             </div>
           </section>
@@ -128,28 +143,67 @@
             </div>
             <div class="rd-card-body" v-show="!collapsedCards.e1">
               <el-row :gutter="20">
-                <el-col :span="12"><el-form-item label="缴费基数" prop="baseAmount"><el-input-number v-model="form.baseAmount" :precision="2" :min="0" controls-position="right" style="width: 100%" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="社保方案" prop="planId">
+                  <el-select v-model="form.planId" placeholder="默认用年度方案" clearable style="width: 100%">
+                    <el-option v-for="p in planOptions" :key="p.planId" :label="p.planName + '（' + p.year + (p.isDefault === 1 ? '，默认' : '') + '）'" :value="p.planId" />
+                  </el-select>
+                </el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="缴费基数" prop="baseAmount"><el-input-number v-model="form.baseAmount" :precision="2" :min="0" controls-position="right" style="width: 100%" @change="clampBaseAmount" /></el-form-item></el-col>
               </el-row>
+              <el-alert v-if="clampHint" :type="clampHint.type" :closable="false" show-icon :title="clampHint.text" style="margin-bottom: 12px" />
+              <el-alert type="info" :closable="false" show-icon title="比例无需在此填写：默认继承所选方案（未选则用年度默认方案）；仅个别员工与方案不一致时，才在下方比例覆盖中单独填写。缴费基数低于方案下限/高于上限时，保存时会自动按下限/上限调整。" />
             </div>
           </section>
-          <!-- 卡片：缴纳比例 -->
+          <!-- 卡片：比例覆盖（可选） -->
           <section class="rd-card">
             <div class="rd-card-header" @click="toggleCard('e2')">
-              <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg></span>缴纳比例</div>
+              <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg></span>比例覆盖（仅个别员工有差异时填写，留空继承方案）</div>
               <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.e2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
             </div>
             <div class="rd-card-body" v-show="!collapsedCards.e2">
               <el-row :gutter="20">
-                <el-col :span="12"><el-form-item label="养老单位比例" prop="pensionEmployer"><el-input-number v-model="form.pensionEmployer" :precision="2" :min="0" controls-position="right" style="width: 100%" /></el-form-item></el-col>
-                <el-col :span="12"><el-form-item label="养老个人比例" prop="pensionEmployee"><el-input-number v-model="form.pensionEmployee" :precision="2" :min="0" controls-position="right" style="width: 100%" /></el-form-item></el-col>
-                <el-col :span="12"><el-form-item label="医疗单位比例" prop="medicalEmployer"><el-input-number v-model="form.medicalEmployer" :precision="2" :min="0" controls-position="right" style="width: 100%" /></el-form-item></el-col>
-                <el-col :span="12"><el-form-item label="医疗个人比例" prop="medicalEmployee"><el-input-number v-model="form.medicalEmployee" :precision="2" :min="0" controls-position="right" style="width: 100%" /></el-form-item></el-col>
-                <el-col :span="12"><el-form-item label="失业单位比例" prop="unemploymentEmployer"><el-input-number v-model="form.unemploymentEmployer" :precision="2" :min="0" controls-position="right" style="width: 100%" /></el-form-item></el-col>
-                <el-col :span="12"><el-form-item label="失业个人比例" prop="unemploymentEmployee"><el-input-number v-model="form.unemploymentEmployee" :precision="2" :min="0" controls-position="right" style="width: 100%" /></el-form-item></el-col>
-                <el-col :span="12"><el-form-item label="工伤单位比例" prop="injuryEmployer"><el-input-number v-model="form.injuryEmployer" :precision="2" :min="0" controls-position="right" style="width: 100%" /></el-form-item></el-col>
-                <el-col :span="12"><el-form-item label="生育单位比例" prop="maternityEmployer"><el-input-number v-model="form.maternityEmployer" :precision="2" :min="0" controls-position="right" style="width: 100%" /></el-form-item></el-col>
-                <el-col :span="12"><el-form-item label="公积金单位比例" prop="fundEmployer"><el-input-number v-model="form.fundEmployer" :precision="2" :min="0" controls-position="right" style="width: 100%" /></el-form-item></el-col>
-                <el-col :span="12"><el-form-item label="公积金个人比例" prop="fundEmployee"><el-input-number v-model="form.fundEmployee" :precision="2" :min="0" controls-position="right" style="width: 100%" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="养老个人比例" prop="pensionEmployee">
+                  <el-input-number v-model="form.pensionEmployee" :precision="2" :min="0" controls-position="right" style="width: 100%" :placeholder="planRatioPlaceholder('pensionEmployee')" />
+                  <el-button v-if="form.pensionEmployee != null" link type="primary" style="margin-left:8px" @click="form.pensionEmployee = null">恢复继承</el-button>
+                </el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="医疗个人比例" prop="medicalEmployee">
+                  <el-input-number v-model="form.medicalEmployee" :precision="2" :min="0" controls-position="right" style="width: 100%" :placeholder="planRatioPlaceholder('medicalEmployee')" />
+                  <el-button v-if="form.medicalEmployee != null" link type="primary" style="margin-left:8px" @click="form.medicalEmployee = null">恢复继承</el-button>
+                </el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="失业个人比例" prop="unemploymentEmployee">
+                  <el-input-number v-model="form.unemploymentEmployee" :precision="2" :min="0" controls-position="right" style="width: 100%" :placeholder="planRatioPlaceholder('unemploymentEmployee')" />
+                  <el-button v-if="form.unemploymentEmployee != null" link type="primary" style="margin-left:8px" @click="form.unemploymentEmployee = null">恢复继承</el-button>
+                </el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="公积金个人比例" prop="fundEmployee">
+                  <el-input-number v-model="form.fundEmployee" :precision="2" :min="0" controls-position="right" style="width: 100%" :placeholder="planRatioPlaceholder('fundEmployee')" />
+                  <el-button v-if="form.fundEmployee != null" link type="primary" style="margin-left:8px" @click="form.fundEmployee = null">恢复继承</el-button>
+                </el-form-item></el-col>
+              </el-row>
+              <el-row :gutter="20">
+                <el-col :span="12"><el-form-item label="养老单位比例" prop="pensionEmployer">
+                  <el-input-number v-model="form.pensionEmployer" :precision="2" :min="0" controls-position="right" style="width: 100%" :placeholder="planRatioPlaceholder('pensionEmployer')" />
+                  <el-button v-if="form.pensionEmployer != null" link type="primary" style="margin-left:8px" @click="form.pensionEmployer = null">恢复继承</el-button>
+                </el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="医疗单位比例" prop="medicalEmployer">
+                  <el-input-number v-model="form.medicalEmployer" :precision="2" :min="0" controls-position="right" style="width: 100%" :placeholder="planRatioPlaceholder('medicalEmployer')" />
+                  <el-button v-if="form.medicalEmployer != null" link type="primary" style="margin-left:8px" @click="form.medicalEmployer = null">恢复继承</el-button>
+                </el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="失业单位比例" prop="unemploymentEmployer">
+                  <el-input-number v-model="form.unemploymentEmployer" :precision="2" :min="0" controls-position="right" style="width: 100%" :placeholder="planRatioPlaceholder('unemploymentEmployer')" />
+                  <el-button v-if="form.unemploymentEmployer != null" link type="primary" style="margin-left:8px" @click="form.unemploymentEmployer = null">恢复继承</el-button>
+                </el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="公积金单位比例" prop="fundEmployer">
+                  <el-input-number v-model="form.fundEmployer" :precision="2" :min="0" controls-position="right" style="width: 100%" :placeholder="planRatioPlaceholder('fundEmployer')" />
+                  <el-button v-if="form.fundEmployer != null" link type="primary" style="margin-left:8px" @click="form.fundEmployer = null">恢复继承</el-button>
+                </el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="工伤单位比例" prop="injuryEmployer">
+                  <el-input-number v-model="form.injuryEmployer" :precision="2" :min="0" controls-position="right" style="width: 100%" :placeholder="planRatioPlaceholder('injuryEmployer')" />
+                  <el-button v-if="form.injuryEmployer != null" link type="primary" style="margin-left:8px" @click="form.injuryEmployer = null">恢复继承</el-button>
+                </el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="生育单位比例" prop="maternityEmployer">
+                  <el-input-number v-model="form.maternityEmployer" :precision="2" :min="0" controls-position="right" style="width: 100%" :placeholder="planRatioPlaceholder('maternityEmployer')" />
+                  <el-button v-if="form.maternityEmployer != null" link type="primary" style="margin-left:8px" @click="form.maternityEmployer = null">恢复继承</el-button>
+                </el-form-item></el-col>
               </el-row>
             </div>
           </section>
@@ -208,16 +262,16 @@
           </div>
           <div class="rd-card-body" v-show="!collapsedCards.c2" style="display:block">
             <div class="rd-grid">
-              <div class="rd-item"><span class="rd-label">养老单位比例</span><div class="rd-value">{{ viewData.pensionEmployer != null ? viewData.pensionEmployer : '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label">养老个人比例</span><div class="rd-value">{{ viewData.pensionEmployee != null ? viewData.pensionEmployee : '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label">医疗单位比例</span><div class="rd-value">{{ viewData.medicalEmployer != null ? viewData.medicalEmployer : '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label">医疗个人比例</span><div class="rd-value">{{ viewData.medicalEmployee != null ? viewData.medicalEmployee : '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label">失业单位比例</span><div class="rd-value">{{ viewData.unemploymentEmployer != null ? viewData.unemploymentEmployer : '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label">失业个人比例</span><div class="rd-value">{{ viewData.unemploymentEmployee != null ? viewData.unemploymentEmployee : '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label">工伤单位比例</span><div class="rd-value">{{ viewData.injuryEmployer != null ? viewData.injuryEmployer : '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label">生育单位比例</span><div class="rd-value">{{ viewData.maternityEmployer != null ? viewData.maternityEmployer : '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label">公积金单位比例</span><div class="rd-value">{{ viewData.fundEmployer != null ? viewData.fundEmployer : '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label">公积金个人比例</span><div class="rd-value">{{ viewData.fundEmployee != null ? viewData.fundEmployee : '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">养老单位比例</span><div class="rd-value">{{ ratioText(viewData, 'pensionEmployer') }}</div></div>
+              <div class="rd-item"><span class="rd-label">养老个人比例</span><div class="rd-value">{{ ratioText(viewData, 'pensionEmployee') }}</div></div>
+              <div class="rd-item"><span class="rd-label">医疗单位比例</span><div class="rd-value">{{ ratioText(viewData, 'medicalEmployer') }}</div></div>
+              <div class="rd-item"><span class="rd-label">医疗个人比例</span><div class="rd-value">{{ ratioText(viewData, 'medicalEmployee') }}</div></div>
+              <div class="rd-item"><span class="rd-label">失业单位比例</span><div class="rd-value">{{ ratioText(viewData, 'unemploymentEmployer') }}</div></div>
+              <div class="rd-item"><span class="rd-label">失业个人比例</span><div class="rd-value">{{ ratioText(viewData, 'unemploymentEmployee') }}</div></div>
+              <div class="rd-item"><span class="rd-label">工伤单位比例</span><div class="rd-value">{{ ratioText(viewData, 'injuryEmployer') }}</div></div>
+              <div class="rd-item"><span class="rd-label">生育单位比例</span><div class="rd-value">{{ ratioText(viewData, 'maternityEmployer') }}</div></div>
+              <div class="rd-item"><span class="rd-label">公积金单位比例</span><div class="rd-value">{{ ratioText(viewData, 'fundEmployer') }}</div></div>
+              <div class="rd-item"><span class="rd-label">公积金个人比例</span><div class="rd-value">{{ ratioText(viewData, 'fundEmployee') }}</div></div>
             </div>
           </div>
         </section>
@@ -229,11 +283,34 @@
 
     <!-- ===== 人员选择弹窗 ===== -->
     <employee-picker ref="employeePickerRef" title="选择人员" @confirm="onEmployeePickerConfirm" />
+
+    <!-- ===== 批量初始化年度选择弹窗 ===== -->
+    <el-dialog v-model="batchInitOpen" width="420px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><el-icon><MagicStick /></el-icon></div>
+          <span class="rd-detail-header-title">批量初始化</span>
+        </div>
+      </template>
+      <div class="rd-page">
+        <el-form label-width="90px">
+          <el-form-item label="年度">
+            <el-date-picker v-model="batchInitYear" type="year" placeholder="选择年度" value-format="YYYY" style="width: 100%" />
+          </el-form-item>
+        </el-form>
+        <el-alert type="info" :closable="false" show-icon title="将按该年度默认方案，为尚未配置此年度社保的在职员工批量生成记录（基数取方案下限）。" />
+      </div>
+      <template #footer>
+        <el-button type="primary" :disabled="!batchInitYear" @click="doBatchInit">初始化</el-button>
+        <el-button @click="batchInitOpen = false">取 消</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup name="HrSocialSecurity">
 import { listHrSocialSecurity, getHrSocialSecurity, addHrSocialSecurity, updateHrSocialSecurity, delHrSocialSecurity } from '@/api/hr/hrSocialSecurity'
+import { listSsPlan, batchInitSs } from '@/api/hr/ssPlan'
 import { useColumnResize } from '@/composables/useColumnResize'
 import EmployeePicker from '@/components/EmployeePicker'
 
@@ -260,10 +337,11 @@ const defaultColumns = {
   employeeName: { label: '员工姓名', visible: true },
   employeeNo: { label: '工号', visible: true },
   year: { label: '年度', visible: true },
+  planId: { label: '社保方案', visible: true },
   baseAmount: { label: '缴费基数', visible: true },
-  pensionEmployer: { label: '养老单位比例', visible: true },
-  pensionEmployee: { label: '养老个人比例', visible: true },
-  medicalEmployer: { label: '医疗单位比例', visible: true }
+  pensionEmployee: { label: '个人养老比例', visible: true },
+  medicalEmployee: { label: '个人医疗比例', visible: true },
+  fundEmployee: { label: '个人公积金比例', visible: true }
 }
 function loadColumnVisibility() {
   try {
@@ -338,8 +416,10 @@ function reset() {
     employeeId: undefined,
     employeeName: undefined,
     employeeNo: undefined,
+    orgName: undefined,
     year: undefined,
     baseAmount: undefined,
+    planId: undefined,
     pensionEmployer: undefined,
     pensionEmployee: undefined,
     medicalEmployer: undefined,
@@ -354,8 +434,99 @@ function reset() {
   proxy.resetForm('hrSocialSecurityRef')
 }
 
+/** ===== 社保方案支持 ===== */
+const planOptions = ref([])
+const planMap = ref({})
+function loadPlans() {
+  listSsPlan({ pageNum: 1, pageSize: 100, status: '0' }).then(res => {
+    planOptions.value = res.rows || []
+    const m = {}
+    planOptions.value.forEach(p => { m[p.planId] = p })
+    planMap.value = m
+  }).catch(() => {})
+}
+function planName(planId) {
+  const p = planMap.value[planId]
+  if (!p) return planId ? '方案#' + planId : '-'
+  return p.planName + (p.isDefault === 1 ? '（默认）' : '')
+}
+/** 比例展示：员工覆盖值优先，否则显示所属方案比例 */
+function ratioText(row, key) {
+  const own = row[key]
+  const pct = v => v != null ? (Number(v) * 100).toFixed(2).replace(/\.00$/, '') + '%' : null
+  if (own != null) return pct(own)
+  const p = planMap.value[row.planId]
+  if (p && p[key] != null) return pct(p[key]) + '（方案）'
+  return '-'
+}
+/** 批量初始化：年度选择弹窗 */
+const batchInitOpen = ref(false)
+const batchInitYear = ref(String(new Date().getFullYear()))
+function handleBatchInit() {
+  batchInitYear.value = String(new Date().getFullYear())
+  batchInitOpen.value = true
+}
+function doBatchInit() {
+  batchInitSs(batchInitYear.value).then(res => {
+    proxy.$modal.msgSuccess(res.msg || '初始化完成')
+    batchInitOpen.value = false
+    getList()
+  }).catch(() => {})
+}
+
+/** 年度变化时联动社保方案：当前所选方案不属于新年份时，切换为新年份默认方案 */
+watch(() => form.value.year, (y) => {
+  if (!y) return
+  const yearNum = Number(y)
+  const cur = planOptions.value.find(p => p.planId === form.value.planId)
+  if (!cur || cur.year !== yearNum) {
+    const def = planOptions.value.find(p => p.isDefault === 1 && p.year === yearNum)
+    form.value.planId = def ? def.planId : undefined
+  }
+  // 基数钳制提示失效时清除
+  clampHint.value = null
+})
+
+/** 当前生效方案（员工所选 > 年度默认） */
+function effectivePlan() {
+  const byId = form.value.planId ? planOptions.value.find(p => p.planId === form.value.planId) : null
+  if (byId) return byId
+  const yearNum = form.value.year ? Number(form.value.year) : null
+  return planOptions.value.find(p => p.isDefault === 1 && p.year === yearNum) || null
+}
+/** 比例输入框 placeholder：显示生效方案的比例（百分数），空方案提示继承 */
+function planRatioPlaceholder(key) {
+  const p = effectivePlan()
+  if (p && p[key] != null) return '方案值 ' + (Number(p[key]) * 100).toFixed(2).replace(/\.00$/, '') + '%'
+  return '留空继承方案'
+}
+
+/** 基数钳制：录入超出所选方案（或年度默认方案）上下限时即时校正并提示 */
+const clampHint = ref(null)
+function clampBaseAmount() {
+  const v = form.value.baseAmount
+  if (v == null) { clampHint.value = null; return }
+  let plan = form.value.planId ? planOptions.value.find(p => p.planId === form.value.planId) : null
+  if (plan && plan.year !== form.value.year) plan = null
+  if (!plan) plan = planOptions.value.find(p => p.isDefault === 1 && p.year === form.value.year)
+  if (!plan) { clampHint.value = null; return }
+  if (plan.baseLower != null && v < plan.baseLower) {
+    form.value.baseAmount = Number(plan.baseLower)
+    clampHint.value = { type: 'warning', text: `基数低于方案「${plan.planName}」下限，已按 ${plan.baseLower} 调整` }
+  } else if (plan.baseUpper != null && v > plan.baseUpper) {
+    form.value.baseAmount = Number(plan.baseUpper)
+    clampHint.value = { type: 'warning', text: `基数高于方案「${plan.planName}」上限，已按 ${plan.baseUpper} 调整` }
+  } else {
+    clampHint.value = null
+  }
+}
+
 function handleAdd() {
   reset()
+  form.value.year = String(new Date().getFullYear())
+  // 社保方案默认取该年度默认方案
+  const defaultPlan = planOptions.value.find(p => p.isDefault === 1 && p.year === Number(form.value.year))
+  if (defaultPlan) form.value.planId = defaultPlan.planId
   open.value = true
   title.value = '新增社保公积金'
 }
@@ -365,6 +536,8 @@ function handleUpdate(row) {
   const ssId = row.ssId || ids.value[0]
   getHrSocialSecurity(ssId).then(response => {
     form.value = response.data
+    // 年度选择器需要字符串
+    if (form.value.year != null) form.value.year = String(form.value.year)
     open.value = true
     title.value = '修改社保公积金'
   })
@@ -381,14 +554,17 @@ function handleView(row) {
 function submitForm() {
   proxy.$refs['hrSocialSecurityRef'].validate(valid => {
     if (valid) {
-      if (form.value.ssId != undefined) {
-        updateHrSocialSecurity(form.value).then(() => {
+      // 年度选择器返回字符串，提交前转为数字
+      const payload = { ...form.value }
+      if (payload.year != null) payload.year = Number(payload.year)
+      if (payload.ssId != undefined) {
+        updateHrSocialSecurity(payload).then(() => {
           proxy.$modal.msgSuccess('修改成功')
           open.value = false
           getList()
         })
       } else {
-        addHrSocialSecurity(form.value).then(() => {
+        addHrSocialSecurity(payload).then(() => {
           proxy.$modal.msgSuccess('新增成功')
           open.value = false
           getList()
@@ -437,6 +613,7 @@ function onEmployeeFieldClick(e) {
   openEmployeePicker();
 }
 
+loadPlans()
 getList()
 </script>
 

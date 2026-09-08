@@ -90,7 +90,7 @@
             border
             class="app-table"
          >
-         <el-table-column type="index" label="序号" width="85" align="center" />
+         <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
          <el-table-column prop="menuName" label="菜单名称" :show-overflow-tooltip="true" :width="colWidth('menuName', 220)">
             <template #default="scope">
                <svg-icon :icon-class="scope.row.icon" />

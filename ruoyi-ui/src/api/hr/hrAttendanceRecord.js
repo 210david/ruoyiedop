@@ -42,3 +42,12 @@ export function delHrAttendanceRecord(recordId) {
     method: 'delete'
   })
 }
+
+// 批量重算考勤状态
+export function recalculateAttendance(query) {
+  return request({
+    url: '/hr/attendance/recalculate',
+    method: 'post',
+    params: query
+  })
+}

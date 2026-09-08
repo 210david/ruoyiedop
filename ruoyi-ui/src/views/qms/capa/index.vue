@@ -107,7 +107,7 @@
           <div class="table-wrap">
             <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" class="app-table">
 <el-table-column type="selection" width="55" align="center" />
-<el-table-column type="index" label="序号" width="85" align="center" />
+<el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
 <el-table-column label="CAPA编号" prop="capaNo" key="capaNo" :width="colWidth('capaNo', 160)" resizable show-overflow-tooltip v-if="columns.capaNo.visible">                <template #header><span>CAPA编号</span><el-tooltip content="CAPA（Corrective and Preventive Action）即纠正与预防措施编号，用于标识和追溯质量问题的闭环处理过程" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></template>
               </el-table-column>
               <el-table-column label="标题" prop="title" key="title" :width="colWidth('title', 220)" resizable show-overflow-tooltip v-if="columns.title.visible" />

@@ -76,7 +76,7 @@
                <div class="table-wrap">
                   <el-table ref="tableRef" v-loading="loading" :data="roleList" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" border class="app-table">
 <el-table-column type="selection" width="55" align="center" />
-<el-table-column type="index" label="序号" width="85" align="center" />
+<el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
 <el-table-column label="角色编号" prop="roleId" key="roleId" :width="colWidth('roleId', 120)" v-if="columns.roleId.visible" />
                      <el-table-column label="角色名称" prop="roleName" key="roleName" :show-overflow-tooltip="true" :width="colWidth('roleName', 150)" v-if="columns.roleName.visible" />
                      <el-table-column label="角色分类" align="center" key="roleCategory" prop="roleCategory" :width="colWidth('roleCategory', 180)" v-if="columns.roleCategory.visible">

@@ -120,7 +120,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
-          <el-table-column type="index" label="序号" width="85" align="center" />
+          <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
           <el-table-column label="线索编号" prop="leadNo" key="leadNo" :width="colWidth('leadNo', 150)" resizable v-if="columns.leadNo.visible" />
           <el-table-column label="企业名称" prop="companyName" key="companyName" :width="colWidth('companyName', 200)" resizable show-overflow-tooltip v-if="columns.companyName.visible">
             <template #default="scope">
@@ -664,31 +664,17 @@
     </el-dialog>
 
     <!-- 导入弹窗 -->
-    <el-dialog v-model="importOpen" width="500px" append-to-body draggable class="rd-dialog">
-      <template #header>
-        <div class="rd-detail-header">
-          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
-          <span class="rd-detail-header-title">线索导入</span>
-        </div>
-      </template>
-      <el-upload ref="uploadRef" :limit="1" accept=".xlsx, .xls" :auto-upload="false" :action="importUrl" :headers="headers" :data="{ updateSupport: importUpdateSupport }" :on-success="handleImportSuccess" :on-error="handleImportError" drag>
-        <el-icon class="el-icon--upload"><upload-filled /></el-icon>
-        <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
-        <template #tip>
-          <div class="el-upload__tip text-center">
-            <span>仅允许导入xls、xlsx格式文件。</span>
-            <el-button type="primary" link @click="handleDownloadTemplate">下载模板</el-button>
-          </div>
-        </template>
-      </el-upload>
-      <div class="mt16">
-        <el-checkbox v-model="importUpdateSupport">如果已存在相同企业名称，则更新数据</el-checkbox>
-      </div>
-      <template #footer>
-        <el-button type="primary" @click="submitImport">确 定</el-button>
-        <el-button @click="importOpen = false">取 消</el-button>
-      </template>
-    </el-dialog>
+    <excel-import-dialog
+      ref="importRef"
+      title="线索导入"
+      action="/mk/lead/importData"
+      template-action="/mk/lead/importTemplate"
+      template-file-name="lead_template"
+      update-support-label="如果已存在相同企业名称，则更新数据"
+      :tips="importTips"
+      :column-labels="importColumnLabels"
+      @success="getList"
+    />
 
     <!-- 重复线索弹窗 -->
     <el-dialog v-model="dupOpen" width="700px" append-to-body draggable class="rd-dialog">
@@ -782,6 +768,7 @@ import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
 const { collapsedCards, toggleCard } = useDetailCard(['c_lead', 'c_company', 'c_requirement', 'c_owner', 'c_other', 'viewBasic', 'viewCompany', 'viewRequirement', 'viewOwner', 'viewOther', 'viewConvert', 'viewInvalid', 'viewInteractions', 'viewTimeline', 'followInfo', 'followForm'])
 import { getToken } from '@/utils/auth'
+import ExcelImportDialog from '@/components/ExcelImportDialog'
 
 const router = useRouter()
 const { proxy } = getCurrentInstance()
@@ -866,9 +853,6 @@ const followRules = {
 }
 
 // 导入相关
-const importOpen = ref(false)
-const importUpdateSupport = ref(false)
-const importUrl = ref(import.meta.env.VITE_APP_BASE_API + '/mk/lead/importData')
 const headers = ref({ Authorization: 'Bearer ' + getToken() })
 
 // 查重
@@ -1232,19 +1216,21 @@ function confirmBatchStatus() {
 }
 
 // 导入
-function handleImport() { importOpen.value = true }
-function handleDownloadTemplate() { proxy.download('mk/lead/importTemplate', {}, `lead_template_${new Date().getTime()}.xlsx`) }
-function submitImport() { proxy.$refs['uploadRef'].submit() }
-function handleImportSuccess(res) {
-  if (res.code === 200) {
-    proxy.$modal.msgSuccess(res.msg)
-    importOpen.value = false
-    getList()
-  } else {
-    proxy.$modal.msgError(res.msg)
-  }
+const importTips = [
+  '请先下载导入模板，按模板格式填写数据。',
+  '企业名称、联系人、手机号为必填字段。',
+  '如勾选更新选项，已存在相同企业名称的线索将被覆盖更新。',
+  '导入结果将显示每条数据的处理情况，失败数据可修正后重新导入。'
+]
+const importColumnLabels = {
+  leadNo: '线索编号',
+  companyName: '企业名称',
+  contactName: '联系人',
+  contactPhone: '联系电话',
+  result: '结果',
+  errorReason: '失败原因'
 }
-function handleImportError() { proxy.$modal.msgError('导入失败') }
+function handleImport() { proxy.$refs['importRef'].open() }
 
 // 查重
 function onCompanyBlur() { if (form.value.companyName && !form.value.leadId) doCheckDup() }

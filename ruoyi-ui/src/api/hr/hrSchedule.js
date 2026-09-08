@@ -9,6 +9,15 @@ export function listHrSchedule(query) {
   })
 }
 
+// 月度排班日历视图
+export function getScheduleCalendar(params) {
+  return request({
+    url: '/hr/schedule/calendar',
+    method: 'get',
+    params: params
+  })
+}
+
 // 查询排班详细
 export function getHrSchedule(scheduleId) {
   return request({
@@ -40,5 +49,23 @@ export function delHrSchedule(scheduleId) {
   return request({
     url: '/hr/schedule/' + scheduleId,
     method: 'delete'
+  })
+}
+
+// 批量排班
+export function batchSchedule(data) {
+  return request({
+    url: '/hr/schedule/batch',
+    method: 'post',
+    data: data
+  })
+}
+
+// 清除排班
+export function clearSchedule(params) {
+  return request({
+    url: '/hr/schedule/clear',
+    method: 'delete',
+    params: params
   })
 }

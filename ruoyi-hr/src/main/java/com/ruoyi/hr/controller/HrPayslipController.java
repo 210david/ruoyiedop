@@ -53,7 +53,8 @@ public class HrPayslipController extends BaseController
     @PostMapping
     public AjaxResult add(@Validated @RequestBody HrPayslip hrPayslip)
     {
-        return toAjax(hrPayslipService.insertHrPayslip(hrPayslip));
+        // 按累计预扣法计算个税/累计数后保存
+        return toAjax(hrPayslipService.saveWithCumulativeTax(hrPayslip));
     }
 
     @PreAuthorize("@ss.hasPermi('hr:payslip:edit')")
@@ -61,7 +62,8 @@ public class HrPayslipController extends BaseController
     @PutMapping
     public AjaxResult edit(@Validated @RequestBody HrPayslip hrPayslip)
     {
-        return toAjax(hrPayslipService.updateHrPayslip(hrPayslip));
+        // 修改后按累计预扣法重算
+        return toAjax(hrPayslipService.saveWithCumulativeTax(hrPayslip));
     }
 
     @PreAuthorize("@ss.hasPermi('hr:payslip:remove')")

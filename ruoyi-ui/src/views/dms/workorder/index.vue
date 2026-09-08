@@ -133,7 +133,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
-          <el-table-column type="index" label="序号" width="85" align="center" />
+          <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
           <el-table-column label="工单号" prop="orderNo" key="orderNo" :width="colWidth('orderNo', 160)" resizable v-if="columns.orderNo.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.orderNo }}</span></template>
           </el-table-column>
@@ -481,7 +481,7 @@
                 <span class="task-table-summary">共 <b>{{ completeTaskList.length }}</b> 项任务，已填写完成情况 <b :class="{ 'task-summary-done': filledTaskCount === completeTaskList.length }">{{ filledTaskCount }}/{{ completeTaskList.length }}</b></span>
               </div>
               <el-table :data="completeTaskList" border size="small" @header-dragend="onHeaderDragEnd">
-                <el-table-column label="序号" type="index" width="60" align="center" />
+                <el-table-column label="序号" type="index" key="序号" :width="colWidth('序号', 60)" align="center" resizable />
                 <el-table-column label="任务" prop="text" min-width="220" show-overflow-tooltip />
                 <el-table-column label="完成情况" width="150" align="center">
                   <template #default="{ row }">
@@ -629,7 +629,7 @@
                 <span class="task-table-summary">已完成 <b class="task-summary-done">{{ verifyTaskList.filter(t => t.result === 'done').length }}</b> / 未完成 <b class="task-summary-undone">{{ verifyTaskList.filter(t => t.result === 'undone').length }}</b> / 不适用 <b>{{ verifyTaskList.filter(t => t.result === 'na').length }}</b></span>
               </div>
               <el-table :data="verifyTaskList" border size="small">
-                <el-table-column label="序号" type="index" width="60" align="center" />
+                <el-table-column label="序号" type="index" key="序号" :width="colWidth('序号', 60)" align="center" resizable />
                 <el-table-column label="任务" prop="text" min-width="200" show-overflow-tooltip />
                 <el-table-column label="完成情况" width="100" align="center">
                   <template #default="{ row }">
@@ -783,7 +783,7 @@
             <div v-if="viewForm.taskChecklist" class="task-checklist">
               <div class="task-checklist-title">任务清单完成情况</div>
               <el-table :data="parseTaskChecklist(viewForm.taskChecklist)" border size="small" @header-dragend="onHeaderDragEnd">
-                <el-table-column label="序号" type="index" width="60" align="center" />
+                <el-table-column label="序号" type="index" key="序号" :width="colWidth('序号', 60)" align="center" resizable />
                 <el-table-column label="任务" prop="text" min-width="200" show-overflow-tooltip />
                 <el-table-column label="完成情况" width="100" align="center">
                   <template #default="{ row }">
@@ -915,7 +915,7 @@
                 <span class="task-table-summary">已完成 <b class="task-summary-done">{{ rejectTaskList.filter(t => t.result === 'done').length }}</b> / 未完成 <b class="task-summary-undone">{{ rejectTaskList.filter(t => t.result === 'undone').length }}</b> / 不适用 <b>{{ rejectTaskList.filter(t => t.result === 'na').length }}</b></span>
               </div>
               <el-table :data="rejectTaskList" border size="small">
-                <el-table-column label="序号" type="index" width="60" align="center" />
+                <el-table-column label="序号" type="index" key="序号" :width="colWidth('序号', 60)" align="center" resizable />
                 <el-table-column label="任务" prop="text" min-width="200" show-overflow-tooltip />
                 <el-table-column label="完成情况" width="100" align="center">
                   <template #default="{ row }">

@@ -84,11 +84,29 @@ public class PmsReturnServiceImpl implements IPmsReturnService
     }
 
     @Override
+    public int countInProgressReturnByReceiveId(Long receiveId)
+    {
+        return pmsReturnMapper.countInProgressReturnByReceiveId(receiveId);
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertReturn(PmsReturn pmsReturn)
     {
-        // 校验：同一采购订单是否存在进行中的退货单（草稿0、待审批1、已审批2、已驳回5）
-        if (pmsReturn.getOrderId() != null)
+        // 退货重复性校验（双轨维度）：
+        // 1) 收货单入口（receiveId 非空，收货验收页发起）：按收货单维度校验。
+        //    一个采购订单可分批多次收货，各收货单的不合格品可各自独立退货，
+        //    因此仅限制"同一收货单"不允许并行存在进行中的退货单（草稿0/待审批1/已审批2/已驳回5）。
+        // 2) 订单直连入口（receiveId 为空，退货管理页手工发起）：保留订单维度校验，
+        //    防止对同一订单手工重复发起退货。
+        if (pmsReturn.getReceiveId() != null)
+        {
+            if (pmsReturnMapper.countInProgressReturnByReceiveId(pmsReturn.getReceiveId()) > 0)
+            {
+                throw new ServiceException("该收货单已存在进行中的退货单（草稿/待审批/已审批/已驳回），请先完成或作废该退货单后再发起新的退货");
+            }
+        }
+        else if (pmsReturn.getOrderId() != null)
         {
             List<Long> inProgressOrderIds = pmsReturnMapper.selectInProgressReturnOrderIds();
             if (inProgressOrderIds != null && inProgressOrderIds.contains(pmsReturn.getOrderId()))

@@ -87,9 +87,9 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table ref="genRef" v-loading="loading" :data="tableList" @selection-change="handleSelectionChange" :default-sort="defaultSort" @sort-change="handleSortChange">
+    <el-table ref="tableRef" v-loading="loading" :data="tableList" @selection-change="handleSelectionChange" :default-sort="defaultSort" @sort-change="handleSortChange" @header-dragend="onHeaderDragEnd">
       <el-table-column type="selection" align="center" width="55"></el-table-column>
-      <el-table-column label="序号" type="index" width="85" align="center">
+      <el-table-column label="序号" type="index" key="序号" :width="colWidth('序号', 85)" resizable align="center">
         <template #default="scope">
           <span>{{(queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1}}</span>
         </template>
@@ -150,9 +150,11 @@ import { listTable, previewTable, delTable, genCode, synchDb } from "@/api/tool/
 import router from "@/router"
 import importTable from "./importTable"
 import createTable from "./createTable"
+import { useColumnResize } from '@/composables/useColumnResize'
 
 const route = useRoute()
 const { proxy } = getCurrentInstance()
+const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('tool_gen_index')
 
 const tableList = ref([])
 const loading = ref(true)
@@ -254,7 +256,7 @@ function resetQuery() {
   dateRange.value = []
   proxy.resetForm("queryRef")
   queryParams.value.pageNum = 1
-  proxy.$refs["genRef"].sort(defaultSort.value.prop, defaultSort.value.order)
+  tableRef.value.sort(defaultSort.value.prop, defaultSort.value.order)
 }
 
 /** 预览按钮 */

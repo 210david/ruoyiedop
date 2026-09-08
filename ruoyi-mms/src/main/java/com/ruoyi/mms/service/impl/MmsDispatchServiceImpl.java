@@ -121,7 +121,7 @@ public class MmsDispatchServiceImpl implements IMmsDispatchService
             "2",   // 重要
             "mms",
             dispatch.getDispatchId(),
-            "/mms/dispatch?id=" + dispatch.getDispatchId(),
+            "/mms/workorder-group/dispatch?id=" + dispatch.getDispatchId(),
             "mms:dispatch:list",
             "0",   // bizStatus: 待开工
             "派工管理"
@@ -597,7 +597,7 @@ public class MmsDispatchServiceImpl implements IMmsDispatchService
                     "2",   // 重要
                     "mms",
                     nextDispatch.getDispatchId(),
-                    "/mms/dispatch?id=" + nextDispatch.getDispatchId(),
+                    "/mms/workorder-group/dispatch?id=" + nextDispatch.getDispatchId(),
                     "mms:dispatch:list",
                     "0",   // bizStatus: 待开工
                     "派工管理"

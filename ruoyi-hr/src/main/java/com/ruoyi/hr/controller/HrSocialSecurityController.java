@@ -22,6 +22,9 @@ public class HrSocialSecurityController extends BaseController
     @Autowired
     private IHrSocialSecurityService hrSocialSecurityService;
 
+    @Autowired
+    private com.ruoyi.hr.service.IHrSsPlanService hrSsPlanService;
+
     @PreAuthorize("@ss.hasPermi('hr:socialSecurity:list')")
     @GetMapping("/list")
     public TableDataInfo list(HrSocialSecurity hrSocialSecurity)
@@ -70,5 +73,23 @@ public class HrSocialSecurityController extends BaseController
     public AjaxResult remove(@PathVariable Long[] ssIds)
     {
         return toAjax(hrSocialSecurityService.deleteHrSocialSecurityByIds(ssIds));
+    }
+
+    /**
+     * 批量初始化：按指定年度默认方案，为在职且未配置该年度社保的员工生成记录
+     * 基数取方案下限（可后续逐个调整），比例继承方案
+     */
+    @Log(title = "社保公积金-批量初始化", businessType = BusinessType.INSERT)
+    @PreAuthorize("@ss.hasPermi('hr:socialSecurity:batchInit')")
+    @PostMapping("/batchInit/{year}")
+    public AjaxResult batchInit(@PathVariable("year") Integer year)
+    {
+        com.ruoyi.hr.domain.HrSsPlan plan = hrSsPlanService.selectDefaultPlanByYear(year);
+        if (plan == null)
+        {
+            return error("该年度未配置默认社保方案，请先在[社保方案]中维护");
+        }
+        int rows = hrSocialSecurityService.batchInitByPlan(plan);
+        return AjaxResult.success("初始化完成，共生成 " + rows + " 条员工社保记录", rows);
     }
 }

@@ -439,6 +439,12 @@ CREATE TABLE `biz_hr_attendance_monthly` (
   `early_count` INT DEFAULT 0 COMMENT '早退次数',
   `absent_days` DECIMAL(5,1) DEFAULT 0 COMMENT '旷工天数',
   `leave_days` DECIMAL(5,1) DEFAULT 0 COMMENT '请假天数',
+  `outing_days` DECIMAL(5,1) DEFAULT 0 COMMENT '外出天数',
+  `trip_days` DECIMAL(5,1) DEFAULT 0 COMMENT '出差天数',
+  `required_days` DECIMAL(5,1) DEFAULT 0 COMMENT '应出勤天数(排班+工作日历理论计算)',
+  `actual_days` DECIMAL(5,1) DEFAULT 0 COMMENT '实际工作天数(出勤+出差+外出,计薪口径)',
+  `dept_id` BIGINT DEFAULT NULL COMMENT '部门ID',
+  `dept_name` VARCHAR(50) DEFAULT NULL COMMENT '部门名称',
   `overtime_hours` DECIMAL(6,1) DEFAULT 0 COMMENT '加班小时',
   `night_shift_count` INT DEFAULT 0 COMMENT '夜班次数',
   `high_temp_days` DECIMAL(5,1) DEFAULT 0 COMMENT '高温天数',
@@ -577,6 +583,7 @@ CREATE TABLE `biz_hr_payslip` (
   `other_deduction` DECIMAL(10,2) DEFAULT 0 COMMENT '其他扣款',
   `net_salary` DECIMAL(10,2) DEFAULT 0 COMMENT '实发工资',
   `calc_status` CHAR(1) DEFAULT '0' COMMENT '状态(0草稿1已锁定2已发放)',
+  `batch_id` BIGINT DEFAULT NULL COMMENT '所属发放批次ID',
   `sealed_by` VARCHAR(64) DEFAULT NULL COMMENT '锁定人',
   `sealed_time` DATETIME DEFAULT NULL COMMENT '锁定时间',
   `pay_date` DATE DEFAULT NULL COMMENT '发放日期',
@@ -588,7 +595,8 @@ CREATE TABLE `biz_hr_payslip` (
   `update_time` DATETIME DEFAULT NULL COMMENT '更新时间',
   `remark` VARCHAR(500) DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`payslip_id`),
-  KEY `idx_ym_emp` (`year_month`, `employee_id`)
+  KEY `idx_ym_emp` (`year_month`, `employee_id`),
+  KEY `idx_batch` (`batch_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='HR工资条明细表';
 
 -- ========== 19. 计件方案 ==========
@@ -992,6 +1000,7 @@ INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, is_frame
 INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark) VALUES ('工资条新增', @p, 2, '#', '', 1, 0, 'F', '0', '0', 'hr:payslip:add', '#', 'admin', sysdate(), '');
 INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark) VALUES ('工资条修改', @p, 3, '#', '', 1, 0, 'F', '0', '0', 'hr:payslip:edit', '#', 'admin', sysdate(), '');
 INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark) VALUES ('工资条删除', @p, 4, '#', '', 1, 0, 'F', '0', '0', 'hr:payslip:remove', '#', 'admin', sysdate(), '');
+INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark) VALUES ('工资条明细明文', @p, 5, '#', '', 1, 0, 'F', '0', '0', 'hr:payslip:detail', '#', 'admin', sysdate(), '');
 
 INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark) VALUES ('计件方案', @hrMenuId, 19, 'pieceworkPlan', 'hr/pieceworkPlan/index', 1, 0, 'C', '0', '0', 'hr:piecework:list', 'component', 'admin', sysdate(), '');
 SET @p = LAST_INSERT_ID();
@@ -1034,6 +1043,9 @@ INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, is_frame
 INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark) VALUES ('薪酬发放新增', @p, 2, '#', '', 1, 0, 'F', '0', '0', 'hr:payroll:add', '#', 'admin', sysdate(), '');
 INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark) VALUES ('薪酬发放修改', @p, 3, '#', '', 1, 0, 'F', '0', '0', 'hr:payroll:edit', '#', 'admin', sysdate(), '');
 INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark) VALUES ('薪酬发放删除', @p, 4, '#', '', 1, 0, 'F', '0', '0', 'hr:payroll:remove', '#', 'admin', sysdate(), '');
+INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark) VALUES ('薪酬核算', @p, 5, '#', '', 1, 0, 'F', '0', '0', 'hr:payroll:calc', '#', 'admin', sysdate(), '');
+INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark) VALUES ('薪酬确认', @p, 6, '#', '', 1, 0, 'F', '0', '0', 'hr:payroll:confirm', '#', 'admin', sysdate(), '');
+INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark) VALUES ('薪酬发放确认', @p, 7, '#', '', 1, 0, 'F', '0', '0', 'hr:payroll:pay', '#', 'admin', sysdate(), '');
 
 INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark) VALUES ('证书台账', @hrMenuId, 25, 'certificate', 'hr/certificate/index', 1, 0, 'C', '0', '0', 'hr:certificate:list', 'skill', 'admin', sysdate(), '');
 SET @p = LAST_INSERT_ID();

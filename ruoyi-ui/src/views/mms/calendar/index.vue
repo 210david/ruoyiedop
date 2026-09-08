@@ -62,9 +62,9 @@
       </div>
 
       <div class="table-wrap">
-        <el-table v-loading="loading" :data="dataList" border @selection-change="handleSelectionChange" class="app-table">
+        <el-table ref="tableRef" v-loading="loading" :data="dataList" border @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" class="app-table">
 <el-table-column type="selection" width="55" align="center" />
-<el-table-column type="index" label="序号" width="85" align="center" />
+<el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" resizable align="center" />
 <el-table-column label="工作日期" prop="workDate" align="center" width="120">
             <template #default="scope"><span>{{ parseTime(scope.row.workDate, '{y}-{m}-{d}') }}</span></template>
           </el-table-column>
@@ -173,9 +173,11 @@
 <script setup name="Calendar">
 import { listCalendar, getCalendar, addCalendar, updateCalendar, delCalendar } from "@/api/mms/calendar";
 import { useDetailCard } from '@/composables/useDetailCard'
+import { useColumnResize } from '@/composables/useColumnResize'
 import { Search, Filter, RefreshLeft, ArrowDown, ArrowRight, WarningFilled } from '@element-plus/icons-vue'
 
 const { proxy } = getCurrentInstance();
+const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('mms_calendar_index')
 const { mms_calendar_daytype, mms_status } = proxy.useDict("mms_calendar_daytype", "mms_status");
 const { collapsedCards, toggleCard } = useDetailCard(["c0","c1","vc0","vc1"])
 

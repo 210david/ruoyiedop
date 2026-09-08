@@ -64,7 +64,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" v-loading="loading" :data="logininforList" @selection-change="handleSelectionChange" :default-sort="defaultSort" @sort-change="handleSortChange" @header-dragend="onHeaderDragEnd" border class="app-table">
 <el-table-column type="selection" width="55" align="center" />
-<el-table-column type="index" label="序号" width="85" align="center" />
+<el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
 <el-table-column label="访问编号" align="center" prop="infoId" :width="colWidth('infoId', 120)" resizable v-if="columns.infoId.visible" />
           <el-table-column label="用户名称" align="center" prop="userName" :show-overflow-tooltip="true" :width="colWidth('userName', 120)" resizable sortable="custom" :sort-orders="['descending', 'ascending']" v-if="columns.userName.visible" />
           <el-table-column label="地址" align="center" prop="ipaddr" :show-overflow-tooltip="true" :width="colWidth('ipaddr', 130)" resizable v-if="columns.ipaddr.visible" />

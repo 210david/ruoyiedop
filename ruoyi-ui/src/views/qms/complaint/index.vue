@@ -93,7 +93,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" class="app-table">
 <el-table-column type="selection" width="55" align="center" />
-<el-table-column type="index" label="序号" width="85" align="center" />
+<el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
 <el-table-column label="客诉编号" prop="complaintNo" key="complaintNo" :width="colWidth('complaintNo', 160)" resizable show-overflow-tooltip v-if="columns.complaintNo.visible" />          <el-table-column label="客户名称" prop="customerName" key="customerName" :width="colWidth('customerName', 180)" resizable show-overflow-tooltip v-if="columns.customerName.visible" />
           <el-table-column label="物料" prop="materialName" key="materialName" :width="colWidth('materialName', 180)" resizable show-overflow-tooltip v-if="columns.materialName.visible" />
           <el-table-column label="投诉日期" prop="complaintDate" key="complaintDate" :width="colWidth('complaintDate', 120)" resizable align="center" v-if="columns.complaintDate.visible"><template #default="scope"><span>{{ parseTime(scope.row.complaintDate, '{y}-{m}-{d}') }}</span></template></el-table-column>

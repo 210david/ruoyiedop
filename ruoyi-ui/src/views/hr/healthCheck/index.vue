@@ -160,7 +160,12 @@
                 </el-form-item></el-col>
                 <el-col :span="12">
                   <el-form-item label="工号" prop="employeeNo">
-                    <el-input v-model="form.employeeNo" placeholder="请输入工号" />
+                    <el-input v-model="form.employeeNo" readonly placeholder="选择人员后自动带出" />
+                  </el-form-item>
+                </el-col>
+                <el-col :span="12">
+                  <el-form-item label="部门" prop="deptName">
+                    <el-input :model-value="form.deptName" readonly placeholder="选择人员后自动带出" />
                   </el-form-item>
                 </el-col>
               </el-row>
@@ -233,8 +238,8 @@
             <div class="rd-card-body" v-show="!collapsedCards.e3">
               <el-row :gutter="20">
                 <el-col :span="24">
-                  <el-form-item label="附件URL" prop="attachmentUrl">
-                    <el-input v-model="form.attachmentUrl" placeholder="请输入附件URL" />
+                  <el-form-item label="附件" prop="attachmentUrl">
+                    <file-upload v-model="form.attachmentUrl" :limit="5" :file-type="['pdf', 'doc', 'docx', 'jpg', 'png']" />
                   </el-form-item>
                 </el-col>
               </el-row>
@@ -273,6 +278,7 @@
             <div class="rd-grid">
               <div class="rd-item"><span class="rd-label">员工姓名</span><div class="rd-value">{{ viewData.employeeName || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">工号</span><div class="rd-value">{{ viewData.employeeNo || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">部门</span><div class="rd-value">{{ viewData.deptName || '-' }}</div></div>
             </div>
           </div>
         </section>
@@ -310,7 +316,23 @@
           </div>
           <div class="rd-card-body" style="display:block" v-show="!collapsedCards.c3">
             <div class="rd-grid">
-              <div class="rd-item rd-item--full"><span class="rd-label">附件URL</span><div class="rd-value">{{ viewData.attachmentUrl || '-' }}</div></div>
+              <div class="rd-item rd-item--full" v-if="viewData.attachmentUrl">
+                <span class="rd-label">体检附件</span>
+                <div class="rd-value">
+                  <div class="rd-file-links">
+                    <div class="rd-file-item" v-for="(url, idx) in String(viewData.attachmentUrl).split(',')" :key="idx">
+                      <div class="rd-file-link" @click="handleFilePreview(url)">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                        <span class="rd-file-name">{{ url.includes('/') ? url.substring(url.lastIndexOf('/') + 1) : url }}</span>
+                      </div>
+                      <span class="rd-file-dl" @click="handleFileDownload(url)">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        下载
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
               <div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value">{{ viewData.remark || '-' }}</div></div>
             </div>
           </div>
@@ -322,6 +344,7 @@
     </el-dialog>
     <!-- ===== 人员选择弹窗 ===== -->
     <employee-picker ref="employeePickerRef" title="选择人员" @confirm="onEmployeePickerConfirm" />
+    <file-preview ref="filePreviewRef" />
   </div>
 </template>
 
@@ -331,6 +354,8 @@ import { Filter, ArrowDown, Search, Edit, Delete, Download } from '@element-plus
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
 import EmployeePicker from '@/components/EmployeePicker';
+import FilePreview from '@/components/FilePreview/index.vue'
+import { downloadFile } from '@/utils/downloadFile'
 
 const { proxy } = getCurrentInstance()
 
@@ -338,6 +363,16 @@ const { hr_health_check_type: checkTypeOptions } = proxy.useDict('hr_health_chec
 const { hr_health_check_result: checkResultOptions } = proxy.useDict('hr_health_check_result')
 
 const employeePickerRef = ref(null)
+const filePreviewRef = ref(null)
+
+/** 附件预览与下载 */
+function handleFilePreview(url) {
+  const name = url.includes('/') ? url.substring(url.lastIndexOf('/') + 1) : url
+  filePreviewRef.value.open(url, name)
+}
+function handleFileDownload(url) {
+  downloadFile(url)
+}
 
 /** 列宽拖拽持久化 */
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('hr_healthCheck_index')
@@ -433,10 +468,13 @@ function openEmployeePicker() { employeePickerRef.value.open(form.value.employee
 function onEmployeePickerConfirm(emp) {
   form.value.employeeId = emp.employeeId;
   form.value.employeeName = emp.employeeName;
+  // 自动带出工号和部门
+  form.value.employeeNo = emp.employeeNo;
+  form.value.deptName = emp.orgName;
 }
 function onEmployeeFieldClick(e) {
   if (e && e.target && e.target.closest && e.target.closest('.el-input-group__append')) {
-    if (form.value.employeeId) { form.value.employeeId = null; form.value.employeeName = ''; }
+    if (form.value.employeeId) { form.value.employeeId = null; form.value.employeeName = ''; form.value.employeeNo = ''; form.value.deptName = ''; }
     else { openEmployeePicker(); }
     return;
   }
@@ -483,6 +521,7 @@ function reset() {
     employeeId: undefined,
     employeeName: undefined,
     employeeNo: undefined,
+    deptName: undefined,
     checkType: undefined,
     checkDate: undefined,
     checkOrg: undefined,

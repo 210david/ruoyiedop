@@ -1,6 +1,9 @@
 package com.ruoyi.hr.service.impl;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -191,8 +194,8 @@ public class HrEmployeeServiceImpl implements IHrEmployeeService
         }
         int successNum = 0;
         int failureNum = 0;
-        StringBuilder successMsg = new StringBuilder();
-        StringBuilder failureMsg = new StringBuilder();
+        List<Map<String, Object>> successList = new ArrayList<>();
+        List<Map<String, Object>> failureList = new ArrayList<>();
         for (HrEmployee row : employeeList)
         {
             try
@@ -229,12 +232,12 @@ public class HrEmployeeServiceImpl implements IHrEmployeeService
                         row.setUpdateBy(operName);
                         hrEmployeeMapper.updateHrEmployee(row);
                         successNum++;
-                        successMsg.append("<br/>" + successNum + "、员工 " + row.getEmployeeName() + "（工号: " + row.getEmployeeNo() + "）更新成功");
+                        successList.add(buildSuccessItem(row, "更新成功"));
                     }
                     else
                     {
                         failureNum++;
-                        failureMsg.append("<br/>" + failureNum + "、员工 " + row.getEmployeeName() + " 已存在（工号: " + row.getEmployeeNo() + "）");
+                        failureList.add(buildFailureItem(row, "员工已存在（工号: " + row.getEmployeeNo() + "），未勾选更新选项"));
                     }
                 }
                 else
@@ -247,26 +250,66 @@ public class HrEmployeeServiceImpl implements IHrEmployeeService
                     row.setCreateBy(operName);
                     hrEmployeeMapper.insertHrEmployee(row);
                     successNum++;
-                    successMsg.append("<br/>" + successNum + "、员工 " + row.getEmployeeName() + "（工号: " + row.getEmployeeNo() + "）导入成功");
+                    successList.add(buildSuccessItem(row, "导入成功"));
                 }
             }
             catch (Exception e)
             {
                 failureNum++;
-                String name = row.getEmployeeName() != null ? row.getEmployeeName() : "未知员工";
-                failureMsg.append("<br/>" + failureNum + "、员工 " + name + " 导入失败：" + e.getMessage());
+                String errMsg = e.getMessage();
+                if (errMsg != null && errMsg.length() > 200) { errMsg = errMsg.substring(0, 200) + "..."; }
+                failureList.add(buildFailureItem(row, errMsg != null ? errMsg : "未知错误"));
             }
         }
-        if (failureNum > 0)
+
+        // 构建返回结果（结构化明细）
+        AjaxResult ajax = AjaxResult.success();
+        ajax.put("successNum", successNum);
+        ajax.put("failureNum", failureNum);
+        ajax.put("successList", successList);
+        ajax.put("failureList", failureList);
+        if (failureNum > 0 && successNum == 0)
         {
-            failureMsg.insert(0, "很抱歉，导入失败！共 " + failureNum + " 条数据格式不正确，错误如下：");
-            throw new RuntimeException(failureMsg.toString());
+            ajax.put("code", 500);
+            ajax.put("msg", "导入失败，共 " + failureNum + " 条数据异常");
+        }
+        else if (failureNum > 0)
+        {
+            ajax.put("msg", "部分导入成功：成功 " + successNum + " 条，失败 " + failureNum + " 条");
         }
         else
         {
-            successMsg.insert(0, "恭喜您，数据已全部导入成功！共 " + successNum + " 条，数据如下：");
+            ajax.put("msg", "导入成功，共 " + successNum + " 条");
         }
-        return AjaxResult.success(successMsg.toString());
+        return ajax;
+    }
+
+    /**
+     * 构建成功明细项
+     */
+    private Map<String, Object> buildSuccessItem(HrEmployee row, String result)
+    {
+        Map<String, Object> item = new LinkedHashMap<>();
+        item.put("employeeNo", row.getEmployeeNo() != null ? row.getEmployeeNo() : "");
+        item.put("employeeName", row.getEmployeeName() != null ? row.getEmployeeName() : "");
+        item.put("orgName", row.getOrgName() != null ? row.getOrgName() : "");
+        item.put("positionName", row.getPositionName() != null ? row.getPositionName() : "");
+        item.put("result", result);
+        return item;
+    }
+
+    /**
+     * 构建失败明细项
+     */
+    private Map<String, Object> buildFailureItem(HrEmployee row, String errorReason)
+    {
+        Map<String, Object> item = new LinkedHashMap<>();
+        item.put("employeeNo", row.getEmployeeNo() != null ? row.getEmployeeNo() : "");
+        item.put("employeeName", row.getEmployeeName() != null ? row.getEmployeeName() : "");
+        item.put("orgName", row.getOrgName() != null ? row.getOrgName() : "");
+        item.put("positionName", row.getPositionName() != null ? row.getPositionName() : "");
+        item.put("errorReason", errorReason);
+        return item;
     }
     /**
      * 新增/编辑员工时同步创建系统用户（填写了登录账号且尚未关联用户时）

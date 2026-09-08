@@ -160,7 +160,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
-          <el-table-column type="index" label="序号" width="85" align="center" />
+          <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" resizable align="center" />
           <el-table-column label="供应商编码" prop="supplierCode" key="supplierCode" :width="colWidth('supplierCode', 150)" resizable sortable="custom" v-if="columns.supplierCode.visible" />
           <el-table-column label="供应商名称" prop="supplierName" key="supplierName" :width="colWidth('supplierName', 220)" resizable show-overflow-tooltip v-if="columns.supplierName.visible" />
           <el-table-column label="简称" prop="supplierShortName" key="supplierShortName" :width="colWidth('supplierShortName', 120)" resizable show-overflow-tooltip v-if="columns.supplierShortName.visible" />
@@ -198,6 +198,7 @@
       template-file-name="supplier_template"
       update-support-label="是否更新已经存在的供应商数据"
       :tips="importTips"
+      :column-labels="importColumnLabels"
       :update-key-options="updateKeyOptions"
       default-update-key="supplierName"
       @success="getList"
@@ -577,6 +578,14 @@ const importTips = [
   '如勾选「更新已存在数据」，需选择匹配字段：按名称、统一信用代码或编码匹配',
   '导入结果将显示每条数据的处理情况，失败数据可修正后重新导入'
 ]
+const importColumnLabels = {
+  supplierCode: '供应商编码',
+  supplierName: '供应商名称',
+  contactPerson: '联系人',
+  contactPhone: '联系电话',
+  result: '结果',
+  errorReason: '失败原因'
+}
 const updateKeyOptions = [
   { value: 'supplierName', label: '供应商名称' },
   { value: 'unifiedCreditCode', label: '统一社会信用代码' },

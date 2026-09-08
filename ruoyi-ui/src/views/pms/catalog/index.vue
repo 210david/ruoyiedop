@@ -190,7 +190,7 @@
       <template #footer><el-button type="primary" @click="submitForm">确 定</el-button><el-button @click="cancel">取 消</el-button></template>
     </el-dialog>
 
-    <excel-import-dialog ref="importRef" title="供货清单导入" action="/pms/catalog/importData" template-action="/pms/catalog/importTemplate" template-file-name="catalog_template" update-support-label="是否更新已经存在的供货清单数据" @success="getList" />
+    <excel-import-dialog ref="importRef" title="供货清单导入" action="/pms/catalog/importData" template-action="/pms/catalog/importTemplate" template-file-name="catalog_template" update-support-label="是否更新已经存在的供货清单数据" :tips="importTips" :column-labels="importColumnLabels" @success="getList" />
 
     <el-dialog v-model="viewOpen" width="860px" append-to-body draggable class="rd-dialog">
       <template #header><div class="rd-detail-header"><div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></div><span class="rd-detail-header-title">供货清单详情</span><div class="rd-detail-header-sub" v-if="viewData.supplierName"><div class="rd-detail-header-divider"></div><span class="rd-detail-header-no">{{ viewData.supplierName }} - {{ viewData.materialName }}</span></div></div></template>
@@ -356,6 +356,21 @@ function handleView(row) { getCatalog(row.catalogId).then(res => { viewData.valu
 function submitForm() { proxy.$refs['catalogRef'].validate(valid => { if (valid) { if (form.value.catalogId != undefined) { updateCatalog(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList() }) } else { addCatalog(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList() }) } } }) }
 function handleDelete(row) { const catalogIds = row.catalogId || ids.value; proxy.$modal.confirm('确认删除编号为"' + catalogIds + '"的数据？').then(() => delCatalog(catalogIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
 function handleExport() { proxy.download('pms/catalog/export', { ...proxy.addDateRange(queryParams.value, dateRange.value, 'PriceEffectiveDate') }, `catalog_${new Date().getTime()}.xlsx`) }
+const importTips = [
+  '请先下载导入模板，按模板格式填写数据。',
+  '供应商名称、物料编码、物料名称为必填字段。',
+  '如勾选更新选项，已存在的供货清单记录将被覆盖更新。',
+  '导入结果将显示每条数据的处理情况，失败数据可修正后重新导入。'
+]
+const importColumnLabels = {
+  supplierName: '供应商名称',
+  materialCode: '物料编码',
+  materialName: '物料名称',
+  specModel: '规格型号',
+  unit: '单位',
+  result: '结果',
+  errorReason: '失败原因'
+}
 function handleImport() { proxy.$refs['importRef'].open() }
 function cancel() { open.value = false; reset() }
 

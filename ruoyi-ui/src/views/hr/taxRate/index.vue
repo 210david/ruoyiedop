@@ -44,28 +44,26 @@
     <div class="surface">
       <div class="toolbar">
         <div class="left">
-          <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['hr:taxRate:add']">新增</el-button>
-          <button type="button" class="btn-soft is-outline" :disabled="single" @click="handleUpdate" v-hasPermi="['hr:taxRate:edit']">
-            <el-icon><Edit /></el-icon> 修改
-          </button>
-          <button type="button" class="btn-soft is-danger-outline" :disabled="multiple" @click="handleDelete" v-hasPermi="['hr:taxRate:remove']">
-            <el-icon><Delete /></el-icon> 删除
-          </button>
-          <div class="toolbar-divider"></div>
-          <button type="button" class="btn-soft is-outline" @click="handleExport" v-hasPermi="['hr:taxRate:export']">
-            <el-icon><Download /></el-icon> 导出
-          </button>
+          <el-alert type="info" :closable="false" show-icon style="padding:6px 12px"
+            title="个税按现行法规内置：起征点（基本减除费用）5000元/月已由系统自动扣除；本表为「全年应纳税所得额」的7级累进税率，即收入扣除起征点、社保公积金、专项附加扣除后的年度余额所适用的税率。通常无需修改，如法规调整请联系系统管理员。" />
         </div>
         <div class="right"><right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="hr_taxRate_columns"></right-toolbar></div>
       </div>
       <div class="table-wrap">
         <el-table ref="tableRef" v-loading="loading" :data="hrTaxRateList" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" border class="app-table">
-          <el-table-column type="selection" width="55" align="center" />
           <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" resizable align="center" />
-          <el-table-column label="级数" prop="level" key="level" align="center" :width="colWidth('level', 90)" resizable v-if="columns.level.visible" />
-          <el-table-column label="下限" prop="minAmount" key="minAmount" align="center" :width="colWidth('minAmount', 130)" resizable v-if="columns.minAmount.visible" />
-          <el-table-column label="上限" prop="maxAmount" key="maxAmount" align="center" :width="colWidth('maxAmount', 130)" resizable v-if="columns.maxAmount.visible" />
-          <el-table-column label="税率" prop="rate" key="rate" align="center" :width="colWidth('rate', 110)" resizable v-if="columns.rate.visible" />
+          <el-table-column label="级数" prop="level" key="level" align="center" :width="colWidth('level', 90)" resizable v-if="columns.level.visible">
+            <template #default="scope">第{{ scope.row.level }}级</template>
+          </el-table-column>
+          <el-table-column label="全年应纳税所得额下限" prop="minAmount" key="minAmount" align="center" :width="colWidth('minAmount', 170)" resizable v-if="columns.minAmount.visible">
+            <template #default="scope">{{ scope.row.minAmount ?? 0 }}</template>
+          </el-table-column>
+          <el-table-column label="全年应纳税所得额上限" prop="maxAmount" key="maxAmount" align="center" :width="colWidth('maxAmount', 170)" resizable v-if="columns.maxAmount.visible">
+            <template #default="scope">{{ scope.row.maxAmount ?? '无限额' }}</template>
+          </el-table-column>
+          <el-table-column label="税率" prop="rate" key="rate" align="center" :width="colWidth('rate', 110)" resizable v-if="columns.rate.visible">
+            <template #default="scope">{{ scope.row.rate != null ? (scope.row.rate * 100).toFixed(1).replace(/\.0$/, '') + '%' : '-' }}</template>
+          </el-table-column>
           <el-table-column label="速算扣除数" prop="quickDeduction" key="quickDeduction" align="center" :width="colWidth('quickDeduction', 130)" resizable v-if="columns.quickDeduction.visible" />
           <el-table-column label="生效日期" prop="effectiveDate" key="effectiveDate" align="center" :width="colWidth('effectiveDate', 130)" resizable v-if="columns.effectiveDate.visible" />
           <el-table-column label="状态" prop="status" key="status" align="center" :width="colWidth('status', 100)" resizable v-if="columns.status.visible">
@@ -73,17 +71,10 @@
               <span class="badge" :class="statusBadgeClass(scope.row.status)"><span class="dot"></span>{{ statusLabel(scope.row.status) }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="删除标志" prop="delFlag" key="delFlag" align="center" :width="colWidth('delFlag', 110)" resizable v-if="columns.delFlag.visible">
-            <template #default="scope">
-              <span class="badge" :class="delFlagBadgeClass(scope.row.delFlag)"><span class="dot"></span>{{ delFlagLabel(scope.row.delFlag) }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
+          <el-table-column label="操作" width="100" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
               <div class="action-btn-row">
                 <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['hr:taxRate:query']">详情</el-button>
-                <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['hr:taxRate:edit']">修改</el-button>
-                <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['hr:taxRate:remove']">删除</el-button>
               </div>
             </template>
           </el-table-column>
@@ -94,7 +85,7 @@
       </div>
     </div>
 
-    <!-- ===== 编辑弹窗 ===== -->
+    <!-- ===== 编辑弹窗（已下线：税率表只读内置） ===== -->
     <el-dialog v-model="open" width="800px" append-to-body draggable class="rd-dialog">
       <template #header>
         <div class="rd-detail-header">
@@ -185,8 +176,8 @@
           </div>
           <div class="rd-card-body" style="display:block" v-show="!collapsedCards.c1">
             <div class="rd-grid">
-              <div class="rd-item"><span class="rd-label">下限</span><div class="rd-value">{{ viewData.minAmount ?? '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label">上限</span><div class="rd-value">{{ viewData.maxAmount ?? '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">全年应纳税所得额下限</span><div class="rd-value">{{ viewData.minAmount ?? '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">全年应纳税所得额上限</span><div class="rd-value">{{ viewData.maxAmount ?? '无限额' }}</div></div>
               <div class="rd-item"><span class="rd-label">税率</span><div class="rd-value">{{ viewData.rate ?? '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">速算扣除数</span><div class="rd-value">{{ viewData.quickDeduction ?? '-' }}</div></div>
             </div>
@@ -252,8 +243,7 @@ const defaultColumns = {
   rate: { label: '税率', visible: true },
   quickDeduction: { label: '速算扣除数', visible: true },
   effectiveDate: { label: '生效日期', visible: true },
-  status: { label: '状态', visible: true },
-  delFlag: { label: '删除标志', visible: true }
+  status: { label: '状态', visible: true }
 }
 function loadColumnVisibility() {
   try {
@@ -300,6 +290,8 @@ function delFlagBadgeClass(v) {
   const map = { '0': 'green', '2': 'red' }
   return map[String(v)] || 'gray'
 }
+
+// 税率表按法规内置只读：handleAdd 等函数在下方保留完整实现，模板中相关按钮已通过 v-if 隐藏
 
 const data = reactive({
   form: {},

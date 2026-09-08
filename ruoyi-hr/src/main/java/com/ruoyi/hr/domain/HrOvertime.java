@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.ruoyi.common.annotation.Excel;
 import com.ruoyi.common.core.domain.BaseEntity;
 import java.util.Date;
+import java.util.List;
 import java.math.BigDecimal;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -22,6 +23,10 @@ public class HrOvertime extends BaseEntity
     private String employeeName;
     @Excel(name = "工号")
     private String employeeNo;
+    @Excel(name = "部门ID")
+    private Long deptId;
+    @Excel(name = "部门名称")
+    private String deptName;
     @NotNull(message = "加班日期不能为空")
     @JsonFormat(pattern = "yyyy-MM-dd")
     @Excel(name = "加班日期")
@@ -43,6 +48,7 @@ public class HrOvertime extends BaseEntity
     private BigDecimal multiplier;
     @Excel(name = "补偿方式")
     private String compensationType;
+    @NotBlank(message = "加班原因不能为空")
     @Excel(name = "加班原因")
     private String reason;
     @Excel(name = "审批状态")
@@ -69,6 +75,10 @@ public class HrOvertime extends BaseEntity
     public void setEmployeeName(String employeeName) { this.employeeName = employeeName; }
     public String getEmployeeNo() { return employeeNo; }
     public void setEmployeeNo(String employeeNo) { this.employeeNo = employeeNo; }
+    public Long getDeptId() { return deptId; }
+    public void setDeptId(Long deptId) { this.deptId = deptId; }
+    public String getDeptName() { return deptName; }
+    public void setDeptName(String deptName) { this.deptName = deptName; }
     public Date getOvertimeDate() { return overtimeDate; }
     public void setOvertimeDate(Date overtimeDate) { this.overtimeDate = overtimeDate; }
     public String getOvertimeType() { return overtimeType; }
@@ -97,4 +107,9 @@ public class HrOvertime extends BaseEntity
     public void setStatus(String status) { this.status = status; }
     public String getDelFlag() { return delFlag; }
     public void setDelFlag(String delFlag) { this.delFlag = delFlag; }
+
+    /** 审核日志列表 */
+    private List<HrOvertimeAuditLog> auditLogList;
+    public List<HrOvertimeAuditLog> getAuditLogList() { return auditLogList; }
+    public void setAuditLogList(List<HrOvertimeAuditLog> auditLogList) { this.auditLogList = auditLogList; }
 }

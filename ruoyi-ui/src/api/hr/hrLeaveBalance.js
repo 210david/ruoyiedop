@@ -42,3 +42,34 @@ export function delHrLeaveBalance(balanceId) {
     method: 'delete'
   })
 }
+
+// 批量生成假期余额
+export function batchGenerateBalance(data) {
+  return request({
+    url: '/hr/leaveBalance/batchGenerate',
+    method: 'post',
+    data: data
+  })
+}
+
+// 下载导入模板
+export function downloadImportTemplate() {
+  return request({
+    url: '/hr/leaveBalance/importTemplate',
+    method: 'post',
+    responseType: 'blob'
+  })
+}
+
+// 批量导入假期余额
+export function importBalanceData(file, overwrite) {
+  const formData = new FormData()
+  formData.append('file', file)
+  formData.append('overwrite', overwrite)
+  return request({
+    url: '/hr/leaveBalance/importData',
+    method: 'post',
+    headers: { 'Content-Type': 'multipart/form-data' },
+    data: formData
+  })
+}

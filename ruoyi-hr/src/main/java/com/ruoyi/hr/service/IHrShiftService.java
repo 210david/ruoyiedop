@@ -10,4 +10,6 @@ public interface IHrShiftService {
     public int updateHrShift(HrShift hrShift);
     public int deleteHrShiftByIds(Long[] shiftIds);
     public int deleteHrShiftById(Long shiftId);
+    /** 查询默认班次 */
+    public HrShift selectDefaultShift();
 }

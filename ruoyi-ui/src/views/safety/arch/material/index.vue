@@ -100,7 +100,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" v-loading="loading" :data="materialList" border @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
-          <el-table-column type="index" label="序号" width="85" align="center" />
+          <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
           <el-table-column label="危化品编号" prop="materialCode" key="materialCode" :width="colWidth('materialCode', 130)" resizable sortable="custom" show-overflow-tooltip v-if="columns.materialCode.visible" />
           <el-table-column label="危化品名称" prop="materialName" key="materialName" :width="colWidth('materialName', 180)" resizable show-overflow-tooltip v-if="columns.materialName.visible" />
           <el-table-column label="危化品分类" prop="hazardClass" key="hazardClass" :width="colWidth('hazardClass', 140)" resizable v-if="columns.hazardClass.visible">

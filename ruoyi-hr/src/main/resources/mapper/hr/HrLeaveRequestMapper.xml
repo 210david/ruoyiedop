@@ -8,6 +8,8 @@
         <result property="employeeId" column="employee_id"/>
         <result property="employeeName" column="employee_name"/>
         <result property="employeeNo" column="employee_no"/>
+        <result property="deptId" column="dept_id"/>
+        <result property="deptName" column="dept_name"/>
         <result property="leaveType" column="leave_type"/>
         <result property="startTime" column="start_time"/>
         <result property="endTime" column="end_time"/>
@@ -25,50 +27,62 @@
         <result property="updateBy" column="update_by"/>
         <result property="updateTime" column="update_time"/>
         <result property="remark" column="remark"/>
+        <!-- 假期余额关联字段 -->
+        <result property="remainingDays" column="remaining_days"/>
+        <result property="totalDays" column="total_days"/>
+        <result property="usedDays" column="used_days"/>
     </resultMap>
 
     <sql id="selectVo">
-        SELECT leave_req_id, leave_req_no, employee_id, employee_name, employee_no, leave_type, start_time, end_time, leave_days, reason, attachment_url, audit_status, audit_by, audit_time, audit_remark, status, del_flag, create_by, create_time, update_by, update_time, remark
-        FROM biz_hr_leave_request
+        SELECT t.leave_req_id, t.leave_req_no, t.employee_id, t.employee_name, t.employee_no, t.dept_id, t.dept_name,
+               t.leave_type, t.start_time, t.end_time, t.leave_days, t.reason, t.attachment_url,
+               t.audit_status, t.audit_by, t.audit_time, t.audit_remark, t.status, t.del_flag,
+               t.create_by, t.create_time, t.update_by, t.update_time, t.remark,
+               b.remaining_days, b.total_days, b.used_days
+        FROM biz_hr_leave_request t
+        LEFT JOIN biz_hr_leave_balance b ON b.employee_id = t.employee_id AND b.leave_type = t.leave_type
+            AND b.year = YEAR(NOW()) AND (b.del_flag IS NULL OR b.del_flag = '0')
     </sql>
 
     <select id="selectHrLeaveRequestList" parameterType="HrLeaveRequest" resultMap="HrLeaveRequestResult">
         <include refid="selectVo"/>
         <where>
-            (del_flag IS NULL OR del_flag = '0')
-            <if test="leaveReqNo != null and leaveReqNo != ''"> AND leave_req_no LIKE CONCAT('%', #{leaveReqNo}, '%')</if>
-            <if test="employeeId != null"> AND employee_id = #{employeeId}</if>
-            <if test="employeeName != null and employeeName != ''"> AND employee_name LIKE CONCAT('%', #{employeeName}, '%')</if>
-            <if test="employeeNo != null and employeeNo != ''"> AND employee_no LIKE CONCAT('%', #{employeeNo}, '%')</if>
-            <if test="leaveType != null and leaveType != ''"> AND leave_type LIKE CONCAT('%', #{leaveType}, '%')</if>
-            <if test="startTime != null"> AND start_time = #{startTime}</if>
-            <if test="params.beginStartTime != null and params.beginStartTime != ''"> AND start_time &gt;= #{params.beginStartTime}</if>
-            <if test="params.endStartTime != null and params.endStartTime != ''"> AND start_time &lt;= #{params.endStartTime}</if>
-            <if test="endTime != null"> AND end_time = #{endTime}</if>
-            <if test="params.beginEndTime != null and params.beginEndTime != ''"> AND end_time &gt;= #{params.beginEndTime}</if>
-            <if test="params.endEndTime != null and params.endEndTime != ''"> AND end_time &lt;= #{params.endEndTime}</if>
-            <if test="leaveDays != null"> AND leave_days = #{leaveDays}</if>
-            <if test="reason != null and reason != ''"> AND reason LIKE CONCAT('%', #{reason}, '%')</if>
-            <if test="attachmentUrl != null and attachmentUrl != ''"> AND attachment_url LIKE CONCAT('%', #{attachmentUrl}, '%')</if>
-            <if test="auditStatus != null and auditStatus != ''"> AND audit_status LIKE CONCAT('%', #{auditStatus}, '%')</if>
-            <if test="auditBy != null and auditBy != ''"> AND audit_by LIKE CONCAT('%', #{auditBy}, '%')</if>
-            <if test="auditTime != null"> AND audit_time = #{auditTime}</if>
-            <if test="auditRemark != null and auditRemark != ''"> AND audit_remark LIKE CONCAT('%', #{auditRemark}, '%')</if>
-            <if test="status != null and status != ''"> AND status LIKE CONCAT('%', #{status}, '%')</if>
-            <if test="delFlag != null and delFlag != ''"> AND del_flag LIKE CONCAT('%', #{delFlag}, '%')</if>
+            (t.del_flag IS NULL OR t.del_flag = '0')
+            <if test="leaveReqNo != null and leaveReqNo != ''"> AND t.leave_req_no LIKE CONCAT('%', #{leaveReqNo}, '%')</if>
+            <if test="employeeId != null"> AND t.employee_id = #{employeeId}</if>
+            <if test="employeeName != null and employeeName != ''"> AND t.employee_name LIKE CONCAT('%', #{employeeName}, '%')</if>
+            <if test="employeeNo != null and employeeNo != ''"> AND t.employee_no LIKE CONCAT('%', #{employeeNo}, '%')</if>
+            <if test="deptId != null"> AND t.dept_id = #{deptId}</if>
+            <if test="deptName != null and deptName != ''"> AND t.dept_name LIKE CONCAT('%', #{deptName}, '%')</if>
+            <if test="leaveType != null and leaveType != ''"> AND t.leave_type LIKE CONCAT('%', #{leaveType}, '%')</if>
+            <if test="startTime != null"> AND t.start_time = #{startTime}</if>
+            <if test="params.beginStartTime != null and params.beginStartTime != ''"> AND t.start_time &gt;= #{params.beginStartTime}</if>
+            <if test="params.endStartTime != null and params.endStartTime != ''"> AND t.start_time &lt;= #{params.endStartTime}</if>
+            <if test="endTime != null"> AND t.end_time = #{endTime}</if>
+            <if test="params.beginEndTime != null and params.beginEndTime != ''"> AND t.end_time &gt;= #{params.beginEndTime}</if>
+            <if test="params.endEndTime != null and params.endEndTime != ''"> AND t.end_time &lt;= #{params.endEndTime}</if>
+            <if test="leaveDays != null"> AND t.leave_days = #{leaveDays}</if>
+            <if test="reason != null and reason != ''"> AND t.reason LIKE CONCAT('%', #{reason}, '%')</if>
+            <if test="attachmentUrl != null and attachmentUrl != ''"> AND t.attachment_url LIKE CONCAT('%', #{attachmentUrl}, '%')</if>
+            <if test="auditStatus != null and auditStatus != ''"> AND t.audit_status LIKE CONCAT('%', #{auditStatus}, '%')</if>
+            <if test="auditBy != null and auditBy != ''"> AND t.audit_by LIKE CONCAT('%', #{auditBy}, '%')</if>
+            <if test="auditTime != null"> AND t.audit_time = #{auditTime}</if>
+            <if test="auditRemark != null and auditRemark != ''"> AND t.audit_remark LIKE CONCAT('%', #{auditRemark}, '%')</if>
+            <if test="status != null and status != ''"> AND t.status LIKE CONCAT('%', #{status}, '%')</if>
+            <if test="delFlag != null and delFlag != ''"> AND t.del_flag LIKE CONCAT('%', #{delFlag}, '%')</if>
         </where>
-        ORDER BY create_time DESC
+        ORDER BY t.create_time DESC
     </select>
 
     <select id="selectHrLeaveRequestById" parameterType="Long" resultMap="HrLeaveRequestResult">
-        <include refid="selectVo"/> WHERE leave_req_id = #{leaveReqId}
+        <include refid="selectVo"/> WHERE t.leave_req_id = #{leaveReqId}
     </select>
 
     <insert id="insertHrLeaveRequest" parameterType="HrLeaveRequest" useGeneratedKeys="true" keyProperty="leaveReqId">
         INSERT INTO biz_hr_leave_request (
-            leave_req_no, employee_id, employee_name, employee_no, leave_type, start_time, end_time, leave_days, reason, attachment_url, audit_status, audit_by, audit_time, audit_remark, status, del_flag, create_by, create_time, remark
+            leave_req_no, employee_id, employee_name, employee_no, dept_id, dept_name, leave_type, start_time, end_time, leave_days, reason, attachment_url, audit_status, audit_by, audit_time, audit_remark, status, del_flag, create_by, create_time, remark
         ) VALUES (
-            #{leaveReqNo}, #{employeeId}, #{employeeName}, #{employeeNo}, #{leaveType}, #{startTime}, #{endTime}, #{leaveDays}, #{reason}, #{attachmentUrl}, #{auditStatus}, #{auditBy}, #{auditTime}, #{auditRemark}, #{status}, #{delFlag}, #{createBy}, sysdate(), #{remark}
+            #{leaveReqNo}, #{employeeId}, #{employeeName}, #{employeeNo}, #{deptId}, #{deptName}, #{leaveType}, #{startTime}, #{endTime}, #{leaveDays}, #{reason}, #{attachmentUrl}, #{auditStatus}, #{auditBy}, #{auditTime}, #{auditRemark}, #{status}, #{delFlag}, #{createBy}, sysdate(), #{remark}
         )
     </insert>
 
@@ -79,6 +93,8 @@
             <if test="employeeId != null">employee_id = #{employeeId},</if>
             <if test="employeeName != null and employeeName != ''">employee_name = #{employeeName},</if>
             <if test="employeeNo != null and employeeNo != ''">employee_no = #{employeeNo},</if>
+            <if test="deptId != null">dept_id = #{deptId},</if>
+            <if test="deptName != null and deptName != ''">dept_name = #{deptName},</if>
             <if test="leaveType != null and leaveType != ''">leave_type = #{leaveType},</if>
             <if test="startTime != null">start_time = #{startTime},</if>
             <if test="endTime != null">end_time = #{endTime},</if>

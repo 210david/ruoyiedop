@@ -101,7 +101,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" class="app-table">
 <el-table-column type="selection" width="55" align="center" />
-<el-table-column type="index" label="序号" width="85" align="center" />
+<el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
 <el-table-column label="标准编码" prop="stdCode" key="stdCode" :width="colWidth('stdCode', 140)" resizable show-overflow-tooltip v-if="columns.stdCode.visible" />          <el-table-column label="检验项目" prop="stdName" key="stdName" :width="colWidth('stdName', 180)" resizable show-overflow-tooltip v-if="columns.stdName.visible" />
           <el-table-column label="检验方法" prop="inspectMethod" key="inspectMethod" :width="colWidth('inspectMethod', 200)" resizable show-overflow-tooltip v-if="columns.inspectMethod.visible" />
           <el-table-column label="计量单位" prop="unit" key="unit" :width="colWidth('unit', 100)" resizable align="center" v-if="columns.unit.visible" />

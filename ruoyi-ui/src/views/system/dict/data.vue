@@ -88,7 +88,7 @@
 
       <el-table ref="tableRef" v-loading="loading" :data="dataList" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" border>
 <el-table-column type="selection" width="55" align="center" />
-<el-table-column type="index" label="序号" width="85" align="center" />
+<el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
 <el-table-column label="字典编码" align="center" prop="dictCode" :width="colWidth('dictCode', 120)" />
          <el-table-column label="字典标签" align="center" prop="dictLabel" :width="colWidth('dictLabel', 140)">
             <template #default="scope">

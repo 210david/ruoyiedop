@@ -70,6 +70,9 @@
             <el-icon><Delete /></el-icon> 删除
           </button>
           <div class="toolbar-divider"></div>
+          <button type="button" class="btn-soft is-outline" @click="handleImport" v-hasPermi="['hr:specialDeduction:import']">
+            <el-icon><Upload /></el-icon> 导入
+          </button>
           <button type="button" class="btn-soft is-outline" @click="handleExport" v-hasPermi="['hr:specialDeduction:export']">
             <el-icon><Download /></el-icon> 导出
           </button>
@@ -223,6 +226,21 @@
 
     <!-- ===== 人员选择弹窗 ===== -->
     <employee-picker ref="employeePickerRef" title="选择人员" @confirm="onEmployeePickerConfirm" />
+
+    <!-- ===== 导入对话框 ===== -->
+    <excel-import-dialog
+      ref="importRef"
+      title="专项附加扣除导入"
+      action="/hr/specialDeduction/importData"
+      template-action="/hr/specialDeduction/importTemplate"
+      template-file-name="hr_special_deduction_template"
+      update-support-label="是否更新已存在的扣除记录（同员工+同项目+同生效日期）"
+      :tips="importTips"
+      :column-labels="importColumnLabels"
+      :update-key-options="updateKeyOptions"
+      default-update-key="employeeNo"
+      @success="getList"
+    />
   </div>
 </template>
 
@@ -231,6 +249,8 @@ import { listHrSpecialDeduction, getHrSpecialDeduction, addHrSpecialDeduction, u
 import { Filter, ArrowDown, Search, Edit, Delete, Download } from '@element-plus/icons-vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import EmployeePicker from '@/components/EmployeePicker'
+import ExcelImportDialog from '@/components/ExcelImportDialog';
+import { Upload } from '@element-plus/icons-vue'
 
 const { proxy } = getCurrentInstance()
 
@@ -428,6 +448,24 @@ function cancel() {
 
 /** ===== 人员弹框选择 ===== */
 const employeePickerRef = ref(null)
+const importRef = ref(null)
+
+/** 导入对话框配置 */
+const importTips = '请下载模板后按工号填写员工专项附加扣除数据（数据来源于员工在个人所得税App的申报，或员工提交的纸质申报表）。支持项目：3岁以下婴幼儿照护、子女教育、继续教育、大病医疗、住房贷款利息、住房租金、赡养老人。'
+const importColumnLabels = {
+  employeeNo: '工号（必填，用于匹配员工）',
+  employeeName: '员工姓名',
+  deductionType: '扣除项目（必填）',
+  deductionAmount: '月扣除金额（必填，元）',
+  effectiveDate: '生效日期（必填，如 2026-01-01）',
+  expiryDate: '失效日期（选填）'
+}
+const updateKeyOptions = [
+  { value: 'employeeNo', label: '工号' }
+]
+function handleImport() {
+  importRef.value.open()
+}
 function openEmployeePicker() { employeePickerRef.value.open(form.value.employeeId); }
 function onEmployeePickerConfirm(emp) {
   const f = form.value;

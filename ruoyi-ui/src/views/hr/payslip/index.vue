@@ -99,6 +99,12 @@
           <el-table-column label="岗位工资" prop="positionSalary" key="positionSalary" align="center" :width="colWidth('positionSalary', 130)" resizable v-if="columns.positionSalary.visible" />
           <el-table-column label="技能津贴" prop="skillAllowance" key="skillAllowance" align="center" :width="colWidth('skillAllowance', 120)" resizable v-if="columns.skillAllowance.visible" />
           <el-table-column label="应发合计" prop="grossSalary" key="grossSalary" align="center" :width="colWidth('grossSalary', 140)" resizable v-if="columns.grossSalary.visible" />
+          <el-table-column label="累计应税所得额" prop="cumulativeTaxableIncome" key="cumulativeTaxableIncome" align="center" :width="colWidth('cumulativeTaxableIncome', 150)" resizable v-if="columns.cumulativeTaxableIncome.visible">
+            <template #default="scope">{{ scope.row.cumulativeTaxableIncome != null ? scope.row.cumulativeTaxableIncome : '-' }}</template>
+          </el-table-column>
+          <el-table-column label="累计已预扣税额" prop="cumulativeTaxWithheld" key="cumulativeTaxWithheld" align="center" :width="colWidth('cumulativeTaxWithheld', 150)" resizable v-if="columns.cumulativeTaxWithheld.visible">
+            <template #default="scope">{{ scope.row.cumulativeTaxWithheld != null ? scope.row.cumulativeTaxWithheld : '-' }}</template>
+          </el-table-column>
           <el-table-column label="实发工资" prop="netSalary" key="netSalary" align="center" :width="colWidth('netSalary', 140)" resizable v-if="columns.netSalary.visible" />
           <el-table-column label="发放状态" prop="calcStatus" key="calcStatus" align="center" :width="colWidth('calcStatus', 110)" resizable v-if="columns.calcStatus.visible">
             <template #default="scope">
@@ -297,6 +303,8 @@
               <div class="rd-item"><span class="rd-label">社保个人</span><div class="rd-value rd-amount">{{ formatAmount(viewData.socialInsurance) }}</div></div>
               <div class="rd-item"><span class="rd-label">公积金个人</span><div class="rd-value rd-amount">{{ formatAmount(viewData.houseFund) }}</div></div>
               <div class="rd-item"><span class="rd-label">个人所得税</span><div class="rd-value rd-amount">{{ formatAmount(viewData.incomeTax) }}</div></div>
+              <div class="rd-item"><span class="rd-label">累计应税所得额</span><div class="rd-value rd-amount">{{ formatAmount(viewData.cumulativeTaxableIncome) }}</div></div>
+              <div class="rd-item"><span class="rd-label">累计已预扣税额</span><div class="rd-value rd-amount">{{ formatAmount(viewData.cumulativeTaxWithheld) }}</div></div>
               <div class="rd-item"><span class="rd-label">其他扣款</span><div class="rd-value rd-amount">{{ formatAmount(viewData.otherDeduction) }}</div></div>
             </div>
           </div>
@@ -374,6 +382,9 @@ const defaultColumns = {
   positionSalary: { label: '岗位工资', visible: true },
   skillAllowance: { label: '技能津贴', visible: true },
   grossSalary: { label: '应发合计', visible: true },
+  incomeTax: { label: '个人所得税', visible: true },
+  cumulativeTaxableIncome: { label: '累计应税所得额', visible: true },
+  cumulativeTaxWithheld: { label: '累计已预扣税额', visible: true },
   netSalary: { label: '实发工资', visible: true },
   calcStatus: { label: '发放状态', visible: true },
   payDate: { label: '发放日期', visible: true },

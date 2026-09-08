@@ -31,7 +31,7 @@
       </div>
       <div class="table-wrap">
         <el-table ref="tableRef" v-loading="loading" :data="dataList" border @header-dragend="onHeaderDragEnd" class="app-table">
-          <el-table-column type="index" label="序号" width="85" align="center" />
+          <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
           <el-table-column label="日期" prop="snapshotDate" key="snapshotDate" :width="colWidth('snapshotDate', 120)" resizable align="center" v-if="columns.snapshotDate.visible"><template #default="scope">{{ parseTime(scope.row.snapshotDate, '{y}-{m}-{d}') }}</template></el-table-column>
           <el-table-column label="产能单元" prop="resourceName" key="resourceName" :width="colWidth('resourceName', 140)" resizable show-overflow-tooltip v-if="columns.resourceName.visible" />
           <el-table-column label="工单编号" prop="workOrderNo" key="workOrderNo" :width="colWidth('workOrderNo', 140)" resizable v-if="columns.workOrderNo.visible" />

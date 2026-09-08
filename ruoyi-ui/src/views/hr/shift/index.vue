@@ -25,17 +25,13 @@
         <div class="field">
           <label>开始时间</label>
           <div class="control">
-            <el-input v-model="queryParams.startTime" placeholder="如 08:00" clearable @keyup.enter="handleQuery">
-              <template #prefix><el-icon><Search /></el-icon></template>
-            </el-input>
+            <el-time-select v-model="queryParams.startTime" start="00:00" end="24:00" step="00:30" placeholder="选择开始时间" clearable style="width: 100%" @change="handleQuery" />
           </div>
         </div>
         <div class="field">
           <label>结束时间</label>
           <div class="control">
-            <el-input v-model="queryParams.endTime" placeholder="如 17:00" clearable @keyup.enter="handleQuery">
-              <template #prefix><el-icon><Search /></el-icon></template>
-            </el-input>
+            <el-time-select v-model="queryParams.endTime" start="00:00" end="24:00" step="00:30" placeholder="选择结束时间" clearable style="width: 100%" @change="handleQuery" />
           </div>
         </div>
       </div>
@@ -78,15 +74,16 @@
           <el-table-column label="班次名称" prop="shiftName" key="shiftName" align="center" :width="colWidth('shiftName', 140)" resizable v-if="columns.shiftName.visible" />
           <el-table-column label="开始时间" prop="startTime" key="startTime" align="center" :width="colWidth('startTime', 100)" resizable v-if="columns.startTime.visible" />
           <el-table-column label="结束时间" prop="endTime" key="endTime" align="center" :width="colWidth('endTime', 100)" resizable v-if="columns.endTime.visible" />
-<el-table-column label="跨零点" prop="crossMidnight" key="crossMidnight" align="center" :width="colWidth('crossMidnight', 90)" resizable v-if="columns.crossMidnight.visible">
-<template #default="scope">{{ scope.row.crossMidnight === 1 ? '是' : '否' }}</template>
-</el-table-column>
-<el-table-column label="工作时长" prop="workHours" key="workHours" align="center" :width="colWidth('workHours', 100)" resizable v-if="columns.workHours.visible">
+          <el-table-column label="工作时长" prop="workHours" key="workHours" align="center" :width="colWidth('workHours', 100)" resizable v-if="columns.workHours.visible">
 <template #default="scope">{{ scope.row.workHours != null ? scope.row.workHours + ' 小时' : '-' }}</template>
 </el-table-column>
-          <el-table-column label="适用场景" prop="applicableTo" key="applicableTo" align="center" :width="colWidth('applicableTo', 140)" resizable show-overflow-tooltip v-if="columns.applicableTo.visible" />
-          <el-table-column label="排序号" prop="orderNum" key="orderNum" align="center" :width="colWidth('orderNum', 90)" resizable v-if="columns.orderNum.visible" />
           <el-table-column label="备注" prop="remark" key="remark" :width="colWidth('remark', 200)" resizable show-overflow-tooltip v-if="columns.remark.visible" />
+          <el-table-column label="默认班次" prop="isDefault" key="isDefault" align="center" :width="colWidth('isDefault', 100)" resizable v-if="columns.isDefault.visible">
+            <template #default="scope">
+              <el-tag v-if="scope.row.isDefault === 1" type="success" size="small">默认</el-tag>
+              <span v-else>-</span>
+            </template>
+          </el-table-column>
           <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
               <div class="action-btn-row">
@@ -122,9 +119,6 @@
               <el-row :gutter="20">
                 <el-col :span="12"><el-form-item label="班次编码" prop="shiftCode"><el-input v-model="form.shiftCode" placeholder="自动生成" disabled /></el-form-item></el-col>
                 <el-col :span="12"><el-form-item label="班次名称" prop="shiftName"><el-input v-model="form.shiftName" placeholder="请输入班次名称" /></el-form-item></el-col>
-                <el-col :span="12"><el-form-item label="适用场景" prop="applicableTo"><el-input v-model="form.applicableTo" placeholder="请输入适用场景" /></el-form-item></el-col>
-                <el-col :span="12"><el-form-item label="排序号" prop="orderNum"><el-input-number v-model="form.orderNum" :precision="0" :min="0" controls-position="right" style="width: 100%" /></el-form-item></el-col>
-                <el-col :span="24"><el-form-item label="备注" prop="remark"><el-input v-model="form.remark" type="textarea" :rows="3" maxlength="500" show-word-limit placeholder="请输入备注" /></el-form-item></el-col>
               </el-row>
             </div>
           </section>
@@ -135,8 +129,21 @@
             </div>
             <div class="rd-card-body" v-show="!collapsedCards.e1">
               <el-row :gutter="20">
-                <el-col :span="12"><el-form-item label="开始时间" prop="startTime"><el-time-select v-model="form.startTime" start="00:00" end="24:00" step="00:30" placeholder="选择开始时间" style="width: 100%" /></el-form-item></el-col>
-                <el-col :span="12"><el-form-item label="结束时间" prop="endTime"><el-time-select v-model="form.endTime" start="00:00" end="24:00" step="00:30" placeholder="选择结束时间，早于开始时间则自动识别为跨零点" style="width: 100%" /></el-form-item></el-col>
+                <el-col :span="8"><el-form-item label="开始时间" prop="startTime"><el-time-select v-model="form.startTime" start="00:00" end="24:00" step="00:30" placeholder="选择开始时间" style="width: 100%" @change="computeShiftFields(form)" /></el-form-item></el-col>
+                <el-col :span="8"><el-form-item label="结束时间" prop="endTime"><el-time-select v-model="form.endTime" start="00:00" end="24:00" step="00:30" placeholder="结束时间" style="width: 100%" @change="computeShiftFields(form)" /></el-form-item></el-col>
+                <el-col :span="8"><el-form-item label="工作时长" prop="workHours"><el-input-number v-model="form.workHours" :precision="1" :min="0" :step="0.5" controls-position="right" style="width: 100%" placeholder="自动计算" /></el-form-item></el-col>
+              </el-row>
+            </div>
+          </section>
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('e2')">
+              <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>其他信息</div>
+              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.e2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.e2">
+              <el-row :gutter="20">
+                <el-col :span="12"><el-form-item label="默认班次" prop="isDefault"><el-switch v-model="form.isDefault" :active-value="1" :inactive-value="0" active-text="设为默认" inactive-text="" /></el-form-item></el-col>
+                <el-col :span="24"><el-form-item label="备注" prop="remark"><el-input v-model="form.remark" type="textarea" :rows="3" maxlength="500" show-word-limit placeholder="请输入备注" /></el-form-item></el-col>
               </el-row>
             </div>
           </section>
@@ -172,8 +179,6 @@
             <div class="rd-grid">
               <div class="rd-item"><span class="rd-label">班次编码</span><div class="rd-value">{{ viewData.shiftCode || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">班次名称</span><div class="rd-value">{{ viewData.shiftName || '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label">适用场景</span><div class="rd-value">{{ viewData.applicableTo || '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label">排序号</span><div class="rd-value">{{ viewData.orderNum != null ? viewData.orderNum : '-' }}</div></div>
             </div>
           </div>
         </section>
@@ -186,7 +191,6 @@
             <div class="rd-grid">
               <div class="rd-item"><span class="rd-label">开始时间</span><div class="rd-value">{{ viewData.startTime || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">结束时间</span><div class="rd-value">{{ viewData.endTime || '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label">跨零点</span><div class="rd-value">{{ viewData.crossMidnight === 1 ? '是' : viewData.crossMidnight === 0 ? '否' : (viewData.crossMidnight != null ? viewData.crossMidnight : '-') }}</div></div>
               <div class="rd-item"><span class="rd-label">工作时长</span><div class="rd-value">{{ viewData.workHours != null ? viewData.workHours + ' 小时' : '-' }}</div></div>
             </div>
           </div>
@@ -198,6 +202,10 @@
           </div>
           <div class="rd-card-body" style="display:block" v-show="!collapsedCards.c2">
             <div class="rd-grid">
+              <div class="rd-item"><span class="rd-label">默认班次</span><div class="rd-value">
+                <el-tag v-if="viewData.isDefault === 1" type="success" size="small">默认</el-tag>
+                <span v-else>否</span>
+              </div></div>
               <div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value">{{ viewData.remark || '-' }}</div></div>
             </div>
           </div>
@@ -222,7 +230,7 @@ const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('hr_shift_index')
 
 /** 详情弹窗卡片折叠 */
-const { collapsedCards, toggleCard } = useDetailCard(['c0', 'c1', 'c2', 'e0', 'e1'])
+const { collapsedCards, toggleCard } = useDetailCard(['c0', 'c1', 'c2', 'e0', 'e1', 'e2'])
 
 /** 列显隐配置 */
 const defaultColumns = {
@@ -230,11 +238,9 @@ const defaultColumns = {
   shiftName: { label: '班次名称', visible: true },
   startTime: { label: '开始时间', visible: true },
   endTime: { label: '结束时间', visible: true },
-crossMidnight: { label: '跨零点', visible: true },
-workHours: { label: '工作时长', visible: true },
-applicableTo: { label: '适用场景', visible: true },
-orderNum: { label: '排序号', visible: true },
-remark: { label: '备注', visible: true }
+  workHours: { label: '工作时长', visible: true },
+  isDefault: { label: '默认班次', visible: true },
+  remark: { label: '备注', visible: true }
 }
 function loadColumnVisibility() {
   try {
@@ -318,10 +324,11 @@ function reset() {
   form.value = {
     shiftCode: undefined,
     shiftName: undefined,
-startTime: undefined,
-endTime: undefined,
-applicableTo: undefined,
-    orderNum: undefined,
+    startTime: undefined,
+    endTime: undefined,
+    crossMidnight: undefined,
+    workHours: undefined,
+    isDefault: 0,
     remark: undefined
   }
   proxy.resetForm('hrShiftRef')
@@ -352,7 +359,7 @@ function handleView(row) {
   })
 }
 
-/** 根据上下班时间自动计算跨零点与工作时长 */
+/** 根据上下班时间自动计算跨零点；工作时长仅在未手动填写时自动计算 */
 function computeShiftFields(f) {
 if (!f.startTime || !f.endTime) return
 const toMin = t => { const p = t.split(':'); return Number(p[0]) * 60 + Number(p[1] || 0) }
@@ -361,13 +368,14 @@ let e = toMin(f.endTime)
 if (e === 0) e = 1440
 f.crossMidnight = e < s ? 1 : 0
 if (e < s) e += 1440
+if (f.workHours == null || f.workHours === undefined) {
 f.workHours = Math.round((e - s) / 60 * 100) / 100
+}
 }
 
 function submitForm() {
 proxy.$refs['hrShiftRef'].validate(valid => {
 if (valid) {
-computeShiftFields(form.value)
 if (form.value.shiftId != undefined) {
         updateHrShift(form.value).then(() => {
           proxy.$modal.msgSuccess('修改成功')

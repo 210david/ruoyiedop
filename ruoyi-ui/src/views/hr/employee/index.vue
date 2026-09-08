@@ -606,6 +606,7 @@
       template-file-name="hr_employee_template"
       update-support-label="是否更新已经存在的员工数据"
       :tips="importTips"
+      :column-labels="importColumnLabels"
       :update-key-options="updateKeyOptions"
       default-update-key="employeeNo"
       @success="getList"
@@ -873,6 +874,14 @@ const importTips = [
   '如勾选「更新已存在数据」，可选择匹配字段：按工号或身份证号匹配',
   '导入结果将显示每条数据的处理情况，失败数据可修正后重新导入'
 ];
+const importColumnLabels = {
+  employeeNo: '工号',
+  employeeName: '姓名',
+  orgName: '所属组织',
+  positionName: '岗位',
+  result: '结果',
+  errorReason: '失败原因'
+};
 const updateKeyOptions = [
   { value: 'employeeNo', label: '工号' },
   { value: 'idCard', label: '身份证号' }

@@ -10,4 +10,6 @@ public interface IHrSocialSecurityService {
     public int updateHrSocialSecurity(HrSocialSecurity hrSocialSecurity);
     public int deleteHrSocialSecurityByIds(Long[] ssIds);
     public int deleteHrSocialSecurityById(Long ssId);
+    /** 按方案批量初始化员工社保记录，返回插入行数 */
+    public int batchInitByPlan(com.ruoyi.hr.domain.HrSsPlan plan);
 }

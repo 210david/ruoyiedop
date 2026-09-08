@@ -71,4 +71,12 @@ public class HrOvertimeController extends BaseController
     {
         return toAjax(hrOvertimeService.deleteHrOvertimeByIds(overtimeIds));
     }
+
+    @PreAuthorize("@ss.hasPermi('hr:overtime:audit')")
+    @Log(title = "加班审批", businessType = BusinessType.UPDATE)
+    @PutMapping("/audit/{overtimeId}")
+    public AjaxResult audit(@PathVariable Long overtimeId, @RequestParam String auditAction, @RequestParam(required = false) String auditRemark)
+    {
+        return toAjax(hrOvertimeService.auditHrOvertime(overtimeId, auditAction, auditRemark));
+    }
 }

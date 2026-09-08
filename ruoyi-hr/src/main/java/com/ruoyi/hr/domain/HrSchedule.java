@@ -13,28 +13,23 @@ public class HrSchedule extends BaseEntity
     private Long scheduleId;
     @NotNull(message = "排班日期不能为空")
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "排班日期")
+    @Excel(name = "排班日期", width = 20, sort = 0, dateFormat = "yyyy-MM-dd")
     private Date scheduleDate;
     @NotNull(message = "员工ID不能为空")
-    @Excel(name = "员工ID")
     private Long employeeId;
-    @Excel(name = "员工姓名")
+    @Excel(name = "员工姓名", width = 16, sort = 1)
     private String employeeName;
-    @Excel(name = "工号")
+    @Excel(name = "工号", width = 14, sort = 2)
     private String employeeNo;
-    @Excel(name = "组织ID")
     private Long orgId;
     /** 部门名称（关联 sys_dept 回显，非表字段） */
+    @Excel(name = "部门", width = 16, sort = 3)
     private String orgName;
-    @Excel(name = "班次ID")
     private Long shiftId;
-    @Excel(name = "班次名称")
+    @Excel(name = "班次", width = 14, sort = 4)
     private String shiftName;
-    @Excel(name = "休息日")
-    private Integer restDay;
-    @Excel(name = "状态")
+    @Excel(name = "状态", width = 10, sort = 5, readConverterExp = "0=正常,1=停用")
     private String status;
-    @Excel(name = "删除标志")
     private String delFlag;
 
     public Long getScheduleId() { return scheduleId; }
@@ -55,8 +50,6 @@ public class HrSchedule extends BaseEntity
     public void setShiftId(Long shiftId) { this.shiftId = shiftId; }
     public String getShiftName() { return shiftName; }
     public void setShiftName(String shiftName) { this.shiftName = shiftName; }
-    public Integer getRestDay() { return restDay; }
-    public void setRestDay(Integer restDay) { this.restDay = restDay; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
     public String getDelFlag() { return delFlag; }

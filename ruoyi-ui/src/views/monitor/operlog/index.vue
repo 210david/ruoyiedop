@@ -81,7 +81,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" v-loading="loading" :data="operlogList" @selection-change="handleSelectionChange" :default-sort="defaultSort" @sort-change="handleSortChange" @header-dragend="onHeaderDragEnd" border class="app-table">
 <el-table-column type="selection" width="50" align="center" />
-<el-table-column type="index" label="序号" width="85" align="center" />
+<el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
 <el-table-column label="日志编号" align="center" prop="operId" :width="colWidth('operId', 120)" resizable v-if="columns.operId.visible" />
           <el-table-column label="系统模块" align="center" prop="title" :show-overflow-tooltip="true" :width="colWidth('title', 120)" resizable v-if="columns.title.visible" />
           <el-table-column label="操作类型" align="center" prop="businessType" :width="colWidth('businessType', 100)" resizable v-if="columns.businessType.visible">

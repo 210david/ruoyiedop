@@ -1,9 +1,13 @@
 package com.ruoyi.mk.service.impl;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.StringUtils;
@@ -161,16 +165,16 @@ public class MkContactServiceImpl implements IMkContactService
     /** P3-13: 批量导入联系人 */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public String importContacts(List<MkContact> contactList, Boolean isUpdateSupport, String operName)
+    public AjaxResult importContacts(List<MkContact> contactList, Boolean isUpdateSupport, String operName)
     {
         if (contactList == null || contactList.isEmpty())
         {
-            throw new ServiceException("导入数据不能为空");
+            return AjaxResult.error("导入数据不能为空");
         }
         int successNum = 0;
         int failureNum = 0;
-        StringBuilder successMsg = new StringBuilder();
-        StringBuilder failureMsg = new StringBuilder();
+        List<Map<String, Object>> successList = new ArrayList<>();
+        List<Map<String, Object>> failureList = new ArrayList<>();
         for (MkContact contact : contactList)
         {
             try
@@ -178,7 +182,7 @@ public class MkContactServiceImpl implements IMkContactService
                 // 验证必填
                 if (StringUtils.isEmpty(contact.getName()))
                 {
-                    throw new ServiceException("姓名不能为空");
+                    throw new RuntimeException("姓名不能为空");
                 }
                 // 检查重复
                 List<MkContact> duplicates = mkContactMapper.selectDuplicateContacts(contact.getPhone(), contact.getEmail());
@@ -191,12 +195,12 @@ public class MkContactServiceImpl implements IMkContactService
                         contact.setUpdateBy(operName);
                         mkContactMapper.updateContact(contact);
                         successNum++;
-                        successMsg.append("<br/>").append(successNum).append("、姓名 ").append(contact.getName()).append(" 更新成功");
+                        successList.add(buildSuccessItem(contact, "更新成功"));
                     }
                     else
                     {
                         failureNum++;
-                        failureMsg.append("<br/>").append(failureNum).append("、姓名 ").append(contact.getName()).append(" 已存在");
+                        failureList.add(buildFailureItem(contact, "联系人已存在，未勾选更新选项"));
                     }
                 }
                 else
@@ -207,21 +211,62 @@ public class MkContactServiceImpl implements IMkContactService
                     contact.setCreateBy(operName);
                     mkContactMapper.insertContact(contact);
                     successNum++;
-                    successMsg.append("<br/>").append(successNum).append("、姓名 ").append(contact.getName()).append(" 导入成功");
+                    successList.add(buildSuccessItem(contact, "导入成功"));
                 }
             }
             catch (Exception e)
             {
                 failureNum++;
-                failureMsg.append("<br/>").append(failureNum).append("、姓名 ").append(contact.getName()).append(" 导入失败：").append(e.getMessage());
+                String errMsg = e.getMessage();
+                if (errMsg != null && errMsg.length() > 200) { errMsg = errMsg.substring(0, 200) + "..."; }
+                failureList.add(buildFailureItem(contact, errMsg != null ? errMsg : "未知错误"));
             }
         }
-        if (failureNum > 0)
+        // 构建返回结果（结构化明细）
+        AjaxResult ajax = AjaxResult.success();
+        ajax.put("successNum", successNum);
+        ajax.put("failureNum", failureNum);
+        ajax.put("successList", successList);
+        ajax.put("failureList", failureList);
+        if (failureNum > 0 && successNum == 0)
         {
-            failureMsg.insert(0, "导入失败！共 " + failureNum + " 条数据格式不正确，错误如下：");
-            throw new ServiceException(failureMsg.toString());
+            ajax.put("code", 500);
+            ajax.put("msg", "导入失败，共 " + failureNum + " 条数据异常");
         }
-        successMsg.insert(0, "恭喜您，数据已全部导入成功！共 " + successNum + " 条，数据如下：");
-        return successMsg.toString();
+        else if (failureNum > 0)
+        {
+            ajax.put("msg", "部分导入成功：成功 " + successNum + " 条，失败 " + failureNum + " 条");
+        }
+        else
+        {
+            ajax.put("msg", "导入成功，共 " + successNum + " 条");
+        }
+        return ajax;
+    }
+
+    /**
+     * 构建成功明细项
+     */
+    private Map<String, Object> buildSuccessItem(MkContact row, String result)
+    {
+        Map<String, Object> item = new LinkedHashMap<>();
+        item.put("name", row.getName() != null ? row.getName() : "");
+        item.put("phone", row.getPhone() != null ? row.getPhone() : "");
+        item.put("email", row.getEmail() != null ? row.getEmail() : "");
+        item.put("result", result);
+        return item;
+    }
+
+    /**
+     * 构建失败明细项
+     */
+    private Map<String, Object> buildFailureItem(MkContact row, String errorReason)
+    {
+        Map<String, Object> item = new LinkedHashMap<>();
+        item.put("name", row.getName() != null ? row.getName() : "");
+        item.put("phone", row.getPhone() != null ? row.getPhone() : "");
+        item.put("email", row.getEmail() != null ? row.getEmail() : "");
+        item.put("errorReason", errorReason);
+        return item;
     }
 }

@@ -758,7 +758,7 @@
       <div class="table-wrap">
         <el-table ref="reportTableRef" v-loading="reportLoading" :data="reportDataList" border @selection-change="handleReportSelectionChange" @header-dragend="onReportHeaderDragEnd" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
-          <el-table-column type="index" label="序号" width="85" align="center" />
+          <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
           <el-table-column label="报工单号" prop="reportNo" key="reportNo" :width="reportColWidth('reportNo', 168)" resizable show-overflow-tooltip v-if="reportColumns.reportNo.visible" />
           <el-table-column label="工单号" prop="workOrderNo" key="workOrderNo" :width="reportColWidth('workOrderNo', 168)" resizable show-overflow-tooltip v-if="reportColumns.workOrderNo.visible" />
           <el-table-column label="工序" prop="processName" key="processName" :width="reportColWidth('processName', 120)" resizable show-overflow-tooltip v-if="reportColumns.processName.visible" />

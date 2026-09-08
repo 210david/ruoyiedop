@@ -1,9 +1,9 @@
-package com.ruoyi.dms.service.impl;
+package com.ruoyi.dms.service.impl;
 import java.util.HashMap;
-import java.util.Map;
-
-
+import java.util.LinkedHashMap;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -75,8 +75,8 @@ public class DmsEquipmentServiceImpl implements IDmsEquipmentService
         }
         int successNum = 0;
         int failureNum = 0;
-        StringBuilder successMsg = new StringBuilder();
-        StringBuilder failureMsg = new StringBuilder();
+        List<Map<String, Object>> successList = new ArrayList<>();
+        List<Map<String, Object>> failureList = new ArrayList<>();
         for (DmsEquipment row : equipmentList)
         {
             try
@@ -108,12 +108,14 @@ public class DmsEquipmentServiceImpl implements IDmsEquipmentService
                         row.setUpdateBy(operName);
                         dmsEquipmentMapper.updateEquipment(row);
                         successNum++;
-                        successMsg.append("<br/>" + successNum + "、设备 " + row.getEquipmentName() + "（" + getMatchFieldLabel(updateKey) + ": " + matchValue + "）更新成功");
+                        Map<String, Object> item = buildSuccessItem(row, "更新成功", updateKey, matchValue);
+                        successList.add(item);
                     }
                     else
                     {
                         failureNum++;
-                        failureMsg.append("<br/>" + failureNum + "、设备 " + row.getEquipmentName() + " 已存在（" + getMatchFieldLabel(updateKey) + ": " + matchValue + "）");
+                        Map<String, Object> item = buildFailureItem(row, "设备已存在（" + getMatchFieldLabel(updateKey) + ": " + matchValue + "），未勾选更新选项", updateKey, matchValue);
+                        failureList.add(item);
                     }
                 }
                 else
@@ -134,36 +136,75 @@ public class DmsEquipmentServiceImpl implements IDmsEquipmentService
                     row.setCreateBy(operName);
                     dmsEquipmentMapper.insertEquipment(row);
                     successNum++;
-                    successMsg.append("<br/>" + successNum + "、设备 " + row.getEquipmentName() + " 导入成功");
+                    Map<String, Object> item = buildSuccessItem(row, "导入成功", updateKey, matchValue);
+                    successList.add(item);
                 }
             }
             catch (Exception e)
             {
                 failureNum++;
-                failureMsg.append("<br/>" + failureNum + "、设备 " + (StringUtils.isNotEmpty(row.getEquipmentName()) ? row.getEquipmentName() : "(名称为空)") + " 导入失败：" + e.getMessage());
+                String errMsg = e.getMessage();
+                if (errMsg != null && errMsg.length() > 200)
+                {
+                    errMsg = errMsg.substring(0, 200) + "...";
+                }
+                Map<String, Object> item = buildFailureItem(row, errMsg != null ? errMsg : "未知错误", updateKey, null);
+                failureList.add(item);
             }
         }
 
-        // 构建返回结果（不抛异常，返回成功和失败的明细）
-        StringBuilder resultMsg = new StringBuilder();
-        if (successNum > 0)
-        {
-            resultMsg.append(successMsg.toString());
-        }
-        if (failureNum > 0)
-        {
-            resultMsg.append(failureMsg.toString());
-        }
-
-        AjaxResult ajax = AjaxResult.success(resultMsg.toString());
+        // 构建返回结果（结构化明细）
+        AjaxResult ajax = AjaxResult.success();
         ajax.put("successNum", successNum);
         ajax.put("failureNum", failureNum);
+        ajax.put("successList", successList);
+        ajax.put("failureList", failureList);
         if (failureNum > 0 && successNum == 0)
         {
-            // 全部失败时标记 code
             ajax.put("code", 500);
+            ajax.put("msg", "导入失败，共 " + failureNum + " 条数据异常");
+        }
+        else if (failureNum > 0)
+        {
+            ajax.put("msg", "部分导入成功：成功 " + successNum + " 条，失败 " + failureNum + " 条");
+        }
+        else
+        {
+            ajax.put("msg", "导入成功，共 " + successNum + " 条");
         }
         return ajax;
+    }
+
+    /**
+     * 构建成功明细项
+     */
+    private Map<String, Object> buildSuccessItem(DmsEquipment row, String result, String updateKey, String matchValue)
+    {
+        Map<String, Object> item = new LinkedHashMap<>();
+        item.put("equipmentCode", row.getEquipmentCode() != null ? row.getEquipmentCode() : "");
+        item.put("equipmentName", row.getEquipmentName() != null ? row.getEquipmentName() : "");
+        item.put("model", row.getModel() != null ? row.getModel() : "");
+        item.put("assetCode", row.getAssetCode() != null ? row.getAssetCode() : "");
+        item.put("serialNumber", row.getSerialNumber() != null ? row.getSerialNumber() : "");
+        item.put("manufacturer", row.getManufacturer() != null ? row.getManufacturer() : "");
+        item.put("result", result);
+        return item;
+    }
+
+    /**
+     * 构建失败明细项
+     */
+    private Map<String, Object> buildFailureItem(DmsEquipment row, String errorReason, String updateKey, String matchValue)
+    {
+        Map<String, Object> item = new LinkedHashMap<>();
+        item.put("equipmentCode", row.getEquipmentCode() != null ? row.getEquipmentCode() : "");
+        item.put("equipmentName", row.getEquipmentName() != null ? row.getEquipmentName() : "");
+        item.put("model", row.getModel() != null ? row.getModel() : "");
+        item.put("assetCode", row.getAssetCode() != null ? row.getAssetCode() : "");
+        item.put("serialNumber", row.getSerialNumber() != null ? row.getSerialNumber() : "");
+        item.put("manufacturer", row.getManufacturer() != null ? row.getManufacturer() : "");
+        item.put("errorReason", errorReason);
+        return item;
     }
 
     /**

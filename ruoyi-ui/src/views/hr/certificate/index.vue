@@ -155,7 +155,12 @@
                 </el-form-item></el-col>
                 <el-col :span="12">
                   <el-form-item label="工号" prop="employeeNo">
-                    <el-input v-model="form.employeeNo" placeholder="请输入工号" />
+                    <el-input v-model="form.employeeNo" readonly placeholder="选择人员后自动带出" />
+                  </el-form-item>
+                </el-col>
+                <el-col :span="12">
+                  <el-form-item label="部门" prop="deptName">
+                    <el-input :model-value="form.deptName" readonly placeholder="选择人员后自动带出" />
                   </el-form-item>
                 </el-col>
                 <el-col :span="12">
@@ -172,7 +177,7 @@
                 </el-col>
                 <el-col :span="12">
                   <el-form-item label="证书编号" prop="certNo">
-                    <el-input v-model="form.certNo" placeholder="自动生成" disabled />
+                    <el-input v-model="form.certNo" placeholder="请输入证书编号" />
                   </el-form-item>
                 </el-col>
               </el-row>
@@ -212,7 +217,7 @@
                 </el-col>
                 <el-col :span="12">
                   <el-form-item label="预警状态" prop="remindStatus">
-                    <el-select v-model="form.remindStatus" placeholder="请选择" clearable style="width: 100%">
+                    <el-select v-model="form.remindStatus" disabled placeholder="根据有效期自动判断" style="width: 100%">
                       <el-option v-for="d in remindStatusOptions" :key="d.value" :label="d.label" :value="d.value" />
                     </el-select>
                   </el-form-item>
@@ -228,8 +233,8 @@
             <div class="rd-card-body" v-show="!collapsedCards.e2">
               <el-row :gutter="20">
                 <el-col :span="24">
-                  <el-form-item label="附件URL" prop="attachmentUrl">
-                    <el-input v-model="form.attachmentUrl" placeholder="请输入附件URL" />
+                  <el-form-item label="附件" prop="attachmentUrl">
+                    <file-upload v-model="form.attachmentUrl" :limit="5" :file-type="['pdf', 'doc', 'docx', 'jpg', 'png']" />
                   </el-form-item>
                 </el-col>
               </el-row>
@@ -267,6 +272,7 @@
             <div class="rd-grid">
               <div class="rd-item"><span class="rd-label">员工姓名</span><div class="rd-value">{{ viewData.employeeName || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">工号</span><div class="rd-value">{{ viewData.employeeNo || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">部门</span><div class="rd-value">{{ viewData.deptName || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">证书类别</span><div class="rd-value"><dict-tag :options="certTypeOptions" :value="viewData.certType" /></div></div>
               <div class="rd-item"><span class="rd-label">证书名称</span><div class="rd-value">{{ viewData.certName || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">证书编号</span><div class="rd-value">{{ viewData.certNo || '-' }}</div></div>
@@ -395,7 +401,11 @@ const data = reactive({
     employeeId: [{ required: true, message: '请选择人员', trigger: 'change' }],
     certType: [{ required: true, message: '证书类别不能为空', trigger: 'change' }],
     certName: [{ required: true, message: '证书名称不能为空', trigger: 'blur' }],
-    validTo: [{ required: true, message: '有效期至不能为空', trigger: 'blur' }]
+    certNo: [{ required: true, message: '证书编号不能为空', trigger: 'blur' }],
+    issueDate: [{ required: true, message: '发证日期不能为空', trigger: 'change' }],
+    validFrom: [{ required: true, message: '有效起始日不能为空', trigger: 'change' }],
+    validTo: [{ required: true, message: '有效期至不能为空', trigger: 'change' }],
+    issueOrg: [{ required: true, message: '发证机构不能为空', trigger: 'blur' }]
   }
 })
 const { queryParams, form, rules } = toRefs(data)
@@ -459,6 +469,9 @@ function openEmployeePicker() { employeePickerRef.value.open(form.value.employee
 function onEmployeePickerConfirm(emp) {
   form.value.employeeId = emp.employeeId;
   form.value.employeeName = emp.employeeName;
+  // 自动带出工号和部门
+  form.value.employeeNo = emp.employeeNo;
+  form.value.deptName = emp.orgName;
 }
 function onEmployeeFieldClick(e) {
   if (e && e.target && e.target.closest && e.target.closest('.el-input-group__append')) {
@@ -493,6 +506,7 @@ function reset() {
     employeeId: undefined,
     employeeName: undefined,
     employeeNo: undefined,
+    deptName: undefined,
     certType: undefined,
     certName: undefined,
     certNo: undefined,

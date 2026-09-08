@@ -7,6 +7,7 @@
         <result property="employeeId" column="employee_id"/>
         <result property="employeeName" column="employee_name"/>
         <result property="employeeNo" column="employee_no"/>
+        <result property="deptName" column="dept_name"/>
         <result property="checkType" column="check_type"/>
         <result property="checkDate" column="check_date"/>
         <result property="checkOrg" column="check_org"/>
@@ -24,7 +25,7 @@
     </resultMap>
 
     <sql id="selectVo">
-        SELECT health_id, employee_id, employee_name, employee_no, check_type, check_date, check_org, hazard_type, check_result, conclusion, attachment_url, next_check_date, del_flag, create_by, create_time, update_by, update_time, remark
+        SELECT health_id, employee_id, employee_name, employee_no, dept_name, check_type, check_date, check_org, hazard_type, check_result, conclusion, attachment_url, next_check_date, del_flag, create_by, create_time, update_by, update_time, remark
         FROM biz_hr_health_check
     </sql>
 
@@ -56,9 +57,9 @@
 
     <insert id="insertHrHealthCheck" parameterType="HrHealthCheck" useGeneratedKeys="true" keyProperty="healthId">
         INSERT INTO biz_hr_health_check (
-            employee_id, employee_name, employee_no, check_type, check_date, check_org, hazard_type, check_result, conclusion, attachment_url, next_check_date, del_flag, create_by, create_time, remark
+            employee_id, employee_name, employee_no, dept_name, check_type, check_date, check_org, hazard_type, check_result, conclusion, attachment_url, next_check_date, del_flag, create_by, create_time, remark
         ) VALUES (
-            #{employeeId}, #{employeeName}, #{employeeNo}, #{checkType}, #{checkDate}, #{checkOrg}, #{hazardType}, #{checkResult}, #{conclusion}, #{attachmentUrl}, #{nextCheckDate}, #{delFlag}, #{createBy}, sysdate(), #{remark}
+            #{employeeId}, #{employeeName}, #{employeeNo}, #{deptName}, #{checkType}, #{checkDate}, #{checkOrg}, #{hazardType}, #{checkResult}, #{conclusion}, #{attachmentUrl}, #{nextCheckDate}, #{delFlag}, #{createBy}, sysdate(), #{remark}
         )
     </insert>
 
@@ -68,6 +69,7 @@
             <if test="employeeId != null">employee_id = #{employeeId},</if>
             <if test="employeeName != null and employeeName != ''">employee_name = #{employeeName},</if>
             <if test="employeeNo != null and employeeNo != ''">employee_no = #{employeeNo},</if>
+            <if test="deptName != null and deptName != ''">dept_name = #{deptName},</if>
             <if test="checkType != null and checkType != ''">check_type = #{checkType},</if>
             <if test="checkDate != null">check_date = #{checkDate},</if>
             <if test="checkOrg != null and checkOrg != ''">check_org = #{checkOrg},</if>
