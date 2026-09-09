@@ -35,15 +35,6 @@
           </div>
         </div>
         <div class="field">
-          <label>状态</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
-              <el-option label="正常" value="0" />
-              <el-option label="停用" value="1" />
-            </el-select>
-          </div>
-        </div>
-        <div class="field" v-show="showAdvanced">
           <label>预案编号</label>
           <div class="control">
             <el-input v-model="queryParams.planCode" placeholder="请输入" clearable @keyup.enter="handleQuery" />
@@ -303,7 +294,7 @@ const columns = ref(loadColumnVisibility())
 
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, planName: undefined, planType: undefined, planLevel: undefined, status: undefined, planCode: undefined, version: undefined, regNo: undefined, params: {} },
+  queryParams: { pageNum: 1, pageSize: 10, planName: undefined, planType: undefined, planLevel: undefined, planCode: undefined, version: undefined, regNo: undefined, params: {} },
   rules: {
     planName: [{ required: true, message: '预案名称不能为空', trigger: 'blur' }],
     planType: [{ required: true, message: '预案类型不能为空', trigger: 'change' }],
@@ -320,7 +311,6 @@ const activeFilterCount = computed(() => {
   if (queryParams.value.planName) count++
   if (queryParams.value.planType) count++
   if (queryParams.value.planLevel) count++
-  if (queryParams.value.status) count++
   if (queryParams.value.planCode) count++
   if (queryParams.value.version) count++
   if (queryParams.value.regNo) count++
@@ -337,8 +327,8 @@ downloadFile(url)
 }
 
 function getList() { loading.value = true; listEmergencyPlan(queryParams.value).then(response => { planList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths() }).catch(error => { console.error(error) }).finally(() => { loading.value = false }) }
-function handleQuery() { showAdvanced.value = false; proxy.addDateRange(queryParams.value, dateRange.value); queryParams.value.pageNum = 1; getList() }
-function resetQuery() { queryParams.value.planName = undefined; queryParams.value.planType = undefined; queryParams.value.planLevel = undefined; queryParams.value.status = undefined; queryParams.value.planCode = undefined; queryParams.value.version = undefined; queryParams.value.regNo = undefined; dateRange.value = []; queryParams.value.params = {}; handleQuery() }
+function handleQuery() { showAdvanced.value = false; proxy.addDateRange(queryParams.value, dateRange.value, 'EffectiveDate'); queryParams.value.pageNum = 1; getList() }
+function resetQuery() { queryParams.value.planName = undefined; queryParams.value.planType = undefined; queryParams.value.planLevel = undefined; queryParams.value.planCode = undefined; queryParams.value.version = undefined; queryParams.value.regNo = undefined; dateRange.value = []; queryParams.value.params = {}; handleQuery() }
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleSelectionChange(selection) { ids.value = selection.map(item => item.planId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function handleAdd() { reset(); collapsedCards.c0 = false; collapsedCards.c1 = false; collapsedCards.c2 = false; open.value = true; title.value = '添加应急预案' }
@@ -353,7 +343,7 @@ function submitForm() {
   })
 }
 function handleDelete(row) { const planIds = row.planId || ids.value; proxy.$modal.confirm('是否确认删除应急预案？').then(function() { return delEmergencyPlan(planIds) }).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
-function handleExport() { proxy.download('safety/emergency/plan/export', { ...queryParams.value }, `emergency_plan_${new Date().getTime()}.xlsx`) }
+function handleExport() { proxy.download('safety/emergency/plan/export', { ...proxy.addDateRange(queryParams.value, dateRange.value, 'EffectiveDate') }, `emergency_plan_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 function reset() {
   form.value = { planId: undefined, planCode: undefined, planName: undefined, planType: undefined, planLevel: undefined, version: undefined, regNo: undefined, regDate: undefined, effectiveDate: undefined, expireDate: undefined, content: undefined, attachment: undefined, remark: undefined }

@@ -29,6 +29,7 @@ public class DmsEquipmentCategoryServiceImpl implements IDmsEquipmentCategorySer
     @Override
     public int insertCategory(DmsEquipmentCategory category)
     {
+        checkCodeUnique(category.getCategoryCode(), null);
         category.setDelFlag("0");
         buildAncestors(category);
         return dmsEquipmentCategoryMapper.insertCategory(category);
@@ -37,6 +38,7 @@ public class DmsEquipmentCategoryServiceImpl implements IDmsEquipmentCategorySer
     @Override
     public int updateCategory(DmsEquipmentCategory category)
     {
+        checkCodeUnique(category.getCategoryCode(), category.getCategoryId());
         DmsEquipmentCategory old = dmsEquipmentCategoryMapper.selectCategoryById(category.getCategoryId());
         if (old != null && category.getParentId() != null
                 && !category.getParentId().equals(old.getParentId()))
@@ -44,6 +46,19 @@ public class DmsEquipmentCategoryServiceImpl implements IDmsEquipmentCategorySer
             buildAncestors(category);
         }
         return dmsEquipmentCategoryMapper.updateCategory(category);
+    }
+
+    private void checkCodeUnique(String categoryCode, Long categoryId)
+    {
+        if (categoryCode == null || categoryCode.isEmpty())
+        {
+            return;
+        }
+        DmsEquipmentCategory exist = dmsEquipmentCategoryMapper.checkCategoryCodeUnique(categoryCode);
+        if (exist != null && !exist.getCategoryId().equals(categoryId))
+        {
+            throw new ServiceException("设备分类编码 [" + categoryCode + "] 已存在，请更换编码后重试");
+        }
     }
 
     @Override

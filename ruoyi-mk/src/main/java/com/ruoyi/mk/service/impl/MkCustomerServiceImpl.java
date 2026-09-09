@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.ruoyi.common.annotation.DataScope;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.utils.StringUtils;
+import com.ruoyi.common.utils.DictUtils;
 import com.ruoyi.mk.domain.MkCustomer;
 import com.ruoyi.mk.mapper.MkCustomerMapper;
 import com.ruoyi.mk.service.IMkCustomerService;
@@ -184,7 +185,9 @@ public class MkCustomerServiceImpl implements IMkCustomerService
                 {
                     throw new RuntimeException("企业名称不能为空");
                 }
-                // 2. 根据匹配字段校验并查找已存在的客户
+                // 2. 字典类字段合法性校验
+                validateDictFields(row);
+                // 3. 根据匹配字段校验并查找已存在的客户
                 String matchValue = getMatchValue(row, updateKey);
                 if (StringUtils.isEmpty(matchValue))
                 {
@@ -265,6 +268,37 @@ public class MkCustomerServiceImpl implements IMkCustomerService
     }
 
     /**
+     * 校验字典类字段：客户等级、客户状态
+     */
+    private void validateDictFields(MkCustomer row)
+    {
+        // 客户等级（dictType: marketing_customer_level）
+        validateDictTypeField("客户等级", row.getCustomerLevel(), "marketing_customer_level");
+        // 客户状态（dictType: marketing_customer_status）
+        validateDictTypeField("客户状态", row.getCustomerStatus(), "marketing_customer_status");
+        // 累计交易额校验
+        if (row.getTotalAmount() != null && row.getTotalAmount().compareTo(java.math.BigDecimal.ZERO) < 0)
+        {
+            throw new RuntimeException("累计交易额不能为负数");
+        }
+    }
+
+    /**
+     * 校验dictType字段：如果值不为空但不是合法编码，说明用户输入了不合法的文字或数字
+     */
+    private void validateDictTypeField(String fieldLabel, String value, String dictType)
+    {
+        if (StringUtils.isNotEmpty(value))
+        {
+            String label = DictUtils.getDictLabel(dictType, value);
+            if (StringUtils.isEmpty(label))
+            {
+                throw new RuntimeException(fieldLabel + "值不合法，请填写文字描述（参考导入说明中的合法值）");
+            }
+        }
+    }
+
+    /**
      * 构建成功明细项
      */
     private Map<String, Object> buildSuccessItem(MkCustomer row, String result)
@@ -272,22 +306,45 @@ public class MkCustomerServiceImpl implements IMkCustomerService
         Map<String, Object> item = new LinkedHashMap<>();
         item.put("customerNo", row.getCustomerNo() != null ? row.getCustomerNo() : "");
         item.put("customerName", row.getCustomerName() != null ? row.getCustomerName() : "");
-        item.put("customerLevel", row.getCustomerLevel() != null ? row.getCustomerLevel() : "");
+        item.put("creditCode", row.getCreditCode() != null ? row.getCreditCode() : "");
+        item.put("customerLevel", dictText(row.getCustomerLevel(), "marketing_customer_level"));
+        item.put("customerStatus", dictText(row.getCustomerStatus(), "marketing_customer_status"));
+        item.put("firstContactDate", row.getFirstContactDate() != null ? row.getFirstContactDate().toString() : "");
+        item.put("cooperationDate", row.getCooperationDate() != null ? row.getCooperationDate().toString() : "");
+        item.put("totalAmount", row.getTotalAmount() != null ? row.getTotalAmount().toString() : "");
+        item.put("userName", row.getUserName() != null ? row.getUserName() : "");
+        item.put("deptName", row.getDeptName() != null ? row.getDeptName() : "");
         item.put("result", result);
         return item;
     }
 
     /**
-     * 构建失败明细项
+     * 构建失败明细项（去掉自动生成的客户编号，列与导入模板对齐）
      */
     private Map<String, Object> buildFailureItem(MkCustomer row, String errorReason)
     {
         Map<String, Object> item = new LinkedHashMap<>();
-        item.put("customerNo", row.getCustomerNo() != null ? row.getCustomerNo() : "");
         item.put("customerName", row.getCustomerName() != null ? row.getCustomerName() : "");
-        item.put("customerLevel", row.getCustomerLevel() != null ? row.getCustomerLevel() : "");
+        item.put("creditCode", row.getCreditCode() != null ? row.getCreditCode() : "");
+        item.put("customerLevel", dictText(row.getCustomerLevel(), "marketing_customer_level"));
+        item.put("customerStatus", dictText(row.getCustomerStatus(), "marketing_customer_status"));
+        item.put("firstContactDate", row.getFirstContactDate() != null ? row.getFirstContactDate().toString() : "");
+        item.put("cooperationDate", row.getCooperationDate() != null ? row.getCooperationDate().toString() : "");
+        item.put("totalAmount", row.getTotalAmount() != null ? row.getTotalAmount().toString() : "");
+        item.put("userName", row.getUserName() != null ? row.getUserName() : "");
+        item.put("deptName", row.getDeptName() != null ? row.getDeptName() : "");
         item.put("errorReason", errorReason);
         return item;
+    }
+
+    /**
+     * 将编码转换为文字标签（用于明细展示）
+     */
+    private String dictText(String code, String dictType)
+    {
+        if (StringUtils.isEmpty(code)) { return ""; }
+        String label = DictUtils.getDictLabel(dictType, code, "");
+        return StringUtils.isNotEmpty(label) ? label : code;
     }
 
     /**

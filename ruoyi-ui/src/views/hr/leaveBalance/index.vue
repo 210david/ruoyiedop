@@ -735,17 +735,21 @@ const importDialogRef = ref(null)
 const importTips = [
   '请先下载导入模板，按模板格式填写数据。',
   '工号、假别、年度、总额度为必填字段。',
+  '假期类别请填写文字：事假、病假、年假、婚假、产假、陪产假、丧假、工伤假、调休',
+  '总额度、已休天数、冻结天数请填写非负数值',
   '导入时已休天数默认为0，剩余天数自动计算。',
-  '勾选“覆盖已有记录”可更新已存在的假期余额数据。'
+  '勾选"覆盖已有记录"可更新已存在的假期余额数据。'
 ]
 const importColumnLabels = {
   employeeNo: '工号',
   employeeName: '员工姓名',
-  leaveType: '假别',
+  deptName: '部门',
+  leaveType: '假期类别',
   year: '年度',
   totalDays: '总额度',
   usedDays: '已休天数',
   remainingDays: '剩余天数',
+  frozenDays: '冻结天数',
   result: '结果',
   errorReason: '失败原因'
 }

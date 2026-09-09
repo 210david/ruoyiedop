@@ -49,12 +49,6 @@
             <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width:100%" @change="handleQuery" />
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>创建时间</label>
-          <div class="control">
-            <el-date-picker v-model="createTimeRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width:100%" />
-          </div>
-        </div>
       </div>
       <div class="filter-actions">
         <div class="filter-info"><el-icon><Filter /></el-icon> 已选 {{ activeFilterCount }} 个条件，支持回车快速搜索</div>
@@ -89,7 +83,11 @@
             </template>
           </el-table-column>
           <el-table-column label="数量" prop="quantity" key="quantity" :width="colWidth('quantity', 100)" align="center" resizable v-if="columns.quantity.visible" />
-          <el-table-column label="单位" prop="unit" key="unit" :width="colWidth('unit', 80)" align="center" resizable v-if="columns.unit.visible" />
+          <el-table-column label="单位" prop="unit" key="unit" :width="colWidth('unit', 80)" align="center" resizable v-if="columns.unit.visible">
+            <template #default="scope">
+              <span>{{ unitLabel(scope.row.unit) }}</span>
+            </template>
+          </el-table-column>
           <el-table-column label="操作前库存" prop="beforeStock" key="beforeStock" :width="colWidth('beforeStock', 110)" align="center" resizable v-if="columns.beforeStock.visible" />
           <el-table-column label="操作后库存" prop="afterStock" key="afterStock" :width="colWidth('afterStock', 110)" align="center" resizable v-if="columns.afterStock.visible" />
           <el-table-column label="供应商/客户" prop="supplierName" key="supplierName" :width="colWidth('supplierName', 140)" resizable show-overflow-tooltip v-if="columns.supplierName.visible" />
@@ -162,7 +160,7 @@
               <div class="rd-item"><span class="rd-label">出入库单号</span><div class="rd-value">{{ viewData.recordCode || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">危化品名称</span><div class="rd-value">{{ viewData.materialName || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">类型</span><div class="rd-value"><span class="badge" :class="viewData.recordType === '1' ? 'blue' : 'amber'"><span class="dot"></span>{{ viewData.recordType === '1' ? '入库' : '出库' }}</span></div></div>
-              <div class="rd-item"><span class="rd-label">数量</span><div class="rd-value">{{ viewData.quantity }} {{ viewData.unit }}</div></div>
+              <div class="rd-item"><span class="rd-label">数量</span><div class="rd-value">{{ viewData.quantity }} {{ unitLabel(viewData.unit) }}</div></div>
               <div class="rd-item"><span class="rd-label">操作前库存</span><div class="rd-value">{{ viewData.beforeStock != null ? viewData.beforeStock : '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">操作后库存</span><div class="rd-value">{{ viewData.afterStock != null ? viewData.afterStock : '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">出入库时间</span><div class="rd-value">{{ parseTime(viewData.recordTime) }}</div></div>
@@ -197,7 +195,7 @@ import { Search, Filter, RefreshLeft, ArrowDown, CircleClose } from '@element-pl
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('safety_record_index')
 const { collapsedCards, toggleCard } = useDetailCard(["c0","c1","vc0","vc1"])
-const { safety_record_type } = proxy.useDict('safety_record_type')
+const { safety_record_type, wms_unit } = proxy.useDict('safety_record_type', 'wms_unit')
 
 const recordList = ref([])
 const materialOptions = ref([])
@@ -208,7 +206,6 @@ const loading = ref(true)
 const showSearch = ref(true)
 const showAdvanced = ref(false)
 const dateRange = ref([])
-const createTimeRange = ref([])
 const ids = ref([])
 const single = ref(true)
 const multiple = ref(true)
@@ -255,15 +252,15 @@ const activeFilterCount = computed(() => {
   if (queryParams.value.supplierName) count++
   if (queryParams.value.recipient) count++
   if (dateRange.value && dateRange.value.length > 0) count++
-  if (createTimeRange.value && createTimeRange.value.length > 0) count++
   return count
 })
-const currentStockDisplay = computed(() => { const m = materialOptions.value.find(i => i.materialId === form.value.materialId); return m ? (m.currentStock || 0) + ' ' + (m.storageUnit || '') : '-' })
+const currentStockDisplay = computed(() => { const m = materialOptions.value.find(i => i.materialId === form.value.materialId); if (!m) return '-'; const unitLabel = (wms_unit.value.find(d => d.value == m.storageUnit) || {}).label || m.storageUnit || ''; return (m.currentStock || 0) + ' ' + unitLabel })
+// 单位显示：先查字典标签，找不到则直接返回原始值（兼容旧数据存的是文本标签的情况）
+function unitLabel(val) { if (val == null || val === '') return ''; const found = wms_unit.value.find(d => d.value == val); return found ? found.label : val }
 
 function getList() {
   loading.value = true
   proxy.addDateRange(queryParams.value, dateRange.value, 'RecordTime')
-  proxy.addDateRange(queryParams.value, createTimeRange.value, 'CreateTime')
   listMaterialRecord(queryParams.value).then(response => { recordList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths() }).catch(error => { console.error(error) }).finally(() => { loading.value = false })
 }
 function handleQuery() {
@@ -279,18 +276,30 @@ function resetQuery() {
   queryParams.value.recipient = undefined
   queryParams.value.params = {}
   dateRange.value = []
-  createTimeRange.value = []
   if (tableRef.value) tableRef.value.clearSort()
   handleQuery()
 }
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleSelectionChange(selection) { ids.value = selection.map(item => item.recordId); single.value = selection.length !== 1; multiple.value = !selection.length }
-function handleAdd() { reset(); collapsedCards.c0 = false; collapsedCards.c1 = false; open.value = true; title.value = '新增出入库记录'; form.value.recordType = '1'; form.value.recordTime = parseTime(new Date(), '{y}-{m}-{d} {h}:{i}:{s}') }
+function handleAdd() { reset(); collapsedCards.c0 = false; collapsedCards.c1 = false; open.value = true; title.value = '新增出入库记录'; form.value.recordType = '1'; form.value.recordTime = proxy.parseTime(new Date(), '{y}-{m}-{d} {h}:{i}:{s}') }
 function handleView(row) { const recordId = row.recordId || ids.value[0]; getMaterialRecord(recordId).then(response => { viewData.value = response.data; viewOpen.value = true }) }
 function handleUpdate(row) { const recordId = row.recordId || ids.value[0]; getMaterialRecord(recordId).then(response => { reset(); form.value = { ...response.data }; collapsedCards.c0 = false; collapsedCards.c1 = false; open.value = true; title.value = '修改出入库记录' }) }
 function submitForm() {
   proxy.$refs['recordRef'].validate(valid => {
     if (valid) {
+      // 入库时校验：入库后库存不能大于最大储存量
+      if (form.value.recordType === '1' && form.value.materialId) {
+        const m = materialOptions.value.find(i => i.materialId === form.value.materialId)
+        if (m && m.maxStorage != null && m.maxStorage !== '') {
+          const current = Number(m.currentStock || 0)
+          const qty = Number(form.value.quantity || 0)
+          const max = Number(m.maxStorage)
+          if (current + qty > max) {
+            proxy.$modal.msgError('入库总数量（' + (current + qty) + '）不能大于最大储存量（' + max + '）')
+            return
+          }
+        }
+      }
       if (form.value.recordId != undefined) { updateMaterialRecord(form.value).then(() => { proxy.$modal.msgSuccess('修改成功，库存已同步调整'); open.value = false; getList(); loadMaterials() }) }
       else { addMaterialRecord(form.value).then(() => { proxy.$modal.msgSuccess('新增成功，库存已自动更新'); open.value = false; getList(); loadMaterials() }) }
     }

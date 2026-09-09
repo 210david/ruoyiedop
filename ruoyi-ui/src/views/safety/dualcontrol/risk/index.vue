@@ -48,15 +48,6 @@
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>状态</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
-              <el-option label="正常" value="0" />
-              <el-option label="停用" value="1" />
-            </el-select>
-          </div>
-        </div>
       </div>
       <div class="filter-actions">
         <div class="filter-info">
@@ -374,7 +365,7 @@ const columns = ref(loadColumnVisibility())
 
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, riskName: undefined, riskCode: undefined, riskLevel: undefined, controlLevel: undefined, accidentType: undefined, status: undefined, params: {} },
+  queryParams: { pageNum: 1, pageSize: 10, riskName: undefined, riskCode: undefined, riskLevel: undefined, controlLevel: undefined, accidentType: undefined, params: {} },
   rules: {
     riskName: [{ required: true, message: '风险点名称不能为空', trigger: 'blur' }],
     hazardDesc: [{ required: true, message: '危险源描述不能为空', trigger: 'blur' }],
@@ -407,13 +398,12 @@ const activeFilterCount = computed(() => {
   if (queryParams.value.riskLevel) count++
   if (queryParams.value.controlLevel) count++
   if (queryParams.value.accidentType) count++
-  if (queryParams.value.status) count++
   return count
 })
 
 function getList() { loading.value = true; listRiskPoint(queryParams.value).then(response => { riskList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths() }).catch(error => { console.error(error) }).finally(() => { loading.value = false }) }
 function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
-function resetQuery() { queryParams.value.riskName = undefined; queryParams.value.riskCode = undefined; queryParams.value.riskLevel = undefined; queryParams.value.controlLevel = undefined; queryParams.value.accidentType = undefined; queryParams.value.status = undefined; queryParams.value.params = {}; handleQuery() }
+function resetQuery() { queryParams.value.riskName = undefined; queryParams.value.riskCode = undefined; queryParams.value.riskLevel = undefined; queryParams.value.controlLevel = undefined; queryParams.value.accidentType = undefined; queryParams.value.params = {}; handleQuery() }
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleSelectionChange(selection) { ids.value = selection.map(item => item.riskPointId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function handleAdd() { reset(); collapsedCards.c0 = false; collapsedCards.c1 = false; collapsedCards.c2 = false; collapsedCards.c3 = false; collapsedCards.c4 = false; const today = new Date(); const y = today.getFullYear(); const m = String(today.getMonth() + 1).padStart(2, '0'); const d = String(today.getDate()).padStart(2, '0'); form.value.evaluateDate = `${y}-${m}-${d}`; open.value = true; title.value = '添加风险点' }

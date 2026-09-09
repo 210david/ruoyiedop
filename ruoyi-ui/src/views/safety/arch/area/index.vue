@@ -99,6 +99,13 @@
             </template>
           </el-table-column>
           <el-table-column label="安全责任人" prop="safetyPersonName" key="safetyPersonName" :width="colWidth('safetyPersonName', 120)" resizable v-if="columns.safetyPersonName.visible" />
+          <el-table-column label="状态" prop="status" key="status" :width="colWidth('status', 90)" resizable align="center" v-if="columns.status.visible">
+            <template #default="scope">
+              <span class="badge" :class="scope.row.status === '0' ? 'green' : 'gray'">
+                <span class="dot"></span>{{ scope.row.status === '0' ? '正常' : '停用' }}
+              </span>
+            </template>
+          </el-table-column>
           <el-table-column label="备注" prop="remark" key="remark" :width="colWidth('remark', 180)" resizable show-overflow-tooltip v-if="columns.remark.visible" />
           <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
@@ -151,6 +158,9 @@
           <section class="rd-card">
             <div class="rd-card-header" @click="toggleCard('c2')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>其他信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
             <div class="rd-card-body" v-show="!collapsedCards.c2">
+              <el-row :gutter="20">
+                <el-col :span="12"><el-form-item label="状态" prop="status"><el-radio-group v-model="form.status"><el-radio value="0">正常</el-radio><el-radio value="1">停用</el-radio></el-radio-group></el-form-item></el-col>
+              </el-row>
               <el-form-item label="备注" prop="remark"><el-input v-model="form.remark" type="textarea" :rows="2" placeholder="请输入备注" /></el-form-item>
             </div>
           </section>
@@ -188,10 +198,11 @@
             </div>
           </div>
         </section>
-        <section class="rd-card" v-if="viewData.remark">
+        <section class="rd-card" v-if="viewData.remark || viewData.status !== undefined">
           <div class="rd-card-header" @click="toggleCard('vc2')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>其他信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
           <div class="rd-card-body" v-show="!collapsedCards.vc2" style="display:block">
             <div class="rd-grid">
+              <div class="rd-item"><span class="rd-label">状态</span><div class="rd-value"><span class="badge" :class="viewData.status === '0' ? 'green' : 'gray'"><span class="dot"></span>{{ viewData.status === '0' ? '正常' : '停用' }}</span></div></div>
               <div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value">{{ viewData.remark || '-' }}</div></div>
             </div>
           </div>
@@ -236,6 +247,7 @@ const defaultColumns = {
   nodeType: { label: '节点类型', visible: true },
   areaType: { label: '区域类型', visible: true },
   safetyPersonName: { label: '安全责任人', visible: true },
+  status: { label: '状态', visible: true },
   remark: { label: '备注', visible: true }
 }
 
@@ -260,7 +272,9 @@ const data = reactive({
   form: {},
   queryParams: { pageNum: 1, pageSize: 10, areaName: undefined, areaCode: undefined, nodeType: undefined, areaType: undefined, status: undefined, safetyPersonName: undefined, params: {} },
   rules: {
-    areaName: [{ required: true, message: '区域名称不能为空', trigger: 'blur' }]
+    areaName: [{ required: true, message: '区域名称不能为空', trigger: 'blur' }],
+    nodeType: [{ required: true, message: '节点类型不能为空', trigger: 'change' }],
+    safetyPersonId: [{ required: true, message: '安全责任人不能为空', trigger: 'change' }]
   }
 })
 
@@ -297,7 +311,7 @@ function handleDelete(row) { const areaIds = row.areaId || ids.value; proxy.$mod
 function handleExport() { proxy.download('safety/area/export', { ...queryParams.value }, `area_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 function reset() {
-  form.value = { areaId: undefined, areaCode: undefined, areaName: undefined, nodeType: '1', areaType: undefined, safetyPersonId: undefined, safetyPersonName: undefined, remark: undefined }
+  form.value = { areaId: undefined, areaCode: undefined, areaName: undefined, nodeType: '1', areaType: undefined, status: '0', safetyPersonId: undefined, safetyPersonName: undefined, remark: undefined }
   proxy.resetForm('areaRef')
 }
 /** 打开安全责任人选择弹窗 */

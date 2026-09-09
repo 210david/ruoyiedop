@@ -1502,8 +1502,13 @@ public class ExcelUtil<T>
      */
     public static String reverseByExp(String propertyValue, String converterExp, String separator)
     {
+        if (StringUtils.isEmpty(propertyValue))
+        {
+            return propertyValue;
+        }
         StringBuilder propertyString = new StringBuilder();
         String[] convertSource = converterExp.split(SEPARATOR);
+        boolean matched = false;
         for (String item : convertSource)
         {
             String[] itemArray = item.split("=");
@@ -1514,6 +1519,7 @@ public class ExcelUtil<T>
                     if (itemArray[1].equals(value))
                     {
                         propertyString.append(itemArray[0] + separator);
+                        matched = true;
                         break;
                     }
                 }
@@ -1526,7 +1532,13 @@ public class ExcelUtil<T>
                 }
             }
         }
-        return StringUtils.stripEnd(propertyString.toString(), separator);
+        String result = StringUtils.stripEnd(propertyString.toString(), separator);
+        // 如果没有匹配到任何值，返回原始值（而非空字符串），以便上层校验能检测到非法输入
+        if (!matched && StringUtils.isEmpty(result))
+        {
+            return propertyValue;
+        }
+        return result;
     }
 
     /**
@@ -1552,7 +1564,17 @@ public class ExcelUtil<T>
      */
     public static String reverseDictByExp(String dictLabel, String dictType, String separator)
     {
-        return DictUtils.getDictValue(dictType, dictLabel, separator);
+        if (StringUtils.isEmpty(dictLabel))
+        {
+            return dictLabel;
+        }
+        String dictValue = DictUtils.getDictValue(dictType, dictLabel, separator);
+        // 如果字典标签不匹配，返回原始值（而非空字符串），以便上层校验能检测到非法输入
+        if (StringUtils.isEmpty(dictValue))
+        {
+            return dictLabel;
+        }
+        return dictValue;
     }
 
     /**

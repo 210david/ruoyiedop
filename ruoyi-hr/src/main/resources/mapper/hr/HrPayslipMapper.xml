@@ -110,7 +110,7 @@
     <update id="updateHrPayslip" parameterType="HrPayslip">
         UPDATE biz_hr_payslip
         <set>
-            <if test="yearMonth != null and yearMonth != ''">year_month = #{yearMonth},</if>
+            <if test="yearMonth != null and yearMonth != ''">`year_month` = #{yearMonth},</if>
             <if test="employeeId != null">employee_id = #{employeeId},</if>
             <if test="employeeName != null and employeeName != ''">employee_name = #{employeeName},</if>
             <if test="employeeNo != null and employeeNo != ''">employee_no = #{employeeNo},</if>

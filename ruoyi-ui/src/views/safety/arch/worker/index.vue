@@ -105,6 +105,13 @@
               </span>
             </template>
           </el-table-column>
+          <el-table-column label="状态" prop="status" key="status" :width="colWidth('status', 90)" resizable align="center" v-if="columns.status.visible">
+            <template #default="scope">
+              <span class="badge" :class="scope.row.status === '0' ? 'green' : 'gray'">
+                <span class="dot"></span>{{ scope.row.status === '0' ? '正常' : '停用' }}
+              </span>
+            </template>
+          </el-table-column>
           <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
               <div class="action-btn-row">
@@ -133,17 +140,19 @@
             <div class="rd-card-header" @click="toggleCard('c0')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>特种人员信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c0 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
             <div class="rd-card-body" v-show="!collapsedCards.c0">
               <el-row :gutter="20">
-                <el-col :span="12"><el-form-item label="姓名" prop="workerName"><el-input v-model="form.workerName" placeholder="请输入姓名" /></el-form-item></el-col>
-                <el-col :span="12"><el-form-item label="工号" prop="workerNo"><el-input v-model="form.workerNo" placeholder="请输入工号" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="姓名" prop="workerName">
+                  <el-input v-model="form.workerName" readonly placeholder="请选择人员" style="width: 100%" @click="openEmployeePicker">
+                    <template #append><el-button icon="Search" @click="openEmployeePicker" /></template>
+                    <template #suffix><el-icon v-if="form.workerName" class="clear-icon" @click.stop="clearEmployee"><CircleClose /></el-icon></template>
+                  </el-input>
+                </el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="工号" prop="workerNo"><el-input v-model="form.workerNo" placeholder="选择人员后自动带出" disabled /></el-form-item></el-col>
               </el-row>
               <el-row :gutter="20">
                 <el-col :span="12"><el-form-item label="所属部门" prop="deptId">
-                  <el-input v-model="form.deptName" readonly placeholder="请选择部门" style="width: 100%" @click="openDeptPicker">
-                    <template #append><el-button icon="Search" @click="openDeptPicker" /></template>
-                    <template #suffix><el-icon v-if="form.deptName" class="clear-icon" @click.stop="clearDept"><CircleClose /></el-icon></template>
-                  </el-input>
+                  <el-input v-model="form.deptName" readonly placeholder="选择人员后自动带出" disabled />
                 </el-form-item></el-col>
-                <el-col :span="12"><el-form-item label="岗位" prop="position"><el-input v-model="form.position" placeholder="请输入岗位" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="岗位" prop="position"><el-input v-model="form.position" placeholder="选择人员后自动带出，可修改" /></el-form-item></el-col>
               </el-row>
               <el-row :gutter="20">
                 <el-col :span="12"><el-form-item label="联系电话" prop="phone"><el-input v-model="form.phone" placeholder="请输入联系电话" /></el-form-item></el-col>
@@ -221,14 +230,14 @@
       <template #footer><el-button @click="viewOpen = false">关 闭</el-button></template>
     </el-dialog>
 
-    <!-- 部门选择弹窗 -->
-    <dept-picker ref="deptPickerRef" title="选择部门" :disabled-ids="[100]" @confirm="onDeptPickerConfirm" />
+    <!-- 员工选择弹窗 -->
+    <employee-picker ref="employeePickerRef" title="选择人员" @confirm="onEmployeePickerConfirm" />
   </div>
 </template>
 
 <script setup name="SafetyWorker">
 import { listWorker, getWorker, addWorker, updateWorker, delWorker } from '@/api/safety/worker'
-import DeptPicker from '@/components/DeptPicker/index.vue'
+import EmployeePicker from '@/components/EmployeePicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
 import { Search, Filter, RefreshLeft, CircleClose, ArrowDown } from '@element-plus/icons-vue'
@@ -259,7 +268,8 @@ const defaultColumns = {
   phone: { label: '联系电话', visible: true },
   jobType: { label: '作业类别', visible: true },
   certNo: { label: '作业证号', visible: true },
-  validTo: { label: '证书有效期至', visible: true }
+  validTo: { label: '证书有效期至', visible: true },
+  status: { label: '状态', visible: true }
 }
 
 function loadColumnVisibility() {
@@ -283,8 +293,13 @@ const data = reactive({
   form: {},
   queryParams: { pageNum: 1, pageSize: 10, workerName: undefined, position: undefined, jobType: undefined, workerNo: undefined, status: undefined, deptName: undefined, phone: undefined, params: {} },
   rules: {
-    workerName: [{ required: true, message: '姓名不能为空', trigger: 'blur' }],
+    workerName: [{ required: true, message: '请选择人员', trigger: 'change' }],
     deptId: [{ required: true, message: '所属部门不能为空', trigger: 'change' }],
+    position: [{ required: true, message: '岗位不能为空', trigger: 'blur' }],
+    phone: [
+      { required: true, message: '联系电话不能为空', trigger: 'blur' },
+      { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的11位手机号码', trigger: 'blur' }
+    ],
     jobType: [{ required: true, message: '作业类别不能为空', trigger: 'change' }],
     certNo: [{ required: true, message: '作业证号不能为空', trigger: 'blur' }],
     certIssueDate: [{ required: true, message: '发证日期不能为空', trigger: 'change' }],
@@ -325,15 +340,29 @@ function handleDelete(row) { const workerIds = row.workerId || ids.value; proxy.
 function handleExport() { proxy.download('safety/worker/export', { ...queryParams.value }, `worker_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 function reset() {
-  form.value = { workerId: undefined, workerName: undefined, workerNo: undefined, deptId: undefined, deptName: undefined, position: undefined, phone: undefined, isSpecial: '1', jobType: undefined, certNo: undefined, certIssueDate: undefined, validTo: undefined, status: '0', remark: undefined }
+  form.value = { workerId: undefined, employeeId: undefined, workerName: undefined, workerNo: undefined, deptId: undefined, deptName: undefined, position: undefined, phone: undefined, isSpecial: '1', jobType: undefined, certNo: undefined, certIssueDate: undefined, validTo: undefined, status: '0', remark: undefined }
   proxy.resetForm('workerRef')
 }
-/** 打开部门选择弹窗 */
-function openDeptPicker() { proxy.$refs.deptPickerRef.open(form.value.deptId) }
-/** 部门选择确认回调 */
-function onDeptPickerConfirm(dept) { form.value.deptId = dept.deptId; form.value.deptName = dept.deptName }
-/** 清除部门 */
-function clearDept() { form.value.deptId = undefined; form.value.deptName = undefined }
+/** 打开员工选择弹窗 */
+function openEmployeePicker() { proxy.$refs.employeePickerRef.open(form.value.employeeId) }
+/** 员工选择确认回调：自动带出工号、部门、岗位、联系电话 */
+function onEmployeePickerConfirm(emp) {
+  form.value.employeeId = emp.employeeId
+  form.value.workerName = emp.employeeName
+  form.value.workerNo = emp.employeeNo
+  form.value.deptId = emp.orgId
+  form.value.deptName = emp.orgName
+  form.value.position = emp.positionName || form.value.position
+  if (emp.phone) form.value.phone = emp.phone
+}
+/** 清除选择的人员 */
+function clearEmployee() {
+  form.value.employeeId = undefined
+  form.value.workerName = undefined
+  form.value.workerNo = undefined
+  form.value.deptId = undefined
+  form.value.deptName = undefined
+}
 /** 作业类别字典翻译 */
 function jobTypeLabel(type) { const item = safety_job_type.value.find(d => d.value == type); return item ? item.label : '-' }
 

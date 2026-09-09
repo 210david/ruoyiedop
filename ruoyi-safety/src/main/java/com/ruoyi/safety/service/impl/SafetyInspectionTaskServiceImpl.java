@@ -1,4 +1,5 @@
-package com.ruoyi.safety.service.impl;
+package com.ruoyi.safety.service.impl;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -51,6 +52,17 @@ public List<SafetyInspectionTask> selectSafetyInspectionTaskList(SafetyInspectio
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertSafetyInspectionTask(SafetyInspectionTask safetyInspectionTask) {
+        // 校验计划日期不能小于当前日期
+        if (safetyInspectionTask.getPlanDate() != null) {
+            java.util.Calendar today = java.util.Calendar.getInstance();
+            today.set(java.util.Calendar.HOUR_OF_DAY, 0);
+            today.set(java.util.Calendar.MINUTE, 0);
+            today.set(java.util.Calendar.SECOND, 0);
+            today.set(java.util.Calendar.MILLISECOND, 0);
+            if (safetyInspectionTask.getPlanDate().before(today.getTime())) {
+                throw new ServiceException("计划日期不能小于当前日期");
+            }
+        }
         if (StringUtils.isEmpty(safetyInspectionTask.getTaskCode())) {
             safetyInspectionTask.setTaskCode(mkNumberRuleService.generateNumber("safety_inspection_task"));
         }
@@ -69,6 +81,17 @@ public List<SafetyInspectionTask> selectSafetyInspectionTaskList(SafetyInspectio
 
     @Override
     public int updateSafetyInspectionTask(SafetyInspectionTask safetyInspectionTask) {
+        // 校验计划日期不能小于当前日期
+        if (safetyInspectionTask.getPlanDate() != null) {
+            java.util.Calendar today = java.util.Calendar.getInstance();
+            today.set(java.util.Calendar.HOUR_OF_DAY, 0);
+            today.set(java.util.Calendar.MINUTE, 0);
+            today.set(java.util.Calendar.SECOND, 0);
+            today.set(java.util.Calendar.MILLISECOND, 0);
+            if (safetyInspectionTask.getPlanDate().before(today.getTime())) {
+                throw new ServiceException("计划日期不能小于当前日期");
+            }
+        }
         // 通用编辑不允许直接修改状态，状态流转只能通过反馈/作废等专用接口
         safetyInspectionTask.setTaskStatus(null);
         return safetyInspectionTaskMapper.updateSafetyInspectionTask(safetyInspectionTask); }

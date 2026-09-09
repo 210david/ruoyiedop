@@ -18,6 +18,7 @@ import com.ruoyi.common.core.domain.entity.SysUser;
 import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.StringUtils;
+import com.ruoyi.common.utils.poi.ExcelUtil;
 import com.ruoyi.common.utils.bean.BeanValidators;
 import com.ruoyi.common.utils.spring.SpringUtils;
 import com.ruoyi.system.domain.SysPost;
@@ -511,6 +512,8 @@ public class SysUserServiceImpl implements ISysUserService
         {
             try
             {
+                // 字典类字段合法性校验
+                validateDictFields(user);
                 // 验证是否存在这个用户
                 SysUser u = userMapper.selectUserByUserName(user.getUserName());
                 if (StringUtils.isNull(u))
@@ -561,5 +564,28 @@ public class SysUserServiceImpl implements ISysUserService
             successMsg.insert(0, "恭喜您，数据已全部导入成功！共 " + successNum + " 条，数据如下：");
         }
         return successMsg.toString();
+    }
+
+    /**
+     * 校验字典类字段：性别、状态
+     */
+    private void validateDictFields(SysUser user)
+    {
+        // 性别（readConverterExp: 0=男,1=女,2=未知）
+        validateConverterField("性别", user.getSex(), "0=男,1=女,2=未知");
+        // 账号状态（readConverterExp: 0=正常,1=停用）
+        validateConverterField("账号状态", user.getStatus(), "0=正常,1=停用");
+    }
+
+    private void validateConverterField(String fieldLabel, String value, String converterExp)
+    {
+        if (StringUtils.isNotEmpty(value))
+        {
+            String label = ExcelUtil.convertByExp(value, converterExp, ",");
+            if (StringUtils.isEmpty(label))
+            {
+                throw new ServiceException(fieldLabel + "值不合法，请填写文字描述");
+            }
+        }
     }
 }

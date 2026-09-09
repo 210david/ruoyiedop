@@ -42,15 +42,9 @@
           <label>状态</label>
           <div class="control is-select">
             <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
-              <el-option label="正常" value="0" />
+              <el-option label="启用" value="0" />
               <el-option label="停用" value="1" />
             </el-select>
-          </div>
-        </div>
-        <div class="field" v-show="showAdvanced">
-          <label>创建时间</label>
-          <div class="control">
-            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
           </div>
         </div>
       </div>
@@ -99,6 +93,14 @@
               </span>
             </template>
           </el-table-column>
+          <el-table-column label="状态" prop="status" key="status" :width="colWidth('status', 90)" resizable align="center" v-if="columns.status.visible">
+            <template #default="scope">
+              <span class="badge" :class="scope.row.status === '0' ? 'green' : 'gray'">
+                <span class="dot"></span>{{ scope.row.status === '0' ? '启用' : '停用' }}
+              </span>
+            </template>
+          </el-table-column>
+          <el-table-column label="创建时间" prop="createTime" key="createTime" :width="colWidth('createTime', 160)" resizable align="center" sortable="custom" v-if="columns.createTime.visible" />
           <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
               <div class="action-btn-row">
@@ -143,6 +145,9 @@
           <section class="rd-card">
             <div class="rd-card-header" @click="toggleCard('c1')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>其他信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
             <div class="rd-card-body" v-show="!collapsedCards.c1">
+              <el-row :gutter="20">
+                <el-col :span="12"><el-form-item label="状态" prop="status"><el-radio-group v-model="form.status"><el-radio value="0">启用</el-radio><el-radio value="1">停用</el-radio></el-radio-group></el-form-item></el-col>
+              </el-row>
               <el-form-item label="附件" prop="attachment"><file-upload v-model="form.attachment" :fileSize="50" /></el-form-item>
               <el-form-item label="备注" prop="remark"><el-input v-model="form.remark" type="textarea" :rows="2" placeholder="请输入备注" /></el-form-item>
             </div>
@@ -172,6 +177,8 @@
               <div class="rd-item"><span class="rd-label">发证机关</span><div class="rd-value">{{ viewData.issueOrg || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">发证日期</span><div class="rd-value">{{ viewData.issueDate || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">有效期至</span><div class="rd-value"><span class="badge" :class="viewData.remindStatus === '1' ? 'red' : 'green'"><span class="dot"></span>{{ viewData.expireDate || '-' }}</span></div></div>
+              <div class="rd-item"><span class="rd-label">状态</span><div class="rd-value"><span class="badge" :class="viewData.status === '0' ? 'green' : 'gray'"><span class="dot"></span>{{ viewData.status === '0' ? '启用' : '停用' }}</span></div></div>
+              <div class="rd-item"><span class="rd-label">创建时间</span><div class="rd-value">{{ viewData.createTime || '-' }}</div></div>
             </div>
           </div>
         </section>
@@ -223,7 +230,6 @@ const viewData = ref({})
 const loading = ref(true)
 const showSearch = ref(true)
 const showAdvanced = ref(false)
-const dateRange = ref([])
 const ids = ref([])
 const single = ref(true)
 const multiple = ref(true)
@@ -236,7 +242,9 @@ const defaultColumns = {
   certType: { label: '证照类型', visible: true },
   issueOrg: { label: '发证机关', visible: true },
   issueDate: { label: '发证日期', visible: true },
-  expireDate: { label: '有效期至', visible: true }
+  expireDate: { label: '有效期至', visible: true },
+  status: { label: '状态', visible: true },
+  createTime: { label: '创建时间', visible: true }
 }
 
 function loadColumnVisibility() {
@@ -262,6 +270,9 @@ const data = reactive({
   rules: {
     certName: [{ required: true, message: '证照名称不能为空', trigger: 'blur' }],
     certNo: [{ required: true, message: '证照编号不能为空', trigger: 'blur' }],
+    certType: [{ required: true, message: '证照类型不能为空', trigger: 'change' }],
+    issueOrg: [{ required: true, message: '发证机关不能为空', trigger: 'blur' }],
+    issueDate: [{ required: true, message: '发证日期不能为空', trigger: 'change' }],
     expireDate: [{ required: true, message: '有效期不能为空', trigger: 'change' }]
   }
 })
@@ -274,7 +285,6 @@ const activeFilterCount = computed(() => {
   if (queryParams.value.certType) count++
   if (queryParams.value.issueOrg) count++
   if (queryParams.value.status) count++
-  if (dateRange.value && dateRange.value.length > 0) count++
   return count
 })
 
@@ -287,8 +297,8 @@ downloadFile(url)
 }
 
 function getList() { loading.value = true; listCert(queryParams.value).then(response => { certList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths() }).catch(error => { console.error(error) }).finally(() => { loading.value = false }) }
-function handleQuery() { showAdvanced.value = false; proxy.addDateRange(queryParams.value, dateRange.value); queryParams.value.pageNum = 1; getList() }
-function resetQuery() { queryParams.value.certName = undefined; queryParams.value.certNo = undefined; queryParams.value.certType = undefined; queryParams.value.issueOrg = undefined; queryParams.value.status = undefined; dateRange.value = []; queryParams.value.params = {}; handleQuery() }
+function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
+function resetQuery() { queryParams.value.certName = undefined; queryParams.value.certNo = undefined; queryParams.value.certType = undefined; queryParams.value.issueOrg = undefined; queryParams.value.status = undefined; queryParams.value.params = {}; handleQuery() }
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleSelectionChange(selection) { ids.value = selection.map(item => item.certId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function handleAdd() { reset(); collapsedCards.c0 = false; collapsedCards.c1 = false; open.value = true; title.value = '添加证照' }
@@ -306,7 +316,7 @@ function handleDelete(row) { const certIds = row.certId || ids.value; proxy.$mod
 function handleExport() { proxy.download('safety/cert/export', { ...queryParams.value }, `cert_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 function reset() {
-  form.value = { certId: undefined, certName: undefined, certNo: undefined, certType: undefined, issueOrg: undefined, issueDate: undefined, expireDate: undefined, attachment: undefined, remark: undefined }
+  form.value = { certId: undefined, certName: undefined, certNo: undefined, certType: undefined, issueOrg: undefined, issueDate: undefined, expireDate: undefined, attachment: undefined, status: '0', remark: undefined }
   proxy.resetForm('certRef')
 }
 

@@ -11,4 +11,6 @@ public interface DmsEquipmentCategoryMapper
     public int insertCategory(DmsEquipmentCategory category);
     public int updateCategory(DmsEquipmentCategory category);
     public int deleteCategoryByIds(Long[] categoryIds);
+
+    public DmsEquipmentCategory checkCategoryCodeUnique(String categoryCode);
 }

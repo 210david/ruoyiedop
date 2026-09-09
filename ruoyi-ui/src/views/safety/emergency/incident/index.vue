@@ -308,7 +308,7 @@ const activeFilterCount = computed(() => {
 })
 
 function getList() { loading.value = true; listIncident(queryParams.value).then(response => { incidentList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths() }).catch(error => { console.error(error) }).finally(() => { loading.value = false }) }
-function handleQuery() { showAdvanced.value = false; proxy.addDateRange(queryParams.value, dateRange.value); queryParams.value.pageNum = 1; getList() }
+function handleQuery() { showAdvanced.value = false; proxy.addDateRange(queryParams.value, dateRange.value, 'IncidentDate'); queryParams.value.pageNum = 1; getList() }
 function resetQuery() { queryParams.value.incidentCode = undefined; queryParams.value.incidentLevel = undefined; queryParams.value.incidentLocation = undefined; queryParams.value.reportPerson = undefined; dateRange.value = []; queryParams.value.params = {}; handleQuery() }
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleSelectionChange(selection) { ids.value = selection.map(item => item.incidentId); single.value = selection.length !== 1; multiple.value = !selection.length }
@@ -323,7 +323,7 @@ function submitForm() {
     }
   })
 }
-function handleExport() { proxy.download('safety/emergency/incident/export', { ...queryParams.value }, `incident_${new Date().getTime()}.xlsx`) }
+function handleExport() { proxy.download('safety/emergency/incident/export', { ...proxy.addDateRange(queryParams.value, dateRange.value, 'IncidentDate') }, `incident_${new Date().getTime()}.xlsx`) }
 function handleDelete(row) { const incidentIds = row.incidentId || ids.value; proxy.$modal.confirm('是否确认删除事故记录？').then(function() { return delIncident(incidentIds) }).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
 function cancel() { open.value = false; reset() }
 function reset() {

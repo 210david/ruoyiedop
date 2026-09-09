@@ -189,7 +189,7 @@
               </el-row>
               <el-form-item label="整改要求" prop="rectifyReq"><el-input v-model="form.rectifyReq" type="textarea" :rows="2" placeholder="请输入整改要求" /></el-form-item>
               <el-row :gutter="20">
-                <el-col :span="12"><el-form-item label="整改期限" prop="rectifyDeadline"><el-date-picker v-model="form.rectifyDeadline" type="date" placeholder="选择日期" value-format="YYYY-MM-DD" style="width: 100%" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="整改期限" prop="rectifyDeadline"><el-date-picker v-model="form.rectifyDeadline" type="date" placeholder="选择日期" value-format="YYYY-MM-DD" :disabled-date="disabledPastDate" style="width: 100%" /></el-form-item></el-col>
               </el-row>
             </div>
           </section>
@@ -319,7 +319,7 @@
             <div class="rd-card-body" v-show="!collapsedCards.c3">
               <el-row :gutter="20">
                 <el-col :span="12"><el-form-item label="负责人" prop="personName"><el-input v-model="rectifyForm.personName" readonly placeholder="--" style="width: 100%" disabled /></el-form-item></el-col>
-                <el-col :span="12"><el-form-item label="整改日期" prop="rectifyTime"><el-date-picker v-model="rectifyForm.rectifyTime" type="date" placeholder="选择日期" value-format="YYYY-MM-DD" style="width: 100%" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="整改日期" prop="rectifyTime"><el-date-picker v-model="rectifyForm.rectifyTime" type="date" placeholder="选择日期" value-format="YYYY-MM-DD" :disabled-date="disabledFutureDate" style="width: 100%" /></el-form-item></el-col>
               </el-row>
               <el-form-item label="整改说明" prop="rectifyDesc"><el-input v-model="rectifyForm.rectifyDesc" type="textarea" :rows="3" placeholder="请输入整改说明" /></el-form-item>
               <el-form-item label="整改后图片" prop="rectifyPhotos"><image-upload v-model="rectifyForm.rectifyPhotos" :limit="5" /></el-form-item>
@@ -397,7 +397,7 @@
             <div class="rd-card-header" @click="toggleCard('v_verify')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>验收信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v_verify }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
             <div class="rd-card-body" v-show="!collapsedCards.v_verify">
               <el-row :gutter="20">
-                <el-col :span="12"><el-form-item label="验收日期" prop="verifyTime"><el-date-picker v-model="verifyForm.verifyTime" type="date" placeholder="选择日期" value-format="YYYY-MM-DD" style="width: 100%" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="验收日期" prop="verifyTime"><el-date-picker v-model="verifyForm.verifyTime" type="date" placeholder="选择日期" value-format="YYYY-MM-DD" :disabled-date="disabledFutureDate" style="width: 100%" /></el-form-item></el-col>
                 <el-col :span="12"><el-form-item label="验收结果" prop="verifyResult"><el-radio-group v-model="verifyForm.verifyResult"><el-radio value="1">通过</el-radio><el-radio value="2">不通过</el-radio></el-radio-group></el-form-item></el-col>
               </el-row>
               <el-form-item label="验收意见" prop="verifyComment"><el-input v-model="verifyForm.verifyComment" type="textarea" :rows="3" placeholder="请输入验收意见" /></el-form-item>
@@ -601,6 +601,50 @@ const { safety_hazard_type, safety_hazard_level, safety_hazard_source, safety_ha
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('safety_hazard_index')
 const { collapsedCards, toggleCard } = useDetailCard(["c0","c1","c2","c3","c4","c5","c_audit","a_basic","a_assign","a_audit","a_remark","c_reject","c_rectify","vc0","vc1","vc2","vc3","vc4","v_basic","v_assign","v_rectify","v_verify"])
 
+/** 禁用未来的日期（用于整改日期、验收日期等不能大于当前时间的字段） */
+function disabledFutureDate(time) {
+  return time.getTime() > Date.now()
+}
+
+/** 禁用过去的日期（用于整改期限等不能早于当前时间的字段） */
+function disabledPastDate(time) {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  return time.getTime() < today.getTime()
+}
+
+/** 自定义校验：日期不能大于当前时间 */
+function validateNotFutureDate(rule, value, callback) {
+  if (value) {
+    const inputDate = new Date(value)
+    const now = new Date()
+    now.setHours(23, 59, 59, 999)
+    if (inputDate.getTime() > now.getTime()) {
+      callback(new Error(rule.message || '日期不能大于当前时间'))
+    } else {
+      callback()
+    }
+  } else {
+    callback()
+  }
+}
+
+/** 自定义校验：日期不能早于当前时间 */
+function validateNotPastDate(rule, value, callback) {
+  if (value) {
+    const inputDate = new Date(value)
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    if (inputDate.getTime() < today.getTime()) {
+      callback(new Error(rule.message || '日期不能早于当前时间'))
+    } else {
+      callback()
+    }
+  } else {
+    callback()
+  }
+}
+
 const hazardList = ref([])
 const open = ref(false)
 const viewOpen = ref(false)
@@ -668,10 +712,20 @@ const data = reactive({
     deptId: [{ required: true, message: '责任部门不能为空', trigger: 'change' }],
     personId: [{ required: true, message: '责任人不能为空', trigger: 'change' }],
     rectifyReq: [{ required: true, message: '整改要求不能为空', trigger: 'blur' }],
-    rectifyDeadline: [{ required: true, message: '整改期限不能为空', trigger: 'change' }]
+    rectifyDeadline: [
+      { required: true, message: '整改期限不能为空', trigger: 'change' },
+      { validator: validateNotPastDate, message: '整改期限不能早于当前时间', trigger: 'change' }
+    ]
   },
-  rectifyRules: { rectifyDesc: [{ required: true, message: '整改说明不能为空', trigger: 'blur' }] },
-  verifyRules: { verifyResult: [{ required: true, message: '验收结果不能为空', trigger: 'change' }], verifyComment: [{ required: true, message: '验收意见不能为空', trigger: 'blur' }] },
+  rectifyRules: {
+    rectifyDesc: [{ required: true, message: '整改说明不能为空', trigger: 'blur' }],
+    rectifyTime: [{ validator: validateNotFutureDate, message: '整改日期不能大于当前时间', trigger: 'change' }]
+  },
+  verifyRules: {
+    verifyResult: [{ required: true, message: '验收结果不能为空', trigger: 'change' }],
+    verifyComment: [{ required: true, message: '验收意见不能为空', trigger: 'blur' }],
+    verifyTime: [{ validator: validateNotFutureDate, message: '验收日期不能大于当前时间', trigger: 'change' }]
+  },
   approveRules: {}
 })
 

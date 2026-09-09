@@ -237,14 +237,11 @@
                 <el-col :span="12"><el-form-item label="供应商等级" prop="supplierLevel">
                   <el-select v-model="form.supplierLevel" placeholder="请选择" clearable style="width: 100%"><el-option v-for="d in wms_supplier_level" :key="d.value" :label="d.label" :value="d.value" /></el-select>
                 </el-form-item></el-col>
-                <el-col :span="12"><el-form-item label="供应商类型" prop="supplierType">
-                  <el-select v-model="form.supplierType" placeholder="请选择" style="width: 100%"><el-option v-for="d in wms_supplier_type" :key="d.value" :label="d.label" :value="d.value" /></el-select>
-                </el-form-item></el-col>
               </el-row>
               <el-row :gutter="20">
                 <el-col :span="24"><el-form-item label="统一信用代码" prop="unifiedCreditCode">
                   <div style="display: flex; gap: 8px; width: 100%">
-                    <el-input v-model="form.unifiedCreditCode" placeholder="请输入18位统一社会信用代码" @keyup.enter="handleEnterpriseLookup" style="flex: 1" />
+                    <el-input v-model="form.unifiedCreditCode" placeholder="请输入18位统一社会信用代码" maxlength="18" @keyup.enter="handleEnterpriseLookup" style="flex: 1" />
                     <el-tooltip content="输入统一社会信用代码后点击查询，自动获取企业名称、法人等信息" placement="top">
                       <el-button type="primary" plain icon="Search" :loading="enterpriseLoading" @click="handleEnterpriseLookup">查询企业</el-button>
                     </el-tooltip>
@@ -263,10 +260,9 @@
             <div class="rd-card-body" v-show="!collapsedCards.c2">
               <el-row :gutter="20">
                 <el-col :span="12"><el-form-item label="联系人" prop="contactPerson"><el-input v-model="form.contactPerson" placeholder="请输入" /></el-form-item></el-col>
-                <el-col :span="12"><el-form-item label="联系电话" prop="contactPhone"><el-input v-model="form.contactPhone" placeholder="请输入" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="联系电话" prop="contactPhone"><el-input v-model="form.contactPhone" placeholder="请输入" maxlength="11" /></el-form-item></el-col>
               </el-row>
               <el-row :gutter="20">
-                <el-col :span="12"><el-form-item label="邮箱" prop="email"><el-input v-model="form.email" placeholder="请输入" /></el-form-item></el-col>
                 <el-col :span="12"><el-form-item label="传真" prop="fax"><el-input v-model="form.fax" placeholder="请输入" /></el-form-item></el-col>
               </el-row>
               <el-row :gutter="20">
@@ -573,16 +569,45 @@ function enterpriseNatureLabel(nature) {
 const importTips = [
   '供应商名称为必填字段，不能为空',
   '供应商编码由系统自动生成，无需填写',
-  '供应商类型填：厂商/经销商/代理商/服务商（或留空）',
-  '供应商等级、企业性质等字典字段请参考系统中已有数据填写',
+  '供应商类型请填写文字：厂商、经销商、代理商、服务商（或留空）',
+  '企业性质请填写文字：国有企业、民营企业、外资企业、合资企业、个体工商户（或留空）',
+  '付款方式请填写文字：现结、月结、预付（或留空）',
+  '结算方式请填写文字：银行转账、承兑汇票、现金（或留空）',
+  '资质状态请填写文字：未审核、已审核、审核不通过（或留空）',
+  '状态请填写文字：正常、停用（或留空）',
+  '账期天数、交货周期请填写非负整数',
+  '注册资本、最小订单金额请填写非负数值',
   '如勾选「更新已存在数据」，需选择匹配字段：按名称、统一信用代码或编码匹配',
-  '导入结果将显示每条数据的处理情况，失败数据可修正后重新导入'
+  '导入结果将显示每条数据的处理情况，失败数据可导出修正后重新导入'
 ]
 const importColumnLabels = {
   supplierCode: '供应商编码',
   supplierName: '供应商名称',
+  supplierShortName: '供应商简称',
+  supplierType: '供应商类型',
+  supplierLevel: '供应商等级',
+  unifiedCreditCode: '统一社会信用代码',
   contactPerson: '联系人',
   contactPhone: '联系电话',
+  email: '邮箱',
+  address: '地址',
+  legalPerson: '法人代表',
+  registeredCapital: '注册资本(万元)',
+  enterpriseNature: '企业性质',
+  establishedDate: '成立日期',
+  bankName: '开户银行',
+  bankAccount: '银行账号',
+  taxNumber: '税号',
+  invoiceTitle: '发票抬头',
+  paymentMethod: '付款方式',
+  paymentDays: '账期天数',
+  settlementType: '结算方式',
+  currency: '结算币种',
+  deliveryCycle: '交货周期(天)',
+  minOrderAmount: '最小订单金额',
+  cooperationDate: '合作开始日期',
+  qualificationStatus: '资质状态',
+  status: '状态',
   result: '结果',
   errorReason: '失败原因'
 }
@@ -625,7 +650,18 @@ const data = reactive({
     params: {}
   },
   rules: {
-    supplierName: [{ required: true, message: '供应商名称不能为空', trigger: 'blur' }]
+    supplierName: [{ required: true, message: '供应商名称不能为空', trigger: 'blur' }],
+    supplierType: [{ required: true, message: '供应商类型不能为空', trigger: 'change' }],
+    supplierLevel: [{ required: true, message: '供应商等级不能为空', trigger: 'change' }],
+    unifiedCreditCode: [
+      { required: true, message: '统一社会信用代码不能为空', trigger: 'blur' },
+      { pattern: /^[0-9A-HJ-NPQRTUWXY]{18}$/, message: '统一社会信用代码应为18位数字或大写字母', trigger: 'blur' }
+    ],
+    contactPerson: [{ required: true, message: '联系人不能为空', trigger: 'blur' }],
+    contactPhone: [
+      { required: true, message: '联系电话不能为空', trigger: 'blur' },
+      { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的11位手机号码', trigger: 'blur' }
+    ]
   }
 })
 const { queryParams, form, rules } = toRefs(data)
@@ -670,7 +706,17 @@ function handleQuery() {
 }
 
 function resetQuery() {
-  proxy.resetForm('queryRef')
+  queryParams.value.supplierCode = undefined
+  queryParams.value.supplierName = undefined
+  queryParams.value.supplierType = undefined
+  queryParams.value.status = undefined
+  queryParams.value.supplierShortName = undefined
+  queryParams.value.supplierLevel = undefined
+  queryParams.value.unifiedCreditCode = undefined
+  queryParams.value.contactPerson = undefined
+  queryParams.value.contactPhone = undefined
+  queryParams.value.legalPerson = undefined
+  queryParams.value.enterpriseNature = undefined
   queryParams.value.params = {}
   dateRange.value = []
   activeStatusTab.value = 'all'
@@ -772,7 +818,7 @@ function submitForm() {
 
 function handleDelete(row) {
   const supplierIds = row.supplierId || ids.value
-  proxy.$modal.confirm('确认删除编号为"' + supplierIds + '"的数据？').then(() => delSupplier(supplierIds)).then(() => {
+  proxy.$modal.confirm('是否确认删除选中的供应商数据？').then(() => delSupplier(supplierIds)).then(() => {
     getList()
     proxy.$modal.msgSuccess('删除成功')
   }).catch(() => {})

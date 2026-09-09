@@ -1,5 +1,6 @@
 package com.ruoyi.wms.service.impl;
 
+import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.ArrayList;
@@ -47,6 +48,10 @@ public class WmsMaterialServiceImpl implements IWmsMaterialService
     @Override
     public int insertMaterial(WmsMaterial material)
     {
+        // 校验安全库存上限不能小于下限
+        validateSafetyStock(material);
+        // 校验效期管理为"是"时保质期天数和临期预警必填
+        validateExpiryManage(material);
         if (StringUtils.isEmpty(material.getMaterialCode()))
         {
             material.setMaterialCode(generateMaterialCode(material.getMaterialType()));
@@ -76,6 +81,10 @@ public class WmsMaterialServiceImpl implements IWmsMaterialService
     @Override
     public int updateMaterial(WmsMaterial material)
     {
+        // 校验安全库存上限不能小于下限
+        validateSafetyStock(material);
+        // 校验效期管理为"是"时保质期天数和临期预警必填
+        validateExpiryManage(material);
         if (!checkMaterialCodeUnique(material))
         {
             throw new ServiceException("修改物料'" + material.getMaterialName() + "'失败，物料编码已存在");
@@ -127,7 +136,13 @@ public class WmsMaterialServiceImpl implements IWmsMaterialService
                 {
                     throw new RuntimeException("物料名称不能为空");
                 }
-                // 2. 根据匹配字段校验并查找已存在的物料
+                // 2. 字典类字段合法性校验
+                validateDictFields(row);
+                // 3. 效期管理校验
+                validateExpiryManage(row);
+                // 4. 安全库存校验
+                validateSafetyStock(row);
+                // 5. 根据匹配字段校验并查找已存在的物料
                 String matchValue = getMatchValue(row, updateKey);
                 if (StringUtils.isEmpty(matchValue))
                 {
@@ -220,8 +235,14 @@ public class WmsMaterialServiceImpl implements IWmsMaterialService
         item.put("materialCode", row.getMaterialCode() != null ? row.getMaterialCode() : "");
         item.put("materialName", row.getMaterialName() != null ? row.getMaterialName() : "");
         item.put("specModel", row.getSpecModel() != null ? row.getSpecModel() : "");
-        item.put("unit", row.getUnit() != null ? row.getUnit() : "");
-        item.put("materialType", row.getMaterialType() != null ? row.getMaterialType() : "");
+        item.put("unit", dictText(row.getUnit(), UNIT_REVERSE));
+        item.put("materialType", dictText(row.getMaterialType(), MATERIAL_TYPE_REVERSE));
+        item.put("isBatchManage", dictText(row.getIsBatchManage(), YES_NO_REVERSE));
+        item.put("isExpiryManage", dictText(row.getIsExpiryManage(), YES_NO_REVERSE));
+        item.put("shelfLifeDays", row.getShelfLifeDays() != null ? row.getShelfLifeDays() : "");
+        item.put("safetyStockMin", row.getSafetyStockMin() != null ? row.getSafetyStockMin() : "");
+        item.put("safetyStockMax", row.getSafetyStockMax() != null ? row.getSafetyStockMax() : "");
+        item.put("status", dictText(row.getStatus(), STATUS_REVERSE));
         item.put("result", result);
         return item;
     }
@@ -232,11 +253,16 @@ public class WmsMaterialServiceImpl implements IWmsMaterialService
     private Map<String, Object> buildFailureItem(WmsMaterial row, String errorReason)
     {
         Map<String, Object> item = new LinkedHashMap<>();
-        item.put("materialCode", row.getMaterialCode() != null ? row.getMaterialCode() : "");
         item.put("materialName", row.getMaterialName() != null ? row.getMaterialName() : "");
         item.put("specModel", row.getSpecModel() != null ? row.getSpecModel() : "");
-        item.put("unit", row.getUnit() != null ? row.getUnit() : "");
-        item.put("materialType", row.getMaterialType() != null ? row.getMaterialType() : "");
+        item.put("unit", dictText(row.getUnit(), UNIT_REVERSE));
+        item.put("materialType", dictText(row.getMaterialType(), MATERIAL_TYPE_REVERSE));
+        item.put("isBatchManage", dictText(row.getIsBatchManage(), YES_NO_REVERSE));
+        item.put("isExpiryManage", dictText(row.getIsExpiryManage(), YES_NO_REVERSE));
+        item.put("shelfLifeDays", row.getShelfLifeDays() != null ? row.getShelfLifeDays() : "");
+        item.put("safetyStockMin", row.getSafetyStockMin() != null ? row.getSafetyStockMin() : "");
+        item.put("safetyStockMax", row.getSafetyStockMax() != null ? row.getSafetyStockMax() : "");
+        item.put("status", dictText(row.getStatus(), STATUS_REVERSE));
         item.put("errorReason", errorReason);
         return item;
     }
@@ -298,5 +324,193 @@ public class WmsMaterialServiceImpl implements IWmsMaterialService
             }
         }
         return null;
+    }
+
+    /** 物料类型 文字→数字 映射表 */
+    private static final Map<String, String> MATERIAL_TYPE_MAP = new HashMap<>();
+    /** 物料类型 数字→文字 映射表（用于导入结果展示） */
+    private static final Map<String, String> MATERIAL_TYPE_REVERSE = new HashMap<>();
+    static {
+        MATERIAL_TYPE_MAP.put("原材料", "0");
+        MATERIAL_TYPE_MAP.put("半成品", "1");
+        MATERIAL_TYPE_MAP.put("成品", "2");
+        MATERIAL_TYPE_MAP.put("辅料", "3");
+        MATERIAL_TYPE_MAP.put("服务", "4");
+        MATERIAL_TYPE_MAP.put("工程", "5");
+        MATERIAL_TYPE_REVERSE.put("0", "原材料");
+        MATERIAL_TYPE_REVERSE.put("1", "半成品");
+        MATERIAL_TYPE_REVERSE.put("2", "成品");
+        MATERIAL_TYPE_REVERSE.put("3", "辅料");
+        MATERIAL_TYPE_REVERSE.put("4", "服务");
+        MATERIAL_TYPE_REVERSE.put("5", "工程");
+    }
+    /** 计量单位 文字→数字 映射表 */
+    private static final Map<String, String> UNIT_MAP = new HashMap<>();
+    /** 计量单位 数字→文字 映射表（用于导入结果展示） */
+    private static final Map<String, String> UNIT_REVERSE = new HashMap<>();
+    static {
+        UNIT_MAP.put("个", "0");
+        UNIT_MAP.put("件", "1");
+        UNIT_MAP.put("箱", "2");
+        UNIT_MAP.put("kg", "3");
+        UNIT_MAP.put("公斤", "3");
+        UNIT_MAP.put("吨", "4");
+        UNIT_MAP.put("米", "5");
+        UNIT_REVERSE.put("0", "个");
+        UNIT_REVERSE.put("1", "件");
+        UNIT_REVERSE.put("2", "箱");
+        UNIT_REVERSE.put("3", "kg");
+        UNIT_REVERSE.put("4", "吨");
+        UNIT_REVERSE.put("5", "米");
+    }
+    /** 是/否 文字→数字 映射表 */
+    private static final Map<String, String> YES_NO_MAP = new HashMap<>();
+    /** 是/否 数字→文字 映射表（用于导入结果展示） */
+    private static final Map<String, String> YES_NO_REVERSE = new HashMap<>();
+    static {
+        YES_NO_MAP.put("是", "1");
+        YES_NO_MAP.put("否", "0");
+        YES_NO_REVERSE.put("0", "否");
+        YES_NO_REVERSE.put("1", "是");
+    }
+    /** 状态 文字→数字 映射表 */
+    private static final Map<String, String> STATUS_MAP = new HashMap<>();
+    /** 状态 数字→文字 映射表（用于导入结果展示） */
+    private static final Map<String, String> STATUS_REVERSE = new HashMap<>();
+    static {
+        STATUS_MAP.put("正常", "0");
+        STATUS_MAP.put("停用", "1");
+        STATUS_REVERSE.put("0", "正常");
+        STATUS_REVERSE.put("1", "停用");
+    }
+
+    /**
+     * 校验并转换字典类字段（导入用）
+     * 用户在Excel中填写的是文字描述（如“原材料”、“是”），
+     * 这里将其转换为数据库存储的数字编码。
+     * 如果填写了不合法的值（包括数字），则报错。
+     * 注意：domain 字段已去掉 readConverterExp，ExcelUtil 不会自动转换，
+     * 用户填写的原始值直接传入此方法。
+     */
+    private void validateDictFields(WmsMaterial row)
+    {
+        // 物料类型校验并转换
+        String materialType = row.getMaterialType();
+        if (StringUtils.isNotEmpty(materialType))
+        {
+            String code = MATERIAL_TYPE_MAP.get(materialType.trim());
+            if (code == null)
+            {
+                throw new RuntimeException("物料类型值不合法，请填写文字：原材料、半成品、成品、辅料、服务、工程（或留空）");
+            }
+            row.setMaterialType(code);
+        }
+        // 计量单位校验并转换
+        String unit = row.getUnit();
+        if (StringUtils.isNotEmpty(unit))
+        {
+            String code = UNIT_MAP.get(unit.trim());
+            if (code == null)
+            {
+                throw new RuntimeException("计量单位值不合法，请填写文字：个、件、箱、kg、吨、米（或留空）");
+            }
+            row.setUnit(code);
+        }
+        // 效期管理校验并转换
+        String isExpiryManage = row.getIsExpiryManage();
+        if (StringUtils.isNotEmpty(isExpiryManage))
+        {
+            String code = YES_NO_MAP.get(isExpiryManage.trim());
+            if (code == null)
+            {
+                throw new RuntimeException("效期管理值不合法，请填写文字：是 或 否（或留空）");
+            }
+            row.setIsExpiryManage(code);
+        }
+        // 批次管理校验并转换
+        String isBatchManage = row.getIsBatchManage();
+        if (StringUtils.isNotEmpty(isBatchManage))
+        {
+            String code = YES_NO_MAP.get(isBatchManage.trim());
+            if (code == null)
+            {
+                throw new RuntimeException("批次管理值不合法，请填写文字：是 或 否（或留空）");
+            }
+            row.setIsBatchManage(code);
+        }
+        // 状态校验并转换
+        String status = row.getStatus();
+        if (StringUtils.isNotEmpty(status))
+        {
+            String code = STATUS_MAP.get(status.trim());
+            if (code == null)
+            {
+                throw new RuntimeException("状态值不合法，请填写文字：正常 或 停用（或留空）");
+            }
+            row.setStatus(code);
+        }
+        // 保质期天数校验
+        Integer shelfLifeDays = row.getShelfLifeDays();
+        if (shelfLifeDays != null && shelfLifeDays < 0)
+        {
+            throw new RuntimeException("保质期天数必须为非负整数");
+        }
+        // 临期预警天数校验
+        Integer expiryAlertDays = row.getExpiryAlertDays();
+        if (expiryAlertDays != null && expiryAlertDays < 0)
+        {
+            throw new RuntimeException("临期预警天数必须为非负整数");
+        }
+    }
+
+    /**
+     * 将数字编码转为文字描述（用于导入结果展示）
+     * @param code 数字编码
+     * @param codeToText 数字→文字映射表
+     * @return 文字描述，如果为空或未找到则返回原始值
+     */
+    private String dictText(String code, Map<String, String> codeToText)
+    {
+        if (StringUtils.isEmpty(code))
+        {
+            return "";
+        }
+        String text = codeToText.get(code);
+        return text != null ? text : code;
+    }
+
+    /**
+     * 校验效期管理为"是"时保质期天数和临期预警必填，且临期预警不能大于保质期天数
+     */
+    private void validateExpiryManage(WmsMaterial material)
+    {
+        if ("1".equals(material.getIsExpiryManage()))
+        {
+            if (material.getShelfLifeDays() == null)
+            {
+                throw new ServiceException("效期管理为「是」时，保质期天数不能为空");
+            }
+            if (material.getExpiryAlertDays() == null)
+            {
+                throw new ServiceException("效期管理为「是」时，临期预警天数不能为空");
+            }
+            if (material.getExpiryAlertDays() > material.getShelfLifeDays())
+            {
+                throw new ServiceException("临期预警天数不能大于保质期天数");
+            }
+        }
+    }
+
+    /**
+     * 校验安全库存上限不能小于安全库存下限
+     */
+    private void validateSafetyStock(WmsMaterial material)
+    {
+        BigDecimal min = material.getSafetyStockMin();
+        BigDecimal max = material.getSafetyStockMax();
+        if (min != null && max != null && max.compareTo(min) < 0)
+        {
+            throw new ServiceException("安全库存上限不能小于安全库存下限");
+        }
     }
 }

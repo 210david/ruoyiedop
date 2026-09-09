@@ -278,12 +278,12 @@
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="保质期天数" prop="shelfLifeDays">
-              <el-input-number v-model="form.shelfLifeDays" :min="0" :precision="0" controls-position="right" placeholder="天" style="width: 50%" />
+              <el-input-number v-model="form.shelfLifeDays" :min="1" :precision="0" controls-position="right" placeholder="天" style="width: 50%" :disabled="form.isExpiryManage !== '1'" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="临期预警" prop="expiryAlertDays">
-              <el-input-number v-model="form.expiryAlertDays" :min="0" :precision="0" controls-position="right" placeholder="天" style="width: 50%" />
+              <el-input-number v-model="form.expiryAlertDays" :min="1" :precision="0" controls-position="right" placeholder="天" style="width: 50%" :disabled="form.isExpiryManage !== '1'" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -306,6 +306,7 @@
           <el-col :span="12">
             <el-form-item label="安全库存上限" prop="safetyStockMax">
               <el-input-number v-model="form.safetyStockMax" :precision="2" :min="0" style="width: 50%" />
+              <div v-if="form.safetyStockMin != null && form.safetyStockMax != null && form.safetyStockMax < form.safetyStockMin" style="color: var(--el-color-danger); font-size: 12px; line-height: 1.5; margin-top: 4px;">安全库存上限不能小于安全库存下限</div>
             </el-form-item>
           </el-col>
         </el-row>
@@ -486,17 +487,27 @@ const columns = ref(loadColumnVisibility())
 const importTips = [
   '物料名称为必填字段，不能为空',
   '物料编码由系统自动生成，无需填写',
-  '物料类型填：原材料/半成品/成品/辅料（或留空）',
-  '计量单位填：个/件/箱/kg/吨/米（或留空）',
-  '如勾选「更新已存在数据」，需选择匹配字段：按名称或编码匹配',
-  '导入结果将显示每条数据的处理情况，失败数据可修正后重新导入'
+  '物料类型请填写文字：原材料、半成品、成品、辅料、服务、工程（留空默认为原材料）',
+  '计量单位请填写文字：个、件、箱、kg、吨、米（留空则不设置）',
+  '效期管理请填写文字：是 或 否（留空默认为否）',
+  '批次管理请填写文字：是 或 否（留空默认为否）',
+  '状态请填写文字：正常 或 停用（留空默认为正常）',
+  '保质期天数和临期预警天数请填写正整数；效期管理为「是」时，两者均必填且临期预警不能大于保质期天数',
+  '安全库存上限不能小于安全库存下限，请填写合理的数值',
+  '如勾选「更新已存在数据」，需选择匹配字段：按物料名称或物料编码匹配',
+  '导入结果将显示每条数据的处理情况，失败数据可导出修正后重新导入'
 ]
 const importColumnLabels = {
-  materialCode: '物料编码',
   materialName: '物料名称',
   specModel: '规格型号',
   unit: '计量单位',
   materialType: '物料类型',
+  isBatchManage: '批次管理',
+  isExpiryManage: '效期管理',
+  shelfLifeDays: '保质期(天)',
+  safetyStockMin: '安全库存下限',
+  safetyStockMax: '安全库存上限',
+  status: '状态',
   result: '结果',
   errorReason: '失败原因'
 }
@@ -504,6 +515,23 @@ const updateKeyOptions = [
   { value: 'materialName', label: '物料名称' },
   { value: 'materialCode', label: '物料编码' }
 ]
+
+/** 自定义校验：临期预警不能大于保质期天数 */
+const validateExpiryAlert = (rule, value, callback) => {
+  if (value != null && data.form.shelfLifeDays != null && value > data.form.shelfLifeDays) {
+    callback(new Error('临期预警天数不能大于保质期天数'))
+  } else {
+    callback()
+  }
+}
+/** 自定义校验：安全库存上限不能小于下限 */
+const validateSafetyStockMax = (rule, value, callback) => {
+  if (value != null && data.form.safetyStockMin != null && value < data.form.safetyStockMin) {
+    callback(new Error('安全库存上限不能小于安全库存下限'))
+  } else {
+    callback()
+  }
+}
 
 const data = reactive({
   form: {},
@@ -520,11 +548,26 @@ const data = reactive({
   },
 rules: {
 materialName: [{ required: true, message: '物料名称不能为空', trigger: 'blur' }],
-    unit: [{ required: true, message: '计量单位不能为空', trigger: 'change' }]
+    unit: [{ required: true, message: '计量单位不能为空', trigger: 'change' }],
+    safetyStockMax: [{ validator: validateSafetyStockMax, trigger: 'blur' }]
   }
 })
 
 const { queryParams, form, rules } = toRefs(data)
+
+/** 监听效期管理变化，动态调整保质期/临期预警的必填规则 */
+watch(() => form.value.isExpiryManage, (val) => {
+  if (val === '1') {
+    rules.value.shelfLifeDays = [{ required: true, message: '保质期天数不能为空', trigger: 'blur' }]
+    rules.value.expiryAlertDays = [
+      { required: true, message: '临期预警不能为空', trigger: 'blur' },
+      { validator: validateExpiryAlert, trigger: 'blur' }
+    ]
+  } else {
+    rules.value.shelfLifeDays = []
+    rules.value.expiryAlertDays = []
+  }
+})
 
 const activeFilterCount = computed(() => {
   let count = 0
@@ -596,7 +639,7 @@ function reset() {
     specModel: undefined,
     unit: undefined,
     shelfLifeDays: undefined,
-    expiryAlertDays: 30,
+    expiryAlertDays: 7,
     isExpiryManage: '0',
     safetyStockMin: 0,
     safetyStockMax: 0,
@@ -652,7 +695,7 @@ function submitForm() {
 
 function handleDelete(row) {
   const materialIds = row.materialId || ids.value
-  proxy.$modal.confirm('是否确认删除物料编号为"' + materialIds + '"的数据项？').then(function () {
+  proxy.$modal.confirm('是否确认删除选中的物料数据项？').then(function () {
     return delMaterial(materialIds)
   }).then(() => {
     getList()

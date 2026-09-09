@@ -61,12 +61,6 @@
             <el-input v-model="queryParams.personName" placeholder="请输入" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>创建时间</label>
-          <div class="control">
-            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
-          </div>
-        </div>
       </div>
       <div class="filter-actions">
         <div class="filter-info">
@@ -116,6 +110,14 @@
             </template>
           </el-table-column>
           <el-table-column label="责任人" prop="personName" key="personName" :width="colWidth('personName', 110)" resizable v-if="columns.personName.visible" />
+          <el-table-column label="状态" prop="status" key="status" :width="colWidth('status', 90)" resizable align="center" v-if="columns.status.visible">
+            <template #default="scope">
+              <span class="badge" :class="scope.row.status === '0' ? 'green' : 'gray'">
+                <span class="dot"></span>{{ scope.row.status === '0' ? '启用' : '停用' }}
+              </span>
+            </template>
+          </el-table-column>
+          <el-table-column label="创建时间" prop="createTime" key="createTime" :width="colWidth('createTime', 160)" resizable align="center" sortable="custom" v-if="columns.createTime.visible" />
           <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
               <div class="action-btn-row">
@@ -169,6 +171,9 @@
           <section class="rd-card">
             <div class="rd-card-header" @click="toggleCard('c2')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>其他信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
             <div class="rd-card-body" v-show="!collapsedCards.c2">
+              <el-row :gutter="20">
+                <el-col :span="12"><el-form-item label="状态" prop="status"><el-radio-group v-model="form.status"><el-radio value="0">启用</el-radio><el-radio value="1">停用</el-radio></el-radio-group></el-form-item></el-col>
+              </el-row>
               <el-form-item label="责任人" prop="personId">
                 <el-input v-model="form.personName" readonly placeholder="请选择责任人" style="width: 100%" @click="openUserPicker">
                   <template #append><el-button icon="Search" @click="openUserPicker" /></template>
@@ -215,11 +220,13 @@
             </div>
           </div>
         </section>
-        <section class="rd-card" v-if="viewData.personName || viewData.remark">
+        <section class="rd-card" v-if="viewData.personName || viewData.remark || viewData.status !== undefined">
           <div class="rd-card-header" @click="toggleCard('vc2')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>其他信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
           <div class="rd-card-body" v-show="!collapsedCards.vc2" style="display:block">
             <div class="rd-grid">
               <div class="rd-item"><span class="rd-label">责任人</span><div class="rd-value">{{ viewData.personName || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">状态</span><div class="rd-value"><span class="badge" :class="viewData.status === '0' ? 'green' : 'gray'"><span class="dot"></span>{{ viewData.status === '0' ? '启用' : '停用' }}</span></div></div>
+              <div class="rd-item"><span class="rd-label">创建时间</span><div class="rd-value">{{ viewData.createTime || '-' }}</div></div>
               <div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value">{{ viewData.remark || '-' }}</div></div>
             </div>
           </div>
@@ -254,7 +261,6 @@ const viewData = ref({})
 const loading = ref(true)
 const showSearch = ref(true)
 const showAdvanced = ref(false)
-const dateRange = ref([])
 const ids = ref([])
 const single = ref(true)
 const multiple = ref(true)
@@ -270,7 +276,9 @@ const defaultColumns = {
   areaName: { label: '所属区域', visible: true },
   regCertNo: { label: '使用登记证号', visible: true },
   inspectExpire: { label: '检验有效期至', visible: true },
-  personName: { label: '责任人', visible: true }
+  personName: { label: '责任人', visible: true },
+  status: { label: '状态', visible: true },
+  createTime: { label: '创建时间', visible: true }
 }
 
 function loadColumnVisibility() {
@@ -295,7 +303,10 @@ const data = reactive({
   queryParams: { pageNum: 1, pageSize: 10, equipmentName: undefined, equipmentCode: undefined, equipmentCategory: undefined, specialSubType: undefined, status: undefined, areaName: undefined, personName: undefined, params: {} },
   rules: {
     equipmentName: [{ required: true, message: '设备名称不能为空', trigger: 'blur' }],
-    equipmentCategory: [{ required: true, message: '设备类别不能为空', trigger: 'change' }]
+    specModel: [{ required: true, message: '型号规格不能为空', trigger: 'blur' }],
+    areaId: [{ required: true, message: '所属区域不能为空', trigger: 'change' }],
+    equipmentCategory: [{ required: true, message: '设备类别不能为空', trigger: 'change' }],
+    personId: [{ required: true, message: '责任人不能为空', trigger: 'change' }]
   }
 })
 const { queryParams, form, rules } = toRefs(data)
@@ -309,13 +320,12 @@ const activeFilterCount = computed(() => {
   if (queryParams.value.specialSubType) count++
   if (queryParams.value.areaName) count++
   if (queryParams.value.personName) count++
-  if (dateRange.value && dateRange.value.length > 0) count++
   return count
 })
 
-function getList() { loading.value = true; listEquipment(proxy.addDateRange(queryParams.value, dateRange.value)).then(response => { equipmentList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths() }).catch(error => { console.error(error) }).finally(() => { loading.value = false }) }
-function handleQuery() { showAdvanced.value = false; proxy.addDateRange(queryParams.value, dateRange.value); queryParams.value.pageNum = 1; getList() }
-function resetQuery() { queryParams.value.equipmentName = undefined; queryParams.value.equipmentCode = undefined; queryParams.value.equipmentCategory = undefined; queryParams.value.specialSubType = undefined; queryParams.value.status = undefined; queryParams.value.areaName = undefined; queryParams.value.personName = undefined; dateRange.value = []; queryParams.value.params = {}; handleQuery() }
+function getList() { loading.value = true; listEquipment(queryParams.value).then(response => { equipmentList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths() }).catch(error => { console.error(error) }).finally(() => { loading.value = false }) }
+function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
+function resetQuery() { queryParams.value.equipmentName = undefined; queryParams.value.equipmentCode = undefined; queryParams.value.equipmentCategory = undefined; queryParams.value.specialSubType = undefined; queryParams.value.status = undefined; queryParams.value.areaName = undefined; queryParams.value.personName = undefined; queryParams.value.params = {}; handleQuery() }
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleSelectionChange(selection) { ids.value = selection.map(item => item.equipmentId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function handleAdd() { reset(); collapsedCards.c0 = false; collapsedCards.c1 = false; collapsedCards.c2 = false; open.value = true; title.value = '添加特种设备' }
@@ -333,7 +343,7 @@ function handleDelete(row) { const equipmentIds = row.equipmentId || ids.value; 
 function handleExport() { proxy.download('safety/equipment/export', { ...queryParams.value }, `equipment_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 function reset() {
-  form.value = { equipmentId: undefined, equipmentCode: undefined, equipmentName: undefined, specModel: undefined, areaId: undefined, areaName: undefined, equipmentCategory: undefined, specialSubType: undefined, regCertNo: undefined, inspectExpire: undefined, personId: undefined, personName: undefined, remark: undefined }
+  form.value = { equipmentId: undefined, equipmentCode: undefined, equipmentName: undefined, specModel: undefined, areaId: undefined, areaName: undefined, equipmentCategory: undefined, specialSubType: undefined, regCertNo: undefined, inspectExpire: undefined, personId: undefined, personName: undefined, status: '0', remark: undefined }
   proxy.resetForm('equipmentRef')
 }
 /** 打开责任人选择弹窗 */

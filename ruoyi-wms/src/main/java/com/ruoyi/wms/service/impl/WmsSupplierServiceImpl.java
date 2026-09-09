@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.utils.StringUtils;
+import com.ruoyi.common.utils.poi.ExcelUtil;
 import com.ruoyi.wms.domain.WmsSupplier;
 import com.ruoyi.wms.mapper.WmsSupplierMapper;
 import com.ruoyi.wms.service.IWmsSupplierService;
@@ -86,7 +87,9 @@ public class WmsSupplierServiceImpl implements IWmsSupplierService
                 {
                     throw new RuntimeException("供应商名称不能为空");
                 }
-                // 2. 根据匹配字段校验并查找已存在的供应商
+                // 2. 字典类字段合法性校验
+                validateDictFields(row);
+                // 3. 根据匹配字段校验并查找已存在的供应商
                 String matchValue = getMatchValue(row, updateKey);
                 if (StringUtils.isEmpty(matchValue))
                 {
@@ -169,31 +172,144 @@ public class WmsSupplierServiceImpl implements IWmsSupplierService
     }
 
     /**
-     * 构建成功明细项
+     * 构建成功明细项（列与导入模板对齐，成功时已生成编码）
      */
     private Map<String, Object> buildSuccessItem(WmsSupplier row, String result)
     {
         Map<String, Object> item = new LinkedHashMap<>();
         item.put("supplierCode", row.getSupplierCode() != null ? row.getSupplierCode() : "");
         item.put("supplierName", row.getSupplierName() != null ? row.getSupplierName() : "");
+        item.put("supplierShortName", row.getSupplierShortName() != null ? row.getSupplierShortName() : "");
+        item.put("supplierType", dictText(row.getSupplierType(), "0=厂商,1=经销商,2=代理商,3=服务商"));
+        item.put("supplierLevel", row.getSupplierLevel() != null ? row.getSupplierLevel() : "");
+        item.put("unifiedCreditCode", row.getUnifiedCreditCode() != null ? row.getUnifiedCreditCode() : "");
         item.put("contactPerson", row.getContactPerson() != null ? row.getContactPerson() : "");
         item.put("contactPhone", row.getContactPhone() != null ? row.getContactPhone() : "");
+        item.put("email", row.getEmail() != null ? row.getEmail() : "");
+        item.put("address", row.getAddress() != null ? row.getAddress() : "");
+        item.put("legalPerson", row.getLegalPerson() != null ? row.getLegalPerson() : "");
+        item.put("registeredCapital", row.getRegisteredCapital() != null ? row.getRegisteredCapital().toString() : "");
+        item.put("enterpriseNature", dictText(row.getEnterpriseNature(), "0=国有企业,1=民营企业,2=外资企业,3=合资企业,4=个体工商户"));
+        item.put("establishedDate", row.getEstablishedDate() != null ? row.getEstablishedDate().toString() : "");
+        item.put("bankName", row.getBankName() != null ? row.getBankName() : "");
+        item.put("bankAccount", row.getBankAccount() != null ? row.getBankAccount() : "");
+        item.put("taxNumber", row.getTaxNumber() != null ? row.getTaxNumber() : "");
+        item.put("invoiceTitle", row.getInvoiceTitle() != null ? row.getInvoiceTitle() : "");
+        item.put("paymentMethod", dictText(row.getPaymentMethod(), "0=现结,1=月结,2=预付"));
+        item.put("paymentDays", row.getPaymentDays() != null ? row.getPaymentDays().toString() : "");
+        item.put("settlementType", dictText(row.getSettlementType(), "0=银行转账,1=承兑汇票,2=现金"));
+        item.put("currency", row.getCurrency() != null ? row.getCurrency() : "");
+        item.put("deliveryCycle", row.getDeliveryCycle() != null ? row.getDeliveryCycle().toString() : "");
+        item.put("minOrderAmount", row.getMinOrderAmount() != null ? row.getMinOrderAmount().toString() : "");
+        item.put("cooperationDate", row.getCooperationDate() != null ? row.getCooperationDate().toString() : "");
+        item.put("qualificationStatus", dictText(row.getQualificationStatus(), "0=未审核,1=已审核,2=审核不通过"));
+        item.put("status", dictText(row.getStatus(), "0=正常,1=停用"));
         item.put("result", result);
         return item;
     }
 
     /**
-     * 构建失败明细项
+     * 构建失败明细项（列与导入模板对齐，去掉自动生成的供应商编码）
      */
     private Map<String, Object> buildFailureItem(WmsSupplier row, String errorReason)
     {
         Map<String, Object> item = new LinkedHashMap<>();
-        item.put("supplierCode", row.getSupplierCode() != null ? row.getSupplierCode() : "");
         item.put("supplierName", row.getSupplierName() != null ? row.getSupplierName() : "");
+        item.put("supplierShortName", row.getSupplierShortName() != null ? row.getSupplierShortName() : "");
+        item.put("supplierType", dictText(row.getSupplierType(), "0=厂商,1=经销商,2=代理商,3=服务商"));
+        item.put("supplierLevel", row.getSupplierLevel() != null ? row.getSupplierLevel() : "");
+        item.put("unifiedCreditCode", row.getUnifiedCreditCode() != null ? row.getUnifiedCreditCode() : "");
         item.put("contactPerson", row.getContactPerson() != null ? row.getContactPerson() : "");
         item.put("contactPhone", row.getContactPhone() != null ? row.getContactPhone() : "");
+        item.put("email", row.getEmail() != null ? row.getEmail() : "");
+        item.put("address", row.getAddress() != null ? row.getAddress() : "");
+        item.put("legalPerson", row.getLegalPerson() != null ? row.getLegalPerson() : "");
+        item.put("registeredCapital", row.getRegisteredCapital() != null ? row.getRegisteredCapital().toString() : "");
+        item.put("enterpriseNature", dictText(row.getEnterpriseNature(), "0=国有企业,1=民营企业,2=外资企业,3=合资企业,4=个体工商户"));
+        item.put("establishedDate", row.getEstablishedDate() != null ? row.getEstablishedDate().toString() : "");
+        item.put("bankName", row.getBankName() != null ? row.getBankName() : "");
+        item.put("bankAccount", row.getBankAccount() != null ? row.getBankAccount() : "");
+        item.put("taxNumber", row.getTaxNumber() != null ? row.getTaxNumber() : "");
+        item.put("invoiceTitle", row.getInvoiceTitle() != null ? row.getInvoiceTitle() : "");
+        item.put("paymentMethod", dictText(row.getPaymentMethod(), "0=现结,1=月结,2=预付"));
+        item.put("paymentDays", row.getPaymentDays() != null ? row.getPaymentDays().toString() : "");
+        item.put("settlementType", dictText(row.getSettlementType(), "0=银行转账,1=承兑汇票,2=现金"));
+        item.put("currency", row.getCurrency() != null ? row.getCurrency() : "");
+        item.put("deliveryCycle", row.getDeliveryCycle() != null ? row.getDeliveryCycle().toString() : "");
+        item.put("minOrderAmount", row.getMinOrderAmount() != null ? row.getMinOrderAmount().toString() : "");
+        item.put("cooperationDate", row.getCooperationDate() != null ? row.getCooperationDate().toString() : "");
+        item.put("qualificationStatus", dictText(row.getQualificationStatus(), "0=未审核,1=已审核,2=审核不通过"));
+        item.put("status", dictText(row.getStatus(), "0=正常,1=停用"));
         item.put("errorReason", errorReason);
         return item;
+    }
+
+    /**
+     * 将编码转换为文字标签（用于明细展示）
+     */
+    private String dictText(String code, String converterExp)
+    {
+        if (StringUtils.isEmpty(code)) { return ""; }
+        String label = ExcelUtil.convertByExp(code, converterExp, ",");
+        return StringUtils.isNotEmpty(label) ? label : code;
+    }
+
+    /**
+     * 校验字典类字段：供应商类型、企业性质、付款方式、结算方式、资质状态、状态
+     * 用户在Excel中填写的是文字描述，ExcelUtil已将合法文字转为编码。
+     * 如果用户输入了不合法的文字或数字，ExcelUtil会保留原始值，此处检测并报错。
+     */
+    private void validateDictFields(WmsSupplier row)
+    {
+        // 供应商类型（readConverterExp: 0=厂商,1=经销商,2=代理商,3=服务商）
+        validateConverterField("供应商类型", row.getSupplierType(), "0=厂商,1=经销商,2=代理商,3=服务商");
+        // 企业性质（readConverterExp: 0=国有企业,1=民营企业,2=外资企业,3=合资企业,4=个体工商户）
+        validateConverterField("企业性质", row.getEnterpriseNature(), "0=国有企业,1=民营企业,2=外资企业,3=合资企业,4=个体工商户");
+        // 付款方式（readConverterExp: 0=现结,1=月结,2=预付）
+        validateConverterField("付款方式", row.getPaymentMethod(), "0=现结,1=月结,2=预付");
+        // 结算方式（readConverterExp: 0=银行转账,1=承兑汇票,2=现金）
+        validateConverterField("结算方式", row.getSettlementType(), "0=银行转账,1=承兑汇票,2=现金");
+        // 资质状态（readConverterExp: 0=未审核,1=已审核,2=审核不通过）
+        validateConverterField("资质状态", row.getQualificationStatus(), "0=未审核,1=已审核,2=审核不通过");
+        // 状态（readConverterExp: 0=正常,1=停用）
+        validateConverterField("状态", row.getStatus(), "0=正常,1=停用");
+        // 账期天数校验
+        if (row.getPaymentDays() != null && row.getPaymentDays() < 0)
+        {
+            throw new RuntimeException("账期天数必须为非负整数");
+        }
+        // 交货周期校验
+        if (row.getDeliveryCycle() != null && row.getDeliveryCycle() < 0)
+        {
+            throw new RuntimeException("交货周期必须为非负整数");
+        }
+        // 注册资本校验
+        if (row.getRegisteredCapital() != null && row.getRegisteredCapital().compareTo(java.math.BigDecimal.ZERO) < 0)
+        {
+            throw new RuntimeException("注册资本不能为负数");
+        }
+        // 最小订单金额校验
+        if (row.getMinOrderAmount() != null && row.getMinOrderAmount().compareTo(java.math.BigDecimal.ZERO) < 0)
+        {
+            throw new RuntimeException("最小订单金额不能为负数");
+        }
+    }
+
+    /**
+     * 校验readConverterExp字段：如果值不为空但不是合法编码，说明用户输入了不合法的文字或数字
+     */
+    private void validateConverterField(String fieldLabel, String value, String converterExp)
+    {
+        if (StringUtils.isNotEmpty(value))
+        {
+            // 尝试将编码转为文字，如果成功说明是合法编码
+            String label = ExcelUtil.convertByExp(value, converterExp, ",");
+            if (StringUtils.isEmpty(label))
+            {
+                // 不是合法编码，说明用户输入了不合法的文字或数字
+                throw new RuntimeException(fieldLabel + "值不合法，请填写文字描述（参考导入说明中的合法值）");
+            }
+        }
     }
 
     /**

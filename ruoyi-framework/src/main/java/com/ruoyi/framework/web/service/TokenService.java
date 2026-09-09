@@ -20,6 +20,7 @@ import com.ruoyi.common.utils.ip.AddressUtils;
 import com.ruoyi.common.utils.ip.IpUtils;
 import com.ruoyi.common.utils.uuid.IdUtils;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import jakarta.servlet.http.HttpServletRequest;
@@ -73,11 +74,24 @@ public class TokenService
                 String uuid = (String) claims.get(Constants.LOGIN_USER_KEY);
                 String userKey = getTokenKey(uuid);
                 LoginUser user = redisCache.getCacheObject(userKey);
+                if (user == null)
+                {
+                    // 会话不存在：可能是 Redis 被清理/重启、并发登录被踢、或已过期删除
+                    log.warn("[Token排查] 会话不存在 tokenKey={} uri={} ip={}", userKey,
+                            request.getRequestURI(), IpUtils.getIpAddr(request));
+                }
                 return user;
+            }
+            catch (ExpiredJwtException e)
+            {
+                // JWT 本身过期（超过 expireTime 且未被活跃续期）
+                log.warn("[Token排查] JWT已过期 uri={} ip={} msg={}",
+                        request.getRequestURI(), IpUtils.getIpAddr(request), e.getMessage());
             }
             catch (Exception e)
             {
-                log.error("获取用户信息异常'{}'", e.getMessage());
+                log.error("[Token排查] 获取用户信息异常 uri={} ip={} msg={}",
+                        request.getRequestURI(), IpUtils.getIpAddr(request), e.getMessage());
             }
         }
         return null;

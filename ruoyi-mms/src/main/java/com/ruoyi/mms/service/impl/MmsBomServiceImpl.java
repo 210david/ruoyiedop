@@ -13,6 +13,7 @@ import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.StringUtils;
+import com.ruoyi.common.utils.poi.ExcelUtil;
 import com.ruoyi.mk.service.IMkNumberRuleService;
 import com.ruoyi.mms.domain.MmsBom;
 import com.ruoyi.mms.domain.MmsBomDetail;
@@ -434,6 +435,12 @@ public class MmsBomServiceImpl implements IMmsBomService
                     throw new RuntimeException("BOM名称不能为空");
                 }
 
+                // 字典类字段合法性校验（遍历所有行）
+                for (MmsBomImport row : rows)
+                {
+                    validateDictFields(row);
+                }
+
                 // 校验产品编码
                 if (StringUtils.isEmpty(firstRow.getProductCode()))
                 {
@@ -546,10 +553,11 @@ public class MmsBomServiceImpl implements IMmsBomService
                 failureNum++;
                 String errMsg = e.getMessage();
                 if (errMsg != null && errMsg.length() > 200) { errMsg = errMsg.substring(0, 200) + "..."; }
+                MmsBomImport firstRow = rows.get(0);
                 Map<String, Object> item = new LinkedHashMap<>();
-                item.put("bomName", "");
+                item.put("bomName", firstRow.getBomName() != null ? firstRow.getBomName() : "");
                 item.put("productCode", productCode);
-                item.put("productName", "");
+                item.put("productName", firstRow.getProductName() != null ? firstRow.getProductName() : "");
                 item.put("version", version);
                 item.put("errorReason", errMsg != null ? errMsg : "未知错误");
                 failureList.add(item);
@@ -576,5 +584,43 @@ public class MmsBomServiceImpl implements IMmsBomService
             ajax.put("msg", "导入成功，共 " + successNum + " 条");
         }
         return ajax;
+    }
+
+    /**
+     * 校验字典类字段和数字字段
+     */
+    private void validateDictFields(MmsBomImport row)
+    {
+        validateConverterField("BOM类型", row.getBomType(), "0=标准BOM,1=替代BOM,2=配方,3=临时BOM");
+        validateConverterField("是否关键料", row.getIsKeyMaterial(), "0=否,1=是");
+        validateConverterField("供应方式", row.getSupplyType(), "1=直接领料,2=倒冲,3=车间库存");
+        validateConverterField("是否虚拟件", row.getIsPhantom(), "0=否,1=是");
+        // 基准数量校验
+        if (row.getBaseQty() != null && row.getBaseQty().compareTo(BigDecimal.ZERO) <= 0)
+        {
+            throw new RuntimeException("基准数量必须为正数");
+        }
+        // 单件用量校验
+        if (row.getUsageQty() != null && row.getUsageQty().compareTo(BigDecimal.ZERO) <= 0)
+        {
+            throw new RuntimeException("单件用量必须为正数");
+        }
+        // 损耗率校验
+        if (row.getLossRate() != null && (row.getLossRate().compareTo(BigDecimal.ZERO) < 0 || row.getLossRate().compareTo(new BigDecimal("100")) > 0))
+        {
+            throw new RuntimeException("损耗率必须在0-100之间");
+        }
+    }
+
+    private void validateConverterField(String fieldLabel, String value, String converterExp)
+    {
+        if (StringUtils.isNotEmpty(value))
+        {
+            String label = ExcelUtil.convertByExp(value, converterExp, ",");
+            if (StringUtils.isEmpty(label))
+            {
+                throw new RuntimeException(fieldLabel + "值不合法，请填写文字描述");
+            }
+        }
     }
 }

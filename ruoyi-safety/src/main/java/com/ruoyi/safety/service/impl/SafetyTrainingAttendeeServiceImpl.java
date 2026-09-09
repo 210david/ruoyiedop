@@ -11,6 +11,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.exception.ServiceException;
+import com.ruoyi.common.utils.StringUtils;
+import com.ruoyi.common.utils.poi.ExcelUtil;
 import com.ruoyi.safety.domain.SafetyTrainingAttendee;
 import com.ruoyi.safety.domain.SafetyTrainingCert;
 import com.ruoyi.safety.domain.SafetyTrainingRecord;
@@ -109,6 +111,8 @@ public class SafetyTrainingAttendeeServiceImpl implements ISafetyTrainingAttende
         {
             try
             {
+                // 字典类字段合法性校验
+                validateDictFields(attendee);
                 // 检查重复
                 if (attendee.getRecordId() != null && attendee.getUserId() != null)
                 {
@@ -167,6 +171,34 @@ public class SafetyTrainingAttendeeServiceImpl implements ISafetyTrainingAttende
     }
 
     /**
+     * 校验字典类字段：签到状态、是否合格
+     */
+    private void validateDictFields(SafetyTrainingAttendee row)
+    {
+        // 签到状态（readConverterExp: 0=未签到,1=已签到,2=请假）
+        validateConverterField("签到状态", row.getSignInStatus(), "0=未签到,1=已签到,2=请假");
+        // 是否合格（readConverterExp: 0=不合格,1=合格）
+        validateConverterField("是否合格", row.getIsPass(), "0=不合格,1=合格");
+        // 考试分数校验
+        if (row.getExamScore() != null && row.getExamScore().compareTo(java.math.BigDecimal.ZERO) < 0)
+        {
+            throw new RuntimeException("考试分数不能为负数");
+        }
+    }
+
+    private void validateConverterField(String fieldLabel, String value, String converterExp)
+    {
+        if (StringUtils.isNotEmpty(value))
+        {
+            String label = ExcelUtil.convertByExp(value, converterExp, ",");
+            if (StringUtils.isEmpty(label))
+            {
+                throw new RuntimeException(fieldLabel + "值不合法，请填写文字描述");
+            }
+        }
+    }
+
+    /**
      * 构建成功明细项
      */
     private Map<String, Object> buildSuccessItem(SafetyTrainingAttendee row, String result)
@@ -174,20 +206,42 @@ public class SafetyTrainingAttendeeServiceImpl implements ISafetyTrainingAttende
         Map<String, Object> item = new LinkedHashMap<>();
         item.put("userName", row.getUserName() != null ? row.getUserName() : "");
         item.put("deptName", row.getDeptName() != null ? row.getDeptName() : "");
+        item.put("signInStatus", dictText(row.getSignInStatus(), "0=未签到,1=已签到,2=请假"));
+        item.put("signInTime", row.getSignInTime() != null ? row.getSignInTime().toString() : "");
+        item.put("signInMethod", row.getSignInMethod() != null ? row.getSignInMethod() : "");
+        item.put("examScore", row.getExamScore() != null ? row.getExamScore().toString() : "");
+        item.put("isPass", dictText(row.getIsPass(), "0=不合格,1=合格"));
+        item.put("examTime", row.getExamTime() != null ? row.getExamTime().toString() : "");
         item.put("result", result);
         return item;
     }
 
     /**
-     * 构建失败明细项
+     * 构建失败明细项（列与导入模板对齐）
      */
     private Map<String, Object> buildFailureItem(SafetyTrainingAttendee row, String errorReason)
     {
         Map<String, Object> item = new LinkedHashMap<>();
         item.put("userName", row.getUserName() != null ? row.getUserName() : "");
         item.put("deptName", row.getDeptName() != null ? row.getDeptName() : "");
+        item.put("signInStatus", dictText(row.getSignInStatus(), "0=未签到,1=已签到,2=请假"));
+        item.put("signInTime", row.getSignInTime() != null ? row.getSignInTime().toString() : "");
+        item.put("signInMethod", row.getSignInMethod() != null ? row.getSignInMethod() : "");
+        item.put("examScore", row.getExamScore() != null ? row.getExamScore().toString() : "");
+        item.put("isPass", dictText(row.getIsPass(), "0=不合格,1=合格"));
+        item.put("examTime", row.getExamTime() != null ? row.getExamTime().toString() : "");
         item.put("errorReason", errorReason);
         return item;
+    }
+
+    /**
+     * 将编码转换为文字标签（用于明细展示）
+     */
+    private String dictText(String code, String converterExp)
+    {
+        if (StringUtils.isEmpty(code)) { return ""; }
+        String label = ExcelUtil.convertByExp(code, converterExp, ",");
+        return StringUtils.isNotEmpty(label) ? label : code;
     }
 
     /** 检查同一培训记录下是否已存在该用户 */

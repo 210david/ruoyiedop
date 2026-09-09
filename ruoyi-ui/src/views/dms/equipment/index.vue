@@ -406,18 +406,33 @@ function equipmentStatusLabel(val) { const item = dms_equipment_status.value.fin
 const importTips = [
   '设备名称为必填字段，不能为空',
   '设备编号由系统自动生成，无需填写',
-  '设备状态填：运行/空闲/维修/故障/报废（或留空，默认为运行）',
-  '设备等级、设备状态等字典字段请参考系统中已有数据填写',
+  '设备状态请填写文字描述（参考系统中字典数据，或留空默认为运行）',
+  '设备等级请填写文字描述（参考系统中字典数据，或留空）',
+  '状态请填写文字：正常、停用（或留空默认为正常）',
+  '原值请填写非负数值',
   '如勾选「更新已存在数据」，需选择匹配字段：按设备名称、设备编号、资产编号或序列号匹配',
-  '导入结果将显示每条数据的处理情况，失败数据可修正后重新导入'
+  '导入结果将显示每条数据的处理情况，失败数据可导出修正后重新导入'
 ]
 const importColumnLabels = {
   equipmentCode: '设备编号',
-  equipmentName: '设备名称',
-  model: '型号',
   assetCode: '资产编号',
+  equipmentName: '设备名称',
+  categoryName: '设备分类',
+  model: '型号',
   serialNumber: '序列号',
   manufacturer: '制造商',
+  supplier: '供应商',
+  purchaseDate: '购置日期',
+  installDate: '启用日期',
+  retireDate: '报废处置日期',
+  originalValue: '原值',
+  deptName: '使用部门',
+  installLocation: '安装位置',
+  equipmentStatus: '设备状态',
+  equipmentLevel: '设备等级',
+  warrantyDate: '质保期限',
+  responsibleName: '责任人',
+  status: '状态',
   result: '结果',
   errorReason: '失败原因'
 }

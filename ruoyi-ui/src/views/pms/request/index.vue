@@ -643,8 +643,10 @@ import UserPicker from '@/components/UserPicker/index.vue'
 import { CircleClose, QuestionFilled } from '@element-plus/icons-vue'
 import { ArrowRight } from '@element-plus/icons-vue'
 import { useRoute } from 'vue-router'
+import useUserStore from '@/store/modules/user'
 
 const { proxy } = getCurrentInstance()
+const userStore = useUserStore()
 const { pms_request_status, pms_priority, wms_unit } = proxy.useDict('pms_request_status', 'pms_priority', 'wms_unit')
 
 const { collapsedCards, toggleCard } = useDetailCard(["c1","c2","c0","c3","v1","v2","v3","v4","a1","a2"])
@@ -769,7 +771,17 @@ const data = reactive({
     params: {}
   },
   rules: {
-    title: [{ required: true, message: '申请标题不能为空', trigger: 'blur' }]
+    title: [{ required: true, message: '申请标题不能为空', trigger: 'blur' }],
+    priority: [{ required: true, message: '优先级不能为空', trigger: 'change' }],
+    expectDate: [{ required: true, message: '期望交货日期不能为空', trigger: 'change' }],
+    requesterName: [{
+      required: true, message: '申请人不能为空', trigger: 'change',
+      validator: (rule, value, callback) => {
+        if (!form.value.requesterId || !form.value.requesterName) return callback(new Error('申请人不能为空'))
+        callback()
+      }
+    }],
+    purpose: [{ required: true, message: '采购用途不能为空', trigger: 'blur' }]
   }
 })
 const { queryParams, form, rules } = toRefs(data)
@@ -820,7 +832,16 @@ function reset() {
   proxy.resetForm('requestRef')
 }
 
-function handleAdd() { reset(); open.value = true; title.value = '添加采购申请' }
+function handleAdd() {
+  reset()
+  // 默认申请人为当前登录用户
+  if (userStore.id) {
+    form.value.requesterId = userStore.id
+    form.value.requesterName = userStore.nickName
+  }
+  open.value = true
+  title.value = '添加采购申请'
+}
 function handleUpdate(row) {
   reset()
   getRequest(row.requestId || ids.value[0]).then(res => {
@@ -928,6 +949,17 @@ function applyPlanDetail(plan) {
 function handleDeleteDetail(index) { form.value.detailList.splice(index, 1); calcDetailAmount({}) }
 
 function submitForm() {
+  if (!form.value.detailList || form.value.detailList.length === 0) {
+    proxy.$modal.msgError('采购明细不能为空，请至少添加一行明细')
+    return
+  }
+  for (let i = 0; i < form.value.detailList.length; i++) {
+    const d = form.value.detailList[i]
+    if (!d.materialId) { proxy.$modal.msgError('第' + (i + 1) + '行：请选择物料'); return }
+    if (!d.unit) { proxy.$modal.msgError('第' + (i + 1) + '行：请选择单位'); return }
+    if (!d.qty || d.qty <= 0) { proxy.$modal.msgError('第' + (i + 1) + '行：数量必须大于0'); return }
+    if (d.estimatedPrice == null || d.estimatedPrice < 0) { proxy.$modal.msgError('第' + (i + 1) + '行：预估单价不能为空且不能小于0'); return }
+  }
   proxy.$refs['requestRef'].validate(valid => {
     if (valid) {
       if (form.value.requestId != undefined) {

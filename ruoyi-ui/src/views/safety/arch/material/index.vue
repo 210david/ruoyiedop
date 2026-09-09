@@ -51,24 +51,9 @@
           </div>
         </div>
         <div class="field" v-show="showAdvanced">
-          <label>状态</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
-              <el-option label="正常" value="0" />
-              <el-option label="停用" value="1" />
-            </el-select>
-          </div>
-        </div>
-        <div class="field" v-show="showAdvanced">
           <label>储存位置</label>
           <div class="control">
             <el-input v-model="queryParams.storageAreaName" placeholder="请输入" clearable @keyup.enter="handleQuery" />
-          </div>
-        </div>
-        <div class="field" v-show="showAdvanced">
-          <label>创建时间</label>
-          <div class="control">
-            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" @change="handleQuery" />
           </div>
         </div>
       </div>
@@ -115,7 +100,11 @@
             <template #header><span>CAS号</span><el-tooltip content="CAS号是化学物质在美国化学文摘社（CAS）数据库中的唯一标识编号，如：7732-18-5（水）" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></template>
           </el-table-column>
           <el-table-column label="最大储存量" prop="maxStorage" key="maxStorage" :width="colWidth('maxStorage', 110)" resizable align="center" v-if="columns.maxStorage.visible" />
-          <el-table-column label="单位" prop="storageUnit" key="storageUnit" :width="colWidth('storageUnit', 80)" resizable align="center" v-if="columns.storageUnit.visible" />
+          <el-table-column label="单位" prop="storageUnit" key="storageUnit" :width="colWidth('storageUnit', 80)" resizable align="center" v-if="columns.storageUnit.visible">
+            <template #default="scope">
+              <dict-tag :options="wms_unit" :value="scope.row.storageUnit" />
+            </template>
+          </el-table-column>
           <el-table-column label="储存位置" prop="storageAreaName" key="storageAreaName" :width="colWidth('storageAreaName', 130)" resizable show-overflow-tooltip v-if="columns.storageAreaName.visible" />
           <el-table-column label="当前库存" prop="currentStock" key="currentStock" :width="colWidth('currentStock', 120)" resizable align="center" v-if="columns.currentStock.visible">
             <template #default="scope">
@@ -173,11 +162,11 @@
             <div class="rd-card-header" @click="toggleCard('c1')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>储存信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
             <div class="rd-card-body" v-show="!collapsedCards.c1">
               <el-row :gutter="20">
-                <el-col :span="12"><el-form-item label="最大储存量" prop="maxStorage"><el-input-number v-model="form.maxStorage" :min="0" style="width: 100%" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="最大储存量" prop="maxStorage"><el-input-number v-model="form.maxStorage" :min="0" style="width: 100%" @change="onMaxStorageChange" /></el-form-item></el-col>
                 <el-col :span="12"><el-form-item label="当前库存" prop="currentStock"><el-input-number v-model="form.currentStock" :min="0" style="width: 100%" /></el-form-item></el-col>
               </el-row>
               <el-row :gutter="20">
-                <el-col :span="12"><el-form-item label="安全库存下限" prop="safetyStockMin"><el-input-number v-model="form.safetyStockMin" :min="0" style="width: 100%" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="安全库存下限" prop="safetyStockMin"><el-input-number v-model="form.safetyStockMin" :min="0" style="width: 100%" @change="onSafetyStockMinChange" /></el-form-item></el-col>
                 <el-col :span="12"><el-form-item label="安全库存上限" prop="safetyStockMax"><el-input-number v-model="form.safetyStockMax" :min="0" style="width: 100%" /></el-form-item></el-col>
               </el-row>
               <el-form-item label="单位" prop="storageUnit"><el-select v-model="form.storageUnit" placeholder="请选择单位" style="width: 100%"><el-option v-for="dict in wms_unit" :key="dict.value" :label="dict.label" :value="dict.value" /></el-select></el-form-item>
@@ -342,10 +331,48 @@ function loadColumnVisibility() {
 
 const columns = ref(loadColumnVisibility())
 
+// 自定义校验：值不能大于最大储存量
+const validateNotExceedMaxStorage = (rule, value, callback) => {
+  if (value !== undefined && value !== null && value !== '') {
+    const max = form.value.maxStorage
+    if (max !== undefined && max !== null && max !== '' && Number(value) > Number(max)) {
+      callback(new Error('不能大于最大储存量'))
+    } else {
+      callback()
+    }
+  } else {
+    callback()
+  }
+}
+// 自定义校验：安全库存上限不能小于安全库存下限
+const validateStockMaxNotLessThanMin = (rule, value, callback) => {
+  if (value !== undefined && value !== null && value !== '') {
+    const min = form.value.safetyStockMin
+    if (min !== undefined && min !== null && min !== '' && Number(value) < Number(min)) {
+      callback(new Error('安全库存上限不能小于安全库存下限'))
+    } else {
+      validateNotExceedMaxStorage(rule, value, callback)
+    }
+  } else {
+    callback()
+  }
+}
+
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, materialCode: undefined, materialName: undefined, hazardClass: undefined, casNo: undefined, toxicFlag: undefined, status: undefined, storageAreaName: undefined, params: {} },
-  rules: { materialName: [{ required: true, message: '危化品名称不能为空', trigger: 'blur' }] }
+  queryParams: { pageNum: 1, pageSize: 10, materialCode: undefined, materialName: undefined, hazardClass: undefined, casNo: undefined, toxicFlag: undefined, storageAreaName: undefined, params: {} },
+  rules: {
+    materialName: [{ required: true, message: '危化品名称不能为空', trigger: 'blur' }],
+    hazardClass: [{ required: true, message: '危化品分类不能为空', trigger: 'change' }],
+    casNo: [{ required: true, message: 'CAS号不能为空', trigger: 'blur' }],
+    toxicFlag: [{ required: true, message: '剧毒/易制爆不能为空', trigger: 'change' }],
+    maxStorage: [{ required: true, message: '最大储存量不能为空', trigger: 'blur' }],
+    storageUnit: [{ required: true, message: '单位不能为空', trigger: 'change' }],
+    storageAreaId: [{ required: true, message: '储存位置不能为空', trigger: 'change' }],
+    currentStock: [{ validator: validateNotExceedMaxStorage, trigger: 'change' }],
+    safetyStockMin: [{ validator: validateNotExceedMaxStorage, trigger: 'change' }],
+    safetyStockMax: [{ validator: validateStockMaxNotLessThanMin, trigger: 'change' }]
+  }
 })
 const { queryParams, form, rules } = toRefs(data)
 
@@ -356,9 +383,7 @@ const activeFilterCount = computed(() => {
   if (queryParams.value.hazardClass) count++
   if (queryParams.value.casNo) count++
   if (queryParams.value.toxicFlag) count++
-  if (queryParams.value.status) count++
   if (queryParams.value.storageAreaName) count++
-  if (dateRange.value && dateRange.value.length > 0) count++
   return count
 })
 
@@ -375,9 +400,13 @@ function loadStockAlerts() { getStockAlert().then(response => { stockAlertIds.va
 function isStockAlert(row) { return stockAlertIds.value.includes(row.materialId) }
 function getAreaTree() { listArea({ pageNum: 1, pageSize: 9999 }).then(response => { areaOptions.value = proxy.handleTree(response.rows, 'areaId') }) }
 function onAreaChange(areaId) { const node = findAreaNode(areaOptions.value, areaId); form.value.storageAreaName = node ? node.areaName : undefined }
+// 最大储存量变化时，重新校验依赖字段
+function onMaxStorageChange() { proxy.$refs['materialRef']?.validateField(['currentStock', 'safetyStockMin', 'safetyStockMax']) }
+// 安全库存下限变化时，重新校验安全库存上限
+function onSafetyStockMinChange() { proxy.$refs['materialRef']?.validateField(['safetyStockMax']) }
 function findAreaNode(nodes, id) { for (const n of nodes) { if (n.areaId === id) return n; if (n.children && n.children.length) { const found = findAreaNode(n.children, id); if (found) return found } } return null }
 function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
-function resetQuery() { queryParams.value.materialCode = undefined; queryParams.value.materialName = undefined; queryParams.value.hazardClass = undefined; queryParams.value.casNo = undefined; queryParams.value.toxicFlag = undefined; queryParams.value.status = undefined; queryParams.value.storageAreaName = undefined; dateRange.value = []; queryParams.value.params = {}; handleQuery() }
+function resetQuery() { queryParams.value.materialCode = undefined; queryParams.value.materialName = undefined; queryParams.value.hazardClass = undefined; queryParams.value.casNo = undefined; queryParams.value.toxicFlag = undefined; queryParams.value.storageAreaName = undefined; dateRange.value = []; queryParams.value.params = {}; handleQuery() }
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleSelectionChange(selection) { ids.value = selection.map(item => item.materialId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function handleAdd() { reset(); collapsedCards.c0 = false; collapsedCards.c1 = false; collapsedCards.c2 = false; collapsedCards.c3 = false; collapsedCards.c4 = false; open.value = true; title.value = '添加危化品' }
@@ -386,6 +415,30 @@ function handleUpdate(row) { reset(); getMaterial(row.materialId || ids.value[0]
 function submitForm() {
   proxy.$refs['materialRef'].validate(valid => {
     if (valid) {
+      // 跨字段校验：确保修改 maxStorage 后，已填写的 currentStock/safetyStockMin/safetyStockMax 仍然合法
+      const max = form.value.maxStorage
+      if (max !== undefined && max !== null && max !== '') {
+        const maxNum = Number(max)
+        if (form.value.currentStock !== undefined && form.value.currentStock !== null && form.value.currentStock !== '' && Number(form.value.currentStock) > maxNum) {
+          proxy.$modal.msgError('当前库存不能大于最大储存量')
+          return
+        }
+        if (form.value.safetyStockMin !== undefined && form.value.safetyStockMin !== null && form.value.safetyStockMin !== '' && Number(form.value.safetyStockMin) > maxNum) {
+          proxy.$modal.msgError('安全库存下限不能大于最大储存量')
+          return
+        }
+        if (form.value.safetyStockMax !== undefined && form.value.safetyStockMax !== null && form.value.safetyStockMax !== '' && Number(form.value.safetyStockMax) > maxNum) {
+          proxy.$modal.msgError('安全库存上限不能大于最大储存量')
+          return
+        }
+      }
+      // 跨字段校验：安全库存上限不能小于安全库存下限
+      if (form.value.safetyStockMin !== undefined && form.value.safetyStockMin !== null && form.value.safetyStockMin !== '' &&
+          form.value.safetyStockMax !== undefined && form.value.safetyStockMax !== null && form.value.safetyStockMax !== '' &&
+          Number(form.value.safetyStockMax) < Number(form.value.safetyStockMin)) {
+        proxy.$modal.msgError('安全库存上限不能小于安全库存下限')
+        return
+      }
       if (form.value.materialId != undefined) { updateMaterial(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList() }) }
       else { addMaterial(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList() }) }
     }

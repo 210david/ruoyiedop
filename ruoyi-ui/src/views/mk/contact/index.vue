@@ -341,7 +341,7 @@
       template-action="/mk/contact/importTemplate"
       template-file-name="contact_template"
       update-support-label="如果已存在相同手机号/邮箱，则更新数据"
-      :column-labels="{ name: '姓名', phone: '手机号', email: '邮箱', result: '结果', errorReason: '失败原因' }"
+      :column-labels="{ customerName: '所属客户', name: '姓名', gender: '性别', position: '职位', roleTag: '角色标签', phone: '手机号', email: '邮箱', isKey: '关键联系人', result: '结果', errorReason: '失败原因' }"
       @success="getList"
     />
 

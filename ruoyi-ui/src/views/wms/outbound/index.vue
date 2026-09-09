@@ -42,16 +42,24 @@
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced" style="grid-column: span 2">
+        <div class="field" v-show="showAdvanced">
           <label>出库日期</label>
           <div class="control">
-            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" @change="handleQuery" />
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
           </div>
         </div>
         <div class="field" v-show="showAdvanced">
           <label>创建时间</label>
           <div class="control">
             <el-date-picker v-model="dateRangeCreateTime" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>创建人</label>
+          <div class="control">
+            <el-input v-model="queryParams.createBy" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
           </div>
         </div>
       </div>
@@ -372,14 +380,14 @@ const currentDetailIndex = ref(-1)
 const defaultColumns = { orderNo: { label: '出库单号', visible: true }, orderType: { label: '出库类型', visible: true }, warehouseName: { label: '出库仓库', visible: true }, status: { label: '状态', visible: true }, totalQty: { label: '总数量', visible: true }, remark: { label: '备注', visible: true } }
 function loadColumnVisibility() { try { const saved = localStorage.getItem('wms_outbound_columns'); if (saved) { const parsed = JSON.parse(saved); const result = {}; Object.keys(defaultColumns).forEach(key => { result[key] = { label: defaultColumns[key].label, visible: parsed[key] !== undefined ? parsed[key] : defaultColumns[key].visible } }); return result } } catch (e) {} return { ...defaultColumns } }
 const columns = ref(loadColumnVisibility())
-const activeFilterCount = computed(() => { let count = 0; if (queryParams.value.orderNo) count++; if (queryParams.value.orderType) count++; if (queryParams.value.warehouseId) count++; if (queryParams.value.status) count++; if (dateRange.value && dateRange.value.length > 0) count++; if (dateRangeCreateTime.value && dateRangeCreateTime.value.length > 0) count++; return count })
+const activeFilterCount = computed(() => { let count = 0; if (queryParams.value.orderNo) count++; if (queryParams.value.orderType) count++; if (queryParams.value.warehouseId) count++; if (queryParams.value.status) count++; if (dateRange.value && dateRange.value.length > 0) count++; if (dateRangeCreateTime.value && dateRangeCreateTime.value.length > 0) count++; if (queryParams.value.createBy) count++; return count })
 const statusTabList = computed(() => wms_outbound_status.value)
 function today() { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') }
-const data = reactive({ form: {}, queryParams: { pageNum: 1, pageSize: 10, orderNo: undefined, orderType: undefined, warehouseId: undefined, status: undefined }, rules: { orderType: [{ required: true, message: '出库类型不能为空', trigger: 'change' }], warehouseId: [{ required: true, message: '出库仓库不能为空', trigger: 'change' }], outboundDate: [{ required: true, message: '预计出库日期不能为空', trigger: 'change' }] } })
+const data = reactive({ form: {}, queryParams: { pageNum: 1, pageSize: 10, orderNo: undefined, orderType: undefined, warehouseId: undefined, status: undefined, createBy: undefined }, rules: { orderType: [{ required: true, message: '出库类型不能为空', trigger: 'change' }], warehouseId: [{ required: true, message: '出库仓库不能为空', trigger: 'change' }], outboundDate: [{ required: true, message: '预计出库日期不能为空', trigger: 'change' }] } })
 const { queryParams, form, rules } = toRefs(data)
 function getList() { loading.value = true; const params = proxy.addDateRange(proxy.addDateRange(queryParams.value, dateRange.value, 'OutboundDate'), dateRangeCreateTime.value, 'CreateTime'); listOutbound(params).then(res => { list.value = res.rows; total.value = res.total; loading.value = false; applySavedWidths() }) }
 function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
-function resetQuery() { queryParams.value.orderNo = undefined; queryParams.value.orderType = undefined; queryParams.value.warehouseId = undefined; queryParams.value.status = undefined; queryParams.value.params = {}; dateRange.value = []; dateRangeCreateTime.value = []; activeStatusTab.value = 'all'; handleQuery() }
+function resetQuery() { queryParams.value.orderNo = undefined; queryParams.value.orderType = undefined; queryParams.value.warehouseId = undefined; queryParams.value.status = undefined; queryParams.value.createBy = undefined; queryParams.value.params = {}; dateRange.value = []; dateRangeCreateTime.value = []; activeStatusTab.value = 'all'; handleQuery() }
 function handleSelectionChange(sel) { ids.value = sel.map(i => i.orderId); multiple.value = !sel.length }
 function reset() { form.value = { orderNo: undefined, orderType: '0', warehouseId: undefined, warehouseName: undefined, outboundDate: today(), status: '0', remark: undefined, detailList: [] }; proxy.resetForm('outboundRef') }
 function handleAdd() { reset(); open.value = true; title.value = '添加出库单' }
@@ -393,7 +401,7 @@ function handleAddDetail() {
   form.value.detailList.push({
     inventoryId: undefined, materialId: undefined, materialCode: '', materialName: '',
     specModel: '', unit: '', batchNo: '', locationId: undefined, locationCode: '', locationName: '',
-    availableQty: 0, planQty: 0
+    availableQty: 0, planQty: undefined
   })
 }
 function handleDeleteDetail(index) { form.value.detailList.splice(index, 1) }
@@ -415,7 +423,7 @@ function clearInventory(index) {
   row.inventoryId = undefined; row.materialId = undefined; row.materialCode = ''; row.materialName = ''
   row.specModel = ''; row.unit = ''; row.batchNo = ''
   row.locationId = undefined; row.locationCode = ''; row.locationName = ''
-  row.availableQty = 0; row.planQty = 0
+  row.availableQty = 0; row.planQty = undefined
 }
 function onInventoryPickerConfirm(inv) {
   if (currentDetailIndex.value >= 0) {
@@ -431,7 +439,7 @@ function onInventoryPickerConfirm(inv) {
     row.locationCode = inv.locationCode
     row.locationName = inv.locationName
     row.availableQty = inv.qty
-    row.planQty = inv.qty
+    row.planQty = undefined
   }
 }
 
@@ -507,7 +515,7 @@ function onWarehouseChange(warehouseId) {
     form.value.detailList.forEach(d => {
       d.inventoryId = undefined; d.materialId = undefined; d.materialCode = ''
       d.materialName = ''; d.specModel = ''; d.unit = ''; d.batchNo = ''
-      d.locationId = undefined; d.locationCode = ''; d.locationName = ''; d.availableQty = 0; d.planQty = 0
+      d.locationId = undefined; d.locationCode = ''; d.locationName = ''; d.availableQty = 0; d.planQty = undefined
     })
   }
 }

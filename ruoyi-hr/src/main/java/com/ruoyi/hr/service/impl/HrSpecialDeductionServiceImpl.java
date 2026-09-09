@@ -58,6 +58,13 @@ public class HrSpecialDeductionServiceImpl implements IHrSpecialDeductionService
                     failCount++;
                     continue;
                 }
+                // 数字字段校验
+                if (sd.getDeductionAmount() != null && sd.getDeductionAmount().compareTo(java.math.BigDecimal.ZERO) < 0)
+                {
+                    failMsg.append("<br/>").append("第").append(rowNo).append("行：月扣除金额不能为负数");
+                    failCount++;
+                    continue;
+                }
                 HrEmployee emp = hrEmployeeMapper.selectHrEmployeeByEmployeeNo(sd.getEmployeeNo());
                 if (emp == null)
                 {

@@ -158,7 +158,7 @@
               </el-row>
               <el-row :gutter="20">
                 <el-col :span="12"><el-form-item label="任务类型" prop="taskType"><el-select v-model="form.taskType" placeholder="请选择" style="width: 100%"><el-option v-for="dict in safety_task_type" :key="dict.value" :label="dict.label" :value="dict.value" /></el-select></el-form-item></el-col>
-                <el-col :span="12"><el-form-item label="计划日期" prop="planDate"><el-date-picker v-model="form.planDate" type="date" placeholder="选择日期" value-format="YYYY-MM-DD" style="width: 100%" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="计划日期" prop="planDate"><el-date-picker v-model="form.planDate" type="date" placeholder="选择日期" value-format="YYYY-MM-DD" :disabled-date="disabledPastDate" style="width: 100%" /></el-form-item></el-col>
               </el-row>
               <el-form-item label="执行人" prop="executorId">
                 <el-input v-model="form.executorName" readonly placeholder="请选择执行人" style="width: 100%" @click="openUserPicker">
@@ -563,7 +563,7 @@
                 </el-col>
                 <el-col :span="8">
                   <el-form-item label="整改期限" prop="rectifyDeadline">
-                    <el-date-picker v-model="hazardForm.rectifyDeadline" type="date" placeholder="选择日期" value-format="YYYY-MM-DD" style="width:100%" />
+                    <el-date-picker v-model="hazardForm.rectifyDeadline" type="date" placeholder="选择日期" value-format="YYYY-MM-DD" :disabled-date="disabledPastDate" style="width:100%" />
                   </el-form-item>
                 </el-col>
               </el-row>
@@ -596,6 +596,29 @@ const { proxy } = getCurrentInstance()
 const { safety_task_type, safety_task_status, safety_hazard_type, safety_hazard_level } = proxy.useDict('safety_task_type', 'safety_task_status', 'safety_hazard_type', 'safety_hazard_level')
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('safety_task_index')
 const { collapsedCards, toggleCard } = useDetailCard(["c0","c1","c2","c3","c4","fb0","fb1","fb2","fb3","hd0","hd1","vc0","vc1","vc2","vc3","vc4"])
+
+/** 禁用过去的日期（用于计划日期、整改期限等不能小于当前日期的字段） */
+function disabledPastDate(time) {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  return time.getTime() < today.getTime()
+}
+
+/** 自定义校验：日期不能小于当前日期 */
+function validateNotPastDate(rule, value, callback) {
+  if (value) {
+    const inputDate = new Date(value)
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    if (inputDate.getTime() < today.getTime()) {
+      callback(new Error(rule.message || '日期不能小于当前日期'))
+    } else {
+      callback()
+    }
+  } else {
+    callback()
+  }
+}
 
 const taskList = ref([])
 const open = ref(false)
@@ -649,7 +672,10 @@ const data = reactive({
   rules: {
     taskName: [{ required: true, message: '任务名称不能为空', trigger: 'blur' }],
     taskType: [{ required: true, message: '任务类型不能为空', trigger: 'change' }],
-    planDate: [{ required: true, message: '计划日期不能为空', trigger: 'change' }],
+    planDate: [
+      { required: true, message: '计划日期不能为空', trigger: 'change' },
+      { validator: validateNotPastDate, message: '计划日期不能小于当前日期', trigger: 'change' }
+    ],
     executorId: [{ required: true, message: '执行人不能为空', trigger: 'change' }]
   }
 })
@@ -727,7 +753,10 @@ const hazardRules = {
   deptId: [{ required: true, message: '请选择责任部门', trigger: 'change' }],
   personId: [{ required: true, message: '请选择责任人', trigger: 'change' }],
   rectifyReq: [{ required: true, message: '整改要求不能为空', trigger: 'blur' }],
-  rectifyDeadline: [{ required: true, message: '请选择整改期限', trigger: 'change' }]
+  rectifyDeadline: [
+    { required: true, message: '请选择整改期限', trigger: 'change' },
+    { validator: validateNotPastDate, message: '整改期限不能小于当前日期', trigger: 'change' }
+  ]
 }
 
 function handleFeedback(row) {

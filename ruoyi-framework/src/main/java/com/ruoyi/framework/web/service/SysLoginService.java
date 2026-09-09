@@ -258,7 +258,10 @@ public class SysLoginService
                     {
                         String userKey = CacheConstants.LOGIN_TOKEN_KEY + toRemove.getToken();
                         redisCache.deleteObject(userKey);
-                        log.info("踢出用户[{}]最旧的登录session，token: {}", username, toRemove.getToken());
+                        // [Token排查] 记录被踢会话的设备信息，便于定位"登录状态已过期"由互踢导致
+                        log.warn("[Token排查] 并发登录踢出 用户[{}] 设备[{}({})] ip[{}] 登录时间[{}]",
+                                username, toRemove.getBrowser(), toRemove.getOs(), toRemove.getIpaddr(),
+                                toRemove.getLoginTime() == null ? "-" : new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(toRemove.getLoginTime())));
                     }
                 }
             }

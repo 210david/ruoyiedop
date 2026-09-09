@@ -342,7 +342,7 @@ downloadFile(url)
 }
 
 function getList() { loading.value = true; listDrill(queryParams.value).then(response => { drillList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths() }).catch(error => { console.error(error) }).finally(() => { loading.value = false }) }
-function handleQuery() { showAdvanced.value = false; proxy.addDateRange(queryParams.value, dateRange.value); queryParams.value.pageNum = 1; getList() }
+function handleQuery() { showAdvanced.value = false; proxy.addDateRange(queryParams.value, dateRange.value, 'DrillDate'); queryParams.value.pageNum = 1; getList() }
 function resetQuery() { queryParams.value.drillName = undefined; queryParams.value.drillType = undefined; queryParams.value.drillCode = undefined; queryParams.value.drillLocation = undefined; queryParams.value.drillCommander = undefined; dateRange.value = []; queryParams.value.params = {}; handleQuery() }
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleSelectionChange(selection) { ids.value = selection.map(item => item.drillId); single.value = selection.length !== 1; multiple.value = !selection.length }
@@ -358,7 +358,7 @@ function submitForm() {
   })
 }
 function handleDelete(row) { const drillIds = row.drillId || ids.value; proxy.$modal.confirm('是否确认删除演练记录？').then(function() { return delDrill(drillIds) }).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
-function handleExport() { proxy.download('safety/emergency/drill/export', { ...queryParams.value }, `emergency_drill_${new Date().getTime()}.xlsx`) }
+function handleExport() { proxy.download('safety/emergency/drill/export', { ...proxy.addDateRange(queryParams.value, dateRange.value, 'DrillDate') }, `emergency_drill_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 function reset() {
   form.value = { drillId: undefined, drillCode: undefined, drillName: undefined, drillType: undefined, drillDate: undefined, drillLocation: undefined, drillCommander: undefined, drillObjective: undefined, participants: undefined, participantCount: undefined, drillDesc: undefined, evalResult: undefined, problems: undefined, improvements: undefined, attachments: undefined, remark: undefined }

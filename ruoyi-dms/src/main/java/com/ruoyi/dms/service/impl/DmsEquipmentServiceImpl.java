@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.utils.StringUtils;
+import com.ruoyi.common.utils.DictUtils;
 import com.ruoyi.dms.domain.DmsEquipment;
 import com.ruoyi.dms.mapper.DmsEquipmentMapper;
 import com.ruoyi.dms.service.IDmsEquipmentService;
@@ -86,7 +87,9 @@ public class DmsEquipmentServiceImpl implements IDmsEquipmentService
                 {
                     throw new RuntimeException("设备名称不能为空");
                 }
-                // 2. 根据匹配字段校验并查找已存在的设备
+                // 2. 字典类字段合法性校验
+                validateDictFields(row);
+                // 3. 根据匹配字段校验并查找已存在的设备
                 String matchValue = getMatchValue(row, updateKey);
                 if (StringUtils.isEmpty(matchValue))
                 {
@@ -176,35 +179,107 @@ public class DmsEquipmentServiceImpl implements IDmsEquipmentService
     }
 
     /**
+     * 校验字典类字段：设备状态、设备等级、状态
+     * 用户在Excel中填写的是文字描述，ExcelUtil已将合法文字转为编码。
+     * 如果用户输入了不合法的文字或数字，ExcelUtil会保留原始值，此处检测并报错。
+     */
+    private void validateDictFields(DmsEquipment row)
+    {
+        // 设备状态（dictType: dms_equipment_status）
+        validateDictTypeField("设备状态", row.getEquipmentStatus(), "dms_equipment_status");
+        // 设备等级（dictType: dms_equipment_level）
+        validateDictTypeField("设备等级", row.getEquipmentLevel(), "dms_equipment_level");
+        // 状态（dictType: sys_normal_disable）
+        validateDictTypeField("状态", row.getStatus(), "sys_normal_disable");
+        // 原值校验
+        if (row.getOriginalValue() != null && row.getOriginalValue().compareTo(java.math.BigDecimal.ZERO) < 0)
+        {
+            throw new RuntimeException("原值不能为负数");
+        }
+    }
+
+    /**
+     * 校验dictType字段：如果值不为空但不是合法编码，说明用户输入了不合法的文字或数字
+     */
+    private void validateDictTypeField(String fieldLabel, String value, String dictType)
+    {
+        if (StringUtils.isNotEmpty(value))
+        {
+            // 尝试将编码转为文字，如果成功说明是合法编码
+            String label = DictUtils.getDictLabel(dictType, value);
+            if (StringUtils.isEmpty(label))
+            {
+                // 不是合法编码，说明用户输入了不合法的文字或数字
+                throw new RuntimeException(fieldLabel + "值不合法，请填写文字描述（参考导入说明中的合法值）");
+            }
+        }
+    }
+
+    /**
      * 构建成功明细项
      */
     private Map<String, Object> buildSuccessItem(DmsEquipment row, String result, String updateKey, String matchValue)
     {
         Map<String, Object> item = new LinkedHashMap<>();
         item.put("equipmentCode", row.getEquipmentCode() != null ? row.getEquipmentCode() : "");
-        item.put("equipmentName", row.getEquipmentName() != null ? row.getEquipmentName() : "");
-        item.put("model", row.getModel() != null ? row.getModel() : "");
         item.put("assetCode", row.getAssetCode() != null ? row.getAssetCode() : "");
+        item.put("equipmentName", row.getEquipmentName() != null ? row.getEquipmentName() : "");
+        item.put("categoryName", row.getCategoryName() != null ? row.getCategoryName() : "");
+        item.put("model", row.getModel() != null ? row.getModel() : "");
         item.put("serialNumber", row.getSerialNumber() != null ? row.getSerialNumber() : "");
         item.put("manufacturer", row.getManufacturer() != null ? row.getManufacturer() : "");
+        item.put("supplier", row.getSupplier() != null ? row.getSupplier() : "");
+        item.put("purchaseDate", row.getPurchaseDate() != null ? row.getPurchaseDate().toString() : "");
+        item.put("installDate", row.getInstallDate() != null ? row.getInstallDate().toString() : "");
+        item.put("retireDate", row.getRetireDate() != null ? row.getRetireDate().toString() : "");
+        item.put("originalValue", row.getOriginalValue() != null ? row.getOriginalValue().toString() : "");
+        item.put("deptName", row.getDeptName() != null ? row.getDeptName() : "");
+        item.put("installLocation", row.getInstallLocation() != null ? row.getInstallLocation() : "");
+        item.put("equipmentStatus", dictText(row.getEquipmentStatus(), "dms_equipment_status"));
+        item.put("equipmentLevel", dictText(row.getEquipmentLevel(), "dms_equipment_level"));
+        item.put("warrantyDate", row.getWarrantyDate() != null ? row.getWarrantyDate().toString() : "");
+        item.put("responsibleName", row.getResponsibleName() != null ? row.getResponsibleName() : "");
+        item.put("status", dictText(row.getStatus(), "sys_normal_disable"));
         item.put("result", result);
         return item;
     }
 
     /**
-     * 构建失败明细项
+     * 构建失败明细项（去掉自动生成的设备编号，列与导入模板对齐）
      */
     private Map<String, Object> buildFailureItem(DmsEquipment row, String errorReason, String updateKey, String matchValue)
     {
         Map<String, Object> item = new LinkedHashMap<>();
-        item.put("equipmentCode", row.getEquipmentCode() != null ? row.getEquipmentCode() : "");
-        item.put("equipmentName", row.getEquipmentName() != null ? row.getEquipmentName() : "");
-        item.put("model", row.getModel() != null ? row.getModel() : "");
         item.put("assetCode", row.getAssetCode() != null ? row.getAssetCode() : "");
+        item.put("equipmentName", row.getEquipmentName() != null ? row.getEquipmentName() : "");
+        item.put("categoryName", row.getCategoryName() != null ? row.getCategoryName() : "");
+        item.put("model", row.getModel() != null ? row.getModel() : "");
         item.put("serialNumber", row.getSerialNumber() != null ? row.getSerialNumber() : "");
         item.put("manufacturer", row.getManufacturer() != null ? row.getManufacturer() : "");
+        item.put("supplier", row.getSupplier() != null ? row.getSupplier() : "");
+        item.put("purchaseDate", row.getPurchaseDate() != null ? row.getPurchaseDate().toString() : "");
+        item.put("installDate", row.getInstallDate() != null ? row.getInstallDate().toString() : "");
+        item.put("retireDate", row.getRetireDate() != null ? row.getRetireDate().toString() : "");
+        item.put("originalValue", row.getOriginalValue() != null ? row.getOriginalValue().toString() : "");
+        item.put("deptName", row.getDeptName() != null ? row.getDeptName() : "");
+        item.put("installLocation", row.getInstallLocation() != null ? row.getInstallLocation() : "");
+        item.put("equipmentStatus", dictText(row.getEquipmentStatus(), "dms_equipment_status"));
+        item.put("equipmentLevel", dictText(row.getEquipmentLevel(), "dms_equipment_level"));
+        item.put("warrantyDate", row.getWarrantyDate() != null ? row.getWarrantyDate().toString() : "");
+        item.put("responsibleName", row.getResponsibleName() != null ? row.getResponsibleName() : "");
+        item.put("status", dictText(row.getStatus(), "sys_normal_disable"));
         item.put("errorReason", errorReason);
         return item;
+    }
+
+    /**
+     * 将编码转换为文字标签（用于明细展示）
+     */
+    private String dictText(String code, String dictType)
+    {
+        if (StringUtils.isEmpty(code)) { return ""; }
+        String label = DictUtils.getDictLabel(dictType, code, "");
+        return StringUtils.isNotEmpty(label) ? label : code;
     }
 
     /**

@@ -1219,14 +1219,27 @@ function confirmBatchStatus() {
 const importTips = [
   '请先下载导入模板，按模板格式填写数据。',
   '企业名称、联系人、手机号为必填字段。',
+  '所属行业、企业规模、线索来源、等级、状态请填写文字描述（参考系统中字典数据，或留空）',
+  '评分请填写0-100之间的整数',
   '如勾选更新选项，已存在相同企业名称的线索将被覆盖更新。',
-  '导入结果将显示每条数据的处理情况，失败数据可修正后重新导入。'
+  '导入结果将显示每条数据的处理情况，失败数据可导出修正后重新导入。'
 ]
 const importColumnLabels = {
   leadNo: '线索编号',
   companyName: '企业名称',
   contactName: '联系人',
-  contactPhone: '联系电话',
+  contactPhone: '手机号',
+  contactEmail: '邮箱',
+  position: '职位',
+  industry: '所属行业',
+  companySize: '企业规模',
+  address: '详细地址',
+  leadSource: '线索来源',
+  requirementDesc: '需求描述',
+  leadScore: '评分',
+  leadGrade: '等级',
+  leadStatus: '状态',
+  userName: '负责人',
   result: '结果',
   errorReason: '失败原因'
 }

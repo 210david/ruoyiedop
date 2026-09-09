@@ -74,7 +74,48 @@
     </div>
 
     <!-- ===== Table Section ===== -->
-    <div class="surface">
+    <div class="table-layout">
+      <!-- 左侧仓库结构树 -->
+      <div class="surface tree-panel" v-show="showTreePanel">
+        <div class="tree-head">
+          <div class="tree-title"><span class="glyph"></span> 仓库结构</div>
+          <div class="tree-head-actions">
+            <el-tooltip content="展开/折叠" placement="top"><el-icon class="tree-act" @click="toggleTreeExpand"><Sort /></el-icon></el-tooltip>
+            <el-tooltip content="收起栏目" placement="top"><el-icon class="tree-act" @click="showTreePanel = false"><Fold /></el-icon></el-tooltip>
+          </div>
+        </div>
+        <div class="tree-search">
+          <el-input v-model="treeFilterName" placeholder="搜索名称/编码" clearable>
+            <template #prefix><el-icon><Search /></el-icon></template>
+          </el-input>
+        </div>
+        <div class="tree-body">
+          <el-tree
+            ref="treeRef"
+            :data="treeData"
+            node-key="warehouseId"
+            :props="{ label: 'warehouseName', children: 'children' }"
+            default-expand-all
+            :expand-on-click-node="false"
+            :filter-node-method="filterTreeNode"
+            highlight-current
+            @node-click="handleTreeNodeClick">
+            <template #default="{ data }">
+              <span class="tree-node">
+                <span class="tree-icon lv1" v-if="data.nodeType === '1'"><el-icon><OfficeBuilding /></el-icon></span>
+                <span class="tree-icon lv2" v-else-if="data.nodeType === '2'"><el-icon><Grid /></el-icon></span>
+                <span class="tree-icon lv3" v-else><el-icon><LocationInformation /></el-icon></span>
+                <span class="tree-node-name">{{ data.warehouseName }}</span>
+              </span>
+            </template>
+          </el-tree>
+        </div>
+      </div>
+      <button v-if="!showTreePanel" type="button" class="tree-toggle btn-soft is-outline" @click="showTreePanel = true">
+        <el-icon><Expand /></el-icon> 仓库结构
+      </button>
+      <div class="table-main">
+      <div class="surface">
       <!-- Toolbar -->
       <div class="toolbar">
         <div class="left">
@@ -156,6 +197,8 @@
             </template>
           </el-table-column>
         </el-table>
+      </div>
+      </div>
       </div>
     </div>
 
@@ -337,6 +380,10 @@ const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResiz
 const { wms_area_type, wms_location_type } = proxy.useDict('wms_area_type', 'wms_location_type')
 
 const warehouseList = ref([])
+const treeData = ref([])
+const treeRef = ref(null)
+const treeFilterName = ref('')
+const showTreePanel = ref(true)
 const open = ref(false)
 const loading = ref(true)
 const showSearch = ref(true)
@@ -410,6 +457,44 @@ function getList() {
     warehouseList.value = proxy.handleTree(response.data, 'warehouseId', 'parentId')
     loading.value = false
     applySavedWidths()
+  })
+}
+
+/** 加载完整仓库结构树（不受表格筛选影响） */
+function loadTreeData() {
+  listWarehouseTree({}).then(response => {
+    treeData.value = proxy.handleTree(response.data, 'warehouseId', 'parentId')
+  })
+}
+
+// ===== 左侧仓库结构树 =====
+watch(treeFilterName, val => {
+  treeRef.value?.filter(val)
+})
+function filterTreeNode(value, data) {
+  if (!value) return true
+  const v = value.toLowerCase()
+  return (data.warehouseName || '').toLowerCase().includes(v) || (data.warehouseCode || '').toLowerCase().includes(v)
+}
+function toggleTreeExpand() {
+  const nodes = treeRef.value?.store?.nodesMap || {}
+  const first = Object.values(nodes)[0]
+  const expand = first ? !first.expanded : false
+  Object.values(nodes).forEach(n => { n.expanded = expand })
+}
+function handleTreeNodeClick(data) {
+  // 点击树节点：按该节点及其子孙过滤右侧表格
+  listWarehouseTree({}).then(response => {
+    const flat = response.data || []
+    const childrenMap = {}
+    flat.forEach(n => { (childrenMap[n.parentId] = childrenMap[n.parentId] || []).push(n) })
+    const keep = new Set([data.warehouseId])
+    const queue = [data.warehouseId]
+    while (queue.length) {
+      const cur = queue.shift()
+      ;(childrenMap[cur] || []).forEach(c => { keep.add(c.warehouseId); queue.push(c.warehouseId) })
+    }
+    warehouseList.value = proxy.handleTree(flat.filter(n => keep.has(n.warehouseId)), 'warehouseId', 'parentId')
   })
 }
 
@@ -537,12 +622,14 @@ function submitForm() {
           proxy.$modal.msgSuccess('修改成功')
           open.value = false
           getList()
+          loadTreeData()
         })
       } else {
         addWarehouse(form.value).then(() => {
           proxy.$modal.msgSuccess('新增成功')
           open.value = false
           getList()
+          loadTreeData()
         })
       }
     }
@@ -554,6 +641,7 @@ function handleDelete(row) {
     return delWarehouse(row.warehouseId)
   }).then(() => {
     getList()
+    loadTreeData()
     proxy.$modal.msgSuccess('删除成功')
   }).catch(() => {})
 }
@@ -598,6 +686,7 @@ function clearDept() {
 }
 
 getList()
+loadTreeData()
 </script>
 
 <style scoped>
@@ -660,6 +749,28 @@ getList()
 .wms-warehouse-page .btn-soft .el-icon { font-size:14px; }
 .wms-warehouse-page .btn-soft.is-outline { background:#fff; color:var(--ink-700); border-color:var(--ink-200); }
 .wms-warehouse-page .btn-soft.is-outline:hover { background:var(--ink-50); border-color:var(--ink-300); color:var(--ink-900); }
+
+/* ===== Tree Panel ===== */
+.wms-warehouse-page .table-layout { display:flex; gap:8px; align-items:flex-start; }
+.wms-warehouse-page .tree-panel { flex:0 0 260px; margin-bottom:0; position:sticky; top:10px; }
+.wms-warehouse-page .tree-head { display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border-bottom:1px solid var(--ink-200); background:var(--ink-50); }
+.wms-warehouse-page .tree-title { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--ink-700); }
+.wms-warehouse-page .tree-title .glyph { width:4px; height:14px; background:var(--brand-600); border-radius:2px; }
+.wms-warehouse-page .tree-head-actions { display:flex; gap:10px; }
+.wms-warehouse-page .tree-act { color:var(--ink-500); cursor:pointer; font-size:16px; transition:color .15s; }
+.wms-warehouse-page .tree-act:hover { color:var(--brand-600); }
+.wms-warehouse-page .tree-search { padding:10px 12px 6px; }
+.wms-warehouse-page .tree-body { padding:4px 8px 10px; max-height:calc(100vh - 280px); overflow-y:auto; }
+.wms-warehouse-page .tree-body :deep(.el-tree) { background:transparent; }
+.wms-warehouse-page .tree-body :deep(.el-tree-node__content) { height:32px; border-radius:6px; }
+.wms-warehouse-page .tree-node { display:inline-flex; align-items:center; gap:7px; overflow:hidden; }
+.wms-warehouse-page .tree-icon { display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:6px; flex-shrink:0; font-size:14px; }
+.wms-warehouse-page .tree-icon.lv1 { background:var(--brand-50); color:var(--brand-600); border:1px solid var(--brand-200); }
+.wms-warehouse-page .tree-icon.lv2 { background:var(--blue-50); color:var(--blue-700); border:1px solid #bfdbfe; }
+.wms-warehouse-page .tree-icon.lv3 { background:var(--amber-50); color:var(--amber-700); border:1px solid #fde68a; }
+.wms-warehouse-page .tree-node-name { font-size:14px; color:var(--ink-700); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.wms-warehouse-page .tree-toggle { margin-bottom:8px; height:36px; }
+.wms-warehouse-page .table-main { flex:1; min-width:0; }
 
 /* ===== Table ===== */
 .wms-warehouse-page .table-wrap { overflow-x:auto; }

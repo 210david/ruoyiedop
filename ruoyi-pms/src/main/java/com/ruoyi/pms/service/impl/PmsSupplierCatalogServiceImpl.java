@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.utils.StringUtils;
+import com.ruoyi.common.utils.poi.ExcelUtil;
 import com.ruoyi.pms.domain.PmsSupplierCatalog;
 import com.ruoyi.pms.mapper.PmsSupplierCatalogMapper;
 import com.ruoyi.pms.service.IPmsSupplierCatalogService;
@@ -98,6 +99,8 @@ public class PmsSupplierCatalogServiceImpl implements IPmsSupplierCatalogService
                 {
                     throw new RuntimeException("物料编码不能为空");
                 }
+                // 字典类字段和数字字段校验
+                validateDictFields(row);
                 // 3. 按供应商名称精确匹配（selectSupplierList 用 LIKE，这里筛选精确匹配）
                 WmsSupplier supplierQuery = new WmsSupplier();
                 supplierQuery.setSupplierName(row.getSupplierName());
@@ -196,6 +199,37 @@ public class PmsSupplierCatalogServiceImpl implements IPmsSupplierCatalogService
     }
 
     /**
+     * 校验字典类字段和数字字段
+     */
+    private void validateDictFields(PmsSupplierCatalog row)
+    {
+        // 状态（readConverterExp: 1=正常供货,2=暂停供货,3=停止供货）
+        validateConverterField("状态", row.getStatus(), "1=正常供货,2=暂停供货,3=停止供货");
+        // 价格校验
+        if (row.getUnitPrice() != null && row.getUnitPrice().compareTo(java.math.BigDecimal.ZERO) < 0)
+        {
+            throw new RuntimeException("单价不能为负数");
+        }
+        // 交货周期校验
+        if (row.getDeliveryCycle() != null && row.getDeliveryCycle() < 0)
+        {
+            throw new RuntimeException("交货周期不能为负数");
+        }
+    }
+
+    private void validateConverterField(String fieldLabel, String value, String converterExp)
+    {
+        if (StringUtils.isNotEmpty(value))
+        {
+            String label = ExcelUtil.convertByExp(value, converterExp, ",");
+            if (StringUtils.isEmpty(label))
+            {
+                throw new RuntimeException(fieldLabel + "值不合法，请填写文字描述");
+            }
+        }
+    }
+
+    /**
      * 构建成功明细项
      */
     private Map<String, Object> buildSuccessItem(PmsSupplierCatalog row, String result)
@@ -206,22 +240,44 @@ public class PmsSupplierCatalogServiceImpl implements IPmsSupplierCatalogService
         item.put("materialName", row.getMaterialName() != null ? row.getMaterialName() : "");
         item.put("specModel", row.getSpecModel() != null ? row.getSpecModel() : "");
         item.put("unit", row.getUnit() != null ? row.getUnit() : "");
+        item.put("unitPrice", row.getUnitPrice() != null ? row.getUnitPrice().toString() : "");
+        item.put("taxRate", row.getTaxRate() != null ? row.getTaxRate().toString() : "");
+        item.put("minOrderQty", row.getMinOrderQty() != null ? row.getMinOrderQty().toString() : "");
+        item.put("deliveryCycle", row.getDeliveryCycle() != null ? row.getDeliveryCycle().toString() : "");
+        item.put("currency", row.getCurrency() != null ? row.getCurrency() : "");
+        item.put("priceEffectiveDate", row.getPriceEffectiveDate() != null ? row.getPriceEffectiveDate().toString() : "");
+        item.put("priceExpireDate", row.getPriceExpireDate() != null ? row.getPriceExpireDate().toString() : "");
+        item.put("status", dictText(row.getStatus(), "1=正常供货,2=暂停供货,3=停止供货"));
         item.put("result", result);
         return item;
     }
 
     /**
-     * 构建失败明细项
+     * 构建失败明细项（列与导入模板对齐）
      */
     private Map<String, Object> buildFailureItem(PmsSupplierCatalog row, String errorReason)
     {
         Map<String, Object> item = new LinkedHashMap<>();
         item.put("supplierName", row.getSupplierName() != null ? row.getSupplierName() : "");
         item.put("materialCode", row.getMaterialCode() != null ? row.getMaterialCode() : "");
-        item.put("materialName", row.getMaterialName() != null ? row.getMaterialName() : "");
-        item.put("specModel", row.getSpecModel() != null ? row.getSpecModel() : "");
-        item.put("unit", row.getUnit() != null ? row.getUnit() : "");
+        item.put("unitPrice", row.getUnitPrice() != null ? row.getUnitPrice().toString() : "");
+        item.put("taxRate", row.getTaxRate() != null ? row.getTaxRate().toString() : "");
+        item.put("minOrderQty", row.getMinOrderQty() != null ? row.getMinOrderQty().toString() : "");
+        item.put("deliveryCycle", row.getDeliveryCycle() != null ? row.getDeliveryCycle().toString() : "");
+        item.put("priceEffectiveDate", row.getPriceEffectiveDate() != null ? row.getPriceEffectiveDate().toString() : "");
+        item.put("priceExpireDate", row.getPriceExpireDate() != null ? row.getPriceExpireDate().toString() : "");
+        item.put("status", dictText(row.getStatus(), "1=正常供货,2=暂停供货,3=停止供货"));
         item.put("errorReason", errorReason);
         return item;
+    }
+
+    /**
+     * 将编码转换为文字标签（用于明细展示）
+     */
+    private String dictText(String code, String converterExp)
+    {
+        if (StringUtils.isEmpty(code)) { return ""; }
+        String label = ExcelUtil.convertByExp(code, converterExp, ",");
+        return StringUtils.isNotEmpty(label) ? label : code;
     }
 }

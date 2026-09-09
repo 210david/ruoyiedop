@@ -19,18 +19,18 @@
           </div>
         </div>
         <div class="field">
+          <label>供应商</label>
+          <div class="control">
+            <el-input v-model="queryParams.supplierName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field">
           <label>入库类型</label>
           <div class="control is-select">
             <el-select v-model="queryParams.orderType" placeholder="全部" clearable @change="handleQuery">
               <el-option v-for="d in wms_inbound_type" :key="d.value" :label="d.label" :value="d.value" />
-            </el-select>
-          </div>
-        </div>
-        <div class="field">
-          <label>目标仓库</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.warehouseId" placeholder="全部" clearable filterable @change="handleQuery">
-              <el-option v-for="w in warehouseOptions" :key="w.warehouseId" :label="w.warehouseName" :value="w.warehouseId" />
             </el-select>
           </div>
         </div>
@@ -42,10 +42,18 @@
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced" style="grid-column: span 2">
+        <div class="field" v-show="showAdvanced">
+          <label>目标仓库</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.warehouseId" placeholder="全部" clearable filterable @change="handleQuery">
+              <el-option v-for="w in warehouseOptions" :key="w.warehouseId" :label="w.warehouseName" :value="w.warehouseId" />
+            </el-select>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
           <label>入库日期</label>
           <div class="control">
-            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" @change="handleQuery" />
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
           </div>
         </div>
         <div class="field" v-show="showAdvanced">
@@ -413,14 +421,14 @@ const currentDetailIndex = ref(-1)
 const defaultColumns = { orderNo: { label: '入库单号', visible: true }, orderType: { label: '入库类型', visible: true }, supplierName: { label: '供应商', visible: true }, warehouseName: { label: '目标仓库', visible: true }, status: { label: '状态', visible: true }, totalQty: { label: '总数量', visible: true }, inboundDate: { label: '入库日期', visible: true } }
 function loadColumnVisibility() { try { const saved = localStorage.getItem('wms_inbound_columns'); if (saved) { const parsed = JSON.parse(saved); const result = {}; Object.keys(defaultColumns).forEach(key => { result[key] = { label: defaultColumns[key].label, visible: parsed[key] !== undefined ? parsed[key] : defaultColumns[key].visible } }); return result } } catch (e) {} return { ...defaultColumns } }
 const columns = ref(loadColumnVisibility())
-const activeFilterCount = computed(() => { let count = 0; if (queryParams.value.orderNo) count++; if (queryParams.value.orderType) count++; if (queryParams.value.warehouseId) count++; if (queryParams.value.status) count++; if (dateRange.value && dateRange.value.length > 0) count++; if (dateRangeCreateTime.value && dateRangeCreateTime.value.length > 0) count++; return count })
+const activeFilterCount = computed(() => { let count = 0; if (queryParams.value.orderNo) count++; if (queryParams.value.supplierName) count++; if (queryParams.value.orderType) count++; if (queryParams.value.warehouseId) count++; if (queryParams.value.status) count++; if (dateRange.value && dateRange.value.length > 0) count++; if (dateRangeCreateTime.value && dateRangeCreateTime.value.length > 0) count++; return count })
 const statusTabList = computed(() => wms_inbound_status.value)
 function today() { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') }
-const data = reactive({ form: {}, queryParams: { pageNum: 1, pageSize: 10, orderNo: undefined, orderType: undefined, warehouseId: undefined, status: undefined }, rules: { orderType: [{ required: true, message: '入库类型不能为空', trigger: 'change' }], warehouseId: [{ required: true, message: '目标仓库不能为空', trigger: 'change' }], inboundDate: [{ required: true, message: '预计入库日期不能为空', trigger: 'change' }] } })
+const data = reactive({ form: {}, queryParams: { pageNum: 1, pageSize: 10, orderNo: undefined, supplierName: undefined, orderType: undefined, warehouseId: undefined, status: undefined }, rules: { orderType: [{ required: true, message: '入库类型不能为空', trigger: 'change' }], warehouseId: [{ required: true, message: '目标仓库不能为空', trigger: 'change' }], inboundDate: [{ required: true, message: '预计入库日期不能为空', trigger: 'change' }] } })
 const { queryParams, form, rules } = toRefs(data)
 function getList() { loading.value = true; const params = proxy.addDateRange(proxy.addDateRange(queryParams.value, dateRange.value, 'InboundDate'), dateRangeCreateTime.value, 'CreateTime'); listInbound(params).then(res => { list.value = res.rows; total.value = res.total; loading.value = false; applySavedWidths() }) }
 function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
-function resetQuery() { queryParams.value.orderNo = undefined; queryParams.value.orderType = undefined; queryParams.value.warehouseId = undefined; queryParams.value.status = undefined; queryParams.value.params = {}; dateRange.value = []; dateRangeCreateTime.value = []; activeStatusTab.value = 'all'; handleQuery() }
+function resetQuery() { queryParams.value.orderNo = undefined; queryParams.value.supplierName = undefined; queryParams.value.orderType = undefined; queryParams.value.warehouseId = undefined; queryParams.value.status = undefined; queryParams.value.params = {}; dateRange.value = []; dateRangeCreateTime.value = []; activeStatusTab.value = 'all'; handleQuery() }
 function handleSelectionChange(sel) { ids.value = sel.map(i => i.orderId); multiple.value = !sel.length }
 function reset() { form.value = { orderNo: undefined, orderType: '0', supplierId: undefined, supplierName: undefined, warehouseId: undefined, warehouseName: undefined, inboundDate: today(), status: '0', remark: undefined, detailList: [] }; proxy.resetForm('inboundRef') }
 function handleAdd() { reset(); open.value = true; title.value = '添加入库单' }

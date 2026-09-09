@@ -11,6 +11,8 @@ import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.StringUtils;
+import com.ruoyi.common.utils.DictUtils;
+import com.ruoyi.common.utils.poi.ExcelUtil;
 import com.ruoyi.mk.domain.MkContact;
 import com.ruoyi.mk.mapper.MkContactMapper;
 import com.ruoyi.mk.service.IMkContactService;
@@ -184,6 +186,8 @@ public class MkContactServiceImpl implements IMkContactService
                 {
                     throw new RuntimeException("姓名不能为空");
                 }
+                // 字典类字段合法性校验
+                validateDictFields(contact);
                 // 检查重复
                 List<MkContact> duplicates = mkContactMapper.selectDuplicateContacts(contact.getPhone(), contact.getEmail());
                 if (!duplicates.isEmpty())
@@ -245,28 +249,89 @@ public class MkContactServiceImpl implements IMkContactService
     }
 
     /**
+     * 校验字典类字段：性别、关键联系人
+     */
+    private void validateDictFields(MkContact row)
+    {
+        // 性别（dictType: sys_user_sex）
+        validateDictTypeField("性别", row.getGender(), "sys_user_sex");
+        // 关键联系人（readConverterExp: 0=否,1=是）
+        validateConverterField("关键联系人", row.getIsKey(), "0=否,1=是");
+    }
+
+    /**
+     * 校验dictType字段
+     */
+    private void validateDictTypeField(String fieldLabel, String value, String dictType)
+    {
+        if (StringUtils.isNotEmpty(value))
+        {
+            String label = DictUtils.getDictLabel(dictType, value);
+            if (StringUtils.isEmpty(label))
+            {
+                throw new RuntimeException(fieldLabel + "值不合法，请填写文字描述");
+            }
+        }
+    }
+
+    /**
+     * 校验readConverterExp字段
+     */
+    private void validateConverterField(String fieldLabel, String value, String converterExp)
+    {
+        if (StringUtils.isNotEmpty(value))
+        {
+            String label = ExcelUtil.convertByExp(value, converterExp, ",");
+            if (StringUtils.isEmpty(label))
+            {
+                throw new RuntimeException(fieldLabel + "值不合法，请填写文字描述");
+            }
+        }
+    }
+
+    /**
      * 构建成功明细项
      */
     private Map<String, Object> buildSuccessItem(MkContact row, String result)
     {
         Map<String, Object> item = new LinkedHashMap<>();
+        item.put("customerName", row.getCustomerName() != null ? row.getCustomerName() : "");
         item.put("name", row.getName() != null ? row.getName() : "");
+        item.put("gender", dictText(row.getGender(), "sys_user_sex"));
+        item.put("position", row.getPosition() != null ? row.getPosition() : "");
+        item.put("roleTag", row.getRoleTag() != null ? row.getRoleTag() : "");
         item.put("phone", row.getPhone() != null ? row.getPhone() : "");
         item.put("email", row.getEmail() != null ? row.getEmail() : "");
+        item.put("isKey", dictText(row.getIsKey(), "0=否,1=是"));
         item.put("result", result);
         return item;
     }
 
     /**
-     * 构建失败明细项
+     * 构建失败明细项（列与导入模板对齐）
      */
     private Map<String, Object> buildFailureItem(MkContact row, String errorReason)
     {
         Map<String, Object> item = new LinkedHashMap<>();
+        item.put("customerName", row.getCustomerName() != null ? row.getCustomerName() : "");
         item.put("name", row.getName() != null ? row.getName() : "");
+        item.put("gender", dictText(row.getGender(), "sys_user_sex"));
+        item.put("position", row.getPosition() != null ? row.getPosition() : "");
+        item.put("roleTag", row.getRoleTag() != null ? row.getRoleTag() : "");
         item.put("phone", row.getPhone() != null ? row.getPhone() : "");
         item.put("email", row.getEmail() != null ? row.getEmail() : "");
+        item.put("isKey", dictText(row.getIsKey(), "0=否,1=是"));
         item.put("errorReason", errorReason);
         return item;
+    }
+
+    /**
+     * 将编码转换为文字标签（用于明细展示）
+     */
+    private String dictText(String code, String converterExp)
+    {
+        if (StringUtils.isEmpty(code)) { return ""; }
+        String label = ExcelUtil.convertByExp(code, converterExp, ",");
+        return StringUtils.isNotEmpty(label) ? label : code;
     }
 }

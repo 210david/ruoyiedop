@@ -50,7 +50,10 @@
             <if test="params.beginCreateTime != null and params.beginCreateTime != ''"> AND date_format(create_time,'%y%m%d') &gt;= date_format(#{params.beginCreateTime},'%y%m%d')</if>
             <if test="params.endCreateTime != null and params.endCreateTime != ''"> AND date_format(create_time,'%y%m%d') &lt;= date_format(#{params.endCreateTime},'%y%m%d')</if>
         </where>
-        ORDER BY expire_date ASC
+        <!-- PageHelper 通过 startPage() 注入排序，无排序参数时使用默认排序 -->
+        <if test="params.orderByColumn == null or params.orderByColumn == ''">
+            ORDER BY expire_date ASC
+        </if>
     </select>
 
     <select id="selectSafetyRemindById" parameterType="Long" resultMap="SafetyRemindResult">

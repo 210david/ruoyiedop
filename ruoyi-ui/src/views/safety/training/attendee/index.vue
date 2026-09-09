@@ -48,15 +48,6 @@
             <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" @change="handleQuery" />
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>签到状态</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.signInStatus" placeholder="全部" clearable @change="handleQuery">
-              <el-option label="已签到" value="1" />
-              <el-option label="未签到" value="0" />
-            </el-select>
-          </div>
-        </div>
       </div>
       <div class="filter-actions">
         <div class="filter-info">
@@ -138,7 +129,7 @@
                 </el-select>
               </el-form-item>
               <el-row :gutter="20">
-                <el-col :span="12"><el-form-item label="参训人员" prop="userId">
+                <el-col :span="12"><el-form-item label="参训人员" prop="userName">
                   <el-input v-model="form.userName" readonly placeholder="请选择参训人员" style="width: 100%" @click="openUserPicker">
                     <template #append><el-button icon="Search" @click="openUserPicker" /></template>
                     <template #suffix><el-icon v-if="form.userName" class="clear-icon" @click.stop="clearUser"><CircleClose /></el-icon></template>
@@ -285,11 +276,20 @@ const dateRange = ref([])
 const importTips = [
   '请先选择关联的培训记录，再导入参训人员',
   'Excel中需包含：参训人员姓名、所属部门、考试分数等字段',
+  '签到状态请填写文字：未签到、已签到、请假（或留空）',
+  '是否合格请填写文字：合格、不合格（或留空）',
+  '考试分数请填写非负数值',
   '同一培训记录下不会重复添加已存在的人员'
 ]
 const importColumnLabels = {
   userName: '参训人员',
   deptName: '所属部门',
+  signInStatus: '签到状态',
+  signInTime: '签到时间',
+  signInMethod: '签到方式',
+  examScore: '考试分数',
+  isPass: '是否合格',
+  examTime: '考试时间',
   result: '结果',
   errorReason: '失败原因'
 }
@@ -322,10 +322,13 @@ const columns = ref(loadColumnVisibility())
 
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, userName: undefined, isPass: undefined, signInStatus: undefined, deptName: undefined, courseName: undefined, recordId: undefined, params: {} },
+  queryParams: { pageNum: 1, pageSize: 10, userName: undefined, isPass: undefined, deptName: undefined, courseName: undefined, recordId: undefined, params: {} },
   rules: {
     recordId: [{ required: true, message: '请选择关联培训记录', trigger: 'change' }],
-    userName: [{ required: true, message: '参训人员不能为空', trigger: 'change' }]
+    userName: [{ required: true, message: '参训人员不能为空', trigger: 'change' }],
+    examScore: [{ required: true, message: '考试分数不能为空', trigger: 'change' }],
+    isPass: [{ required: true, message: '请选择是否合格', trigger: 'change' }],
+    examTime: [{ required: true, message: '请选择考试时间', trigger: 'change' }]
   }
 })
 const { queryParams, form, rules } = toRefs(data)
@@ -336,7 +339,6 @@ const activeFilterCount = computed(() => {
   if (queryParams.value.isPass) count++
   if (queryParams.value.deptName) count++
   if (queryParams.value.courseName) count++
-  if (queryParams.value.signInStatus) count++
   if (dateRange.value && dateRange.value.length === 2) count++
   return count
 })
@@ -354,7 +356,7 @@ function getList() {
   listTrainingAttendee(queryParams.value).then(response => { attendeeList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths() }).catch(error => { console.error(error) }).finally(() => { loading.value = false })
 }
 function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
-function resetQuery() { queryParams.value.userName = undefined; queryParams.value.isPass = undefined; queryParams.value.signInStatus = undefined; queryParams.value.deptName = undefined; queryParams.value.courseName = undefined; dateRange.value = []; queryParams.value.params = {}; handleQuery() }
+function resetQuery() { queryParams.value.userName = undefined; queryParams.value.isPass = undefined; queryParams.value.deptName = undefined; queryParams.value.courseName = undefined; dateRange.value = []; queryParams.value.params = {}; handleQuery() }
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleSelectionChange(selection) { ids.value = selection.map(item => item.attendeeId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function handleAdd() { reset(); collapsedCards.c0 = false; collapsedCards.c1 = false; open.value = true; title.value = '添加参训人员' }
@@ -403,7 +405,7 @@ function clearRecordFilter() {
 /** 打开参训人员选择弹窗 */
 function openUserPicker() { proxy.$refs.userPickerRef.open(form.value.userId) }
 /** 参训人员选择确认回调 */
-function onUserPickerConfirm(user) { form.value.userId = user.userId; form.value.userName = user.nickName; form.value.deptId = user.deptId; form.value.deptName = user.dept?.deptName || '' }
+function onUserPickerConfirm(user) { form.value.userId = user.userId; form.value.userName = user.nickName; form.value.deptId = user.deptId; form.value.deptName = user.deptName || '' }
 /** 清除参训人员 */
 function clearUser() { form.value.userId = undefined; form.value.userName = undefined; form.value.deptId = undefined; form.value.deptName = undefined }
 

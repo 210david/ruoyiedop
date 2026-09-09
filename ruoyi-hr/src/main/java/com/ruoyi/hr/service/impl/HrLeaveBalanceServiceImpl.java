@@ -11,6 +11,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.exception.ServiceException;
+import com.ruoyi.common.utils.StringUtils;
+import com.ruoyi.common.utils.poi.ExcelUtil;
 import com.ruoyi.hr.domain.HrEmployee;
 import com.ruoyi.hr.domain.HrLeaveBalance;
 import com.ruoyi.hr.domain.dto.HrLeaveBalanceBatchDTO;
@@ -236,6 +238,22 @@ public class HrLeaveBalanceServiceImpl implements IHrLeaveBalanceService
                     throw new RuntimeException("总额度不能为空");
                 }
 
+                // 字典类字段合法性校验
+                validateConverterField("假期类别", bal.getLeaveType(), "1=事假,2=病假,3=年假,4=婚假,5=产假,6=陪产假,7=丧假,8=工伤假,9=调休");
+                // 数字字段校验
+                if (bal.getTotalDays() != null && bal.getTotalDays().compareTo(BigDecimal.ZERO) < 0)
+                {
+                    throw new RuntimeException("总额度不能为负数");
+                }
+                if (bal.getUsedDays() != null && bal.getUsedDays().compareTo(BigDecimal.ZERO) < 0)
+                {
+                    throw new RuntimeException("已休天数不能为负数");
+                }
+                if (bal.getFrozenDays() != null && bal.getFrozenDays().compareTo(BigDecimal.ZERO) < 0)
+                {
+                    throw new RuntimeException("冻结天数不能为负数");
+                }
+
                 // 若有工号但无 employeeId，则通过工号查员工
                 if (bal.getEmployeeId() == null && bal.getEmployeeNo() != null && !bal.getEmployeeNo().isEmpty())
                 {
@@ -318,6 +336,18 @@ public class HrLeaveBalanceServiceImpl implements IHrLeaveBalanceService
         return ajax;
     }
 
+    private void validateConverterField(String fieldLabel, String value, String converterExp)
+    {
+        if (StringUtils.isNotEmpty(value))
+        {
+            String label = ExcelUtil.convertByExp(value, converterExp, ",");
+            if (StringUtils.isEmpty(label))
+            {
+                throw new RuntimeException(fieldLabel + "值不合法，请填写文字描述");
+            }
+        }
+    }
+
     /**
      * 构建成功明细项
      */
@@ -326,26 +356,44 @@ public class HrLeaveBalanceServiceImpl implements IHrLeaveBalanceService
         Map<String, Object> item = new LinkedHashMap<>();
         item.put("employeeNo", row.getEmployeeNo() != null ? row.getEmployeeNo() : "");
         item.put("employeeName", row.getEmployeeName() != null ? row.getEmployeeName() : "");
-        item.put("leaveType", row.getLeaveType() != null ? row.getLeaveType() : "");
+        item.put("deptName", row.getDeptName() != null ? row.getDeptName() : "");
+        item.put("leaveType", dictText(row.getLeaveType(), "1=事假,2=病假,3=年假,4=婚假,5=产假,6=陪产假,7=丧假,8=工伤假,9=调休"));
         item.put("year", row.getYear() != null ? row.getYear().toString() : "");
         item.put("totalDays", row.getTotalDays() != null ? row.getTotalDays().toString() : "");
+        item.put("usedDays", row.getUsedDays() != null ? row.getUsedDays().toString() : "");
+        item.put("remainingDays", row.getRemainingDays() != null ? row.getRemainingDays().toString() : "");
+        item.put("frozenDays", row.getFrozenDays() != null ? row.getFrozenDays().toString() : "");
         item.put("result", result);
         return item;
     }
 
     /**
-     * 构建失败明细项
+     * 构建失败明细项（列与导入模板对齐）
      */
     private Map<String, Object> buildFailureItem(HrLeaveBalance row, String errorReason)
     {
         Map<String, Object> item = new LinkedHashMap<>();
         item.put("employeeNo", row.getEmployeeNo() != null ? row.getEmployeeNo() : "");
         item.put("employeeName", row.getEmployeeName() != null ? row.getEmployeeName() : "");
-        item.put("leaveType", row.getLeaveType() != null ? row.getLeaveType() : "");
+        item.put("deptName", row.getDeptName() != null ? row.getDeptName() : "");
+        item.put("leaveType", dictText(row.getLeaveType(), "1=事假,2=病假,3=年假,4=婚假,5=产假,6=陪产假,7=丧假,8=工伤假,9=调休"));
         item.put("year", row.getYear() != null ? row.getYear().toString() : "");
         item.put("totalDays", row.getTotalDays() != null ? row.getTotalDays().toString() : "");
+        item.put("usedDays", row.getUsedDays() != null ? row.getUsedDays().toString() : "");
+        item.put("remainingDays", row.getRemainingDays() != null ? row.getRemainingDays().toString() : "");
+        item.put("frozenDays", row.getFrozenDays() != null ? row.getFrozenDays().toString() : "");
         item.put("errorReason", errorReason);
         return item;
+    }
+
+    /**
+     * 将编码转换为文字标签（用于明细展示）
+     */
+    private String dictText(String code, String converterExp)
+    {
+        if (StringUtils.isEmpty(code)) { return ""; }
+        String label = ExcelUtil.convertByExp(code, converterExp, ",");
+        return StringUtils.isNotEmpty(label) ? label : code;
     }
 
     /**

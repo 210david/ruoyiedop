@@ -25,6 +25,11 @@
         FROM dms_equipment_category
     </sql>
 
+    <select id="checkCategoryCodeUnique" parameterType="String" resultMap="DmsEquipmentCategoryResult">
+        <include refid="selectCategoryVo"/>
+        WHERE category_code = #{categoryCode} AND del_flag = '0' LIMIT 1
+    </select>
+
     <select id="selectCategoryList" parameterType="DmsEquipmentCategory" resultMap="DmsEquipmentCategoryResult">
         <include refid="selectCategoryVo"/>
         <where>

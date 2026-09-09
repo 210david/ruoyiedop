@@ -12,6 +12,7 @@ import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.StringUtils;
+import com.ruoyi.common.utils.DictUtils;
 import com.ruoyi.mk.domain.MkContact;
 import com.ruoyi.mk.domain.MkCustomer;
 import com.ruoyi.mk.domain.MkLead;
@@ -400,6 +401,8 @@ return rows;
                 {
                     throw new RuntimeException("企业名称不能为空");
                 }
+                // 字典类字段合法性校验
+                validateDictFields(row);
                 // 检查是否已存在（按企业名称匹配）
                 MkLead query = new MkLead();
                 query.setCompanyName(row.getCompanyName());
@@ -484,6 +487,35 @@ return rows;
     }
 
     /**
+     * 校验字典类字段：所属行业、企业规模、线索来源、等级、状态
+     */
+    private void validateDictFields(MkLead row)
+    {
+        validateDictTypeField("所属行业", row.getIndustry(), "marketing_industry");
+        validateDictTypeField("企业规模", row.getCompanySize(), "marketing_company_size");
+        validateDictTypeField("线索来源", row.getLeadSource(), "marketing_customer_source");
+        validateDictTypeField("等级", row.getLeadGrade(), "marketing_lead_grade");
+        validateDictTypeField("状态", row.getLeadStatus(), "marketing_lead_status");
+        // 评分校验
+        if (row.getLeadScore() != null && (row.getLeadScore() < 0 || row.getLeadScore() > 100))
+        {
+            throw new RuntimeException("评分必须为0-100之间的整数");
+        }
+    }
+
+    private void validateDictTypeField(String fieldLabel, String value, String dictType)
+    {
+        if (StringUtils.isNotEmpty(value))
+        {
+            String label = DictUtils.getDictLabel(dictType, value);
+            if (StringUtils.isEmpty(label))
+            {
+                throw new RuntimeException(fieldLabel + "值不合法，请填写文字描述");
+            }
+        }
+    }
+
+    /**
      * 构建成功明细项
      */
     private Map<String, Object> buildSuccessItem(MkLead row, String result)
@@ -493,22 +525,53 @@ return rows;
         item.put("companyName", row.getCompanyName() != null ? row.getCompanyName() : "");
         item.put("contactName", row.getContactName() != null ? row.getContactName() : "");
         item.put("contactPhone", row.getContactPhone() != null ? row.getContactPhone() : "");
+        item.put("contactEmail", row.getContactEmail() != null ? row.getContactEmail() : "");
+        item.put("position", row.getPosition() != null ? row.getPosition() : "");
+        item.put("industry", dictText(row.getIndustry(), "marketing_industry"));
+        item.put("companySize", dictText(row.getCompanySize(), "marketing_company_size"));
+        item.put("address", row.getAddress() != null ? row.getAddress() : "");
+        item.put("leadSource", dictText(row.getLeadSource(), "marketing_customer_source"));
+        item.put("requirementDesc", row.getRequirementDesc() != null ? row.getRequirementDesc() : "");
+        item.put("leadScore", row.getLeadScore() != null ? row.getLeadScore().toString() : "");
+        item.put("leadGrade", dictText(row.getLeadGrade(), "marketing_lead_grade"));
+        item.put("leadStatus", dictText(row.getLeadStatus(), "marketing_lead_status"));
+        item.put("userName", row.getUserName() != null ? row.getUserName() : "");
         item.put("result", result);
         return item;
     }
 
     /**
-     * 构建失败明细项
+     * 构建失败明细项（去掉自动生成的线索编号，列与导入模板对齐）
      */
     private Map<String, Object> buildFailureItem(MkLead row, String errorReason)
     {
         Map<String, Object> item = new LinkedHashMap<>();
-        item.put("leadNo", row.getLeadNo() != null ? row.getLeadNo() : "");
         item.put("companyName", row.getCompanyName() != null ? row.getCompanyName() : "");
         item.put("contactName", row.getContactName() != null ? row.getContactName() : "");
         item.put("contactPhone", row.getContactPhone() != null ? row.getContactPhone() : "");
+        item.put("contactEmail", row.getContactEmail() != null ? row.getContactEmail() : "");
+        item.put("position", row.getPosition() != null ? row.getPosition() : "");
+        item.put("industry", dictText(row.getIndustry(), "marketing_industry"));
+        item.put("companySize", dictText(row.getCompanySize(), "marketing_company_size"));
+        item.put("address", row.getAddress() != null ? row.getAddress() : "");
+        item.put("leadSource", dictText(row.getLeadSource(), "marketing_customer_source"));
+        item.put("requirementDesc", row.getRequirementDesc() != null ? row.getRequirementDesc() : "");
+        item.put("leadScore", row.getLeadScore() != null ? row.getLeadScore().toString() : "");
+        item.put("leadGrade", dictText(row.getLeadGrade(), "marketing_lead_grade"));
+        item.put("leadStatus", dictText(row.getLeadStatus(), "marketing_lead_status"));
+        item.put("userName", row.getUserName() != null ? row.getUserName() : "");
         item.put("errorReason", errorReason);
         return item;
+    }
+
+    /**
+     * 将编码转换为文字标签（用于明细展示）
+     */
+    private String dictText(String code, String dictType)
+    {
+        if (StringUtils.isEmpty(code)) { return ""; }
+        String label = DictUtils.getDictLabel(dictType, code, "");
+        return StringUtils.isNotEmpty(label) ? label : code;
     }
 
     // ====== P2: 无效线索 + 跟进时间 ======

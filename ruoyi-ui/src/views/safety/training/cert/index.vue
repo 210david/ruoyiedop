@@ -151,6 +151,9 @@
                 <el-col :span="12"><el-form-item label="证书类型" prop="certType"><el-select v-model="form.certType" placeholder="请选择" style="width: 100%"><el-option v-for="dict in safety_cert_type" :key="dict.value" :label="dict.label" :value="dict.value" /></el-select></el-form-item></el-col>
                 <el-col :span="12"><el-form-item label="发证机构" prop="issueOrg"><el-input v-model="form.issueOrg" placeholder="请输入发证机构" /></el-form-item></el-col>
               </el-row>
+              <el-row :gutter="20">
+                <el-col :span="12"><el-form-item label="状态" prop="status"><el-radio-group v-model="form.status"><el-radio value="0">正常</el-radio><el-radio value="1">停用</el-radio></el-radio-group></el-form-item></el-col>
+              </el-row>
             </div>
           </section>
           <section class="rd-card">

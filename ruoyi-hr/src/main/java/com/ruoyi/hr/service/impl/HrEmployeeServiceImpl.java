@@ -209,6 +209,15 @@ public class HrEmployeeServiceImpl implements IHrEmployeeService
                 {
                     throw new RuntimeException("姓名不能为空");
                 }
+                // 数字字段校验
+                if (row.getSocialWorkYears() != null && row.getSocialWorkYears() < 0)
+                {
+                    throw new RuntimeException("社会工龄不能为负数");
+                }
+                if (row.getCompanyWorkYears() != null && row.getCompanyWorkYears() < 0)
+                {
+                    throw new RuntimeException("本公司工龄不能为负数");
+                }
                 // 2. 根据匹配字段查找已存在的员工
                 HrEmployee matched;
                 if ("idCard".equals(updateKey))
@@ -292,22 +301,82 @@ public class HrEmployeeServiceImpl implements IHrEmployeeService
         Map<String, Object> item = new LinkedHashMap<>();
         item.put("employeeNo", row.getEmployeeNo() != null ? row.getEmployeeNo() : "");
         item.put("employeeName", row.getEmployeeName() != null ? row.getEmployeeName() : "");
-        item.put("orgName", row.getOrgName() != null ? row.getOrgName() : "");
+        item.put("gender", row.getGender() != null ? row.getGender() : "");
+        item.put("idCard", row.getIdCard() != null ? row.getIdCard() : "");
+        item.put("birthday", row.getBirthday() != null ? row.getBirthday().toString() : "");
+        item.put("nation", row.getNation() != null ? row.getNation() : "");
+        item.put("politicsStatus", row.getPoliticsStatus() != null ? row.getPoliticsStatus() : "");
+        item.put("maritalStatus", row.getMaritalStatus() != null ? row.getMaritalStatus() : "");
+        item.put("phone", row.getPhone() != null ? row.getPhone() : "");
+        item.put("email", row.getEmail() != null ? row.getEmail() : "");
+        item.put("emergencyContact", row.getEmergencyContact() != null ? row.getEmergencyContact() : "");
+        item.put("emergencyPhone", row.getEmergencyPhone() != null ? row.getEmergencyPhone() : "");
+        item.put("nativePlace", row.getNativePlace() != null ? row.getNativePlace() : "");
+        item.put("address", row.getAddress() != null ? row.getAddress() : "");
+        item.put("eduLevel", row.getEduLevel() != null ? row.getEduLevel() : "");
+        item.put("graduationSchool", row.getGraduationSchool() != null ? row.getGraduationSchool() : "");
+        item.put("major", row.getMajor() != null ? row.getMajor() : "");
+        item.put("graduationDate", row.getGraduationDate() != null ? row.getGraduationDate().toString() : "");
+        item.put("socialWorkYears", row.getSocialWorkYears() != null ? row.getSocialWorkYears().toString() : "");
+        item.put("companyWorkYears", row.getCompanyWorkYears() != null ? row.getCompanyWorkYears().toString() : "");
         item.put("positionName", row.getPositionName() != null ? row.getPositionName() : "");
+        item.put("skillLevel", row.getSkillLevel() != null ? row.getSkillLevel() : "");
+        item.put("workType", row.getWorkType() != null ? row.getWorkType() : "");
+        item.put("employeeType", row.getEmployeeType() != null ? row.getEmployeeType() : "");
+        item.put("entryDate", row.getEntryDate() != null ? row.getEntryDate().toString() : "");
+        item.put("regularDate", row.getRegularDate() != null ? row.getRegularDate().toString() : "");
+        item.put("leaveDate", row.getLeaveDate() != null ? row.getLeaveDate().toString() : "");
+        item.put("employeeStatus", row.getEmployeeStatus() != null ? row.getEmployeeStatus() : "");
+        item.put("bankName", row.getBankName() != null ? row.getBankName() : "");
+        item.put("bankAccount", row.getBankAccount() != null ? row.getBankAccount() : "");
+        item.put("socialSecurityNo", row.getSocialSecurityNo() != null ? row.getSocialSecurityNo() : "");
+        item.put("socialSecurityStatus", row.getSocialSecurityStatus() != null ? row.getSocialSecurityStatus() : "");
+        item.put("houseFundNo", row.getHouseFundNo() != null ? row.getHouseFundNo() : "");
+        item.put("leaveReason", row.getLeaveReason() != null ? row.getLeaveReason() : "");
         item.put("result", result);
         return item;
     }
 
     /**
-     * 构建失败明细项
+     * 构建失败明细项（列与导入模板对齐）
      */
     private Map<String, Object> buildFailureItem(HrEmployee row, String errorReason)
     {
         Map<String, Object> item = new LinkedHashMap<>();
         item.put("employeeNo", row.getEmployeeNo() != null ? row.getEmployeeNo() : "");
         item.put("employeeName", row.getEmployeeName() != null ? row.getEmployeeName() : "");
-        item.put("orgName", row.getOrgName() != null ? row.getOrgName() : "");
+        item.put("gender", row.getGender() != null ? row.getGender() : "");
+        item.put("idCard", row.getIdCard() != null ? row.getIdCard() : "");
+        item.put("birthday", row.getBirthday() != null ? row.getBirthday().toString() : "");
+        item.put("nation", row.getNation() != null ? row.getNation() : "");
+        item.put("politicsStatus", row.getPoliticsStatus() != null ? row.getPoliticsStatus() : "");
+        item.put("maritalStatus", row.getMaritalStatus() != null ? row.getMaritalStatus() : "");
+        item.put("phone", row.getPhone() != null ? row.getPhone() : "");
+        item.put("email", row.getEmail() != null ? row.getEmail() : "");
+        item.put("emergencyContact", row.getEmergencyContact() != null ? row.getEmergencyContact() : "");
+        item.put("emergencyPhone", row.getEmergencyPhone() != null ? row.getEmergencyPhone() : "");
+        item.put("nativePlace", row.getNativePlace() != null ? row.getNativePlace() : "");
+        item.put("address", row.getAddress() != null ? row.getAddress() : "");
+        item.put("eduLevel", row.getEduLevel() != null ? row.getEduLevel() : "");
+        item.put("graduationSchool", row.getGraduationSchool() != null ? row.getGraduationSchool() : "");
+        item.put("major", row.getMajor() != null ? row.getMajor() : "");
+        item.put("graduationDate", row.getGraduationDate() != null ? row.getGraduationDate().toString() : "");
+        item.put("socialWorkYears", row.getSocialWorkYears() != null ? row.getSocialWorkYears().toString() : "");
+        item.put("companyWorkYears", row.getCompanyWorkYears() != null ? row.getCompanyWorkYears().toString() : "");
         item.put("positionName", row.getPositionName() != null ? row.getPositionName() : "");
+        item.put("skillLevel", row.getSkillLevel() != null ? row.getSkillLevel() : "");
+        item.put("workType", row.getWorkType() != null ? row.getWorkType() : "");
+        item.put("employeeType", row.getEmployeeType() != null ? row.getEmployeeType() : "");
+        item.put("entryDate", row.getEntryDate() != null ? row.getEntryDate().toString() : "");
+        item.put("regularDate", row.getRegularDate() != null ? row.getRegularDate().toString() : "");
+        item.put("leaveDate", row.getLeaveDate() != null ? row.getLeaveDate().toString() : "");
+        item.put("employeeStatus", row.getEmployeeStatus() != null ? row.getEmployeeStatus() : "");
+        item.put("bankName", row.getBankName() != null ? row.getBankName() : "");
+        item.put("bankAccount", row.getBankAccount() != null ? row.getBankAccount() : "");
+        item.put("socialSecurityNo", row.getSocialSecurityNo() != null ? row.getSocialSecurityNo() : "");
+        item.put("socialSecurityStatus", row.getSocialSecurityStatus() != null ? row.getSocialSecurityStatus() : "");
+        item.put("houseFundNo", row.getHouseFundNo() != null ? row.getHouseFundNo() : "");
+        item.put("leaveReason", row.getLeaveReason() != null ? row.getLeaveReason() : "");
         item.put("errorReason", errorReason);
         return item;
     }

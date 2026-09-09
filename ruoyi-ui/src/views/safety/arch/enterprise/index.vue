@@ -59,12 +59,6 @@
             <el-input v-model="queryParams.safetyOrg" placeholder="请输入" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>创建时间</label>
-          <div class="control">
-            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
-          </div>
-        </div>
       </div>
       <div class="filter-actions">
         <div class="filter-info">
@@ -247,7 +241,7 @@ const viewData = ref({})
 const loading = ref(true)
 const showSearch = ref(true)
 const showAdvanced = ref(false)
-const dateRange = ref([])
+
 const ids = ref([])
 const single = ref(true)
 const multiple = ref(true)
@@ -287,8 +281,14 @@ const data = reactive({
   queryParams: { pageNum: 1, pageSize: 10, enterpriseName: undefined, creditCode: undefined, industryType: undefined, isHighRisk: undefined, legalPerson: undefined, safetyManager: undefined, safetyOrg: undefined, params: {} },
   rules: {
     enterpriseName: [{ required: true, message: '企业名称不能为空', trigger: 'blur' }],
-    creditCode: [{ required: true, message: '统一社会信用代码不能为空', trigger: 'blur' }],
-    industryType: [{ required: true, message: '行业类别不能为空', trigger: 'change' }]
+    creditCode: [
+      { required: true, message: '统一社会信用代码不能为空', trigger: 'blur' },
+      { pattern: /^[0-9A-HJ-NPQRTUWXY]{18}$/, message: '统一社会信用代码应为18位数字或大写字母', trigger: 'blur' }
+    ],
+    industryType: [{ required: true, message: '行业类别不能为空', trigger: 'change' }],
+    legalPerson: [{ required: true, message: '法定代表人不能为空', trigger: 'blur' }],
+    safetyManagerId: [{ required: true, message: '安全负责人不能为空', trigger: 'change' }],
+    superviseDept: [{ required: true, message: '属地监管单位不能为空', trigger: 'blur' }]
   }
 })
 
@@ -303,7 +303,6 @@ const activeFilterCount = computed(() => {
   if (queryParams.value.legalPerson) count++
   if (queryParams.value.safetyManager) count++
   if (queryParams.value.safetyOrg) count++
-  if (dateRange.value && dateRange.value.length > 0) count++
   return count
 })
 
@@ -317,8 +316,8 @@ function getList() {
   }).catch(error => { console.error(error) }).finally(() => { loading.value = false })
 }
 
-function handleQuery() { showAdvanced.value = false; proxy.addDateRange(queryParams.value, dateRange.value); queryParams.value.pageNum = 1; getList() }
-function resetQuery() { queryParams.value.enterpriseName = undefined; queryParams.value.creditCode = undefined; queryParams.value.industryType = undefined; queryParams.value.isHighRisk = undefined; queryParams.value.legalPerson = undefined; queryParams.value.safetyManager = undefined; queryParams.value.safetyOrg = undefined; dateRange.value = []; queryParams.value.params = {}; handleQuery() }
+function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
+function resetQuery() { queryParams.value.enterpriseName = undefined; queryParams.value.creditCode = undefined; queryParams.value.industryType = undefined; queryParams.value.isHighRisk = undefined; queryParams.value.legalPerson = undefined; queryParams.value.safetyManager = undefined; queryParams.value.safetyOrg = undefined; queryParams.value.params = {}; handleQuery() }
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleSelectionChange(selection) { ids.value = selection.map(item => item.enterpriseId); single.value = selection.length !== 1; multiple.value = !selection.length }
 
@@ -347,7 +346,7 @@ function handleDelete(row) {
   const enterpriseIds = row.enterpriseId || ids.value
   proxy.$modal.confirm('是否确认删除企业档案？').then(function() { return delEnterprise(enterpriseIds) }).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {})
 }
-function handleExport() { proxy.download('safety/enterprise/export', { ...proxy.addDateRange(queryParams.value, dateRange.value) }, `enterprise_${new Date().getTime()}.xlsx`) }
+function handleExport() { proxy.download('safety/enterprise/export', { ...queryParams.value }, `enterprise_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 function reset() {
   form.value = { enterpriseId: undefined, enterpriseName: undefined, creditCode: undefined, industryType: undefined, isHighRisk: '0', legalPerson: undefined, safetyManagerId: undefined, safetyManager: undefined, safetyOrg: undefined, superviseDept: undefined, responsibility: undefined, remark: undefined }

@@ -46,8 +46,8 @@ user:
     maxRetryCount: 5
     # 密码锁定时间（默认30分钟）
     lockTime: 30
-    # 允许同时在线数（默认1）
-    onlineCount: 1
+    # 允许同时在线数（默认1；0=不限制。测试期建议放宽，避免多端互踢）
+    onlineCount: 5
     # 并发登录模式（kick踢出旧session / deny拒绝登录）
     onlineMode: kick
     # 密码过期天数（超过后仅标记过期，不阻止登录）
@@ -106,8 +106,8 @@ token:
   header: Authorization
   # 令牌密钥
   secret: abcdefghijklmnopqrstuvwxyz
-  # 令牌有效期（默认30分钟）
-  expireTime: 30
+  # 令牌有效期（分钟），120=2小时，活跃自动续期
+  expireTime: 120
 
 # MyBatis配置
 mybatis:

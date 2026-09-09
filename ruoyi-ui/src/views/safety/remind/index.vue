@@ -111,6 +111,7 @@
           <el-table-column label="处理人" prop="handleBy" key="handleBy" :width="colWidth('handleBy', 100)" resizable v-if="columns.handleBy.visible" />
           <el-table-column label="处理时间" prop="handleTime" key="handleTime" :width="colWidth('handleTime', 160)" resizable align="center" v-if="columns.handleTime.visible" />
           <el-table-column label="处理结果" prop="handleResult" key="handleResult" :width="colWidth('handleResult', 150)" resizable show-overflow-tooltip v-if="columns.handleResult.visible" />
+          <el-table-column label="创建时间" prop="createTime" key="createTime" :width="colWidth('createTime', 160)" resizable align="center" sortable="custom" :sort-orders="['descending', 'ascending']" v-if="columns.createTime.visible" />
           <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
               <div class="action-btn-row">
@@ -233,7 +234,8 @@ const default_columns = {
   toPersonName: { label: '接收人', visible: true },
   handleBy: { label: '处理人', visible: true },
   handleTime: { label: '处理时间', visible: true },
-  handleResult: { label: '处理结果', visible: true }
+  handleResult: { label: '处理结果', visible: true },
+  createTime: { label: '创建时间', visible: true }
 }
 
 function loadColumnVisibility() {
@@ -286,7 +288,7 @@ function getList() {
   }).catch(error => { console.error(error) }).finally(() => { loading.value = false })
 }
 function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
-function resetQuery() { queryParams.value.remindType = undefined; queryParams.value.remindStatus = undefined; queryParams.value.relatedName = undefined; queryParams.value.toPersonName = undefined; queryParams.value.handleBy = undefined; dateRange.value = []; createTimeRange.value = []; queryParams.value.params = {}; handleQuery() }
+function resetQuery() { queryParams.value.remindType = undefined; queryParams.value.remindStatus = undefined; queryParams.value.relatedName = undefined; queryParams.value.toPersonName = undefined; queryParams.value.handleBy = undefined; dateRange.value = []; createTimeRange.value = []; queryParams.value.params = {}; tableRef.value?.clearSort(); handleQuery() }
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleSelectionChange(selection) { ids.value = selection.map(item => item.remindId); single.value = selection.length !== 1; multiple.value = !selection.length }
 

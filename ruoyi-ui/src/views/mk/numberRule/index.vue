@@ -5,10 +5,6 @@
     <div class="surface filter-card" v-show="showSearch">
       <div class="filter-head">
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
-        <a class="adv-link" :class="{ 'is-open': showAdvanced }" @click.prevent="showAdvanced = !showAdvanced">
-          <span>{{ showAdvanced ? '收起' : '高级筛选' }}</span>
-          <el-icon class="chev"><ArrowDown /></el-icon>
-        </a>
       </div>
       <div class="filter-bar">
         <div class="field">
@@ -42,12 +38,6 @@
               <template #prefix><el-icon><Filter /></el-icon></template>
               <el-option v-for="d in sys_normal_disable" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
-          </div>
-        </div>
-        <div class="field" v-show="showAdvanced">
-          <label>创建时间</label>
-          <div class="control">
-            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" @change="handleQuery" />
           </div>
         </div>
       </div>
@@ -351,7 +341,7 @@ import { useRoute } from 'vue-router'
 import { listNumberRule, getNumberRule, addNumberRule, updateNumberRule } from '@/api/mk/numberRule'
 import { getDicts } from '@/api/system/dict/data'
 import { useColumnResize } from '@/composables/useColumnResize'
-import { Search, Filter, RefreshLeft, ArrowDown } from '@element-plus/icons-vue'
+import { Search, Filter, RefreshLeft } from '@element-plus/icons-vue'
 
 const route = useRoute()
 import { useDetailCard } from '@/composables/useDetailCard'
@@ -381,8 +371,6 @@ const list = ref([])
 const open = ref(false)
 const loading = ref(true)
 const showSearch = ref(true)
-const showAdvanced = ref(false)
-const dateRange = ref([])
 const ids = ref([])
 const single = ref(true)
 const total = ref(0)
@@ -425,7 +413,6 @@ const activeFilterCount = computed(() => {
   if (queryParams.value.ruleName) count++
   if (queryParams.value.resetType) count++
   if (queryParams.value.status !== undefined && queryParams.value.status !== null && queryParams.value.status !== '') count++
-  if (dateRange.value && dateRange.value.length > 0) count++
   return count
 })
 
@@ -464,12 +451,11 @@ function getList() {
   if (presetRuleCode.value) {
     queryParams.value.ruleCode = presetRuleCode.value
   }
-  proxy.addDateRange(queryParams.value, dateRange.value)
   listNumberRule(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false; applySavedWidths() }).catch(() => { loading.value = false })
 }
-function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
+function handleQuery() { queryParams.value.pageNum = 1; getList() }
 function resetQuery() {
-  queryParams.value.ruleCode = undefined; queryParams.value.ruleName = undefined; queryParams.value.resetType = undefined; queryParams.value.status = undefined; dateRange.value = []; queryParams.value.params = {}
+  queryParams.value.ruleCode = undefined; queryParams.value.ruleName = undefined; queryParams.value.resetType = undefined; queryParams.value.status = undefined; queryParams.value.params = {}
   queryParams.value.module = currentModule.value
   if (presetRuleCode.value) {
     queryParams.value.ruleCode = presetRuleCode.value
@@ -766,10 +752,6 @@ getList()
 .mk-number-rule-page .filter-card .filter-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
 .mk-number-rule-page .filter-card .filter-title { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--ink-700); }
 .mk-number-rule-page .filter-card .filter-title .glyph { width:4px; height:14px; background:var(--brand-600); border-radius:2px; }
-.mk-number-rule-page .filter-card .adv-link { display:inline-flex; align-items:center; gap:4px; font-size:13px; color:var(--ink-500); cursor:pointer; user-select:none; transition:color .15s var(--ease-out); }
-.mk-number-rule-page .filter-card .adv-link:hover { color:var(--brand-600); }
-.mk-number-rule-page .filter-card .adv-link .chev { transition:transform .2s var(--ease-out); }
-.mk-number-rule-page .filter-card .adv-link.is-open .chev { transform:rotate(180deg); }
 .mk-number-rule-page .filter-card .filter-bar { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px 16px; }
 .mk-number-rule-page .filter-card .field { display:flex; flex-direction:column; gap:4px; }
 .mk-number-rule-page .filter-card .field > label { font-size:13px; font-weight:500; color:var(--ink-500); }

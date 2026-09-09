@@ -802,14 +802,23 @@ const statusCustomerId = ref(null)
 const importTips = [
   '企业名称为必填字段，不能为空',
   '客户编号由系统自动生成，无需填写',
-  '客户等级、客户状态等字典字段请参考系统中已有数据填写',
+  '客户等级请填写文字描述（参考系统中字典数据，或留空）',
+  '客户状态请填写文字描述（参考系统中字典数据，或留空）',
+  '累计交易额请填写非负数值',
   '如勾选「更新已存在数据」，需选择匹配字段：按企业名称、统一信用代码或客户编号匹配',
-  '导入结果将显示每条数据的处理情况，失败数据可修正后重新导入'
+  '导入结果将显示每条数据的处理情况，失败数据可导出修正后重新导入'
 ]
 const importColumnLabels = {
   customerNo: '客户编号',
   customerName: '企业名称',
+  creditCode: '统一社会信用代码',
   customerLevel: '客户等级',
+  customerStatus: '客户状态',
+  firstContactDate: '首次接触时间',
+  cooperationDate: '合作开始时间',
+  totalAmount: '累计交易额',
+  userName: '负责人',
+  deptName: '部门',
   result: '结果',
   errorReason: '失败原因'
 }

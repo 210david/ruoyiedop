@@ -359,15 +359,26 @@ function handleExport() { proxy.download('pms/catalog/export', { ...proxy.addDat
 const importTips = [
   '请先下载导入模板，按模板格式填写数据。',
   '供应商名称、物料编码、物料名称为必填字段。',
+  '状态请填写文字：正常供货、暂停供货、停止供货（或留空）',
+  '单价请填写非负数值',
+  '交货周期请填写非负整数',
   '如勾选更新选项，已存在的供货清单记录将被覆盖更新。',
-  '导入结果将显示每条数据的处理情况，失败数据可修正后重新导入。'
+  '导入结果将显示每条数据的处理情况，失败数据可导出修正后重新导入。'
 ]
 const importColumnLabels = {
-  supplierName: '供应商名称',
+  supplierName: '供应商',
   materialCode: '物料编码',
   materialName: '物料名称',
   specModel: '规格型号',
   unit: '单位',
+  unitPrice: '供货单价',
+  taxRate: '税率(%)',
+  minOrderQty: '最小起订量',
+  deliveryCycle: '交货周期(天)',
+  currency: '货币类型',
+  priceEffectiveDate: '价格生效日期',
+  priceExpireDate: '价格失效日期',
+  status: '状态',
   result: '结果',
   errorReason: '失败原因'
 }

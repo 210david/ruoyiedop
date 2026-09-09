@@ -161,8 +161,8 @@
       <el-form ref="supplierRef" :model="form" :rules="rules" label-width="110px">
         <el-row :gutter="20"><el-col :span="12"><el-form-item label="供应商编码" prop="supplierCode"><el-input v-model="form.supplierCode" placeholder="保存后自动生成" disabled /></el-form-item></el-col><el-col :span="12"><el-form-item label="供应商名称" prop="supplierName"><el-input v-model="form.supplierName" placeholder="请输入企业全称" /></el-form-item></el-col></el-row>
         <el-row :gutter="20"><el-col :span="12"><el-form-item label="供应商简称" prop="supplierShortName"><el-input v-model="form.supplierShortName" placeholder="请输入" /></el-form-item></el-col><el-col :span="12"><el-form-item label="供应商类型" prop="supplierType"><el-select v-model="form.supplierType" placeholder="请选择" style="width: 100%"><el-option v-for="d in wms_supplier_type" :key="d.value" :label="d.label" :value="d.value" /></el-select></el-form-item></el-col></el-row>
-        <el-row :gutter="20"><el-col :span="12"><el-form-item label="供应商等级" prop="supplierLevel"><el-select v-model="form.supplierLevel" placeholder="请选择" clearable style="width: 100%"><el-option v-for="d in wms_supplier_level" :key="d.value" :label="d.label" :value="d.value" /></el-select></el-form-item></el-col><el-col :span="12"><el-form-item label="统一信用代码" prop="unifiedCreditCode"><div style="display:flex;gap:8px;width:100%"><el-input v-model="form.unifiedCreditCode" placeholder="请输入18位统一社会信用代码" @keyup.enter="handleEnterpriseLookup" style="flex:1" /><el-tooltip content="输入统一社会信用代码后点击查询，自动获取企业名称、法人等信息" placement="top"><el-button type="primary" plain icon="Search" :loading="enterpriseLoading" @click="handleEnterpriseLookup">查询企业</el-button></el-tooltip></div><div style="color: #999; font-size: 12px; margin-top: 4px;">提示：输入18位统一社会信用代码，点击查询按钮自动获取企业信息</div></el-form-item></el-col></el-row>
-        <el-row :gutter="20"><el-col :span="12"><el-form-item label="联系人" prop="contactPerson"><el-input v-model="form.contactPerson" placeholder="请输入" /></el-form-item></el-col><el-col :span="12"><el-form-item label="联系电话" prop="contactPhone"><el-input v-model="form.contactPhone" placeholder="请输入" /></el-form-item></el-col></el-row>
+        <el-row :gutter="20"><el-col :span="12"><el-form-item label="供应商等级" prop="supplierLevel"><el-select v-model="form.supplierLevel" placeholder="请选择" clearable style="width: 100%"><el-option v-for="d in wms_supplier_level" :key="d.value" :label="d.label" :value="d.value" /></el-select></el-form-item></el-col><el-col :span="12"><el-form-item label="统一信用代码" prop="unifiedCreditCode"><div style="display:flex;gap:8px;width:100%"><el-input v-model="form.unifiedCreditCode" placeholder="请输入18位统一社会信用代码" maxlength="18" @keyup.enter="handleEnterpriseLookup" style="flex:1" /><el-tooltip content="输入统一社会信用代码后点击查询，自动获取企业名称、法人等信息" placement="top"><el-button type="primary" plain icon="Search" :loading="enterpriseLoading" @click="handleEnterpriseLookup">查询企业</el-button></el-tooltip></div><div style="color: #999; font-size: 12px; margin-top: 4px;">提示：输入18位统一社会信用代码，点击查询按钮自动获取企业信息</div></el-form-item></el-col></el-row>
+        <el-row :gutter="20"><el-col :span="12"><el-form-item label="联系人" prop="contactPerson"><el-input v-model="form.contactPerson" placeholder="请输入" /></el-form-item></el-col><el-col :span="12"><el-form-item label="联系电话" prop="contactPhone"><el-input v-model="form.contactPhone" placeholder="请输入" maxlength="11" /></el-form-item></el-col></el-row>
         <el-row :gutter="20"><el-col :span="24"><el-form-item label="地址" prop="address"><el-input v-model="form.address" type="textarea" placeholder="请输入" /></el-form-item></el-col></el-row>
         <el-row :gutter="20"><el-col :span="12"><el-form-item label="法人代表" prop="legalPerson"><el-input v-model="form.legalPerson" placeholder="请输入" /></el-form-item></el-col><el-col :span="12"><el-form-item label="企业性质" prop="enterpriseNature"><el-select v-model="form.enterpriseNature" placeholder="请选择" clearable style="width: 100%"><el-option v-for="d in wms_enterprise_nature" :key="d.value" :label="d.label" :value="d.value" /></el-select></el-form-item></el-col></el-row>
         <el-row :gutter="20"><el-col :span="12"><el-form-item label="状态" prop="status"><el-radio-group v-model="form.status"><el-radio value="0">正常</el-radio><el-radio value="1">停用</el-radio></el-radio-group></el-form-item></el-col></el-row>
@@ -329,7 +329,20 @@ const showStatusHelp = ref(false)
 const data = reactive({
   form: {},
   queryParams: { pageNum: 1, pageSize: 10, supplierCode: undefined, supplierName: undefined, supplierType: undefined, status: undefined, contactPerson: undefined, contactPhone: undefined, unifiedCreditCode: undefined, params: {} },
-  rules: { supplierName: [{ required: true, message: '供应商名称不能为空', trigger: 'blur' }] }
+  rules: {
+    supplierName: [{ required: true, message: '供应商名称不能为空', trigger: 'blur' }],
+    supplierType: [{ required: true, message: '供应商类型不能为空', trigger: 'change' }],
+    supplierLevel: [{ required: true, message: '供应商等级不能为空', trigger: 'change' }],
+    unifiedCreditCode: [
+      { required: true, message: '统一社会信用代码不能为空', trigger: 'blur' },
+      { pattern: /^[0-9A-HJ-NPQRTUWXY]{18}$/, message: '统一社会信用代码应为18位数字或大写字母', trigger: 'blur' }
+    ],
+    contactPerson: [{ required: true, message: '联系人不能为空', trigger: 'blur' }],
+    contactPhone: [
+      { required: true, message: '联系电话不能为空', trigger: 'blur' },
+      { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的11位手机号码', trigger: 'blur' }
+    ]
+  }
 })
 const { queryParams, form, rules } = toRefs(data)
 
@@ -343,7 +356,7 @@ function handleAdd() { reset(); open.value = true; title.value = '添加供应�
 function handleUpdate(row) { reset(); getSupplier(row.supplierId || ids.value[0]).then(res => { form.value = res.data; open.value = true; title.value = '修改供应商' }) }
 function handleView(row) { getSupplier(row.supplierId).then(res => { viewData.value = res.data; viewOpen.value = true }) }
 function submitForm() { proxy.$refs['supplierRef'].validate(valid => { if (valid) { if (form.value.supplierId != undefined) { updateSupplier(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList() }) } else { addSupplier(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList() }) } } }) }
-function handleDelete(row) { const supplierIds = row.supplierId || ids.value; proxy.$modal.confirm('确认删除编号为"' + supplierIds + '"的数据？').then(() => delSupplier(supplierIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleDelete(row) { const supplierIds = row.supplierId || ids.value; proxy.$modal.confirm('是否确认删除选中的供应商数据？').then(() => delSupplier(supplierIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
 function handleExport() { proxy.download('wms/supplier/export', { ...proxy.addDateRange(queryParams.value, dateRange.value) }, `supplier_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 

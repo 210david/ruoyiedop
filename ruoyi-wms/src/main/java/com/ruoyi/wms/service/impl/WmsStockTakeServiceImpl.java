@@ -276,7 +276,22 @@ public class WmsStockTakeServiceImpl implements IWmsStockTakeService
                 item.put("locationCode", importItem.getLocationCode() != null ? importItem.getLocationCode() : "");
                 item.put("batchNo", importItem.getBatchNo() != null ? importItem.getBatchNo() : "");
                 item.put("actualQty", importItem.getActualQty() != null ? importItem.getActualQty().toString() : "");
+                item.put("diffReason", importItem.getDiffReason() != null ? importItem.getDiffReason() : "");
                 item.put("errorReason", "物料编码或实盘数量为空");
+                failureList.add(item);
+                continue;
+            }
+            // 数字字段校验
+            if (importItem.getActualQty() != null && importItem.getActualQty().compareTo(BigDecimal.ZERO) < 0)
+            {
+                failCount++;
+                Map<String, Object> item = new LinkedHashMap<>();
+                item.put("materialCode", materialCode);
+                item.put("locationCode", importItem.getLocationCode() != null ? importItem.getLocationCode() : "");
+                item.put("batchNo", importItem.getBatchNo() != null ? importItem.getBatchNo() : "");
+                item.put("actualQty", importItem.getActualQty().toString());
+                item.put("diffReason", importItem.getDiffReason() != null ? importItem.getDiffReason() : "");
+                item.put("errorReason", "实盘数量不能为负数");
                 failureList.add(item);
                 continue;
             }
@@ -290,6 +305,7 @@ public class WmsStockTakeServiceImpl implements IWmsStockTakeService
                 item.put("locationCode", importItem.getLocationCode() != null ? importItem.getLocationCode() : "");
                 item.put("batchNo", importItem.getBatchNo() != null ? importItem.getBatchNo() : "");
                 item.put("actualQty", importItem.getActualQty().toString());
+                item.put("diffReason", importItem.getDiffReason() != null ? importItem.getDiffReason() : "");
                 item.put("errorReason", "未匹配到盘点明细");
                 failureList.add(item);
                 continue;
@@ -306,6 +322,7 @@ public class WmsStockTakeServiceImpl implements IWmsStockTakeService
                 item.put("locationCode", importItem.getLocationCode() != null ? importItem.getLocationCode() : "");
                 item.put("batchNo", importItem.getBatchNo() != null ? importItem.getBatchNo() : "");
                 item.put("actualQty", importItem.getActualQty().toString());
+                item.put("diffReason", importItem.getDiffReason() != null ? importItem.getDiffReason() : "");
                 item.put("errorReason", "存在差异（差异数量：" + detail.getDiffQty() + "），未填写差异原因");
                 failureList.add(item);
                 continue;
@@ -320,6 +337,7 @@ public class WmsStockTakeServiceImpl implements IWmsStockTakeService
             item.put("bookQty", detail.getBookQty() != null ? detail.getBookQty().toString() : "");
             item.put("actualQty", detail.getActualQty().toString());
             item.put("diffQty", detail.getDiffQty() != null ? detail.getDiffQty().toString() : "");
+            item.put("diffReason", detail.getDiffReason() != null ? detail.getDiffReason() : "");
             item.put("result", "录入成功");
             successList.add(item);
         }

@@ -19,6 +19,14 @@
           </div>
         </div>
         <div class="field">
+          <label>出库仓库</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.warehouseId" placeholder="全部" clearable filterable @change="handleQuery">
+              <el-option v-for="w in warehouseOptions" :key="w.warehouseId" :label="w.warehouseName" :value="w.warehouseId" />
+            </el-select>
+          </div>
+        </div>
+        <div class="field">
           <label>出库类型</label>
           <div class="control is-select">
             <el-select v-model="queryParams.orderType" placeholder="全部" clearable @change="handleQuery">
@@ -27,11 +35,17 @@
           </div>
         </div>
         <div class="field">
-          <label>出库仓库</label>
+          <label>状态</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.statusFilter" placeholder="全部" clearable @change="handleQuery">
+              <el-option v-for="d in wms_outbound_status" :key="d.value" :label="d.label" :value="d.value" />
+            </el-select>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>出库日期</label>
           <div class="control">
-            <el-input v-model="queryParams.warehouseName" placeholder="请输入" clearable @keyup.enter="handleQuery">
-              <template #prefix><el-icon><Search /></el-icon></template>
-            </el-input>
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
           </div>
         </div>
       </div>
@@ -299,6 +313,7 @@
 
 <script setup name="WmsOutboundDetail">
 import { listOutbound, getOutbound, pickOutbound } from '@/api/wms/outbound'
+import { listWarehouse } from '@/api/wms/warehouse'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
 import { ArrowRight, ArrowDown, QuestionFilled, WarningFilled, Filter, Search } from '@element-plus/icons-vue'
@@ -320,16 +335,18 @@ const currentOrder = ref({})
 const pickOpen = ref(false)
 const pickForm = ref({})
 const showStatusHelp = ref(false)
+const warehouseOptions = ref([])
+const dateRange = ref([])
 const pickRules = {
   qty: [{ required: true, message: '请输入拣货数量', trigger: 'blur' }]
 }
 const defaultColumns = { orderNo: { label: '出库单号', visible: true }, orderType: { label: '出库类型', visible: true }, warehouseName: { label: '出库仓库', visible: true }, status: { label: '状态', visible: true }, totalQty: { label: '总数量', visible: true }, outboundDate: { label: '出库日期', visible: true }, remark: { label: '备注', visible: true } }
 function loadColumnVisibility() { try { const saved = localStorage.getItem('wms_outbound_detail_columns'); if (saved) { const parsed = JSON.parse(saved); const result = {}; Object.keys(defaultColumns).forEach(key => { result[key] = { label: defaultColumns[key].label, visible: parsed[key] !== undefined ? parsed[key] : defaultColumns[key].visible } }); return result } } catch (e) {} return { ...defaultColumns } }
 const columns = ref(loadColumnVisibility())
-const activeFilterCount = computed(() => { let count = 0; if (queryParams.value.orderNo) count++; if (queryParams.value.orderType) count++; if (queryParams.value.warehouseName) count++; return count })
+const activeFilterCount = computed(() => { let count = 0; if (queryParams.value.orderNo) count++; if (queryParams.value.warehouseId) count++; if (queryParams.value.orderType) count++; if (queryParams.value.statusFilter) count++; if (dateRange.value && dateRange.value.length > 0) count++; return count })
 
 const data = reactive({
-  queryParams: { pageNum: 1, pageSize: 10, orderNo: undefined, orderType: undefined, warehouseName: undefined }
+  queryParams: { pageNum: 1, pageSize: 10, orderNo: undefined, warehouseId: undefined, orderType: undefined, statusFilter: undefined, status: '1' }
 })
 const { queryParams } = toRefs(data)
 
@@ -337,13 +354,17 @@ const { queryParams } = toRefs(data)
 function getList() {
   loading.value = true
   const params = { ...queryParams.value }
-  if (activeStatusTab.value === 'all') {
+  // statusFilter 是筛选区的状态下拉，优先于标签页的状态
+  if (queryParams.value.statusFilter) {
+    params.status = queryParams.value.statusFilter
+  } else if (activeStatusTab.value === 'all') {
     // 「全部」标签排除草稿状态，草稿单据不能进行出库作业
     params.status = undefined
     params.params = { excludeStatus: '0' }
   } else {
     params.status = activeStatusTab.value
   }
+  proxy.addDateRange(params, dateRange.value, 'OutboundDate')
   listOutbound(params).then(res => {
     list.value = res.rows
     total.value = res.total
@@ -370,8 +391,8 @@ function statusLabel(status) { const item = wms_outbound_status.value.find(d => 
 function orderTypeLabel(type) { const item = wms_outbound_type.value.find(d => d.value == type); return item ? item.label : '-' }
 function statusTabClass(value) { const map = { '1': 'tab-audit', '2': 'tab-partial', '3': 'tab-done' }; return map[value] || '' }
 
-function handleQuery() { queryParams.value.pageNum = 1; getList() }
-function resetQuery() { queryParams.value.orderNo = undefined; queryParams.value.orderType = undefined; queryParams.value.warehouseName = undefined; handleQuery() }
+function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
+function resetQuery() { queryParams.value.orderNo = undefined; queryParams.value.warehouseId = undefined; queryParams.value.orderType = undefined; queryParams.value.statusFilter = undefined; queryParams.value.params = {}; dateRange.value = []; handleQuery() }
 
 /** 打开出库单详情（列表操作按钮 + 行点击都走这里） */
 function handleDetail(row) {
@@ -412,6 +433,7 @@ function submitPick() {
 }
 
 // 初始化
+listWarehouse({ status: '0', pageSize: 999 }).then(res => { warehouseOptions.value = res.rows })
 getList()
 loadStatusCounts()
 

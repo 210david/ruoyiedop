@@ -1,4 +1,5 @@
-package com.ruoyi.pms.service.impl;
+package com.ruoyi.pms.service.impl;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -22,6 +23,8 @@ import com.ruoyi.pms.mapper.PmsInquiryMapper;
 import com.ruoyi.pms.mapper.PmsInquiryAuditLogMapper;
 import com.ruoyi.pms.mapper.PmsQuotationMapper;
 import com.ruoyi.pms.service.IPmsInquiryService;
+import com.ruoyi.wms.domain.WmsMaterial;
+import com.ruoyi.wms.service.IWmsMaterialService;
 
 /**
  * 询价单Service业务层处理
@@ -42,6 +45,9 @@ public class PmsInquiryServiceImpl implements IPmsInquiryService
 
     @Autowired
     private IMkNumberRuleService mkNumberRuleService;
+
+    @Autowired
+    private IWmsMaterialService wmsMaterialService;
 
     @Override
     public PmsInquiry selectPmsInquiryById(Long inquiryId)
@@ -345,6 +351,19 @@ public class PmsInquiryServiceImpl implements IPmsInquiryService
                 detail.setAmount(qty.multiply(price));
                 total = total.add(detail.getAmount());
                 detail.setDelFlag("0");
+                // 物料冗余字段兜底回填：防止前端漏传导致比价页空字段
+                if (detail.getMaterialId() != null
+                        && (StringUtils.isEmpty(detail.getMaterialCode()) || StringUtils.isEmpty(detail.getMaterialName())))
+                {
+                    WmsMaterial material = wmsMaterialService.selectMaterialById(detail.getMaterialId());
+                    if (material != null)
+                    {
+                        if (StringUtils.isEmpty(detail.getMaterialCode())) { detail.setMaterialCode(material.getMaterialCode()); }
+                        if (StringUtils.isEmpty(detail.getMaterialName())) { detail.setMaterialName(material.getMaterialName()); }
+                        if (StringUtils.isEmpty(detail.getSpecification())) { detail.setSpecification(material.getSpecModel()); }
+                        if (StringUtils.isEmpty(detail.getUnit())) { detail.setUnit(material.getUnit()); }
+                    }
+                }
             }
         }
         if (quotation.getTotalAmount() == null || quotation.getTotalAmount().compareTo(java.math.BigDecimal.ZERO) == 0)
