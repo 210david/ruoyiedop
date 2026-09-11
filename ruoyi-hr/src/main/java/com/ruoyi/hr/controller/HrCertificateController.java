@@ -37,6 +37,7 @@ public class HrCertificateController extends BaseController
     public void export(HttpServletResponse response, HrCertificate hrCertificate)
     {
         List<HrCertificate> list = hrCertificateService.selectHrCertificateList(hrCertificate);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, hrCertificate);
         ExcelUtil<HrCertificate> util = new ExcelUtil<>(HrCertificate.class);
         util.exportExcel(response, list, "证书台账");
     }

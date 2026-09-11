@@ -43,7 +43,7 @@ public class MkOpportunity extends BaseEntity
     private Long leadId;
 
     /** 商机来源 */
-    @Excel(name = "商机来源")
+    @Excel(name = "商机来源", dictType = "marketing_opportunity_source")
     private String opportunitySource;
 
     /** 预计金额 */

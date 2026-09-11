@@ -84,13 +84,13 @@
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" class="app-table">
 <el-table-column type="selection" width="55" align="center" />
 <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
-<el-table-column label="量检具编号" prop="gaugeNo" key="gaugeNo" :width="colWidth('gaugeNo', 140)" resizable show-overflow-tooltip v-if="columns.gaugeNo.visible" />          <el-table-column label="量检具名称" prop="gaugeName" key="gaugeName" :width="colWidth('gaugeName', 180)" resizable show-overflow-tooltip v-if="columns.gaugeName.visible" />
+<el-table-column label="量检具编号" prop="gaugeNo" key="gaugeNo" :width="colWidth('gaugeNo', 140)" resizable show-overflow-tooltip v-if="columns.gaugeNo.visible" />          <el-table-column label="量检具名称" prop="gaugeName" key="gaugeName" :min-width="colWidth('gaugeName', 180)" resizable show-overflow-tooltip v-if="columns.gaugeName.visible" />
           <el-table-column prop="gaugeType" key="gaugeType" :width="colWidth('gaugeType', 120)" resizable align="center" v-if="columns.gaugeType.visible">
             <template #header><span>类型</span><el-tooltip content="量检具分类大类：称量类（天平/水分仪等）、分析类（光谱仪/色谱仪等）、量具类（卡尺/千分尺/量块等）、监测类（温度记录仪等）" placement="top"><el-icon class="form-tip-icon"><QuestionFilled /></el-icon></el-tooltip></template>
             <template #default="scope"><span class="badge violet"><span class="dot"></span>{{ gaugeTypeLabel(scope.row.gaugeType) }}</span></template>
           </el-table-column>
           <el-table-column label="精度" prop="precisionVal" key="precisionVal" :width="colWidth('precisionVal', 100)" resizable align="center" v-if="columns.precisionVal.visible" />
-          <el-table-column label="测量范围" prop="measureRange" key="measureRange" :width="colWidth('measureRange', 140)" resizable show-overflow-tooltip v-if="columns.measureRange.visible" />
+          <el-table-column label="测量范围" prop="measureRange" key="measureRange" :min-width="colWidth('measureRange', 140)" resizable show-overflow-tooltip v-if="columns.measureRange.visible" />
           <el-table-column prop="calibCycle" key="calibCycle" :width="colWidth('calibCycle', 110)" resizable align="center" v-if="columns.calibCycle.visible">
             <template #header><span>校准周期(月)</span><el-tooltip content="量检具两次校准之间的间隔月数，到期前应及时送检校准" placement="top"><el-icon class="form-tip-icon"><QuestionFilled /></el-icon></el-tooltip></template>
           </el-table-column>
@@ -296,8 +296,8 @@ function handleAdd() { reset(); open.value = true; title.value = '添加量检�
 function handleUpdate(row) { reset(); getGauge(row.gaugeId || ids.value[0]).then(res => { form.value = res.data; open.value = true; title.value = '修改量检具' }) }
 function handleView(row) { getGauge(row.gaugeId).then(res => { viewData.value = res.data; viewOpen.value = true }) }
 function submitForm() { proxy.$refs['gaugeRef'].validate(valid => { if (valid) { if (form.value.gaugeId != undefined) { updateGauge(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList() }) } else { addGauge(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList() }) } } }) }
-function handleDelete(row) { const gaugeIds = row.gaugeId || ids.value; proxy.$modal.confirm('确认删除编号为"' + gaugeIds + '"的数据？').then(() => delGauge(gaugeIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
-function handleExport() { proxy.download('qms/gauge/export', { ...proxy.addDateRange(queryParams.value, dateRange.value) }, `gauge_${new Date().getTime()}.xlsx`) }
+function handleDelete(row) { const gaugeIds = row.gaugeId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delGauge(gaugeIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleExport() { proxy.download('qms/gauge/export', proxy.withExportIds({ ...proxy.addDateRange(queryParams.value, dateRange.value) }, ids.value, 'gaugeId'), `gauge_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 
 getList()

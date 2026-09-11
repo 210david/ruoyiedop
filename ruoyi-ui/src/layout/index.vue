@@ -19,6 +19,8 @@ import Sidebar from './components/Sidebar/index.vue'
 import { AppMain, Navbar, Settings, TagsView } from './components'
 import useAppStore from '@/store/modules/app'
 import useSettingsStore from '@/store/modules/settings'
+import { initWatermark } from '@/utils/watermark'
+import { getToken } from '@/utils/auth'
 
 const settingsStore = useSettingsStore()
 const theme = computed(() => settingsStore.theme)
@@ -36,6 +38,13 @@ const classObj = computed(() => ({
 
 const { width, height } = useWindowSize()
 const WIDTH = 992 // refer to Bootstrap's responsive design
+
+// 初始化水印
+onMounted(() => {
+  if (getToken()) {
+    initWatermark()
+  }
+})
 
 watch(() => device.value, () => {
   if (device.value === 'mobile' && sidebar.value.opened) {

@@ -95,14 +95,14 @@
           <el-table-column label="备件编号" prop="partCode" key="partCode" :width="colWidth('partCode', 120)" resizable v-if="columns.partCode.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.partCode }}</span></template>
           </el-table-column>
-          <el-table-column label="备件名称" prop="partName" key="partName" :width="colWidth('partName', 150)" resizable show-overflow-tooltip v-if="columns.partName.visible" />
+          <el-table-column label="备件名称" prop="partName" key="partName" :min-width="colWidth('partName', 150)" resizable show-overflow-tooltip v-if="columns.partName.visible" />
           <el-table-column label="单位" prop="unit" key="unit" :width="colWidth('unit', 80)" resizable align="center" v-if="columns.unit.visible">
             <template #default="scope"><span class="badge amber">{{ unitLabel(scope.row.unit) }}</span></template>
           </el-table-column>
           <el-table-column label="入库类型" prop="sourceType" key="sourceType" :width="colWidth('sourceType', 100)" resizable align="center" v-if="columns.sourceType.visible">
             <template #default="scope"><span class="badge violet">{{ sourceTypeLabel(scope.row.sourceType) }}</span></template>
           </el-table-column>
-          <el-table-column label="供应商" prop="supplierOrDept" key="supplierOrDept" :width="colWidth('supplierOrDept', 150)" resizable show-overflow-tooltip v-if="columns.supplierOrDept.visible" />
+          <el-table-column label="供应商" prop="supplierOrDept" key="supplierOrDept" :min-width="colWidth('supplierOrDept', 150)" resizable show-overflow-tooltip v-if="columns.supplierOrDept.visible" />
           <el-table-column label="存放位置" prop="storageLocation" key="storageLocation" :width="colWidth('storageLocation', 120)" resizable show-overflow-tooltip v-if="columns.storageLocation.visible" />
           <el-table-column label="数量" prop="quantity" key="quantity" :width="colWidth('quantity', 90)" resizable align="center" v-if="columns.quantity.visible" />
           <el-table-column label="入库日期" prop="operateDate" key="operateDate" :width="colWidth('operateDate', 120)" resizable align="center" v-if="columns.operateDate.visible" />
@@ -385,7 +385,7 @@
 
 <script setup name="DmsPartIn">
 import { listPartIn, addPartIn, delPartIn, getPartIn, updatePartIn } from '@/api/dms/partin'
-import { fetchAllPages, downloadCsv } from '@/utils/csvExport'
+import { fetchAllPages, downloadXlsx } from '@/utils/csvExport'
 import SparepartPicker from '@/components/SparepartPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
@@ -540,10 +540,11 @@ function submitForm() {
 function cancel() { open.value = false; reset() }
 /** 导出入库记录（与列表口径一致：含筛选条件、日期范围，导出全部页数据） */
 async function handleExport() {
-  const rows = await fetchAllPages(listPartIn, queryParams.value)
+  let rows = await fetchAllPages(listPartIn, queryParams.value)
+  if (ids.value && ids.value.length) { rows = rows.filter(i => ids.value.includes(i.recordId)) }
   if (!rows.length) { proxy.$modal.msgWarning('当前筛选下无数据可导出'); return }
   const headers = ['单据号', '备件编号', '备件名称', '单位', '入库类型', '供应商', '存放位置', '数量', '入库日期']
-  downloadCsv(`partin_${new Date().getTime()}`, headers, rows.map(i => [
+  downloadXlsx(`partin_${new Date().getTime()}`, headers, rows.map(i => [
     i.documentCode, i.partCode, i.partName, unitLabel(i.unit), sourceTypeLabel(i.sourceType),
     i.supplierOrDept || '', i.storageLocation || '', i.quantity != null ? i.quantity : '', i.operateDate || ''
   ]))

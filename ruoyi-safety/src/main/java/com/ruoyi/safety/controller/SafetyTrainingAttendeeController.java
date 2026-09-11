@@ -81,6 +81,7 @@ public class SafetyTrainingAttendeeController extends BaseController
     public void export(HttpServletResponse response, SafetyTrainingAttendee attendee)
     {
         List<SafetyTrainingAttendee> list = safetyTrainingAttendeeService.selectSafetyTrainingAttendeeList(attendee);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, attendee);
         ExcelUtil<SafetyTrainingAttendee> util = new ExcelUtil<>(SafetyTrainingAttendee.class);
         util.exportExcel(response, list, "参训人员");
     }

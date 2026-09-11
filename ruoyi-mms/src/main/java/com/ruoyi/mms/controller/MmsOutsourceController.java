@@ -37,6 +37,7 @@ public class MmsOutsourceController extends BaseController
     public void export(HttpServletResponse response, MmsOutsource outsource)
     {
         List<MmsOutsource> list = mmsOutsourceService.selectOutsourceList(outsource);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, outsource);
         ExcelUtil<MmsOutsource> util = new ExcelUtil<>(MmsOutsource.class);
         util.exportExcel(response, list, "外协管理数据");
     }

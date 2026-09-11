@@ -55,17 +55,17 @@ public class DmsEquipment extends BaseEntity
 
     /** 购置日期 */
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "购置日期", width = 20)
+    @Excel(name = "购置日期", width = 20, dateFormat = "yyyy-MM-dd")
     private Date purchaseDate;
 
     /** 启用日期 */
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "启用日期", width = 20)
+    @Excel(name = "启用日期", width = 20, dateFormat = "yyyy-MM-dd")
     private Date installDate;
 
     /** 报废处置日期 */
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "报废处置日期", width = 20)
+    @Excel(name = "报废处置日期", width = 20, dateFormat = "yyyy-MM-dd")
     private Date retireDate;
 
     /** 原值 */
@@ -93,7 +93,7 @@ public class DmsEquipment extends BaseEntity
 
     /** 质保期限 */
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "质保期限", width = 20)
+    @Excel(name = "质保期限", width = 20, dateFormat = "yyyy-MM-dd")
     private Date warrantyDate;
 
     /** 责任人ID */

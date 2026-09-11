@@ -108,7 +108,7 @@
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
-          <el-table-column label="计划名称" prop="planName" key="planName" :width="colWidth('planName', 180)" resizable show-overflow-tooltip v-if="columns.planName.visible" />
+          <el-table-column label="计划名称" prop="planName" key="planName" :min-width="colWidth('planName', 180)" resizable show-overflow-tooltip v-if="columns.planName.visible" />
           <el-table-column label="关联设备" prop="equipmentName" key="equipmentName" :width="colWidth('equipmentName', 160)" resizable show-overflow-tooltip v-if="columns.equipmentName.visible" />
           <el-table-column label="触发类型" prop="triggerType" key="triggerType" :width="colWidth('triggerType', 130)" resizable align="center" v-if="columns.triggerType.visible">
             <template #default="scope"><span class="badge violet">{{ triggerTypeLabel(scope.row.triggerType) }}</span></template>
@@ -263,10 +263,10 @@
           <el-col :span="12"><el-form-item label="派工人员" prop="assigneeId">
             <el-input v-model="form.assigneeName" readonly placeholder="请选择派工人员" style="width: 100%" @click="openUserPicker">
               <template #append><el-button icon="Search" @click="openUserPicker" /></template>
-              <template #suffix><el-icon v-if="form.assigneeName" class="clear-icon" @click.stop="form.assigneeId = undefined; form.assigneeName = undefined"><CircleClose /></el-icon></template>
+              <template #suffix><el-icon v-if="form.assigneeName" class="clear-icon" @click.stop="clearAssignee"><CircleClose /></el-icon></template>
             </el-input>
           </el-form-item></el-col>
-          <el-col :span="12"><el-form-item label="人员名称"><el-input v-model="form.assigneeName" placeholder="选择后自动带出" disabled /></el-form-item></el-col>
+          <el-col :span="12"><el-form-item label="所属部门"><el-input v-model="form.assigneeDeptName" placeholder="选择人员后自动带出" disabled /></el-form-item></el-col>
         </el-row>
 
         <!-- 分组三：任务配置 -->
@@ -562,7 +562,7 @@
 <script setup name="DmsPmPlan">
 import { listPmplan, getPmplan, addPmplan, updatePmplan, delPmplan, generateWorkOrder, autoGeneratePm, getPmplanCalendar } from '@/api/dms/pmplan'
 import { listEquipment } from '@/api/dms/equipment'
-import { listUser } from '@/api/system/user'
+import { listUser, getUser } from '@/api/system/user'
 import UserPicker from '@/components/UserPicker/index.vue'
 import EquipmentPicker from '@/components/EquipmentPicker/index.vue'
 import PartPicker from '@/components/PartPicker/index.vue'
@@ -644,9 +644,12 @@ const data = reactive({
   queryParams: { pageNum: 1, pageSize: 10, planName: undefined, triggerType: undefined, equipmentName: undefined, status: undefined, assigneeName: undefined, params: {} },
   rules: {
     planName: [{ required: true, message: '计划名称不能为空', trigger: 'blur' }],
+    equipmentId: [{ required: true, message: '设备编号不能为空', trigger: 'change' }],
     triggerType: [{ required: true, message: '触发类型不能为空', trigger: 'change' }],
     cycleValue: [{ required: true, message: '周期值不能为空', trigger: 'blur' }],
-    cycleUnit: [{ required: true, message: '周期单位不能为空', trigger: 'change' }]
+    cycleUnit: [{ required: true, message: '周期单位不能为空', trigger: 'change' }],
+    estimatedHours: [{ required: true, message: '预计工时不能为空', trigger: 'blur' }],
+    taskList: [{ required: true, message: '任务清单不能为空', trigger: 'change' }]
   }
 })
 const { queryParams, form, rules } = toRefs(data)
@@ -719,15 +722,33 @@ form.value.categoryName = undefined
 function openUserPicker() {
   proxy.$refs.userPickerRef.open(form.value.assigneeId)
 }
-/** 人员选择确认回调 */
+/** 人员选择确认回调 — 带出姓名与部门 */
 function onUserPickerConfirm(user) {
-  form.value.assigneeId = user.userId
-  form.assigneeName = user.nickName
+form.value.assigneeId = user.userId
+form.value.assigneeName = user.nickName
+form.value.assigneeDeptName = user.deptName
+}
+/** 清空派工人员 */
+function clearAssignee() {
+form.value.assigneeId = undefined
+form.value.assigneeName = undefined
+form.value.assigneeDeptName = undefined
+}
+/** 编辑回显时根据派工人员 ID 带出部门名称 */
+function loadAssigneeDept(userId) {
+if (!userId) return
+getUser(userId).then(res => {
+const u = res.data
+if (u && form.value.assigneeId === userId) {
+form.value.assigneeDeptName = u.dept ? u.dept.deptName : undefined
+}
+}).catch(() => {})
 }
 /** 删除设备后清空派工人员 */
 function onRemoveEquipment() {
-  form.value.assigneeId = undefined
-  form.value.assigneeName = undefined
+form.value.assigneeId = undefined
+form.value.assigneeName = undefined
+form.value.assigneeDeptName = undefined
 }
 function handleQuery() { showAdvanced.value = false; queryParams.value.params = proxy.addDateRange(queryParams.value.params, dateRange.value, 'NextExecuteTime'); queryParams.value.pageNum = 1; getList() }
 function resetQuery() { queryParams.value.planName = undefined; queryParams.value.triggerType = undefined; queryParams.value.equipmentName = undefined; queryParams.value.status = undefined; queryParams.value.assigneeName = undefined; dateRange.value = []; queryParams.value.params = {}; proxy.resetForm('queryRef'); handleQuery() }
@@ -770,12 +791,21 @@ function sparePartListToString(items) {
 }
 
 function reset() {
-form.value = { planName: undefined, equipmentId: undefined, equipmentCode: undefined, equipmentName: undefined, categoryId: undefined, categoryName: undefined, triggerType: '0', cycleValue: 30, cycleUnit: '天', taskList: undefined, sparePartList: undefined, estimatedHours: undefined, advanceDays: 3, autoAssign: '0', assigneeId: undefined, assigneeName: undefined, status: '0', remark: undefined }
-  taskItems.value = []
+form.value = { planName: undefined, equipmentId: undefined, equipmentCode: undefined, equipmentName: undefined, categoryId: undefined, categoryName: undefined, triggerType: '0', cycleValue: 30, cycleUnit: '天', taskList: undefined, sparePartList: undefined, estimatedHours: undefined, advanceDays: 3, autoAssign: '0', assigneeId: undefined, assigneeName: undefined, assigneeDeptName: undefined, status: '0', remark: undefined }
+  taskItems.value = [{ text: '' }]
   sparePartItems.value = []
   proxy.resetForm('pmplanRef')
 }
 function handleAdd() { reset(); open.value = true; title.value = '新增PM计划' }
+/** 校验任务清单：至少一行有效内容 */
+function validateTaskItems() {
+  const validItems = taskItems.value.filter(i => i.text && i.text.trim())
+  if (validItems.length === 0) {
+    proxy.$modal.msgError('任务清单不能为空，请至少填写一条任务项')
+    return false
+  }
+  return true
+}
 function handleView(row) {
   viewLoading.value = true
   viewOpen.value = true
@@ -800,25 +830,33 @@ function handleUpdate(row) {
     }
     taskItems.value = parseTaskList(form.value.taskList)
     sparePartItems.value = parseSparePartList(form.value.sparePartList)
+    // 如果没有任务清单行，默认添加一行空行
+    if (taskItems.value.length === 0) {
+      taskItems.value = [{ text: '' }]
+    }
+    if (form.value.autoAssign === '1' && form.value.assigneeId) {
+      loadAssigneeDept(form.value.assigneeId)
+    }
     open.value = true
     title.value = '修改PM计划'
   })
 }
 function submitForm() {
   proxy.$refs['pmplanRef'].validate(valid => {
-    if (valid) {
-      form.value.taskList = taskListToString(taskItems.value) || undefined
-      form.value.sparePartList = sparePartListToString(sparePartItems.value) || undefined
-      if (form.value.autoAssign !== '1') {
-        form.value.assigneeId = undefined
-        form.value.assigneeName = undefined
-      }
-      if (form.value.planId != undefined) { updatePmplan(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList() }) }
-      else { addPmplan(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList() }) }
+    if (!valid) return
+    if (!validateTaskItems()) return
+    form.value.taskList = taskListToString(taskItems.value) || undefined
+    form.value.sparePartList = sparePartListToString(sparePartItems.value) || undefined
+    if (form.value.autoAssign !== '1') {
+      form.value.assigneeId = undefined
+      form.value.assigneeName = undefined
+      form.value.assigneeDeptName = undefined
     }
+    if (form.value.planId != undefined) { updatePmplan(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList() }) }
+    else { addPmplan(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList() }) }
   })
 }
-function handleDelete(row) { const planIds = row.planId || ids.value; proxy.$modal.confirm('确认删除编号为"' + planIds + '"的数据？').then(() => delPmplan(planIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleDelete(row) { const planIds = row.planId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delPmplan(planIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
 function handleGenerate(row) {
   proxy.$modal.confirm('确认根据计划「' + row.planName + '」生成工单？').then(() => {
     return generateWorkOrder(row.planId)

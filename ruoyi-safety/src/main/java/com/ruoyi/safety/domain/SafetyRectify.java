@@ -19,12 +19,12 @@ public class SafetyRectify extends BaseEntity
     private Long rectifyPersonId;
     @Excel(name = "整改人")
     private String rectifyPerson;
-    @Excel(name = "整改时间", width = 160)
+    @Excel(name = "整改时间", width = 160, dateFormat = "yyyy-MM-dd HH:mm:ss")
     private Date rectifyTime;
     private Long verifyPersonId;
     @Excel(name = "验收人")
     private String verifyPerson;
-    @Excel(name = "验收时间", width = 160)
+    @Excel(name = "验收时间", width = 160, dateFormat = "yyyy-MM-dd HH:mm:ss")
     private Date verifyTime;
     @Excel(name = "验收结果", readConverterExp = "1=通过,2=不通过")
     private String verifyResult;

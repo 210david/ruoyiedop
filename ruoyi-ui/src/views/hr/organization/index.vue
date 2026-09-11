@@ -67,12 +67,12 @@
           <el-table-column label="组织编码" prop="orgCode" key="orgCode" align="center" :width="colWidth('orgCode', 140)" resizable v-if="columns.orgCode.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.orgCode }}</span></template>
           </el-table-column>
-          <el-table-column label="组织名称" prop="orgName" key="orgName" align="center" :width="colWidth('orgName', 200)" resizable v-if="columns.orgName.visible" />
+          <el-table-column label="组织名称" prop="orgName" key="orgName" align="center" :min-width="colWidth('orgName', 200)" show-overflow-tooltip resizable v-if="columns.orgName.visible" />
           <el-table-column label="父组织ID" prop="parentId" key="parentId" align="center" :width="colWidth('parentId', 110)" resizable v-if="columns.parentId.visible" />
           <el-table-column label="排序号" prop="orderNum" key="orderNum" align="center" :width="colWidth('orderNum', 100)" resizable v-if="columns.orderNum.visible" />
           <el-table-column label="组织层级" prop="orgLevel" key="orgLevel" align="center" :width="colWidth('orgLevel', 110)" resizable v-if="columns.orgLevel.visible" />
           <el-table-column label="负责人ID" prop="leaderId" key="leaderId" align="center" :width="colWidth('leaderId', 110)" resizable v-if="columns.leaderId.visible" />
-          <el-table-column label="负责人姓名" prop="leaderName" key="leaderName" align="center" :width="colWidth('leaderName', 120)" resizable v-if="columns.leaderName.visible" />
+          <el-table-column label="负责人姓名" prop="leaderName" key="leaderName" align="center" :min-width="colWidth('leaderName', 120)" show-overflow-tooltip resizable v-if="columns.leaderName.visible" />
           <el-table-column label="成本中心" prop="costCenter" key="costCenter" align="center" :width="colWidth('costCenter', 130)" resizable v-if="columns.costCenter.visible" />
           <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
@@ -408,7 +408,7 @@ function handleDelete(row) {
 }
 
 function handleExport() {
-  proxy.download('hr/organization/export', { ...queryParams.value }, `hrOrganization_${new Date().getTime()}.xlsx`)
+  proxy.download('hr/organization/export', proxy.withExportIds({ ...queryParams.value }, ids.value, 'orgId'), `hrOrganization_${new Date().getTime()}.xlsx`)
 }
 
 function cancel() {

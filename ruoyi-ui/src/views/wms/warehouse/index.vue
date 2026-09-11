@@ -134,7 +134,7 @@
         <el-table ref="tableRef" border v-if="refreshTable" v-loading="loading" :data="warehouseList" row-key="warehouseId" :default-expand-all="isExpandAll" :tree-props="{ children: 'children', hasChildren: 'hasChildren' }" @header-dragend="onHeaderDragEnd" class="app-table">
           <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" resizable align="center" />
 <el-table-column prop="warehouseCode" label="编码" key="warehouseCode" :width="colWidth('warehouseCode', 200)" resizable v-if="columns.warehouseCode.visible" />
-          <el-table-column prop="warehouseName" label="名称" key="warehouseName" :width="colWidth('warehouseName', 260)" resizable :show-overflow-tooltip="true" v-if="columns.warehouseName.visible" />
+          <el-table-column prop="warehouseName" label="名称" key="warehouseName" :min-width="colWidth('warehouseName', 260)" resizable :show-overflow-tooltip="true" v-if="columns.warehouseName.visible" />
           <el-table-column prop="nodeType" label="类型" key="nodeType" :width="colWidth('nodeType', 90)" resizable align="center" v-if="columns.nodeType.visible">
             <template #default="scope">
               <span class="badge violet" v-if="scope.row.nodeType === '1'">仓库</span>

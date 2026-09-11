@@ -115,7 +115,7 @@
 <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" resizable align="center" />
 <el-table-column label="收货单号" prop="receiveNo" key="receiveNo" :width="colWidth('receiveNo', 180)" resizable sortable="custom" v-if="columns.receiveNo.visible" />
           <el-table-column label="采购单号" prop="orderNo" key="orderNo" :width="colWidth('orderNo', 180)" resizable v-if="columns.orderNo.visible" />
-          <el-table-column label="供应商" prop="supplierName" key="supplierName" :width="colWidth('supplierName', 240)" resizable show-overflow-tooltip v-if="columns.supplierName.visible" />
+          <el-table-column label="供应商" prop="supplierName" key="supplierName" :min-width="colWidth('supplierName', 240)" resizable show-overflow-tooltip v-if="columns.supplierName.visible" />
           <el-table-column label="状态" prop="status" key="status" :width="colWidth('status', 120)" resizable align="center" sortable="custom" v-if="columns.status.visible">
             <template #default="scope">
               <span class="badge" :class="badgeClass(scope.row.status)">
@@ -1310,13 +1310,13 @@ function doSubmit() {
     updateReceive(form.value).then(() => {
       proxy.$modal.msgSuccess('修改成功')
       open.value = false
-      getList()
+      getList(); loadStatusCounts()
     })
   } else {
     addReceive(form.value).then(() => {
       proxy.$modal.msgSuccess('新增成功')
       open.value = false
-      getList()
+      getList(); loadStatusCounts()
     })
   }
 }
@@ -1367,8 +1367,8 @@ function submitForm() {
 
 function handleDelete(row) {
   const receiveIds = row.receiveId || ids.value
-  proxy.$modal.confirm('确认删除编号为"' + receiveIds + '"的数据？').then(() => delReceive(receiveIds)).then(() => {
-    getList()
+  proxy.$modal.confirm('确认删除？').then(() => delReceive(receiveIds)).then(() => {
+    getList(); loadStatusCounts()
     proxy.$modal.msgSuccess('删除成功')
   }).catch(() => {})
 }
@@ -1446,7 +1446,7 @@ function submitInspect() {
   }).then(() => {
     proxy.$modal.msgSuccess('验收已提交，待审核')
     inspectOpen.value = false
-    getList()
+    getList(); loadStatusCounts()
   }).catch(() => {})
 }
 
@@ -1560,7 +1560,7 @@ function submitAudit(passed) {
 }
 
 function handleExport() {
-  proxy.download('pms/receive/export', { ...proxy.addDateRange(queryParams.value, dateRange.value) }, `receive_${new Date().getTime()}.xlsx`)
+  proxy.download('pms/receive/export', proxy.withExportIds({ ...proxy.addDateRange(queryParams.value, dateRange.value) }, ids.value, 'receiveId'), `receive_${new Date().getTime()}.xlsx`)
 }
 
 function cancel() {

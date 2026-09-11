@@ -86,7 +86,7 @@
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
           <el-table-column label="区域编码" prop="areaCode" key="areaCode" :width="colWidth('areaCode', 150)" resizable sortable="custom" v-if="columns.areaCode.visible" />
-          <el-table-column label="区域名称" prop="areaName" key="areaName" :width="colWidth('areaName', 200)" resizable show-overflow-tooltip v-if="columns.areaName.visible" />
+          <el-table-column label="区域名称" prop="areaName" key="areaName" :min-width="colWidth('areaName', 200)" resizable show-overflow-tooltip v-if="columns.areaName.visible" />
           <el-table-column label="节点类型" prop="nodeType" key="nodeType" :width="colWidth('nodeType', 120)" resizable align="center" v-if="columns.nodeType.visible">
             <template #default="scope">
               <span class="badge blue">{{ nodeTypeLabel(scope.row.nodeType) }}</span>
@@ -106,7 +106,7 @@
               </span>
             </template>
           </el-table-column>
-          <el-table-column label="备注" prop="remark" key="remark" :width="colWidth('remark', 180)" resizable show-overflow-tooltip v-if="columns.remark.visible" />
+          <el-table-column label="备注" prop="remark" key="remark" :min-width="colWidth('remark', 180)" resizable show-overflow-tooltip v-if="columns.remark.visible" />
           <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
               <div class="action-btn-row">
@@ -308,7 +308,7 @@ function submitForm() {
   })
 }
 function handleDelete(row) { const areaIds = row.areaId || ids.value; proxy.$modal.confirm('是否确认删除区域？').then(function() { return delArea(areaIds) }).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
-function handleExport() { proxy.download('safety/area/export', { ...queryParams.value }, `area_${new Date().getTime()}.xlsx`) }
+function handleExport() { proxy.download('safety/area/export', proxy.withExportIds({ ...queryParams.value }, ids.value, 'areaId'), `area_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 function reset() {
   form.value = { areaId: undefined, areaCode: undefined, areaName: undefined, nodeType: '1', areaType: undefined, status: '0', safetyPersonId: undefined, safetyPersonName: undefined, remark: undefined }

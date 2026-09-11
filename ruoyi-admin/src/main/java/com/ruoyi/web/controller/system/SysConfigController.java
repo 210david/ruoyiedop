@@ -52,6 +52,7 @@ public class SysConfigController extends BaseController
     public void export(HttpServletResponse response, SysConfig config)
     {
         List<SysConfig> list = configService.selectConfigList(config);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, config);
         ExcelUtil<SysConfig> util = new ExcelUtil<SysConfig>(SysConfig.class);
         util.exportExcel(response, list, "参数数据");
     }

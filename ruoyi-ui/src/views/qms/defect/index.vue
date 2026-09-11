@@ -61,7 +61,7 @@
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" class="app-table">
 <el-table-column type="selection" width="55" align="center" />
 <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
-<el-table-column label="缺陷代码" prop="defectCode" key="defectCode" :width="colWidth('defectCode', 130)" resizable show-overflow-tooltip v-if="columns.defectCode.visible" />          <el-table-column label="缺陷名称" prop="defectName" key="defectName" :width="colWidth('defectName', 200)" resizable show-overflow-tooltip v-if="columns.defectName.visible" />
+<el-table-column label="缺陷代码" prop="defectCode" key="defectCode" :width="colWidth('defectCode', 130)" resizable show-overflow-tooltip v-if="columns.defectCode.visible" />          <el-table-column label="缺陷名称" prop="defectName" key="defectName" :min-width="colWidth('defectName', 200)" resizable show-overflow-tooltip v-if="columns.defectName.visible" />
           <el-table-column label="缺陷等级" prop="defectLevel" key="defectLevel" :width="colWidth('defectLevel', 110)" resizable align="center" v-if="columns.defectLevel.visible"><template #default="scope"><span class="badge" :class="defectBadgeClass(scope.row.defectLevel)"><span class="dot"></span>{{ defectLevelLabel(scope.row.defectLevel) }}</span></template></el-table-column>
           <el-table-column label="缺陷分类" prop="defectCategory" key="defectCategory" :width="colWidth('defectCategory', 120)" resizable align="center" v-if="columns.defectCategory.visible"><template #default="scope"><span class="badge violet"><span class="dot"></span>{{ defectCategoryLabel(scope.row.defectCategory) }}</span></template></el-table-column>
           <el-table-column label="状态" prop="status" key="status" :width="colWidth('status', 90)" resizable align="center" v-if="columns.status.visible"><template #default="scope"><span class="badge" :class="scope.row.status === '0' ? 'green' : 'gray'"><span class="dot"></span>{{ scope.row.status === '0' ? '正常' : '停用' }}</span></template></el-table-column>
@@ -207,8 +207,8 @@ function handleAdd() { reset(); open.value = true; title.value = '添加缺陷�
 function handleUpdate(row) { reset(); getDefect(row.defectId || ids.value[0]).then(res => { form.value = res.data; open.value = true; title.value = '修改缺陷代码' }) }
 function handleView(row) { getDefect(row.defectId).then(res => { viewData.value = res.data; viewOpen.value = true }) }
 function submitForm() { proxy.$refs['defectRef'].validate(valid => { if (valid) { if (form.value.defectId != undefined) { updateDefect(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList() }) } else { addDefect(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList() }) } } }) }
-function handleDelete(row) { const defectIds = row.defectId || ids.value; proxy.$modal.confirm('确认删除编号为"' + defectIds + '"的数据？').then(() => delDefect(defectIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
-function handleExport() { proxy.download('qms/defect/export', { ...proxy.addDateRange(queryParams.value, dateRange.value) }, `defect_${new Date().getTime()}.xlsx`) }
+function handleDelete(row) { const defectIds = row.defectId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delDefect(defectIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleExport() { proxy.download('qms/defect/export', proxy.withExportIds({ ...proxy.addDateRange(queryParams.value, dateRange.value) }, ids.value, 'defectId'), `defect_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 
 getList()

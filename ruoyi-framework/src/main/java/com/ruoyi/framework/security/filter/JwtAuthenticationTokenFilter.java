@@ -31,7 +31,17 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException
     {
-        LoginUser loginUser = tokenService.getLoginUser(request);
+        String requestUri = request.getRequestURI();
+        LoginUser loginUser;
+        // 文件访问路径支持从Query参数获取Token（<img>等标签无法携带自定义Header）
+        if (requestUri != null && (requestUri.startsWith("/common/file/access") || requestUri.startsWith("/profile/")))
+        {
+            loginUser = tokenService.getLoginUserFromHeaderOrQuery(request);
+        }
+        else
+        {
+            loginUser = tokenService.getLoginUser(request);
+        }
         if (StringUtils.isNotNull(loginUser) && StringUtils.isNull(SecurityUtils.getAuthentication()))
         {
             tokenService.verifyToken(loginUser);

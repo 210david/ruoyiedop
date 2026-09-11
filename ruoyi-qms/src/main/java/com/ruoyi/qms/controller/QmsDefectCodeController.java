@@ -42,6 +42,7 @@ public class QmsDefectCodeController extends BaseController
     public void export(HttpServletResponse response, QmsDefectCode defectCode)
     {
         List<QmsDefectCode> list = qmsDefectCodeService.selectDefectCodeList(defectCode);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, defectCode);
         ExcelUtil<QmsDefectCode> util = new ExcelUtil<>(QmsDefectCode.class);
         util.exportExcel(response, list, "缺陷代码数据");
     }

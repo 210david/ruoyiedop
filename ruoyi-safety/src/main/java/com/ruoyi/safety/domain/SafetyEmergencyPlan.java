@@ -23,13 +23,13 @@ public class SafetyEmergencyPlan extends BaseEntity
     @Excel(name = "备案号")
     private String regNo;
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "备案日期", width = 120)
+    @Excel(name = "备案日期", width = 120, dateFormat = "yyyy-MM-dd")
     private Date regDate;
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "生效日期", width = 120)
+    @Excel(name = "生效日期", width = 120, dateFormat = "yyyy-MM-dd")
     private Date effectiveDate;
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "修订到期", width = 120)
+    @Excel(name = "修订到期", width = 120, dateFormat = "yyyy-MM-dd")
     private Date expireDate;
     private String remindStatus;
     private String content;

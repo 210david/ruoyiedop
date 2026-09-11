@@ -58,7 +58,7 @@
 <el-table-column type="selection" width="55" align="center" />
 <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
 <el-table-column label="编号" align="center" prop="noticeId" :width="colWidth('noticeId', 100)" resizable v-if="columns.noticeId.visible" />
-          <el-table-column label="公告标题" align="center" prop="noticeTitle" :show-overflow-tooltip="true" :width="colWidth('noticeTitle', 200)" resizable v-if="columns.noticeTitle.visible">
+          <el-table-column label="公告标题" align="center" prop="noticeTitle" :show-overflow-tooltip="true" :min-width="colWidth('noticeTitle', 200)" resizable v-if="columns.noticeTitle.visible">
             <template #default="scope">
               <a class="link-type" style="cursor:pointer" @click="handleViewData(scope.row)">{{ scope.row.noticeTitle }}</a>
             </template>
@@ -347,7 +347,7 @@ function handleReadUsers(row) {
 /** 删除按钮操作 */
 function handleDelete(row) {
   const noticeIds = row.noticeId || ids.value
-  proxy.$modal.confirm('是否确认删除公告编号为"' + noticeIds + '"的数据项？').then(function() {
+  proxy.$modal.confirm('是否确认删除选中的公告？').then(function() {
     return delNotice(noticeIds)
   }).then(() => {
     getList()

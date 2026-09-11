@@ -42,6 +42,7 @@ public class MkOpportunityController extends BaseController
     public void export(HttpServletResponse response, MkOpportunity opportunity)
     {
         List<MkOpportunity> list = mkOpportunityService.selectOpportunityList(opportunity);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, opportunity);
         ExcelUtil<MkOpportunity> util = new ExcelUtil<>(MkOpportunity.class);
         util.exportExcel(response, list, "商机数据");
     }

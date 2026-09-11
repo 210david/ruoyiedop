@@ -22,7 +22,7 @@ public class HrEntry extends BaseEntity
     private String employeeName;
     @Excel(name = "身份证号")
     private String idCard;
-    @Excel(name = "性别")
+    @Excel(name = "性别", dictType = "hr_gender")
     private String gender;
     @Excel(name = "联系电话")
     private String phone;
@@ -36,7 +36,7 @@ public class HrEntry extends BaseEntity
     private String positionName;
     @NotNull(message = "入职日期不能为空")
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "入职日期")
+    @Excel(name = "入职日期", dateFormat = "yyyy-MM-dd")
     private Date entryDate;
     @Excel(name = "试用期月数")
     private Integer probationMonths;
@@ -44,7 +44,7 @@ public class HrEntry extends BaseEntity
     private BigDecimal probationSalary;
     @Excel(name = "转正工资")
     private BigDecimal regularSalary;
-    @Excel(name = "合同类型")
+    @Excel(name = "合同类型", dictType = "hr_contract_type")
     private String contractType;
     @Excel(name = "合同期限")
     private String contractPeriod;
@@ -54,20 +54,20 @@ public class HrEntry extends BaseEntity
     private String healthCheck;
     @Excel(name = "三级安全教育")
     private String safetyEducation;
-    @Excel(name = "审批状态")
+    @Excel(name = "审批状态", dictType = "hr_audit_status")
     private String auditStatus;
     @Excel(name = "审批人")
     private String auditBy;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    @Excel(name = "审批时间")
+    @Excel(name = "审批时间", dateFormat = "yyyy-MM-dd HH:mm:ss")
     private Date auditTime;
     @Excel(name = "审批意见")
     private String auditRemark;
     @Excel(name = "员工档案ID")
     private Long employeeId;
-    @Excel(name = "状态")
+    @Excel(name = "状态", dictType = "hr_audit_status")
     private String status;
-    @Excel(name = "删除标志")
+    @Excel(name = "删除标志", readConverterExp = "0=正常,2=已删除")
     private String delFlag;
 
     public Long getEntryId() { return entryId; }

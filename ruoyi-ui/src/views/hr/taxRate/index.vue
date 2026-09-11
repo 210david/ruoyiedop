@@ -413,7 +413,7 @@ function handleDelete(row) {
 }
 
 function handleExport() {
-  proxy.download('hr/taxRate/export', { ...queryParams.value }, `hrTaxRate_${new Date().getTime()}.xlsx`)
+  proxy.download('hr/taxRate/export', proxy.withExportIds({ ...queryParams.value }, ids.value, 'taxRateId'), `hrTaxRate_${new Date().getTime()}.xlsx`)
 }
 
 function cancel() {

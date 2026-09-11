@@ -22,17 +22,17 @@ public class HrContract extends BaseEntity
     private String employeeName;
     @Excel(name = "工号")
     private String employeeNo;
-    @Excel(name = "合同类型")
+    @Excel(name = "合同类型", dictType = "hr_contract_type")
     private String contractType;
     @NotNull(message = "开始日期不能为空")
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "开始日期")
+    @Excel(name = "开始日期", dateFormat = "yyyy-MM-dd")
     private Date startDate;
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "结束日期")
+    @Excel(name = "结束日期", dateFormat = "yyyy-MM-dd")
     private Date endDate;
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "签订日期")
+    @Excel(name = "签订日期", dateFormat = "yyyy-MM-dd")
     private Date signDate;
     @Excel(name = "试用期月数")
     private Integer probationMonths;
@@ -42,13 +42,13 @@ public class HrContract extends BaseEntity
     private BigDecimal regularSalary;
     @Excel(name = "续签次数")
     private Integer renewCount;
-    @Excel(name = "预警状态")
+    @Excel(name = "预警状态", dictType = "hr_remind_status")
     private String remindStatus;
     @Excel(name = "附件URL")
     private String attachmentUrl;
-    @Excel(name = "状态")
+    @Excel(name = "状态", dictType = "sys_normal_disable")
     private String status;
-    @Excel(name = "删除标志")
+    @Excel(name = "删除标志", readConverterExp = "0=正常,2=已删除")
     private String delFlag;
 
     public Long getContractId() { return contractId; }

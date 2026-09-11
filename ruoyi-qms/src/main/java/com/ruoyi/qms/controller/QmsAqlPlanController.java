@@ -33,6 +33,7 @@ public class QmsAqlPlanController extends BaseController {
     @PostMapping("/export")
     public void export(HttpServletResponse response, QmsAqlPlan plan) {
         List<QmsAqlPlan> list = service.selectAqlPlanList(plan);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, plan);
         ExcelUtil<QmsAqlPlan> util = new ExcelUtil<>(QmsAqlPlan.class);
         util.exportExcel(response, list, "AQL抽样方案");
     }

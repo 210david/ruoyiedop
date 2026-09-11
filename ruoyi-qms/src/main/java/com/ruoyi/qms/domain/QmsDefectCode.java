@@ -31,7 +31,7 @@ public class QmsDefectCode extends BaseEntity
 
     /** 缺陷分类 */
     @NotBlank(message = "缺陷分类不能为空")
-    @Excel(name = "缺陷分类")
+    @Excel(name = "缺陷分类", dictType = "qms_defect_category")
     private String defectCategory;
 
     /** 状态（0正常 1停用） */

@@ -38,6 +38,7 @@ public class HrSpecialDeductionController extends BaseController
     public void export(HttpServletResponse response, HrSpecialDeduction hrSpecialDeduction)
     {
         List<HrSpecialDeduction> list = hrSpecialDeductionService.selectHrSpecialDeductionList(hrSpecialDeduction);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, hrSpecialDeduction);
         ExcelUtil<HrSpecialDeduction> util = new ExcelUtil<>(HrSpecialDeduction.class);
         util.exportExcel(response, list, "专项附加扣除");
     }

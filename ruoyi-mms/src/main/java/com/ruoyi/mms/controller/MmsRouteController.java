@@ -41,6 +41,7 @@ public class MmsRouteController extends BaseController
     public void export(HttpServletResponse response, MmsRoute route)
     {
         List<MmsRoute> list = mmsRouteService.selectRouteList(route);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, route);
         ExcelUtil<MmsRoute> util = new ExcelUtil<>(MmsRoute.class);
         util.exportExcel(response, list, "工艺路线");
     }

@@ -104,7 +104,7 @@
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
           <el-table-column label="隐患编号" prop="hazardCode" key="hazardCode" :width="colWidth('hazardCode', 160)" resizable show-overflow-tooltip v-if="columns.hazardCode.visible" />
-          <el-table-column label="隐患描述" prop="hazardDesc" key="hazardDesc" :width="colWidth('hazardDesc', 220)" resizable show-overflow-tooltip v-if="columns.hazardDesc.visible" />
+          <el-table-column label="隐患描述" prop="hazardDesc" key="hazardDesc" :min-width="colWidth('hazardDesc', 220)" resizable show-overflow-tooltip v-if="columns.hazardDesc.visible" />
           <el-table-column label="隐患类型" prop="hazardType" key="hazardType" :width="colWidth('hazardType', 120)" resizable align="center" v-if="columns.hazardType.visible">
             <template #default="scope"><span class="badge violet">{{ hazardTypeLabel(scope.row.hazardType) }}</span></template>
           </el-table-column>
@@ -763,7 +763,7 @@ function handleStatusTabClick(status) { activeStatusTab.value = status; queryPar
 function handleAdd() { reset(); collapsedCards.c0 = false; collapsedCards.c1 = false; collapsedCards.c2 = false; collapsedCards.c3 = false; collapsedCards.c4 = false; collapsedCards.c5 = false; open.value = true; title.value = '添加隐患' }
 function handleUpdate(row) { reset(); const hazardId = row.hazardId || ids.value[0]; getHazard(hazardId).then(response => { form.value = response.data; collapsedCards.c2 = !response.data.remark; open.value = true; title.value = '修改隐患' }) }
 function handleView(row) { const hazardId = row.hazardId || ids.value[0]; getHazard(hazardId).then(response => { viewData.value = response.data; viewOpen.value = true }) }
-function handleSubmit(row) { proxy.$modal.confirm('确认提交该隐患审批吗？').then(function() { return submitHazard(row.hazardId) }).then(() => { getList(); proxy.$modal.msgSuccess('提交成功') }).catch(() => {}) }
+function handleSubmit(row) { proxy.$modal.confirm('确认提交该隐患审批吗？').then(function() { return submitHazard(row.hazardId) }).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('提交成功') }).catch(() => {}) }
 function handleApprove(row) {
   approveForm.value = { hazardId: row.hazardId, approveComment: '' }
   approveHazardData.value = {}
@@ -785,11 +785,11 @@ function confirmApprove(result) {
   approveHazardApi(approveForm.value).then(() => {
     proxy.$modal.msgSuccess(result === '1' ? '审批通过' : '已驳回')
     approveOpen.value = false
-    getList()
+    getList(); loadStatusCounts()
   })
 }
 function handleStartRectify(row) { rectifyForm.value.hazardId = row.hazardId; rectifyForm.value.personName = row.personName; rectifyForm.value.rectifyTime = parseToday(); rectifyForm.value.rectifyDesc = row.rectifyDesc || ''; rectifyForm.value.rectifyPhotos = row.rectifyPhotos || ''; rectifyRejectInfo.value = (row.hazardStatus === '4' && row.verifyResult === '2') ? { comment: row.verifyComment, person: row.verifyPerson, time: row.verifyTime } : null; rectifyTitle.value = rectifyRejectInfo.value ? '重新整改' : '隐患整改'; rectifyOpen.value = true }
-function submitRectify() { proxy.$refs['rectifyRef'].validate(valid => { if (valid) { submitRectifyApi(rectifyForm.value).then(() => { proxy.$modal.msgSuccess('整改提交成功'); rectifyOpen.value = false; getList() }) } }) }
+function submitRectify() { proxy.$refs['rectifyRef'].validate(valid => { if (valid) { submitRectifyApi(rectifyForm.value).then(() => { proxy.$modal.msgSuccess('整改提交成功'); rectifyOpen.value = false; getList(); loadStatusCounts() }) } }) }
 function handleVerify(row) {
   verifyForm.value = { hazardId: row.hazardId, verifyTime: parseToday(), verifyResult: '', verifyComment: '' }
   verifyHazardData.value = {}
@@ -802,18 +802,18 @@ function handleVerify(row) {
     verifyOpen.value = true
   })
 }
-function submitVerify() { proxy.$refs['verifyRef'].validate(valid => { if (valid) { verifyHazardApi(verifyForm.value).then(() => { proxy.$modal.msgSuccess('验收完成'); verifyOpen.value = false; getList() }) } }) }
+function submitVerify() { proxy.$refs['verifyRef'].validate(valid => { if (valid) { verifyHazardApi(verifyForm.value).then(() => { proxy.$modal.msgSuccess('验收完成'); verifyOpen.value = false; getList(); loadStatusCounts() }) } }) }
 
 function submitForm() {
   proxy.$refs['hazardRef'].validate(valid => {
     if (valid) {
-      if (form.value.hazardId != undefined) { updateHazard(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList() }) }
-      else { addHazard(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList() }) }
+      if (form.value.hazardId != undefined) { updateHazard(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList(); loadStatusCounts() }) }
+      else { addHazard(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList(); loadStatusCounts() }) }
     }
   })
 }
-function handleDelete(row) { const hazardIds = row.hazardId || ids.value; proxy.$modal.confirm('是否确认删除隐患编号为"' + hazardIds + '"的数据项？').then(function() { return delHazard(hazardIds) }).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
-function handleExport() { proxy.download('safety/hazard/export', { ...proxy.addDateRange(queryParams.value, dateRange.value) }, `hazard_${new Date().getTime()}.xlsx`) }
+function handleDelete(row) { const hazardIds = row.hazardId || ids.value; proxy.$modal.confirm('是否确认删除选中的隐患数据？').then(function() { return delHazard(hazardIds) }).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleExport() { proxy.download('safety/hazard/export', proxy.withExportIds({ ...proxy.addDateRange(queryParams.value, dateRange.value) }, ids.value, 'hazardId'), `hazard_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 function reset() {
   form.value = { hazardId: undefined, hazardCode: undefined, hazardDesc: undefined, hazardType: undefined, hazardLevel: '1', sourceType: undefined, deptId: undefined, deptName: undefined, personId: undefined, personName: undefined, rectifyReq: undefined, rectifyDeadline: undefined, hazardStatus: '0', remark: undefined }

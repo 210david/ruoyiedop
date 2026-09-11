@@ -82,14 +82,14 @@ public class HrPayslip extends BaseEntity
     @Excel(name = "锁定人")
     private String sealedBy;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    @Excel(name = "锁定时间")
+    @Excel(name = "锁定时间", dateFormat = "yyyy-MM-dd")
     private Date sealedTime;
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "发放日期")
+    @Excel(name = "发放日期", dateFormat = "yyyy-MM-dd")
     private Date payDate;
     @Excel(name = "银行回单号")
     private String bankReceiptNo;
-    @Excel(name = "删除标志")
+    @Excel(name = "删除标志", readConverterExp = "0=正常,2=已删除")
     private String delFlag;
 
     public Long getPayslipId() { return payslipId; }

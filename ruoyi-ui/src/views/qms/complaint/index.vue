@@ -94,7 +94,7 @@
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" class="app-table">
 <el-table-column type="selection" width="55" align="center" />
 <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
-<el-table-column label="客诉编号" prop="complaintNo" key="complaintNo" :width="colWidth('complaintNo', 160)" resizable show-overflow-tooltip v-if="columns.complaintNo.visible" />          <el-table-column label="客户名称" prop="customerName" key="customerName" :width="colWidth('customerName', 180)" resizable show-overflow-tooltip v-if="columns.customerName.visible" />
+<el-table-column label="客诉编号" prop="complaintNo" key="complaintNo" :width="colWidth('complaintNo', 160)" resizable show-overflow-tooltip v-if="columns.complaintNo.visible" />          <el-table-column label="客户名称" prop="customerName" key="customerName" :min-width="colWidth('customerName', 180)" resizable show-overflow-tooltip v-if="columns.customerName.visible" />
           <el-table-column label="物料" prop="materialName" key="materialName" :width="colWidth('materialName', 180)" resizable show-overflow-tooltip v-if="columns.materialName.visible" />
           <el-table-column label="投诉日期" prop="complaintDate" key="complaintDate" :width="colWidth('complaintDate', 120)" resizable align="center" v-if="columns.complaintDate.visible"><template #default="scope"><span>{{ parseTime(scope.row.complaintDate, '{y}-{m}-{d}') }}</span></template></el-table-column>
           <el-table-column label="类型" prop="complaintType" key="complaintType" :width="colWidth('complaintType', 100)" resizable align="center" v-if="columns.complaintType.visible"><template #default="scope"><span v-if="dictLabel(typeOptions, scope.row.complaintType)" class="badge violet">{{ dictLabel(typeOptions, scope.row.complaintType) }}</span></template></el-table-column>
@@ -536,7 +536,7 @@ function handleUpdate(row) {
 }
 function handleView(row) { getComplaint(row.complaintId).then(res => { viewData.value = res.data; viewOpen.value = true }) }
 function handleAccept(row) {
-  proxy.$modal.confirm('确认受理客诉 "' + row.complaintNo + '"？受理后将进入处理中状态。').then(() => acceptComplaint(row.complaintId)).then(() => { getList(); proxy.$modal.msgSuccess('受理成功') }).catch(() => {})
+  proxy.$modal.confirm('确认受理客诉 "' + row.complaintNo + '"？受理后将进入处理中状态。').then(() => acceptComplaint(row.complaintId)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('受理成功') }).catch(() => {})
 }
 function handleProcess(row) {
   getComplaint(row.complaintId).then(res => { processForm.value = res.data; processOpen.value = true })
@@ -544,7 +544,7 @@ function handleProcess(row) {
 function submitProcess() {
   proxy.$refs['processRef'].validate(valid => {
     if (valid) {
-      completeComplaint(processForm.value).then(() => { proxy.$modal.msgSuccess('处理完成'); processOpen.value = false; getList() })
+      completeComplaint(processForm.value).then(() => { proxy.$modal.msgSuccess('处理完成'); processOpen.value = false; getList(); loadStatusCounts() })
     }
   })
 }
@@ -574,19 +574,19 @@ function handleSelectionChange(selection) { selectedIds.value = selection.map(it
 function submitForm() {
   proxy.$refs['complaintRef'].validate(valid => {
     if (valid) {
-      if (form.value.complaintId) { updateComplaint(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList() }) }
-      else { addComplaint(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList() }) }
+      if (form.value.complaintId) { updateComplaint(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList(); loadStatusCounts() }) }
+      else { addComplaint(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList(); loadStatusCounts() }) }
     }
   })
 }
 function handleDelete(row) {
   const ids = row?.complaintId ? [row.complaintId] : selectedIds.value
-  proxy.$modal.confirm('确认删除？').then(() => delComplaint(ids.join(','))).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {})
+  proxy.$modal.confirm('确认删除？').then(() => delComplaint(ids.join(','))).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {})
 }
 function handleClose(row) {
-  proxy.$modal.confirm('确认关闭客诉 "' + row.complaintNo + '"？').then(() => closeComplaint(row.complaintId)).then(() => { getList(); proxy.$modal.msgSuccess('关闭成功') }).catch(() => {})
+  proxy.$modal.confirm('确认关闭客诉 "' + row.complaintNo + '"？').then(() => closeComplaint(row.complaintId)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('关闭成功') }).catch(() => {})
 }
-function handleExport() { proxy.download('qms/complaint/export', { ...queryParams.value }, `complaint_${new Date().getTime()}.xlsx`) }
+function handleExport() { proxy.download('qms/complaint/export', proxy.withExportIds({ ...queryParams.value }, selectedIds.value, 'complaintId'), `complaint_${new Date().getTime()}.xlsx`) }
 function reset() { form.value = { complaintId: null, complaintNo: undefined, customerId: undefined, customerName: undefined, customerCode: undefined, materialId: undefined, materialName: undefined, materialCode: undefined, batchNo: undefined, complaintType: undefined, severity: undefined, complaintDate: new Date().toISOString().slice(0,10), defectDesc: undefined }; proxy.resetForm('complaintRef') }
 function cancel() { open.value = false; reset() }
 function dictLabel(options, val) { const arr = Array.isArray(options) ? options : options.value; const item = arr?.find(d => d.value == val); return item ? item.label : '' }

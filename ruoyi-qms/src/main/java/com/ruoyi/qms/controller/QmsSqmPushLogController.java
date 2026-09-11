@@ -38,6 +38,7 @@ public class QmsSqmPushLogController extends BaseController {
     @PostMapping("/export")
     public void export(HttpServletResponse response, QmsSqmPushLog log) {
         List<QmsSqmPushLog> list = pushService.selectPushLogList(log);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, log);
         ExcelUtil<QmsSqmPushLog> util = new ExcelUtil<>(QmsSqmPushLog.class);
         util.exportExcel(response, list, "SQM推送日志");
     }

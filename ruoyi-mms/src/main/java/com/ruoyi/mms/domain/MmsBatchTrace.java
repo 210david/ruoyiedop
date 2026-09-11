@@ -42,7 +42,7 @@ public class MmsBatchTrace extends BaseEntity
     @Excel(name = "规格型号")
     private String specModel;
 
-    @Excel(name = "单位")
+    @Excel(name = "单位", dictType = "wms_unit")
     private String unit;
 
     @Excel(name = "使用数量")

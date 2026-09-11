@@ -29,6 +29,7 @@ public class SafetyRemindController extends BaseController
     {
         startPage();
         List<SafetyRemind> list = safetyRemindService.selectSafetyRemindList(remind);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, remind);
         return getDataTable(list);
     }
 

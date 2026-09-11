@@ -1,5 +1,7 @@
 package com.ruoyi.web.controller.system;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,26 +58,77 @@ public class SysMenuController extends BaseController
     }
 
     /**
-     * 获取菜单下拉树列表
+     * 获取菜单下拉树列表（过滤停用菜单及其子菜单）
      */
     @GetMapping("/treeselect")
     public AjaxResult treeselect(SysMenu menu)
     {
         List<SysMenu> menus = menuService.selectMenuList(menu, getUserId());
-        return success(menuService.buildMenuTreeSelect(menus));
+        return success(menuService.buildMenuTreeSelect(filterDisabledMenus(menus)));
     }
 
     /**
-     * 加载对应角色菜单列表树
+     * 加载对应角色菜单列表树（过滤停用菜单及其子菜单）
      */
     @GetMapping(value = "/roleMenuTreeselect/{roleId}")
     public AjaxResult roleMenuTreeselect(@PathVariable("roleId") Long roleId)
     {
-        List<SysMenu> menus = menuService.selectMenuList(getUserId());
+        List<SysMenu> menus = filterDisabledMenus(menuService.selectMenuList(getUserId()));
         AjaxResult ajax = AjaxResult.success();
         ajax.put("checkedKeys", menuService.selectMenuListByRoleId(roleId));
         ajax.put("menus", menuService.buildMenuTreeSelect(menus));
         return ajax;
+    }
+
+    /**
+     * 过滤停用菜单及其全部子菜单
+     * 
+     * @param menus 菜单列表
+     * @return 仅含正常状态菜单及其上级链路的菜单列表
+     */
+    private List<SysMenu> filterDisabledMenus(List<SysMenu> menus)
+    {
+        Map<Long, SysMenu> menuMap = new HashMap<>();
+        for (SysMenu menu : menus)
+        {
+            menuMap.put(menu.getMenuId(), menu);
+        }
+        List<SysMenu> result = new ArrayList<>();
+        for (SysMenu menu : menus)
+        {
+            if (isEnabledWithAncestors(menu, menuMap))
+            {
+                result.add(menu);
+            }
+        }
+        return result;
+    }
+
+    /**
+     * 判断菜单及其所有上级菜单是否均为正常状态
+     * 
+     * @param menu 当前菜单
+     * @param menuMap 列表内全部菜单（menuId -> SysMenu）
+     * @return true 表示菜单本身及上级链路均未停用
+     */
+    private boolean isEnabledWithAncestors(SysMenu menu, Map<Long, SysMenu> menuMap)
+    {
+        // sys_menu.status：0=正常，1=停用
+        if ("1".equals(menu.getStatus()))
+        {
+            return false;
+        }
+        Long parentId = menu.getParentId();
+        if (parentId == null || parentId.longValue() == 0L)
+        {
+            return true;
+        }
+        SysMenu parent = menuMap.get(parentId);
+        if (parent == null)
+        {
+            return true;
+        }
+        return isEnabledWithAncestors(parent, menuMap);
     }
 
     /**

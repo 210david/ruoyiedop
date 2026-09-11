@@ -80,7 +80,7 @@
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
-          <el-table-column label="路线名称" prop="routeName" key="routeName" :width="colWidth('routeName', 160)" resizable show-overflow-tooltip v-if="columns.routeName.visible" />
+          <el-table-column label="路线名称" prop="routeName" key="routeName" :min-width="colWidth('routeName', 160)" resizable show-overflow-tooltip v-if="columns.routeName.visible" />
           <el-table-column label="路线编码" prop="routeCode" key="routeCode" :width="colWidth('routeCode', 180)" resizable show-overflow-tooltip v-if="columns.routeCode.visible" />
           <el-table-column label="责任部门" prop="deptName" key="deptName" :width="colWidth('deptName', 120)" resizable v-if="columns.deptName.visible" />
           <el-table-column label="周期" prop="cycleType" key="cycleType" :width="colWidth('cycleType', 140)" resizable align="center" v-if="columns.cycleType.visible">
@@ -198,12 +198,13 @@
             <el-collapse v-model="activeDeviceTabs" style="margin-top: 4px">
               <el-collapse-item v-for="(dev, di) in form.deviceItems" :key="dev.equipmentId" :name="dev.equipmentId">
                 <template #title>
-                  <span style="font-weight: 600; font-size: 14px">{{ dev.equipmentName }}</span>
+                  <span class="dev-collapse-code" v-if="dev.equipmentCode">{{ dev.equipmentCode }}</span>
+                  <span class="dev-collapse-name">{{ dev.equipmentName }}</span>
                   <el-tag size="small" style="margin-left: 8px">{{ dev.items.length }}项</el-tag>
                 </template>
                 <el-table :data="dev.items" border style="width: 100%" size="small" @header-dragend="onHeaderDragEnd">
                   <el-table-column label="序号" width="60" align="center"><template #default="scope">{{ scope.$index + 1 }}</template></el-table-column>
-                  <el-table-column label="点检项目名称" min-width="360"><template #default="scope"><el-input v-model="scope.row.item" :placeholder="'如：检查' + dev.equipmentName + '运行温度是否正常'" size="small" /></template></el-table-column>
+                  <el-table-column label="点检项目名称" min-width="360"><template #default="scope"><el-input v-model="scope.row.item" :placeholder="'如：检查' + (dev.equipmentName || '') + '运行温度是否正常'" size="small" /></template></el-table-column>
                   <el-table-column label="操作" width="70" align="center"><template #default="scope"><el-button link type="danger" icon="Delete" size="small" @click="removeDeviceItem(di, scope.$index)">删除</el-button></template></el-table-column>
                 </el-table>
                 <el-button type="primary" plain icon="Plus" size="small" style="margin-top: 8px" @click="addDeviceItem(di)">添加点检项</el-button>
@@ -271,21 +272,16 @@
             </div>
           </div>
         </section>
-        <section class="rd-card" v-if="viewItems.common.length > 0">
-          <div class="rd-card-header" @click="toggleCard('v3')">
-            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></span>通用点检项</div>
-            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v3 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
-          </div>
-          <div class="rd-card-body" v-show="!collapsedCards.v3">
-            <el-table :data="viewItems.common" border size="small">
-              <el-table-column label="序号" type="index" key="序号" :width="colWidth('序号', 60)" align="center" resizable />
-              <el-table-column label="点检项目名称" prop="item" min-width="200" />
-            </el-table>
-          </div>
-        </section>
         <section class="rd-card" v-for="(dg, di) in viewItems.devices" :key="'vd' + di">
           <div class="rd-card-header" @click="toggleCard('vd' + di)">
-            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></span>{{ dg.equipmentName }}</div>
+            <div class="rd-card-title">
+              <span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></span>
+              <span class="rd-card-title-label">设备点检项</span>
+              <span class="rd-card-title-sep">|</span>
+              <span class="rd-card-title-code" v-if="dg.equipmentCode">{{ dg.equipmentCode }}</span>
+              <span class="rd-card-title-name">{{ dg.equipmentName }}</span>
+              <el-tag size="small" type="info" effect="plain" style="margin-left: 4px">{{ dg.items.length }}项</el-tag>
+            </div>
             <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards['vd' + di] }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
           </div>
           <div class="rd-card-body" v-show="!collapsedCards['vd' + di]">
@@ -304,8 +300,6 @@
             <div class="rd-grid">
               <div class="rd-item"><span class="rd-label"><span class="rd-label-dot"></span>创建人</span><div class="rd-value">{{ viewForm.createBy || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label"><span class="rd-label-dot"></span>创建时间</span><div class="rd-value">{{ viewForm.createTime || '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label"><span class="rd-label-dot"></span>更新人</span><div class="rd-value">{{ viewForm.updateBy || '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label"><span class="rd-label-dot"></span>更新时间</span><div class="rd-value">{{ viewForm.updateTime || '-' }}</div></div>
               <div class="rd-item rd-item--full"><span class="rd-label"><span class="rd-label-dot"></span>备注</span><div class="rd-value">{{ viewForm.remark || '-' }}</div></div>
             </div>
           </div>
@@ -364,7 +358,7 @@ import DeptPicker from '@/components/DeptPicker/index.vue'
 import EquipmentPicker from '@/components/EquipmentPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
-const { collapsedCards, toggleCard } = useDetailCard(["c3","c2","c1","c0","v1","v2","v3","v4"])
+const { collapsedCards, toggleCard } = useDetailCard(["c3","c2","c1","c0","v1","v2","v4"])
 
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('dms_inspection_route_index')
@@ -543,7 +537,16 @@ function handleUpdate(row) {
           form.value.deviceItems = []
         } else {
           form.value.commonItems = parsed.common || []
-          form.value.deviceItems = parsed.devices || []
+          // 拆分设备编码和名称
+          form.value.deviceItems = (parsed.devices || []).map(d => {
+            const parts = (d.equipmentName || '').split(' - ')
+            return {
+              equipmentId: d.equipmentId,
+              equipmentCode: parts.length > 1 ? parts[0].trim() : '',
+              equipmentName: parts.length > 1 ? parts.slice(1).join(' - ').trim() : (d.equipmentName || ''),
+              items: d.items || []
+            }
+          })
         }
       } catch (e) { form.value.commonItems = []; form.value.deviceItems = [] }
     }
@@ -570,19 +573,40 @@ function handleView(row) {
         })
       } catch (e) {}
     }
-    // 解析点检项
+    // 解析点检项：通用项合并到每台设备明细开头（与执行界面一致）
     if (res.data.inspectionItems) {
       try {
         const parsed = JSON.parse(res.data.inspectionItems)
         if (Array.isArray(parsed)) {
-          viewItems.value = { common: parsed, devices: [] }
+          // 旧扁平格式：合成一个通用分组
+          viewItems.value = { common: [], devices: [{ equipmentId: undefined, equipmentName: '通用检查项', items: parsed }] }
         } else {
-          viewItems.value = { common: parsed.common || [], devices: parsed.devices || [] }
+          // 新格式：将通用点检项合并到每台设备明细前面
+          const commonItems = parsed.common || []
+          const devices = (parsed.devices || []).map(d => {
+            // 从设备选项中补充设备编号
+            const eq = equipmentOptions.value.find(e => e.equipmentId === d.equipmentId)
+            const displayName = d.equipmentName || (eq ? eq.equipmentName : '设备' + d.equipmentId)
+            // 如果equipmentName是"编码 - 名称"格式，拆分开来
+            const parts = displayName.split(' - ')
+            return {
+              equipmentId: d.equipmentId,
+              equipmentCode: parts.length > 1 ? parts[0].trim() : (eq ? eq.equipmentCode : ''),
+              equipmentName: parts.length > 1 ? parts.slice(1).join(' - ').trim() : displayName,
+              items: [...commonItems.map(c => ({ ...c })), ...(d.items || [])]
+            }
+          })
+          // 只有通用项、没有设备结构时，合成通用分组
+          if (devices.length === 0 && commonItems.length > 0) {
+            viewItems.value = { common: [], devices: [{ equipmentId: undefined, equipmentName: '通用检查项', items: commonItems }] }
+          } else {
+            viewItems.value = { common: [], devices }
+          }
         }
       } catch (e) { viewItems.value = { common: [], devices: [] } }
     }
     // 系统信息为空时自动收缩
-    collapsedCards.v4 = !viewForm.value.createBy && !viewForm.value.createTime && !viewForm.value.updateBy && !viewForm.value.updateTime && !viewForm.value.remark
+    collapsedCards.v4 = !viewForm.value.createBy && !viewForm.value.createTime && !viewForm.value.remark
     viewLoading.value = false
   }).catch(() => { viewLoading.value = false })
 }
@@ -590,13 +614,38 @@ function handleView(row) {
 // 设备选择变化时，同步设备明细分组
 function syncDeviceItems() {
   const selectedIds = form.value.equipmentIdList || []
+  // 对已有设备：补充缺失的 equipmentCode / equipmentName（数据库中可能未存 equipmentName）
+  form.value.deviceItems.forEach(d => {
+    // 如果 equipmentName 为空或与 equipmentCode 相同（旧"编码 - 名称"未拆分），尝试从设备选项补充
+    if (!d.equipmentName || d.equipmentName === d.equipmentCode) {
+      const eq = equipmentOptions.value.find(e => e.equipmentId === d.equipmentId)
+      if (eq) {
+        // 先检查是否有旧格式 equipmentName 待拆分
+        const oldName = d.equipmentName || ''
+        const parts = oldName.split(' - ')
+        d.equipmentCode = parts.length > 1 ? parts[0].trim() : eq.equipmentCode || ''
+        d.equipmentName = parts.length > 1 ? parts.slice(1).join(' - ').trim() : eq.equipmentName || ''
+      }
+    } else if (d.equipmentName && !d.equipmentCode) {
+      // 有 equipmentName 但没有 equipmentCode：尝试拆分旧"编码 - 名称"格式
+      const parts = d.equipmentName.split(' - ')
+      if (parts.length > 1) {
+        d.equipmentCode = parts[0].trim()
+        d.equipmentName = parts.slice(1).join(' - ').trim()
+      } else {
+        const eq = equipmentOptions.value.find(e => e.equipmentId === d.equipmentId)
+        if (eq) d.equipmentCode = eq.equipmentCode || ''
+      }
+    }
+  })
   form.value.deviceItems = form.value.deviceItems.filter(d => selectedIds.includes(d.equipmentId))
   selectedIds.forEach(eid => {
     if (!form.value.deviceItems.find(d => d.equipmentId === eid)) {
       const eq = equipmentOptions.value.find(e => e.equipmentId === eid)
       form.value.deviceItems.push({
         equipmentId: eid,
-        equipmentName: eq ? eq.equipmentCode + ' - ' + eq.equipmentName : '设备' + eid,
+        equipmentCode: eq ? eq.equipmentCode : '',
+        equipmentName: eq ? eq.equipmentName : '设备' + eid,
         items: []
       })
     }
@@ -615,7 +664,11 @@ function submitForm() {
       form.value.equipmentIds = form.value.equipmentIdList && form.value.equipmentIdList.length > 0 ? JSON.stringify(form.value.equipmentIdList) : undefined
       const inspectionData = {
         common: form.value.commonItems || [],
-        devices: form.value.deviceItems || []
+        devices: (form.value.deviceItems || []).map(d => ({
+          equipmentId: d.equipmentId,
+          equipmentName: d.equipmentCode ? d.equipmentCode + ' - ' + (d.equipmentName || '') : (d.equipmentName || ''),
+          items: d.items || []
+        }))
       }
       const hasItems = inspectionData.common.length > 0 || inspectionData.devices.some(d => d.items.length > 0)
       form.value.inspectionItems = hasItems ? JSON.stringify(inspectionData) : undefined
@@ -736,6 +789,48 @@ loadStatusCounts()
 .cycle-suffix::before { content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--brand-500); margin-right: 6px; vertical-align: middle; }
 .cycle-suffix-custom { color: var(--amber-700); }
 .cycle-suffix-custom::before { background: var(--amber-500); }
+
+/* 新增/修改弹窗：设备折叠面板标题样式 */
+.dms-inspection-route-page .dev-collapse-code {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--brand-600);
+  font-family: 'SF Mono', 'Consolas', monospace;
+  white-space: nowrap;
+  margin-right: 6px;
+}
+.dms-inspection-route-page .dev-collapse-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-900);
+  white-space: nowrap;
+}
+
+/* 设备点检项分组标题样式 */
+.dms-inspection-route-page .rd-card-title-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-700);
+  white-space: nowrap;
+}
+.dms-inspection-route-page .rd-card-title-sep {
+  color: var(--ink-300);
+  font-size: 14px;
+  margin: 0 2px;
+}
+.dms-inspection-route-page .rd-card-title-code {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--brand-600);
+  font-family: 'SF Mono', 'Consolas', monospace;
+  white-space: nowrap;
+}
+.dms-inspection-route-page .rd-card-title-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-900);
+  white-space: nowrap;
+}
 
 /* 详情弹窗滚动 */
 :deep(.el-input.is-disabled .el-input__inner) { cursor: pointer; }

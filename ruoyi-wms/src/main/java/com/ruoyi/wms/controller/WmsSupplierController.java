@@ -38,6 +38,7 @@ public class WmsSupplierController extends BaseController
     public void export(HttpServletResponse response, WmsSupplier supplier)
     {
         List<WmsSupplier> list = wmsSupplierService.selectSupplierList(supplier);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, supplier);
         ExcelUtil<WmsSupplier> util = new ExcelUtil<>(WmsSupplier.class);
         util.exportExcel(response, list, "供应商数据");
     }

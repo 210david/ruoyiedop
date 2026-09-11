@@ -104,6 +104,8 @@ const list = ref([])
 const total = ref(0)
 const selectedId = ref(null)
 const selectedRow = ref(null)
+/** 需排除的备件 partId 列表（避免重复选择） */
+const excludedPartIds = ref([])
 const tableRef = ref()
 
 /** 是否库存台账数据源（出库场景，仅显示有库存的备件） */
@@ -135,6 +137,10 @@ function getList() {
   const request = isStock.value ? listPartLedger : listSparepart
   request(queryParams).then(res => {
     let rows = res.rows || []
+    // 排除已选备件（按 partId）
+    if (excludedPartIds.value.length > 0) {
+      rows = rows.filter(item => !excludedPartIds.value.includes(item.partId))
+    }
     if (isStock.value) {
       // 库存台账数据源仅显示库存大于0的备件
       rows = rows.filter(item => item.currentStock != null && Number(item.currentStock) > 0)
@@ -187,9 +193,10 @@ function handleConfirm() {
   visible.value = false
 }
 
-/** 打开弹窗 */
-function open(currentId) {
+/** 打开弹窗（excludedIds 为需排除的备件 partId 列表） */
+function open(currentId, excludedIds) {
   visible.value = true
+  excludedPartIds.value = Array.isArray(excludedIds) ? excludedIds : []
   if (currentId) {
     selectedId.value = currentId
   }

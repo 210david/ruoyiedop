@@ -79,7 +79,7 @@
               <span class="badge violet">{{ moduleLabel(scope.row.module) }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="规则名称" prop="ruleName" key="ruleName" :width="colWidth('ruleName', 140)" resizable v-if="columns.ruleName.visible" />
+          <el-table-column label="规则名称" prop="ruleName" key="ruleName" :min-width="colWidth('ruleName', 140)" show-overflow-tooltip resizable v-if="columns.ruleName.visible" />
           <el-table-column label="前缀" prop="prefix" key="prefix" :width="colWidth('prefix', 80)" resizable align="center" v-if="columns.prefix.visible">
             <template #default="scope">
               <span v-if="scope.row.prefix">{{ scope.row.prefix }}</span>
@@ -105,7 +105,7 @@
               <span class="badge" :class="scope.row.status === '0' ? 'green' : 'gray'"><span class="dot"></span>{{ statusLabel(scope.row.status) }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="备注" prop="remark" key="remark" :width="colWidth('remark', 180)" resizable show-overflow-tooltip v-if="columns.remark.visible" />
+          <el-table-column label="备注" prop="remark" key="remark" :min-width="colWidth('remark', 180)" resizable show-overflow-tooltip v-if="columns.remark.visible" />
 <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
 <template #default="scope">
 <div class="action-btn-row">
@@ -703,7 +703,7 @@ function loadDictToPrefixList() {
   })
 }
 
-function handleExport() { proxy.download('mk/numberRule/export', { ...queryParams.value }, `numberRule_${currentModule.value}_${new Date().getTime()}.xlsx`) }
+function handleExport() { proxy.download('mk/numberRule/export', proxy.withExportIds({ ...queryParams.value }, ids.value, 'ruleId'), `numberRule_${currentModule.value}_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset(); isView.value = false }
 
 // 监听重置类型变化，自动设置日期格式

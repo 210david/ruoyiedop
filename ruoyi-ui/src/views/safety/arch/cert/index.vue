@@ -77,7 +77,7 @@
         <el-table ref="tableRef" v-loading="loading" :data="certList" border @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
-          <el-table-column label="证照名称" prop="certName" key="certName" :width="colWidth('certName', 180)" resizable show-overflow-tooltip v-if="columns.certName.visible" />
+          <el-table-column label="证照名称" prop="certName" key="certName" :min-width="colWidth('certName', 180)" resizable show-overflow-tooltip v-if="columns.certName.visible" />
           <el-table-column label="证照编号" prop="certNo" key="certNo" :width="colWidth('certNo', 160)" resizable v-if="columns.certNo.visible" />
           <el-table-column label="证照类型" prop="certType" key="certType" :width="colWidth('certType', 120)" resizable align="center" v-if="columns.certType.visible">
             <template #default="scope">
@@ -313,7 +313,7 @@ function submitForm() {
   })
 }
 function handleDelete(row) { const certIds = row.certId || ids.value; proxy.$modal.confirm('是否确认删除证照？').then(function() { return delCert(certIds) }).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
-function handleExport() { proxy.download('safety/cert/export', { ...queryParams.value }, `cert_${new Date().getTime()}.xlsx`) }
+function handleExport() { proxy.download('safety/cert/export', proxy.withExportIds({ ...queryParams.value }, ids.value, 'certId'), `cert_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 function reset() {
   form.value = { certId: undefined, certName: undefined, certNo: undefined, certType: undefined, issueOrg: undefined, issueDate: undefined, expireDate: undefined, attachment: undefined, status: '0', remark: undefined }

@@ -49,6 +49,7 @@ public class MmsKitCheckController extends BaseController
     public void export(HttpServletResponse response, MmsKitCheck kit)
     {
         List<MmsKitCheck> list = mmsKitCheckService.selectKitCheckList(kit);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, kit);
         ExcelUtil<MmsKitCheck> util = new ExcelUtil<>(MmsKitCheck.class);
         util.exportExcel(response, list, "齐套检查数据");
     }

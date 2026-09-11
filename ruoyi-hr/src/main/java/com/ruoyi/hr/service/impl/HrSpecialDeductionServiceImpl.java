@@ -65,6 +65,16 @@ public class HrSpecialDeductionServiceImpl implements IHrSpecialDeductionService
                     failCount++;
                     continue;
                 }
+                // 扣除项目必须为法定固定7项之一
+                java.util.Set<String> DEDUCTION_TYPES = new java.util.HashSet<>(java.util.Arrays.asList(
+                    "3岁以下婴幼儿照护", "子女教育", "继续教育", "大病医疗", "住房贷款利息", "住房租金", "赡养老人"));
+                if (com.ruoyi.common.utils.StringUtils.isEmpty(sd.getDeductionType()) || !DEDUCTION_TYPES.contains(sd.getDeductionType().trim()))
+                {
+                    failMsg.append("<br/>").append("第").append(rowNo).append("行：扣除项目「").append(sd.getDeductionType()).append("」无效，须为：3岁以下婴幼儿照护/子女教育/继续教育/大病医疗/住房贷款利息/住房租金/赡养老人");
+                    failCount++;
+                    continue;
+                }
+                sd.setDeductionType(sd.getDeductionType().trim());
                 HrEmployee emp = hrEmployeeMapper.selectHrEmployeeByEmployeeNo(sd.getEmployeeNo());
                 if (emp == null)
                 {
@@ -74,6 +84,9 @@ public class HrSpecialDeductionServiceImpl implements IHrSpecialDeductionService
                 }
                 sd.setEmployeeId(emp.getEmployeeId());
                 sd.setEmployeeName(emp.getEmployeeName());
+                // 部门自动带出（导入时不填部门，统一按员工档案回填）
+                sd.setDeptId(emp.getOrgId());
+                sd.setDeptName(emp.getOrgName());
                 if (sd.getDeductionAmount() == null || sd.getDeductionAmount().signum() < 0)
                 {
                     failMsg.append("<br/>").append("第").append(rowNo).append("行：月扣除金额不能为空且不能为负");

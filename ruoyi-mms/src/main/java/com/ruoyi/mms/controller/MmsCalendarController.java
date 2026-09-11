@@ -37,6 +37,7 @@ public class MmsCalendarController extends BaseController
     public void export(HttpServletResponse response, MmsCalendar calendar)
     {
         List<MmsCalendar> list = mmsCalendarService.selectCalendarList(calendar);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, calendar);
         ExcelUtil<MmsCalendar> util = new ExcelUtil<>(MmsCalendar.class);
         util.exportExcel(response, list, "工厂日历数据");
     }

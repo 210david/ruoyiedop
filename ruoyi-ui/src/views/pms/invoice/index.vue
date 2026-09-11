@@ -123,7 +123,7 @@
           <el-table-column label="采购单号" prop="orderNo" key="orderNo" :width="colWidth('orderNo', 180)" resizable v-if="columns.orderNo.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.orderNo }}</span></template>
           </el-table-column>
-          <el-table-column label="供应商" prop="supplierName" key="supplierName" :width="colWidth('supplierName', 240)" resizable show-overflow-tooltip v-if="columns.supplierName.visible" />
+          <el-table-column label="供应商" prop="supplierName" key="supplierName" :min-width="colWidth('supplierName', 240)" resizable show-overflow-tooltip v-if="columns.supplierName.visible" />
           <el-table-column label="状态" prop="status" key="status" :width="colWidth('status', 120)" resizable align="center" sortable="custom" v-if="columns.status.visible">
             <template #default="scope">
               <span class="badge" :class="badgeClass(scope.row.status)">
@@ -1198,12 +1198,12 @@ function handleAdd() { reset(); open.value = true; title.value = '添加发票�
 function handleUpdate(row) { reset(); getInvoice(row.invoiceId || ids.value[0]).then(res => { form.value = res.data; open.value = true; title.value = '修改发票结算' }) }
 function handleView(row) { getInvoice(row.invoiceId).then(res => { viewData.value = res.data; viewOpen.value = true }) }
 function calcTax() { const total = form.value.totalAmount || 0; const rate = form.value.taxRate || 0; form.value.taxAmount = parseFloat((total * rate / 100).toFixed(2)); form.value.invoiceAmount = parseFloat((total - form.value.taxAmount).toFixed(2)); form.value.payAmount = total }
-function submitForm() { proxy.$refs['invoiceRef'].validate(valid => { if (valid) { if (form.value.invoiceId != undefined) { updateInvoice(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList() }) } else { addInvoice(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList() }) } } }) }
-function handleDelete(row) { const invoiceIds = row.invoiceId || ids.value; proxy.$modal.confirm('确认删除编号为"' + invoiceIds + '"的数据？').then(() => delInvoice(invoiceIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
-function handleExport() { proxy.download('pms/invoice/export', { ...proxy.addDateRange(queryParams.value, dateRange.value) }, `invoice_${new Date().getTime()}.xlsx`) }
+function submitForm() { proxy.$refs['invoiceRef'].validate(valid => { if (valid) { if (form.value.invoiceId != undefined) { updateInvoice(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList(); loadStatusCounts() }) } else { addInvoice(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList(); loadStatusCounts() }) } } }) }
+function handleDelete(row) { const invoiceIds = row.invoiceId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delInvoice(invoiceIds)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleExport() { proxy.download('pms/invoice/export', proxy.withExportIds({ ...proxy.addDateRange(queryParams.value, dateRange.value) }, ids.value, 'invoiceId'), `invoice_${new Date().getTime()}.xlsx`) }
 function handleAudit(row) { getInvoice(row.invoiceId).then(res => { auditData.value = res.data; auditForm.value = { invoiceId: row.invoiceId, auditOpinion: '' }; auditOpen.value = true }) }
 function submitAudit(passed) { proxy.$refs['auditRef'].validate(valid => { if (valid) { const status = passed ? '2' : '5'; const actionText = passed ? '通过' : '驳回'; proxy.$modal.confirm(`确认${actionText}该发票结算？`).then(() => { return auditInvoice(auditForm.value.invoiceId, status, auditForm.value.auditOpinion) }).then(() => { proxy.$modal.msgSuccess(`${actionText}成功`); auditOpen.value = false; getList() }).catch(() => {}) } }) }
-function handleSubmit(row) { proxy.$modal.confirm('确认提交该发票结算审核？').then(() => submitInvoice(row.invoiceId)).then(() => { getList(); proxy.$modal.msgSuccess('提交成功') }).catch(() => {}) }
+function handleSubmit(row) { proxy.$modal.confirm('确认提交该发票结算审核？').then(() => submitInvoice(row.invoiceId)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('提交成功') }).catch(() => {}) }
 function handlePay(row) {
   getInvoice(row.invoiceId).then(res => {
     payData.value = res.data
@@ -1236,7 +1236,7 @@ function submitPay() {
     }).then(() => {
       proxy.$modal.msgSuccess('付款成功')
       payOpen.value = false
-      getList()
+      getList(); loadStatusCounts()
     }).catch(() => {})
   })
 }

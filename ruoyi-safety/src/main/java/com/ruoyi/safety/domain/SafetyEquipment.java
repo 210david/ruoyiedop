@@ -26,7 +26,7 @@ public class SafetyEquipment extends BaseEntity
     @Excel(name = "登记证号")
     private String regCertNo;
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "检验有效期", width = 120)
+    @Excel(name = "检验有效期", width = 120, dateFormat = "yyyy-MM-dd")
     private Date inspectExpire;
     private String remindStatus;
     private Long personId;

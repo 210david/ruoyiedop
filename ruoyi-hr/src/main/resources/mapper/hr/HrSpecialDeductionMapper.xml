@@ -7,6 +7,8 @@
         <result property="employeeId" column="employee_id"/>
         <result property="employeeName" column="employee_name"/>
         <result property="employeeNo" column="employee_no"/>
+        <result property="deptId" column="dept_id"/>
+        <result property="deptName" column="dept_name"/>
         <result property="deductionType" column="deduction_type"/>
         <result property="deductionAmount" column="deduction_amount"/>
         <result property="effectiveDate" column="effective_date"/>
@@ -20,7 +22,7 @@
     </resultMap>
 
     <sql id="selectVo">
-        SELECT sd_id, employee_id, employee_name, employee_no, deduction_type, deduction_amount, effective_date, expiry_date, del_flag, create_by, create_time, update_by, update_time, remark
+        SELECT sd_id, employee_id, employee_name, employee_no, dept_id, dept_name, deduction_type, deduction_amount, effective_date, expiry_date, del_flag, create_by, create_time, update_by, update_time, remark
         FROM biz_hr_special_deduction
     </sql>
 
@@ -31,7 +33,9 @@
             <if test="employeeId != null"> AND employee_id = #{employeeId}</if>
             <if test="employeeName != null and employeeName != ''"> AND employee_name LIKE CONCAT('%', #{employeeName}, '%')</if>
             <if test="employeeNo != null and employeeNo != ''"> AND employee_no LIKE CONCAT('%', #{employeeNo}, '%')</if>
-            <if test="deductionType != null and deductionType != ''"> AND deduction_type LIKE CONCAT('%', #{deductionType}, '%')</if>
+            <if test="deptId != null"> AND dept_id = #{deptId}</if>
+            <if test="deptName != null and deptName != ''"> AND dept_name LIKE CONCAT('%', #{deptName}, '%')</if>
+            <if test="deductionType != null and deductionType != ''"> AND deduction_type = #{deductionType}</if>
             <if test="deductionAmount != null"> AND deduction_amount = #{deductionAmount}</if>
             <if test="effectiveDate != null"> AND effective_date = #{effectiveDate}</if>
             <if test="params.beginEffectiveDate != null and params.beginEffectiveDate != ''"> AND effective_date &gt;= #{params.beginEffectiveDate}</if>
@@ -50,9 +54,9 @@
 
     <insert id="insertHrSpecialDeduction" parameterType="HrSpecialDeduction" useGeneratedKeys="true" keyProperty="sdId">
         INSERT INTO biz_hr_special_deduction (
-            employee_id, employee_name, employee_no, deduction_type, deduction_amount, effective_date, expiry_date, del_flag, create_by, create_time, remark
+            employee_id, employee_name, employee_no, dept_id, dept_name, deduction_type, deduction_amount, effective_date, expiry_date, del_flag, create_by, create_time, remark
         ) VALUES (
-            #{employeeId}, #{employeeName}, #{employeeNo}, #{deductionType}, #{deductionAmount}, #{effectiveDate}, #{expiryDate}, #{delFlag}, #{createBy}, sysdate(), #{remark}
+            #{employeeId}, #{employeeName}, #{employeeNo}, #{deptId}, #{deptName}, #{deductionType}, #{deductionAmount}, #{effectiveDate}, #{expiryDate}, #{delFlag}, #{createBy}, sysdate(), #{remark}
         )
     </insert>
 
@@ -62,6 +66,8 @@
             <if test="employeeId != null">employee_id = #{employeeId},</if>
             <if test="employeeName != null and employeeName != ''">employee_name = #{employeeName},</if>
             <if test="employeeNo != null and employeeNo != ''">employee_no = #{employeeNo},</if>
+            <if test="deptId != null">dept_id = #{deptId},</if>
+            <if test="deptName != null and deptName != ''">dept_name = #{deptName},</if>
             <if test="deductionType != null and deductionType != ''">deduction_type = #{deductionType},</if>
             <if test="deductionAmount != null">deduction_amount = #{deductionAmount},</if>
             <if test="effectiveDate != null">effective_date = #{effectiveDate},</if>

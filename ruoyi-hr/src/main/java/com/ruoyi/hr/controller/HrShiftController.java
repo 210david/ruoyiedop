@@ -37,6 +37,7 @@ public class HrShiftController extends BaseController
     public void export(HttpServletResponse response, HrShift hrShift)
     {
         List<HrShift> list = hrShiftService.selectHrShiftList(hrShift);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, hrShift);
         ExcelUtil<HrShift> util = new ExcelUtil<>(HrShift.class);
         util.exportExcel(response, list, "班次");
     }

@@ -42,6 +42,7 @@ public class MkShipmentController extends BaseController
     public void export(HttpServletResponse response, MkShipment shipment)
     {
         List<MkShipment> list = mkShipmentService.selectShipmentList(shipment);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, shipment);
         ExcelUtil<MkShipment> util = new ExcelUtil<>(MkShipment.class);
         util.exportExcel(response, list, "发货管理数据");
     }

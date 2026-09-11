@@ -94,8 +94,8 @@
           <el-table-column label="物料编码" prop="materialCode" key="materialCode" :width="colWidth('materialCode', 180)" resizable sortable="custom" v-if="columns.materialCode.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.materialCode }}</span></template>
           </el-table-column>
-          <el-table-column label="物料名称" prop="materialName" key="materialName" :width="colWidth('materialName', 240)" resizable show-overflow-tooltip v-if="columns.materialName.visible" />
-          <el-table-column label="规格型号" prop="specModel" key="specModel" :width="colWidth('specModel', 200)" resizable show-overflow-tooltip v-if="columns.specModel.visible" />
+          <el-table-column label="物料名称" prop="materialName" key="materialName" :min-width="colWidth('materialName', 240)" resizable show-overflow-tooltip v-if="columns.materialName.visible" />
+          <el-table-column label="规格型号" prop="specModel" key="specModel" :min-width="colWidth('specModel', 200)" resizable show-overflow-tooltip v-if="columns.specModel.visible" />
           <el-table-column label="单位" prop="unit" key="unit" :width="colWidth('unit', 80)" resizable align="center" v-if="columns.unit.visible">
             <template #default="scope"><span class="badge blue">{{ unitLabel(scope.row.unit) }}</span></template>
           </el-table-column>
@@ -126,7 +126,7 @@
 
 <script setup name="WmsInventory">
 import { listInventory, delInventory } from '@/api/wms/inventory'
-import { fetchAllPages, downloadCsv } from '@/utils/csvExport'
+import { fetchAllPages, downloadXlsx } from '@/utils/csvExport'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { ArrowDown, Delete, Download, RefreshLeft, Search, Filter } from '@element-plus/icons-vue'
 const { proxy } = getCurrentInstance()
@@ -197,10 +197,11 @@ function handleSortChange(column) {
 function unitLabel(unit) { const item = wms_unit.value.find(d => d.value == unit); return item ? item.label : '-' }
 /** 导出库存（与列表口径一致：含筛选条件，导出全部页数据；仓库/库区/库位为合并列） */
 async function handleExport() {
-  const rows = await fetchAllPages(listInventory, proxy.addDateRange(queryParams.value, dateRange.value, 'UpdateTime'))
+  let rows = await fetchAllPages(listInventory, proxy.addDateRange(queryParams.value, dateRange.value, 'UpdateTime'))
+  if (ids.value && ids.value.length) { rows = rows.filter(i => ids.value.includes(i.inventoryId)) }
   if (!rows.length) { proxy.$modal.msgWarning('当前筛选下无数据可导出'); return }
   const headers = ['物料编码', '物料名称', '规格型号', '单位', '仓库/库区/库位', '批次号', '生产日期', '有效期', '可用数量', '锁定数量', '更新时间']
-  downloadCsv(`inventory_${new Date().getTime()}`, headers, rows.map(i => [
+  downloadXlsx(`inventory_${new Date().getTime()}`, headers, rows.map(i => [
     i.materialCode || '', i.materialName || '', i.specModel || '', unitLabel(i.unit),
     [i.warehouseName, i.areaName, i.locationName].filter(Boolean).join('/'),
     i.batchNo || '', i.productionDate || '', i.expiryDate || '',

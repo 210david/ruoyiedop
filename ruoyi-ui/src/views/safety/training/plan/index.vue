@@ -114,7 +114,7 @@
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
           <el-table-column label="计划编号" prop="planCode" key="planCode" :width="colWidth('planCode', 156)" resizable sortable="custom" v-if="columns.planCode.visible" />
-          <el-table-column label="计划名称" prop="planName" key="planName" :width="colWidth('planName', 240)" resizable show-overflow-tooltip v-if="columns.planName.visible" />
+          <el-table-column label="计划名称" prop="planName" key="planName" :min-width="colWidth('planName', 240)" resizable show-overflow-tooltip v-if="columns.planName.visible" />
           <el-table-column label="计划类型" prop="planType" key="planType" :width="colWidth('planType', 132)" resizable align="center" v-if="columns.planType.visible">
             <template #default="scope">
               <span class="badge violet">{{ planTypeLabel(scope.row.planType) }}</span>
@@ -501,7 +501,7 @@ function submitForm() {
   })
 }
 function handleDelete(row) { const planIds = row.planId || ids.value; proxy.$modal.confirm('是否确认删除培训计划？').then(function() { return delTrainingPlan(planIds) }).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
-function handleExport() { proxy.download('safety/training/plan/export', { ...queryParams.value }, `training_plan_${new Date().getTime()}.xlsx`) }
+function handleExport() { proxy.download('safety/training/plan/export', proxy.withExportIds({ ...queryParams.value }, ids.value, 'planId'), `training_plan_${new Date().getTime()}.xlsx`) }
 function handleStart(row) { proxy.$modal.confirm('确认开始执行该培训计划吗？').then(function() { return startTrainingPlan(row.planId) }).then(() => { proxy.$modal.msgSuccess('已开始执行'); getList() }).catch(() => {}) }
 function handleComplete(row) {
   const recordCount = row.recordCount || 0

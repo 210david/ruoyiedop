@@ -33,6 +33,7 @@ public class MkNumberRuleController extends BaseController
     {
         startPage();
         List<MkNumberRule> list = mkNumberRuleService.selectRuleList(rule);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, rule);
         return getDataTable(list);
     }
 

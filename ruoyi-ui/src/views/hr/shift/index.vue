@@ -71,13 +71,13 @@
           <el-table-column label="班次编码" prop="shiftCode" key="shiftCode" align="center" :width="colWidth('shiftCode', 120)" resizable v-if="columns.shiftCode.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.shiftCode }}</span></template>
           </el-table-column>
-          <el-table-column label="班次名称" prop="shiftName" key="shiftName" align="center" :width="colWidth('shiftName', 140)" resizable v-if="columns.shiftName.visible" />
+          <el-table-column label="班次名称" prop="shiftName" key="shiftName" align="center" :min-width="colWidth('shiftName', 140)" show-overflow-tooltip resizable v-if="columns.shiftName.visible" />
           <el-table-column label="开始时间" prop="startTime" key="startTime" align="center" :width="colWidth('startTime', 100)" resizable v-if="columns.startTime.visible" />
           <el-table-column label="结束时间" prop="endTime" key="endTime" align="center" :width="colWidth('endTime', 100)" resizable v-if="columns.endTime.visible" />
           <el-table-column label="工作时长" prop="workHours" key="workHours" align="center" :width="colWidth('workHours', 100)" resizable v-if="columns.workHours.visible">
 <template #default="scope">{{ scope.row.workHours != null ? scope.row.workHours + ' 小时' : '-' }}</template>
 </el-table-column>
-          <el-table-column label="备注" prop="remark" key="remark" :width="colWidth('remark', 200)" resizable show-overflow-tooltip v-if="columns.remark.visible" />
+          <el-table-column label="备注" prop="remark" key="remark" :min-width="colWidth('remark', 200)" resizable show-overflow-tooltip v-if="columns.remark.visible" />
           <el-table-column label="默认班次" prop="isDefault" key="isDefault" align="center" :width="colWidth('isDefault', 100)" resizable v-if="columns.isDefault.visible">
             <template #default="scope">
               <el-tag v-if="scope.row.isDefault === 1" type="success" size="small">默认</el-tag>
@@ -404,7 +404,7 @@ function handleDelete(row) {
 }
 
 function handleExport() {
-  proxy.download('hr/shift/export', { ...queryParams.value }, `hrShift_${new Date().getTime()}.xlsx`)
+  proxy.download('hr/shift/export', proxy.withExportIds({ ...queryParams.value }, ids.value, 'shiftId'), `hrShift_${new Date().getTime()}.xlsx`)
 }
 
 function cancel() {

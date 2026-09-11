@@ -42,6 +42,7 @@ public class MkActivityParticipantController extends BaseController
     public void export(HttpServletResponse response, MkActivityParticipant participant)
     {
         List<MkActivityParticipant> list = mkActivityParticipantService.selectParticipantList(participant);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, participant);
         ExcelUtil<MkActivityParticipant> util = new ExcelUtil<>(MkActivityParticipant.class);
         util.exportExcel(response, list, "活动参与人数据");
     }

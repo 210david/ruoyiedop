@@ -123,7 +123,7 @@
 <el-table-column type="selection" width="55" align="center" />
 <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" resizable align="center" />
 <el-table-column label="计划单号" prop="planNo" key="planNo" :width="colWidth('planNo', 180)" resizable sortable="custom" v-if="columns.planNo.visible" />
-          <el-table-column label="计划标题" prop="title" key="title" :width="colWidth('title', 240)" resizable show-overflow-tooltip v-if="columns.title.visible" />
+          <el-table-column label="计划标题" prop="title" key="title" :min-width="colWidth('title', 240)" resizable show-overflow-tooltip v-if="columns.title.visible" />
           <el-table-column label="计划类型" prop="planType" key="planType" :width="colWidth('planType', 120)" resizable align="center" v-if="columns.planType.visible">
             <template #default="scope"><span class="badge violet">{{ planTypeLabel(scope.row.planType) }}</span></template>
           </el-table-column>
@@ -952,10 +952,10 @@ function submitForm() {
 /** 删除按钮操作 */
 function handleDelete(row) {
   const planIds = row.planId ? [row.planId] : ids.value;
-  proxy.$modal.confirm('是否确认删除采购计划编号为"' + planIds + '"的数据项？').then(function() {
+  proxy.$modal.confirm('是否确认删除选中的采购计划？').then(function() {
     return delPlan(planIds);
   }).then(() => {
-    getList();
+    getList(); loadStatusCounts();
     proxy.$modal.msgSuccess("删除成功");
   }).catch(() => {});
 }
@@ -982,7 +982,7 @@ function submitAudit(passed) {
       }).then(() => {
         proxy.$modal.msgSuccess("审批成功");
         auditOpen.value = false;
-        getList();
+        getList(); loadStatusCounts();
       }).catch(() => {});
     }
   });
@@ -993,7 +993,7 @@ function handleClose(row) {
   proxy.$modal.confirm('是否确认关闭该采购计划？').then(function() {
     return closePlan(row.planId);
   }).then(() => {
-    getList();
+    getList(); loadStatusCounts();
     proxy.$modal.msgSuccess("关闭成功");
   }).catch(() => {});
 }
@@ -1005,9 +1005,9 @@ function handleGenerateRequest(row) {
 
 /** 导出按钮操作 */
 function handleExport() {
-  proxy.download("pms/plan/export", {
+  proxy.download("pms/plan/export", proxy.withExportIds({
     ...proxy.addDateRange(queryParams.value, dateRange.value, 'CreateTime')
-  }, `plan_${new Date().getTime()}.xlsx`);
+  }, ids.value, 'planId'), `plan_${new Date().getTime()}.xlsx`);
 }
 
 /** 添加明细 */

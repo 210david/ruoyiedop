@@ -37,6 +37,7 @@ public class HrContractController extends BaseController
     public void export(HttpServletResponse response, HrContract hrContract)
     {
         List<HrContract> list = hrContractService.selectHrContractList(hrContract);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, hrContract);
         ExcelUtil<HrContract> util = new ExcelUtil<>(HrContract.class);
         util.exportExcel(response, list, "劳动合同");
     }

@@ -83,7 +83,7 @@
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" class="app-table">
 <el-table-column type="selection" width="55" align="center" />
 <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
-<el-table-column label="文档编号" prop="docNo" key="docNo" :width="colWidth('docNo', 160)" resizable show-overflow-tooltip v-if="columns.docNo.visible" />          <el-table-column label="标题" prop="docTitle" key="docTitle" :width="colWidth('docTitle', 220)" resizable show-overflow-tooltip v-if="columns.docTitle.visible" />
+<el-table-column label="文档编号" prop="docNo" key="docNo" :width="colWidth('docNo', 160)" resizable show-overflow-tooltip v-if="columns.docNo.visible" />          <el-table-column label="标题" prop="docTitle" key="docTitle" :min-width="colWidth('docTitle', 220)" resizable show-overflow-tooltip v-if="columns.docTitle.visible" />
           <el-table-column label="分类" prop="docCategory" key="docCategory" :width="colWidth('docCategory', 120)" resizable align="center" v-if="columns.docCategory.visible"><template #default="scope"><span class="badge violet"><span class="dot"></span>{{ docCategoryLabel(scope.row.docCategory) }}</span></template></el-table-column>
           <el-table-column label="版本" prop="versionNo" key="versionNo" :width="colWidth('versionNo', 100)" resizable align="center" v-if="columns.versionNo.visible" />
           <el-table-column label="归属部门" prop="deptName" key="deptName" :width="colWidth('deptName', 140)" resizable show-overflow-tooltip v-if="columns.deptName.visible" />
@@ -299,7 +299,7 @@ function handleDelete(row) {
 function handleObsolete(row) {
   proxy.$modal.confirm('确认作废该文档？作废后文档将标记为作废状态。').then(() => obsoleteDoc(row.docId)).then(() => { getList(); proxy.$modal.msgSuccess('作废成功') }).catch(() => {})
 }
-function handleExport() { proxy.download('qms/doc/export', { ...proxy.addDateRange(queryParams.value, dateRange.value) }, `doc_${new Date().getTime()}.xlsx`) }
+function handleExport() { proxy.download('qms/doc/export', proxy.withExportIds({ ...proxy.addDateRange(queryParams.value, dateRange.value) }, selectedIds.value, 'docId'), `doc_${new Date().getTime()}.xlsx`) }
 /** 打开部门选择弹窗 */
 function openDeptPicker() { proxy.$refs.deptPickerRef.open(form.value.deptId) }
 /** 部门选择确认回调 */

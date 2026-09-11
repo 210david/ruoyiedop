@@ -26,7 +26,7 @@ public class WmsMaterial extends BaseEntity
     private String materialName;
 
     /** 物料类型 */
-    @Excel(name = "物料类型")
+    @Excel(name = "物料类型", dictType = "wms_material_type")
     private String materialType;
 
     /** 规格型号 */
@@ -34,7 +34,7 @@ public class WmsMaterial extends BaseEntity
     private String specModel;
 
     /** 基本计量单位 */
-    @Excel(name = "计量单位")
+    @Excel(name = "计量单位", dictType = "wms_unit")
     private String unit;
 
     /** 保质期天数 */
@@ -46,7 +46,7 @@ public class WmsMaterial extends BaseEntity
     private Integer expiryAlertDays;
 
     /** 效期管理（0否 1是） */
-    @Excel(name = "效期管理")
+    @Excel(name = "效期管理", dictType = "sys_yes_no")
     private String isExpiryManage;
 
     /** 安全库存下限 */
@@ -58,11 +58,11 @@ public class WmsMaterial extends BaseEntity
     private BigDecimal safetyStockMax;
 
     /** 是否批次管理（0否 1是） */
-    @Excel(name = "批次管理")
+    @Excel(name = "批次管理", dictType = "sys_yes_no")
     private String isBatchManage;
 
     /** 状态（0正常 1停用） */
-    @Excel(name = "状态")
+    @Excel(name = "状态", dictType = "sys_normal_disable")
     private String status;
 
     /** 删除标志 */

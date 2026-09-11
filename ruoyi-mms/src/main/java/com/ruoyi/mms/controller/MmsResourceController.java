@@ -41,6 +41,7 @@ public class MmsResourceController extends BaseController
     public void export(HttpServletResponse response, MmsResource resource)
     {
         List<MmsResource> list = mmsResourceService.selectResourceList(resource);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, resource);
         ExcelUtil<MmsResource> util = new ExcelUtil<>(MmsResource.class);
         util.exportExcel(response, list, "Resource");
     }

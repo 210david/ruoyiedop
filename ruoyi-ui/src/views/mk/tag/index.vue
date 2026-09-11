@@ -86,7 +86,7 @@
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
-          <el-table-column label="标签名称" prop="tagName" key="tagName" :width="colWidth('tagName', 180)" resizable v-if="columns.tagName.visible">
+          <el-table-column label="标签名称" prop="tagName" key="tagName" :min-width="colWidth('tagName', 180)" show-overflow-tooltip resizable v-if="columns.tagName.visible">
             <template #default="scope">
               <el-tag :color="scope.row.tagColor" effect="dark" v-if="scope.row.tagColor">{{ scope.row.tagName }}</el-tag>
               <span v-else>{{ scope.row.tagName }}</span>
@@ -355,13 +355,13 @@ function handleView(row) {
 function submitForm() {
   proxy.$refs['tagRef'].validate(valid => {
     if (valid) {
-      if (form.value.tagId != undefined) { updateTag(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList() }) }
-      else { addTag(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList() }) }
+      if (form.value.tagId != undefined) { updateTag(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList(); loadStatusCounts() }) }
+      else { addTag(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList(); loadStatusCounts() }) }
     }
   })
 }
-function handleDelete(row) { const tagIds = row.tagId || ids.value; proxy.$modal.confirm('确认删除编号为"' + tagIds + '"的数据？').then(() => delTag(tagIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
-function handleExport() { proxy.download('mk/tag/export', { ...queryParams.value }, `tag_${new Date().getTime()}.xlsx`) }
+function handleDelete(row) { const tagIds = row.tagId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delTag(tagIds)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleExport() { proxy.download('mk/tag/export', proxy.withExportIds({ ...queryParams.value }, ids.value, 'tagId'), `tag_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 getList()
 </script>

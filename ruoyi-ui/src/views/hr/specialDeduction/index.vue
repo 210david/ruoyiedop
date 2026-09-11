@@ -29,9 +29,9 @@
         <div class="field">
           <label>扣除项目</label>
           <div class="control">
-            <el-input v-model="queryParams.deductionType" placeholder="请输入扣除项目" clearable @keyup.enter="handleQuery">
-              <template #prefix><el-icon><Search /></el-icon></template>
-            </el-input>
+            <el-select v-model="queryParams.deductionType" placeholder="请选择扣除项目" clearable filterable @change="handleQuery" style="width: 100%">
+              <el-option v-for="d in deductionTypeOptions" :key="d.value" :label="d.label" :value="d.value" />
+            </el-select>
           </div>
         </div>
         <div class="field">
@@ -83,12 +83,19 @@
         <el-table ref="tableRef" v-loading="loading" :data="hrSpecialDeductionList" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" border class="app-table">
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" resizable align="center" />
-          <el-table-column label="员工姓名" prop="employeeName" key="employeeName" align="center" :width="colWidth('employeeName', 120)" resizable v-if="columns.employeeName.visible" />
+          <el-table-column label="员工姓名" prop="employeeName" key="employeeName" align="center" :min-width="colWidth('employeeName', 120)" show-overflow-tooltip resizable v-if="columns.employeeName.visible" />
           <el-table-column label="工号" prop="employeeNo" key="employeeNo" align="center" :width="colWidth('employeeNo', 120)" resizable v-if="columns.employeeNo.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.employeeNo }}</span></template>
           </el-table-column>
-          <el-table-column label="扣除项目" prop="deductionType" key="deductionType" align="center" :width="colWidth('deductionType', 160)" resizable v-if="columns.deductionType.visible" />
-          <el-table-column label="月扣除金额" prop="deductionAmount" key="deductionAmount" align="center" :width="colWidth('deductionAmount', 130)" resizable v-if="columns.deductionAmount.visible" />
+          <el-table-column label="部门" prop="deptName" key="deptName" align="center" :min-width="colWidth('deptName', 140)" show-overflow-tooltip resizable v-if="columns.deptName.visible" />
+          <el-table-column label="扣除项目" prop="deductionType" key="deductionType" align="center" :width="colWidth('deductionType', 180)" resizable v-if="columns.deductionType.visible">
+            <template #default="scope">
+              <span class="badge" :class="deductionBadgeClass(scope.row.deductionType)">{{ scope.row.deductionType }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="月扣除金额" prop="deductionAmount" key="deductionAmount" align="center" :width="colWidth('deductionAmount', 140)" resizable v-if="columns.deductionAmount.visible">
+            <template #default="scope"><span class="rd-amount">￥{{ formatAmount(scope.row.deductionAmount) }}</span></template>
+          </el-table-column>
           <el-table-column label="生效日期" prop="effectiveDate" key="effectiveDate" align="center" :width="colWidth('effectiveDate', 130)" resizable v-if="columns.effectiveDate.visible" />
           <el-table-column label="失效日期" prop="expiryDate" key="expiryDate" align="center" :width="colWidth('expiryDate', 130)" resizable v-if="columns.expiryDate.visible" />
           <el-table-column label="删除标志" prop="delFlag" key="delFlag" align="center" :width="colWidth('delFlag', 110)" resizable v-if="columns.delFlag.visible">
@@ -139,6 +146,7 @@
                   </el-input>
                 </el-form-item></el-col>
                 <el-col :span="12"><el-form-item label="工号" prop="employeeNo"><el-input v-model="form.employeeNo" placeholder="请输入工号" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="部门" prop="deptName"><el-input :model-value="form.deptName" readonly placeholder="选择人员后自动带出" /></el-form-item></el-col>
               </el-row>
             </div>
           </section>
@@ -150,8 +158,18 @@
             </div>
             <div class="rd-card-body" v-show="!collapsedCards.e1">
               <el-row :gutter="20">
-                <el-col :span="12"><el-form-item label="扣除项目" prop="deductionType"><el-input v-model="form.deductionType" placeholder="请输入扣除项目" /></el-form-item></el-col>
-                <el-col :span="12"><el-form-item label="月扣除金额" prop="deductionAmount"><el-input-number v-model="form.deductionAmount" :precision="2" :min="0" controls-position="right" style="width: 100%" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="扣除项目" prop="deductionType">
+                  <el-select v-model="form.deductionType" placeholder="请选择扣除项目" style="width: 100%">
+                    <el-option v-for="d in deductionTypeOptions" :key="d.value" :label="d.label" :value="d.value" />
+                  </el-select>
+                </el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="月扣除金额" prop="deductionAmount">
+                  <el-select v-if="deductionRule.options" v-model="form.deductionAmount" placeholder="请选择扣除档位" style="width: 100%">
+                    <el-option v-for="o in deductionRule.options" :key="o.value" :label="o.label" :value="o.value" />
+                  </el-select>
+                  <el-input-number v-else v-model="form.deductionAmount" :precision="2" :min="0" :max="deductionRule.max || Infinity" :disabled="deductionRule.fixed !== undefined" controls-position="right" style="width: 100%" />
+                  <div v-if="deductionRule.hint" class="amount-hint">{{ deductionRule.hint }}</div>
+                </el-form-item></el-col>
                 <el-col :span="12"><el-form-item label="生效日期" prop="effectiveDate"><el-date-picker v-model="form.effectiveDate" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" style="width: 100%" /></el-form-item></el-col>
                 <el-col :span="12"><el-form-item label="失效日期" prop="expiryDate"><el-date-picker v-model="form.expiryDate" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" style="width: 100%" /></el-form-item></el-col>
               </el-row>
@@ -186,10 +204,11 @@
             <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>基本信息</div>
             <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c0 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
           </div>
-          <div class="rd-card-body" style="display:block" v-show="!collapsedCards.c0">
+          <div class="rd-card-body" v-show="!collapsedCards.c0">
             <div class="rd-grid">
-              <div class="rd-item"><span class="rd-label">员工姓名</span><div class="rd-value">{{ viewData.employeeName || '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label">工号</span><div class="rd-value">{{ viewData.employeeNo || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label"><span class="rd-label-dot"></span>员工姓名</span><div class="rd-value">{{ viewData.employeeName || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label"><span class="rd-label-dot"></span>工号</span><div class="rd-value">{{ viewData.employeeNo || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label"><span class="rd-label-dot"></span>部门</span><div class="rd-value" :class="{ 'rd-value--muted': !viewData.deptName }">{{ viewData.deptName || '暂无部门' }}</div></div>
             </div>
           </div>
         </section>
@@ -198,12 +217,12 @@
             <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>扣除信息</div>
             <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
           </div>
-          <div class="rd-card-body" style="display:block" v-show="!collapsedCards.c1">
+          <div class="rd-card-body" v-show="!collapsedCards.c1">
             <div class="rd-grid">
-              <div class="rd-item"><span class="rd-label">扣除项目</span><div class="rd-value">{{ viewData.deductionType || '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label">月扣除金额</span><div class="rd-value rd-amount">{{ viewData.deductionAmount ?? '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label">生效日期</span><div class="rd-value">{{ viewData.effectiveDate || '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label">失效日期</span><div class="rd-value">{{ viewData.expiryDate || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label"><span class="rd-label-dot"></span>扣除项目</span><div class="rd-value">{{ viewData.deductionType || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label"><span class="rd-label-dot"></span>月扣除金额</span><div class="rd-value rd-amount">￥{{ formatAmount(viewData.deductionAmount) }}</div></div>
+              <div class="rd-item"><span class="rd-label"><span class="rd-label-dot"></span>生效日期</span><div class="rd-value">{{ viewData.effectiveDate || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label"><span class="rd-label-dot"></span>失效日期</span><div class="rd-value" :class="{ 'rd-value--muted': !viewData.expiryDate }">{{ viewData.expiryDate || '长期有效' }}</div></div>
             </div>
           </div>
         </section>
@@ -212,9 +231,9 @@
             <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>其他信息</div>
             <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
           </div>
-          <div class="rd-card-body" style="display:block" v-show="!collapsedCards.c2">
+          <div class="rd-card-body" v-show="!collapsedCards.c2">
             <div class="rd-grid">
-              <div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value">{{ viewData.remark || '-' }}</div></div>
+              <div class="rd-item rd-item--full"><span class="rd-label"><span class="rd-label-dot"></span>备注</span><div class="rd-value" :class="{ 'rd-value--muted': !viewData.remark }">{{ viewData.remark || '暂无备注' }}</div></div>
             </div>
           </div>
         </section>
@@ -268,6 +287,9 @@ const dateRange = ref([])
 const expiryDateRange = ref([])
 const showAdvanced = ref(false)
 
+/** 扣除项目字典（个人所得税专项附加扣除固定7项） */
+const { hr_deduction_type: deductionTypeOptions } = proxy.useDict('hr_deduction_type')
+
 /** 列宽拖拽持久化 */
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('hr_specialDeduction_index')
 
@@ -275,6 +297,7 @@ const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResiz
 const defaultColumns = {
   employeeName: { label: '员工姓名', visible: true },
   employeeNo: { label: '工号', visible: true },
+  deptName: { label: '部门', visible: true },
   deductionType: { label: '扣除项目', visible: true },
   deductionAmount: { label: '月扣除金额', visible: true },
   effectiveDate: { label: '生效日期', visible: true },
@@ -308,6 +331,26 @@ function delFlagLabel(v) {
   const map = { '0': '正常', '2': '已删除' }
   return map[String(v)] || '-'
 }
+
+/** 金额千分位 + 两位小数（detail-page-style-guide 3.4） */
+function formatAmount(val) {
+  if (val === null || val === undefined || val === '') return '-'
+  return Number(val).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+/** 扣除项目徽章颜色映射（list-page-style-guide 5.7 字典列统一 badge） */
+function deductionBadgeClass(v) {
+  const map = {
+    '3岁以下婴幼儿照护': 'blue',
+    '子女教育': 'green',
+    '继续教育': 'violet',
+    '大病医疗': 'red',
+    '住房贷款利息': 'amber',
+    '住房租金': 'amber',
+    '赡养老人': 'gray'
+  }
+  return map[v] || 'gray'
+}
 function delFlagBadgeClass(v) {
   const map = { '0': 'green', '2': 'red' }
   return map[String(v)] || 'gray'
@@ -318,11 +361,34 @@ const data = reactive({
   queryParams: { pageNum: 1, pageSize: 10, employeeName: undefined, employeeNo: undefined, deductionType: undefined },
   rules: {
     employeeId: [{ required: true, message: '请选择人员', trigger: 'change' }],
-    deductionType: [{ required: true, message: '扣除项目不能为空', trigger: 'blur' }],
+    deductionType: [{ required: true, message: '扣除项目不能为空', trigger: 'change' }],
     effectiveDate: [{ required: true, message: '生效日期不能为空', trigger: 'blur' }]
   }
 })
 const { queryParams, form, rules } = toRefs(data)
+
+/**
+ * 月扣除金额法定标准固化（国家税务总局公告2023年第14号，2026年度维持现行）
+ * fixed: 定额锁定；options: 档位下拉；max: 自由录入上限；hint: 填写提示
+ */
+const deductionRules = {
+  '3岁以下婴幼儿照护': { fixed: 2000, hint: '法定标准：每孩每月2000元' },
+  '子女教育': { fixed: 2000, hint: '法定标准：每孩每月2000元' },
+  '赡养老人': { options: [{ value: 3000, label: '3000 元（独生子女）' }, { value: 1500, label: '1500 元（非独生子女分摊上限）' }], hint: '独生子女每月3000元；非独生子女分摊每月不超过1500元' },
+  '住房贷款利息': { fixed: 1000, hint: '法定标准：每月1000元（首套住房贷款，与住房租金不可同时享受）' },
+  '住房租金': { options: [{ value: 1500, label: '1500 元（直辖市/省会/计划单列市）' }, { value: 1100, label: '1100 元（市辖区户籍人口超100万）' }, { value: 800, label: '800 元（市辖区户籍人口不超100万）' }], hint: '按主要工作城市分档；与住房贷款利息不可同时享受' },
+  '继续教育': { fixed: 400, hint: '学历（学位）继续教育每月400元；职业资格继续教育为取证当年一次性3600元' },
+  '大病医疗': { max: 80000, hint: '医保目录内自付累计超1.5万元部分据实录入，年度最高80000元' }
+}
+const deductionRule = computed(() => deductionRules[form.value.deductionType] || {})
+/** 扣除项目变化时按法定标准自动带出/清空金额 */
+watch(() => form.value.deductionType, (t, old) => {
+  if (t === old) return
+  const rule = deductionRules[t]
+  if (rule && rule.fixed !== undefined) { form.value.deductionAmount = rule.fixed; return }
+  if (rule && rule.options) { form.value.deductionAmount = undefined; return }
+  if (old && deductionRules[old] && (deductionRules[old].fixed !== undefined || deductionRules[old].options)) { form.value.deductionAmount = undefined }
+})
 
 const activeFilterCount = computed(() => {
   let count = 0
@@ -374,6 +440,8 @@ function reset() {
     employeeId: undefined,
     employeeName: undefined,
     employeeNo: undefined,
+    deptId: undefined,
+    deptName: undefined,
     deductionType: undefined,
     deductionAmount: undefined,
     effectiveDate: undefined,
@@ -384,6 +452,10 @@ function reset() {
 
 function handleAdd() {
   reset()
+  // 年度申报口径默认值：生效=当年1月1日，失效=当年12月31日
+  const y = new Date().getFullYear()
+  form.value.effectiveDate = `${y}-01-01`
+  form.value.expiryDate = `${y}-12-31`
   open.value = true
   title.value = '新增专项附加扣除'
 }
@@ -438,7 +510,7 @@ function handleDelete(row) {
 }
 
 function handleExport() {
-  proxy.download('hr/specialDeduction/export', { ...queryParams.value }, `hrSpecialDeduction_${new Date().getTime()}.xlsx`)
+  proxy.download('hr/specialDeduction/export', proxy.withExportIds({ ...queryParams.value }, ids.value, 'sdId'), `hrSpecialDeduction_${new Date().getTime()}.xlsx`)
 }
 
 function cancel() {
@@ -451,12 +523,18 @@ const employeePickerRef = ref(null)
 const importRef = ref(null)
 
 /** 导入对话框配置 */
-const importTips = '请下载模板后按工号填写员工专项附加扣除数据（数据来源于员工在个人所得税App的申报，或员工提交的纸质申报表）。支持项目：3岁以下婴幼儿照护、子女教育、继续教育、大病医疗、住房贷款利息、住房租金、赡养老人。'
+/** 导入说明（数组，逐条编号渲染；字符串会被 v-for 逐字符遍历导致样式异常） */
+const importTips = [
+  '请下载模板后按工号填写员工专项附加扣除数据（数据来源于员工在个人所得税App的申报，或员工提交的纸质申报表）。',
+  '扣除项目为固定字典值：3岁以下婴幼儿照护、子女教育、继续教育、大病医疗、住房贷款利息、住房租金、赡养老人，须与模板下拉项完全一致。',
+  '月扣除金额按法定标准填写：婴幼儿照护/子女教育每孩每月2000元；赡养老人独生子女3000元、非独生分摊不超1500元；住房贷款利息每月1000元；住房租金按城市1500/1100/800元；学历继续教育每月400元；大病医疗为医保自付超1.5万部分，年度最高8万元。',
+  '部门无需填写，系统按员工档案自动带出。'
+]
 const importColumnLabels = {
   employeeNo: '工号（必填，用于匹配员工）',
   employeeName: '员工姓名',
-  deductionType: '扣除项目（必填）',
-  deductionAmount: '月扣除金额（必填，元）',
+  deductionType: '扣除项目（必填，固定字典值）',
+  deductionAmount: '月扣除金额（必填，元，按法定标准）',
   effectiveDate: '生效日期（必填，如 2026-01-01）',
   expiryDate: '失效日期（选填）'
 }
@@ -472,7 +550,7 @@ function onEmployeePickerConfirm(emp) {
   f.employeeId = emp.employeeId;
   f.employeeName = emp.employeeName;
   // 档案信息自动带出：仅填充本页面表单中存在的字段
-  const auto = { idCard: emp.idCard, gender: emp.gender, phone: emp.phone, email: emp.email, orgId: emp.orgId, orgName: emp.orgName, positionId: emp.positionId, positionName: emp.positionName };
+  const auto = { deptId: emp.orgId, deptName: emp.orgName, idCard: emp.idCard, gender: emp.gender, phone: emp.phone, email: emp.email, orgId: emp.orgId, orgName: emp.orgName, positionId: emp.positionId, positionName: emp.positionName };
   Object.keys(auto).forEach(k => { if (k in f && auto[k] !== null && auto[k] !== undefined) f[k] = auto[k]; });
 }
 function onEmployeeFieldClick(e) {
@@ -588,28 +666,7 @@ getList()
 .hr-specialDeduction-page .pagination-container :deep(.el-pagination .btn-prev:hover), .hr-specialDeduction-page .pagination-container :deep(.el-pagination .btn-next:hover) { border-color:var(--brand-200); color:var(--brand-700); }
 .hr-specialDeduction-page .pagination-container :deep(.el-pagination .el-pagination__sizes .el-select__wrapper) { border-radius:6px; box-shadow:0 0 0 1px var(--ink-200) inset; }
 
-/* ===== 详情弹窗样式 ===== */
-.hr-specialDeduction-page .rd-page { max-height:60vh; overflow-y:auto; }
-.hr-specialDeduction-page .rd-card { border:1px solid #ebeef5; border-radius:8px; margin-bottom:16px; overflow:hidden; animation:rdFadeIn 0.4s ease-out forwards; }
-.hr-specialDeduction-page .rd-card-header { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; background:#f5f7fa; cursor:pointer; user-select:none; }
-.hr-specialDeduction-page .rd-card-title { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:#303133; }
-.hr-specialDeduction-page .rd-card-icon { display:flex; align-items:center; color:#409eff; }
-.hr-specialDeduction-page .rd-collapse-btn { border:none; background:transparent; cursor:pointer; padding:4px; display:flex; align-items:center; color:#909399; transition:transform 0.2s; }
-.hr-specialDeduction-page .rd-collapse-btn.is-collapsed { transform:rotate(-90deg); }
-.hr-specialDeduction-page .rd-card-body { padding:16px; }
-.hr-specialDeduction-page .rd-grid { display:grid; grid-template-columns:repeat(2, 1fr); gap:12px 24px; }
-.hr-specialDeduction-page .rd-item { display:flex; flex-direction:column; gap:4px; }
-.hr-specialDeduction-page .rd-item--full { grid-column:1 / -1; }
-.hr-specialDeduction-page .rd-label { font-size:12px; color:#909399; }
-.hr-specialDeduction-page .rd-value { font-size:14px; color:#303133; font-weight:500; }
-.hr-specialDeduction-page .rd-detail-header { display:flex; align-items:center; gap:12px; }
-.hr-specialDeduction-page .rd-detail-header-icon { width:36px; height:36px; border-radius:8px; background:#ecf5ff; display:flex; align-items:center; justify-content:center; color:#409eff; }
-.hr-specialDeduction-page .rd-detail-header-main { flex:1; }
-.hr-specialDeduction-page .rd-detail-header-title { font-size:16px; font-weight:600; color:#303133; }
-.hr-specialDeduction-page .rd-detail-header-sub { display:flex; align-items:center; gap:12px; margin-top:4px; }
-.hr-specialDeduction-page .rd-detail-header-divider { width:1px; height:12px; background:#dcdfe6; }
-.hr-specialDeduction-page .rd-detail-header-no { font-size:13px; color:#909399; }
-@keyframes rdFadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+/* ===== 详情弹窗样式：统一使用全局 detail-page.scss 的 rd- 体系，页面不再重复定义 ===== */
 
 /* 操作列按钮对齐：每行2个按钮，flex-wrap 自动换行，按钮自适应内容宽度 */
 :deep(.col-action) { padding: 6px 4px !important; }
@@ -617,6 +674,8 @@ getList()
 .action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
 :deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
 :deep(.col-action .el-button + .el-button) { margin-left: 2px; }
+
+.amount-hint { font-size: 12px; color: #909399; line-height: 1.5; margin-top: 2px; }
 
 /* ===== Responsive ===== */
 @media (max-width:1100px) { .hr-specialDeduction-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }

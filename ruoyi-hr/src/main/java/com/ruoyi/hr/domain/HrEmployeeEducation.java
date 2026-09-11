@@ -15,10 +15,10 @@ public class HrEmployeeEducation extends BaseEntity
     @NotNull(message = "员工ID不能为空") @Excel(name = "员工ID")
     private Long employeeId;
 
-    @JsonFormat(pattern = "yyyy-MM-dd") @Excel(name = "开始日期")
+    @JsonFormat(pattern = "yyyy-MM-dd") @Excel(name = "开始日期", dateFormat = "yyyy-MM-dd")
     private Date startDate;
 
-    @JsonFormat(pattern = "yyyy-MM-dd") @Excel(name = "结束日期")
+    @JsonFormat(pattern = "yyyy-MM-dd") @Excel(name = "结束日期", dateFormat = "yyyy-MM-dd")
     private Date endDate;
 
     @Excel(name = "学校名称")
@@ -27,19 +27,19 @@ public class HrEmployeeEducation extends BaseEntity
     @Excel(name = "专业")
     private String major;
 
-    @Excel(name = "学历")
+    @Excel(name = "学历", dictType = "hr_edu_level")
     private String eduLevel;
 
     @Excel(name = "学位")
     private String degree;
 
-    @Excel(name = "是否最高学历")
+    @Excel(name = "是否最高学历", dictType = "sys_yes_no")
     private String isHighest;
 
-    @Excel(name = "状态")
+    @Excel(name = "状态", dictType = "sys_normal_disable")
     private String status;
 
-    @Excel(name = "删除标志")
+    @Excel(name = "删除标志", readConverterExp = "0=正常,2=已删除")
     private String delFlag;
 
 

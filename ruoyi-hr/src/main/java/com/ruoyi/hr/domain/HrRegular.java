@@ -27,10 +27,10 @@ public class HrRegular extends BaseEntity
     @Excel(name = "岗位名称")
     private String positionName;
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "入职日期")
+    @Excel(name = "入职日期", dateFormat = "yyyy-MM-dd")
     private Date entryDate;
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "拟转正日期")
+    @Excel(name = "拟转正日期", dateFormat = "yyyy-MM-dd")
     private Date regularDate;
     @Excel(name = "工作表现")
     private String workPerformance;
@@ -42,18 +42,18 @@ public class HrRegular extends BaseEntity
     private String safetyViolation;
     @Excel(name = "评估结果")
     private String evaluationResult;
-    @Excel(name = "审批状态")
+    @Excel(name = "审批状态", dictType = "hr_audit_status")
     private String auditStatus;
     @Excel(name = "审批人")
     private String auditBy;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    @Excel(name = "审批时间")
+    @Excel(name = "审批时间", dateFormat = "yyyy-MM-dd HH:mm:ss")
     private Date auditTime;
     @Excel(name = "审批意见")
     private String auditRemark;
-    @Excel(name = "状态")
+    @Excel(name = "状态", dictType = "hr_audit_status")
     private String status;
-    @Excel(name = "删除标志")
+    @Excel(name = "删除标志", readConverterExp = "0=正常,2=已删除")
     private String delFlag;
 
     /** 审核记录 */

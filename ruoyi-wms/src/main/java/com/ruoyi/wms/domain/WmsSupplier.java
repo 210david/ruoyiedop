@@ -35,7 +35,7 @@ public class WmsSupplier extends BaseEntity
     private String supplierType;
 
     /** 供应商等级（字典 wms_supplier_level） */
-    @Excel(name = "供应商等级")
+    @Excel(name = "供应商等级", dictType = "wms_supplier_level")
     private String supplierLevel;
 
     /** 统一社会信用代码 */

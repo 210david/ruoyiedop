@@ -57,6 +57,7 @@ public class MmsFinishAnalysisController extends BaseController
     public void export(HttpServletResponse response, MmsFinishAnalysis query)
     {
         List<MmsFinishAnalysis> list = mmsFinishAnalysisService.selectFinishAnalysisList(query);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, query);
         ExcelUtil<MmsFinishAnalysis> util = new ExcelUtil<>(MmsFinishAnalysis.class);
         util.exportExcel(response, list, "工单完工分析");
     }

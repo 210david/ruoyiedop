@@ -42,6 +42,7 @@ public class QmsMaterialAttrController extends BaseController
     public void export(HttpServletResponse response, QmsMaterialAttr materialAttr)
     {
         List<QmsMaterialAttr> list = qmsMaterialAttrService.selectMaterialAttrList(materialAttr);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, materialAttr);
         ExcelUtil<QmsMaterialAttr> util = new ExcelUtil<>(QmsMaterialAttr.class);
         util.exportExcel(response, list, "物料质量属性数据");
     }

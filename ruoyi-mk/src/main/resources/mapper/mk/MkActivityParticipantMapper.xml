@@ -17,6 +17,7 @@
         <result property="signTime"          column="sign_time"/>
         <result property="signInCode"        column="sign_in_code"/>
         <result property="activityName"      column="activity_name"/>
+        <result property="activityStatus"    column="activity_status"/>
         <result property="createBy"          column="create_by"/>
         <result property="createTime"        column="create_time"/>
         <result property="updateBy"          column="update_by"/>
@@ -27,7 +28,7 @@
     <sql id="selectParticipantVo">
         SELECT p.participant_id, p.activity_id, p.lead_id, p.contact_id, p.company_name, p.contact_name,
                p.contact_phone, p.contact_email, p.position, p.participate_status, p.source, p.sign_time, p.sign_in_code,
-               p.create_by, p.create_time, p.update_by, p.update_time, p.remark, a.activity_name
+               p.create_by, p.create_time, p.update_by, p.update_time, p.remark, a.activity_name, a.activity_status
         FROM mk_activity_participant p
         LEFT JOIN mk_activity a ON p.activity_id = a.activity_id
     </sql>

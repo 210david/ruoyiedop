@@ -35,7 +35,7 @@ public class WmsOutboundOrderDetail extends BaseEntity
     private String specModel;
 
     /** 计量单位 */
-    @Excel(name = "单位")
+    @Excel(name = "单位", dictType = "wms_unit")
     private String unit;
 
     /** 指定批次号 */

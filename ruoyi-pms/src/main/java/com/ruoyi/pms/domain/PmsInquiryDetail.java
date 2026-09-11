@@ -35,7 +35,7 @@ public class PmsInquiryDetail extends BaseEntity
     private String specification;
 
     /** 单位 */
-    @Excel(name = "单位")
+    @Excel(name = "单位", dictType = "wms_unit")
     private String unit;
 
     /** 采购数量 */

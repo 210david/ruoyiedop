@@ -37,6 +37,7 @@ public class HrHealthCheckController extends BaseController
     public void export(HttpServletResponse response, HrHealthCheck hrHealthCheck)
     {
         List<HrHealthCheck> list = hrHealthCheckService.selectHrHealthCheckList(hrHealthCheck);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, hrHealthCheck);
         ExcelUtil<HrHealthCheck> util = new ExcelUtil<>(HrHealthCheck.class);
         util.exportExcel(response, list, "职业健康体检");
     }

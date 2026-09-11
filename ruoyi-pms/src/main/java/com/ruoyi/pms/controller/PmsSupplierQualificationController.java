@@ -42,6 +42,7 @@ public class PmsSupplierQualificationController extends BaseController
     public void export(HttpServletResponse response, PmsSupplierQualification qualification)
     {
         List<PmsSupplierQualification> list = pmsSupplierQualificationService.selectQualificationList(qualification);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, qualification);
         ExcelUtil<PmsSupplierQualification> util = new ExcelUtil<>(PmsSupplierQualification.class);
         util.exportExcel(response, list, "供应商资质数据");
     }

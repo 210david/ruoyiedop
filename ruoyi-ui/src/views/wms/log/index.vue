@@ -102,7 +102,7 @@
           <el-table-column label="物料编码" prop="materialCode" key="materialCode" :width="colWidth('materialCode', 180)" resizable v-if="columns.materialCode.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.materialCode }}</span></template>
           </el-table-column>
-          <el-table-column label="物料名称" prop="materialName" key="materialName" :width="colWidth('materialName', 280)" resizable show-overflow-tooltip v-if="columns.materialName.visible" />
+          <el-table-column label="物料名称" prop="materialName" key="materialName" :min-width="colWidth('materialName', 280)" resizable show-overflow-tooltip v-if="columns.materialName.visible" />
           <el-table-column label="仓库/库区/库位" prop="warehouseName" key="warehouseName" :width="colWidth('warehouseName', 240)" resizable show-overflow-tooltip v-if="columns.warehouseName.visible">
             <template #default="scope">
               {{ scope.row.warehouseName || '' }}<span v-if="scope.row.areaName">/{{ scope.row.areaName }}</span><span v-if="scope.row.locationName">/{{ scope.row.locationName }}</span>
@@ -192,7 +192,7 @@ function getList() { loading.value = true; listInventoryLog(proxy.addDateRange(q
 function handleQuery() { queryParams.value.pageNum = 1; getList() }
 function resetQuery() { dateRange.value = []; queryParams.value.materialCode = undefined; queryParams.value.materialName = undefined; queryParams.value.changeType = undefined; queryParams.value.refOrderNo = undefined; queryParams.value.warehouseId = undefined; queryParams.value.batchNo = undefined; handleQuery() }
 function changeTypeLabel(type) { const item = wms_change_type.value.find(d => d.value == type); return item ? item.label : '-' }
-function handleExport() { proxy.download('wms/log/export', { ...proxy.addDateRange(queryParams.value, dateRange.value) }, `inventory_log_${new Date().getTime()}.xlsx`) }
+function handleExport() { proxy.download('wms/log/export', proxy.withExportIds({ ...proxy.addDateRange(queryParams.value, dateRange.value) }, ids.value, 'logId'), `inventory_log_${new Date().getTime()}.xlsx`) }
 function handleSelectionChange(sel) { ids.value = sel.map(i => i.logId); multiple.value = !sel.length }
 function handleDelete(row) { const logIds = row.logId || ids.value; proxy.$modal.confirm('确认删除选中的流水记录？').then(() => delInventoryLog(logIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
 getList()

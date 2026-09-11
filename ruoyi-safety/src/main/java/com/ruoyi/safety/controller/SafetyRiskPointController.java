@@ -38,6 +38,7 @@ public class SafetyRiskPointController extends BaseController
     public void export(HttpServletResponse response, SafetyRiskPoint riskPoint)
     {
         List<SafetyRiskPoint> list = safetyRiskPointService.selectSafetyRiskPointList(riskPoint);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, riskPoint);
         ExcelUtil<SafetyRiskPoint> util = new ExcelUtil<>(SafetyRiskPoint.class);
         util.exportExcel(response, list, "风险点数据");
     }

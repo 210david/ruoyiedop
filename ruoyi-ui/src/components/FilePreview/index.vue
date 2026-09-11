@@ -3,11 +3,11 @@
     <div v-loading="loading" element-loading-text="正在加载文件，请稍候..." class="preview-container">
       <!-- 图片预览 -->
       <div v-if="previewType === 'image'" class="image-preview-wrap">
-        <img :src="fullUrl" alt="预览" class="preview-image" @click="handleImageClick" />
+        <img :src="objectUrl" alt="预览" class="preview-image" @click="handleImageClick" />
       </div>
 
       <!-- PDF预览 -->
-      <iframe v-else-if="previewType === 'pdf'" :src="fullUrl" class="pdf-preview-frame" frameborder="0"></iframe>
+      <iframe v-else-if="previewType === 'pdf'" :src="objectUrl" class="pdf-preview-frame" frameborder="0"></iframe>
 
       <!-- Word预览 -->
       <div v-else-if="previewType === 'word'" ref="wordContainer" class="word-preview-wrap"></div>
@@ -18,7 +18,7 @@
       </div>
 
       <!-- 视频预览 -->
-      <video v-else-if="previewType === 'video'" :src="fullUrl" controls class="video-preview"></video>
+      <video v-else-if="previewType === 'video'" :src="objectUrl" controls class="video-preview"></video>
 
       <!-- 不支持的格式 -->
       <div v-else class="unsupported-wrap">
@@ -44,7 +44,8 @@ const title = ref('文件预览')
 const fileName = ref('')
 const fileUrl = ref('')
 const baseUrl = import.meta.env.VITE_APP_BASE_API
-const fullUrl = computed(() => baseUrl + fileUrl.value)
+// 图片/PDF/视频需要通过认证接口访问，用 objectURL 展示
+const objectUrl = ref('')
 
 const previewType = ref('')
 const excelHtml = ref('')
@@ -78,6 +79,11 @@ async function open(url, name) {
   visible.value = true
   loading.value = true
   excelHtml.value = ''
+  // 清理上一次的 objectUrl
+  if (objectUrl.value) {
+    URL.revokeObjectURL(objectUrl.value)
+    objectUrl.value = ''
+  }
 
   const ext = getExtension(fileName.value)
   previewType.value = getPreviewType(ext)
@@ -89,16 +95,15 @@ async function open(url, name) {
       await previewWord(url, ext)
     } else if (previewType.value === 'excel') {
       await previewExcel(url)
+    } else if (previewType.value === 'image' || previewType.value === 'pdf' || previewType.value === 'video') {
+      // 图片、PDF、视频通过安全接口获取 blob 后用 objectURL 展示
+      const blob = await fetchBlob(url)
+      objectUrl.value = URL.createObjectURL(blob)
     }
   } catch (e) {
     proxy.$modal.msgError('文件加载失败：' + e.message)
     previewType.value = ''
   } finally {
-    loading.value = false
-  }
-
-  // 图片和PDF不需要loading
-  if (previewType.value === 'image' || previewType.value === 'pdf' || previewType.value === 'video') {
     loading.value = false
   }
 }
@@ -138,13 +143,26 @@ async function previewExcel(url) {
   excelHtml.value = html
 }
 
-/** 获取文件Blob */
+/**
+ * 获取文件Blob（通过安全接口，携带Token）
+ * 原先直接 fetch(baseUrl + url) 访问 /profile/... 路径无需认证，
+ * 现在改为通过 /common/file/access?resource=... 接口代理访问
+ */
 async function fetchBlob(url) {
-  const response = await fetch(baseUrl + url, {
+  const accessUrl = buildAccessUrl(url)
+  const response = await fetch(accessUrl, {
     headers: { Authorization: 'Bearer ' + getToken() }
   })
   if (!response.ok) throw new Error('HTTP ' + response.status)
   return response.blob()
+}
+
+/**
+ * 将 /profile/... 资源路径转换为安全访问 URL
+ * /profile/upload/xxx.jpg -> {baseUrl}/common/file/access?resource=/profile/upload/xxx.jpg
+ */
+function buildAccessUrl(url) {
+  return baseUrl + '/common/file/access?resource=' + encodeURIComponent(url)
 }
 
 function getFileNameFromUrl(url) {
@@ -155,21 +173,49 @@ function getFileNameFromUrl(url) {
 }
 
 function handleDownload() {
+  // 通过安全接口下载
+  const accessUrl = buildAccessUrl(fileUrl.value)
   const link = document.createElement('a')
-  link.href = fullUrl.value
+  link.href = accessUrl
   link.download = fileName.value
-  link.target = '_blank'
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
+  // 需要携带 Token，所以不能直接用 a 标签，改用 fetch + blob
+  fetch(accessUrl, {
+    headers: { Authorization: 'Bearer ' + getToken() }
+  }).then(res => res.blob()).then(blob => {
+    const blobUrl = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = blobUrl
+    link.download = fileName.value
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 200)
+  }).catch(() => {
+    proxy.$modal.msgError('文件下载失败')
+  })
 }
 
 function handleImageClick() {
-  // 使用浏览器原生图片查看
-  window.open(fullUrl.value, '_blank')
+  // 图片预览也需要认证，在弹窗中展示
+  // 使用 fetch 获取图片 blob 后用 objectURL 展示
+  const accessUrl = buildAccessUrl(fileUrl.value)
+  fetch(accessUrl, {
+    headers: { Authorization: 'Bearer ' + getToken() }
+  }).then(res => res.blob()).then(blob => {
+    const blobUrl = URL.createObjectURL(blob)
+    window.open(blobUrl, '_blank')
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 60000)
+  }).catch(() => {
+    proxy.$modal.msgError('图片加载失败')
+  })
 }
 
 function handleClose() {
+  // 清理 objectUrl 避免内存泄漏
+  if (objectUrl.value) {
+    URL.revokeObjectURL(objectUrl.value)
+    objectUrl.value = ''
+  }
   visible.value = false
   previewType.value = ''
   excelHtml.value = ''

@@ -40,6 +40,7 @@ public class HrLeaveBalanceController extends BaseController
     public void export(HttpServletResponse response, HrLeaveBalance hrLeaveBalance)
     {
         List<HrLeaveBalance> list = hrLeaveBalanceService.selectHrLeaveBalanceList(hrLeaveBalance);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, hrLeaveBalance);
         ExcelUtil<HrLeaveBalance> util = new ExcelUtil<>(HrLeaveBalance.class);
         util.exportExcel(response, list, "假期余额");
     }

@@ -19,6 +19,7 @@ import com.ruoyi.common.constant.Constants;
 import com.ruoyi.common.constant.UserConstants;
 import com.ruoyi.common.core.domain.model.LoginUser;
 import com.ruoyi.common.core.redis.RedisCache;
+import com.ruoyi.common.core.text.Convert;
 import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.exception.user.BlackListException;
 import com.ruoyi.common.exception.user.CaptchaException;
@@ -69,6 +70,9 @@ public class SysLoginService
 
     @Value("${user.password.onlineMode:kick}")
     private String onlineMode;
+
+    /** 默认允许多终端登录 */
+    private static final String DEFAULT_MULTI_LOGIN = "true";
 
     /**
      * 登录验证
@@ -130,10 +134,26 @@ public class SysLoginService
             loginUser.setPwdExpired(true);
             log.warn("用户[{}]密码已过期", username);
         }
-        // 并发登录控制
+        // 并发登录控制（从系统参数读取多终端登录开关）
         handleConcurrentLogin(username);
         // 生成token
         return tokenService.createToken(loginUser);
+    }
+
+    /**
+     * 判断是否允许同一账号多终端登录
+     * 从系统参数 sys.login.multiLoginEnabled 读取
+     * 
+     * @return true=允许多终端登录，false=不允许（单点登录）
+     */
+    private boolean isMultiLoginEnabled()
+    {
+        String value = configService.selectConfigByKey("sys.login.multiLoginEnabled");
+        if (StringUtils.isEmpty(value))
+        {
+            return Convert.toBool(DEFAULT_MULTI_LOGIN);
+        }
+        return Convert.toBool(value);
     }
 
     /**
@@ -213,15 +233,22 @@ public class SysLoginService
 
     /**
      * 并发登录控制（限制同时在线用户数）
+     * 多终端登录由系统参数 sys.login.multiLoginEnabled 控制：
+     *   true  = 允许多终端登录（不做踢出/拒绝处理）
+     *   false = 不允许多终端登录（走 onlineCount/onlineMode 逻辑）
      * 
      * @param username 用户名
      */
     private void handleConcurrentLogin(String username)
     {
-        if (onlineCount <= 0)
+        // 从系统参数读取多终端登录开关
+        if (isMultiLoginEnabled())
         {
+            // 允许多终端登录，不做任何处理
             return;
         }
+        // 不允许多终端登录时，使用 onlineCount=1 限制
+        int maxOnline = 1;
         // 扫描所有在线token，找出属于当前用户的
         Collection<String> keys = redisCache.keys(CacheConstants.LOGIN_TOKEN_KEY + "*");
         if (keys == null || keys.isEmpty())
@@ -238,31 +265,23 @@ public class SysLoginService
             }
         }
         int currentOnlineCount = sameUserTokens.size();
-        if (currentOnlineCount >= onlineCount)
+        if (currentOnlineCount >= maxOnline)
         {
-            if ("deny".equalsIgnoreCase(onlineMode))
+            // 踢出模式：删除最旧的登录session（单点登录场景）
+            sameUserTokens.sort(Comparator.comparingLong(LoginUser::getLoginTime));
+            int needRemove = currentOnlineCount - maxOnline + 1;
+            for (int i = 0; i < needRemove && i < sameUserTokens.size(); i++)
             {
-                // 拒绝登录模式
-                log.warn("用户[{}]已达到最大在线数限制[{}]，拒绝登录", username, onlineCount);
-                throw new ServiceException("当前账号已在其他设备登录，达到最大在线数限制");
-            }
-            else
-            {
-                // 踢出模式：删除最旧的登录session
-                sameUserTokens.sort(Comparator.comparingLong(LoginUser::getLoginTime));
-                int needRemove = currentOnlineCount - onlineCount + 1;
-                for (int i = 0; i < needRemove && i < sameUserTokens.size(); i++)
+                LoginUser toRemove = sameUserTokens.get(i);
+                if (StringUtils.isNotEmpty(toRemove.getToken()))
                 {
-                    LoginUser toRemove = sameUserTokens.get(i);
-                    if (StringUtils.isNotEmpty(toRemove.getToken()))
-                    {
-                        String userKey = CacheConstants.LOGIN_TOKEN_KEY + toRemove.getToken();
-                        redisCache.deleteObject(userKey);
-                        // [Token排查] 记录被踢会话的设备信息，便于定位"登录状态已过期"由互踢导致
-                        log.warn("[Token排查] 并发登录踢出 用户[{}] 设备[{}({})] ip[{}] 登录时间[{}]",
-                                username, toRemove.getBrowser(), toRemove.getOs(), toRemove.getIpaddr(),
-                                toRemove.getLoginTime() == null ? "-" : new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(toRemove.getLoginTime())));
-                    }
+                    String userKey = CacheConstants.LOGIN_TOKEN_KEY + toRemove.getToken();
+                    redisCache.deleteObject(userKey);
+                    // [Token排查] 记录被踢会话的设备信息，便于定位"登录状态已过期"由互踢导致
+                    // 说明：logback 的 file_info/file_error 均为 LevelFilter 精确匹配（只收 INFO/ERROR），WARN 不落盘，故用 error
+                    log.error("[Token排查] 并发登录踢出 用户[{}] 设备[{}({})] ip[{}] 登录时间[{}]",
+                            username, toRemove.getBrowser(), toRemove.getOs(), toRemove.getIpaddr(),
+                            toRemove.getLoginTime() == null ? "-" : new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(toRemove.getLoginTime())));
                 }
             }
         }

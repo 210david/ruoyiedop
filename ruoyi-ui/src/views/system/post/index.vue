@@ -61,7 +61,7 @@
           <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
           <el-table-column label="岗位编号" prop="postId" key="postId" :width="colWidth('postId', 120)" resizable align="center" v-if="columns.postId.visible" />
           <el-table-column label="岗位编码" prop="postCode" key="postCode" :width="colWidth('postCode', 120)" resizable align="center" v-if="columns.postCode.visible" />
-          <el-table-column label="岗位名称" prop="postName" key="postName" :width="colWidth('postName', 120)" resizable align="center" v-if="columns.postName.visible" />
+          <el-table-column label="岗位名称" prop="postName" key="postName" :min-width="colWidth('postName', 120)" show-overflow-tooltip resizable align="center" v-if="columns.postName.visible" />
           <el-table-column label="岗位排序" prop="postSort" key="postSort" :width="colWidth('postSort', 100)" resizable align="center" v-if="columns.postSort.visible" />
           <el-table-column label="状态" prop="status" key="status" :width="colWidth('status', 100)" resizable align="center" v-if="columns.status.visible">
             <template #default="scope">
@@ -314,7 +314,7 @@ function submitForm() {
 /** 删除按钮操作 */
 function handleDelete(row) {
   const postIds = row.postId || ids.value
-  proxy.$modal.confirm('是否确认删除岗位编号为"' + postIds + '"的数据项？').then(function() {
+  proxy.$modal.confirm('是否确认删除选中的岗位？').then(function() {
     return delPost(postIds)
   }).then(() => {
     getList()
@@ -324,9 +324,9 @@ function handleDelete(row) {
 
 /** 导出按钮操作 */
 function handleExport() {
-  proxy.download("system/post/export", {
+  proxy.download("system/post/export", proxy.withExportIds({
     ...queryParams.value
-  }, `post_${new Date().getTime()}.xlsx`)
+  }, ids.value, 'postId'), `post_${new Date().getTime()}.xlsx`)
 }
 
 getList()

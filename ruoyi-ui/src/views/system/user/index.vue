@@ -80,7 +80,7 @@
 <el-table-column type="selection" width="50" align="center" />
 <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
 <el-table-column label="用户编号" align="center" key="userId" prop="userId" :width="colWidth('userId', 120)" v-if="columns.userId.visible" />
-          <el-table-column label="用户名称" align="center" key="userName" prop="userName" v-if="columns.userName.visible" :show-overflow-tooltip="true" :width="colWidth('userName', 140)">
+          <el-table-column label="用户名称" align="center" key="userName" prop="userName" v-if="columns.userName.visible" :show-overflow-tooltip="true" :min-width="colWidth('userName', 140)">
             <template #default="scope">
               <a class="link-type" style="cursor:pointer" @click="handleViewData(scope.row)">{{ scope.row.userName }}</a>
             </template>
@@ -403,7 +403,7 @@ function resetQuery() {
 /** 删除按钮操作 */
 function handleDelete(row) {
   const userIds = row.userId || ids.value
-  proxy.$modal.confirm('是否确认删除用户编号为"' + userIds + '"的数据项？').then(function () {
+  proxy.$modal.confirm('是否确认删除选中的用户？').then(function () {
     return delUser(userIds)
   }).then(() => {
     getList()
@@ -413,9 +413,9 @@ function handleDelete(row) {
 
 /** 导出按钮操作 */
 function handleExport() {
-  proxy.download("system/user/export", {
+  proxy.download("system/user/export", proxy.withExportIds({
     ...proxy.addDateRange(queryParams.value, dateRange.value),
-  },`user_${new Date().getTime()}.xlsx`)
+  }, ids.value, 'userId'),`user_${new Date().getTime()}.xlsx`)
 }
 
 /** 用户状态修改  */

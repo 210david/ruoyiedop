@@ -158,7 +158,7 @@
           <el-table-column label="合同编号" prop="contractNo" key="contractNo" :width="colWidth('contractNo', 150)" resizable v-if="columns.contractNo.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.contractNo }}</span></template>
           </el-table-column>
-          <el-table-column label="客户名称" prop="customerName" key="customerName" :width="colWidth('customerName', 200)" resizable show-overflow-tooltip v-if="columns.customerName.visible" />
+          <el-table-column label="客户名称" prop="customerName" key="customerName" :min-width="colWidth('customerName', 200)" resizable show-overflow-tooltip v-if="columns.customerName.visible" />
           <el-table-column label="期次" prop="periodNo" key="periodNo" :width="colWidth('periodNo', 80)" resizable align="center" v-if="columns.periodNo.visible" />
           <el-table-column label="计划回款金额" prop="planAmount" key="planAmount" :width="colWidth('planAmount', 140)" resizable align="right" sortable="custom" class-name="col-num" v-if="columns.planAmount.visible">
             <template #default="scope"><span class="rd-amount">{{ formatMoney(scope.row.planAmount) }}</span></template>
@@ -1171,7 +1171,7 @@ function submitConfirm(confirmStatus) {
   }).catch(() => {})
 }
 
-function handleExport() { proxy.download('mk/payment/export', { ...proxy.addDateRange(queryParams.value, dateRange.value, 'PlanDate') }, `payment_${new Date().getTime()}.xlsx`) }
+function handleExport() { proxy.download('mk/payment/export', proxy.withExportIds({ ...proxy.addDateRange(queryParams.value, dateRange.value, 'PlanDate') }, ids.value, 'planId'), `payment_${new Date().getTime()}.xlsx`) }
 
 getList()
 getList()

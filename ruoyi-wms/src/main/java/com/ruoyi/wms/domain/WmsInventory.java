@@ -33,7 +33,7 @@ public class WmsInventory extends BaseEntity
     private String specModel;
 
     /** 计量单位 */
-    @Excel(name = "单位")
+    @Excel(name = "单位", dictType = "wms_unit")
     private String unit;
 
     /** 仓库ID */
@@ -63,11 +63,11 @@ public class WmsInventory extends BaseEntity
     private String batchNo;
 
     /** 生产日期 */
-    @Excel(name = "生产日期")
+    @Excel(name = "生产日期", dateFormat = "yyyy-MM-dd")
     private Date productionDate;
 
     /** 有效期 */
-    @Excel(name = "有效期")
+    @Excel(name = "有效期", dateFormat = "yyyy-MM-dd")
     private Date expiryDate;
 
     /** 可用数量 */

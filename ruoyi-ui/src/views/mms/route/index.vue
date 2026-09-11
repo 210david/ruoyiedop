@@ -43,9 +43,9 @@
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
           <el-table-column label="路线编号" prop="routeNo" key="routeNo" :width="colWidth('routeNo', 140)" resizable v-if="columns.routeNo.visible" />
-          <el-table-column label="路线名称" prop="routeName" key="routeName" :width="colWidth('routeName', 200)" resizable show-overflow-tooltip v-if="columns.routeName.visible" />
+          <el-table-column label="路线名称" prop="routeName" key="routeName" :min-width="colWidth('routeName', 200)" resizable show-overflow-tooltip v-if="columns.routeName.visible" />
           <el-table-column label="产品编码" prop="productCode" key="productCode" :width="colWidth('productCode', 130)" resizable v-if="columns.productCode.visible" />
-          <el-table-column label="产品名称" prop="productName" key="productName" :width="colWidth('productName', 200)" resizable show-overflow-tooltip v-if="columns.productName.visible" />
+          <el-table-column label="产品名称" prop="productName" key="productName" :min-width="colWidth('productName', 200)" resizable show-overflow-tooltip v-if="columns.productName.visible" />
           <el-table-column label="版本" prop="version" key="version" :width="colWidth('version', 80)" resizable align="center" v-if="columns.version.visible" />
           <el-table-column label="工序数" key="processCount" :width="colWidth('processCount', 80)" resizable align="center" v-if="columns.processCount.visible"><template #default="scope"><el-tag size="small" type="info" round>{{ scope.row.processCount || 0 }}</el-tag></template></el-table-column>
           <el-table-column label="总工时(h)" prop="totalStdTime" key="totalStdTime" :width="colWidth('totalStdTime', 100)" resizable align="center" v-if="columns.totalStdTime.visible"><template #default="scope"><span>{{ scope.row.totalStdTime != null ? scope.row.totalStdTime : '—' }}</span></template></el-table-column>
@@ -852,9 +852,9 @@ function submitForm() {
 }
 function doSubmit() {
   if (form.value.routeId != null) {
-    updateRoute(form.value).then(() => { proxy.$modal.msgSuccess("修改成功"); open.value = false; getList(); });
+    updateRoute(form.value).then(() => { proxy.$modal.msgSuccess("修改成功"); open.value = false; getList(); loadStatusCounts(); });
   } else {
-    addRoute(form.value).then(() => { proxy.$modal.msgSuccess("新增成功"); open.value = false; getList(); });
+    addRoute(form.value).then(() => { proxy.$modal.msgSuccess("新增成功"); open.value = false; getList(); loadStatusCounts(); });
   }
 }
 
@@ -862,12 +862,12 @@ function cancel() { open.value = false; reset(); }
 
 function handleDelete(row) {
   const delIds = row.routeId || ids.value;
-  proxy.$modal.confirm('是否确认删除选中的工艺路线？').then(() => delRoute(delIds)).then(() => { getList(); proxy.$modal.msgSuccess("删除成功"); }).catch(() => {});
+  proxy.$modal.confirm('是否确认删除选中的工艺路线？').then(() => delRoute(delIds)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess("删除成功"); }).catch(() => {});
 }
 
-function handleExport() { proxy.download("mms/route/export", { ...queryParams.value }, `route_${new Date().getTime()}.xlsx`); }
+function handleExport() { proxy.download("mms/route/export", proxy.withExportIds({ ...queryParams.value }, ids.value, 'routeId'), `route_${new Date().getTime()}.xlsx`); }
 
-function handleEnable(row) { proxy.$modal.confirm('是否确认提交工艺路线[' + row.routeNo + ']进行审核？').then(() => enableRoute(row.routeId)).then(() => { proxy.$modal.msgSuccess("已提交审核"); getList(); }).catch(() => {}); }
+function handleEnable(row) { proxy.$modal.confirm('是否确认提交工艺路线[' + row.routeNo + ']进行审核？').then(() => enableRoute(row.routeId)).then(() => { proxy.$modal.msgSuccess("已提交审核"); getList(); loadStatusCounts(); }).catch(() => {}); }
 function handleAudit(row) {
   auditForm.value = { routeId: row.routeId, auditRemark: undefined };
   auditData.value = {};
@@ -895,8 +895,8 @@ function submitAudit(passed) {
     }
   });
 }
-function handleDisable(row) { proxy.$modal.confirm('是否确认停用工艺路线[' + row.routeNo + ']？停用后不可被新工单引用。').then(() => disableRoute(row.routeId)).then(() => { proxy.$modal.msgSuccess("停用成功"); getList(); }).catch(() => {}); }
-function handleCopy(row) { proxy.$modal.confirm('是否确认复制工艺路线[' + row.routeNo + ']为新版本？').then(() => copyRoute(row.routeId)).then(() => { proxy.$modal.msgSuccess("复制成功"); getList(); }).catch(() => {}); }
+function handleDisable(row) { proxy.$modal.confirm('是否确认停用工艺路线[' + row.routeNo + ']？停用后不可被新工单引用。').then(() => disableRoute(row.routeId)).then(() => { proxy.$modal.msgSuccess("停用成功"); getList(); loadStatusCounts(); }).catch(() => {}); }
+function handleCopy(row) { proxy.$modal.confirm('是否确认复制工艺路线[' + row.routeNo + ']为新版本？').then(() => copyRoute(row.routeId)).then(() => { proxy.$modal.msgSuccess("复制成功"); getList(); loadStatusCounts(); }).catch(() => {}); }
 
 // ===== Process Detail Operations =====
 let _uidCounter = 0;

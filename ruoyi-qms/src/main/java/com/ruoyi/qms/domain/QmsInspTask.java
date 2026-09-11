@@ -94,7 +94,7 @@ public class QmsInspTask extends BaseEntity
     private String inspectResult;
 
     /** 最高缺陷等级 */
-    @Excel(name = "缺陷等级")
+    @Excel(name = "缺陷等级", dictType = "qms_defect_level")
     private String defectLevel;
 
     /** 检验员ID */

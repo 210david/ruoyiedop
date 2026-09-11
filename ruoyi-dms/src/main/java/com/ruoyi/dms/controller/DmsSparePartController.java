@@ -45,6 +45,7 @@ public class DmsSparePartController extends BaseController
     public void export(HttpServletResponse response, DmsSparePart sparePart)
     {
         List<DmsSparePart> list = dmsSparePartService.selectSparePartList(sparePart);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, sparePart);
         ExcelUtil<DmsSparePart> util = new ExcelUtil<>(DmsSparePart.class);
         util.exportExcel(response, list, "备件数据");
     }

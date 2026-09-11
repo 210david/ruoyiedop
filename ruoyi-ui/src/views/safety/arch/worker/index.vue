@@ -89,7 +89,7 @@
         <el-table ref="tableRef" v-loading="loading" :data="workerList" border @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
-          <el-table-column label="姓名" prop="workerName" key="workerName" :width="colWidth('workerName', 120)" resizable v-if="columns.workerName.visible" />
+          <el-table-column label="姓名" prop="workerName" key="workerName" :min-width="colWidth('workerName', 120)" show-overflow-tooltip resizable v-if="columns.workerName.visible" />
           <el-table-column label="工号" prop="workerNo" key="workerNo" :width="colWidth('workerNo', 120)" resizable v-if="columns.workerNo.visible" />
           <el-table-column label="所属部门" prop="deptName" key="deptName" :width="colWidth('deptName', 140)" resizable show-overflow-tooltip v-if="columns.deptName.visible" />
           <el-table-column label="岗位" prop="position" key="position" :width="colWidth('position', 130)" resizable show-overflow-tooltip v-if="columns.position.visible" />
@@ -337,7 +337,7 @@ function submitForm() {
   })
 }
 function handleDelete(row) { const workerIds = row.workerId || ids.value; proxy.$modal.confirm('是否确认删除选中的特种人员？').then(function() { return delWorker(workerIds) }).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
-function handleExport() { proxy.download('safety/worker/export', { ...queryParams.value }, `worker_${new Date().getTime()}.xlsx`) }
+function handleExport() { proxy.download('safety/worker/export', proxy.withExportIds({ ...queryParams.value }, ids.value, 'workerId'), `worker_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 function reset() {
   form.value = { workerId: undefined, employeeId: undefined, workerName: undefined, workerNo: undefined, deptId: undefined, deptName: undefined, position: undefined, phone: undefined, isSpecial: '1', jobType: undefined, certNo: undefined, certIssueDate: undefined, validTo: undefined, status: '0', remark: undefined }

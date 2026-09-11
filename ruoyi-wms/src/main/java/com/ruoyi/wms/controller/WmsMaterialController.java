@@ -38,6 +38,7 @@ public class WmsMaterialController extends BaseController
     public void export(HttpServletResponse response, WmsMaterial material)
     {
         List<WmsMaterial> list = wmsMaterialService.selectMaterialList(material);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, material);
         ExcelUtil<WmsMaterial> util = new ExcelUtil<>(WmsMaterial.class);
         util.exportExcel(response, list, "物料数据");
     }

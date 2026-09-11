@@ -37,6 +37,7 @@ public class HrTaxRateController extends BaseController
     public void export(HttpServletResponse response, HrTaxRate hrTaxRate)
     {
         List<HrTaxRate> list = hrTaxRateService.selectHrTaxRateList(hrTaxRate);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, hrTaxRate);
         ExcelUtil<HrTaxRate> util = new ExcelUtil<>(HrTaxRate.class);
         util.exportExcel(response, list, "个税税率");
     }

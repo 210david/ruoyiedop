@@ -37,6 +37,7 @@ public class SafetyEmergencyMaterialController extends BaseController
     public void export(HttpServletResponse response, SafetyEmergencyMaterial material)
     {
         List<SafetyEmergencyMaterial> list = safetyEmergencyMaterialService.selectSafetyEmergencyMaterialList(material);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, material);
         ExcelUtil<SafetyEmergencyMaterial> util = new ExcelUtil<>(SafetyEmergencyMaterial.class);
         util.exportExcel(response, list, "应急物资");
     }

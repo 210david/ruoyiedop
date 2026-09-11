@@ -41,6 +41,7 @@ public class MmsTeamController extends BaseController
     public void export(HttpServletResponse response, MmsTeam team)
     {
         List<MmsTeam> list = mmsTeamService.selectTeamList(team);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, team);
         ExcelUtil<MmsTeam> util = new ExcelUtil<>(MmsTeam.class);
         util.exportExcel(response, list, "班组管理");
     }

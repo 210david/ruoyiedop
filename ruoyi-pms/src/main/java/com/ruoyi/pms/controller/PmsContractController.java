@@ -43,6 +43,7 @@ public class PmsContractController extends BaseController
     public void export(HttpServletResponse response, PmsContract contract)
     {
         List<PmsContract> list = pmsContractService.selectContractList(contract);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, contract);
         ExcelUtil<PmsContract> util = new ExcelUtil<>(PmsContract.class);
         util.exportExcel(response, list, "采购合同数据");
     }

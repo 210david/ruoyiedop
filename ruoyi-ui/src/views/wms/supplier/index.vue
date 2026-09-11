@@ -161,8 +161,8 @@
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" resizable align="center" />
-          <el-table-column label="供应商编码" prop="supplierCode" key="supplierCode" :width="colWidth('supplierCode', 150)" resizable sortable="custom" v-if="columns.supplierCode.visible" />
-          <el-table-column label="供应商名称" prop="supplierName" key="supplierName" :width="colWidth('supplierName', 220)" resizable show-overflow-tooltip v-if="columns.supplierName.visible" />
+          <el-table-column label="供应商编码" prop="supplierCode" key="supplierCode" :min-width="colWidth('supplierCode', 150)" show-overflow-tooltip resizable sortable="custom" v-if="columns.supplierCode.visible" />
+          <el-table-column label="供应商名称" prop="supplierName" key="supplierName" :min-width="colWidth('supplierName', 220)" resizable show-overflow-tooltip v-if="columns.supplierName.visible" />
           <el-table-column label="简称" prop="supplierShortName" key="supplierShortName" :width="colWidth('supplierShortName', 120)" resizable show-overflow-tooltip v-if="columns.supplierShortName.visible" />
           <el-table-column label="类型" prop="supplierType" key="supplierType" :width="colWidth('supplierType', 100)" resizable align="center" v-if="columns.supplierType.visible"><template #default="scope"><span class="badge violet">{{ supplierTypeLabel(scope.row.supplierType) }}</span></template></el-table-column>
           <el-table-column label="等级" prop="supplierLevel" key="supplierLevel" :width="colWidth('supplierLevel', 100)" resizable align="center" sortable="custom" v-if="columns.supplierLevel.visible"><template #default="scope"><span class="badge blue">{{ supplierLevelLabel(scope.row.supplierLevel) }}</span></template></el-table-column>
@@ -170,7 +170,7 @@
           <el-table-column label="联系人" prop="contactPerson" key="contactPerson" :width="colWidth('contactPerson', 100)" resizable v-if="columns.contactPerson.visible" />
           <el-table-column label="联系电话" prop="contactPhone" key="contactPhone" :width="colWidth('contactPhone', 130)" resizable v-if="columns.contactPhone.visible" />
           <el-table-column label="法人代表" prop="legalPerson" key="legalPerson" :width="colWidth('legalPerson', 100)" resizable v-if="columns.legalPerson.visible" />
-          <el-table-column label="企业性质" prop="enterpriseNature" key="enterpriseNature" :width="colWidth('enterpriseNature', 100)" resizable align="center" v-if="columns.enterpriseNature.visible"><template #default="scope"><span class="badge amber">{{ enterpriseNatureLabel(scope.row.enterpriseNature) }}</span></template></el-table-column>
+          <el-table-column label="企业性质" prop="enterpriseNature" key="enterpriseNature" :min-width="colWidth('enterpriseNature', 100)" show-overflow-tooltip resizable align="center" v-if="columns.enterpriseNature.visible"><template #default="scope"><span class="badge amber">{{ enterpriseNatureLabel(scope.row.enterpriseNature) }}</span></template></el-table-column>
           <el-table-column label="状态" prop="status" key="status" :width="colWidth('status', 100)" resizable align="center" sortable="custom" v-if="columns.status.visible"><template #default="scope"><span class="badge" :class="badgeClass(scope.row.status)"><span class="dot"></span>{{ statusLabel(scope.row.status) }}</span></template></el-table-column>
           <el-table-column label="创建时间" prop="createTime" key="createTime" :width="colWidth('createTime', 160)" resizable align="center" sortable="custom" v-if="columns.createTime.visible" />
           <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
@@ -476,7 +476,7 @@
 <script setup name="WmsSupplier">
 import { listSupplier, getSupplier, addSupplier, updateSupplier, delSupplier } from '@/api/wms/supplier'
 import { lookupEnterprise } from '@/api/pms/enterprise'
-import { fetchAllPages, downloadCsv } from '@/utils/csvExport'
+import { fetchAllPages, downloadXlsx } from '@/utils/csvExport'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard, formatAmount } from '@/composables/useDetailCard'
 import ExcelImportDialog from '@/components/ExcelImportDialog'
@@ -803,13 +803,13 @@ function submitForm() {
         updateSupplier(form.value).then(() => {
           proxy.$modal.msgSuccess('修改成功')
           open.value = false
-          getList()
+          getList(); loadStatusCounts()
         })
       } else {
         addSupplier(form.value).then(() => {
           proxy.$modal.msgSuccess('新增成功')
           open.value = false
-          getList()
+          getList(); loadStatusCounts()
         })
       }
     }
@@ -819,17 +819,18 @@ function submitForm() {
 function handleDelete(row) {
   const supplierIds = row.supplierId || ids.value
   proxy.$modal.confirm('是否确认删除选中的供应商数据？').then(() => delSupplier(supplierIds)).then(() => {
-    getList()
+    getList(); loadStatusCounts()
     proxy.$modal.msgSuccess('删除成功')
   }).catch(() => {})
 }
 
 /** 导出供应商（与列表口径一致：含筛选条件，导出全部页数据） */
 async function handleExport() {
-  const rows = await fetchAllPages(listSupplier, queryParams.value)
+  let rows = await fetchAllPages(listSupplier, queryParams.value)
+  if (ids.value && ids.value.length) { rows = rows.filter(i => ids.value.includes(i.supplierId)) }
   if (!rows.length) { proxy.$modal.msgWarning('当前筛选下无数据可导出'); return }
   const headers = ['供应商编码', '供应商名称', '简称', '类型', '等级', '统一信用代码', '联系人', '联系电话', '法人代表', '企业性质', '状态', '创建时间']
-  downloadCsv(`supplier_${new Date().getTime()}`, headers, rows.map(i => [
+  downloadXlsx(`supplier_${new Date().getTime()}`, headers, rows.map(i => [
     i.supplierCode || '', i.supplierName || '', i.supplierShortName || '',
     supplierTypeLabel(i.supplierType), supplierLevelLabel(i.supplierLevel), i.unifiedCreditCode || '',
     i.contactPerson || '', i.contactPhone || '', i.legalPerson || '',

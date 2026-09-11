@@ -16,14 +16,14 @@ public class SafetyInspectionTask extends BaseEntity
     @Excel(name = "任务编号")
     private String taskCode;
     @NotBlank(message = "任务类型不能为空")
-    @Excel(name = "任务类型")
+    @Excel(name = "任务类型", dictType = "safety_task_type")
     private String taskType;
     @Excel(name = "任务名称")
     private String taskName;
     private Long riskPointId;
     @NotNull(message = "计划日期不能为空")
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "计划日期", width = 120)
+    @Excel(name = "计划日期", width = 120, dateFormat = "yyyy-MM-dd")
     private Date planDate;
     @NotNull(message = "执行人不能为空")
     private Long executorId;
@@ -35,7 +35,7 @@ public class SafetyInspectionTask extends BaseEntity
     private String inspectResult;
     @Excel(name = "隐患数")
     private Integer hazardCount;
-    @Excel(name = "检查时间", width = 160)
+    @Excel(name = "检查时间", width = 160, dateFormat = "yyyy-MM-dd HH:mm:ss")
     private Date inspectTime;
     private Long enterpriseId;
     private String delFlag;

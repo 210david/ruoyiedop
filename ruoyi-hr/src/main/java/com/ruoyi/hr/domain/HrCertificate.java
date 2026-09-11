@@ -22,7 +22,7 @@ public class HrCertificate extends BaseEntity
     @Excel(name = "部门")
     private String deptName;
     @NotBlank(message = "证书类别不能为空")
-    @Excel(name = "证书类别")
+    @Excel(name = "证书类别", dictType = "hr_cert_type")
     private String certType;
     @NotBlank(message = "证书名称不能为空")
     @Excel(name = "证书名称")
@@ -30,27 +30,27 @@ public class HrCertificate extends BaseEntity
     @Excel(name = "证书编号")
     private String certNo;
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "发证日期")
+    @Excel(name = "发证日期", dateFormat = "yyyy-MM-dd")
     private Date issueDate;
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "有效起始日")
+    @Excel(name = "有效起始日", dateFormat = "yyyy-MM-dd")
     private Date validFrom;
     @NotNull(message = "有效期至不能为空")
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "有效期至")
+    @Excel(name = "有效期至", dateFormat = "yyyy-MM-dd")
     private Date validTo;
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "复审日期")
+    @Excel(name = "复审日期", dateFormat = "yyyy-MM-dd")
     private Date reviewDate;
     @Excel(name = "发证机构")
     private String issueOrg;
     @Excel(name = "附件URL")
     private String attachmentUrl;
-    @Excel(name = "预警状态")
+    @Excel(name = "预警状态", dictType = "hr_remind_status")
     private String remindStatus;
-    @Excel(name = "状态")
+    @Excel(name = "状态", dictType = "sys_normal_disable")
     private String status;
-    @Excel(name = "删除标志")
+    @Excel(name = "删除标志", readConverterExp = "0=正常,2=已删除")
     private String delFlag;
 
     public Long getCertId() { return certId; }

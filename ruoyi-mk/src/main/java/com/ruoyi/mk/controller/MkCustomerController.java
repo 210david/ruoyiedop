@@ -54,6 +54,7 @@ public class MkCustomerController extends BaseController
     public void export(HttpServletResponse response, MkCustomer customer)
     {
         List<MkCustomer> list = mkCustomerService.selectCustomerList(customer);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, customer);
         ExcelUtil<MkCustomer> util = new ExcelUtil<>(MkCustomer.class);
         util.exportExcel(response, list, "企业客户数据");
     }

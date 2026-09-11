@@ -41,6 +41,7 @@ public class MmsShiftController extends BaseController
     public void export(HttpServletResponse response, MmsShift shift)
     {
         List<MmsShift> list = mmsShiftService.selectShiftList(shift);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, shift);
         ExcelUtil<MmsShift> util = new ExcelUtil<>(MmsShift.class);
         util.exportExcel(response, list, "Shift");
     }

@@ -81,7 +81,7 @@
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
           <el-table-column label="演练编号" prop="drillCode" key="drillCode" :width="colWidth('drillCode', 130)" resizable v-if="columns.drillCode.visible" />
-          <el-table-column label="演练名称" prop="drillName" key="drillName" :width="colWidth('drillName', 200)" resizable show-overflow-tooltip v-if="columns.drillName.visible" />
+          <el-table-column label="演练名称" prop="drillName" key="drillName" :min-width="colWidth('drillName', 200)" resizable show-overflow-tooltip v-if="columns.drillName.visible" />
           <el-table-column label="演练类型" prop="drillType" key="drillType" :width="colWidth('drillType', 110)" resizable align="center" v-if="columns.drillType.visible">
             <template #default="scope"><span class="badge violet">{{ drillTypeLabel(scope.row.drillType) }}</span></template>
           </el-table-column>
@@ -91,7 +91,7 @@
           <el-table-column label="参与人数" prop="participantCount" key="participantCount" :width="colWidth('participantCount', 90)" resizable align="center" v-if="columns.participantCount.visible" />
           <el-table-column label="参与人员" prop="participants" key="participants" :width="colWidth('participants', 150)" resizable show-overflow-tooltip v-if="columns.participants.visible" />
           <el-table-column label="演练评估" prop="evalResult" key="evalResult" :width="colWidth('evalResult', 150)" resizable show-overflow-tooltip v-if="columns.evalResult.visible" />
-          <el-table-column label="发现问题" prop="problems" key="problems" :width="colWidth('problems', 120)" resizable show-overflow-tooltip v-if="columns.problems.visible" />
+          <el-table-column label="发现问题" prop="problems" key="problems" :min-width="colWidth('problems', 120)" resizable show-overflow-tooltip v-if="columns.problems.visible" />
           <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
               <div class="action-btn-row">
@@ -358,7 +358,7 @@ function submitForm() {
   })
 }
 function handleDelete(row) { const drillIds = row.drillId || ids.value; proxy.$modal.confirm('是否确认删除演练记录？').then(function() { return delDrill(drillIds) }).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
-function handleExport() { proxy.download('safety/emergency/drill/export', { ...proxy.addDateRange(queryParams.value, dateRange.value, 'DrillDate') }, `emergency_drill_${new Date().getTime()}.xlsx`) }
+function handleExport() { proxy.download('safety/emergency/drill/export', proxy.withExportIds({ ...proxy.addDateRange(queryParams.value, dateRange.value, 'DrillDate') }, ids.value, 'drillId'), `emergency_drill_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 function reset() {
   form.value = { drillId: undefined, drillCode: undefined, drillName: undefined, drillType: undefined, drillDate: undefined, drillLocation: undefined, drillCommander: undefined, drillObjective: undefined, participants: undefined, participantCount: undefined, drillDesc: undefined, evalResult: undefined, problems: undefined, improvements: undefined, attachments: undefined, remark: undefined }

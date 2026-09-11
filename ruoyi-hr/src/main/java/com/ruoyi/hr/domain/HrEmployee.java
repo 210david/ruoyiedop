@@ -17,18 +17,18 @@ public class HrEmployee extends BaseEntity
     @NotBlank(message = "姓名不能为空")
     @Excel(name = "姓名")
     private String employeeName;
-    @Excel(name = "性别")
+    @Excel(name = "性别", dictType = "hr_gender")
     private String gender;
     @Excel(name = "身份证号")
     private String idCard;
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "出生日期")
+    @Excel(name = "出生日期", dateFormat = "yyyy-MM-dd")
     private Date birthday;
     @Excel(name = "民族")
     private String nation;
     @Excel(name = "政治面貌")
     private String politicsStatus;
-    @Excel(name = "婚姻状况")
+    @Excel(name = "婚姻状况", dictType = "hr_marital_status")
     private String maritalStatus;
     @Excel(name = "联系电话")
     private String phone;
@@ -42,14 +42,14 @@ public class HrEmployee extends BaseEntity
     private String nativePlace;
     @Excel(name = "现住址")
     private String address;
-    @Excel(name = "学历")
+    @Excel(name = "学历", dictType = "hr_edu_level")
     private String eduLevel;
     @Excel(name = "毕业院校")
     private String graduationSchool;
     @Excel(name = "专业")
     private String major;
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "毕业日期")
+    @Excel(name = "毕业日期", dateFormat = "yyyy-MM-dd")
     private Date graduationDate;
     @Excel(name = "社会工龄")
     private Integer socialWorkYears;
@@ -65,20 +65,20 @@ public class HrEmployee extends BaseEntity
     private String positionName;
     @Excel(name = "技能等级")
     private String skillLevel;
-    @Excel(name = "工时制度")
+    @Excel(name = "工时制度", dictType = "hr_work_type")
     private String workType;
-    @Excel(name = "用工类型")
+    @Excel(name = "用工类型", dictType = "hr_employee_type")
     private String employeeType;
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "入职日期")
+    @Excel(name = "入职日期", dateFormat = "yyyy-MM-dd")
     private Date entryDate;
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "转正日期")
+    @Excel(name = "转正日期", dateFormat = "yyyy-MM-dd")
     private Date regularDate;
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "离职日期")
+    @Excel(name = "离职日期", dateFormat = "yyyy-MM-dd")
     private Date leaveDate;
-    @Excel(name = "员工状态")
+    @Excel(name = "员工状态", dictType = "hr_employee_status")
     private String employeeStatus;
     @Excel(name = "开户银行")
     private String bankName;
@@ -86,7 +86,7 @@ public class HrEmployee extends BaseEntity
     private String bankAccount;
     @Excel(name = "社保号")
     private String socialSecurityNo;
-    @Excel(name = "参保状态")
+    @Excel(name = "参保状态", dictType = "hr_social_security_status")
     private String socialSecurityStatus;
     @Excel(name = "公积金号")
     private String houseFundNo;

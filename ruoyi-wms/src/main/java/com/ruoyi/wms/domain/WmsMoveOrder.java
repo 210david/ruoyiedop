@@ -41,7 +41,7 @@ public class WmsMoveOrder extends BaseEntity
     private String materialName;
 
     /** 计量单位 */
-    @Excel(name = "单位")
+    @Excel(name = "单位", dictType = "wms_unit")
     private String unit;
 
     /** 批次号 */

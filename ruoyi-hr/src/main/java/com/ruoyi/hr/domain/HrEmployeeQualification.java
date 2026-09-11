@@ -27,22 +27,22 @@ public class HrEmployeeQualification extends BaseEntity
     @Excel(name = "发证机构")
     private String issueOrg;
 
-    @JsonFormat(pattern = "yyyy-MM-dd") @Excel(name = "发证日期")
+    @JsonFormat(pattern = "yyyy-MM-dd") @Excel(name = "发证日期", dateFormat = "yyyy-MM-dd")
     private Date issueDate;
 
-    @JsonFormat(pattern = "yyyy-MM-dd") @Excel(name = "有效起始日")
+    @JsonFormat(pattern = "yyyy-MM-dd") @Excel(name = "有效起始日", dateFormat = "yyyy-MM-dd")
     private Date validFrom;
 
-    @JsonFormat(pattern = "yyyy-MM-dd") @Excel(name = "有效期至")
+    @JsonFormat(pattern = "yyyy-MM-dd") @Excel(name = "有效期至", dateFormat = "yyyy-MM-dd")
     private Date validTo;
 
     @Excel(name = "成绩/等级")
     private String score;
 
-    @Excel(name = "状态")
+    @Excel(name = "状态", dictType = "sys_normal_disable")
     private String status;
 
-    @Excel(name = "删除标志")
+    @Excel(name = "删除标志", readConverterExp = "0=正常,2=已删除")
     private String delFlag;
 
 

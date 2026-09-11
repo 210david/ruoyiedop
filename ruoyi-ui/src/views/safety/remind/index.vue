@@ -90,8 +90,8 @@
           <el-table-column label="提醒类型" prop="remindType" key="remindType" :width="colWidth('remindType', 120)" resizable align="center" v-if="columns.remindType.visible">
             <template #default="scope"><span class="badge violet">{{ remindTypeLabel(scope.row.remindType) }}</span></template>
           </el-table-column>
-          <el-table-column label="关联名称" prop="relatedName" key="relatedName" :width="colWidth('relatedName', 180)" resizable show-overflow-tooltip v-if="columns.relatedName.visible" />
-          <el-table-column label="提醒内容" prop="remindContent" key="remindContent" :width="colWidth('remindContent', 200)" resizable show-overflow-tooltip v-if="columns.remindContent.visible" />
+          <el-table-column label="关联名称" prop="relatedName" key="relatedName" :min-width="colWidth('relatedName', 180)" resizable show-overflow-tooltip v-if="columns.relatedName.visible" />
+          <el-table-column label="提醒内容" prop="remindContent" key="remindContent" :min-width="colWidth('remindContent', 200)" resizable show-overflow-tooltip v-if="columns.remindContent.visible" />
           <el-table-column label="到期日期" prop="expireDate" key="expireDate" :width="colWidth('expireDate', 120)" resizable align="center" sortable="custom" v-if="columns.expireDate.visible">
             <template #default="scope">
               <span class="badge" :class="isOverdue(scope.row) ? 'red' : 'gray'">
@@ -337,7 +337,7 @@ function handleView(row) {
   })
 }
 
-function handleExport() { proxy.download('safety/remind/export', { ...queryParams.value }, `remind_${new Date().getTime()}.xlsx`) }
+function handleExport() { proxy.download('safety/remind/export', proxy.withExportIds({ ...queryParams.value }, ids.value, 'remindId'), `remind_${new Date().getTime()}.xlsx`) }
 function handleDelete(row) {
   const remindIds = row.remindId || ids.value
   proxy.$modal.confirm('是否确认删除提醒？').then(function() {

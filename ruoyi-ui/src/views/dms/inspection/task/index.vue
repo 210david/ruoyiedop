@@ -98,7 +98,7 @@
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
           <el-table-column label="任务编号" prop="taskNo" key="taskNo" :width="colWidth('taskNo', 180)" resizable v-if="columns.taskNo.visible" />
-          <el-table-column label="路线名称" prop="routeName" key="routeName" :width="colWidth('routeName', 200)" resizable show-overflow-tooltip v-if="columns.routeName.visible" />
+          <el-table-column label="路线名称" prop="routeName" key="routeName" :min-width="colWidth('routeName', 200)" resizable show-overflow-tooltip v-if="columns.routeName.visible" />
           <el-table-column label="计划日期" prop="planDate" key="planDate" :width="colWidth('planDate', 130)" resizable align="center" v-if="columns.planDate.visible">
             <template #default="scope">
               <span :class="{ 'plan-date-overdue': scope.row.overdueFlag === '1' }">{{ scope.row.planDate || '-' }}</span>
@@ -114,7 +114,7 @@
                 <span class="badge" :class="taskStatusBadge(scope.row.taskStatus)"><span class="dot"></span>{{ taskStatusLabel(scope.row.taskStatus) }}</span>
                 <span v-if="scope.row.overdueFlag === '1'" class="overdue-badge">
                   <span class="overdue-pulse"></span>
-                  <svg class="overdue-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                  <svg class="overdue-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
                   逾期
                 </span>
               </div>
@@ -191,6 +191,7 @@
               <div v-for="(dg, di) in addPreviewGroups" :key="di" class="preview-device">
                 <div class="preview-device-title">
                   <span class="preview-device-no">{{ di + 1 }}</span>
+                  <span class="preview-device-code" v-if="dg.equipmentCode">{{ dg.equipmentCode }}</span>
                   <span class="preview-device-name">{{ dg.equipmentName }}</span>
                   <el-tag size="small" type="info" effect="plain">{{ dg.items.length }}项</el-tag>
                 </div>
@@ -233,6 +234,7 @@
           <span class="rd-detail-header-title">点检详情</span>
           <div class="rd-detail-header-tags" v-if="viewForm.taskStatus != null">
             <dict-tag :options="dms_inspection_status" :value="viewForm.taskStatus" />
+            <span v-if="viewForm.overdueFlag === '1'" class="overdue-badge"><span class="overdue-pulse"></span><svg class="overdue-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>逾期</span>
           </div>
         </div>
       </template>
@@ -251,7 +253,7 @@
               <div class="rd-item"><span class="rd-label">任务编号</span><div class="rd-value">{{ viewForm.taskNo || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">路线名称</span><div class="rd-value">{{ viewForm.routeName || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">计划日期</span><div class="rd-value">{{ viewForm.planDate || '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label">状态</span><div class="rd-value"><dict-tag :options="dms_inspection_status" :value="viewForm.taskStatus" /><span v-if="viewForm.overdueFlag === '1'" class="overdue-badge overdue-badge-detail"><span class="overdue-pulse"></span><svg class="overdue-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>逾期</span></div></div>
+              <div class="rd-item"><span class="rd-label">状态</span><div class="rd-value rd-value--inline"><dict-tag :options="dms_inspection_status" :value="viewForm.taskStatus" /><span v-if="viewForm.overdueFlag === '1'" class="overdue-badge overdue-badge-detail"><span class="overdue-pulse"></span><svg class="overdue-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>逾期</span></div></div>
               <div class="rd-item"><span class="rd-label">异常项数</span><div class="rd-value">{{ viewForm.abnormalCount != null ? viewForm.abnormalCount : 0 }}</div></div>
             </div>
           </div>
@@ -282,7 +284,8 @@
           <div class="rd-card-header" @click="toggleCard('insp_device_' + di)">
             <div class="rd-card-title">
               <span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></span>
-              {{ dg.equipmentName }}
+              <span class="rd-card-title-code" v-if="dg.equipmentCode">{{ dg.equipmentCode }}</span>
+              <span class="rd-card-title-name">{{ dg.equipmentName }}</span>
               <el-tag size="small" type="info" effect="plain" style="margin-left: 4px">{{ dg.items.length }}项</el-tag>
             </div>
             <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards['insp_device_' + di] }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
@@ -361,7 +364,8 @@
           <div class="rd-card-header" @click="toggleCard('exec_device_' + di)">
             <div class="rd-card-title">
               <span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></span>
-              {{ dg.equipmentName }}
+              <span class="rd-card-title-code" v-if="dg.equipmentCode">{{ dg.equipmentCode }}</span>
+              <span class="rd-card-title-name">{{ dg.equipmentName }}</span>
               <el-tag size="small" type="info" effect="plain" style="margin-left: 4px">{{ dg.items.length }}项</el-tag>
             </div>
             <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards['exec_device_' + di] }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
@@ -489,7 +493,7 @@
           <el-descriptions-item label="待执行">任务已创建，等待点检人执行。可新增、删除</el-descriptions-item>
           <el-descriptions-item label="执行中">点检人已开始执行点检，系统记录开始时间。可继续填写检查结果</el-descriptions-item>
           <el-descriptions-item label="已完成">点检完成，提交检查结果后自动完成。若有异常项，系统按异常设备自动生成整改工单（一个设备一张工单）</el-descriptions-item>
-          <el-descriptions-item label="逾期标记">计划日期已过且仍未完成的任务，系统每天凌晨自动标记为"逾期"（<span class="overdue-badge overdue-badge-inline"><span class="overdue-pulse"></span><svg class="overdue-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>逾期</span>）。逾期仅作显性提示，<strong>不影响任务执行</strong>，点检人仍可点击「执行」补做</el-descriptions-item>
+          <el-descriptions-item label="逾期标记">计划日期已过且仍未完成的任务，系统每天凌晨自动标记为"逾期"（<span class="overdue-badge overdue-badge-inline"><span class="overdue-pulse"></span><svg class="overdue-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>逾期</span>）。逾期仅作显性提示，<strong>不影响任务执行</strong>，点检人仍可点击「执行」补做</el-descriptions-item>
         </el-descriptions>
 
         <h4>三、重点业务规则</h4>
@@ -545,6 +549,7 @@
 <script setup name="DmsInspectionTask">
 import { Plus, CircleClose, Search, Filter, RefreshLeft, ArrowDown } from '@element-plus/icons-vue'
 import { listTask, getTask, addTask, updateTask, delTask, completeTask, startTask, listRoute, getRoute, countTaskByStatus } from '@/api/dms/inspection'
+import { listEquipment } from '@/api/dms/equipment'
 import UserPicker from '@/components/UserPicker/index.vue'
 import { getToken } from '@/utils/auth'
 import { useColumnResize } from '@/composables/useColumnResize'
@@ -652,6 +657,18 @@ function taskStatusBadge(val) {
 /** 逾期行添加高亮类名 */
 function tableRowClassName({ row }) {
   return row.overdueFlag === '1' ? 'overdue-row' : ''
+}
+
+// 设备列表（用于根据 equipmentId 补充设备编号和名称）
+const equipmentOptions = ref([])
+function loadEquipmentOptions() {
+  listEquipment({ pageNum: 1, pageSize: 9999 }).then(res => {
+    equipmentOptions.value = res.rows || []
+  }).catch(() => {})
+}
+// 根据 equipmentId 从设备列表查找设备编号和名称
+function findEquipment(eid) {
+  return equipmentOptions.value.find(e => e.equipmentId === eid)
 }
 
 const viewForm = ref({})
@@ -807,24 +824,34 @@ function handleView(row) {
     if (parsed) {
       if (Array.isArray(parsed)) {
         // 旧扁平格式：合成一个通用分组
-        viewGroups.value = { common: [], devices: [{ equipmentId: undefined, equipmentName: '通用检查项', items: parsed.map(toViewItem) }] }
+        viewGroups.value = { common: [], devices: [{ equipmentId: undefined, equipmentCode: '', equipmentName: '通用检查项', items: parsed.map(toViewItem) }] }
       } else {
         // 新格式 common 为空；旧格式 common 有值时合并到每台设备明细开头
         const commonItems = (parsed.common || []).map(toViewItem)
         const hasCommonFilled = commonItems.some(it => it.value !== undefined || it.abnormal !== undefined)
         viewGroups.value = {
           common: [],
-          devices: (parsed.devices || []).map(d => ({
-            equipmentId: d.equipmentId,
-            equipmentName: d.equipmentName,
-            items: hasCommonFilled
-              ? [...commonItems.map(c => ({ ...c })), ...(d.items || []).map(toViewItem)]
-              : (d.items || []).map(toViewItem)
-          }))
+          devices: (parsed.devices || []).map(d => {
+            // 拆分 "编码 - 名称" 格式的 equipmentName；为空时从设备列表查找
+            let rawName = d.equipmentName || ''
+            if (!rawName && d.equipmentId) {
+              const eq = findEquipment(d.equipmentId)
+              if (eq) rawName = (eq.equipmentCode ? eq.equipmentCode + ' - ' : '') + (eq.equipmentName || '')
+            }
+            const parts = rawName.split(' - ')
+            return {
+              equipmentId: d.equipmentId,
+              equipmentCode: d.equipmentCode || (parts.length > 1 ? parts[0].trim() : (findEquipment(d.equipmentId)?.equipmentCode || '')),
+              equipmentName: parts.length > 1 ? parts.slice(1).join(' - ').trim() : rawName,
+              items: hasCommonFilled
+                ? [...commonItems.map(c => ({ ...c })), ...(d.items || []).map(toViewItem)]
+                : (d.items || []).map(toViewItem)
+            }
+          })
         }
         // 只有通用项、没有设备结构时，合成通用分组
         if (viewGroups.value.devices.length === 0 && commonItems.length > 0) {
-          viewGroups.value.devices = [{ equipmentId: undefined, equipmentName: '通用检查项', items: commonItems }]
+          viewGroups.value.devices = [{ equipmentId: undefined, equipmentCode: '', equipmentName: '通用检查项', items: commonItems }]
         }
       }
       // 有填写痕迹（巡检内容或结果判定）即视为已执行
@@ -901,16 +928,27 @@ function handleExecute(row) {
  */
 function buildGroups(parsed) {
   if (Array.isArray(parsed)) {
-    return { common: [], devices: [{ equipmentId: undefined, equipmentName: '通用检查项', items: initItems(parsed) }] }
+    return { common: [], devices: [{ equipmentId: undefined, equipmentCode: '', equipmentName: '通用检查项', items: initItems(parsed) }] }
   }
   const commonItems = initItems(parsed.common || [])
-  const devices = (parsed.devices || []).map(d => ({
-    equipmentId: d.equipmentId,
-    equipmentName: d.equipmentName,
-    items: [...commonItems.map(c => ({ ...c })), ...initItems(d.items || [])]
-  }))
+  const devices = (parsed.devices || []).map(d => {
+    // 拆分 "编码 - 名称" 格式的 equipmentName
+    let rawName = d.equipmentName || ''
+    // 如果 equipmentName 为空，从设备列表查找
+    if (!rawName && d.equipmentId) {
+      const eq = findEquipment(d.equipmentId)
+      if (eq) rawName = (eq.equipmentCode ? eq.equipmentCode + ' - ' : '') + (eq.equipmentName || '')
+    }
+    const parts = rawName.split(' - ')
+    return {
+      equipmentId: d.equipmentId,
+      equipmentCode: d.equipmentCode || (parts.length > 1 ? parts[0].trim() : (findEquipment(d.equipmentId)?.equipmentCode || '')),
+      equipmentName: parts.length > 1 ? parts.slice(1).join(' - ').trim() : rawName,
+      items: [...commonItems.map(c => ({ ...c })), ...initItems(d.items || [])]
+    }
+  })
   if (devices.length === 0 && commonItems.length > 0) {
-    return { common: [], devices: [{ equipmentId: undefined, equipmentName: '通用检查项', items: commonItems }] }
+    return { common: [], devices: [{ equipmentId: undefined, equipmentCode: '', equipmentName: '通用检查项', items: commonItems }] }
   }
   return { common: [], devices }
 }
@@ -1038,14 +1076,23 @@ function parsePhotos(photoUrls) {
   try {
     const urls = JSON.parse(photoUrls)
     const baseApi = import.meta.env.VITE_APP_BASE_API
+    const token = getToken()
     return urls.map(u => {
-      if (u && !u.startsWith('http') && !u.startsWith('data:')) return baseApi + u
+      if (u && !u.startsWith('http') && !u.startsWith('data:')) {
+        // /profile/ 路径需通过 /common/file/access 接口安全代理访问（需认证）
+        // <img> 标签无法携带 Authorization Header，通过 Query 参数传递 token
+        if (u.startsWith('/profile/') && token) {
+          return baseApi + '/common/file/access?resource=' + encodeURIComponent(u) + '&token=' + encodeURIComponent(token)
+        }
+        return baseApi + u
+      }
       return u
     })
   } catch (e) { return [] }
 }
 
 getRouteOptions()
+loadEquipmentOptions()
 getList()
 loadStatusCounts()
 </script>
@@ -1145,41 +1192,6 @@ loadStatusCounts()
 /* ===== 逾期标记样式 ===== */
 /* 状态单元格容器 */
 .dms-inspection-task-page .status-cell { display:flex; flex-direction:column; align-items:center; gap:4px; }
-/* 逾期徽章 */
-.dms-inspection-task-page .overdue-badge {
-  display:inline-flex; align-items:center; gap:4px;
-  padding:2px 8px 2px 6px; border-radius:999px;
-  font-size:11.5px; font-weight:700; line-height:1.3;
-  color:#fff; background:linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-  border:1px solid #b91c1c;
-  box-shadow:0 1px 4px rgba(239,68,68,.35);
-  white-space:nowrap; position:relative;
-}
-.dms-inspection-task-page .overdue-badge .overdue-icon {
-  width:12px; height:12px; flex-shrink:0;
-}
-/* 脉冲动画圆点 */
-.dms-inspection-task-page .overdue-pulse {
-  width:6px; height:6px; border-radius:50%; background:#fff;
-  flex-shrink:0; position:relative;
-}
-.dms-inspection-task-page .overdue-pulse::after {
-  content:''; position:absolute; inset:0; border-radius:50%;
-  background:#fff; animation:overdue-ping 1.8s cubic-bezier(0,0,.2,1) infinite;
-}
-@keyframes overdue-ping {
-  0% { transform:scale(1); opacity:.8; }
-  75%,100% { transform:scale(2.8); opacity:0; }
-}
-/* 详情弹窗中的逾期徽章 */
-.dms-inspection-task-page .overdue-badge-detail {
-  margin-left:6px; font-size:12.5px; padding:3px 10px 3px 8px;
-}
-.dms-inspection-task-page .overdue-badge-detail .overdue-icon { width:14px; height:14px; }
-/* 说明弹窗中的内联徽章 */
-.dms-inspection-task-page .overdue-badge-inline {
-  font-size:12px; padding:2px 8px 2px 6px; vertical-align:middle;
-}
 /* 计划日期逾期标红 */
 .dms-inspection-task-page .plan-date-overdue {
   color:var(--red-700); font-weight:600;
@@ -1235,6 +1247,10 @@ loadStatusCounts()
 .preview-device-title { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
 .preview-device-no { width: 22px; height: 22px; border-radius: 50%; background: #eef2ff; color: #4f46e5; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .preview-device-name { font-size: 14px; font-weight: 600; color: #334155; }
+.preview-device-code { font-size: 13px; font-weight: 600; color: #4f46e5; font-family: 'SF Mono', 'Consolas', monospace; white-space: nowrap; }
+/* 设备分组卡头中的编号和名称 */
+.rd-card-title-code { font-size: 13px; font-weight: 600; color: #4f46e5; font-family: 'SF Mono', 'Consolas', monospace; white-space: nowrap; margin-left: 2px; }
+.rd-card-title-name { font-size: 14px; font-weight: 600; color: #1e293b; white-space: nowrap; margin-left: 2px; }
 .preview-items { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 6px 12px; }
 .preview-item { display: flex; align-items: center; gap: 8px; padding: 6px 10px; background: #fff; border: 1px solid #f1f5f9; border-radius: 8px; font-size: 13px; color: #475569; }
 .preview-item-no { flex-shrink: 0; color: #94a3b8; font-size: 12px; min-width: 18px; text-align: right; }
@@ -1301,4 +1317,47 @@ loadStatusCounts()
 .route-picker-table :deep(.el-table__row:hover > td) { background: #f0f7ff; }
 .route-picker-table :deep(.el-table__row.is-current > td) { background: #e6f0fd; }
 .route-picker-pager { margin-top: 8px; display: flex; justify-content: flex-end; }
+
+/* 详情弹窗标题栏标签容器：flex 布局确保状态标签和逾期徽章同一行 */
+.rd-detail-header-tags { display: flex; align-items: center; gap: 6px; flex-wrap: nowrap; }
+
+/* ===== 逾期徽章全局样式（弹窗 append-to-body 时 scoped 样式不生效，需放全局） ===== */
+.overdue-badge {
+  display:inline-flex; align-items:center; gap:4px;
+  padding:2px 8px 2px 6px; border-radius:999px;
+  font-size:11.5px; font-weight:700; line-height:1.3;
+  color:#fff; background:linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  border:1px solid #b91c1c;
+  box-shadow:0 1px 4px rgba(239,68,68,.35);
+  white-space:nowrap; position:relative;
+}
+.overdue-badge .overdue-icon {
+  width:12px; height:12px; flex-shrink:0;
+}
+.overdue-pulse {
+  width:6px; height:6px; border-radius:50%; background:#fff;
+  flex-shrink:0; position:relative;
+}
+.overdue-pulse::after {
+  content:''; position:absolute; inset:0; border-radius:50%;
+  background:#fff; animation:overdue-ping 1.8s cubic-bezier(0,0,.2,1) infinite;
+}
+@keyframes overdue-ping {
+  0% { transform:scale(1); opacity:.8; }
+  75%,100% { transform:scale(2.8); opacity:0; }
+}
+.overdue-badge-detail {
+  margin-left:6px; font-size:12.5px; padding:3px 10px 3px 8px; vertical-align: middle;
+}
+/* 详情弹窗中状态字段内联显示（状态标签 + 逾期徽章同一行） */
+.rd-value--inline {
+  display: flex !important;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.overdue-badge-detail .overdue-icon { width:14px; height:14px; }
+.overdue-badge-inline {
+  font-size:12px; padding:2px 8px 2px 6px; vertical-align:middle;
+}
 </style>

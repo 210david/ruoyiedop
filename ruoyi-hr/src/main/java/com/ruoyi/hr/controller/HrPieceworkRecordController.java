@@ -37,6 +37,7 @@ public class HrPieceworkRecordController extends BaseController
     public void export(HttpServletResponse response, HrPieceworkRecord hrPieceworkRecord)
     {
         List<HrPieceworkRecord> list = hrPieceworkRecordService.selectHrPieceworkRecordList(hrPieceworkRecord);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, hrPieceworkRecord);
         ExcelUtil<HrPieceworkRecord> util = new ExcelUtil<>(HrPieceworkRecord.class);
         util.exportExcel(response, list, "计件报工");
     }

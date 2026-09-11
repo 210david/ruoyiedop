@@ -42,6 +42,7 @@ public class QmsInspectStdController extends BaseController
     public void export(HttpServletResponse response, QmsInspectStd inspectStd)
     {
         List<QmsInspectStd> list = qmsInspectStdService.selectInspectStdList(inspectStd);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, inspectStd);
         ExcelUtil<QmsInspectStd> util = new ExcelUtil<>(QmsInspectStd.class);
         util.exportExcel(response, list, "检验标准库数据");
     }

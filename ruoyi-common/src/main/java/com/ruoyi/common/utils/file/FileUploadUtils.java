@@ -1,7 +1,9 @@
 package com.ruoyi.common.utils.file;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Paths;
 import java.util.Objects;
 import org.apache.commons.io.FilenameUtils;
@@ -134,7 +136,8 @@ public class FileUploadUtils
         String fileName = useCustomNaming ? uuidFilename(file) : extractFilename(file);
 
         String absPath = getAbsoluteFile(baseDir, fileName).getAbsolutePath();
-        file.transferTo(Paths.get(absPath));
+        // 安全存储：GZIP压缩 + AES加密后写入磁盘，服务器上文件为加密格式无法直接打开
+        encryptedStore(file, absPath);
         return getPathFileName(baseDir, fileName);
     }
 
@@ -166,6 +169,22 @@ public class FileUploadUtils
             }
         }
         return desc;
+    }
+
+    /**
+     * 加密存储文件
+     * 将上传文件经GZIP压缩+AES加密后写入磁盘，磁盘文件为加密格式
+     *
+     * @param file 上传的文件
+     * @param absPath 目标磁盘路径
+     */
+    private static void encryptedStore(MultipartFile file, String absPath) throws IOException
+    {
+        try (InputStream input = file.getInputStream();
+             FileOutputStream output = new FileOutputStream(absPath))
+        {
+            FileStorageUtils.encryptStream(input, output);
+        }
     }
 
     public static final String getPathFileName(String uploadDir, String fileName) throws IOException

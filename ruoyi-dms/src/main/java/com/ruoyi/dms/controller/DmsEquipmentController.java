@@ -48,6 +48,7 @@ public class DmsEquipmentController extends BaseController
     public void export(HttpServletResponse response, DmsEquipment equipment)
     {
         List<DmsEquipment> list = dmsEquipmentService.selectEquipmentList(equipment);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, equipment);
         ExcelUtil<DmsEquipment> util = new ExcelUtil<>(DmsEquipment.class);
         util.exportExcel(response, list, "设备台账数据");
     }

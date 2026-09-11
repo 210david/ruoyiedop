@@ -63,6 +63,7 @@ public class WmsStockAlertController extends BaseController
     public void export(HttpServletResponse response, WmsStatisticsVO query)
     {
         List<WmsStatisticsVO> list = wmsStatisticsService.selectStockAlertList(query);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, query);
         ExcelUtil<WmsStatisticsVO> util = new ExcelUtil<>(WmsStatisticsVO.class);
         util.exportExcel(response, list, "库存预警数据");
     }

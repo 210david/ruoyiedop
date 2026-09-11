@@ -12,6 +12,8 @@ ruoyi:
   addressEnabled: false
   # 验证码类型 math 数字计算 char 字符验证
   captchaType: math
+  # 文件加密密钥（AES-128，需至少16位字符，生产环境请务必修改）
+  fileEncryptionKey: EDOP2026SecureK3y!
 
 # 开发环境配置
 server:

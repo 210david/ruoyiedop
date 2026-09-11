@@ -14,7 +14,7 @@ public class HrAttendanceRecord extends BaseEntity
     private Long recordId;
     @NotNull(message = "考勤日期不能为空")
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "考勤日期")
+    @Excel(name = "考勤日期", dateFormat = "yyyy-MM-dd")
     private Date recordDate;
     @NotNull(message = "员工ID不能为空")
     @Excel(name = "员工ID")
@@ -36,20 +36,20 @@ public class HrAttendanceRecord extends BaseEntity
     /** 班次结束时间（关联 biz_hr_shift 回显，非表字段） */
     private String shiftEndTime;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    @Excel(name = "上班打卡")
+    @Excel(name = "上班打卡", dateFormat = "yyyy-MM-dd HH:mm:ss")
     private Date clockIn;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    @Excel(name = "下班打卡")
+    @Excel(name = "下班打卡", dateFormat = "yyyy-MM-dd HH:mm:ss")
     private Date clockOut;
-    @Excel(name = "上班来源")
+    @Excel(name = "上班来源", dictType = "hr_clock_source")
     private String clockInSource;
-    @Excel(name = "下班来源")
+    @Excel(name = "下班来源", dictType = "hr_clock_source")
     private String clockOutSource;
     @Excel(name = "迟到分钟")
     private Integer lateMinutes;
     @Excel(name = "早退分钟")
     private Integer earlyMinutes;
-    @Excel(name = "考勤状态")
+    @Excel(name = "考勤状态", dictType = "hr_attendance_status")
     private String attendanceStatus;
     @Excel(name = "加班小时")
     private BigDecimal overtimeHours;
@@ -57,7 +57,7 @@ public class HrAttendanceRecord extends BaseEntity
     private Integer nightShift;
     @Excel(name = "备注")
     private String remark;
-    @Excel(name = "删除标志")
+    @Excel(name = "删除标志", readConverterExp = "0=正常,2=已删除")
     private String delFlag;
 
     public Long getRecordId() { return recordId; }

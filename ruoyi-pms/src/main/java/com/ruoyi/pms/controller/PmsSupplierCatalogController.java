@@ -43,6 +43,7 @@ public class PmsSupplierCatalogController extends BaseController
     public void export(HttpServletResponse response, PmsSupplierCatalog catalog)
     {
         List<PmsSupplierCatalog> list = pmsSupplierCatalogService.selectCatalogList(catalog);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, catalog);
         ExcelUtil<PmsSupplierCatalog> util = new ExcelUtil<>(PmsSupplierCatalog.class);
         util.exportExcel(response, list, "供应商供货清单数据");
     }

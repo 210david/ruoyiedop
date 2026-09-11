@@ -37,6 +37,7 @@ public class SafetyCertController extends BaseController
     public void export(HttpServletResponse response, SafetyCert cert)
     {
         List<SafetyCert> list = safetyCertService.selectSafetyCertList(cert);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, cert);
         ExcelUtil<SafetyCert> util = new ExcelUtil<>(SafetyCert.class);
         util.exportExcel(response, list, "安全证照");
     }

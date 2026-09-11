@@ -37,6 +37,7 @@ public class HrSalaryPlanController extends BaseController
     public void export(HttpServletResponse response, HrSalaryPlan hrSalaryPlan)
     {
         List<HrSalaryPlan> list = hrSalaryPlanService.selectHrSalaryPlanList(hrSalaryPlan);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, hrSalaryPlan);
         ExcelUtil<HrSalaryPlan> util = new ExcelUtil<>(HrSalaryPlan.class);
         util.exportExcel(response, list, "定薪调薪");
     }

@@ -51,6 +51,7 @@ public class HrScheduleController extends BaseController
     public void export(HttpServletResponse response, HrSchedule hrSchedule)
     {
         List<HrSchedule> list = hrScheduleService.selectHrScheduleList(hrSchedule);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, hrSchedule);
         ExcelUtil<HrSchedule> util = new ExcelUtil<>(HrSchedule.class);
         util.exportExcel(response, list, "排班");
     }

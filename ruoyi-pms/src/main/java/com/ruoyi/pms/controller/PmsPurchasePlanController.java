@@ -43,6 +43,7 @@ public class PmsPurchasePlanController extends BaseController
     {
         startPage();
         List<PmsPurchasePlan> list = pmsPurchasePlanService.selectPmsPurchasePlanList(pmsPurchasePlan);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, pmsPurchasePlan);
         return getDataTable(list);
     }
 

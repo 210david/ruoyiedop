@@ -99,7 +99,7 @@
           <el-table-column label="请假单号" prop="leaveReqNo" key="leaveReqNo" align="center" :width="colWidth('leaveReqNo', 160)" resizable v-if="columns.leaveReqNo.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.leaveReqNo }}</span></template>
           </el-table-column>
-          <el-table-column label="员工姓名" prop="employeeName" key="employeeName" align="center" :width="colWidth('employeeName', 110)" resizable v-if="columns.employeeName.visible" />
+          <el-table-column label="员工姓名" prop="employeeName" key="employeeName" align="center" :min-width="colWidth('employeeName', 110)" show-overflow-tooltip resizable v-if="columns.employeeName.visible" />
           <el-table-column label="工号" prop="employeeNo" key="employeeNo" align="center" :width="colWidth('employeeNo', 110)" resizable v-if="columns.employeeNo.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.employeeNo }}</span></template>
           </el-table-column>
@@ -829,7 +829,7 @@ function submitAudit(action) {
 }
 
 function handleExport() {
-  proxy.download('hr/leaveRequest/export', { ...queryParams.value }, `hrLeaveRequest_${new Date().getTime()}.xlsx`)
+  proxy.download('hr/leaveRequest/export', proxy.withExportIds({ ...queryParams.value }, ids.value, 'leaveReqId'), `hrLeaveRequest_${new Date().getTime()}.xlsx`)
 }
 
 /** 假别文字映射 */

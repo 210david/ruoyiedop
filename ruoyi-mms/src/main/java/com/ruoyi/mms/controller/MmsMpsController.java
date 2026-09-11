@@ -50,6 +50,7 @@ public class MmsMpsController extends BaseController
     public void export(HttpServletResponse response, MmsMps mps)
     {
         List<MmsMps> list = mmsMpsService.selectMpsList(mps);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, mps);
         ExcelUtil<MmsMps> util = new ExcelUtil<>(MmsMps.class);
         util.exportExcel(response, list, "生产计划数据");
     }

@@ -510,9 +510,9 @@ function submitForm() {
   proxy.$refs["formRef"].validate(valid => {
     if (valid) {
       if (form.value.reportId != null) {
-        updateWorkReport(form.value).then(() => { proxy.$modal.msgSuccess("修改成功"); open.value = false; getList(); });
+        updateWorkReport(form.value).then(() => { proxy.$modal.msgSuccess("修改成功"); open.value = false; getList(); loadStatusCounts(); });
       } else {
-        addWorkReport(form.value).then(() => { proxy.$modal.msgSuccess("新增成功"); open.value = false; getList(); });
+        addWorkReport(form.value).then(() => { proxy.$modal.msgSuccess("新增成功"); open.value = false; getList(); loadStatusCounts(); });
       }
     }
   });
@@ -520,9 +520,9 @@ function submitForm() {
 function cancel() { open.value = false; reset(); }
 function handleDelete(row) {
   const delIds = row.reportId || ids.value;
-  proxy.$modal.confirm('是否确认删除选中的报工记录？').then(() => delWorkReport(delIds)).then(() => { getList(); proxy.$modal.msgSuccess("删除成功"); }).catch(() => {});
+  proxy.$modal.confirm('是否确认删除选中的报工记录？').then(() => delWorkReport(delIds)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess("删除成功"); }).catch(() => {});
 }
-function handleExport() { proxy.download("mms/report/export", { ...queryParams.value }, `report_${new Date().getTime()}.xlsx`); }
+function handleExport() { proxy.download("mms/report/export", proxy.withExportIds({ ...queryParams.value }, ids.value, 'reportId'), `report_${new Date().getTime()}.xlsx`); }
 
 function handleAudit(row, status) {
   auditTitle.value = status === "1" ? "报工审核-通过" : "报工审核-驳回";
@@ -531,7 +531,7 @@ function handleAudit(row, status) {
 }
 function submitAudit() {
   auditWorkReport(auditForm.value.reportId, auditForm.value.status, auditForm.value.auditRemark).then(() => {
-    auditOpen.value = false; getList(); proxy.$modal.msgSuccess("操作成功");
+    auditOpen.value = false; getList(); loadStatusCounts(); proxy.$modal.msgSuccess("操作成功");
   });
 }
 

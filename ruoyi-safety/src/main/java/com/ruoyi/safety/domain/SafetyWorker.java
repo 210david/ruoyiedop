@@ -28,21 +28,21 @@ public class SafetyWorker extends BaseEntity
     @Excel(name = "特种人员", readConverterExp = "0=否,1=是")
     private String isSpecial;
     @NotBlank(message = "作业类别不能为空")
-    @Excel(name = "作业类别")
+    @Excel(name = "作业类别", dictType = "safety_job_type")
     private String jobType;
     @NotBlank(message = "作业证号不能为空")
     @Excel(name = "证号")
     private String certNo;
     @NotNull(message = "发证日期不能为空")
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "发证日期", width = 120)
+    @Excel(name = "发证日期", width = 120, dateFormat = "yyyy-MM-dd")
     private Date certIssueDate;
     @NotNull(message = "有效期不能为空")
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "有效期至", width = 120)
+    @Excel(name = "有效期至", width = 120, dateFormat = "yyyy-MM-dd")
     private Date validTo;
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "复审日期", width = 120)
+    @Excel(name = "复审日期", width = 120, dateFormat = "yyyy-MM-dd")
     private Date reviewDate;
     private String remindStatus;
     private Long enterpriseId;

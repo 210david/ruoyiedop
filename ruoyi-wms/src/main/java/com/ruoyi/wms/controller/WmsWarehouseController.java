@@ -38,6 +38,7 @@ public class WmsWarehouseController extends BaseController
     public void export(HttpServletResponse response, WmsWarehouse warehouse)
     {
         List<WmsWarehouse> list = wmsWarehouseService.selectWarehouseList(warehouse);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, warehouse);
         ExcelUtil<WmsWarehouse> util = new ExcelUtil<>(WmsWarehouse.class);
         util.exportExcel(response, list, "仓库数据");
     }

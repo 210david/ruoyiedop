@@ -239,7 +239,7 @@ function handleDelete(row) {
   const delIds = row.calendarId || ids.value;
   proxy.$modal.confirm('是否确认删除选中的日历记录？').then(function() { return delCalendar(delIds); }).then(() => { getList(); proxy.$modal.msgSuccess("删除成功"); }).catch(() => {});
 }
-function handleExport() { proxy.download("mms/calendar/export", { ...queryParams.value }, `calendar_${new Date().getTime()}.xlsx`); }
+function handleExport() { proxy.download("mms/calendar/export", proxy.withExportIds({ ...queryParams.value }, ids.value, 'calendarId'), `calendar_${new Date().getTime()}.xlsx`); }
 function dayTypeLabel(val) { if (val === null || val === undefined || val === '') return '—'; const item = mms_calendar_daytype.value?.find(d => d.value == val); return item ? item.label : '—'; }
 function badgeClass(val) { const map = { '0': 'green', '1': 'amber', '2': 'red' }; return map[val] || 'gray'; }
 getList();

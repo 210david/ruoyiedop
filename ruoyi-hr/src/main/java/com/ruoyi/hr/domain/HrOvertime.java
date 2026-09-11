@@ -29,17 +29,17 @@ public class HrOvertime extends BaseEntity
     private String deptName;
     @NotNull(message = "加班日期不能为空")
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "加班日期")
+    @Excel(name = "加班日期", dateFormat = "yyyy-MM-dd HH:mm:ss")
     private Date overtimeDate;
-    @Excel(name = "加班类型")
+    @Excel(name = "加班类型", dictType = "hr_overtime_type")
     private String overtimeType;
     @NotNull(message = "开始时间不能为空")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    @Excel(name = "开始时间")
+    @Excel(name = "开始时间", dateFormat = "yyyy-MM-dd HH:mm:ss")
     private Date startTime;
     @NotNull(message = "结束时间不能为空")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    @Excel(name = "结束时间")
+    @Excel(name = "结束时间", dateFormat = "yyyy-MM-dd HH:mm:ss")
     private Date endTime;
     @NotNull(message = "加班小时不能为空")
     @Excel(name = "加班小时")
@@ -51,18 +51,18 @@ public class HrOvertime extends BaseEntity
     @NotBlank(message = "加班原因不能为空")
     @Excel(name = "加班原因")
     private String reason;
-    @Excel(name = "审批状态")
+    @Excel(name = "审批状态", dictType = "hr_audit_status")
     private String auditStatus;
     @Excel(name = "审批人")
     private String auditBy;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    @Excel(name = "审批时间")
+    @Excel(name = "审批时间", dateFormat = "yyyy-MM-dd HH:mm:ss")
     private Date auditTime;
     @Excel(name = "审批意见")
     private String auditRemark;
-    @Excel(name = "状态")
+    @Excel(name = "状态", dictType = "hr_audit_status")
     private String status;
-    @Excel(name = "删除标志")
+    @Excel(name = "删除标志", readConverterExp = "0=正常,2=已删除")
     private String delFlag;
 
     public Long getOvertimeId() { return overtimeId; }

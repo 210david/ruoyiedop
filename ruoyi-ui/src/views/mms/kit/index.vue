@@ -344,8 +344,8 @@ function resetQuery() { queryParams.value.kitNo = undefined; queryParams.value.w
 function handleStatusTabClick(status) { activeStatusTab.value = status; queryParams.value.status = status === "all" ? undefined : status; handleQuery(); }
 function handleSelectionChange(selection) { ids.value = selection.map(item => item.kitId); multiple.value = !selection.length; }
 function handleView(row) { const id = row.kitId || ids.value[0]; Promise.all([getKitCheck(id), getKitCheckDetail(id)]).then(([infoRes, detailRes]) => { viewData.value = infoRes.data; detailList.value = detailRes.data || []; viewOpen.value = true; }); }
-function handleDelete(row) { const delIds = row.kitId || ids.value; proxy.$modal.confirm('是否确认删除选中的齐套检查记录？').then(() => delKitCheck(delIds)).then(() => { getList(); proxy.$modal.msgSuccess("删除成功"); }).catch(() => {}); }
-function handleExport() { proxy.download("mms/kit/export", { ...queryParams.value }, `kit_${new Date().getTime()}.xlsx`); }
+function handleDelete(row) { const delIds = row.kitId || ids.value; proxy.$modal.confirm('是否确认删除选中的齐套检查记录？').then(() => delKitCheck(delIds)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess("删除成功"); }).catch(() => {}); }
+function handleExport() { proxy.download("mms/kit/export", proxy.withExportIds({ ...queryParams.value }, ids.value, 'kitId'), `kit_${new Date().getTime()}.xlsx`); }
 
 // ===== 一键齐套检查 =====
 function handleAutoCheck() { autoCheckOpen.value = true; workOrderQuery.pageNum = 1; workOrderQuery.workOrderNo = undefined; workOrderQuery.productName = undefined; selectedWorkOrderIds.value = []; loadWorkOrders(); }

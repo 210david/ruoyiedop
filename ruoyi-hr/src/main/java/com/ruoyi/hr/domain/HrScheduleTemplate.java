@@ -42,7 +42,7 @@ public class HrScheduleTemplate extends BaseEntity
     private String description;
 
     /** 状态(0启用1停用) */
-    @Excel(name = "状态")
+    @Excel(name = "状态", dictType = "sys_normal_disable")
     private String status;
 
     /** 删除标志 */

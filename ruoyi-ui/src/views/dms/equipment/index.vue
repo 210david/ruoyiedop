@@ -128,9 +128,9 @@
           <el-table-column label="资产编号" prop="assetCode" key="assetCode" :width="colWidth('assetCode', 130)" resizable v-if="columns.assetCode.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.assetCode }}</span></template>
           </el-table-column>
-          <el-table-column label="设备名称" prop="equipmentName" key="equipmentName" :width="colWidth('equipmentName', 200)" resizable show-overflow-tooltip v-if="columns.equipmentName.visible" />
+          <el-table-column label="设备名称" prop="equipmentName" key="equipmentName" :min-width="colWidth('equipmentName', 200)" resizable show-overflow-tooltip v-if="columns.equipmentName.visible" />
           <el-table-column label="分类" prop="categoryName" key="categoryName" :width="colWidth('categoryName', 120)" resizable v-if="columns.categoryName.visible" />
-          <el-table-column label="型号" prop="model" key="model" :width="colWidth('model', 120)" resizable v-if="columns.model.visible" />
+          <el-table-column label="型号" prop="model" key="model" :min-width="colWidth('model', 120)" show-overflow-tooltip resizable v-if="columns.model.visible" />
           <el-table-column label="设备等级" prop="equipmentLevel" key="equipmentLevel" :width="colWidth('equipmentLevel', 100)" resizable align="center" v-if="columns.equipmentLevel.visible">
             <template #default="scope">
               <span class="badge blue">{{ equipmentLevelLabel(scope.row.equipmentLevel) }}</span>
@@ -537,13 +537,13 @@ function handleUpdate(row) {
 function submitForm() {
   proxy.$refs['equipmentRef'].validate(valid => {
     if (valid) {
-      if (form.value.equipmentId != undefined) { updateEquipment(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList() }) }
-      else { addEquipment(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList() }) }
+      if (form.value.equipmentId != undefined) { updateEquipment(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList(); loadStatusCounts() }) }
+      else { addEquipment(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList(); loadStatusCounts() }) }
     }
   })
 }
-function handleDelete(row) { const equipmentIds = row.equipmentId || ids.value; proxy.$modal.confirm('确认删除编号为"' + equipmentIds + '"的数据？').then(() => delEquipment(equipmentIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
-function handleExport() { proxy.download('dms/equipment/export', { ...proxy.addDateRange(queryParams.value, dateRange.value, 'CreateTime') }, `equipment_${new Date().getTime()}.xlsx`) }
+function handleDelete(row) { const equipmentIds = row.equipmentId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delEquipment(equipmentIds)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleExport() { proxy.download('dms/equipment/export', proxy.withExportIds({ ...proxy.addDateRange(queryParams.value, dateRange.value, 'CreateTime') }, ids.value, 'equipmentId'), `equipment_${new Date().getTime()}.xlsx`) }
 function handleImport() {
   proxy.$refs['importRef'].open()
 }

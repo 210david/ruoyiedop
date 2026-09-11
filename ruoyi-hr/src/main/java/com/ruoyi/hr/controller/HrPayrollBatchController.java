@@ -37,6 +37,7 @@ public class HrPayrollBatchController extends BaseController
     public void export(HttpServletResponse response, HrPayrollBatch hrPayrollBatch)
     {
         List<HrPayrollBatch> list = hrPayrollBatchService.selectHrPayrollBatchList(hrPayrollBatch);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, hrPayrollBatch);
         ExcelUtil<HrPayrollBatch> util = new ExcelUtil<>(HrPayrollBatch.class);
         util.exportExcel(response, list, "薪酬发放");
     }

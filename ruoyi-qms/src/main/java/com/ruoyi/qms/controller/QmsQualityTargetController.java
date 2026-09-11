@@ -48,6 +48,7 @@ public class QmsQualityTargetController extends BaseController {
     @PostMapping("/export")
     public void export(HttpServletResponse response, QmsQualityTarget target) {
         List<QmsQualityTarget> list = service.selectTargetList(target);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, target);
         ExcelUtil<QmsQualityTarget> util = new ExcelUtil<>(QmsQualityTarget.class);
         util.exportExcel(response, list, "质量目标数据");
     }

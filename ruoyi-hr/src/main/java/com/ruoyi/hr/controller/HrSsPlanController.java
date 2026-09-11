@@ -46,6 +46,7 @@ public class HrSsPlanController extends BaseController
     public void export(HttpServletResponse response, HrSsPlan hrSsPlan)
     {
         List<HrSsPlan> list = hrSsPlanService.selectHrSsPlanList(hrSsPlan);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, hrSsPlan);
         ExcelUtil<HrSsPlan> util = new ExcelUtil<>(HrSsPlan.class);
         util.exportExcel(response, list, "社保方案");
     }

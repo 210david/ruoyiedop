@@ -361,8 +361,8 @@ function handleAdd() { reset(); open.value = true; title.value = '添加检验�
 function handleUpdate(row) { reset(); getStd(row.stdId || ids.value[0]).then(res => { form.value = res.data; open.value = true; title.value = '修改检验标准' }) }
 function handleView(row) { getStd(row.stdId).then(res => { viewData.value = res.data; viewOpen.value = true }) }
 function submitForm() { proxy.$refs['stdRef'].validate(valid => { if (valid) { if (form.value.stdId != undefined) { updateStd(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList() }) } else { addStd(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList() }) } } }) }
-function handleDelete(row) { const stdIds = row.stdId || ids.value; proxy.$modal.confirm('确认删除编号为"' + stdIds + '"的数据？').then(() => delStd(stdIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
-function handleExport() { proxy.download('qms/std/export', { ...proxy.addDateRange(queryParams.value, dateRange.value) }, `std_${new Date().getTime()}.xlsx`) }
+function handleDelete(row) { const stdIds = row.stdId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delStd(stdIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleExport() { proxy.download('qms/std/export', proxy.withExportIds({ ...proxy.addDateRange(queryParams.value, dateRange.value) }, ids.value, 'stdId'), `std_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 
 getList()

@@ -50,6 +50,7 @@ public class MmsScheduleController extends BaseController
     public void export(HttpServletResponse response, MmsSchedule schedule)
     {
         List<MmsSchedule> list = mmsScheduleService.selectScheduleList(schedule);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, schedule);
         ExcelUtil<MmsSchedule> util = new ExcelUtil<>(MmsSchedule.class);
         util.exportExcel(response, list, "排产管理数据");
     }

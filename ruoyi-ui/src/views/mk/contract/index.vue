@@ -132,7 +132,7 @@
           <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
           <el-table-column label="合同编号" prop="contractNo" key="contractNo" :width="colWidth('contractNo', 150)" resizable v-if="columns.contractNo.visible" />
           <el-table-column label="合同名称" prop="contractName" key="contractName" show-overflow-tooltip v-if="columns.contractName.visible" />
-          <el-table-column label="客户名称" prop="customerName" key="customerName" :width="colWidth('customerName', 180)" resizable show-overflow-tooltip v-if="columns.customerName.visible" />
+          <el-table-column label="客户名称" prop="customerName" key="customerName" :min-width="colWidth('customerName', 180)" resizable show-overflow-tooltip v-if="columns.customerName.visible" />
           <el-table-column label="合同类型" prop="contractType" key="contractType" :width="colWidth('contractType', 100)" resizable align="center" v-if="columns.contractType.visible">
             <template #default="scope"><span class="badge" :class="contractTypeBadgeClass(scope.row.contractType)"><span class="dot"></span>{{ contractTypeLabel(scope.row.contractType) }}</span></template>
           </el-table-column>
@@ -1584,14 +1584,14 @@ function confirmChangeApprove(approved) {
   approveContractChangeByContractId(viewForm.value.contractId, approved, changeApproveOpinion.value).then(() => {
     proxy.$modal.msgSuccess(msg + '成功')
     viewOpen.value = false
-    getList()
+    getList(); loadStatusCounts()
   }).catch(() => {})
 }
 function submitForm() {
   proxy.$refs['contractRef'].validate(valid => {
     if (valid) {
-      if (form.value.contractId != undefined) { updateContract(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList() }).catch(() => {}) }
-      else { addContract(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList() }).catch(() => {}) }
+      if (form.value.contractId != undefined) { updateContract(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList(); loadStatusCounts() }).catch(() => {}) }
+      else { addContract(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList(); loadStatusCounts() }).catch(() => {}) }
     }
   })
 }
@@ -1606,10 +1606,10 @@ function handlePreview(fileUrl) {
 }
 function handleDelete(row) {
   const contractIds = row.contractId || ids.value
-  proxy.$modal.confirm('确认删除编号为"' + contractIds + '"的数据？').then(() => delContract(contractIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {})
+  proxy.$modal.confirm('确认删除？').then(() => delContract(contractIds)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {})
 }
 function handleSubmit(row) {
-  proxy.$modal.confirm('确认提交合同【' + row.contractNo + '】进行审批？').then(() => submitContract(row.contractId)).then(() => { getList(); proxy.$modal.msgSuccess('已提交审批') }).catch(() => {})
+  proxy.$modal.confirm('确认提交合同【' + row.contractNo + '】进行审批？').then(() => submitContract(row.contractId)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('已提交审批') }).catch(() => {})
 }
 function handleApprove(row) {
   getContract(row.contractId).then(res => {
@@ -1628,13 +1628,13 @@ function confirmApprove(passed) {
     approveContract(approveForm.value.contractId, approveForm.value.approveOpinion).then(() => {
       proxy.$modal.msgSuccess('审批通过，合同已生效')
       approveOpen.value = false
-      getList()
+      getList(); loadStatusCounts()
     }).catch(() => {})
   } else {
     rejectContract(approveForm.value.contractId, approveForm.value.approveOpinion).then(() => {
       proxy.$modal.msgSuccess('已驳回，合同退回草稿状态')
       approveOpen.value = false
-      getList()
+      getList(); loadStatusCounts()
     }).catch(() => {})
   }
 }
@@ -1646,7 +1646,7 @@ function confirmTerminate() {
   terminateContract(terminateForm.value.contractId, terminateForm.value.terminateReason).then(() => {
     proxy.$modal.msgSuccess('合同已终止')
     terminateOpen.value = false
-    getList()
+    getList(); loadStatusCounts()
   }).catch(() => {})
 }
 
@@ -1702,7 +1702,7 @@ function confirmRenew() {
     renewContract(renewForm.value.contractId, submitData).then(() => {
       proxy.$modal.msgSuccess('续签合同已创建，请完善信息后提交审批')
       renewOpen.value = false
-      getList()
+      getList(); loadStatusCounts()
     }).catch(() => {})
   })
 }
@@ -1866,12 +1866,12 @@ function submitChange() {
     submitContractChangeBatch(submitData).then(() => {
       proxy.$modal.msgSuccess('变更申请已提交，等待审批')
       changeOpen.value = false
-      getList()
+      getList(); loadStatusCounts()
     }).catch(() => {})
   })
 }
 
-function handleExport() { proxy.download('mk/contract/export', { ...proxy.addDateRange(queryParams.value, dateRange.value, 'SignDate') }, `contract_${new Date().getTime()}.xlsx`) }
+function handleExport() { proxy.download('mk/contract/export', proxy.withExportIds({ ...proxy.addDateRange(queryParams.value, dateRange.value, 'SignDate') }, ids.value, 'contractId'), `contract_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 getList()
 

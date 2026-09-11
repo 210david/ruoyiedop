@@ -17,7 +17,7 @@ public class HrPieceworkRecord extends BaseEntity
     private String pwRecordNo;
     @NotNull(message = "报工日期不能为空")
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "报工日期")
+    @Excel(name = "报工日期", dateFormat = "yyyy-MM-dd")
     private Date recordDate;
     @Excel(name = "员工ID")
     private Long employeeId;
@@ -46,11 +46,11 @@ public class HrPieceworkRecord extends BaseEntity
     @Excel(name = "确认人")
     private String confirmBy;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    @Excel(name = "确认时间")
+    @Excel(name = "确认时间", dateFormat = "yyyy-MM-dd HH:mm:ss")
     private Date confirmTime;
     @Excel(name = "来源")
     private String source;
-    @Excel(name = "删除标志")
+    @Excel(name = "删除标志", readConverterExp = "0=正常,2=已删除")
     private String delFlag;
 
     public Long getPwRecordId() { return pwRecordId; }

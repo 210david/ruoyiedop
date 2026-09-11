@@ -76,7 +76,7 @@
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
           <el-table-column label="出入库单号" prop="recordCode" key="recordCode" :width="colWidth('recordCode', 160)" resizable show-overflow-tooltip v-if="columns.recordCode.visible" />
-          <el-table-column label="危化品名称" prop="materialName" key="materialName" :width="colWidth('materialName', 160)" resizable show-overflow-tooltip v-if="columns.materialName.visible" />
+          <el-table-column label="危化品名称" prop="materialName" key="materialName" :min-width="colWidth('materialName', 160)" resizable show-overflow-tooltip v-if="columns.materialName.visible" />
           <el-table-column label="类型" prop="recordType" key="recordType" :width="colWidth('recordType', 80)" align="center" resizable v-if="columns.recordType.visible">
             <template #default="scope">
               <span class="badge" :class="scope.row.recordType === '1' ? 'blue' : 'amber'"><span class="dot"></span>{{ scope.row.recordType === '1' ? '入库' : '出库' }}</span>
@@ -90,7 +90,7 @@
           </el-table-column>
           <el-table-column label="操作前库存" prop="beforeStock" key="beforeStock" :width="colWidth('beforeStock', 110)" align="center" resizable v-if="columns.beforeStock.visible" />
           <el-table-column label="操作后库存" prop="afterStock" key="afterStock" :width="colWidth('afterStock', 110)" align="center" resizable v-if="columns.afterStock.visible" />
-          <el-table-column label="供应商/客户" prop="supplierName" key="supplierName" :width="colWidth('supplierName', 140)" resizable show-overflow-tooltip v-if="columns.supplierName.visible" />
+          <el-table-column label="供应商/客户" prop="supplierName" key="supplierName" :min-width="colWidth('supplierName', 140)" resizable show-overflow-tooltip v-if="columns.supplierName.visible" />
           <el-table-column label="领用人" prop="recipient" key="recipient" :width="colWidth('recipient', 100)" resizable v-if="columns.recipient.visible" />
           <el-table-column label="出入库时间" prop="recordTime" key="recordTime" :width="colWidth('recordTime', 160)" align="center" resizable sortable="custom" v-if="columns.recordTime.visible">
             <template #default="scope">{{ parseTime(scope.row.recordTime, '{y}-{m}-{d} {h}:{i}') }}</template>
@@ -306,7 +306,7 @@ function submitForm() {
   })
 }
 function handleDelete(row) { const recordIds = row.recordId || ids.value; proxy.$modal.confirm('是否确认删除该出入库记录？删除后库存将自动冲正').then(function() { return delMaterialRecord(recordIds) }).then(() => { getList(); loadMaterials(); proxy.$modal.msgSuccess('删除成功，库存已冲正') }).catch(() => {}) }
-function handleExport() { proxy.download('safety/materialRecord/export', { ...queryParams.value }, `materialRecord_${new Date().getTime()}.xlsx`) }
+function handleExport() { proxy.download('safety/materialRecord/export', proxy.withExportIds({ ...queryParams.value }, ids.value, 'recordId'), `materialRecord_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 function reset() { form.value = { recordId: undefined, recordCode: undefined, materialId: undefined, recordType: '1', quantity: undefined, supplierName: undefined, recipient: undefined, purpose: undefined, batchNo: undefined, recordTime: undefined, remark: undefined }; proxy.resetForm('recordRef') }
 function onMaterialChange(val) { /* could auto-fill unit etc */ }

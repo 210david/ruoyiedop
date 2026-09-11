@@ -37,7 +37,7 @@ public class SafetyRiskPoint extends BaseEntity
     private String hazardDesc;
 
     /** 事故类别 */
-    @Excel(name = "事故类别")
+    @Excel(name = "事故类别", dictType = "safety_accident_type")
     private String accidentType;
 
     /** L值 */

@@ -38,6 +38,7 @@ public class HrAttendanceMonthlyController extends BaseController
     public void export(HttpServletResponse response, HrAttendanceMonthly hrAttendanceMonthly)
     {
         List<HrAttendanceMonthly> list = hrAttendanceMonthlyService.selectHrAttendanceMonthlyList(hrAttendanceMonthly);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, hrAttendanceMonthly);
         ExcelUtil<HrAttendanceMonthly> util = new ExcelUtil<>(HrAttendanceMonthly.class);
         util.exportExcel(response, list, "考勤月报");
     }

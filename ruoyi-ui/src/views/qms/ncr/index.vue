@@ -127,7 +127,7 @@
           </el-table-column>
           <el-table-column label="来源单号" prop="sourceNo" key="sourceNo" :width="colWidth('sourceNo', 150)" resizable show-overflow-tooltip v-if="columns.sourceNo.visible" />
           <el-table-column label="物料编码" prop="materialCode" key="materialCode" :width="colWidth('materialCode', 140)" resizable show-overflow-tooltip v-if="columns.materialCode.visible" />
-          <el-table-column label="物料名称" prop="materialName" key="materialName" :width="colWidth('materialName', 180)" resizable show-overflow-tooltip v-if="columns.materialName.visible" />
+          <el-table-column label="物料名称" prop="materialName" key="materialName" :min-width="colWidth('materialName', 180)" resizable show-overflow-tooltip v-if="columns.materialName.visible" />
           <el-table-column label="批次号" prop="batchNo" key="batchNo" :width="colWidth('batchNo', 120)" resizable show-overflow-tooltip v-if="columns.batchNo.visible" />
           <el-table-column label="不合格数量" prop="defectQty" key="defectQty" :width="colWidth('defectQty', 100)" resizable align="right" v-if="columns.defectQty.visible" />
           <el-table-column label="缺陷等级" prop="defectLevel" key="defectLevel" :width="colWidth('defectLevel', 100)" resizable align="center" v-if="columns.defectLevel.visible">
@@ -859,13 +859,13 @@ function submitForm() {
         updateNcr(form.value).then(() => {
           proxy.$modal.msgSuccess('修改成功')
           open.value = false
-          getList()
+          getList(); loadStatusCounts()
         })
       } else {
         addNcr(form.value).then(() => {
           proxy.$modal.msgSuccess('新增成功')
           open.value = false
-          getList()
+          getList(); loadStatusCounts()
         })
       }
     }
@@ -874,19 +874,19 @@ function submitForm() {
 
 function handleDelete(row) {
   const delIds = row?.ncrId ? [row.ncrId] : ids.value
-  proxy.$modal.confirm('确认删除编号为"' + delIds + '"的数据项？').then(() => delNcr(delIds.join(','))).then(() => {
-    getList()
+  proxy.$modal.confirm('确认删除？').then(() => delNcr(delIds.join(','))).then(() => {
+    getList(); loadStatusCounts()
     proxy.$modal.msgSuccess('删除成功')
   }).catch(() => {})
 }
 
 function handleExport() {
-  proxy.download('qms/ncr/export', { ...queryParams.value }, `ncr_${new Date().getTime()}.xlsx`)
+  proxy.download('qms/ncr/export', proxy.withExportIds({ ...queryParams.value }, ids.value, 'ncrId'), `ncr_${new Date().getTime()}.xlsx`)
 }
 
 function handleSubmitReview(row) {
   proxy.$modal.confirm('确认提交NCR "' + row.ncrNo + '"进入MRB评审？').then(() => submitReview(row.ncrId)).then(() => {
-    getList()
+    getList(); loadStatusCounts()
     proxy.$modal.msgSuccess('提交评审成功')
   }).catch(() => {})
 }
@@ -905,13 +905,13 @@ function confirmApprove(passed) {
         approveNcr(approveForm.value.ncrId, approveForm.value.approveOpinion).then(() => {
           proxy.$modal.msgSuccess('审批通过')
           approveOpen.value = false
-          getList()
+          getList(); loadStatusCounts()
         })
       } else {
         rejectNcr(approveForm.value.ncrId, approveForm.value.approveOpinion).then(() => {
           proxy.$modal.msgSuccess('已驳回')
           approveOpen.value = false
-          getList()
+          getList(); loadStatusCounts()
         })
       }
     }
@@ -936,7 +936,7 @@ function submitDispositionForm() {
       }).then(() => {
         proxy.$modal.msgSuccess('处置结论已提交')
         dispositionOpen.value = false
-        getList()
+        getList(); loadStatusCounts()
       })
     }
   })
@@ -959,7 +959,7 @@ function submitVerify() {
       }).then(() => {
         proxy.$modal.msgSuccess('验证已提交')
         verifyOpen.value = false
-        getList()
+        getList(); loadStatusCounts()
       })
     }
   })
@@ -967,7 +967,7 @@ function submitVerify() {
 
 function handleClose(row) {
   proxy.$modal.confirm('确认关闭NCR "' + row.ncrNo + '"？关闭后不可修改。').then(() => closeNcr(row.ncrId)).then(() => {
-    getList()
+    getList(); loadStatusCounts()
     proxy.$modal.msgSuccess('关闭成功')
   }).catch(() => {})
 }

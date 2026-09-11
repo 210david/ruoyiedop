@@ -117,7 +117,7 @@
             <template #default="scope"><span class="badge" :class="badgeClass(scope.row.status)"><span class="dot"></span>{{ statusLabel(scope.row.status) }}</span></template>
           </el-table-column>
           <el-table-column label="总数量" prop="totalQty" key="totalQty" :width="colWidth('totalQty', 110)" resizable align="center" class-name="col-num" v-if="columns.totalQty.visible" />
-          <el-table-column label="备注" prop="remark" key="remark" :width="colWidth('remark', 200)" resizable :show-overflow-tooltip="true" v-if="columns.remark.visible" />
+          <el-table-column label="备注" prop="remark" key="remark" :min-width="colWidth('remark', 200)" resizable :show-overflow-tooltip="true" v-if="columns.remark.visible" />
 <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
 <template #default="scope">
 <div class="action-btn-row">
@@ -188,8 +188,8 @@
               <el-table :data="form.detailList" border @header-dragend="onHeaderDragEnd">
                 <el-table-column label="库存物料" min-width="220"><template #default="scope"><el-input v-model="scope.row.materialCode" readonly size="small" placeholder="选择库存物料" @click="openInventoryPicker(scope.$index)"><template v-if="scope.row.materialCode" #append><el-button icon="CircleClose" size="small" @click.stop="clearInventory(scope.$index)" /></template><template v-else #append><el-button icon="Search" size="small" @click="openInventoryPicker(scope.$index)" /></template></el-input></template></el-table-column>
                 <el-table-column label="物料编码" prop="materialCode" :width="colWidth('materialCode', 120)" resizable align="center" />
-                <el-table-column label="物料名称" prop="materialName" :width="colWidth('materialName', 150)" resizable show-overflow-tooltip align="center" />
-                <el-table-column label="规格型号" prop="specModel" :width="colWidth('specModel', 120)" resizable show-overflow-tooltip align="center" />
+                <el-table-column label="物料名称" prop="materialName" :min-width="colWidth('materialName', 150)" resizable show-overflow-tooltip align="center" />
+                <el-table-column label="规格型号" prop="specModel" :min-width="colWidth('specModel', 120)" resizable show-overflow-tooltip align="center" />
                 <el-table-column label="单位" prop="unit" :width="colWidth('unit', 70)" resizable align="center"><template #default="scope"><dict-tag :options="wms_unit" :value="scope.row.unit" /></template></el-table-column>
                 <el-table-column label="批次号" prop="batchNo" :width="colWidth('batchNo', 110)" resizable align="center" />
                 <el-table-column label="库位" prop="locationName" :width="colWidth('locationName', 90)" resizable show-overflow-tooltip align="center" />
@@ -262,7 +262,7 @@
             <el-table :data="detailData.detailList" border @header-dragend="onHeaderDragEnd">
               <el-table-column label="物料编码" prop="materialCode" :width="colWidth('materialCode', 120)" resizable align="center" />
               <el-table-column label="物料名称" prop="materialName" show-overflow-tooltip align="center" />
-              <el-table-column label="规格型号" prop="specModel" :width="colWidth('specModel', 120)" resizable show-overflow-tooltip align="center" />
+              <el-table-column label="规格型号" prop="specModel" :min-width="colWidth('specModel', 120)" resizable show-overflow-tooltip align="center" />
               <el-table-column label="单位" prop="unit" :width="colWidth('unit', 70)" resizable align="center"><template #default="scope"><dict-tag :options="wms_unit" :value="scope.row.unit" /></template></el-table-column>
               <el-table-column label="批次号" prop="batchNo" :width="colWidth('batchNo', 110)" resizable align="center" />
               <el-table-column label="计划数量" prop="planQty" :width="colWidth('planQty', 90)" resizable align="center" />
@@ -362,7 +362,7 @@
 <script setup name="WmsOutbound">
 import { listOutbound, getOutbound, addOutbound, updateOutbound, delOutbound, submitOutbound } from '@/api/wms/outbound'
 import { listWarehouse } from '@/api/wms/warehouse'
-import { fetchAllPages, downloadCsv } from '@/utils/csvExport'
+import { fetchAllPages, downloadXlsx } from '@/utils/csvExport'
 import InventoryPicker from '@/components/InventoryPicker/index.vue'
 import WarehousePicker from '@/components/WarehousePicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
@@ -458,9 +458,9 @@ function submitForm() {
   proxy.$refs['outboundRef'].validate(v => {
     if (v) {
       if (form.value.orderId != null) {
-        updateOutbound(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList() })
+        updateOutbound(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList(); loadStatusCounts() })
       } else {
-        addOutbound(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList() })
+        addOutbound(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList(); loadStatusCounts() })
       }
     }
   })
@@ -481,15 +481,16 @@ function validateDetailList() {
   return true
 }
 
-function handleDelete(row) { const orderIds = row.orderId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delOutbound(orderIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
-function handleSubmit(row) { proxy.$modal.confirm('确认提交出库单「' + row.orderNo + '」？提交后将无法修改。').then(() => submitOutbound(row.orderId)).then(() => { getList(); proxy.$modal.msgSuccess('提交成功') }).catch(() => {}) }
+function handleDelete(row) { const orderIds = row.orderId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delOutbound(orderIds)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleSubmit(row) { proxy.$modal.confirm('确认提交出库单「' + row.orderNo + '」？提交后将无法修改。').then(() => submitOutbound(row.orderId)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('提交成功') }).catch(() => {}) }
 /** 导出出库单（与列表口径一致：含筛选条件、日期范围，导出全部页数据） */
 async function handleExport() {
   const params = proxy.addDateRange(proxy.addDateRange(queryParams.value, dateRange.value, 'OutboundDate'), dateRangeCreateTime.value, 'CreateTime')
-  const rows = await fetchAllPages(listOutbound, params)
+  let rows = await fetchAllPages(listOutbound, params)
+  if (ids.value && ids.value.length) { rows = rows.filter(i => ids.value.includes(i.orderId)) }
   if (!rows.length) { proxy.$modal.msgWarning('当前筛选下无数据可导出'); return }
   const headers = ['出库单号', '出库类型', '出库仓库', '状态', '总数量', '备注']
-  downloadCsv(`outbound_${new Date().getTime()}`, headers, rows.map(i => [
+  downloadXlsx(`outbound_${new Date().getTime()}`, headers, rows.map(i => [
     i.orderNo || '', orderTypeLabel(i.orderType), i.warehouseName || '',
     statusLabel(i.status), i.totalQty != null ? i.totalQty : '', i.remark || ''
   ]))

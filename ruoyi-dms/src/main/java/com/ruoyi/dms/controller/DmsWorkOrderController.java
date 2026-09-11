@@ -41,6 +41,7 @@ public class DmsWorkOrderController extends BaseController
     public void export(HttpServletResponse response, DmsWorkOrder workOrder)
     {
         List<DmsWorkOrder> list = dmsWorkOrderService.selectWorkOrderList(workOrder);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, workOrder);
         ExcelUtil<DmsWorkOrder> util = new ExcelUtil<>(DmsWorkOrder.class);
         util.exportExcel(response, list, "工单数据");
     }

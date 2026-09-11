@@ -545,7 +545,7 @@ function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum =
 function resetQuery() { queryParams.value.customerNo = undefined; queryParams.value.customerName = undefined; queryParams.value.customerLevel = undefined; queryParams.value.customerStatus = undefined; queryParams.value.industry = undefined; queryParams.value.customerSource = undefined; queryParams.value.params = {}; dateRange.value = []; activeStatusTab.value = 'all'; handleQuery() }
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.customerId); single.value = selection.length !== 1; multiple.value = !selection.length }
-function handleExport() { proxy.download('mk/customer/export', { ...queryParams.value }, `public_pool_${new Date().getTime()}.xlsx`) }
+function handleExport() { proxy.download('mk/customer/export', proxy.withExportIds({ ...queryParams.value }, ids.value, 'customerId'), `public_pool_${new Date().getTime()}.xlsx`) }
 
 function handleView(row) {
   getCustomer(row.customerId).then(res => {
@@ -578,7 +578,7 @@ function handleClaim(row) {
   proxy.$modal.confirm('确认领取"' + row.customerName + '"？领取后您将成为该客户的负责人。').then(() => {
     claimCustomer(row.customerId).then(() => {
       proxy.$modal.msgSuccess('领取成功')
-      getList()
+      getList(); loadStatusCounts()
     })
   }).catch(() => {})
 }
@@ -587,7 +587,7 @@ function handleBatchClaim() {
     const promises = ids.value.map(id => claimCustomer(id))
     Promise.all(promises).then(() => {
       proxy.$modal.msgSuccess('批量领取成功')
-      getList()
+      getList(); loadStatusCounts()
     }).catch(() => {})
   }).catch(() => {})
 }

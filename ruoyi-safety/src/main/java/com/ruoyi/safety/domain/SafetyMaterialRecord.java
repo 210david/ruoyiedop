@@ -25,7 +25,7 @@ public class SafetyMaterialRecord extends BaseEntity
     private String recordType;
     @Excel(name = "数量")
     private BigDecimal quantity;
-    @Excel(name = "单位")
+    @Excel(name = "单位", dictType = "wms_unit")
     private String unit;
     private BigDecimal beforeStock;
     private BigDecimal afterStock;
@@ -41,7 +41,7 @@ public class SafetyMaterialRecord extends BaseEntity
     @Excel(name = "操作人")
     private String operator;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    @Excel(name = "出入库时间", width = 160)
+    @Excel(name = "出入库时间", width = 160, dateFormat = "yyyy-MM-dd HH:mm:ss")
     private Date recordTime;
     private String attachment;
     private Long enterpriseId;

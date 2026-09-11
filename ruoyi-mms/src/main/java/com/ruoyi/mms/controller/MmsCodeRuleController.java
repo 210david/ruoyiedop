@@ -43,6 +43,7 @@ public class MmsCodeRuleController extends BaseController
     public void export(HttpServletResponse response, MkNumberRule rule)
     {
         List<MkNumberRule> list = mkNumberRuleService.selectRuleList(rule);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, rule);
         ExcelUtil<MkNumberRule> util = new ExcelUtil<>(MkNumberRule.class);
         util.exportExcel(response, list, "生产管控编号规则数据");
     }

@@ -37,6 +37,7 @@ public class HrBusinessTripController extends BaseController
     public void export(HttpServletResponse response, HrBusinessTrip hrBusinessTrip)
     {
         List<HrBusinessTrip> list = hrBusinessTripService.selectHrBusinessTripList(hrBusinessTrip);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, hrBusinessTrip);
         ExcelUtil<HrBusinessTrip> util = new ExcelUtil<>(HrBusinessTrip.class);
         util.exportExcel(response, list, "出差");
     }

@@ -37,6 +37,7 @@ public class HrSalaryItemController extends BaseController
     public void export(HttpServletResponse response, HrSalaryItem hrSalaryItem)
     {
         List<HrSalaryItem> list = hrSalaryItemService.selectHrSalaryItemList(hrSalaryItem);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, hrSalaryItem);
         ExcelUtil<HrSalaryItem> util = new ExcelUtil<>(HrSalaryItem.class);
         util.exportExcel(response, list, "薪资项字典");
     }

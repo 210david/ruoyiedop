@@ -37,6 +37,7 @@ public class SafetyDrillController extends BaseController
     public void export(HttpServletResponse response, SafetyDrill drill)
     {
         List<SafetyDrill> list = safetyDrillService.selectSafetyDrillList(drill);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, drill);
         ExcelUtil<SafetyDrill> util = new ExcelUtil<>(SafetyDrill.class);
         util.exportExcel(response, list, "演练记录");
     }

@@ -42,6 +42,7 @@ public class HrWorkdayCalendarController extends BaseController
     public void export(HttpServletResponse response, HrWorkdayCalendar hrWorkdayCalendar)
     {
         List<HrWorkdayCalendar> list = hrWorkdayCalendarService.selectHrWorkdayCalendarList(hrWorkdayCalendar);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, hrWorkdayCalendar);
         ExcelUtil<HrWorkdayCalendar> util = new ExcelUtil<>(HrWorkdayCalendar.class);
         util.exportExcel(response, list, "工作日期维护");
     }

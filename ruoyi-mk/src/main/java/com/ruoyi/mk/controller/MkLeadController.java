@@ -45,6 +45,7 @@ public class MkLeadController extends BaseController
     public void export(HttpServletResponse response, MkLead lead)
     {
         List<MkLead> list = mkLeadService.selectLeadList(lead);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, lead);
         ExcelUtil<MkLead> util = new ExcelUtil<>(MkLead.class);
         util.exportExcel(response, list, "线索数据");
     }

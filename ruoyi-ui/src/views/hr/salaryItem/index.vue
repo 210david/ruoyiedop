@@ -103,7 +103,7 @@
           <el-table-column label="编码" prop="itemCode" key="itemCode" align="center" :width="colWidth('itemCode', 140)" resizable v-if="columns.itemCode.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.itemCode }}</span></template>
           </el-table-column>
-          <el-table-column label="名称" prop="itemName" key="itemName" align="center" :width="colWidth('itemName', 180)" resizable v-if="columns.itemName.visible" />
+          <el-table-column label="名称" prop="itemName" key="itemName" align="center" :min-width="colWidth('itemName', 180)" show-overflow-tooltip resizable v-if="columns.itemName.visible" />
           <el-table-column label="类别" prop="itemCategory" key="itemCategory" align="center" :width="colWidth('itemCategory', 120)" resizable v-if="columns.itemCategory.visible">
             <template #default="scope">
               <span class="badge violet" v-if="scope.row.itemCategory !== undefined && scope.row.itemCategory !== null && scope.row.itemCategory !== ''">
@@ -455,7 +455,7 @@ function handleDelete(row) {
 }
 
 function handleExport() {
-  proxy.download('hr/salaryItem/export', { ...queryParams.value }, `hrSalaryItem_${new Date().getTime()}.xlsx`)
+  proxy.download('hr/salaryItem/export', proxy.withExportIds({ ...queryParams.value }, ids.value, 'itemId'), `hrSalaryItem_${new Date().getTime()}.xlsx`)
 }
 
 function cancel() {

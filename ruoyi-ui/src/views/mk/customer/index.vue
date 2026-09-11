@@ -144,21 +144,21 @@
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
-          <el-table-column label="客户编号" prop="customerNo" key="customerNo" :width="colWidth('customerNo', 150)" resizable sortable="custom" v-if="columns.customerNo.visible">
+          <el-table-column label="客户编号" prop="customerNo" key="customerNo" :min-width="colWidth('customerNo', 150)" show-overflow-tooltip resizable sortable="custom" v-if="columns.customerNo.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.customerNo }}</span></template>
           </el-table-column>
-          <el-table-column label="企业名称" prop="customerName" key="customerName" :width="colWidth('customerName', 200)" resizable show-overflow-tooltip v-if="columns.customerName.visible">
+          <el-table-column label="企业名称" prop="customerName" key="customerName" :min-width="colWidth('customerName', 200)" resizable show-overflow-tooltip v-if="columns.customerName.visible">
             <template #default="scope">
               <el-button link type="primary" @click="handleView(scope.row)">{{ scope.row.customerName }}</el-button>
             </template>
           </el-table-column>
-          <el-table-column label="客户标签" prop="tagNames" key="tagNames" :width="colWidth('tagNames', 150)" resizable show-overflow-tooltip v-if="columns.tagNames.visible">
+          <el-table-column label="客户标签" prop="tagNames" key="tagNames" :min-width="colWidth('tagNames', 150)" resizable show-overflow-tooltip v-if="columns.tagNames.visible">
             <template #default="scope">
               <span v-if="scope.row.tagNames">{{ scope.row.tagNames }}</span>
               <span v-else>-</span>
             </template>
           </el-table-column>
-          <el-table-column label="客户等级" prop="customerLevel" key="customerLevel" :width="colWidth('customerLevel', 100)" resizable align="center" v-if="columns.customerLevel.visible">
+          <el-table-column label="客户等级" prop="customerLevel" key="customerLevel" :min-width="colWidth('customerLevel', 100)" show-overflow-tooltip resizable align="center" v-if="columns.customerLevel.visible">
             <template #default="scope">
               <span class="badge" :class="levelBadgeClass(scope.row.customerLevel)">
                 <span class="dot"></span>{{ levelLabel(scope.row.customerLevel) }}
@@ -172,7 +172,7 @@
               </span>
             </template>
           </el-table-column>
-          <el-table-column label="客户状态" prop="customerStatus" key="customerStatus" :width="colWidth('customerStatus', 100)" resizable align="center" sortable="custom" v-if="columns.customerStatus.visible">
+          <el-table-column label="客户状态" prop="customerStatus" key="customerStatus" :min-width="colWidth('customerStatus', 100)" show-overflow-tooltip resizable align="center" sortable="custom" v-if="columns.customerStatus.visible">
             <template #default="scope">
               <span class="badge" :class="badgeClass(scope.row.customerStatus)">
                 <span class="dot"></span>{{ statusLabel(scope.row.customerStatus) }}
@@ -987,13 +987,13 @@ function statusTagType(val) { return { '0': 'primary', '1': 'success', '2': 'suc
 function submitForm() {
   proxy.$refs['customerRef'].validate(valid => {
     if (valid) {
-      if (form.value.customerId != undefined) { updateCustomer(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList() }) }
-      else { addCustomer(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList() }) }
+      if (form.value.customerId != undefined) { updateCustomer(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList(); loadStatusCounts() }) }
+      else { addCustomer(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList(); loadStatusCounts() }) }
     }
   })
 }
-function handleDelete(row) { const customerIds = row.customerId || ids.value; proxy.$modal.confirm('确认删除编号为"' + customerIds + '"的数据？').then(() => delCustomer(customerIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
-function handleExport() { proxy.download('mk/customer/export', { ...proxy.addDateRange(queryParams.value, dateRange.value, 'CreateTime') }, `customer_${new Date().getTime()}.xlsx`) }
+function handleDelete(row) { const customerIds = row.customerId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delCustomer(customerIds)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleExport() { proxy.download('mk/customer/export', proxy.withExportIds({ ...proxy.addDateRange(queryParams.value, dateRange.value, 'CreateTime') }, ids.value, 'customerId'), `customer_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 
 // ====== 操作下拉菜单 ======
@@ -1034,7 +1034,7 @@ function confirmAssign() {
   assignCustomer(assignCustomerId.value, data).then(() => {
     proxy.$modal.msgSuccess('分配成功')
     assignOpen.value = false
-    getList()
+    getList(); loadStatusCounts()
   })
 }
 
@@ -1043,7 +1043,7 @@ function handleRelease(row) {
   proxy.$modal.confirm('确认将"' + row.customerName + '"释放到公海？').then(() => {
     releaseToPool(row.customerId).then(() => {
       proxy.$modal.msgSuccess('已释放到公海')
-      getList()
+      getList(); loadStatusCounts()
     })
   }).catch(() => {})
 }
@@ -1053,7 +1053,7 @@ function handleClaim(row) {
   proxy.$modal.confirm('确认领取"' + row.customerName + '"？').then(() => {
     claimCustomer(row.customerId).then(() => {
       proxy.$modal.msgSuccess('领取成功')
-      getList()
+      getList(); loadStatusCounts()
     })
   }).catch(() => {})
 }
@@ -1068,7 +1068,7 @@ function confirmStatusChange() {
   changeCustomerStatus(statusCustomerId.value, statusValue.value).then(() => {
     proxy.$modal.msgSuccess('状态变更成功')
     statusOpen.value = false
-    getList()
+    getList(); loadStatusCounts()
   })
 }
 
@@ -1109,7 +1109,7 @@ function confirmBatchAssign() {
   batchAssignCustomer(data).then(() => {
     proxy.$modal.msgSuccess('批量分配成功')
     batchAssignOpen.value = false
-    getList()
+    getList(); loadStatusCounts()
   })
 }
 
@@ -1126,7 +1126,7 @@ function confirmBatchStatus() {
   batchUpdateStatus({ customerIds: ids.value, customerStatus: batchStatusValue.value }).then(() => {
     proxy.$modal.msgSuccess('批量变更状态成功')
     batchStatusOpen.value = false
-    getList()
+    getList(); loadStatusCounts()
   })
 }
 

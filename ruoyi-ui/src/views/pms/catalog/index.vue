@@ -114,10 +114,10 @@
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" resizable align="center" />
-          <el-table-column label="供应商" prop="supplierName" key="supplierName" :width="colWidth('supplierName', 240)" resizable show-overflow-tooltip v-if="columns.supplierName.visible" />
+          <el-table-column label="供应商" prop="supplierName" key="supplierName" :min-width="colWidth('supplierName', 240)" resizable show-overflow-tooltip v-if="columns.supplierName.visible" />
           <el-table-column label="物料编码" prop="materialCode" key="materialCode" :width="colWidth('materialCode', 140)" resizable sortable="custom" :sort-orders="['descending','ascending']" v-if="columns.materialCode.visible" />
-          <el-table-column label="物料名称" prop="materialName" key="materialName" :width="colWidth('materialName', 180)" resizable show-overflow-tooltip v-if="columns.materialName.visible" />
-          <el-table-column label="规格型号" prop="specModel" key="specModel" :width="colWidth('specModel', 150)" resizable show-overflow-tooltip v-if="columns.specModel.visible" />
+          <el-table-column label="物料名称" prop="materialName" key="materialName" :min-width="colWidth('materialName', 180)" resizable show-overflow-tooltip v-if="columns.materialName.visible" />
+          <el-table-column label="规格型号" prop="specModel" key="specModel" :min-width="colWidth('specModel', 150)" resizable show-overflow-tooltip v-if="columns.specModel.visible" />
           <el-table-column label="单位" prop="unit" key="unit" :width="colWidth('unit', 80)" resizable align="center" v-if="columns.unit.visible"><template #default="scope"><span class="badge gray">{{ unitLabel(scope.row.unit) }}</span></template></el-table-column>
           <el-table-column label="供货单价" prop="unitPrice" key="unitPrice" :width="colWidth('unitPrice', 110)" resizable align="right" sortable="custom" :sort-orders="['descending','ascending']" class-name="col-num" v-if="columns.unitPrice.visible"><template #default="scope"><span class="rd-amount">{{ formatMoney(scope.row.unitPrice) }}</span></template></el-table-column>
           <el-table-column label="税率(%)" prop="taxRate" key="taxRate" :width="colWidth('taxRate', 90)" resizable align="center" v-if="columns.taxRate.visible" />
@@ -354,8 +354,8 @@ function handleAdd() { reset(); open.value = true; title.value = '添加供货�
 function handleUpdate(row) { reset(); getCatalog(row.catalogId).then(res => { form.value = res.data; open.value = true; title.value = '修改供货清单' }) }
 function handleView(row) { getCatalog(row.catalogId).then(res => { viewData.value = res.data; viewOpen.value = true }) }
 function submitForm() { proxy.$refs['catalogRef'].validate(valid => { if (valid) { if (form.value.catalogId != undefined) { updateCatalog(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList() }) } else { addCatalog(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList() }) } } }) }
-function handleDelete(row) { const catalogIds = row.catalogId || ids.value; proxy.$modal.confirm('确认删除编号为"' + catalogIds + '"的数据？').then(() => delCatalog(catalogIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
-function handleExport() { proxy.download('pms/catalog/export', { ...proxy.addDateRange(queryParams.value, dateRange.value, 'PriceEffectiveDate') }, `catalog_${new Date().getTime()}.xlsx`) }
+function handleDelete(row) { const catalogIds = row.catalogId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delCatalog(catalogIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleExport() { proxy.download('pms/catalog/export', proxy.withExportIds({ ...proxy.addDateRange(queryParams.value, dateRange.value, 'PriceEffectiveDate') }, ids.value, 'catalogId'), `catalog_${new Date().getTime()}.xlsx`) }
 const importTips = [
   '请先下载导入模板，按模板格式填写数据。',
   '供应商名称、物料编码、物料名称为必填字段。',

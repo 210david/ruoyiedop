@@ -50,7 +50,7 @@ public class SafetyHazard extends BaseEntity
     private String discoverPerson;
 
     /** 发现时间 */
-    @Excel(name = "发现时间", width = 180)
+    @Excel(name = "发现时间", width = 180, dateFormat = "yyyy-MM-dd HH:mm:ss")
     private Date discoverTime;
 
     /** 隐患来源 */
@@ -125,7 +125,7 @@ public class SafetyHazard extends BaseEntity
     private String approvePerson;
 
     /** 审批时间 */
-    @Excel(name = "审批时间", width = 180)
+    @Excel(name = "审批时间", width = 180, dateFormat = "yyyy-MM-dd HH:mm:ss")
     private Date approveTime;
 
     /** 审批结果 */

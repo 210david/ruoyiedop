@@ -75,7 +75,7 @@
       </el-table-column>
       <el-table-column label="物料编码" prop="materialCode" :width="colWidth('materialCode', 130)" resizable />
       <el-table-column label="物料名称" prop="materialName" min-width="180" show-overflow-tooltip />
-      <el-table-column label="规格型号" prop="specModel" :width="colWidth('specModel', 160)" resizable show-overflow-tooltip />
+      <el-table-column label="规格型号" prop="specModel" :min-width="colWidth('specModel', 160)" resizable show-overflow-tooltip />
       <el-table-column label="物料类型" prop="materialType" :width="colWidth('materialType', 100)" resizable align="center">
         <template #default="scope"><dict-tag :options="wms_material_type" :value="scope.row.materialType" /></template>
       </el-table-column>
@@ -126,7 +126,7 @@
 <script setup name="WmsStockAlert">
 import { listStockAlert, getStockAlertSummary, delStockAlert } from '@/api/wms/stockAlert'
 import { listWarehouse } from '@/api/wms/warehouse'
-import { fetchAllPages, downloadCsv } from '@/utils/csvExport'
+import { fetchAllPages, downloadXlsx } from '@/utils/csvExport'
 import { useColumnResize } from '@/composables/useColumnResize'
 
 const { proxy } = getCurrentInstance()
@@ -207,10 +207,13 @@ function handleTabClick(tab) {
 
 /** 导出预警数据（与列表口径一致：含预警类型 Tab、筛选条件，导出全部页数据） */
 async function handleExport() {
-  const rows = await fetchAllPages(listStockAlert, queryParams.value)
+  let rows = await fetchAllPages(listStockAlert, queryParams.value)
+  if (ids.value && ids.value.length) {
+    rows = rows.filter(i => ids.value.some(k => k.alertType === i.alertType && k.materialId === i.materialId && k.warehouseId === i.warehouseId && k.productionDate === i.productionDate && k.expiryDate === i.expiryDate))
+  }
   if (!rows.length) { proxy.$modal.msgWarning('当前筛选下无数据可导出'); return }
   const headers = ['预警类型', '物料编码', '物料名称', '规格型号', '物料类型', '单位', '仓库', '当前库存', '安全下限', '安全上限', '生产日期', '有效期', '距过期(天)', '预警说明']
-  downloadCsv(`stock_alert_${new Date().getTime()}`, headers, rows.map(i => [
+  downloadXlsx(`stock_alert_${new Date().getTime()}`, headers, rows.map(i => [
     alertLabel(i.alertType), i.materialCode || '', i.materialName || '', i.specModel || '',
     dictText(wms_material_type, i.materialType), dictText(wms_unit, i.unit),
     i.warehouseName || '—（汇总）', i.qty != null ? i.qty : '',

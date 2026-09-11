@@ -54,12 +54,12 @@ public class HrAttendanceMonthly extends BaseEntity
     private Integer nightShiftCount;
     @Excel(name = "高温天数")
     private BigDecimal highTempDays;
-    @Excel(name = "封账状态")
+    @Excel(name = "封账状态", dictType = "hr_sealed_status")
     private String sealedStatus;
     @Excel(name = "封账人")
     private String sealedBy;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    @Excel(name = "封账时间")
+    @Excel(name = "封账时间", dateFormat = "yyyy-MM-dd HH:mm:ss")
     private Date sealedTime;
     private String delFlag;
 

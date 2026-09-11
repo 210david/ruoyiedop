@@ -54,8 +54,8 @@
           <el-table-column label="签名用户" prop="nickName" key="nickName" :width="colWidth('nickName', 120)" resizable v-if="columns.nickName.visible" />
           <el-table-column label="签名含义" prop="sigMeaning" key="sigMeaning" :width="colWidth('sigMeaning', 160)" resizable show-overflow-tooltip v-if="columns.sigMeaning.visible" />
           <el-table-column label="签名结果" prop="sigResult" key="sigResult" :width="colWidth('sigResult', 100)" resizable align="center" v-if="columns.sigResult.visible"><template #default="scope"><span class="badge" :class="sigResultBadgeClass(scope.row.sigResult)"><span class="dot"></span>{{ sigResultLabel(scope.row.sigResult) }}</span></template></el-table-column>
-          <el-table-column label="签名意见" prop="sigOpinion" key="sigOpinion" :width="colWidth('sigOpinion', 200)" resizable show-overflow-tooltip v-if="columns.sigOpinion.visible" />
-          <el-table-column label="IP地址" prop="sigIp" key="sigIp" :width="colWidth('sigIp', 130)" resizable v-if="columns.sigIp.visible" />
+          <el-table-column label="签名意见" prop="sigOpinion" key="sigOpinion" :min-width="colWidth('sigOpinion', 200)" resizable show-overflow-tooltip v-if="columns.sigOpinion.visible" />
+          <el-table-column label="IP地址" prop="sigIp" key="sigIp" :min-width="colWidth('sigIp', 130)" show-overflow-tooltip resizable v-if="columns.sigIp.visible" />
           <el-table-column label="签名时间" prop="sigTime" key="sigTime" :width="colWidth('sigTime', 160)" resizable align="center" v-if="columns.sigTime.visible" />
           <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
@@ -132,7 +132,7 @@ function handleQuery() { showAdvanced.value = false; proxy.addDateRange(queryPar
 function resetQuery() { queryParams.value.bizType = undefined; queryParams.value.bizNo = undefined; queryParams.value.userName = undefined; queryParams.value.sigResult = undefined; queryParams.value.remark = undefined; dateRange.value = []; queryParams.value.params = {}; handleQuery() }
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.esigId); multiple.value = !selection.length }
 function handleDetail(row) { getEsigRecord(row.esigId).then(res => { form.value = res.data; open.value = true }) }
-function handleDelete(row) { const esigIds = row.esigId || ids.value; proxy.$modal.confirm('确认删除编号为"' + esigIds + '"的签名记录？').then(() => delEsigRecord(esigIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleDelete(row) { const esigIds = row.esigId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delEsigRecord(esigIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
 
 getList()
 onActivated(() => { getList() })

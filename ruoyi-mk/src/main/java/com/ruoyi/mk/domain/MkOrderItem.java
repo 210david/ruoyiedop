@@ -40,7 +40,7 @@ public class MkOrderItem extends BaseEntity
     private String productSpec;
 
     /** 单位 */
-    @Excel(name = "单位")
+    @Excel(name = "单位", dictType = "wms_unit")
     private String unit;
 
     /** 数量 */

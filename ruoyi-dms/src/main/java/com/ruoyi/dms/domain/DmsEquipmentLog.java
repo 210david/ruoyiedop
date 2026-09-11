@@ -37,7 +37,7 @@ public class DmsEquipmentLog extends BaseEntity
     private String operatorName;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    @Excel(name = "操作时间", width = 30)
+    @Excel(name = "操作时间", width = 30, dateFormat = "yyyy-MM-dd HH:mm:ss")
     private Date createTime;
 
     public Long getLogId() { return logId; }

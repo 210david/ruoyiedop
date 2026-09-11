@@ -13,13 +13,13 @@ public class SafetyMaterial extends BaseEntity
     private String materialCode;
     @Excel(name = "危化品名称")
     private String materialName;
-    @Excel(name = "危化品分类")
+    @Excel(name = "危化品分类", dictType = "safety_hazard_class")
     private String hazardClass;
     @Excel(name = "CAS号")
     private String casNo;
     @Excel(name = "最大储存量")
     private BigDecimal maxStorage;
-    @Excel(name = "单位")
+    @Excel(name = "单位", dictType = "wms_unit")
     private String storageUnit;
     private Long storageAreaId;
     @Excel(name = "储存位置")

@@ -37,6 +37,7 @@ public class SafetyAreaController extends BaseController
     public void export(HttpServletResponse response, SafetyArea area)
     {
         List<SafetyArea> list = safetyAreaService.selectSafetyAreaList(area);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, area);
         ExcelUtil<SafetyArea> util = new ExcelUtil<>(SafetyArea.class);
         util.exportExcel(response, list, "风险区域");
     }

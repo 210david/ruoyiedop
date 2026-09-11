@@ -33,6 +33,7 @@ public class MmsStatDailyController extends BaseController
     public void export(HttpServletResponse response, MmsStatDaily statDaily)
     {
         List<MmsStatDaily> list = mmsStatDailyService.selectStatDailyList(statDaily);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, statDaily);
         ExcelUtil<MmsStatDaily> util = new ExcelUtil<>(MmsStatDaily.class);
         util.exportExcel(response, list, "生产日报数据");
     }

@@ -37,6 +37,7 @@ public class PmsPriceCompareController extends BaseController
     public void export(HttpServletResponse response, PmsPriceCompareVo priceCompare)
     {
         List<PmsPriceCompareVo> list = pmsPriceCompareMapper.selectPriceCompareList(priceCompare);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, priceCompare);
         ExcelUtil<PmsPriceCompareVo> util = new ExcelUtil<PmsPriceCompareVo>(PmsPriceCompareVo.class);
         util.exportExcel(response, list, "价格比价数据");
     }

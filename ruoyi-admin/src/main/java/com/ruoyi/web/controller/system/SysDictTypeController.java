@@ -49,6 +49,7 @@ public class SysDictTypeController extends BaseController
     public void export(HttpServletResponse response, SysDictType dictType)
     {
         List<SysDictType> list = dictTypeService.selectDictTypeList(dictType);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, dictType);
         ExcelUtil<SysDictType> util = new ExcelUtil<SysDictType>(SysDictType.class);
         util.exportExcel(response, list, "字典类型");
     }

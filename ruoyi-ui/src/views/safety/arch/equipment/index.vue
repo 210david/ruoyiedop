@@ -92,8 +92,8 @@
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
           <el-table-column label="设备编号" prop="equipmentCode" key="equipmentCode" :width="colWidth('equipmentCode', 130)" resizable v-if="columns.equipmentCode.visible" />
-          <el-table-column label="设备名称" prop="equipmentName" key="equipmentName" :width="colWidth('equipmentName', 180)" resizable show-overflow-tooltip v-if="columns.equipmentName.visible" />
-          <el-table-column label="型号规格" prop="specModel" key="specModel" :width="colWidth('specModel', 160)" resizable show-overflow-tooltip v-if="columns.specModel.visible" />
+          <el-table-column label="设备名称" prop="equipmentName" key="equipmentName" :min-width="colWidth('equipmentName', 180)" resizable show-overflow-tooltip v-if="columns.equipmentName.visible" />
+          <el-table-column label="型号规格" prop="specModel" key="specModel" :min-width="colWidth('specModel', 160)" resizable show-overflow-tooltip v-if="columns.specModel.visible" />
           <el-table-column label="设备类别" prop="equipmentCategory" key="equipmentCategory" :width="colWidth('equipmentCategory', 110)" resizable align="center" v-if="columns.equipmentCategory.visible">
             <template #default="scope"><span class="badge violet">{{ equipmentCategoryLabel(scope.row.equipmentCategory) }}</span></template>
           </el-table-column>
@@ -340,7 +340,7 @@ function submitForm() {
   })
 }
 function handleDelete(row) { const equipmentIds = row.equipmentId || ids.value; proxy.$modal.confirm('是否确认删除特种设备？').then(function() { return delEquipment(equipmentIds) }).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
-function handleExport() { proxy.download('safety/equipment/export', { ...queryParams.value }, `equipment_${new Date().getTime()}.xlsx`) }
+function handleExport() { proxy.download('safety/equipment/export', proxy.withExportIds({ ...queryParams.value }, ids.value, 'equipmentId'), `equipment_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 function reset() {
   form.value = { equipmentId: undefined, equipmentCode: undefined, equipmentName: undefined, specModel: undefined, areaId: undefined, areaName: undefined, equipmentCategory: undefined, specialSubType: undefined, regCertNo: undefined, inspectExpire: undefined, personId: undefined, personName: undefined, status: '0', remark: undefined }

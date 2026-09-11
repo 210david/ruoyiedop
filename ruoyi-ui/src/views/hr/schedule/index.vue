@@ -141,7 +141,7 @@
         <el-table-column type="selection" width="55" align="center" />
         <el-table-column type="index" label="序号" :width="colWidth('index', 70)" align="center" />
         <el-table-column label="排班日期" prop="scheduleDate" :width="colWidth('scheduleDate', 120)" align="center" />
-        <el-table-column label="员工姓名" prop="employeeName" :width="colWidth('employeeName', 120)" show-overflow-tooltip />
+        <el-table-column label="员工姓名" prop="employeeName" :min-width="colWidth('employeeName', 120)" show-overflow-tooltip />
         <el-table-column label="工号" prop="employeeNo" :width="colWidth('employeeNo', 100)" align="center" />
         <el-table-column label="部门" prop="orgName" :width="colWidth('orgName', 140)" show-overflow-tooltip />
         <el-table-column label="班次" prop="shiftName" :width="colWidth('shiftName', 100)" align="center">

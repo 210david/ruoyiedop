@@ -53,6 +53,7 @@ public class MmsIssueController extends BaseController
     public void export(HttpServletResponse response, MmsIssue issue)
     {
         List<MmsIssue> list = mmsIssueService.selectIssueList(issue);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, issue);
         ExcelUtil<MmsIssue> util = new ExcelUtil<>(MmsIssue.class);
         util.exportExcel(response, list, "Issue");
     }

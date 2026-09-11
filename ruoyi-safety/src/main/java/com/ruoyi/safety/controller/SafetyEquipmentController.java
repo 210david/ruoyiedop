@@ -37,6 +37,7 @@ public class SafetyEquipmentController extends BaseController
     public void export(HttpServletResponse response, SafetyEquipment equipment)
     {
         List<SafetyEquipment> list = safetyEquipmentService.selectSafetyEquipmentList(equipment);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, equipment);
         ExcelUtil<SafetyEquipment> util = new ExcelUtil<>(SafetyEquipment.class);
         util.exportExcel(response, list, "安全设备设施");
     }

@@ -30,6 +30,9 @@ public class RuoYiConfig
     /** 验证码类型 */
     private static String captchaType;
 
+    /** 文件加密密钥（用于上传文件加密存储，建议生产环境修改） */
+    private static String fileEncryptionKey;
+
     public String getName()
     {
         return name;
@@ -86,6 +89,14 @@ public class RuoYiConfig
 
     public void setCaptchaType(String captchaType) {
         RuoYiConfig.captchaType = captchaType;
+    }
+
+    public static String getFileEncryptionKey() {
+        return fileEncryptionKey;
+    }
+
+    public void setFileEncryptionKey(String fileEncryptionKey) {
+        RuoYiConfig.fileEncryptionKey = fileEncryptionKey;
     }
 
     /**

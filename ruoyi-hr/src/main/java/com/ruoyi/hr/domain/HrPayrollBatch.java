@@ -20,7 +20,7 @@ public class HrPayrollBatch extends BaseEntity
     @Excel(name = "批次名称")
     private String batchName;
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "发放日期")
+    @Excel(name = "发放日期", dateFormat = "yyyy-MM-dd")
     private Date payDate;
     @Excel(name = "发薪银行")
     private String bankName;
@@ -28,20 +28,20 @@ public class HrPayrollBatch extends BaseEntity
     private Integer totalCount;
     @Excel(name = "总金额")
     private BigDecimal totalAmount;
-    @Excel(name = "审批状态")
+    @Excel(name = "审批状态", dictType = "hr_audit_status")
     private String auditStatus;
     @Excel(name = "审批人")
     private String auditBy;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    @Excel(name = "审批时间")
+    @Excel(name = "审批时间", dateFormat = "yyyy-MM-dd HH:mm:ss")
     private Date auditTime;
     @Excel(name = "审批意见")
     private String auditRemark;
     @Excel(name = "银行回单号")
     private String bankReceiptNo;
-    @Excel(name = "封账状态")
+    @Excel(name = "封账状态", dictType = "hr_sealed_status")
     private String sealedStatus;
-    @Excel(name = "删除标志")
+    @Excel(name = "删除标志", readConverterExp = "0=正常,2=已删除")
     private String delFlag;
 
     public Long getBatchId() { return batchId; }

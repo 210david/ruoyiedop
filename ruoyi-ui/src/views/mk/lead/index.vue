@@ -122,7 +122,7 @@
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
           <el-table-column label="线索编号" prop="leadNo" key="leadNo" :width="colWidth('leadNo', 150)" resizable v-if="columns.leadNo.visible" />
-          <el-table-column label="企业名称" prop="companyName" key="companyName" :width="colWidth('companyName', 200)" resizable show-overflow-tooltip v-if="columns.companyName.visible">
+          <el-table-column label="企业名称" prop="companyName" key="companyName" :min-width="colWidth('companyName', 200)" resizable show-overflow-tooltip v-if="columns.companyName.visible">
             <template #default="scope">
               <el-button link type="primary" @click="handleView(scope.row)">{{ scope.row.companyName }}</el-button>
             </template>
@@ -1032,13 +1032,13 @@ function getInteractTypeLabel(type) {
 function submitForm() {
   proxy.$refs['leadRef'].validate(valid => {
     if (valid) {
-      if (form.value.leadId != undefined) { updateLead(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList() }) }
-      else { addLead(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList() }) }
+      if (form.value.leadId != undefined) { updateLead(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList(); loadStatusCounts() }) }
+      else { addLead(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList(); loadStatusCounts() }) }
     }
   })
 }
-function handleDelete(row) { const leadIds = row.leadId || ids.value; proxy.$modal.confirm('确认删除编号为"' + leadIds + '"的数据？').then(() => delLead(leadIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
-function handleExport() { proxy.download('mk/lead/export', { ...queryParams.value }, `lead_${new Date().getTime()}.xlsx`) }
+function handleDelete(row) { const leadIds = row.leadId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delLead(leadIds)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleExport() { proxy.download('mk/lead/export', proxy.withExportIds({ ...queryParams.value }, ids.value, 'leadId'), `lead_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 
 // ====== 更多操作下拉菜单 ======
@@ -1096,7 +1096,7 @@ function confirmAssign() {
   assignLead(assignLeadId.value, data).then(() => {
     proxy.$modal.msgSuccess('分配成功')
     assignOpen.value = false
-    getList()
+    getList(); loadStatusCounts()
   })
 }
 
@@ -1105,7 +1105,7 @@ function handleRelease(row) {
   proxy.$modal.confirm('确认将"' + row.companyName + '"退回公海？').then(() => {
     releaseLeadToPool(row.leadId).then(() => {
       proxy.$modal.msgSuccess('已退回公海')
-      getList()
+      getList(); loadStatusCounts()
     })
   }).catch(() => {})
 }
@@ -1124,7 +1124,7 @@ function confirmInvalidate() {
   invalidateLead(invalidateLeadId.value, invalidateForm.value).then(() => {
     proxy.$modal.msgSuccess('已标记为无效')
     invalidateOpen.value = false
-    getList()
+    getList(); loadStatusCounts()
   })
 }
 
@@ -1194,7 +1194,7 @@ function confirmBatchAssign() {
   batchAssignLead(data).then(() => {
     proxy.$modal.msgSuccess('批量分配成功')
     batchAssignOpen.value = false
-    getList()
+    getList(); loadStatusCounts()
   })
 }
 
@@ -1211,7 +1211,7 @@ function confirmBatchStatus() {
   batchUpdateLeadStatus({ leadIds: ids.value, leadStatus: batchStatusValue.value }).then(() => {
     proxy.$modal.msgSuccess('批量变更状态成功')
     batchStatusOpen.value = false
-    getList()
+    getList(); loadStatusCounts()
   })
 }
 

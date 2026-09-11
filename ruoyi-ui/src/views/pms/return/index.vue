@@ -139,7 +139,7 @@
           <el-table-column label="采购单号" prop="orderNo" key="orderNo" :width="colWidth('orderNo', 160)" resizable v-if="columns.orderNo.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.orderNo }}</span></template>
           </el-table-column>
-          <el-table-column label="供应商" prop="supplierName" key="supplierName" :width="colWidth('supplierName', 200)" resizable show-overflow-tooltip v-if="columns.supplierName.visible" />
+          <el-table-column label="供应商" prop="supplierName" key="supplierName" :min-width="colWidth('supplierName', 200)" resizable show-overflow-tooltip v-if="columns.supplierName.visible" />
           <el-table-column label="状态" prop="status" key="status" :width="colWidth('status', 100)" resizable align="center" sortable="custom" v-if="columns.status.visible">
             <template #default="scope">
               <span class="badge" :class="badgeClass(scope.row.status)">
@@ -781,7 +781,7 @@ function handleView(row) {
 }
 function calcDetail(row) { if (row.qty != null && row.unitPrice != null) row.amount = parseFloat((row.qty * row.unitPrice).toFixed(2)); let tq = 0, ta = 0; form.value.detailList.forEach(d => { if (d.qty) tq += d.qty; if (d.amount) ta += d.amount }); form.value.totalQty = parseFloat(tq.toFixed(2)); form.value.totalAmount = parseFloat(ta.toFixed(2)) }
 function handleDeleteDetail(index) { form.value.detailList.splice(index, 1); calcDetail({}) }
-function submitForm() { proxy.$refs['returnRef'].validate(valid => { if (valid) { if (form.value.returnId != undefined) { updateReturn(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList() }) } else { addReturn(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList() }) } } }) }
+function submitForm() { proxy.$refs['returnRef'].validate(valid => { if (valid) { if (form.value.returnId != undefined) { updateReturn(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList(); loadStatusCounts() }) } else { addReturn(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList(); loadStatusCounts() }) } } }) }
 function handleDelete(row) { 
   let returnIds = row && row.returnId ? row.returnId : ids.value;
   if (!returnIds) {
@@ -796,15 +796,15 @@ function handleDelete(row) {
     proxy.$modal.msgError('无效的退货单ID');
     return;
   }
-  proxy.$modal.confirm('确认删除编号为"' + returnIds + '"的数据？').then(() => delReturn(returnIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) 
+  proxy.$modal.confirm('确认删除？').then(() => delReturn(returnIds)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) 
 }
-function handleExport() { proxy.download('pms/return/export', { ...proxy.addDateRange(queryParams.value, dateRange.value) }, `return_${new Date().getTime()}.xlsx`) }
+function handleExport() { proxy.download('pms/return/export', proxy.withExportIds({ ...proxy.addDateRange(queryParams.value, dateRange.value) }, ids.value, 'returnId'), `return_${new Date().getTime()}.xlsx`) }
 function handleSubmit(row) { 
   if (!row || !row.returnId || typeof row.returnId !== 'number') {
     proxy.$modal.msgError('无效的退货单ID');
     return;
   }
-  proxy.$modal.confirm('确认提交编号为"' + row.returnNo + '"的退货单审批？').then(() => submitReturn(row.returnId)).then(() => { getList(); proxy.$modal.msgSuccess('提交成功') }).catch(() => {}) 
+  proxy.$modal.confirm('确认提交编号为"' + row.returnNo + '"的退货单审批？').then(() => submitReturn(row.returnId)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('提交成功') }).catch(() => {}) 
 }
 function handleAudit(row) { 
   if (!row || !row.returnId || typeof row.returnId !== 'number') {

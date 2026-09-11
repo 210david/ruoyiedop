@@ -35,16 +35,16 @@ public class HrBusinessTrip extends BaseEntity
     private String reason;
     @NotNull(message = "出发日期不能为空")
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "出发日期")
+    @Excel(name = "出发日期", dateFormat = "yyyy-MM-dd")
     private Date departureDate;
     @NotNull(message = "预计返回日期不能为空")
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "预计返回日期")
+    @Excel(name = "预计返回日期", dateFormat = "yyyy-MM-dd")
     private Date expectedReturnDate;
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "实际返回日期")
+    @Excel(name = "实际返回日期", dateFormat = "yyyy-MM-dd")
     private Date actualReturnDate;
-    @Excel(name = "交通方式")
+    @Excel(name = "交通方式", dictType = "hr_transport_mode")
     private String transportMode;
     @Excel(name = "出差天数")
     private BigDecimal tripDays;
@@ -52,18 +52,18 @@ public class HrBusinessTrip extends BaseEntity
     private BigDecimal budgetAmount;
     @Excel(name = "附件URL")
     private String attachmentUrl;
-    @Excel(name = "审批状态")
+    @Excel(name = "审批状态", dictType = "hr_audit_status")
     private String auditStatus;
     @Excel(name = "审批人")
     private String auditBy;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    @Excel(name = "审批时间")
+    @Excel(name = "审批时间", dateFormat = "yyyy-MM-dd HH:mm:ss")
     private Date auditTime;
     @Excel(name = "审批意见")
     private String auditRemark;
-    @Excel(name = "状态")
+    @Excel(name = "状态", dictType = "hr_audit_status")
     private String status;
-    @Excel(name = "删除标志")
+    @Excel(name = "删除标志", readConverterExp = "0=正常,2=已删除")
     private String delFlag;
 
     public Long getTripId() { return tripId; }

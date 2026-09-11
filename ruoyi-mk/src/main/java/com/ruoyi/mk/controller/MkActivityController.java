@@ -47,6 +47,7 @@ public class MkActivityController extends BaseController
     public void export(HttpServletResponse response, MkActivity activity)
     {
         List<MkActivity> list = mkActivityService.selectActivityList(activity);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, activity);
         ExcelUtil<MkActivity> util = new ExcelUtil<>(MkActivity.class);
         util.exportExcel(response, list, "营销活动数据");
     }

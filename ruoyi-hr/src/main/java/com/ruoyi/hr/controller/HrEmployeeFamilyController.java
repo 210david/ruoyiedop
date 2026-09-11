@@ -34,6 +34,7 @@ public class HrEmployeeFamilyController extends BaseController {
     @PostMapping("/export")
     public void export(HttpServletResponse response, HrEmployeeFamily hrEmployeeFamily) {
         List<HrEmployeeFamily> list = hrEmployeeFamilyService.selectHrEmployeeFamilyList(hrEmployeeFamily);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, hrEmployeeFamily);
         ExcelUtil<HrEmployeeFamily> util = new ExcelUtil<>(HrEmployeeFamily.class);
         util.exportExcel(response, list, "员工家庭成员");
     }

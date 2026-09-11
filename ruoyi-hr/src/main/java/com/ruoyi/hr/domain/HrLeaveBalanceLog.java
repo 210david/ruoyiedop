@@ -19,7 +19,7 @@ public class HrLeaveBalanceLog extends BaseEntity
     private Long employeeId;
     @Excel(name = "员工姓名")
     private String employeeName;
-    @Excel(name = "假别")
+    @Excel(name = "假别", dictType = "hr_leave_type")
     private String leaveType;
     @Excel(name = "年度")
     private Integer year;

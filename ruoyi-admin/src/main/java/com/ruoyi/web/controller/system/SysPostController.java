@@ -52,6 +52,7 @@ public class SysPostController extends BaseController
     public void export(HttpServletResponse response, SysPost post)
     {
         List<SysPost> list = postService.selectPostList(post);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, post);
         ExcelUtil<SysPost> util = new ExcelUtil<SysPost>(SysPost.class);
         util.exportExcel(response, list, "岗位数据");
     }

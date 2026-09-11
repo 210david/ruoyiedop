@@ -227,11 +227,11 @@
           <el-table-column label="派工单号" prop="dispatchNo" key="dispatchNo" :width="colWidth('dispatchNo', 150)" resizable v-if="columns.dispatchNo.visible" />
           <el-table-column label="工单编号" prop="workOrderNo" key="workOrderNo" :width="colWidth('workOrderNo', 140)" resizable v-if="columns.workOrderNo.visible" />
           <el-table-column label="产品编码" prop="productCode" key="productCode" :width="colWidth('productCode', 120)" resizable show-overflow-tooltip v-if="columns.productCode.visible" />
-          <el-table-column label="产品名称" prop="productName" key="productName" :width="colWidth('productName', 160)" resizable show-overflow-tooltip v-if="columns.productName.visible" />
-          <el-table-column label="规格型号" prop="specModel" key="specModel" :width="colWidth('specModel', 120)" resizable show-overflow-tooltip v-if="columns.specModel.visible" />
+          <el-table-column label="产品名称" prop="productName" key="productName" :min-width="colWidth('productName', 160)" resizable show-overflow-tooltip v-if="columns.productName.visible" />
+          <el-table-column label="规格型号" prop="specModel" key="specModel" :min-width="colWidth('specModel', 120)" resizable show-overflow-tooltip v-if="columns.specModel.visible" />
           <el-table-column label="单位" prop="unit" key="unit" :width="colWidth('unit', 80)" resizable align="center" v-if="columns.unit.visible"><template #default="scope"><dict-tag :options="wms_unit" :value="scope.row.unit" /></template></el-table-column>
           <el-table-column label="工序顺序号" prop="opSeq" key="opSeq" :width="colWidth('opSeq', 90)" resizable align="center" v-if="columns.opSeq.visible" />
-          <el-table-column label="工序名称" prop="processName" key="processName" :width="colWidth('processName', 140)" resizable show-overflow-tooltip v-if="columns.processName.visible" />
+          <el-table-column label="工序名称" prop="processName" key="processName" :min-width="colWidth('processName', 140)" resizable show-overflow-tooltip v-if="columns.processName.visible" />
           <el-table-column label="产能单元" prop="resourceName" key="resourceName" :width="colWidth('resourceName', 140)" resizable show-overflow-tooltip v-if="columns.resourceName.visible" />
           <el-table-column label="班组" prop="teamName" key="teamName" :width="colWidth('teamName', 120)" resizable v-if="columns.teamName.visible" />
           <el-table-column label="派工人员" prop="userIds" key="userIds" :width="colWidth('userIds', 150)" resizable show-overflow-tooltip v-if="columns.userIds.visible" />
@@ -1748,7 +1748,7 @@ function handleCancel(row) {
   proxy.$modal.confirm('是否确认取消派工单"' + row.dispatchNo + '"？').then(function() {
     return cancelDispatch(row.dispatchId);
   }).then(() => {
-    getList();
+    getList(); loadStatusCounts(); loadReportStatusCounts();
     proxy.$modal.msgSuccess("取消成功");
   }).catch(() => {});
 }

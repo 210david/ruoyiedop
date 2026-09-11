@@ -46,6 +46,7 @@ public class MmsDispatchController extends BaseController
     public void export(HttpServletResponse response, MmsDispatch dispatch)
     {
         List<MmsDispatch> list = mmsDispatchService.selectDispatchList(dispatch);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, dispatch);
         ExcelUtil<MmsDispatch> util = new ExcelUtil<>(MmsDispatch.class);
         util.exportExcel(response, list, "派工单数据");
     }

@@ -44,6 +44,7 @@ public class QmsCapaController extends BaseController {
     @PostMapping("/export")
     public void export(HttpServletResponse response, QmsCapa capa) {
         List<QmsCapa> list = qmsCapaService.selectCapaList(capa);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, capa);
         ExcelUtil<QmsCapa> util = new ExcelUtil<>(QmsCapa.class);
         util.exportExcel(response, list, "CAPA数据");
     }

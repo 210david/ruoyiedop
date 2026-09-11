@@ -109,19 +109,19 @@
           <el-table-column label="备件编号" prop="partCode" key="partCode" :width="colWidth('partCode', 140)" resizable v-if="columns.partCode.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.partCode }}</span></template>
           </el-table-column>
-          <el-table-column label="备件名称" prop="partName" key="partName" :width="colWidth('partName', 200)" resizable show-overflow-tooltip v-if="columns.partName.visible" />
+          <el-table-column label="备件名称" prop="partName" key="partName" :min-width="colWidth('partName', 200)" resizable show-overflow-tooltip v-if="columns.partName.visible" />
           <el-table-column label="备件类别" prop="partType" key="partType" :width="colWidth('partType', 100)" resizable align="center" v-if="columns.partType.visible">
             <template #default="scope">
               <span class="badge violet">{{ partTypeLabel(scope.row.partType) }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="规格型号" prop="specModel" key="specModel" :width="colWidth('specModel', 150)" resizable show-overflow-tooltip v-if="columns.specModel.visible" />
+          <el-table-column label="规格型号" prop="specModel" key="specModel" :min-width="colWidth('specModel', 150)" resizable show-overflow-tooltip v-if="columns.specModel.visible" />
           <el-table-column label="单位" prop="unit" key="unit" :width="colWidth('unit', 80)" resizable align="center" v-if="columns.unit.visible">
             <template #default="scope">
               <span class="badge amber">{{ unitLabel(scope.row.unit) }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="供应商" prop="supplier" key="supplier" :width="colWidth('supplier', 140)" resizable show-overflow-tooltip v-if="columns.supplier.visible" />
+          <el-table-column label="供应商" prop="supplier" key="supplier" :min-width="colWidth('supplier', 140)" resizable show-overflow-tooltip v-if="columns.supplier.visible" />
           <el-table-column label="库存下限" prop="stockMin" key="stockMin" :width="colWidth('stockMin', 90)" resizable align="center" v-if="columns.stockMin.visible" />
           <el-table-column label="库存上限" prop="stockMax" key="stockMax" :width="colWidth('stockMax', 90)" resizable align="center" v-if="columns.stockMax.visible" />
           <el-table-column label="状态" prop="status" key="status" :width="colWidth('status', 100)" resizable align="center" v-if="columns.status.visible">
@@ -129,7 +129,7 @@
               <span class="badge" :class="scope.row.status === '0' ? 'green' : 'gray'"><span class="dot"></span>{{ scope.row.status === '0' ? '正常' : '停用' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="备注" prop="remark" key="remark" :width="colWidth('remark', 180)" resizable show-overflow-tooltip v-if="columns.remark.visible" />
+          <el-table-column label="备注" prop="remark" key="remark" :min-width="colWidth('remark', 180)" resizable show-overflow-tooltip v-if="columns.remark.visible" />
           <el-table-column label="操作" width="180" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
               <div class="action-btn-row">
@@ -206,12 +206,12 @@
             <el-row>
               <el-col :span="12">
                 <el-form-item label="库存下限" prop="stockMin">
-                  <el-input-number v-model="form.stockMin" :min="0" :precision="2" :step="1" controls-position="right" placeholder="下限" style="width: 100%" />
+                  <el-input-number v-model="form.stockMin" :min="0" :precision="2" :step="1" controls-position="right" placeholder="下限" style="width: 100%" @change="revalidateStock('stockMax')" />
                 </el-form-item>
               </el-col>
               <el-col :span="12">
                 <el-form-item label="库存上限" prop="stockMax">
-                  <el-input-number v-model="form.stockMax" :min="0" :precision="2" :step="1" controls-position="right" placeholder="上限" style="width: 100%" />
+                  <el-input-number v-model="form.stockMax" :min="0" :precision="2" :step="1" controls-position="right" placeholder="上限" style="width: 100%" @change="revalidateStock('stockMin')" />
                 </el-form-item>
               </el-col>
             </el-row>
@@ -249,7 +249,7 @@
 
 <script setup name="DmsSparePart">
 import { listSparepart, getSparepart, addSparepart, updateSparepart, delSparepart } from '@/api/dms/sparepart'
-import { fetchAllPages, downloadCsv } from '@/utils/csvExport'
+import { fetchAllPages, downloadXlsx } from '@/utils/csvExport'
 import SupplierPicker from '@/components/SupplierPicker/index.vue'
 import DmsSparePartViewDrawer from './view.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
@@ -324,10 +324,33 @@ const data = reactive({
     partCode: [{ required: false }],
     partName: [{ required: true, message: '备件名称不能为空', trigger: 'blur' }],
     partType: [{ required: true, message: '备件类别不能为空', trigger: 'change' }],
-    unit: [{ required: true, message: '单位不能为空', trigger: 'change' }]
+    unit: [{ required: true, message: '单位不能为空', trigger: 'change' }],
+    stockMax: [{
+      validator: (rule, value, callback) => {
+        if (value != null && form.value.stockMin != null && value < form.value.stockMin) {
+          callback(new Error('库存上限不能小于库存下限'))
+        } else { callback() }
+      },
+      trigger: 'blur'
+    }],
+    stockMin: [{
+      validator: (rule, value, callback) => {
+        if (value != null && form.value.stockMax != null && value > form.value.stockMax) {
+          callback(new Error('库存下限不能大于库存上限'))
+        } else { callback() }
+      },
+      trigger: 'blur'
+    }]
   }
 })
 const { queryParams, form, rules } = toRefs(data)
+
+/** 库存上下限联动校验：修改一个字段时重新校验另一个 */
+function revalidateStock(field) {
+  if (form.value.stockMin != null && form.value.stockMax != null) {
+    proxy.$refs['sparepartRef']?.validateField(field)
+  }
+}
 
 function getList() {
   loading.value = true
@@ -371,18 +394,19 @@ function handleView(row) {
 function submitForm() {
   proxy.$refs['sparepartRef'].validate(valid => {
     if (valid) {
-      if (form.value.partId != undefined) { updateSparepart(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList() }) }
-      else { addSparepart(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList() }) }
+      if (form.value.partId != undefined) { updateSparepart(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList(); loadTypeCounts() }) }
+      else { addSparepart(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList(); loadTypeCounts() }) }
     }
   })
 }
-function handleDelete(row) { const partIds = row?.partId || ids.value; const tip = Array.isArray(partIds) ? `选中的 ${partIds.length} 条数据` : `编号为"${partIds}"的数据`; proxy.$modal.confirm('确认删除' + tip + '？').then(() => delSparepart(partIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleDelete(row) { const partIds = row?.partId || ids.value; const tip = Array.isArray(partIds) ? `选中的 ${partIds.length} 条数据` : '选中的备件数据'; proxy.$modal.confirm('确认删除' + tip + '？').then(() => delSparepart(partIds)).then(() => { getList(); loadTypeCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
 /** 导出备件台账（与列表口径一致：含筛选条件，导出全部页数据） */
 async function handleExport() {
-  const rows = await fetchAllPages(listSparepart, queryParams.value)
+  let rows = await fetchAllPages(listSparepart, queryParams.value)
+  if (ids.value && ids.value.length) { rows = rows.filter(i => ids.value.includes(i.partId)) }
   if (!rows.length) { proxy.$modal.msgWarning('当前筛选下无数据可导出'); return }
   const headers = ['备件编号', '备件名称', '备件类别', '规格型号', '单位', '供应商', '库存下限', '库存上限', '状态', '备注']
-  downloadCsv(`sparepart_${new Date().getTime()}`, headers, rows.map(i => [
+  downloadXlsx(`sparepart_${new Date().getTime()}`, headers, rows.map(i => [
     i.partCode, i.partName, partTypeLabel(i.partType), i.specModel, unitLabel(i.unit), i.supplier || '',
     i.stockMin != null ? i.stockMin : '', i.stockMax != null ? i.stockMax : '',
     i.status === '0' ? '正常' : '停用', i.remark || ''

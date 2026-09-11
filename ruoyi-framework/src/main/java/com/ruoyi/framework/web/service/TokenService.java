@@ -19,6 +19,8 @@ import com.ruoyi.common.utils.http.UserAgentUtils;
 import com.ruoyi.common.utils.ip.AddressUtils;
 import com.ruoyi.common.utils.ip.IpUtils;
 import com.ruoyi.common.utils.uuid.IdUtils;
+import com.ruoyi.common.core.text.Convert;
+import com.ruoyi.system.service.ISysConfigService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
@@ -47,14 +49,44 @@ public class TokenService
     @Value("${token.expireTime}")
     private int expireTime;
 
+    /** 默认超时时间（分钟），当系统参数未配置时使用yml配置的值 */
+    private static final int DEFAULT_EXPIRE_TIME = 120;
+
+    @Autowired
+    private RedisCache redisCache;
+
+    @Autowired
+    private ISysConfigService configService;
+
     protected static final long MILLIS_SECOND = 1000;
 
     protected static final long MILLIS_MINUTE = 60 * MILLIS_SECOND;
 
     private static final Long MILLIS_MINUTE_TWENTY = 20 * 60 * 1000L;
 
-    @Autowired
-    private RedisCache redisCache;
+    /**
+     * 获取令牌有效期（分钟）
+     * 优先从系统参数 sys.token.expireTime 读取，未配置时使用yml默认值
+     * 
+     * @return 过期时间（分钟）
+     */
+    private int getExpireTime()
+    {
+        try
+        {
+            String value = configService.selectConfigByKey("sys.token.expireTime");
+            if (StringUtils.isNotEmpty(value))
+            {
+                int minutes = Convert.toInt(value, DEFAULT_EXPIRE_TIME);
+                return minutes > 0 ? minutes : DEFAULT_EXPIRE_TIME;
+            }
+        }
+        catch (Exception e)
+        {
+            log.warn("获取系统参数sys.token.expireTime失败，使用默认值{}", DEFAULT_EXPIRE_TIME, e);
+        }
+        return expireTime > 0 ? expireTime : DEFAULT_EXPIRE_TIME;
+    }
 
     /**
      * 获取用户身份信息
@@ -65,6 +97,26 @@ public class TokenService
     {
         // 获取请求携带的令牌
         String token = getToken(request);
+        return getLoginUserByToken(token, request);
+    }
+
+    /**
+     * 获取用户身份信息（支持从Header或Query参数获取Token）
+     * 用于文件访问等无法携带自定义Header的场景
+     * 
+     * @return 用户信息
+     */
+    public LoginUser getLoginUserFromHeaderOrQuery(HttpServletRequest request)
+    {
+        String token = getTokenFromHeaderOrQuery(request);
+        return getLoginUserByToken(token, request);
+    }
+
+    /**
+     * 通过Token获取用户信息（公共提取逻辑）
+     */
+    private LoginUser getLoginUserByToken(String token, HttpServletRequest request)
+    {
         if (StringUtils.isNotEmpty(token))
         {
             try
@@ -77,7 +129,9 @@ public class TokenService
                 if (user == null)
                 {
                     // 会话不存在：可能是 Redis 被清理/重启、并发登录被踢、或已过期删除
-                    log.warn("[Token排查] 会话不存在 tokenKey={} uri={} ip={}", userKey,
+                    // 说明：logback 的 file_info/file_error 均为 LevelFilter 精确匹配（只收 INFO/ERROR），
+                    // WARN 级别不会落入任何日志文件，因此此处必须使用 error 级别
+                    log.error("[Token排查] 会话不存在 tokenKey={} uri={} ip={}", userKey,
                             request.getRequestURI(), IpUtils.getIpAddr(request));
                 }
                 return user;
@@ -85,7 +139,7 @@ public class TokenService
             catch (ExpiredJwtException e)
             {
                 // JWT 本身过期（超过 expireTime 且未被活跃续期）
-                log.warn("[Token排查] JWT已过期 uri={} ip={} msg={}",
+                log.error("[Token排查] JWT已过期 uri={} ip={} msg={}",
                         request.getRequestURI(), IpUtils.getIpAddr(request), e.getMessage());
             }
             catch (Exception e)
@@ -162,11 +216,12 @@ public class TokenService
      */
     public void refreshToken(LoginUser loginUser)
     {
+        int currentExpireTime = getExpireTime();
         loginUser.setLoginTime(System.currentTimeMillis());
-        loginUser.setExpireTime(loginUser.getLoginTime() + expireTime * MILLIS_MINUTE);
+        loginUser.setExpireTime(loginUser.getLoginTime() + currentExpireTime * MILLIS_MINUTE);
         // 根据uuid将loginUser缓存
         String userKey = getTokenKey(loginUser.getToken());
-        redisCache.setCacheObject(userKey, loginUser, expireTime, TimeUnit.MINUTES);
+        redisCache.setCacheObject(userKey, loginUser, currentExpireTime, TimeUnit.MINUTES);
     }
 
     /**
@@ -238,6 +293,39 @@ public class TokenService
             token = token.replace(Constants.TOKEN_PREFIX, "");
         }
         return token;
+    }
+
+    /**
+     * 获取请求token（支持从Header或Query参数获取）
+     * 仅用于文件访问等无法携带自定义Header的场景（如 &lt;img&gt; 标签）
+     *
+     * @param request
+     * @return token
+     */
+    public String getTokenFromHeaderOrQuery(HttpServletRequest request)
+    {
+        // 优先从Header获取
+        String token = getToken(request);
+        if (StringUtils.isNotEmpty(token))
+        {
+            return token;
+        }
+        // Header中没有时，从Query参数获取（仅对文件访问路径）
+        String requestUri = request.getRequestURI();
+        if (requestUri != null && (requestUri.startsWith("/common/file/access") || requestUri.startsWith("/profile/")))
+        {
+            String queryToken = request.getParameter("token");
+            if (StringUtils.isNotEmpty(queryToken))
+            {
+                // 去除可能的 Bearer 前缀
+                if (queryToken.startsWith(Constants.TOKEN_PREFIX))
+                {
+                    queryToken = queryToken.replace(Constants.TOKEN_PREFIX, "");
+                }
+                return queryToken;
+            }
+        }
+        return null;
     }
 
     private String getTokenKey(String uuid)

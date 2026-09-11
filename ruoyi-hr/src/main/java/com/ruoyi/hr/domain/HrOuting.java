@@ -28,7 +28,7 @@ public class HrOuting extends BaseEntity
     private String deptName;
     @NotNull(message = "外出日期不能为空")
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "外出日期")
+    @Excel(name = "外出日期", dateFormat = "yyyy-MM-dd")
     private Date outingDate;
     @NotNull(message = "开始时间不能为空")
     @Excel(name = "开始时间")
@@ -45,22 +45,22 @@ public class HrOuting extends BaseEntity
     @Excel(name = "交通工具")
     private String transportMode;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    @Excel(name = "预计返回时间")
+    @Excel(name = "预计返回时间", dateFormat = "yyyy-MM-dd HH:mm:ss")
     private Date expectedReturnTime;
     @Excel(name = "附件URL")
     private String attachmentUrl;
-    @Excel(name = "审批状态")
+    @Excel(name = "审批状态", dictType = "hr_audit_status")
     private String auditStatus;
     @Excel(name = "审批人")
     private String auditBy;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    @Excel(name = "审批时间")
+    @Excel(name = "审批时间", dateFormat = "yyyy-MM-dd HH:mm:ss")
     private Date auditTime;
     @Excel(name = "审批意见")
     private String auditRemark;
-    @Excel(name = "状态")
+    @Excel(name = "状态", dictType = "hr_audit_status")
     private String status;
-    @Excel(name = "删除标志")
+    @Excel(name = "删除标志", readConverterExp = "0=正常,2=已删除")
     private String delFlag;
 
     public Long getOutingId() { return outingId; }

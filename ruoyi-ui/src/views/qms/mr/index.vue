@@ -106,7 +106,7 @@
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" class="app-table">
 <el-table-column type="selection" width="55" align="center" />
 <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
-<el-table-column label="评审编号" prop="mrNo" key="mrNo" :width="colWidth('mrNo', 160)" resizable show-overflow-tooltip v-if="columns.mrNo.visible" />          <el-table-column label="评审标题" prop="mrTitle" key="mrTitle" :width="colWidth('mrTitle', 220)" resizable show-overflow-tooltip v-if="columns.mrTitle.visible" />
+<el-table-column label="评审编号" prop="mrNo" key="mrNo" :width="colWidth('mrNo', 160)" resizable show-overflow-tooltip v-if="columns.mrNo.visible" />          <el-table-column label="评审标题" prop="mrTitle" key="mrTitle" :min-width="colWidth('mrTitle', 220)" resizable show-overflow-tooltip v-if="columns.mrTitle.visible" />
           <el-table-column label="年度" prop="mrYear" key="mrYear" :width="colWidth('mrYear', 80)" resizable align="center" v-if="columns.mrYear.visible" />
           <el-table-column label="评审日期" prop="mrDate" key="mrDate" :width="colWidth('mrDate', 120)" resizable align="center" v-if="columns.mrDate.visible"><template #default="scope"><span>{{ parseTime(scope.row.mrDate, '{y}-{m}-{d}') }}</span></template></el-table-column>
           <el-table-column label="主持人" prop="chairperson" key="chairperson" :width="colWidth('chairperson', 100)" resizable show-overflow-tooltip v-if="columns.chairperson.visible" />
@@ -406,16 +406,16 @@ function handleSelectionChange(selection) { selectedIds.value = selection.map(it
 function submitForm() {
   proxy.$refs['mrRef'].validate(valid => {
     if (valid) {
-      if (form.value.mrId) { updateMr(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList() }) }
-      else { addMr(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList() }) }
+      if (form.value.mrId) { updateMr(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList(); loadTabCounts() }) }
+      else { addMr(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList(); loadTabCounts() }) }
     }
   })
 }
 function handleDelete(row) {
   const ids = row?.mrId ? [row.mrId] : selectedIds.value
-  proxy.$modal.confirm('确认删除？').then(() => delMr(ids.join(','))).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {})
+  proxy.$modal.confirm('确认删除？').then(() => delMr(ids.join(','))).then(() => { getList(); loadTabCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {})
 }
-function handleExport() { proxy.download('qms/mr/export', { ...proxy.addDateRange(queryParams.value, dateRange.value) }, `mr_${new Date().getTime()}.xlsx`) }
+function handleExport() { proxy.download('qms/mr/export', proxy.withExportIds({ ...proxy.addDateRange(queryParams.value, dateRange.value) }, selectedIds.value, 'mrId'), `mr_${new Date().getTime()}.xlsx`) }
 function reset() { form.value = { mrId: null, mrTitle: undefined, mrYear: new Date().getFullYear(), mrDate: undefined, chairperson: undefined, mrStatus: '0' }; proxy.resetForm('mrRef') }
 function cancel() { open.value = false; reset() }
 function mrStatusLabel(val) { const item = statusOptions.value.find(d => d.value == val); return item ? item.label : '-' }

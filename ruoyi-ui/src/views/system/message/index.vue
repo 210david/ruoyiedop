@@ -91,7 +91,7 @@
           <el-table-column type="selection" width="55" align="center" :selectable="canSelect" />
           <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
           <el-table-column label="消息ID" align="center" prop="messageId" :width="colWidth('messageId', 90)" resizable v-if="columns.messageId.visible" />
-          <el-table-column label="消息标题" align="center" :show-overflow-tooltip="true" :width="colWidth('messageTitle', 200)" resizable v-if="columns.messageTitle.visible">
+          <el-table-column label="消息标题" align="center" :show-overflow-tooltip="true" :min-width="colWidth('messageTitle', 200)" resizable v-if="columns.messageTitle.visible">
             <template #default="scope">
               <a class="link-type" :class="{ 'is-handled': scope.row.bizHandled == '1' || scope.row.bizHandled === true }" style="cursor:pointer" @click="handleViewData(scope.row)">{{ scope.row.messageTitle }}</a>
             </template>

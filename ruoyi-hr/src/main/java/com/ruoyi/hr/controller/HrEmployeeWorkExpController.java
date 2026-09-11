@@ -34,6 +34,7 @@ public class HrEmployeeWorkExpController extends BaseController {
     @PostMapping("/export")
     public void export(HttpServletResponse response, HrEmployeeWorkExp hrEmployeeWorkExp) {
         List<HrEmployeeWorkExp> list = hrEmployeeWorkExpService.selectHrEmployeeWorkExpList(hrEmployeeWorkExp);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, hrEmployeeWorkExp);
         ExcelUtil<HrEmployeeWorkExp> util = new ExcelUtil<>(HrEmployeeWorkExp.class);
         util.exportExcel(response, list, "员工工作经历");
     }

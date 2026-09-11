@@ -42,6 +42,7 @@ public class PmsReceiveController extends BaseController
     public void export(HttpServletResponse response, PmsReceive receive)
     {
         List<PmsReceive> list = pmsReceiveService.selectReceiveList(receive);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, receive);
         ExcelUtil<PmsReceive> util = new ExcelUtil<>(PmsReceive.class);
         util.exportExcel(response, list, "收货验收数据");
     }

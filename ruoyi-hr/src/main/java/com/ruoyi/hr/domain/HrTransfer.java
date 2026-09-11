@@ -23,7 +23,7 @@ public class HrTransfer extends BaseEntity
     private String employeeName;
     @Excel(name = "工号")
     private String employeeNo;
-    @Excel(name = "调动类型")
+    @Excel(name = "调动类型", dictType = "hr_transfer_type")
     private String transferType;
     @Excel(name = "原组织ID")
     private Long fromOrgId;
@@ -43,22 +43,22 @@ public class HrTransfer extends BaseEntity
     private BigDecimal toSalary;
 @NotNull(message = "申请日期不能为空")
 @JsonFormat(pattern = "yyyy-MM-dd")
-@Excel(name = "申请日期")
+@Excel(name = "申请日期", dateFormat = "yyyy-MM-dd HH:mm:ss")
     private Date effectiveDate;
     @Excel(name = "调动原因")
     private String reason;
-    @Excel(name = "审批状态")
+    @Excel(name = "审批状态", dictType = "hr_audit_status")
     private String auditStatus;
     @Excel(name = "审批人")
     private String auditBy;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    @Excel(name = "审批时间")
+    @Excel(name = "审批时间", dateFormat = "yyyy-MM-dd HH:mm:ss")
     private Date auditTime;
     @Excel(name = "审批意见")
     private String auditRemark;
-    @Excel(name = "状态")
+    @Excel(name = "状态", dictType = "hr_audit_status")
     private String status;
-    @Excel(name = "删除标志")
+    @Excel(name = "删除标志", readConverterExp = "0=正常,2=已删除")
     private String delFlag;
 
     public Long getTransferId() { return transferId; }

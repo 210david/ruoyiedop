@@ -52,6 +52,11 @@
           <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['system:config:add']">新增</el-button>
           <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['system:config:edit']">修改</el-button>
           <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['system:config:remove']">删除</el-button>
+          <el-tooltip content="系统内置参数允许修改参数键值，但不允许删除" placement="top">
+            <span style="display: inline-flex; align-items: center; height: 32px; margin-left: 8px; font-size: 13px; color: var(--ink-400);">
+              <el-icon style="margin-right: 4px;"><WarningFilled /></el-icon>内置参数受保护
+            </span>
+          </el-tooltip>
           <div class="toolbar-divider"></div>
           <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['system:config:export']">导出</el-button>
           <el-button type="danger" plain icon="Refresh" @click="handleRefreshCache" v-hasPermi="['system:config:remove']">刷新缓存</el-button>
@@ -67,7 +72,7 @@
 <el-table-column type="selection" width="55" align="center" />
 <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
 <el-table-column label="参数主键" align="center" prop="configId" :width="colWidth('configId', 120)" resizable v-if="columns.configId.visible" />
-          <el-table-column label="参数名称" align="center" prop="configName" :show-overflow-tooltip="true" :width="colWidth('configName', 140)" resizable v-if="columns.configName.visible" />
+          <el-table-column label="参数名称" align="center" prop="configName" :show-overflow-tooltip="true" :min-width="colWidth('configName', 140)" resizable v-if="columns.configName.visible" />
           <el-table-column label="参数键名" align="center" prop="configKey" :show-overflow-tooltip="true" :width="colWidth('configKey', 180)" resizable v-if="columns.configKey.visible" />
           <el-table-column label="参数键值" align="center" prop="configValue" :show-overflow-tooltip="true" :width="colWidth('configValue', 180)" resizable v-if="columns.configValue.visible" />
           <el-table-column label="系统内置" align="center" prop="configType" :width="colWidth('configType', 100)" resizable v-if="columns.configType.visible">
@@ -75,7 +80,7 @@
               <dict-tag :options="sys_yes_no" :value="scope.row.configType" />
             </template>
           </el-table-column>
-          <el-table-column label="备注" align="center" prop="remark" :show-overflow-tooltip="true" :width="colWidth('remark', 200)" resizable v-if="columns.remark.visible" />
+          <el-table-column label="备注" align="center" prop="remark" :show-overflow-tooltip="true" :min-width="colWidth('remark', 200)" resizable v-if="columns.remark.visible" />
           <el-table-column label="创建时间" align="center" prop="createTime" :width="colWidth('createTime', 180)" resizable v-if="columns.createTime.visible">
             <template #default="scope">
               <span>{{ parseTime(scope.row.createTime) }}</span>
@@ -85,7 +90,7 @@
             <template #default="scope">
               <div class="action-btn-row">
                 <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['system:config:edit']">修改</el-button>
-                <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['system:config:remove']">删除</el-button>
+                <el-button v-if="scope.row.configType !== 'Y'" link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['system:config:remove']">删除</el-button>
               </div>
             </template>
           </el-table-column>
@@ -103,7 +108,7 @@
     </div>
 
     <!-- 添加或修改参数配置对话框 -->
-    <el-dialog v-model="open" width="560px" append-to-body draggable :close-on-click-modal="false" class="rd-dialog">
+    <el-dialog v-model="open" width="672px" append-to-body draggable :close-on-click-modal="false" class="rd-dialog">
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon">
@@ -134,10 +139,10 @@
           </div>
           <div class="rd-card-body">
             <el-form-item label="参数名称" prop="configName">
-              <el-input v-model="form.configName" placeholder="请输入参数名称" />
+              <el-input v-model="form.configName" placeholder="请输入参数名称" :disabled="form.configType === 'Y' && form.configId != null" />
             </el-form-item>
             <el-form-item label="参数键名" prop="configKey">
-              <el-input v-model="form.configKey" placeholder="请输入参数键名" />
+              <el-input v-model="form.configKey" placeholder="请输入参数键名" :disabled="form.configType === 'Y' && form.configId != null" />
             </el-form-item>
             <el-form-item label="参数键值" prop="configValue">
               <el-input v-model="form.configValue" type="textarea" placeholder="请输入参数键值" :rows="3" />
@@ -145,7 +150,7 @@
             <el-row :gutter="16">
               <el-col :span="12">
                 <el-form-item label="系统内置" prop="configType">
-                  <el-radio-group v-model="form.configType">
+                  <el-radio-group v-model="form.configType" :disabled="form.configId != null">
                     <el-radio v-for="dict in sys_yes_no" :key="dict.value" :value="dict.value">{{ dict.label }}</el-radio>
                   </el-radio-group>
                 </el-form-item>
@@ -154,6 +159,9 @@
             <el-form-item label="备注" prop="remark">
               <el-input v-model="form.remark" type="textarea" placeholder="请输入内容" :rows="3" />
             </el-form-item>
+            <el-alert v-if="form.configType === 'Y' && form.configId != null" type="warning" :closable="false" show-icon style="margin-top: 4px">
+              <template #title>系统内置参数：仅允许修改参数键值和备注，参数名称、键名和内置类型不可更改</template>
+            </el-alert>
           </div>
         </section>
       </el-form>
@@ -169,8 +177,9 @@
 
 <script setup name="Config">
 import { listConfig, getConfig, delConfig, addConfig, updateConfig, refreshCache } from "@/api/system/config"
-import { Filter } from '@element-plus/icons-vue'
+import { Filter, WarningFilled } from '@element-plus/icons-vue'
 import { useColumnResize } from '@/composables/useColumnResize'
+import { refreshWatermark } from '@/utils/watermark'
 
 const { proxy } = getCurrentInstance()
 const { sys_yes_no } = useDict("sys_yes_no")
@@ -280,6 +289,10 @@ function handleSelectionChange(selection) {
   single.value = selection.length != 1
   multiple.value = !selection.length
 }
+/** 检查是否包含系统内置参数（仅用于删除拦截） */
+function isBuiltIn(row) {
+  return row && row.configType === 'Y'
+}
 
 /** 新增按钮操作 */
 function handleAdd() {
@@ -305,15 +318,33 @@ function submitForm() {
     if (valid) {
       if (form.value.configId != undefined) {
         updateConfig(form.value).then(response => {
-          proxy.$modal.msgSuccess("修改成功")
+          proxy.$modal.msgSuccess("修改成功，参数已即时生效")
           open.value = false
           getList()
+          // 修改参数后刷新缓存，确保后端Redis和Spring缓存同步更新
+          // 后端updateConfig已自动清除双层缓存（Spring Cache + Redis手动缓存）
+          // 前端调用refreshCache触发resetConfigCache（清空全部+重新加载），确保万无一失
+          refreshCache().then(() => {
+            // 刷新水印（如果是水印参数变更则立即生效）
+            refreshWatermark()
+            // 如果修改的是密码规则参数，更新前端 sessionStorage 缓存
+            if (form.value.configKey === 'sys.account.chrtype') {
+              proxy.getConfigKey('sys.account.chrtype').then(res => {
+                const val = res.data !== undefined ? res.data : res.msg
+                import('@/plugins/cache').then(m => {
+                  m.default.session.set('pwrChrtype', val || '0')
+                })
+              }).catch(() => {})
+            }
+          }).catch(() => {})
         })
       } else {
         addConfig(form.value).then(response => {
           proxy.$modal.msgSuccess("新增成功")
           open.value = false
           getList()
+          // 新增参数后也刷新缓存
+          refreshCache().then(() => {}).catch(() => {})
         })
       }
     }
@@ -322,8 +353,12 @@ function submitForm() {
 
 /** 删除按钮操作 */
 function handleDelete(row) {
+  if (isBuiltIn(row)) {
+    proxy.$modal.msgError('系统内置参数不允许删除')
+    return
+  }
   const configIds = row.configId || ids.value
-  proxy.$modal.confirm('是否确认删除参数编号为"' + configIds + '"的数据项？').then(function () {
+  proxy.$modal.confirm('是否确认删除选中的参数？').then(function () {
     return delConfig(configIds)
   }).then(() => {
     getList()
@@ -333,15 +368,16 @@ function handleDelete(row) {
 
 /** 导出按钮操作 */
 function handleExport() {
-  proxy.download("system/config/export", {
+  proxy.download("system/config/export", proxy.withExportIds({
     ...proxy.addDateRange(queryParams.value, dateRange.value)
-  }, `config_${new Date().getTime()}.xlsx`)
+  }, ids.value, 'configId'), `config_${new Date().getTime()}.xlsx`)
 }
 
 /** 刷新缓存按钮操作 */
 function handleRefreshCache() {
   refreshCache().then(() => {
     proxy.$modal.msgSuccess("刷新缓存成功")
+    refreshWatermark()
   })
 }
 

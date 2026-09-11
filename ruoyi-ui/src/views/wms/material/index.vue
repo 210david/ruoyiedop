@@ -123,13 +123,13 @@
           <el-table-column label="物料编码" prop="materialCode" key="materialCode" :width="colWidth('materialCode', 180)" resizable sortable="custom" v-if="columns.materialCode.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.materialCode }}</span></template>
           </el-table-column>
-          <el-table-column label="物料名称" prop="materialName" key="materialName" :width="colWidth('materialName', 240)" resizable show-overflow-tooltip v-if="columns.materialName.visible" />
+          <el-table-column label="物料名称" prop="materialName" key="materialName" :min-width="colWidth('materialName', 240)" resizable show-overflow-tooltip v-if="columns.materialName.visible" />
           <el-table-column label="物料类型" prop="materialType" key="materialType" :width="colWidth('materialType', 120)" resizable align="center" v-if="columns.materialType.visible">
             <template #default="scope">
               <span class="badge violet">{{ materialTypeLabel(scope.row.materialType) }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="规格型号" prop="specModel" key="specModel" :width="colWidth('specModel', 240)" resizable show-overflow-tooltip v-if="columns.specModel.visible" />
+          <el-table-column label="规格型号" prop="specModel" key="specModel" :min-width="colWidth('specModel', 240)" resizable show-overflow-tooltip v-if="columns.specModel.visible" />
           <el-table-column label="单位" prop="unit" key="unit" :width="colWidth('unit', 80)" resizable align="center" v-if="columns.unit.visible">
             <template #default="scope">
               <span class="badge blue">{{ unitLabel(scope.row.unit) }}</span>
@@ -425,7 +425,7 @@
 
 <script setup name="WmsMaterial">
 import { listMaterial, getMaterial, addMaterial, updateMaterial, delMaterial } from '@/api/wms/material'
-import { fetchAllPages, downloadCsv } from '@/utils/csvExport'
+import { fetchAllPages, downloadXlsx } from '@/utils/csvExport'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
 import ExcelImportDialog from '@/components/ExcelImportDialog'
@@ -680,13 +680,13 @@ function submitForm() {
         updateMaterial(form.value).then(() => {
           proxy.$modal.msgSuccess('修改成功')
           open.value = false
-          getList()
+          getList(); loadTypeCounts()
         })
       } else {
         addMaterial(form.value).then(() => {
           proxy.$modal.msgSuccess('新增成功')
           open.value = false
-          getList()
+          getList(); loadTypeCounts()
         })
       }
     }
@@ -698,17 +698,18 @@ function handleDelete(row) {
   proxy.$modal.confirm('是否确认删除选中的物料数据项？').then(function () {
     return delMaterial(materialIds)
   }).then(() => {
-    getList()
+    getList(); loadTypeCounts()
     proxy.$modal.msgSuccess('删除成功')
   }).catch(() => {})
 }
 
 /** 导出物料（与列表口径一致：含筛选条件，导出全部页数据） */
 async function handleExport() {
-  const rows = await fetchAllPages(listMaterial, proxy.addDateRange(queryParams.value, dateRange.value))
+  let rows = await fetchAllPages(listMaterial, proxy.addDateRange(queryParams.value, dateRange.value))
+  if (ids.value && ids.value.length) { rows = rows.filter(i => ids.value.includes(i.materialId)) }
   if (!rows.length) { proxy.$modal.msgWarning('当前筛选下无数据可导出'); return }
   const headers = ['物料编码', '物料名称', '物料类型', '规格型号', '单位', '批次管理', '效期管理', '保质期(天)', '安全库存下限', '安全库存上限', '状态', '创建时间']
-  downloadCsv(`material_${new Date().getTime()}`, headers, rows.map(i => [
+  downloadXlsx(`material_${new Date().getTime()}`, headers, rows.map(i => [
     i.materialCode || '', i.materialName || '', materialTypeLabel(i.materialType), i.specModel || '', unitLabel(i.unit),
     i.isBatchManage === '1' ? '是' : '否', i.isExpiryManage === '1' ? '是' : '否',
     i.shelfLifeDays != null ? i.shelfLifeDays : '',

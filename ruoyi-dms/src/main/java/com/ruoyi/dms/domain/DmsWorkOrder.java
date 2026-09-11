@@ -38,7 +38,7 @@ public class DmsWorkOrder extends BaseEntity
     private String orderType;
 
     /** 故障现象/任务描述 */
-    @Excel(name = "故障描述")
+    @Excel(name = "故障描述", width = 40, handler = DmsFaultDescriptionExcelHandler.class)
     private String faultDescription;
 
     /** 报修人ID */
@@ -50,7 +50,7 @@ public class DmsWorkOrder extends BaseEntity
 
     /** 报修时间 */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    @Excel(name = "报修时间", width = 30)
+    @Excel(name = "报修时间", width = 30, dateFormat = "yyyy-MM-dd HH:mm:ss")
     private Date reportTime;
 
     /** 优先级（字典 dms_priority） */

@@ -106,7 +106,7 @@
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" class="app-table">
 <el-table-column type="selection" width="55" align="center" />
 <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
-<el-table-column label="审核编号" prop="auditPlanNo" key="auditPlanNo" :width="colWidth('auditPlanNo', 160)" resizable show-overflow-tooltip v-if="columns.auditPlanNo.visible" />          <el-table-column label="审核标题" prop="auditTitle" key="auditTitle" :width="colWidth('auditTitle', 220)" resizable show-overflow-tooltip v-if="columns.auditTitle.visible" />
+<el-table-column label="审核编号" prop="auditPlanNo" key="auditPlanNo" :width="colWidth('auditPlanNo', 160)" resizable show-overflow-tooltip v-if="columns.auditPlanNo.visible" />          <el-table-column label="审核标题" prop="auditTitle" key="auditTitle" :min-width="colWidth('auditTitle', 220)" resizable show-overflow-tooltip v-if="columns.auditTitle.visible" />
           <el-table-column label="年度" prop="auditYear" key="auditYear" :width="colWidth('auditYear', 80)" resizable align="center" v-if="columns.auditYear.visible" />
           <el-table-column label="主审" prop="leadAuditor" key="leadAuditor" :width="colWidth('leadAuditor', 100)" resizable show-overflow-tooltip v-if="columns.leadAuditor.visible" />
           <el-table-column label="开始日期" prop="auditDateFrom" key="auditDateFrom" :width="colWidth('auditDateFrom', 120)" resizable align="center" v-if="columns.auditDateFrom.visible"><template #default="scope"><span>{{ parseTime(scope.row.auditDateFrom, '{y}-{m}-{d}') }}</span></template></el-table-column>
@@ -384,16 +384,16 @@ function handleSelectionChange(selection) { selectedIds.value = selection.map(it
 function submitForm() {
   proxy.$refs['auditRef'].validate(valid => {
     if (valid) {
-      if (form.value.auditPlanId) { updateAudit(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList() }) }
-      else { addAudit(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList() }) }
+      if (form.value.auditPlanId) { updateAudit(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList(); loadTabCounts() }) }
+      else { addAudit(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList(); loadTabCounts() }) }
     }
   })
 }
 function handleDelete(row) {
   const ids = row?.auditPlanId ? [row.auditPlanId] : selectedIds.value
-  proxy.$modal.confirm('确认删除？').then(() => delAudit(ids.join(','))).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {})
+  proxy.$modal.confirm('确认删除？').then(() => delAudit(ids.join(','))).then(() => { getList(); loadTabCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {})
 }
-function handleExport() { proxy.download('qms/audit/export', { ...proxy.addDateRange(queryParams.value, dateRange.value) }, `audit_${new Date().getTime()}.xlsx`) }
+function handleExport() { proxy.download('qms/audit/export', proxy.withExportIds({ ...proxy.addDateRange(queryParams.value, dateRange.value) }, selectedIds.value, 'auditPlanId'), `audit_${new Date().getTime()}.xlsx`) }
 function reset() { form.value = { auditPlanId: null, auditTitle: undefined, auditYear: new Date().getFullYear(), auditType: 'annual', leadAuditor: undefined, planStatus: '0' }; proxy.resetForm('auditRef') }
 function cancel() { open.value = false; reset() }
 function planStatusLabel(val) { const item = statusOptions.value.find(d => d.value == val); return item ? item.label : '-' }

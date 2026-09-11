@@ -42,6 +42,7 @@ public class MkCustomerTagController extends BaseController
     public void export(HttpServletResponse response, MkCustomerTag tag)
     {
         List<MkCustomerTag> list = mkCustomerTagService.selectTagList(tag);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, tag);
         ExcelUtil<MkCustomerTag> util = new ExcelUtil<>(MkCustomerTag.class);
         util.exportExcel(response, list, "客户标签数据");
     }

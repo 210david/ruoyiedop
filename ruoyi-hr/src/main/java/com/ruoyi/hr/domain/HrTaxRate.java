@@ -28,11 +28,11 @@ public class HrTaxRate extends BaseEntity
     private BigDecimal quickDeduction;
     @NotNull(message = "生效日期不能为空")
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "生效日期")
+    @Excel(name = "生效日期", dateFormat = "yyyy-MM-dd")
     private Date effectiveDate;
-    @Excel(name = "状态")
+    @Excel(name = "状态", dictType = "sys_normal_disable")
     private String status;
-    @Excel(name = "删除标志")
+    @Excel(name = "删除标志", readConverterExp = "0=正常,2=已删除")
     private String delFlag;
 
     public Long getTaxRateId() { return taxRateId; }

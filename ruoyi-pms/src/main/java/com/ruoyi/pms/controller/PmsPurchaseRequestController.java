@@ -42,6 +42,7 @@ public class PmsPurchaseRequestController extends BaseController
     public void export(HttpServletResponse response, PmsPurchaseRequest request)
     {
         List<PmsPurchaseRequest> list = pmsPurchaseRequestService.selectPurchaseRequestList(request);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, request);
         ExcelUtil<PmsPurchaseRequest> util = new ExcelUtil<>(PmsPurchaseRequest.class);
         util.exportExcel(response, list, "采购申请数据");
     }

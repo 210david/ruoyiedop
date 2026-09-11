@@ -103,7 +103,7 @@
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
           <el-table-column label="班组编号" prop="teamCode" key="teamCode" :width="colWidth('teamCode', 140)" resizable v-if="columns.teamCode.visible" />
-          <el-table-column label="班组名称" prop="teamName" key="teamName" :width="colWidth('teamName', 140)" resizable v-if="columns.teamName.visible" />
+          <el-table-column label="班组名称" prop="teamName" key="teamName" :min-width="colWidth('teamName', 140)" show-overflow-tooltip resizable v-if="columns.teamName.visible" />
           <el-table-column label="产能单元" prop="resourceName" key="resourceName" :width="colWidth('resourceName', 140)" resizable show-overflow-tooltip v-if="columns.resourceName.visible" />
           <el-table-column label="班组长" prop="leader" key="leader" :width="colWidth('leader', 100)" resizable v-if="columns.leader.visible" />
           <el-table-column label="联系电话" prop="phone" key="phone" :width="colWidth('phone', 130)" resizable v-if="columns.phone.visible" />
@@ -628,13 +628,13 @@ function handleDelete(row) {
   proxy.$modal.confirm('是否确认删除选中的班组？').then(function() {
     return delTeam(delIds);
   }).then(() => {
-    getList();
+    getList(); loadStatusCounts();
     proxy.$modal.msgSuccess("删除成功");
   }).catch(() => {});
 }
 
 function handleExport() {
-  proxy.download("mms/team/export", { ...queryParams.value }, `team_${new Date().getTime()}.xlsx`);
+  proxy.download("mms/team/export", proxy.withExportIds({ ...queryParams.value }, ids.value, 'teamId'), `team_${new Date().getTime()}.xlsx`);
 }
 
 // ===== 字典辅助函数 =====

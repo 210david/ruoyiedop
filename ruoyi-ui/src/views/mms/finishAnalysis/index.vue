@@ -79,7 +79,7 @@
           <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
           <el-table-column label="工单号" prop="workOrderNo" key="workOrderNo" :width="colWidth('workOrderNo', 140)" resizable v-if="columns.workOrderNo.visible" />
           <el-table-column label="产品编码" prop="productCode" key="productCode" :width="colWidth('productCode', 130)" resizable v-if="columns.productCode.visible" />
-          <el-table-column label="产品名称" prop="productName" key="productName" :width="colWidth('productName', 180)" resizable show-overflow-tooltip v-if="columns.productName.visible" />
+          <el-table-column label="产品名称" prop="productName" key="productName" :min-width="colWidth('productName', 180)" resizable show-overflow-tooltip v-if="columns.productName.visible" />
           <el-table-column label="单位" prop="unit" key="unit" :width="colWidth('unit', 80)" resizable align="center" v-if="columns.unit.visible"><template #default="scope"><span v-if="scope.row.unit" class="badge violet">{{ unitLabel(scope.row.unit) }}</span><span v-else class="text-muted">—</span></template></el-table-column>
           <el-table-column label="计划数量" prop="planQty" key="planQty" :width="colWidth('planQty', 100)" resizable align="center" v-if="columns.planQty.visible" />
           <el-table-column label="完工数量" prop="finishQty" key="finishQty" :width="colWidth('finishQty', 100)" resizable align="center" v-if="columns.finishQty.visible" />

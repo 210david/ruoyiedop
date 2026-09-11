@@ -84,7 +84,7 @@
           </el-table-column>
           <el-table-column label="发生时间" prop="incidentDate" key="incidentDate" :width="colWidth('incidentDate', 160)" resizable align="center" sortable="custom" v-if="columns.incidentDate.visible" />
           <el-table-column label="事故地点" prop="incidentLocation" key="incidentLocation" :width="colWidth('incidentLocation', 150)" resizable show-overflow-tooltip v-if="columns.incidentLocation.visible" />
-          <el-table-column label="事故描述" prop="incidentDesc" key="incidentDesc" :width="colWidth('incidentDesc', 200)" resizable show-overflow-tooltip v-if="columns.incidentDesc.visible" />
+          <el-table-column label="事故描述" prop="incidentDesc" key="incidentDesc" :min-width="colWidth('incidentDesc', 200)" resizable show-overflow-tooltip v-if="columns.incidentDesc.visible" />
           <el-table-column label="伤亡人数" prop="casualties" key="casualties" :width="colWidth('casualties', 90)" resizable align="center" v-if="columns.casualties.visible">
             <template #default="scope">
               <span class="badge" :class="scope.row.casualties > 0 ? 'red' : 'gray'">
@@ -323,7 +323,7 @@ function submitForm() {
     }
   })
 }
-function handleExport() { proxy.download('safety/emergency/incident/export', { ...proxy.addDateRange(queryParams.value, dateRange.value, 'IncidentDate') }, `incident_${new Date().getTime()}.xlsx`) }
+function handleExport() { proxy.download('safety/emergency/incident/export', proxy.withExportIds({ ...proxy.addDateRange(queryParams.value, dateRange.value, 'IncidentDate') }, ids.value, 'incidentId'), `incident_${new Date().getTime()}.xlsx`) }
 function handleDelete(row) { const incidentIds = row.incidentId || ids.value; proxy.$modal.confirm('是否确认删除事故记录？').then(function() { return delIncident(incidentIds) }).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
 function cancel() { open.value = false; reset() }
 function reset() {

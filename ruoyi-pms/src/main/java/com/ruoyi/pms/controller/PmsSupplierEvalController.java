@@ -42,6 +42,7 @@ public class PmsSupplierEvalController extends BaseController
     public void export(HttpServletResponse response, PmsSupplierEval eval)
     {
         List<PmsSupplierEval> list = pmsSupplierEvalService.selectEvalList(eval);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, eval);
         ExcelUtil<PmsSupplierEval> util = new ExcelUtil<>(PmsSupplierEval.class);
         util.exportExcel(response, list, "供应商评估数据");
     }

@@ -109,7 +109,7 @@
             <template #default="scope"><span class="badge" :class="badgeClass(scope.row.status)"><span class="dot"></span>{{ statusLabel(scope.row.status) }}</span></template>
           </el-table-column>
           <el-table-column label="计划日期" prop="planDate" key="planDate" :width="colWidth('planDate', 120)" resizable align="center" v-if="columns.planDate.visible" />
-          <el-table-column label="备注" prop="remark" key="remark" :width="colWidth('remark', 200)" resizable :show-overflow-tooltip="true" v-if="columns.remark.visible" />
+          <el-table-column label="备注" prop="remark" key="remark" :min-width="colWidth('remark', 200)" resizable :show-overflow-tooltip="true" v-if="columns.remark.visible" />
           <el-table-column label="创建时间" prop="createTime" key="createTime" :width="colWidth('createTime', 160)" resizable align="center" v-if="columns.createTime.visible" />
           <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
@@ -528,27 +528,27 @@ function resetQuery() { queryParams.value.takeNo = undefined; queryParams.value.
 function handleSelectionChange(sel) { ids.value = sel.map(i => i.takeId); multiple.value = !sel.length }
 function reset() { form.value = { warehouseId: undefined, warehouseName: undefined, areaId: undefined, areaName: undefined, takeType: '0', sampleRatio: 30, cycleNo: 1, planDate: undefined, remark: undefined }; areaOptions.value = []; proxy.resetForm('takeRef') }
 function handleAdd() { reset(); open.value = true; title.value = '添加盘点单' }
-function submitForm() { proxy.$refs['takeRef'].validate(v => { if (v) { addStockTake(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList() }) } }) }
+function submitForm() { proxy.$refs['takeRef'].validate(v => { if (v) { addStockTake(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList(); loadStatusCounts() }) } }) }
 function handleDetail(row) { getStockTake(row.takeId).then(res => { detailData.value = res.data; detailPage.pageNum = 1; detailOpen.value = true }) }
 function handleApprove(row) { getStockTake(row.takeId).then(res => { approveForm.value = { ...res.data, approveOpinion: '' }; approvePage.pageNum = 1; approveOpen.value = true }) }
 function confirmApprove(passed) {
   if (!approveForm.value.approveOpinion) { proxy.$modal.msgWarning('请输入审批意见'); return }
   if (passed) {
     approveStockTake(approveForm.value.takeId, approveForm.value.approveOpinion).then(() => {
-      proxy.$modal.msgSuccess('审批通过'); approveOpen.value = false; getList()
+      proxy.$modal.msgSuccess('审批通过'); approveOpen.value = false; getList(); loadStatusCounts()
     })
   } else {
     rejectStockTake(approveForm.value.takeId, approveForm.value.approveOpinion).then(() => {
-      proxy.$modal.msgSuccess('已驳回，盘点单已退回盘点人员重新核实'); approveOpen.value = false; getList()
+      proxy.$modal.msgSuccess('已驳回，盘点单已退回盘点人员重新核实'); approveOpen.value = false; getList(); loadStatusCounts()
     })
   }
 }
-function handleStart(row) { proxy.$modal.confirm('确认开始盘点？').then(() => startStockTake(row.takeId)).then(() => { getList(); proxy.$modal.msgSuccess('已开始') }).catch(() => {}) }
-function handleVoid(row) { proxy.$modal.confirm('确认作废该盘点单？作废后将无法继续盘点。').then(() => voidStockTake(row.takeId)).then(() => { getList(); proxy.$modal.msgSuccess('已作废') }).catch(() => {}) }
+function handleStart(row) { proxy.$modal.confirm('确认开始盘点？').then(() => startStockTake(row.takeId)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('已开始') }).catch(() => {}) }
+function handleVoid(row) { proxy.$modal.confirm('确认作废该盘点单？作废后将无法继续盘点。').then(() => voidStockTake(row.takeId)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('已作废') }).catch(() => {}) }
 function handleSubmitDetail(row) { inputForm.value = { takeId: detailData.value.takeId, detailId: row.detailId, materialCode: row.materialCode, materialName: row.materialName, batchNo: row.batchNo, areaName: row.areaName, locationName: row.locationName, bookQty: row.bookQty, actualQty: row.actualQty || row.bookQty, diffReason: undefined }; submitOpen.value = true }
 function submitDetailForm() { submitStockTakeDetail(inputForm.value.takeId, inputForm.value.detailId, inputForm.value.actualQty, inputForm.value.diffReason).then(() => { proxy.$modal.msgSuccess('录入成功'); submitOpen.value = false; getStockTake(detailData.value.takeId).then(res => { detailData.value = res.data }) }) }
 function handleSubmitForApproval() { proxy.$modal.confirm('确认提交审批？提交后将等待审批人审批。').then(() => submitForApproval(detailData.value.takeId)).then(() => { proxy.$modal.msgSuccess('已提交审批'); getStockTake(detailData.value.takeId).then(res => { detailData.value = res.data }); getList() }).catch(() => {}) }
-function handleDelete(row) { const takeIds = row.takeId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delStockTake(takeIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleDelete(row) { const takeIds = row.takeId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delStockTake(takeIds)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
 function cancel() { open.value = false; reset() }
 function badgeClass(status) { const map = { '0': 'amber', '1': 'blue', '2': 'violet', '3': 'green', '4': 'gray' }; return map[status] || 'gray' }
 function statusLabel(status) { const item = wms_take_status.value.find(d => d.value == status); return item ? item.label : '-' }

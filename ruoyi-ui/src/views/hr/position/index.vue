@@ -87,7 +87,7 @@
           <el-table-column label="岗位编码" prop="positionCode" key="positionCode" align="center" :width="colWidth('positionCode', 130)" resizable show-overflow-tooltip v-if="columns.positionCode.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.positionCode }}</span></template>
           </el-table-column>
-          <el-table-column label="岗位名称" prop="positionName" key="positionName" align="center" :width="colWidth('positionName', 160)" resizable show-overflow-tooltip v-if="columns.positionName.visible" />
+          <el-table-column label="岗位名称" prop="positionName" key="positionName" align="center" :min-width="colWidth('positionName', 160)" resizable show-overflow-tooltip v-if="columns.positionName.visible" />
           <el-table-column label="岗位序列" prop="positionSeq" key="positionSeq" align="center" :width="colWidth('positionSeq', 120)" resizable v-if="columns.positionSeq.visible" />
           <el-table-column label="岗级" prop="positionLevel" key="positionLevel" align="center" :width="colWidth('positionLevel', 100)" resizable v-if="columns.positionLevel.visible" />
           <el-table-column label="技能等级" prop="skillLevel" key="skillLevel" align="center" :width="colWidth('skillLevel', 100)" resizable v-if="columns.skillLevel.visible" />
@@ -439,7 +439,7 @@ function handleDelete(row) {
 }
 
 function handleExport() {
-  proxy.download('hr/position/export', { ...queryParams.value }, `hrPosition_${new Date().getTime()}.xlsx`)
+  proxy.download('hr/position/export', proxy.withExportIds({ ...queryParams.value }, ids.value, 'positionId'), `hrPosition_${new Date().getTime()}.xlsx`)
 }
 
 function cancel() {

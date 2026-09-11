@@ -42,6 +42,7 @@ public class MkOrderController extends BaseController
     public void export(HttpServletResponse response, MkOrder order)
     {
         List<MkOrder> list = mkOrderService.selectOrderList(order);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, order);
         ExcelUtil<MkOrder> util = new ExcelUtil<>(MkOrder.class);
         util.exportExcel(response, list, "订单数据");
     }

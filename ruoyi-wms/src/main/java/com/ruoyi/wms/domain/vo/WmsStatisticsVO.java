@@ -83,11 +83,11 @@ public class WmsStatisticsVO extends BaseEntity
     private String alertType;
 
     /** 生产日期（效期预警用） */
-    @Excel(name = "生产日期")
+    @Excel(name = "生产日期", dateFormat = "yyyy-MM-dd")
     private Date productionDate;
 
     /** 有效期（效期预警用） */
-    @Excel(name = "有效期")
+    @Excel(name = "有效期", dateFormat = "yyyy-MM-dd")
     private Date expiryDate;
 
     /** 距过期天数（效期预警用） */

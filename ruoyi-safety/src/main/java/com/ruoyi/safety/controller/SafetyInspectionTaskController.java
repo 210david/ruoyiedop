@@ -37,6 +37,7 @@ public class SafetyInspectionTaskController extends BaseController
     public void export(HttpServletResponse response, SafetyInspectionTask task)
     {
         List<SafetyInspectionTask> list = safetyInspectionTaskService.selectSafetyInspectionTaskList(task);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, task);
         ExcelUtil<SafetyInspectionTask> util = new ExcelUtil<>(SafetyInspectionTask.class);
         util.exportExcel(response, list, "排查任务");
     }

@@ -96,7 +96,7 @@
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
           <el-table-column label="证书编号" prop="certNo" key="certNo" :width="colWidth('certNo', 156)" resizable v-if="columns.certNo.visible" />
-          <el-table-column label="证书名称" prop="certName" key="certName" :width="colWidth('certName', 240)" resizable show-overflow-tooltip v-if="columns.certName.visible" />
+          <el-table-column label="证书名称" prop="certName" key="certName" :min-width="colWidth('certName', 240)" resizable show-overflow-tooltip v-if="columns.certName.visible" />
           <el-table-column label="证书类型" prop="certType" key="certType" :width="colWidth('certType', 180)" resizable align="center" v-if="columns.certType.visible">
             <template #default="scope"><span class="badge violet">{{ certTypeLabel(scope.row.certType) }}</span></template>
           </el-table-column>
@@ -368,7 +368,7 @@ function submitForm() {
   })
 }
 function handleDelete(row) { const certIds = row.certId || ids.value; proxy.$modal.confirm('是否确认删除证书？').then(function() { return delTrainingCert(certIds) }).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
-function handleExport() { proxy.download('safety/training/cert/export', { ...queryParams.value }, `training_cert_${new Date().getTime()}.xlsx`) }
+function handleExport() { proxy.download('safety/training/cert/export', proxy.withExportIds({ ...queryParams.value }, ids.value, 'certId'), `training_cert_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 function reset() {
   form.value = { certId: undefined, certNo: undefined, certName: undefined, certType: undefined, userId: undefined, userName: undefined, deptId: undefined, deptName: undefined, issueDate: undefined, expireDate: undefined, issueOrg: undefined, attachment: undefined, status: '0', remark: undefined }

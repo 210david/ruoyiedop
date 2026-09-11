@@ -371,7 +371,7 @@ function submitForm() {
   })
 }
 function handleDelete(row) { const attendeeIds = row.attendeeId || ids.value; proxy.$modal.confirm('是否确认删除参训人员记录？').then(function() { return delTrainingAttendee(attendeeIds) }).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
-function handleExport() { proxy.download('safety/training/attendee/export', { ...queryParams.value }, `attendee_${new Date().getTime()}.xlsx`) }
+function handleExport() { proxy.download('safety/training/attendee/export', proxy.withExportIds({ ...queryParams.value }, ids.value, 'attendeeId'), `attendee_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 function reset() {
   form.value = { attendeeId: undefined, recordId: queryParams.value.recordId, userId: undefined, userName: undefined, deptId: undefined, deptName: undefined, examScore: undefined, isPass: '1', examTime: undefined, remark: undefined }

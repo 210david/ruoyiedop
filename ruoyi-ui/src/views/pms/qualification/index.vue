@@ -93,8 +93,8 @@
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" :row-class-name="tableRowClassName" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" resizable align="center" />
-          <el-table-column label="供应商" prop="supplierName" key="supplierName" :width="colWidth('supplierName', 240)" resizable show-overflow-tooltip v-if="columns.supplierName.visible" />
-          <el-table-column label="资质名称" prop="qualName" key="qualName" :width="colWidth('qualName', 180)" resizable show-overflow-tooltip v-if="columns.qualName.visible" />
+          <el-table-column label="供应商" prop="supplierName" key="supplierName" :min-width="colWidth('supplierName', 240)" resizable show-overflow-tooltip v-if="columns.supplierName.visible" />
+          <el-table-column label="资质名称" prop="qualName" key="qualName" :min-width="colWidth('qualName', 180)" resizable show-overflow-tooltip v-if="columns.qualName.visible" />
           <el-table-column label="资质类型" prop="qualType" key="qualType" :width="colWidth('qualType', 120)" resizable align="center" v-if="columns.qualType.visible"><template #default="scope"><span class="badge violet">{{ qualTypeLabel(scope.row.qualType) }}</span></template></el-table-column>
           <el-table-column label="资质编号" prop="qualCode" key="qualCode" :width="colWidth('qualCode', 140)" resizable v-if="columns.qualCode.visible" />
           <el-table-column label="颁发日期" prop="issueDate" key="issueDate" :width="colWidth('issueDate', 130)" resizable align="center" v-if="columns.issueDate.visible" />
@@ -363,8 +363,8 @@ function handleAdd() { reset(); open.value = true; title.value = '添加资质' 
 function handleUpdate(row) { reset(); getQualification(row.qualId).then(res => { form.value = res.data; open.value = true; title.value = '修改资质' }) }
 function handleView(row) { getQualification(row.qualId).then(res => { viewData.value = res.data; viewOpen.value = true }) }
 function submitForm() { proxy.$refs['qualRef'].validate(valid => { if (valid) { if (form.value.qualId != undefined) { updateQualification(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList() }) } else { addQualification(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList() }) } } }) }
-function handleDelete(row) { const qualIds = row.qualId || ids.value; proxy.$modal.confirm('确认删除编号为"' + qualIds + '"的数据？').then(() => delQualification(qualIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
-function handleExport() { proxy.download('pms/qualification/export', { ...proxy.addDateRange(queryParams.value, dateRange.value, 'IssueDate') }, `qualification_${new Date().getTime()}.xlsx`) }
+function handleDelete(row) { const qualIds = row.qualId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delQualification(qualIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleExport() { proxy.download('pms/qualification/export', proxy.withExportIds({ ...proxy.addDateRange(queryParams.value, dateRange.value, 'IssueDate') }, ids.value, 'qualId'), `qualification_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 
 /** 判断资质是否已过期 */

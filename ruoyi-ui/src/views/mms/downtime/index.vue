@@ -93,7 +93,7 @@
           <el-table-column label="结束时间" prop="endTime" key="endTime" :width="colWidth('endTime', 160)" resizable align="center" v-if="columns.endTime.visible"><template #default="scope">{{ scope.row.endTime ? parseTime(scope.row.endTime) : '—' }}</template></el-table-column>
           <el-table-column label="停机时长(小时)" prop="hours" key="hours" :width="colWidth('hours', 120)" resizable align="center" v-if="columns.hours.visible"><template #default="scope">{{ scope.row.hours != null ? scope.row.hours + ' 小时' : '—' }}</template></el-table-column>
           <el-table-column label="上报人" prop="reportBy" key="reportBy" :width="colWidth('reportBy', 90)" resizable align="center" v-if="columns.reportBy.visible" />
-          <el-table-column label="停机原因" prop="reason" key="reason" :width="colWidth('reason', 200)" resizable show-overflow-tooltip v-if="columns.reason.visible" />
+          <el-table-column label="停机原因" prop="reason" key="reason" :min-width="colWidth('reason', 200)" resizable show-overflow-tooltip v-if="columns.reason.visible" />
           <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
               <div class="action-btn-row">
@@ -373,14 +373,14 @@ function submitForm() {
   if (form.value.endTime) { calcDowntimeHours(); }
   proxy.$refs["formRef"].validate(valid => {
     if (valid) {
-      if (form.value.downtimeId != null) { updateDowntime(form.value).then(() => { proxy.$modal.msgSuccess("修改成功"); open.value = false; getList(); }); }
-      else { addDowntime(form.value).then(() => { proxy.$modal.msgSuccess("新增成功"); open.value = false; getList(); }); }
+      if (form.value.downtimeId != null) { updateDowntime(form.value).then(() => { proxy.$modal.msgSuccess("修改成功"); open.value = false; getList(); loadTypeCounts(); }); }
+      else { addDowntime(form.value).then(() => { proxy.$modal.msgSuccess("新增成功"); open.value = false; getList(); loadTypeCounts(); }); }
     }
   });
 }
 function cancel() { open.value = false; reset(); }
-function handleDelete(row) { const delIds = row.downtimeId || ids.value; proxy.$modal.confirm('确认删除选中的停机记录？').then(() => delDowntime(delIds)).then(() => { getList(); proxy.$modal.msgSuccess("删除成功"); }).catch(() => {}); }
-function handleExport() { proxy.download("mms/downtime/export", { ...queryParams.value }, `downtime_${new Date().getTime()}.xlsx`); }
+function handleDelete(row) { const delIds = row.downtimeId || ids.value; proxy.$modal.confirm('确认删除选中的停机记录？').then(() => delDowntime(delIds)).then(() => { getList(); loadTypeCounts(); proxy.$modal.msgSuccess("删除成功"); }).catch(() => {}); }
+function handleExport() { proxy.download("mms/downtime/export", proxy.withExportIds({ ...queryParams.value }, ids.value, 'downtimeId'), `downtime_${new Date().getTime()}.xlsx`); }
 
 // ===== 产能单元弹框选择 =====
 const resourcePickerOpen = ref(false)

@@ -37,6 +37,7 @@ public class HrClockRepairController extends BaseController
     public void export(HttpServletResponse response, HrClockRepair hrClockRepair)
     {
         List<HrClockRepair> list = hrClockRepairService.selectHrClockRepairList(hrClockRepair);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, hrClockRepair);
         ExcelUtil<HrClockRepair> util = new ExcelUtil<>(HrClockRepair.class);
         util.exportExcel(response, list, "补卡");
     }

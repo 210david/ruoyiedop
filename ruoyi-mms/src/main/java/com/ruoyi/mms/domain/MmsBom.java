@@ -51,7 +51,7 @@ public class MmsBom extends BaseEntity
     private BigDecimal baseQty;
 
     /** 基准单位 */
-    @Excel(name = "基准单位")
+    @Excel(name = "基准单位", dictType = "wms_unit")
     private String baseUnit;
 
     /** 状态(0草稿 1已发布 2停用) */

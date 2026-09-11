@@ -148,8 +148,8 @@
             <template #default="scope"><span v-if="scope.row.sourceType" class="badge amber">{{ sourceTypeLabel(scope.row.sourceType) }}</span><span v-else class="text-muted">—</span></template>
           </el-table-column>
           <el-table-column label="产品编码" prop="productCode" key="productCode" :width="colWidth('productCode', 130)" resizable v-if="columns.productCode.visible" />
-          <el-table-column label="产品名称" prop="productName" key="productName" :width="colWidth('productName', 200)" resizable show-overflow-tooltip v-if="columns.productName.visible" />
-          <el-table-column label="规格型号" prop="specModel" key="specModel" :width="colWidth('specModel', 140)" resizable show-overflow-tooltip v-if="columns.specModel.visible" />
+          <el-table-column label="产品名称" prop="productName" key="productName" :min-width="colWidth('productName', 200)" resizable show-overflow-tooltip v-if="columns.productName.visible" />
+          <el-table-column label="规格型号" prop="specModel" key="specModel" :min-width="colWidth('specModel', 140)" resizable show-overflow-tooltip v-if="columns.specModel.visible" />
           <el-table-column label="单位" prop="unit" key="unit" :width="colWidth('unit', 80)" resizable align="center" v-if="columns.unit.visible">
             <template #default="scope"><span v-if="scope.row.unit" class="badge gray">{{ unitLabel(scope.row.unit) }}</span><span v-else class="text-muted">—</span></template>
           </el-table-column>
@@ -2129,13 +2129,13 @@ function handleDelete(row) {
   proxy.$modal.confirm('是否确认删除选中的工单？').then(function() {
     return delWorkOrder(delIds);
   }).then(() => {
-    getList();
+    getList(); loadStatusCounts();
     proxy.$modal.msgSuccess("删除成功");
   }).catch(() => {});
 }
 
 function handleExport() {
-  proxy.download("mms/workorder/export", { ...queryParams.value }, `workorder_${new Date().getTime()}.xlsx`);
+  proxy.download("mms/workorder/export", proxy.withExportIds({ ...queryParams.value }, ids.value, 'workOrderId'), `workorder_${new Date().getTime()}.xlsx`);
 }
 
 // ===== 业务操作 =====
@@ -2160,7 +2160,7 @@ function submitRelease() {
   releaseSubmitting.value = true;
   releaseWorkOrder(wo.workOrderId).then(() => {
     releaseOpen.value = false;
-    getList();
+    getList(); loadStatusCounts();
     proxy.$modal.msgSuccess("下达成功");
   }).finally(() => {
     releaseSubmitting.value = false;
@@ -2188,7 +2188,7 @@ function submitPause() {
     if (valid) {
       pauseWorkOrder(pauseForm.value.workOrderId, pauseForm.value.pauseReason).then(() => {
         pauseOpen.value = false;
-        getList();
+        getList(); loadStatusCounts();
         proxy.$modal.msgSuccess("暂停成功");
       });
     }
@@ -2199,7 +2199,7 @@ function handleResume(row) {
   proxy.$modal.confirm('是否确认恢复工单"' + row.workOrderNo + '"？').then(function() {
     return resumeWorkOrder(row.workOrderId);
   }).then(() => {
-    getList();
+    getList(); loadStatusCounts();
     proxy.$modal.msgSuccess("恢复成功");
   }).catch(() => {});
 }
@@ -2208,7 +2208,7 @@ function handleFinish(row) {
   proxy.$modal.confirm('是否确认完工工单"' + row.workOrderNo + '"？').then(function() {
     return finishWorkOrder(row.workOrderId);
   }).then(() => {
-    getList();
+    getList(); loadStatusCounts();
     proxy.$modal.msgSuccess("完工成功");
   }).catch(() => {});
 }
@@ -2259,13 +2259,13 @@ function submitClose() {
       if (closeForm.value.type === "close" || closeForm.value.type === "forceClose") {
         closeWorkOrder(closeForm.value.workOrderId, closeForm.value.remark).then(() => {
           closeOpen.value = false;
-          getList();
+          getList(); loadStatusCounts();
           proxy.$modal.msgSuccess(closeForm.value.type === "forceClose" ? "强制关闭成功" : "关闭成功");
         });
       } else {
         cancelWorkOrder(closeForm.value.workOrderId, closeForm.value.remark).then(() => {
           closeOpen.value = false;
-          getList();
+          getList(); loadStatusCounts();
           proxy.$modal.msgSuccess("作废成功");
         });
       }
@@ -2321,7 +2321,7 @@ function submitRework() {
     if (valid) {
       createReworkOrder(reworkForm.value.workOrderId, reworkForm.value.reworkQty, reworkForm.value.reworkReason).then(() => {
         reworkOpen.value = false;
-        getList();
+        getList(); loadStatusCounts();
         proxy.$modal.msgSuccess("返工工单创建成功，请到工单列表下达");
       });
     }

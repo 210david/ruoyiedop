@@ -15,7 +15,7 @@ public class HrSalaryItem extends BaseEntity
     @NotBlank(message = "名称不能为空")
     @Excel(name = "名称")
     private String itemName;
-    @Excel(name = "类别")
+    @Excel(name = "类别", dictType = "hr_salary_item_category")
     private String itemCategory;
     @Excel(name = "计算规则")
     private String calcRule;
@@ -25,9 +25,9 @@ public class HrSalaryItem extends BaseEntity
     private String industryTag;
     @Excel(name = "排序号")
     private Integer orderNum;
-    @Excel(name = "状态")
+    @Excel(name = "状态", dictType = "sys_normal_disable")
     private String status;
-    @Excel(name = "删除标志")
+    @Excel(name = "删除标志", readConverterExp = "0=正常,2=已删除")
     private String delFlag;
 
     public Long getItemId() { return itemId; }

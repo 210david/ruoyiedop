@@ -161,7 +161,7 @@
         <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" resizable align="center" />
         <el-table-column label="物料编码" prop="materialCode" :width="colWidth('materialCode', 140)" resizable />
         <el-table-column label="物料名称" prop="materialName" show-overflow-tooltip min-width="180" />
-        <el-table-column label="规格型号" prop="specModel" :width="colWidth('specModel', 160)" resizable show-overflow-tooltip />
+        <el-table-column label="规格型号" prop="specModel" :min-width="colWidth('specModel', 160)" resizable show-overflow-tooltip />
         <el-table-column label="物料类型" prop="materialType" :width="colWidth('materialType', 100)" resizable align="center">
           <template #default="scope"><dict-tag :options="wms_material_type" :value="scope.row.materialType" /></template>
         </el-table-column>

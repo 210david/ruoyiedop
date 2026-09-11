@@ -129,7 +129,7 @@
 <el-table-column type="selection" width="55" align="center" />
 <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" resizable align="center" />
 <el-table-column label="申请单号" prop="requestNo" key="requestNo" :width="colWidth('requestNo', 180)" resizable sortable="custom" v-if="columns.requestNo.visible" />
-          <el-table-column label="标题" prop="title" key="title" :width="colWidth('title', 240)" resizable show-overflow-tooltip v-if="columns.title.visible" />
+          <el-table-column label="标题" prop="title" key="title" :min-width="colWidth('title', 240)" resizable show-overflow-tooltip v-if="columns.title.visible" />
           <el-table-column label="状态" prop="status" key="status" :width="colWidth('status', 120)" resizable align="center" sortable="custom" v-if="columns.status.visible">
             <template #default="scope"><span class="badge" :class="badgeClass(scope.row.status)"><span class="dot"></span>{{ statusLabel(scope.row.status) }}</span></template>
           </el-table-column>
@@ -963,9 +963,9 @@ function submitForm() {
   proxy.$refs['requestRef'].validate(valid => {
     if (valid) {
       if (form.value.requestId != undefined) {
-        updateRequest(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList() })
+        updateRequest(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList(); loadStatusCounts() })
       } else {
-        addRequest(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList() })
+        addRequest(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList(); loadStatusCounts() })
       }
     }
   })
@@ -973,7 +973,7 @@ function submitForm() {
 
 function handleDelete(row) {
   const requestIds = row.requestId || ids.value
-  proxy.$modal.confirm('确认删除编号为"' + requestIds + '"的数据？').then(() => delRequest(requestIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {})
+  proxy.$modal.confirm('确认删除？').then(() => delRequest(requestIds)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {})
 }
 
 /** 审核按钮操作 */
@@ -995,13 +995,13 @@ function submitAudit(passed) {
       }).then(() => {
         proxy.$modal.msgSuccess('审批成功')
         auditOpen.value = false
-        getList()
+        getList(); loadStatusCounts()
       }).catch(() => {})
     }
   })
 }
 
-function handleExport() { proxy.download('pms/request/export', { ...proxy.addDateRange(queryParams.value, dateRange.value, 'CreateTime') }, `purchase_request_${new Date().getTime()}.xlsx`) }
+function handleExport() { proxy.download('pms/request/export', proxy.withExportIds({ ...proxy.addDateRange(queryParams.value, dateRange.value, 'CreateTime') }, ids.value, 'requestId'), `purchase_request_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 
 /** 打开申请人选择弹窗 */

@@ -84,7 +84,7 @@
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" class="app-table">
 <el-table-column type="selection" width="55" align="center" />
 <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
-<el-table-column label="供应商名称" prop="supplierName" key="supplierName" :width="colWidth('supplierName', 200)" resizable show-overflow-tooltip v-if="columns.supplierName.visible" />          <el-table-column label="评价周期" prop="evalPeriod" key="evalPeriod" :width="colWidth('evalPeriod', 110)" resizable align="center" v-if="columns.evalPeriod.visible" />
+<el-table-column label="供应商名称" prop="supplierName" key="supplierName" :min-width="colWidth('supplierName', 200)" resizable show-overflow-tooltip v-if="columns.supplierName.visible" />          <el-table-column label="评价周期" prop="evalPeriod" key="evalPeriod" :width="colWidth('evalPeriod', 110)" resizable align="center" v-if="columns.evalPeriod.visible" />
           <el-table-column label="来料批次" prop="incomingTotal" key="incomingTotal" :width="colWidth('incomingTotal', 110)" resizable align="center" v-if="columns.incomingTotal.visible">
             <template #header><span>来料批次</span><el-tooltip content="自动统计该供应商在评价周期内的IQC来料检验任务总数（已判定状态）" placement="top"><el-icon class="col-tip"><QuestionFilled /></el-icon></el-tooltip></template>
           </el-table-column>
@@ -430,7 +430,7 @@ function handleDelete(row) {
   const ids = row?.evalId ? [row.evalId] : selectedIds.value
   proxy.$modal.confirm('确认删除选中的数据？').then(() => delSupplierEval(ids.join(','))).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {})
 }
-function handleExport() { proxy.download('qms/supplierEval/export', { ...proxy.addDateRange(queryParams.value, dateRange.value) }, `supplierEval_${new Date().getTime()}.xlsx`) }
+function handleExport() { proxy.download('qms/supplierEval/export', proxy.withExportIds({ ...proxy.addDateRange(queryParams.value, dateRange.value) }, selectedIds.value, 'evalId'), `supplierEval_${new Date().getTime()}.xlsx`) }
 function reset() { form.value = { evalId: null, supplierId: undefined, supplierName: undefined, evalPeriod: undefined, evalType: 'monthly', incomingTotal: 0, incomingPass: 0, passRate: null, ppm: null, qualityScore: undefined, deliveryScore: undefined, serviceScore: undefined, totalScore: null, grade: null }; proxy.resetForm('evalRef') }
 function cancel() { open.value = false; reset() }
 // 监听三项评分变化，前端预览综合评分和等级（最终以后台 calcScore 为准）

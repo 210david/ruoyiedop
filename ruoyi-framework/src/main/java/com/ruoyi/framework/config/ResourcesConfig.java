@@ -11,8 +11,6 @@ import org.springframework.web.filter.CorsFilter;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
-import com.ruoyi.common.config.RuoYiConfig;
-import com.ruoyi.common.constant.Constants;
 import com.ruoyi.framework.interceptor.OpenApiInterceptor;
 import com.ruoyi.framework.interceptor.RepeatSubmitInterceptor;
 
@@ -33,9 +31,9 @@ public class ResourcesConfig implements WebMvcConfigurer
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry)
     {
-        /** 本地文件上传路径 */
-        registry.addResourceHandler(Constants.RESOURCE_PREFIX + "/**")
-                .addResourceLocations("file:" + RuoYiConfig.getProfile() + "/");
+        // 安全策略：不再将 /profile/** 直接映射到磁盘目录，
+        // 改为通过 CommonController 的 /common/file/access 接口代理文件访问，
+        // 必须携带有效 JWT Token 才能读取上传的文件
 
         /** swagger配置 */
         registry.addResourceHandler("/swagger-ui/**")

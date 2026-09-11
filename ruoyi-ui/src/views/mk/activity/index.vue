@@ -138,7 +138,7 @@
           <el-table-column label="活动编号" prop="activityNo" key="activityNo" :width="colWidth('activityNo', 150)" resizable sortable="custom" v-if="columns.activityNo.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.activityNo }}</span></template>
           </el-table-column>
-          <el-table-column label="活动名称" prop="activityName" key="activityName" :width="colWidth('activityName', 200)" resizable show-overflow-tooltip v-if="columns.activityName.visible">
+          <el-table-column label="活动名称" prop="activityName" key="activityName" :min-width="colWidth('activityName', 200)" resizable show-overflow-tooltip v-if="columns.activityName.visible">
             <template #default="scope">
               <el-button link type="primary" @click="handleView(scope.row)">{{ scope.row.activityName }}</el-button>
             </template>
@@ -663,7 +663,6 @@
               <div class="rd-card-header" @click="toggleCard('viewParticipants')">
                 <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>参与人列表<el-tag size="small" effect="plain" style="margin-left: 4px">{{ viewParticipants.length }}人</el-tag></div>
                 <div style="display: flex; align-items: center; gap: 8px">
-                  <el-button type="primary" plain icon="Plus" size="small" @click="handleAddParticipant" v-hasPermi="['marketing:participant:add']">新增参与人</el-button>
                   <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.viewParticipants }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
                 </div>
               </div>
@@ -1222,13 +1221,13 @@ function openViewPromotePage() { window.open(viewPromoteUrl.value, '_blank') }
 function submitForm() {
   proxy.$refs['activityRef'].validate(valid => {
     if (valid) {
-      if (form.value.activityId != undefined) { updateActivity(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList() }) }
-      else { addActivity(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList() }) }
+      if (form.value.activityId != undefined) { updateActivity(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList(); loadStatusCounts() }) }
+      else { addActivity(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList(); loadStatusCounts() }) }
     }
   })
 }
-function handleDelete(row) { const activityIds = row.activityId || ids.value; proxy.$modal.confirm('确认删除编号为"' + activityIds + '"的数据？').then(() => delActivity(activityIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
-function handleExport() { proxy.download('mk/activity/export', { ...proxy.addDateRange(queryParams.value, dateRange.value, 'Activity') }, `activity_${new Date().getTime()}.xlsx`) }
+function handleDelete(row) { const activityIds = row.activityId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delActivity(activityIds)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleExport() { proxy.download('mk/activity/export', proxy.withExportIds({ ...proxy.addDateRange(queryParams.value, dateRange.value, 'Activity') }, ids.value, 'activityId'), `activity_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 
 // P0-1: 状态流转
@@ -1260,7 +1259,7 @@ function confirmSettle() {
   updateActivity(settleForm.value).then(() => {
     proxy.$modal.msgSuccess('结算成功')
     settleOpen.value = false
-    getList()
+    getList(); loadStatusCounts()
   })
 }
 function handleCancel(row) {
@@ -1273,7 +1272,7 @@ function confirmCancel() {
   changeActivityStatus(cancelRow.value.activityId, { toStatus: '5', remark: cancelRemark.value }).then(() => {
     proxy.$modal.msgSuccess('已取消')
     cancelOpen.value = false
-    getList()
+    getList(); loadStatusCounts()
   })
 }
 
@@ -1281,7 +1280,7 @@ function confirmCancel() {
 function handleCopy(row) {
   proxy.$modal.confirm('确认复制活动"' + row.activityName + '"？').then(() => copyActivity(row.activityId)).then(() => {
     proxy.$modal.msgSuccess('复制成功')
-    getList()
+    getList(); loadStatusCounts()
   }).catch(() => {})
 }
 
@@ -1305,7 +1304,7 @@ function handleBatchPublish() {
   proxy.$modal.confirm('确认批量发布选中的' + ids.value.length + '个活动？').then(() => {
     batchChangeStatus({ activityIds: ids.value, status: '1' }).then(() => {
       proxy.$modal.msgSuccess('批量发布成功')
-      getList()
+      getList(); loadStatusCounts()
     })
   }).catch(() => {})
 }
@@ -1313,7 +1312,7 @@ function handleBatchArchive() {
   proxy.$modal.confirm('确认批量归档选中的' + ids.value.length + '个活动？').then(() => {
     batchChangeStatus({ activityIds: ids.value, status: '4' }).then(() => {
       proxy.$modal.msgSuccess('批量归档成功')
-      getList()
+      getList(); loadStatusCounts()
     })
   }).catch(() => {})
 }
@@ -1327,7 +1326,7 @@ function confirmBatchOwner() {
   batchUpdateOwner({ activityIds: ids.value, userId: batchOwnerUserId.value, userName: batchOwnerName.value, deptId: batchOwnerDeptId.value, ownerPhone: batchOwnerPhone.value }).then(() => {
     proxy.$modal.msgSuccess('批量修改成功')
     ownerOpen.value = false
-    getList()
+    getList(); loadStatusCounts()
   })
 }
 

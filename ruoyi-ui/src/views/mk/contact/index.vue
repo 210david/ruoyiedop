@@ -117,13 +117,13 @@
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
-          <el-table-column label="所属客户" prop="customerName" key="customerName" :width="colWidth('customerName', 180)" resizable show-overflow-tooltip v-if="columns.customerName.visible">
+          <el-table-column label="所属客户" prop="customerName" key="customerName" :min-width="colWidth('customerName', 180)" resizable show-overflow-tooltip v-if="columns.customerName.visible">
             <template #default="scope">
               <span>{{ scope.row.customerName }}</span>
               <el-badge v-if="isOverdue(scope.row)" is-dot type="danger" class="ml5" />
             </template>
           </el-table-column>
-          <el-table-column label="姓名" prop="name" key="name" :width="colWidth('name', 100)" resizable v-if="columns.name.visible">
+          <el-table-column label="姓名" prop="name" key="name" :min-width="colWidth('name', 100)" show-overflow-tooltip resizable v-if="columns.name.visible">
             <template #default="scope">
               <el-button link type="primary" @click="handleDetail(scope.row)">{{ scope.row.name }}</el-button>
             </template>
@@ -135,7 +135,7 @@
           <el-table-column label="手机号" prop="phone" key="phone" :width="colWidth('phone', 130)" resizable v-if="columns.phone.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.phone }}</span></template>
           </el-table-column>
-          <el-table-column label="邮箱" prop="email" key="email" :width="colWidth('email', 180)" resizable show-overflow-tooltip v-if="columns.email.visible" />
+          <el-table-column label="邮箱" prop="email" key="email" :min-width="colWidth('email', 180)" resizable show-overflow-tooltip v-if="columns.email.visible" />
           <el-table-column label="关键联系人" prop="isKey" key="isKey" :width="colWidth('isKey', 100)" resizable align="center" v-if="columns.isKey.visible">
             <template #default="scope">
               <span class="badge" :class="scope.row.isKey === '1' ? 'red' : 'gray'">
@@ -828,8 +828,8 @@ function submitForm() {
     }
   })
 }
-function handleDelete(row) { const contactIds = row.contactId || ids.value; proxy.$modal.confirm('确认删除编号为"' + contactIds + '"的数据？').then(() => delContact(contactIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
-function handleExport() { proxy.download('mk/contact/export', { ...queryParams.value }, `contact_${new Date().getTime()}.xlsx`) }
+function handleDelete(row) { const contactIds = row.contactId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delContact(contactIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleExport() { proxy.download('mk/contact/export', proxy.withExportIds({ ...queryParams.value }, ids.value, 'contactId'), `contact_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 
 // 操作下拉菜单

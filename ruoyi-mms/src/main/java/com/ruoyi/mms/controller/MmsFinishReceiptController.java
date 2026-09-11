@@ -41,6 +41,7 @@ public class MmsFinishReceiptController extends BaseController
     public void export(HttpServletResponse response, MmsFinishReceipt finish)
     {
         List<MmsFinishReceipt> list = mmsFinishReceiptService.selectFinishReceiptList(finish);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, finish);
         ExcelUtil<MmsFinishReceipt> util = new ExcelUtil<>(MmsFinishReceipt.class);
         util.exportExcel(response, list, "FinishReceipt");
     }

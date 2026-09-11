@@ -29,9 +29,9 @@ public class HrOrganization extends BaseEntity
     private Integer costCenter;
     @Excel(name = "考勤归属")
     private Integer attendanceOrg;
-    @Excel(name = "状态")
+    @Excel(name = "状态", dictType = "sys_normal_disable")
     private String status;
-    @Excel(name = "删除标志")
+    @Excel(name = "删除标志", readConverterExp = "0=正常,2=已删除")
     private String delFlag;
 
     public Long getOrgId() { return orgId; }

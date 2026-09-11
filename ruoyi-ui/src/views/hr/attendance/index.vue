@@ -82,7 +82,7 @@
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" resizable align="center" />
           <el-table-column label="考勤日期" prop="recordDate" key="recordDate" align="center" :width="colWidth('recordDate', 120)" resizable v-if="columns.recordDate.visible" />
-          <el-table-column label="员工姓名" prop="employeeName" key="employeeName" align="center" :width="colWidth('employeeName', 110)" resizable v-if="columns.employeeName.visible" />
+          <el-table-column label="员工姓名" prop="employeeName" key="employeeName" align="center" :min-width="colWidth('employeeName', 110)" show-overflow-tooltip resizable v-if="columns.employeeName.visible" />
           <el-table-column label="工号" prop="employeeNo" key="employeeNo" align="center" :width="colWidth('employeeNo', 120)" resizable v-if="columns.employeeNo.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.employeeNo }}</span></template>
           </el-table-column>
@@ -679,7 +679,7 @@ function handleDelete(row) {
 }
 
 function handleExport() {
-  proxy.download('hr/attendance/export', { ...queryParams.value }, `hrAttendanceRecord_${new Date().getTime()}.xlsx`)
+  proxy.download('hr/attendance/export', proxy.withExportIds({ ...queryParams.value }, ids.value, 'recordId'), `hrAttendanceRecord_${new Date().getTime()}.xlsx`)
 }
 
 /** 重算考勤状态：根据当前筛选条件批量重新计算 */

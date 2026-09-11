@@ -89,7 +89,7 @@
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
           <el-table-column label="预案编号" prop="planCode" key="planCode" :width="colWidth('planCode', 130)" resizable v-if="columns.planCode.visible" />
-          <el-table-column label="预案名称" prop="planName" key="planName" :width="colWidth('planName', 200)" resizable show-overflow-tooltip v-if="columns.planName.visible" />
+          <el-table-column label="预案名称" prop="planName" key="planName" :min-width="colWidth('planName', 200)" resizable show-overflow-tooltip v-if="columns.planName.visible" />
           <el-table-column label="预案类型" prop="planType" key="planType" :width="colWidth('planType', 110)" resizable align="center" v-if="columns.planType.visible">
             <template #default="scope"><span class="badge violet">{{ planTypeLabel(scope.row.planType) }}</span></template>
           </el-table-column>
@@ -343,7 +343,7 @@ function submitForm() {
   })
 }
 function handleDelete(row) { const planIds = row.planId || ids.value; proxy.$modal.confirm('是否确认删除应急预案？').then(function() { return delEmergencyPlan(planIds) }).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
-function handleExport() { proxy.download('safety/emergency/plan/export', { ...proxy.addDateRange(queryParams.value, dateRange.value, 'EffectiveDate') }, `emergency_plan_${new Date().getTime()}.xlsx`) }
+function handleExport() { proxy.download('safety/emergency/plan/export', proxy.withExportIds({ ...proxy.addDateRange(queryParams.value, dateRange.value, 'EffectiveDate') }, ids.value, 'planId'), `emergency_plan_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 function reset() {
   form.value = { planId: undefined, planCode: undefined, planName: undefined, planType: undefined, planLevel: undefined, version: undefined, regNo: undefined, regDate: undefined, effectiveDate: undefined, expireDate: undefined, content: undefined, attachment: undefined, remark: undefined }

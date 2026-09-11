@@ -61,6 +61,7 @@ public class MmsWorkOrderController extends BaseController
     public void export(HttpServletResponse response, MmsWorkOrder workorder)
     {
         List<MmsWorkOrder> list = mmsWorkOrderService.selectWorkOrderList(workorder);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, workorder);
         ExcelUtil<MmsWorkOrder> util = new ExcelUtil<>(MmsWorkOrder.class);
         util.exportExcel(response, list, "生产工单数据");
     }

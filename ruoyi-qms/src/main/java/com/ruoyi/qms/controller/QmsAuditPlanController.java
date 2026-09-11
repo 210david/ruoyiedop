@@ -29,7 +29,7 @@ public class QmsAuditPlanController extends BaseController {
     @PostMapping("/export")
     public void export(HttpServletResponse response, QmsAuditPlan plan) {
         ExcelUtil<QmsAuditPlan> util = new ExcelUtil<>(QmsAuditPlan.class);
-        util.exportExcel(response, service.selectAuditPlanList(plan), "内审计划");
+        util.exportExcel(response, com.ruoyi.common.utils.ExportIdFilter.filter(service.selectAuditPlanList(plan), plan), "内审计划");
     }
 
     @PreAuthorize("@ss.hasPermi('qms:audit:query')")

@@ -43,6 +43,7 @@ public class QmsInspTaskController extends BaseController
     public void export(HttpServletResponse response, QmsInspTask inspTask)
     {
         List<QmsInspTask> list = qmsInspTaskService.selectInspTaskList(inspTask);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, inspTask);
         ExcelUtil<QmsInspTask> util = new ExcelUtil<>(QmsInspTask.class);
         util.exportExcel(response, list, "检验任务数据");
     }

@@ -60,6 +60,7 @@ public class MmsReturnMaterialController extends BaseController
     public void export(HttpServletResponse response, MmsReturnMaterial returnMaterial)
     {
         List<MmsReturnMaterial> list = mmsReturnMaterialService.selectReturnMaterialList(returnMaterial);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, returnMaterial);
         ExcelUtil<MmsReturnMaterial> util = new ExcelUtil<>(MmsReturnMaterial.class);
         util.exportExcel(response, list, "ReturnMaterial");
     }

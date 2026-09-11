@@ -41,7 +41,7 @@ public class SafetyTrainingAttendee extends BaseEntity
     @Excel(name = "签到状态", readConverterExp = "0=未签到,1=已签到,2=请假")
     private String signInStatus;
 
-    @Excel(name = "签到时间", width = 120)
+    @Excel(name = "签到时间", width = 120, dateFormat = "yyyy-MM-dd HH:mm:ss")
     private Date signInTime;
 
     @Excel(name = "签到方式")
@@ -53,7 +53,7 @@ public class SafetyTrainingAttendee extends BaseEntity
     @Excel(name = "是否合格", readConverterExp = "0=不合格,1=合格")
     private String isPass;
 
-    @Excel(name = "考试时间", width = 120)
+    @Excel(name = "考试时间", width = 120, dateFormat = "yyyy-MM-dd HH:mm:ss")
     private Date examTime;
 
     private Long enterpriseId;

@@ -49,6 +49,7 @@ public class MmsOeeSnapshotController extends BaseController
     public void export(HttpServletResponse response, MmsOeeSnapshot snapshot)
     {
         List<MmsOeeSnapshot> list = mmsOeeSnapshotService.selectOeeSnapshotList(snapshot);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, snapshot);
         ExcelUtil<MmsOeeSnapshot> util = new ExcelUtil<>(MmsOeeSnapshot.class);
         util.exportExcel(response, list, "OEE分析数据");
     }

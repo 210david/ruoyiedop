@@ -15,10 +15,10 @@ public class HrEmployeeWorkExp extends BaseEntity
     @NotNull(message = "员工ID不能为空") @Excel(name = "员工ID")
     private Long employeeId;
 
-    @JsonFormat(pattern = "yyyy-MM-dd") @Excel(name = "开始日期")
+    @JsonFormat(pattern = "yyyy-MM-dd") @Excel(name = "开始日期", dateFormat = "yyyy-MM-dd")
     private Date startDate;
 
-    @JsonFormat(pattern = "yyyy-MM-dd") @Excel(name = "结束日期")
+    @JsonFormat(pattern = "yyyy-MM-dd") @Excel(name = "结束日期", dateFormat = "yyyy-MM-dd")
     private Date endDate;
 
     @Excel(name = "工作单位")
@@ -33,10 +33,10 @@ public class HrEmployeeWorkExp extends BaseEntity
     @Excel(name = "离职原因")
     private String leaveReason;
 
-    @Excel(name = "状态")
+    @Excel(name = "状态", dictType = "sys_normal_disable")
     private String status;
 
-    @Excel(name = "删除标志")
+    @Excel(name = "删除标志", readConverterExp = "0=正常,2=已删除")
     private String delFlag;
 
 

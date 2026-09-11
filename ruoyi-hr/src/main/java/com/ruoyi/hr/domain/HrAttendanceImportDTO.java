@@ -18,7 +18,7 @@ public class HrAttendanceImportDTO
     private String employeeName;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    @Excel(name = "打卡时间", width = 30, type = Excel.Type.IMPORT)
+    @Excel(name = "打卡时间", width = 30, type = Excel.Type.IMPORT, dateFormat = "yyyy-MM-dd HH:mm:ss")
     private Date clockTime;
 
     @Excel(name = "考勤机号", type = Excel.Type.IMPORT)

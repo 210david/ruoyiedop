@@ -24,6 +24,9 @@ public class MkActivityParticipantServiceImpl implements IMkActivityParticipantS
     private MkActivityParticipantMapper mkActivityParticipantMapper;
 
     @Autowired
+    private com.ruoyi.mk.mapper.MkActivityMapper mkActivityMapper;
+
+    @Autowired
     private IMkLeadService mkLeadService;
 
     @Override
@@ -41,6 +44,7 @@ public class MkActivityParticipantServiceImpl implements IMkActivityParticipantS
     @Override
     public int insertParticipant(MkActivityParticipant participant)
     {
+        checkActivityJoinable(participant.getActivityId());
         if (participant.getParticipateStatus() == null)
         {
             participant.setParticipateStatus("0");
@@ -50,6 +54,40 @@ public class MkActivityParticipantServiceImpl implements IMkActivityParticipantS
             participant.setSource("0");
         }
         return mkActivityParticipantMapper.insertParticipant(participant);
+    }
+
+    /** 活动已结束(3)/已取消(4)时禁止报名，已结束(3)同时禁止签到 */
+    private void checkActivityJoinable(Long activityId)
+    {
+        if (activityId == null)
+        {
+            return;
+        }
+        com.ruoyi.mk.domain.MkActivity activity = mkActivityMapper.selectActivityById(activityId);
+        String status = activity != null ? activity.getActivityStatus() : null;
+        if ("3".equals(status))
+        {
+            throw new ServiceException("活动【" + (activity != null ? activity.getActivityName() : activityId) + "】已结束，不允许报名");
+        }
+        if ("4".equals(status))
+        {
+            throw new ServiceException("活动【" + (activity != null ? activity.getActivityName() : activityId) + "】已取消，不允许报名");
+        }
+    }
+
+    /** 活动已结束(3)/已取消(4)时禁止签到 */
+    private void checkActivitySignable(Long activityId)
+    {
+        if (activityId == null)
+        {
+            return;
+        }
+        com.ruoyi.mk.domain.MkActivity activity = mkActivityMapper.selectActivityById(activityId);
+        String status = activity != null ? activity.getActivityStatus() : null;
+        if ("3".equals(status) || "4".equals(status))
+        {
+            throw new ServiceException("活动【" + (activity != null ? activity.getActivityName() : activityId) + "】已结束或已取消，不允许签到");
+        }
     }
 
     @Override
@@ -80,6 +118,7 @@ public class MkActivityParticipantServiceImpl implements IMkActivityParticipantS
         {
             throw new ServiceException("参与人不存在");
         }
+        checkActivitySignable(p.getActivityId());
         return mkActivityParticipantMapper.signIn(participantId, SecurityUtils.getUsername());
     }
 

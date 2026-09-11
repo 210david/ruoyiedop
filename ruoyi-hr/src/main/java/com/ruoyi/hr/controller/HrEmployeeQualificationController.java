@@ -34,8 +34,9 @@ public class HrEmployeeQualificationController extends BaseController {
     @PostMapping("/export")
     public void export(HttpServletResponse response, HrEmployeeQualification hrEmployeeQualification) {
         List<HrEmployeeQualification> list = hrEmployeeQualificationService.selectHrEmployeeQualificationList(hrEmployeeQualification);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, hrEmployeeQualification);
         ExcelUtil<HrEmployeeQualification> util = new ExcelUtil<>(HrEmployeeQualification.class);
-        util.exportExcel(response, list, "员工培训/职称/资格认证");
+        util.exportExcel(response, list, "员工培训职称资格认证");
     }
 
     @PreAuthorize("@ss.hasPermi('hr:employeeQualification:query')")

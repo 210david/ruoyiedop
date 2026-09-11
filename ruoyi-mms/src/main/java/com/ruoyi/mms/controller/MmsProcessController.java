@@ -41,6 +41,7 @@ public class MmsProcessController extends BaseController
     public void export(HttpServletResponse response, MmsProcess process)
     {
         List<MmsProcess> list = mmsProcessService.selectProcessList(process);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, process);
         ExcelUtil<MmsProcess> util = new ExcelUtil<>(MmsProcess.class);
         util.exportExcel(response, list, "Process");
     }

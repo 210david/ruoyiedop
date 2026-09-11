@@ -63,7 +63,7 @@
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
           <el-table-column label="设备编码" prop="equipmentCode" key="equipmentCode" :width="colWidth('equipmentCode', 140)" resizable show-overflow-tooltip v-if="columns.equipmentCode.visible" />
-          <el-table-column label="设备名称" prop="equipmentName" key="equipmentName" :width="colWidth('equipmentName', 160)" resizable show-overflow-tooltip v-if="columns.equipmentName.visible" />
+          <el-table-column label="设备名称" prop="equipmentName" key="equipmentName" :min-width="colWidth('equipmentName', 160)" resizable show-overflow-tooltip v-if="columns.equipmentName.visible" />
           <el-table-column label="运行状态" prop="runStatus" key="runStatus" :width="colWidth('runStatus', 100)" resizable align="center" v-if="columns.runStatus.visible">
             <template #default="scope">
               <span class="badge" :class="runStatusBadge(scope.row.runStatus)"><span class="dot"></span>{{ runStatusLabel(scope.row.runStatus) }}</span>

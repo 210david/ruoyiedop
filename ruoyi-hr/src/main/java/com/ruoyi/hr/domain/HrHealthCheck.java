@@ -22,26 +22,26 @@ public class HrHealthCheck extends BaseEntity
     @Excel(name = "部门")
     private String deptName;
     @NotBlank(message = "体检类型不能为空")
-    @Excel(name = "体检类型")
+    @Excel(name = "体检类型", dictType = "hr_health_check_type")
     private String checkType;
     @NotNull(message = "体检日期不能为空")
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "体检日期")
+    @Excel(name = "体检日期", dateFormat = "yyyy-MM-dd")
     private Date checkDate;
     @Excel(name = "体检机构")
     private String checkOrg;
     @Excel(name = "职业危害因素")
     private String hazardType;
-    @Excel(name = "结论")
+    @Excel(name = "结论", dictType = "hr_health_check_result")
     private String checkResult;
     @Excel(name = "体检结论")
     private String conclusion;
     @Excel(name = "附件URL")
     private String attachmentUrl;
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "下次体检日期")
+    @Excel(name = "下次体检日期", dateFormat = "yyyy-MM-dd")
     private Date nextCheckDate;
-    @Excel(name = "删除标志")
+    @Excel(name = "删除标志", readConverterExp = "0=正常,2=已删除")
     private String delFlag;
 
     public Long getHealthId() { return healthId; }

@@ -46,7 +46,7 @@ public class HrSocialSecurity extends BaseEntity
     private BigDecimal fundEmployer;
     @Excel(name = "公积金个人比例")
     private BigDecimal fundEmployee;
-    @Excel(name = "删除标志")
+    @Excel(name = "删除标志", readConverterExp = "0=正常,2=已删除")
     private String delFlag;
 
     public Long getPlanId() { return planId; }

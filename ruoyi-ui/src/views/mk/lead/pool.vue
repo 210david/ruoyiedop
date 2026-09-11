@@ -635,7 +635,7 @@ function getInteractTypeLabel(type) {
   return item ? item.label : type
 }
 function handleReceive(row) {
-  proxy.$modal.confirm('确认申请领取线索"' + row.companyName + '"？提交后需等待管理员审批。').then(() => receiveLead(row.leadId, {})).then(() => { getList(); proxy.$modal.msgSuccess('申请已提交，等待审批') }).catch(() => {})
+  proxy.$modal.confirm('确认申请领取线索"' + row.companyName + '"？提交后需等待管理员审批。').then(() => receiveLead(row.leadId, {})).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('申请已提交，等待审批') }).catch(() => {})
 }
 function handleApprove(row) {
   approveForm.value = {
@@ -669,14 +669,14 @@ function confirmApprove() {
   approveReceive(approveForm.value.leadId, { receiveRemark: approveForm.value.receiveRemark }).then(() => {
     proxy.$modal.msgSuccess('审批通过，线索已分配')
     approveOpen.value = false
-    getList()
+    getList(); loadStatusCounts()
   })
 }
 function confirmReject() {
   rejectReceive(approveForm.value.leadId, { receiveRemark: approveForm.value.receiveRemark }).then(() => {
     proxy.$modal.msgSuccess('已拒绝领取申请')
     approveOpen.value = false
-    getList()
+    getList(); loadStatusCounts()
   })
 }
 getList()

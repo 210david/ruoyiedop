@@ -42,6 +42,7 @@ public class QmsGaugeController extends BaseController
     public void export(HttpServletResponse response, QmsGauge gauge)
     {
         List<QmsGauge> list = qmsGaugeService.selectGaugeList(gauge);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, gauge);
         ExcelUtil<QmsGauge> util = new ExcelUtil<>(QmsGauge.class);
         util.exportExcel(response, list, "量检具台账数据");
     }

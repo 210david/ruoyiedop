@@ -103,15 +103,15 @@
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" resizable align="center" />
           <el-table-column label="询价单号" align="center" prop="inquiryNo" key="inquiryNo" :width="colWidth('inquiryNo', 180)" resizable sortable="custom" v-if="columns.inquiryNo.visible" />
-          <el-table-column label="询价标题" align="center" prop="title" key="title" :width="colWidth('title', 240)" resizable show-overflow-tooltip v-if="columns.title.visible" />
-          <el-table-column label="物料名称" align="center" prop="materialName" key="materialName" :width="colWidth('materialName', 160)" resizable show-overflow-tooltip v-if="columns.materialName.visible" />
+          <el-table-column label="询价标题" align="center" prop="title" key="title" :min-width="colWidth('title', 240)" resizable show-overflow-tooltip v-if="columns.title.visible" />
+          <el-table-column label="物料名称" align="center" prop="materialName" key="materialName" :min-width="colWidth('materialName', 160)" resizable show-overflow-tooltip v-if="columns.materialName.visible" />
           <el-table-column label="状态" align="center" prop="status" key="status" :width="colWidth('status', 120)" resizable sortable="custom" v-if="columns.status.visible"><template #default="scope"><span class="badge" :class="badgeClass(scope.row.status)"><span class="dot"></span>{{ statusLabel(scope.row.status) }}</span></template></el-table-column>
           <el-table-column label="询价方式" align="center" prop="inquiryType" key="inquiryType" :width="colWidth('inquiryType', 120)" resizable v-if="columns.inquiryType.visible"><template #default="scope"><span class="badge violet">{{ inquiryTypeLabel(scope.row.inquiryType) }}</span></template></el-table-column>
           <el-table-column label="报价截止" align="center" prop="deadline" key="deadline" :width="colWidth('deadline', 180)" resizable v-if="columns.deadline.visible"><template #default="scope"><span>{{ parseTime(scope.row.deadline) }}</span></template></el-table-column>
           <el-table-column label="最高限价" prop="maxPrice" key="maxPrice" :width="colWidth('maxPrice', 130)" resizable align="right" v-if="columns.maxPrice.visible"><template #default="scope"><span class="rd-amount">{{ formatMoney(scope.row.maxPrice) }}</span></template></el-table-column>
           <el-table-column label="报价数" align="center" key="quotationCount" :width="colWidth('quotationCount', 90)" resizable v-if="columns.quotationCount.visible"><template #default="scope"><el-tag v-if="scope.row.quotationCount > 0" type="success" size="small">{{ scope.row.quotationCount }}</el-tag><span v-else>-</span></template></el-table-column>
           <el-table-column label="定标金额" prop="awardAmount" key="awardAmount" :width="colWidth('awardAmount', 130)" resizable align="right" v-if="columns.awardAmount.visible"><template #default="scope"><span class="rd-amount">{{ formatMoney(scope.row.awardAmount) }}</span></template></el-table-column>
-          <el-table-column label="定标供应商" align="center" prop="awardSupplierName" key="awardSupplierName" :width="colWidth('awardSupplierName', 160)" resizable show-overflow-tooltip v-if="columns.awardSupplierName.visible" />
+          <el-table-column label="定标供应商" align="center" prop="awardSupplierName" key="awardSupplierName" :min-width="colWidth('awardSupplierName', 160)" resizable show-overflow-tooltip v-if="columns.awardSupplierName.visible" />
           <el-table-column label="创建时间" align="center" prop="createTime" key="createTime" :width="colWidth('createTime', 180)" resizable sortable="custom" v-if="columns.createTime.visible" />
           <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
@@ -694,7 +694,7 @@ function resetQuery() {
 function handleSelectionChange(selection) { ids.value = selection.map(item => item.inquiryId); single.value = selection.length !== 1; multiple.value = !selection.length; }
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList(); }
 
-function handleExport() { proxy.download('pms/inquiry/export', { ...queryParams.value }, `inquiry_${new Date().getTime()}.xlsx`); }
+function handleExport() { proxy.download('pms/inquiry/export', proxy.withExportIds({ ...queryParams.value }, ids.value, 'inquiryId'), `inquiry_${new Date().getTime()}.xlsx`); }
 
 function handleAdd() { reset(); open.value = true; title.value = "新增询价单"; }
 
@@ -752,9 +752,9 @@ function submitForm() {
         maxPrice: form.value.maxPrice
       }];
       if (form.value.inquiryId != null) {
-        updateInquiry(form.value).then(() => { proxy.$modal.msgSuccess("修改成功"); open.value = false; getList(); });
+        updateInquiry(form.value).then(() => { proxy.$modal.msgSuccess("修改成功"); open.value = false; getList(); loadStatusCounts(); });
       } else {
-        addInquiry(form.value).then(() => { proxy.$modal.msgSuccess("新增成功"); open.value = false; getList(); });
+        addInquiry(form.value).then(() => { proxy.$modal.msgSuccess("新增成功"); open.value = false; getList(); loadStatusCounts(); });
       }
     }
   });
@@ -762,15 +762,15 @@ function submitForm() {
 
 function handleDelete(row) {
   const inquiryIds = row.inquiryId ? [row.inquiryId] : ids.value;
-  proxy.$modal.confirm('是否确认删除编号为"' + inquiryIds + '"的数据项？').then(() => delInquiry(inquiryIds)).then(() => { getList(); proxy.$modal.msgSuccess("删除成功"); }).catch(() => {});
+  proxy.$modal.confirm('确认删除？').then(() => delInquiry(inquiryIds)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess("删除成功"); }).catch(() => {});
 }
 
 function handlePublish(row) {
-  proxy.$modal.confirm('是否确认发布该询价单？').then(() => publishInquiry(row.inquiryId)).then(() => { getList(); proxy.$modal.msgSuccess("发布成功"); }).catch(() => {});
+  proxy.$modal.confirm('是否确认发布该询价单？').then(() => publishInquiry(row.inquiryId)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess("发布成功"); }).catch(() => {});
 }
 
 function handleClose(row) {
-  proxy.$modal.confirm('是否确认截止该询价单？').then(() => closeInquiry(row.inquiryId)).then(() => { getList(); proxy.$modal.msgSuccess("截止成功"); }).catch(() => {});
+  proxy.$modal.confirm('是否确认截止该询价单？').then(() => closeInquiry(row.inquiryId)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess("截止成功"); }).catch(() => {});
 }
 
 async function handleAddQuotation(row) {
@@ -854,7 +854,7 @@ function submitQuotation() {
           amount: quotationForm.totalAmount
         }]
       };
-      addQuotation(submitData).then(() => { proxy.$modal.msgSuccess("报价录入成功，询价单已自动转为「比价中」状态"); quotationOpen.value = false; getList(); }).catch(() => {});
+      addQuotation(submitData).then(() => { proxy.$modal.msgSuccess("报价录入成功，询价单已自动转为「比价中」状态"); quotationOpen.value = false; getList(); loadStatusCounts(); }).catch(() => {});
     }
   });
 }
@@ -909,7 +909,7 @@ function submitAward() {
     if (valid) {
       proxy.$modal.confirm('是否确认对该询价单进行定标？定标后将不可修改。').then(() =>
         awardInquiry(awardForm.inquiryId, awardForm.supplierId, awardForm.supplierName, awardForm.amount)
-      ).then(() => { awardOpen.value = false; getList(); proxy.$modal.msgSuccess("定标成功"); }).catch(() => {});
+      ).then(() => { awardOpen.value = false; getList(); loadStatusCounts(); proxy.$modal.msgSuccess("定标成功"); }).catch(() => {});
     }
   });
 }

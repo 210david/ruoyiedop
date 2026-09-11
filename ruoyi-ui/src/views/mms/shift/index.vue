@@ -90,7 +90,7 @@
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
           <el-table-column label="班次编号" prop="shiftCode" key="shiftCode" :width="colWidth('shiftCode', 140)" resizable v-if="columns.shiftCode.visible" />
-          <el-table-column label="班次名称" prop="shiftName" key="shiftName" :width="colWidth('shiftName', 140)" resizable v-if="columns.shiftName.visible" />
+          <el-table-column label="班次名称" prop="shiftName" key="shiftName" :min-width="colWidth('shiftName', 140)" show-overflow-tooltip resizable v-if="columns.shiftName.visible" />
           <el-table-column label="开始时间" prop="startTime" key="startTime" :width="colWidth('startTime', 100)" resizable align="center" v-if="columns.startTime.visible" />
           <el-table-column label="结束时间" prop="endTime" key="endTime" :width="colWidth('endTime', 100)" resizable align="center" v-if="columns.endTime.visible" />
           <el-table-column label="休息分钟" prop="restMinutes" key="restMinutes" :width="colWidth('restMinutes', 100)" resizable align="center" v-if="columns.restMinutes.visible" />
@@ -501,13 +501,13 @@ function handleDelete(row) {
   proxy.$modal.confirm('是否确认删除选中的班次？').then(function() {
     return delShift(delIds);
   }).then(() => {
-    getList();
+    getList(); loadStatusCounts();
     proxy.$modal.msgSuccess("删除成功");
   }).catch(() => {});
 }
 
 function handleExport() {
-  proxy.download("mms/shift/export", { ...queryParams.value }, `shift_${new Date().getTime()}.xlsx`);
+  proxy.download("mms/shift/export", proxy.withExportIds({ ...queryParams.value }, ids.value, 'shiftId'), `shift_${new Date().getTime()}.xlsx`);
 }
 
 // ===== 字典辅助函数 =====

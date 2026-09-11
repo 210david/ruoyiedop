@@ -125,12 +125,12 @@
           <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
           <el-table-column label="发货单号" prop="shipmentNo" key="shipmentNo" :width="colWidth('shipmentNo', 160)" resizable v-if="columns.shipmentNo.visible" />
           <el-table-column label="订单编号" prop="orderNo" key="orderNo" :width="colWidth('orderNo', 160)" resizable v-if="columns.orderNo.visible" />
-          <el-table-column label="客户名称" prop="customerName" key="customerName" :width="colWidth('customerName', 200)" resizable show-overflow-tooltip v-if="columns.customerName.visible" />
+          <el-table-column label="客户名称" prop="customerName" key="customerName" :min-width="colWidth('customerName', 200)" resizable show-overflow-tooltip v-if="columns.customerName.visible" />
           <el-table-column label="状态" prop="status" key="status" :width="colWidth('status', 100)" resizable align="center" v-if="columns.status.visible"><template #default="scope"><span class="badge" :class="badgeClass(scope.row.status)"><span class="dot"></span>{{ statusLabel(scope.row.status) }}</span></template></el-table-column>
           <el-table-column label="发货日期" prop="shipmentDate" key="shipmentDate" :width="colWidth('shipmentDate', 120)" resizable align="center" v-if="columns.shipmentDate.visible" />
           <el-table-column label="发货数量" prop="totalQty" key="totalQty" :width="colWidth('totalQty', 100)" resizable align="right" v-if="columns.totalQty.visible" />
           <el-table-column label="发货金额" prop="totalAmount" key="totalAmount" :width="colWidth('totalAmount', 120)" resizable align="right" v-if="columns.totalAmount.visible"><template #default="scope"><span class="rd-amount">{{ formatMoney(scope.row.totalAmount) }}</span></template></el-table-column>
-          <el-table-column label="物流公司" prop="logisticsCompany" key="logisticsCompany" :width="colWidth('logisticsCompany', 120)" resizable show-overflow-tooltip v-if="columns.logisticsCompany.visible" />
+          <el-table-column label="物流公司" prop="logisticsCompany" key="logisticsCompany" :min-width="colWidth('logisticsCompany', 120)" resizable show-overflow-tooltip v-if="columns.logisticsCompany.visible" />
           <el-table-column label="物流单号" prop="trackingNo" key="trackingNo" :width="colWidth('trackingNo', 140)" resizable show-overflow-tooltip v-if="columns.trackingNo.visible" />
           <el-table-column label="出库单号" prop="outboundOrderNo" key="outboundOrderNo" :width="colWidth('outboundOrderNo', 140)" resizable show-overflow-tooltip v-if="columns.outboundOrderNo.visible" />
           <el-table-column label="发货人" prop="shipperName" key="shipperName" :width="colWidth('shipperName', 100)" resizable v-if="columns.shipperName.visible" />
@@ -920,13 +920,13 @@ function submitForm() {
         updateShipment(form.value).then(() => {
           proxy.$modal.msgSuccess('修改成功')
           open.value = false
-          getList()
+          getList(); loadStatusCounts()
         })
       } else {
         addShipment(form.value).then(() => {
           proxy.$modal.msgSuccess('新增成功')
           open.value = false
-          getList()
+          getList(); loadStatusCounts()
         })
       }
     }
@@ -936,10 +936,10 @@ function submitForm() {
 function handleDelete(row) {
   const shipmentIds = row.shipmentId || ids.value
   const msg = row.status && row.status !== '0' && row.status !== '3'
-    ? '确认删除编号为"' + shipmentIds + '"的发货单？\n\n注意：删除已发货的发货单将自动回滚关联订单的已发货数量和状态。'
-    : '确认删除编号为"' + shipmentIds + '"的发货单？'
+    ? '确认删除发货单？\n\n注意：删除已发货的发货单将自动回滚关联订单的已发货数量和状态。'
+    : '确认删除发货单？'
   proxy.$modal.confirm(msg).then(() => delShipment(shipmentIds)).then(() => {
-    getList()
+    getList(); loadStatusCounts()
     proxy.$modal.msgSuccess('删除成功')
   }).catch(() => {})
 }
@@ -973,7 +973,7 @@ function submitConfirm() {
       }).then(() => {
         proxy.$modal.msgSuccess('发货成功')
         confirmOpen.value = false
-        getList()
+        getList(); loadStatusCounts()
       }).catch(() => {})
     }
   })
@@ -985,7 +985,7 @@ function handleReceive(row) {
     return receiveShipment(row.shipmentId)
   }).then(() => {
     proxy.$modal.msgSuccess('签收成功')
-    getList()
+    getList(); loadStatusCounts()
   }).catch(() => {})
 }
 
@@ -1112,14 +1112,14 @@ function submitReturn() {
       }).then(() => {
         proxy.$modal.msgSuccess('退货单已创建（草稿状态），可前往退货管理提交审批')
         returnOpen.value = false
-        getList()
+        getList(); loadStatusCounts()
       }).catch(() => {})
     }
   })
 }
 
 function handleExport() {
-  proxy.download('mk/shipment/export', { ...proxy.addDateRange(queryParams.value, dateRange.value) }, `shipment_${new Date().getTime()}.xlsx`)
+  proxy.download('mk/shipment/export', proxy.withExportIds({ ...proxy.addDateRange(queryParams.value, dateRange.value) }, ids.value, 'shipmentId'), `shipment_${new Date().getTime()}.xlsx`)
 }
 
 function cancel() {

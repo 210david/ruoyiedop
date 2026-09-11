@@ -35,7 +35,7 @@ public class SafetyIncident extends BaseEntity
     private Long reportPersonId;
     @Excel(name = "报告人")
     private String reportPerson;
-    @Excel(name = "报告时间", width = 160)
+    @Excel(name = "报告时间", width = 160, dateFormat = "yyyy-MM-dd HH:mm:ss")
     private Date reportTime;
     private Long enterpriseId;
     private String delFlag;

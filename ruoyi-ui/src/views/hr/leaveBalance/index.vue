@@ -83,7 +83,7 @@
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" resizable align="center" />
           <el-table-column label="工号" prop="employeeNo" key="employeeNo" align="center" :width="colWidth('employeeNo', 120)" resizable v-if="columns.employeeNo.visible" />
-          <el-table-column label="员工姓名" prop="employeeName" key="employeeName" align="center" :width="colWidth('employeeName', 120)" resizable v-if="columns.employeeName.visible" />
+          <el-table-column label="员工姓名" prop="employeeName" key="employeeName" align="center" :min-width="colWidth('employeeName', 120)" show-overflow-tooltip resizable v-if="columns.employeeName.visible" />
           <el-table-column label="部门" prop="deptName" key="deptName" align="center" :width="colWidth('deptName', 140)" resizable v-if="columns.deptName.visible" />
           <el-table-column label="假别" prop="leaveType" key="leaveType" align="center" :width="colWidth('leaveType', 140)" resizable v-if="columns.leaveType.visible">
             <template #default="scope">
@@ -654,7 +654,7 @@ function handleDelete(row) {
 }
 
 function handleExport() {
-  proxy.download('hr/leaveBalance/export', { ...queryParams.value }, `hrLeaveBalance_${new Date().getTime()}.xlsx`)
+  proxy.download('hr/leaveBalance/export', proxy.withExportIds({ ...queryParams.value }, ids.value, 'balanceId'), `hrLeaveBalance_${new Date().getTime()}.xlsx`)
 }
 
 /** ===== 批量生成 ===== */

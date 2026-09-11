@@ -43,6 +43,7 @@ public class MmsBomController extends BaseController
     public void export(HttpServletResponse response, MmsBom bom)
     {
         List<MmsBom> list = mmsBomService.selectBomList(bom);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, bom);
         ExcelUtil<MmsBom> util = new ExcelUtil<>(MmsBom.class);
         util.exportExcel(response, list, "BOM");
     }

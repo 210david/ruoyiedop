@@ -37,6 +37,7 @@ public class HrLeaveRequestController extends BaseController
     public void export(HttpServletResponse response, HrLeaveRequest hrLeaveRequest)
     {
         List<HrLeaveRequest> list = hrLeaveRequestService.selectHrLeaveRequestList(hrLeaveRequest);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, hrLeaveRequest);
         ExcelUtil<HrLeaveRequest> util = new ExcelUtil<>(HrLeaveRequest.class);
         util.exportExcel(response, list, "请假");
     }

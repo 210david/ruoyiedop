@@ -79,7 +79,7 @@
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
           <el-table-column label="风险点编号" prop="riskCode" key="riskCode" :width="colWidth('riskCode', 130)" resizable v-if="columns.riskCode.visible" />
-          <el-table-column label="风险点名称" prop="riskName" key="riskName" :width="colWidth('riskName', 180)" resizable show-overflow-tooltip v-if="columns.riskName.visible" />
+          <el-table-column label="风险点名称" prop="riskName" key="riskName" :min-width="colWidth('riskName', 180)" resizable show-overflow-tooltip v-if="columns.riskName.visible" />
           <el-table-column label="所属区域" prop="areaName" key="areaName" :width="colWidth('areaName', 130)" resizable show-overflow-tooltip v-if="columns.areaName.visible" />
           <el-table-column label="事故类别" prop="accidentType" key="accidentType" :width="colWidth('accidentType', 120)" resizable align="center" v-if="columns.accidentType.visible">
             <template #default="scope">
@@ -465,7 +465,7 @@ function submitForm() {
   })
 }
 function handleDelete(row) { const riskPointIds = row.riskPointId || ids.value; proxy.$modal.confirm('是否确认删除风险点？').then(function() { return delRiskPoint(riskPointIds) }).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
-function handleExport() { proxy.download('safety/risk/export', { ...queryParams.value }, `risk_${new Date().getTime()}.xlsx`) }
+function handleExport() { proxy.download('safety/risk/export', proxy.withExportIds({ ...queryParams.value }, ids.value, 'riskPointId'), `risk_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 function reset() {
   form.value = { riskPointId: undefined, riskCode: undefined, riskName: undefined, areaId: undefined, areaName: undefined, hazardDesc: undefined, accidentType: undefined, lValue: undefined, eValue: undefined, cValue: undefined, dValue: undefined, riskLevel: undefined, controlLevel: undefined, measureEngine: undefined, measureManage: undefined, measureTraining: undefined, measurePpe: undefined, measureEmergency: undefined, checkStandard: undefined, checkFrequency: undefined, isMajorHazard: '0', majorHazardRule: undefined, complianceFile: undefined, personId: undefined, personName: undefined, evaluateDate: undefined, reEvaluateDate: undefined, remark: undefined }

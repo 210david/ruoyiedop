@@ -34,6 +34,7 @@ public class PmsInquiryController extends BaseController
     {
         startPage();
         List<PmsInquiry> list = pmsInquiryService.selectPmsInquiryList(pmsInquiry);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, pmsInquiry);
         return getDataTable(list);
     }
 

@@ -80,7 +80,7 @@
               <span v-else style="color:var(--ink-400)">—</span>
             </template>
           </el-table-column>
-          <el-table-column label="课程名称" prop="courseName" key="courseName" :width="colWidth('courseName', 240)" resizable show-overflow-tooltip v-if="columns.courseName.visible" />
+          <el-table-column label="课程名称" prop="courseName" key="courseName" :min-width="colWidth('courseName', 240)" resizable show-overflow-tooltip v-if="columns.courseName.visible" />
           <el-table-column label="课程类别" prop="courseType" key="courseType" :width="colWidth('courseType', 132)" resizable align="center" v-if="columns.courseType.visible">
             <template #default="scope"><span class="badge violet">{{ courseTypeLabel(scope.row.courseType) }}</span></template>
           </el-table-column>
@@ -470,7 +470,7 @@ function submitForm() {
   })
 }
 function handleDelete(row) { const recordIds = row.recordId || ids.value; proxy.$modal.confirm('是否确认删除培训记录？').then(function() { return delTrainingRecord(recordIds) }).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
-function handleExport() { proxy.download('safety/training/record/export', { ...queryParams.value }, `training_record_${new Date().getTime()}.xlsx`) }
+function handleExport() { proxy.download('safety/training/record/export', proxy.withExportIds({ ...queryParams.value }, ids.value, 'recordId'), `training_record_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 function reset() {
   form.value = { recordId: undefined, planId: undefined, courseId: undefined, trainerId: undefined, courseName: undefined, courseType: undefined, trainingDate: undefined, trainingLocation: undefined, hours: undefined, trainer: undefined, attachment: undefined, remark: undefined, attendeeUsers: [] }

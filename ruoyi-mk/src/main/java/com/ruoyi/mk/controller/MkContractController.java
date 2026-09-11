@@ -47,6 +47,7 @@ public class MkContractController extends BaseController
     public void export(HttpServletResponse response, MkContract contract)
     {
         List<MkContract> list = mkContractService.selectContractList(contract);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, contract);
         ExcelUtil<MkContract> util = new ExcelUtil<>(MkContract.class);
         util.exportExcel(response, list, "合同数据");
     }

@@ -94,7 +94,7 @@
           <el-table-column label="工号" prop="employeeNo" key="employeeNo" align="center" :width="colWidth('employeeNo', 120)" resizable v-if="columns.employeeNo.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.employeeNo }}</span></template>
           </el-table-column>
-          <el-table-column label="员工姓名" prop="employeeName" key="employeeName" align="center" :width="colWidth('employeeName', 100)" resizable v-if="columns.employeeName.visible" />
+          <el-table-column label="员工姓名" prop="employeeName" key="employeeName" align="center" :min-width="colWidth('employeeName', 100)" show-overflow-tooltip resizable v-if="columns.employeeName.visible" />
           <el-table-column label="基本工资" prop="basicSalary" key="basicSalary" align="center" :width="colWidth('basicSalary', 130)" resizable v-if="columns.basicSalary.visible" />
           <el-table-column label="岗位工资" prop="positionSalary" key="positionSalary" align="center" :width="colWidth('positionSalary', 130)" resizable v-if="columns.positionSalary.visible" />
           <el-table-column label="技能津贴" prop="skillAllowance" key="skillAllowance" align="center" :width="colWidth('skillAllowance', 120)" resizable v-if="columns.skillAllowance.visible" />
@@ -576,7 +576,7 @@ function handleDelete(row) {
 }
 
 function handleExport() {
-  proxy.download('hr/payslip/export', { ...queryParams.value }, `hrPayslip_${new Date().getTime()}.xlsx`)
+  proxy.download('hr/payslip/export', proxy.withExportIds({ ...queryParams.value }, ids.value, 'payslipId'), `hrPayslip_${new Date().getTime()}.xlsx`)
 }
 
 function cancel() {

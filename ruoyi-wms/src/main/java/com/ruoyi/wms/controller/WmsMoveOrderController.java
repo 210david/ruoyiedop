@@ -37,6 +37,7 @@ public class WmsMoveOrderController extends BaseController
     public void export(HttpServletResponse response, WmsMoveOrder move)
     {
         List<WmsMoveOrder> list = wmsMoveOrderService.selectMoveOrderList(move);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, move);
         ExcelUtil<WmsMoveOrder> util = new ExcelUtil<>(WmsMoveOrder.class);
         util.exportExcel(response, list, "移库单数据");
     }

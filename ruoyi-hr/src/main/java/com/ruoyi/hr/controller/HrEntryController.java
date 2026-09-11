@@ -39,6 +39,7 @@ public class HrEntryController extends BaseController
     public void export(HttpServletResponse response, HrEntry hrEntry)
     {
         List<HrEntry> list = hrEntryService.selectHrEntryList(hrEntry);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, hrEntry);
         ExcelUtil<HrEntry> util = new ExcelUtil<>(HrEntry.class);
         util.exportExcel(response, list, "入职");
     }

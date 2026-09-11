@@ -36,7 +36,7 @@ public class QmsSqmPushLog extends BaseEntity {
     private BigDecimal qualityScore;
 
     /** 等级(A/B/C/D) */
-    @Excel(name = "等级")
+    @Excel(name = "等级", dictType = "qms_supplier_grade")
     private String grade;
 
     /** 合格率(%) */

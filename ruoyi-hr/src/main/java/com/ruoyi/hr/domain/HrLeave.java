@@ -23,11 +23,11 @@ public class HrLeave extends BaseEntity
     private String employeeName;
     @Excel(name = "工号")
     private String employeeNo;
-    @Excel(name = "离职类型")
+    @Excel(name = "离职类型", dictType = "hr_leave_type")
     private String leaveType;
     @NotNull(message = "离职日期不能为空")
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "离职日期")
+    @Excel(name = "离职日期", dateFormat = "yyyy-MM-dd")
     private Date leaveDate;
     @Excel(name = "离职原因")
     private String reason;
@@ -37,7 +37,7 @@ public class HrLeave extends BaseEntity
     private String handoverRemark;
     @Excel(name = "离岗体检")
     private String healthCheck;
-    @Excel(name = "补偿类型")
+    @Excel(name = "补偿类型", dictType = "hr_compensation_type")
     private String compensationType;
     @Excel(name = "补偿金额")
     private BigDecimal compensationAmount;
@@ -49,18 +49,18 @@ public class HrLeave extends BaseEntity
     private BigDecimal settlementAmount;
     @Excel(name = "离职证明编号")
     private String certificateNo;
-    @Excel(name = "审批状态")
+    @Excel(name = "审批状态", dictType = "hr_audit_status")
     private String auditStatus;
     @Excel(name = "审批人")
     private String auditBy;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    @Excel(name = "审批时间")
+    @Excel(name = "审批时间", dateFormat = "yyyy-MM-dd HH:mm:ss")
     private Date auditTime;
     @Excel(name = "审批意见")
     private String auditRemark;
-    @Excel(name = "状态")
+    @Excel(name = "状态", dictType = "hr_audit_status")
     private String status;
-    @Excel(name = "删除标志")
+    @Excel(name = "删除标志", readConverterExp = "0=正常,2=已删除")
     private String delFlag;
 
     public Long getLeaveId() { return leaveId; }

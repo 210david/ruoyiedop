@@ -123,11 +123,11 @@
           <el-table-column label="备件编号" prop="partCode" key="partCode" :width="colWidth('partCode', 130)" resizable v-if="columns.partCode.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.partCode }}</span></template>
           </el-table-column>
-          <el-table-column label="备件名称" prop="partName" key="partName" :width="colWidth('partName', 150)" resizable show-overflow-tooltip v-if="columns.partName.visible" />
+          <el-table-column label="备件名称" prop="partName" key="partName" :min-width="colWidth('partName', 150)" resizable show-overflow-tooltip v-if="columns.partName.visible" />
           <el-table-column label="备件类别" prop="partType" key="partType" :width="colWidth('partType', 90)" resizable align="center" v-if="columns.partType.visible">
             <template #default="scope"><span class="badge violet">{{ partTypeLabel(scope.row.partType) }}</span></template>
           </el-table-column>
-          <el-table-column label="规格型号" prop="specModel" key="specModel" :width="colWidth('specModel', 130)" resizable show-overflow-tooltip v-if="columns.specModel.visible" />
+          <el-table-column label="规格型号" prop="specModel" key="specModel" :min-width="colWidth('specModel', 130)" resizable show-overflow-tooltip v-if="columns.specModel.visible" />
           <el-table-column label="单位" prop="unit" key="unit" :width="colWidth('unit', 60)" resizable align="center" v-if="columns.unit.visible">
             <template #default="scope"><span class="badge amber">{{ unitLabel(scope.row.unit) }}</span></template>
           </el-table-column>
@@ -147,7 +147,7 @@
           </el-table-column>
           <el-table-column label="仓库" prop="warehouseName" key="warehouseName" :width="colWidth('warehouseName', 100)" resizable show-overflow-tooltip v-if="columns.warehouseName.visible" />
           <el-table-column label="存放位置" prop="storageLocation" key="storageLocation" :width="colWidth('storageLocation', 110)" resizable show-overflow-tooltip v-if="columns.storageLocation.visible" />
-          <el-table-column label="供应商" prop="supplier" key="supplier" :width="colWidth('supplier', 110)" resizable show-overflow-tooltip v-if="columns.supplier.visible" />
+          <el-table-column label="供应商" prop="supplier" key="supplier" :min-width="colWidth('supplier', 110)" resizable show-overflow-tooltip v-if="columns.supplier.visible" />
           <el-table-column label="更新时间" prop="updateTime" key="updateTime" :width="colWidth('updateTime', 160)" resizable align="center" sortable="custom" v-if="columns.updateTime.visible" />
           <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
@@ -233,7 +233,7 @@
 
 <script setup name="DmsPartLedger">
 import { listPartLedger, delPartLedger } from '@/api/dms/partledger'
-import { fetchAllPages, downloadCsv } from '@/utils/csvExport'
+import { fetchAllPages, downloadXlsx } from '@/utils/csvExport'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
 import { Search, Filter, RefreshLeft, Delete, Download } from '@element-plus/icons-vue'
@@ -366,11 +366,12 @@ function handleSelectionChange(selection) { ids.value = selection.map(i => i.sto
 function handleDelete(row) { const stockIds = row.stockId || ids.value; proxy.$modal.confirm('确认删除选中的库存记录？（不会删除备件主数据）').then(() => delPartLedger(stockIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
 /** 导出台账（与列表口径一致：含筛选条件、库存状态前端过滤，导出全部页数据） */
 async function handleExport() {
-  const rows = await fetchAllPages(listPartLedger, queryParams.value)
+  let rows = await fetchAllPages(listPartLedger, queryParams.value)
+  if (ids.value && ids.value.length) { rows = rows.filter(i => ids.value.includes(i.stockId)) }
   const filtered = queryParams.value.stockStatus ? rows.filter(i => getStockKey(i) === queryParams.value.stockStatus) : rows
   if (!filtered.length) { proxy.$modal.msgWarning('当前筛选下无数据可导出'); return }
   const headers = ['备件编号', '备件名称', '备件类别', '规格型号', '单位', '当前库存', '库存下限', '库存上限', '库存状态', '仓库', '存放位置', '供应商', '更新时间']
-  downloadCsv(`partledger_${new Date().getTime()}`, headers, filtered.map(i => [
+  downloadXlsx(`partledger_${new Date().getTime()}`, headers, filtered.map(i => [
     i.partCode, i.partName, partTypeLabel(i.partType), i.specModel, unitLabel(i.unit),
     i.currentStock != null ? i.currentStock : 0, i.stockMin != null ? i.stockMin : '', i.stockMax != null ? i.stockMax : '',
     getStockText(i), i.warehouseName || '', i.storageLocation || '', i.supplier || '', i.updateTime || ''

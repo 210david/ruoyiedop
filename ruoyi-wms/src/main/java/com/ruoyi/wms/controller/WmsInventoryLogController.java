@@ -36,6 +36,7 @@ public class WmsInventoryLogController extends BaseController
     public void export(HttpServletResponse response, WmsInventoryLog log)
     {
         List<WmsInventoryLog> list = wmsInventoryService.selectInventoryLogList(log);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, log);
         ExcelUtil<WmsInventoryLog> util = new ExcelUtil<>(WmsInventoryLog.class);
         util.exportExcel(response, list, "库存流水数据");
     }

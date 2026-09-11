@@ -38,11 +38,11 @@ public class HrShift extends BaseEntity
     private String applicableTo;
     @Excel(name = "排序号")
     private Integer orderNum;
-    @Excel(name = "状态")
+    @Excel(name = "状态", dictType = "sys_normal_disable")
     private String status;
     @Excel(name = "默认班次", readConverterExp = "0=否,1=是")
     private Integer isDefault;
-    @Excel(name = "删除标志")
+    @Excel(name = "删除标志", readConverterExp = "0=正常,2=已删除")
     private String delFlag;
 
     public Long getShiftId() { return shiftId; }

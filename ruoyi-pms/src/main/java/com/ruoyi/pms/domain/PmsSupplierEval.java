@@ -88,7 +88,7 @@ public class PmsSupplierEval extends BaseEntity
     private BigDecimal totalScore;
 
     /** 评估等级（字典 pms_eval_level） */
-    @Excel(name = "评估等级")
+    @Excel(name = "评估等级", dictType = "pms_eval_level")
     private String evalLevel;
 
     /** 状态（0待审核 1已审核） */

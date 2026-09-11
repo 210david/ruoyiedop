@@ -66,9 +66,23 @@ export function addDateRange(params, dateRange, propName) {
   return search
 }
 
+// 组装导出参数：勾选了数据时按勾选导出（传 exportIds），否则按筛选条件导出全部
+export function withExportIds(params, ids, idField) {
+  let search = params
+  search.params = typeof (search.params) === 'object' && search.params !== null && !Array.isArray(search.params) ? search.params : {}
+  const idArr = Array.isArray(ids) ? ids : (ids != null ? [ids] : [])
+  if (idArr.length > 0) {
+    search.params['exportIds'] = idArr.join(',')
+    search.params['exportIdField'] = idField
+  } else {
+    delete search.params['exportIds']
+    delete search.params['exportIdField']
+  }
+  return search
+}
+
 // 回显数据字典
-export function selectDictLabel(datas, value) {
-  if (value === undefined) {
+export function selectDictLabel(datas, value) {  if (value === undefined) {
     return ""
   }
   const actions = []

@@ -73,6 +73,7 @@ public class SysUserController extends BaseController
     public void export(HttpServletResponse response, SysUser user)
     {
         List<SysUser> list = userService.selectUserList(user);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, user);
         ExcelUtil<SysUser> util = new ExcelUtil<SysUser>(SysUser.class);
         util.exportExcel(response, list, "用户数据");
     }

@@ -17,7 +17,7 @@ public class SafetyArea extends BaseEntity
     @Excel(name = "节点类型", readConverterExp = "1=厂区,2=车间,3=区域")
     private String nodeType;
     private Long enterpriseId;
-    @Excel(name = "区域类型")
+    @Excel(name = "区域类型", dictType = "safety_area_type")
     private String areaType;
     private Long safetyPersonId;
     @Excel(name = "安全责任人")

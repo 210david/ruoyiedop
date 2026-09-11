@@ -37,6 +37,7 @@ public class HrOvertimeController extends BaseController
     public void export(HttpServletResponse response, HrOvertime hrOvertime)
     {
         List<HrOvertime> list = hrOvertimeService.selectHrOvertimeList(hrOvertime);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, hrOvertime);
         ExcelUtil<HrOvertime> util = new ExcelUtil<>(HrOvertime.class);
         util.exportExcel(response, list, "加班");
     }

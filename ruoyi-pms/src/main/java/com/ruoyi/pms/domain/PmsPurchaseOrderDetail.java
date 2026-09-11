@@ -38,7 +38,7 @@ public class PmsPurchaseOrderDetail extends BaseEntity
     private String specModel;
 
     /** 单位（冗余） */
-    @Excel(name = "单位")
+    @Excel(name = "单位", dictType = "wms_unit")
     private String unit;
 
     /** 采购数量 */

@@ -40,6 +40,7 @@ public class HrSocialSecurityController extends BaseController
     public void export(HttpServletResponse response, HrSocialSecurity hrSocialSecurity)
     {
         List<HrSocialSecurity> list = hrSocialSecurityService.selectHrSocialSecurityList(hrSocialSecurity);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, hrSocialSecurity);
         ExcelUtil<HrSocialSecurity> util = new ExcelUtil<>(HrSocialSecurity.class);
         util.exportExcel(response, list, "社保公积金");
     }

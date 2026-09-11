@@ -29,7 +29,7 @@
     <!-- 文件列表 -->
     <transition-group ref="uploadFileList" class="upload-file-list el-upload-list el-upload-list--text" name="el-fade-in-linear" tag="ul">
       <li :key="file.uid" class="el-upload-list__item ele-upload-list__item-content" v-for="(file, index) in fileList">
-        <el-link :href="`${baseUrl}${file.url}`" underline="never" target="_blank">
+        <el-link :href="buildSecureUrl(file.url)" underline="never" target="_blank">
           <span class="el-icon-document"> {{ getFileName(file.name) }} </span>
         </el-link>
         <div class="ele-upload-list__item-content-action">
@@ -103,6 +103,15 @@ const fileList = ref([])
 const showTip = computed(
   () => props.isShowTip && (props.fileType || props.fileSize)
 )
+
+/**
+ * 将 /profile/... 资源路径转换为安全访问 URL
+ * <a> 标签无法携带自定义 Authorization Header，通过 token 参数传递
+ */
+function buildSecureUrl(url) {
+  if (!url) return ''
+  return baseUrl + '/common/file/access?resource=' + encodeURIComponent(url) + '&token=' + getToken()
+}
 
 watch(() => props.modelValue, val => {
   if (val) {

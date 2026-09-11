@@ -47,6 +47,7 @@ public class MkPaymentPlanController extends BaseController
     public void export(HttpServletResponse response, MkPaymentPlan paymentPlan)
     {
         List<MkPaymentPlan> list = mkPaymentPlanService.selectPaymentPlanList(paymentPlan);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, paymentPlan);
         ExcelUtil<MkPaymentPlan> util = new ExcelUtil<>(MkPaymentPlan.class);
         util.exportExcel(response, list, "回款计划数据");
     }

@@ -31,9 +31,9 @@ public class HrPosition extends BaseEntity
     private String requireCert;
     @Excel(name = "排序号")
     private Integer orderNum;
-    @Excel(name = "状态")
+    @Excel(name = "状态", dictType = "sys_normal_disable")
     private String status;
-    @Excel(name = "删除标志")
+    @Excel(name = "删除标志", readConverterExp = "0=正常,2=已删除")
     private String delFlag;
 
     public Long getPositionId() { return positionId; }

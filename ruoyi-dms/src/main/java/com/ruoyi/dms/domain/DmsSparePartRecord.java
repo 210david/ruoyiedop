@@ -65,7 +65,7 @@ public class DmsSparePartRecord extends BaseEntity
 
     /** 操作日期（入库日期/出库日期） */
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "操作日期", width = 20)
+    @Excel(name = "操作日期", width = 20, dateFormat = "yyyy-MM-dd HH:mm:ss")
     private Date operateDate;
 
     /** 存放位置（入库时填写） */
@@ -76,7 +76,7 @@ public class DmsSparePartRecord extends BaseEntity
     private String warehouseName;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    @Excel(name = "操作时间", width = 30)
+    @Excel(name = "操作时间", width = 30, dateFormat = "yyyy-MM-dd HH:mm:ss")
     private Date createTime;
 
     public Long getRecordId() { return recordId; }

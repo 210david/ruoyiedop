@@ -68,6 +68,7 @@ public class SysRoleController extends BaseController
     public void export(HttpServletResponse response, SysRole role)
     {
         List<SysRole> list = roleService.selectRoleList(role);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, role);
         ExcelUtil<SysRole> util = new ExcelUtil<SysRole>(SysRole.class);
         util.exportExcel(response, list, "角色数据");
     }

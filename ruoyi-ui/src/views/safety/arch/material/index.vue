@@ -87,7 +87,7 @@
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
           <el-table-column label="危化品编号" prop="materialCode" key="materialCode" :width="colWidth('materialCode', 130)" resizable sortable="custom" show-overflow-tooltip v-if="columns.materialCode.visible" />
-          <el-table-column label="危化品名称" prop="materialName" key="materialName" :width="colWidth('materialName', 180)" resizable show-overflow-tooltip v-if="columns.materialName.visible" />
+          <el-table-column label="危化品名称" prop="materialName" key="materialName" :min-width="colWidth('materialName', 180)" resizable show-overflow-tooltip v-if="columns.materialName.visible" />
           <el-table-column label="危化品分类" prop="hazardClass" key="hazardClass" :width="colWidth('hazardClass', 140)" resizable v-if="columns.hazardClass.visible">
             <template #header><span>危化品分类</span><el-tooltip content="依据《危险化学品目录》对危险化学品进行的分类编号，如第2.1类易燃气体、第3类易燃液体等" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></template>
             <template #default="scope">
@@ -445,7 +445,7 @@ function submitForm() {
   })
 }
 function handleDelete(row) { const materialIds = row.materialId || ids.value; proxy.$modal.confirm('是否确认删除危化品？').then(function() { return delMaterial(materialIds) }).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
-function handleExport() { proxy.download('safety/material/export', { ...queryParams.value }, `material_${new Date().getTime()}.xlsx`) }
+function handleExport() { proxy.download('safety/material/export', proxy.withExportIds({ ...queryParams.value }, ids.value, 'materialId'), `material_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 function reset() {
   form.value = { materialId: undefined, materialCode: undefined, materialName: undefined, hazardClass: undefined, casNo: undefined, maxStorage: undefined, storageUnit: undefined, storageAreaId: undefined, storageAreaName: undefined, sdsAttachment: undefined, toxicFlag: '0', currentStock: undefined, safetyStockMin: undefined, safetyStockMax: undefined, flashPoint: undefined, explosionLimit: undefined, physicalProperties: undefined, hazardSummary: undefined, firstAidMeasures: undefined, fireFighting: undefined, leakHandling: undefined, storagePrecaution: undefined, exposureControl: undefined, stabilityReactivity: undefined, toxicologicalInfo: undefined, ecologicalInfo: undefined, disposalInfo: undefined, transportInfo: undefined, remark: undefined }

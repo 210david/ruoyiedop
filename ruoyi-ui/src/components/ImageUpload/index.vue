@@ -119,7 +119,9 @@ watch(() => props.modelValue, val => {
     fileList.value = list.map(item => {
       if (typeof item === "string") {
         if (item.indexOf(baseUrl) === -1 && !isExternal(item)) {
-          item = { name: baseUrl + item, url: baseUrl + item }
+          // /profile/... 路径需通过安全接口访问（携带Token）
+          const secureUrl = baseUrl + '/common/file/access?resource=' + encodeURIComponent(item) + '&token=' + getToken()
+          item = { name: secureUrl, url: secureUrl }
         } else {
           item = { name: item, url: item }
         }
@@ -225,7 +227,18 @@ function listToString(list, separator) {
   separator = separator || ","
   for (let i in list) {
     if (undefined !== list[i].url && list[i].url.indexOf("blob:") !== 0) {
-      strs += list[i].url.replace(baseUrl, "") + separator
+      // 从安全访问URL中提取原始的 /profile/... 资源路径
+      let url = list[i].url
+      // 如果是安全访问URL，提取 resource 参数值
+      if (url.includes('/common/file/access?resource=')) {
+        const match = url.match(/resource=([^&]+)/)
+        if (match) {
+          url = decodeURIComponent(match[1])
+        }
+      } else {
+        url = url.replace(baseUrl, "")
+      }
+      strs += url + separator
     }
   }
   return strs != "" ? strs.substr(0, strs.length - 1) : ""

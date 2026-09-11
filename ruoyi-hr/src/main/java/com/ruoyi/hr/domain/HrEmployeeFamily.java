@@ -21,10 +21,10 @@ public class HrEmployeeFamily extends BaseEntity
     @Excel(name = "关系")
     private String relationship;
 
-    @Excel(name = "性别")
+    @Excel(name = "性别", dictType = "hr_gender")
     private String gender;
 
-    @JsonFormat(pattern = "yyyy-MM-dd") @Excel(name = "出生日期")
+    @JsonFormat(pattern = "yyyy-MM-dd") @Excel(name = "出生日期", dateFormat = "yyyy-MM-dd")
     private Date birthday;
 
     @Excel(name = "联系电话")
@@ -33,10 +33,10 @@ public class HrEmployeeFamily extends BaseEntity
     @Excel(name = "工作单位/职业")
     private String occupation;
 
-    @Excel(name = "状态")
+    @Excel(name = "状态", dictType = "sys_normal_disable")
     private String status;
 
-    @Excel(name = "删除标志")
+    @Excel(name = "删除标志", readConverterExp = "0=正常,2=已删除")
     private String delFlag;
 
 

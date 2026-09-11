@@ -32,7 +32,7 @@ public class MmsBomImport
     @Excel(name = "基准数量")
     private BigDecimal baseQty;
 
-    @Excel(name = "基准单位")
+    @Excel(name = "基准单位", dictType = "wms_unit")
     private String baseUnit;
 
     @Excel(name = "物料编码")

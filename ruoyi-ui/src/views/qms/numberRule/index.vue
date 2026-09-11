@@ -77,7 +77,7 @@
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" class="app-table">
 <el-table-column type="selection" width="55" align="center" />
 <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
-<el-table-column label="规则编码" prop="ruleCode" key="ruleCode" :width="colWidth('ruleCode', 160)" resizable v-if="columns.ruleCode.visible" />          <el-table-column label="规则名称" prop="ruleName" key="ruleName" :width="colWidth('ruleName', 140)" resizable v-if="columns.ruleName.visible" />
+<el-table-column label="规则编码" prop="ruleCode" key="ruleCode" :width="colWidth('ruleCode', 160)" resizable v-if="columns.ruleCode.visible" />          <el-table-column label="规则名称" prop="ruleName" key="ruleName" :min-width="colWidth('ruleName', 140)" show-overflow-tooltip resizable v-if="columns.ruleName.visible" />
           <el-table-column label="前缀" prop="prefix" key="prefix" :width="colWidth('prefix', 80)" resizable align="center" v-if="columns.prefix.visible">
             <template #default="scope">
               <span v-if="scope.row.prefix" class="col-mono">{{ scope.row.prefix }}</span>
@@ -99,7 +99,7 @@
           <el-table-column label="状态" prop="status" key="status" :width="colWidth('status', 100)" resizable align="center" v-if="columns.status.visible">
             <template #default="scope"><span class="badge" :class="badgeClass(scope.row.status)"><span class="dot"></span>{{ statusLabel(scope.row.status) }}</span></template>
           </el-table-column>
-          <el-table-column label="备注" prop="remark" key="remark" :width="colWidth('remark', 200)" resizable :show-overflow-tooltip="true" v-if="columns.remark.visible" />
+          <el-table-column label="备注" prop="remark" key="remark" :min-width="colWidth('remark', 200)" resizable :show-overflow-tooltip="true" v-if="columns.remark.visible" />
           <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
               <div class="action-btn-row">
@@ -554,7 +554,7 @@ function loadDictToPrefixList() {
   })
 }
 
-function handleExport() { proxy.download('mk/numberRule/export', { ...proxy.addDateRange(queryParams.value, dateRange.value) }, `numberRule_${MODULE}_${new Date().getTime()}.xlsx`) }
+function handleExport() { proxy.download('mk/numberRule/export', proxy.withExportIds({ ...proxy.addDateRange(queryParams.value, dateRange.value) }, ids.value, 'ruleId'), `numberRule_${MODULE}_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset(); isView.value = false }
 
 // 监听重置类型变化，自动设置日期格式

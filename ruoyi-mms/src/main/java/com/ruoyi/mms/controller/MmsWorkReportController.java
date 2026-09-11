@@ -50,6 +50,7 @@ public class MmsWorkReportController extends BaseController
     public void export(HttpServletResponse response, MmsWorkReport report)
     {
         List<MmsWorkReport> list = mmsWorkReportService.selectWorkReportList(report);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, report);
         ExcelUtil<MmsWorkReport> util = new ExcelUtil<>(MmsWorkReport.class);
         util.exportExcel(response, list, "报工记录数据");
     }

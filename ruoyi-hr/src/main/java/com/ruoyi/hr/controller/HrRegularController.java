@@ -37,6 +37,7 @@ public class HrRegularController extends BaseController
     public void export(HttpServletResponse response, HrRegular hrRegular)
     {
         List<HrRegular> list = hrRegularService.selectHrRegularList(hrRegular);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, hrRegular);
         ExcelUtil<HrRegular> util = new ExcelUtil<>(HrRegular.class);
         util.exportExcel(response, list, "转正");
     }

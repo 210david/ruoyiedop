@@ -38,6 +38,7 @@ public class WmsInboundOrderController extends BaseController
     public void export(HttpServletResponse response, WmsInboundOrder order)
     {
         List<WmsInboundOrder> list = wmsInboundOrderService.selectInboundOrderList(order);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, order);
         ExcelUtil<WmsInboundOrder> util = new ExcelUtil<>(WmsInboundOrder.class);
         util.exportExcel(response, list, "入库单数据");
     }

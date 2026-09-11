@@ -26,7 +26,7 @@
     </resultMap>
 
     <sql id="selectVo">
-        SELECT batch_id, batch_no, year_month, batch_name, pay_date, bank_name, total_count, total_amount, audit_status, audit_by, audit_time, audit_remark, bank_receipt_no, sealed_status, del_flag, create_by, create_time, update_by, update_time, remark
+        SELECT batch_id, batch_no, `year_month`, batch_name, pay_date, bank_name, total_count, total_amount, audit_status, audit_by, audit_time, audit_remark, bank_receipt_no, sealed_status, del_flag, create_by, create_time, update_by, update_time, remark
         FROM biz_hr_payroll_batch
     </sql>
 
@@ -35,7 +35,7 @@
         <where>
             (del_flag IS NULL OR del_flag = '0')
             <if test="batchNo != null and batchNo != ''"> AND batch_no LIKE CONCAT('%', #{batchNo}, '%')</if>
-            <if test="yearMonth != null and yearMonth != ''"> AND year_month LIKE CONCAT('%', #{yearMonth}, '%')</if>
+            <if test="yearMonth != null and yearMonth != ''"> AND `year_month` LIKE CONCAT('%', #{yearMonth}, '%')</if>
             <if test="batchName != null and batchName != ''"> AND batch_name LIKE CONCAT('%', #{batchName}, '%')</if>
             <if test="payDate != null"> AND pay_date = #{payDate}</if>
             <if test="params.beginPayDate != null and params.beginPayDate != ''"> AND pay_date &gt;= #{params.beginPayDate}</if>
@@ -60,7 +60,7 @@
 
     <insert id="insertHrPayrollBatch" parameterType="HrPayrollBatch" useGeneratedKeys="true" keyProperty="batchId">
         INSERT INTO biz_hr_payroll_batch (
-            batch_no, year_month, batch_name, pay_date, bank_name, total_count, total_amount, audit_status, audit_by, audit_time, audit_remark, bank_receipt_no, sealed_status, del_flag, create_by, create_time, remark
+            batch_no, `year_month`, batch_name, pay_date, bank_name, total_count, total_amount, audit_status, audit_by, audit_time, audit_remark, bank_receipt_no, sealed_status, del_flag, create_by, create_time, remark
         ) VALUES (
             #{batchNo}, #{yearMonth}, #{batchName}, #{payDate}, #{bankName}, #{totalCount}, #{totalAmount}, #{auditStatus}, #{auditBy}, #{auditTime}, #{auditRemark}, #{bankReceiptNo}, #{sealedStatus}, #{delFlag}, #{createBy}, sysdate(), #{remark}
         )
@@ -70,7 +70,7 @@
         UPDATE biz_hr_payroll_batch
         <set>
             <if test="batchNo != null and batchNo != ''">batch_no = #{batchNo},</if>
-            <if test="yearMonth != null and yearMonth != ''">year_month = #{yearMonth},</if>
+            <if test="yearMonth != null and yearMonth != ''">`year_month` = #{yearMonth},</if>
             <if test="batchName != null and batchName != ''">batch_name = #{batchName},</if>
             <if test="payDate != null">pay_date = #{payDate},</if>
             <if test="bankName != null and bankName != ''">bank_name = #{bankName},</if>

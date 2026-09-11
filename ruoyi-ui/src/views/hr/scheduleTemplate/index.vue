@@ -106,7 +106,7 @@
         <el-table ref="tableRef" v-loading="loading" :data="templateList" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" border class="app-table">
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" resizable align="center" />
-          <el-table-column label="模板名称" prop="templateName" key="templateName" :width="colWidth('templateName', 200)" resizable align="center" show-overflow-tooltip v-if="columns.templateName.visible" />
+          <el-table-column label="模板名称" prop="templateName" key="templateName" :min-width="colWidth('templateName', 200)" resizable align="center" show-overflow-tooltip v-if="columns.templateName.visible" />
           <el-table-column label="模板编码" prop="templateCode" key="templateCode" :width="colWidth('templateCode', 150)" resizable align="center" v-if="columns.templateCode.visible" />
           <el-table-column label="循环天数" prop="cycleDays" key="cycleDays" :width="colWidth('cycleDays', 100)" resizable align="center" sortable v-if="columns.cycleDays.visible" />
           <el-table-column label="班次序列" key="shiftSequence" :width="colWidth('shiftSequence', 320)" resizable align="center" v-if="columns.shiftSequence.visible">
@@ -130,7 +130,7 @@
               </span>
             </template>
           </el-table-column>
-          <el-table-column label="说明" prop="description" key="description" :width="colWidth('description', 200)" resizable align="center" show-overflow-tooltip v-if="columns.description.visible" />
+          <el-table-column label="说明" prop="description" key="description" :min-width="colWidth('description', 200)" resizable align="center" show-overflow-tooltip v-if="columns.description.visible" />
           <el-table-column label="创建人" prop="createBy" key="createBy" :width="colWidth('createBy', 120)" resizable align="center" v-if="columns.createBy.visible" />
           <el-table-column label="创建时间" prop="createTime" key="createTime" :width="colWidth('createTime', 180)" resizable align="center" v-if="columns.createTime.visible" />
           <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
@@ -598,7 +598,7 @@ function handleDelete(row) {
 }
 
 function handleExport() {
-  proxy.download('hr/scheduleTemplate/export', { ...queryParams.value }, `hrScheduleTemplate_${new Date().getTime()}.xlsx`)
+  proxy.download('hr/scheduleTemplate/export', proxy.withExportIds({ ...queryParams.value }, ids.value, 'templateId'), `hrScheduleTemplate_${new Date().getTime()}.xlsx`)
 }
 
 function cancel() { open.value = false; reset() }

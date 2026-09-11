@@ -27,7 +27,7 @@ public class SafetyTrainingCert extends BaseEntity
     private String certName;
 
     @NotBlank(message = "证书类型不能为空")
-    @Excel(name = "证书类型")
+    @Excel(name = "证书类型", dictType = "safety_cert_type")
     private String certType;
 
     private Long userId;
@@ -46,12 +46,12 @@ public class SafetyTrainingCert extends BaseEntity
 
     @NotNull(message = "发证日期不能为空")
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "发证日期", width = 120)
+    @Excel(name = "发证日期", width = 120, dateFormat = "yyyy-MM-dd")
     private Date issueDate;
 
     @NotNull(message = "有效期至不能为空")
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "有效期至", width = 120)
+    @Excel(name = "有效期至", width = 120, dateFormat = "yyyy-MM-dd")
     private Date expireDate;
 
     @NotBlank(message = "发证机构不能为空")

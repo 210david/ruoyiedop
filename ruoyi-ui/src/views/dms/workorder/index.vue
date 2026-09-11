@@ -137,11 +137,11 @@
           <el-table-column label="工单号" prop="orderNo" key="orderNo" :width="colWidth('orderNo', 160)" resizable v-if="columns.orderNo.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.orderNo }}</span></template>
           </el-table-column>
-          <el-table-column label="设备名称" prop="equipmentName" key="equipmentName" :width="colWidth('equipmentName', 160)" resizable show-overflow-tooltip v-if="columns.equipmentName.visible" />
+          <el-table-column label="设备名称" prop="equipmentName" key="equipmentName" :min-width="colWidth('equipmentName', 160)" resizable show-overflow-tooltip v-if="columns.equipmentName.visible" />
           <el-table-column label="工单类型" prop="orderType" key="orderType" :width="colWidth('orderType', 100)" resizable align="center" v-if="columns.orderType.visible">
             <template #default="scope"><span class="badge violet">{{ orderTypeLabel(scope.row.orderType) }}</span></template>
           </el-table-column>
-          <el-table-column label="故障描述" prop="faultDescription" key="faultDescription" :width="colWidth('faultDescription', 220)" resizable show-overflow-tooltip v-if="columns.faultDescription.visible">
+          <el-table-column label="故障描述" prop="faultDescription" key="faultDescription" :min-width="colWidth('faultDescription', 220)" resizable show-overflow-tooltip v-if="columns.faultDescription.visible">
             <template #default="scope">
               <span class="text-truncate">{{ cleanFaultDescription(scope.row.faultDescription) || '—' }}</span>
             </template>
@@ -283,24 +283,29 @@
               <el-col :span="24">
                 <el-form-item label="更换备件" prop="sparePartsUsed">
                   <div style="width: 100%">
-                    <el-table :data="formSparePartList" border size="small" style="margin-bottom: 8px" @header-dragend="onHeaderDragEnd">
-                      <el-table-column label="备件名称" min-width="180">
-                        <template #default="{ row }">
-                          <el-select v-model="row.partName" filterable clearable placeholder="请选择备件" style="width: 100%">
-                            <el-option v-for="p in getAvailableSpareParts(formSparePartList, row.partName)" :key="p.partId" :label="p.partName + (p.specModel ? ' (' + p.specModel + ')' : '')" :value="p.partName" />
-                          </el-select>
-                        </template>
-                      </el-table-column>
+<el-table :data="formSparePartList" border size="small" style="margin-bottom: 8px" @header-dragend="onHeaderDragEnd">
+<el-table-column label="备件名称" min-width="220">
+<template #default="{ row, $index }">
+<el-input :model-value="row.partName" readonly placeholder="请选择备件" style="width: 100%" @click="openPartPicker(formSparePartList, $index)">
+<template v-if="row.partId" #append>
+<el-button icon="CircleClose" @click.stop="clearPart(formSparePartList, $index)" />
+</template>
+<template v-else #append>
+<el-button icon="Search" @click.stop="openPartPicker(formSparePartList, $index)" />
+</template>
+</el-input>
+</template>
+</el-table-column>
                       <el-table-column label="库存" width="80" align="center">
-                        <template #default="{ row }">{{ getSparePartStock(row.partName) != null ? getSparePartStock(row.partName) : '-' }}</template>
+                        <template #default="{ row }">{{ getPartStock(row) != null ? getPartStock(row) : '-' }}</template>
                       </el-table-column>
                       <el-table-column label="数量" width="120" align="center">
                         <template #default="{ row }">
-                          <el-input-number v-model="row.quantity" :min="1" :max="getSparePartStock(row.partName) != null ? getSparePartStock(row.partName) : undefined" :precision="0" size="small" controls-position="right" style="width: 100px" />
+                          <el-input-number v-model="row.quantity" :min="1" :max="getPartStock(row) != null ? getPartStock(row) : undefined" :precision="0" size="small" controls-position="right" style="width: 100px" />
                         </template>
                       </el-table-column>
                       <el-table-column label="单位" width="70" align="center">
-                        <template #default="{ row }">{{ getSparePartUnit(row.partName) }}</template>
+                        <template #default="{ row }">{{ getPartUnit(row) }}</template>
                       </el-table-column>
                       <el-table-column label="操作" width="70" align="center">
                         <template #default="{ $index }">
@@ -308,7 +313,7 @@
                         </template>
                       </el-table-column>
                     </el-table>
-                    <el-button type="primary" plain icon="Plus" size="small" @click="formSparePartList.push({ partName: undefined, quantity: 1 })">添加备件</el-button>
+                    <el-button type="primary" plain icon="Plus" size="small" @click="openPartPicker(formSparePartList, -1)">添加备件</el-button>
                   </div>
                 </el-form-item>
               </el-col>
@@ -516,23 +521,28 @@
                 <el-form-item label="更换备件">
                   <div style="width: 100%">
                     <el-table :data="completeSparePartList" border size="small" style="margin-bottom: 8px" @header-dragend="onHeaderDragEnd">
-                      <el-table-column label="备件名称" min-width="180">
-                        <template #default="{ row }">
-                          <el-select v-model="row.partName" filterable clearable placeholder="请选择备件" style="width: 100%">
-                            <el-option v-for="p in getAvailableSpareParts(completeSparePartList, row.partName)" :key="p.partId" :label="p.partName + (p.specModel ? ' (' + p.specModel + ')' : '')" :value="p.partName" />
-                          </el-select>
-                        </template>
-                      </el-table-column>
-                      <el-table-column label="库存" width="80" align="center">
-                        <template #default="{ row }">{{ getSparePartStock(row.partName) != null ? getSparePartStock(row.partName) : '-' }}</template>
+<el-table-column label="备件名称" min-width="220">
+<template #default="{ row, $index }">
+<el-input :model-value="row.partName" readonly placeholder="请选择备件" style="width: 100%" @click="openPartPicker(completeSparePartList, $index)">
+<template v-if="row.partId" #append>
+<el-button icon="CircleClose" @click.stop="clearPart(completeSparePartList, $index)" />
+</template>
+<template v-else #append>
+<el-button icon="Search" @click.stop="openPartPicker(completeSparePartList, $index)" />
+</template>
+</el-input>
+</template>
+</el-table-column>
+<el-table-column label="库存" width="80" align="center">
+<template #default="{ row }">{{ getPartStock(row) != null ? getPartStock(row) : '-' }}</template>
                       </el-table-column>
                       <el-table-column label="数量" width="120" align="center">
                         <template #default="{ row }">
-                          <el-input-number v-model="row.quantity" :min="1" :max="getSparePartStock(row.partName) != null ? getSparePartStock(row.partName) : undefined" :precision="0" size="small" controls-position="right" style="width: 100px" />
+                          <el-input-number v-model="row.quantity" :min="1" :max="getPartStock(row) != null ? getPartStock(row) : undefined" :precision="0" size="small" controls-position="right" style="width: 100px" />
                         </template>
                       </el-table-column>
                       <el-table-column label="单位" width="70" align="center">
-                        <template #default="{ row }">{{ getSparePartUnit(row.partName) }}</template>
+                        <template #default="{ row }">{{ getPartUnit(row) }}</template>
                       </el-table-column>
                       <el-table-column label="操作" width="70" align="center">
                         <template #default="{ $index }">
@@ -540,7 +550,7 @@
                         </template>
                       </el-table-column>
                     </el-table>
-                    <el-button type="primary" plain icon="Plus" size="small" @click="completeSparePartList.push({ partName: undefined, quantity: 1 })">添加备件</el-button>
+                    <el-button type="primary" plain icon="Plus" size="small" @click="openPartPicker(completeSparePartList, -1)">添加备件</el-button>
                   </div>
                 </el-form-item>
               </el-col>
@@ -1075,6 +1085,7 @@
 
 <user-picker ref="userPickerRef" title="选择人员" @confirm="onUserPickerConfirm" />
 <equipment-picker ref="equipmentPickerRef" title="选择设备" @confirm="onEquipmentPickerConfirm" />
+<sparepart-picker ref="partPickerRef" source="stock" title="选择备件（库存）" @confirm="onPartPickerConfirm" />
 </div>
 </template>
 
@@ -1087,6 +1098,7 @@ import { listUser } from '@/api/system/user'
 import { listSparepart } from '@/api/dms/sparepart'
 import UserPicker from '@/components/UserPicker/index.vue'
 import EquipmentPicker from '@/components/EquipmentPicker/index.vue'
+import SparepartPicker from '@/components/SparepartPicker/index.vue'
 import useUserStore from '@/store/modules/user'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
@@ -1254,11 +1266,26 @@ function getSparePartStock(partName) {
   const part = sparePartOptions.value.find(p => p.partName === partName)
   return part ? part.currentStock : null
 }
+/** 获取备件行可用库存：优先使用选择弹框带出的库存数量，历史数据回退主数据库存 */
+function getPartStock(row) {
+if (!row) return null
+if (row.currentStock != null) return Number(row.currentStock)
+return getSparePartStock(row.partName)
+}
+/** 获取备件行单位（字典标签） */
+function getPartUnit(row) {
+if (!row) return ''
+if (row.unit) {
+const dictItem = wms_unit.value.find(d => d.value === row.unit)
+return dictItem ? dictItem.label : row.unit
+}
+return getSparePartUnit(row.partName)
+}
 /** 校验备件列表中数量不超库存 */
 function validateSparePartStock(list) {
-  for (const item of list) {
-    if (!item.partName) continue
-    const stock = getSparePartStock(item.partName)
+for (const item of list) {
+if (!item.partName) continue
+const stock = getPartStock(item)
     if (stock != null && item.quantity > stock) {
       proxy.$modal.msgError(`备件「${item.partName}」使用数量 ${item.quantity} 超过库存数量 ${stock}`)
       return false
@@ -1266,10 +1293,38 @@ function validateSparePartStock(list) {
   }
   return true
 }
-/** 获取可选备件列表（排除当前表格中其他行已选的备件） */
-function getAvailableSpareParts(list, currentName) {
-  const selectedNames = list.filter(i => i.partName && i.partName !== currentName).map(i => i.partName)
-  return sparePartOptions.value.filter(p => !selectedNames.includes(p.partName) && p.currentStock != null && p.currentStock > 0)
+/** 备件选择弹框目标（list 为目标备件行数组，index 为目标行下标，-1 表示追加新行） */
+const partPickerTarget = ref(null)
+/** 打开备件选择弹框（从备件库存中选择，index 为 -1 时表示追加新行） */
+function openPartPicker(list, index) {
+partPickerTarget.value = { list, index }
+const excludedIds = list.filter((_, i) => i !== index).map(i => i.partId).filter(Boolean)
+proxy.$refs.partPickerRef.open(undefined, excludedIds)
+}
+/** 备件选择确认回调 — 自动带出备件名称、库存数量、单位 */
+function onPartPickerConfirm(part) {
+const t = partPickerTarget.value
+if (!t) return
+const list = t.list
+const stock = part.currentStock != null ? Number(part.currentStock) : undefined
+if (t.index >= 0 && t.index < list.length) {
+const row = list[t.index]
+row.partId = part.partId
+row.partCode = part.partCode
+row.partName = part.partName
+row.currentStock = stock
+row.unit = part.unit
+} else {
+list.push({ partId: part.partId, partCode: part.partCode, partName: part.partName, currentStock: stock, unit: part.unit, quantity: 1 })
+}
+}
+/** 清除行内备件 */
+function clearPart(list, index) {
+const row = list[index]
+if (row) {
+row.partId = undefined
+row.partName = undefined
+}
 }
 /** 备件列表序列化为字符串：轴承×2，密封圈×5 */
 function sparePartsToString(list) {
@@ -1278,14 +1333,19 @@ function sparePartsToString(list) {
 }
 /** 字符串解析为备件列表 */
 function parseSpareParts(str) {
-  if (!str) return []
-  return str.split('，').filter(s => s.trim()).map(s => {
-    const idx = s.indexOf('×')
-    if (idx > 0) {
-      return { partName: s.substring(0, idx).trim(), quantity: parseInt(s.substring(idx + 1)) || 1 }
-    }
-    return { partName: s.trim(), quantity: 1 }
-  })
+if (!str) return []
+return str.split('，').filter(s => s.trim()).map(s => {
+const idx = s.indexOf('×')
+if (idx > 0) {
+return buildSparePartRow(s.substring(0, idx).trim(), parseInt(s.substring(idx + 1)) || 1)
+}
+return buildSparePartRow(s.trim(), 1)
+})
+}
+/** 构建备件行：根据备件名称回填 partId 与主数据库存（历史数据） */
+function buildSparePartRow(partName, quantity) {
+const part = sparePartOptions.value.find(p => p.partName === partName)
+return { partId: part ? part.partId : undefined, partName, currentStock: part && part.currentStock != null ? Number(part.currentStock) : undefined, unit: part ? part.unit : undefined, quantity }
 }
 /** 清洗故障描述：去除可能包含的JSON字段名、键值对格式、嵌入的JSON任务清单，只保留纯文本 */
 function cleanFaultDescription(desc) {
@@ -1402,13 +1462,13 @@ function submitForm() {
     if (valid) {
       if (!validateSparePartStock(formSparePartList.value)) return
       form.value.sparePartsUsed = sparePartsToString(formSparePartList.value) || undefined
-      if (form.value.orderId != undefined) { updateWorkorder(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList() }) }
-      else { addWorkorder(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList() }) }
+      if (form.value.orderId != undefined) { updateWorkorder(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList(); loadStatusCounts() }) }
+      else { addWorkorder(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList(); loadStatusCounts() }) }
     }
   })
 }
-function handleDelete(row) { const orderIds = row.orderId || ids.value; proxy.$modal.confirm('确认删除编号为"' + orderIds + '"的数据？').then(() => delWorkorder(orderIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
-function handleExport() { proxy.download('dms/workorder/export', { ...queryParams.value }, `workorder_${new Date().getTime()}.xlsx`) }
+function handleDelete(row) { const orderIds = row.orderId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delWorkorder(orderIds)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleExport() { proxy.download('dms/workorder/export', proxy.withExportIds({ ...queryParams.value }, ids.value, 'orderId'), `workorder_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 
 // ===== 状态机操作 =====
@@ -1422,9 +1482,9 @@ function handleDispatch(row) {
 function submitDispatch() {
   if (!dispatchForm.value.assigneeId) { proxy.$modal.msgError('请选择维修人'); return }
   if (isReassign.value) {
-    reassignWorkorder(dispatchForm.value).then(() => { proxy.$modal.msgSuccess('改派成功'); dispatchOpen.value = false; getList() })
+    reassignWorkorder(dispatchForm.value).then(() => { proxy.$modal.msgSuccess('改派成功'); dispatchOpen.value = false; getList(); loadStatusCounts() })
   } else {
-    dispatchWorkorder(dispatchForm.value).then(() => { proxy.$modal.msgSuccess('派工成功'); dispatchOpen.value = false; getList() })
+    dispatchWorkorder(dispatchForm.value).then(() => { proxy.$modal.msgSuccess('派工成功'); dispatchOpen.value = false; getList(); loadStatusCounts() })
   }
 }
 function handleReassign(row) {
@@ -1435,10 +1495,10 @@ function handleReassign(row) {
   dispatchOpen.value = true
 }
 function handleAccept(row) {
-  proxy.$modal.confirm('确认接单？').then(() => acceptWorkorder(row.orderId)).then(() => { proxy.$modal.msgSuccess('接单成功'); getList() }).catch(() => {})
+  proxy.$modal.confirm('确认接单？').then(() => acceptWorkorder(row.orderId)).then(() => { proxy.$modal.msgSuccess('接单成功'); getList(); loadStatusCounts() }).catch(() => {})
 }
 function handleProcess(row) {
-  proxy.$modal.confirm('确认开始处理？').then(() => processWorkorder(row.orderId)).then(() => { proxy.$modal.msgSuccess('已开始处理'); getList() }).catch(() => {})
+  proxy.$modal.confirm('确认开始处理？').then(() => processWorkorder(row.orderId)).then(() => { proxy.$modal.msgSuccess('已开始处理'); getList(); loadStatusCounts() }).catch(() => {})
 }
 function handleComplete(row) {
   completeForm.value = { orderId: row.orderId, orderNo: row.orderNo, orderType: row.orderType, equipmentCode: row.equipmentCode, equipmentName: row.equipmentName, reporterName: row.reporterName, reportTime: row.reportTime, faultDescription: row.faultDescription, faultCause: '', repairMeasure: '', sparePartsUsed: '', repairCost: 0, downtimeDuration: 0, completeRemark: '', deviationReason: '' }
@@ -1486,7 +1546,7 @@ function submitComplete() {
   if (completeTaskList.value.length > 0) {
     completeForm.value.taskChecklist = JSON.stringify(completeTaskList.value.map(t => ({ text: t.text, done: t.result === 'done', result: t.result, remark: t.remark || '' })))
   }
-  completeWorkorder(completeForm.value).then(() => { proxy.$modal.msgSuccess('完工成功'); completeOpen.value = false; getList() })
+  completeWorkorder(completeForm.value).then(() => { proxy.$modal.msgSuccess('完工成功'); completeOpen.value = false; getList(); loadStatusCounts() })
 }
 function handleVerify(row) {
   verifyForm.value = { orderId: row.orderId, orderNo: row.orderNo, equipmentCode: row.equipmentCode, equipmentName: row.equipmentName, orderType: row.orderType, faultDescription: row.faultDescription, reporterName: row.reporterName, reportTime: row.reportTime, assigneeName: row.assigneeName, verifierId: undefined, verifierName: '', rating: 5, verifyOpinion: '', sparePartsUsed: '', faultCause: '', repairMeasure: '', repairCost: null, downtimeDuration: null, completeTime: '' }
@@ -1515,6 +1575,7 @@ function submitVerify() {
     proxy.$modal.msgSuccess(msg)
     verifyOpen.value = false
     getList()
+    loadStatusCounts()
   })
 }
 function handleReject(row) {
@@ -1535,10 +1596,10 @@ function handleReject(row) {
 }
 function submitReject() {
   if (!rejectForm.value.verifyOpinion) { proxy.$modal.msgError('请输入驳回原因'); return }
-  rejectWorkorder(rejectForm.value).then(() => { proxy.$modal.msgSuccess('已驳回'); rejectOpen.value = false; getList() })
+  rejectWorkorder(rejectForm.value).then(() => { proxy.$modal.msgSuccess('已驳回'); rejectOpen.value = false; getList(); loadStatusCounts() })
 }
 function handleCancel(row) {
-  proxy.$modal.confirm('确认撤销该工单？').then(() => cancelWorkorder(row.orderId)).then(() => { proxy.$modal.msgSuccess('已撤销'); getList() }).catch(() => {})
+  proxy.$modal.confirm('确认撤销该工单？').then(() => cancelWorkorder(row.orderId)).then(() => { proxy.$modal.msgSuccess('已撤销'); getList(); loadStatusCounts() }).catch(() => {})
 }
 
 // ===== 工单操作历史 =====

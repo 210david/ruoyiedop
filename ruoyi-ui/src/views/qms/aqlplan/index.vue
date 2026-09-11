@@ -86,7 +86,7 @@
               </span>
             </template>
           </el-table-column>
-          <el-table-column label="批量范围" prop="batchRange" key="batchRange" :width="colWidth('batchRange', 140)" resizable align="center" v-if="columns.batchRange.visible">
+          <el-table-column label="批量范围" prop="batchRange" key="batchRange" :min-width="colWidth('batchRange', 140)" show-overflow-tooltip resizable align="center" v-if="columns.batchRange.visible">
             <template #default="scope">
               {{ scope.row.batchMin || 0 }} ~ {{ scope.row.batchMax || '∞' }}
             </template>
@@ -403,7 +403,7 @@ function handleView(row) {
 }
 
 function handleExport() {
-  proxy.download('qms/aqlplan/export', { ...queryParams.value }, `aqlplan_${new Date().getTime()}.xlsx`)
+  proxy.download('qms/aqlplan/export', proxy.withExportIds({ ...queryParams.value }, ids.value, 'planId'), `aqlplan_${new Date().getTime()}.xlsx`)
 }
 
 getList()

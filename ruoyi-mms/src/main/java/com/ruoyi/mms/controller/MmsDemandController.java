@@ -41,6 +41,7 @@ public class MmsDemandController extends BaseController
     public void export(HttpServletResponse response, MmsDemand demand)
     {
         List<MmsDemand> list = mmsDemandService.selectDemandList(demand);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, demand);
         ExcelUtil<MmsDemand> util = new ExcelUtil<>(MmsDemand.class);
         util.exportExcel(response, list, "Demand");
     }

@@ -37,6 +37,7 @@ public class MmsDowntimeController extends BaseController
     public void export(HttpServletResponse response, MmsDowntime downtime)
     {
         List<MmsDowntime> list = mmsDowntimeService.selectDowntimeList(downtime);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, downtime);
         ExcelUtil<MmsDowntime> util = new ExcelUtil<>(MmsDowntime.class);
         util.exportExcel(response, list, "停机记录数据");
     }

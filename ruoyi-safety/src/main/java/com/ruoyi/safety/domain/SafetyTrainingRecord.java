@@ -27,11 +27,11 @@ public class SafetyTrainingRecord extends BaseEntity
     @Excel(name = "课程名称")
     private String courseName;
 
-    @Excel(name = "课程类别")
+    @Excel(name = "课程类别", dictType = "safety_course_type")
     private String courseType;
 
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "培训日期", width = 120)
+    @Excel(name = "培训日期", width = 120, dateFormat = "yyyy-MM-dd")
     private Date trainingDate;
 
     @Excel(name = "培训地点")

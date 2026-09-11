@@ -37,6 +37,7 @@ public class HrPayslipController extends BaseController
     public void export(HttpServletResponse response, HrPayslip hrPayslip)
     {
         List<HrPayslip> list = hrPayslipService.selectHrPayslipList(hrPayslip);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, hrPayslip);
         ExcelUtil<HrPayslip> util = new ExcelUtil<>(HrPayslip.class);
         util.exportExcel(response, list, "工资条");
     }

@@ -54,6 +54,7 @@ public class PmsReturnController extends BaseController
     public void export(HttpServletResponse response, PmsReturn pmsReturn)
     {
         List<PmsReturn> list = pmsReturnService.selectReturnList(pmsReturn);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, pmsReturn);
         ExcelUtil<PmsReturn> util = new ExcelUtil<>(PmsReturn.class);
         util.exportExcel(response, list, "退货数据");
     }

@@ -16,15 +16,15 @@ public class SafetyCert extends BaseEntity
     @NotBlank(message = "证照编号不能为空")
     @Excel(name = "证照编号")
     private String certNo;
-    @Excel(name = "证照类型")
+    @Excel(name = "证照类型", dictType = "safety_cert_type")
     private String certType;
     @Excel(name = "发证机关")
     private String issueOrg;
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "发证日期", width = 120)
+    @Excel(name = "发证日期", width = 120, dateFormat = "yyyy-MM-dd")
     private Date issueDate;
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "有效期至", width = 120)
+    @Excel(name = "有效期至", width = 120, dateFormat = "yyyy-MM-dd")
     private Date expireDate;
     private String remindStatus;
     private Long enterpriseId;

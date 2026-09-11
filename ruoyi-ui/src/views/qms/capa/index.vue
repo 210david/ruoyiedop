@@ -110,7 +110,7 @@
 <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
 <el-table-column label="CAPA编号" prop="capaNo" key="capaNo" :width="colWidth('capaNo', 160)" resizable show-overflow-tooltip v-if="columns.capaNo.visible">                <template #header><span>CAPA编号</span><el-tooltip content="CAPA（Corrective and Preventive Action）即纠正与预防措施编号，用于标识和追溯质量问题的闭环处理过程" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></template>
               </el-table-column>
-              <el-table-column label="标题" prop="title" key="title" :width="colWidth('title', 220)" resizable show-overflow-tooltip v-if="columns.title.visible" />
+              <el-table-column label="标题" prop="title" key="title" :min-width="colWidth('title', 220)" resizable show-overflow-tooltip v-if="columns.title.visible" />
               <el-table-column label="来源" prop="sourceType" key="sourceType" :width="colWidth('sourceType', 110)" resizable align="center" v-if="columns.sourceType.visible"><template #default="scope"><span class="badge violet"><span class="dot"></span>{{ capaSourceTypeLabel(scope.row.sourceType) }}</span></template></el-table-column>
               <el-table-column label="来源编号" prop="sourceNo" key="sourceNo" :width="colWidth('sourceNo', 140)" resizable show-overflow-tooltip v-if="columns.sourceNo.visible" />
               <el-table-column label="状态" prop="capaStatus" key="capaStatus" :width="colWidth('capaStatus', 100)" resizable align="center" v-if="columns.capaStatus.visible"><template #default="scope"><span class="badge" :class="capaStatusBadgeClass(scope.row.capaStatus)"><span class="dot"></span>{{ capaStatusLabel(scope.row.capaStatus) }}</span></template></el-table-column>
@@ -632,17 +632,17 @@ function handleSelectionChange(selection) { selectedIds.value = selection.map(it
 function submitForm() {
   proxy.$refs['capaRef'].validate(valid => {
     if (valid) {
-      if (form.value.capaId) { updateCapa(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList() }) }
-      else { addCapa(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList() }) }
+      if (form.value.capaId) { updateCapa(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList(); loadStatusCounts() }) }
+      else { addCapa(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList(); loadStatusCounts() }) }
     }
   })
 }
 function handleDelete(row) {
   const ids = row?.capaId ? [row.capaId] : selectedIds.value
-  proxy.$modal.confirm('确认删除编号为"' + ids + '"的数据项？').then(() => delCapa(ids.join(','))).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {})
+  proxy.$modal.confirm('确认删除？').then(() => delCapa(ids.join(','))).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {})
 }
 function handleSubmit(row) {
-  proxy.$modal.confirm('确认提交CAPA "' + row.capaNo + '"进入进行中？').then(() => submitCapa(row.capaId)).then(() => { getList(); proxy.$modal.msgSuccess('提交成功') }).catch(() => {})
+  proxy.$modal.confirm('确认提交CAPA "' + row.capaNo + '"进入进行中？').then(() => submitCapa(row.capaId)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('提交成功') }).catch(() => {})
 }
 function handleSubmitVerify(row) {
   getCapa(row.capaId).then(res => {
@@ -652,7 +652,7 @@ function handleSubmitVerify(row) {
 }
 function submitVerify() {
   proxy.$refs['verifyRef'].validate(valid => {
-    if (valid) { submitVerifyCapa({ capaId: verifyForm.value.capaId, verifyResult: verifyForm.value.verifyResult }).then(() => { proxy.$modal.msgSuccess('已提交验证'); verifyOpen.value = false; getList() }) }
+    if (valid) { submitVerifyCapa({ capaId: verifyForm.value.capaId, verifyResult: verifyForm.value.verifyResult }).then(() => { proxy.$modal.msgSuccess('已提交验证'); verifyOpen.value = false; getList(); loadStatusCounts() }) }
   })
 }
 function handleClose(row) {
@@ -663,7 +663,7 @@ function handleClose(row) {
 }
 function submitClose() {
   proxy.$refs['closeRef'].validate(valid => {
-    if (valid) { closeCapa(closeForm.value).then(() => { proxy.$modal.msgSuccess('关闭成功'); closeOpen.value = false; getList() }) }
+    if (valid) { closeCapa(closeForm.value).then(() => { proxy.$modal.msgSuccess('关闭成功'); closeOpen.value = false; getList(); loadStatusCounts() }) }
   })
 }
 function handleReject(row) {
@@ -674,10 +674,10 @@ function handleReject(row) {
 }
 function submitReject() {
   proxy.$refs['rejectRef'].validate(valid => {
-    if (valid) { rejectCapa(rejectForm.value.capaId, rejectForm.value.rejectReason).then(() => { proxy.$modal.msgSuccess('已驳回'); rejectOpen.value = false; getList() }) }
+    if (valid) { rejectCapa(rejectForm.value.capaId, rejectForm.value.rejectReason).then(() => { proxy.$modal.msgSuccess('已驳回'); rejectOpen.value = false; getList(); loadStatusCounts() }) }
   })
 }
-function handleExport() { proxy.download('qms/capa/export', { ...proxy.addDateRange(queryParams.value, dateRange.value) }, `capa_${new Date().getTime()}.xlsx`) }
+function handleExport() { proxy.download('qms/capa/export', proxy.withExportIds({ ...proxy.addDateRange(queryParams.value, dateRange.value) }, selectedIds.value, 'capaId'), `capa_${new Date().getTime()}.xlsx`) }
 function reset() {
   form.value = { capaId: null, capaNo: undefined, sourceType: 'ncr', sourceNo: undefined, title: undefined, teamMembers: undefined, problemDesc: undefined, interimAction: undefined, rootCause: undefined, permanentAction: undefined, verifyResult: undefined, preventAction: undefined, closeRemark: undefined, capaStatus: '0', responsiblePersonId: undefined, responsiblePerson: undefined, planCloseTime: undefined, remark: undefined }
   proxy.resetForm('capaRef')

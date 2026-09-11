@@ -43,6 +43,7 @@ public class MkInvoiceController extends BaseController
     public void export(HttpServletResponse response, MkInvoice invoice)
     {
         List<MkInvoice> list = mkInvoiceService.selectInvoiceList(invoice);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, invoice);
         ExcelUtil<MkInvoice> util = new ExcelUtil<>(MkInvoice.class);
         util.exportExcel(response, list, "发票数据");
     }

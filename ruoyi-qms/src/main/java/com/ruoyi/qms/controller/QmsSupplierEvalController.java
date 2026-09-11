@@ -37,6 +37,7 @@ public class QmsSupplierEvalController extends BaseController {
     @PostMapping("/export")
     public void export(HttpServletResponse response, QmsSupplierEval eval) {
         List<QmsSupplierEval> list = service.selectEvalList(eval);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, eval);
         ExcelUtil<QmsSupplierEval> util = new ExcelUtil<>(QmsSupplierEval.class);
         util.exportExcel(response, list, "供应商质量评价");
     }

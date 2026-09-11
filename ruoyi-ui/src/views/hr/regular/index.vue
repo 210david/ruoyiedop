@@ -120,12 +120,12 @@
           <el-table-column label="转正单号" prop="regularNo" key="regularNo" align="center" :width="colWidth('regularNo', 160)" resizable v-if="columns.regularNo.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.regularNo }}</span></template>
           </el-table-column>
-          <el-table-column label="员工姓名" prop="employeeName" key="employeeName" align="center" :width="colWidth('employeeName', 110)" resizable v-if="columns.employeeName.visible" />
+          <el-table-column label="员工姓名" prop="employeeName" key="employeeName" align="center" :min-width="colWidth('employeeName', 110)" show-overflow-tooltip resizable v-if="columns.employeeName.visible" />
           <el-table-column label="工号" prop="employeeNo" key="employeeNo" align="center" :width="colWidth('employeeNo', 110)" resizable v-if="columns.employeeNo.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.employeeNo }}</span></template>
           </el-table-column>
           <el-table-column label="部门" prop="orgName" key="orgName" align="center" :width="colWidth('orgName', 140)" resizable v-if="columns.orgName.visible" />
-          <el-table-column label="岗位名称" prop="positionName" key="positionName" align="center" :width="colWidth('positionName', 140)" resizable v-if="columns.positionName.visible" />
+          <el-table-column label="岗位名称" prop="positionName" key="positionName" align="center" :min-width="colWidth('positionName', 140)" show-overflow-tooltip resizable v-if="columns.positionName.visible" />
           <el-table-column label="入职日期" prop="entryDate" key="entryDate" align="center" :width="colWidth('entryDate', 120)" resizable v-if="columns.entryDate.visible" />
           <el-table-column label="拟转正日期" prop="regularDate" key="regularDate" align="center" :width="colWidth('regularDate', 120)" resizable v-if="columns.regularDate.visible" />
           <el-table-column label="审批状态" prop="auditStatus" key="auditStatus" align="center" :width="colWidth('auditStatus', 110)" resizable v-if="columns.auditStatus.visible">
@@ -834,7 +834,7 @@ function submitAudit(action) {
   auditHrRegular(auditData.value.regularId, action, auditData.value.auditRemark).then(() => {
     proxy.$modal.msgSuccess(action === '1' ? '审批通过' : '已驳回')
     auditOpen.value = false
-    getList()
+    getList(); loadStatusCounts()
   }).finally(() => {
     auditSubmitting.value = false
   })
@@ -847,13 +847,13 @@ function submitForm() {
         updateHrRegular(form.value).then(() => {
           proxy.$modal.msgSuccess('修改成功')
           open.value = false
-          getList()
+          getList(); loadStatusCounts()
         })
       } else {
         addHrRegular(form.value).then(() => {
           proxy.$modal.msgSuccess('新增成功')
           open.value = false
-          getList()
+          getList(); loadStatusCounts()
         })
       }
     }
@@ -865,13 +865,13 @@ function handleDelete(row) {
   proxy.$modal.confirm('是否确认删除选中的转正？').then(function() {
     return delHrRegular(regularIds)
   }).then(() => {
-    getList()
+    getList(); loadStatusCounts()
     proxy.$modal.msgSuccess('删除成功')
   }).catch(() => {})
 }
 
 function handleExport() {
-  proxy.download('hr/regular/export', { ...queryParams.value }, `hrRegular_${new Date().getTime()}.xlsx`)
+  proxy.download('hr/regular/export', proxy.withExportIds({ ...queryParams.value }, ids.value, 'regularId'), `hrRegular_${new Date().getTime()}.xlsx`)
 }
 
 /** ===== 人员/部门/岗位弹框选择 ===== */

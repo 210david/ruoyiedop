@@ -146,7 +146,7 @@
           <el-table-column label="入职单号" prop="entryNo" key="entryNo" align="center" :width="colWidth('entryNo', 180)" resizable v-if="columns.entryNo.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.entryNo }}</span></template>
           </el-table-column>
-          <el-table-column label="姓名" prop="employeeName" key="employeeName" align="center" :width="colWidth('employeeName', 100)" resizable v-if="columns.employeeName.visible" />
+          <el-table-column label="姓名" prop="employeeName" key="employeeName" align="center" :min-width="colWidth('employeeName', 100)" show-overflow-tooltip resizable v-if="columns.employeeName.visible" />
           <el-table-column label="身份证号" prop="idCard" key="idCard" align="center" :width="colWidth('idCard', 180)" resizable show-overflow-tooltip v-if="columns.idCard.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.idCard }}</span></template>
           </el-table-column>
@@ -160,7 +160,7 @@
           </el-table-column>
           <el-table-column label="联系电话" prop="phone" key="phone" align="center" :width="colWidth('phone', 120)" resizable v-if="columns.phone.visible" />
           <el-table-column label="部门" prop="orgName" key="orgName" align="center" :width="colWidth('orgName', 160)" resizable show-overflow-tooltip v-if="columns.orgName.visible" />
-          <el-table-column label="岗位名称" prop="positionName" key="positionName" align="center" :width="colWidth('positionName', 140)" resizable show-overflow-tooltip v-if="columns.positionName.visible" />
+          <el-table-column label="岗位名称" prop="positionName" key="positionName" align="center" :min-width="colWidth('positionName', 140)" resizable show-overflow-tooltip v-if="columns.positionName.visible" />
           <el-table-column label="入职日期" prop="entryDate" key="entryDate" align="center" :width="colWidth('entryDate', 120)" resizable v-if="columns.entryDate.visible" />
           <el-table-column label="合同类型" prop="contractType" key="contractType" align="center" :width="colWidth('contractType', 120)" resizable v-if="columns.contractType.visible">
             <template #default="scope">
@@ -993,7 +993,7 @@ function submitAudit(action) {
   auditHrEntry(auditData.value.entryId, action, auditData.value.auditRemark).then(() => {
     proxy.$modal.msgSuccess(action === '1' ? '审批通过' : '已驳回')
     auditOpen.value = false
-    getList()
+    getList(); loadStatusCounts()
   }).finally(() => {
     auditSubmitting.value = false
   })
@@ -1006,13 +1006,13 @@ function submitForm() {
         updateHrEntry(form.value).then(() => {
           proxy.$modal.msgSuccess('修改成功')
           open.value = false
-          getList()
+          getList(); loadStatusCounts()
         })
       } else {
         addHrEntry(form.value).then(() => {
           proxy.$modal.msgSuccess('新增成功')
           open.value = false
-          getList()
+          getList(); loadStatusCounts()
         })
       }
     }
@@ -1024,13 +1024,13 @@ function handleDelete(row) {
   proxy.$modal.confirm('是否确认删除选中的入职？').then(function() {
     return delHrEntry(entryIds)
   }).then(() => {
-    getList()
+    getList(); loadStatusCounts()
     proxy.$modal.msgSuccess('删除成功')
   }).catch(() => {})
 }
 
 function handleExport() {
-  proxy.download('hr/entry/export', { ...queryParams.value }, `hrEntry_${new Date().getTime()}.xlsx`)
+  proxy.download('hr/entry/export', proxy.withExportIds({ ...queryParams.value }, ids.value, 'entryId'), `hrEntry_${new Date().getTime()}.xlsx`)
 }
 
 function cancel() {

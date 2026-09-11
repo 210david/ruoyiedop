@@ -20,7 +20,7 @@ public class HrWorkdayCalendar extends BaseEntity
     /** 日期 */
     @NotNull(message = "日期不能为空")
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "日期")
+    @Excel(name = "日期", dateFormat = "yyyy-MM-dd")
     private Date calendarDate;
 
     /** 年份 */
@@ -51,7 +51,7 @@ public class HrWorkdayCalendar extends BaseEntity
     private String holidayName;
 
     /** 状态(0=启用 1=停用) */
-    @Excel(name = "状态")
+    @Excel(name = "状态", dictType = "sys_normal_disable")
     private String status;
 
     /** 删除标志 */

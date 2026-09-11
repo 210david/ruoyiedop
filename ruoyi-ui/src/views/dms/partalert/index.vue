@@ -101,11 +101,11 @@
           <el-table-column label="备件编号" prop="partCode" key="partCode" :width="colWidth('partCode', 130)" resizable v-if="columns.partCode.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.partCode }}</span></template>
           </el-table-column>
-          <el-table-column label="备件名称" prop="partName" key="partName" :width="colWidth('partName', 150)" resizable show-overflow-tooltip v-if="columns.partName.visible" />
+          <el-table-column label="备件名称" prop="partName" key="partName" :min-width="colWidth('partName', 150)" resizable show-overflow-tooltip v-if="columns.partName.visible" />
           <el-table-column label="备件类别" prop="partType" key="partType" :width="colWidth('partType', 100)" resizable align="center" v-if="columns.partType.visible">
             <template #default="scope"><span class="badge violet">{{ partTypeLabel(scope.row.partType) }}</span></template>
           </el-table-column>
-          <el-table-column label="规格型号" prop="specModel" key="specModel" :width="colWidth('specModel', 140)" resizable show-overflow-tooltip v-if="columns.specModel.visible" />
+          <el-table-column label="规格型号" prop="specModel" key="specModel" :min-width="colWidth('specModel', 140)" resizable show-overflow-tooltip v-if="columns.specModel.visible" />
           <el-table-column label="单位" prop="unit" key="unit" :width="colWidth('unit', 70)" resizable align="center" v-if="columns.unit.visible">
             <template #default="scope"><span class="badge amber">{{ unitLabel(scope.row.unit) }}</span></template>
           </el-table-column>
@@ -124,7 +124,7 @@
             </template>
           </el-table-column>
           <el-table-column label="存放位置" prop="storageLocation" key="storageLocation" :width="colWidth('storageLocation', 120)" resizable show-overflow-tooltip v-if="columns.storageLocation.visible" />
-          <el-table-column label="供应商" prop="supplier" key="supplier" :width="colWidth('supplier', 120)" resizable show-overflow-tooltip v-if="columns.supplier.visible" />
+          <el-table-column label="供应商" prop="supplier" key="supplier" :min-width="colWidth('supplier', 120)" resizable show-overflow-tooltip v-if="columns.supplier.visible" />
         </el-table>
       </div>
       <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
@@ -134,7 +134,7 @@
 
 <script setup name="DmsPartAlert">
 import { listPartAlert, delPartAlert } from '@/api/dms/partalert'
-import { fetchAllPages, downloadCsv } from '@/utils/csvExport'
+import { fetchAllPages, downloadXlsx } from '@/utils/csvExport'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { Search, Filter, RefreshLeft, Delete, Download } from '@element-plus/icons-vue'
 
@@ -278,12 +278,13 @@ function getStockClass(row) {
 
 /** 导出预警数据（与列表口径一致：含筛选条件、卡片过滤、排除正常状态，导出全部页数据） */
 async function handleExport() {
-  const all = await fetchAllPages(listPartAlert, queryParams.value)
+  let all = await fetchAllPages(listPartAlert, queryParams.value)
+  if (ids.value && ids.value.length) { all = all.filter(i => ids.value.includes(i.partId)) }
   let rows = all.filter(i => getAlertKey(i) !== 'normal')
   if (activeStatus.value !== 'all') rows = rows.filter(i => getAlertKey(i) === activeStatus.value)
   if (!rows.length) { proxy.$modal.msgWarning('当前筛选下无数据可导出'); return }
   const headers = ['备件编号', '备件名称', '备件类别', '规格型号', '单位', '当前库存', '库存下限', '库存上限', '预警状态', '存放位置', '供应商']
-  downloadCsv(`partalert_${new Date().getTime()}`, headers, rows.map(i => [
+  downloadXlsx(`partalert_${new Date().getTime()}`, headers, rows.map(i => [
     i.partCode, i.partName, partTypeLabel(i.partType), i.specModel, unitLabel(i.unit),
     i.currentStock != null ? i.currentStock : 0, i.stockMin != null ? i.stockMin : '', i.stockMax != null ? i.stockMax : '',
     getAlertText(i), i.storageLocation || '', i.supplier || ''

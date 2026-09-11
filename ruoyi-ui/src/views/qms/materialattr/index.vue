@@ -85,7 +85,7 @@
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" class="app-table">
 <el-table-column type="selection" width="55" align="center" />
 <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
-<el-table-column label="物料编码" prop="materialCode" key="materialCode" :width="colWidth('materialCode', 140)" resizable show-overflow-tooltip v-if="columns.materialCode.visible" />          <el-table-column label="物料名称" prop="materialName" key="materialName" :width="colWidth('materialName', 200)" resizable show-overflow-tooltip v-if="columns.materialName.visible" />
+<el-table-column label="物料编码" prop="materialCode" key="materialCode" :width="colWidth('materialCode', 140)" resizable show-overflow-tooltip v-if="columns.materialCode.visible" />          <el-table-column label="物料名称" prop="materialName" key="materialName" :min-width="colWidth('materialName', 200)" resizable show-overflow-tooltip v-if="columns.materialName.visible" />
           <el-table-column label="检验类型" prop="inspectTypes" key="inspectTypes" :width="colWidth('inspectTypes', 200)" resizable align="center" v-if="columns.inspectTypes.visible">
             <template #header><span>检验类型</span><el-tooltip content="检验类型包括IQC（来料检验）、IPQC（过程检验）、FQC（成品检验）、OQC（出货检验）等" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></template>
             <template #default="scope">
@@ -276,8 +276,8 @@ function handleAdd() { reset(); open.value = true; title.value = '添加物料�
 function handleUpdate(row) { reset(); getMaterialAttr(row.attrId || ids.value[0]).then(res => { form.value = res.data; inspectTypeArr.value = parseInspectTypes(res.data.inspectTypes); open.value = true; title.value = '修改物料质量属性' }) }
 function handleView(row) { getMaterialAttr(row.attrId).then(res => { viewData.value = res.data; viewOpen.value = true }) }
 function submitForm() { form.value.inspectTypes = inspectTypeArr.value.join(','); proxy.$refs['mattrRef'].validate(valid => { if (valid) { if (form.value.attrId != undefined) { updateMaterialAttr(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList() }) } else { addMaterialAttr(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList() }) } } }) }
-function handleDelete(row) { const attrIds = row.attrId || ids.value; proxy.$modal.confirm('确认删除编号为"' + attrIds + '"的数据？').then(() => delMaterialAttr(attrIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
-function handleExport() { proxy.download('qms/materialattr/export', { ...proxy.addDateRange(queryParams.value, dateRange.value) }, `materialattr_${new Date().getTime()}.xlsx`) }
+function handleDelete(row) { const attrIds = row.attrId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delMaterialAttr(attrIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleExport() { proxy.download('qms/materialattr/export', proxy.withExportIds({ ...proxy.addDateRange(queryParams.value, dateRange.value) }, ids.value, 'attrId'), `materialattr_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 
 getList()

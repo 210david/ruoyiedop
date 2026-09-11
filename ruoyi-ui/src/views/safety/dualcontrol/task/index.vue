@@ -101,7 +101,7 @@
         <el-table ref="tableRef" v-loading="loading" :data="taskList" border @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column label="任务编号" prop="taskCode" key="taskCode" :width="colWidth('taskCode', 130)" resizable v-if="columns.taskCode.visible" />
-          <el-table-column label="任务名称" prop="taskName" key="taskName" :width="colWidth('taskName', 200)" resizable show-overflow-tooltip v-if="columns.taskName.visible" />
+          <el-table-column label="任务名称" prop="taskName" key="taskName" :min-width="colWidth('taskName', 200)" resizable show-overflow-tooltip v-if="columns.taskName.visible" />
           <el-table-column label="任务类型" prop="taskType" key="taskType" :width="colWidth('taskType', 110)" resizable align="center" v-if="columns.taskType.visible">
             <template #default="scope"><span class="badge violet">{{ taskTypeLabel(scope.row.taskType) }}</span></template>
           </el-table-column>
@@ -719,13 +719,13 @@ function handleUpdate(row) { reset(); getTask(row.taskId || ids.value[0]).then(r
 function submitForm() {
   proxy.$refs['taskRef'].validate(valid => {
     if (valid) {
-      if (form.value.taskId != undefined) { updateTask(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList() }) }
-      else { addTask(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList() }) }
+      if (form.value.taskId != undefined) { updateTask(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList(); loadStatusCounts() }) }
+      else { addTask(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList(); loadStatusCounts() }) }
     }
   })
 }
-function handleDelete(row) { const taskIds = row.taskId || ids.value; proxy.$modal.confirm('是否确认删除排查任务？').then(function() { return delTask(taskIds) }).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
-function handleExport() { proxy.download('safety/task/export', { ...queryParams.value }, `task_${new Date().getTime()}.xlsx`) }
+function handleDelete(row) { const taskIds = row.taskId || ids.value; proxy.$modal.confirm('是否确认删除排查任务？').then(function() { return delTask(taskIds) }).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleExport() { proxy.download('safety/task/export', proxy.withExportIds({ ...queryParams.value }, ids.value, 'taskId'), `task_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 function reset() {
   form.value = { taskId: undefined, taskCode: undefined, taskName: undefined, taskType: undefined, planDate: undefined, executorId: undefined, executorName: undefined, remark: undefined }
@@ -851,7 +851,7 @@ function submitFeedbackForm() {
       submitFeedback(data).then(() => {
         proxy.$modal.msgSuccess('执行反馈提交成功')
         feedbackOpen.value = false
-        getList()
+        getList(); loadStatusCounts()
       })
     }
   })
@@ -862,7 +862,7 @@ function handleCancel(row) {
   proxy.$modal.confirm('是否确认作废该排查任务？').then(function() {
     return cancelTask(row.taskId)
   }).then(() => {
-    getList()
+    getList(); loadStatusCounts()
     proxy.$modal.msgSuccess('作废成功')
   }).catch(() => {})
 }

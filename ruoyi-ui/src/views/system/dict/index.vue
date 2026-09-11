@@ -67,7 +67,7 @@
 <el-table-column type="selection" width="55" align="center" />
 <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
 <el-table-column label="字典编号" align="center" prop="dictId" :width="colWidth('dictId', 120)" resizable v-if="columns.dictId.visible" />
-           <el-table-column label="字典名称" align="center" prop="dictName" :show-overflow-tooltip="true" :width="colWidth('dictName', 120)" resizable v-if="columns.dictName.visible" />
+           <el-table-column label="字典名称" align="center" prop="dictName" :show-overflow-tooltip="true" :min-width="colWidth('dictName', 120)" resizable v-if="columns.dictName.visible" />
            <el-table-column label="字典类型" align="center" prop="dictType" :show-overflow-tooltip="true" :width="colWidth('dictType', 140)" resizable v-if="columns.dictType.visible">
              <template #default="scope">
                <a class="link-type" style="cursor:pointer" @click="handleViewData(scope.row)">{{ scope.row.dictType }}</a>
@@ -78,7 +78,7 @@
                <dict-tag :options="sys_normal_disable" :value="scope.row.status" />
              </template>
            </el-table-column>
-           <el-table-column label="备注" align="center" prop="remark" :show-overflow-tooltip="true" :width="colWidth('remark', 200)" resizable v-if="columns.remark.visible" />
+           <el-table-column label="备注" align="center" prop="remark" :show-overflow-tooltip="true" :min-width="colWidth('remark', 200)" resizable v-if="columns.remark.visible" />
            <el-table-column label="创建时间" align="center" prop="createTime" :width="colWidth('createTime', 180)" resizable v-if="columns.createTime.visible">
              <template #default="scope">
                <span>{{ parseTime(scope.row.createTime) }}</span>
@@ -345,7 +345,7 @@ function submitForm() {
 /** 删除按钮操作 */
 function handleDelete(row) {
   const dictIds = row.dictId || ids.value
-  proxy.$modal.confirm('是否确认删除字典编号为"' + dictIds + '"的数据项？').then(function() {
+  proxy.$modal.confirm('是否确认删除选中的字典类型？').then(function() {
     return delType(dictIds)
   }).then(() => {
     getList()
@@ -355,9 +355,9 @@ function handleDelete(row) {
 
 /** 导出按钮操作 */
 function handleExport() {
-  proxy.download("system/dict/type/export", {
+  proxy.download("system/dict/type/export", proxy.withExportIds({
     ...proxy.addDateRange(queryParams.value, dateRange.value)
-  }, `dict_${new Date().getTime()}.xlsx`)
+  }, ids.value, 'dictId'), `dict_${new Date().getTime()}.xlsx`)
 }
 
 /** 刷新缓存按钮操作 */

@@ -104,7 +104,7 @@
           <el-table-column label="工号" prop="employeeNo" key="employeeNo" align="center" :width="colWidth('employeeNo', 120)" resizable v-if="columns.employeeNo.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.employeeNo }}</span></template>
           </el-table-column>
-          <el-table-column label="员工姓名" prop="employeeName" key="employeeName" align="center" :width="colWidth('employeeName', 100)" resizable v-if="columns.employeeName.visible" />
+          <el-table-column label="员工姓名" prop="employeeName" key="employeeName" align="center" :min-width="colWidth('employeeName', 100)" show-overflow-tooltip resizable v-if="columns.employeeName.visible" />
           <el-table-column label="类型" prop="planType" key="planType" align="center" :width="colWidth('planType', 110)" resizable v-if="columns.planType.visible">
             <template #default="scope">
               <span class="badge violet" v-if="scope.row.planType">{{ scope.row.planType }}</span>
@@ -529,7 +529,7 @@ function handleDelete(row) {
 }
 
 function handleExport() {
-  proxy.download('hr/salaryPlan/export', { ...queryParams.value }, `hrSalaryPlan_${new Date().getTime()}.xlsx`)
+  proxy.download('hr/salaryPlan/export', proxy.withExportIds({ ...queryParams.value }, ids.value, 'planId'), `hrSalaryPlan_${new Date().getTime()}.xlsx`)
 }
 
 function cancel() {

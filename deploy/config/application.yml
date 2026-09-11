@@ -13,6 +13,8 @@ ruoyi:
   profile: D:/EDOP/uploadPath
   addressEnabled: false
   captchaType: math
+  # 文件加密密钥（AES-128，需至少16位字符，生产环境请务必修改）
+  fileEncryptionKey: EDOP2026SecureK3y!
 
 # 开发环境配置
 server:

@@ -39,6 +39,7 @@ public class HrAttendanceRecordController extends BaseController
     public void export(HttpServletResponse response, HrAttendanceRecord hrAttendanceRecord)
     {
         List<HrAttendanceRecord> list = hrAttendanceRecordService.selectHrAttendanceRecordList(hrAttendanceRecord);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, hrAttendanceRecord);
         ExcelUtil<HrAttendanceRecord> util = new ExcelUtil<>(HrAttendanceRecord.class);
         util.exportExcel(response, list, "考勤记录");
     }

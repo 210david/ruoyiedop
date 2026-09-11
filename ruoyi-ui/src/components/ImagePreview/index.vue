@@ -16,6 +16,7 @@
 
 <script setup>
 import { isExternal } from "@/utils/validate"
+import { getToken } from "@/utils/auth"
 
 const props = defineProps({
   src: {
@@ -32,6 +33,17 @@ const props = defineProps({
   }
 })
 
+/**
+ * 将 /profile/... 资源路径转换为安全访问 URL
+ * 由于 <img> 标签无法携带自定义 Authorization Header，
+ * 需通过 /common/file/access?resource=xxx&token=xxx 形式访问
+ */
+function buildSecureUrl(url) {
+  if (!url) return ''
+  const baseUrl = import.meta.env.VITE_APP_BASE_API
+  return baseUrl + '/common/file/access?resource=' + encodeURIComponent(url) + '&token=' + getToken()
+}
+
 const realSrc = computed(() => {
   if (!props.src) {
     return
@@ -40,7 +52,7 @@ const realSrc = computed(() => {
   if (isExternal(real_src)) {
     return real_src
   }
-  return import.meta.env.VITE_APP_BASE_API + real_src
+  return buildSecureUrl(real_src)
 })
 
 const realSrcList = computed(() => {
@@ -53,7 +65,7 @@ const realSrcList = computed(() => {
     if (isExternal(item)) {
       return srcList.push(item)
     }
-    return srcList.push(import.meta.env.VITE_APP_BASE_API + item)
+    return srcList.push(buildSecureUrl(item))
   })
   return srcList
 })

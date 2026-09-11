@@ -112,7 +112,7 @@
           <el-table-column label="入库类型" prop="orderType" key="orderType" :width="colWidth('orderType', 100)" resizable align="center" v-if="columns.orderType.visible">
             <template #default="scope"><span class="badge violet">{{ orderTypeLabel(scope.row.orderType) }}</span></template>
           </el-table-column>
-          <el-table-column label="供应商" prop="supplierName" key="supplierName" :width="colWidth('supplierName', 240)" resizable :show-overflow-tooltip="true" v-if="columns.supplierName.visible" />
+          <el-table-column label="供应商" prop="supplierName" key="supplierName" :min-width="colWidth('supplierName', 240)" resizable :show-overflow-tooltip="true" v-if="columns.supplierName.visible" />
           <el-table-column label="目标仓库" prop="warehouseName" key="warehouseName" :width="colWidth('warehouseName', 120)" resizable v-if="columns.warehouseName.visible" />
           <el-table-column label="状态" prop="status" key="status" :width="colWidth('status', 120)" resizable align="center" v-if="columns.status.visible">
             <template #default="scope"><span class="badge" :class="badgeClass(scope.row.status)"><span class="dot"></span>{{ statusLabel(scope.row.status) }}</span></template>
@@ -401,7 +401,7 @@
 <script setup name="WmsInbound">
 import { listInbound, getInbound, addInbound, updateInbound, delInbound, submitInbound } from '@/api/wms/inbound'
 import { listWarehouse } from '@/api/wms/warehouse'
-import { fetchAllPages, downloadCsv } from '@/utils/csvExport'
+import { fetchAllPages, downloadXlsx } from '@/utils/csvExport'
 import SupplierPicker from '@/components/SupplierPicker/index.vue'
 import MaterialPicker from '@/components/MaterialPicker/index.vue'
 import WarehousePicker from '@/components/WarehousePicker/index.vue'
@@ -445,9 +445,9 @@ function submitForm() {
   proxy.$refs['inboundRef'].validate(v => {
     if (v) {
       if (form.value.orderId != null) {
-        updateInbound(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList() })
+        updateInbound(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList(); loadStatusCounts() })
       } else {
-        addInbound(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList() })
+        addInbound(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList(); loadStatusCounts() })
       }
     }
   })
@@ -463,15 +463,16 @@ function validateDetailList() {
   }
   return true
 }
-function handleDelete(row) { const orderIds = row.orderId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delInbound(orderIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
-function handleSubmit(row) { proxy.$modal.confirm('确认提交入库单「' + row.orderNo + '」？提交后将无法修改。').then(() => submitInbound(row.orderId)).then(() => { getList(); proxy.$modal.msgSuccess('提交成功') }).catch(() => {}) }
+function handleDelete(row) { const orderIds = row.orderId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delInbound(orderIds)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleSubmit(row) { proxy.$modal.confirm('确认提交入库单「' + row.orderNo + '」？提交后将无法修改。').then(() => submitInbound(row.orderId)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('提交成功') }).catch(() => {}) }
 /** 导出入库单（与列表口径一致：含筛选条件、日期范围，导出全部页数据） */
 async function handleExport() {
   const params = proxy.addDateRange(proxy.addDateRange(queryParams.value, dateRange.value, 'InboundDate'), dateRangeCreateTime.value, 'CreateTime')
-  const rows = await fetchAllPages(listInbound, params)
+  let rows = await fetchAllPages(listInbound, params)
+  if (ids.value && ids.value.length) { rows = rows.filter(i => ids.value.includes(i.orderId)) }
   if (!rows.length) { proxy.$modal.msgWarning('当前筛选下无数据可导出'); return }
   const headers = ['入库单号', '入库类型', '供应商', '目标仓库', '状态', '总数量', '入库日期']
-  downloadCsv(`inbound_${new Date().getTime()}`, headers, rows.map(i => [
+  downloadXlsx(`inbound_${new Date().getTime()}`, headers, rows.map(i => [
     i.orderNo || '', orderTypeLabel(i.orderType), i.supplierName || '', i.warehouseName || '',
     statusLabel(i.status), i.totalQty != null ? i.totalQty : '', i.inboundDate || ''
   ]))

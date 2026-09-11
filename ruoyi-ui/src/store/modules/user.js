@@ -5,7 +5,16 @@ import { login, logout, getInfo } from '@/api/login'
 import { getToken, setToken, removeToken } from '@/utils/auth'
 import { isHttp, isEmpty } from "@/utils/validate"
 import useLockStore from '@/store/modules/lock'
+import { removeWatermark } from '@/utils/watermark'
 import defAva from '@/assets/images/profile.jpg'
+
+/**
+ * 将 /profile/... 资源路径转换为安全访问 URL
+ * <img> 标签无法携带自定义 Authorization Header，通过 token 参数传递
+ */
+function buildSecureUrl(url) {
+  return import.meta.env.VITE_APP_BASE_API + '/common/file/access?resource=' + encodeURIComponent(url) + '&token=' + getToken()
+}
 
 const useUserStore = defineStore(
   'user',
@@ -44,7 +53,7 @@ const useUserStore = defineStore(
             const user = res.user
             let avatar = user.avatar || ""
             if (!isHttp(avatar)) {
-              avatar = (isEmpty(avatar)) ? defAva : import.meta.env.VITE_APP_BASE_API + avatar
+              avatar = (isEmpty(avatar)) ? defAva : buildSecureUrl(avatar)
             }
             if (res.roles && res.roles.length > 0) { // 验证返回的roles是否是一个非空数组
               this.roles = res.roles
@@ -83,6 +92,7 @@ const useUserStore = defineStore(
             this.roles = []
             this.permissions = []
             removeToken()
+            removeWatermark()
             resolve()
           }).catch(error => {
             reject(error)

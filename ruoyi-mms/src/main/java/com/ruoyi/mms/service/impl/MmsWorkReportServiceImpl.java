@@ -125,10 +125,10 @@ public class MmsWorkReportServiceImpl implements IMmsWorkReportService
                     "2",   // 重要
                     "mms",
                     workReport.getReportId(),
-                    "/mms/execution/report?id=" + workReport.getReportId(),
+                    "/mms/workorder-group/dispatch?id=" + workReport.getReportId(),
                     "mms:report:audit",
                     "0",   // bizStatus: 待审核
-                    "报工管理"  // bizEntryName
+                    "派工管理"  // bizEntryName
                 );
             }
         }

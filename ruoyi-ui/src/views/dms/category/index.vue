@@ -19,7 +19,47 @@
     </div>
 
     <!-- ===== Table Section ===== -->
-    <div class="surface">
+    <div class="table-layout">
+      <!-- 左侧分类结构树 -->
+      <div class="surface tree-panel" v-show="showTreePanel">
+        <div class="tree-head">
+          <div class="tree-title"><span class="glyph"></span> 分类结构</div>
+          <div class="tree-head-actions">
+            <el-tooltip content="展开/折叠" placement="top"><el-icon class="tree-act" @click="toggleTreeExpand"><Sort /></el-icon></el-tooltip>
+            <el-tooltip content="收起栏目" placement="top"><el-icon class="tree-act" @click="showTreePanel = false"><Fold /></el-icon></el-tooltip>
+          </div>
+        </div>
+        <div class="tree-search">
+          <el-input v-model="treeFilterName" placeholder="搜索名称/编码" clearable>
+            <template #prefix><el-icon><Search /></el-icon></template>
+          </el-input>
+        </div>
+        <div class="tree-body">
+          <el-tree
+            ref="treeRef"
+            :data="treeData"
+            node-key="categoryId"
+            :props="{ label: 'categoryName', children: 'children' }"
+            default-expand-all
+            :expand-on-click-node="false"
+            :filter-node-method="filterTreeNode"
+            highlight-current
+            @node-click="handleTreeNodeClick">
+            <template #default="{ data }">
+              <span class="tree-node">
+                <span class="tree-icon lv1" v-if="data.categoryLevel === 1"><el-icon><Folder /></el-icon></span>
+                <span class="tree-icon lv2" v-else><el-icon><Collection /></el-icon></span>
+                <span class="tree-node-name">{{ data.categoryName }}</span>
+              </span>
+            </template>
+          </el-tree>
+        </div>
+      </div>
+      <button v-if="!showTreePanel" type="button" class="tree-toggle btn-soft is-outline" @click="showTreePanel = true">
+        <el-icon><Expand /></el-icon> 分类结构
+      </button>
+      <div class="table-main">
+      <div class="surface">
       <div class="toolbar">
         <div class="left">
           <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['dms:category:add']">新增</el-button>
@@ -34,7 +74,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" border v-if="refreshTable" v-loading="loading" :data="categoryList" row-key="categoryId" :default-expand-all="isExpandAll" :tree-props="{ children: 'children', hasChildren: 'hasChildren' }" @header-dragend="onHeaderDragEnd" class="app-table">
           <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
-<el-table-column label="分类名称" prop="categoryName" key="categoryName" :width="colWidth('categoryName', 260)" resizable v-if="columns.categoryName.visible" />
+<el-table-column label="分类名称" prop="categoryName" key="categoryName" :min-width="colWidth('categoryName', 260)" show-overflow-tooltip resizable v-if="columns.categoryName.visible" />
           <el-table-column label="分类编码" prop="categoryCode" key="categoryCode" :width="colWidth('categoryCode', 160)" resizable align="center" v-if="columns.categoryCode.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.categoryCode }}</span></template>
           </el-table-column>
@@ -58,6 +98,8 @@
         </el-table>
       </div>
     </div>
+      </div>
+      </div>
 
         <el-dialog v-model="open" width="720px" append-to-body draggable class="rd-dialog">
       <template #header>
@@ -122,7 +164,7 @@
 import { listCategory, getCategory, addCategory, updateCategory, delCategory } from '@/api/dms/category'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
-import { Search, RefreshLeft, Sort } from '@element-plus/icons-vue'
+import { Search, RefreshLeft, Sort, Fold, Expand, Folder, Collection } from '@element-plus/icons-vue'
 const { collapsedCards, toggleCard } = useDetailCard(["basic","other"])
 
 const { proxy } = getCurrentInstance()
@@ -130,6 +172,10 @@ const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResiz
 
 const categoryList = ref([])
 const categoryOptions = ref([])
+const treeData = ref([])
+const treeRef = ref(null)
+const treeFilterName = ref('')
+const showTreePanel = ref(true)
 const open = ref(false)
 const loading = ref(true)
 const showSearch = ref(true)
@@ -180,6 +226,43 @@ function getList() {
     applySavedWidths()
   })
 }
+/** 加载完整分类结构树（不受表格筛选影响） */
+function loadTreeData() {
+  listCategory().then(res => {
+    treeData.value = proxy.handleTree(res.data, 'categoryId', 'parentId')
+  })
+}
+
+// ===== 左侧分类结构树 =====
+watch(treeFilterName, val => {
+  treeRef.value?.filter(val)
+})
+function filterTreeNode(value, data) {
+  if (!value) return true
+  const v = value.toLowerCase()
+  return (data.categoryName || '').toLowerCase().includes(v) || (data.categoryCode || '').toLowerCase().includes(v)
+}
+function toggleTreeExpand() {
+  const nodes = treeRef.value?.store?.nodesMap || {}
+  const first = Object.values(nodes)[0]
+  const expand = first ? !first.expanded : false
+  Object.values(nodes).forEach(n => { n.expanded = expand })
+}
+function handleTreeNodeClick(data) {
+  // 点击树节点：按该节点及其子孙过滤右侧表格
+  listCategory().then(res => {
+    const flat = res.data || []
+    const childrenMap = {}
+    flat.forEach(n => { (childrenMap[n.parentId] = childrenMap[n.parentId] || []).push(n) })
+    const keep = new Set([data.categoryId])
+    const queue = [data.categoryId]
+    while (queue.length) {
+      const cur = queue.shift()
+      ;(childrenMap[cur] || []).forEach(c => { keep.add(c.categoryId); queue.push(c.categoryId) })
+    }
+    categoryList.value = proxy.handleTree(flat.filter(n => keep.has(n.categoryId)), 'categoryId', 'parentId')
+  })
+}
 function handleQuery() { getList() }
 function resetQuery() { queryParams.value.categoryName = undefined; proxy.resetForm('queryRef'); handleQuery() }
 function toggleExpandAll() {
@@ -205,14 +288,15 @@ function handleUpdate(row) {
 function submitForm() {
   proxy.$refs['categoryRef'].validate(valid => {
     if (valid) {
-      if (form.value.categoryId != undefined) { updateCategory(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList() }) }
-      else { addCategory(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList() }) }
+      if (form.value.categoryId != undefined) { updateCategory(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList(); loadTreeData() }) }
+      else { addCategory(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList(); loadTreeData() }) }
     }
   })
 }
-function handleDelete(row) { proxy.$modal.confirm('确认删除"' + row.categoryName + '"？').then(() => delCategory(row.categoryId)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleDelete(row) { proxy.$modal.confirm('确认删除"' + row.categoryName + '"？').then(() => delCategory(row.categoryId)).then(() => { getList(); loadTreeData(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
 function cancel() { open.value = false; reset() }
 getList()
+loadTreeData()
 </script>
 
 <style scoped>
@@ -275,6 +359,26 @@ getList()
 .dms-category-page .action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
 .dms-category-page :deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
 .dms-category-page :deep(.col-action .el-button + .el-button) { margin-left: 2px; }
+
+.dms-category-page .tree-toggle { margin-bottom:8px; height:36px; }
+.dms-category-page .table-main { flex:1; min-width:0; }
+.dms-category-page .table-layout { display:flex; gap:8px; align-items:flex-start; }
+.dms-category-page .tree-panel { flex:0 0 260px; margin-bottom:0; position:sticky; top:10px; }
+.dms-category-page .tree-head { display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border-bottom:1px solid var(--ink-200); background:var(--ink-50); }
+.dms-category-page .tree-title { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--ink-900); }
+.dms-category-page .tree-title .glyph { width:4px; height:14px; border-radius:2px; background:var(--brand-600); }
+.dms-category-page .tree-head-actions { display:flex; gap:10px; }
+.dms-category-page .tree-act { color:var(--ink-500); cursor:pointer; font-size:16px; transition:color .15s; }
+.dms-category-page .tree-act:hover { color:var(--brand-600); }
+.dms-category-page .tree-search { padding:10px 12px 6px; }
+.dms-category-page .tree-body { padding:4px 8px 10px; max-height:calc(100vh - 280px); overflow-y:auto; }
+.dms-category-page .tree-body :deep(.el-tree) { background:transparent; }
+.dms-category-page .tree-body :deep(.el-tree-node__content) { height:32px; border-radius:6px; }
+.dms-category-page .tree-node { display:inline-flex; align-items:center; gap:7px; overflow:hidden; }
+.dms-category-page .tree-icon { display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:6px; flex-shrink:0; font-size:14px; }
+.dms-category-page .tree-icon.lv1 { background:var(--brand-50); color:var(--brand-600); border:1px solid var(--brand-200); }
+.dms-category-page .tree-icon.lv2 { background:var(--blue-50); color:var(--blue-700); border:1px solid #bfdbfe; }
+.dms-category-page .tree-node-name { font-size:14px; color:var(--ink-700); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
 @media (max-width:720px) { .dms-category-page .filter-card .filter-row { flex-direction:column; align-items:stretch; } .dms-category-page .filter-card .filter-row-fields { flex-direction:column; align-items:stretch; } .dms-category-page .field-inline { flex-direction:column; align-items:stretch; } .dms-category-page .field-inline :deep(.el-input) { width:100% !important; } }
 </style>

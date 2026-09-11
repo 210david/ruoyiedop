@@ -117,8 +117,8 @@
           </el-table-column>
           <el-table-column label="来源单号" prop="sourceNo" key="sourceNo" :width="colWidth('sourceNo', 150)" resizable show-overflow-tooltip v-if="columns.sourceNo.visible" />
           <el-table-column label="物料编码" prop="materialCode" key="materialCode" :width="colWidth('materialCode', 140)" resizable show-overflow-tooltip v-if="columns.materialCode.visible" />
-          <el-table-column label="物料名称" prop="materialName" key="materialName" :width="colWidth('materialName', 180)" resizable show-overflow-tooltip v-if="columns.materialName.visible" />
-          <el-table-column label="供应商" prop="supplierName" key="supplierName" :width="colWidth('supplierName', 140)" resizable show-overflow-tooltip v-if="columns.supplierName.visible" />
+          <el-table-column label="物料名称" prop="materialName" key="materialName" :min-width="colWidth('materialName', 180)" resizable show-overflow-tooltip v-if="columns.materialName.visible" />
+          <el-table-column label="供应商" prop="supplierName" key="supplierName" :min-width="colWidth('supplierName', 140)" resizable show-overflow-tooltip v-if="columns.supplierName.visible" />
           <el-table-column label="批次号" prop="batchNo" key="batchNo" :width="colWidth('batchNo', 120)" resizable show-overflow-tooltip v-if="columns.batchNo.visible" />
           <el-table-column label="送检数量" prop="inspectQty" key="inspectQty" :width="colWidth('inspectQty', 100)" resizable align="center" v-if="columns.inspectQty.visible" />
           <el-table-column label="AQL等级" prop="aqlLevel" key="aqlLevel" :width="colWidth('aqlLevel', 90)" resizable align="center" v-if="columns.aqlLevel.visible">
@@ -905,22 +905,22 @@ function handleInspect(row) {
     inspectOpen.value = true
   })
 }
-function handleRecheck(row) { proxy.$modal.confirm('确认对任务"' + row.taskNo + '"发起复检？').then(() => createRecheckTask(row.taskId)).then(() => { proxy.$modal.msgSuccess('复检任务已创建'); getList() }).catch(() => {}) }
+function handleRecheck(row) { proxy.$modal.confirm('确认对任务"' + row.taskNo + '"发起复检？').then(() => createRecheckTask(row.taskId)).then(() => { proxy.$modal.msgSuccess('复检任务已创建'); getList(); loadStatusCounts() }).catch(() => {}) }
 function handleVoid(row) {
   proxy.$modal.confirm('确认将检验任务"' + row.taskNo + '"作废？作废后任务将不可继续检验。').then(() => {
     return voidTask(row.taskId, { reason: '手动作废', voidType: 'manual' })
   }).then(() => {
     proxy.$modal.msgSuccess('作废成功')
-    getList()
+    getList(); loadStatusCounts()
   }).catch(() => {})
 }
 function submitForm() {
   proxy.$refs['taskRef'].validate(valid => {
     if (valid) {
       if (form.value.taskId != undefined) {
-        updateTask(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList() })
+        updateTask(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList(); loadStatusCounts() })
       } else {
-        addTask(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList() })
+        addTask(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList(); loadStatusCounts() })
       }
     }
   })
@@ -940,15 +940,15 @@ function submitInspectResult() {
       if (item.defectQty == null || item.defectQty === undefined) item.defectQty = 0
     }
   }
-  saveInspectResult(inspectForm.value).then(() => { proxy.$modal.msgSuccess('检验结果已提交'); inspectOpen.value = false; getList() })
+  saveInspectResult(inspectForm.value).then(() => { proxy.$modal.msgSuccess('检验结果已提交'); inspectOpen.value = false; getList(); loadStatusCounts() })
 }
 function handleSaveDraft() {
   saveInspectDraft(inspectForm.value).then(() => {
     proxy.$modal.msgSuccess('已临时保存，可稍后继续录入')
-    getList()
+    getList(); loadStatusCounts()
   }).catch(() => {})
 }
-function handleDelete(row) { const taskIds = row.taskId || ids.value; proxy.$modal.confirm('确认删除编号为"' + taskIds + '"的数据？').then(() => delTask(taskIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleDelete(row) { const taskIds = row.taskId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delTask(taskIds)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
 /** 详情页补全量检具信息：根据gaugeId查询补全gaugeName和gaugeNo */
 function syncViewGaugeInfo() {
   if (viewData.value.gaugeId && (!viewData.value.gaugeName || !viewData.value.gaugeNo)) {
@@ -959,7 +959,7 @@ function syncViewGaugeInfo() {
   }
 }
 
-function handleExport() { proxy.download('qms/task/export', { ...queryParams.value }, `task_${new Date().getTime()}.xlsx`) }
+function handleExport() { proxy.download('qms/task/export', proxy.withExportIds({ ...queryParams.value }, ids.value, 'taskId'), `task_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 
 loadDefectOptions()

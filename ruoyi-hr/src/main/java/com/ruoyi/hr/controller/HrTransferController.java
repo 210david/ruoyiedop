@@ -37,6 +37,7 @@ public class HrTransferController extends BaseController
     public void export(HttpServletResponse response, HrTransfer hrTransfer)
     {
         List<HrTransfer> list = hrTransferService.selectHrTransferList(hrTransfer);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, hrTransfer);
         ExcelUtil<HrTransfer> util = new ExcelUtil<>(HrTransfer.class);
         util.exportExcel(response, list, "调动");
     }

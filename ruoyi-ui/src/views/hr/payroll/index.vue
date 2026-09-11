@@ -94,7 +94,7 @@
             <template #default="scope"><span class="col-mono">{{ scope.row.batchNo }}</span></template>
           </el-table-column>
           <el-table-column label="薪资年月" prop="yearMonth" key="yearMonth" align="center" :width="colWidth('yearMonth', 100)" resizable v-if="columns.yearMonth.visible" />
-          <el-table-column label="批次名称" prop="batchName" key="batchName" align="center" :width="colWidth('batchName', 180)" resizable show-overflow-tooltip v-if="columns.batchName.visible" />
+          <el-table-column label="批次名称" prop="batchName" key="batchName" align="center" :min-width="colWidth('batchName', 180)" resizable show-overflow-tooltip v-if="columns.batchName.visible" />
           <el-table-column label="发薪日期" prop="payDate" key="payDate" align="center" :width="colWidth('payDate', 120)" resizable v-if="columns.payDate.visible" />
           <el-table-column label="发薪银行" prop="bankName" key="bankName" align="center" :width="colWidth('bankName', 160)" resizable v-if="columns.bankName.visible" />
           <el-table-column label="总人数" prop="totalCount" key="totalCount" align="center" :width="colWidth('totalCount', 100)" resizable v-if="columns.totalCount.visible" />
@@ -458,7 +458,7 @@ function handleDelete(row) {
 }
 
 function handleExport() {
-  proxy.download('hr/payroll/export', { ...queryParams.value }, `hrPayrollBatch_${new Date().getTime()}.xlsx`)
+  proxy.download('hr/payroll/export', proxy.withExportIds({ ...queryParams.value }, ids.value, 'batchId'), `hrPayrollBatch_${new Date().getTime()}.xlsx`)
 }
 
 function cancel() {

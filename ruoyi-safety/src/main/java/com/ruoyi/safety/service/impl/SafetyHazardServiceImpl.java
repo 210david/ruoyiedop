@@ -86,17 +86,28 @@ return safetyHazardMapper.selectSafetyHazardList(safetyHazard);
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public int deleteSafetyHazardByIds(Long[] hazardIds)
     {
         checkHazardDeletable(hazardIds);
-        return safetyHazardMapper.deleteSafetyHazardByIds(hazardIds);
+        int rows = safetyHazardMapper.deleteSafetyHazardByIds(hazardIds);
+        // 隐患删除后同步关闭其关联消息提醒，避免消息中心残留指向已删单据的"孤儿消息"
+        for (Long hazardId : hazardIds)
+        {
+            messageHelper.markHandled("safety", hazardId);
+        }
+        return rows;
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public int deleteSafetyHazardById(Long hazardId)
     {
         checkHazardDeletable(new Long[]{ hazardId });
-        return safetyHazardMapper.deleteSafetyHazardById(hazardId);
+        int rows = safetyHazardMapper.deleteSafetyHazardById(hazardId);
+        // 隐患删除后同步关闭其关联消息提醒，避免消息中心残留指向已删单据的"孤儿消息"
+        messageHelper.markHandled("safety", hazardId);
+        return rows;
     }
 
     /**

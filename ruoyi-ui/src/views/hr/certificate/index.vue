@@ -96,7 +96,7 @@
         <el-table ref="tableRef" v-loading="loading" :data="hrCertificateList" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" border class="app-table">
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column label="序号" type="index" :width="colWidth('序号', 85)" align="center" />
-          <el-table-column label="员工姓名" prop="employeeName" key="employeeName" align="center" :width="colWidth('employeeName', 110)" resizable v-if="columns.employeeName.visible" />
+          <el-table-column label="员工姓名" prop="employeeName" key="employeeName" align="center" :min-width="colWidth('employeeName', 110)" show-overflow-tooltip resizable v-if="columns.employeeName.visible" />
           <el-table-column label="工号" prop="employeeNo" key="employeeNo" align="center" :width="colWidth('employeeNo', 110)" resizable v-if="columns.employeeNo.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.employeeNo }}</span></template>
           </el-table-column>
@@ -106,7 +106,7 @@
               <span v-else>-</span>
             </template>
           </el-table-column>
-          <el-table-column label="证书名称" prop="certName" key="certName" align="center" :width="colWidth('certName', 180)" resizable show-overflow-tooltip v-if="columns.certName.visible" />
+          <el-table-column label="证书名称" prop="certName" key="certName" align="center" :min-width="colWidth('certName', 180)" resizable show-overflow-tooltip v-if="columns.certName.visible" />
           <el-table-column label="证书编号" prop="certNo" key="certNo" align="center" :width="colWidth('certNo', 150)" resizable v-if="columns.certNo.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.certNo }}</span></template>
           </el-table-column>
@@ -576,7 +576,7 @@ function handleDelete(row) {
 }
 
 function handleExport() {
-  proxy.download('hr/certificate/export', { ...queryParams.value }, `hrCertificate_${new Date().getTime()}.xlsx`)
+  proxy.download('hr/certificate/export', proxy.withExportIds({ ...queryParams.value }, ids.value, 'certId'), `hrCertificate_${new Date().getTime()}.xlsx`)
 }
 
 getList()

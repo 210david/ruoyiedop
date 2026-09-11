@@ -77,7 +77,7 @@
           <el-table-column label="备件编号" prop="partCode" key="partCode" :width="colWidth('partCode', 120)" resizable v-if="columns.partCode.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.partCode }}</span></template>
           </el-table-column>
-          <el-table-column label="备件名称" prop="partName" key="partName" :width="colWidth('partName', 150)" resizable show-overflow-tooltip v-if="columns.partName.visible" />
+          <el-table-column label="备件名称" prop="partName" key="partName" :min-width="colWidth('partName', 150)" resizable show-overflow-tooltip v-if="columns.partName.visible" />
           <el-table-column label="类型" prop="moveType" key="moveType" :width="colWidth('moveType', 80)" resizable align="center" v-if="columns.moveType.visible">
             <template #default="scope">
               <span class="badge" :class="scope.row.moveType === '0' ? 'green' : 'amber'">
@@ -90,13 +90,13 @@
               <span class="badge violet">{{ moveTypeLabel(scope.row) }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="供应商/部门" prop="supplierOrDept" key="supplierOrDept" :width="colWidth('supplierOrDept', 150)" resizable show-overflow-tooltip v-if="columns.supplierOrDept.visible" />
+          <el-table-column label="供应商/部门" prop="supplierOrDept" key="supplierOrDept" :min-width="colWidth('supplierOrDept', 150)" resizable show-overflow-tooltip v-if="columns.supplierOrDept.visible" />
           <el-table-column label="数量" prop="quantity" key="quantity" :width="colWidth('quantity', 80)" resizable align="center" v-if="columns.quantity.visible" />
           <el-table-column label="变更前" prop="beforeStock" key="beforeStock" :width="colWidth('beforeStock', 80)" resizable align="center" v-if="columns.beforeStock.visible" />
           <el-table-column label="变更后" prop="afterStock" key="afterStock" :width="colWidth('afterStock', 80)" resizable align="center" v-if="columns.afterStock.visible" />
           <el-table-column label="操作人" prop="operatorName" key="operatorName" :width="colWidth('operatorName', 80)" resizable v-if="columns.operatorName.visible" />
           <el-table-column label="操作时间" prop="createTime" key="createTime" :width="colWidth('createTime', 160)" resizable align="center" sortable v-if="columns.createTime.visible" />
-          <el-table-column label="备注" prop="remark" key="remark" :width="colWidth('remark', 150)" resizable show-overflow-tooltip v-if="columns.remark.visible" />
+          <el-table-column label="备注" prop="remark" key="remark" :min-width="colWidth('remark', 150)" resizable show-overflow-tooltip v-if="columns.remark.visible" />
           <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
               <div class="action-btn-row">
@@ -113,7 +113,7 @@
 
 <script setup name="DmsPartStock">
 import { listPartStock, delPartStock } from '@/api/dms/partstock'
-import { fetchAllPages, downloadCsv } from '@/utils/csvExport'
+import { fetchAllPages, downloadXlsx } from '@/utils/csvExport'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { Search, Filter, RefreshLeft, Delete, Download } from '@element-plus/icons-vue'
 
@@ -203,10 +203,11 @@ function resetQuery() { queryParams.value.documentCode = undefined; queryParams.
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.recordId); multiple.value = !selection.length }
 /** 导出流水（与列表口径一致：含筛选条件，导出全部页数据） */
 async function handleExport() {
-  const rows = await fetchAllPages(listPartStock, queryParams.value)
+  let rows = await fetchAllPages(listPartStock, queryParams.value)
+  if (ids.value && ids.value.length) { rows = rows.filter(i => ids.value.includes(i.recordId)) }
   if (!rows.length) { proxy.$modal.msgWarning('当前筛选下无数据可导出'); return }
   const headers = ['单据号', '备件编号', '备件名称', '类型', '出入库类型', '供应商/部门', '数量', '变更前', '变更后', '操作人', '操作时间', '备注']
-  downloadCsv(`partstock_${new Date().getTime()}`, headers, rows.map(i => [
+  downloadXlsx(`partstock_${new Date().getTime()}`, headers, rows.map(i => [
     i.documentCode, i.partCode, i.partName, i.moveType === '0' ? '入库' : '出库', moveTypeLabel(i),
     i.supplierOrDept || '', i.quantity != null ? i.quantity : '', i.beforeStock != null ? i.beforeStock : '', i.afterStock != null ? i.afterStock : '',
     i.operatorName || '', i.createTime || '', i.remark || ''

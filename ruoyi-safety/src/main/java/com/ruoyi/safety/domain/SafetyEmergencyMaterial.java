@@ -19,7 +19,7 @@ public class SafetyEmergencyMaterial extends BaseEntity
     @Excel(name = "物资名称")
     private String materialName;
     @NotBlank(message = "物资类别不能为空")
-    @Excel(name = "物资类别")
+    @Excel(name = "物资类别", dictType = "safety_material_type")
     private String materialType;
     @Excel(name = "规格型号")
     private String specModel;
@@ -27,7 +27,7 @@ public class SafetyEmergencyMaterial extends BaseEntity
     @Excel(name = "数量")
     private BigDecimal quantity;
     @NotBlank(message = "单位不能为空")
-    @Excel(name = "单位")
+    @Excel(name = "单位", dictType = "wms_unit")
     private String unit;
     @NotBlank(message = "存放位置不能为空")
     @Excel(name = "存放位置")
@@ -38,7 +38,7 @@ public class SafetyEmergencyMaterial extends BaseEntity
     private String personName;
     @NotNull(message = "有效期至不能为空")
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "有效期至", width = 120)
+    @Excel(name = "有效期至", width = 120, dateFormat = "yyyy-MM-dd")
     private Date effectiveDate;
     private String remindStatus;
     private Long enterpriseId;

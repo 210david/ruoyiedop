@@ -63,6 +63,7 @@ import "vue-cropper/dist/index.css"
 import { VueCropper } from "vue-cropper"
 import { uploadAvatar } from "@/api/system/user"
 import useUserStore from "@/store/modules/user"
+import { getToken } from "@/utils/auth"
 
 const userStore = useUserStore()
 const { proxy } = getCurrentInstance()
@@ -133,7 +134,7 @@ function uploadImg() {
     formData.append("avatarfile", data, options.filename)
     uploadAvatar(formData).then(response => {
       open.value = false
-      options.img = import.meta.env.VITE_APP_BASE_API + response.imgUrl
+      options.img = import.meta.env.VITE_APP_BASE_API + '/common/file/access?resource=' + encodeURIComponent(response.imgUrl) + '&token=' + getToken()
       userStore.avatar = options.img
       proxy.$modal.msgSuccess("修改成功")
       visible.value = false

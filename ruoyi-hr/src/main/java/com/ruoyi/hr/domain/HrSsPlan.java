@@ -51,7 +51,7 @@ public class HrSsPlan extends BaseEntity
     private BigDecimal fundEmployer;
     @Excel(name = "公积金个人比例")
     private BigDecimal fundEmployee;
-    @Excel(name = "状态")
+    @Excel(name = "状态", dictType = "sys_normal_disable")
     private String status;
     private String delFlag;
 

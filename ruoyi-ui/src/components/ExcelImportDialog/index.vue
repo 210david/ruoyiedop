@@ -1,5 +1,5 @@
 <template>
-  <el-dialog :title="title" v-model="visible" width="720px" append-to-body @close="handleClose" class="excel-import-dialog">
+  <el-dialog :title="title" v-model="visible" width="720px" append-to-body @close="handleClose" class="rd-dialog excel-import-dialog">
     <!-- 顶层页签：上传 / 导入结果 -->
     <el-tabs v-model="topTab" class="import-tabs">
       <!-- ===== 页签1：文件上传 ===== -->

@@ -36,6 +36,7 @@ public class WmsInventoryController extends BaseController
     public void export(HttpServletResponse response, WmsInventory inventory)
     {
         List<WmsInventory> list = wmsInventoryService.selectInventoryList(inventory);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, inventory);
         ExcelUtil<WmsInventory> util = new ExcelUtil<>(WmsInventory.class);
         util.exportExcel(response, list, "库存数据");
     }

@@ -34,11 +34,11 @@
           <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
           <el-table-column label="产出批次" prop="batchOut" key="batchOut" :width="colWidth('batchOut', 160)" resizable v-if="columns.batchOut.visible" />
           <el-table-column label="产品编码" prop="productCode" key="productCode" :width="colWidth('productCode', 130)" resizable v-if="columns.productCode.visible" />
-          <el-table-column label="产品名称" prop="productName" key="productName" :width="colWidth('productName', 180)" resizable show-overflow-tooltip v-if="columns.productName.visible" />
+          <el-table-column label="产品名称" prop="productName" key="productName" :min-width="colWidth('productName', 180)" resizable show-overflow-tooltip v-if="columns.productName.visible" />
           <el-table-column label="投入批次" prop="batchIn" key="batchIn" :width="colWidth('batchIn', 160)" resizable v-if="columns.batchIn.visible" />
           <el-table-column label="物料编码" prop="materialCode" key="materialCode" :width="colWidth('materialCode', 140)" resizable v-if="columns.materialCode.visible" />
-          <el-table-column label="物料名称" prop="materialName" key="materialName" :width="colWidth('materialName', 160)" resizable show-overflow-tooltip v-if="columns.materialName.visible" />
-          <el-table-column label="规格型号" prop="specModel" key="specModel" :width="colWidth('specModel', 160)" resizable show-overflow-tooltip v-if="columns.specModel.visible" />
+          <el-table-column label="物料名称" prop="materialName" key="materialName" :min-width="colWidth('materialName', 160)" resizable show-overflow-tooltip v-if="columns.materialName.visible" />
+          <el-table-column label="规格型号" prop="specModel" key="specModel" :min-width="colWidth('specModel', 160)" resizable show-overflow-tooltip v-if="columns.specModel.visible" />
           <el-table-column label="单位" prop="unit" key="unit" :width="colWidth('unit', 80)" resizable align="center" v-if="columns.unit.visible"><template #default="scope"><span v-if="scope.row.unit" class="badge violet">{{ unitLabel(scope.row.unit) }}</span><span v-else class="text-muted">—</span></template></el-table-column>
           <el-table-column label="使用数量" prop="qtyUsed" key="qtyUsed" :width="colWidth('qtyUsed', 120)" resizable align="center" v-if="columns.qtyUsed.visible" />
         </el-table>

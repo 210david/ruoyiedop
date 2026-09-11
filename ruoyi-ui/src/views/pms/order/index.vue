@@ -137,7 +137,7 @@
           <el-table-column label="采购单号" prop="orderNo" key="orderNo" :width="colWidth('orderNo', 180)" resizable sortable="custom" v-if="columns.orderNo.visible" />
           <el-table-column label="关联合同" prop="contractNo" key="contractNo" :width="colWidth('contractNo', 140)" resizable v-if="columns.contractNo.visible" />
           <el-table-column label="关联申请单号" prop="requestNo" key="requestNo" :width="colWidth('requestNo', 140)" resizable v-if="columns.requestNo.visible" />
-          <el-table-column label="供应商" prop="supplierName" key="supplierName" :width="colWidth('supplierName', 240)" resizable show-overflow-tooltip v-if="columns.supplierName.visible" />
+          <el-table-column label="供应商" prop="supplierName" key="supplierName" :min-width="colWidth('supplierName', 240)" resizable show-overflow-tooltip v-if="columns.supplierName.visible" />
           <el-table-column label="状态" prop="status" key="status" :width="colWidth('status', 120)" resizable align="center" sortable="custom" v-if="columns.status.visible">
             <template #default="scope"><span class="badge" :class="badgeClass(scope.row.status)"><span class="dot"></span>{{ statusLabel(scope.row.status) }}</span></template>
           </el-table-column>
@@ -1307,13 +1307,13 @@ function submitForm() {
         updateOrder(form.value).then(() => {
           proxy.$modal.msgSuccess('修改成功')
           open.value = false
-          getList()
+          getList(); loadStatusCounts()
         })
       } else {
         addOrder(form.value).then(() => {
           proxy.$modal.msgSuccess('新增成功')
           open.value = false
-          getList()
+          getList(); loadStatusCounts()
         })
       }
     }
@@ -1322,15 +1322,15 @@ function submitForm() {
 
 function handleDelete(row) {
   const orderIds = row.orderId || ids.value
-  proxy.$modal.confirm('确认删除编号为"' + orderIds + '"的数据？').then(() => delOrder(orderIds)).then(() => {
-    getList()
+  proxy.$modal.confirm('确认删除？').then(() => delOrder(orderIds)).then(() => {
+    getList(); loadStatusCounts()
     proxy.$modal.msgSuccess('删除成功')
   }).catch(() => {})
 }
 
 function handleSubmit(row) {
   proxy.$modal.confirm('确认提交编号为"' + row.orderNo + '"的采购订单？').then(() => submitOrder(row.orderId)).then(() => {
-    getList()
+    getList(); loadStatusCounts()
     proxy.$modal.msgSuccess('提交成功')
   }).catch(() => {})
 }
@@ -1357,14 +1357,14 @@ function submitAudit(passed) {
       }).then(() => {
         proxy.$modal.msgSuccess('审批成功')
         auditOpen.value = false
-        getList()
+        getList(); loadStatusCounts()
       }).catch(() => {})
     }
   })
 }
 
 function handleExport() {
-  proxy.download('pms/order/export', { ...proxy.addDateRange(queryParams.value, dateRange.value, 'Date') }, `purchase_order_${new Date().getTime()}.xlsx`)
+  proxy.download('pms/order/export', proxy.withExportIds({ ...proxy.addDateRange(queryParams.value, dateRange.value, 'Date') }, ids.value, 'orderId'), `purchase_order_${new Date().getTime()}.xlsx`)
 }
 
 function cancel() {

@@ -72,7 +72,7 @@
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" class="app-table">
 <el-table-column type="selection" width="55" align="center" />
 <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
-<el-table-column label="供应商" prop="supplierName" key="supplierName" :width="colWidth('supplierName', 180)" resizable show-overflow-tooltip v-if="columns.supplierName.visible" />          <el-table-column label="评价周期" prop="evalPeriod" key="evalPeriod" :width="colWidth('evalPeriod', 110)" resizable align="center" v-if="columns.evalPeriod.visible" />
+<el-table-column label="供应商" prop="supplierName" key="supplierName" :min-width="colWidth('supplierName', 180)" resizable show-overflow-tooltip v-if="columns.supplierName.visible" />          <el-table-column label="评价周期" prop="evalPeriod" key="evalPeriod" :width="colWidth('evalPeriod', 110)" resizable align="center" v-if="columns.evalPeriod.visible" />
           <el-table-column label="质量评分" prop="qualityScore" key="qualityScore" :width="colWidth('qualityScore', 100)" resizable align="center" v-if="columns.qualityScore.visible" />
           <el-table-column label="等级" prop="grade" key="grade" :width="colWidth('grade', 80)" resizable align="center" v-if="columns.grade.visible">
             <template #default="scope">
@@ -90,7 +90,7 @@
             <template #default="scope"><span>{{ parseTime(scope.row.pushTime, '{y}-{m}-{d} {h}:{i}:{s}') }}</span></template>
           </el-table-column>
           <el-table-column label="重试次数" prop="retryCount" key="retryCount" :width="colWidth('retryCount', 90)" resizable align="center" v-if="columns.retryCount.visible" />
-          <el-table-column label="失败原因" prop="errorMsg" key="errorMsg" :width="colWidth('errorMsg', 200)" resizable show-overflow-tooltip v-if="columns.errorMsg.visible" />
+          <el-table-column label="失败原因" prop="errorMsg" key="errorMsg" :min-width="colWidth('errorMsg', 200)" resizable show-overflow-tooltip v-if="columns.errorMsg.visible" />
         </el-table>
       </div>
       <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
@@ -174,7 +174,7 @@ function handleDelete() {
   }).catch(() => {})
 }
 function handleExport() {
-  proxy.download('qms/sqmPushLog/export', { ...queryParams.value }, `sqmPushLog_${new Date().getTime()}.xlsx`)
+  proxy.download('qms/sqmPushLog/export', proxy.withExportIds({ ...queryParams.value }, selectedIds.value, 'logId'), `sqmPushLog_${new Date().getTime()}.xlsx`)
 }
 function statusLabel(val) { return { '0': '待推送', '1': '成功', '2': '失败' }[val] || '-' }
 function statusClass(val) { return { '0': 'warning', '1': 'success', '2': 'danger' }[val] || '' }

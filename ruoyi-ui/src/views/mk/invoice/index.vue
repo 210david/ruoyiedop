@@ -110,7 +110,7 @@
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
           <el-table-column label="发票编号" prop="invoiceNo" key="invoiceNo" :width="colWidth('invoiceNo', 150)" resizable v-if="columns.invoiceNo.visible" />
-          <el-table-column label="客户名称" prop="customerName" key="customerName" :width="colWidth('customerName', 180)" resizable show-overflow-tooltip v-if="columns.customerName.visible" />
+          <el-table-column label="客户名称" prop="customerName" key="customerName" :min-width="colWidth('customerName', 180)" resizable show-overflow-tooltip v-if="columns.customerName.visible" />
           <el-table-column label="发票类型" prop="invoiceType" key="invoiceType" :width="colWidth('invoiceType', 130)" resizable align="center" v-if="columns.invoiceType.visible">
             <template #default="scope">
               <span class="badge" :class="typeBadgeClass(scope.row.invoiceType)">
@@ -672,16 +672,16 @@ function submitForm() {
         form.value.taxAmount = Number((form.value.invoiceAmount * form.value.taxRate / 100).toFixed(2))
       }
       if (form.value.invoiceId != undefined) {
-        updateInvoice(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList() })
+        updateInvoice(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList(); loadStatusCounts() })
       } else {
-        addInvoice(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList() })
+        addInvoice(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList(); loadStatusCounts() })
       }
     }
   })
 }
-function handleDelete(row) { const invoiceIds = row.invoiceId || ids.value; proxy.$modal.confirm('确认删除选中的发票？').then(() => delInvoice(invoiceIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
-function handleVoid(row) { proxy.$modal.confirm('确认作废发票【' + row.invoiceNo + '】？').then(() => voidInvoice(row.invoiceId)).then(() => { getList(); proxy.$modal.msgSuccess('发票已作废') }).catch(() => {}) }
-function handleExport() { proxy.download('mk/invoice/export', { ...proxy.addDateRange(queryParams.value, dateRange.value, 'InvoiceDate') }, `invoice_${new Date().getTime()}.xlsx`) }
+function handleDelete(row) { const invoiceIds = row.invoiceId || ids.value; proxy.$modal.confirm('确认删除选中的发票？').then(() => delInvoice(invoiceIds)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleVoid(row) { proxy.$modal.confirm('确认作废发票【' + row.invoiceNo + '】？').then(() => voidInvoice(row.invoiceId)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('发票已作废') }).catch(() => {}) }
+function handleExport() { proxy.download('mk/invoice/export', proxy.withExportIds({ ...proxy.addDateRange(queryParams.value, dateRange.value, 'InvoiceDate') }, ids.value, 'invoiceId'), `invoice_${new Date().getTime()}.xlsx`) }
 
 function handleBeforeRecognize(file) {
   const fileName = file.name.split('.')

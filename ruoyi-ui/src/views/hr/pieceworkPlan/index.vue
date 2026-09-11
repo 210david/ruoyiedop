@@ -85,7 +85,7 @@
           <el-table-column label="计件编码" prop="pwCode" key="pwCode" align="center" :width="colWidth('pwCode', 130)" resizable v-if="columns.pwCode.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.pwCode }}</span></template>
           </el-table-column>
-          <el-table-column label="计件名称" prop="pwName" key="pwName" align="center" :width="colWidth('pwName', 180)" resizable show-overflow-tooltip v-if="columns.pwName.visible" />
+          <el-table-column label="计件名称" prop="pwName" key="pwName" align="center" :min-width="colWidth('pwName', 180)" resizable show-overflow-tooltip v-if="columns.pwName.visible" />
           <el-table-column label="计件类型" prop="pwType" key="pwType" align="center" :width="colWidth('pwType', 110)" resizable v-if="columns.pwType.visible" />
           <el-table-column label="单位" prop="unit" key="unit" align="center" :width="colWidth('unit', 90)" resizable v-if="columns.unit.visible" />
           <el-table-column label="计件单价" prop="unitPrice" key="unitPrice" align="center" :width="colWidth('unitPrice', 110)" resizable v-if="columns.unitPrice.visible" />
@@ -460,7 +460,7 @@ function handleDelete(row) {
 }
 
 function handleExport() {
-  proxy.download('hr/pieceworkPlan/export', { ...queryParams.value }, `hrPieceworkPlan_${new Date().getTime()}.xlsx`)
+  proxy.download('hr/pieceworkPlan/export', proxy.withExportIds({ ...queryParams.value }, ids.value, 'pwPlanId'), `hrPieceworkPlan_${new Date().getTime()}.xlsx`)
 }
 
 function cancel() {

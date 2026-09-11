@@ -42,6 +42,7 @@ public class MkOpportunityStageController extends BaseController
     public void export(HttpServletResponse response, MkOpportunityStage stage)
     {
         List<MkOpportunityStage> list = mkOpportunityStageService.selectStageList(stage);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, stage);
         ExcelUtil<MkOpportunityStage> util = new ExcelUtil<>(MkOpportunityStage.class);
         util.exportExcel(response, list, "销售阶段配置数据");
     }

@@ -963,13 +963,13 @@ function loadRelations() {
 function submitForm() {
   proxy.$refs['opportunityRef'].validate(valid => {
     if (valid) {
-      if (form.value.opportunityId != undefined) { updateOpportunity(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList() }) }
-      else { addOpportunity(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList() }) }
+      if (form.value.opportunityId != undefined) { updateOpportunity(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList(); loadStatusCounts() }) }
+      else { addOpportunity(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList(); loadStatusCounts() }) }
     }
   })
 }
-function handleDelete(row) { const opportunityIds = row.opportunityId || ids.value; proxy.$modal.confirm('确认删除编号为"' + opportunityIds + '"的数据？').then(() => delOpportunity(opportunityIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
-function handleExport() { proxy.download('mk/opportunity/export', { ...proxy.addDateRange(queryParams.value, dateRange.value, 'CreateTime') }, `opportunity_${new Date().getTime()}.xlsx`) }
+function handleDelete(row) { const opportunityIds = row.opportunityId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delOpportunity(opportunityIds)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleExport() { proxy.download('mk/opportunity/export', proxy.withExportIds({ ...proxy.addDateRange(queryParams.value, dateRange.value, 'CreateTime') }, ids.value, 'opportunityId'), `opportunity_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 
 // ===== 阶段推进/赢单/输单 =====
@@ -1004,21 +1004,21 @@ function submitAction() {
   const id = actionForm.value.opportunityId
   if (actionType.value === 'advance') {
     if (!actionForm.value.toStageCode) { proxy.$modal.msgError('请选择目标阶段'); return }
-    advanceOpportunity(id, { stageCode: actionForm.value.toStageCode, remark: actionForm.value.remark }).then(() => { proxy.$modal.msgSuccess('阶段推进成功'); actionOpen.value = false; getList() })
+    advanceOpportunity(id, { stageCode: actionForm.value.toStageCode, remark: actionForm.value.remark }).then(() => { proxy.$modal.msgSuccess('阶段推进成功'); actionOpen.value = false; getList(); loadStatusCounts() })
   } else if (actionType.value === 'retreat') {
     if (!actionForm.value.toStageCode) { proxy.$modal.msgError('请选择目标阶段'); return }
-    retreatOpportunity(id, { stageCode: actionForm.value.toStageCode, remark: actionForm.value.remark }).then(() => { proxy.$modal.msgSuccess('阶段退回成功'); actionOpen.value = false; getList() })
+    retreatOpportunity(id, { stageCode: actionForm.value.toStageCode, remark: actionForm.value.remark }).then(() => { proxy.$modal.msgSuccess('阶段退回成功'); actionOpen.value = false; getList(); loadStatusCounts() })
   } else if (actionType.value === 'win') {
     if (!actionForm.value.actualAmount) { proxy.$modal.msgError('请填写实际成交金额'); return }
     if (!actionForm.value.actualDate) { proxy.$modal.msgError('请选择实际成交日期'); return }
-    winOpportunity(id, { actualAmount: actionForm.value.actualAmount, actualDate: actionForm.value.actualDate, remark: actionForm.value.remark }).then(() => { proxy.$modal.msgSuccess('赢单关单成功'); actionOpen.value = false; getList() })
+    winOpportunity(id, { actualAmount: actionForm.value.actualAmount, actualDate: actionForm.value.actualDate, remark: actionForm.value.remark }).then(() => { proxy.$modal.msgSuccess('赢单关单成功'); actionOpen.value = false; getList(); loadStatusCounts() })
   } else if (actionType.value === 'lose') {
     if (!actionForm.value.lostReason) { proxy.$modal.msgError('请选择输单原因'); return }
-    loseOpportunity(id, { lostReason: actionForm.value.lostReason, lostRemark: actionForm.value.lostRemark }).then(() => { proxy.$modal.msgSuccess('输单关单成功'); actionOpen.value = false; getList() })
+    loseOpportunity(id, { lostReason: actionForm.value.lostReason, lostRemark: actionForm.value.lostRemark }).then(() => { proxy.$modal.msgSuccess('输单关单成功'); actionOpen.value = false; getList(); loadStatusCounts() })
   }
 }
 function handleReopen(row) {
-  proxy.$modal.confirm('确认重新打开商机"' + row.opportunityName + '"？').then(() => reopenOpportunity(row.opportunityId)).then(() => { proxy.$modal.msgSuccess('重新打开成功'); getList() }).catch(() => {})
+  proxy.$modal.confirm('确认重新打开商机"' + row.opportunityName + '"？').then(() => reopenOpportunity(row.opportunityId)).then(() => { proxy.$modal.msgSuccess('重新打开成功'); getList(); loadStatusCounts() }).catch(() => {})
 }
 
 function getInteractTypeLabel(type) {

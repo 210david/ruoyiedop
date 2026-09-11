@@ -46,6 +46,7 @@ public class SysOperlogController extends BaseController
     public void export(HttpServletResponse response, SysOperLog operLog)
     {
         List<SysOperLog> list = operLogService.selectOperLogList(operLog);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, operLog);
         ExcelUtil<SysOperLog> util = new ExcelUtil<SysOperLog>(SysOperLog.class);
         util.exportExcel(response, list, "操作日志");
     }

@@ -40,7 +40,7 @@
       <div class="table-wrap">
         <el-table ref="tableRef" v-loading="loading" :data="planList" @header-dragend="onHeaderDragEnd" border class="app-table">
           <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" resizable align="center" />
-          <el-table-column label="方案名称" prop="planName" key="planName" align="center" :width="colWidth('planName', 160)" resizable v-if="columns.planName.visible" />
+          <el-table-column label="方案名称" prop="planName" key="planName" align="center" :min-width="colWidth('planName', 160)" show-overflow-tooltip resizable v-if="columns.planName.visible" />
           <el-table-column label="年度" prop="year" key="year" align="center" :width="colWidth('year', 90)" resizable v-if="columns.year.visible" />
           <el-table-column label="默认方案" key="isDefault" align="center" :width="colWidth('isDefault', 100)" resizable v-if="columns.isDefault.visible">
             <template #default="scope">

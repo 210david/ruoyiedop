@@ -42,6 +42,7 @@ public class MkInteractionController extends BaseController
     public void export(HttpServletResponse response, MkInteraction interaction)
     {
         List<MkInteraction> list = mkInteractionService.selectInteractionList(interaction);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, interaction);
         ExcelUtil<MkInteraction> util = new ExcelUtil<>(MkInteraction.class);
         util.exportExcel(response, list, "互动记录数据");
     }

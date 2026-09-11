@@ -63,6 +63,9 @@ public class MkActivityParticipant extends BaseEntity
     /** 活动名称（关联查询） */
     private String activityName;
 
+    /** 活动状态（关联查询：0草稿 1报名中 2进行中 3已结束 4已取消） */
+    private String activityStatus;
+
     /** 客户ID（仅用于查询条件，通过企业名称匹配） */
     private Long customerId;
 
@@ -92,6 +95,8 @@ public class MkActivityParticipant extends BaseEntity
     public void setSignTime(Date signTime) { this.signTime = signTime; }
     public String getActivityName() { return activityName; }
     public void setActivityName(String activityName) { this.activityName = activityName; }
+    public String getActivityStatus() { return activityStatus; }
+    public void setActivityStatus(String activityStatus) { this.activityStatus = activityStatus; }
     public Long getCustomerId() { return customerId; }
     public void setCustomerId(Long customerId) { this.customerId = customerId; }
     public String getSignInCode() { return signInCode; }

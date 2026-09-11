@@ -41,7 +41,7 @@ public class PmsSupplierCatalog extends BaseEntity
     private String specModel;
 
     /** 计量单位 */
-    @Excel(name = "单位", type = Excel.Type.EXPORT)
+    @Excel(name = "单位", type = Excel.Type.EXPORT, dictType = "wms_unit")
     private String unit;
 
     /** 供货单价（不含税） */

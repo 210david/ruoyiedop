@@ -81,11 +81,11 @@
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
           <el-table-column label="物资编码" prop="materialCode" key="materialCode" :width="colWidth('materialCode', 130)" resizable v-if="columns.materialCode.visible" />
-          <el-table-column label="物资名称" prop="materialName" key="materialName" :width="colWidth('materialName', 180)" resizable show-overflow-tooltip v-if="columns.materialName.visible" />
+          <el-table-column label="物资名称" prop="materialName" key="materialName" :min-width="colWidth('materialName', 180)" resizable show-overflow-tooltip v-if="columns.materialName.visible" />
           <el-table-column label="物资类别" prop="materialType" key="materialType" :width="colWidth('materialType', 110)" resizable align="center" v-if="columns.materialType.visible">
             <template #default="scope"><span class="badge violet">{{ materialTypeLabel(scope.row.materialType) }}</span></template>
           </el-table-column>
-          <el-table-column label="规格型号" prop="specModel" key="specModel" :width="colWidth('specModel', 150)" resizable show-overflow-tooltip v-if="columns.specModel.visible" />
+          <el-table-column label="规格型号" prop="specModel" key="specModel" :min-width="colWidth('specModel', 150)" resizable show-overflow-tooltip v-if="columns.specModel.visible" />
           <el-table-column label="数量" prop="quantity" key="quantity" :width="colWidth('quantity', 80)" resizable align="center" v-if="columns.quantity.visible" />
           <el-table-column label="单位" prop="unit" key="unit" :width="colWidth('unit', 70)" resizable align="center" v-if="columns.unit.visible">
             <template #default="scope"><span class="badge violet">{{ unitLabel(scope.row.unit) }}</span></template>
@@ -314,7 +314,7 @@ function submitForm() {
   })
 }
 function handleDelete(row) { const materialIds = row.materialId || ids.value; proxy.$modal.confirm('是否确认删除应急物资？').then(function() { return delEmergencyMaterial(materialIds) }).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
-function handleExport() { proxy.download('safety/emergency/material/export', { ...queryParams.value }, `emergency_material_${new Date().getTime()}.xlsx`) }
+function handleExport() { proxy.download('safety/emergency/material/export', proxy.withExportIds({ ...queryParams.value }, ids.value, 'materialId'), `emergency_material_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 function reset() {
   form.value = { materialId: undefined, materialCode: undefined, materialName: undefined, materialType: undefined, specModel: undefined, quantity: undefined, unit: undefined, storageLocation: undefined, personId: undefined, personName: undefined, effectiveDate: undefined, remark: undefined }

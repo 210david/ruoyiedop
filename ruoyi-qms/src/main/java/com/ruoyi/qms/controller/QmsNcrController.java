@@ -45,6 +45,7 @@ public class QmsNcrController extends BaseController
     public void export(HttpServletResponse response, QmsNcr ncr)
     {
         List<QmsNcr> list = qmsNcrService.selectNcrList(ncr);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, ncr);
         ExcelUtil<QmsNcr> util = new ExcelUtil<>(QmsNcr.class);
         util.exportExcel(response, list, "不合格品报告数据");
     }

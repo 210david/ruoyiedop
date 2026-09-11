@@ -124,13 +124,13 @@
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
-          <el-table-column label="活动名称" prop="activityName" key="activityName" :width="colWidth('activityName', 200)" resizable show-overflow-tooltip v-if="!queryParams.activityId && columns.activityName.visible" />
-          <el-table-column label="企业名称" prop="companyName" key="companyName" :width="colWidth('companyName', 180)" resizable show-overflow-tooltip v-if="columns.companyName.visible" />
+          <el-table-column label="活动名称" prop="activityName" key="activityName" :min-width="colWidth('activityName', 200)" resizable show-overflow-tooltip v-if="!queryParams.activityId && columns.activityName.visible" />
+          <el-table-column label="企业名称" prop="companyName" key="companyName" :min-width="colWidth('companyName', 180)" resizable show-overflow-tooltip v-if="columns.companyName.visible" />
           <el-table-column label="联系人" prop="contactName" key="contactName" :width="colWidth('contactName', 100)" resizable v-if="columns.contactName.visible" />
           <el-table-column label="手机号" prop="contactPhone" key="contactPhone" :width="colWidth('contactPhone', 130)" resizable v-if="columns.contactPhone.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.contactPhone }}</span></template>
           </el-table-column>
-          <el-table-column label="邮箱" prop="contactEmail" key="contactEmail" :width="colWidth('contactEmail', 180)" resizable show-overflow-tooltip v-if="columns.contactEmail.visible" />
+          <el-table-column label="邮箱" prop="contactEmail" key="contactEmail" :min-width="colWidth('contactEmail', 180)" resizable show-overflow-tooltip v-if="columns.contactEmail.visible" />
           <el-table-column label="职位" prop="position" key="position" :width="colWidth('position', 120)" resizable v-if="columns.position.visible" />
           <el-table-column label="参与状态" prop="participateStatus" key="participateStatus" :width="colWidth('participateStatus', 100)" resizable align="center" sortable="custom" v-if="columns.participateStatus.visible">
             <template #default="scope">
@@ -152,7 +152,7 @@
             <el-button link type="primary" icon="ArrowDown">更多</el-button>
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item command="signIn" icon="CircleCheck" v-if="scope.row.participateStatus !== '1'" v-hasPermi="['marketing:participant:edit']">签到</el-dropdown-item>
+                <el-dropdown-item command="signIn" icon="CircleCheck" v-if="scope.row.participateStatus !== '1' && scope.row.activityStatus !== '3' && scope.row.activityStatus !== '4'" v-hasPermi="['marketing:participant:edit']">签到</el-dropdown-item>
                 <el-dropdown-item command="convertLead" icon="Connection" v-if="!scope.row.leadId" v-hasPermi="['marketing:participant:convert']">转线索</el-dropdown-item>
                 <el-dropdown-item command="delete" icon="Delete" v-hasPermi="['marketing:participant:remove']" divided>删除</el-dropdown-item>
               </el-dropdown-menu>
@@ -508,7 +508,7 @@ function getList() {
   listParticipant(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false; loadStatusCounts(); applySavedWidths() }).catch(() => { loading.value = false })
 }
 function getActivityOptions() {
-  listActivity({ pageNum: 1, pageSize: 9999 }).then(res => { activityOptions.value = res.rows })
+  listActivity({ pageNum: 1, pageSize: 9999, params: { excludeEnded: true } }).then(res => { activityOptions.value = res.rows })
 }
 function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; proxy.addDateRange(queryParams.value, dateRange.value, 'SignTime'); getList() }
 function resetQuery() {
@@ -556,10 +556,11 @@ const activityPickerList = ref([])
 const activityPickerTotal = ref(0)
 const activityPickerSelected = ref(null)
 const activityPickerQuery = reactive({ pageNum: 1, pageSize: 10, activityName: undefined, activityStatus: undefined })
-function openActivityPicker() { activityPickerSelected.value = form.value.activityId || null; activityPickerOpen.value = true }
+function openActivityPicker() { activityPickerSelected.value = form.value.activityId || null; activityPickerQuery.activityStatus = undefined; activityPickerOpen.value = true }
 function loadActivityPicker() {
   activityPickerLoading.value = true
-  listActivity({ ...activityPickerQuery }).then(res => {
+  // 报名场景：过滤已结束(3)/已取消(4)的活动
+  listActivity({ ...activityPickerQuery, params: { ...(activityPickerQuery.params || {}), excludeEnded: true } }).then(res => {
     activityPickerList.value = res.rows
     activityPickerTotal.value = res.total
   }).catch(() => { activityPickerList.value = []; activityPickerTotal.value = 0 }).finally(() => { activityPickerLoading.value = false })
@@ -609,22 +610,22 @@ function clearContact() {
 function submitForm() {
   proxy.$refs['participantRef'].validate(valid => {
     if (valid) {
-      if (form.value.participantId != undefined) { updateParticipant(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList() }) }
-      else { addParticipant(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList() }) }
+      if (form.value.participantId != undefined) { updateParticipant(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList(); loadStatusCounts() }) }
+      else { addParticipant(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList(); loadStatusCounts() }) }
     }
   })
 }
-function handleDelete(row) { const participantIds = row.participantId || ids.value; proxy.$modal.confirm('确认删除编号为"' + participantIds + '"的数据？').then(() => delParticipant(participantIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
-function handleExport() { proxy.download('mk/participant/export', { ...proxy.addDateRange(queryParams.value, dateRange.value, 'SignTime') }, `participant_${new Date().getTime()}.xlsx`) }
+function handleDelete(row) { const participantIds = row.participantId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delParticipant(participantIds)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleExport() { proxy.download('mk/participant/export', proxy.withExportIds({ ...proxy.addDateRange(queryParams.value, dateRange.value, 'SignTime') }, ids.value, 'participantId'), `participant_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 
 // P1-5: 签到
 function handleSignIn(row) {
-  proxy.$modal.confirm('确认签到？').then(() => signInParticipant(row.participantId)).then(() => { proxy.$modal.msgSuccess('签到成功'); getList() }).catch(() => {})
+  proxy.$modal.confirm('确认签到？').then(() => signInParticipant(row.participantId)).then(() => { proxy.$modal.msgSuccess('签到成功'); getList(); loadStatusCounts() }).catch(() => {})
 }
 // P1-5: 转线索
 function handleConvertLead(row) {
-  proxy.$modal.confirm('确认将"' + row.contactName + '"转化为线索？').then(() => convertToLead(row.participantId)).then(() => { proxy.$modal.msgSuccess('转线索成功'); getList() }).catch(() => {})
+  proxy.$modal.confirm('确认将"' + row.contactName + '"转化为线索？').then(() => convertToLead(row.participantId)).then(() => { proxy.$modal.msgSuccess('转线索成功'); getList(); loadStatusCounts() }).catch(() => {})
 }
 
 // 操作下拉菜单统一分发

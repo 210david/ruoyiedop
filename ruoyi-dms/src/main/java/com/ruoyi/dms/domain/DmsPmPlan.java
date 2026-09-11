@@ -49,7 +49,7 @@ public class DmsPmPlan extends BaseEntity
     private Integer cycleValue;
 
     /** 周期单位（天/月/小时/件） */
-    @Excel(name = "周期单位")
+    @Excel(name = "周期单位", dictType = "wms_unit")
     private String cycleUnit;
 
     /** 任务清单（JSON数组） */
@@ -83,7 +83,7 @@ public class DmsPmPlan extends BaseEntity
 
     /** 下次执行时间 */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    @Excel(name = "下次执行时间", width = 30)
+    @Excel(name = "下次执行时间", width = 30, dateFormat = "yyyy-MM-dd HH:mm:ss")
     private Date nextExecuteTime;
 
     /** 状态（0正常 1停用） */

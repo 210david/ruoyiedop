@@ -105,7 +105,7 @@
           <el-table-column label="移库单号" prop="moveNo" key="moveNo" :width="colWidth('moveNo', 160)" resizable v-if="columns.moveNo.visible" />
           <el-table-column label="仓库" prop="warehouseName" key="warehouseName" :width="colWidth('warehouseName', 120)" resizable v-if="columns.warehouseName.visible" />
           <el-table-column label="物料编码" prop="materialCode" key="materialCode" :width="colWidth('materialCode', 120)" resizable v-if="columns.materialCode.visible" />
-          <el-table-column label="物料名称" prop="materialName" key="materialName" :width="colWidth('materialName', 200)" resizable :show-overflow-tooltip="true" v-if="columns.materialName.visible" />
+          <el-table-column label="物料名称" prop="materialName" key="materialName" :min-width="colWidth('materialName', 200)" resizable :show-overflow-tooltip="true" v-if="columns.materialName.visible" />
           <el-table-column label="单位" prop="unit" key="unit" :width="colWidth('unit', 70)" resizable align="center" v-if="columns.unit.visible"><template #default="scope"><dict-tag :options="wms_unit" :value="scope.row.unit" /></template></el-table-column>
           <el-table-column label="批次号" prop="batchNo" key="batchNo" :width="colWidth('batchNo', 100)" resizable v-if="columns.batchNo.visible" />
           <el-table-column label="源库位" prop="fromLocationName" key="fromLocationName" :width="colWidth('fromLocationName', 180)" resizable :show-overflow-tooltip="true" v-if="columns.fromLocationName.visible" />
@@ -543,7 +543,7 @@
 <script setup name="WmsMove">
 import { listMove, getMove, addMove, delMove, approveMove, rejectMove, executeMove, voidMove } from '@/api/wms/move'
 import { listWarehouse, listLocation } from '@/api/wms/warehouse'
-import { fetchAllPages, downloadCsv } from '@/utils/csvExport'
+import { fetchAllPages, downloadXlsx } from '@/utils/csvExport'
 import InventoryPicker from '@/components/InventoryPicker/index.vue'
 import WarehousePicker from '@/components/WarehousePicker/index.vue'
 import LocationPicker from '@/components/LocationPicker/index.vue'
@@ -588,7 +588,7 @@ function submitForm() {
     if (v) {
       if (form.value.moveQty <= 0) { proxy.$modal.msgError('移库数量必须大于0'); return }
       if (form.value.toLocationId === form.value.fromLocationId) { proxy.$modal.msgError('目标库位不能与源库位相同'); return }
-      addMove(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList() })
+      addMove(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList(); loadStatusCounts() })
     }
   })
 }
@@ -607,24 +607,25 @@ function confirmApprove(passed) {
     approveMove(approveForm.value.moveId, approveForm.value.approveOpinion).then(() => {
       proxy.$modal.msgSuccess('审批通过')
       approveOpen.value = false
-      getList()
+      getList(); loadStatusCounts()
     })
   } else {
     rejectMove(approveForm.value.moveId, approveForm.value.approveOpinion).then(() => {
       proxy.$modal.msgSuccess('已驳回')
       approveOpen.value = false
-      getList()
+      getList(); loadStatusCounts()
     })
   }
 }
-function handleExecute(row) { proxy.$modal.confirm('确认执行移库？').then(() => executeMove(row.moveId)).then(() => { getList(); proxy.$modal.msgSuccess('执行完成') }).catch(() => {}) }
-function handleVoid(row) { proxy.$modal.confirm('确认作废该移库单？作废后不可恢复').then(() => voidMove(row.moveId)).then(() => { getList(); proxy.$modal.msgSuccess('已作废') }).catch(() => {}) }
+function handleExecute(row) { proxy.$modal.confirm('确认执行移库？').then(() => executeMove(row.moveId)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('执行完成') }).catch(() => {}) }
+function handleVoid(row) { proxy.$modal.confirm('确认作废该移库单？作废后不可恢复').then(() => voidMove(row.moveId)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('已作废') }).catch(() => {}) }
 /** 导出移库单（与列表口径一致：含筛选条件，导出全部页数据） */
 async function handleExport() {
-  const rows = await fetchAllPages(listMove, proxy.addDateRange(queryParams.value, dateRange.value))
+  let rows = await fetchAllPages(listMove, proxy.addDateRange(queryParams.value, dateRange.value))
+  if (ids.value && ids.value.length) { rows = rows.filter(i => ids.value.includes(i.moveId)) }
   if (!rows.length) { proxy.$modal.msgWarning('当前筛选下无数据可导出'); return }
   const headers = ['移库单号', '仓库', '物料编码', '物料名称', '单位', '批次号', '源库位', '目标库位', '移库数量', '状态']
-  downloadCsv(`move_${new Date().getTime()}`, headers, rows.map(i => [
+  downloadXlsx(`move_${new Date().getTime()}`, headers, rows.map(i => [
     i.moveNo || '', i.warehouseName || '', i.materialCode || '', i.materialName || '',
     unitText(i.unit), i.batchNo || '', i.fromLocationName || '', i.toLocationName || '',
     i.moveQty != null ? i.moveQty : '', statusLabel(i.status)
@@ -648,7 +649,7 @@ function loadStatusCounts() {
     statusCounts.value = counts
   }).catch(() => {})
 }
-function handleDelete(row) { const moveIds = row.moveId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delMove(moveIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleDelete(row) { const moveIds = row.moveId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delMove(moveIds)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
 function cancel() { open.value = false; reset() }
 function handleDetail(row) { getMove(row.moveId).then(res => { detailData.value = res.data; detailOpen.value = true }) }
 

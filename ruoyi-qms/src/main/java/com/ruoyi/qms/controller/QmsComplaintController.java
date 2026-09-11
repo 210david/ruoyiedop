@@ -32,7 +32,7 @@ public class QmsComplaintController extends BaseController {
     @PostMapping("/export")
     public void export(HttpServletResponse response, QmsComplaint complaint) {
         ExcelUtil<QmsComplaint> util = new ExcelUtil<>(QmsComplaint.class);
-        util.exportExcel(response, service.selectComplaintList(complaint), "客诉数据");
+        util.exportExcel(response, com.ruoyi.common.utils.ExportIdFilter.filter(service.selectComplaintList(complaint), complaint), "客诉数据");
     }
 
     @PreAuthorize("@ss.hasPermi('qms:complaint:query')")

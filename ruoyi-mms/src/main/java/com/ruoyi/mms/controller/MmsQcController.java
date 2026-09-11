@@ -41,6 +41,7 @@ public class MmsQcController extends BaseController
     public void export(HttpServletResponse response, MmsQc qc)
     {
         List<MmsQc> list = mmsQcService.selectQcList(qc);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, qc);
         ExcelUtil<MmsQc> util = new ExcelUtil<>(MmsQc.class);
         util.exportExcel(response, list, "Qc");
     }

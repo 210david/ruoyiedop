@@ -31,7 +31,7 @@ public class MkOrderReturnItem extends BaseEntity
     private String productSpec;
 
     /** 单位（冗余） */
-    @Excel(name = "单位")
+    @Excel(name = "单位", dictType = "wms_unit")
     private String unit;
 
     /** 订单数量 */

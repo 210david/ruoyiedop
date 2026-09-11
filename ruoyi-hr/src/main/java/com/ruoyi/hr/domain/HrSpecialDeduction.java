@@ -20,19 +20,24 @@ public class HrSpecialDeduction extends BaseEntity
     private String employeeName;
     @Excel(name = "工号")
     private String employeeNo;
+    /** 部门ID */
+    private Long deptId;
+    /** 部门名称（导出展示；导入时按员工档案自动带出） */
+    @Excel(name = "部门名称")
+    private String deptName;
     @NotBlank(message = "扣除项目不能为空")
-    @Excel(name = "扣除项目")
+    @Excel(name = "扣除项目", dictType = "hr_deduction_type")
     private String deductionType;
     @Excel(name = "月扣除金额")
     private BigDecimal deductionAmount;
     @NotNull(message = "生效日期不能为空")
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "生效日期")
+    @Excel(name = "生效日期", dateFormat = "yyyy-MM-dd")
     private Date effectiveDate;
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "失效日期")
+    @Excel(name = "失效日期", dateFormat = "yyyy-MM-dd")
     private Date expiryDate;
-    @Excel(name = "删除标志")
+    @Excel(name = "删除标志", readConverterExp = "0=正常,2=已删除")
     private String delFlag;
 
     public Long getSdId() { return sdId; }
@@ -43,6 +48,10 @@ public class HrSpecialDeduction extends BaseEntity
     public void setEmployeeName(String employeeName) { this.employeeName = employeeName; }
     public String getEmployeeNo() { return employeeNo; }
     public void setEmployeeNo(String employeeNo) { this.employeeNo = employeeNo; }
+    public Long getDeptId() { return deptId; }
+    public void setDeptId(Long deptId) { this.deptId = deptId; }
+    public String getDeptName() { return deptName; }
+    public void setDeptName(String deptName) { this.deptName = deptName; }
     public String getDeductionType() { return deductionType; }
     public void setDeductionType(String deductionType) { this.deductionType = deductionType; }
     public BigDecimal getDeductionAmount() { return deductionAmount; }

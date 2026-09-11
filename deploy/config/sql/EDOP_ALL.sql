@@ -577,6 +577,9 @@ insert into sys_config values(6, '用户登录-黑名单列表',           'sys.
 insert into sys_config values(7, '用户管理-初始密码修改策略',     'sys.account.initPasswordModify',   '1',             'Y', 'admin', sysdate(), '', null, '0：初始密码修改策略关闭，没有任何提示，1：提醒用户，如果未修改初始密码，则在登录时就会提醒修改密码对话框');
 insert into sys_config values(8, '用户管理-账号密码更新周期',     'sys.account.passwordValidateDays', '0',             'Y', 'admin', sysdate(), '', null, '密码更新周期（填写数字，数据初始化值为0不限制，若修改必须为大于0小于365的正整数），如果超过这个周期登录系统时，则在登录时就会提醒修改密码对话框');
 insert into sys_config values(9, '用户管理-密码字符范围',         'sys.account.chrtype',              '0',             'Y', 'admin', sysdate(), '', null, '默认任意字符范围，0任意（密码可以输入任意字符），1数字（密码只能为0-9数字），2英文字母（密码只能为a-z和A-Z字母），3字母和数字（密码必须包含字母，数字）,4字母数字和特殊字符（目前支持的特殊字符包括：~!@#$%^&*()-=_+）');
+insert into sys_config values(10, '系统安全-页面水印开关',       'sys.index.watermarkEnabled',       'false',         'Y', 'admin', sysdate(), '', null, '是否启用页面水印功能（true开启，false关闭），开启后所有页面显示当前用户名水印');
+insert into sys_config values(11, '系统安全-多终端登录开关',     'sys.login.multiLoginEnabled',      'true',          'Y', 'admin', sysdate(), '', null, '是否允许同一账号多终端同时登录（true允许，false不允许，不允许时新登录会踢出旧会话）');
+insert into sys_config values(12, '系统安全-会话超时时长',       'sys.token.expireTime',              '120',           'Y', 'admin', sysdate(), '', null, '令牌有效期（分钟），默认120分钟=2小时，活跃用户自动续期。修改后需刷新缓存生效');
 
 
 -- ----------------------------

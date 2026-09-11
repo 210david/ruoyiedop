@@ -40,7 +40,7 @@ public class QmsDocController extends BaseController {
     @PostMapping("/export")
     public void export(HttpServletResponse response, QmsDoc doc) {
         ExcelUtil<QmsDoc> util = new ExcelUtil<>(QmsDoc.class);
-        util.exportExcel(response, service.selectDocList(doc), "质量文档");
+        util.exportExcel(response, com.ruoyi.common.utils.ExportIdFilter.filter(service.selectDocList(doc), doc), "质量文档");
     }
 
     @PreAuthorize("@ss.hasPermi('qms:doc:query')")

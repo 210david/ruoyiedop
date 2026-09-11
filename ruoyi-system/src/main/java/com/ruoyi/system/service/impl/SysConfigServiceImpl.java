@@ -122,6 +122,8 @@ public class SysConfigServiceImpl implements ISysConfigService
         int row = configMapper.insertConfig(config);
         if (row > 0)
         {
+            // 先删除可能存在的旧缓存（虽然新增时不太可能有，但安全起见）
+            redisCache.deleteObject(getCacheKey(config.getConfigKey()));
             redisCache.setCacheObject(getCacheKey(config.getConfigKey()), config.getConfigValue(), 30, TimeUnit.MINUTES);
         }
         return row;
@@ -129,6 +131,8 @@ public class SysConfigServiceImpl implements ISysConfigService
 
     /**
      * 修改参数配置（清除对应缓存）
+     * 系统内置参数允许修改参数键值，但不允许修改参数键名和内置类型
+     * 修改后立即生效：先清除Redis手动缓存，再写入新值，Spring @CacheEvict 自动清除 Spring Cache 层
      * 
      * @param config 参数配置信息
      * @return 结果
@@ -146,6 +150,8 @@ public class SysConfigServiceImpl implements ISysConfigService
         int row = configMapper.updateConfig(config);
         if (row > 0)
         {
+            // 先删除旧缓存，再写入新值，确保不会残留旧数据
+            redisCache.deleteObject(getCacheKey(config.getConfigKey()));
             redisCache.setCacheObject(getCacheKey(config.getConfigKey()), config.getConfigValue(), 30, TimeUnit.MINUTES);
         }
         return row;

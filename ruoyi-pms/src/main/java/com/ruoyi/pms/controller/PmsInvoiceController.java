@@ -42,6 +42,7 @@ public class PmsInvoiceController extends BaseController
     public void export(HttpServletResponse response, PmsInvoice invoice)
     {
         List<PmsInvoice> list = pmsInvoiceService.selectInvoiceList(invoice);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, invoice);
         ExcelUtil<PmsInvoice> util = new ExcelUtil<>(PmsInvoice.class);
         util.exportExcel(response, list, "发票结算数据");
     }

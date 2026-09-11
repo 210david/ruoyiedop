@@ -112,7 +112,7 @@
           <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
           <el-table-column label="计划编号" prop="mpsNo" key="mpsNo" :width="colWidth('mpsNo', 140)" resizable v-if="columns.mpsNo.visible" />
           <el-table-column label="产品编码" prop="productCode" key="productCode" :width="colWidth('productCode', 130)" resizable v-if="columns.productCode.visible" />
-          <el-table-column label="产品名称" prop="productName" key="productName" :width="colWidth('productName', 180)" resizable show-overflow-tooltip v-if="columns.productName.visible" />
+          <el-table-column label="产品名称" prop="productName" key="productName" :min-width="colWidth('productName', 180)" resizable show-overflow-tooltip v-if="columns.productName.visible" />
           <el-table-column label="计划数量" prop="planQty" key="planQty" :width="colWidth('planQty', 100)" resizable align="center" v-if="columns.planQty.visible" />
           <el-table-column label="计划开始" prop="periodStart" key="periodStart" :width="colWidth('periodStart', 120)" resizable align="center" v-if="columns.periodStart.visible">
             <template #default="scope"><span>{{ parseTime(scope.row.periodStart, '{y}-{m}-{d}') }}</span></template>
@@ -638,9 +638,9 @@ function submitForm() {
   proxy.$refs["formRef"].validate(valid => {
     if (valid) {
       if (form.value.mpsId != null) {
-        updateMps(form.value).then(() => { proxy.$modal.msgSuccess("修改成功"); open.value = false; getList(); });
+        updateMps(form.value).then(() => { proxy.$modal.msgSuccess("修改成功"); open.value = false; getList(); loadStatusCounts(); });
       } else {
-        addMps(form.value).then(() => { proxy.$modal.msgSuccess("新增成功"); open.value = false; getList(); });
+        addMps(form.value).then(() => { proxy.$modal.msgSuccess("新增成功"); open.value = false; getList(); loadStatusCounts(); });
       }
     }
   });
@@ -648,13 +648,13 @@ function submitForm() {
 function cancel() { open.value = false; reset(); }
 function handleDelete(row) {
   const delIds = row.mpsId || ids.value;
-  proxy.$modal.confirm('是否确认删除选中的计划？').then(() => delMps(delIds)).then(() => { getList(); proxy.$modal.msgSuccess("删除成功"); }).catch(() => {});
+  proxy.$modal.confirm('是否确认删除选中的计划？').then(() => delMps(delIds)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess("删除成功"); }).catch(() => {});
 }
-function handleExport() { proxy.download("mms/mps/export", { ...queryParams.value }, `mps_${new Date().getTime()}.xlsx`); }
+function handleExport() { proxy.download("mms/mps/export", proxy.withExportIds({ ...queryParams.value }, ids.value, 'mpsId'), `mps_${new Date().getTime()}.xlsx`); }
 
 // 业务操作
 function handleSubmit(row) {
-  proxy.$modal.confirm('是否提交计划"' + row.mpsNo + '"进行审批？').then(() => submitMps(row.mpsId)).then(() => { getList(); proxy.$modal.msgSuccess("提交成功"); }).catch(() => {});
+  proxy.$modal.confirm('是否提交计划"' + row.mpsNo + '"进行审批？').then(() => submitMps(row.mpsId)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess("提交成功"); }).catch(() => {});
 }
 function handleAudit(row) {
   const id = row.mpsId;
@@ -674,13 +674,13 @@ function submitAudit(passed) {
       }).then(() => {
         proxy.$modal.msgSuccess("审批成功");
         auditOpen.value = false;
-        getList();
+        getList(); loadStatusCounts();
       }).catch(() => {});
     }
   });
 }
 function handleRelease(row) {
-  proxy.$modal.confirm('是否确认下达计划"' + row.mpsNo + '"？将自动生成生产工单。').then(() => releaseMps(row.mpsId)).then(() => { getList(); proxy.$modal.msgSuccess("下达成功，工单已生成"); }).catch(() => {});
+  proxy.$modal.confirm('是否确认下达计划"' + row.mpsNo + '"？将自动生成生产工单。').then(() => releaseMps(row.mpsId)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess("下达成功，工单已生成"); }).catch(() => {});
 }
 function handleCancel(row) {
   cancelForm.value = { mpsId: row.mpsId, mpsNo: row.mpsNo, cancelReason: "" };
@@ -688,7 +688,7 @@ function handleCancel(row) {
 }
 function submitCancel() {
   cancelMps(cancelForm.value.mpsId, cancelForm.value.cancelReason).then(() => {
-    cancelOpen.value = false; getList(); proxy.$modal.msgSuccess("取消成功");
+    cancelOpen.value = false; getList(); loadStatusCounts(); proxy.$modal.msgSuccess("取消成功");
   });
 }
 

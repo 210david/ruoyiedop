@@ -89,7 +89,7 @@
         <el-table ref="tableRef" v-loading="loading" :data="enterpriseList" border @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
-          <el-table-column label="企业名称" prop="enterpriseName" key="enterpriseName" :width="colWidth('enterpriseName', 200)" resizable sortable="custom" show-overflow-tooltip v-if="columns.enterpriseName.visible" />
+          <el-table-column label="企业名称" prop="enterpriseName" key="enterpriseName" :min-width="colWidth('enterpriseName', 200)" resizable sortable="custom" show-overflow-tooltip v-if="columns.enterpriseName.visible" />
           <el-table-column label="统一社会信用代码" prop="creditCode" key="creditCode" :width="colWidth('creditCode', 200)" resizable show-overflow-tooltip v-if="columns.creditCode.visible" />
           <el-table-column label="行业类别" prop="industryType" key="industryType" :width="colWidth('industryType', 120)" resizable align="center" v-if="columns.industryType.visible">
             <template #default="scope">
@@ -346,7 +346,7 @@ function handleDelete(row) {
   const enterpriseIds = row.enterpriseId || ids.value
   proxy.$modal.confirm('是否确认删除企业档案？').then(function() { return delEnterprise(enterpriseIds) }).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {})
 }
-function handleExport() { proxy.download('safety/enterprise/export', { ...queryParams.value }, `enterprise_${new Date().getTime()}.xlsx`) }
+function handleExport() { proxy.download('safety/enterprise/export', proxy.withExportIds({ ...queryParams.value }, ids.value, 'enterpriseId'), `enterprise_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 function reset() {
   form.value = { enterpriseId: undefined, enterpriseName: undefined, creditCode: undefined, industryType: undefined, isHighRisk: '0', legalPerson: undefined, safetyManagerId: undefined, safetyManager: undefined, safetyOrg: undefined, superviseDept: undefined, responsibility: undefined, remark: undefined }

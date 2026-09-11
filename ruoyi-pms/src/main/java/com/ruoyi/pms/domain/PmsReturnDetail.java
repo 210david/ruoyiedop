@@ -35,7 +35,7 @@ public class PmsReturnDetail extends BaseEntity
     private String specModel;
 
     /** 单位（冗余） */
-    @Excel(name = "单位")
+    @Excel(name = "单位", dictType = "wms_unit")
     private String unit;
 
     /** 退货数量 */

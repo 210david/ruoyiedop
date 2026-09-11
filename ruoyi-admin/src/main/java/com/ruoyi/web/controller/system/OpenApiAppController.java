@@ -36,6 +36,7 @@ public class OpenApiAppController extends BaseController
     {
         startPage();
         List<OpenApiApp> list = openApiAppService.selectOpenApiAppList(app);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, app);
         return getDataTable(list);
     }
 

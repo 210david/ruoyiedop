@@ -50,6 +50,7 @@ public class MmsAbnormalController extends BaseController
     public void export(HttpServletResponse response, MmsAbnormal abnormal)
     {
         List<MmsAbnormal> list = mmsAbnormalService.selectAbnormalList(abnormal);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, abnormal);
         ExcelUtil<MmsAbnormal> util = new ExcelUtil<>(MmsAbnormal.class);
         util.exportExcel(response, list, "异常记录数据");
     }

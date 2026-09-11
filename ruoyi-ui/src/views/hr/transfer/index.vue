@@ -122,7 +122,7 @@
           <el-table-column label="调动单号" prop="transferNo" key="transferNo" align="center" :width="colWidth('transferNo', 180)" resizable v-if="columns.transferNo.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.transferNo }}</span></template>
           </el-table-column>
-          <el-table-column label="员工姓名" prop="employeeName" key="employeeName" align="center" :width="colWidth('employeeName', 110)" resizable v-if="columns.employeeName.visible" />
+          <el-table-column label="员工姓名" prop="employeeName" key="employeeName" align="center" :min-width="colWidth('employeeName', 110)" show-overflow-tooltip resizable v-if="columns.employeeName.visible" />
           <el-table-column label="工号" prop="employeeNo" key="employeeNo" align="center" :width="colWidth('employeeNo', 120)" resizable v-if="columns.employeeNo.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.employeeNo }}</span></template>
           </el-table-column>
@@ -874,7 +874,7 @@ function submitAudit(action) {
   auditHrTransfer(auditData.value.transferId, action, auditData.value.auditRemark).then(() => {
     proxy.$modal.msgSuccess(action === '1' ? '审批通过' : '已驳回')
     auditOpen.value = false
-    getList()
+    getList(); loadStatusCounts()
   }).finally(() => {
     auditSubmitting.value = false
   })
@@ -887,13 +887,13 @@ function submitForm() {
         updateHrTransfer(form.value).then(() => {
           proxy.$modal.msgSuccess('修改成功')
           open.value = false
-          getList()
+          getList(); loadStatusCounts()
         })
       } else {
         addHrTransfer(form.value).then(() => {
           proxy.$modal.msgSuccess('新增成功')
           open.value = false
-          getList()
+          getList(); loadStatusCounts()
         })
       }
     }
@@ -905,13 +905,13 @@ function handleDelete(row) {
   proxy.$modal.confirm('是否确认删除选中的调动？').then(function() {
     return delHrTransfer(transferIds)
   }).then(() => {
-    getList()
+    getList(); loadStatusCounts()
     proxy.$modal.msgSuccess('删除成功')
   }).catch(() => {})
 }
 
 function handleExport() {
-  proxy.download('hr/transfer/export', { ...queryParams.value }, `hrTransfer_${new Date().getTime()}.xlsx`)
+  proxy.download('hr/transfer/export', proxy.withExportIds({ ...queryParams.value }, ids.value, 'transferId'), `hrTransfer_${new Date().getTime()}.xlsx`)
 }
 
 function cancel() {

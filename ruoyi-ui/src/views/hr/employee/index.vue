@@ -153,7 +153,7 @@
           <el-table-column label="工号" prop="employeeNo" key="employeeNo" align="center" :width="colWidth('employeeNo', 120)" resizable v-if="columns.employeeNo.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.employeeNo }}</span></template>
           </el-table-column>
-          <el-table-column label="姓名" prop="employeeName" key="employeeName" align="center" :width="colWidth('employeeName', 100)" resizable v-if="columns.employeeName.visible" />
+          <el-table-column label="姓名" prop="employeeName" key="employeeName" align="center" :min-width="colWidth('employeeName', 100)" show-overflow-tooltip resizable v-if="columns.employeeName.visible" />
           <el-table-column label="性别" prop="gender" key="gender" align="center" :width="colWidth('gender', 80)" resizable v-if="columns.gender.visible">
             <template #default="scope">
               <span class="badge blue" v-if="scope.row.gender === '0'">男</span>
@@ -1112,13 +1112,13 @@ function submitForm() {
         updateHrEmployee(form.value).then(() => {
           proxy.$modal.msgSuccess('修改成功');
           open.value = false;
-          getList();
+          getList(); loadStatusCounts();
         });
       } else {
         addHrEmployee(form.value).then(() => {
           proxy.$modal.msgSuccess('新增成功');
           open.value = false;
-          getList();
+          getList(); loadStatusCounts();
         });
       }
     }
@@ -1130,13 +1130,13 @@ function handleDelete(row) {
   proxy.$modal.confirm('是否确认删除选中的员工数据？').then(() => {
     return delHrEmployee(deleteIds);
   }).then(() => {
-    getList();
+    getList(); loadStatusCounts();
     proxy.$modal.msgSuccess('删除成功');
   }).catch(() => {});
 }
 
 function handleExport() {
-  proxy.download('hr/employee/export', { ...queryParams }, 'employee_' + new Date().getTime() + '.xlsx');
+  proxy.download('hr/employee/export', proxy.withExportIds({ ...queryParams }, ids.value, 'employeeId'), 'employee_' + new Date().getTime() + '.xlsx');
 }
 
 function cancel() {

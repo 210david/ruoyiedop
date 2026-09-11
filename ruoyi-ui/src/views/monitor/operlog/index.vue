@@ -90,7 +90,7 @@
             </template>
           </el-table-column>
           <el-table-column label="操作人员" align="center" prop="operName" :show-overflow-tooltip="true" :width="colWidth('operName', 110)" resizable sortable="custom" :sort-orders="['descending', 'ascending']" v-if="columns.operName.visible" />
-          <el-table-column label="操作地址" align="center" prop="operIp" :show-overflow-tooltip="true" :width="colWidth('operIp', 130)" resizable v-if="columns.operIp.visible" />
+          <el-table-column label="操作地址" align="center" prop="operIp" :show-overflow-tooltip="true" :min-width="colWidth('operIp', 130)" resizable v-if="columns.operIp.visible" />
           <el-table-column label="操作状态" align="center" prop="status" :width="colWidth('status', 100)" resizable v-if="columns.status.visible">
             <template #default="scope">
               <dict-tag :options="sys_common_status" :value="scope.row.status" />
@@ -246,7 +246,7 @@ function handleDetail(row) {
 /** 删除按钮操作 */
 function handleDelete(row) {
   const operIds = row.operId || ids.value
-  proxy.$modal.confirm('是否确认删除日志编号为"' + operIds + '"的数据项?').then(function () {
+  proxy.$modal.confirm('是否确认删除选中的操作日志？').then(function () {
     return delOperlog(operIds)
   }).then(() => {
     getList()
@@ -266,9 +266,9 @@ function handleClean() {
 
 /** 导出按钮操作 */
 function handleExport() {
-  proxy.download("monitor/operlog/export",{
+  proxy.download("monitor/operlog/export",proxy.withExportIds({
     ...proxy.addDateRange(queryParams.value, dateRange.value),
-  }, `config_${new Date().getTime()}.xlsx`)
+  }, ids.value, 'operId'), `config_${new Date().getTime()}.xlsx`)
 }
 
 getList()

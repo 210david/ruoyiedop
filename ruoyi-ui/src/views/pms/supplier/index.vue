@@ -130,8 +130,8 @@
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" resizable align="center" />
-          <el-table-column label="供应商编码" prop="supplierCode" key="supplierCode" :width="colWidth('supplierCode', 180)" resizable sortable="custom" v-if="columns.supplierCode.visible" />
-          <el-table-column label="供应商名称" prop="supplierName" key="supplierName" :width="colWidth('supplierName', 240)" resizable show-overflow-tooltip v-if="columns.supplierName.visible" />
+          <el-table-column label="供应商编码" prop="supplierCode" key="supplierCode" :min-width="colWidth('supplierCode', 180)" show-overflow-tooltip resizable sortable="custom" v-if="columns.supplierCode.visible" />
+          <el-table-column label="供应商名称" prop="supplierName" key="supplierName" :min-width="colWidth('supplierName', 240)" resizable show-overflow-tooltip v-if="columns.supplierName.visible" />
           <el-table-column label="简称" prop="supplierShortName" key="supplierShortName" :width="colWidth('supplierShortName', 120)" resizable show-overflow-tooltip v-if="columns.supplierShortName.visible" />
           <el-table-column label="类型" prop="supplierType" key="supplierType" :width="colWidth('supplierType', 120)" resizable align="center" v-if="columns.supplierType.visible"><template #default="scope"><span class="badge violet">{{ supplierTypeLabel(scope.row.supplierType) }}</span></template></el-table-column>
           <el-table-column label="等级" prop="supplierLevel" key="supplierLevel" :width="colWidth('supplierLevel', 120)" resizable align="center" sortable="custom" v-if="columns.supplierLevel.visible"><template #default="scope"><span class="badge blue">{{ supplierLevelLabel(scope.row.supplierLevel) }}</span></template></el-table-column>
@@ -355,9 +355,9 @@ function reset() { form.value = { supplierId: undefined, supplierCode: undefined
 function handleAdd() { reset(); open.value = true; title.value = '添加供应商' }
 function handleUpdate(row) { reset(); getSupplier(row.supplierId || ids.value[0]).then(res => { form.value = res.data; open.value = true; title.value = '修改供应商' }) }
 function handleView(row) { getSupplier(row.supplierId).then(res => { viewData.value = res.data; viewOpen.value = true }) }
-function submitForm() { proxy.$refs['supplierRef'].validate(valid => { if (valid) { if (form.value.supplierId != undefined) { updateSupplier(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList() }) } else { addSupplier(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList() }) } } }) }
-function handleDelete(row) { const supplierIds = row.supplierId || ids.value; proxy.$modal.confirm('是否确认删除选中的供应商数据？').then(() => delSupplier(supplierIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
-function handleExport() { proxy.download('wms/supplier/export', { ...proxy.addDateRange(queryParams.value, dateRange.value) }, `supplier_${new Date().getTime()}.xlsx`) }
+function submitForm() { proxy.$refs['supplierRef'].validate(valid => { if (valid) { if (form.value.supplierId != undefined) { updateSupplier(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList(); loadStatusCounts() }) } else { addSupplier(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList(); loadStatusCounts() }) } } }) }
+function handleDelete(row) { const supplierIds = row.supplierId || ids.value; proxy.$modal.confirm('是否确认删除选中的供应商数据？').then(() => delSupplier(supplierIds)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleExport() { proxy.download('wms/supplier/export', proxy.withExportIds({ ...proxy.addDateRange(queryParams.value, dateRange.value) }, ids.value, 'supplierId'), `supplier_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 
 function handleEnterpriseLookup() {

@@ -40,3 +40,28 @@ export function downloadCsv(filename, headers, rows) {
   link.click()
   setTimeout(() => { document.body.removeChild(link); URL.revokeObjectURL(link.href) }, 200)
 }
+
+/**
+ * 下载 XLSX 文件（平台统一导出格式，参考后端工单导出；含表头样式）
+ * @param {String} filename 文件名（自动补 .xlsx 后缀）
+ * @param {Array<String>} headers 表头
+ * @param {Array<Array>} rows 数据行
+ */
+export async function downloadXlsx(filename, headers, rows) {
+  const XLSX = await import('xlsx')
+  const aoa = [headers, ...rows]
+  const ws = XLSX.utils.aoa_to_sheet(aoa)
+  // 列宽自适应：按各列最长内容估算（中文按2字符宽计）
+  ws['!cols'] = headers.map((_, ci) => {
+    let max = String(headers[ci] || '').length
+    for (const r of rows) {
+      const v = String(r[ci] != null ? r[ci] : '')
+      const w = v.split('').reduce((n, ch) => n + (ch.charCodeAt(0) > 127 ? 2 : 1), 0)
+      if (w > max) max = w
+    }
+    return { wch: Math.min(Math.max(max + 4, 10), 60) }
+  })
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, 'Sheet1')
+  XLSX.writeFile(wb, filename.endsWith('.xlsx') ? filename : `${filename}.xlsx`)
+}

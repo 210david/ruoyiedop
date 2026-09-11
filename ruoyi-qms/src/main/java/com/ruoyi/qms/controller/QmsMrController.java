@@ -34,7 +34,7 @@ public class QmsMrController extends BaseController {
     @PostMapping("/export")
     public void export(HttpServletResponse response, QmsMr mr) {
         ExcelUtil<QmsMr> util = new ExcelUtil<>(QmsMr.class);
-        util.exportExcel(response, service.selectMrList(mr), "管理评审");
+        util.exportExcel(response, com.ruoyi.common.utils.ExportIdFilter.filter(service.selectMrList(mr), mr), "管理评审");
     }
 
     @PreAuthorize("@ss.hasPermi('qms:mr:query')")

@@ -33,6 +33,7 @@ public class MmsBatchTraceController extends BaseController
     public void export(HttpServletResponse response, MmsBatchTrace trace)
     {
         List<MmsBatchTrace> list = mmsBatchTraceService.selectBatchTraceList(trace);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, trace);
         ExcelUtil<MmsBatchTrace> util = new ExcelUtil<>(MmsBatchTrace.class);
         util.exportExcel(response, list, "批次追溯数据");
     }

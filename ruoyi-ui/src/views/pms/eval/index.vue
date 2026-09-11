@@ -99,7 +99,7 @@
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" resizable align="center" />
-          <el-table-column label="供应商" prop="supplierName" key="supplierName" :width="colWidth('supplierName', 240)" resizable show-overflow-tooltip v-if="columns.supplierName.visible" />
+          <el-table-column label="供应商" prop="supplierName" key="supplierName" :min-width="colWidth('supplierName', 240)" resizable show-overflow-tooltip v-if="columns.supplierName.visible" />
           <el-table-column label="评估周期" prop="evalPeriod" key="evalPeriod" :width="colWidth('evalPeriod', 130)" resizable align="center" v-if="columns.evalPeriod.visible" />
           <el-table-column label="评估日期" prop="evalDate" key="evalDate" :width="colWidth('evalDate', 130)" resizable align="center" sortable="custom" :sort-orders="['descending', 'ascending']" v-if="columns.evalDate.visible" />
           <el-table-column label="交货评分" prop="deliveryScore" key="deliveryScore" :width="colWidth('deliveryScore', 110)" resizable align="center" v-if="columns.deliveryScore.visible" />
@@ -729,12 +729,12 @@ function submitForm() {
 }
 function handleDelete(row) {
   const evalIds = row.evalId || ids.value
-  proxy.$modal.confirm('确认删除编号为"' + evalIds + '"的数据？').then(() => delEval(evalIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {})
+  proxy.$modal.confirm('确认删除？').then(() => delEval(evalIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {})
 }
 function handleExport() {
   proxy.addDateRange(queryParams.value, dateRange.value, 'EvalDate')
   proxy.addDateRange(queryParams.value, createTimeRange.value, 'CreateTime')
-  proxy.download('pms/eval/export', { ...queryParams.value }, `eval_${new Date().getTime()}.xlsx`)
+  proxy.download('pms/eval/export', proxy.withExportIds({ ...queryParams.value }, ids.value, 'evalId'), `eval_${new Date().getTime()}.xlsx`)
 }
 function cancel() { open.value = false; reset() }
 

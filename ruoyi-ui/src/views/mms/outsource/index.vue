@@ -40,10 +40,10 @@
           <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
           <el-table-column label="外协单号" prop="outsourceNo" key="outsourceNo" :width="colWidth('outsourceNo', 150)" resizable v-if="columns.outsourceNo.visible" />
           <el-table-column label="工单编号" prop="workOrderNo" key="workOrderNo" :width="colWidth('workOrderNo', 140)" resizable v-if="columns.workOrderNo.visible" />
-          <el-table-column label="产品名称" prop="productName" key="productName" :width="colWidth('productName', 160)" resizable show-overflow-tooltip v-if="columns.productName.visible" />
+          <el-table-column label="产品名称" prop="productName" key="productName" :min-width="colWidth('productName', 160)" resizable show-overflow-tooltip v-if="columns.productName.visible" />
           <el-table-column label="计划数量" prop="planQty" key="planQty" :width="colWidth('planQty', 100)" resizable align="center" v-if="columns.planQty.visible" />
           <el-table-column label="工序" prop="processName" key="processName" :width="colWidth('processName', 120)" resizable show-overflow-tooltip v-if="columns.processName.visible" />
-          <el-table-column label="供应商" prop="supplierName" key="supplierName" :width="colWidth('supplierName', 140)" resizable show-overflow-tooltip v-if="columns.supplierName.visible" />
+          <el-table-column label="供应商" prop="supplierName" key="supplierName" :min-width="colWidth('supplierName', 140)" resizable show-overflow-tooltip v-if="columns.supplierName.visible" />
           <el-table-column label="外协数量" prop="outQty" key="outQty" :width="colWidth('outQty', 100)" resizable align="center" v-if="columns.outQty.visible" />
           <el-table-column label="单价" prop="unitPrice" key="unitPrice" :width="colWidth('unitPrice', 110)" resizable align="center" v-if="columns.unitPrice.visible"><template #default="scope"><span class="rd-amount">{{ scope.row.unitPrice != null ? '￥' + formatAmount(scope.row.unitPrice) : '—' }}</span></template></el-table-column>
           <el-table-column label="总金额" prop="totalAmount" key="totalAmount" :width="colWidth('totalAmount', 130)" resizable align="center" v-if="columns.totalAmount.visible"><template #default="scope"><span class="rd-amount rd-value--large">{{ scope.row.totalAmount != null ? '￥' + formatAmount(scope.row.totalAmount) : '—' }}</span></template></el-table-column>
@@ -488,7 +488,7 @@ function handleView(row) { const id = row.outsourceId || ids.value[0]; getOutsou
 function submitForm() { proxy.$refs["formRef"].validate(v => { if (v) { if (form.value.outsourceId != null) { updateOutsource(form.value).then(() => { proxy.$modal.msgSuccess("修改成功"); open.value = false; getList(); }); } else { addOutsource(form.value).then(() => { proxy.$modal.msgSuccess("新增成功"); open.value = false; getList(); }); } } }); }
 function cancel() { open.value = false; reset(); }
 function handleDelete(row) { const delIds = row.outsourceId || ids.value; proxy.$modal.confirm('确认删除选中的外协记录？').then(() => delOutsource(delIds)).then(() => { getList(); proxy.$modal.msgSuccess("删除成功"); }).catch(() => {}); }
-function handleExport() { proxy.download("mms/outsource/export", { ...queryParams.value }, `outsource_${new Date().getTime()}.xlsx`); }
+function handleExport() { proxy.download("mms/outsource/export", proxy.withExportIds({ ...queryParams.value }, ids.value, 'outsourceId'), `outsource_${new Date().getTime()}.xlsx`); }
 function statusLabel(s) { if (s === null || s === undefined || s === '') return '—'; const i = mms_outsource_status.value?.find(d => d.value == s); return i ? i.label : '—'; }
 function badgeClass(s) { return { '0': 'amber', '1': 'blue', '2': 'green' }[s] || 'gray'; }
 function statusTabClass(v) { return { '0': 'tab-draft', '1': 'tab-audit', '2': 'tab-done' }[v] || ''; }

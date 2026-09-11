@@ -9,14 +9,14 @@ public class SafetyRemind extends BaseEntity
     private static final long serialVersionUID = 1L;
 
     private Long remindId;
-    @Excel(name = "提醒类型")
+    @Excel(name = "提醒类型", dictType = "safety_remind_type")
     private String remindType;
     private Long relatedId;
     @Excel(name = "关联名称")
     private String relatedName;
     @Excel(name = "提醒内容")
     private String remindContent;
-    @Excel(name = "到期日期", width = 120)
+    @Excel(name = "到期日期", width = 120, dateFormat = "yyyy-MM-dd")
     private Date expireDate;
     @Excel(name = "提前天数")
     private Integer remindDays;
@@ -27,11 +27,11 @@ public class SafetyRemind extends BaseEntity
     private Long toPersonId;
     @Excel(name = "接收人")
     private String toPersonName;
-    @Excel(name = "已读时间", width = 160)
+    @Excel(name = "已读时间", width = 160, dateFormat = "yyyy-MM-dd HH:mm:ss")
     private Date readTime;
     @Excel(name = "处理人")
     private String handleBy;
-    @Excel(name = "处理时间", width = 160)
+    @Excel(name = "处理时间", width = 160, dateFormat = "yyyy-MM-dd HH:mm:ss")
     private Date handleTime;
     @Excel(name = "处理结果")
     private String handleResult;

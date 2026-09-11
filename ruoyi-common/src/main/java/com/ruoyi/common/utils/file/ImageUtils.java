@@ -57,6 +57,7 @@ public class ImageUtils
 
     /**
      * 读取文件为字节数据
+     * 本地文件已加密存储，读取时需解密解压
      * 
      * @param url 地址
      * @return 字节数据
@@ -68,22 +69,24 @@ public class ImageUtils
         {
             if (url.startsWith("http"))
             {
-                // 网络地址
+                // 网络地址（不加密）
                 URL urlObj = new URL(url);
                 URLConnection urlConnection = urlObj.openConnection();
                 urlConnection.setConnectTimeout(30 * 1000);
                 urlConnection.setReadTimeout(60 * 1000);
                 urlConnection.setDoInput(true);
                 in = urlConnection.getInputStream();
+                return IOUtils.toByteArray(in);
             }
             else
             {
-                // 本机地址
+                // 本机地址：文件已加密，需解密解压
                 String localPath = RuoYiConfig.getProfile();
                 String downloadPath = localPath + StringUtils.substringAfter(url, Constants.RESOURCE_PREFIX);
                 in = new FileInputStream(downloadPath);
+                byte[] encryptedData = in.readAllBytes();
+                return FileStorageUtils.decryptAndDecompress(encryptedData);
             }
-            return IOUtils.toByteArray(in);
         }
         catch (Exception e)
         {

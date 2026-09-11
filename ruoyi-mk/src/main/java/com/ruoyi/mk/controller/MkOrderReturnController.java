@@ -44,6 +44,7 @@ public class MkOrderReturnController extends BaseController
     public void export(HttpServletResponse response, MkOrderReturn orderReturn)
     {
         List<MkOrderReturn> list = mkOrderReturnService.selectReturnList(orderReturn);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, orderReturn);
         ExcelUtil<MkOrderReturn> util = new ExcelUtil<>(MkOrderReturn.class);
         util.exportExcel(response, list, "退货数据");
     }

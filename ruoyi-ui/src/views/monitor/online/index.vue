@@ -66,7 +66,7 @@
             </template>
           </el-table-column>
           <el-table-column label="会话编号" align="center" prop="tokenId" key="tokenId" :show-overflow-tooltip="true" :width="colWidth('tokenId', 220)" resizable v-if="columns.tokenId.visible" />
-          <el-table-column label="登录名称" align="center" prop="userName" key="userName" :show-overflow-tooltip="true" :width="colWidth('userName', 120)" resizable v-if="columns.userName.visible" />
+          <el-table-column label="登录名称" align="center" prop="userName" key="userName" :show-overflow-tooltip="true" :min-width="colWidth('userName', 120)" resizable v-if="columns.userName.visible" />
           <el-table-column label="所属部门" align="center" prop="deptName" key="deptName" :show-overflow-tooltip="true" :width="colWidth('deptName', 120)" resizable v-if="columns.deptName.visible" />
           <el-table-column label="主机" align="center" prop="ipaddr" key="ipaddr" :show-overflow-tooltip="true" :width="colWidth('ipaddr', 130)" resizable v-if="columns.ipaddr.visible" />
           <el-table-column label="登录地点" align="center" prop="loginLocation" key="loginLocation" :show-overflow-tooltip="true" :width="colWidth('loginLocation', 130)" resizable v-if="columns.loginLocation.visible" />

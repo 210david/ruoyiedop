@@ -101,13 +101,13 @@
           <el-table-column label="询价单号" prop="inquiryNo" key="inquiryNo" :width="colWidth('inquiryNo', 180)" resizable sortable="custom" v-if="columns.inquiryNo.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.inquiryNo }}</span></template>
           </el-table-column>
-          <el-table-column label="供应商编号" prop="supplierCode" key="supplierCode" :width="colWidth('supplierCode', 120)" resizable show-overflow-tooltip v-if="columns.supplierCode.visible" />
-          <el-table-column label="供应商名称" prop="supplierName" key="supplierName" :width="colWidth('supplierName', 240)" resizable show-overflow-tooltip v-if="columns.supplierName.visible" />
+          <el-table-column label="供应商编号" prop="supplierCode" key="supplierCode" :min-width="colWidth('supplierCode', 120)" resizable show-overflow-tooltip v-if="columns.supplierCode.visible" />
+          <el-table-column label="供应商名称" prop="supplierName" key="supplierName" :min-width="colWidth('supplierName', 240)" resizable show-overflow-tooltip v-if="columns.supplierName.visible" />
           <el-table-column label="物料编号" prop="materialCode" key="materialCode" :width="colWidth('materialCode', 130)" resizable v-if="columns.materialCode.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.materialCode }}</span></template>
           </el-table-column>
-          <el-table-column label="物料名称" prop="materialName" key="materialName" :width="colWidth('materialName', 150)" resizable show-overflow-tooltip v-if="columns.materialName.visible" />
-          <el-table-column label="规格型号" prop="specification" key="specification" :width="colWidth('specification', 130)" resizable show-overflow-tooltip v-if="columns.specification.visible" />
+          <el-table-column label="物料名称" prop="materialName" key="materialName" :min-width="colWidth('materialName', 150)" resizable show-overflow-tooltip v-if="columns.materialName.visible" />
+          <el-table-column label="规格型号" prop="specification" key="specification" :min-width="colWidth('specification', 130)" resizable show-overflow-tooltip v-if="columns.specification.visible" />
           <el-table-column label="单位" prop="unit" key="unit" :width="colWidth('unit', 80)" resizable align="center" v-if="columns.unit.visible">
             <template #default="scope"><dict-tag :options="wms_unit" :value="scope.row.unit" /></template>
           </el-table-column>

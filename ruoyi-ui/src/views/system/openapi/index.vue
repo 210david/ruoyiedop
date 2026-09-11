@@ -53,7 +53,7 @@
 <el-table-column type="selection" width="55" align="center" />
 <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
 <el-table-column label="应用ID" align="center" prop="appId" :width="colWidth('appId', 80)" resizable v-if="columns.appId.visible" />
-          <el-table-column label="应用名称" align="center" prop="appName" :show-overflow-tooltip="true" :width="colWidth('appName', 150)" resizable v-if="columns.appName.visible" />
+          <el-table-column label="应用名称" align="center" prop="appName" :show-overflow-tooltip="true" :min-width="colWidth('appName', 150)" resizable v-if="columns.appName.visible" />
           <el-table-column label="API Key" align="center" prop="appKey" :show-overflow-tooltip="true" :width="colWidth('appKey', 200)" resizable v-if="columns.appKey.visible">
             <template #default="scope">
               <span style="font-family: monospace;">{{ scope.row.appKey }}</span>
@@ -66,7 +66,7 @@
             </template>
           </el-table-column>
           <el-table-column label="创建时间" align="center" prop="createTime" :width="colWidth('createTime', 160)" resizable v-if="columns.createTime.visible" />
-          <el-table-column label="备注" align="center" prop="remark" :show-overflow-tooltip="true" :width="colWidth('remark', 200)" resizable v-if="columns.remark.visible" />
+          <el-table-column label="备注" align="center" prop="remark" :show-overflow-tooltip="true" :min-width="colWidth('remark', 200)" resizable v-if="columns.remark.visible" />
           <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
               <div class="action-btn-row">
@@ -282,7 +282,7 @@ function submitForm() {
 
 function handleDelete(row) {
   const appIds = row.appId || ids.value
-  proxy.$modal.confirm('是否确认删除应用编号为"' + appIds + '"的数据项？').then(() => {
+  proxy.$modal.confirm('是否确认删除选中的应用？').then(() => {
     return delOpenApi(appIds)
   }).then(() => {
     getList()

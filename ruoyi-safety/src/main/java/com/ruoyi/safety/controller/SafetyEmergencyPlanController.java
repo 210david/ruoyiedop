@@ -37,6 +37,7 @@ public class SafetyEmergencyPlanController extends BaseController
     public void export(HttpServletResponse response, SafetyEmergencyPlan plan)
     {
         List<SafetyEmergencyPlan> list = safetyEmergencyPlanService.selectSafetyEmergencyPlanList(plan);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, plan);
         ExcelUtil<SafetyEmergencyPlan> util = new ExcelUtil<>(SafetyEmergencyPlan.class);
         util.exportExcel(response, list, "应急预案");
     }

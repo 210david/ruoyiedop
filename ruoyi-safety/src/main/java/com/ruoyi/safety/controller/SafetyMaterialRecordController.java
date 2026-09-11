@@ -35,6 +35,7 @@ public class SafetyMaterialRecordController extends BaseController
     @PostMapping("/export")
     public void export(HttpServletResponse response, SafetyMaterialRecord record) {
         List<SafetyMaterialRecord> list = safetyMaterialRecordService.selectSafetyMaterialRecordList(record);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, record);
         ExcelUtil<SafetyMaterialRecord> util = new ExcelUtil<>(SafetyMaterialRecord.class);
         util.exportExcel(response, list, "出入库记录");
     }

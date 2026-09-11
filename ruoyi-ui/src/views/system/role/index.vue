@@ -78,7 +78,7 @@
 <el-table-column type="selection" width="55" align="center" />
 <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
 <el-table-column label="角色编号" prop="roleId" key="roleId" :width="colWidth('roleId', 120)" v-if="columns.roleId.visible" />
-                     <el-table-column label="角色名称" prop="roleName" key="roleName" :show-overflow-tooltip="true" :width="colWidth('roleName', 150)" v-if="columns.roleName.visible" />
+                     <el-table-column label="角色名称" prop="roleName" key="roleName" :show-overflow-tooltip="true" :min-width="colWidth('roleName', 150)" v-if="columns.roleName.visible" />
                      <el-table-column label="角色分类" align="center" key="roleCategory" prop="roleCategory" :width="colWidth('roleCategory', 180)" v-if="columns.roleCategory.visible">
                         <template #default="scope">
                            <div class="category-tags">
@@ -491,7 +491,7 @@ function resetQuery() {
 /** 删除按钮操作 */
 function handleDelete(row) {
   const roleIds = row.roleId || ids.value
-  proxy.$modal.confirm('是否确认删除角色编号为"' + roleIds + '"的数据项?').then(function () {
+  proxy.$modal.confirm('是否确认删除选中的角色?').then(function () {
     return delRole(roleIds)
   }).then(() => {
     getList()
@@ -501,9 +501,9 @@ function handleDelete(row) {
 
 /** 导出按钮操作 */
 function handleExport() {
-  proxy.download("system/role/export", {
+  proxy.download("system/role/export", proxy.withExportIds({
     ...proxy.addDateRange(queryParams.value, dateRange.value),
-  }, `role_${new Date().getTime()}.xlsx`)
+  }, ids.value, 'roleId'), `role_${new Date().getTime()}.xlsx`)
 }
 
 /** 多选框选中数据 */

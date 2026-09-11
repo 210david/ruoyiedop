@@ -66,8 +66,8 @@
 <el-table-column type="selection" width="55" align="center" />
 <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
 <el-table-column label="访问编号" align="center" prop="infoId" :width="colWidth('infoId', 120)" resizable v-if="columns.infoId.visible" />
-          <el-table-column label="用户名称" align="center" prop="userName" :show-overflow-tooltip="true" :width="colWidth('userName', 120)" resizable sortable="custom" :sort-orders="['descending', 'ascending']" v-if="columns.userName.visible" />
-          <el-table-column label="地址" align="center" prop="ipaddr" :show-overflow-tooltip="true" :width="colWidth('ipaddr', 130)" resizable v-if="columns.ipaddr.visible" />
+          <el-table-column label="用户名称" align="center" prop="userName" :show-overflow-tooltip="true" :min-width="colWidth('userName', 120)" resizable sortable="custom" :sort-orders="['descending', 'ascending']" v-if="columns.userName.visible" />
+          <el-table-column label="地址" align="center" prop="ipaddr" :show-overflow-tooltip="true" :min-width="colWidth('ipaddr', 130)" resizable v-if="columns.ipaddr.visible" />
           <el-table-column label="登录地点" align="center" prop="loginLocation" :show-overflow-tooltip="true" :width="colWidth('loginLocation', 160)" resizable v-if="columns.loginLocation.visible" />
           <el-table-column label="操作系统" align="center" prop="os" :show-overflow-tooltip="true" :width="colWidth('os', 130)" resizable v-if="columns.os.visible" />
           <el-table-column label="浏览器" align="center" prop="browser" :show-overflow-tooltip="true" :width="colWidth('browser', 130)" resizable v-if="columns.browser.visible" />
@@ -76,7 +76,7 @@
               <dict-tag :options="sys_common_status" :value="scope.row.status" />
             </template>
           </el-table-column>
-          <el-table-column label="描述" align="center" prop="msg" :show-overflow-tooltip="true" :width="colWidth('msg', 150)" resizable v-if="columns.msg.visible" />
+          <el-table-column label="描述" align="center" prop="msg" :show-overflow-tooltip="true" :min-width="colWidth('msg', 150)" resizable v-if="columns.msg.visible" />
           <el-table-column label="访问时间" align="center" prop="loginTime" :width="colWidth('loginTime', 180)" resizable sortable="custom" :sort-orders="['descending', 'ascending']" v-if="columns.loginTime.visible">
             <template #default="scope">
               <span>{{ parseTime(scope.row.loginTime) }}</span>
@@ -198,7 +198,7 @@ function handleSortChange(column, prop, order) {
 /** 删除按钮操作 */
 function handleDelete(row) {
   const infoIds = row.infoId || ids.value
-  proxy.$modal.confirm('是否确认删除访问编号为"' + infoIds + '"的数据项?').then(function () {
+  proxy.$modal.confirm('是否确认删除选中的登录日志？').then(function () {
     return delLogininfor(infoIds)
   }).then(() => {
     getList()
@@ -228,9 +228,9 @@ function handleUnlock() {
 
 /** 导出按钮操作 */
 function handleExport() {
-  proxy.download("monitor/logininfor/export", {
+  proxy.download("monitor/logininfor/export", proxy.withExportIds({
     ...proxy.addDateRange(queryParams.value, dateRange.value),
-  }, `logininfor_${new Date().getTime()}.xlsx`)
+  }, ids.value, 'infoId'), `logininfor_${new Date().getTime()}.xlsx`)
 }
 
 getList()

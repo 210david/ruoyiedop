@@ -122,7 +122,7 @@
           <el-table-column label="离职单号" prop="leaveNo" key="leaveNo" align="center" :width="colWidth('leaveNo', 180)" resizable v-if="columns.leaveNo.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.leaveNo }}</span></template>
           </el-table-column>
-          <el-table-column label="员工姓名" prop="employeeName" key="employeeName" align="center" :width="colWidth('employeeName', 110)" resizable v-if="columns.employeeName.visible" />
+          <el-table-column label="员工姓名" prop="employeeName" key="employeeName" align="center" :min-width="colWidth('employeeName', 110)" show-overflow-tooltip resizable v-if="columns.employeeName.visible" />
           <el-table-column label="工号" prop="employeeNo" key="employeeNo" align="center" :width="colWidth('employeeNo', 120)" resizable v-if="columns.employeeNo.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.employeeNo }}</span></template>
           </el-table-column>
@@ -135,7 +135,7 @@
             </template>
           </el-table-column>
           <el-table-column label="离职日期" prop="leaveDate" key="leaveDate" align="center" :width="colWidth('leaveDate', 120)" resizable v-if="columns.leaveDate.visible" />
-          <el-table-column label="离职原因" prop="reason" key="reason" align="center" :width="colWidth('reason', 160)" resizable show-overflow-tooltip v-if="columns.reason.visible" />
+          <el-table-column label="离职原因" prop="reason" key="reason" align="center" :min-width="colWidth('reason', 160)" resizable show-overflow-tooltip v-if="columns.reason.visible" />
           <el-table-column label="交接状态" prop="handoverStatus" key="handoverStatus" align="center" :width="colWidth('handoverStatus', 110)" resizable v-if="columns.handoverStatus.visible">
             <template #default="scope">
               <span class="badge" :class="handoverStatusClass(scope.row.handoverStatus)"><span class="dot"></span>{{ scope.row.handoverStatus || '-' }}</span>
@@ -854,7 +854,7 @@ function submitAudit(action) {
   auditHrLeave(auditData.value.leaveId, action, auditData.value.auditRemark).then(() => {
     proxy.$modal.msgSuccess(action === '1' ? '审批通过' : '已驳回')
     auditOpen.value = false
-    getList()
+    getList(); loadStatusCounts()
   }).finally(() => {
     auditSubmitting.value = false
   })
@@ -867,13 +867,13 @@ function submitForm() {
         updateHrLeave(form.value).then(() => {
           proxy.$modal.msgSuccess('修改成功')
           open.value = false
-          getList()
+          getList(); loadStatusCounts()
         })
       } else {
         addHrLeave(form.value).then(() => {
           proxy.$modal.msgSuccess('新增成功')
           open.value = false
-          getList()
+          getList(); loadStatusCounts()
         })
       }
     }
@@ -885,13 +885,13 @@ function handleDelete(row) {
   proxy.$modal.confirm('是否确认删除选中的离职？').then(function() {
     return delHrLeave(leaveIds)
   }).then(() => {
-    getList()
+    getList(); loadStatusCounts()
     proxy.$modal.msgSuccess('删除成功')
   }).catch(() => {})
 }
 
 function handleExport() {
-  proxy.download('hr/leave/export', { ...queryParams.value }, `hrLeave_${new Date().getTime()}.xlsx`)
+  proxy.download('hr/leave/export', proxy.withExportIds({ ...queryParams.value }, ids.value, 'leaveId'), `hrLeave_${new Date().getTime()}.xlsx`)
 }
 
 function cancel() {

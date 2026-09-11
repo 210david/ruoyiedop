@@ -44,6 +44,7 @@ public class MkContactController extends BaseController
     public void export(HttpServletResponse response, MkContact contact)
     {
         List<MkContact> list = mkContactService.selectContactList(contact);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, contact);
         ExcelUtil<MkContact> util = new ExcelUtil<>(MkContact.class);
         util.exportExcel(response, list, "联系人数据");
     }

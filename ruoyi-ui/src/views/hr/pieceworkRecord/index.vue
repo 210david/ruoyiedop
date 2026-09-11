@@ -74,7 +74,7 @@
             <template #default="scope"><span class="col-mono">{{ scope.row.pwRecordNo }}</span></template>
           </el-table-column>
           <el-table-column label="计件日期" prop="recordDate" key="recordDate" align="center" :width="colWidth('recordDate', 120)" resizable v-if="columns.recordDate.visible" />
-          <el-table-column label="员工姓名" prop="employeeName" key="employeeName" align="center" :width="colWidth('employeeName', 110)" resizable v-if="columns.employeeName.visible" />
+          <el-table-column label="员工姓名" prop="employeeName" key="employeeName" align="center" :min-width="colWidth('employeeName', 110)" show-overflow-tooltip resizable v-if="columns.employeeName.visible" />
           <el-table-column label="计件计划ID" prop="pwPlanId" key="pwPlanId" align="center" :width="colWidth('pwPlanId', 110)" resizable v-if="columns.pwPlanId.visible" />
           <el-table-column label="计件项目" prop="pwName" key="pwName" align="center" :width="colWidth('pwName', 160)" resizable show-overflow-tooltip v-if="columns.pwName.visible" />
           <el-table-column label="合格数量" prop="qualifiedQty" key="qualifiedQty" align="center" :width="colWidth('qualifiedQty', 110)" resizable v-if="columns.qualifiedQty.visible" />
@@ -438,7 +438,7 @@ function handleDelete(row) {
 }
 
 function handleExport() {
-  proxy.download('hr/pieceworkRecord/export', { ...queryParams.value }, `hrPieceworkRecord_${new Date().getTime()}.xlsx`)
+  proxy.download('hr/pieceworkRecord/export', proxy.withExportIds({ ...queryParams.value }, ids.value, 'pwRecordId'), `hrPieceworkRecord_${new Date().getTime()}.xlsx`)
 }
 
 /** ===== 人员/部门弹框选择 ===== */

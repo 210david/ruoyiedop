@@ -37,6 +37,7 @@ public class SafetyIncidentController extends BaseController
     public void export(HttpServletResponse response, SafetyIncident incident)
     {
         List<SafetyIncident> list = safetyIncidentService.selectSafetyIncidentList(incident);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, incident);
         ExcelUtil<SafetyIncident> util = new ExcelUtil<>(SafetyIncident.class);
         util.exportExcel(response, list, "事故管理");
     }

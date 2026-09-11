@@ -37,6 +37,7 @@ public class HrOutingController extends BaseController
     public void export(HttpServletResponse response, HrOuting hrOuting)
     {
         List<HrOuting> list = hrOutingService.selectHrOutingList(hrOuting);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, hrOuting);
         ExcelUtil<HrOuting> util = new ExcelUtil<>(HrOuting.class);
         util.exportExcel(response, list, "外出");
     }

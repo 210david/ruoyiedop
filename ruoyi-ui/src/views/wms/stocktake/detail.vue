@@ -676,13 +676,13 @@ function confirmApprove(passed) {
     approveStockTake(approveFormData.value.takeId, approveFormData.value.approveOpinion).then(() => {
       proxy.$modal.msgSuccess('审批通过，库存已自动调整')
       approveOpen.value = false
-      getList()
+      getList(); loadStatusCounts()
     })
   } else {
     rejectStockTake(approveFormData.value.takeId, approveFormData.value.approveOpinion).then(() => {
       proxy.$modal.msgSuccess('已驳回，盘点单已退回盘点人员重新核实')
       approveOpen.value = false
-      getList()
+      getList(); loadStatusCounts()
     })
   }
 }
