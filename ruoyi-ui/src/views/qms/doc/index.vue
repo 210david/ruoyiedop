@@ -261,7 +261,7 @@ function loadColumnVisibility() { try { const saved = localStorage.getItem('qms_
 const columns = ref(loadColumnVisibility())
 const data = reactive({ form: {}, queryParams: { pageNum: 1, pageSize: 10, docNo: undefined, docTitle: undefined, docCategory: undefined, docStatus: undefined, remark: undefined, params: {} } })
 const { queryParams, form } = toRefs(data)
-const rules = { docTitle: [{ required: true, message: '请输入文档标题', trigger: 'blur' }] }
+const rules = { docTitle: [{ required: true, message: '请输入文档标题', trigger: 'blur' }], docCategory: [{ required: true, message: '请选择文档分类', trigger: 'change' }], deptId: [{ required: true, message: '请选择归属部门', trigger: 'change' }], fileUrl: [{ required: true, message: '请上传文件附件', trigger: 'change' }] }
 
 const activeFilterCount = computed(() => {
   let count = 0

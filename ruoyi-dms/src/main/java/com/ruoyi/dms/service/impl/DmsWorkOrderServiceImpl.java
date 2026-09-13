@@ -145,7 +145,13 @@ public class DmsWorkOrderServiceImpl implements IDmsWorkOrderService
     @Override
     public int deleteWorkOrderByIds(Long[] orderIds)
     {
-        return dmsWorkOrderMapper.deleteWorkOrderByIds(orderIds);
+        int rows = dmsWorkOrderMapper.deleteWorkOrderByIds(orderIds);
+        // 工单删除后同步关闭关联消息提醒，避免消息中心残留"孤儿消息"
+        for (Long orderId : orderIds)
+        {
+            messageHelper.markHandled("dms", orderId);
+        }
+        return rows;
     }
 
     @Override

@@ -21,4 +21,6 @@ public interface QmsWorkshopMapper
     public int deleteWorkshopByIds(Long[] workshopIds);
 
     public int hasChildByWorkshopId(Long workshopId);
+
+    public QmsWorkshop checkWorkshopCodeUnique(String workshopCode);
 }

@@ -32,6 +32,7 @@
             <if test="equipmentCode != null and equipmentCode != ''"> AND equipment_code LIKE CONCAT('%', #{equipmentCode}, '%')</if>
             <if test="equipmentName != null and equipmentName != ''"> AND equipment_name LIKE CONCAT('%', #{equipmentName}, '%')</if>
             <if test="runStatus != null and runStatus != ''"> AND run_status = #{runStatus}</if>
+            <if test="collectMode != null and collectMode != ''"> AND collect_mode = #{collectMode}</if>
         </where>
         ORDER BY collect_time DESC
     </select>

@@ -237,9 +237,12 @@
                 <el-col :span="12"><el-form-item label="线索来源" prop="leadSource">
                   <el-select v-model="form.leadSource" placeholder="请选择" style="width: 100%"><el-option v-for="d in marketing_customer_source" :key="d.value" :label="d.label" :value="d.value" /></el-select>
                 </el-form-item></el-col>
-                <el-col :span="12"><el-form-item label="线索评分" prop="leadScore"><el-input-number v-model="form.leadScore" :min="0" :max="100" controls-position="right" style="width: 100%" /></el-form-item></el-col>
                 <el-col :span="12"><el-form-item label="线索等级" prop="leadGrade">
-                  <el-select v-model="form.leadGrade" placeholder="请选择" style="width: 100%"><el-option v-for="d in marketing_lead_grade" :key="d.value" :label="d.label" :value="d.value" /></el-select>
+                  <el-select v-model="form.leadGrade" placeholder="请选择" style="width: 100%" @change="onGradeChange"><el-option v-for="d in marketing_lead_grade" :key="d.value" :label="d.label" :value="d.value" /></el-select>
+                </el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="线索评分" prop="leadScore">
+                  <el-input-number v-model="form.leadScore" :min="0" :max="100" controls-position="right" style="width: 100%" />
+                  <div class="rd-field-tip">评分标准：A级≥90分，B级75-89分，C级60-74分，D级&lt;60分。选择等级后自动填充参考评分，可手动调整。</div>
                 </el-form-item></el-col>
                 <el-col :span="12"><el-form-item label="线索状态" prop="leadStatus">
                   <el-select v-model="form.leadStatus" placeholder="请选择" style="width: 100%"><el-option v-for="d in marketing_lead_status" :key="d.value" :label="d.label" :value="d.value" /></el-select>
@@ -255,7 +258,12 @@
             </div>
             <div class="rd-card-body" v-show="!collapsedCards.c_owner">
               <el-row>
-                <el-col :span="12"><el-form-item label="负责人" prop="userId">
+                <el-col :span="24"><el-form-item label="是否公海" prop="isPublic">
+                  <el-radio-group v-model="form.isPublic" @change="onPublicChange"><el-radio value="0">否</el-radio><el-radio value="1">是</el-radio></el-radio-group>
+                </el-form-item></el-col>
+              </el-row>
+              <el-row v-if="form.isPublic === '0'">
+                <el-col :span="12"><el-form-item label="负责人" prop="userId" :rules="[{ required: true, message: '非公海线索必须选择负责人', trigger: 'change' }]">
                   <el-input v-model="form.userName" readonly placeholder="请选择负责人" style="width: 100%" @click="openUserPicker">
                     <template #append>
                       <el-button icon="Search" @click="openUserPicker" />
@@ -274,9 +282,6 @@
                       <el-icon v-if="form.deptName" class="clear-icon" @click.stop="clearDept"><CircleClose /></el-icon>
                     </template>
                   </el-input>
-                </el-form-item></el-col>
-                <el-col :span="12"><el-form-item label="是否公海" prop="isPublic">
-                  <el-radio-group v-model="form.isPublic"><el-radio value="0">否</el-radio><el-radio value="1">是</el-radio></el-radio-group>
                 </el-form-item></el-col>
               </el-row>
             </div>
@@ -865,7 +870,17 @@ const data = reactive({
   rules: {
     companyName: [{ required: true, message: '企业名称不能为空', trigger: 'blur' }],
     contactName: [{ required: true, message: '联系人不能为空', trigger: 'blur' }],
-    contactPhone: [{ required: true, message: '手机号不能为空', trigger: 'blur' }]
+    contactPhone: [
+      { required: true, message: '手机号不能为空', trigger: 'blur' },
+      { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号格式', trigger: 'blur' }
+    ],
+    contactEmail: [
+      { type: 'email', message: '请输入正确的邮箱格式', trigger: 'blur' }
+    ],
+    leadSource: [{ required: true, message: '请选择线索来源', trigger: 'change' }],
+    leadGrade: [{ required: true, message: '请选择线索等级', trigger: 'change' }],
+    requirementDesc: [{ required: true, message: '需求描述不能为空', trigger: 'blur' }],
+    industry: [{ required: true, message: '请选择所属行业', trigger: 'change' }]
   }
 })
 const { queryParams, form, rules } = toRefs(data)
@@ -948,13 +963,34 @@ function clearDept() {
   form.value.deptId = undefined
   form.value.deptName = undefined
 }
+/** 线索等级变更时自动填充参考评分 */
+function onGradeChange(grade) {
+  const scoreMap = { 'A': 90, 'B': 75, 'C': 60, 'D': 40 }
+  if (scoreMap[grade] !== undefined) {
+    form.value.leadScore = scoreMap[grade]
+  }
+}
+/** 是否公海变更时联动负责人校验 */
+function onPublicChange(val) {
+  if (val === '1') {
+    // 选"是"公海，清空负责人
+    form.value.userId = undefined
+    form.value.userName = undefined
+    form.value.deptId = undefined
+    form.value.deptName = undefined
+  }
+  // 手动触发userId字段的校验清除
+  if (val === '0' && !form.value.userId) {
+    proxy.$refs['leadRef']?.validateField('userId')
+  }
+}
 
 function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
 function resetQuery() { queryParams.value.leadNo = undefined; queryParams.value.companyName = undefined; queryParams.value.leadStatus = undefined; queryParams.value.leadGrade = undefined; queryParams.value.leadSource = undefined; queryParams.value.params = {}; activeStatusTab.value = 'all'; handleQuery() }
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.leadId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function reset() {
-  form.value = { leadNo: undefined, companyName: undefined, contactName: undefined, contactPhone: undefined, contactEmail: undefined, position: undefined, industry: undefined, companySize: undefined, address: undefined, leadSource: undefined, activityId: undefined, requirementDesc: undefined, leadScore: 0, leadGrade: 'D', leadStatus: '0', isPublic: '1', userId: undefined, userName: undefined, deptId: undefined, deptName: undefined, remark: undefined }
+  form.value = { leadNo: undefined, companyName: undefined, contactName: undefined, contactPhone: undefined, contactEmail: undefined, position: undefined, industry: undefined, companySize: undefined, address: undefined, leadSource: undefined, activityId: undefined, requirementDesc: undefined, leadScore: undefined, leadGrade: undefined, leadStatus: '0', isPublic: '0', userId: undefined, userName: undefined, deptId: undefined, deptName: undefined, remark: undefined }
   proxy.resetForm('leadRef')
 }
 function handleAdd() { reset(); open.value = true; title.value = '新增线索' }
@@ -1218,9 +1254,9 @@ function confirmBatchStatus() {
 // 导入
 const importTips = [
   '请先下载导入模板，按模板格式填写数据。',
-  '企业名称、联系人、手机号为必填字段。',
+  '企业名称、联系人、手机号、所属行业、线索来源、线索等级、需求描述为必填字段。',
   '所属行业、企业规模、线索来源、等级、状态请填写文字描述（参考系统中字典数据，或留空）',
-  '评分请填写0-100之间的整数',
+  '评分请填写0-100之间的整数，选择等级后系统会自动填充参考评分',
   '如勾选更新选项，已存在相同企业名称的线索将被覆盖更新。',
   '导入结果将显示每条数据的处理情况，失败数据可导出修正后重新导入。'
 ]
@@ -1338,6 +1374,7 @@ const showStatusHelp = ref(false)
 :deep(.col-action) { padding: 6px 4px !important; }
 :deep(.col-action .cell) { display: flex; justify-content: center; padding: 0; }
 .action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
+.rd-field-tip { font-size: 12px; color: #909399; line-height: 1.5; margin-top: 4px; }
 :deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
 :deep(.col-action .el-button + .el-button) { margin-left: 2px; }
 </style>

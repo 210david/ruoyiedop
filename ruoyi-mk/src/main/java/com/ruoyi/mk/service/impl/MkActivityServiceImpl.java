@@ -49,6 +49,7 @@ public class MkActivityServiceImpl implements IMkActivityService
     @Override
     public int insertActivity(MkActivity activity)
     {
+        checkTimeRange(activity);
         activity.setDelFlag("0");
         if (activity.getActivityStatus() == null)
         {
@@ -70,9 +71,22 @@ public class MkActivityServiceImpl implements IMkActivityService
         return mkActivityMapper.insertActivity(activity);
     }
 
+    /**
+     * 校验结束时间必须晚于开始时间
+     */
+    private void checkTimeRange(MkActivity activity)
+    {
+        if (activity.getStartTime() != null && activity.getEndTime() != null
+                && !activity.getEndTime().after(activity.getStartTime()))
+        {
+            throw new ServiceException("结束时间必须晚于开始时间");
+        }
+    }
+
     @Override
     public int updateActivity(MkActivity activity)
     {
+        checkTimeRange(activity);
         return mkActivityMapper.updateActivity(activity);
     }
 

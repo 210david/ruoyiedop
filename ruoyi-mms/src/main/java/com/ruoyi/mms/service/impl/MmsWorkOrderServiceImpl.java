@@ -119,6 +119,7 @@ public class MmsWorkOrderServiceImpl implements IMmsWorkOrderService
     @Transactional(rollbackFor = Exception.class)
     public int insertWorkOrder(MmsWorkOrder workOrder)
     {
+        checkPlanTimeRange(workOrder);
         // 来源类型校验：默认手工创建
         if (StringUtils.isEmpty(workOrder.getSourceType()))
         {
@@ -183,10 +184,23 @@ public class MmsWorkOrderServiceImpl implements IMmsWorkOrderService
         return workOrderMapper.insertWorkOrder(workOrder);
     }
 
+    /**
+     * 校验计划完工时间必须晚于计划开工时间
+     */
+    private void checkPlanTimeRange(MmsWorkOrder workOrder)
+    {
+        if (workOrder.getPlanStart() != null && workOrder.getPlanFinish() != null
+                && !workOrder.getPlanFinish().after(workOrder.getPlanStart()))
+        {
+            throw new ServiceException("计划完工时间必须晚于计划开工时间");
+        }
+    }
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateWorkOrder(MmsWorkOrder workOrder)
     {
+        checkPlanTimeRange(workOrder);
         // 校验：已下达及之后状态不允许修改核心字段
         MmsWorkOrder existing = workOrderMapper.selectWorkOrderById(workOrder.getWorkOrderId());
         if (existing != null && !"0".equals(existing.getStatus()) && !"5".equals(existing.getStatus()))
@@ -249,7 +263,13 @@ public class MmsWorkOrderServiceImpl implements IMmsWorkOrderService
         {
             dispatchMapper.updateDispatchStatusByWorkOrder(id, "3", username);
         }
-        return workOrderMapper.deleteWorkOrderByIds(workOrderIds);
+        int rows = workOrderMapper.deleteWorkOrderByIds(workOrderIds);
+        // 工单删除后同步关闭关联消息提醒，避免消息中心残留"孤儿消息"
+        for (Long id : workOrderIds)
+        {
+            messageHelper.markHandled("mms", id);
+        }
+        return rows;
     }
 
     // ========== 审核日志 ==========

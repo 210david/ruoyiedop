@@ -68,6 +68,12 @@ public class QmsWorkshopServiceImpl implements IQmsWorkshopService
     @Transactional(rollbackFor = Exception.class)
     public int insertWorkshop(QmsWorkshop workshop)
     {
+        // 编码唯一性校验，避免重复编码触发数据库异常
+        QmsWorkshop exist = qmsWorkshopMapper.checkWorkshopCodeUnique(workshop.getWorkshopCode());
+        if (exist != null)
+        {
+            throw new ServiceException("节点编码[" + workshop.getWorkshopCode() + "]已存在，请修改后重试");
+        }
         workshop.setDelFlag("0");
         if (workshop.getStatus() == null)
         {
@@ -88,6 +94,15 @@ public class QmsWorkshopServiceImpl implements IQmsWorkshopService
     @Transactional(rollbackFor = Exception.class)
     public int updateWorkshop(QmsWorkshop workshop)
     {
+        // 编码唯一性校验（排除自身），避免重复编码触发数据库异常
+        if (workshop.getWorkshopCode() != null && !workshop.getWorkshopCode().isEmpty())
+        {
+            QmsWorkshop exist = qmsWorkshopMapper.checkWorkshopCodeUnique(workshop.getWorkshopCode());
+            if (exist != null && !exist.getWorkshopId().equals(workshop.getWorkshopId()))
+            {
+                throw new ServiceException("节点编码[" + workshop.getWorkshopCode() + "]已存在，请修改后重试");
+            }
+        }
         return qmsWorkshopMapper.updateWorkshop(workshop);
     }
 

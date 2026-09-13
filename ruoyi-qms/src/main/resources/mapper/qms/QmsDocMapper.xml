@@ -35,6 +35,7 @@
             <if test="docTitle != null and docTitle != ''"> AND doc_title LIKE CONCAT('%', #{docTitle}, '%')</if>
             <if test="docCategory != null and docCategory != ''"> AND doc_category = #{docCategory}</if>
             <if test="docStatus != null and docStatus != ''"> AND doc_status = #{docStatus}</if>
+            <if test="remark != null and remark != ''"> AND remark LIKE CONCAT('%', #{remark}, '%')</if>
         </where>
         ORDER BY create_time DESC
     </select>

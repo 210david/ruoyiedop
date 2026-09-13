@@ -1,27 +1,53 @@
 <template>
   <div class="app-container qms-workshop-page">
-    <el-row :gutter="20">
-      <!-- 左侧树 -->
-      <el-col :span="4" :xs="24">
-        <div class="surface tree-panel">
-          <div class="tree-head">
-            <el-input v-model="deptName" placeholder="请输入节点名称" clearable size="small" prefix-icon="Search" />
-          </div>
-          <div class="tree-body">
-            <el-tree :data="workshopTreeOptions" :props="defaultProps" :expand-on-click-node="false" :filter-node-method="filterNode" ref="deptTreeRef" default-expand-all highlight-current @node-click="handleNodeClick" />
+    <!-- ===== Table Section ===== -->
+    <div class="table-layout">
+      <!-- 左侧产线结构树 -->
+      <div class="surface tree-panel" v-show="showTreePanel">
+        <div class="tree-head">
+          <div class="tree-title"><span class="glyph"></span> 产线结构</div>
+          <div class="tree-head-actions">
+            <el-tooltip content="展开/折叠" placement="top"><el-icon class="tree-act" @click="toggleTreeExpand"><Sort /></el-icon></el-tooltip>
+            <el-tooltip content="收起栏目" placement="top"><el-icon class="tree-act" @click="showTreePanel = false"><Fold /></el-icon></el-tooltip>
           </div>
         </div>
-      </el-col>
+        <div class="tree-search">
+          <el-input v-model="treeFilterName" placeholder="搜索名称/编码" clearable>
+            <template #prefix><el-icon><Search /></el-icon></template>
+          </el-input>
+        </div>
+        <div class="tree-body">
+          <el-tree
+            ref="deptTreeRef"
+            :data="treeData"
+            node-key="workshopId"
+            :props="defaultProps"
+            default-expand-all
+            :expand-on-click-node="false"
+            :filter-node-method="filterNode"
+            highlight-current
+            @node-click="handleNodeClick">
+            <template #default="{ data }">
+              <span class="tree-node">
+                <span class="tree-icon lv1" v-if="data.nodeType === '1'"><el-icon><OfficeBuilding /></el-icon></span>
+                <span class="tree-icon lv2" v-else-if="data.nodeType === '2'"><el-icon><Share /></el-icon></span>
+                <span class="tree-icon lv3" v-else-if="data.nodeType === '3'"><el-icon><Position /></el-icon></span>
+                <span class="tree-icon lv4" v-else><el-icon><CircleCheck /></el-icon></span>
+                <span class="tree-node-name">{{ data.workshopName }}</span>
+              </span>
+            </template>
+          </el-tree>
+        </div>
+      </div>
+      <button v-if="!showTreePanel" type="button" class="tree-toggle btn-soft is-outline" @click="showTreePanel = true">
+        <el-icon><Expand /></el-icon> 产线结构
+      </button>
       <!-- 右侧表格 -->
-      <el-col :span="20" :xs="24">
+      <div class="table-main">
         <!-- ===== Filter Card ===== -->
         <div class="surface filter-card" v-show="showSearch">
           <div class="filter-head">
             <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
-            <a class="adv-link" :class="{ 'is-open': showAdvanced }" @click.prevent="showAdvanced = !showAdvanced">
-              <span>{{ showAdvanced ? '收起' : '高级筛选' }}</span>
-              <el-icon class="chev"><ArrowDown /></el-icon>
-            </a>
           </div>
           <div class="filter-bar">
             <div class="field">
@@ -54,18 +80,6 @@
                 </el-select>
               </div>
             </div>
-            <div class="field" v-show="showAdvanced">
-              <label>备注</label>
-              <div class="control">
-                <el-input v-model="queryParams.remark" placeholder="请输入" clearable @keyup.enter="handleQuery" />
-              </div>
-            </div>
-            <div class="field" v-show="showAdvanced">
-              <label>创建时间</label>
-              <div class="control">
-                <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
-              </div>
-            </div>
           </div>
           <div class="filter-actions">
             <div class="filter-info"><el-icon><Filter /></el-icon> 已选 {{ activeFilterCount }} 个条件，支持回车快速搜索</div>
@@ -95,19 +109,19 @@
               <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
               <el-table-column prop="workshopName" label="节点名称" key="workshopName" :min-width="colWidth('workshopName', 220)" show-overflow-tooltip resizable v-if="columns.workshopName.visible" />
               <el-table-column prop="workshopCode" label="节点编码" key="workshopCode" :width="colWidth('workshopCode', 160)" resizable align="center" v-if="columns.workshopCode.visible" />
-              <el-table-column label="层级类型" align="center" key="nodeType" :width="colWidth('nodeType', 120)" resizable v-if="columns.nodeType.visible">
+              <el-table-column label="层级类型" prop="nodeType" align="center" key="nodeType" :width="colWidth('nodeType', 120)" resizable v-if="columns.nodeType.visible">
                 <template #default="scope">
                   <span class="badge violet"><span class="dot"></span>{{ nodeTypeLabel(scope.row.nodeType) }}</span>
                 </template>
               </el-table-column>
-              <el-table-column label="工位类型" align="center" key="stationType" :width="colWidth('stationType', 100)" resizable v-if="columns.stationType.visible">
+              <el-table-column label="工位类型" prop="stationType" align="center" key="stationType" :width="colWidth('stationType', 100)" resizable v-if="columns.stationType.visible">
                 <template #default="scope">
                   <span v-if="scope.row.nodeType === '3'" class="badge" :class="stationTypeBadge(scope.row.stationType).cls"><span class="dot"></span>{{ stationTypeBadge(scope.row.stationType).label }}</span>
                   <span v-else>-</span>
                 </template>
               </el-table-column>
               <el-table-column prop="orderNum" label="排序" key="orderNum" align="center" :width="colWidth('orderNum', 80)" resizable v-if="columns.orderNum.visible" />
-              <el-table-column label="状态" align="center" key="status" :width="colWidth('status', 100)" resizable v-if="columns.status.visible">
+              <el-table-column label="状态" prop="status" align="center" key="status" :width="colWidth('status', 100)" resizable v-if="columns.status.visible">
                 <template #default="scope">
                   <span class="badge" :class="scope.row.status === '0' ? 'green' : 'gray'"><span class="dot"></span>{{ scope.row.status === '0' ? '正常' : '停用' }}</span>
                 </template>
@@ -129,8 +143,8 @@
             </el-table>
           </div>
         </div>
-      </el-col>
-    </el-row>
+      </div>
+    </div>
 
     <!-- 添加或修改对话框 -->
     <el-dialog v-model="open" width="816px" append-to-body draggable class="rd-dialog">
@@ -219,7 +233,6 @@
 import { listWorkshop, workshopTree, getWorkshop, addWorkshop, updateWorkshop, delWorkshop } from '@/api/qms/workshop'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
-import { ArrowDown } from '@element-plus/icons-vue'
 
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('qms_workshop_index')
@@ -227,16 +240,17 @@ const { collapsedCards, toggleCard } = useDetailCard(['e_basic', 'e_config', 'e_
 const { sys_normal_disable, qms_workshop_node_type } = proxy.useDict('sys_normal_disable', 'qms_workshop_node_type')
 
 const workshopList = ref([])
+const treeData = ref([])
 const workshopTreeOptions = ref([])
+const deptTreeRef = ref(null)
 const open = ref(false)
 const loading = ref(true)
 const showSearch = ref(true)
-const showAdvanced = ref(false)
-const dateRange = ref([])
 const title = ref('')
 const isExpandAll = ref(true)
 const refreshTable = ref(true)
-const deptName = ref(undefined)
+const treeFilterName = ref('')
+const showTreePanel = ref(true)
 const currentWorkshopId = ref(undefined)
 const defaultProps = { children: 'children', label: 'workshopName' }
 const defaultColumns = { workshopName: { label: '节点名称', visible: true }, workshopCode: { label: '节点编码', visible: true }, nodeType: { label: '层级类型', visible: true }, stationType: { label: '工位类型', visible: true }, orderNum: { label: '排序', visible: true }, status: { label: '状态', visible: true }, createTime: { label: '创建时间', visible: true } }
@@ -245,7 +259,7 @@ const columns = ref(loadColumnVisibility())
 
 const data = reactive({
   form: {},
-  queryParams: { workshopCode: undefined, workshopName: undefined, nodeType: undefined, status: undefined, remark: undefined, params: {} },
+  queryParams: { workshopCode: undefined, workshopName: undefined, nodeType: undefined, status: undefined, params: {} },
   rules: {
     workshopCode: [{ required: true, message: '节点编码不能为空', trigger: 'blur' }],
     workshopName: [{ required: true, message: '节点名称不能为空', trigger: 'blur' }],
@@ -264,8 +278,6 @@ const activeFilterCount = computed(() => {
   if (queryParams.value.workshopName) count++
   if (queryParams.value.nodeType) count++
   if (queryParams.value.status) count++
-  if (queryParams.value.remark) count++
-  if (dateRange.value && dateRange.value.length > 0) count++
   return count
 })
 
@@ -308,10 +320,26 @@ function getTreeselect() {
   })
 }
 
-/** 筛选节点 */
+/** 查询产线结构树（左侧树，不包根节点） */
+function getTreeData() {
+  workshopTree().then(response => {
+    treeData.value = response.data || []
+  })
+}
+
+/** 筛选节点（支持名称/编码） */
 function filterNode(value, data) {
   if (!value) return true
-  return data.workshopName.indexOf(value) !== -1
+  const v = value.toLowerCase()
+  return (data.workshopName || '').toLowerCase().includes(v) || (data.workshopCode || '').toLowerCase().includes(v)
+}
+
+/** 树展开/折叠 */
+function toggleTreeExpand() {
+  const nodes = deptTreeRef.value?.store?.nodesMap || {}
+  const first = Object.values(nodes)[0]
+  const expand = first ? !first.expanded : false
+  Object.values(nodes).forEach(n => { n.expanded = expand })
 }
 
 /** 节点单击事件 */
@@ -322,8 +350,6 @@ function handleNodeClick(data) {
 
 /** 搜索按钮 */
 function handleQuery() {
-  showAdvanced.value = false
-  proxy.addDateRange(queryParams.value, dateRange.value)
   getList()
 }
 
@@ -333,9 +359,6 @@ function resetQuery() {
   queryParams.value.workshopName = undefined
   queryParams.value.nodeType = undefined
   queryParams.value.status = undefined
-  queryParams.value.remark = undefined
-  dateRange.value = []
-  queryParams.value.params = {}
   currentWorkshopId.value = undefined
   proxy.$refs['deptTreeRef'].setCurrentKey(null)
   handleQuery()
@@ -376,6 +399,7 @@ function submitForm() {
           proxy.$modal.msgSuccess('修改成功')
           open.value = false
           getList()
+          getTreeData()
           getTreeselect()
         })
       } else {
@@ -383,6 +407,7 @@ function submitForm() {
           proxy.$modal.msgSuccess('新增成功')
           open.value = false
           getList()
+          getTreeData()
           getTreeselect()
         })
       }
@@ -395,7 +420,13 @@ function handleDelete(row) {
   proxy.$modal.confirm('是否确认删除节点"' + row.workshopName + '"？').then(function () {
     return delWorkshop(row.workshopId)
   }).then(() => {
+    // 若删除的是当前树中选中的节点，清除过滤状态并取消高亮，避免右侧表格空白
+    if (currentWorkshopId.value === row.workshopId) {
+      currentWorkshopId.value = undefined
+      deptTreeRef.value?.setCurrentKey(null)
+    }
     getList()
+    getTreeData()
     getTreeselect()
     proxy.$modal.msgSuccess('删除成功')
   }).catch(() => {})
@@ -430,20 +461,40 @@ function cancel() {
   reset()
 }
 
-watch(deptName, val => {
-  proxy.$refs['deptTreeRef'].filter(val)
+watch(treeFilterName, val => {
+  deptTreeRef.value?.filter(val)
 })
 
 getList()
 getTreeselect()
+getTreeData()
 </script>
 
 <style scoped>
-.qms-workshop-page { padding-top: 10px; --violet-50:#f5f3ff; --brand-50:#eef2ff; --brand-100:#e0e7ff; --brand-200:#c7d2fe; --brand-500:#6366f1; --brand-600:#4f46e5; --brand-700:#4338ca; --ink-900:#0f172a; --ink-700:#334155; --ink-500:#64748b; --ink-400:#94a3b8; --ink-300:#cbd5e1; --ink-200:#e2e8f0; --ink-100:#f1f5f9; --ink-50:#f8fafc; --green-50:#ecfdf5; --green-500:#10b981; --green-700:#047857; --red-50:#fef2f2; --red-500:#ef4444; --red-700:#b91c1c; --r-sm:6px; --r-md:10px; --r-lg:14px; --shadow-card:0 1px 0 rgba(15,23,42,.04), 0 1px 2px rgba(15,23,42,.04); --ease-out:cubic-bezier(.16,.84,.44,1); color: var(--ink-900); }
+.qms-workshop-page { padding-top: 10px; --violet-50:#f5f3ff; --brand-50:#eef2ff; --brand-100:#e0e7ff; --brand-200:#c7d2fe; --brand-500:#6366f1; --brand-600:#4f46e5; --brand-700:#4338ca; --blue-50:#eff6ff; --blue-500:#3b82f6; --blue-700:#1d4ed8; --amber-50:#fffbeb; --amber-500:#f59e0b; --amber-700:#b45309; --ink-900:#0f172a; --ink-700:#334155; --ink-500:#64748b; --ink-400:#94a3b8; --ink-300:#cbd5e1; --ink-200:#e2e8f0; --ink-100:#f1f5f9; --ink-50:#f8fafc; --green-50:#ecfdf5; --green-500:#10b981; --green-700:#047857; --red-50:#fef2f2; --red-500:#ef4444; --red-700:#b91c1c; --r-sm:6px; --r-md:10px; --r-lg:14px; --shadow-card:0 1px 0 rgba(15,23,42,.04), 0 1px 2px rgba(15,23,42,.04); --ease-out:cubic-bezier(.16,.84,.44,1); color: var(--ink-900); }
 .qms-workshop-page .surface { background:#fff; border:1px solid var(--ink-200); border-radius:var(--r-lg); box-shadow:var(--shadow-card); overflow:hidden; margin-bottom:8px; }
-.qms-workshop-page .tree-panel { position: sticky; top: 10px; }
-.qms-workshop-page .tree-panel .tree-head { padding:12px 16px; border-bottom:1px solid var(--ink-200); background:var(--ink-50); }
-.qms-workshop-page .tree-panel .tree-body { padding:12px 16px; max-height: calc(100vh - 200px); overflow-y: auto; }
+/* ===== 产线结构树（对齐仓库管理样式） ===== */
+.qms-workshop-page .table-layout { display:flex; gap:8px; align-items:flex-start; }
+.qms-workshop-page .tree-panel { flex:0 0 260px; margin-bottom:0; position:sticky; top:10px; }
+.qms-workshop-page .tree-head { display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border-bottom:1px solid var(--ink-200); background:var(--ink-50); }
+.qms-workshop-page .tree-title { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--ink-700); }
+.qms-workshop-page .tree-title .glyph { width:4px; height:14px; background:var(--brand-600); border-radius:2px; }
+.qms-workshop-page .tree-head-actions { display:flex; gap:10px; }
+.qms-workshop-page .tree-act { color:var(--ink-500); cursor:pointer; font-size:16px; transition:color .15s; }
+.qms-workshop-page .tree-act:hover { color:var(--brand-600); }
+.qms-workshop-page .tree-search { padding:10px 12px 6px; }
+.qms-workshop-page .tree-body { padding:4px 8px 10px; max-height:calc(100vh - 280px); overflow-y:auto; }
+.qms-workshop-page .tree-body :deep(.el-tree) { background:transparent; }
+.qms-workshop-page .tree-body :deep(.el-tree-node__content) { height:32px; border-radius:6px; }
+.qms-workshop-page .tree-node { display:inline-flex; align-items:center; gap:7px; overflow:hidden; }
+.qms-workshop-page .tree-icon { display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:6px; flex-shrink:0; font-size:14px; }
+.qms-workshop-page .tree-icon.lv1 { background:var(--brand-50); color:var(--brand-600); border:1px solid var(--brand-200); }
+.qms-workshop-page .tree-icon.lv2 { background:var(--blue-50); color:var(--blue-700); border:1px solid #bfdbfe; }
+.qms-workshop-page .tree-icon.lv3 { background:var(--amber-50); color:var(--amber-700); border:1px solid #fde68a; }
+.qms-workshop-page .tree-icon.lv4 { background:var(--green-50); color:var(--green-700); border:1px solid #a7f3d0; }
+.qms-workshop-page .tree-node-name { font-size:14px; color:var(--ink-700); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.qms-workshop-page .tree-toggle { margin-bottom:8px; height:36px; }
+.qms-workshop-page .table-main { flex:1; min-width:0; }
 .qms-workshop-page .filter-card { padding:14px 20px 16px; }
 .qms-workshop-page .filter-card .filter-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
 .qms-workshop-page .filter-card .filter-title { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--ink-700); }

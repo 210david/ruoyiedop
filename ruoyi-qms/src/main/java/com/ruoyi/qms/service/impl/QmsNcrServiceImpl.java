@@ -121,7 +121,13 @@ public class QmsNcrServiceImpl implements IQmsNcrService
         {
             qmsNcrApproveLogMapper.deleteApproveLogByNcrId(ncrId);
         }
-        return qmsNcrMapper.deleteNcrByIds(ncrIds);
+        int rows = qmsNcrMapper.deleteNcrByIds(ncrIds);
+        // NCR删除后同步关闭关联消息提醒，避免消息中心残留"孤儿消息"
+        for (Long ncrId : ncrIds)
+        {
+            messageHelper.markHandled("qms", ncrId);
+        }
+        return rows;
     }
 
     /**

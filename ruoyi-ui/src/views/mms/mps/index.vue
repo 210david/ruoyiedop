@@ -180,7 +180,7 @@
             <div class="rd-card-header" @click="toggleCard('c2')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>计划参数</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
             <div class="rd-card-body" v-show="!collapsedCards.c2">
               <el-row :gutter="20"><el-col :span="12"><el-form-item label="计划产量" prop="planQty"><el-input-number v-model="form.planQty" :min="0" :precision="2" style="width: 100%" /></el-form-item></el-col></el-row>
-              <el-row :gutter="20"><el-col :span="12"><el-form-item label="计划期开始" prop="periodStart"><el-date-picker v-model="form.periodStart" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" style="width: 100%" /></el-form-item></el-col><el-col :span="12"><el-form-item label="计划期结束" prop="periodEnd"><el-date-picker v-model="form.periodEnd" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" style="width: 100%" /></el-form-item></el-col></el-row>
+              <el-row :gutter="20"><el-col :span="12"><el-form-item label="计划期开始" prop="periodStart"><el-date-picker v-model="form.periodStart" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" style="width: 100%" @change="revalidatePeriodEnd" /></el-form-item></el-col><el-col :span="12"><el-form-item label="计划期结束" prop="periodEnd"><el-date-picker v-model="form.periodEnd" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" style="width: 100%" /></el-form-item></el-col></el-row>
             </div>
           </section>
           <section class="rd-card">
@@ -543,8 +543,8 @@ const data = reactive({
     productCode: [{ required: true, message: "请选择产品编码", trigger: "change" }],
     priority: [{ required: true, message: "请选择优先级", trigger: "change" }],
     planQty: [{ required: true, message: "请输入计划产量", trigger: "blur" }],
-    periodStart: [{ required: true, message: "请选择计划期开始", trigger: "change" }],
-    periodEnd: [{ required: true, message: "请选择计划期结束", trigger: "change" }]
+    periodStart: [{ required: true, message: "请选择计划期开始", trigger: "change" }, { validator: (rule, value, callback) => { if (value && form.value.periodEnd && form.value.periodEnd <= value) { callback(new Error("计划期结束不能早于或等于计划期开始")); } else { callback(); } }, trigger: "change" }],
+    periodEnd: [{ required: true, message: "请选择计划期结束", trigger: "change" }, { validator: (rule, value, callback) => { if (value && form.value.periodStart && value <= form.value.periodStart) { callback(new Error("计划期结束不能早于或等于计划期开始")); } else { callback(); } }, trigger: "change" }]
   },
   auditForm: {},
   auditRules: {
@@ -554,6 +554,11 @@ const data = reactive({
 });
 
 const { queryParams, form, rules, auditForm, auditRules, cancelForm } = toRefs(data);
+
+/** 计划期开始变化后联动重校验结束日期 */
+function revalidatePeriodEnd() {
+  if (form.value.periodEnd && proxy.$refs["formRef"]) proxy.$refs["formRef"].validateField("periodEnd");
+}
 
 function getList() {
   loading.value = true;

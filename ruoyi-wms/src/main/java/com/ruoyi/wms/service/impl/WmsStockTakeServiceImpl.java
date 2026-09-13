@@ -149,7 +149,13 @@ public class WmsStockTakeServiceImpl implements IWmsStockTakeService
     @Override
     public int deleteStockTakeByIds(Long[] takeIds)
     {
-        return wmsStockTakeMapper.deleteStockTakeByIds(takeIds);
+        int rows = wmsStockTakeMapper.deleteStockTakeByIds(takeIds);
+        // 盘点单删除后同步关闭关联消息提醒，避免消息中心残留"孤儿消息"
+        for (Long takeId : takeIds)
+        {
+            messageHelper.markHandled("wms", takeId);
+        }
+        return rows;
     }
 
     @Override

@@ -30,6 +30,7 @@
         <include refid="selectConfigVo"/>
         <where> del_flag = '0'
             <if test="equipmentName != null and equipmentName != ''"> AND equipment_name LIKE CONCAT('%', #{equipmentName}, '%')</if>
+            <if test="collectMode != null and collectMode != ''"> AND collect_mode = #{collectMode}</if>
             <if test="status != null and status != ''"> AND status = #{status}</if>
         </where>
         ORDER BY config_id DESC

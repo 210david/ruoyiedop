@@ -66,7 +66,16 @@ public class QmsCapaServiceImpl implements IQmsCapaService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public int deleteCapaByIds(Long[] capaIds) { return qmsCapaMapper.deleteCapaByIds(capaIds); }
+    public int deleteCapaByIds(Long[] capaIds)
+    {
+        int rows = qmsCapaMapper.deleteCapaByIds(capaIds);
+        // CAPA删除后同步关闭关联消息提醒，避免消息中心残留"孤儿消息"
+        for (Long capaId : capaIds)
+        {
+            messageHelper.markHandled("qms", capaId);
+        }
+        return rows;
+    }
 
     @Override
     @Transactional(rollbackFor = Exception.class)

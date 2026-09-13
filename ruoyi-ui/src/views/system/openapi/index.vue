@@ -190,7 +190,8 @@ const data = reactive({
   },
   rules: {
     appName: [{ required: true, message: '应用名称不能为空', trigger: 'blur' }],
-    appKey: [{ required: true, message: 'API Key不能为空', trigger: 'blur' }]
+    appKey: [{ required: true, message: 'API Key不能为空', trigger: 'blur' }],
+    allowedModules: [{ required: true, message: '请选择允许访问的业务模块', trigger: 'change' }]
   }
 })
 

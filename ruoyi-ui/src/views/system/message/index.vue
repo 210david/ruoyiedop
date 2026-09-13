@@ -111,7 +111,7 @@
               <span class="badge amber">{{ bizSourceLabel(scope.row.bizSource) }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="状态" align="center" :width="colWidth('readStatus', 120)" resizable v-if="columns.readStatus.visible">
+          <el-table-column label="状态" prop="readStatus" align="center" :width="colWidth('readStatus', 120)" resizable v-if="columns.readStatus.visible">
             <template #default="scope">
               <span v-if="scope.row.bizHandled == '1' || scope.row.bizHandled === true" class="badge gray"><span class="dot"></span>已处理</span>
               <span v-else class="badge" :class="scope.row.isRead ? 'green' : 'gray'">

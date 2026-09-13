@@ -155,7 +155,13 @@ public class MmsDispatchServiceImpl implements IMmsDispatchService
                 throw new ServiceException("派工单[" + d.getDispatchNo() + "]非待开工/已取消状态，不允许删除");
             }
         }
-        return dispatchMapper.deleteDispatchByIds(dispatchIds);
+        int rows = dispatchMapper.deleteDispatchByIds(dispatchIds);
+        // 派工单删除后同步关闭关联消息提醒，避免消息中心残留"孤儿消息"
+        for (Long id : dispatchIds)
+        {
+            messageHelper.markHandled("mms", id);
+        }
+        return rows;
     }
 
     // ========== 业务操作 ==========

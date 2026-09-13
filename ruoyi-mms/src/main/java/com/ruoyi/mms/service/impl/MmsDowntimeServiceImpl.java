@@ -41,6 +41,7 @@ public class MmsDowntimeServiceImpl implements IMmsDowntimeService
     @Transactional(rollbackFor = Exception.class)
     public int insertDowntime(MmsDowntime downtime)
     {
+        checkTimeRange(downtime.getStartTime(), downtime.getEndTime());
         downtime.setDelFlag("0");
         if (StringUtils.isEmpty(downtime.getDowntimeNo()))
         {
@@ -88,6 +89,7 @@ public class MmsDowntimeServiceImpl implements IMmsDowntimeService
             }
             if (downtime.getStartTime() != null)
             {
+                checkTimeRange(downtime.getStartTime(), downtime.getEndTime());
                 long diff = downtime.getEndTime().getTime() - downtime.getStartTime().getTime();
                 // 转换为小时，保留2位小数
                 BigDecimal hours = BigDecimal.valueOf(diff)
@@ -111,5 +113,16 @@ public class MmsDowntimeServiceImpl implements IMmsDowntimeService
     public int deleteDowntimeByIds(Long[] downtimeIds)
     {
         return downtimeMapper.deleteDowntimeByIds(downtimeIds);
+    }
+
+    /**
+     * 校验结束时间必须晚于开始时间
+     */
+    private void checkTimeRange(Date startTime, Date endTime)
+    {
+        if (startTime != null && endTime != null && !endTime.after(startTime))
+        {
+            throw new ServiceException("结束时间必须晚于开始时间");
+        }
     }
 }

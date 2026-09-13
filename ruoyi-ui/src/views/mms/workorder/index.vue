@@ -236,7 +236,7 @@
             <div class="rd-card-body" v-show="!collapsedCards.c1">
               <el-row :gutter="20"><el-col :span="12"><el-form-item label="计划数量" prop="planQty"><el-input-number v-model="form.planQty" :min="0" :precision="2" placeholder="请输入" style="width: 100%" /></el-form-item></el-col><el-col :span="12"><el-form-item label="BOM编号" prop="bomNo"><el-input v-model="form.bomNo" readonly placeholder="请选择BOM" style="width: 100%" @click="openBomPicker"><template #append><el-button icon="Search" @click="openBomPicker" /></template><template #suffix><el-icon v-if="form.bomNo" class="rd-form-tip" style="cursor:pointer" @click.stop="clearBom"><CircleClose /></el-icon></template></el-input></el-form-item></el-col></el-row>
               <el-row :gutter="20"><el-col :span="24"><el-form-item label="工艺路线" prop="routeNo"><el-input v-model="form.routeNo" readonly placeholder="请选择工艺路线" style="width: 100%" @click="openRoutePicker"><template #append><el-button icon="Search" @click="openRoutePicker" /></template><template #suffix><el-icon v-if="form.routeNo" class="rd-form-tip" style="cursor:pointer" @click.stop="clearRoute"><CircleClose /></el-icon></template></el-input></el-form-item></el-col></el-row>
-              <el-row :gutter="20"><el-col :span="12"><el-form-item label="计划开工" prop="planStart"><el-date-picker v-model="form.planStart" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" placeholder="选择时间" style="width: 100%" /></el-form-item></el-col><el-col :span="12"><el-form-item label="计划完工" prop="planFinish"><el-date-picker v-model="form.planFinish" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" placeholder="选择时间" style="width: 100%" /></el-form-item></el-col></el-row>
+              <el-row :gutter="20"><el-col :span="12"><el-form-item label="计划开工" prop="planStart"><el-date-picker v-model="form.planStart" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" placeholder="选择时间" style="width: 100%" @change="revalidatePlanFinish" /></el-form-item></el-col><el-col :span="12"><el-form-item label="计划完工" prop="planFinish"><el-date-picker v-model="form.planFinish" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" placeholder="选择时间" style="width: 100%" /></el-form-item></el-col></el-row>
             </div>
           </section>
           <section class="rd-card">
@@ -1732,8 +1732,8 @@ const data = reactive({
     planQty: [{ required: true, message: "请输入计划数量", trigger: "blur" }],
     bomNo: [{ required: true, message: "请选择BOM", trigger: "change" }],
     routeNo: [{ required: true, message: "请选择工艺路线", trigger: "change" }],
-    planStart: [{ required: true, message: "请选择计划开工时间", trigger: "change" }],
-    planFinish: [{ required: true, message: "请选择计划完工时间", trigger: "change" }],
+    planStart: [{ required: true, message: "请选择计划开工时间", trigger: "change" }, { validator: (rule, value, callback) => { if (value && form.value.planFinish && form.value.planFinish <= value) { callback(new Error("计划完工时间必须晚于计划开工时间")); } else { callback(); } }, trigger: "change" }],
+    planFinish: [{ required: true, message: "请选择计划完工时间", trigger: "change" }, { validator: (rule, value, callback) => { if (value && form.value.planStart && value <= form.value.planStart) { callback(new Error("计划完工时间必须晚于计划开工时间")); } else { callback(); } }, trigger: "change" }],
     priority: [{ required: true, message: "请选择优先级", trigger: "change" }]
   },
   pauseForm: {},
@@ -1741,6 +1741,11 @@ const data = reactive({
 });
 
 const { queryParams, form, rules, pauseForm, closeForm } = toRefs(data);
+
+/** 计划开工变化后联动重校验计划完工 */
+function revalidatePlanFinish() {
+  if (form.value.planFinish && proxy.$refs["formRef"]) proxy.$refs["formRef"].validateField("planFinish");
+}
 
 function getList() {
   loading.value = true;

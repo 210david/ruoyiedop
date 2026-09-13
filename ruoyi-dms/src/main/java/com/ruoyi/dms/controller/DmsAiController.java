@@ -47,6 +47,7 @@ public class DmsAiController extends BaseController
     @PostMapping("/faq")
     public AjaxResult addFaq(@Validated @RequestBody DmsRepairFaq faq)
     {
+        faq.setCreateBy(getUsername());
         return toAjax(faqService.insertFaq(faq));
     }
 

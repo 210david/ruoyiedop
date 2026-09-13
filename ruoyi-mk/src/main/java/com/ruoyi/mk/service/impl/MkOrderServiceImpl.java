@@ -165,7 +165,13 @@ public class MkOrderServiceImpl implements IMkOrderService
         {
             mkOrderMapper.deleteOrderItemsByOrderId(orderId);
         }
-        return mkOrderMapper.deleteOrderByIds(orderIds);
+        int rows = mkOrderMapper.deleteOrderByIds(orderIds);
+        // 订单删除后同步关闭关联消息提醒，避免消息中心残留"孤儿消息"
+        for (Long orderId : orderIds)
+        {
+            messageHelper.markHandled("mk", orderId);
+        }
+        return rows;
     }
 
     @Override

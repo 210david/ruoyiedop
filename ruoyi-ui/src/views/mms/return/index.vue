@@ -189,7 +189,7 @@ function loadColumnVisibility() { try { const saved = localStorage.getItem('mms_
 const columns = ref(loadColumnVisibility())
 const activeFilterCount = computed(() => { let c = 0; if (queryParams.value.returnNo) c++; if (queryParams.value.workOrderNo) c++; if (queryParams.value.materialCode) c++; if (queryParams.value.materialName) c++; if (queryParams.value.status) c++; if (queryParams.value.returnBy) c++; if (dateRange.value && dateRange.value.length === 2) c++; return c; });
 
-const data = reactive({ form: {}, queryParams: { pageNum: 1, pageSize: 10, returnNo: undefined, workOrderNo: undefined, materialCode: undefined, materialName: undefined, status: undefined, returnBy: undefined, params: {} }, rules: { returnNo: [{ required: false, message: "退料编号自动生成", trigger: "blur" }] } });
+const data = reactive({ form: {}, queryParams: { pageNum: 1, pageSize: 10, returnNo: undefined, workOrderNo: undefined, materialCode: undefined, materialName: undefined, status: undefined, returnBy: undefined, params: {} }, rules: { returnNo: [{ required: false, message: "退料编号自动生成", trigger: "blur" }], returnBy: [{ required: true, message: '请选择退料人', trigger: 'change' }], returnReason: [{ required: true, message: '请输入退料原因', trigger: 'blur' }] } });
 const { queryParams, form, rules } = toRefs(data);
 
 function getList() { loading.value = true; listReturnMaterial(proxy.addDateRange(queryParams.value, dateRange.value)).then(response => { dataList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths(); loadStatusCounts(); }).catch(() => { loading.value = false; }); }
@@ -200,7 +200,27 @@ function handleStatusTabClick(status) { activeStatusTab.value = status; queryPar
 function handleSelectionChange(selection) { ids.value = selection.map(item => item.returnId); single.value = selection.length !== 1; multiple.value = !selection.length; }
 function reset() { form.value = { returnNo: undefined, issueId: undefined, issueNo: undefined, workOrderId: undefined, workOrderNo: undefined, productCode: undefined, productName: undefined, returnBy: undefined, returnByName: undefined, returnReason: undefined, status: '0', remark: undefined, detailList: [] }; proxy.resetForm("formRef"); }
 function handleAdd() { reset(); open.value = true; title.value = "新增退料"; }
-function handleUpdate(row) { reset(); const id = row.returnId || ids.value[0]; getReturnMaterial(id).then(response => { form.value = response.data; form.value.returnByName = form.value.returnBy; if (!form.value.detailList) form.value.detailList = []; open.value = true; title.value = "修改退料"; }); }
+function handleUpdate(row) { reset(); const id = row.returnId || ids.value[0]; getReturnMaterial(id).then(response => { form.value = response.data; form.value.returnByName = form.value.returnBy; if (!form.value.detailList) form.value.detailList = []; open.value = true; title.value = "修改退料"; fillReturnedQty(form.value); }); }
+// 编辑/确认弹窗回填已退数量、可退数量（退料明细表不持久化这两个字段，需从领料单实时计算）
+function fillReturnedQty(data) {
+  if (!data.issueId) return;
+  getIssueInfo(data.issueId).then(res => {
+    const issueData = res.data;
+    if (!issueData || !issueData.detailList) return;
+    const issueMap = {};
+    issueData.detailList.forEach(d => { issueMap[d.materialCode] = d; });
+    (data.detailList || []).forEach(d => {
+      const issueDetail = issueMap[d.materialCode];
+      if (issueDetail) {
+        d.returnedQty = issueDetail.returnedQty || 0;
+        d.availableQty = issueDetail.availableQty || 0;
+        if (d.returnQty && d.availableQty && d.returnQty > d.availableQty) {
+          d.returnQty = d.availableQty;
+        }
+      }
+    });
+  });
+}
 function handleView(row) { const id = row.returnId || ids.value[0]; getReturnMaterial(id).then(response => { viewData.value = response.data; if (!viewData.value.detailList) viewData.value.detailList = []; viewOpen.value = true; }); }
 function submitForm() {
   proxy.$refs["formRef"].validate(valid => {
@@ -301,7 +321,7 @@ function onConfirmUserPickerConfirm(user) {
 
 // ===== 领料单选择器 =====
 const issuePickerOpen = ref(false); const issuePickerLoading = ref(false); const issuePickerList = ref([]); const issuePickerTotal = ref(0); const issuePickerSelectedId = ref(null); const issuePickerSelectedRow = ref(null);
-const issuePickerQuery = reactive({ pageNum: 1, pageSize: 10, issueNo: undefined, workOrderNo: undefined });
+const issuePickerQuery = reactive({ pageNum: 1, pageSize: 10, issueNo: undefined, workOrderNo: undefined, params: { excludeDraftWorkOrder: '1' } });
 function openIssuePicker() { issuePickerOpen.value = true; issuePickerSelectedId.value = null; issuePickerSelectedRow.value = null; issuePickerQuery.pageNum = 1; issuePickerQuery.issueNo = undefined; issuePickerQuery.workOrderNo = undefined; getIssuePickerList(); }
 function getIssuePickerList() { issuePickerLoading.value = true; listIssueForReturn(issuePickerQuery).then(res => { issuePickerList.value = res.rows; issuePickerTotal.value = res.total; issuePickerLoading.value = false; }).catch(() => { issuePickerLoading.value = false; }); }
 function handleIssuePickerQuery() { issuePickerQuery.pageNum = 1; getIssuePickerList(); }

@@ -160,10 +160,9 @@ public class AqlCalculator
         // 3. AQL → (字码 → Ac/Re) 正常检验一次抽样方案（GB/T 2828.1 表3-A）
         // ============================================================
 
-        // AQL 0.65
+        // AQL 0.65（表2-A：字码 A~G 为↓箭头，H 起为数字方案）
         Map<String, int[]> aql065 = new TreeMap<>();
-        aql065.put("G", new int[]{0, 1});
-        aql065.put("H", new int[]{1, 2});
+        aql065.put("H", new int[]{0, 1});
         aql065.put("J", new int[]{1, 2});
         aql065.put("K", new int[]{2, 3});
         aql065.put("L", new int[]{3, 4});
@@ -174,9 +173,9 @@ public class AqlCalculator
         aql065.put("R", new int[]{21, 22});
         AQL_TABLE.put("0.65", aql065);
 
-        // AQL 1.0
+        // AQL 1.0（表2-A：字码 A~F 为↓箭头，G 起为数字方案）
         Map<String, int[]> aql10 = new TreeMap<>();
-        aql10.put("G", new int[]{1, 2});
+        aql10.put("G", new int[]{0, 1});
         aql10.put("H", new int[]{1, 2});
         aql10.put("J", new int[]{2, 3});
         aql10.put("K", new int[]{3, 4});
@@ -348,39 +347,34 @@ public class AqlCalculator
         int[] acRe = levelTable.get(codeLetter);
         if (acRe == null)
         {
-            // 字码在AQL表中无直接条目，按箭头规则查找：
-            // 先尝试向下查找（↓ 箭头）：找第一个字码 >= 当前字码且在AQL表中有条目的条目
-            // TreeMap 按 key 自然排序（字母序 = 样本量升序），所以遍历即为字码升序
+            // 箭头规则（GB/T 2828.1 表2-A）：字码在AQL列无数字方案时，
+            // ↓ 使用箭头下方第一个抽样方案（完整采用其 n 与 Ac/Re）；
+            // ↓ 未命中时按 ↑ 处理：使用箭头上方第一个抽样方案。
+            // TreeMap 按 key 自然排序（字母序 = 样本量升序），遍历即为样本量升序。
+            String resolved = null;
             for (Map.Entry<String, int[]> entry : levelTable.entrySet())
             {
-                String entryCode = entry.getKey();
-                if (compareCodeLetter(entryCode, codeLetter) >= 0)
+                if (compareCodeLetter(entry.getKey(), codeLetter) > 0)
                 {
-                    int entryN = SAMPLE_SIZE_MAP.getOrDefault(entryCode, 0);
-                    int batchN = batchQty.intValue();
-                    acRe = entry.getValue();
-                    // 关键修复：只有当查到的样本量 ≤ 批量时，才使用新字码的样本量
-                    // 否则保持原字码的样本量 n（后续 100%检验截断逻辑处理）
-                    if (entryN <= batchN)
-                    {
-                        n = entryN;
-                    }
+                    resolved = entry.getKey();
                     break;
                 }
             }
-            // 向下查找未命中时，向上查找（↑ 箭头）：使用表中样本量最大的条目
-            if (acRe == null)
+            if (resolved == null)
             {
                 for (Map.Entry<String, int[]> entry : levelTable.entrySet())
                 {
-                    int entryN = SAMPLE_SIZE_MAP.getOrDefault(entry.getKey(), 0);
-                    int batchN = batchQty.intValue();
-                    acRe = entry.getValue();
-                    if (entryN <= batchN)
+                    if (compareCodeLetter(entry.getKey(), codeLetter) < 0)
                     {
-                        n = entryN;
+                        resolved = entry.getKey();
                     }
                 }
+            }
+            if (resolved != null)
+            {
+                codeLetter = resolved;
+                n = SAMPLE_SIZE_MAP.get(codeLetter);
+                acRe = levelTable.get(codeLetter);
             }
         }
         int ac, re;

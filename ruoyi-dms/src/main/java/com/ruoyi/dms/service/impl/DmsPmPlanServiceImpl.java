@@ -74,7 +74,13 @@ public class DmsPmPlanServiceImpl implements IDmsPmPlanService
     @Override
     public int deletePmPlanByIds(Long[] planIds)
     {
-        return dmsPmPlanMapper.deletePmPlanByIds(planIds);
+        int rows = dmsPmPlanMapper.deletePmPlanByIds(planIds);
+        // PM计划删除后同步关闭关联消息提醒，避免消息中心残留"孤儿消息"
+        for (Long planId : planIds)
+        {
+            messageHelper.markHandled("dms", planId);
+        }
+        return rows;
     }
 
     @Override

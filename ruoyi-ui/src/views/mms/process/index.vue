@@ -140,7 +140,7 @@ function loadColumnVisibility() { try { const saved = localStorage.getItem('mms_
 const columns = ref(loadColumnVisibility())
 const activeFilterCount = computed(() => { let c = 0; if (queryParams.value.processCode) c++; if (queryParams.value.processName) c++; if (queryParams.value.processType) c++; if (queryParams.value.lineName) c++; if (queryParams.value.status) c++; if (queryParams.value.isKeyProcess) c++; if (queryParams.value.isOutsource) c++; if (dateRange.value && dateRange.value.length === 2) c++; return c; });
 
-const data = reactive({ form: {}, queryParams: { pageNum: 1, pageSize: 10, processCode: undefined, processName: undefined, processType: undefined, lineName: undefined, status: undefined, isKeyProcess: undefined, isOutsource: undefined, params: {} }, rules: { processName: [{ required: true, message: "请输入工序名称", trigger: "blur" }] } });
+const data = reactive({ form: {}, queryParams: { pageNum: 1, pageSize: 10, processCode: undefined, processName: undefined, processType: undefined, lineName: undefined, status: undefined, isKeyProcess: undefined, isOutsource: undefined, params: {} }, rules: { processName: [{ required: true, message: "请输入工序名称", trigger: "blur" }], processType: [{ required: true, message: "请选择工序类型", trigger: "change" }], lineName: [{ required: true, message: "请选择产线", trigger: "change" }], stdTime: [{ required: true, message: "请输入标准工时", trigger: "blur" }] } });
 const { queryParams, form, rules } = toRefs(data);
 
 function getList() { loading.value = true; listProcess(proxy.addDateRange(queryParams.value, dateRange.value)).then(response => { dataList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths(); loadStatusCounts(); }); }

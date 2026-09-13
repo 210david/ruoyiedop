@@ -160,19 +160,19 @@
               <el-row :gutter="20">
                 <el-col :span="12">
                   <el-form-item label="开始时间" prop="startTime">
-                    <el-time-picker v-model="form.startTime" format="HH:mm" value-format="HH:mm" placeholder="如：08:00" style="width: 100%" />
+                    <el-time-picker v-model="form.startTime" format="HH:mm" value-format="HH:mm" placeholder="如：08:00" style="width: 100%" @change="onShiftFieldChange" />
                   </el-form-item>
                 </el-col>
                 <el-col :span="12">
                   <el-form-item label="结束时间" prop="endTime">
-                    <el-time-picker v-model="form.endTime" format="HH:mm" value-format="HH:mm" placeholder="如：17:00" style="width: 100%" />
+                    <el-time-picker v-model="form.endTime" format="HH:mm" value-format="HH:mm" placeholder="如：17:00" style="width: 100%" @change="onShiftFieldChange" />
                   </el-form-item>
                 </el-col>
               </el-row>
               <el-row :gutter="20">
                 <el-col :span="12">
                   <el-form-item label="休息分钟" prop="restMinutes">
-                    <el-input-number v-model="form.restMinutes" :min="0" :step="5" style="width: 100%" />
+                    <el-input-number v-model="form.restMinutes" :min="0" :step="5" style="width: 100%" @change="computeAvailHours" />
                   </el-form-item>
                 </el-col>
                 <el-col :span="12">
@@ -372,12 +372,32 @@ const data = reactive({
     queryParams: { pageNum: 1, pageSize: 10, shiftCode: undefined, shiftName: undefined, startTime: undefined, status: undefined, params: {} },
   rules: {
     shiftName: [{ required: true, message: "请输入班次名称", trigger: "blur" }],
-    startTime: [{ required: true, message: "请输入开始时间", trigger: "blur" }],
-    endTime: [{ required: true, message: "请输入结束时间", trigger: "blur" }]
+    startTime: [{ required: true, message: "请输入开始时间", trigger: "blur" }, { validator: (rule, value, callback) => { if (value && form.value.endTime && form.value.endTime <= value) { callback(new Error("结束时间必须晚于开始时间")); } else { callback(); } }, trigger: "change" }],
+    endTime: [{ required: true, message: "请输入结束时间", trigger: "blur" }, { validator: (rule, value, callback) => { if (value && form.value.startTime && value <= form.value.startTime) { callback(new Error("结束时间必须晚于开始时间")); } else { callback(); } }, trigger: "change" }]
   }
 });
 
 const { queryParams, form, rules } = toRefs(data);
+
+/** 开始时间变化后联动重校验结束时间 */
+function revalidateEndTime() {
+  if (form.value.endTime) proxy.$refs["formRef"].validateField("endTime");
+}
+
+/** 起止时间变化：重校验结束时间并联动计算可用工时 */
+function onShiftFieldChange() {
+  revalidateEndTime();
+  computeAvailHours();
+}
+
+/** 可用工时 =（结束-开始-休息分钟）/60，保留2位；起止未填或结果无意义时清空 */
+function computeAvailHours() {
+  const f = form.value;
+  if (!f.startTime || !f.endTime) return;
+  const toMin = t => { const p = t.split(':'); return Number(p[0]) * 60 + Number(p[1] || 0); };
+  const net = toMin(f.endTime) - toMin(f.startTime) - Number(f.restMinutes || 0);
+  f.availHours = net > 0 ? Math.round(net / 60 * 100) / 100 : undefined;
+}
 
 function getList() {
   loading.value = true;

@@ -45,6 +45,7 @@
             <if test="productName != null and productName != ''"> AND product_name LIKE CONCAT('%', #{productName}, '%')</if>
             <if test="status != null and status != ''"> AND status = #{status}</if>
             <if test="batchNo != null and batchNo != ''"> AND batch_no LIKE CONCAT('%', #{batchNo}, '%')</if>
+            <if test="finishBy != null and finishBy != ''"> AND finish_by LIKE CONCAT('%', #{finishBy}, '%')</if>
             <if test="params.beginTime != null and params.beginTime != ''"> AND date(create_time) &gt;= #{params.beginTime}</if>
             <if test="params.endTime != null and params.endTime != ''"> AND date(create_time) &lt;= #{params.endTime}</if>
         </where>

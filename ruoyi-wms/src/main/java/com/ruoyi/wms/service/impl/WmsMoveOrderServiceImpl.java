@@ -115,7 +115,13 @@ public class WmsMoveOrderServiceImpl implements IWmsMoveOrderService
     @Override
     public int deleteMoveOrderByIds(Long[] moveIds)
     {
-        return wmsMoveOrderMapper.deleteMoveOrderByIds(moveIds);
+        int rows = wmsMoveOrderMapper.deleteMoveOrderByIds(moveIds);
+        // 移库单删除后同步关闭关联消息提醒，避免消息中心残留"孤儿消息"
+        for (Long moveId : moveIds)
+        {
+            messageHelper.markHandled("wms", moveId);
+        }
+        return rows;
     }
 
     @Override

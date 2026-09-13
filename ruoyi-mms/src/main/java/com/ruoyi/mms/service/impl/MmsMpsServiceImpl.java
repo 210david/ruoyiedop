@@ -77,6 +77,7 @@ public class MmsMpsServiceImpl implements IMmsMpsService
     @Transactional(rollbackFor = Exception.class)
     public int insertMps(MmsMps mps)
     {
+        checkPeriodRange(mps);
         // 自动生成计划编号：MPS + yyyyMMdd + 4位
         if (StringUtils.isEmpty(mps.getMpsNo()))
         {
@@ -93,10 +94,23 @@ public class MmsMpsServiceImpl implements IMmsMpsService
         return mpsMapper.insertMps(mps);
     }
 
+    /**
+     * 校验计划期结束不能早于或等于计划期开始
+     */
+    private void checkPeriodRange(MmsMps mps)
+    {
+        if (mps.getPeriodStart() != null && mps.getPeriodEnd() != null
+                && !mps.getPeriodEnd().after(mps.getPeriodStart()))
+        {
+            throw new ServiceException("计划期结束不能早于或等于计划期开始");
+        }
+    }
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateMps(MmsMps mps)
     {
+        checkPeriodRange(mps);
         // 校验：已确认及之后状态不允许修改
         MmsMps existing = mpsMapper.selectMpsById(mps.getMpsId());
         if (existing != null && !"0".equals(existing.getStatus()))

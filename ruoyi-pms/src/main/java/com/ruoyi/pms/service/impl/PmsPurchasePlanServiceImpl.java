@@ -1,4 +1,5 @@
-package com.ruoyi.pms.service.impl;
+package com.ruoyi.pms.service.impl;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -7,6 +8,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.StringUtils;
@@ -74,6 +76,7 @@ public class PmsPurchasePlanServiceImpl implements IPmsPurchasePlanService
     @Override
     public int insertPmsPurchasePlan(PmsPurchasePlan pmsPurchasePlan)
     {
+        checkDateRange(pmsPurchasePlan);
         pmsPurchasePlan.setCreateTime(DateUtils.getNowDate());
         pmsPurchasePlan.setCreateBy(SecurityUtils.getUsername());
         pmsPurchasePlan.setStatus("0"); // 草稿状态
@@ -113,6 +116,7 @@ public class PmsPurchasePlanServiceImpl implements IPmsPurchasePlanService
     @Override
     public int updatePmsPurchasePlan(PmsPurchasePlan pmsPurchasePlan)
     {
+        checkDateRange(pmsPurchasePlan);
         PmsPurchasePlan existing = pmsPurchasePlanMapper.selectPmsPurchasePlanById(pmsPurchasePlan.getPlanId());
         if (existing != null && "6".equals(existing.getStatus()))
         {
@@ -242,5 +246,17 @@ public class PmsPurchasePlanServiceImpl implements IPmsPurchasePlanService
         plan.setUpdateTime(DateUtils.getNowDate());
         plan.setUpdateBy(SecurityUtils.getUsername());
         return pmsPurchasePlanMapper.updatePmsPurchasePlan(plan);
+    }
+
+    /**
+     * 校验结束日期不能早于或等于开始日期
+     */
+    private void checkDateRange(PmsPurchasePlan plan)
+    {
+        if (plan.getStartDate() != null && plan.getEndDate() != null
+                && !plan.getEndDate().after(plan.getStartDate()))
+        {
+            throw new ServiceException("结束日期不能早于或等于开始日期");
+        }
     }
 }

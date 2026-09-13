@@ -49,6 +49,11 @@
         SELECT COUNT(1) FROM qms_workshop WHERE parent_id = #{workshopId} AND del_flag = '0'
     </select>
 
+    <select id="checkWorkshopCodeUnique" parameterType="String" resultMap="QmsWorkshopResult">
+        <include refid="selectWorkshopVo"/>
+        WHERE workshop_code = #{workshopCode} AND del_flag = '0' LIMIT 1
+    </select>
+
     <insert id="insertWorkshop" parameterType="QmsWorkshop" useGeneratedKeys="true" keyProperty="workshopId">
         INSERT INTO qms_workshop (
             parent_id, workshop_code, workshop_name, node_type, line_type, cycle_time, station_type, order_num,

@@ -252,7 +252,7 @@
           </div>
           <div class="rd-card-body" v-show="!collapsedCards.schedule">
             <el-row>
-              <el-col :span="12"><el-form-item label="开始时间" prop="startTime"><el-date-picker v-model="form.startTime" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" placeholder="选择开始时间" style="width: 100%" /></el-form-item></el-col>
+              <el-col :span="12"><el-form-item label="开始时间" prop="startTime"><el-date-picker v-model="form.startTime" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" placeholder="选择开始时间" style="width: 100%" @change="revalidateEndTime" /></el-form-item></el-col>
               <el-col :span="12"><el-form-item label="结束时间" prop="endTime"><el-date-picker v-model="form.endTime" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" placeholder="选择结束时间" style="width: 100%" /></el-form-item></el-col>
               <el-col :span="12"><el-form-item label="活动预算" prop="budget"><el-input-number v-model="form.budget" :min="0" :precision="2" controls-position="right" style="width: 100%" /></el-form-item></el-col>
               <el-col :span="12"><el-form-item label="实际花费" prop="cost"><el-input-number v-model="form.cost" :min="0" :precision="2" controls-position="right" style="width: 100%" :disabled="!isSettlementPhase" /></el-form-item></el-col>
@@ -966,10 +966,17 @@ const data = reactive({
   queryParams: { pageNum: 1, pageSize: 10, activityNo: undefined, activityName: undefined, activityType: undefined, activityStatus: undefined, activityForm: undefined, userName: undefined, params: {} },
   rules: {
     activityName: [{ required: true, message: '活动名称不能为空', trigger: 'blur' }],
-    activityType: [{ required: true, message: '活动类型不能为空', trigger: 'change' }]
+    activityType: [{ required: true, message: '活动类型不能为空', trigger: 'change' }],
+    startTime: [{ required: true, message: '请选择开始时间', trigger: 'change' }, { validator: (rule, value, callback) => { if (value && form.value.endTime && form.value.endTime <= value) { callback(new Error('结束时间必须晚于开始时间')); } else { callback(); } }, trigger: 'change' }],
+    endTime: [{ required: true, message: '请选择结束时间', trigger: 'change' }, { validator: (rule, value, callback) => { if (value && form.value.startTime && value <= form.value.startTime) { callback(new Error('结束时间必须晚于开始时间')); } else { callback(); } }, trigger: 'change' }]
   }
 })
 const { queryParams, form, rules } = toRefs(data)
+
+/** 开始时间变化后联动重校验结束时间 */
+function revalidateEndTime() {
+  if (form.value.endTime && proxy.$refs['activityRef']) proxy.$refs['activityRef'].validateField('endTime')
+}
 
 // 列显隐配置 - 从 localStorage 恢复保存的设置
 const defaultColumns = {

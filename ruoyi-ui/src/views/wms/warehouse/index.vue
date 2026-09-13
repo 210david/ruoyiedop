@@ -445,6 +445,9 @@ const data = reactive({
   },
   rules: {
     nodeType: [{ required: true, message: '请选择节点类型', trigger: 'change' }],
+    warehouseCode: [{ required: true, message: '编码不能为空', trigger: 'blur' }],
+    managerId: [{ required: true, message: '请选择负责人', trigger: 'change' }],
+    deptId: [{ required: true, message: '请选择管理部门', trigger: 'change' }],
     warehouseName: [{ required: true, message: '名称不能为空', trigger: 'blur' }]
   }
 })

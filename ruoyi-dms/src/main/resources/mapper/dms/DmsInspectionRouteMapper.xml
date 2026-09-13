@@ -32,8 +32,18 @@
         <where>
             del_flag = '0'
             <if test="routeName != null and routeName != ''"> AND route_name LIKE CONCAT('%', #{routeName}, '%')</if>
+            <if test="routeCode != null and routeCode != ''"> AND route_code LIKE CONCAT('%', #{routeCode}, '%')</if>
+            <if test="deptId != null"> AND dept_id = #{deptId}</if>
+            <if test="deptName != null and deptName != ''"> AND dept_name LIKE CONCAT('%', #{deptName}, '%')</if>
             <if test="cycleType != null and cycleType != ''"> AND cycle_type = #{cycleType}</if>
             <if test="status != null and status != ''"> AND status = #{status}</if>
+            <if test="createBy != null and createBy != ''"> AND create_by LIKE CONCAT('%', #{createBy}, '%')</if>
+            <if test="params.beginTime != null and params.beginTime != ''"><!-- 开始时间 -->
+                AND date_format(create_time,'%Y-%m-%d') &gt;= #{params.beginTime}
+            </if>
+            <if test="params.endTime != null and params.endTime != ''"><!-- 结束时间 -->
+                AND date_format(create_time,'%Y-%m-%d') &lt;= #{params.endTime}
+            </if>
         </where>
         ORDER BY route_id DESC
     </select>

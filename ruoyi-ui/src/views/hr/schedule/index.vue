@@ -139,7 +139,7 @@
       </div>
       <el-table ref="scheduleTableRef" :data="scheduleList" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" border stripe style="width: 100%">
         <el-table-column type="selection" width="55" align="center" />
-        <el-table-column type="index" label="序号" :width="colWidth('index', 70)" align="center" />
+        <el-table-column type="index" label="序号" prop="index" :width="colWidth('index', 70)" align="center" />
         <el-table-column label="排班日期" prop="scheduleDate" :width="colWidth('scheduleDate', 120)" align="center" />
         <el-table-column label="员工姓名" prop="employeeName" :min-width="colWidth('employeeName', 120)" show-overflow-tooltip />
         <el-table-column label="工号" prop="employeeNo" :width="colWidth('employeeNo', 100)" align="center" />
@@ -156,7 +156,7 @@
           </template>
         </el-table-column>
         <el-table-column label="创建时间" prop="createTime" :width="colWidth('createTime', 160)" align="center" />
-        <el-table-column label="操作" :width="colWidth('action', 150)" align="center" fixed="right">
+        <el-table-column label="操作" prop="action" :width="colWidth('action', 150)" align="center" fixed="right">
           <template #default="scope">
             <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['hr:schedule:edit']">编辑</el-button>
             <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['hr:schedule:remove']">删除</el-button>

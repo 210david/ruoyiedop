@@ -74,7 +74,7 @@
         <el-table ref="tableRef" v-loading="loading" :data="recordList" border @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
-          <el-table-column label="关联计划" key="planName" :width="colWidth('planName', 192)" resizable show-overflow-tooltip v-if="columns.planName.visible">
+          <el-table-column label="关联计划" prop="planName" key="planName" :width="colWidth('planName', 192)" resizable show-overflow-tooltip v-if="columns.planName.visible">
             <template #default="scope">
               <span v-if="scope.row.planId">{{ getPlanName(scope.row.planId) }}</span>
               <span v-else style="color:var(--ink-400)">—</span>
@@ -88,7 +88,7 @@
           <el-table-column label="培训地点" prop="trainingLocation" key="trainingLocation" :width="colWidth('trainingLocation', 180)" resizable show-overflow-tooltip v-if="columns.trainingLocation.visible" />
           <el-table-column label="课时" prop="hours" key="hours" :width="colWidth('hours', 96)" resizable align="center" v-if="columns.hours.visible" />
           <el-table-column label="培训讲师" prop="trainer" key="trainer" :width="colWidth('trainer', 144)" resizable show-overflow-tooltip v-if="columns.trainer.visible" />
-          <el-table-column label="参训人数" key="attendeeCount" :width="colWidth('attendeeCount', 108)" resizable align="center" v-if="columns.attendeeCount.visible">
+          <el-table-column label="参训人数" prop="attendeeCount" key="attendeeCount" :width="colWidth('attendeeCount', 108)" resizable align="center" v-if="columns.attendeeCount.visible">
             <template #default="scope">
               <span>{{ scope.row.attendeeCount || 0 }} 人</span>
             </template>

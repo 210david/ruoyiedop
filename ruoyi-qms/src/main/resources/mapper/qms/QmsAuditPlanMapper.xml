@@ -34,6 +34,7 @@
             <if test="auditTitle != null and auditTitle != ''"> AND audit_title LIKE CONCAT('%', #{auditTitle}, '%')</if>
             <if test="auditYear != null"> AND audit_year = #{auditYear}</if>
             <if test="planStatus != null and planStatus != ''"> AND plan_status = #{planStatus}</if>
+            <if test="remark != null and remark != ''"> AND remark LIKE CONCAT('%', #{remark}, '%')</if>
         </where>
         ORDER BY create_time DESC
     </select>

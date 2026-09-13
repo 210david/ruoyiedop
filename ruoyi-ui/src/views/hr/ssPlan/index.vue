@@ -42,7 +42,7 @@
           <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" resizable align="center" />
           <el-table-column label="方案名称" prop="planName" key="planName" align="center" :min-width="colWidth('planName', 160)" show-overflow-tooltip resizable v-if="columns.planName.visible" />
           <el-table-column label="年度" prop="year" key="year" align="center" :width="colWidth('year', 90)" resizable v-if="columns.year.visible" />
-          <el-table-column label="默认方案" key="isDefault" align="center" :width="colWidth('isDefault', 100)" resizable v-if="columns.isDefault.visible">
+          <el-table-column label="默认方案" prop="isDefault" key="isDefault" align="center" :width="colWidth('isDefault', 100)" resizable v-if="columns.isDefault.visible">
             <template #default="scope">
               <el-tooltip v-if="scope.row.isDefault === 1" content="该年度工资核算时的默认比例来源，同年度仅一个；不同年度各有一个默认" placement="top">
                 <el-tag type="success" size="small">{{ scope.row.year }}默认</el-tag>
@@ -52,22 +52,22 @@
           </el-table-column>
           <el-table-column label="基数下限" prop="baseLower" key="baseLower" align="center" :width="colWidth('baseLower', 110)" resizable v-if="columns.baseLower.visible" />
           <el-table-column label="基数上限" prop="baseUpper" key="baseUpper" align="center" :width="colWidth('baseUpper', 110)" resizable v-if="columns.baseUpper.visible" />
-          <el-table-column label="养老(单位/个人)" key="pension" align="center" :width="colWidth('pension', 140)" resizable v-if="columns.pension.visible">
+          <el-table-column label="养老(单位/个人)" prop="pension" key="pension" align="center" :width="colWidth('pension', 140)" resizable v-if="columns.pension.visible">
             <template #default="scope">{{ pct(scope.row.pensionEmployer) }} / {{ pct(scope.row.pensionEmployee) }}</template>
           </el-table-column>
-          <el-table-column label="医疗(单位/个人)" key="medical" align="center" :width="colWidth('medical', 140)" resizable v-if="columns.medical.visible">
+          <el-table-column label="医疗(单位/个人)" prop="medical" key="medical" align="center" :width="colWidth('medical', 140)" resizable v-if="columns.medical.visible">
             <template #default="scope">{{ pct(scope.row.medicalEmployer) }} / {{ pct(scope.row.medicalEmployee) }}</template>
           </el-table-column>
-          <el-table-column label="失业(单位/个人)" key="unemployment" align="center" :width="colWidth('unemployment', 140)" resizable v-if="columns.unemployment.visible">
+          <el-table-column label="失业(单位/个人)" prop="unemployment" key="unemployment" align="center" :width="colWidth('unemployment', 140)" resizable v-if="columns.unemployment.visible">
             <template #default="scope">{{ pct(scope.row.unemploymentEmployer) }} / {{ pct(scope.row.unemploymentEmployee) }}</template>
           </el-table-column>
-          <el-table-column label="工伤/生育(单位)" key="injury" align="center" :width="colWidth('injury', 140)" resizable v-if="columns.injury.visible">
+          <el-table-column label="工伤/生育(单位)" prop="injury" key="injury" align="center" :width="colWidth('injury', 140)" resizable v-if="columns.injury.visible">
             <template #default="scope">{{ pct(scope.row.injuryEmployer) }} / {{ pct(scope.row.maternityEmployer) }}</template>
           </el-table-column>
-          <el-table-column label="公积金(单位/个人)" key="fund" align="center" :width="colWidth('fund', 140)" resizable v-if="columns.fund.visible">
+          <el-table-column label="公积金(单位/个人)" prop="fund" key="fund" align="center" :width="colWidth('fund', 140)" resizable v-if="columns.fund.visible">
             <template #default="scope">{{ pct(scope.row.fundEmployer) }} / {{ pct(scope.row.fundEmployee) }}</template>
           </el-table-column>
-          <el-table-column label="状态" key="status" align="center" :width="colWidth('status', 90)" resizable v-if="columns.status.visible">
+          <el-table-column label="状态" prop="status" key="status" align="center" :width="colWidth('status', 90)" resizable v-if="columns.status.visible">
             <template #default="scope"><el-tag :type="scope.row.status === '0' ? 'success' : 'info'" size="small">{{ scope.row.status === '0' ? '正常' : '停用' }}</el-tag></template>
           </el-table-column>
           <el-table-column label="操作" width="180" align="center" fixed="right" class-name="col-action">
@@ -159,7 +159,19 @@ const data = reactive({
   queryParams: { pageNum: 1, pageSize: 10, planName: undefined, year: undefined, status: undefined },
   rules: {
     planName: [{ required: true, message: '方案名称不能为空', trigger: 'blur' }],
-    year: [{ required: true, message: '适用年度不能为空', trigger: 'blur' }]
+    year: [{ required: true, message: '适用年度不能为空', trigger: 'blur' }],
+    baseLower: [{ required: true, message: '基数下限不能为空（不参保可填 0）', trigger: 'blur' }],
+    baseUpper: [{ required: true, message: '基数上限不能为空（不参保可填 0）', trigger: 'blur' }],
+    pensionEmployer: [{ required: true, message: '请填写养老单位比例（不参保填 0）', trigger: 'blur' }],
+    pensionEmployee: [{ required: true, message: '请填写养老个人比例（不参保填 0）', trigger: 'blur' }],
+    medicalEmployer: [{ required: true, message: '请填写医疗单位比例（不参保填 0）', trigger: 'blur' }],
+    medicalEmployee: [{ required: true, message: '请填写医疗个人比例（不参保填 0）', trigger: 'blur' }],
+    unemploymentEmployer: [{ required: true, message: '请填写失业单位比例（不参保填 0）', trigger: 'blur' }],
+    unemploymentEmployee: [{ required: true, message: '请填写失业个人比例（不参保填 0）', trigger: 'blur' }],
+    injuryEmployer: [{ required: true, message: '请填写工伤单位比例（不参保填 0）', trigger: 'blur' }],
+    maternityEmployer: [{ required: true, message: '请填写生育单位比例（不参保填 0）', trigger: 'blur' }],
+    fundEmployer: [{ required: true, message: '请填写公积金单位比例（不参保填 0）', trigger: 'blur' }],
+    fundEmployee: [{ required: true, message: '请填写公积金个人比例（不参保填 0）', trigger: 'blur' }]
   }
 })
 const { queryParams, form, rules } = toRefs(data)

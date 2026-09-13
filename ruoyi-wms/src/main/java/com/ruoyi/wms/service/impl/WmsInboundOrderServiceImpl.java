@@ -125,7 +125,13 @@ public class WmsInboundOrderServiceImpl implements IWmsInboundOrderService
     @Transactional(rollbackFor = Exception.class)
     public int deleteInboundOrderByIds(Long[] orderIds)
     {
-        return wmsInboundOrderMapper.deleteInboundOrderByIds(orderIds);
+        int rows = wmsInboundOrderMapper.deleteInboundOrderByIds(orderIds);
+        // 入库单删除后同步关闭关联消息提醒，避免消息中心残留"孤儿消息"
+        for (Long orderId : orderIds)
+        {
+            messageHelper.markHandled("wms", orderId);
+        }
+        return rows;
     }
 
     @Override

@@ -4,12 +4,24 @@
     <div class="surface filter-card" v-show="showSearch">
       <div class="filter-head">
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+        <a class="adv-link" :class="{ 'is-open': showAdvanced }" @click.prevent="showAdvanced = !showAdvanced">
+          <span>{{ showAdvanced ? '收起' : '高级筛选' }}</span>
+          <el-icon class="chev"><ArrowDown /></el-icon>
+        </a>
       </div>
       <div class="filter-bar">
         <div class="field">
           <label>路线名称</label>
           <div class="control">
             <el-input v-model="queryParams.routeName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field">
+          <label>路线编码</label>
+          <div class="control">
+            <el-input v-model="queryParams.routeCode" placeholder="请输入" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
@@ -29,6 +41,28 @@
               <el-option label="正常" value="0" />
               <el-option label="停用" value="1" />
             </el-select>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>责任部门</label>
+          <div class="control">
+            <el-input v-model="queryParams.deptName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>创建人</label>
+          <div class="control">
+            <el-input v-model="queryParams.createBy" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>创建时间</label>
+          <div class="control">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
           </div>
         </div>
       </div>
@@ -351,7 +385,7 @@
 </template>
 
 <script setup name="DmsInspectionRoute">
-import { CircleClose } from '@element-plus/icons-vue'
+import { CircleClose, ArrowDown } from '@element-plus/icons-vue'
 import { listRoute, getRoute, addRoute, updateRoute, delRoute, countRouteByStatus } from '@/api/dms/inspection'
 import { listEquipment } from '@/api/dms/equipment'
 import DeptPicker from '@/components/DeptPicker/index.vue'
@@ -430,11 +464,17 @@ function loadColumnVisibility() {
 }
 const columns = ref(loadColumnVisibility())
 
+const showAdvanced = ref(false)
+const dateRange = ref([])
 const activeFilterCount = computed(() => {
   let count = 0
   if (queryParams.value.routeName) count++
+  if (queryParams.value.routeCode) count++
   if (queryParams.value.cycleType !== undefined && queryParams.value.cycleType !== null && queryParams.value.cycleType !== '') count++
   if (queryParams.value.status !== undefined && queryParams.value.status !== null && queryParams.value.status !== '') count++
+  if (queryParams.value.deptName) count++
+  if (queryParams.value.createBy) count++
+  if (dateRange.value && dateRange.value.length === 2) count++
   return count
 })
 
@@ -463,7 +503,7 @@ function getEquipmentLabel(eid) {
 
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, routeName: undefined, cycleType: undefined, status: undefined },
+  queryParams: { pageNum: 1, pageSize: 10, routeName: undefined, routeCode: undefined, cycleType: undefined, status: undefined, deptName: undefined, createBy: undefined, params: {} },
   rules: {
     routeName: [{ required: true, message: '路线名称不能为空', trigger: 'blur' }],
     cycleType: [{ required: true, message: '周期类型不能为空', trigger: 'change' }],
@@ -506,8 +546,13 @@ function removeEquipment(idx) {
   syncDeviceItems()
 }
 
-function handleQuery() { queryParams.value.pageNum = 1; getList() }
-function resetQuery() { proxy.resetForm('queryRef'); handleQuery() }
+function handleQuery() { showAdvanced.value = false; queryParams.value.params = proxy.addDateRange(queryParams.value.params, dateRange.value); queryParams.value.pageNum = 1; getList() }
+function resetQuery() {
+  queryParams.value = { pageNum: 1, pageSize: 10, routeName: undefined, routeCode: undefined, cycleType: undefined, status: undefined, deptName: undefined, createBy: undefined, params: {} }
+  dateRange.value = []
+  activeStatusTab.value = 'all'
+  handleQuery()
+}
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.routeId); single.value = selection.length !== 1; multiple.value = !selection.length }
 
 function reset() {
@@ -705,6 +750,10 @@ loadStatusCounts()
 .dms-inspection-route-page .filter-card .filter-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
 .dms-inspection-route-page .filter-card .filter-title { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--ink-700); }
 .dms-inspection-route-page .filter-card .filter-title .glyph { width:4px; height:14px; background:var(--brand-600); border-radius:2px; }
+.dms-inspection-route-page .filter-card .adv-link { font-size:14px; color:var(--ink-500); text-decoration:none; display:flex; align-items:center; gap:4px; transition:color .15s var(--ease-out); cursor:pointer; }
+.dms-inspection-route-page .filter-card .adv-link:hover { color:var(--brand-600); }
+.dms-inspection-route-page .filter-card .adv-link .chev { transition:transform .2s var(--ease-out); }
+.dms-inspection-route-page .filter-card .adv-link.is-open .chev { transform:rotate(180deg); }
 .dms-inspection-route-page .filter-card .filter-bar { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px 16px; }
 .dms-inspection-route-page .filter-card .field { display:flex; flex-direction:column; gap:4px; }
 .dms-inspection-route-page .filter-card .field > label { font-size:13px; font-weight:500; color:var(--ink-500); }

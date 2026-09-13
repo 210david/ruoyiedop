@@ -275,11 +275,27 @@ const data = reactive({
   queryParams: { pageNum: 1, pageSize: 10, shiftCode: undefined, shiftName: undefined, startTime: undefined, endTime: undefined },
   rules: {
     shiftName: [{ required: true, message: '班次名称不能为空', trigger: 'blur' }],
-    startTime: [{ required: true, message: '开始时间不能为空', trigger: 'blur' }],
-    endTime: [{ required: true, message: '结束时间不能为空', trigger: 'blur' }]
+    startTime: [{ required: true, message: '开始时间不能为空', trigger: 'blur' }, { validator: validateShiftTimeRange, trigger: 'change' }],
+    endTime: [{ required: true, message: '结束时间不能为空', trigger: 'blur' }, { validator: validateShiftTimeRange, trigger: 'change' }]
   }
 })
 const { queryParams, form, rules } = toRefs(data)
+
+/** 跨零点班次：结束时间早于开始时间视为次日，仅禁止两者相等（时长为0） */
+function validateShiftTimeRange(rule, value, callback) {
+  if (!value || !form.value.startTime || !form.value.endTime) {
+    callback()
+    return
+  }
+  const toMin = t => { const p = t.split(':'); return Number(p[0]) * 60 + Number(p[1] || 0) }
+  const s = toMin(form.value.startTime)
+  const e = toMin(form.value.endTime) === 0 ? 1440 : toMin(form.value.endTime)
+  if (e === s) {
+    callback(new Error('结束时间不能等于开始时间（跨零点班次结束时间不可与开始时间相同）'))
+  } else {
+    callback()
+  }
+}
 
 const activeFilterCount = computed(() => {
   let count = 0
@@ -371,6 +387,7 @@ if (e < s) e += 1440
 if (f.workHours == null || f.workHours === undefined) {
 f.workHours = Math.round((e - s) / 60 * 100) / 100
 }
+if (f.endTime && proxy.$refs['hrShiftRef']) proxy.$refs['hrShiftRef'].validateField('endTime')
 }
 
 function submitForm() {

@@ -39,6 +39,7 @@
             <if test="gaugeType != null and gaugeType != ''"> AND gauge_type LIKE CONCAT('%', #{gaugeType}, '%')</if>
             <if test="gaugeStatus != null and gaugeStatus != ''"> AND gauge_status = #{gaugeStatus}</if>
             <if test="status != null and status != ''"> AND status = #{status}</if>
+            <if test="remark != null and remark != ''"> AND remark LIKE CONCAT('%', #{remark}, '%')</if>
         </where>
         ORDER BY gauge_id DESC
     </select>

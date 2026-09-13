@@ -144,7 +144,13 @@ public class PmsPurchaseRequestServiceImpl implements IPmsPurchaseRequestService
     @Transactional(rollbackFor = Exception.class)
     public int deletePurchaseRequestByIds(Long[] requestIds)
     {
-        return pmsPurchaseRequestMapper.deletePurchaseRequestByIds(requestIds);
+        int rows = pmsPurchaseRequestMapper.deletePurchaseRequestByIds(requestIds);
+        // 采购申请删除后同步关闭关联消息提醒，避免消息中心残留"孤儿消息"
+        for (Long requestId : requestIds)
+        {
+            messageHelper.markHandled("pms", requestId);
+        }
+        return rows;
     }
 
     @Override

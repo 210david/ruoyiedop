@@ -143,7 +143,13 @@ public class WmsOutboundOrderServiceImpl implements IWmsOutboundOrderService
                 }
             }
         }
-        return wmsOutboundOrderMapper.deleteOutboundOrderByIds(orderIds);
+        int rows = wmsOutboundOrderMapper.deleteOutboundOrderByIds(orderIds);
+        // 出库单删除后同步关闭关联消息提醒，避免消息中心残留"孤儿消息"
+        for (Long orderId : orderIds)
+        {
+            messageHelper.markHandled("wms", orderId);
+        }
+        return rows;
     }
 
     @Override

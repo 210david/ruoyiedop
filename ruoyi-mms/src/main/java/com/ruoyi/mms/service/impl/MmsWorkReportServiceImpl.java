@@ -161,7 +161,13 @@ public class MmsWorkReportServiceImpl implements IMmsWorkReportService
                 throw new ServiceException("报工记录[" + report.getReportNo() + "]已审核，不允许删除");
             }
         }
-        return workReportMapper.deleteWorkReportByIds(reportIds);
+        int rows = workReportMapper.deleteWorkReportByIds(reportIds);
+        // 报工记录删除后同步关闭关联消息提醒，避免消息中心残留"孤儿消息"
+        for (Long id : reportIds)
+        {
+            messageHelper.markHandled("mms", id);
+        }
+        return rows;
     }
 
     @Override

@@ -3,6 +3,7 @@ package com.ruoyi.hr.service.impl;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.hr.domain.HrShift;
 import com.ruoyi.hr.mapper.HrShiftMapper;
@@ -27,6 +28,7 @@ public class HrShiftServiceImpl implements IHrShiftService
     @Override
     public int insertHrShift(HrShift hrShift)
     {
+        checkShiftTimeRange(hrShift);
         if (StringUtils.isEmpty(hrShift.getShiftCode()))
         {
             hrShift.setShiftCode(mkNumberRuleService.generateNumber("hr_shift"));
@@ -43,6 +45,7 @@ public class HrShiftServiceImpl implements IHrShiftService
     @Override
     public int updateHrShift(HrShift hrShift)
     {
+        checkShiftTimeRange(hrShift);
         computeShiftFields(hrShift);
         // 如果设为默认班次，清除其他班次的默认标记
         if (hrShift.getIsDefault() != null && hrShift.getIsDefault() == 1)
@@ -72,6 +75,30 @@ public class HrShiftServiceImpl implements IHrShiftService
             if (shift.getWorkHours() == null)
             {
                 shift.setWorkHours(java.math.BigDecimal.valueOf(Math.round((e - s) * 100.0 / 60.0) / 100.0));
+            }
+        }
+        catch (NumberFormatException ignored) { }
+    }
+
+    /** 跨零点班次：结束时间早于开始时间视为次日，仅禁止结束时间与开始时间相同 */
+    private void checkShiftTimeRange(HrShift shift)
+    {
+        String st = shift.getStartTime();
+        String et = shift.getEndTime();
+        if (st == null || et == null || !st.contains(":") || !et.contains(":"))
+        {
+            return;
+        }
+        try
+        {
+            String[] sp = st.split(":");
+            String[] ep = et.split(":");
+            int s = Integer.parseInt(sp[0]) * 60 + (sp.length > 1 ? Integer.parseInt(sp[1]) : 0);
+            int e = Integer.parseInt(ep[0]) * 60 + (ep.length > 1 ? Integer.parseInt(ep[1]) : 0);
+            if (e == 0) { e = 1440; }
+            if (e == s)
+            {
+                throw new ServiceException("结束时间不能等于开始时间（跨零点班次结束时间不可与开始时间相同）");
             }
         }
         catch (NumberFormatException ignored) { }

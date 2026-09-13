@@ -339,7 +339,10 @@ function onEquipmentPickerConfirm(equipment) {
   form.value.equipmentName = equipment.equipmentName
 }
 function handleQuery() { queryParams.value.pageNum = 1; getList() }
-function resetQuery() { proxy.resetForm('queryRef'); handleQuery() }
+function resetQuery() {
+  queryParams.value = { pageNum: 1, pageSize: 10, equipmentName: undefined, runStatus: undefined, collectMode: undefined }
+  handleQuery()
+}
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.recordId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function reset() { form.value = { equipmentId: undefined, equipmentCode: undefined, equipmentName: undefined, runStatus: '0', runHours: 0, productCount: 0, param1Value: undefined, param2Value: undefined, param3Value: undefined, collectTime: new Date(), collectMode: '0' }; proxy.resetForm('recordRef') }
 function handleAdd() { reset(); title.value = '录入数据'; open.value = true }

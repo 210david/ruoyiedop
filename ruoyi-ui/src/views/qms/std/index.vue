@@ -156,9 +156,9 @@
             <div class="rd-card-header" @click="toggleCard('e_std')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></span>标准值</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.e_std }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
             <div class="rd-card-body" v-show="!collapsedCards.e_std">
               <el-row :gutter="20">
-                <el-col :span="8"><el-form-item label="标准下限" prop="valMin"><el-input-number v-model="form.valMin" :precision="4" style="width: 100%" /></el-form-item></el-col>
-                <el-col :span="8"><el-form-item label="标准上限" prop="valMax"><el-input-number v-model="form.valMax" :precision="4" style="width: 100%" /></el-form-item></el-col>
-                <el-col :span="8"><el-form-item label="目标值" prop="targetVal"><el-input-number v-model="form.targetVal" :precision="4" style="width: 100%" /></el-form-item></el-col>
+                <el-col :span="8"><el-form-item label="标准下限" prop="valMin"><el-input-number v-model="form.valMin" :precision="4" style="width: 100%" @change="revalidateStdValues" /></el-form-item></el-col>
+                <el-col :span="8"><el-form-item label="标准上限" prop="valMax"><el-input-number v-model="form.valMax" :precision="4" style="width: 100%" @change="revalidateStdValues" /></el-form-item></el-col>
+                <el-col :span="8"><el-form-item label="目标值" prop="targetVal"><el-input-number v-model="form.targetVal" :precision="4" style="width: 100%" @change="revalidateStdValues" /></el-form-item></el-col>
               </el-row>
             </div>
           </section>
@@ -166,7 +166,7 @@
             <div class="rd-card-header" @click="toggleCard('e_judge')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>判定配置</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.e_judge }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
             <div class="rd-card-body" v-show="!collapsedCards.e_judge">
               <el-row :gutter="20">
-                <el-col :span="12"><el-form-item label="判定规则" prop="judgeRule"><el-select v-model="form.judgeRule" style="width: 100%"><el-option v-for="d in qms_judge_rule" :key="d.value" :label="d.label" :value="d.value" /></el-select></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="判定规则" prop="judgeRule"><el-select v-model="form.judgeRule" style="width: 100%" @change="revalidateStdValues"><el-option v-for="d in qms_judge_rule" :key="d.value" :label="d.label" :value="d.value" /></el-select></el-form-item></el-col>
                 <el-col :span="12"><el-form-item label="状态" prop="status"><el-radio-group v-model="form.status"><el-radio value="0">正常</el-radio><el-radio value="1">停用</el-radio></el-radio-group></el-form-item></el-col>
               </el-row>
             </div>
@@ -335,10 +335,33 @@ const data = reactive({
   form: {},
   queryParams: { pageNum: 1, pageSize: 10, stdCode: undefined, stdName: undefined, judgeRule: undefined, status: undefined, inspectMethod: undefined, remark: undefined, params: {} },
   rules: {
-    stdName: [{ required: true, message: '检验项目不能为空', trigger: 'blur' }]
+    stdName: [{ required: true, message: '检验项目不能为空', trigger: 'blur' }],
+    inspectMethod: [{ required: true, message: '检验方法不能为空', trigger: 'blur' }],
+    unit: [{ required: true, message: '计量单位不能为空', trigger: 'blur' }],
+    judgeRule: [{ required: true, message: '判定规则不能为空', trigger: 'change' }, { validator: validateStdValues, trigger: 'change' }],
+    valMin: [{ validator: validateStdValues, trigger: 'change' }],
+    valMax: [{ validator: validateStdValues, trigger: 'change' }],
+    targetVal: [{ validator: validateStdValues, trigger: 'change' }]
   }
 })
 const { queryParams, form, rules } = toRefs(data)
+
+/** 判定规则驱动的标准值校验：区间判定上下限必填且上限不能小于下限；单值判定目标值必填 */
+function validateStdValues(rule, value, callback) {
+  const f = form.value
+  const jr = f.judgeRule || '1'
+  if (jr === '1') {
+    if (f.valMin == null || f.valMax == null) { callback(new Error('区间判定必须填写标准下限和标准上限')); return }
+    if (Number(f.valMax) < Number(f.valMin)) { callback(new Error('标准上限不能小于标准下限')); return }
+  }
+  if (jr === '2' && (f.targetVal == null)) { callback(new Error('单值判定必须填写目标值')); return }
+  callback()
+}
+
+/** 判定规则或标准值变化后联动重校验三个标准值字段 */
+function revalidateStdValues() {
+  if (proxy.$refs['stdRef']) proxy.$refs['stdRef'].validateField(['valMin', 'valMax', 'targetVal'])
+}
 
 const activeFilterCount = computed(() => {
   let count = 0

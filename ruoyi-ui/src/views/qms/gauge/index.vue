@@ -138,42 +138,29 @@
                 <el-col :span="12"><el-form-item label="量检具名称" prop="gaugeName"><el-input v-model="form.gaugeName" placeholder="请输入量检具名称" /></el-form-item></el-col>
               </el-row>
               <el-row :gutter="20">
-                <el-col :span="12"><el-form-item prop="gaugeType">
-                  <template #label><span>类型</span><el-tooltip content="量检具分类大类：称量类（天平/水分仪等）、分析类（光谱仪/色谱仪等）、量具类（卡尺/千分尺/量块等）、监测类（温度记录仪等）" placement="top"><el-icon class="form-tip-icon"><QuestionFilled /></el-icon></el-tooltip></template>
+                <el-col :span="12"><el-form-item label="类型" prop="gaugeType">
                   <el-select v-model="form.gaugeType" placeholder="请选择类型" style="width: 100%">
                     <el-option v-for="d in qms_gauge_type" :key="d.value" :label="d.label" :value="d.value" />
                   </el-select>
                 </el-form-item></el-col>
-                <el-col :span="12"><el-form-item prop="precisionVal">
-                  <template #label>
-                    <span>精度</span>
-                    <el-tooltip content="请输入量检具的精度值，如 0.02mm、0.01mm、±0.005mm 等" placement="top">
-                      <el-icon class="form-tip-icon"><QuestionFilled /></el-icon>
-                    </el-tooltip>
-                  </template>
-                  <el-input v-model="form.precisionVal" placeholder="如 0.02mm" />
+                <el-col :span="12"><el-form-item label="精度" prop="precisionVal">
+                  <el-input v-model="form.precisionVal" placeholder="如 0.02mm、0.01mm、±0.005mm 等" />
                 </el-form-item></el-col>
               </el-row>
-              <el-form-item prop="measureRange">
-                <template #label>
-                  <span>测量范围</span>
-                  <el-tooltip content="请输入量检具可测量的最小至最大值，如 0~150mm、0~25mm、-50~50℃ 等" placement="top">
-                    <el-icon class="form-tip-icon"><QuestionFilled /></el-icon>
-                  </el-tooltip>
-                </template>
-                <el-input v-model="form.measureRange" placeholder="如 0~150mm" />
+              <el-form-item label="测量范围" prop="measureRange">
+                <el-input v-model="form.measureRange" placeholder="如 0~150mm、0~25mm、-50~50℃ 等" />
               </el-form-item>
             </div>
           </section>
           <section class="rd-card">
-            <div class="rd-card-header" @click="toggleCard('e_calib')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>校准信息</div><el-tooltip content="记录量检具的校准周期及历次校准日期，下次校准日期 = 上次校准日期 + 校准周期，到期前应及时送检" placement="top"><el-icon class="form-tip-icon"><QuestionFilled /></el-icon></el-tooltip><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.e_calib }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+            <div class="rd-card-header" @click="toggleCard('e_calib')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>校准信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.e_calib }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
             <div class="rd-card-body" v-show="!collapsedCards.e_calib">
               <el-row :gutter="20">
-                <el-col :span="12"><el-form-item prop="lastCalibDate"><template #label><span>上次校准日期</span><el-tooltip content="最近一次校准的执行日期，校准合格后方可继续使用" placement="top"><el-icon class="form-tip-icon"><QuestionFilled /></el-icon></el-tooltip></template><el-date-picker v-model="form.lastCalibDate" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" style="width: 100%" /></el-form-item></el-col>
-                <el-col :span="12"><el-form-item prop="nextCalibDate"><template #label><span>下次校准日期</span><el-tooltip content="预计下次需要校准的日期，通常为上次校准日期加校准周期" placement="top"><el-icon class="form-tip-icon"><QuestionFilled /></el-icon></el-tooltip></template><el-date-picker v-model="form.nextCalibDate" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" style="width: 100%" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="上次校准日期" prop="lastCalibDate"><el-date-picker v-model="form.lastCalibDate" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" style="width: 100%" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item prop="calibCycle"><template #label><span>校准周期(月)</span><el-tooltip content="量检具两次校准之间的间隔月数，到期前应及时送检校准" placement="top"><el-icon class="form-tip-icon"><QuestionFilled /></el-icon></el-tooltip></template><el-input-number v-model="form.calibCycle" :min="1" :max="120" style="width: 100%" /></el-form-item></el-col>
               </el-row>
               <el-row :gutter="20">
-                <el-col :span="12"><el-form-item prop="calibCycle"><template #label><span>校准周期(月)</span><el-tooltip content="量检具两次校准之间的间隔月数，到期前应及时送检校准" placement="top"><el-icon class="form-tip-icon"><QuestionFilled /></el-icon></el-tooltip></template><el-input-number v-model="form.calibCycle" :min="1" :max="120" style="width: 100%" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="下次校准日期" prop="nextCalibDate"><el-date-picker v-model="form.nextCalibDate" type="date" value-format="YYYY-MM-DD" placeholder="根据上次校准日期和周期自动计算" disabled style="width: 100%" /></el-form-item></el-col>
               </el-row>
             </div>
           </section>
@@ -211,18 +198,18 @@
           <div class="rd-card-body" v-show="!collapsedCards.v_basic" style="display:block"><div class="rd-grid">
             <div class="rd-item"><span class="rd-label">量检具编号</span><div class="rd-value">{{ viewData.gaugeNo || '-' }}</div></div>
             <div class="rd-item"><span class="rd-label">量检具名称</span><div class="rd-value">{{ viewData.gaugeName || '-' }}</div></div>
-            <div class="rd-item"><span class="rd-label">类型<el-tooltip content="量检具分类大类：称量类（天平/水分仪等）、分析类（光谱仪/色谱仪等）、量具类（卡尺/千分尺/量块等）、监测类（温度记录仪等）" placement="top"><el-icon class="form-tip-icon"><QuestionFilled /></el-icon></el-tooltip></span><div class="rd-value"><dict-tag :options="qms_gauge_type" :value="viewData.gaugeType" /></div></div>
+            <div class="rd-item"><span class="rd-label">类型</span><div class="rd-value"><dict-tag :options="qms_gauge_type" :value="viewData.gaugeType" /></div></div>
             <div class="rd-item"><span class="rd-label">精度</span><div class="rd-value">{{ viewData.precisionVal || '-' }}</div></div>
             <div class="rd-item"><span class="rd-label">测量范围</span><div class="rd-value">{{ viewData.measureRange || '-' }}</div></div>
-            <div class="rd-item"><span class="rd-label">量检具状态<el-tooltip content="在用：正常使用中；停用：暂停使用；待校准：校准到期需送检" placement="top"><el-icon class="form-tip-icon"><QuestionFilled /></el-icon></el-tooltip></span><div class="rd-value">{{ gaugeStatusLabel(viewData.gaugeStatus) }}</div></div>
+            <div class="rd-item"><span class="rd-label">量检具状态</span><div class="rd-value">{{ gaugeStatusLabel(viewData.gaugeStatus) }}</div></div>
           </div></div>
         </section>
         <section class="rd-card">
-          <div class="rd-card-header" @click="toggleCard('v_calib')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>校准信息</div><el-tooltip content="记录量检具的校准周期及历次校准日期，下次校准日期 = 上次校准日期 + 校准周期，到期前应及时送检" placement="top"><el-icon class="form-tip-icon"><QuestionFilled /></el-icon></el-tooltip><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v_calib }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-header" @click="toggleCard('v_calib')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>校准信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v_calib }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
           <div class="rd-card-body" v-show="!collapsedCards.v_calib" style="display:block"><div class="rd-grid">
-            <div class="rd-item"><span class="rd-label">校准周期(月)<el-tooltip content="量检具两次校准之间的间隔月数，到期前应及时送检校准" placement="top"><el-icon class="form-tip-icon"><QuestionFilled /></el-icon></el-tooltip></span><div class="rd-value">{{ viewData.calibCycle != null ? viewData.calibCycle : '-' }}</div></div>
-            <div class="rd-item"><span class="rd-label">上次校准日期<el-tooltip content="最近一次校准的执行日期，校准合格后方可继续使用" placement="top"><el-icon class="form-tip-icon"><QuestionFilled /></el-icon></el-tooltip></span><div class="rd-value">{{ viewData.lastCalibDate || '-' }}</div></div>
-            <div class="rd-item"><span class="rd-label">下次校准日期<el-tooltip content="预计下次需要校准的日期，通常为上次校准日期加校准周期" placement="top"><el-icon class="form-tip-icon"><QuestionFilled /></el-icon></el-tooltip></span><div class="rd-value">{{ viewData.nextCalibDate || '-' }}</div></div>
+            <div class="rd-item"><span class="rd-label">上次校准日期</span><div class="rd-value">{{ viewData.lastCalibDate || '-' }}</div></div>
+            <div class="rd-item"><span class="rd-label">校准周期(月)</span><div class="rd-value">{{ viewData.calibCycle != null ? viewData.calibCycle : '-' }}</div></div>
+            <div class="rd-item"><span class="rd-label">下次校准日期</span><div class="rd-value">{{ viewData.nextCalibDate || '-' }}</div></div>
             <div class="rd-item"><span class="rd-label">状态</span><div class="rd-value">{{ viewData.status === '0' ? '正常' : '停用' }}</div></div>
           </div></div>
         </section>
@@ -299,6 +286,17 @@ function submitForm() { proxy.$refs['gaugeRef'].validate(valid => { if (valid) {
 function handleDelete(row) { const gaugeIds = row.gaugeId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delGauge(gaugeIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
 function handleExport() { proxy.download('qms/gauge/export', proxy.withExportIds({ ...proxy.addDateRange(queryParams.value, dateRange.value) }, ids.value, 'gaugeId'), `gauge_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
+
+/** 自动计算下次校准日期 = 上次校准日期 + 校准周期(月) */
+watch(() => [form.value.lastCalibDate, form.value.calibCycle], ([date, cycle]) => {
+  if (date && cycle && cycle > 0) {
+    const d = new Date(date)
+    d.setMonth(d.getMonth() + cycle)
+    form.value.nextCalibDate = d.toISOString().slice(0, 10)
+  } else {
+    form.value.nextCalibDate = undefined
+  }
+})
 
 getList()
 onActivated(() => { getList() })

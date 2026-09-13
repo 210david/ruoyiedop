@@ -351,7 +351,7 @@ const activeFilterCount = computed(() => {
 const data = reactive({
   form: {},
   queryParams: { pageNum: 1, pageSize: 10, downtimeNo: undefined, resourceName: undefined, dtType: undefined, dtCategory: undefined, dtLevel: undefined, reportBy: undefined, params: {} },
-  rules: { resourceName: [{ required: true, message: "请选择产能单元", trigger: "change" }], startTime: [{ required: true, message: "请选择开始时间", trigger: "change" }], dtType: [{ required: true, message: "请选择停机类型", trigger: "change" }] }
+  rules: { resourceName: [{ required: true, message: "请选择产能单元", trigger: "change" }], startTime: [{ required: true, message: "请选择开始时间", trigger: "change" }, { validator: (rule, value, callback) => { if (value && form.value.endTime && form.value.endTime <= value) { callback(new Error("结束时间必须晚于开始时间")); } else { callback(); } }, trigger: "change" }], endTime: [{ required: true, message: "请选择结束时间", trigger: "change" }, { validator: (rule, value, callback) => { if (value && form.value.startTime && value <= form.value.startTime) { callback(new Error("结束时间必须晚于开始时间")); } else { callback(); } }, trigger: "change" }], dtType: [{ required: true, message: "请选择停机类型", trigger: "change" }], dtCategory: [{ required: true, message: "请选择停机分类", trigger: "change" }], dtLevel: [{ required: true, message: "请选择停机级别", trigger: "change" }], reason: [{ required: true, message: "请输入停机原因", trigger: "blur" }] }
 });
 const { queryParams, form, rules } = toRefs(data);
 
@@ -450,9 +450,8 @@ function calcDowntimeHours() {
     } else {
       form.value.hours = undefined
     }
-  } else {
-    form.value.hours = undefined
   }
+  if (form.value.endTime && proxy.$refs["formRef"]) proxy.$refs["formRef"].validateField("endTime")
 }
 function dtTypeBadgeClass(type) { const map = { '1': 'red', '2': 'amber', '3': 'amber', '9': 'gray' }; return map[type] || 'gray'; }
 function dtLevelBadgeClass(level) { const map = { '0': 'blue', '1': 'amber', '2': 'red' }; return map[level] || 'gray'; }

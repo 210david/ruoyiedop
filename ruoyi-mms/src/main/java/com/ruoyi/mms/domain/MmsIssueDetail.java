@@ -39,7 +39,7 @@ public class MmsIssueDetail extends BaseEntity
     @Excel(name = "单件用量")
     private BigDecimal usageQty;
 
-    /** 建议数量（单件用量×工单数量） */
+    /** 建议数量（单件用量×工单数量×(1+损耗率)） */
     @Excel(name = "建议数量")
     private BigDecimal suggestedQty;
 

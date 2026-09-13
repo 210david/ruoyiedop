@@ -185,8 +185,8 @@
           </div>
           <div class="rd-card-body" v-show="!collapsedCards.v2">
             <div class="rd-grid">
+              <div class="rd-item"><span class="rd-label">创建人</span><div class="rd-value">{{ viewData.createBy || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">创建时间</span><div class="rd-value">{{ viewData.createTime || '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label">更新时间</span><div class="rd-value">{{ viewData.updateTime || '-' }}</div></div>
               <div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value">{{ viewData.remark || '-' }}</div></div>
             </div>
           </div>
@@ -262,7 +262,10 @@ const { queryParams, form, rules } = toRefs(data)
 
 function getList() { loading.value = true; listFaq(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false; applySavedWidths() }) }
 function handleQuery() { queryParams.value.pageNum = 1; getList() }
-function resetQuery() { proxy.resetForm('queryRef'); handleQuery() }
+function resetQuery() {
+  queryParams.value = { pageNum: 1, pageSize: 10, question: undefined, categoryName: undefined, keywords: undefined }
+  handleQuery()
+}
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.faqId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function reset() { form.value = { question: undefined, answer: undefined, categoryName: undefined, keywords: undefined, status: '0', remark: undefined }; proxy.resetForm('faqRef') }
 function handleAdd() { reset(); open.value = true; title.value = '新增FAQ' }

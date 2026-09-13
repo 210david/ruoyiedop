@@ -63,6 +63,7 @@ public class QmsInspectStdServiceImpl implements IQmsInspectStdService
         {
             inspectStd.setJudgeRule("1");
         }
+        checkInspectStd(inspectStd);
         return qmsInspectStdMapper.insertInspectStd(inspectStd);
     }
 
@@ -70,7 +71,48 @@ public class QmsInspectStdServiceImpl implements IQmsInspectStdService
     @Transactional(rollbackFor = Exception.class)
     public int updateInspectStd(QmsInspectStd inspectStd)
     {
+        checkInspectStd(inspectStd);
         return qmsInspectStdMapper.updateInspectStd(inspectStd);
+    }
+
+    /**
+     * 检验标准关键字段与数值关系校验：
+     * 必填：检验项目/检验方法/计量单位/判定规则；
+     * 区间判定：上下限必填且上限不能小于下限；单值判定：目标值必填
+     */
+    private void checkInspectStd(QmsInspectStd std)
+    {
+        if (StringUtils.isEmpty(std.getStdName()))
+        {
+            throw new ServiceException("检验项目不能为空");
+        }
+        if (StringUtils.isEmpty(std.getInspectMethod()))
+        {
+            throw new ServiceException("检验方法不能为空");
+        }
+        if (StringUtils.isEmpty(std.getUnit()))
+        {
+            throw new ServiceException("计量单位不能为空");
+        }
+        String judgeRule = StringUtils.isEmpty(std.getJudgeRule()) ? "1" : std.getJudgeRule();
+        if ("1".equals(judgeRule))
+        {
+            if (std.getValMin() == null || std.getValMax() == null)
+            {
+                throw new ServiceException("区间判定必须填写标准下限和标准上限");
+            }
+            if (std.getValMax().compareTo(std.getValMin()) < 0)
+            {
+                throw new ServiceException("标准上限不能小于标准下限");
+            }
+        }
+        else if ("2".equals(judgeRule))
+        {
+            if (std.getTargetVal() == null)
+            {
+                throw new ServiceException("单值判定必须填写目标值");
+            }
+        }
     }
 
     @Override

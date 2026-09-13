@@ -62,6 +62,7 @@
                 <el-table-column label="规格型号" prop="specModel" width="100" show-overflow-tooltip />
                 <el-table-column label="单位" prop="unit" width="60" align="center"><template #default="scope"><dict-tag :options="wms_unit" :value="scope.row.unit" /></template></el-table-column>
                 <el-table-column label="单件用量" prop="usageQty" width="80" align="center" />
+                <el-table-column label="损耗率(%)" width="80" align="center"><template #default="scope"><span v-if="scope.row.lossRate != null">{{ scope.row.lossRate }}%</span><span v-else class="text-muted">—</span></template></el-table-column>
                 <el-table-column label="建议数量" prop="suggestedQty" width="90" align="center" />
                 <el-table-column label="领料数量" width="110" align="center"><template #default="scope"><el-input-number v-model="scope.row.issueQty" :min="0" :precision="2" :controls="false" size="small" style="width: 100%" placeholder="数量" /></template></el-table-column>
                 <el-table-column label="批次号" width="110"><template #default="scope"><el-input v-model="scope.row.batchNo" size="small" placeholder="批次号" /></template></el-table-column>
@@ -106,6 +107,7 @@
               <el-table-column label="规格型号" prop="specModel" width="140" show-overflow-tooltip />
               <el-table-column label="单位" prop="unit" width="60" align="center"><template #default="scope"><dict-tag :options="wms_unit" :value="scope.row.unit" /></template></el-table-column>
               <el-table-column label="单件用量" prop="usageQty" width="80" align="center" />
+              <el-table-column label="损耗率(%)" width="80" align="center"><template #default="scope"><span v-if="scope.row.lossRate != null">{{ scope.row.lossRate }}%</span><span v-else class="text-muted">—</span></template></el-table-column>
               <el-table-column label="建议数量" prop="suggestedQty" width="90" align="center" />
               <el-table-column label="领料数量" prop="issueQty" width="100" align="center" />
               <el-table-column label="批次号" prop="batchNo" width="110" />
@@ -183,7 +185,7 @@
             <p>• 点击「从BOM添加物料」按钮，从工单BOM快照中批量选择物料</p>
             <p>• <strong>物料编码 / 物料名称 / 规格型号 / 单位：</strong>从BOM自动带出，不可修改</p>
             <p>• <strong>单件用量：</strong>来源于BOM中每个产品所需该物料的数量，自动带出</p>
-            <p>• <strong>建议数量：</strong>系统根据单件用量 × 工单数量自动计算，仅供参考</p>
+            <p>• <strong>建议数量：</strong>系统根据 单件用量 × 工单数量 × (1 + 损耗率) 自动计算，仅供参考</p>
             <p>• <strong>领料数量：</strong>可修改，默认为建议数量<span style="color: #f56c6c;">*必填</span>（须大于0）</p>
             <p>• <strong>批次号：</strong>手动输入物料的批次信息，便于物料追溯</p>
           </div>
@@ -265,6 +267,7 @@
               <el-table-column label="规格型号" prop="specModel" width="100" show-overflow-tooltip />
               <el-table-column label="单位" prop="unit" width="60" align="center"><template #default="scope"><dict-tag :options="wms_unit" :value="scope.row.unit" /></template></el-table-column>
               <el-table-column label="单件用量" prop="usageQty" width="80" align="center" />
+              <el-table-column label="损耗率(%)" width="80" align="center"><template #default="scope"><span v-if="scope.row.lossRate != null">{{ scope.row.lossRate }}%</span><span v-else class="text-muted">—</span></template></el-table-column>
               <el-table-column label="建议数量" prop="suggestedQty" width="90" align="center" />
               <el-table-column label="领料数量" width="130" align="center"><template #header><span style="color:#f56c6c">* 领料数量</span></template><template #default="scope"><el-input-number v-model="scope.row.issueQty" :min="0" :precision="2" :controls="false" size="small" style="width: 100%" placeholder="数量" /></template></el-table-column>
               <el-table-column label="批次号" prop="batchNo" width="110" />
@@ -283,7 +286,7 @@
     <!-- ===== 物料选择器弹窗（多选，基于工单BOM快照） ===== -->
     <el-dialog v-model="matPickerOpen" width="936px" append-to-body draggable class="rd-dialog">
       <template #header><div class="rd-detail-header"><div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></div><span class="rd-detail-header-title">选择物料（来源：工单BOM）</span></div></template>
-      <div class="material-picker"><div class="material-picker-table"><el-table v-loading="matPickerLoading" :data="woBomList" height="360" size="small" border @selection-change="onMatSelectionChange"><el-table-column type="selection" width="45" align="center" /><el-table-column label="序号" prop="seq" width="60" align="center" /><el-table-column label="物料编码" prop="materialCode" width="140" show-overflow-tooltip /><el-table-column label="物料名称" prop="materialName" min-width="160" show-overflow-tooltip /><el-table-column label="规格型号" prop="specModel" width="130" show-overflow-tooltip /><el-table-column label="单位" prop="unit" width="70" align="center"><template #default="scope"><dict-tag :options="wms_unit" :value="scope.row.unit" /></template></el-table-column><el-table-column label="单件用量" prop="usageQty" width="90" align="center" /><el-table-column label="关键料" prop="isKeyMaterial" width="70" align="center"><template #default="scope"><el-tag v-if="scope.row.isKeyMaterial === '1'" type="danger" size="small">是</el-tag><span v-else>—</span></template></el-table-column></el-table></div><div v-if="woBomList.length === 0 && !matPickerLoading" style="text-align:center;padding:20px;color:#909399;font-size:13px">该工单暂无BOM快照数据，请确认工单已下达</div></div>
+      <div class="material-picker"><div class="material-picker-table"><el-table v-loading="matPickerLoading" :data="woBomList" height="360" size="small" border @selection-change="onMatSelectionChange"><el-table-column type="selection" width="45" align="center" /><el-table-column label="序号" prop="seq" width="60" align="center" /><el-table-column label="物料编码" prop="materialCode" width="140" show-overflow-tooltip /><el-table-column label="物料名称" prop="materialName" min-width="160" show-overflow-tooltip /><el-table-column label="规格型号" prop="specModel" width="130" show-overflow-tooltip /><el-table-column label="单位" prop="unit" width="70" align="center"><template #default="scope"><dict-tag :options="wms_unit" :value="scope.row.unit" /></template></el-table-column><el-table-column label="单件用量" prop="usageQty" width="90" align="center" /><el-table-column label="损耗率(%)" width="80" align="center"><template #default="scope"><span v-if="scope.row.lossRate != null">{{ scope.row.lossRate }}%</span><span v-else class="text-muted">—</span></template></el-table-column><el-table-column label="关键料" prop="isKeyMaterial" width="70" align="center"><template #default="scope"><el-tag v-if="scope.row.isKeyMaterial === '1'" type="danger" size="small">是</el-tag><span v-else>—</span></template></el-table-column></el-table></div><div v-if="woBomList.length === 0 && !matPickerLoading" style="text-align:center;padding:20px;color:#909399;font-size:13px">该工单暂无BOM快照数据，请确认工单已下达</div></div>
       <template #footer><el-button @click="matPickerOpen = false">取 消</el-button><el-button type="primary" @click="handleMatPickerConfirm" :disabled="matPickerSelectedRows.length === 0">确 定（已选 {{ matPickerSelectedRows.length }} 项）</el-button></template>
     </el-dialog>
     <!-- ===== 人员选择器 ===== -->
@@ -314,7 +317,7 @@ function loadColumnVisibility() { try { const saved = localStorage.getItem('mms_
 const columns = ref(loadColumnVisibility())
 const activeFilterCount = computed(() => { let c = 0; if (queryParams.value.issueNo) c++; if (queryParams.value.workOrderNo) c++; if (queryParams.value.materialCode) c++; if (queryParams.value.materialName) c++; if (queryParams.value.status) c++; if (queryParams.value.issueBy) c++; if (dateRange.value && dateRange.value.length === 2) c++; return c; });
 
-const data = reactive({ form: {}, queryParams: { pageNum: 1, pageSize: 10, issueNo: undefined, workOrderNo: undefined, materialCode: undefined, materialName: undefined, status: undefined, issueBy: undefined, params: {} }, rules: { issueNo: [{ required: false, message: "领料编号自动生成", trigger: "blur" }], workOrderNo: [{ required: true, message: '请选择工单', trigger: 'change' }] } });
+const data = reactive({ form: {}, queryParams: { pageNum: 1, pageSize: 10, issueNo: undefined, workOrderNo: undefined, materialCode: undefined, materialName: undefined, status: undefined, issueBy: undefined, params: {} }, rules: { issueNo: [{ required: false, message: "领料编号自动生成", trigger: "blur" }], workOrderNo: [{ required: true, message: '请选择工单', trigger: 'change' }], issueBy: [{ required: true, message: '请选择领料人', trigger: 'change' }] } });
 const { queryParams, form, rules } = toRefs(data);
 
 function getList() { loading.value = true; listIssue(proxy.addDateRange(queryParams.value, dateRange.value)).then(response => { dataList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths(); loadStatusCounts(); }); }
@@ -405,7 +408,7 @@ function onConfirmUserPickerConfirm(user) {
 
 // ===== 工单选择器 =====
 const woPickerOpen = ref(false); const woPickerLoading = ref(false); const woPickerList = ref([]); const woPickerTotal = ref(0); const woPickerSelectedId = ref(null); const woPickerSelectedRow = ref(null);
-const woPickerQuery = reactive({ pageNum: 1, pageSize: 10, workOrderNo: undefined, productName: undefined });
+const woPickerQuery = reactive({ pageNum: 1, pageSize: 10, workOrderNo: undefined, productName: undefined, params: { excludeStatus: '0' } });
 function openWorkOrderPicker() { woPickerOpen.value = true; woPickerSelectedId.value = null; woPickerSelectedRow.value = null; woPickerQuery.pageNum = 1; woPickerQuery.workOrderNo = undefined; woPickerQuery.productName = undefined; getWoPickerList(); }
 function getWoPickerList() { woPickerLoading.value = true; listWorkOrder(woPickerQuery).then(res => { woPickerList.value = res.rows; woPickerTotal.value = res.total; woPickerLoading.value = false; }).catch(() => { woPickerLoading.value = false; }); }
 function handleWoPickerQuery() { woPickerQuery.pageNum = 1; getWoPickerList(); }
@@ -462,7 +465,9 @@ function handleMatPickerConfirm() {
   const planQty = Number(form.value.planQty) || 0;
   newRows.forEach(row => {
     const usageQty = Number(row.usageQty) || 0;
-    const suggestedQty = Number((usageQty * planQty).toFixed(2));
+    const lossRate = Number(row.lossRate) || 0;
+    // 建议数量 = 单件用量 × 工单计划数量 × (1 + 损耗率/100)，与齐套检查/工单需求口径一致
+    const suggestedQty = Number((usageQty * planQty * (1 + lossRate / 100)).toFixed(2));
     form.value.detailList.push({
       materialId: row.materialId,
       materialCode: row.materialCode,
@@ -470,6 +475,7 @@ function handleMatPickerConfirm() {
       specModel: row.specModel,
       unit: row.unit,
       usageQty: usageQty,
+      lossRate: lossRate,
       suggestedQty: suggestedQty,
       issueQty: suggestedQty,
       batchNo: undefined

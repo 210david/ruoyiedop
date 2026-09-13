@@ -210,7 +210,7 @@
               <el-row :gutter="20">
                 <el-col :span="12">
                   <el-form-item label="开始日期" prop="startDate">
-                    <el-date-picker v-model="form.startDate" type="date" placeholder="选择开始日期" value-format="YYYY-MM-DD" style="width: 100%" />
+                    <el-date-picker v-model="form.startDate" type="date" placeholder="选择开始日期" value-format="YYYY-MM-DD" style="width: 100%" @change="revalidateEndDate" />
                   </el-form-item>
                 </el-col>
                 <el-col :span="12">
@@ -791,8 +791,8 @@ const data = reactive({
   rules: {
     title: [{ required: true, message: "计划标题不能为空", trigger: "blur" }],
     planType: [{ required: true, message: "计划类型不能为空", trigger: "change" }],
-    startDate: [{ required: true, message: "开始日期不能为空", trigger: "change" }],
-    endDate: [{ required: true, message: "结束日期不能为空", trigger: "change" }]
+    startDate: [{ required: true, message: "开始日期不能为空", trigger: "change" }, { validator: (rule, value, callback) => { if (value && form.value.endDate && form.value.endDate <= value) { callback(new Error("结束日期不能早于或等于开始日期")); } else { callback(); } }, trigger: "change" }],
+    endDate: [{ required: true, message: "结束日期不能为空", trigger: "change" }, { validator: (rule, value, callback) => { if (value && form.value.startDate && value <= form.value.startDate) { callback(new Error("结束日期不能早于或等于开始日期")); } else { callback(); } }, trigger: "change" }]
   },
   auditRules: {
     auditOpinion: [{ required: true, message: "请输入审批意见", trigger: "blur" }]
@@ -800,6 +800,11 @@ const data = reactive({
 });
 
 const { queryParams, form, auditForm, rules, auditRules } = toRefs(data);
+
+/** 开始日期变化后联动重校验结束日期 */
+function revalidateEndDate() {
+  if (form.value.endDate && proxy.$refs["planRef"]) proxy.$refs["planRef"].validateField("endDate");
+}
 
 // 计算属性
 const totalQuantity = computed(() => {

@@ -166,7 +166,13 @@ public class PmsPurchaseOrderServiceImpl implements IPmsPurchaseOrderService
     @Transactional(rollbackFor = Exception.class)
     public int deletePurchaseOrderByIds(Long[] orderIds)
     {
-        return pmsPurchaseOrderMapper.deletePurchaseOrderByIds(orderIds);
+        int rows = pmsPurchaseOrderMapper.deletePurchaseOrderByIds(orderIds);
+        // 采购订单删除后同步关闭关联消息提醒，避免消息中心残留"孤儿消息"
+        for (Long orderId : orderIds)
+        {
+            messageHelper.markHandled("pms", orderId);
+        }
+        return rows;
     }
 
     @Override

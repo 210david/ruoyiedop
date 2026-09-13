@@ -143,7 +143,7 @@
             </template>
           </el-table-column>
           <el-table-column label="总课时" prop="totalHours" key="totalHours" :width="colWidth('totalHours', 96)" resizable align="center" v-if="columns.totalHours.visible" />
-          <el-table-column label="培训进度" key="progress" :width="colWidth('progress', 216)" resizable align="center" v-if="columns.progress.visible">
+          <el-table-column label="培训进度" prop="progress" key="progress" :width="colWidth('progress', 216)" resizable align="center" v-if="columns.progress.visible">
             <template #default="scope">
               <div class="progress-cell">
                 <span class="progress-stat" v-if="scope.row.recordCount > 0">

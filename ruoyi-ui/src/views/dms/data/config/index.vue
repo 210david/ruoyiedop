@@ -427,7 +427,10 @@ function resolveEquipmentCode(equipmentId) {
   return equipment ? equipment.equipmentCode : ''
 }
 function handleQuery() { queryParams.value.pageNum = 1; getList() }
-function resetQuery() { proxy.resetForm('queryRef'); handleQuery() }
+function resetQuery() {
+  queryParams.value = { pageNum: 1, pageSize: 10, equipmentName: undefined, collectMode: undefined, status: undefined }
+  handleQuery()
+}
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.configId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function reset() { form.value = { equipmentId: undefined, equipmentCode: undefined, equipmentName: undefined, collectMode: '0', collectStatus: '1', collectHours: '1', collectCount: '0', param1Name: undefined, param1Unit: undefined, param1AlarmMin: undefined, param1AlarmMax: undefined, param2Name: undefined, param2Unit: undefined, param2AlarmMin: undefined, param2AlarmMax: undefined, param3Name: undefined, param3Unit: undefined, param3AlarmMin: undefined, param3AlarmMax: undefined, status: '0', remark: undefined }; proxy.resetForm('configRef') }
 function handleAdd() { reset(); open.value = true; title.value = '新增采集配置' }

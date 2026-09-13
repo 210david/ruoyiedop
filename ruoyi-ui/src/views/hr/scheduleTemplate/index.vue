@@ -109,7 +109,7 @@
           <el-table-column label="模板名称" prop="templateName" key="templateName" :min-width="colWidth('templateName', 200)" resizable align="center" show-overflow-tooltip v-if="columns.templateName.visible" />
           <el-table-column label="模板编码" prop="templateCode" key="templateCode" :width="colWidth('templateCode', 150)" resizable align="center" v-if="columns.templateCode.visible" />
           <el-table-column label="循环天数" prop="cycleDays" key="cycleDays" :width="colWidth('cycleDays', 100)" resizable align="center" sortable v-if="columns.cycleDays.visible" />
-          <el-table-column label="班次序列" key="shiftSequence" :width="colWidth('shiftSequence', 320)" resizable align="center" v-if="columns.shiftSequence.visible">
+          <el-table-column label="班次序列" prop="shiftSequence" key="shiftSequence" :width="colWidth('shiftSequence', 320)" resizable align="center" v-if="columns.shiftSequence.visible">
             <template #default="scope">
               <div class="shift-sequence-preview">
                 <span v-for="(item, idx) in parseSequence(scope.row.shiftSequence)" :key="idx" class="shift-chip" :class="item.shiftId > 0 ? 'shift-chip--work' : 'shift-chip--rest'">

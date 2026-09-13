@@ -801,6 +801,7 @@ const statusCustomerId = ref(null)
 // ===== 导入功能配置 =====
 const importTips = [
   '企业名称为必填字段，不能为空',
+  '统一社会信用代码为必填字段，需为18位数字和大写字母',
   '客户编号由系统自动生成，无需填写',
   '客户等级请填写文字描述（参考系统中字典数据，或留空）',
   '客户状态请填写文字描述（参考系统中字典数据，或留空）',
@@ -832,7 +833,27 @@ const data = reactive({
   form: {},
   queryParams: { pageNum: 1, pageSize: 10, customerNo: undefined, customerName: undefined, customerLevel: undefined, customerStatus: undefined, industry: undefined, customerSource: undefined, userName: undefined, params: {} },
   rules: {
-    customerName: [{ required: true, message: '企业名称不能为空', trigger: 'blur' }]
+    customerName: [
+      { required: true, message: '企业名称不能为空', trigger: 'blur' },
+      { min: 2, max: 100, message: '企业名称长度需在 2 到 100 个字符', trigger: 'blur' }
+    ],
+    creditCode: [
+      { required: true, message: '统一社会信用代码不能为空', trigger: 'blur' },
+      { pattern: /^[0-9A-Z]{18}$/, message: '统一社会信用代码为18位数字和大写字母', trigger: 'blur' }
+    ],
+    customerLevel: [{ required: true, message: '请选择客户等级', trigger: 'change' }],
+    customerSource: [{ required: true, message: '请选择客户来源', trigger: 'change' }],
+    customerStatus: [{ required: true, message: '请选择客户状态', trigger: 'change' }],
+    industry: [{ required: true, message: '请选择所属行业', trigger: 'change' }],
+    address: [
+      { required: true, message: '详细地址不能为空', trigger: 'blur' },
+      { max: 200, message: '详细地址不能超过 200 个字符', trigger: 'blur' }
+    ],
+    userId: [{ required: true, message: '请选择负责人', trigger: 'change' }],
+    firstContactDate: [{ required: true, message: '请选择首次接触日期', trigger: 'change' }],
+    website: [
+      { pattern: /^https?:\/\/.+$/, message: '官网地址需以 http:// 或 https:// 开头', trigger: 'blur' }
+    ]
   }
 })
 const { queryParams, form, rules } = toRefs(data)
@@ -951,7 +972,9 @@ function industryBadgeClass(industry) { const map = { '1': 'blue', '2': 'green',
 function industryLabel(industry) { const item = marketing_industry.value.find(d => d.value == industry); return item ? item.label : '-' }
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.customerId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function reset() {
-  form.value = { customerNo: undefined, customerName: undefined, creditCode: undefined, customerLevel: '3', customerSource: undefined, industry: undefined, companySize: undefined, address: undefined, website: undefined, customerStatus: '0', firstContactDate: undefined, cooperationDate: undefined, totalAmount: 0, userId: undefined, userName: undefined, deptId: undefined, deptName: undefined, tagIds: [], remark: undefined }
+  const today = new Date()
+  const todayStr = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0')
+  form.value = { customerNo: undefined, customerName: undefined, creditCode: undefined, customerLevel: '3', customerSource: undefined, industry: undefined, companySize: undefined, address: undefined, website: undefined, customerStatus: '0', firstContactDate: todayStr, cooperationDate: undefined, totalAmount: 0, userId: undefined, userName: undefined, deptId: undefined, deptName: undefined, tagIds: [], remark: undefined }
   proxy.resetForm('customerRef')
 }
 function handleAdd() { reset(); open.value = true; title.value = '新增企业客户' }

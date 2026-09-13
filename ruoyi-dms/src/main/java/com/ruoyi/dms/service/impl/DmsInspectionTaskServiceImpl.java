@@ -70,7 +70,16 @@ public class DmsInspectionTaskServiceImpl implements IDmsInspectionTaskService
     @Override
     public int updateTask(DmsInspectionTask task) { return dmsInspectionTaskMapper.updateTask(task); }
     @Override
-    public int deleteTaskByIds(Long[] taskIds) { return dmsInspectionTaskMapper.deleteTaskByIds(taskIds); }
+    public int deleteTaskByIds(Long[] taskIds)
+    {
+        int rows = dmsInspectionTaskMapper.deleteTaskByIds(taskIds);
+        // 点检任务删除后同步关闭关联消息提醒，避免消息中心残留"孤儿消息"
+        for (Long taskId : taskIds)
+        {
+            messageHelper.markHandled("dms", taskId);
+        }
+        return rows;
+    }
 
     /**
      * 开始执行点检任务

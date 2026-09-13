@@ -1,4 +1,5 @@
-package com.ruoyi.dms.service.impl;
+package com.ruoyi.dms.service.impl;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -77,7 +78,13 @@ public class DmsSparePartServiceImpl implements IDmsSparePartService
     @Override
     public int deleteSparePartByIds(Long[] partIds)
     {
-        return dmsSparePartMapper.deleteSparePartByIds(partIds);
+        int rows = dmsSparePartMapper.deleteSparePartByIds(partIds);
+        // 备件删除后同步关闭其库存预警消息，避免消息中心残留"孤儿消息"
+        for (Long partId : partIds)
+        {
+            messageHelper.markHandled("dms", partId);
+        }
+        return rows;
     }
 
     @Override
@@ -299,7 +306,13 @@ public class DmsSparePartServiceImpl implements IDmsSparePartService
     @Override
     public int deleteRecordByIds(Long[] recordIds)
     {
-        return dmsSparePartRecordMapper.deleteRecordByIds(recordIds);
+        int rows = dmsSparePartRecordMapper.deleteRecordByIds(recordIds);
+        // 出入库记录删除后同步关闭其通知消息，避免消息中心残留"孤儿消息"
+        for (Long recordId : recordIds)
+        {
+            messageHelper.markHandled("dms", recordId);
+        }
+        return rows;
     }
 
     @Override
