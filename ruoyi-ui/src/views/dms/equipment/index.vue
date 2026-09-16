@@ -110,17 +110,20 @@
           <button type="button" class="btn-soft is-outline" @click="handleExport" v-hasPermi="['dms:equipment:export']">
             <el-icon><Download /></el-icon> 导出
           </button>
-          <AiAssistButton button-text="AI设备健康总览" button-type="success" :button-plain="false" :api="aiEquipmentHealthOverview" @result="d => onAiText(d, '设备健康度总览（风险排名前'+ (d.ranking? d.ranking.length:0) +'台）')" />
-          <AiAssistButton button-text="备件消耗预测" button-type="warning" :button-plain="false" :api="aiSparepartForecast" @result="d => onAiText(d, '备件消耗预测与采购建议')" />
-          <AiResultPanel :visible="aiPanelVisible" :content="aiPanelText" :latency-ms="aiLatency" @close="aiPanelVisible = false" />
           <button type="button" class="btn-soft is-outline" @click="handleImport" v-hasPermi="['dms:equipment:import']">
             <el-icon><Upload /></el-icon> 导入
           </button>
         </div>
         <div class="right">
+          <div class="toolbar-divider"></div>
+          <!-- AI 分析类功能与左侧单据操作分区，放在工具栏右端弱化展示 -->
+          <AiAssistButton v-hasPermi="['dms:ai:healthOverview']" button-text="AI设备健康总览（全量）" button-type="success" :button-plain="true" size="small" :api="aiEquipmentHealthOverview" @result="d => onAiText(d, '设备健康度总览（全量，风险排名前'+ (d.ranking? d.ranking.length:0) +'台）')" />
+          <AiAssistButton v-hasPermi="['dms:ai:sparepartForecast']" button-text="备件消耗预测（全量）" button-type="warning" :button-plain="true" size="small" :api="aiSparepartForecast" @result="d => onAiText(d, '备件消耗预测与采购建议（全量备件）')" />
           <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="dms_equipment_columns" />
         </div>
       </div>
+      <!-- AI 结果面板：独立于工具栏 flex 行，避免挤压按钮 -->
+      <AiResultPanel :visible="aiPanelVisible" :content="aiPanelText" :latency-ms="aiLatency" @close="aiPanelVisible = false" />
       <div class="table-wrap">
         <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
@@ -572,8 +575,9 @@ const aiPanelVisible = ref(false)
 const aiPanelText = ref('')
 const aiLatency = ref(0)
 function onAiText(d, title) {
-  aiPanelText.value = (title ? '【' + title + '】\n\n' : '') + (d.content || d.aiSummary || d.error || 'AI未返回内容')
-  aiLatency.value = d.latencyMs || 0
+  const tag = d.cached ? '【缓存命中·数据未变化，未重复调用AI】\n\n' : ''
+  aiPanelText.value = (title ? '【' + title + '】\n\n' : '') + tag + (d.content || d.aiSummary || d.error || 'AI未返回内容')
+  aiLatency.value = d.cached ? 0 : (d.latencyMs || 0)
   aiPanelVisible.value = true
 }
 </script>

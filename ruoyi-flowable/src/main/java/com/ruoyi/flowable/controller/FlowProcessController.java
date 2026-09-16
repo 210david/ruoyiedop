@@ -48,15 +48,49 @@ public class FlowProcessController extends BaseController
     }
 
     /**
-     * 查询我发起的流程
+     * 查询我发起的流程（支持流程标题/创建日期等条件，内存过滤后手动分页）
      */
     @PreAuthorize("@ss.hasPermi('flowable:process:myList')")
     @GetMapping("/myList")
     public TableDataInfo myList(FlowInstance query)
     {
-        startPage();
-        List<FlowInstance> list = flowProcessService.selectMyProcessList(query);
-        return getDataTable(list);
+        return buildPage(flowProcessService.selectMyProcessList(query));
+    }
+
+    /**
+     * 查询我参与过的流程（发起+审批过）
+     */
+    @PreAuthorize("@ss.hasPermi('flowable:process:query')")
+    @GetMapping("/involved")
+    public TableDataInfo involved(FlowInstance query)
+    {
+        return buildPage(flowProcessService.selectInvolvedProcessList(query));
+    }
+
+    /** 对已过滤的完整列表手动分页（Flowable 历史查询不支持 PageHelper 拦截） */
+    private TableDataInfo buildPage(List<FlowInstance> list)
+    {
+        com.ruoyi.common.core.page.PageDomain page = com.ruoyi.common.core.page.TableSupport.buildPageRequest();
+        TableDataInfo rsp = new TableDataInfo();
+        rsp.setCode(200);
+        rsp.setMsg("查询成功");
+        rsp.setTotal(list.size());
+        int pageNum = page.getPageNum() == null ? 1 : page.getPageNum();
+        int pageSize = page.getPageSize() == null ? 10 : page.getPageSize();
+        int from = Math.min((pageNum - 1) * pageSize, list.size());
+        int to = Math.min(from + pageSize, list.size());
+        rsp.setRows(list.subList(from, to));
+        return rsp;
+    }
+
+    /**
+     * 流程分类树（左侧树）
+     */
+    @PreAuthorize("@ss.hasAnyPermi('flowable:task:todo,flowable:task:done,flowable:process:query,flowable:process:start')")
+    @GetMapping("/tree")
+    public AjaxResult tree()
+    {
+        return success(flowProcessService.selectProcessTree());
     }
 
     /**

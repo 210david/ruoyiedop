@@ -203,3 +203,12 @@ AI配置 | 用量统计 | 调用日志 | 知识库 | 提示词模板 | 智能查
 - embedding 未配置时 RAG 为关键词检索模式，配置 `ai.embedding_*` 三项即升级向量检索
 - ruoyi-flowable 为用户开发中的工作流模块，本任务未触碰其业务逻辑（仅两次构建阻塞时做了 Flowable7 API 兼容修正：HistoryLevel 包路径、Comment.getMessage 移除）
 
+
+## 十二、AI配置保存假成功问题修复（2026-09-16）
+
+- **现象**：AI配置页保存大模型配置提示成功，刷新页面仍显示旧值（小米MiMo），实际调用也未切换。
+- **根因**：`AiBaseConfigController.updateConfigByKey` 使用 `selectConfigList` 查询更新目标，而 RuoYi 的 `sys_config` 查询对 `config_key` 为 **like 模糊匹配**，`ai.api_url` 同时命中新键 `ai.api_url` 与历史迁移旧键 `dms.ai.api_url`，代码取 `list.get(0)` 将新值写入了旧键，读取端（mergeKey 新键优先）读到的一直是旧值。
+- **修复**：`updateConfigByKey` 遍历结果按 `configKey` **精确匹配**后再更新（AiBaseConfigController.java）。
+- **数据修复**：将 `dms.ai.api_url / dms.ai.model_name / dms.ai.api_key` 的 DeepSeek 值迁移回 `ai.*` 正式键。
+- **验证**：重启后 Redis 配置缓存中 `sys_config:ai.api_url = https://api.deepseek.com/v1/chat/completions`、`sys_config:ai.model_name = deepseek-chat`，配置读取与保存键一致。
+- **经验**：凡基于 `selectConfigList` 做按键更新，必须精确比对 `configKey`；RuoYi 配置键存在 `dms.*` 历史前缀时尤其易踩坑。

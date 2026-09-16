@@ -45,7 +45,7 @@ public class WmsAiAssistController extends BaseController
     /**
      * 库存预警归因分析：拉取当前库存快照，LLM分析低库存/呆滞风险并给出建议
      */
-    @PreAuthorize("@ss.hasPermi('wms:inventory:list')")
+    @PreAuthorize("@ss.hasPermi('wms:ai:stockAnalysis')")
     @GetMapping("/stockAnalysis")
     public AjaxResult stockAnalysis(@RequestParam(defaultValue = "50") int limit)
     {
@@ -78,7 +78,7 @@ public class WmsAiAssistController extends BaseController
                 + "要求：结论先行，引用具体物料名称，给出可操作建议。\n\n"
                 + "【库存快照（前" + count + "条）】\n" + data;
 
-        AiResult result = aiClient.chat("wms", "stock_analysis", prompt);
+        AiResult result = aiClient.chatCached("wms", "stock_analysis", prompt);
         return AjaxResult.success(result.toMap());
     }
 
@@ -127,7 +127,7 @@ public class WmsAiAssistController extends BaseController
     /**
      * 盘点差异分析：拉取盘点单差异明细，LLM生成差异归因与处理建议
      */
-    @PreAuthorize("@ss.hasPermi('wms:stocktake:query')")
+    @PreAuthorize("@ss.hasPermi('wms:ai:stockTakeAnalysis')")
     @GetMapping("/stockTakeAnalysis/{takeId}")
     public AjaxResult stockTakeAnalysis(@PathVariable Long takeId)
     {
@@ -173,7 +173,7 @@ public class WmsAiAssistController extends BaseController
                     + "【盘点差异明细】\n" + diffData;
         }
 
-        AiResult result = aiClient.chat("wms", "stocktake_analysis", prompt);
+        AiResult result = aiClient.chatCached("wms", "stocktake_analysis", prompt);
         return AjaxResult.success(result.toMap());
     }
 }

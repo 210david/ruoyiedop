@@ -142,7 +142,7 @@
                 </configuration>   
            </plugin>   
         </plugins>
-        <finalName>ruoyi-admin-v3</finalName>
+        <finalName>edop-admin-v10</finalName>
     </build>
 
 </project>

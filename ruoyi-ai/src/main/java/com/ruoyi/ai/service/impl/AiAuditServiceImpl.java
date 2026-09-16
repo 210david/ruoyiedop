@@ -53,4 +53,10 @@ public class AiAuditServiceImpl implements IAiAuditService
         stat.put("featureStat", logMapper.selectFeatureStat(params));
         return stat;
     }
+
+    @Override
+    public java.util.List<Map<String, Object>> selectStatusCounts()
+    {
+        return logMapper.selectStatusCounts();
+    }
 }

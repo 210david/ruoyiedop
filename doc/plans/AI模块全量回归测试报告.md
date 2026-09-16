@@ -80,3 +80,20 @@
 **使用说明**：AI中心→AI配置→「RAG向量检索」区，填入 OpenAI 兼容的 embedding 接口（推荐通义 text-embedding-v3，有免费额度）、密钥、模型名，保存后新上传文档自动向量化；未配置时知识库为关键词检索模式（功能完整可用）。
 
 **遗留说明**：ruoyi-admin 目标 jar 文件名临时为 ruoyi-admin-v2.jar（原文件名被系统文件锁占用），打包配置 finalName 临时修改，功能无影响；重启电脑或文件锁释放后可改回 `ruoyi-admin-v2`→`${project.artifactId}` 恢复常规命名。
+
+
+## 六、RAG 检索降级修复（2026-09-16 追加）
+
+**问题**：AI配置页预填了 embedding 的 URL/模型名（Key为空）后，`isEmbeddingConfigured()` 判定为已启用向量检索，检索只查 `embedding IS NOT NULL` 的切片——而历史切片均以关键词模式生成（embedding为NULL），导致知识库问答永远"未找到相关内容"。
+
+**修复**：`AiKnowledgeServiceImpl.retrieve()` 重构为三级降级：
+1. embedding 已配置且切片已向量化 → 余弦向量检索
+2. 向量化调用失败（如Key无效/网络）或无已向量化切片 → 自动回退**关键词检索全部切片**
+3. 全部失败 → 明确提示未找到
+
+**同时补齐**：
+- `AiClient.testEmbedding()`：Embedding 服务连通性测试（成功返回向量维度/耗时；按401/404/400/超时给出可操作建议）
+- AI配置页 RAG 卡片：Embedding 服务商预设下拉（通义/智谱/硅基流动/OpenAI/千帆）+ 独立「保存/测试/重置」按钮组 + 结构化测试结果弹窗（与大模型测试同款）
+- RAG 分区保存走独立端点 `PUT /ai/center/config/embedding`，与大模型配置完全隔离
+
+**验证**：全局AI助手（不带module）与知识库页（带module）问答均命中并引用来源 ✓；Embedding 测试端点按预期返回鉴权失败提示（待用户配置真实通义Key后即可连通）✓

@@ -38,7 +38,7 @@ public class MmsAiAssistController extends BaseController
     /**
      * 生产异常智能诊断：基于异常记录生成原因分析+处置建议
      */
-    @PreAuthorize("@ss.hasPermi('mms:abnormal:query')")
+    @PreAuthorize("@ss.hasPermi('mms:ai:abnormalAdvice')")
     @GetMapping("/abnormalAdvice/{abnormalId}")
     public AjaxResult abnormalAdvice(@PathVariable Long abnormalId)
     {
@@ -65,7 +65,7 @@ public class MmsAiAssistController extends BaseController
               .append("已采取措施：").append(StringUtils.nvl(abnormal.getResponseMeasure(), "未填写")).append("\n")
               .append("停机时长(小时)：").append(abnormal.getDowntimeHours() == null ? "" : abnormal.getDowntimeHours().toString()).append("\n");
 
-        AiResult result = aiClient.chat("mms", "abnormal_advice", prompt.toString());
+        AiResult result = aiClient.chatCached("mms", "abnormal_advice", prompt.toString());
         Map<String, Object> data = new HashMap<>(result.toMap());
         if (result.isSuccess())
         {
@@ -77,7 +77,7 @@ public class MmsAiAssistController extends BaseController
     /**
      * 生产日报生成：基于当日统计快照生成管理视角日报草稿
      */
-    @PreAuthorize("@ss.hasPermi('mms:daily:query')")
+    @PreAuthorize("@ss.hasPermi('mms:ai:dailyReport')")
     @GetMapping("/dailyReport/{statId}")
     public AjaxResult dailyReport(@PathVariable Long statId)
     {
@@ -102,7 +102,7 @@ public class MmsAiAssistController extends BaseController
               .append("不良数量：").append(nvlDec(stat.getTotalDefectQty())).append("\n")
               .append("平均OEE：").append(nvlDec(stat.getAvgOee())).append("\n");
 
-        AiResult result = aiClient.chat("mms", "daily_report", prompt.toString());
+        AiResult result = aiClient.chatCached("mms", "daily_report", prompt.toString());
         return AjaxResult.success(result.toMap());
     }
 

@@ -430,9 +430,6 @@
 
 <script setup name="Abnormal">
 import { listAbnormal, getAbnormal, addAbnormal, updateAbnormal, delAbnormal, respondAbnormal, resolveAbnormal, linkDowntime } from "@/api/mms/abnormal";
-import { aiAbnormalAdvice } from '@/api/ai/assist'
-import AiAssistButton from '@/components/AiAssist/AiAssistButton.vue'
-import AiResultPanel from '@/components/AiAssist/AiResultPanel.vue'
 import { listWorkOrder, listWorkOrderProcesses } from "@/api/mms/workorder";
 import UserPicker from '@/components/UserPicker/index.vue'
 import useUserStore from '@/store/modules/user'

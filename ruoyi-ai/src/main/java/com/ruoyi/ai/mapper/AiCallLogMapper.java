@@ -24,4 +24,7 @@ public interface AiCallLogMapper
 
     /** 总计统计（总次数/成功/降级/失败/限额/平均耗时） */
     public java.util.Map<String, Object> selectTotalStat(java.util.Map<String, Object> params);
+
+    /** 按状态统计记录数（状态标签栏数量徽章用） */
+    public java.util.List<java.util.Map<String, Object>> selectStatusCounts();
 }

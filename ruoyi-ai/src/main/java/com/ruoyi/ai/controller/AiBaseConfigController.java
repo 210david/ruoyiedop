@@ -51,18 +51,29 @@ public abstract class AiBaseConfigController extends BaseController
         return newKey;
     }
 
-    /** 按configKey更新配置值 */
+    /** 按configKey更新配置值（config_key需精确匹配，避免like模糊命中dms.ai.*等相似键） */
     protected void updateConfigByKey(String key, String value)
     {
         SysConfig query = new SysConfig();
         query.setConfigKey(key);
         List<SysConfig> list = configService.selectConfigList(query);
-        if (list != null && !list.isEmpty())
+        SysConfig target = null;
+        if (list != null)
         {
-            SysConfig update = list.get(0);
-            update.setConfigValue(value);
-            update.setUpdateBy(getUsername());
-            configService.updateConfig(update);
+            for (SysConfig c : list)
+            {
+                if (key.equals(c.getConfigKey()))
+                {
+                    target = c;
+                    break;
+                }
+            }
+        }
+        if (target != null)
+        {
+            target.setConfigValue(value);
+            target.setUpdateBy(getUsername());
+            configService.updateConfig(target);
         }
         else if (StringUtils.isNotEmpty(value))
         {

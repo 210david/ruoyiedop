@@ -46,6 +46,9 @@ public class FlowInstance extends BaseEntity
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date endTime;
 
+    /** 流程标题（发起时写入的实例名称，为空回退流程定义名称） */
+    private String title;
+
     /** 当前节点名称（进行中时返回） */
     private String currentActivityName;
 
@@ -77,6 +80,8 @@ public class FlowInstance extends BaseEntity
     public void setEndTime(Date endTime) { this.endTime = endTime; }
     public String getCurrentActivityName() { return currentActivityName; }
     public void setCurrentActivityName(String currentActivityName) { this.currentActivityName = currentActivityName; }
+    public String getTitle() { return title; }
+    public void setTitle(String title) { this.title = title; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
     public Map<String, Object> getVariables() { return variables; }

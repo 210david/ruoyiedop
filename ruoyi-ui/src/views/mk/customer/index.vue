@@ -135,8 +135,8 @@
           </button>
         </div>
         <div class="right">
-          <AiAssistButton button-text="AI流失预警" :api="aiCustomerChurnReport" @result="d => onAiText(d, '客户流失预警报告')" />
-          <AiAssistButton button-text="AI流失预测" button-type="danger" :button-plain="false" :api="aiChurnPrediction" @result="onChurnPrediction" /><right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="mk_customer_columns" />
+          <AiAssistButton v-hasPermi="['mk:ai:churnReport']" button-text="AI流失预警" :api="aiCustomerChurnReport" @result="d => onAiText(d, '客户流失预警报告')" />
+          <AiAssistButton v-hasPermi="['mk:ai:churnPrediction']" button-text="AI流失预测" button-type="danger" :button-plain="false" :api="aiChurnPrediction" @result="onChurnPrediction" /><right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="mk_customer_columns" />
         </div>
       </div>
 
@@ -1172,8 +1172,9 @@ const aiPanelVisible = ref(false)
 const aiPanelText = ref('')
 const aiLatency = ref(0)
 function onAiText(d, title) {
-  aiPanelText.value = (title ? '【' + title + '】\n\n' : '') + (d.content || d.error || 'AI未返回内容')
-  aiLatency.value = d.latencyMs || 0
+  const tag = d.cached ? '【缓存命中·数据未变化，未重复调用AI】\n\n' : ''
+  aiPanelText.value = (title ? '【' + title + '】\n\n' : '') + tag + (d.content || d.error || 'AI未返回内容')
+  aiLatency.value = d.cached ? 0 : (d.latencyMs || 0)
   aiPanelVisible.value = true
 }
 

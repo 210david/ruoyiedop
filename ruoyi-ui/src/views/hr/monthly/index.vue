@@ -68,7 +68,7 @@
             <el-icon><Download /></el-icon> 导出
           </button>
         </div>
-        <div class="right"><AiAssistButton button-text="AI考勤摘要" :api="aiAttendanceSummary" :params="[currentYearMonth]" :disabled="!currentYearMonth" @result="d => onAiText(d, '考勤异常摘要')" /><right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="hr_monthly_columns"></right-toolbar></div>
+        <div class="right"><AiAssistButton v-hasPermi="['hr:ai:attendanceSummary']" button-text="AI考勤摘要" :api="aiAttendanceSummary" :params="[currentYearMonth]" :disabled="!currentYearMonth" @result="d => onAiText(d, '考勤异常摘要')" /><right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="hr_monthly_columns"></right-toolbar></div>
       </div>
       <div class="table-wrap">
         <el-table ref="tableRef" v-loading="loading" :data="hrAttendanceMonthlyList" @selection-change="handleSelectionChange" highlight-current-row @current-change="onRowChange" @header-dragend="onHeaderDragEnd" border class="app-table">
@@ -142,8 +142,9 @@
           </el-table-column>
         </el-table>
       </div>
+      <!-- AI 结果面板：独立于 pagination flex 行，避免挤压分页器 -->
+      <AiResultPanel :visible="aiPanelVisible" :content="aiPanelText" :latency-ms="aiLatency" @close="aiPanelVisible = false" />
       <div class="pagination-container">
-        <AiResultPanel :visible="aiPanelVisible" :content="aiPanelText" :latency-ms="aiLatency" @close="aiPanelVisible = false" />
       <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
       </div>
     </div>
@@ -830,8 +831,9 @@ const aiPanelVisible = ref(false)
 const aiPanelText = ref('')
 const aiLatency = ref(0)
 function onAiText(d, title) {
-  aiPanelText.value = (title ? '【' + title + '】\n\n' : '') + (d.content || d.error || 'AI未返回内容')
-  aiLatency.value = d.latencyMs || 0
+  const tag = d.cached ? '【缓存命中·数据未变化，未重复调用AI】\n\n' : ''
+  aiPanelText.value = (title ? '【' + title + '】\n\n' : '') + tag + (d.content || d.error || 'AI未返回内容')
+  aiLatency.value = d.cached ? 0 : (d.latencyMs || 0)
   aiPanelVisible.value = true
 }
 

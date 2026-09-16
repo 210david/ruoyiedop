@@ -87,7 +87,7 @@
       <div class="toolbar">
         <div class="left">
           <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['wms:stocktake:add']">新增</el-button>
-          <AiAssistButton button-text="AI差异分析" :api="aiStockTakeAnalysis" :params="[currentTakeId]" :disabled="!currentTakeId" @result="d => onAiText(d, '盘点差异分析')" />
+          <AiAssistButton v-hasPermi="['wms:ai:stockTakeAnalysis']" button-text="AI差异分析" :api="aiStockTakeAnalysis" :params="[currentTakeId]" :disabled="!currentTakeId" @result="d => onAiText(d, '盘点差异分析')" />
           <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['wms:stocktake:remove']">删除</el-button>
         </div>
         <div class="right">
@@ -125,8 +125,9 @@
           </el-table-column>
         </el-table>
       </div>
+      <!-- AI 结果面板：独立于 pagination flex 行，避免挤压分页器 -->
+      <AiResultPanel :visible="aiPanelVisible" :content="aiPanelText" :latency-ms="aiLatency" @close="aiPanelVisible = false" />
       <div class="pagination-container">
-        <AiResultPanel :visible="aiPanelVisible" :content="aiPanelText" :latency-ms="aiLatency" @close="aiPanelVisible = false" />
       <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
       </div>
     </div>
@@ -609,8 +610,9 @@ const aiPanelVisible = ref(false)
 const aiPanelText = ref('')
 const aiLatency = ref(0)
 function onAiText(d, title) {
-  aiPanelText.value = (title ? '【' + title + '】\n\n' : '') + (d.content || d.error || 'AI未返回内容')
-  aiLatency.value = d.latencyMs || 0
+  const tag = d.cached ? '【缓存命中·数据未变化，未重复调用AI】\n\n' : ''
+  aiPanelText.value = (title ? '【' + title + '】\n\n' : '') + tag + (d.content || d.error || 'AI未返回内容')
+  aiLatency.value = d.cached ? 0 : (d.latencyMs || 0)
   aiPanelVisible.value = true
 }
 

@@ -41,4 +41,10 @@ public interface AiKnowledgeDocMapper
 
     /** 按ID加载切片（带embedding，向量检索用） */
     public List<java.util.Map<String, Object>> selectChunksWithEmbedding(@Param("module") String module);
+
+    /** 按文档加载全部切片（原文查看用，按切片顺序） */
+    public List<java.util.Map<String, Object>> selectChunksByDocId(@Param("docId") Long docId);
+
+    /** 按文档名称精确查找（来源无docId时兜底） */
+    public AiKnowledgeDoc selectDocByName(@Param("docName") String docName);
 }

@@ -25,6 +25,8 @@ public class AiResult
     private String content;
     private String error;
     private long latencyMs;
+    /** 是否命中本地缓存（未实际调用模型） */
+    private boolean cached;
 
     public static AiResult ok(String content, long latencyMs)
     {
@@ -72,6 +74,7 @@ public class AiResult
         m.put("content", content);
         m.put("error", error);
         m.put("latencyMs", latencyMs);
+        m.put("cached", cached);
         return m;
     }
 
@@ -80,4 +83,6 @@ public class AiResult
     public String getContent() { return content; }
     public String getError() { return error; }
     public long getLatencyMs() { return latencyMs; }
+    public boolean isCached() { return cached; }
+    public void setCached(boolean cached) { this.cached = cached; }
 }

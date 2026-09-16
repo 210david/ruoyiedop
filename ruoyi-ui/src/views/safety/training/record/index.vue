@@ -97,7 +97,7 @@
             <template #default="scope">
               <div class="action-btn-row">
                 <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['safety:training:record:query']">查看</el-button>
-                <AiAssistButton button-text="AI考题" size="small" button-type="primary" :api="aiTrainingQuiz" :params="[scope.row.recordId]" @result="onTrainingQuiz" />
+                <AiAssistButton v-hasPermi="['safety:ai:trainingQuiz']" button-text="AI考题" size="small" button-type="primary" :api="aiTrainingQuiz" :params="[scope.row.recordId]" @result="onTrainingQuiz" />
                 <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['safety:training:record:edit']">修改</el-button>
                 <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['safety:training:record:remove']">删除</el-button>
               </div>

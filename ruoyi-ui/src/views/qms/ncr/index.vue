@@ -486,7 +486,7 @@
           </div>
         </section>
       </div>
-      <AiAssistButton button-text="AI处置建议" :api="aiNcrAdvice" :params="[dispositionForm.ncrId]"
+      <AiAssistButton v-hasPermi="['qms:ai:ncrAdvice']" button-text="AI处置建议" :api="aiNcrAdvice" :params="[dispositionForm.ncrId]"
         v-show="dispositionForm.ncrStatus === '2'" style="margin-left: 16px" @result="onNcrAdvice" />
       <AiResultPanel :visible="ncrAdviceVisible" :content="ncrAdviceText" :latency-ms="ncrAdviceLatency"
         @close="ncrAdviceVisible = false" />

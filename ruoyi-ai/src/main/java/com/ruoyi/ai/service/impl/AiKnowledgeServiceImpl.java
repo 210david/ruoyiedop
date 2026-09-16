@@ -51,6 +51,9 @@ public class AiKnowledgeServiceImpl implements IAiKnowledgeService
     /** 检索Top-K */
     private static final int TOP_K = 5;
 
+    /** embedding失败熔断时间点（失败后10分钟内不再重试，避免每次提问白等网络往返） */
+    private static volatile long embedFailUntil = 0L;
+
     @Autowired
     private AiKnowledgeDocMapper docMapper;
 
@@ -107,6 +110,13 @@ public class AiKnowledgeServiceImpl implements IAiKnowledgeService
         doc.setFileType(fileType);
         doc.setFilePath(filePath);
         doc.setStatus("1");
+        // 填充创建人（定时/异步无登录上下文时跳过）
+        try
+        {
+            doc.setCreateBy(com.ruoyi.common.utils.SecurityUtils.getUsername());
+        }
+        catch (Exception ignore) {}
+        doc.setCreateTime(com.ruoyi.common.utils.DateUtils.getNowDate());
         docMapper.insertDoc(doc);
 
         // 3. 同步解析（文档量小，无需异步）
@@ -173,6 +183,42 @@ public class AiKnowledgeServiceImpl implements IAiKnowledgeService
             return result;
         }
 
+        // 1.5 高置信命中：直接返回知识库原文，跳过大模型调用（毫秒级响应）
+        //     开关 ai.knowledge.direct_hit（默认开启）；命中阈值：关键词模式≥0.5，向量模式余弦≥0.80
+        Map<String, Object> top = hits.get(0);
+        Object modeObj = top.get("mode");
+        String mode = modeObj != null ? modeObj.toString() : "keyword";
+        double topScore = toDouble(top.get("score"));
+        boolean directHitEnabled = !"false".equalsIgnoreCase(getConfig("ai.knowledge.direct_hit"));
+        double threshold = "vector".equals(mode) ? 0.80 : 0.50;
+        if (directHitEnabled && question.trim().length() >= 4 && topScore >= threshold)
+        {
+            result.put("answer", "【知识库直接命中 · 原文返回，未调用大模型】\n\n" + top.get("content"));
+            List<Map<String, Object>> src = new ArrayList<>();
+            Map<String, Object> s0 = new HashMap<>();
+            s0.put("docId", top.get("docId"));
+            s0.put("docName", top.get("docName"));
+            s0.put("module", top.get("module"));
+            src.add(s0);
+            result.put("sources", src);
+            result.put("directHit", true);
+            result.put("retrievalMode", mode);
+            return result;
+        }
+
+        // 1.8 低分放弃：检索分数几乎为0说明知识库与问题无交集，直接返回未找到，不浪费模型调用
+        //     阈值：关键词模式<0.05（2字滑窗命中率），向量模式余弦<0.20
+        //     问题过短（<4字，如"222"、"你好"）无检索意义，同样直接返回未找到
+        double floorThreshold = "vector".equals(mode) ? 0.20 : 0.05;
+        if (topScore < floorThreshold
+                || (question.trim().length() >= 2 && question.trim().length() < 4))
+        {
+            result.put("answer", "知识库中未找到相关内容。可尝试换一种问法，或确认知识库中已上传相关文档。");
+            result.put("sources", new ArrayList<>());
+            result.put("retrievalMode", mode);
+            return result;
+        }
+
         // 2. 组装prompt（分隔符包裹，防提示词注入）
         StringBuilder context = new StringBuilder();
         List<Map<String, Object>> sources = new ArrayList<>();
@@ -182,6 +228,7 @@ public class AiKnowledgeServiceImpl implements IAiKnowledgeService
             context.append("[片段").append(i + 1).append(" 来源：《").append(h.get("docName"))
                    .append("》]\n").append(h.get("content")).append("\n\n");
             Map<String, Object> src = new HashMap<>();
+            src.put("docId", h.get("docId"));
             src.put("docName", h.get("docName"));
             src.put("module", h.get("module"));
             sources.add(src);
@@ -202,7 +249,9 @@ public class AiKnowledgeServiceImpl implements IAiKnowledgeService
         {
             result.put("answer", "AI生成答案失败，以下是知识库中检索到的相关片段供参考：\n\n" + context);
         }
-        result.put("sources", sources);
+        // 模型判定片段中无相关内容（回答"未找到"）时，不返回来源，避免"未找到却有来源"的矛盾展示
+        boolean notFound = ai.getContent() != null && ai.getContent().contains("未找到");
+        result.put("sources", notFound ? new ArrayList<>() : sources);
         result.put("retrievalMode", isEmbeddingConfigured() ? "vector" : "keyword");
         return result;
     }
@@ -213,32 +262,15 @@ public class AiKnowledgeServiceImpl implements IAiKnowledgeService
     private List<Map<String, Object>> retrieve(String module, String question)
     {
         boolean embedEnabled = isEmbeddingConfigured();
-        List<Map<String, Object>> chunks;
-        try
-        {
-            if (embedEnabled)
-            {
-                chunks = docMapper.selectChunksWithEmbedding(module);
-            }
-            else
-            {
-                chunks = docMapper.selectChunksForSearch(module);
-            }
-        }
-        catch (Exception e)
-        {
-            log.warn("知识库检索失败: {}", e.getMessage());
-            return new ArrayList<>();
-        }
-        if (chunks == null || chunks.isEmpty())
-        {
-            return new ArrayList<>();
-        }
-
-        if (embedEnabled)
+        List<Map<String, Object>> chunks = new ArrayList<>();
+        String searchMode = "keyword";
+        // 向量路径：仅当embedding已配置且切片已向量化时可用
+        // 熔断：embedding调用失败后10分钟内不再重试，避免每次提问都白等失败的网络往返
+        if (embedEnabled && System.currentTimeMillis() > embedFailUntil)
         {
             try
             {
+                chunks = docMapper.selectChunksWithEmbedding(module);
                 float[] qVec = parseVector(callEmbedding(question));
                 for (Map<String, Object> c : chunks)
                 {
@@ -248,19 +280,44 @@ public class AiKnowledgeServiceImpl implements IAiKnowledgeService
             }
             catch (Exception e)
             {
-                log.warn("问题向量化失败，降级关键词检索: {}", e.getMessage());
-                embedEnabled = false;
+                log.warn("向量检索不可用，降级关键词检索（10分钟内不再重试embedding）: {}", e.getMessage());
+                embedFailUntil = System.currentTimeMillis() + 10 * 60 * 1000L;
+                chunks = new ArrayList<>();
+                searchMode = "keyword";
+            }
+            if (!chunks.isEmpty())
+            {
+                searchMode = "vector";
             }
         }
-        if (!embedEnabled)
+        // 降级路径：embedding未配置 / 向量化失败 / 切片尚未向量化时，回退关键词检索全部切片
+        if (chunks.isEmpty())
         {
+            try
+            {
+                chunks = docMapper.selectChunksForSearch(module);
+            }
+            catch (Exception e)
+            {
+                log.warn("知识库关键词检索失败: {}", e.getMessage());
+                return new ArrayList<>();
+            }
             for (Map<String, Object> c : chunks)
             {
                 c.put("score", keywordScore((String) c.get("content"), question));
             }
         }
+        if (chunks == null || chunks.isEmpty())
+        {
+            return new ArrayList<>();
+        }
         chunks.sort(Comparator.comparingDouble(c -> -toDouble(c.get("score"))));
-        return chunks.size() > TOP_K ? new ArrayList<>(chunks.subList(0, TOP_K)) : chunks;
+        List<Map<String, Object>> top = chunks.size() > TOP_K ? new ArrayList<>(chunks.subList(0, TOP_K)) : chunks;
+        for (Map<String, Object> c : top)
+        {
+            c.put("mode", searchMode);
+        }
+        return top;
     }
 
     /** 关键词匹配打分：命中词数占比 */
@@ -360,26 +417,81 @@ public class AiKnowledgeServiceImpl implements IAiKnowledgeService
 
     private String extractText(MultipartFile file, String fileType) throws Exception
     {
+        String text;
         try (InputStream in = file.getInputStream())
         {
             if ("pdf".equals(fileType))
             {
                 try (PDDocument pdf = PDDocument.load(in))
                 {
-                    return new PDFTextStripper().getText(pdf);
+                    text = new PDFTextStripper().getText(pdf);
                 }
             }
-            if ("docx".equals(fileType))
+            else if ("docx".equals(fileType))
             {
                 try (XWPFDocument docx = new XWPFDocument(in);
                      XWPFWordExtractor extractor = new XWPFWordExtractor(docx))
                 {
-                    return extractor.getText();
+                    text = extractor.getText();
                 }
             }
-            // md/txt
-            return new String(file.getBytes(), "UTF-8");
+            else
+            {
+                // md/txt
+                text = new String(file.getBytes(), "UTF-8");
+            }
         }
+        return normalizeCjkLineBreaks(text);
+    }
+
+    /**
+     * 中文换行规整：PDF/Word抽取常见"每字一行"或"句内断行"问题。
+     * 规则：相邻中文字符（含全角标点）之间的单个换行合并；连续换行保留为段落分隔。
+     */
+    private String normalizeCjkLineBreaks(String text)
+    {
+        if (text == null || text.isEmpty()) return text;
+        String t = text.replace("\r\n", "\n").replace('\r', '\n');
+        StringBuilder sb = new StringBuilder(t.length());
+        for (int i = 0; i < t.length(); i++)
+        {
+            char ch = t.charAt(i);
+            if (ch == '\n' && i > 0 && i < t.length() - 1 && isCjk(t.charAt(i - 1)) && isCjk(t.charAt(i + 1)))
+            {
+                continue; // 合并中文之间的断行
+            }
+            sb.append(ch);
+        }
+        // 按行过滤纯符号/页码噪声行
+        String joined = sb.toString();
+        String[] lines = joined.split("\n", -1);
+        StringBuilder out = new StringBuilder(joined.length());
+        for (String line : lines)
+        {
+            if (isNoiseLine(line)) continue;
+            out.append(line).append('\n');
+        }
+        String result = out.toString();
+        // 合并多余空行
+        result = result.replaceAll("\n{3,}", "\n\n");
+        return result.trim();
+    }
+
+    private boolean isCjk(char c)
+    {
+        return (c >= 0x4E00 && c <= 0x9FFF) || (c >= 0x3000 && c <= 0x303F) || (c >= 0xFF00 && c <= 0xFFEF);
+    }
+
+    /** 判断一行是否为纯符号/页码噪声（如 PDF 项目符号、页码），是则删除 */
+    private boolean isNoiseLine(String line)
+    {
+        String t = line.trim();
+        if (t.isEmpty()) return false;
+        // 纯项目符号
+        if (t.matches("[*\u2022\u00b7\u25cf\u25aa\u2014\u2013\u22c5\\-]+")) return true;
+        // 纯页码（1-4位数字）
+        if (t.matches("\\d{1,4}")) return true;
+        return false;
     }
 
     /** 滑动窗口切片：约500字/片，相邻保留50字重叠 */

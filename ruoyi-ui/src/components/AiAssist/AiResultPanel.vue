@@ -8,9 +8,7 @@
       <span class="ai-result-meta" v-if="latencyMs">耗时 {{ formatLatency }}</span>
       <el-button link type="primary" size="small" class="ai-result-close" @click="handleClose">关闭</el-button>
     </div>
-    <div class="ai-result-body">
-      <slot>{{ content }}</slot>
-    </div>
+    <div class="ai-result-body" v-html="renderedHtml"></div>
     <div class="ai-result-foot">AI 结果仅供参考，请确认后使用</div>
   </div>
 </template>
@@ -31,6 +29,24 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['close'])
+
+/**
+ * 轻量 Markdown 渲染：先做 HTML 转义防注入，再转换常用语法
+ * 支持：**加粗**、# 标题、无序/有序列表缩进展示；其余按纯文本保留换行
+ */
+const renderedHtml = computed(() => {
+  const raw = props.content || ''
+  const esc = raw
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+  return esc
+    .replace(/(^|\n)#{1,6}\s*([^\n]+)/g, '$1<strong class="ai-md-heading">$2</strong>')
+    .replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/(^|\n)\s*[-•]\s+/g, '$1· ')
+})
 
 const formatLatency = computed(() => {
   const v = props.latencyMs || 0
@@ -78,6 +94,13 @@ function handleClose() {
   line-height: 1.8;
   white-space: pre-wrap;
   word-break: break-all;
+}
+.ai-result-body :deep(.ai-md-heading) {
+  font-weight: 700;
+  color: #1f2d3d;
+}
+.ai-result-body :deep(strong) {
+  font-weight: 600;
 }
 .ai-result-foot {
   font-size: 12px;

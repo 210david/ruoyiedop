@@ -65,6 +65,15 @@
       </template>
 
       <el-form :model="form" label-width="180px" style="max-width: 700px" v-show="form.enabled">
+        <el-form-item label="Embedding服务商">
+          <el-select v-model="embeddingProvider" placeholder="选择服务商自动填入（可再手动修改）" style="width: 100%" clearable @change="applyEmbeddingProvider">
+            <el-option v-for="p in embeddingPresets" :key="p.name" :label="p.name" :value="p.name">
+              <span style="float: left">{{ p.name }}</span>
+              <span style="float: right; color: var(--el-text-color-secondary); font-size: 12px">{{ p.model }}</span>
+            </el-option>
+          </el-select>
+          <div class="form-tip">内置主流Embedding服务商，选择后自动填入地址与模型名，仍可手动修改</div>
+        </el-form-item>
         <el-form-item label="Embedding API地址">
             <el-input v-model="form.embeddingUrl" placeholder="如 https://dashscope.aliyuncs.com/compatible-mode/v1/embeddings" />
             <div class="form-tip">OpenAI兼容的向量化接口地址；不配置时知识库使用关键词检索（功能可用，语义精度略降）</div>
@@ -105,6 +114,25 @@ const testingEmbedding = ref(false)
 const testing = ref(false)
 const apiKeyConfigured = ref(false)
 const embeddingKeyConfigured = ref(false)
+
+// 主流Embedding服务商预设（OpenAI兼容向量化接口）
+const embeddingPresets = [
+  { name: '通义千问（阿里百炼）', url: 'https://dashscope.aliyuncs.com/compatible-mode/v1/embeddings', model: 'text-embedding-v3' },
+  { name: '智谱清言 GLM', url: 'https://open.bigmodel.cn/api/paas/v4/embeddings', model: 'embedding-3' },
+  { name: '硅基流动 SiliconFlow', url: 'https://api.siliconflow.cn/v1/embeddings', model: 'BAAI/bge-large-zh-v1.5' },
+  { name: 'OpenAI', url: 'https://api.openai.com/v1/embeddings', model: 'text-embedding-3-small' },
+  { name: '百度千帆', url: 'https://qianfan.baidubce.com/v2/embeddings', model: 'bge-large-zh' },
+  { name: '自定义/自建中转', url: '', model: '' }
+]
+const embeddingProvider = ref('')
+
+/** 选择Embedding服务商后自动填入 */
+function applyEmbeddingProvider(name) {
+  const p = embeddingPresets.find(item => item.name === name)
+  if (!p) return
+  if (p.url) form.value.embeddingUrl = p.url
+  if (p.model) form.value.embeddingModel = p.model
+}
 const embeddingReady = computed(() => !!(form.value.embeddingUrl && form.value.embeddingModel && (form.value.embeddingKey || embeddingKeyConfigured.value)))
 const monthlyUsed = ref(0)
 const originalForm = ref({})
@@ -155,6 +183,8 @@ function loadConfig() {
     originalForm.value = { ...form.value }
     apiKeyConfigured.value = d.apiKeyConfigured === true
     embeddingKeyConfigured.value = d.embeddingKeyConfigured === true
+    const embedMatched = embeddingPresets.find(p => p.url && p.url === form.value.embeddingUrl)
+    embeddingProvider.value = embedMatched ? embedMatched.name : 
     monthlyUsed.value = d.monthlyUsed || 0
     const matched = providerPresets.find(p => p.url && p.url === form.value.apiUrl)
     provider.value = matched ? matched.name : ''
@@ -208,6 +238,7 @@ function handleResetMain() {
   form.value.apiKey = ''
   form.value.modelName = originalForm.value.modelName
   form.value.monthlyLimit = originalForm.value.monthlyLimit
+  proxy.$modal.msgSuccess('已还原为最近保存的大模型配置（密钥留空表示沿用已存密钥）')
 }
 
 /** RAG重置：仅还原embedding三项 */
@@ -215,6 +246,7 @@ function handleResetRag() {
   form.value.embeddingUrl = originalForm.value.embeddingUrl
   form.value.embeddingKey = ''
   form.value.embeddingModel = originalForm.value.embeddingModel
+  proxy.$modal.msgSuccess('已还原为最近保存的RAG配置（密钥留空表示沿用已存密钥）')
 }
 
 /** 测试Embedding连接（未保存也可测；Key留空沿用已存密钥） */
@@ -231,11 +263,18 @@ function handleTestEmbedding() {
   }).then(res => {
     testingEmbedding.value = false
     const d = res.data || {}
-    if (d.success) {
-      proxy.$modal.alert('Embedding连接成功！向量维度：' + (d.dims || '?') + '，耗时 ' + formatLatency(d.latencyMs), '测试通过', { confirmButtonText: '知道了' })
-    } else {
-      proxy.$modal.alert(d.error || '连接失败，请检查地址、密钥和模型名称', '测试失败', { confirmButtonText: '知道了', type: 'error' })
-    }
+    const rows = [
+      ['API 地址', form.value.embeddingUrl],
+      ['模型名称', form.value.embeddingModel || '（默认）']
+    ]
+    if (d.success) rows.push(['向量维度', String(d.dims || '?')])
+    showResultDialog({
+      ok: d.success,
+      latencyMs: d.latencyMs,
+      subText: d.success ? `响应耗时 ${formatLatency(d.latencyMs)} · 向量化服务可正常调用` : undefined,
+      rows,
+      error: d.error
+    })
   }).catch(() => { testingEmbedding.value = false })
 }
 
@@ -260,8 +299,12 @@ function formatLatency(ms) {
   return v < 1000 ? v + ' ms' : (v / 1000).toFixed(1) + ' 秒'
 }
 
-function showTestResult(d, ctx) {
-  const ok = !!d.success
+/**
+ * 通用结构化测试结果弹窗（大模型 / Embedding 共用）
+ * @param {Object} opt { ok, latencyMs, rows: [[label, value]], error, subText }
+ */
+function showResultDialog(opt) {
+  const ok = !!opt.ok
   const svgProps = { viewBox: '0 0 24 24', width: 24, height: 24, fill: 'none', stroke: '#fff', 'stroke-width': 3, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }
   const icon = h('div', { class: ['ai-test-icon', ok ? 'is-ok' : 'is-fail'] }, [
     ok
@@ -279,27 +322,24 @@ function showTestResult(d, ctx) {
       h('div', null, [
         h('div', { class: 'ai-test-title' }, ok ? '连接成功' : '连接失败'),
         h('div', { class: 'ai-test-sub' }, ok
-          ? `响应耗时 ${formatLatency(d.latencyMs)} · 大模型可正常调用`
+          ? (opt.subText || `响应耗时 ${formatLatency(opt.latencyMs)} · 服务可正常调用`)
           : '请根据下方建议排查后重新测试')
       ])
     ])
   ]
 
   if (ok) {
-    blocks.push(h('div', { class: 'ai-test-card' }, [
-      row('API 地址', ctx.apiUrl),
-      row('模型名称', ctx.modelName || '（默认）'),
-      row('模型回复', d.content || d.reply || 'OK')
-    ]))
+    blocks.push(h('div', { class: 'ai-test-card' },
+      (opt.rows || []).map(r => row(r[0], r[1]))
+    ))
   } else {
     blocks.push(h('div', { class: 'ai-test-card is-error' }, [
       h('div', { class: 'ai-test-block-title' }, '原因与建议'),
-      h('div', { class: 'ai-test-err-text' }, d.error || '连接失败，请检查API地址、密钥和模型名称')
+      h('div', { class: 'ai-test-err-text' }, opt.error || '连接失败，请检查配置后重试')
     ]))
-    blocks.push(h('div', { class: 'ai-test-card' }, [
-      row('API 地址', ctx.apiUrl),
-      row('模型名称', ctx.modelName || '（默认）')
-    ]))
+    if (opt.rows && opt.rows.length) {
+      blocks.push(h('div', { class: 'ai-test-card' }, opt.rows.map(r => row(r[0], r[1]))))
+    }
   }
 
   ElMessageBox({
@@ -310,6 +350,22 @@ function showTestResult(d, ctx) {
     customClass: 'ai-test-msgbox',
     center: true
   }).catch(() => {})
+}
+
+/** 大模型连接测试（复用通用弹窗） */
+function showTestResult(d, ctx) {
+  const rows = [
+    ['API 地址', ctx.apiUrl],
+    ['模型名称', ctx.modelName || '（默认）']
+  ]
+  if (d.success) rows.push(['模型回复', d.content || d.reply || 'OK'])
+  showResultDialog({
+    ok: d.success,
+    latencyMs: d.latencyMs,
+    subText: d.success ? `响应耗时 ${formatLatency(d.latencyMs)} · 大模型可正常调用` : undefined,
+    rows,
+    error: d.error
+  })
 }
 
 loadConfig()

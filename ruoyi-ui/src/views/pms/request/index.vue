@@ -407,7 +407,7 @@
           </div>
         </section>
       </div>
-      <AiAssistButton button-text="AI采购建议" :api="aiRequestAdvice" :params="[viewData.requestId]" style="margin-left: 16px" @result="onRequestAdvice" />
+      <AiAssistButton v-hasPermi="['pms:ai:requestAdvice']" button-text="AI采购建议" :api="aiRequestAdvice" :params="[viewData.requestId]" style="margin-left: 16px" @result="onRequestAdvice" />
       <AiResultPanel :visible="requestAdviceVisible" :content="requestAdviceText" :latency-ms="requestAdviceLatency" @close="requestAdviceVisible = false" />
       <template #footer>
         <el-button @click="viewOpen = false">关 闭</el-button>

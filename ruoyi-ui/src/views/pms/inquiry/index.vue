@@ -244,7 +244,7 @@
           <div class="rd-card-body" v-show="!collapsedCards.v0" style="display:block"><div class="rd-grid"><div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value">{{ viewData.remark || '暂无备注' }}</div></div></div></div>
         </section>
       </div>
-      <AiAssistButton button-text="AI比价摘要" :api="aiPriceSummary" :params="[viewData.inquiryId]" style="margin-left: 16px" @result="onPriceSummary" />
+      <AiAssistButton v-hasPermi="['pms:ai:priceSummary']" button-text="AI比价摘要" :api="aiPriceSummary" :params="[viewData.inquiryId]" style="margin-left: 16px" @result="onPriceSummary" />
       <AiResultPanel :visible="priceSummaryVisible" :content="priceSummaryText" :latency-ms="priceSummaryLatency" @close="priceSummaryVisible = false" />
       <template #footer>
         <el-button @click="viewOpen = false">关 闭</el-button>

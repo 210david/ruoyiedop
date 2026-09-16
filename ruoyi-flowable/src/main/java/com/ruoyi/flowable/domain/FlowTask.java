@@ -57,6 +57,12 @@ public class FlowTask extends BaseEntity
     /** 审批结果（已办返回）：approved/rejected */
     private String outcome;
 
+    /** 流程标题（流程实例名称，发起时生成） */
+    private String title;
+
+    /** 流程定义Key（用于按流程过滤） */
+    private String processDefinitionKey;
+
     public String getTaskId() { return taskId; }
     public void setTaskId(String taskId) { this.taskId = taskId; }
     public String getTaskName() { return taskName; }
@@ -85,4 +91,8 @@ public class FlowTask extends BaseEntity
     public void setComment(String comment) { this.comment = comment; }
     public String getOutcome() { return outcome; }
     public void setOutcome(String outcome) { this.outcome = outcome; }
+    public String getTitle() { return title; }
+    public void setTitle(String title) { this.title = title; }
+    public String getProcessDefinitionKey() { return processDefinitionKey; }
+    public void setProcessDefinitionKey(String processDefinitionKey) { this.processDefinitionKey = processDefinitionKey; }
 }

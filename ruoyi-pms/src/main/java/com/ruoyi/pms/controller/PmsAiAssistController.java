@@ -40,7 +40,7 @@ public class PmsAiAssistController extends BaseController
     /**
      * 采购申请AI建议：辅助确认需求合理性（是否建议转采购计划）
      */
-    @PreAuthorize("@ss.hasPermi('pms:request:query')")
+    @PreAuthorize("@ss.hasPermi('pms:ai:requestAdvice')")
     @GetMapping("/requestAdvice/{requestId}")
     public AjaxResult requestAdvice(@PathVariable Long requestId)
     {
@@ -75,7 +75,7 @@ public class PmsAiAssistController extends BaseController
             }
         }
 
-        AiResult result = aiClient.chat("pms", "request_advice", prompt.toString());
+        AiResult result = aiClient.chatCached("pms", "request_advice", prompt.toString());
         Map<String, Object> data = new HashMap<>(result.toMap());
         if (result.isSuccess())
         {
@@ -87,7 +87,7 @@ public class PmsAiAssistController extends BaseController
     /**
      * 询价比价AI摘要：辅助多份报价对比决策
      */
-    @PreAuthorize("@ss.hasPermi('pms:inquiry:query')")
+    @PreAuthorize("@ss.hasPermi('pms:ai:priceSummary')")
     @GetMapping("/priceSummary/{inquiryId}")
     public AjaxResult priceSummary(@PathVariable Long inquiryId)
     {
@@ -122,7 +122,7 @@ public class PmsAiAssistController extends BaseController
             }
         }
 
-        AiResult result = aiClient.chat("pms", "price_summary", prompt.toString());
+        AiResult result = aiClient.chatCached("pms", "price_summary", prompt.toString());
         return AjaxResult.success(result.toMap());
     }
 

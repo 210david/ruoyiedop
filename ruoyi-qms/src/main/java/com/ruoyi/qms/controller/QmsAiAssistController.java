@@ -33,7 +33,7 @@ public class QmsAiAssistController extends BaseController
     /**
      * NCR处置建议：基于缺陷描述+历史处置记录生成处置方式建议
      */
-    @PreAuthorize("@ss.hasPermi('qms:ncr:query')")
+    @PreAuthorize("@ss.hasPermi('qms:ai:ncrAdvice')")
     @GetMapping("/ncrAdvice/{ncrId}")
     public AjaxResult ncrAdvice(@PathVariable Long ncrId)
     {
@@ -57,7 +57,7 @@ public class QmsAiAssistController extends BaseController
               .append("缺陷等级：").append(defectLevelText(ncr.getDefectLevel())).append("\n")
               .append("缺陷描述：").append(StringUtils.nvl(ncr.getDefectDesc(), "未填写")).append("\n");
 
-        AiResult result = aiClient.chat("qms", "ncr_advice", prompt.toString());
+        AiResult result = aiClient.chatCached("qms", "ncr_advice", prompt.toString());
         Map<String, Object> data = new HashMap<>(result.toMap());
         if (result.isSuccess())
         {
@@ -70,7 +70,7 @@ public class QmsAiAssistController extends BaseController
      * 质量报告初稿生成：基于给定期间数据生成报告草稿
      * body: { "beginDate": "2026-09-01", "endDate": "2026-09-30" }
      */
-    @PreAuthorize("@ss.hasPermi('qms:report:query')")
+    @PreAuthorize("@ss.hasPermi('qms:ai:reportDraft')")
     @PostMapping("/reportDraft")
     public AjaxResult reportDraft(@RequestBody Map<String, String> body)
     {
@@ -86,7 +86,7 @@ public class QmsAiAssistController extends BaseController
                 + "要求：结构清晰、语言专业；数据部分请留【待填写】占位，由质量员从系统报表补全。\n"
                 + "报告期间：" + beginDate + " 至 " + endDate + "。";
 
-        AiResult result = aiClient.chat("qms", "report_draft", prompt);
+        AiResult result = aiClient.chatCached("qms", "report_draft", prompt);
         return AjaxResult.success(result.toMap());
     }
 

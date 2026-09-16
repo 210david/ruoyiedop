@@ -94,7 +94,7 @@
       <div class="toolbar">
         <div class="left">
           <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['marketing:order:add']">新增</el-button>
-          <AiAssistButton button-text="AI销售周报" :api="aiSalesWeeklyReport" @result="d => onAiText(d, '销售周报')" />
+          <AiAssistButton v-hasPermi="['mk:ai:weeklyReport']" button-text="AI销售周报" :api="aiSalesWeeklyReport" @result="d => onAiText(d, '销售周报')" />
           <button type="button" class="btn-soft is-danger-outline" :disabled="multiple" @click="handleDelete" v-hasPermi="['marketing:order:remove']">
             <el-icon><Delete /></el-icon> 删除
           </button>
@@ -1141,8 +1141,9 @@ const aiPanelVisible = ref(false)
 const aiPanelText = ref('')
 const aiLatency = ref(0)
 function onAiText(d, title) {
-  aiPanelText.value = (title ? '【' + title + '】\n\n' : '') + (d.content || d.error || 'AI未返回内容')
-  aiLatency.value = d.latencyMs || 0
+  const tag = d.cached ? '【缓存命中·数据未变化，未重复调用AI】\n\n' : ''
+  aiPanelText.value = (title ? '【' + title + '】\n\n' : '') + tag + (d.content || d.error || 'AI未返回内容')
+  aiLatency.value = d.cached ? 0 : (d.latencyMs || 0)
   aiPanelVisible.value = true
 }
 </script>

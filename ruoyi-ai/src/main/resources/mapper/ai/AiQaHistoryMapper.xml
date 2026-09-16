@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.ai.mapper.AiQaHistoryMapper">
+
+    <resultMap type="AiQaHistory" id="AiQaHistoryResult">
+        <id     property="id"            column="id"/>
+        <result property="userId"        column="user_id"/>
+        <result property="userName"      column="user_name"/>
+        <result property="module"        column="module"/>
+        <result property="question"      column="question"/>
+        <result property="answer"        column="answer"/>
+        <result property="sourcesJson"   column="sources_json"/>
+        <result property="retrievalMode" column="retrieval_mode"/>
+        <result property="createTime"    column="create_time"/>
+    </resultMap>
+
+    <insert id="insertHistory" parameterType="AiQaHistory" useGeneratedKeys="true" keyProperty="id">
+        insert into ai_qa_history (user_id, user_name, module, question, answer, sources_json, retrieval_mode, create_time)
+        values (#{userId}, #{userName}, #{module}, #{question}, #{answer}, #{sourcesJson}, #{retrievalMode}, sysdate())
+    </insert>
+
+    <select id="selectHistoryByUser" parameterType="AiQaHistory" resultMap="AiQaHistoryResult">
+        select id, user_id, user_name, module, question, answer, sources_json, retrieval_mode, create_time
+        from ai_qa_history
+        where user_id = #{userId}
+        <if test="question != null and question != ''">
+            and question like concat('%', #{question}, '%')
+        </if>
+        order by create_time desc, id desc
+        limit #{pageSize} offset #{offset}
+    </select>
+
+    <delete id="deleteHistoryByUser" parameterType="Long">
+        delete from ai_qa_history where user_id = #{userId}
+    </delete>
+
+</mapper>

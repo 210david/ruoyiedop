@@ -58,18 +58,26 @@ SELECT 'AI Embedding模型名', 'ai.embedding_model', '', 'Y', 'admin', sysdate(
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_config WHERE config_key='ai.embedding_model');
 
 -- =============================================
--- 三、菜单权限（AI中心下新增"知识库"子菜单）
+-- 三、菜单权限（AI中心下新增"知识文档管理"+"知识问答"子菜单）
 -- =============================================
 
 -- 挂到AI中心一级菜单下
 INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, route_name,
     is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time)
-SELECT '知识库', m.menu_id, 4, 'knowledge', 'ai/knowledge/index', 'AiKnowledge',
+SELECT '知识文档管理', m.menu_id, 4, 'knowledge', 'ai/knowledge/index', 'AiKnowledge',
     1, 0, 'C', '0', '0', 'ai:knowledge:list', 'documentation', 'admin', sysdate()
 FROM sys_menu m WHERE m.menu_name='AI中心' AND m.parent_id=0
 AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE perms='ai:knowledge:list');
 
 SET @menuId = LAST_INSERT_ID();
+
+-- 知识问答独立菜单页面
+INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, route_name,
+    is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time)
+SELECT '知识问答', m.menu_id, 5, 'qa', 'ai/knowledge/qa', 'AiKnowledgeQa',
+    1, 0, 'C', '0', '0', 'ai:knowledge:qa', 'education', 'admin', sysdate()
+FROM sys_menu m WHERE m.menu_name='AI中心' AND m.parent_id=0
+AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE component='ai/knowledge/qa');
 
 INSERT INTO sys_menu (menu_name, parent_id, order_num, path, menu_type, visible, status, perms, create_by, create_time) VALUES
 ('知识库查询', @menuId, 1, '', 'F', '0', '0', 'ai:knowledge:query',  'admin', sysdate()),
@@ -80,3 +88,8 @@ INSERT INTO sys_menu (menu_name, parent_id, order_num, path, menu_type, visible,
 INSERT INTO sys_role_menu (role_id, menu_id)
 SELECT 1, menu_id FROM sys_menu WHERE perms LIKE 'ai:knowledge%'
 AND menu_id NOT IN (SELECT menu_id FROM sys_role_menu WHERE role_id=1);
+
+-- 知识库直接命中开关
+INSERT INTO sys_config (config_name, config_key, config_value, config_type, create_by, create_time, remark)
+SELECT '知识库直接命中开关', 'ai.knowledge.direct_hit', 'true', 'Y', 'admin', sysdate(), '高置信命中时直接返回知识库原文，跳过大模型（大幅提速）'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_config WHERE config_key='ai.knowledge.direct_hit');

@@ -64,6 +64,11 @@ export function listTodoTask(query) {
   return request({ url: '/flowable/task/todoList', method: 'get', params: query })
 }
 
+// 流程分类树（待办/查询页左侧树）
+export function getProcessTree() {
+  return request({ url: '/flowable/process/tree', method: 'get' })
+}
+
 export function countTodoTask() {
   return request({ url: '/flowable/task/todoCount', method: 'get' })
 }

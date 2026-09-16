@@ -83,5 +83,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         from ai_call_log
         where call_time &gt;= date_sub(now(), interval #{days} day)
     </select>
+    <select id="selectStatusCounts" resultType="map">
+        select status, count(*) as cnt
+        from ai_call_log
+        group by status
+    </select>
 
 </mapper>

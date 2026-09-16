@@ -23,3 +23,8 @@ export function getAiUsage(days = 30) {
 export function listAiLog(query) {
   return request({ url: '/ai/center/log/list', method: 'get', params: query })
 }
+
+// 按状态统计日志数量（状态标签栏数量徽章用）
+export function aiLogStatusCounts() {
+  return request({ url: '/ai/center/log/statusCounts', method: 'get' })
+}

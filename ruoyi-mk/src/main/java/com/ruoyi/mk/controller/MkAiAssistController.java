@@ -47,7 +47,7 @@ public class MkAiAssistController extends BaseController
     /**
      * 客户流失预警报告：拉取客户清单，LLM分析客户等级分布、流失风险分级与挽回建议
      */
-    @PreAuthorize("@ss.hasPermi('mk:customer:list')")
+    @PreAuthorize("@ss.hasPermi('mk:ai:churnReport')")
     @GetMapping("/customerChurnReport")
     public AjaxResult customerChurnReport()
     {
@@ -78,14 +78,14 @@ public class MkAiAssistController extends BaseController
                 + "要求：结论先行，引用具体企业名称；数据中缺失的信息一律写【待补充】，不得编造。\n\n"
                 + "【客户清单（前" + count + "条）】\n" + data;
 
-        AiResult result = aiClient.chat("mk", "customer_churn_report", prompt);
+        AiResult result = aiClient.chatCached("mk", "customer_churn_report", prompt);
         return AjaxResult.success(result.toMap());
     }
 
     /**
      * 销售周报生成：拉取近7天订单，LLM生成本周销售周报；无订单时生成模板周报
      */
-    @PreAuthorize("@ss.hasPermi('mk:order:list')")
+    @PreAuthorize("@ss.hasPermi('mk:ai:weeklyReport')")
     @GetMapping("/weeklyReport")
     public AjaxResult weeklyReport()
     {
@@ -136,7 +136,7 @@ public class MkAiAssistController extends BaseController
                     + "【近" + WEEKLY_DAYS + "天订单明细】\n" + data;
         }
 
-        AiResult result = aiClient.chat("mk", "sales_weekly_report", prompt);
+        AiResult result = aiClient.chatCached("mk", "sales_weekly_report", prompt);
         return AjaxResult.success(result.toMap());
     }
 }

@@ -33,15 +33,13 @@ public class FlowTaskController extends BaseController
     private IFlowProcessService flowProcessService;
 
     /**
-     * 查询我的待办
+     * 查询我的待办（支持流程标题/创建人/创建时间等条件，内存过滤后手动分页）
      */
     @PreAuthorize("@ss.hasPermi('flowable:task:todo')")
     @GetMapping("/todoList")
     public TableDataInfo todoList(FlowTask query)
     {
-        startPage();
-        List<FlowTask> list = flowProcessService.selectTodoList(query);
-        return getDataTable(list);
+        return buildPage(flowProcessService.selectTodoList(query));
     }
 
     /**
@@ -60,9 +58,23 @@ public class FlowTaskController extends BaseController
     @GetMapping("/doneList")
     public TableDataInfo doneList(FlowTask query)
     {
-        startPage();
-        List<FlowTask> list = flowProcessService.selectDoneList(query);
-        return getDataTable(list);
+        return buildPage(flowProcessService.selectDoneList(query));
+    }
+
+    /** 对已过滤的完整列表手动分页 */
+    private TableDataInfo buildPage(List<FlowTask> list)
+    {
+        com.ruoyi.common.core.page.PageDomain page = com.ruoyi.common.core.page.TableSupport.buildPageRequest();
+        TableDataInfo rsp = new TableDataInfo();
+        rsp.setCode(200);
+        rsp.setMsg("查询成功");
+        rsp.setTotal(list.size());
+        int pageNum = page.getPageNum() == null ? 1 : page.getPageNum();
+        int pageSize = page.getPageSize() == null ? 10 : page.getPageSize();
+        int from = Math.min((pageNum - 1) * pageSize, list.size());
+        int to = Math.min(from + pageSize, list.size());
+        rsp.setRows(list.subList(from, to));
+        return rsp;
     }
 
     /**

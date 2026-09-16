@@ -82,12 +82,14 @@
           </button>
           <AiAssistButton button-text="AI库存分析" button-type="success" :button-plain="false" :api="aiStockAnalysis" @result="d => onAiText(d, '库存分析报告')" />
           <AiAssistButton button-text="呆滞识别" button-type="warning" :button-plain="false" :api="aiStaleInventory" @result="onStaleList" />
-          <AiResultPanel :visible="aiPanelVisible" :content="aiPanelText" :latency-ms="aiLatency" @close="aiPanelVisible = false" />
         </div>
         <div class="right">
           <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="wms_inventory_columns" />
         </div>
       </div>
+
+      <!-- AI 结果面板：独立于工具栏 flex 行，避免挤压按钮 -->
+      <AiResultPanel :visible="aiPanelVisible" :content="aiPanelText" :latency-ms="aiLatency" @close="aiPanelVisible = false" />
 
       <!-- Table -->
       <div class="table-wrap">

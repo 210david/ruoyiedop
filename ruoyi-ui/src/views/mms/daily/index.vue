@@ -24,7 +24,7 @@
       <div class="toolbar">
         <div class="left">
           <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['mms:daily:export']">导出</el-button>
-          <AiAssistButton button-text="AI生成日报" :api="aiDailyReport" :params="[currentStatId]" :disabled="!currentStatId" @result="onDailyReport" />
+          <AiAssistButton v-hasPermi="['mms:ai:dailyReport']" button-text="AI生成日报" :api="aiDailyReport" :params="[currentStatId]" :disabled="!currentStatId" @result="onDailyReport" />
         </div>
         <div class="right"><right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="mms_daily_columns" /></div>
       </div>
@@ -44,7 +44,7 @@
           <el-table-column label="报工次数" prop="reportCount" key="reportCount" :width="colWidth('reportCount', 100)" resizable align="center" v-if="columns.reportCount.visible" />
           <el-table-column label="AI日报" width="110" align="center" fixed="right">
             <template #default="scope">
-              <AiAssistButton button-text="生成" size="small" button-type="primary" :api="aiDailyReport" :params="[scope.row.statId]" @result="d => onDailyReport(d, scope.row)" />
+              <AiAssistButton v-hasPermi="['mms:ai:dailyReport']" button-text="生成" size="small" button-type="primary" :api="aiDailyReport" :params="[scope.row.statId]" @result="d => onDailyReport(d, scope.row)" />
             </template>
           </el-table-column>
         </el-table>

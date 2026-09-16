@@ -27,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.StringUtils;
+import com.ruoyi.common.utils.DictUtils;
 import com.ruoyi.flowable.domain.FlowInstance;
 import com.ruoyi.flowable.domain.FlowTask;
 import com.ruoyi.flowable.domain.dto.FlowCompleteDTO;
@@ -61,6 +62,9 @@ public class FlowProcessServiceImpl implements IFlowProcessService
 
     @Autowired
     private com.ruoyi.flowable.mapper.FlowLeaveMapper flowLeaveMapper;
+
+    @Autowired
+    private com.ruoyi.system.service.ISysUserService sysUserService;
 
     /** 审批意见类型标识 */
 
@@ -119,11 +123,106 @@ public class FlowProcessServiceImpl implements IFlowProcessService
         {
             hisQuery.finished();
         }
+        else if ("canceled".equals(query.getStatus()))
+        {
+            // 已撤销=已结束且带删除原因，Flowable 原生查询不支持，内存过滤
+            hisQuery.finished();
+        }
+        // 流程标题内存过滤（实例名称 Flowable 历史查询不支持）
         List<HistoricProcessInstance> instances = hisQuery.list();
         List<FlowInstance> list = new ArrayList<>();
         for (HistoricProcessInstance hpi : instances)
         {
-            list.add(convertInstance(hpi));
+            FlowInstance fi = convertInstance(hpi);
+            if (!matchInstanceFilter(fi, query))
+            {
+                continue;
+            }
+            list.add(fi);
+        }
+        return list;
+    }
+
+    /** 流程实例列表内存过滤：流程标题/发起人/发起时间区间/已撤销状态（Flowable 原生查询不支持的条件） */
+    private boolean matchInstanceFilter(FlowInstance fi, FlowInstance query)
+    {
+        if ("canceled".equals(query.getStatus())
+                && !"canceled".equals(fi.getStatus()))
+        {
+            return false;
+        }
+        if (StringUtils.isNotEmpty(query.getTitle())
+                && (fi.getTitle() == null || !fi.getTitle().contains(query.getTitle())))
+        {
+            return false;
+        }
+        if (StringUtils.isNotEmpty(query.getStartUserName())
+                && (fi.getStartUserName() == null || !fi.getStartUserName().contains(query.getStartUserName())))
+        {
+            return false;
+        }
+        java.util.Map<String, Object> params = query.getParams();
+        if (params != null)
+        {
+            String begin = (String) params.get("beginTime");
+            String end = (String) params.get("endTime");
+            try
+            {
+                java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd");
+                if (StringUtils.isNotEmpty(begin) && fi.getStartTime() != null
+                        && fi.getStartTime().before(sdf.parse(begin)))
+                {
+                    return false;
+                }
+                if (StringUtils.isNotEmpty(end) && fi.getStartTime() != null)
+                {
+                    java.util.Date endDate = sdf.parse(end);
+                    // 结束日期含当天（23:59:59）
+                    java.util.Calendar c = java.util.Calendar.getInstance();
+                    c.setTime(endDate);
+                    c.add(java.util.Calendar.DAY_OF_MONTH, 1);
+                    if (fi.getStartTime().after(c.getTime()))
+                    {
+                        return false;
+                    }
+                }
+            }
+            catch (java.text.ParseException ignored) { }
+        }
+        return true;
+    }
+
+    @Override
+    public List<FlowInstance> selectInvolvedProcessList(FlowInstance query)
+    {
+        Long userId = SecurityUtils.getUserId();
+        HistoricProcessInstanceQuery hisQuery = historyService.createHistoricProcessInstanceQuery()
+                .involvedUser(String.valueOf(userId))
+                .orderByProcessInstanceStartTime().desc();
+        if (StringUtils.isNotEmpty(query.getProcessDefinitionName()))
+        {
+            hisQuery.processDefinitionNameLike("%" + query.getProcessDefinitionName() + "%");
+        }
+        if (StringUtils.isNotEmpty(query.getProcessDefinitionKey()))
+        {
+            hisQuery.processDefinitionKey(query.getProcessDefinitionKey());
+        }
+        if ("running".equals(query.getStatus()))
+        {
+            hisQuery.unfinished();
+        }
+        else if ("completed".equals(query.getStatus()) || "canceled".equals(query.getStatus()))
+        {
+            hisQuery.finished();
+        }
+        List<HistoricProcessInstance> instances = hisQuery.list();
+        List<FlowInstance> list = new ArrayList<>();
+        for (HistoricProcessInstance hpi : instances)
+        {
+            FlowInstance fi = convertInstance(hpi);
+            // 标注我是否为发起人
+            fi.setStartUserId(userId.equals(fi.getStartUserId()) ? userId : fi.getStartUserId());
+            list.add(fi);
         }
         return list;
     }
@@ -200,13 +299,65 @@ public class FlowProcessServiceImpl implements IFlowProcessService
         {
             taskQuery.processDefinitionNameLike("%" + query.getProcessDefinitionName() + "%");
         }
+        if (StringUtils.isNotEmpty(query.getProcessDefinitionKey()))
+        {
+            taskQuery.processDefinitionKey(query.getProcessDefinitionKey());
+        }
         List<Task> tasks = taskQuery.list();
         List<FlowTask> list = new ArrayList<>();
         for (Task task : tasks)
         {
-            list.add(convertTask(task));
+            FlowTask ft = convertTask(task);
+            if (matchTaskFilter(ft, query))
+            {
+                list.add(ft);
+            }
         }
         return list;
+    }
+
+    /** 任务列表内存过滤：流程标题/创建人/创建时间区间（这些条件 Flowable 原生查询不支持） */
+    private boolean matchTaskFilter(FlowTask ft, FlowTask query)
+    {
+        if (StringUtils.isNotEmpty(query.getTitle())
+                && (ft.getTitle() == null || !ft.getTitle().contains(query.getTitle())))
+        {
+            return false;
+        }
+        if (StringUtils.isNotEmpty(query.getStartUserName())
+                && (ft.getStartUserName() == null || !ft.getStartUserName().contains(query.getStartUserName())))
+        {
+            return false;
+        }
+        java.util.Map<String, Object> params = query.getParams();
+        if (params != null)
+        {
+            String begin = (String) params.get("beginTime");
+            String end = (String) params.get("endTime");
+            try
+            {
+                java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd");
+                if (StringUtils.isNotEmpty(begin) && ft.getCreateTime() != null
+                        && ft.getCreateTime().before(sdf.parse(begin)))
+                {
+                    return false;
+                }
+                if (StringUtils.isNotEmpty(end) && ft.getCreateTime() != null)
+                {
+                    java.util.Date endDate = sdf.parse(end);
+                    // 结束日期含当天（23:59:59）
+                    java.util.Calendar c = java.util.Calendar.getInstance();
+                    c.setTime(endDate);
+                    c.add(java.util.Calendar.DAY_OF_MONTH, 1);
+                    if (ft.getCreateTime().after(c.getTime()))
+                    {
+                        return false;
+                    }
+                }
+            }
+            catch (java.text.ParseException ignored) { }
+        }
+        return true;
     }
 
     @Override
@@ -232,6 +383,10 @@ public class FlowProcessServiceImpl implements IFlowProcessService
         {
             hisQuery.processDefinitionNameLike("%" + query.getProcessDefinitionName() + "%");
         }
+        if (StringUtils.isNotEmpty(query.getProcessDefinitionKey()))
+        {
+            hisQuery.processDefinitionKey(query.getProcessDefinitionKey());
+        }
         List<HistoricTaskInstance> tasks = hisQuery.list();
         List<FlowTask> list = new ArrayList<>();
         for (HistoricTaskInstance task : tasks)
@@ -244,7 +399,10 @@ public class FlowProcessServiceImpl implements IFlowProcessService
                 Comment comment = comments.get(0);
                 applyComment(ft, comment);
             }
-            list.add(ft);
+            if (matchTaskFilter(ft, query))
+            {
+                list.add(ft);
+            }
         }
         return list;
     }
@@ -343,6 +501,10 @@ public class FlowProcessServiceImpl implements IFlowProcessService
             {
                 applyComment(ft, comment);
             }
+            if (StringUtils.isNotEmpty(task.getAssignee()))
+            {
+                ft.setAssigneeName(resolveUserNickname(task.getAssignee()));
+            }
             list.add(ft);
         }
         return list;
@@ -423,6 +585,10 @@ public class FlowProcessServiceImpl implements IFlowProcessService
         fi.setProcessDefinitionName(hpi.getProcessDefinitionName());
         fi.setProcessDefinitionVersion(hpi.getProcessDefinitionVersion());
         fi.setBusinessKey(hpi.getBusinessKey());
+        // 流程标题：发起时写入的实例名称（单据名-申请人-日期），为空回退流程定义名
+        String instName = hpi.getName();
+        fi.setTitle(StringUtils.isNotEmpty(instName) ? instName : hpi.getProcessDefinitionName());
+        fi.setStartUserName(resolveUserNickname(hpi.getStartUserId()));
         fi.setStartTime(hpi.getStartTime());
         fi.setEndTime(hpi.getEndTime());
         if (StringUtils.isNotEmpty(hpi.getStartUserId()))
@@ -500,7 +666,7 @@ public class FlowProcessServiceImpl implements IFlowProcessService
         return ft;
     }
 
-    /** 补充流程名称、业务主键、发起人 */
+    /** 补充流程名称、业务主键、发起人、流程标题 */
     private void fillProcessInfo(FlowTask ft, String instanceId)
     {
         try
@@ -511,8 +677,80 @@ public class FlowProcessServiceImpl implements IFlowProcessService
             {
                 ft.setProcessDefinitionName(hpi.getProcessDefinitionName());
                 ft.setBusinessKey(hpi.getBusinessKey());
+                // 流程标题：发起时写入的实例名称（单据名-申请人-日期），为空回退流程定义名
+                String instName = hpi.getName();
+                ft.setTitle(StringUtils.isNotEmpty(instName) ? instName : hpi.getProcessDefinitionName());
+                ft.setProcessDefinitionKey(hpi.getProcessDefinitionKey());
+                // 创建人：发起人用户ID转昵称
+                if (StringUtils.isEmpty(ft.getStartUserName()) && StringUtils.isNotEmpty(hpi.getStartUserId()))
+                {
+                    ft.setStartUserName(resolveUserNickname(hpi.getStartUserId()));
+                }
             }
         }
         catch (Exception ignored) { }
+    }
+
+    /** 按用户ID解析昵称，失败返回原值 */
+    private String resolveUserNickname(String userId)
+    {
+        try
+        {
+            Long id = Long.valueOf(userId);
+            com.ruoyi.common.core.domain.entity.SysUser user = sysUserService.selectUserById(id);
+            return user != null && StringUtils.isNotEmpty(user.getNickName()) ? user.getNickName() : userId;
+        }
+        catch (Exception e)
+        {
+            return userId;
+        }
+    }
+
+    /** 流程分类树：按最新版本流程定义按分类分组，count=当前用户该流程待办数，供待办/查询页左侧树使用 */
+    @Override
+    public List<Map<String, Object>> selectProcessTree()
+    {
+        Long userId = SecurityUtils.getUserId();
+        List<ProcessDefinition> defs = repositoryService.createProcessDefinitionQuery()
+                .latestVersion().active().orderByProcessDefinitionCategory().asc()
+                .orderByProcessDefinitionName().asc().list();
+        List<Map<String, Object>> tree = new ArrayList<>();
+        Map<String, Map<String, Object>> byCategory = new java.util.LinkedHashMap<>();
+        for (ProcessDefinition def : defs)
+        {
+            String rawCategory = def.getCategory();
+            // 空分类或 BPMN 命名空间归入「未分类」
+            if (StringUtils.isEmpty(rawCategory) || rawCategory.contains("://"))
+            {
+                rawCategory = "未分类";
+            }
+            String category = rawCategory;
+            Map<String, Object> node = byCategory.get(category);
+            if (node == null)
+            {
+                node = new java.util.HashMap<>();
+                node.put("id", category);
+                String label = DictUtils.getDictLabel("flowable_category", category, ",");
+                if (StringUtils.isEmpty(label))
+                {
+                    label = category;
+                }
+                node.put("label", label);
+                node.put("children", new ArrayList<Map<String, Object>>());
+                node.put("count", 0);
+                byCategory.put(category, node);
+            }
+            long cnt = taskService.createTaskQuery().taskAssignee(String.valueOf(userId))
+                    .processDefinitionKey(def.getKey()).count();
+            Map<String, Object> leaf = new java.util.HashMap<>();
+            leaf.put("id", def.getKey());
+            leaf.put("label", def.getName());
+            leaf.put("key", def.getKey());
+            leaf.put("count", cnt);
+            ((List<Map<String, Object>>) node.get("children")).add(leaf);
+            node.put("count", (int) node.get("count") + (int) cnt);
+        }
+        tree.addAll(byCategory.values());
+        return tree;
     }
 }

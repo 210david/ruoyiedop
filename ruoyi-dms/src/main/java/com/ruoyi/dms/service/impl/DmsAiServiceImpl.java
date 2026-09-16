@@ -83,6 +83,7 @@ public class DmsAiServiceImpl implements IDmsAiService
                     result.put("equipmentName", json.getString("equipmentName"));
                     result.put("faultPart", json.getString("faultPart"));
                     result.put("aiEnabled", true);
+                    result.put("cached", lastCallCached.get());
                     result.put("tip", "AI识别结果仅供参考，请确认后提交");
                     return result;
                 }
@@ -322,6 +323,7 @@ public class DmsAiServiceImpl implements IDmsAiService
                     {
                         result.put("answer", aiResp);
                         result.put("source", "AI总结(基于历史工单)");
+                        result.put("cached", lastCallCached.get());
                     }
                 }
                 catch (Exception e)
@@ -362,6 +364,7 @@ public class DmsAiServiceImpl implements IDmsAiService
                     {
                         result.put("answer", aiResp);
                         result.put("source", "AI直答");
+                        result.put("cached", lastCallCached.get());
                     }
                 }
                 catch (Exception e)
@@ -518,13 +521,16 @@ public class DmsAiServiceImpl implements IDmsAiService
      */
     private String callLlm(String prompt)
     {
-        com.ruoyi.ai.core.AiResult result = aiClient.chat(currentModule.get(), currentFeature.get(), prompt);
+        com.ruoyi.ai.core.AiResult result = aiClient.chatCached(currentModule.get(), currentFeature.get(), prompt);
+        lastCallCached.set(result.isCached());
         return result.isSuccess() ? result.getContent() : null;
     }
 
     /** AiClient上下文（调用前由各功能入口设置module/feature） */
     private static final ThreadLocal<String> currentModule = ThreadLocal.withInitial(() -> "dms");
     private static final ThreadLocal<String> currentFeature = ThreadLocal.withInitial(() -> "unknown");
+    /** 最近一次callLlm是否命中缓存（供各功能入口透出cached标记给前端显示） */
+    private static final ThreadLocal<Boolean> lastCallCached = ThreadLocal.withInitial(() -> Boolean.FALSE);
 
     /**
      * 解析月度限额配置（空或非法值视为不限制）

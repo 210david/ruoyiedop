@@ -1,5 +1,5 @@
 /* ===== Design Tokens（与 pms-return 一致） ===== */
-.flowable-model-page {
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page) {
   padding-top: 10px;
   --brand-50:#eef2ff; --brand-100:#e0e7ff; --brand-200:#c7d2fe; --brand-500:#6366f1; --brand-600:#4f46e5; --brand-700:#4338ca;
   --ink-900:#0f172a; --ink-700:#334155; --ink-500:#64748b; --ink-400:#94a3b8; --ink-300:#cbd5e1; --ink-200:#e2e8f0; --ink-100:#f1f5f9; --ink-50:#f8fafc;
@@ -16,59 +16,59 @@
 }
 
 /* ===== Surface Card ===== */
-.flowable-model-page .surface { background:#fff; border:1px solid var(--ink-200); border-radius:var(--r-lg); box-shadow:var(--shadow-card); overflow:hidden; margin-bottom:8px; }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page) .surface { background:#fff; border:1px solid var(--ink-200); border-radius:var(--r-lg); box-shadow:var(--shadow-card); overflow:hidden; margin-bottom:8px; }
 
 /* ===== Filter Card ===== */
-.flowable-model-page .filter-card { padding:14px 20px 16px; }
-.flowable-model-page .filter-card .filter-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
-.flowable-model-page .filter-card .filter-title { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--ink-700); }
-.flowable-model-page .filter-card .filter-title .glyph { width:4px; height:14px; background:var(--brand-600); border-radius:2px; }
-.flowable-model-page .filter-card .filter-bar { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px 16px; }
-.flowable-model-page .filter-card .filter-actions { display:flex; align-items:center; justify-content:space-between; margin-top:14px; padding-top:14px; border-top:1px dashed var(--ink-200); }
-.flowable-model-page .filter-card .filter-info { font-size:13px; color:var(--ink-500); display:flex; align-items:center; gap:6px; }
-.flowable-model-page .filter-card .filter-buttons { display:flex; gap:8px; }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page) .filter-card { padding:14px 20px 16px; }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page) .filter-card .filter-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page) .filter-card .filter-title { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--ink-700); }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page) .filter-card .filter-title .glyph { width:4px; height:14px; background:var(--brand-600); border-radius:2px; }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page) .filter-card .filter-bar { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px 16px; }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page) .filter-card .filter-actions { display:flex; align-items:center; justify-content:space-between; margin-top:14px; padding-top:14px; border-top:1px dashed var(--ink-200); }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page) .filter-card .filter-info { font-size:13px; color:var(--ink-500); display:flex; align-items:center; gap:6px; }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page) .filter-card .filter-buttons { display:flex; gap:8px; }
 
 /* ===== Form Field ===== */
-.flowable-model-page .field { display:flex; flex-direction:column; gap:6px; }
-.flowable-model-page .field label { font-size:14px; font-weight:500; color:var(--ink-700); }
-.flowable-model-page .field .control { display:flex; align-items:center; height:36px; padding:0 12px; background:#fff; border:1px solid var(--ink-200); border-radius:var(--r-sm); transition:border-color .15s var(--ease-out), box-shadow .15s var(--ease-out); }
-.flowable-model-page .field .control:focus-within { border-color:var(--brand-500); box-shadow:0 0 0 3px rgba(99,102,241,.15); }
-.flowable-model-page .field .control :deep(.el-input__wrapper) { box-shadow:none !important; background:transparent !important; padding:0; height:34px; }
-.flowable-model-page .field .control :deep(.el-input__inner) { border:0; background:transparent; font-size:14px; color:var(--ink-900); height:34px; line-height:34px; }
-.flowable-model-page .field .control :deep(.el-input__inner::placeholder) { color:var(--ink-400); }
-.flowable-model-page .field .control :deep(.el-input__prefix) { color:var(--ink-400); margin-right:4px; }
-.flowable-model-page .field .control :deep(.el-select) { width:100%; }
-.flowable-model-page .field .control :deep(.el-select .el-select__wrapper) { box-shadow:none !important; background:transparent !important; padding:0; min-height:34px; height:34px; }
-.flowable-model-page .field .control :deep(.el-select .el-select__wrapper .el-select__placeholder) { font-size:14px; color:var(--ink-900); }
-.flowable-model-page .field .control :deep(.el-select .el-select__wrapper.is-focused) { box-shadow:none !important; }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page) .field { display:flex; flex-direction:column; gap:6px; }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page) .field label { font-size:14px; font-weight:500; color:var(--ink-700); }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page) .field .control { display:flex; align-items:center; height:36px; padding:0 12px; background:#fff; border:1px solid var(--ink-200); border-radius:var(--r-sm); transition:border-color .15s var(--ease-out), box-shadow .15s var(--ease-out); }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page) .field .control:focus-within { border-color:var(--brand-500); box-shadow:0 0 0 3px rgba(99,102,241,.15); }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page) .field .control :deep(.el-input__wrapper) { box-shadow:none !important; background:transparent !important; padding:0; height:34px; }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page) .field .control :deep(.el-input__inner) { border:0; background:transparent; font-size:14px; color:var(--ink-900); height:34px; line-height:34px; }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page) .field .control :deep(.el-input__inner::placeholder) { color:var(--ink-400); }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page) .field .control :deep(.el-input__prefix) { color:var(--ink-400); margin-right:4px; }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page) .field .control :deep(.el-select) { width:100%; }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page) .field .control :deep(.el-select .el-select__wrapper) { box-shadow:none !important; background:transparent !important; padding:0; min-height:34px; height:34px; }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page) .field .control :deep(.el-select .el-select__wrapper .el-select__placeholder) { font-size:14px; color:var(--ink-900); }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page) .field .control :deep(.el-select .el-select__wrapper.is-focused) { box-shadow:none !important; }
 
 /* ===== Toolbar ===== */
-.flowable-model-page .toolbar { display:flex; align-items:center; justify-content:space-between; padding:12px 20px; border-bottom:1px solid var(--ink-200); background:var(--ink-50); }
-.flowable-model-page .toolbar .left { display:flex; gap:8px; align-items:center; }
-.flowable-model-page .toolbar .right { display:flex; gap:8px; align-items:center; }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page) .toolbar { display:flex; align-items:center; justify-content:space-between; padding:12px 20px; border-bottom:1px solid var(--ink-200); background:var(--ink-50); }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page) .toolbar .left { display:flex; gap:8px; align-items:center; }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page) .toolbar .right { display:flex; gap:8px; align-items:center; }
 
 /* ===== Table ===== */
-.flowable-model-page .table-wrap { overflow-x:auto; }
-.flowable-model-page .app-table { --el-table-bg-color:#fff; --el-table-header-bg-color:var(--ink-50); --el-table-row-hover-bg-color:#fafbff; --el-table-border-color:transparent; --el-table-text-color:var(--ink-700); --el-table-header-text-color:var(--ink-500); }
-.flowable-model-page .app-table :deep(.el-table__header th) { background:var(--ink-50) !important; color:var(--ink-500); font-weight:600; font-size:14px; padding:12px 16px; border-bottom:1px solid var(--ink-200); }
-.flowable-model-page .app-table :deep(.el-table__body td) { padding:14px 16px; border-bottom:1px solid var(--ink-100); color:var(--ink-700); }
-.flowable-model-page .app-table .col-mono { font-family:ui-monospace,"JetBrains Mono",Menlo,monospace; font-size:14px; color:var(--ink-700); }
-.flowable-model-page .app-table .col-strong { color:var(--ink-900); font-weight:500; }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page) .table-wrap { overflow-x:auto; }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page) .app-table { --el-table-bg-color:#fff; --el-table-header-bg-color:var(--ink-50); --el-table-row-hover-bg-color:#fafbff; --el-table-border-color:transparent; --el-table-text-color:var(--ink-700); --el-table-header-text-color:var(--ink-500); }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page) .app-table :deep(.el-table__header th) { background:var(--ink-50) !important; color:var(--ink-500); font-weight:600; font-size:14px; padding:12px 16px; border-bottom:1px solid var(--ink-200); }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page) .app-table :deep(.el-table__body td) { padding:14px 16px; border-bottom:1px solid var(--ink-100); color:var(--ink-700); }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page) .app-table .col-mono { font-family:ui-monospace,"JetBrains Mono",Menlo,monospace; font-size:14px; color:var(--ink-700); }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page) .app-table .col-strong { color:var(--ink-900); font-weight:500; }
 
 /* ===== Badges ===== */
-.flowable-model-page .badge { display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:999px; font-size:13px; font-weight:600; line-height:1; border:1px solid transparent; }
-.flowable-model-page .badge .dot { width:6px; height:6px; border-radius:50%; }
-.flowable-model-page .badge.green { background:var(--green-50); color:var(--green-700); border-color:#a7f3d0; }
-.flowable-model-page .badge.green .dot { background:var(--green-500); }
-.flowable-model-page .badge.blue { background:var(--blue-50); color:var(--blue-700); border-color:#bfdbfe; }
-.flowable-model-page .badge.blue .dot { background:var(--blue-500); }
-.flowable-model-page .badge.gray { background:var(--ink-100); color:var(--ink-500); border-color:var(--ink-200); }
-.flowable-model-page .badge.gray .dot { background:var(--ink-400); }
-.flowable-model-page .badge.violet { background:var(--violet-50); color:var(--brand-700); border-color:var(--brand-200); }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page) .badge { display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:999px; font-size:13px; font-weight:600; line-height:1; border:1px solid transparent; }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page) .badge .dot { width:6px; height:6px; border-radius:50%; }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page) .badge.green { background:var(--green-50); color:var(--green-700); border-color:#a7f3d0; }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page) .badge.green .dot { background:var(--green-500); }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page) .badge.blue { background:var(--blue-50); color:var(--blue-700); border-color:#bfdbfe; }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page) .badge.blue .dot { background:var(--blue-500); }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page) .badge.gray { background:var(--ink-100); color:var(--ink-500); border-color:var(--ink-200); }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page) .badge.gray .dot { background:var(--ink-400); }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page) .badge.violet { background:var(--violet-50); color:var(--brand-700); border-color:var(--brand-200); }
 
 /* ===== Pagination ===== */
-.flowable-model-page .pagination-container { display:flex; align-items:center; justify-content:flex-end; padding:14px 20px; font-size:14px; color:var(--ink-500); background:#fff; }
-.flowable-model-page .pagination-container :deep(.el-pagination) { justify-content:flex-end; }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page) .pagination-container { display:flex; align-items:center; justify-content:flex-end; padding:14px 20px; font-size:14px; color:var(--ink-500); background:#fff; }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page) .pagination-container :deep(.el-pagination) { justify-content:flex-end; }
 
 /* ===== 操作列 ===== */
 :deep(.col-action) { padding: 6px 4px !important; }
@@ -77,20 +77,20 @@
 :deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; }
 
 /* ===== 详情弹窗头部（rd-detail-header，全局类 + 补充样式） ===== */
-.flowable-model-page :deep(.rd-detail-header) { display:flex; align-items:center; gap:12px; }
-.flowable-model-page :deep(.rd-detail-header-icon) { width:40px; height:40px; border-radius:10px; background:rgba(255,255,255,.2); display:grid; place-items:center; color:#fff; backdrop-filter:blur(4px); }
-.flowable-model-page :deep(.rd-detail-header-title) { font-size:18px; font-weight:700; color:#fff; }
-.flowable-model-page :deep(.rd-detail-header-sub) { display:flex; align-items:center; gap:10px; }
-.flowable-model-page :deep(.rd-detail-header-divider) { width:1px; height:14px; background:rgba(255,255,255,.4); }
-.flowable-model-page :deep(.rd-detail-header-no) { font-size:13px; color:rgba(255,255,255,.8); font-feature-settings:"tnum" 1; }
-.flowable-model-page :deep(.rd-dialog .el-dialog__header) { background:linear-gradient(135deg,#1e3a8a 0%,#2563eb 60%,#3b82f6 100%); margin-right:0; border-radius:6px 6px 0 0; padding:14px 20px; }
-.flowable-model-page :deep(.rd-dialog .el-dialog__headerbtn .el-dialog__close) { color:#fff; }
-.flowable-model-page :deep(.rd-dialog .el-dialog__body) { background:linear-gradient(#f8fafc,#f1f5f9); }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page) :deep(.rd-detail-header) { display:flex; align-items:center; gap:12px; }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page) :deep(.rd-detail-header-icon) { width:40px; height:40px; border-radius:10px; background:rgba(255,255,255,.2); display:grid; place-items:center; color:#fff; backdrop-filter:blur(4px); }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page) :deep(.rd-detail-header-title) { font-size:18px; font-weight:700; color:#fff; }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page) :deep(.rd-detail-header-sub) { display:flex; align-items:center; gap:10px; }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page) :deep(.rd-detail-header-divider) { width:1px; height:14px; background:rgba(255,255,255,.4); }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page) :deep(.rd-detail-header-no) { font-size:13px; color:rgba(255,255,255,.8); font-feature-settings:"tnum" 1; }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page) :deep(.rd-dialog .el-dialog__header) { background:linear-gradient(135deg,#1e3a8a 0%,#2563eb 60%,#3b82f6 100%); margin-right:0; border-radius:6px 6px 0 0; padding:14px 20px; }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page) :deep(.rd-dialog .el-dialog__headerbtn .el-dialog__close) { color:#fff; }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page) :deep(.rd-dialog .el-dialog__body) { background:linear-gradient(#f8fafc,#f1f5f9); }
 
 /* ===== 流程设计器 ===== */
 .designer-dialog { }
-.flowable-model-page :deep(.designer-dialog .el-dialog__header) { background:var(--ink-900); padding:10px 20px; margin-right:0; }
-.flowable-model-page :deep(.designer-dialog .el-dialog__headerbtn .el-dialog__close) { color:#fff; }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page) :deep(.designer-dialog .el-dialog__header) { background:var(--ink-900); padding:10px 20px; margin-right:0; }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page) :deep(.designer-dialog .el-dialog__headerbtn .el-dialog__close) { color:#fff; }
 .designer-header { display:flex; align-items:center; justify-content:space-between; width:100%; padding-right:30px; }
 .designer-title { display:flex; align-items:center; gap:10px; color:#fff; font-size:16px; font-weight:600; }
 .designer-title .glyph { width:4px; height:16px; background:#6366f1; border-radius:2px; }
@@ -117,7 +117,7 @@
 .viewer-canvas { height:480px; }
 
 /* ===== 流程图与时间线（详情弹窗） ===== */
-.flowable-model-page .diagram-wrap, .flowable-task-page .diagram-wrap, .flowable-process-page .diagram-wrap {
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page) .diagram-wrap, .flowable-task-page .diagram-wrap, .flowable-process-page .diagram-wrap {
   background: var(--ink-50); border: 1px solid var(--ink-200); border-radius: var(--r-md);
   min-height: 260px; display: flex; align-items: center; justify-content: center; padding: 12px;
   overflow: auto;
@@ -197,6 +197,6 @@
 .flowable-task-page :deep(.rd-detail-header-no), .flowable-process-page :deep(.rd-detail-header-no) { font-size:13px; color:rgba(255,255,255,.8); }
 
 /* ===== Responsive ===== */
-@media (max-width:1100px) { .flowable-model-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }
-@media (max-width:720px) { .flowable-model-page .filter-card .filter-bar { grid-template-columns:1fr; } }
+@media (max-width:1100px) { :is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page) .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }
+@media (max-width:720px) { :is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page) .filter-card .filter-bar { grid-template-columns:1fr; } }
 

@@ -19,6 +19,9 @@ public interface IFlowProcessService
     /** 查询我发起的流程 */
     public List<FlowInstance> selectMyProcessList(FlowInstance query);
 
+    /** 查询我参与过的全部流程（发起+审批过） */
+    public List<FlowInstance> selectInvolvedProcessList(FlowInstance query);
+
     /** 查询流程实例详情（含流转历史） */
     public FlowInstance selectInstanceDetail(String instanceId);
 
@@ -36,6 +39,9 @@ public interface IFlowProcessService
 
     /** 办理任务（同意/驳回） */
     public int completeTask(FlowCompleteDTO dto);
+
+    /** 流程分类树（最新版本流程定义按分类分组） */
+    public java.util.List<java.util.Map<String, Object>> selectProcessTree();
 
     /** 任务转办 */
     public int delegateTask(String taskId, Long targetUserId, String comment);

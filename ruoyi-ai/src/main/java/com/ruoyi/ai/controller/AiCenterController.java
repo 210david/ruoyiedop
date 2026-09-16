@@ -184,4 +184,14 @@ public class AiCenterController extends AiBaseConfigController
         java.util.List<AiCallLog> list = auditService.selectLogList(log);
         return getDataTable(list);
     }
+
+    /**
+     * 按状态统计日志数量（状态标签栏数量徽章用）
+     */
+    @PreAuthorize("@ss.hasPermi('ai:center:log:list')")
+    @GetMapping("/log/statusCounts")
+    public AjaxResult logStatusCounts()
+    {
+        return AjaxResult.success(auditService.selectStatusCounts());
+    }
 }

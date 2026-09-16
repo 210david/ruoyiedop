@@ -32,7 +32,7 @@ public class DmsAiAssistController extends BaseController
     /**
      * 完工报告草稿生成：基于工单全量数据（故障、过程、备件、耗时）生成完工说明草稿
      */
-    @PreAuthorize("@ss.hasPermi('dms:workorder:query')")
+    @PreAuthorize("@ss.hasPermi('dms:ai:completeReport')")
     @GetMapping("/completeReport/{orderId}")
     public AjaxResult completeReport(@PathVariable Long orderId)
     {
@@ -56,7 +56,7 @@ public class DmsAiAssistController extends BaseController
               .append("维修费用(元)：").append(wo.getRepairCost() == null ? "" : wo.getRepairCost().toPlainString()).append("\n")
               .append("停机时长(小时)：").append(wo.getDowntimeDuration() == null ? "" : wo.getDowntimeDuration().toPlainString()).append("\n");
 
-        AiResult result = aiClient.chat("dms", "complete_report", prompt.toString());
+        AiResult result = aiClient.chatCached("dms", "complete_report", prompt.toString());
         Map<String, Object> data = new HashMap<>(result.toMap());
         if (result.isSuccess())
         {

@@ -43,7 +43,7 @@ public class SafetyAiAssistController extends BaseController
     /**
      * 隐患描述结构化+整改建议：按ID拉取隐患，LLM输出结构化JSON（分类/风险评估/整改措施/时限/预防措施）
      */
-    @PreAuthorize("@ss.hasPermi('safety:hazard:query')")
+    @PreAuthorize("@ss.hasPermi('safety:ai:hazardAdvice')")
     @GetMapping("/hazardAdvice/{hazardId}")
     public AjaxResult hazardAdvice(@PathVariable("hazardId") Long hazardId)
     {
@@ -70,7 +70,7 @@ public class SafetyAiAssistController extends BaseController
                 + "要求：基于给定信息分析，数据中缺失的信息对应字段写【待补充】，不得编造。\n\n"
                 + "【隐患信息】\n" + data;
 
-        AiResult result = aiClient.chat("safety", "hazard_advice", prompt);
+        AiResult result = aiClient.chatCached("safety", "hazard_advice", prompt);
         JSONObject parsed = AiJsonParser.parse(result.getContent());
         Map<String, Object> resp = new HashMap<>(result.toMap());
         resp.put("parsed", parsed);
@@ -80,7 +80,7 @@ public class SafetyAiAssistController extends BaseController
     /**
      * 培训考题自动生成：按培训记录ID拉取课程信息，LLM生成5道单选题+2道判断题（JSON）
      */
-    @PreAuthorize("@ss.hasPermi('safety:training:query')")
+    @PreAuthorize("@ss.hasPermi('safety:ai:trainingQuiz')")
     @GetMapping("/trainingQuiz/{recordId}")
     public AjaxResult trainingQuiz(@PathVariable("recordId") Long recordId)
     {
@@ -104,7 +104,7 @@ public class SafetyAiAssistController extends BaseController
                 + "题目内容须紧扣课程名称与类别；课程信息缺失时题干相关背景写【待补充】，不得编造课程细节。\n\n"
                 + "【培训课程信息】\n" + data;
 
-        AiResult result = aiClient.chat("safety", "training_quiz", prompt, 3000);
+        AiResult result = aiClient.chatCached("safety", "training_quiz", prompt, 3000);
         JSONObject parsed = AiJsonParser.parse(result.getContent());
         Map<String, Object> resp = new HashMap<>(result.toMap());
         resp.put("parsed", parsed);

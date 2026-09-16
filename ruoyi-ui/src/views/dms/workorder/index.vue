@@ -571,7 +571,7 @@
             <el-row>
               <el-col :span="24"><el-form-item label="完工说明" required>
               <el-input v-model="completeForm.completeRemark" type="textarea" :rows="4" placeholder="请输入完工说明，或点击AI生成草稿后确认修改" />
-              <AiAssistButton button-text="AI生成完工报告" button-type="success" size="small" :api="aiCompleteReport" :params="[completeForm.orderId]" @result="onCompleteReport" style="margin-top: 4px" />
+              <AiAssistButton v-hasPermi="['dms:ai:completeReport']" button-text="AI生成完工报告" button-type="success" size="small" :api="aiCompleteReport" :params="[completeForm.orderId]" @result="onCompleteReport" style="margin-top: 4px" />
             </el-form-item></el-col>
               <el-col :span="24" v-if="completeForm.orderType === '1'"><el-form-item label="偏差原因"><el-input v-model="completeForm.deviationReason" type="textarea" :rows="2" placeholder="如未按计划时间完成，请说明原因（选填）" /></el-form-item></el-col>
             </el-row>

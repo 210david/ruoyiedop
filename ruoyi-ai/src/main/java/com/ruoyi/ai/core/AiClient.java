@@ -9,6 +9,7 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,6 +71,46 @@ public class AiClient
     public AiResult chat(String module, String feature, String prompt)
     {
         return chat(module, feature, prompt, 1000);
+    }
+
+    /** 缓存条目上限：超过则清空重建，避免长期运行内存膨胀 */
+    private static final int RESPONSE_CACHE_MAX = 300;
+    /** 缓存有效期：30分钟兜底（期间即使重复点击也不再调用） */
+    private static final long RESPONSE_CACHE_TTL_MS = 30 * 60 * 1000L;
+    private final Map<String, Object[]> responseCache = new ConcurrentHashMap<>();
+
+    /**
+     * 带提示词指纹缓存的调模型入口（原创设计：数据未变→提示词不变→直接复用上次结果）
+     * key = module:feature:MD5(prompt+maxTokens)，命中未过期则返回 cached=true 的结果，不实际调模型
+     * 调用失败不缓存，下次点击自动重试
+     */
+    public AiResult chatCached(String module, String feature, String prompt, int maxTokens)
+    {
+        String key = module + ":" + feature + ":"
+            + com.ruoyi.common.utils.sign.Md5Utils.hash(prompt + "|" + maxTokens);
+        Object[] entry = responseCache.get(key);
+        if (entry != null && System.currentTimeMillis() - (Long) entry[0] < RESPONSE_CACHE_TTL_MS)
+        {
+            AiResult cached = (AiResult) entry[1];
+            cached.setCached(true);
+            return cached;
+        }
+        AiResult ai = chat(module, feature, prompt, maxTokens);
+        if (ai.isSuccess())
+        {
+            if (responseCache.size() >= RESPONSE_CACHE_MAX)
+            {
+                responseCache.clear();
+            }
+            responseCache.put(key, new Object[] { System.currentTimeMillis(), ai });
+        }
+        return ai;
+    }
+
+    /** 带提示词指纹缓存的调模型入口（默认 maxTokens） */
+    public AiResult chatCached(String module, String feature, String prompt)
+    {
+        return chatCached(module, feature, prompt, 1000);
     }
 
     /**
@@ -569,6 +610,7 @@ public class AiClient
     private String abbreviate(String text, int maxLen)
     {
         if (text == null) return "";
-        return text.length() <= maxLen ? text : text.substring(0, maxLen) + "...";
+        // 总长不超过maxLen（含省略号），避免超过数据库字段长度
+        return text.length() <= maxLen ? text : text.substring(0, Math.max(0, maxLen - 3)) + "...";
     }
 }

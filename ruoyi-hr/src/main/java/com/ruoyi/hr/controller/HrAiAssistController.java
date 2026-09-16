@@ -39,7 +39,7 @@ public class HrAiAssistController extends BaseController
      * 月度考勤异常摘要：按年月拉取考勤月报，LLM生成出勤概况、缺勤榜、部门分布与管理建议
      * 注意：仅使用考勤数据，不触碰任何薪资相关数据
      */
-    @PreAuthorize("@ss.hasPermi('hr:monthly:list')")
+    @PreAuthorize("@ss.hasPermi('hr:ai:attendanceSummary')")
     @GetMapping("/attendanceSummary/{yearMonth}")
     public AjaxResult attendanceSummary(@PathVariable("yearMonth") String yearMonth)
     {
@@ -81,7 +81,7 @@ public class HrAiAssistController extends BaseController
                 + "要求：结论先行，引用具体姓名与数字；数据中缺失的信息一律写【待补充】，不得编造。\n\n"
                 + "【" + yearMonth + "月考勤月报（前" + count + "条）】\n" + data;
 
-        AiResult result = aiClient.chat("hr", "attendance_summary", prompt);
+        AiResult result = aiClient.chatCached("hr", "attendance_summary", prompt);
         return AjaxResult.success(result.toMap());
     }
 }

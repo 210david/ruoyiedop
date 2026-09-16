@@ -44,7 +44,7 @@ public class MkPredictController extends BaseController
     /**
      * 客户流失预测
      */
-    @PreAuthorize("@ss.hasPermi('mk:customer:list')")
+    @PreAuthorize("@ss.hasPermi('mk:ai:churnPrediction')")
     @GetMapping("/churnPrediction")
     public AjaxResult churnPrediction()
     {
@@ -139,12 +139,13 @@ public class MkPredictController extends BaseController
                 + "清单为空时生成健康度确认报告。\n\n"
                 + "【风险清单】\n" + (risks.isEmpty() ? "（无高风险客户）" : data);
 
-        AiResult ai = aiClient.chat("mk", "churn_prediction", prompt);
+        AiResult ai = aiClient.chatCached("mk", "churn_prediction", prompt);
         Map<String, Object> result = new HashMap<>();
         result.put("riskCount", risks.size());
         result.put("riskList", risks);
         result.put("success", ai.isSuccess());
         result.put("aiSummary", ai.isSuccess() ? ai.getContent() : ai.getError());
+        result.put("cached", ai.isCached());
         result.put("latencyMs", ai.getLatencyMs());
         return AjaxResult.success(result);
     }

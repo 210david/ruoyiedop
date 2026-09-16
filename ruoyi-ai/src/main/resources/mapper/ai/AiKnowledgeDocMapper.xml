@@ -110,4 +110,18 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </if>
     </select>
 
+    <select id="selectChunksByDocId" parameterType="Long" resultType="map">
+        select chunk_id as chunkId, chunk_index as chunkIndex, content
+        from ai_knowledge_chunk
+        where doc_id = #{docId}
+        order by chunk_index
+    </select>
+
+    <select id="selectDocByName" parameterType="String" resultMap="AiKnowledgeDocResult">
+        <include refid="selectDocVo"/>
+        where doc_name = #{docName} and status = '0'
+        order by doc_id desc
+        limit 1
+    </select>
+
 </mapper>

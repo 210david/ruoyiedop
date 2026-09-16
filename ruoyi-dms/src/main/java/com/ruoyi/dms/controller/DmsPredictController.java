@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -14,6 +15,7 @@ import com.ruoyi.ai.core.AiResult;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.utils.StringUtils;
+import com.ruoyi.common.utils.sign.Md5Utils;
 import com.ruoyi.dms.domain.DmsEquipment;
 import com.ruoyi.dms.domain.DmsWorkOrder;
 import com.ruoyi.dms.service.IDmsEquipmentService;
@@ -43,9 +45,50 @@ public class DmsPredictController extends BaseController
     private IDmsWorkOrderService workOrderService;
 
     /**
+     * LLM结果指纹缓存（原创设计：数据指纹未变化则复用上次模型结果，省token）
+     * key = 功能名:数据指纹(MD5)，数据由本地规则统计得出，不耗模型调用
+     * 命中且未过期 → 直接返回缓存结果（cached=true）；数据变化或过期 → 重新调模型
+     */
+    private static final long LLM_CACHE_TTL_MS = 30 * 60 * 1000L;
+    private final Map<String, long[]> llmCacheAt = new ConcurrentHashMap<>();
+    private final Map<String, AiResult> llmCacheVal = new ConcurrentHashMap<>();
+
+    private AiResult chatWithFingerprint(String func, String fingerprint, String prompt)
+    {
+        String key = func + ":" + fingerprint;
+        long[] at = llmCacheAt.get(key);
+        AiResult cached = llmCacheVal.get(key);
+        if (at != null && cached != null && System.currentTimeMillis() - at[0] < LLM_CACHE_TTL_MS)
+        {
+            cached.setCached(true);
+            return cached;
+        }
+        AiResult ai = aiClient.chat("dms", func, prompt);
+        if (ai.isSuccess())
+        {
+            llmCacheVal.put(key, ai);
+            llmCacheAt.put(key, new long[] { System.currentTimeMillis() });
+        }
+        else
+        {
+            // 调用失败不缓存，下次重试
+            llmCacheAt.remove(key);
+            llmCacheVal.remove(key);
+        }
+        return ai;
+    }
+
+    private void evictFingerprint(String func, String fingerprint)
+    {
+        String key = func + ":" + fingerprint;
+        llmCacheAt.remove(key);
+        llmCacheVal.remove(key);
+    }
+
+    /**
      * 设备健康度评分+故障预测（单台）
      */
-    @PreAuthorize("@ss.hasPermi('dms:equipment:query')")
+    @PreAuthorize("@ss.hasPermi('dms:ai:equipmentHealth')")
     @GetMapping("/equipmentHealth/{equipmentId}")
     public AjaxResult equipmentHealth(@PathVariable Long equipmentId)
     {
@@ -112,7 +155,7 @@ public class DmsPredictController extends BaseController
                 + "累计停机：" + downtimeHours.toPlainString() + "小时；累计维修费用：" + repairCost.toPlainString() + "元\n"
                 + "购入日期：" + (equipment.getPurchaseDate() == null ? "未记录" : equipment.getPurchaseDate());
 
-        AiResult ai = aiClient.chat("dms", "equipment_health", prompt);
+        AiResult ai = aiClient.chatCached("dms", "equipment_health", prompt);
         Map<String, Object> result = new HashMap<>(stats);
         result.put("success", ai.isSuccess());
         result.put("aiInterpretation", ai.isSuccess() ? ai.getContent() : ai.getError());
@@ -122,8 +165,9 @@ public class DmsPredictController extends BaseController
 
     /**
      * 设备健康度总览（全部设备排名，取前N台风险设备）
+     * 权限：专用权限点 dms:ai:healthOverview（按钮级控制，避免所有有列表权限的人都能耗token）
      */
-    @PreAuthorize("@ss.hasPermi('dms:equipment:list')")
+    @PreAuthorize("@ss.hasPermi('dms:ai:healthOverview')")
     @GetMapping("/equipmentHealthOverview")
     public AjaxResult equipmentHealthOverview(@RequestParam(defaultValue = "10") int limit)
     {
@@ -133,10 +177,13 @@ public class DmsPredictController extends BaseController
 
         long now = System.currentTimeMillis();
         List<Map<String, Object>> ranking = new ArrayList<>();
+        // 数据指纹累加器：设备主数据变化（增删/状态变化）也会改变指纹
+        StringBuilder fpSrc = new StringBuilder();
         if (equipments != null)
         {
             for (DmsEquipment eq : equipments)
             {
+                fpSrc.append(eq.getEquipmentId()).append(':').append(StringUtils.nvl(eq.getStatus(), "-")).append(';');
                 int fault90 = 0, fault30 = 0;
                 BigDecimal downtimeHours = BigDecimal.ZERO, repairCost = BigDecimal.ZERO;
                 if (allOrders != null)
@@ -177,7 +224,7 @@ public class DmsPredictController extends BaseController
         ranking.sort((a, b) -> Integer.compare((int) a.get("score"), (int) b.get("score")));
         if (ranking.size() > limit) ranking = new ArrayList<>(ranking.subList(0, limit));
 
-        // LLM 总体解读
+        // LLM 总体解读（指纹 = 排名明细 + 设备主数据 + limit，任一变化都会重新调模型）
         StringBuilder data = new StringBuilder();
         for (Map<String, Object> item : ranking)
         {
@@ -185,24 +232,29 @@ public class DmsPredictController extends BaseController
                 .append("分（").append(item.get("level")).append("），近90天故障").append(item.get("fault90"))
                 .append("次，停机").append(item.get("downtimeHours")).append("小时\n");
         }
+        fpSrc.append("limit=").append(limit).append(';').append(data);
+        String fingerprint = Md5Utils.hash(fpSrc.toString());
+
         String prompt = "你是设备管理预测分析助手。以下是设备健康度排名（由规则计算，低分在前）。"
                 + "请生成设备总体健康报告：1.总体状况 2.需要重点关注的设备（点名）3.共性原因与系统性维护建议。200字内。\n\n"
                 + "【健康度排名（升序，最差在前）】\n" + data;
 
-        AiResult ai = aiClient.chat("dms", "equipment_health_overview", prompt);
+        AiResult ai = chatWithFingerprint("equipment_health_overview", fingerprint, prompt);
         Map<String, Object> result = new HashMap<>();
         result.put("ranking", ranking);
         result.put("success", ai.isSuccess());
         result.put("aiSummary", ai.isSuccess() ? ai.getContent() : ai.getError());
         result.put("latencyMs", ai.getLatencyMs());
+        result.put("cached", ai.isCached());
         return AjaxResult.success(result);
     }
 
     /**
      * 备件消耗预测/安全库存建议：基于库存流水计算月均消耗，对比当前库存，LLM给采购建议
      * （联动采购建议闭环：结论可直接供PMS采购参考）
+     * 权限：专用权限点 dms:ai:sparepartForecast
      */
-    @PreAuthorize("@ss.hasPermi('wms:inventory:list')")
+    @PreAuthorize("@ss.hasPermi('dms:ai:sparepartForecast')")
     @GetMapping("/sparepartForecast")
     public AjaxResult sparepartForecast()
     {
@@ -231,12 +283,14 @@ public class DmsPredictController extends BaseController
                 + "（含建议备货量逻辑说明）4.与采购计划联动提醒。250字内；数据不足处标注【数据不足】。\n\n"
                 + "【备件使用记录】\n" + (count == 0 ? "（暂无记录）" : usage);
 
-        AiResult ai = aiClient.chat("dms", "sparepart_forecast", prompt);
+        // 指纹 = 备件使用记录明细，工单无新增/修改则命中缓存
+        AiResult ai = chatWithFingerprint("sparepart_forecast", Md5Utils.hash(usage + "|count=" + count), prompt);
         Map<String, Object> result = new HashMap<>();
         result.put("usageCount", count);
         result.put("success", ai.isSuccess());
         result.put("content", ai.isSuccess() ? ai.getContent() : ai.getError());
         result.put("latencyMs", ai.getLatencyMs());
+        result.put("cached", ai.isCached());
         return AjaxResult.success(result);
     }
 }

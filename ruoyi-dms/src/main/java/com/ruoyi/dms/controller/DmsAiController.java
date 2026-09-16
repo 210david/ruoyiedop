@@ -69,6 +69,7 @@ public class DmsAiController extends BaseController
 
     // ===== AI 智能报修助手 =====
 
+    @PreAuthorize("@ss.hasPermi('dms:ai:repairAssistant')")
     @PostMapping("/repairAssistant")
     public AjaxResult repairAssistant(@RequestBody Map<String, String> body)
     {
@@ -82,6 +83,7 @@ public class DmsAiController extends BaseController
 
     // ===== AI 智能派工推荐 =====
 
+    @PreAuthorize("@ss.hasPermi('dms:ai:dispatchRecommend')")
     @GetMapping("/dispatchRecommend/{orderId}")
     public AjaxResult dispatchRecommend(@PathVariable Long orderId)
     {
@@ -90,6 +92,7 @@ public class DmsAiController extends BaseController
 
     // ===== AI 维修知识问答 =====
 
+    @PreAuthorize("@ss.hasPermi('dms:ai:knowledgeQA')")
     @PostMapping("/knowledgeQA")
     public AjaxResult knowledgeQA(@RequestBody Map<String, String> body)
     {

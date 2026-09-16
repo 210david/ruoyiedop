@@ -45,7 +45,7 @@ public class DmsWorkOrderAgentController extends BaseController
     /**
      * 工单全流程 Agent：诊断 → 备件清单 → 派工推荐，一次返回
      */
-    @PreAuthorize("@ss.hasPermi('dms:workorder:query')")
+    @PreAuthorize("@ss.hasPermi('dms:ai:agent')")
     @GetMapping("/agent/{orderId}")
     public AjaxResult agent(@PathVariable Long orderId)
     {
@@ -103,7 +103,7 @@ public class DmsWorkOrderAgentController extends BaseController
                 + "【该设备历史维修记录】\n" + (relatedCount == 0 ? "（无历史记录）" : history);
 
         // MiMo等推理模型的思考链会消耗大量token，需给足输出空间
-        AiResult ai = aiClient.chat("dms", "workorder_agent", prompt, 8000);
+        AiResult ai = aiClient.chatCached("dms", "workorder_agent", prompt, 8000);
 
         Map<String, Object> plan = new HashMap<>();
         plan.put("success", ai.isSuccess());

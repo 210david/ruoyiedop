@@ -131,7 +131,7 @@
             <template #default="scope">
               <div class="action-btn-row">
                 <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['safety:hazard:query']">查看</el-button>
-                <AiAssistButton button-text="AI" size="small" button-type="primary" :api="aiHazardAdvice" :params="[scope.row.hazardId]" @result="d => onHazardAdvice(d, scope.row)" />
+                <AiAssistButton v-hasPermi="['safety:ai:hazardAdvice']" button-text="AI" size="small" button-type="primary" :api="aiHazardAdvice" :params="[scope.row.hazardId]" @result="d => onHazardAdvice(d, scope.row)" />
                 <el-button v-if="scope.row.hazardStatus === '0' || scope.row.hazardStatus === '2'" link type="primary" icon="Check" @click="handleSubmit(scope.row)" v-hasPermi="['safety:hazard:submit']">提交</el-button>
                 <el-button v-if="scope.row.hazardStatus === '1'" link type="primary" icon="DocumentChecked" @click="handleApprove(scope.row)" v-hasPermi="['safety:hazard:approve']">审批</el-button>
                 <el-button v-if="scope.row.hazardStatus === '3'" link type="primary" icon="Edit" @click="handleStartRectify(scope.row)" v-hasPermi="['safety:hazard:rectify']">整改</el-button>
