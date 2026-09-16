@@ -1,5 +1,6 @@
 package com.ruoyi.pms.service.impl;
 
+import com.ruoyi.common.annotation.DataScope;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -39,6 +40,7 @@ public class PmsContractServiceImpl implements IPmsContractService
     private IMkNumberRuleService mkNumberRuleService;
 
     @Override
+    @DataScope(deptAlias = "pms_contract")
     public List<PmsContract> selectContractList(PmsContract contract)
     {
         return pmsContractMapper.selectContractList(contract);

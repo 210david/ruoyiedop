@@ -1,9 +1,17 @@
 package com.ruoyi.web.controller.system;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
@@ -15,7 +23,9 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 import com.ruoyi.common.annotation.Log;
+import com.ruoyi.common.config.RuoYiConfig;
 import com.ruoyi.common.constant.UserConstants;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
@@ -33,6 +43,8 @@ import com.ruoyi.system.service.ISysMenuService;
 @RequestMapping("/system/menu")
 public class SysMenuController extends BaseController
 {
+    private static final Logger log = LoggerFactory.getLogger(SysMenuController.class);
+
     @Autowired
     private ISysMenuService menuService;
 
@@ -214,5 +226,70 @@ public class SysMenuController extends BaseController
             return warn("菜单已分配,不允许删除");
         }
         return toAjax(menuService.deleteMenuById(menuId));
+    }
+
+    /**
+     * 上传自定义菜单图标（SVG格式）
+     * 将SVG文件保存到服务器指定目录，同时返回SVG内容供前端动态注册到sprite
+     */
+    @PreAuthorize("@ss.hasPermi('system:menu:edit')")
+    @Log(title = "菜单图标上传", businessType = BusinessType.IMPORT)
+    @PostMapping("/icon/upload")
+    public AjaxResult uploadIcon(MultipartFile file)
+    {
+        try
+        {
+            // 校验文件
+            if (file == null || file.isEmpty())
+            {
+                return AjaxResult.error("文件不能为空");
+            }
+            String originalFilename = file.getOriginalFilename();
+            if (originalFilename == null || !originalFilename.toLowerCase().endsWith(".svg"))
+            {
+                return AjaxResult.error("只能上传SVG格式文件");
+            }
+            // 文件大小校验（100KB）
+            if (file.getSize() > 100 * 1024)
+            {
+                return AjaxResult.error("SVG文件大小不能超过100KB");
+            }
+            // 提取图标名称（去掉.svg后缀）
+            String iconName = originalFilename.substring(0, originalFilename.length() - 4)
+                    .replaceAll("[^a-zA-Z0-9_-]", "-")
+                    .toLowerCase();
+            if (StringUtils.isEmpty(iconName))
+            {
+                return AjaxResult.error("图标名称无效");
+            }
+            // 读取SVG内容
+            String svgContent = new String(file.getBytes(), StandardCharsets.UTF_8);
+            // 基本安全校验：检查是否包含可疑内容
+            String lowerContent = svgContent.toLowerCase();
+            if (lowerContent.contains("<script") || lowerContent.contains("javascript:") || lowerContent.contains("onerror"))
+            {
+                return AjaxResult.error("SVG文件包含不安全的内容");
+            }
+            // 保存到 profile/icons/ 目录
+            String iconDir = RuoYiConfig.getProfile() + "/icons";
+            File dir = new File(iconDir);
+            if (!dir.exists())
+            {
+                dir.mkdirs();
+            }
+            String filePath = iconDir + "/" + iconName + ".svg";
+            Files.write(Paths.get(filePath), file.getBytes());
+            log.info("菜单图标上传成功: {}", filePath);
+            // 返回结果
+            AjaxResult ajax = AjaxResult.success();
+            ajax.put("iconName", iconName);
+            ajax.put("svgContent", svgContent);
+            return ajax;
+        }
+        catch (IOException e)
+        {
+            log.error("上传菜单图标失败", e);
+            return AjaxResult.error("上传失败：" + e.getMessage());
+        }
     }
 }

@@ -1,5 +1,6 @@
 package com.ruoyi.mk.service.impl;
 
+import com.ruoyi.common.annotation.DataScope;
 import java.math.BigDecimal;
 import java.util.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,6 +44,7 @@ public class MkOpportunityServiceImpl implements IMkOpportunityService
     private MkOrderMapper mkOrderMapper;
 
     @Override
+    @DataScope(deptAlias = "o", userAlias = "o")
     public List<MkOpportunity> selectOpportunityList(MkOpportunity opportunity)
     {
         return mkOpportunityMapper.selectOpportunityList(opportunity);

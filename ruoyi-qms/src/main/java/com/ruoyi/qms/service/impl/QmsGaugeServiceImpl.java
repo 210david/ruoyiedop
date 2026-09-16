@@ -1,5 +1,6 @@
 package com.ruoyi.qms.service.impl;
 
+import com.ruoyi.common.annotation.DataScope;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -26,6 +27,7 @@ public class QmsGaugeServiceImpl implements IQmsGaugeService
     private IMkNumberRuleService mkNumberRuleService;
 
     @Override
+    @DataScope(deptAlias = "qms_gauge")
     public List<QmsGauge> selectGaugeList(QmsGauge gauge)
     {
         return qmsGaugeMapper.selectGaugeList(gauge);

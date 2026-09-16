@@ -58,7 +58,8 @@
             <if test="attachmentUrl != null and attachmentUrl != ''"> AND attachment_url LIKE CONCAT('%', #{attachmentUrl}, '%')</if>
             <if test="status != null and status != ''"> AND status LIKE CONCAT('%', #{status}, '%')</if>
             <if test="delFlag != null and delFlag != ''"> AND del_flag LIKE CONCAT('%', #{delFlag}, '%')</if>
-        </where>
+                  <if test="params.dataScope != null and params.dataScope != ''">${params.dataScope}</if>
+</where>
         ORDER BY create_time DESC
     </select>
 

@@ -60,6 +60,12 @@
             <artifactId>ruoyi-wms</artifactId>
         </dependency>
 
+        <!-- AI公共模块 -->
+        <dependency>
+            <groupId>com.ruoyi</groupId>
+            <artifactId>ruoyi-ai</artifactId>
+        </dependency>
+
         <!-- DMS设备管理 -->
         <dependency>
             <groupId>com.ruoyi</groupId>
@@ -102,6 +108,12 @@
             <artifactId>ruoyi-hr</artifactId>
         </dependency>
 
+        <!-- Flowable工作流 -->
+        <dependency>
+            <groupId>com.ruoyi</groupId>
+            <artifactId>ruoyi-flowable</artifactId>
+        </dependency>
+
     </dependencies>
 
     <build>
@@ -130,7 +142,7 @@
                 </configuration>   
            </plugin>   
         </plugins>
-        <finalName>${project.artifactId}</finalName>
+        <finalName>ruoyi-admin-v3</finalName>
     </build>
 
 </project>

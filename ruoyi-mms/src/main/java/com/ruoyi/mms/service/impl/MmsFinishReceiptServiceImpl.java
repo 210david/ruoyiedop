@@ -1,5 +1,6 @@
 package com.ruoyi.mms.service.impl;
 
+import com.ruoyi.common.annotation.DataScope;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -28,6 +29,7 @@ public class MmsFinishReceiptServiceImpl implements IMmsFinishReceiptService
     private IMkNumberRuleService mkNumberRuleService;
 
     @Override
+    @DataScope(deptAlias = "mms_finish_receipt")
     public List<MmsFinishReceipt> selectFinishReceiptList(MmsFinishReceipt finishReceipt)
     {
         return finishReceiptMapper.selectFinishReceiptList(finishReceipt);

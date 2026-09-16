@@ -65,7 +65,8 @@
             <if test="sealedBy != null and sealedBy != ''"> AND t.sealed_by LIKE CONCAT('%', #{sealedBy}, '%')</if>
             <if test="sealedTime != null"> AND t.sealed_time = #{sealedTime}</if>
             <if test="delFlag != null and delFlag != ''"> AND t.del_flag LIKE CONCAT('%', #{delFlag}, '%')</if>
-        </where>
+                  <if test="params.dataScope != null and params.dataScope != ''">${params.dataScope}</if>
+</where>
         ORDER BY t.create_time DESC
     </select>
 

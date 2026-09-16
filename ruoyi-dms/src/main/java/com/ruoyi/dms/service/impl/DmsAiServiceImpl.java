@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Service;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
+import com.ruoyi.common.core.redis.RedisCache;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.dms.domain.DmsRepairFaq;
 import com.ruoyi.dms.domain.DmsWorkOrder;
@@ -40,6 +42,12 @@ public class DmsAiServiceImpl implements IDmsAiService
     @Autowired
     private DmsRepairFaqMapper faqMapper;
 
+    @Autowired
+    private RedisCache redisCache;
+
+    @Autowired
+    private com.ruoyi.ai.core.AiClient aiClient;
+
     private static final HttpClient httpClient = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(10))
             .build();
@@ -52,6 +60,7 @@ public class DmsAiServiceImpl implements IDmsAiService
         Map<String, Object> result = new HashMap<>();
         result.put("rawInput", input);
 
+        currentFeature.set("repair_assistant");
         if (isAiEnabled("dms.ai.repair_assistant"))
         {
             try
@@ -122,6 +131,15 @@ public class DmsAiServiceImpl implements IDmsAiService
     @Override
     public Map<String, Object> dispatchRecommend(Long orderId)
     {
+        // 开关校验：智能派工推荐未开启时返回空推荐
+        if (!isAiEnabled("dms.ai.dispatch_recommend"))
+        {
+            Map<String, Object> off = new HashMap<>();
+            off.put("recommendations", new ArrayList<>());
+            off.put("tip", "智能派工推荐未开启，请管理员在【AI助手-AI配置】中开启后使用");
+            return off;
+        }
+
         DmsWorkOrder order = workOrderMapper.selectWorkOrderById(orderId);
         if (order == null)
         {
@@ -298,6 +316,7 @@ public class DmsAiServiceImpl implements IDmsAiService
                             + "用户问题：" + question + "\n"
                             + "请给出可能的原因和处理方法参考，简洁专业。";
 
+                    currentFeature.set("knowledge_qa");
                     String aiResp = callLlm(prompt);
                     if (aiResp != null)
                     {
@@ -330,11 +349,154 @@ public class DmsAiServiceImpl implements IDmsAiService
 
         if (!result.containsKey("answer"))
         {
+            // 3.5 FAQ与历史工单均无匹配时，AI直答兜底
+            if (isAiEnabled("dms.ai.knowledge_qa"))
+            {
+                try
+                {
+                    String prompt = "你是设备维修知识助手。请回答以下设备维修问题：给出可能原因与处理步骤，"
+                            + "简洁专业、分点说明；如信息不足请给出建议排查方向。\n用户问题：" + question;
+                    currentFeature.set("knowledge_qa");
+                    String aiResp = callLlm(prompt);
+                    if (aiResp != null)
+                    {
+                        result.put("answer", aiResp);
+                        result.put("source", "AI直答");
+                    }
+                }
+                catch (Exception e)
+                {
+                    log.warn("AI直答调用失败: {}", e.getMessage());
+                }
+            }
+        }
+
+        if (!result.containsKey("answer"))
+        {
             result.put("answer", "暂无相关记录，建议手动排查或联系设备管理员。");
             result.put("source", "无匹配");
         }
 
         result.put("tip", "以上内容基于历史工单和FAQ生成，仅供参考");
+        return result;
+    }
+
+    // ==================== AI知识沉淀：工单自动生成FAQ ====================
+
+    @Override
+    public Map<String, Object> generateFaqFromOrders(Integer limit)
+    {
+        Map<String, Object> result = new HashMap<>();
+        if (!isAiEnabled("dms.ai.knowledge_qa"))
+        {
+            result.put("success", false);
+            result.put("msg", "AI功能未开启，请先在【AI配置】中开启总开关与维修知识问答");
+            return result;
+        }
+
+        int max = (limit != null && limit > 0 && limit <= 20) ? limit : 8;
+
+        // 已有FAQ中引用过的工单号，避免重复生成
+        List<DmsRepairFaq> existFaqs = faqMapper.selectFaqList(new DmsRepairFaq());
+        List<String> usedRemarks = new ArrayList<>();
+        for (DmsRepairFaq f : existFaqs)
+        {
+            if (f.getRemark() != null && f.getRemark().contains("来源工单:"))
+            {
+                usedRemarks.add(f.getRemark());
+            }
+        }
+
+        // 筛选可沉淀的完工/验收工单：有故障原因和维修措施且未被引用过
+        List<DmsWorkOrder> candidates = new ArrayList<>();
+        DmsWorkOrder query = new DmsWorkOrder();
+        List<DmsWorkOrder> allOrders = workOrderMapper.selectWorkOrderList(query);
+        for (DmsWorkOrder wo : allOrders)
+        {
+            String status = wo.getOrderStatus();
+            if (!"4".equals(status) && !"5".equals(status)) continue;
+            if (StringUtils.isEmpty(wo.getFaultDescription()) || StringUtils.isEmpty(wo.getRepairMeasure())) continue;
+            if (wo.getOrderNo() != null)
+            {
+                boolean used = false;
+                for (String remark : usedRemarks)
+                {
+                    if (remark.contains(wo.getOrderNo())) { used = true; break; }
+                }
+                if (used) continue;
+            }
+            candidates.add(wo);
+            if (candidates.size() >= max) break;
+        }
+
+        if (candidates.isEmpty())
+        {
+            result.put("success", true);
+            result.put("generated", 0);
+            result.put("msg", "没有可沉淀的新完工工单（可能均已生成过或缺少故障原因/维修措施）");
+            return result;
+        }
+
+        // 构建Prompt，要求返回JSON数组
+        StringBuilder sb = new StringBuilder();
+        sb.append("以下是设备维修完工工单记录。请将每条工单沉淀为一条维修知识FAQ，以JSON数组返回，不要输出其他内容。\n")
+          .append("数组元素字段：question(问题，以设备+故障现象描述)、answer(标准处理答案，含原因分析与处理步骤，简洁专业)、keywords(关键词，逗号分隔)。\n\n");
+        for (int i = 0; i < candidates.size(); i++)
+        {
+            DmsWorkOrder wo = candidates.get(i);
+            sb.append(i + 1).append(". 工单号：").append(wo.getOrderNo())
+              .append("；设备：").append(wo.getEquipmentName())
+              .append("；故障现象：").append(wo.getFaultDescription())
+              .append("；故障原因：").append(StringUtils.nvl(wo.getFaultCause(), "未记录"))
+              .append("；维修措施：").append(wo.getRepairMeasure()).append("\n");
+        }
+
+        currentFeature.set("faq_generate");
+        String aiResp = callLlm(sb.toString());
+        if (aiResp == null)
+        {
+            result.put("success", false);
+            result.put("msg", "AI调用失败，请检查AI配置（API地址/密钥/月度限额）");
+            return result;
+        }
+
+        // 解析JSON数组（兼容Markdown包裹）
+        String cleaned = aiResp.trim();
+        if (cleaned.startsWith("```"))
+        {
+            int start = cleaned.indexOf('\n');
+            int end = cleaned.lastIndexOf("```");
+            if (start > 0 && end > start) cleaned = cleaned.substring(start + 1, end).trim();
+        }
+        int arrStart = cleaned.indexOf('[');
+        int arrEnd = cleaned.lastIndexOf(']');
+        if (arrStart < 0 || arrEnd <= arrStart)
+        {
+            result.put("success", false);
+            result.put("msg", "AI返回格式异常，请重试");
+            return result;
+        }
+        JSONArray arr = JSON.parseArray(cleaned.substring(arrStart, arrEnd + 1));
+
+        int generated = 0;
+        for (int i = 0; i < arr.size() && i < candidates.size(); i++)
+        {
+            JSONObject obj = arr.getJSONObject(i);
+            if (obj == null || StringUtils.isEmpty(obj.getString("question"))) continue;
+            DmsRepairFaq faq = new DmsRepairFaq();
+            faq.setQuestion(obj.getString("question"));
+            faq.setAnswer(obj.getString("answer"));
+            faq.setKeywords(obj.getString("keywords"));
+            faq.setStatus("1"); // 待人工审核，审核通过后启用
+            faq.setRemark("AI生成-待审核 来源工单:" + candidates.get(i).getOrderNo());
+            faq.setCreateBy("ai");
+            faqMapper.insertFaq(faq);
+            generated++;
+        }
+
+        result.put("success", true);
+        result.put("generated", generated);
+        result.put("msg", "已从完工工单生成 " + generated + " 条FAQ，状态为待审核，请审核后启用");
         return result;
     }
 
@@ -345,72 +507,39 @@ public class DmsAiServiceImpl implements IDmsAiService
      */
     private boolean isAiEnabled(String configKey)
     {
-        String globalEnabled = configService.selectConfigByKey("dms.ai.enabled");
-        if (!"true".equalsIgnoreCase(globalEnabled)) return false;
-
-        String featureEnabled = configService.selectConfigByKey(configKey);
-        return "true".equalsIgnoreCase(featureEnabled);
+        // 迁移至ruoyi-ai公共模块：三级开关校验（平台/模块/功能），兼容旧键
+        String feature = configKey.replace("dms.ai.", "");
+        return aiClient.isEnabled("dms", feature);
     }
 
     /**
-     * 调用大模型API
+     * 调用大模型API（迁移至ruoyi-ai统一客户端，含限额/脱敏/审计）
+     * 返回content，失败返回null（与原行为一致，调用方走降级逻辑）
      */
     private String callLlm(String prompt)
     {
+        com.ruoyi.ai.core.AiResult result = aiClient.chat(currentModule.get(), currentFeature.get(), prompt);
+        return result.isSuccess() ? result.getContent() : null;
+    }
+
+    /** AiClient上下文（调用前由各功能入口设置module/feature） */
+    private static final ThreadLocal<String> currentModule = ThreadLocal.withInitial(() -> "dms");
+    private static final ThreadLocal<String> currentFeature = ThreadLocal.withInitial(() -> "unknown");
+
+    /**
+     * 解析月度限额配置（空或非法值视为不限制）
+     */
+    private int parseMonthlyLimit(String val)
+    {
+        if (StringUtils.isEmpty(val)) return 0;
         try
         {
-            String apiUrl = configService.selectConfigByKey("dms.ai.api_url");
-            String apiKey = configService.selectConfigByKey("dms.ai.api_key");
-            String modelName = configService.selectConfigByKey("dms.ai.model_name");
-
-            if (StringUtils.isEmpty(apiUrl) || StringUtils.isEmpty(apiKey))
-            {
-                log.warn("AI大模型API地址或Key未配置");
-                return null;
-            }
-
-            // 构建请求体（兼容OpenAI格式）
-            JSONObject requestBody = new JSONObject();
-            requestBody.put("model", StringUtils.isNotEmpty(modelName) ? modelName : "deepseek-chat");
-            requestBody.put("temperature", 0.3);
-            requestBody.put("max_tokens", 1000);
-
-            JSONArray messages = new JSONArray();
-            JSONObject message = new JSONObject();
-            message.put("role", "user");
-            message.put("content", prompt);
-            messages.add(message);
-            requestBody.put("messages", messages);
-
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(apiUrl))
-                    .header("Content-Type", "application/json")
-                    .header("Authorization", "Bearer " + apiKey)
-                    .timeout(Duration.ofSeconds(30))
-                    .POST(HttpRequest.BodyPublishers.ofString(requestBody.toString()))
-                    .build();
-
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-
-            if (response.statusCode() == 200)
-            {
-                JSONObject respJson = JSON.parseObject(response.body());
-                JSONArray choices = respJson.getJSONArray("choices");
-                if (choices != null && !choices.isEmpty())
-                {
-                    return choices.getJSONObject(0).getJSONObject("message").getString("content");
-                }
-            }
-            else
-            {
-                log.error("AI大模型API调用失败, HTTP {}: {}", response.statusCode(), response.body());
-            }
+            return Integer.parseInt(val.trim());
         }
-        catch (Exception e)
+        catch (NumberFormatException e)
         {
-            log.error("AI大模型API调用异常", e);
+            return 0;
         }
-        return null;
     }
 
     /**
@@ -439,6 +568,13 @@ public class DmsAiServiceImpl implements IDmsAiService
             log.warn("解析AI返回JSON失败: {}", text);
             return new JSONObject();
         }
+    }
+
+    /** 截断过长文本，避免错误信息刷屏 */
+    private String abbreviate(String text, int maxLen)
+    {
+        if (text == null) return "";
+        return text.length() <= maxLen ? text : text.substring(0, maxLen) + "...";
     }
 
     /** 维修员统计数据 */

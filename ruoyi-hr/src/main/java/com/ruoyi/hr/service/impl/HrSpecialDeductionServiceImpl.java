@@ -1,5 +1,6 @@
 package com.ruoyi.hr.service.impl;
 
+import com.ruoyi.common.annotation.DataScope;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -21,6 +22,7 @@ public class HrSpecialDeductionServiceImpl implements IHrSpecialDeductionService
     public HrSpecialDeduction selectHrSpecialDeductionById(Long sdId) { return hrSpecialDeductionMapper.selectHrSpecialDeductionById(sdId); }
 
     @Override
+    @DataScope(deptAlias = "biz_hr_special_deduction")
     public List<HrSpecialDeduction> selectHrSpecialDeductionList(HrSpecialDeduction hrSpecialDeduction) { return hrSpecialDeductionMapper.selectHrSpecialDeductionList(hrSpecialDeduction); }
 
     @Override

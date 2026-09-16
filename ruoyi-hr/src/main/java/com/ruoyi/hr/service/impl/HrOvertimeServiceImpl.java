@@ -1,5 +1,6 @@
 package com.ruoyi.hr.service.impl;
 
+import com.ruoyi.common.annotation.DataScope;
 import java.util.Date;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,6 +38,7 @@ public class HrOvertimeServiceImpl implements IHrOvertimeService
     }
 
     @Override
+    @DataScope(deptAlias = "biz_hr_overtime")
     public List<HrOvertime> selectHrOvertimeList(HrOvertime hrOvertime) { return hrOvertimeMapper.selectHrOvertimeList(hrOvertime); }
 
     @Override

@@ -38,7 +38,7 @@
       </el-input>
     </div>
 
-    <div class="tree-wrap" v-show="!collapsed">
+    <div class="tree-wrap" v-show="!collapsed" v-loading="loading" element-loading-text="加载中..." :element-loading-svg="loadingSvg" element-loading-svg-view-box="-10 -10 50 50" element-loading-background="rgba(255,255,255,0.85)">
       <el-tree 
         ref="treeRef" 
         :data="treeData" 
@@ -169,6 +169,16 @@ const props = defineProps({
   enableStorage: {
     type: Boolean,
     default: true
+  },
+  // 是否显示加载中
+  loading: {
+    type: Boolean,
+    default: false
+  },
+  // 自定义加载 SVG
+  loadingSvg: {
+    type: String,
+    default: ''
   },
   // 自定义过滤方法
   filterMethod: {

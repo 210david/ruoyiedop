@@ -1,5 +1,6 @@
 package com.ruoyi.mk.service.impl;
 
+import com.ruoyi.common.annotation.DataScope;
 import java.math.BigDecimal;
 import java.util.List;
 import org.slf4j.Logger;
@@ -48,6 +49,7 @@ public class MkContractServiceImpl implements IMkContractService
     private MkContractChangeLogMapper mkContractChangeLogMapper;
 
     @Override
+    @DataScope(deptAlias = "co", userAlias = "co")
     public List<MkContract> selectContractList(MkContract contract)
     {
         return mkContractMapper.selectContractList(contract);

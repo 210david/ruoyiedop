@@ -1,5 +1,6 @@
 package com.ruoyi.mk.service.impl;
 
+import com.ruoyi.common.annotation.DataScope;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
@@ -35,6 +36,7 @@ public class MkActivityServiceImpl implements IMkActivityService
     private IMkNumberRuleService mkNumberRuleService;
 
     @Override
+    @DataScope(deptAlias = "a", userAlias = "a")
     public List<MkActivity> selectActivityList(MkActivity activity)
     {
         return mkActivityMapper.selectActivityList(activity);

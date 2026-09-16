@@ -1,5 +1,6 @@
 package com.ruoyi.pms.service.impl;
 
+import com.ruoyi.common.annotation.DataScope;
 import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
@@ -64,6 +65,7 @@ public class PmsInvoiceServiceImpl implements IPmsInvoiceService
     private PmsPurchaseOrderMapper pmsPurchaseOrderMapper;
 
     @Override
+    @DataScope(deptAlias = "pms_invoice")
     public List<PmsInvoice> selectInvoiceList(PmsInvoice invoice)
     {
         return pmsInvoiceMapper.selectInvoiceList(invoice);

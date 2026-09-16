@@ -35,7 +35,8 @@
             <if test="auditYear != null"> AND audit_year = #{auditYear}</if>
             <if test="planStatus != null and planStatus != ''"> AND plan_status = #{planStatus}</if>
             <if test="remark != null and remark != ''"> AND remark LIKE CONCAT('%', #{remark}, '%')</if>
-        </where>
+                  <if test="params.dataScope != null and params.dataScope != ''">${params.dataScope}</if>
+</where>
         ORDER BY create_time DESC
     </select>
     <select id="selectAuditPlanById" parameterType="Long" resultMap="QmsAuditPlanResult">

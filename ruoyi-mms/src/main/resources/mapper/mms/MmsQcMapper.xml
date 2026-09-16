@@ -48,7 +48,8 @@
             <if test="qcBy != null and qcBy != ''"> AND qc_by LIKE CONCAT('%', #{qcBy}, '%')</if>
             <if test="params.beginTime != null and params.beginTime != ''"> AND date(create_time) &gt;= #{params.beginTime}</if>
             <if test="params.endTime != null and params.endTime != ''"> AND date(create_time) &lt;= #{params.endTime}</if>
-        </where>
+                  <if test="params.dataScope != null and params.dataScope != ''">${params.dataScope}</if>
+</where>
         ORDER BY qc_id DESC
     </select>
 

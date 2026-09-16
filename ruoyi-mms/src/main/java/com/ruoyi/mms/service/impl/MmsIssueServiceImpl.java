@@ -1,5 +1,6 @@
 package com.ruoyi.mms.service.impl;
 
+import com.ruoyi.common.annotation.DataScope;
 import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
@@ -31,6 +32,7 @@ public class MmsIssueServiceImpl implements IMmsIssueService
     private IMkNumberRuleService mkNumberRuleService;
 
     @Override
+    @DataScope(deptAlias = "mms_issue")
     public List<MmsIssue> selectIssueList(MmsIssue issue)
     {
         return issueMapper.selectIssueList(issue);

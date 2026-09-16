@@ -169,6 +169,7 @@
             <el-button v-if="scope.row.orderStatus === '1'" v-hasPermi="['dms:workorder:reassign']" link type="warning" icon="Switch" @click="handleReassign(scope.row)">改派</el-button>
             <el-button v-if="scope.row.orderStatus === '2' || scope.row.orderStatus === '7'" v-hasPermi="['dms:workorder:process']" link type="primary" icon="Tools" @click="handleProcess(scope.row)">处理</el-button>
             <el-button v-if="scope.row.orderStatus === '3'" v-hasPermi="['dms:workorder:complete']" link type="success" icon="CircleCheck" @click="handleComplete(scope.row)">完工</el-button>
+                <el-button v-if="scope.row.orderStatus === '1'" link type="primary" icon="MagicStick" @click="handleAgent(scope.row)">AI方案</el-button>
             <el-button v-if="scope.row.orderStatus === '4'" v-hasPermi="['dms:workorder:verify']" link type="success" icon="Checked" @click="handleVerify(scope.row)">验收</el-button>
             <el-button v-if="scope.row.orderStatus === '4'" v-hasPermi="['dms:workorder:reject']" link type="danger" icon="CircleClose" @click="handleReject(scope.row)">驳回</el-button>
             <el-button v-if="scope.row.orderStatus === '0' || scope.row.orderStatus === '1'" v-hasPermi="['dms:workorder:cancel']" link type="info" icon="RefreshLeft" @click="handleCancel(scope.row)">撤销</el-button>
@@ -568,7 +569,10 @@
           </div>
           <div class="rd-card-body" v-show="!collapsedCards.cp_other">
             <el-row>
-              <el-col :span="24"><el-form-item label="完工说明" required><el-input v-model="completeForm.completeRemark" type="textarea" :rows="2" placeholder="请输入完工说明" /></el-form-item></el-col>
+              <el-col :span="24"><el-form-item label="完工说明" required>
+              <el-input v-model="completeForm.completeRemark" type="textarea" :rows="4" placeholder="请输入完工说明，或点击AI生成草稿后确认修改" />
+              <AiAssistButton button-text="AI生成完工报告" button-type="success" size="small" :api="aiCompleteReport" :params="[completeForm.orderId]" @result="onCompleteReport" style="margin-top: 4px" />
+            </el-form-item></el-col>
               <el-col :span="24" v-if="completeForm.orderType === '1'"><el-form-item label="偏差原因"><el-input v-model="completeForm.deviationReason" type="textarea" :rows="2" placeholder="如未按计划时间完成，请说明原因（选填）" /></el-form-item></el-col>
             </el-row>
           </div>
@@ -1082,6 +1086,50 @@
         <el-button type="primary" @click="showStatusHelp = false">我知道了</el-button>
       </template>
     </el-dialog>
+    <!-- AI全流程方案弹窗（P2 Agent） -->
+    <el-dialog title="AI维修全流程方案" v-model="agentOpen" width="720px" append-to-body draggable class="rd-dialog">
+      <div v-loading="agentLoading" style="min-height: 200px">
+        <template v-if="agentData.orderNo">
+          <el-alert type="info" :closable="false" style="margin-bottom: 12px"
+            :title="'工单 ' + agentData.orderNo + '（' + (agentData.equipmentName || '-') + '）· AI建议方案，请人工确认后按既有流程操作'" />
+          <el-card shadow="never" v-if="agentData.plan && agentData.plan.parsed" style="margin-bottom: 10px">
+            <template #header><span style="font-weight:600">故障诊断</span></template>
+            <div style="font-size: 13px; line-height: 1.8; white-space: pre-wrap">{{ agentData.plan.parsed.diagnosis || '—' }}</div>
+            <div v-if="agentData.plan.parsed.possibleCauses && agentData.plan.parsed.possibleCauses.length" style="margin-top: 8px">
+              <div style="font-size: 12px; color:#909399; margin-bottom:4px">可能原因：</div>
+              <el-tag v-for="(c, i) in agentData.plan.parsed.possibleCauses" :key="i" size="small" style="margin: 0 4px 4px 0">{{ c }}</el-tag>
+            </div>
+          </el-card>
+          <el-card shadow="never" v-if="agentData.plan && agentData.plan.parsed" style="margin-bottom: 10px">
+            <template #header><span style="font-weight:600">排查步骤与备件清单</span></template>
+            <ol v-if="agentData.plan.parsed.checkSteps" style="font-size: 13px; line-height: 2; margin: 0 0 8px 0; padding-left: 20px">
+              <li v-for="(s, i) in agentData.plan.parsed.checkSteps" :key="i">{{ s }}</li>
+            </ol>
+            <div v-if="agentData.plan.parsed.spareparts && agentData.plan.parsed.spareparts.length" style="font-size: 13px">
+              <span style="color:#909399">备件清单：</span>
+              <el-tag v-for="(p, i) in agentData.plan.parsed.spareparts" :key="i" size="small" type="warning" style="margin: 0 4px 4px 0">{{ p }}</el-tag>
+            </div>
+            <div v-if="agentData.plan.parsed.safetyNotes" style="margin-top: 8px; font-size: 12px; color: #e6a23c">
+              ⚠ 安全注意：{{ agentData.plan.parsed.safetyNotes }}
+            </div>
+          </el-card>
+          <el-card shadow="never" v-if="agentData.dispatch" style="margin-bottom: 10px">
+            <template #header><span style="font-weight:600">派工推荐</span></template>
+            <div v-if="agentData.dispatch.recommendations && agentData.dispatch.recommendations.length" style="font-size: 13px">
+              <div v-for="(rec, i) in agentData.dispatch.recommendations" :key="i" style="padding: 4px 0">
+                {{ i + 1 }}. {{ rec.repairerName || rec.userName || '-' }} —— 综合评分 {{ rec.score || '-' }}
+              </div>
+            </div>
+            <div v-else style="color: #909399; font-size: 13px">{{ agentData.dispatch.tip || '暂无推荐' }}</div>
+          </el-card>
+          <el-alert v-if="agentData.plan && agentData.plan.error" :title="'AI方案生成失败：' + agentData.plan.error" type="error" :closable="false" />
+        </template>
+      </div>
+      <template #footer>
+        <el-button type="primary" @click="agentOpen = false">知道了</el-button>
+      </template>
+    </el-dialog>
+
 
 <user-picker ref="userPickerRef" title="选择人员" @confirm="onUserPickerConfirm" />
 <equipment-picker ref="equipmentPickerRef" title="选择设备" @confirm="onEquipmentPickerConfirm" />
@@ -1094,6 +1142,9 @@ import { listWorkorder, getWorkorder, addWorkorder, updateWorkorder, delWorkorde
   dispatchWorkorder, reassignWorkorder, acceptWorkorder, processWorkorder,
   completeWorkorder, verifyWorkorder, rejectWorkorder, cancelWorkorder, getWorkorderLog, countWorkorderStatus } from '@/api/dms/workorder'
 import { repairAssistant, dispatchRecommend } from '@/api/dms/ai'
+import { aiCompleteReport } from '@/api/ai/assist'
+import { aiWorkorderAgent } from '@/api/ai/manage'
+import AiAssistButton from '@/components/AiAssist/AiAssistButton.vue'
 import { listUser } from '@/api/system/user'
 import { listSparepart } from '@/api/dms/sparepart'
 import UserPicker from '@/components/UserPicker/index.vue'
@@ -1529,6 +1580,16 @@ function handleComplete(row) {
   })
   completeOpen.value = true
 }
+
+// ===== AI生成完工报告（外挂式增量）：草稿预填，人工确认后保存 =====
+function onCompleteReport(d) {
+  if (d.draft) {
+    completeForm.value.completeRemark = d.draft
+    proxy.$modal.msgSuccess('AI已生成完工说明草稿，请确认后修改')
+  } else {
+    proxy.$modal.msgWarning(d.error || 'AI生成失败，请手动填写')
+  }
+}
 function submitComplete() {
   if (!completeForm.value.faultCause) { proxy.$modal.msgError('请输入故障原因'); return }
   if (!completeForm.value.repairMeasure) { proxy.$modal.msgError('请输入维修措施'); return }
@@ -1692,6 +1753,21 @@ onActivated(() => {
   getList()
   loadStatusCounts()
 })
+
+// ===== 工单全流程AI Agent（外挂式增量）：诊断→备件→派工方案，人工确认后按既有流程操作 =====
+const agentOpen = ref(false)
+const agentLoading = ref(false)
+const agentData = ref({})
+
+function handleAgent(row) {
+  agentOpen.value = true
+  agentLoading.value = true
+  agentData.value = {}
+  aiWorkorderAgent(row.orderId).then(res => {
+    agentLoading.value = false
+    agentData.value = res.data || {}
+  }).catch(() => { agentLoading.value = false })
+}
 </script>
 
 <style scoped>

@@ -1,5 +1,6 @@
 package com.ruoyi.mms.service.impl;
 
+import com.ruoyi.common.annotation.DataScope;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Date;
@@ -70,6 +71,7 @@ public class MmsDispatchServiceImpl implements IMmsDispatchService
     // ========== 标准 CRUD ==========
 
     @Override
+    @DataScope(deptAlias = "mms_dispatch")
     public List<MmsDispatch> selectDispatchList(MmsDispatch dispatch)
     {
         return dispatchMapper.selectDispatchList(dispatch);

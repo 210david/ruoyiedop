@@ -24,11 +24,12 @@
       <div class="toolbar">
         <div class="left">
           <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['mms:daily:export']">导出</el-button>
+          <AiAssistButton button-text="AI生成日报" :api="aiDailyReport" :params="[currentStatId]" :disabled="!currentStatId" @result="onDailyReport" />
         </div>
         <div class="right"><right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="mms_daily_columns" /></div>
       </div>
       <div class="table-wrap">
-        <el-table ref="tableRef" v-loading="loading" :data="dataList" border @header-dragend="onHeaderDragEnd" class="app-table">
+        <el-table ref="tableRef" v-loading="loading" :data="dataList" border highlight-current-row @current-change="onRowChange" @header-dragend="onHeaderDragEnd" class="app-table">
           <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
           <el-table-column label="生产日期" prop="statDate" key="statDate" :width="colWidth('statDate', 120)" resizable align="center" v-if="columns.statDate.visible"><template #default="scope">{{ parseTime(scope.row.statDate, '{y}-{m}-{d}') }}</template></el-table-column>
           <el-table-column label="工单数" prop="workOrderCount" key="workOrderCount" :width="colWidth('workOrderCount', 100)" resizable align="center" v-if="columns.workOrderCount.visible" />
@@ -41,8 +42,14 @@
           <el-table-column label="合格数量" prop="totalGoodQty" key="totalGoodQty" :width="colWidth('totalGoodQty', 120)" resizable align="center" v-if="columns.totalGoodQty.visible" />
           <el-table-column label="不良数量" prop="totalDefectQty" key="totalDefectQty" :width="colWidth('totalDefectQty', 120)" resizable align="center" v-if="columns.totalDefectQty.visible" />
           <el-table-column label="报工次数" prop="reportCount" key="reportCount" :width="colWidth('reportCount', 100)" resizable align="center" v-if="columns.reportCount.visible" />
+          <el-table-column label="AI日报" width="110" align="center" fixed="right">
+            <template #default="scope">
+              <AiAssistButton button-text="生成" size="small" button-type="primary" :api="aiDailyReport" :params="[scope.row.statId]" @result="d => onDailyReport(d, scope.row)" />
+            </template>
+          </el-table-column>
         </el-table>
       </div>
+      <AiResultPanel :visible="dailyReportVisible" :content="dailyReportText" :latency-ms="dailyReportLatency" @close="dailyReportVisible = false" />
       <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
     </div>
 
@@ -90,6 +97,9 @@
 </template>
 <script setup name="Daily">
 import { listDaily } from "@/api/mms/daily";
+import { aiDailyReport } from '@/api/ai/assist'
+import AiAssistButton from '@/components/AiAssist/AiAssistButton.vue'
+import AiResultPanel from '@/components/AiAssist/AiResultPanel.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { Filter, RefreshLeft, QuestionFilled } from '@element-plus/icons-vue'
 const { proxy } = getCurrentInstance();
@@ -113,6 +123,20 @@ function getList() { loading.value = true; listDaily(proxy.addDateRange(queryPar
 function handleQuery() { queryParams.value.pageNum = 1; getList(); }
 function resetQuery() { dateRange.value = []; handleQuery(); }
 function handleExport() { proxy.download("mms/daily/export", { ...queryParams.value }, `daily_${new Date().getTime()}.xlsx`); }
+
+// ===== AI生成日报（外挂式增量） =====
+const dailyReportVisible = ref(false)
+const dailyReportText = ref('')
+const dailyReportLatency = ref(0)
+const currentStatId = ref(null)
+
+function onRowChange(row) { currentStatId.value = row ? row.statId : null }
+
+function onDailyReport(d, row) {
+  dailyReportText.value = (row ? '【' + (row.statDate || '') + ' 生产日报】\n\n' : '') + (d.content || d.error || 'AI未返回内容')
+  dailyReportLatency.value = d.latencyMs || 0
+  dailyReportVisible.value = true
+}
 getList();
 </script>
 <style scoped>

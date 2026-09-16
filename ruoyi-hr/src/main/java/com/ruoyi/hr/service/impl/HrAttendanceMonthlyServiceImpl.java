@@ -1,5 +1,6 @@
 package com.ruoyi.hr.service.impl;
 
+import com.ruoyi.common.annotation.DataScope;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
@@ -90,6 +91,7 @@ public class HrAttendanceMonthlyServiceImpl implements IHrAttendanceMonthlyServi
     public HrAttendanceMonthly selectHrAttendanceMonthlyById(Long monthlyId) { return hrAttendanceMonthlyMapper.selectHrAttendanceMonthlyById(monthlyId); }
 
     @Override
+    @DataScope(deptAlias = "t")
     public List<HrAttendanceMonthly> selectHrAttendanceMonthlyList(HrAttendanceMonthly hrAttendanceMonthly) { return hrAttendanceMonthlyMapper.selectHrAttendanceMonthlyList(hrAttendanceMonthly); }
 
     @Override

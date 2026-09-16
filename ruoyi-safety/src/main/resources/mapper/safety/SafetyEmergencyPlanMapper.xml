@@ -46,7 +46,8 @@
             <if test="regNo != null and regNo != ''"> AND reg_no LIKE CONCAT('%', #{regNo}, '%')</if>
             <if test="params.beginEffectiveDate != null and params.beginEffectiveDate != ''"> AND effective_date &gt;= #{params.beginEffectiveDate}</if>
             <if test="params.endEffectiveDate != null and params.endEffectiveDate != ''"> AND effective_date &lt;= #{params.endEffectiveDate}</if>
-        </where>
+                  <if test="params.dataScope != null and params.dataScope != ''">${params.dataScope}</if>
+</where>
         ORDER BY create_time DESC
     </select>
 

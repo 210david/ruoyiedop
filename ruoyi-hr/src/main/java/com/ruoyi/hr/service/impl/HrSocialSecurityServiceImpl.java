@@ -1,5 +1,6 @@
 package com.ruoyi.hr.service.impl;
 
+import com.ruoyi.common.annotation.DataScope;
 import java.math.BigDecimal;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +26,7 @@ public class HrSocialSecurityServiceImpl implements IHrSocialSecurityService
     public HrSocialSecurity selectHrSocialSecurityById(Long ssId) { return hrSocialSecurityMapper.selectHrSocialSecurityById(ssId); }
 
     @Override
+    @DataScope(deptAlias = "biz_hr_social_security")
     public List<HrSocialSecurity> selectHrSocialSecurityList(HrSocialSecurity hrSocialSecurity) { return hrSocialSecurityMapper.selectHrSocialSecurityList(hrSocialSecurity); }
 
     @Override

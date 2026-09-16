@@ -1,5 +1,6 @@
 package com.ruoyi.mms.service.impl;
 
+import com.ruoyi.common.annotation.DataScope;
 import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
@@ -57,6 +58,7 @@ public class MmsMpsServiceImpl implements IMmsMpsService
     // ========== 标准 CRUD ==========
 
     @Override
+    @DataScope(deptAlias = "mms_mps")
     public List<MmsMps> selectMpsList(MmsMps mps)
     {
         return mpsMapper.selectMpsList(mps);

@@ -1,5 +1,6 @@
 package com.ruoyi.wms.service.impl;
 
+import com.ruoyi.common.annotation.DataScope;
 import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
@@ -37,6 +38,7 @@ public class WmsMoveOrderServiceImpl implements IWmsMoveOrderService
     private MessageHelper messageHelper;
 
     @Override
+    @DataScope(deptAlias = "wms_move_order")
     public List<WmsMoveOrder> selectMoveOrderList(WmsMoveOrder move)
     {
         return wmsMoveOrderMapper.selectMoveOrderList(move);

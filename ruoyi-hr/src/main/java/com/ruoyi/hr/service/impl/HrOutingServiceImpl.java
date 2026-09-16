@@ -1,5 +1,6 @@
 package com.ruoyi.hr.service.impl;
 
+import com.ruoyi.common.annotation.DataScope;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -53,6 +54,7 @@ public class HrOutingServiceImpl implements IHrOutingService
     }
 
     @Override
+    @DataScope(deptAlias = "biz_hr_outing")
     public List<HrOuting> selectHrOutingList(HrOuting hrOuting) { return hrOutingMapper.selectHrOutingList(hrOuting); }
 
     @Override

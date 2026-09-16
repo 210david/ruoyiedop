@@ -1,5 +1,6 @@
 package com.ruoyi.qms.service.impl;
 
+import com.ruoyi.common.annotation.DataScope;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -22,6 +23,7 @@ public class QmsComplaintServiceImpl implements IQmsComplaintService {
     private IMkNumberRuleService mkNumberRuleService;
 
     @Override
+    @DataScope(deptAlias = "qms_complaint")
     public List<QmsComplaint> selectComplaintList(QmsComplaint complaint) { return mapper.selectComplaintList(complaint); }
     @Override
     public QmsComplaint selectComplaintById(Long complaintId) { return mapper.selectComplaintById(complaintId); }

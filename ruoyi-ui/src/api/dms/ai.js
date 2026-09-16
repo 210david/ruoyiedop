@@ -27,3 +27,7 @@ export function dispatchRecommend(orderId) {
 export function knowledgeQA(question) {
   return request({ url: '/dms/ai/knowledgeQA', method: 'post', data: { question } })
 }
+// 从完工工单AI自动生成FAQ（待人工审核）
+export function generateFaqFromOrders(limit = 8) {
+  return request({ url: '/dms/ai/faq/generate', method: 'post', data: { limit } })
+}

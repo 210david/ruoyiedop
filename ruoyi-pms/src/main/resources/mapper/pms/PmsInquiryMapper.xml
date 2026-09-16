@@ -80,7 +80,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 AND i.award_supplier_name like concat('%', #{awardSupplierName}, '%')
             </if>
             AND i.del_flag = '0'
-        </where>
+                  <if test="params.dataScope != null and params.dataScope != ''">${params.dataScope}</if>
+</where>
         order by i.create_time desc
     </select>
 

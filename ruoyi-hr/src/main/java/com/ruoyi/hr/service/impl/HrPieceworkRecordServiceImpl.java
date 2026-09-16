@@ -1,5 +1,6 @@
 package com.ruoyi.hr.service.impl;
 
+import com.ruoyi.common.annotation.DataScope;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -22,6 +23,7 @@ public class HrPieceworkRecordServiceImpl implements IHrPieceworkRecordService
     public HrPieceworkRecord selectHrPieceworkRecordById(Long pwRecordId) { return hrPieceworkRecordMapper.selectHrPieceworkRecordById(pwRecordId); }
 
     @Override
+    @DataScope(deptAlias = "biz_hr_piecework_record")
     public List<HrPieceworkRecord> selectHrPieceworkRecordList(HrPieceworkRecord hrPieceworkRecord) { return hrPieceworkRecordMapper.selectHrPieceworkRecordList(hrPieceworkRecord); }
 
     @Override

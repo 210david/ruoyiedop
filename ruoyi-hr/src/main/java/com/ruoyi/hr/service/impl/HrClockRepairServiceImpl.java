@@ -1,5 +1,6 @@
 package com.ruoyi.hr.service.impl;
 
+import com.ruoyi.common.annotation.DataScope;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -51,6 +52,7 @@ public class HrClockRepairServiceImpl implements IHrClockRepairService
     }
 
     @Override
+    @DataScope(deptAlias = "biz_hr_clock_repair")
     public List<HrClockRepair> selectHrClockRepairList(HrClockRepair hrClockRepair) { return hrClockRepairMapper.selectHrClockRepairList(hrClockRepair); }
 
     @Override

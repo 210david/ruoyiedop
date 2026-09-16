@@ -70,7 +70,8 @@
             <if test="auditRemark != null and auditRemark != ''"> AND t.audit_remark LIKE CONCAT('%', #{auditRemark}, '%')</if>
             <if test="status != null and status != ''"> AND t.status LIKE CONCAT('%', #{status}, '%')</if>
             <if test="delFlag != null and delFlag != ''"> AND t.del_flag LIKE CONCAT('%', #{delFlag}, '%')</if>
-        </where>
+                  <if test="params.dataScope != null and params.dataScope != ''">${params.dataScope}</if>
+</where>
         ORDER BY t.create_time DESC
     </select>
 

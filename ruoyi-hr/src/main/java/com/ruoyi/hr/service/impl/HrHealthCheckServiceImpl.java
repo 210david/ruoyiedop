@@ -1,5 +1,6 @@
 package com.ruoyi.hr.service.impl;
 
+import com.ruoyi.common.annotation.DataScope;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -17,6 +18,7 @@ public class HrHealthCheckServiceImpl implements IHrHealthCheckService
     public HrHealthCheck selectHrHealthCheckById(Long healthId) { return hrHealthCheckMapper.selectHrHealthCheckById(healthId); }
 
     @Override
+    @DataScope(deptAlias = "biz_hr_health_check")
     public List<HrHealthCheck> selectHrHealthCheckList(HrHealthCheck hrHealthCheck) { return hrHealthCheckMapper.selectHrHealthCheckList(hrHealthCheck); }
 
     @Override

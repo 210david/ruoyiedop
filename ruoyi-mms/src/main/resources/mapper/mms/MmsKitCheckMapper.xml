@@ -41,7 +41,8 @@
             <if test="bomNo != null and bomNo != ''"> AND b.bom_no LIKE CONCAT('%', #{bomNo}, '%')</if>
             <if test="params.beginTime != null and params.beginTime != ''"> AND date(k.create_time) &gt;= #{params.beginTime}</if>
             <if test="params.endTime != null and params.endTime != ''"> AND date(k.create_time) &lt;= #{params.endTime}</if>
-        </where>
+                  <if test="params.dataScope != null and params.dataScope != ''">${params.dataScope}</if>
+</where>
         ORDER BY k.kit_id DESC
     </select>
 

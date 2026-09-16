@@ -1,214 +1,262 @@
 <template>
   <div class="app-container sys-message-page">
-    <!-- ===== Filter Card ===== -->
-    <div class="surface filter-card" v-show="showSearch">
-      <div class="filter-head">
-        <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
-        <a class="adv-link" :class="{ 'is-open': showAdvanced }" @click.prevent="showAdvanced = !showAdvanced">
-          <span>{{ showAdvanced ? '收起' : '高级筛选' }}</span>
-          <el-icon class="chev"><ArrowDown /></el-icon>
-        </a>
-      </div>
-      <div class="filter-bar">
-        <div class="field">
-          <label>消息标题</label>
-          <div class="control">
-            <el-input v-model="queryParams.messageTitle" placeholder="请输入" clearable @keyup.enter="handleQuery" />
-          </div>
-        </div>
-        <div class="field">
-          <label>业务来源</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.bizSource" placeholder="全部" clearable @change="handleQuery">
-              <el-option v-for="dict in sys_message_biz_source" :key="dict.value" :label="dict.label" :value="dict.value" />
-            </el-select>
-          </div>
-        </div>
-        <div class="field">
-          <label>消息类型</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.messageType" placeholder="全部" clearable @change="handleQuery">
-              <el-option v-for="dict in sys_message_type" :key="dict.value" :label="dict.label" :value="dict.value" />
-            </el-select>
-          </div>
-        </div>
-        <div class="field">
-          <label>消息级别</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.messageLevel" placeholder="全部" clearable @change="handleQuery">
-              <el-option v-for="dict in sys_message_level" :key="dict.value" :label="dict.label" :value="dict.value" />
-            </el-select>
-          </div>
-        </div>
-        <div class="field" v-show="showAdvanced">
-          <label>通知时间</label>
-          <div class="control">
-            <el-date-picker v-model="dateRange" value-format="YYYY-MM-DD" type="daterange" range-separator="-" start-placeholder="开始" end-placeholder="结束" style="width: 100%" />
-          </div>
+    <!-- Page Head -->
+    <div class="page-head">
+      <div class="page-head-left">
+        <h1>消息中心</h1>
+        <div class="subtitle">
+          <span>集中处理审批提醒、业务通知、系统消息</span>
+          <span class="sep">·</span>
+          <span>由系统智能排序，最近消息优先</span>
         </div>
       </div>
-      <div class="filter-actions">
-        <div class="filter-info">
-          <el-icon><Filter /></el-icon> 已选 {{ activeFilterCount }} 个条件，支持回车快速搜索
-        </div>
-        <div class="filter-buttons">
-          <el-button icon="RefreshLeft" @click="resetQuery">重置</el-button>
-          <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-        </div>
+      <div class="page-head-right" v-if="unreadTotal > 0">
+        <span class="unread-pill">
+          <span class="dot"></span>
+          <span>{{ unreadTotal }} 条未读</span>
+        </span>
       </div>
     </div>
 
-    <!-- ===== Table Section ===== -->
-    <div class="surface">
-      <!-- Status Tabs -->
-      <div class="status-tabs">
-        <div class="tabs-track">
-          <button v-for="s in readStatusTabs" :key="s.value"
-            class="status-tab"
-            :class="[statusTabClass(s.value), { 'is-active': activeStatusTab === s.value }]"
-            @click="handleStatusTabClick(s.value)">
-            <span class="dot"></span>
-            <span>{{ s.label }}</span>
-            <span class="count">{{ statusCounts[s.value] || 0 }}</span>
+    <!-- Inbox Layout -->
+    <div class="inbox">
+      <!-- ─── 左侧：分类导航 ─── -->
+      <aside class="surface side">
+        <div class="side-head">
+          <div class="side-label">分类</div>
+          <div class="side-search">
+            <el-icon class="search-icon"><Search /></el-icon>
+            <input v-model="queryParams.messageTitle" placeholder="搜索消息标题"
+                   @keyup.enter="handleQuery" />
+          </div>
+        </div>
+        <div class="cat-list">
+          <div v-for="cat in categories" :key="cat.key"
+            class="cat" :class="[{ 'is-active': activeCategory === cat.key, 'has-hot': cat.hot }]"
+            @click="handleCategoryClick(cat.key)">
+            <span class="glyph" :style="cat.glyphStyle"><el-icon><component :is="cat.icon" /></el-icon></span>
+            <span class="name">{{ cat.label }}</span>
+            <span class="count" v-if="cat.count !== undefined">{{ cat.count }}</span>
+          </div>
+          <div class="cat-divider"></div>
+          <div class="cat" :class="{ 'is-active': activeCategory === 'read' }"
+               @click="handleCategoryClick('read')">
+            <span class="glyph glyph-gray"><el-icon><DocumentChecked /></el-icon></span>
+            <span class="name">已读消息</span>
+          </div>
+        </div>
+        <div class="side-foot">
+          <button class="side-action-btn" @click="showSettings = true">
+            <el-icon><Setting /></el-icon>
+            <span>通知设置</span>
           </button>
         </div>
-      </div>
+      </aside>
 
-      <!-- Toolbar -->
-      <div class="toolbar">
-        <div class="left">
-          <el-button type="primary" plain icon="Check" :disabled="!selectedUnreadIds.length" @click="handleBatchRead">标为已读</el-button>
+      <!-- ─── 右侧：消息列表 ─── -->
+      <section class="surface main">
+        <!-- Toolbar -->
+        <div class="main-toolbar">
+          <div class="seg">
+            <button v-for="s in readStatusTabs" :key="s.value"
+              :class="{ 'is-active': activeStatusTab === s.value }"
+              @click="handleStatusTabClick(s.value)">
+              {{ s.label }}
+              <span class="seg-count" :class="s.value === '0' ? 'seg-unread' : ''">{{ statusCounts[s.value] || 0 }}</span>
+            </button>
+          </div>
+          <div class="actions">
+            <button class="btn-soft is-outline" :disabled="!hasUnread || batchReading" @click="handleBatchReadAll">
+              <el-icon><Check /></el-icon> 标记已读
+            </button>
+            <button class="btn-soft is-outline" @click="showSearch = !showSearch">
+              <el-icon><Filter /></el-icon> 筛选
+            </button>
+          </div>
         </div>
-        <div class="right">
-          <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="sys_message_columns" />
-        </div>
-      </div>
 
-      <!-- Table -->
-      <div class="table-wrap">
-        <el-table ref="tableRef" v-loading="loading" :data="messageList" border class="app-table"
-          @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
-          <el-table-column type="selection" width="55" align="center" :selectable="canSelect" />
-          <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
-          <el-table-column label="消息ID" align="center" prop="messageId" :width="colWidth('messageId', 90)" resizable v-if="columns.messageId.visible" />
-          <el-table-column label="消息标题" align="center" :show-overflow-tooltip="true" :min-width="colWidth('messageTitle', 200)" resizable v-if="columns.messageTitle.visible">
-            <template #default="scope">
-              <a class="link-type" :class="{ 'is-handled': scope.row.bizHandled == '1' || scope.row.bizHandled === true }" style="cursor:pointer" @click="handleViewData(scope.row)">{{ scope.row.messageTitle }}</a>
-            </template>
-          </el-table-column>
-          <el-table-column label="消息类型" align="center" prop="messageType" :width="colWidth('messageType', 100)" resizable v-if="columns.messageType.visible">
-            <template #default="scope">
-              <span class="badge violet">{{ typeLabel(scope.row.messageType) }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="消息级别" align="center" prop="messageLevel" :width="colWidth('messageLevel', 100)" resizable v-if="columns.messageLevel.visible">
-            <template #default="scope">
-              <span class="badge blue">{{ levelLabel(scope.row.messageLevel) }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="业务来源" align="center" prop="bizSource" :width="colWidth('bizSource', 120)" resizable v-if="columns.bizSource.visible">
-            <template #default="scope">
-              <span class="badge amber">{{ bizSourceLabel(scope.row.bizSource) }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="状态" prop="readStatus" align="center" :width="colWidth('readStatus', 120)" resizable v-if="columns.readStatus.visible">
-            <template #default="scope">
-              <span v-if="scope.row.bizHandled == '1' || scope.row.bizHandled === true" class="badge gray"><span class="dot"></span>已处理</span>
-              <span v-else class="badge" :class="scope.row.isRead ? 'green' : 'gray'">
-                <span class="dot"></span>{{ scope.row.isRead ? '已读' : '未读' }}
-              </span>
-            </template>
-          </el-table-column>
-          <el-table-column label="通知时间" align="center" prop="createTime" :width="colWidth('createTime', 160)" resizable v-if="columns.createTime.visible">
-            <template #default="scope">
-              <span>{{ parseTime(scope.row.createTime) }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
-            <template #default="scope">
-              <div class="action-btn-row">
-                <el-button link type="primary" icon="View" @click="handleViewData(scope.row)">详情</el-button>
+        <!-- Filter Panel (collapsible) -->
+        <transition name="filter-slide">
+          <div class="filter-panel" v-show="showSearch">
+            <div class="filter-row">
+              <div class="field">
+                <label>业务来源</label>
+                <el-select v-model="queryParams.bizSource" placeholder="全部" clearable @change="handleQuery">
+                  <el-option v-for="dict in sys_message_biz_source" :key="dict.value" :label="dict.label" :value="dict.value" />
+                </el-select>
               </div>
-            </template>
-          </el-table-column>
-        </el-table>
-      </div>
+              <div class="field">
+                <label>消息类型</label>
+                <el-select v-model="queryParams.messageType" placeholder="全部" clearable @change="handleQuery">
+                  <el-option v-for="dict in sys_message_type" :key="dict.value" :label="dict.label" :value="dict.value" />
+                </el-select>
+              </div>
+              <div class="field">
+                <label>消息级别</label>
+                <el-select v-model="queryParams.messageLevel" placeholder="全部" clearable @change="handleQuery">
+                  <el-option v-for="dict in sys_message_level" :key="dict.value" :label="dict.label" :value="dict.value" />
+                </el-select>
+              </div>
+              <div class="field">
+                <label>通知时间</label>
+                <el-date-picker v-model="dateRange" value-format="YYYY-MM-DD" type="daterange"
+                  range-separator="-" start-placeholder="开始" end-placeholder="结束" style="width: 100%" />
+              </div>
+            </div>
+            <div class="filter-footer">
+              <span class="filter-info">
+                <el-icon><Filter /></el-icon> 已选 {{ activeFilterCount }} 个条件
+              </span>
+              <div class="filter-buttons">
+                <el-button icon="RefreshLeft" @click="resetQuery">重置</el-button>
+                <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+              </div>
+            </div>
+          </div>
+        </transition>
 
-      <!-- Pagination -->
-      <pagination
-        v-show="total > 0"
-        :total="total"
-        v-model:page="queryParams.pageNum"
-        v-model:limit="queryParams.pageSize"
-        @pagination="getList"
-      />
+        <!-- Message Cards -->
+        <div class="msg-list" v-loading="loading">
+          <div v-if="messageList.length === 0 && !loading" class="empty">
+            <div class="empty-pic"><el-icon><MessageBox /></el-icon></div>
+            <div class="empty-title">暂无消息</div>
+            <div class="empty-hint">当前分类下没有消息记录</div>
+          </div>
+
+          <article v-for="msg in messageList" :key="msg.messageId"
+            class="msg" :class="[msgKindClass(msg), { 'is-unread': !msg.isRead && msg.bizHandled != '1' && msg.bizHandled !== true }]"
+            @click="handleViewData(msg)">
+            <span class="accent"></span>
+            <div class="msg-inner">
+              <div class="ic"><el-icon><component :is="msgIcon(msg)" /></el-icon></div>
+              <div class="body">
+                <div class="meta">
+                  <span class="tag">{{ typeLabel(msg.messageType) }}</span>
+                  <span v-if="msg.bizSource" class="biz-source">{{ bizSourceLabel(msg.bizSource) }}</span>
+                  <span class="dot-sep" v-if="msg.bizSource"></span>
+                  <span v-if="msg.bizId" class="biz-id">单据 #{{ msg.bizId }}</span>
+                  <span class="dot-sep" v-if="msg.bizEntryName"></span>
+                  <span v-if="msg.bizEntryName" class="biz-entry">{{ msg.bizEntryName }}</span>
+                </div>
+                <div class="title" :class="{ 'is-handled': msg.bizHandled == '1' || msg.bizHandled === true }">
+                  {{ msg.messageTitle }}
+                </div>
+                <div class="desc" v-if="msg.messageContent">
+                  <span v-if="msg.bizHandled == '1' || msg.bizHandled === true" class="handled-tag">已处理</span>
+                  <span v-if="msg.bizHandled == '1' || msg.bizHandled === true" class="desc-sep">·</span>
+                  <span class="level-badge" :class="levelClass(msg.messageLevel)">{{ levelLabel(msg.messageLevel) }}</span>
+                </div>
+              </div>
+              <div class="side-actions">
+                <span class="time">{{ formatTime(msg.createTime) }}</span>
+                <div class="row-actions">
+                  <button v-if="msg.redirectUrl" class="is-primary" @click.stop="handleViewData(msg)">
+                    <el-icon><View /></el-icon> 查看
+                  </button>
+                  <button v-else @click.stop="handleViewData(msg)">
+                    <el-icon><View /></el-icon> 详情
+                  </button>
+                  <button v-if="!msg.isRead && msg.bizHandled != '1' && msg.bizHandled !== true"
+                    class="is-ghost" title="标为已读" @click.stop="handleMarkRead(msg)">
+                    <el-icon><Check /></el-icon>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <!-- Pagination -->
+        <div class="pager" v-show="total > 0">
+          <pagination
+            :total="total"
+            v-model:page="queryParams.pageNum"
+            v-model:limit="queryParams.pageSize"
+            @pagination="getList"
+          />
+        </div>
+      </section>
     </div>
 
     <!-- 消息详情弹窗 -->
     <message-detail-view ref="messageViewRef" @read="onMessageRead" />
+
+    <!-- 通知设置弹窗 -->
+    <el-dialog v-model="showSettings" title="通知设置" width="520px" append-to-body>
+      <div class="settings-body">
+        <div class="setting-row" v-for="item in settingItems" :key="item.key">
+          <div class="setting-info">
+            <div class="setting-name">{{ item.name }}</div>
+            <div class="setting-desc">{{ item.desc }}</div>
+          </div>
+          <el-switch v-model="item.enabled" />
+        </div>
+      </div>
+      <template #footer>
+        <el-button @click="showSettings = false">取 消</el-button>
+        <el-button type="primary" @click="handleSaveSettings">保 存</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup name="Message">
 import MessageDetailView from "./DetailView"
-import { listMessage, markMessageReadAll } from "@/api/system/message"
+import { listMessage } from "@/api/system/message"
 import { useMessageStore } from '@/store/modules/message'
-import { useColumnResize } from '@/composables/useColumnResize'
-import { Filter, ArrowDown } from '@element-plus/icons-vue'
+import { Filter, Search, Check, View, DocumentChecked, MessageBox,
+  WarningFilled, Bell, Tickets, Files, Memo, Setting } from '@element-plus/icons-vue'
+import { parseTime } from '@/utils/ruoyi'
 
 const messageStore = useMessageStore()
-
-const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('sys_message_index')
 
 const { proxy } = getCurrentInstance()
 const { sys_message_type, sys_message_level, sys_message_biz_source } = useDict("sys_message_type", "sys_message_level", "sys_message_biz_source")
 
 const messageList = ref([])
 const loading = ref(true)
-const showSearch = ref(true)
-const showAdvanced = ref(false)
+const showSearch = ref(false)
+const showSettings = ref(false)
 const total = ref(0)
 const dateRange = ref([])
 const activeStatusTab = ref('0')
 const statusCounts = ref({})
-const selectedRows = ref([])
+const activeCategory = ref('all')
+const unreadTotal = ref(0)
+const batchReading = ref(false)
 
-// 阅读状态页签（只有未读和已读，没有全部）
+// 通知设置项
+const settingItems = ref([
+  { key: 'system', name: '系统通知', desc: '系统升级、维护等重要通知', enabled: true },
+  { key: 'alert', name: '业务预警', desc: '库存不足、订单异常等预警消息', enabled: true },
+  { key: 'audit', name: '审批消息', desc: '待审批、审批结果等消息提醒', enabled: true },
+  { key: 'todo', name: '待办事项', desc: '任务分配、到期提醒等待办消息', enabled: true },
+  { key: 'email', name: '邮件通知', desc: '同步发送邮件到您的邮箱', enabled: false },
+])
+
+/** 保存通知设置 */
+function handleSaveSettings() {
+  showSettings.value = false
+  proxy.$modal.msgSuccess('通知设置已保存')
+}
+
+// 阅读状态页签
 const readStatusTabs = [
   { label: '未读', value: '0' },
   { label: '已读', value: '1' }
 ]
 
-// 列显隐配置
-const defaultColumns = {
-  messageId: { label: '消息ID', visible: true },
-  messageTitle: { label: '消息标题', visible: true },
-  messageType: { label: '消息类型', visible: true },
-  messageLevel: { label: '消息级别', visible: true },
-  bizSource: { label: '业务来源', visible: true },
-  readStatus: { label: '阅读状态', visible: true },
-  createTime: { label: '通知时间', visible: true }
-}
+// 分类导航 — 从后端独立查询各类型未读数，不依赖当前页数据
+const catCounts = ref({})
+const categories = computed(() => [
+  { key: 'all', label: '全部消息', icon: Files, glyphStyle: '', count: catCounts.value.total || 0 },
+  { key: '1', label: '系统通知', icon: Bell, glyphStyle: 'background:var(--green-50); color:var(--green-700);', count: catCounts.value['1'] || 0, hot: (catCounts.value['1'] || 0) > 0 },
+  { key: '2', label: '业务预警', icon: WarningFilled, glyphStyle: 'background:var(--red-50); color:var(--red-700);', count: catCounts.value['2'] || 0, hot: (catCounts.value['2'] || 0) > 0 },
+  { key: '3', label: '审批消息', icon: Memo, glyphStyle: 'background:var(--amber-50); color:var(--amber-700);', count: catCounts.value['3'] || 0, hot: (catCounts.value['3'] || 0) > 0 },
+  { key: '4', label: '待办事项', icon: Tickets, glyphStyle: 'background:var(--blue-50); color:var(--blue-700);', count: catCounts.value['4'] || 0, hot: (catCounts.value['4'] || 0) > 0 },
+])
 
-function loadColumnVisibility() {
-  try {
-    const saved = localStorage.getItem('sys_message_columns')
-    if (saved) {
-      const parsed = JSON.parse(saved)
-      const result = {}
-      Object.keys(defaultColumns).forEach(key => {
-        result[key] = {
-          label: defaultColumns[key].label,
-          visible: parsed[key] !== undefined ? parsed[key] : defaultColumns[key].visible
-        }
-      })
-      return result
-    }
-  } catch (e) {}
-  return { ...defaultColumns }
-}
-
-const columns = ref(loadColumnVisibility())
+const hasUnread = computed(() => (catCounts.value.total || 0) > 0)
 
 const data = reactive({
   queryParams: {
@@ -234,25 +282,30 @@ const activeFilterCount = computed(() => {
   return count
 })
 
-// 选中的未读消息ID（排除已处理的消息）
-const selectedUnreadIds = computed(() => {
-  return selectedRows.value.filter(r => !r.isRead && r.bizHandled != '1' && r.bizHandled !== true).map(r => r.messageId)
-})
-
-/** 状态页签样式映射 */
-function statusTabClass(value) {
-  const map = { '0': 'tab-unread', '1': 'tab-read' }
-  return map[value] || ''
+/** 消息类型对应的图标 */
+function msgIcon(msg) {
+  const map = { '1': Bell, '2': WarningFilled, '3': Memo, '4': Tickets }
+  return map[msg.messageType] || MessageBox
 }
 
-/** 字典label查询函数 */
+/** 消息类型对应的数据属性 (用于配色) */
+function msgKindClass(msg) {
+  const map = { '1': 'kind-system', '2': 'kind-alert', '3': 'kind-audit', '4': 'kind-todo' }
+  return map[msg.messageType] || 'kind-system'
+}
+
+/** 字典label查询 */
 function typeLabel(value) {
   const item = sys_message_type.value.find(d => d.value == value)
-  return item ? item.label : '-'
+  return item ? item.label : '消息'
 }
 function levelLabel(value) {
   const item = sys_message_level.value.find(d => d.value == value)
-  return item ? item.label : '-'
+  return item ? item.label : '普通'
+}
+function levelClass(value) {
+  const map = { '1': 'level-normal', '2': 'level-important', '3': 'level-urgent' }
+  return map[value] || 'level-normal'
 }
 function bizSourceLabel(value) {
   if (!value) return '-'
@@ -260,9 +313,40 @@ function bizSourceLabel(value) {
   return item ? item.label : value
 }
 
-/** 只有未读消息可以勾选 */
-function canSelect(row) {
-  return !row.isRead
+/** 格式化时间 */
+function formatTime(time) {
+  if (!time) return ''
+  const date = new Date(time)
+  const now = new Date()
+  const diff = now - date
+  const minutes = Math.floor(diff / 60000)
+  const hours = Math.floor(diff / 3600000)
+  const days = Math.floor(diff / 86400000)
+  if (minutes < 1) return '刚刚'
+  if (minutes < 60) return `${minutes} 分钟前`
+  if (hours < 24) return `${hours} 小时前`
+  if (days < 7) return `${days} 天前`
+  return parseTime(time, '{y}-{m}-{d}')
+}
+
+/** 分类点击 */
+function handleCategoryClick(key) {
+  activeCategory.value = key
+  if (key === 'all') {
+    queryParams.value.messageType = undefined
+    queryParams.value.readStatus = '0'
+    activeStatusTab.value = '0'
+  } else if (key === 'read') {
+    queryParams.value.messageType = undefined
+    queryParams.value.readStatus = '1'
+    activeStatusTab.value = '1'
+  } else {
+    queryParams.value.messageType = key
+    queryParams.value.readStatus = '0'
+    activeStatusTab.value = '0'
+  }
+  queryParams.value.pageNum = 1
+  getList()
 }
 
 /** 查询消息列表 */
@@ -272,39 +356,60 @@ function getList() {
     messageList.value = response.rows
     total.value = response.total
     loading.value = false
-    nextTick(() => { applySavedWidths() })
     loadStatusCounts()
   }).catch(() => {
     loading.value = false
   })
 }
 
-/** 加载状态页签数量统计（并行请求，只取total不取数据） */
+/** 加载状态页签数量统计 + 各分类未读数 */
 function loadStatusCounts() {
-  const baseQuery = { pageNum: 1, pageSize: 1 }
-  if (queryParams.value.messageTitle) baseQuery.messageTitle = queryParams.value.messageTitle
-  if (queryParams.value.messageType) baseQuery.messageType = queryParams.value.messageType
-  if (queryParams.value.messageLevel) baseQuery.messageLevel = queryParams.value.messageLevel
-  if (queryParams.value.bizSource) baseQuery.bizSource = queryParams.value.bizSource
-  // 并行查未读和已读数量
-  const unreadQuery = { ...baseQuery, readStatus: '0' }
-  const readQuery = { ...baseQuery, readStatus: '1' }
+  // 全局基类查询（不含 messageType 和 readStatus）
+  const globalBase = { pageNum: 1, pageSize: 1 }
+  if (queryParams.value.messageTitle) globalBase.messageTitle = queryParams.value.messageTitle
+  if (queryParams.value.messageLevel) globalBase.messageLevel = queryParams.value.messageLevel
+  if (queryParams.value.bizSource) globalBase.bizSource = queryParams.value.bizSource
+
+  // 当前分类下的已读/未读统计（带 messageType 筛选）
+  const currentBase = { ...globalBase }
+  if (activeCategory.value !== 'all' && activeCategory.value !== 'read' && activeCategory.value) {
+    currentBase.messageType = activeCategory.value
+  }
+  const currentUnreadQuery = { ...currentBase, readStatus: '0' }
+  const currentReadQuery = { ...currentBase, readStatus: '1' }
+
+  // 全局各类型未读数（不受当前 messageType 筛选影响）
+  const typeQueries = ['1', '2', '3', '4'].map(t =>
+    listMessage(proxy.addDateRange({ ...globalBase, messageType: t, readStatus: '0' }, dateRange.value))
+  )
+
   Promise.all([
-    listMessage(proxy.addDateRange(unreadQuery, dateRange.value)),
-    listMessage(proxy.addDateRange(readQuery, dateRange.value))
-  ]).then(([res1, res2]) => {
+    listMessage(proxy.addDateRange(currentUnreadQuery, dateRange.value)),
+    listMessage(proxy.addDateRange(currentReadQuery, dateRange.value)),
+    ...typeQueries
+  ]).then(([res1, res2, t1, t2, t3, t4]) => {
+    // 顶部已读/未读统计 — 反映当前分类筛选
     statusCounts.value = { '0': res1.total, '1': res2.total }
+    // 左侧各分类未读数 — 全局独立统计
+    catCounts.value = {
+      total: (t1.total || 0) + (t2.total || 0) + (t3.total || 0) + (t4.total || 0),
+      '1': t1.total,
+      '2': t2.total,
+      '3': t3.total,
+      '4': t4.total
+    }
+    unreadTotal.value = catCounts.value.total
   }).catch(() => {})
 }
 
-/** 搜索按钮操作 */
+/** 搜索 */
 function handleQuery() {
-  showAdvanced.value = false
+  showSearch.value = false
   queryParams.value.pageNum = 1
   getList()
 }
 
-/** 重置按钮操作 */
+/** 重置 */
 function resetQuery() {
   dateRange.value = []
   queryParams.value.messageTitle = undefined
@@ -312,6 +417,7 @@ function resetQuery() {
   queryParams.value.messageType = undefined
   queryParams.value.messageLevel = undefined
   queryParams.value.params = {}
+  activeCategory.value = 'all'
   handleQuery()
 }
 
@@ -323,41 +429,46 @@ function handleStatusTabClick(value) {
   getList()
 }
 
-/** 多选框选中数据 */
-function handleSelectionChange(selection) {
-  selectedRows.value = selection
-}
-
-/** 批量已读 */
-function handleBatchRead() {
-  const ids = selectedUnreadIds.value
-  if (!ids.length) return
+/** 批量标记已读 — 仅标记当前筛选结果中的未读消息 */
+function handleBatchReadAll() {
+  const ids = messageList.value.filter(m => !m.isRead).map(m => m.messageId)
+  if (!ids.length) {
+    proxy.$modal.msgWarning('当前列表没有未读消息')
+    return
+  }
+  batchReading.value = true
   messageStore.markReadAll(ids.join(',')).then(() => {
-    proxy.$modal.msgSuccess('标记成功')
-    // 从后端重新拉取铃铛未读数，确保 HeaderNotice 的数字实时更新
+    proxy.$modal.msgSuccess(`已标记 ${ids.length} 条消息为已读`)
     messageStore.loadNoticeTop()
     getList()
+  }).finally(() => {
+    batchReading.value = false
   })
 }
 
-/** 查看消息详情（查看后自动标记为已读） */
+/** 单条标记已读 */
+function handleMarkRead(row) {
+  if (!row.messageId) return
+  messageStore.markRead(row.messageId).then(() => {
+    row.isRead = true
+    loadStatusCounts()
+    messageStore.loadNoticeTop()
+  })
+}
+
+/** 查看消息详情 */
 function handleViewData(row) {
   proxy.$refs["messageViewRef"].open(row)
 }
 
 /** 详情弹窗标记已读后的回调 */
 function onMessageRead(messageId) {
-  // DetailView 已经通过 store.markRead 标记了已读，这里不需要重复调用
-  // 只做本地列表状态更新和计数刷新
   const item = messageList.value.find(m => m.messageId === messageId)
   if (item) {
     item.isRead = true
   }
-  // 刷新页签计数
   loadStatusCounts()
-  // 从后端重新拉取铃铛未读数，确保 HeaderNotice 的数字实时更新
   messageStore.loadNoticeTop()
-  // 如果当前在未读页签，延迟刷新列表让该消息消失
   if (activeStatusTab.value === '0') {
     setTimeout(() => getList(), 300)
   }
@@ -379,148 +490,462 @@ getList()
   --violet-50:#f5f3ff; --violet-500:#8b5cf6;
   --r-sm:6px; --r-md:10px; --r-lg:14px;
   --shadow-card:0 1px 0 rgba(15,23,42,.04), 0 1px 2px rgba(15,23,42,.04);
+  --shadow-pop:0 12px 32px -8px rgba(15,23,42,.18), 0 2px 6px rgba(15,23,42,.06);
   --ease-out:cubic-bezier(.16,.84,.44,1);
   font-feature-settings:"tnum" 1;
   color: var(--ink-900);
 }
 
-/* ===== Surface Card ===== */
-.sys-message-page .surface { background:#fff; border:1px solid var(--ink-200); border-radius:var(--r-lg); box-shadow:var(--shadow-card); overflow:hidden; margin-bottom:8px; }
-
-/* ===== Filter Card ===== */
-.sys-message-page .filter-card { padding:14px 20px 16px; }
-.sys-message-page .filter-card .filter-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
-.sys-message-page .filter-card .filter-title { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--ink-700); }
-.sys-message-page .filter-card .filter-title .glyph { width:4px; height:14px; background:var(--brand-600); border-radius:2px; }
-.sys-message-page .filter-card .adv-link { font-size:14px; color:var(--ink-500); text-decoration:none; display:flex; align-items:center; gap:4px; transition:color .15s; cursor:pointer; }
-.sys-message-page .filter-card .adv-link:hover { color:var(--brand-600); }
-.sys-message-page .filter-card .adv-link .chev { transition:transform .2s var(--ease-out); }
-.sys-message-page .filter-card .adv-link.is-open .chev { transform:rotate(180deg); }
-.sys-message-page .filter-card .filter-bar { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px 16px; }
-.sys-message-page .filter-card .filter-actions { display:flex; align-items:center; justify-content:space-between; margin-top:14px; padding-top:14px; border-top:1px dashed var(--ink-200); }
-.sys-message-page .filter-card .filter-info { font-size:13px; color:var(--ink-500); display:flex; align-items:center; gap:6px; }
-.sys-message-page .filter-card .filter-buttons { display:flex; gap:8px; }
-
-/* ===== Form Field ===== */
-.sys-message-page .field { display:flex; flex-direction:column; gap:6px; }
-.sys-message-page .field label { font-size:14px; font-weight:500; color:var(--ink-700); display:flex; align-items:center; gap:6px; }
-.sys-message-page .field .control { display:flex; align-items:center; height:36px; padding:0 12px; background:#fff; border:1px solid var(--ink-200); border-radius:var(--r-sm); transition:border-color .15s var(--ease-out), box-shadow .15s var(--ease-out); }
-.sys-message-page .field .control:focus-within { border-color:var(--brand-500); box-shadow:0 0 0 3px rgba(99,102,241,.15); }
-
-.sys-message-page .field .control :deep(.el-input__wrapper) { box-shadow:none !important; background:transparent !important; padding:0; height:34px; }
-.sys-message-page .field .control :deep(.el-input__inner) { border:0; background:transparent; font-size:14px; color:var(--ink-900); height:34px; line-height:34px; }
-.sys-message-page .field .control :deep(.el-input__inner::placeholder) { color:var(--ink-400); }
-.sys-message-page .field .control :deep(.el-input__prefix) { color:var(--ink-400); margin-right:4px; }
-.sys-message-page .field .control :deep(.el-input__prefix .el-icon) { font-size:14px; }
-
-.sys-message-page .field .control :deep(.el-select) { width:100%; }
-.sys-message-page .field .control :deep(.el-select .el-select__wrapper) { box-shadow:none !important; background:transparent !important; padding:0; min-height:34px; height:34px; }
-.sys-message-page .field .control :deep(.el-select .el-select__wrapper .el-select__placeholder) { font-size:14px; color:var(--ink-900); }
-.sys-message-page .field .control :deep(.el-select .el-select__wrapper.is-focused) { box-shadow:none !important; }
-
-.sys-message-page .field .control :deep(.el-date-editor) { width:100%; }
-.sys-message-page .field .control :deep(.el-date-editor .el-range-input) { background:transparent; border:0; font-size:14px; color:var(--ink-900); }
-.sys-message-page .field .control :deep(.el-date-editor .el-range-separator) { color:var(--ink-400); }
-.sys-message-page .field .control :deep(.el-date-editor .el-range__icon) { color:var(--ink-400); }
-
-/* ===== Status Tabs ===== */
-.sys-message-page .status-tabs {
-  display: flex; align-items: center; gap: 12px;
-  padding: 6px 10px 6px 12px;
-  border-bottom: 1px solid var(--ink-200);
-  background: #fff;
+/* ===== Page Head ===== */
+.sys-message-page .page-head {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  gap: 24px; margin-bottom: 18px;
 }
-.sys-message-page .tabs-track {
-  display: flex; align-items: center; gap: 4px;
-  flex: 1; min-width: 0; overflow-x: auto;
-  scrollbar-width: none;
+.sys-message-page .page-head h1 {
+  font-size: 26px; font-weight: 700; letter-spacing: -.02em;
+  margin: 0 0 6px; color: var(--ink-900);
 }
-.sys-message-page .tabs-track::-webkit-scrollbar { display: none; }
-.sys-message-page .status-tab {
+.sys-message-page .page-head .subtitle {
+  font-size: 13px; color: var(--ink-500);
+  display: flex; align-items: center; gap: 10px;
+}
+.sys-message-page .page-head .sep { color: var(--ink-300); }
+.sys-message-page .unread-pill {
   display: inline-flex; align-items: center; gap: 6px;
-  height: 32px; padding: 0 12px; border-radius: var(--r-sm);
-  font-size: 14px; color: var(--ink-500); cursor: pointer;
-  user-select: none; transition: all .15s var(--ease-out);
-  white-space: nowrap; border: 1px solid transparent; background: transparent;
+  height: 32px; padding: 0 14px;
+  background: var(--red-50); color: var(--red-700);
+  border: 1px solid #fecaca; border-radius: 999px;
+  font-size: 13px; font-weight: 600;
 }
-.sys-message-page .status-tab .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ink-300); }
-.sys-message-page .status-tab .count {
-  font-size: 12px; font-weight: 600; padding: 1px 6px;
-  border-radius: 999px; background: var(--ink-100); color: var(--ink-500);
-  min-width: 18px; text-align: center; line-height: 1.4; font-feature-settings: "tnum" 1;
+.sys-message-page .unread-pill .dot {
+  width: 7px; height: 7px; border-radius: 50%; background: var(--red-500);
+  box-shadow: 0 0 0 4px rgba(239,68,68,.15);
+  animation: dot-pulse 2s var(--ease-out) infinite;
 }
-.sys-message-page .status-tab:hover { background: var(--ink-50); color: var(--ink-700); }
-.sys-message-page .status-tab.is-active {
+@keyframes dot-pulse {
+  0%,100% { box-shadow: 0 0 0 4px rgba(239,68,68,.15); }
+  50%     { box-shadow: 0 0 0 8px rgba(239,68,68,0); }
+}
+
+/* ===== Surface ===== */
+.sys-message-page .surface {
+  background: #fff; border: 1px solid var(--ink-200);
+  border-radius: var(--r-lg); box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+
+/* ===== Inbox Layout ===== */
+.sys-message-page .inbox {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+/* ===== 左侧分类导航 ===== */
+.sys-message-page .side {
+  position: sticky;
+  top: 80px;
+  align-self: flex-start;
+  max-height: calc(100vh - 100px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.sys-message-page .side-head {
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid var(--ink-200);
+  background: var(--ink-50);
+}
+.sys-message-page .side-label {
+  font-size: 11px; font-weight: 600; color: var(--ink-500);
+  letter-spacing: .06em; text-transform: uppercase;
+}
+.sys-message-page .side-search {
+  display: flex; align-items: center;
+  height: 34px; padding: 0 12px; margin-top: 8px;
+  background: #fff; border: 1px solid var(--ink-200);
+  border-radius: var(--r-sm); transition: all .15s var(--ease-out);
+}
+.sys-message-page .side-search:focus-within {
+  border-color: var(--brand-500);
+  box-shadow: 0 0 0 3px rgba(99,102,241,.15);
+}
+.sys-message-page .side-search .search-icon { color: var(--ink-400); font-size: 14px; margin-right: 6px; }
+.sys-message-page .side-search input {
+  border: 0; outline: 0; background: transparent;
+  flex: 1; font-size: 13px; color: var(--ink-900);
+}
+.sys-message-page .side-search input::placeholder { color: var(--ink-400); }
+
+.sys-message-page .cat-list { padding: 8px; }
+.sys-message-page .cat {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 10px; border-radius: var(--r-sm);
+  cursor: pointer; transition: all .12s var(--ease-out);
+  position: relative; color: var(--ink-700);
+}
+.sys-message-page .cat:hover { background: var(--ink-50); }
+.sys-message-page .cat .glyph {
+  width: 26px; height: 26px; border-radius: 7px;
+  display: grid; place-items: center;
+  font-size: 13px; flex-shrink: 0;
+  background: #e2e8f0; color: #475569;
+}
+.sys-message-page .cat .glyph.glyph-gray { background: var(--ink-100); color: var(--ink-500); }
+.sys-message-page .cat .name { flex: 1; font-size: 13.5px; font-weight: 500; }
+.sys-message-page .cat .count {
+  min-width: 22px; height: 20px; padding: 0 6px;
+  border-radius: 999px;
+  background: var(--ink-100); color: var(--ink-500);
+  font-size: 11.5px; font-weight: 600;
+  display: grid; place-items: center; line-height: 1;
+}
+.sys-message-page .cat.is-active {
   background: var(--brand-50); color: var(--brand-700);
-  font-weight: 600; border-color: var(--brand-200);
 }
-.sys-message-page .status-tab.is-active .count { background: var(--brand-600); color: #fff; }
-.sys-message-page .status-tab.is-active .dot { background: var(--brand-500); }
+.sys-message-page .cat.is-active .name { font-weight: 600; }
+.sys-message-page .cat.is-active .count { background: var(--brand-600); color: #fff; }
+.sys-message-page .cat.is-active::before {
+  content: ''; position: absolute; left: -8px; top: 8px; bottom: 8px;
+  width: 3px; border-radius: 2px; background: var(--brand-600);
+}
+.sys-message-page .cat.has-hot .count { background: var(--red-500); color: #fff; }
+.sys-message-page .cat-divider { height: 1px; background: var(--ink-200); margin: 8px 12px; }
 
-/* 未读页签颜色 */
-.sys-message-page .status-tab.tab-unread .dot { background: var(--amber-500); }
-.sys-message-page .status-tab.tab-unread .count { background: var(--amber-50); color: var(--amber-700); }
-.sys-message-page .status-tab.is-active.tab-unread .count { background: var(--amber-500); color: #fff; }
+/* ===== Side Footer ===== */
+.sys-message-page .side-foot {
+  padding: 10px 12px; border-top: 1px solid var(--ink-200);
+  background: var(--ink-50);
+}
+.sys-message-page .side-action-btn {
+  width: 100%;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  height: 34px; padding: 0 12px;
+  background: #fff; border: 1px solid var(--ink-200);
+  border-radius: var(--r-sm);
+  font-size: 13px; font-weight: 500; color: var(--ink-700);
+  cursor: pointer; user-select: none;
+  transition: all .15s var(--ease-out);
+}
+.sys-message-page .side-action-btn:hover {
+  border-color: var(--brand-500); color: var(--brand-700);
+  background: var(--brand-50);
+}
+.sys-message-page .side-action-btn:disabled {
+  opacity: .5; cursor: not-allowed;
+}
+.sys-message-page .side-action-btn .el-icon { font-size: 14px; }
 
-/* 已读页签颜色 */
-.sys-message-page .status-tab.tab-read .dot { background: var(--green-500); }
-.sys-message-page .status-tab.tab-read .count { background: var(--green-50); color: var(--green-700); }
-.sys-message-page .status-tab.is-active.tab-read .count { background: var(--green-500); color: #fff; }
+/* ===== Notification Settings Dialog ===== */
+.sys-message-page .settings-body {
+  display: flex; flex-direction: column; gap: 4px;
+}
+.sys-message-page .setting-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 0; border-bottom: 1px solid var(--ink-100);
+}
+.sys-message-page .setting-row:last-child { border-bottom: 0; }
+.sys-message-page .setting-info { flex: 1; }
+.sys-message-page .setting-name { font-size: 14px; font-weight: 600; color: var(--ink-900); margin-bottom: 4px; }
+.sys-message-page .setting-desc { font-size: 12px; color: var(--ink-500); }
+
+/* ===== 右侧主区域 ===== */
+.sys-message-page .main { min-width: 0; }
 
 /* ===== Toolbar ===== */
-.sys-message-page .toolbar { display:flex; align-items:center; justify-content:space-between; padding:12px 20px; border-bottom:1px solid var(--ink-200); background:var(--ink-50); }
-.sys-message-page .toolbar .left { display:flex; gap:8px; align-items:center; }
-.sys-message-page .toolbar .right { display:flex; gap:8px; align-items:center; }
-
-/* ===== Table ===== */
-.sys-message-page .table-wrap { overflow-x:auto; }
-.sys-message-page .app-table { --el-table-bg-color:#fff; --el-table-header-bg-color:var(--ink-50); --el-table-row-hover-bg-color:#fafbff; --el-table-border-color:transparent; --el-table-text-color:var(--ink-700); --el-table-header-text-color:var(--ink-500); }
-.sys-message-page .app-table :deep(.el-table__body td) { border-right-color:transparent !important; }
-.sys-message-page .app-table :deep(.el-table__header th) { border-right-color:transparent !important; }
-.sys-message-page .app-table :deep(.el-table__header th:hover) { border-right-color:var(--ink-200) !important; }
-.sys-message-page .app-table :deep(.el-table__header th) { background:var(--ink-50) !important; color:var(--ink-500); font-weight:600; font-size:14px; letter-spacing:.02em; padding:12px 16px; border-bottom:1px solid var(--ink-200); }
-.sys-message-page .app-table :deep(.el-table__header th .cell) { text-transform:uppercase; }
-.sys-message-page .app-table :deep(.el-table__body td) { padding:14px 16px; border-bottom:1px solid var(--ink-100); color:var(--ink-700); }
-.sys-message-page .app-table :deep(.el-table__row:hover > td) { background:#fafbff !important; }
-.sys-message-page .app-table :deep(.el-table__inner-wrapper::before) { display:none; }
-.sys-message-page .app-table :deep(.el-table__border-left-patch) { display:none; }
-
-/* ===== Badge ===== */
-.sys-message-page .badge {
-  display: inline-flex; align-items: center; gap: 5px;
-  padding: 3px 9px; border-radius: 999px;
-  font-size: 13px; font-weight: 600; line-height: 1;
-  border: 1px solid transparent; white-space: nowrap;
+.sys-message-page .main-toolbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px; border-bottom: 1px solid var(--ink-200);
+  background: #fff; flex-wrap: wrap; gap: 10px;
 }
-.sys-message-page .badge .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
-.sys-message-page .badge.violet { background: var(--violet-50); color: var(--brand-700); border-color: var(--brand-200); }
-.sys-message-page .badge.blue { background: var(--blue-50); color: var(--blue-700); border-color: #bfdbfe; }
-.sys-message-page .badge.amber { background: var(--amber-50); color: var(--amber-700); border-color: #fde68a; }
-.sys-message-page .badge.green { background: var(--green-50); color: var(--green-700); border-color: #a7f3d0; }
-.sys-message-page .badge.green .dot { background: var(--green-500); }
-.sys-message-page .badge.gray { background: var(--ink-100); color: var(--ink-500); border-color: var(--ink-200); }
-.sys-message-page .badge.gray .dot { background: var(--ink-400); }
+.sys-message-page .seg {
+  display: inline-flex; background: var(--ink-100);
+  padding: 3px; border-radius: var(--r-sm);
+}
+.sys-message-page .seg button {
+  border: 0; background: transparent;
+  height: 28px; padding: 0 14px;
+  font-size: 13px; font-weight: 500; color: var(--ink-500);
+  border-radius: 4px; cursor: pointer;
+  transition: all .12s var(--ease-out);
+  display: inline-flex; align-items: center; gap: 4px;
+}
+.sys-message-page .seg button:hover { color: var(--ink-700); }
+.sys-message-page .seg button.is-active {
+  background: #fff; color: var(--ink-900);
+  box-shadow: 0 1px 2px rgba(15,23,42,.08);
+  font-weight: 600;
+}
+.sys-message-page .seg .seg-count { font-size: 11px; font-weight: 600; }
+.sys-message-page .seg .seg-unread { color: var(--red-500); }
+.sys-message-page .seg button.is-active .seg-unread { color: var(--red-500); }
+
+.sys-message-page .actions { display: flex; gap: 6px; align-items: center; }
+.sys-message-page .btn-soft {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 30px; padding: 0 12px;
+  font-size: 13px; font-weight: 500;
+  border-radius: var(--r-sm);
+  border: 1px solid transparent;
+  cursor: pointer; user-select: none;
+  transition: all .15s var(--ease-out);
+  background: #fff; color: var(--ink-700);
+}
+.sys-message-page .btn-soft .el-icon { font-size: 14px; }
+.sys-message-page .btn-soft:hover { background: var(--ink-50); }
+.sys-message-page .btn-soft.is-outline { border-color: var(--ink-200); }
+.sys-message-page .btn-soft.is-outline:hover { border-color: var(--ink-300); color: var(--ink-900); }
+.sys-message-page .btn-soft:disabled { opacity: .5; cursor: not-allowed; }
+
+/* ===== Filter Panel ===== */
+.sys-message-page .filter-panel {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--ink-200);
+  background: var(--ink-50);
+}
+.sys-message-page .filter-row {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px 16px;
+}
+.sys-message-page .field { display: flex; flex-direction: column; gap: 6px; }
+.sys-message-page .field label {
+  font-size: 13px; font-weight: 500; color: var(--ink-700);
+}
+.sys-message-page .field :deep(.el-select) { width: 100%; }
+.sys-message-page .field :deep(.el-select .el-select__wrapper) {
+  box-shadow: 0 0 0 1px var(--ink-200) inset !important;
+  border-radius: var(--r-sm);
+}
+.sys-message-page .field :deep(.el-select .el-select__wrapper.is-focused) {
+  box-shadow: 0 0 0 1px var(--brand-500) inset !important;
+}
+.sys-message-page .field :deep(.el-date-editor) { width: 100%; }
+.sys-message-page .field :deep(.el-date-editor .el-range-input) { font-size: 13px; }
+.sys-message-page .filter-footer {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--ink-200);
+}
+.sys-message-page .filter-info {
+  font-size: 12px; color: var(--ink-500);
+  display: flex; align-items: center; gap: 6px;
+}
+.sys-message-page .filter-buttons { display: flex; gap: 8px; }
+
+.filter-slide-enter-active, .filter-slide-leave-active {
+  transition: all .2s var(--ease-out);
+  overflow: hidden;
+}
+.filter-slide-enter-from, .filter-slide-leave-to {
+  opacity: 0; max-height: 0; padding-top: 0; padding-bottom: 0;
+}
+.filter-slide-enter-to, .filter-slide-leave-from {
+  opacity: 1; max-height: 300px;
+}
+
+/* ===== 消息卡片列表 ===== */
+.sys-message-page .msg-list {
+  padding: 12px; display: flex; flex-direction: column; gap: 8px;
+  min-height: 300px;
+}
+
+.sys-message-page .msg {
+  position: relative; background: #fff;
+  border: 1px solid var(--ink-200);
+  border-radius: var(--r-md);
+  transition: all .15s var(--ease-out);
+  overflow: hidden; cursor: pointer;
+}
+.sys-message-page .msg:hover {
+  border-color: var(--ink-300);
+  box-shadow: 0 6px 16px -8px rgba(15,23,42,.18);
+  transform: translateY(-1px);
+}
+.sys-message-page .msg .accent {
+  position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+  background: var(--ink-200); transition: background .15s;
+}
+.sys-message-page .msg-inner {
+  padding: 14px 16px 14px 18px;
+  display: grid;
+  grid-template-columns: 36px 1fr auto;
+  gap: 14px; align-items: flex-start;
+}
+.sys-message-page .msg .ic {
+  width: 36px; height: 36px; border-radius: 9px;
+  display: grid; place-items: center;
+  font-size: 16px; flex-shrink: 0;
+}
+.sys-message-page .msg .body { min-width: 0; }
+.sys-message-page .msg .meta {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  font-size: 12px; color: var(--ink-500); margin-bottom: 4px;
+}
+.sys-message-page .msg .meta .tag {
+  padding: 1px 8px; border-radius: 999px;
+  font-size: 11.5px; font-weight: 600;
+  border: 1px solid; line-height: 1.4;
+}
+.sys-message-page .msg .meta .dot-sep {
+  width: 3px; height: 3px; background: var(--ink-300); border-radius: 50%;
+}
+.sys-message-page .msg .meta .biz-source { color: var(--ink-700); font-weight: 500; }
+.sys-message-page .msg .meta .biz-id { font-family: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, monospace; font-size: 11.5px; color: var(--ink-500); }
+.sys-message-page .msg .meta .biz-entry { color: var(--brand-600); font-weight: 500; }
+.sys-message-page .msg .title {
+  font-size: 14px; font-weight: 500; color: var(--ink-700);
+  line-height: 1.5; word-break: break-word;
+}
+.sys-message-page .msg.is-unread .title { color: var(--ink-900); font-weight: 600; }
+.sys-message-page .msg .title.is-handled { color: var(--ink-400); text-decoration: line-through; }
+.sys-message-page .msg .desc {
+  font-size: 12.5px; color: var(--ink-500); line-height: 1.6;
+  margin-top: 6px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+}
+.sys-message-page .msg .desc .handled-tag {
+  padding: 1px 7px; border-radius: 4px;
+  background: var(--ink-100); color: var(--ink-500);
+  font-size: 11px; font-weight: 600;
+}
+.sys-message-page .msg .desc .desc-sep { color: var(--ink-300); }
+.sys-message-page .msg .desc .level-badge {
+  padding: 1px 7px; border-radius: 4px;
+  font-size: 11px; font-weight: 600;
+}
+.sys-message-page .msg .desc .level-normal { background: var(--ink-100); color: var(--ink-500); }
+.sys-message-page .msg .desc .level-important { background: var(--amber-50); color: var(--amber-700); }
+.sys-message-page .msg .desc .level-urgent { background: var(--red-50); color: var(--red-700); }
+
+.sys-message-page .msg .side-actions {
+  display: flex; flex-direction: column; gap: 6px; align-items: flex-end;
+  min-width: 110px;
+}
+.sys-message-page .msg .time { font-size: 12px; color: var(--ink-400); white-space: nowrap; }
+.sys-message-page .msg .row-actions {
+  display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end;
+}
+.sys-message-page .msg .row-actions button {
+  display: inline-flex; align-items: center; gap: 3px;
+  height: 26px; padding: 0 9px;
+  background: #fff; border: 1px solid var(--ink-200);
+  border-radius: 5px; font-size: 12px; color: var(--ink-700);
+  cursor: pointer; transition: all .12s;
+}
+.sys-message-page .msg .row-actions button:hover {
+  background: var(--ink-50); color: var(--ink-900); border-color: var(--ink-300);
+}
+.sys-message-page .msg .row-actions .is-primary {
+  background: var(--brand-600); color: #fff; border-color: var(--brand-600);
+}
+.sys-message-page .msg .row-actions .is-primary:hover {
+  background: var(--brand-700); border-color: var(--brand-700);
+}
+.sys-message-page .msg .row-actions .is-ghost {
+  border-color: transparent; background: transparent;
+  padding: 0 6px; color: var(--ink-500);
+}
+.sys-message-page .msg .row-actions .is-ghost:hover { color: var(--ink-900); background: var(--ink-50); }
+
+/* ===== 状态配色 ===== */
+/* 系统通知 (type=1) - green */
+.sys-message-page .msg.kind-system .accent,
+.sys-message-page .msg.kind-system .ic { background: var(--green-50); color: var(--green-700); }
+.sys-message-page .msg.kind-system .meta .tag { background: var(--green-50); color: var(--green-700); border-color: #a7f3d0; }
+
+/* 业务预警 (type=2) - red */
+.sys-message-page .msg.kind-alert .accent,
+.sys-message-page .msg.kind-alert .ic { background: var(--red-50); color: var(--red-700); }
+.sys-message-page .msg.kind-alert .meta .tag { background: var(--red-50); color: var(--red-700); border-color: #fecaca; }
+
+/* 审批消息 (type=3) - amber */
+.sys-message-page .msg.kind-audit .accent,
+.sys-message-page .msg.kind-audit .ic { background: var(--amber-50); color: var(--amber-700); }
+.sys-message-page .msg.kind-audit .meta .tag { background: var(--amber-50); color: var(--amber-700); border-color: #fde68a; }
+
+/* 待办事项 (type=4) - blue */
+.sys-message-page .msg.kind-todo .accent,
+.sys-message-page .msg.kind-todo .ic { background: var(--blue-50); color: var(--blue-700); }
+.sys-message-page .msg.kind-todo .meta .tag { background: var(--blue-50); color: var(--blue-700); border-color: #bfdbfe; }
+
+/* 未读态：渐变背景 */
+.sys-message-page .msg.kind-system.is-unread { background: linear-gradient(to right, var(--green-50) 0%, #fff 35%); }
+.sys-message-page .msg.kind-alert.is-unread { background: linear-gradient(to right, var(--red-50) 0%, #fff 35%); }
+.sys-message-page .msg.kind-audit.is-unread { background: linear-gradient(to right, var(--amber-50) 0%, #fff 35%); }
+.sys-message-page .msg.kind-todo.is-unread { background: linear-gradient(to right, var(--blue-50) 0%, #fff 35%); }
+.sys-message-page .msg.is-unread .accent { background: currentColor; }
+
+/* 已读态 */
+.sys-message-page .msg:not(.is-unread) { opacity: .88; }
+.sys-message-page .msg:not(.is-unread) .accent { background: var(--ink-200); }
+
+/* ===== Empty State ===== */
+.sys-message-page .empty {
+  padding: 80px 24px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  color: var(--ink-500); text-align: center;
+}
+.sys-message-page .empty .empty-pic {
+  width: 80px; height: 80px; border-radius: 50%;
+  background: var(--ink-100);
+  display: grid; place-items: center;
+  color: var(--ink-400); font-size: 32px;
+  margin-bottom: 14px;
+}
+.sys-message-page .empty .empty-title {
+  font-size: 15px; font-weight: 600; color: var(--ink-700); margin-bottom: 4px;
+}
+.sys-message-page .empty .empty-hint { font-size: 13px; color: var(--ink-500); }
 
 /* ===== Pagination ===== */
-.sys-message-page .pagination-container { display:flex; align-items:center; justify-content:flex-end; padding:14px 20px; font-size:14px; color:var(--ink-500); background:#fff; border-top:1px solid transparent; }
-.sys-message-page .pagination-container :deep(.el-pagination) { justify-content:flex-end; }
-.sys-message-page .pagination-container :deep(.el-pagination .el-pager li) { border-radius:6px; border:1px solid var(--ink-200); background:#fff; min-width:32px; height:32px; line-height:32px; font-size:14px; color:var(--ink-700); margin:0 2px; }
-.sys-message-page .pagination-container :deep(.el-pagination .el-pager li.is-active) { background:var(--brand-600); border-color:var(--brand-600); color:#fff; font-weight:600; box-shadow:0 4px 10px -2px rgba(79,70,229,.4); }
-.sys-message-page .pagination-container :deep(.el-pagination .btn-prev), .sys-message-page .pagination-container :deep(.el-pagination .btn-next) { border-radius:6px; border:1px solid var(--ink-200); background:#fff; min-width:32px; height:32px; }
-.sys-message-page .pagination-container :deep(.el-pagination .btn-prev:hover), .sys-message-page .pagination-container :deep(.el-pagination .btn-next:hover) { border-color:var(--brand-200); color:var(--brand-700); }
-.sys-message-page .pagination-container :deep(.el-pagination .el-pagination__sizes .el-select__wrapper) { border-radius:6px; box-shadow:0 0 0 1px var(--ink-200) inset; }
+.sys-message-page .pager { padding: 0 16px 14px; }
+.sys-message-page .pager :deep(.pagination-container) {
+  display: flex; align-items: center; justify-content: flex-end;
+  padding: 0; font-size: 13px; color: var(--ink-500); background: transparent;
+}
+.sys-message-page .pager :deep(.el-pagination) { justify-content: flex-end; }
+.sys-message-page .pager :deep(.el-pagination .el-pager li) {
+  border-radius: 6px; border: 1px solid var(--ink-200);
+  background: #fff; min-width: 32px; height: 32px; line-height: 32px;
+  font-size: 13px; color: var(--ink-700); margin: 0 2px;
+}
+.sys-message-page .pager :deep(.el-pagination .el-pager li.is-active) {
+  background: var(--brand-600); border-color: var(--brand-600);
+  color: #fff; font-weight: 600;
+  box-shadow: 0 4px 10px -2px rgba(79,70,229,.4);
+}
+.sys-message-page .pager :deep(.el-pagination .btn-prev),
+.sys-message-page .pager :deep(.el-pagination .btn-next) {
+  border-radius: 6px; border: 1px solid var(--ink-200);
+  background: #fff; min-width: 32px; height: 32px;
+}
+.sys-message-page .pager :deep(.el-pagination .btn-prev:hover),
+.sys-message-page .pager :deep(.el-pagination .btn-next:hover) {
+  border-color: var(--brand-200); color: var(--brand-700);
+}
 
 /* ===== Responsive ===== */
-@media (max-width:1100px) { .sys-message-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }
-@media (max-width:720px) { .sys-message-page .filter-card .filter-bar { grid-template-columns:1fr; } .sys-message-page .toolbar { flex-wrap:wrap; gap:10px; } }
+@media (max-width: 1024px) {
+  .sys-message-page .inbox { grid-template-columns: 1fr; }
+  .sys-message-page .side { position: static; }
+  .sys-message-page .msg .side-actions { min-width: auto; }
+  .sys-message-page .filter-row { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 640px) {
+  .sys-message-page .filter-row { grid-template-columns: 1fr; }
+  .sys-message-page .msg-inner { grid-template-columns: 36px 1fr; }
+  .sys-message-page .msg .side-actions {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
 
-/* ===== Handled Message ===== */
-.sys-message-page .is-handled { color: var(--ink-400) !important; }
-
-/* 操作列按钮对齐：每行2个按钮，flex-wrap 自动换行，按钮自适应内容宽度 */
-:deep(.col-action) { padding: 6px 4px !important; }
-:deep(.col-action .cell) { display: flex; justify-content: center; padding: 0; }
-.action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
-:deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
-:deep(.col-action .el-button + .el-button) { margin-left: 2px; }
+/* ===== a11y focus ===== */
+.sys-message-page .btn-soft:focus-visible,
+.sys-message-page .cat:focus-visible,
+.sys-message-page .msg .row-actions button:focus-visible,
+.sys-message-page .seg button:focus-visible {
+  outline: 2px solid var(--brand-500); outline-offset: 2px;
+}
 </style>

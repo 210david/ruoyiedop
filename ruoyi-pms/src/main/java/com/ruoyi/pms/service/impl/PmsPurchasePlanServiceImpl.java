@@ -1,5 +1,6 @@
 package com.ruoyi.pms.service.impl;
 
+import com.ruoyi.common.annotation.DataScope;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -61,6 +62,7 @@ public class PmsPurchasePlanServiceImpl implements IPmsPurchasePlanService
      * @return 采购计划
      */
     @Override
+    @DataScope(deptAlias = "pms_purchase_plan")
     public List<PmsPurchasePlan> selectPmsPurchasePlanList(PmsPurchasePlan pmsPurchasePlan)
     {
         return pmsPurchasePlanMapper.selectPmsPurchasePlanList(pmsPurchasePlan);

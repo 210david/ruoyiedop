@@ -1,5 +1,6 @@
 package com.ruoyi.hr.service.impl;
 
+import com.ruoyi.common.annotation.DataScope;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -21,6 +22,7 @@ public class HrContractServiceImpl implements IHrContractService
     public HrContract selectHrContractById(Long contractId) { return hrContractMapper.selectHrContractById(contractId); }
 
     @Override
+    @DataScope(deptAlias = "biz_hr_contract")
     public List<HrContract> selectHrContractList(HrContract hrContract) { return hrContractMapper.selectHrContractList(hrContract); }
 
     @Override

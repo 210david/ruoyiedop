@@ -35,7 +35,8 @@
             <if test="waveName != null and waveName != ''"> AND v.wave_name LIKE CONCAT('%', #{waveName}, '%')</if>
             <if test="warehouseId != null"> AND v.warehouse_id = #{warehouseId}</if>
             <if test="status != null and status != ''"> AND v.status = #{status}</if>
-        </where>
+                  <if test="params.dataScope != null and params.dataScope != ''">${params.dataScope}</if>
+</where>
         ORDER BY v.wave_id DESC
     </select>
 

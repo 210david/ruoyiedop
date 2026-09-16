@@ -49,7 +49,8 @@
             <if test="status != null and status != ''"> AND status = #{status}</if>
             <if test="params.beginTime != null and params.beginTime != ''"> AND date(out_date) &gt;= #{params.beginTime}</if>
             <if test="params.endTime != null and params.endTime != ''"> AND date(out_date) &lt;= #{params.endTime}</if>
-        </where>
+                  <if test="params.dataScope != null and params.dataScope != ''">${params.dataScope}</if>
+</where>
         ORDER BY outsource_id DESC
     </select>
 

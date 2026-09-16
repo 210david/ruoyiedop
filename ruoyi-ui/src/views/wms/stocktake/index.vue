@@ -87,6 +87,7 @@
       <div class="toolbar">
         <div class="left">
           <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['wms:stocktake:add']">新增</el-button>
+          <AiAssistButton button-text="AI差异分析" :api="aiStockTakeAnalysis" :params="[currentTakeId]" :disabled="!currentTakeId" @result="d => onAiText(d, '盘点差异分析')" />
           <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['wms:stocktake:remove']">删除</el-button>
         </div>
         <div class="right">
@@ -96,7 +97,7 @@
 
       <!-- Table -->
       <div class="table-wrap">
-        <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" class="app-table">
+        <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" highlight-current-row @current-change="onRowChange" @header-dragend="onHeaderDragEnd" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" resizable align="center" />
           <el-table-column label="盘点单号" prop="takeNo" key="takeNo" :width="colWidth('takeNo', 160)" resizable v-if="columns.takeNo.visible" />
@@ -125,7 +126,8 @@
         </el-table>
       </div>
       <div class="pagination-container">
-        <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+        <AiResultPanel :visible="aiPanelVisible" :content="aiPanelText" :latency-ms="aiLatency" @close="aiPanelVisible = false" />
+      <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
       </div>
     </div>
 
@@ -488,6 +490,9 @@
 
 <script setup name="WmsStockTake">
 import { listStockTake, getStockTake, addStockTake, delStockTake, startStockTake, submitStockTakeDetail, voidStockTake, approveStockTake, rejectStockTake, submitForApproval } from '@/api/wms/stocktake'
+import { aiStockTakeAnalysis } from '@/api/ai/manage'
+import AiAssistButton from '@/components/AiAssist/AiAssistButton.vue'
+import AiResultPanel from '@/components/AiAssist/AiResultPanel.vue'
 import { listWarehouse, listArea } from '@/api/wms/warehouse'
 import WarehousePicker from '@/components/WarehousePicker/index.vue'
 import AreaPicker from '@/components/AreaPicker/index.vue'
@@ -598,6 +603,19 @@ function onAreaPickerConfirm(area) {
 listWarehouse({ status: '0', pageSize: 999 }).then(res => { warehouseOptions.value = res.rows })
 getList()
 loadStatusCounts()
+
+// ===== AI辅助（外挂式增量） =====
+const aiPanelVisible = ref(false)
+const aiPanelText = ref('')
+const aiLatency = ref(0)
+function onAiText(d, title) {
+  aiPanelText.value = (title ? '【' + title + '】\n\n' : '') + (d.content || d.error || 'AI未返回内容')
+  aiLatency.value = d.latencyMs || 0
+  aiPanelVisible.value = true
+}
+
+const currentTakeId = ref(null)
+function onRowChange(row) { currentTakeId.value = row ? row.takeId : null }
 </script>
 
 <style scoped>

@@ -1,5 +1,6 @@
 package com.ruoyi.qms.service.impl;
 
+import com.ruoyi.common.annotation.DataScope;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -19,6 +20,7 @@ public class QmsAuditPlanServiceImpl implements IQmsAuditPlanService {
     private IMkNumberRuleService mkNumberRuleService;
 
     @Override
+    @DataScope(deptAlias = "qms_audit_plan")
     public List<QmsAuditPlan> selectAuditPlanList(QmsAuditPlan plan) { return mapper.selectAuditPlanList(plan); }
     @Override
     public QmsAuditPlan selectAuditPlanById(Long auditPlanId) { return mapper.selectAuditPlanById(auditPlanId); }

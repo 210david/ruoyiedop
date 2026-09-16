@@ -16,7 +16,9 @@
         <el-input v-model="queryParams.roleName" placeholder="角色名称" clearable size="small" style="width: 160px" @keyup.enter="handleQuery">
           <template #prefix><el-icon><Search /></el-icon></template>
         </el-input>
-        <el-input v-model="queryParams.roleKey" placeholder="权限字符" clearable size="small" style="width: 160px; margin-left: 8px" @keyup.enter="handleQuery" />
+        <el-select v-model="queryParams.roleCategory" placeholder="角色分类" clearable size="small" style="width: 160px; margin-left: 8px" @change="handleQuery">
+          <el-option v-for="dict in sys_role_category" :key="dict.value" :label="dict.label" :value="dict.value" />
+        </el-select>
         <el-button type="primary" plain icon="Search" size="small" style="margin-left: 8px" @click="handleQuery">查询</el-button>
         <el-button icon="RefreshLeft" size="small" @click="resetQuery">重置</el-button>
       </div>
@@ -30,11 +32,16 @@
           height="360"
           size="small"
           @selection-change="onSelectionChange"
+          @row-click="onRowClick"
         >
           <el-table-column type="selection" width="45" align="center" />
           <el-table-column label="角色编号" prop="roleId" width="100" align="center" />
           <el-table-column label="角色名称" prop="roleName" min-width="160" show-overflow-tooltip />
-          <el-table-column label="权限字符" prop="roleKey" min-width="140" show-overflow-tooltip />
+          <el-table-column label="角色分类" prop="roleCategory" min-width="140" align="center">
+            <template #default="{ row }">
+              <el-tag v-for="cat in parseCategoryList(row.roleCategory)" :key="cat" :type="getCategoryTagType(cat)" size="small" style="margin: 1px;">{{ getCategoryLabel(cat) }}</el-tag>
+            </template>
+          </el-table-column>
           <el-table-column label="状态" prop="status" width="90" align="center">
             <template #default="{ row }">
               <span v-if="row.status === '0'">正常</span>
@@ -67,6 +74,9 @@
 <script setup>
 import { listRole } from '@/api/system/role'
 
+const { proxy } = getCurrentInstance()
+const { sys_role_category } = proxy.useDict('sys_role_category')
+
 const props = defineProps({
   title: {
     type: String,
@@ -88,14 +98,43 @@ const queryParams = reactive({
   pageNum: 1,
   pageSize: 10,
   roleName: undefined,
-  roleKey: undefined,
+  roleCategory: undefined,
   status: '0'
 })
+
+/** 分类标签类型映射 */
+const categoryTagTypeMap = {
+  system: 'primary',
+  dms: 'success',
+  pms: 'warning',
+  mk: 'danger',
+  wms: 'info',
+  safety: 'warning',
+  qms: 'success'
+}
+
+/** 获取分类标签类型 */
+function getCategoryTagType(category) {
+  const dict = sys_role_category.value?.find(d => d.value === category)
+  return dict?.elTagType || categoryTagTypeMap[category] || 'info'
+}
+
+/** 获取分类标签文本 */
+function getCategoryLabel(category) {
+  const dict = sys_role_category.value?.find(d => d.value === category)
+  return dict ? dict.label : category
+}
+
+/** 解析角色分类字符串为数组 */
+function parseCategoryList(roleCategory) {
+  if (!roleCategory) return ['system']
+  return roleCategory.split(',').map(c => c.trim()).filter(c => c)
+}
 
 /** 弹窗打开时初始化 */
 function onOpen() {
   queryParams.roleName = undefined
-  queryParams.roleKey = undefined
+  queryParams.roleCategory = undefined
   queryParams.pageNum = 1
   selection.value = []
   getList()
@@ -128,7 +167,7 @@ function handleQuery() {
 /** 重置 */
 function resetQuery() {
   queryParams.roleName = undefined
-  queryParams.roleKey = undefined
+  queryParams.roleCategory = undefined
   handleQuery()
 }
 
@@ -137,6 +176,13 @@ function onSelectionChange(rows) {
   const pageIds = list.value.map(r => r.roleId)
   const kept = selection.value.filter(r => !pageIds.includes(r.roleId))
   selection.value = [...kept, ...rows]
+}
+
+/** 点击行切换勾选（多选模式） */
+function onRowClick(row, column) {
+  // 点击勾选框列本身时由 checkbox 处理，避免双重切换
+  if (column && column.type === 'selection') return
+  if (tableRef.value) tableRef.value.toggleRowSelection(row)
 }
 
 /** 确认选择 */

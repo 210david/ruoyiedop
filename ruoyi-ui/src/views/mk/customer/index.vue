@@ -135,7 +135,8 @@
           </button>
         </div>
         <div class="right">
-          <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="mk_customer_columns" />
+          <AiAssistButton button-text="AI流失预警" :api="aiCustomerChurnReport" @result="d => onAiText(d, '客户流失预警报告')" />
+          <AiAssistButton button-text="AI流失预测" button-type="danger" :button-plain="false" :api="aiChurnPrediction" @result="onChurnPrediction" /><right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="mk_customer_columns" />
         </div>
       </div>
 
@@ -211,6 +212,7 @@
       </div>
 
       <!-- Pagination -->
+      <AiResultPanel :visible="aiPanelVisible" :content="aiPanelText" :latency-ms="aiLatency" @close="aiPanelVisible = false" />
       <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
     </div>
 
@@ -732,6 +734,9 @@
 <script setup name="MkCustomer">
 import { UploadFilled, CircleClose, ArrowRight, ArrowDown, QuestionFilled, WarningFilled, Search, Filter, Edit, Delete, Download, User, Upload, RefreshRight } from '@element-plus/icons-vue'
 import { listCustomer, getCustomer, addCustomer, updateCustomer, delCustomer, changeCustomerStatus, assignCustomer, releaseToPool, claimCustomer, batchAssignCustomer, batchUpdateStatus } from '@/api/mk/customer'
+import { aiCustomerChurnReport, aiChurnPrediction } from '@/api/ai/manage'
+import AiAssistButton from '@/components/AiAssist/AiAssistButton.vue'
+import AiResultPanel from '@/components/AiAssist/AiResultPanel.vue'
 import { listTag } from '@/api/mk/tag'
 import { listContact } from '@/api/mk/contact'
 import { listOpportunity } from '@/api/mk/opportunity'
@@ -1161,6 +1166,28 @@ getTagOptions()
 getList()
 
 const showStatusHelp = ref(false)
+
+// ===== AI辅助（外挂式增量） =====
+const aiPanelVisible = ref(false)
+const aiPanelText = ref('')
+const aiLatency = ref(0)
+function onAiText(d, title) {
+  aiPanelText.value = (title ? '【' + title + '】\n\n' : '') + (d.content || d.error || 'AI未返回内容')
+  aiLatency.value = d.latencyMs || 0
+  aiPanelVisible.value = true
+}
+
+function onChurnPrediction(d) {
+  const list = d.riskList || []
+  const lines = ['规则评分发现 ' + (d.riskCount || list.length) + ' 家流失风险客户（≥40分）：', '']
+  list.slice(0, 15).forEach((x, i) => {
+    lines.push((i + 1) + '. ' + (x.customerName || '-') + ' | 风险' + x.riskScore + '分/' + x.riskLevel + ' | 订单' + x.orderCount + '单 | 累计' + (x.totalAmount || 0) + '元')
+  })
+  if (list.length > 15) lines.push('…其余 ' + (list.length - 15) + ' 家略')
+  aiPanelText.value = lines.join('\n') + '\n\n' + (d.aiSummary || '')
+  aiLatency.value = d.latencyMs || 0
+  aiPanelVisible.value = true
+}
 </script>
 
 <style scoped>

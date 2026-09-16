@@ -34,7 +34,8 @@
             <if test="mrTitle != null and mrTitle != ''"> AND mr_title LIKE CONCAT('%', #{mrTitle}, '%')</if>
             <if test="mrYear != null"> AND mr_year = #{mrYear}</if>
             <if test="mrStatus != null and mrStatus != ''"> AND mr_status = #{mrStatus}</if>
-        </where>
+                  <if test="params.dataScope != null and params.dataScope != ''">${params.dataScope}</if>
+</where>
         ORDER BY create_time DESC
     </select>
     <select id="selectMrById" parameterType="Long" resultMap="QmsMrResult">

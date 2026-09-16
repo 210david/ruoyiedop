@@ -205,7 +205,12 @@
                   <el-row :gutter="16">
                      <el-col :span="12">
                         <el-form-item label="负责人" prop="leader">
-                           <el-input v-model="form.leader" placeholder="请输入负责人" maxlength="20" />
+                           <el-input v-model="form.leader" readonly placeholder="请选择负责人" style="width: 100%" @click="onLeaderFieldClick">
+                              <template #append>
+                                 <el-button v-if="form.leader" icon="CircleClose" @click="onLeaderFieldClick" />
+                                 <el-button v-else icon="Search" @click="onLeaderFieldClick" />
+                              </template>
+                           </el-input>
                         </el-form-item>
                      </el-col>
                      <el-col :span="12">
@@ -237,14 +242,18 @@
             </div>
          </template>
       </el-dialog>
+
+      <!-- 负责人选择弹窗 -->
+      <user-picker ref="userPickerRef" title="选择部门负责人" @confirm="onUserPickerConfirm" />
    </div>
 </template>
 
 <script setup name="Dept">
 import TreePanel from "@/components/TreePanel"
+import UserPicker from "@/components/UserPicker"
 import { listDept, getDept, delDept, addDept, updateDept, updateDeptSort, listDeptExcludeChild } from "@/api/system/dept"
 import { deptTreeSelect } from "@/api/system/user"
-import { Search, Filter } from '@element-plus/icons-vue'
+import { Search, Filter, CircleClose } from '@element-plus/icons-vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 
 const { proxy } = getCurrentInstance()
@@ -354,11 +363,35 @@ function reset() {
     deptName: undefined,
     orderNum: 0,
     leader: undefined,
+    leaderId: undefined,
     phone: undefined,
     email: undefined,
     status: "0"
   }
   proxy.resetForm("deptRef")
+}
+
+/** ===== 负责人弹框选择 ===== */
+function openUserPicker() {
+  proxy.$refs.userPickerRef.open(form.value.leaderId)
+}
+function onUserPickerConfirm(user) {
+  form.value.leaderId = user.userId
+  form.value.leader = user.nickName
+  if (user.phonenumber) {
+    form.value.phone = user.phonenumber
+  }
+}
+function clearLeader() {
+  form.value.leaderId = undefined
+  form.value.leader = undefined
+}
+function onLeaderFieldClick(e) {
+  if (e && e.target && e.target.closest && e.target.closest('.el-input-group__append')) {
+    if (form.value.leader) { clearLeader(); } else { openUserPicker(); }
+    return
+  }
+  openUserPicker()
 }
 
 /** 搜索按钮操作 */

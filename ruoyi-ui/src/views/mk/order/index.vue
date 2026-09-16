@@ -94,6 +94,7 @@
       <div class="toolbar">
         <div class="left">
           <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['marketing:order:add']">新增</el-button>
+          <AiAssistButton button-text="AI销售周报" :api="aiSalesWeeklyReport" @result="d => onAiText(d, '销售周报')" />
           <button type="button" class="btn-soft is-danger-outline" :disabled="multiple" @click="handleDelete" v-hasPermi="['marketing:order:remove']">
             <el-icon><Delete /></el-icon> 删除
           </button>
@@ -145,6 +146,7 @@
       </div>
 
       <!-- Pagination -->
+      <AiResultPanel :visible="aiPanelVisible" :content="aiPanelText" :latency-ms="aiLatency" @close="aiPanelVisible = false" />
       <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
     </div>
 
@@ -876,6 +878,9 @@
 <script setup name="MkOrder">
 import { CircleClose, ArrowRight, ArrowDown, QuestionFilled } from '@element-plus/icons-vue'
 import { listOrder, getOrder, addOrder, updateOrder, delOrder, submitOrder, voidOrder, auditOrder } from '@/api/mk/order'
+import { aiSalesWeeklyReport } from '@/api/ai/manage'
+import AiAssistButton from '@/components/AiAssist/AiAssistButton.vue'
+import AiResultPanel from '@/components/AiAssist/AiResultPanel.vue'
 import { listContract } from '@/api/mk/contract'
 import { getCustomer } from '@/api/mk/customer'
 import { listMaterial } from '@/api/wms/material'
@@ -1130,6 +1135,16 @@ function submitVoid() { if (!voidForm.value.voidReason) { proxy.$modal.msgWarnin
 function handleExport() { proxy.download('mk/order/export', proxy.withExportIds({ ...proxy.addDateRange(queryParams.value, dateRange.value, 'CreateTime') }, ids.value, 'orderId'), `order_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 getList()
+
+// ===== AI辅助（外挂式增量） =====
+const aiPanelVisible = ref(false)
+const aiPanelText = ref('')
+const aiLatency = ref(0)
+function onAiText(d, title) {
+  aiPanelText.value = (title ? '【' + title + '】\n\n' : '') + (d.content || d.error || 'AI未返回内容')
+  aiLatency.value = d.latencyMs || 0
+  aiPanelVisible.value = true
+}
 </script>
 
 <style scoped>

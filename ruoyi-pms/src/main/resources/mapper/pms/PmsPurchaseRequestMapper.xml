@@ -67,7 +67,8 @@
             <if test="deptId != null"> AND dept_id = #{deptId}</if>
             <if test="params.beginDate != null and params.beginDate != ''"> AND date(create_time) &gt;= #{params.beginDate}</if>
             <if test="params.endDate != null and params.endDate != ''"> AND date(create_time) &lt;= #{params.endDate}</if>
-        </where>
+                  <if test="params.dataScope != null and params.dataScope != ''">${params.dataScope}</if>
+</where>
         ORDER BY request_id DESC
     </select>
 

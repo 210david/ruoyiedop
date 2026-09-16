@@ -74,7 +74,8 @@
             <if test="params.endInboundDate != null and params.endInboundDate != ''"> AND o.inbound_date &lt;= #{params.endInboundDate}</if>
             <if test="params.beginCreateTime != null and params.beginCreateTime != ''"> AND date(o.create_time) &gt;= #{params.beginCreateTime}</if>
             <if test="params.endCreateTime != null and params.endCreateTime != ''"> AND date(o.create_time) &lt;= #{params.endCreateTime}</if>
-        </where>
+                  <if test="params.dataScope != null and params.dataScope != ''">${params.dataScope}</if>
+</where>
         ORDER BY o.order_id DESC
     </select>
 

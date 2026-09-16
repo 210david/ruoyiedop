@@ -172,7 +172,12 @@
               </el-col>
               <el-col :span="12">
                 <el-form-item label="归属部门" prop="deptId">
-                  <el-tree-select v-model="form.deptId" :data="enabledDeptOptions" :props="{ value: 'id', label: 'label', children: 'children' }" value-key="id" placeholder="请选择归属部门" clearable check-strictly />
+                  <el-input v-model="form.deptName" readonly placeholder="请选择归属部门" style="width: 100%" @click="onDeptFieldClick">
+                    <template #append>
+                      <el-button v-if="form.deptId" icon="CircleClose" @click="onDeptFieldClick" />
+                      <el-button v-else icon="Search" @click="onDeptFieldClick" />
+                    </template>
+                  </el-input>
                 </el-form-item>
               </el-col>
             </el-row>
@@ -237,16 +242,22 @@
             <el-row :gutter="16">
               <el-col :span="12">
                 <el-form-item label="岗位">
-                  <el-select v-model="form.postIds" multiple placeholder="请选择">
-                    <el-option v-for="item in postOptions" :key="item.postId" :label="item.postName" :value="item.postId" :disabled="item.status == 1" />
-                  </el-select>
+                  <el-input :model-value="postNames" readonly placeholder="请选择岗位（可多选）" style="width: 100%" @click="onPostFieldClick">
+                    <template #append>
+                      <el-button v-if="form.postIds && form.postIds.length" icon="CircleClose" @click="onPostFieldClick" />
+                      <el-button v-else icon="Search" @click="onPostFieldClick" />
+                    </template>
+                  </el-input>
                 </el-form-item>
               </el-col>
               <el-col :span="12">
                 <el-form-item label="角色">
-                  <el-select v-model="form.roleIds" multiple placeholder="请选择">
-                    <el-option v-for="item in roleOptions" :key="item.roleId" :label="item.roleName" :value="item.roleId" :disabled="item.status == 1" />
-                  </el-select>
+                  <el-input :model-value="roleNames" readonly placeholder="请选择角色（可多选）" style="width: 100%" @click="onRoleFieldClick">
+                    <template #append>
+                      <el-button v-if="form.roleIds && form.roleIds.length" icon="CircleClose" @click="onRoleFieldClick" />
+                      <el-button v-else icon="Search" @click="onRoleFieldClick" />
+                    </template>
+                  </el-input>
                 </el-form-item>
               </el-col>
             </el-row>
@@ -266,6 +277,13 @@
       </template>
     </el-dialog>
 
+    <!-- 部门选择弹窗 -->
+    <dept-picker ref="deptPickerRef" title="选择归属部门" :disabled-ids="[100]" @confirm="onDeptPickerConfirm" />
+    <!-- 岗位选择弹窗（多选） -->
+    <position-picker ref="positionPickerRef" :multiple="true" title="选择岗位" @confirm="onPositionPickerConfirm" />
+    <!-- 角色选择弹窗（多选） -->
+    <role-picker ref="rolePickerRef" title="选择角色" @confirm="onRolePickerConfirm" />
+
     <!-- 用户详情抽屉 -->
     <user-view-drawer ref="userViewRef" />
     <!-- 用户导入对话框 -->
@@ -276,11 +294,14 @@
 <script setup name="User">
 import TreePanel from "@/components/TreePanel"
 import ExcelImportDialog from "@/components/ExcelImportDialog"
+import DeptPicker from "@/components/DeptPicker"
+import PositionPicker from "@/components/PositionPicker"
+import RolePicker from "@/components/RolePicker"
 import UserViewDrawer from "./view"
 import { usePasswordRule } from "@/utils/passwordRule"
 import { useColumnResize } from '@/composables/useColumnResize'
 import { changeUserStatus, listUser, resetUserPwd, delUser, getUser, updateUser, addUser, deptTreeSelect } from "@/api/system/user"
-import { Search, Iphone, Filter, Edit, Delete, Upload, Download, RefreshLeft } from '@element-plus/icons-vue'
+import { Search, Iphone, Filter, Edit, Delete, Upload, Download, RefreshLeft, CircleClose } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const { proxy } = getCurrentInstance()
@@ -300,7 +321,6 @@ const total = ref(0)
 const title = ref("")
 const dateRange = ref([])
 const deptOptions = ref(undefined)
-const enabledDeptOptions = ref(undefined)
 const initPassword = ref(undefined)
 const postOptions = ref([])
 const roleOptions = ref([])
@@ -346,6 +366,81 @@ const activeFilterCount = computed(() => {
   return count
 })
 
+/** 岗位名称回显（多选） */
+const postNames = computed(() => {
+  if (!form.value.postIds || !form.value.postIds.length) return ''
+  return form.value.postIds.map(id => {
+    const p = postOptions.value.find(x => x.postId === id)
+    return p ? p.postName : ('岗位' + id)
+  }).join('、')
+})
+
+/** 角色名称回显（多选） */
+const roleNames = computed(() => {
+  if (!form.value.roleIds || !form.value.roleIds.length) return ''
+  return form.value.roleIds.map(id => {
+    const r = roleOptions.value.find(x => x.roleId === id)
+    return r ? r.roleName : ('角色' + id)
+  }).join('、')
+})
+
+/** ===== 部门弹框选择 ===== */
+function openDeptPicker() {
+  proxy.$refs.deptPickerRef.open(form.value.deptId)
+}
+function onDeptPickerConfirm(dept) {
+  form.value.deptId = dept.deptId
+  form.value.deptName = dept.deptName
+  proxy.$refs.userRef && proxy.$refs.userRef.validateField('deptId')
+}
+function clearDept() {
+  form.value.deptId = undefined
+  form.value.deptName = undefined
+}
+function onDeptFieldClick(e) {
+  if (e && e.target && e.target.closest && e.target.closest('.el-input-group__append')) {
+    if (form.value.deptId) { clearDept(); } else { openDeptPicker(); }
+    return
+  }
+  openDeptPicker()
+}
+
+/** ===== 岗位弹框选择（多选） ===== */
+function openPositionPicker() {
+  proxy.$refs.positionPickerRef.open(form.value.postIds || [])
+}
+function onPositionPickerConfirm(rows) {
+  form.value.postIds = rows.map(r => r.postId)
+}
+function clearPosts() {
+  form.value.postIds = []
+}
+function onPostFieldClick(e) {
+  if (e && e.target && e.target.closest && e.target.closest('.el-input-group__append')) {
+    if (form.value.postIds && form.value.postIds.length) { clearPosts(); } else { openPositionPicker(); }
+    return
+  }
+  openPositionPicker()
+}
+
+/** ===== 角色弹框选择（多选） ===== */
+function openRolePicker() {
+  proxy.$refs.rolePickerRef.open(form.value.roleIds || [])
+}
+function onRolePickerConfirm(rows) {
+  form.value.roleIds = rows.map(r => r.roleId)
+}
+function clearRoles() {
+  form.value.roleIds = []
+}
+function onRoleFieldClick(e) {
+  if (e && e.target && e.target.closest && e.target.closest('.el-input-group__append')) {
+    if (form.value.roleIds && form.value.roleIds.length) { clearRoles(); } else { openRolePicker(); }
+    return
+  }
+  openRolePicker()
+}
+
 /** 查询用户列表 */
 function getList() {
   loading.value = true
@@ -357,24 +452,22 @@ function getList() {
   })
 }
 
+/** 递归查找部门树节点 */
+function findDeptNode(nodes, id) {
+  for (const n of nodes) {
+    if (n.id === id) return n
+    if (n.children && n.children.length) {
+      const found = findDeptNode(n.children, id)
+      if (found) return found
+    }
+  }
+  return null
+}
+
 /** 查询部门下拉树结构 */
 function getDeptTree() {
   deptTreeSelect().then(response => {
     deptOptions.value = response.data
-    enabledDeptOptions.value = filterDisabledDept(JSON.parse(JSON.stringify(response.data)))
-  })
-}
-
-/** 过滤禁用的部门 */
-function filterDisabledDept(deptList) {
-  return deptList.filter(dept => {
-    if (dept.disabled) {
-      return false
-    }
-    if (dept.children && dept.children.length) {
-      dept.children = filterDisabledDept(dept.children)
-    }
-    return true
   })
 }
 
@@ -495,6 +588,7 @@ function reset() {
   form.value = {
     userId: undefined,
     deptId: undefined,
+    deptName: undefined,
     userName: undefined,
     nickName: undefined,
     password: undefined,
@@ -537,6 +631,11 @@ function handleUpdate(row) {
     roleOptions.value = response.roles
     form.value.postIds = response.postIds
     form.value.roleIds = response.roleIds
+    // 回显部门名称
+    if (form.value.deptId && deptOptions.value) {
+      const node = findDeptNode(deptOptions.value, form.value.deptId)
+      form.value.deptName = node ? node.label : ''
+    }
     open.value = true
     title.value = "修改用户"
     form.value.password = ""
@@ -574,6 +673,16 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* ===== Picker clear icon ===== */
+.sys-user-page .clear-icon {
+  cursor: pointer;
+  color: #c0c4cc;
+  font-size: 14px;
+}
+.sys-user-page .clear-icon:hover {
+  color: #909399;
+}
+
 /* ===== Design Tokens ===== */
 .sys-user-page {
   --brand-50:#eef2ff; --brand-100:#e0e7ff; --brand-200:#c7d2fe; --brand-500:#6366f1; --brand-600:#4f46e5; --brand-700:#4338ca;

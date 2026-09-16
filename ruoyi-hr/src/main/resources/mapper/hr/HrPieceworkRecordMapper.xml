@@ -57,7 +57,8 @@
             <if test="confirmTime != null"> AND t.confirm_time = #{confirmTime}</if>
             <if test="source != null and source != ''"> AND t.source LIKE CONCAT('%', #{source}, '%')</if>
             <if test="delFlag != null and delFlag != ''"> AND t.del_flag LIKE CONCAT('%', #{delFlag}, '%')</if>
-        </where>
+                  <if test="params.dataScope != null and params.dataScope != ''">${params.dataScope}</if>
+</where>
         ORDER BY t.create_time DESC
     </select>
 

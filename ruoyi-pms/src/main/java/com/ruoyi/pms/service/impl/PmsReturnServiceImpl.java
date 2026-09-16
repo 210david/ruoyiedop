@@ -1,5 +1,6 @@
 package com.ruoyi.pms.service.impl;
 
+import com.ruoyi.common.annotation.DataScope;
 import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
@@ -51,6 +52,7 @@ public class PmsReturnServiceImpl implements IPmsReturnService
     private IMkNumberRuleService mkNumberRuleService;
 
     @Override
+    @DataScope(deptAlias = "pms_return")
     public List<PmsReturn> selectReturnList(PmsReturn pmsReturn)
     {
         return pmsReturnMapper.selectReturnList(pmsReturn);

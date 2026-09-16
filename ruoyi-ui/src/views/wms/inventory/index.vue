@@ -80,6 +80,9 @@
           <button type="button" class="btn-soft is-outline" @click="handleExport" v-hasPermi="['wms:inventory:export']">
             <el-icon><Download /></el-icon> 导出
           </button>
+          <AiAssistButton button-text="AI库存分析" button-type="success" :button-plain="false" :api="aiStockAnalysis" @result="d => onAiText(d, '库存分析报告')" />
+          <AiAssistButton button-text="呆滞识别" button-type="warning" :button-plain="false" :api="aiStaleInventory" @result="onStaleList" />
+          <AiResultPanel :visible="aiPanelVisible" :content="aiPanelText" :latency-ms="aiLatency" @close="aiPanelVisible = false" />
         </div>
         <div class="right">
           <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="wms_inventory_columns" />
@@ -126,6 +129,9 @@
 
 <script setup name="WmsInventory">
 import { listInventory, delInventory } from '@/api/wms/inventory'
+import { aiStockAnalysis, aiStaleInventory } from '@/api/ai/manage'
+import AiAssistButton from '@/components/AiAssist/AiAssistButton.vue'
+import AiResultPanel from '@/components/AiAssist/AiResultPanel.vue'
 import { fetchAllPages, downloadXlsx } from '@/utils/csvExport'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { ArrowDown, Delete, Download, RefreshLeft, Search, Filter } from '@element-plus/icons-vue'
@@ -211,6 +217,27 @@ async function handleExport() {
 function handleSelectionChange(sel) { ids.value = sel.map(i => i.inventoryId); multiple.value = !sel.length }
 function handleDelete(row) { const inventoryIds = row.inventoryId || ids.value; proxy.$modal.confirm('确认删除选中的库存记录？').then(() => delInventory(inventoryIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
 getList()
+
+// ===== AI辅助（外挂式增量） =====
+const aiPanelVisible = ref(false)
+const aiPanelText = ref('')
+const aiLatency = ref(0)
+function onAiText(d, title) {
+  aiPanelText.value = (title ? '【' + title + '】\n\n' : '') + (d.content || d.error || 'AI未返回内容')
+  aiLatency.value = d.latencyMs || 0
+  aiPanelVisible.value = true
+}
+
+function onStaleList(d) {
+  const list = d.staleList || []
+  if (!list.length) { onAiText({ content: '未发现呆滞库存（库龄≥' + (d.staleDays || 90) + '天的库存为0项）', latencyMs: 0 }, '呆滞库存识别'); return }
+  const lines = ['共发现 ' + (d.staleCount || list.length) + ' 项呆滞库存（库龄≥' + (d.staleDays || 90) + '天）：', '']
+  list.slice(0, 30).forEach((x, i) => {
+    lines.push((i + 1) + '. ' + (x.materialName || '-') + ' | ' + (x.warehouseName || '-') + ' | 数量 ' + x.qty + ' | 库龄 ' + x.ageDays + '天 | 生产 ' + (x.productionDate || '-'))
+  })
+  if (list.length > 30) lines.push('…其余 ' + (list.length - 30) + ' 项略')
+  aiPanelText.value = lines.join('\n'); aiLatency.value = 0; aiPanelVisible.value = true
+}
 </script>
 
 <style scoped>

@@ -43,7 +43,8 @@
             <if test="specModel != null and specModel != ''"> AND spec_model LIKE CONCAT('%', #{specModel}, '%')</if>
             <if test="storageLocation != null and storageLocation != ''"> AND storage_location LIKE CONCAT('%', #{storageLocation}, '%')</if>
             <if test="personName != null and personName != ''"> AND person_name LIKE CONCAT('%', #{personName}, '%')</if>
-        </where>
+                  <if test="params.dataScope != null and params.dataScope != ''">${params.dataScope}</if>
+</where>
         ORDER BY create_time DESC
     </select>
 

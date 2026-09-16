@@ -68,10 +68,10 @@
             <el-icon><Download /></el-icon> 导出
           </button>
         </div>
-        <div class="right"><right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="hr_monthly_columns"></right-toolbar></div>
+        <div class="right"><AiAssistButton button-text="AI考勤摘要" :api="aiAttendanceSummary" :params="[currentYearMonth]" :disabled="!currentYearMonth" @result="d => onAiText(d, '考勤异常摘要')" /><right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="hr_monthly_columns"></right-toolbar></div>
       </div>
       <div class="table-wrap">
-        <el-table ref="tableRef" v-loading="loading" :data="hrAttendanceMonthlyList" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" border class="app-table">
+        <el-table ref="tableRef" v-loading="loading" :data="hrAttendanceMonthlyList" @selection-change="handleSelectionChange" highlight-current-row @current-change="onRowChange" @header-dragend="onHeaderDragEnd" border class="app-table">
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" resizable align="center" />
           <el-table-column label="年月" prop="yearMonth" key="yearMonth" align="center" :width="colWidth('yearMonth', 120)" resizable v-if="columns.yearMonth.visible">
@@ -143,7 +143,8 @@
         </el-table>
       </div>
       <div class="pagination-container">
-        <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+        <AiResultPanel :visible="aiPanelVisible" :content="aiPanelText" :latency-ms="aiLatency" @close="aiPanelVisible = false" />
+      <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
       </div>
     </div>
 
@@ -460,6 +461,9 @@
 
 <script setup name="HrAttendanceMonthly">
 import { listHrAttendanceMonthly, getHrAttendanceMonthly, addHrAttendanceMonthly, updateHrAttendanceMonthly, delHrAttendanceMonthly, generateMonthly } from '@/api/hr/hrAttendanceMonthly'
+import { aiAttendanceSummary } from '@/api/ai/manage'
+import AiAssistButton from '@/components/AiAssist/AiAssistButton.vue'
+import AiResultPanel from '@/components/AiAssist/AiResultPanel.vue'
 import { MagicStick, OfficeBuilding } from '@element-plus/icons-vue'
 import { getMonthlyDetail } from '@/api/hr/hrAttendanceMonthly'
 import { useDict } from '@/utils/dict'
@@ -820,6 +824,19 @@ function cancel() {
 }
 
 getList()
+
+// ===== AI辅助（外挂式增量） =====
+const aiPanelVisible = ref(false)
+const aiPanelText = ref('')
+const aiLatency = ref(0)
+function onAiText(d, title) {
+  aiPanelText.value = (title ? '【' + title + '】\n\n' : '') + (d.content || d.error || 'AI未返回内容')
+  aiLatency.value = d.latencyMs || 0
+  aiPanelVisible.value = true
+}
+
+const currentYearMonth = ref(null)
+function onRowChange(row) { currentYearMonth.value = row ? row.yearMonth : null }
 </script>
 
 <style scoped>

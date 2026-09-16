@@ -76,7 +76,8 @@
             <if test="resourceName != null and resourceName != ''"> AND resource_name LIKE CONCAT('%', #{resourceName}, '%')</if>
             <if test="params.beginTime != null and params.beginTime != ''"> AND date(create_time) &gt;= #{params.beginTime}</if>
             <if test="params.endTime != null and params.endTime != ''"> AND date(create_time) &lt;= #{params.endTime}</if>
-        </where>
+                  <if test="params.dataScope != null and params.dataScope != ''">${params.dataScope}</if>
+</where>
         ORDER BY work_order_id DESC
     </select>
 

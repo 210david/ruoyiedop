@@ -1,4 +1,6 @@
-package com.ruoyi.safety.service.impl;
+package com.ruoyi.safety.service.impl;
+
+import com.ruoyi.common.annotation.DataScope;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -25,6 +27,7 @@ public class SafetyDrillServiceImpl implements ISafetyDrillService
     public SafetyDrill selectSafetyDrillById(Long drillId) { return safetyDrillMapper.selectSafetyDrillById(drillId); }
 
     @Override
+    @DataScope(deptAlias = "biz_safety_drill")
     public List<SafetyDrill> selectSafetyDrillList(SafetyDrill safetyDrill) { return safetyDrillMapper.selectSafetyDrillList(safetyDrill); }
 
     @Override

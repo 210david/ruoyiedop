@@ -1,5 +1,6 @@
 package com.ruoyi.safety.service.impl;
 
+import com.ruoyi.common.annotation.DataScope;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -17,6 +18,7 @@ public class SafetyTrainingRecordServiceImpl implements ISafetyTrainingRecordSer
     public SafetyTrainingRecord selectSafetyTrainingRecordById(Long recordId) { return safetyTrainingRecordMapper.selectSafetyTrainingRecordById(recordId); }
 
     @Override
+    @DataScope(deptAlias = "biz_safety_training_record")
     public List<SafetyTrainingRecord> selectSafetyTrainingRecordList(SafetyTrainingRecord safetyTrainingRecord) { return safetyTrainingRecordMapper.selectSafetyTrainingRecordList(safetyTrainingRecord); }
 
     @Override

@@ -24,7 +24,32 @@
 
       <!-- 岗位表格 -->
       <div class="position-picker-table">
+        <!-- 多选模式 -->
         <el-table
+          v-if="multiple"
+          ref="tableRef"
+          v-loading="loading"
+          :data="list"
+          height="360"
+          size="small"
+          @selection-change="onSelectionChange"
+          @row-click="onRowClick"
+        >
+          <el-table-column type="selection" width="45" align="center" />
+          <el-table-column label="岗位编码" prop="postCode" width="170" show-overflow-tooltip />
+          <el-table-column label="岗位名称" prop="postName" min-width="200" show-overflow-tooltip />
+          <el-table-column label="状态" prop="status" width="100" align="center">
+            <template #default="{ row }">
+              <span v-if="row.status === '0'">正常</span>
+              <span v-else-if="row.status === '1'">停用</span>
+              <span v-else>-</span>
+            </template>
+          </el-table-column>
+        </el-table>
+
+        <!-- 单选模式 -->
+        <el-table
+          v-else
           ref="tableRef"
           v-loading="loading"
           :data="list"
@@ -65,7 +90,7 @@
     </div>
     <template #footer>
       <el-button @click="visible = false">取 消</el-button>
-      <el-button type="primary" @click="handleConfirm" :disabled="!selectedId">确 定</el-button>
+      <el-button type="primary" @click="handleConfirm" :disabled="multiple ? !selection.length : !selectedId">确 定</el-button>
     </template>
   </el-dialog>
 </template>
@@ -77,6 +102,11 @@ const props = defineProps({
   title: {
     type: String,
     default: '选择岗位'
+  },
+  /** 是否多选模式 */
+  multiple: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -89,6 +119,8 @@ const total = ref(0)
 const selectedId = ref(null)
 const selectedRow = ref(null)
 const pendingId = ref(null)
+const pendingIds = ref([])
+const selection = ref([])
 const tableRef = ref()
 
 const queryParams = reactive({
@@ -103,8 +135,12 @@ function onOpen() {
   queryParams.postCode = undefined
   queryParams.postName = undefined
   queryParams.pageNum = 1
-  selectedId.value = pendingId.value || null
-  selectedRow.value = null
+  if (props.multiple) {
+    selection.value = []
+  } else {
+    selectedId.value = pendingId.value || null
+    selectedRow.value = null
+  }
   getList()
 }
 
@@ -116,13 +152,25 @@ function getList() {
     list.value = res.rows
     total.value = res.total
     loading.value = false
-    // 回显选中行
-    if (selectedId.value) {
+    if (props.multiple) {
+      // 多选模式：回显已选行
       nextTick(() => {
-        if (tableRef.value) {
-          tableRef.value.setCurrentRow(list.value.find(r => r.postId === selectedId.value))
-        }
+        if (!tableRef.value) return
+        list.value.forEach(row => {
+          if (pendingIds.value.includes(row.postId)) {
+            tableRef.value.toggleRowSelection(row, true)
+          }
+        })
       })
+    } else {
+      // 单选模式：回显选中行
+      if (selectedId.value) {
+        nextTick(() => {
+          if (tableRef.value) {
+            tableRef.value.setCurrentRow(list.value.find(r => r.postId === selectedId.value))
+          }
+        })
+      }
     }
   })
 }
@@ -135,18 +183,32 @@ function handleQuery() {
 
 /** 重置 */
 function resetQuery() {
-  queryParams.positionCode = undefined
-  queryParams.positionName = undefined
+  queryParams.postCode = undefined
+  queryParams.postName = undefined
   handleQuery()
 }
 
-/** 行点击 - 选中 */
-function onRowClick(row) {
+/** 多选模式：跨页保留已选行 */
+function onSelectionChange(rows) {
+  const pageIds = list.value.map(r => r.postId)
+  const kept = selection.value.filter(r => !pageIds.includes(r.postId))
+  selection.value = [...kept, ...rows]
+}
+
+/** 多选模式：点击行切换勾选 */
+function onRowClick(row, column) {
+  if (props.multiple) {
+    // 点击勾选框列本身时由 checkbox 处理，避免双重切换
+    if (column && column.type === 'selection') return
+    if (tableRef.value) tableRef.value.toggleRowSelection(row)
+    return
+  }
+  // 单选模式：行点击 - 选中
   selectedId.value = row.postId
   selectedRow.value = row
 }
 
-/** 行双击 - 确认 */
+/** 单选模式：行双击 - 确认 */
 function onRowDblClick(row) {
   selectedId.value = row.postId
   selectedRow.value = row
@@ -155,18 +217,34 @@ function onRowDblClick(row) {
 
 /** 确认选择 */
 function handleConfirm() {
-  if (!selectedId.value) return
-  emit('confirm', {
-    positionId: selectedRow.value.postId,
-    positionCode: selectedRow.value.postCode,
-    positionName: selectedRow.value.postName
-  })
+  if (props.multiple) {
+    if (!selection.value.length) return
+    emit('confirm', selection.value.map(r => ({
+      postId: r.postId,
+      postCode: r.postCode,
+      postName: r.postName
+    })))
+  } else {
+    if (!selectedId.value) return
+    emit('confirm', {
+      positionId: selectedRow.value.postId,
+      positionCode: selectedRow.value.postCode,
+      positionName: selectedRow.value.postName
+    })
+  }
   visible.value = false
 }
 
-/** 打开弹窗 */
+/** 打开弹窗
+ *  单选模式：传入当前已选岗位ID
+ *  多选模式：传入当前已选岗位ID数组
+ */
 function open(currentPositionId) {
-  pendingId.value = currentPositionId || null
+  if (props.multiple) {
+    pendingIds.value = Array.isArray(currentPositionId) ? currentPositionId : []
+  } else {
+    pendingId.value = currentPositionId || null
+  }
   visible.value = true
 }
 

@@ -1,5 +1,6 @@
 package com.ruoyi.hr.service.impl;
 
+import com.ruoyi.common.annotation.DataScope;
 import java.util.Date;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,6 +42,7 @@ public class HrRegularServiceImpl implements IHrRegularService
     }
 
     @Override
+    @DataScope(deptAlias = "biz_hr_regular")
     public List<HrRegular> selectHrRegularList(HrRegular hrRegular) { return hrRegularMapper.selectHrRegularList(hrRegular); }
 
     @Override

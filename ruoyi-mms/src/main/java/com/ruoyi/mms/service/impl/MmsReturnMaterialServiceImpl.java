@@ -1,5 +1,6 @@
 package com.ruoyi.mms.service.impl;
 
+import com.ruoyi.common.annotation.DataScope;
 import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
@@ -37,6 +38,7 @@ public class MmsReturnMaterialServiceImpl implements IMmsReturnMaterialService
     private IMmsIssueService mmsIssueService;
 
     @Override
+    @DataScope(deptAlias = "mms_return_material")
     public List<MmsReturnMaterial> selectReturnMaterialList(MmsReturnMaterial returnMaterial)
     {
         return returnMaterialMapper.selectReturnMaterialList(returnMaterial);

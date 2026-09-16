@@ -1,5 +1,6 @@
 package com.ruoyi.hr.service.impl;
 
+import com.ruoyi.common.annotation.DataScope;
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -56,6 +57,7 @@ public class HrLeaveRequestServiceImpl implements IHrLeaveRequestService
     }
 
     @Override
+    @DataScope(deptAlias = "t")
     public List<HrLeaveRequest> selectHrLeaveRequestList(HrLeaveRequest hrLeaveRequest) { return hrLeaveRequestMapper.selectHrLeaveRequestList(hrLeaveRequest); }
 
     @Override

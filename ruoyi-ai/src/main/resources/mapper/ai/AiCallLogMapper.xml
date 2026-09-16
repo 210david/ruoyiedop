@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.ai.mapper.AiCallLogMapper">
+
+    <resultMap type="AiCallLog" id="AiCallLogResult">
+        <id     property="logId"        column="log_id"/>
+        <result property="module"       column="module"/>
+        <result property="feature"      column="feature"/>
+        <result property="userId"       column="user_id"/>
+        <result property="userName"     column="user_name"/>
+        <result property="status"       column="status"/>
+        <result property="durationMs"   column="duration_ms"/>
+        <result property="promptDigest" column="prompt_digest"/>
+        <result property="errorMsg"     column="error_msg"/>
+        <result property="callTime"     column="call_time"/>
+        <result property="createTime"   column="create_time"/>
+    </resultMap>
+
+    <sql id="selectLogVo">
+        select log_id, module, feature, user_id, user_name, status, duration_ms,
+               prompt_digest, error_msg, call_time, create_time
+        from ai_call_log
+    </sql>
+
+    <insert id="insertLog" parameterType="AiCallLog" useGeneratedKeys="true" keyProperty="logId">
+        insert into ai_call_log (module, feature, user_id, user_name, status, duration_ms,
+            prompt_digest, error_msg, call_time, create_by, create_time)
+        values (#{module}, #{feature}, #{userId}, #{userName}, #{status}, #{durationMs},
+            #{promptDigest}, #{errorMsg}, #{callTime}, #{userName}, sysdate())
+    </insert>
+
+    <select id="selectLogList" parameterType="AiCallLog" resultMap="AiCallLogResult">
+        <include refid="selectLogVo"/>
+        <where>
+            <if test="module != null and module != ''"> and module = #{module}</if>
+            <if test="feature != null and feature != ''"> and feature like concat('%', #{feature}, '%')</if>
+            <if test="userName != null and userName != ''"> and user_name like concat('%', #{userName}, '%')</if>
+            <if test="status != null and status != ''"> and status = #{status}</if>
+            <if test="params.beginTime != null and params.beginTime != ''"><!-- 开始时间检索 -->
+                and date_format(call_time,'%y%m%d') &gt;= date_format(#{params.beginTime},'%y%m%d')
+            </if>
+            <if test="params.endTime != null and params.endTime != ''"><!-- 结束时间检索 -->
+                and date_format(call_time,'%y%m%d') &lt;= date_format(#{params.endTime},'%y%m%d')
+            </if>
+        </where>
+        order by log_id desc
+    </select>
+
+    <select id="selectModuleStat" parameterType="map" resultType="map">
+        select module,
+               count(*) as total,
+               sum(case when status = '0' then 1 else 0 end) as success,
+               sum(case when status = '1' then 1 else 0 end) as degraded,
+               sum(case when status = '2' then 1 else 0 end) as failed,
+               sum(case when status = '3' then 1 else 0 end) as limited
+        from ai_call_log
+        where call_time &gt;= date_sub(now(), interval #{days} day)
+        group by module
+        order by total desc
+    </select>
+
+    <select id="selectFeatureStat" parameterType="map" resultType="map">
+        select module, feature,
+               count(*) as total,
+               sum(case when status = '0' then 1 else 0 end) as success,
+               round(avg(duration_ms)) as avgDuration
+        from ai_call_log
+        where call_time &gt;= date_sub(now(), interval #{days} day)
+        group by module, feature
+        order by total desc
+        limit 20
+    </select>
+
+    <select id="selectTotalStat" parameterType="map" resultType="map">
+        select count(*) as total,
+               sum(case when status = '0' then 1 else 0 end) as success,
+               sum(case when status = '1' then 1 else 0 end) as degraded,
+               sum(case when status = '2' then 1 else 0 end) as failed,
+               sum(case when status = '3' then 1 else 0 end) as limited,
+               round(avg(duration_ms)) as avgDuration
+        from ai_call_log
+        where call_time &gt;= date_sub(now(), interval #{days} day)
+    </select>
+
+</mapper>

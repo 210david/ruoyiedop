@@ -91,7 +91,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 AND dept_id = #{deptId}
             </if>
             AND del_flag = '0'
-        </where>
+                  <if test="params.dataScope != null and params.dataScope != ''">${params.dataScope}</if>
+</where>
         order by create_time desc
     </select>
 

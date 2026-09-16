@@ -1,5 +1,6 @@
 package com.ruoyi.mms.service.impl;
 
+import com.ruoyi.common.annotation.DataScope;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Date;
@@ -90,6 +91,7 @@ public class MmsWorkOrderServiceImpl implements IMmsWorkOrderService
     // ========== 标准 CRUD ==========
 
     @Override
+    @DataScope(deptAlias = "mms_work_order")
     public List<MmsWorkOrder> selectWorkOrderList(MmsWorkOrder workOrder)
     {
         return workOrderMapper.selectWorkOrderList(workOrder);

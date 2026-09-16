@@ -211,10 +211,12 @@
             <div class="rd-card-header" @click="toggleCard('e_sample')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg></span>抽样与检验</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.e_sample }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
             <div class="rd-card-body" v-show="!collapsedCards.e_sample">
               <el-row :gutter="20">
-                <el-col :span="8"><el-form-item label="送检数量" prop="inspectQty"><el-input-number v-model="form.inspectQty" :min="0" :precision="0" style="width: 100%" /></el-form-item></el-col>
-                <el-col :span="6"><el-form-item prop="aqlLevel" required><template #label><span>AQL等级</span><el-tooltip content="AQL（Acceptable Quality Limit）即可接受质量限，表示检验批中允许的最大不合格品率，以百分比表示。常用值为2.5%（一般检验）、1.5%（加严检验）、4.0%（放宽检验）" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></template><el-input v-model="form.aqlLevel" placeholder="如：2.5（%）"><template #append>%</template></el-input></el-form-item></el-col>
-                <el-col :span="6"><el-form-item prop="inspectLevel" required><template #label><span>检验严格度</span><el-tooltip content="抽样检验的严格度等级，分为：正常检验、加严检验、放宽检验。根据产品质量历史动态调整检验严格度" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></template><el-select v-model="form.inspectLevel" style="width: 100%"><el-option v-for="d in qms_inspect_level" :key="d.value" :label="d.label" :value="d.value" /></el-select></el-form-item></el-col>
-                <el-col :span="6"><el-form-item prop="inspectMethod"><template #label><span>检验水平</span><el-tooltip content="检验水平决定了批量与样本量之间的关系。OQC出货检验默认使用S-4（特殊检验水平，样本量小）；IQC/IPQC/FQC默认使用II（一般检验水平，标准样本量）。检验水平越高样本量越大，检验判别能力越强" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></template><el-select v-model="form.inspectMethod" style="width: 100%"><el-option label="S-1（特殊-极小）" value="S-1" /><el-option label="S-2（特殊-小）" value="S-2" /><el-option label="S-3（特殊-中）" value="S-3" /><el-option label="S-4（特殊-大）" value="S-4" /><el-option label="I（一般-低）" value="I" /><el-option label="II（一般-标准）" value="II" /><el-option label="III（一般-高）" value="III" /></el-select></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="送检数量" prop="inspectQty"><el-input-number v-model="form.inspectQty" :min="0" :precision="0" style="width: 100%" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item prop="aqlLevel" required><template #label><span>AQL等级</span><el-tooltip content="AQL即可接受质量限，表示检验批中允许的最大不合格品率。输入后自动带出检验严格度：2.5%→正常、1.5%→加严、4.0%→放宽，其他值按范围推断（≤2.0加严、2.01~3.5正常、>3.5放宽），也可手动调整" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></template><el-input v-model="form.aqlLevel" placeholder="如：2.5"><template #append>%</template></el-input></el-form-item></el-col>
+              </el-row>
+              <el-row :gutter="20">
+                <el-col :span="12"><el-form-item prop="inspectLevel" required><template #label><span>检验严格度</span><el-tooltip content="抽样检验的严格度等级，分为：正常检验、加严检验、放宽检验。根据AQL等级自动带出，也可手动调整" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></template><el-select v-model="form.inspectLevel" style="width: 100%"><el-option v-for="d in qms_inspect_level" :key="d.value" :label="d.label" :value="d.value" /></el-select></el-form-item></el-col>
+                <el-col :span="12"><el-form-item prop="inspectMethod"><template #label><span>检验水平</span><el-tooltip content="检验水平决定了批量与样本量之间的关系。OQC出货检验默认使用S-4（特殊检验水平，样本量小）；IQC/IPQC/FQC默认使用II（一般检验水平，标准样本量）" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></template><el-select v-model="form.inspectMethod" style="width: 100%"><el-option label="S-1（特殊-极小）" value="S-1" /><el-option label="S-2（特殊-小）" value="S-2" /><el-option label="S-3（特殊-中）" value="S-3" /><el-option label="S-4（特殊-大）" value="S-4" /><el-option label="I（一般-低）" value="I" /><el-option label="II（一般-标准）" value="II" /><el-option label="III（一般-高）" value="III" /></el-select></el-form-item></el-col>
               </el-row>
               <el-row :gutter="20">
                 <el-col :span="12"><el-form-item label="量检具" prop="gaugeId"><el-input :model-value="gaugeDisplay" readonly placeholder="请选择量检具" style="width: 100%" @click="openGaugePicker"><template v-if="form.gaugeName" #append><el-button icon="CircleClose" @click.stop="clearGauge" /></template><template v-else #append><el-button icon="Search" @click="openGaugePicker" /></template></el-input></el-form-item></el-col>
@@ -253,19 +255,19 @@
             <div class="rd-item"><span class="rd-label">物料名称</span><div class="rd-value">{{ viewData.materialName || '-' }}</div></div>
             <div class="rd-item"><span class="rd-label">供应商</span><div class="rd-value">{{ viewData.supplierName || '-' }}</div></div>
             <div class="rd-item"><span class="rd-label">批次号</span><div class="rd-value">{{ viewData.batchNo || '-' }}</div></div>
-            <div class="rd-item"><span class="rd-label">送检数量</span><div class="rd-value">{{ viewData.inspectQty != null ? viewData.inspectQty : '-' }}</div></div>
             <div class="rd-item"><span class="rd-label">量检具<el-tooltip content="用于检验测量的工具或仪器，如卡尺、千分尺、通止规等，从量检具库中选择" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></span><div class="rd-value">{{ viewData.gaugeNo ? viewData.gaugeNo + ' - ' + (viewData.gaugeName || '') : (viewData.gaugeName || '-') }}</div></div>
           </div></div>
         </section>
         <section class="rd-card">
           <div class="rd-card-header" @click="toggleCard('v_aql')"><div class="rd-card-title">AQL抽样信息</div><el-tooltip content="AQL（Acceptable Quality Limit）即可接受质量限，是抽样检验标准中的核心参数，用于判定检验批是否合格" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v_aql }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
           <div class="rd-card-body" v-show="!collapsedCards.v_aql" style="display:block"><div class="rd-grid">
-            <div class="rd-item"><span class="rd-label">AQL等级<el-tooltip content="AQL（Acceptable Quality Limit）即可接受质量限，表示检验批中允许的最大不合格品率，以百分比表示。常用值为2.5%（一般检验）、1.5%（加严检验）、4.0%（放宽检验）" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></span><div class="rd-value">{{ viewData.aqlLevel != null ? viewData.aqlLevel + '%' : '-' }}</div></div>
-            <div class="rd-item"><span class="rd-label">检验严格度<el-tooltip content="抽样检验的严格度等级，分为：正常检验、加严检验、放宽检验。根据产品质量历史动态调整检验严格度" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></span><div class="rd-value"><dict-tag :options="qms_inspect_level" :value="viewData.inspectLevel" /></div></div>
-            <div class="rd-item"><span class="rd-label">检验水平<el-tooltip content="检验水平决定了批量与样本量之间的关系，分为特殊检验水平（S-1~S-4）和一般检验水平（I~III）。OQC出货检验默认使用S-4" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></span><div class="rd-value">{{ viewData.inspectMethod || 'II' }}</div></div>
-            <div class="rd-item"><span class="rd-label">样本量(n)<el-tooltip content="n为样本量（Sample Size），即从检验批中抽取的样本数量，由批量大小和检验水平查表确定" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></span><div class="rd-value">{{ viewData.sampleSize != null ? viewData.sampleSize : '-' }}</div></div>
-            <div class="rd-item"><span class="rd-label">接收数(Ac)<el-tooltip content="Ac为接收数（Acceptance Number），即抽样检验中允许的最大不合格品数，当样本中的不合格品数≤Ac时判定批合格" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></span><div class="rd-value">{{ viewData.acVal != null ? viewData.acVal : '-' }}</div></div>
-            <div class="rd-item"><span class="rd-label">拒收数(Re)<el-tooltip content="Re为拒收数（Rejection Number），即抽样检验中拒收的最小不合格品数，当样本中的不合格品数≥Re时判定批不合格" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></span><div class="rd-value">{{ viewData.reVal != null ? viewData.reVal : '-' }}</div></div>
+            <div class="rd-item"><span class="rd-label">送检数量</span><div class="rd-value">{{ viewData.inspectQty != null ? viewData.inspectQty : '-' }}</div></div>
+            <div class="rd-item"><span class="rd-label">AQL等级</span><div class="rd-value">{{ viewData.aqlLevel != null ? viewData.aqlLevel + '%' : '-' }}</div></div>
+            <div class="rd-item"><span class="rd-label">检验严格度</span><div class="rd-value"><dict-tag :options="qms_inspect_level" :value="viewData.inspectLevel" /></div></div>
+            <div class="rd-item"><span class="rd-label">检验水平</span><div class="rd-value">{{ viewData.inspectMethod || 'II' }}</div></div>
+            <div class="rd-item"><span class="rd-label">样本量(n)</span><div class="rd-value">{{ viewData.sampleSize != null ? viewData.sampleSize : '-' }}</div></div>
+            <div class="rd-item"><span class="rd-label">接收数(Ac)</span><div class="rd-value">{{ viewData.acVal != null ? viewData.acVal : '-' }}</div></div>
+            <div class="rd-item"><span class="rd-label">拒收数(Re)</span><div class="rd-value">{{ viewData.reVal != null ? viewData.reVal : '-' }}</div></div>
           </div></div>
         </section>
         <section class="rd-card">
@@ -396,9 +398,9 @@
           <div class="highlight-card-title">抽样与检验区</div>
           <div class="highlight-card-body">
             <p>• <strong>送检数量：</strong>本次送检的物料数量<span style="color: #f56c6c;">*必填</span></p>
-            <p>• <strong>AQL等级：</strong>可接受质量限，表示检验批中允许的最大不合格品率，以百分比表示（%）。常用值为2.5%（一般检验）、1.5%（加严检验）、4.0%（放宽检验）<span style="color: #f56c6c;">*必填</span></p>
-            <p>• <strong>检验严格度：</strong>分为正常检验、加严检验、放宽检验。根据产品质量历史动态调整<span style="color: #f56c6c;">*必填</span></p>
-            <p>• <strong>检验水平：</strong>决定批量与样本量的映射关系。OQC默认S-4（样本量小），其他默认II（标准）。选填，不填时系统按检验类型自动推断</p>
+            <p>• <strong>AQL等级：</strong>可接受质量限，表示检验批中允许的最大不合格品率，以百分比表示（%）。常用值：2.5%（正常）、1.5%（加严）、4.0%（放宽）。输入后自动带出检验严格度<span style="color: #f56c6c;">*必填</span></p>
+            <p>• <strong>检验严格度：</strong>分为正常检验、加严检验、放宽检验。根据AQL等级自动带出，也可手动调整<span style="color: #f56c6c;">*必填</span></p>
+            <p>• <strong>检验水平：</strong>决定批量与样本量的映射关系。根据检验类型自动带出：OQC→S-4（样本量小），其他→II（标准），也可手动调整</p>
             <p>• <strong>量检具：</strong>从量检具库中选择，选择时同时显示编号和名称</p>
             <p>• <strong>检验员：</strong>从组织机构中选择执行检验的人员<span style="color: #f56c6c;">*必填</span></p>
           </div>
@@ -447,16 +449,14 @@
           </div>
         </div>
         <div class="highlight-card highlight-primary" style="margin-top: 12px;">
-          <div class="highlight-card-title">检验严格度转换规则</div>
+          <div class="highlight-card-title">检验严格度与AQL等级联动规则</div>
           <div class="highlight-card-body">
-            <p>检验严格度分为<strong>正常</strong>、<strong>加严</strong>、<strong>放宽</strong>三种，根据检验历史动态调整：</p>
-            <p>• <strong>正常检验：</strong>系统默认状态，按标准抽样方案执行检验</p>
-            <p>• <strong>正常 → 加严：</strong>正常检验时，连续5批中有2批被拒收，则从下一批起转为加严检验</p>
-            <p>• <strong>加严 → 正常：</strong>加严检验时，连续5批均被接收，则恢复正常检验</p>
-            <p>• <strong>正常 → 放宽：</strong>正常检验时，连续10批均被接收且生产稳定，经质量主管批准后转为放宽检验</p>
-            <p>• <strong>放宽 → 正常：</strong>放宽检验时，有1批被拒收或生产不稳定，立即恢复正常检验</p>
-            <p>• <strong>加严 → 暂停：</strong>加严检验时累计5批被拒收，暂停抽样检验，待质量改进后恢复</p>
-            <p style="color: #e6a23c;"><strong>提示：</strong>加严检验会增大样本量或降低接收数，放宽检验会减小样本量，系统根据历史检验结果自动跟踪和提示严格度转换。</p>
+            <p>检验严格度分为<strong>正常</strong>、<strong>加严</strong>、<strong>放宽</strong>三种。填写AQL等级时系统自动带出检验严格度，也可手动调整：</p>
+            <p>• <strong>AQL 2.5%</strong> → 正常检验（系统默认状态，按标准抽样方案执行）</p>
+            <p>• <strong>AQL 1.5%</strong> → 加严检验（增大样本量或降低接收数，适用于质量风险较高的物料）</p>
+            <p>• <strong>AQL 4.0%</strong> → 放宽检验（减小样本量，适用于质量稳定的低风险物料）</p>
+            <p>• <strong>其他值范围推断：</strong>≤2.0→加严、2.01~3.5→正常、>3.5→放宽</p>
+            <p style="color: #e6a23c;"><strong>提示：</strong>加严检验会增大样本量或降低接收数，放宽检验会减小样本量。实际生产中可根据产品质量历史动态调整：连续5批中有2批被拒收应转为加严，连续10批均被接收可转为放宽。</p>
           </div>
         </div>
         <div class="highlight-card highlight-success" style="margin-top: 12px;">
@@ -880,6 +880,28 @@ function openUserPicker() { userPickerRef.value.open(form.value.inspectorId) }
 function onUserPickerConfirm(user) { form.value.inspectorId = user.userId; form.value.inspectorName = user.nickName }
 /** 清空检验员 */
 function clearInspector() { form.value.inspectorId = undefined; form.value.inspectorName = undefined }
+
+/** AQL等级变化时自动带出检验严格度
+ *  精确匹配：2.5→正常(1)、1.5→加严(2)、4.0→放宽(3)
+ *  范围推断：≤2.0→加严(2)、2.01~3.5→正常(1)、>3.5→放宽(3)
+ */
+watch(() => form.value.aqlLevel, (val) => {
+  if (val == null || val === '') { return }
+  const v = parseFloat(val)
+  if (isNaN(v)) { return }
+  if (v === 2.5) form.value.inspectLevel = '1'
+  else if (v === 1.5) form.value.inspectLevel = '2'
+  else if (v === 4.0 || v === 4) form.value.inspectLevel = '3'
+  else if (v <= 2.0) form.value.inspectLevel = '2'
+  else if (v <= 3.5) form.value.inspectLevel = '1'
+  else form.value.inspectLevel = '3'
+})
+/** 检验类型变化时自动带出检验水平：OQC→S-4，其他→II */
+watch(() => form.value.taskType, (val) => {
+  if (val) {
+    form.value.inspectMethod = val === 'OQC' ? 'S-4' : 'II'
+  }
+})
 
 function handleAdd() { reset(); open.value = true; title.value = '添加检验任务' }
 function handleUpdate(row) { reset(); getTask(row.taskId || ids.value[0]).then(res => { form.value = res.data; open.value = true; title.value = '修改检验任务' }) }

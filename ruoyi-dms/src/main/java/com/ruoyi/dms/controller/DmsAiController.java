@@ -100,4 +100,23 @@ public class DmsAiController extends BaseController
         }
         return AjaxResult.success(dmsAiService.knowledgeQA(question));
     }
+
+    // ===== AI知识沉淀：从完工工单自动生成FAQ =====
+
+    /**
+     * 从已完工/已验收工单自动生成FAQ（AI生成，待人工审核后启用）
+     * body可选：{ "limit": 8 }
+     */
+    @PreAuthorize("@ss.hasPermi('dms:ai:faq:add')")
+    @Log(title = "维修知识FAQ", businessType = BusinessType.INSERT)
+    @PostMapping("/faq/generate")
+    public AjaxResult generateFaq(@RequestBody(required = false) Map<String, Object> body)
+    {
+        Integer limit = 8;
+        if (body != null && body.get("limit") != null)
+        {
+            try { limit = Integer.parseInt(body.get("limit").toString()); } catch (NumberFormatException ignore) {}
+        }
+        return AjaxResult.success(dmsAiService.generateFaqFromOrders(limit));
+    }
 }

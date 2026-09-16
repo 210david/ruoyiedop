@@ -146,18 +146,18 @@
             <div class="rd-card-header" @click="toggleCard('e_insp')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>检验配置</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.e_insp }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
             <div class="rd-card-body" v-show="!collapsedCards.e_insp">
               <el-row :gutter="20">
+                <el-col :span="12"><el-form-item prop="isExempt"><template #label><span>是否免检</span><el-tooltip content="勾选“是”表示该物料可跳过检验直接入库/投入使用，通常适用于低风险物料或有质量保证协议的供应商" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></template><el-radio-group v-model="form.isExempt" @change="onExemptChange"><el-radio value="0">否</el-radio><el-radio value="1">是</el-radio></el-radio-group></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="状态" prop="status"><el-radio-group v-model="form.status"><el-radio value="0">正常</el-radio><el-radio value="1">停用</el-radio></el-radio-group></el-form-item></el-col>
+              </el-row>
+              <el-row :gutter="20">
                 <el-col :span="24">
                   <el-form-item prop="inspectTypes">
                     <template #label><span>检验类型</span><el-tooltip content="检验类型包括IQC（来料检验）、IPQC（过程检验）、FQC（成品检验）、OQC（出货检验）等，可多选" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></template>
-                    <el-checkbox-group v-model="inspectTypeArr" class="insp-type-group">
+                    <el-checkbox-group v-model="inspectTypeArr" class="insp-type-group" :disabled="form.isExempt === '1'">
                       <el-checkbox v-for="d in qms_insp_type" :key="d.value" :value="d.value">{{ d.label }}</el-checkbox>
                     </el-checkbox-group>
                   </el-form-item>
                 </el-col>
-              </el-row>
-              <el-row :gutter="20">
-                <el-col :span="12"><el-form-item prop="isExempt"><template #label><span>是否免检</span><el-tooltip content="勾选“是”表示该物料可跳过检验直接入库/投入使用，通常适用于低风险物料或有质量保证协议的供应商" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></template><el-radio-group v-model="form.isExempt"><el-radio value="0">否</el-radio><el-radio value="1">是</el-radio></el-radio-group></el-form-item></el-col>
-                <el-col :span="12"><el-form-item label="状态" prop="status"><el-radio-group v-model="form.status"><el-radio value="0">正常</el-radio><el-radio value="1">停用</el-radio></el-radio-group></el-form-item></el-col>
               </el-row>
             </div>
           </section>
@@ -189,8 +189,8 @@
           <div class="rd-card-body" v-show="!collapsedCards.v_basic" style="display:block"><div class="rd-grid">
             <div class="rd-item"><span class="rd-label">物料编码</span><div class="rd-value">{{ viewData.materialCode || '-' }}</div></div>
             <div class="rd-item"><span class="rd-label">物料名称</span><div class="rd-value">{{ viewData.materialName || '-' }}</div></div>
-            <div class="rd-item"><span class="rd-label">检验类型</span><div class="rd-value"><span v-for="(t, i) in parseInspectTypes(viewData.inspectTypes)" :key="i" class="badge blue" style="margin-right:4px"><span class="dot"></span>{{ inspTypeLabel(t) }}</span></div></div>
             <div class="rd-item"><span class="rd-label">是否免检</span><div class="rd-value">{{ viewData.isExempt === '1' ? '是' : '否' }}</div></div>
+            <div class="rd-item" v-if="viewData.isExempt !== '1'"><span class="rd-label">检验类型</span><div class="rd-value"><span v-for="(t, i) in parseInspectTypes(viewData.inspectTypes)" :key="i" class="badge blue" style="margin-right:4px"><span class="dot"></span>{{ inspTypeLabel(t) }}</span></div></div>
             <div class="rd-item"><span class="rd-label">状态</span><div class="rd-value">{{ viewData.status === '0' ? '正常' : '停用' }}</div></div>
           </div></div>
         </section>
@@ -272,6 +272,8 @@ function reset() { form.value = { attrId: undefined, materialId: undefined, mate
 function openMaterialPicker() { materialPickerRef.value.open(form.value.materialId) }
 function onMaterialPickerConfirm(material) { form.value.materialId = material.materialId; form.value.materialCode = material.materialCode; form.value.materialName = material.materialName }
 function clearMaterial() { form.value.materialId = undefined; form.value.materialCode = undefined; form.value.materialName = undefined }
+/** 是否免检切换为"是"时清空检验类型 */
+function onExemptChange(val) { if (val === '1') { inspectTypeArr.value = [] } }
 function handleAdd() { reset(); open.value = true; title.value = '添加物料质量属性' }
 function handleUpdate(row) { reset(); getMaterialAttr(row.attrId || ids.value[0]).then(res => { form.value = res.data; inspectTypeArr.value = parseInspectTypes(res.data.inspectTypes); open.value = true; title.value = '修改物料质量属性' }) }
 function handleView(row) { getMaterialAttr(row.attrId).then(res => { viewData.value = res.data; viewOpen.value = true }) }

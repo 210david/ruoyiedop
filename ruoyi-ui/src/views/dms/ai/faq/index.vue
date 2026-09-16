@@ -47,6 +47,7 @@
       <div class="toolbar">
         <div class="left">
           <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['dms:ai:faq:add']">新增</el-button>
+          <el-button type="success" plain icon="MagicStick" :loading="generating" @click="handleAiGenerate" v-hasPermi="['dms:ai:faq:add']">AI生成</el-button>
           <button type="button" class="btn-soft is-outline" :disabled="single" @click="handleUpdate" v-hasPermi="['dms:ai:faq:edit']">
             <el-icon><Edit /></el-icon> 修改
           </button>
@@ -200,7 +201,7 @@
 </template>
 
 <script setup name="DmsRepairFaq">
-import { listFaq, getFaq, addFaq, updateFaq, delFaq } from '@/api/dms/ai'
+import { listFaq, getFaq, addFaq, updateFaq, delFaq, generateFaqFromOrders } from '@/api/dms/ai'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
 const { collapsedCards, toggleCard } = useDetailCard(["c0", "c1", "c2", "v0", "v1", "v2"])
@@ -261,6 +262,23 @@ const data = reactive({
 const { queryParams, form, rules } = toRefs(data)
 
 function getList() { loading.value = true; listFaq(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false; applySavedWidths() }) }
+
+/** AI从完工工单自动生成FAQ */
+const generating = ref(false)
+function handleAiGenerate() {
+  proxy.$modal.confirm('将从已完工/已验收工单中用AI自动生成维修知识FAQ（生成后为待审核状态），是否继续？').then(() => {
+    generating.value = true
+    generateFaqFromOrders(8).then(res => {
+      const d = res.data || {}
+      if (d.success) {
+        proxy.$modal.msgSuccess(d.msg || '生成完成')
+        getList()
+      } else {
+        proxy.$modal.msgWarning(d.msg || '生成失败，请检查AI配置')
+      }
+    }).finally(() => { generating.value = false })
+  }).catch(() => {})
+}
 function handleQuery() { queryParams.value.pageNum = 1; getList() }
 function resetQuery() {
   queryParams.value = { pageNum: 1, pageSize: 10, question: undefined, categoryName: undefined, keywords: undefined }

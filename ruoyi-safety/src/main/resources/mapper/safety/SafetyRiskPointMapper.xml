@@ -65,7 +65,8 @@
             <if test="accidentType != null and accidentType != ''"> AND accident_type = #{accidentType}</if>
             <if test="isMajorHazard != null and isMajorHazard != ''"> AND is_major_hazard = #{isMajorHazard}</if>
             <if test="status != null and status != ''"> AND status = #{status}</if>
-        </where>
+                  <if test="params.dataScope != null and params.dataScope != ''">${params.dataScope}</if>
+</where>
         ORDER BY d_value DESC
     </select>
 

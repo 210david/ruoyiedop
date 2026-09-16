@@ -1,5 +1,6 @@
 package com.ruoyi.qms.service.impl;
 
+import com.ruoyi.common.annotation.DataScope;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -52,6 +53,7 @@ public class QmsNcrServiceImpl implements IQmsNcrService
     private MessageHelper messageHelper;
 
     @Override
+    @DataScope(deptAlias = "qms_ncr")
     public List<QmsNcr> selectNcrList(QmsNcr ncr)
     {
         return qmsNcrMapper.selectNcrList(ncr);

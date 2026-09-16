@@ -86,7 +86,8 @@
             <if test="settlementType != null and settlementType != ''"> AND settlement_type = #{settlementType}</if>
             <if test="params.beginDate != null and params.beginDate != ''"> AND date(order_date) &gt;= #{params.beginDate}</if>
             <if test="params.endDate != null and params.endDate != ''"> AND date(order_date) &lt;= #{params.endDate}</if>
-        </where>
+                  <if test="params.dataScope != null and params.dataScope != ''">${params.dataScope}</if>
+</where>
         ORDER BY order_id DESC
     </select>
 

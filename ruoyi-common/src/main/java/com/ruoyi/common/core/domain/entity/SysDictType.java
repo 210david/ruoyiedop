@@ -30,6 +30,10 @@ public class SysDictType extends BaseEntity
     @Excel(name = "字典类型")
     private String dictType;
 
+    /** 字典分类（业务模块） */
+    @Excel(name = "字典分类")
+    private String dictCategory;
+
     /** 状态（0正常 1停用） */
     @Excel(name = "状态", readConverterExp = "0=正常,1=停用")
     private String status;
@@ -69,6 +73,16 @@ public class SysDictType extends BaseEntity
         this.dictType = dictType;
     }
 
+    public String getDictCategory()
+    {
+        return dictCategory;
+    }
+
+    public void setDictCategory(String dictCategory)
+    {
+        this.dictCategory = dictCategory;
+    }
+
     public String getStatus()
     {
         return status;
@@ -85,6 +99,7 @@ public class SysDictType extends BaseEntity
             .append("dictId", getDictId())
             .append("dictName", getDictName())
             .append("dictType", getDictType())
+            .append("dictCategory", getDictCategory())
             .append("status", getStatus())
             .append("createBy", getCreateBy())
             .append("createTime", getCreateTime())

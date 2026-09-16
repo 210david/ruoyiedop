@@ -22,6 +22,12 @@
             <artifactId>ruoyi-common</artifactId>
         </dependency>
 
+        <!-- AI公共模块（统一LLM调用/审计/限额） -->
+        <dependency>
+            <groupId>com.ruoyi</groupId>
+            <artifactId>ruoyi-ai</artifactId>
+        </dependency>
+
         <!-- 系统模块 -->
         <dependency>
             <groupId>com.ruoyi</groupId>

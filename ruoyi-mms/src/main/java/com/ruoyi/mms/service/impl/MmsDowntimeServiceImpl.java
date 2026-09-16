@@ -1,5 +1,6 @@
 package com.ruoyi.mms.service.impl;
 
+import com.ruoyi.common.annotation.DataScope;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Date;
@@ -26,6 +27,7 @@ public class MmsDowntimeServiceImpl implements IMmsDowntimeService
     private IMkNumberRuleService mkNumberRuleService;
 
     @Override
+    @DataScope(deptAlias = "mms_downtime")
     public List<MmsDowntime> selectDowntimeList(MmsDowntime downtime)
     {
         return downtimeMapper.selectDowntimeList(downtime);

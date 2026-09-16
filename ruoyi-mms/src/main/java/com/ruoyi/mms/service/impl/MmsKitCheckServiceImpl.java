@@ -1,5 +1,6 @@
 package com.ruoyi.mms.service.impl;
 
+import com.ruoyi.common.annotation.DataScope;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
@@ -49,6 +50,7 @@ public class MmsKitCheckServiceImpl implements IMmsKitCheckService
     private MmsBomMapper bomMapper;
 
     @Override
+    @DataScope(deptAlias = "mms_kit_check")
     public List<MmsKitCheck> selectKitCheckList(MmsKitCheck kitCheck)
     {
         return kitCheckMapper.selectKitCheckList(kitCheck);

@@ -1,5 +1,6 @@
 package com.ruoyi.pms.service.impl;
 
+import com.ruoyi.common.annotation.DataScope;
 import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
@@ -39,6 +40,7 @@ public class PmsPurchaseRequestServiceImpl implements IPmsPurchaseRequestService
     private MessageHelper messageHelper;
 
     @Override
+    @DataScope(deptAlias = "pms_purchase_request")
     public List<PmsPurchaseRequest> selectPurchaseRequestList(PmsPurchaseRequest request)
     {
         return pmsPurchaseRequestMapper.selectPurchaseRequestList(request);

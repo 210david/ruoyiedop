@@ -1,5 +1,6 @@
 package com.ruoyi.hr.service.impl;
 
+import com.ruoyi.common.annotation.DataScope;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -74,6 +75,7 @@ public class HrEmployeeServiceImpl implements IHrEmployeeService
     }
 
     @Override
+    @DataScope(deptAlias = "biz_hr_employee")
     public List<HrEmployee> selectHrEmployeeList(HrEmployee hrEmployee) { return hrEmployeeMapper.selectHrEmployeeList(hrEmployee); }
 
     @Override

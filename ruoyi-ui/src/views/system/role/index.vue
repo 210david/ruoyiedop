@@ -228,9 +228,22 @@
                   <div class="rd-card-body">
                      <div class="menu-perm-toolbar">
                         <div class="menu-perm-ops">
-                           <el-checkbox v-model="menuExpand" @change="handleCheckedTreeExpand($event, 'menu')">展开/折叠</el-checkbox>
-                           <el-checkbox v-model="menuNodeAll" @change="handleCheckedTreeNodeAll($event, 'menu')">全选/全不选</el-checkbox>
-                           <el-checkbox v-model="form.menuCheckStrictly" @change="handleCheckedTreeConnect($event, 'menu')">父子联动</el-checkbox>
+                           <el-button-group>
+                              <el-button size="small" :type="menuExpand ? 'primary' : 'default'" @click="toggleTreeExpand('menu')">
+                                 <el-icon style="margin-right: 4px;"><component :is="menuExpand ? 'ArrowDown' : 'ArrowRight'" /></el-icon>
+                                 {{ menuExpand ? '折叠' : '展开' }}
+                              </el-button>
+                              <el-button size="small" :type="menuNodeAll ? 'primary' : 'default'" @click="toggleTreeNodeAll('menu')">
+                                 <el-icon style="margin-right: 4px;"><component :is="menuNodeAll ? 'Check' : 'Minus'" /></el-icon>
+                                 {{ menuNodeAll ? '全不选' : '全选' }}
+                              </el-button>
+                              <el-tooltip content="开启后，勾选父级菜单时自动选中所有子级菜单；关闭后，父子菜单独立勾选" placement="top">
+                                 <el-button size="small" :type="form.menuCheckStrictly ? 'primary' : 'default'" @click="toggleTreeConnect('menu')">
+                                    <el-icon style="margin-right: 4px;"><Connection /></el-icon>
+                                    父子联动{{ form.menuCheckStrictly ? '：开' : '：关' }}
+                                 </el-button>
+                              </el-tooltip>
+                           </el-button-group>
                         </div>
                         <el-input v-model="menuFilterText" placeholder="搜索菜单名称" clearable size="small" style="width: 200px" :prefix-icon="Search" @input="handleMenuFilter" />
                      </div>
@@ -303,9 +316,22 @@
                   <el-form-item label="数据权限" v-show="form.dataScope == 2">
                      <div class="menu-perm-toolbar" style="margin-bottom: 8px;">
                         <div class="menu-perm-ops">
-                           <el-checkbox v-model="deptExpand" @change="handleCheckedTreeExpand($event, 'dept')">展开/折叠</el-checkbox>
-                           <el-checkbox v-model="deptNodeAll" @change="handleCheckedTreeNodeAll($event, 'dept')">全选/全不选</el-checkbox>
-                           <el-checkbox v-model="form.deptCheckStrictly" @change="handleCheckedTreeConnect($event, 'dept')">父子联动</el-checkbox>
+                           <el-button-group>
+                              <el-button size="small" :type="deptExpand ? 'primary' : 'default'" @click="toggleTreeExpand('dept')">
+                                 <el-icon style="margin-right: 4px;"><component :is="deptExpand ? 'ArrowDown' : 'ArrowRight'" /></el-icon>
+                                 {{ deptExpand ? '折叠' : '展开' }}
+                              </el-button>
+                              <el-button size="small" :type="deptNodeAll ? 'primary' : 'default'" @click="toggleTreeNodeAll('dept')">
+                                 <el-icon style="margin-right: 4px;"><component :is="deptNodeAll ? 'Check' : 'Minus'" /></el-icon>
+                                 {{ deptNodeAll ? '全不选' : '全选' }}
+                              </el-button>
+                              <el-tooltip content="开启后，勾选父级部门时自动选中所有子级部门；关闭后，父子部门独立勾选" placement="top">
+                                 <el-button size="small" :type="form.deptCheckStrictly ? 'primary' : 'default'" @click="toggleTreeConnect('dept')">
+                                    <el-icon style="margin-right: 4px;"><Connection /></el-icon>
+                                    父子联动{{ form.deptCheckStrictly ? '：开' : '：关' }}
+                                 </el-button>
+                              </el-tooltip>
+                           </el-button-group>
                         </div>
                      </div>
                      <el-tree
@@ -335,7 +361,7 @@
 import TreePanel from "@/components/TreePanel"
 import { addRole, changeRoleStatus, dataScope, delRole, getRole, listRole, updateRole, deptTreeSelect } from "@/api/system/role"
 import { roleMenuTreeselect, treeselect as menuTreeselect } from "@/api/system/menu"
-import { Search, Key, Filter, Edit, Delete, Download, RefreshLeft } from "@element-plus/icons-vue"
+import { Search, Key, Filter, Edit, Delete, Download, RefreshLeft, ArrowDown, ArrowRight, Check, Minus, Connection } from "@element-plus/icons-vue"
 import { pinyin } from 'pinyin-pro'
 import { useColumnResize } from '@/composables/useColumnResize'
 
@@ -356,7 +382,7 @@ const total = ref(0)
 const title = ref("")
 const dateRange = ref([])
 const menuOptions = ref([])
-const menuExpand = ref(false)
+const menuExpand = ref(true)
 const menuNodeAll = ref(false)
 const deptExpand = ref(true)
 const deptNodeAll = ref(false)
@@ -585,7 +611,10 @@ function handleMenuFilter() {
   if (menuFilterText.value) {
     menuExpand.value = true
     nextTick(() => {
-      handleCheckedTreeExpand(true, 'menu')
+      let treeList = menuOptions.value
+      for (let i = 0; i < treeList.length; i++) {
+        menuRef.value.store.nodesMap[treeList[i].id].expanded = true
+      }
     })
   }
 }
@@ -605,7 +634,7 @@ function reset() {
   if (menuRef.value != undefined) {
     menuRef.value.setCheckedKeys([])
   }
-  menuExpand.value = false
+  menuExpand.value = true
   menuNodeAll.value = false
   menuFilterText.value = ""
   deptExpand.value = true
@@ -681,36 +710,40 @@ function getDeptTree(roleId) {
   })
 }
 
-/** 树权限（展开/折叠）*/
-function handleCheckedTreeExpand(value, type) {
-  if (type == "menu") {
+/** 树权限（展开/折叠）— 切换按钮 */
+function toggleTreeExpand(type) {
+  if (type == 'menu') {
+    menuExpand.value = !menuExpand.value
     let treeList = menuOptions.value
     for (let i = 0; i < treeList.length; i++) {
-      menuRef.value.store.nodesMap[treeList[i].id].expanded = value
+      menuRef.value.store.nodesMap[treeList[i].id].expanded = menuExpand.value
     }
-  } else if (type == "dept") {
+  } else if (type == 'dept') {
+    deptExpand.value = !deptExpand.value
     let treeList = deptOptions.value
     for (let i = 0; i < treeList.length; i++) {
-      deptRef.value.store.nodesMap[treeList[i].id].expanded = value
+      deptRef.value.store.nodesMap[treeList[i].id].expanded = deptExpand.value
     }
   }
 }
 
-/** 树权限（全选/全不选） */
-function handleCheckedTreeNodeAll(value, type) {
-  if (type == "menu") {
-    menuRef.value.setCheckedNodes(value ? menuOptions.value : [])
-  } else if (type == "dept") {
-    deptRef.value.setCheckedNodes(value ? deptOptions.value : [])
+/** 树权限（全选/全不选）— 切换按钮 */
+function toggleTreeNodeAll(type) {
+  if (type == 'menu') {
+    menuNodeAll.value = !menuNodeAll.value
+    menuRef.value.setCheckedNodes(menuNodeAll.value ? menuOptions.value : [])
+  } else if (type == 'dept') {
+    deptNodeAll.value = !deptNodeAll.value
+    deptRef.value.setCheckedNodes(deptNodeAll.value ? deptOptions.value : [])
   }
 }
 
-/** 树权限（父子联动） */
-function handleCheckedTreeConnect(value, type) {
-  if (type == "menu") {
-    form.value.menuCheckStrictly = value ? true : false
-  } else if (type == "dept") {
-    form.value.deptCheckStrictly = value ? true : false
+/** 树权限（父子联动）— 切换按钮 */
+function toggleTreeConnect(type) {
+  if (type == 'menu') {
+    form.value.menuCheckStrictly = !form.value.menuCheckStrictly
+  } else if (type == 'dept') {
+    form.value.deptCheckStrictly = !form.value.deptCheckStrictly
   }
 }
 

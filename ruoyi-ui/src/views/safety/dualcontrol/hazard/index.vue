@@ -131,6 +131,7 @@
             <template #default="scope">
               <div class="action-btn-row">
                 <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['safety:hazard:query']">查看</el-button>
+                <AiAssistButton button-text="AI" size="small" button-type="primary" :api="aiHazardAdvice" :params="[scope.row.hazardId]" @result="d => onHazardAdvice(d, scope.row)" />
                 <el-button v-if="scope.row.hazardStatus === '0' || scope.row.hazardStatus === '2'" link type="primary" icon="Check" @click="handleSubmit(scope.row)" v-hasPermi="['safety:hazard:submit']">提交</el-button>
                 <el-button v-if="scope.row.hazardStatus === '1'" link type="primary" icon="DocumentChecked" @click="handleApprove(scope.row)" v-hasPermi="['safety:hazard:approve']">审批</el-button>
                 <el-button v-if="scope.row.hazardStatus === '3'" link type="primary" icon="Edit" @click="handleStartRectify(scope.row)" v-hasPermi="['safety:hazard:rectify']">整改</el-button>
@@ -144,6 +145,7 @@
         </el-table>
       </div>
 
+      <AiResultPanel :visible="aiPanelVisible" :content="aiPanelText" :latency-ms="aiLatency" @close="aiPanelVisible = false" />
       <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
     </div>
 
@@ -591,6 +593,9 @@
 
 <script setup name="SafetyHazard">
 import { listHazard, getHazard, addHazard, updateHazard, delHazard, submitHazard, approveHazard as approveHazardApi, startRectify, submitRectify as submitRectifyApi, verifyHazard as verifyHazardApi } from '@/api/safety/hazard'
+import { aiHazardAdvice } from '@/api/ai/manage'
+import AiAssistButton from '@/components/AiAssist/AiAssistButton.vue'
+import AiResultPanel from '@/components/AiAssist/AiResultPanel.vue'
 import UserPicker from '@/components/UserPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
@@ -855,6 +860,33 @@ function hazardBadgeClass(status) { const map = { '0': 'gray', '1': 'amber', '2'
 function statusTabClass(value) { const map = { '0': 'tab-void', '1': 'tab-draft', '2': 'tab-reject', '3': 'tab-audit', '4': 'tab-audit', '5': 'tab-audit', '6': 'tab-done', '7': 'tab-reject' }; return map[value] || '' }
 
 getList()
+
+// ===== AI辅助（外挂式增量） =====
+const aiPanelVisible = ref(false)
+const aiPanelText = ref('')
+const aiLatency = ref(0)
+function onAiText(d, title) {
+  aiPanelText.value = (title ? '【' + title + '】\n\n' : '') + (d.content || d.error || 'AI未返回内容')
+  aiLatency.value = d.latencyMs || 0
+  aiPanelVisible.value = true
+}
+
+function onHazardAdvice(d, row) {
+  const p = d.parsed || {}
+  const lines = []
+  if (p.hazardCategory) lines.push('隐患分类：' + p.hazardCategory)
+  if (p.riskAssessment) lines.push('风险评估：' + p.riskAssessment)
+  if (Array.isArray(p.rectifyAdvice) && p.rectifyAdvice.length) {
+    lines.push('整改措施建议：')
+    p.rectifyAdvice.forEach((a, i) => lines.push('  ' + (i + 1) + '. ' + a))
+  }
+  if (p.deadlineAdvice) lines.push('整改时限建议：' + p.deadlineAdvice)
+  if (p.preventiveMeasure) lines.push('预防措施：' + p.preventiveMeasure)
+  if (!lines.length) lines.push(d.content || d.error || 'AI未返回有效建议')
+  aiPanelText.value = (row && row.hazardCode ? '【隐患 ' + row.hazardCode + '】\n' : '') + lines.join('\n')
+  aiLatency.value = d.latencyMs || 0
+  aiPanelVisible.value = true
+}
 </script>
 
 <style scoped>

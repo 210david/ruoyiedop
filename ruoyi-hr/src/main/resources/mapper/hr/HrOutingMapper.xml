@@ -55,7 +55,8 @@
             <if test="auditStatus != null and auditStatus != ''"> AND audit_status = #{auditStatus}</if>
             <if test="auditBy != null and auditBy != ''"> AND audit_by LIKE CONCAT('%', #{auditBy}, '%')</if>
             <if test="status != null and status != ''"> AND status = #{status}</if>
-        </where>
+                  <if test="params.dataScope != null and params.dataScope != ''">${params.dataScope}</if>
+</where>
         ORDER BY create_time DESC
     </select>
 

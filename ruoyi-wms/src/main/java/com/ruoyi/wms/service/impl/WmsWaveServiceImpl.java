@@ -1,5 +1,6 @@
 package com.ruoyi.wms.service.impl;
 
+import com.ruoyi.common.annotation.DataScope;
 import java.math.BigDecimal;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +23,7 @@ public class WmsWaveServiceImpl implements IWmsWaveService
     private WmsOutboundOrderMapper wmsOutboundOrderMapper;
 
     @Override
+    @DataScope(deptAlias = "wms_wave")
     public List<WmsWave> selectWaveList(WmsWave wave)
     {
         return wmsWaveMapper.selectWaveList(wave);

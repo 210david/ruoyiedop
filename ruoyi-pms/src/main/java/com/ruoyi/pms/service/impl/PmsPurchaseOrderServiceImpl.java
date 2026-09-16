@@ -1,5 +1,6 @@
 package com.ruoyi.pms.service.impl;
 
+import com.ruoyi.common.annotation.DataScope;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -43,6 +44,7 @@ public class PmsPurchaseOrderServiceImpl implements IPmsPurchaseOrderService
     private MessageHelper messageHelper;
 
     @Override
+    @DataScope(deptAlias = "pms_purchase_order")
     public List<PmsPurchaseOrder> selectPurchaseOrderList(PmsPurchaseOrder order)
     {
         return pmsPurchaseOrderMapper.selectPurchaseOrderList(order);

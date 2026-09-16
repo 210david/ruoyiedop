@@ -1,5 +1,6 @@
 package com.ruoyi.wms.service.impl;
 
+import com.ruoyi.common.annotation.DataScope;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -37,6 +38,7 @@ public class WmsOutboundOrderServiceImpl implements IWmsOutboundOrderService
     private MessageHelper messageHelper;
 
     @Override
+    @DataScope(deptAlias = "wms_outbound_order")
     public List<WmsOutboundOrder> selectOutboundOrderList(WmsOutboundOrder order)
     {
         return wmsOutboundOrderMapper.selectOutboundOrderList(order);

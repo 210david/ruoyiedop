@@ -1,5 +1,6 @@
 package com.ruoyi.qms.service.impl;
 
+import com.ruoyi.common.annotation.DataScope;
 import java.math.BigDecimal;
 import java.util.Date;
 import java.util.HashMap;
@@ -55,6 +56,7 @@ public class QmsInspTaskServiceImpl implements IQmsInspTaskService
     private IMkNumberRuleService mkNumberRuleService;
 
     @Override
+    @DataScope(deptAlias = "qms_insp_task")
     public List<QmsInspTask> selectInspTaskList(QmsInspTask inspTask)
     {
         return qmsInspTaskMapper.selectInspTaskList(inspTask);

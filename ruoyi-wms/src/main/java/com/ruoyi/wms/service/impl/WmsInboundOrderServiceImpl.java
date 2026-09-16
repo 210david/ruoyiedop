@@ -1,5 +1,6 @@
 package com.ruoyi.wms.service.impl;
 
+import com.ruoyi.common.annotation.DataScope;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -37,6 +38,7 @@ public class WmsInboundOrderServiceImpl implements IWmsInboundOrderService
     private MessageHelper messageHelper;
 
     @Override
+    @DataScope(deptAlias = "wms_inbound_order")
     public List<WmsInboundOrder> selectInboundOrderList(WmsInboundOrder order)
     {
         return wmsInboundOrderMapper.selectInboundOrderList(order);

@@ -1,5 +1,6 @@
 package com.ruoyi.mk.service.impl;
 
+import com.ruoyi.common.annotation.DataScope;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -19,6 +20,7 @@ public class MkInteractionServiceImpl implements IMkInteractionService
     private MkInteractionMapper mkInteractionMapper;
 
     @Override
+    @DataScope(userAlias = "i")
     public List<MkInteraction> selectInteractionList(MkInteraction interaction)
     {
         return mkInteractionMapper.selectInteractionList(interaction);

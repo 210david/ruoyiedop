@@ -1,4 +1,6 @@
-package com.ruoyi.safety.service.impl;
+package com.ruoyi.safety.service.impl;
+
+import com.ruoyi.common.annotation.DataScope;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -28,6 +30,7 @@ public class SafetyTrainingPlanServiceImpl implements ISafetyTrainingPlanService
     public SafetyTrainingPlan selectSafetyTrainingPlanById(Long planId) { return safetyTrainingPlanMapper.selectSafetyTrainingPlanById(planId); }
 
     @Override
+    @DataScope(deptAlias = "biz_safety_training_plan")
     public List<SafetyTrainingPlan> selectSafetyTrainingPlanList(SafetyTrainingPlan safetyTrainingPlan) { return safetyTrainingPlanMapper.selectSafetyTrainingPlanList(safetyTrainingPlan); }
 
     @Override

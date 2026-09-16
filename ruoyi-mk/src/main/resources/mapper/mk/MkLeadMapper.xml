@@ -84,7 +84,8 @@
             <if test="deptId != null"> AND l.dept_id = #{deptId}</if>
             <if test="params.beginApplyTime != null and params.beginApplyTime != ''"> AND l.receive_apply_time &gt;= #{params.beginApplyTime}</if>
             <if test="params.endApplyTime != null and params.endApplyTime != ''"> AND l.receive_apply_time &lt;= #{params.endApplyTime}</if>
-        </where>
+                  <if test="params.dataScope != null and params.dataScope != ''">${params.dataScope}</if>
+</where>
         ORDER BY l.lead_id DESC
     </select>
 

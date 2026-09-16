@@ -10,6 +10,7 @@
 
     <div class="right-menu">
       <template v-if="appStore.device !== 'mobile'">
+        <ai-assistant id="header-ai-assistant" />
         <header-notice id="header-notice" />
       </template>
 
@@ -57,6 +58,7 @@ import useLockStore from '@/store/modules/lock'
 import useSettingsStore from '@/store/modules/settings'
 import useTagsViewStore from '@/store/modules/tagsView'
 import HeaderNotice from './HeaderNotice'
+import AiAssistant from './AiAssistant/index.vue'
 
 const route = useRoute()
 const router = useRouter()

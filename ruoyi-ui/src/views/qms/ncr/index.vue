@@ -486,6 +486,10 @@
           </div>
         </section>
       </div>
+      <AiAssistButton button-text="AI处置建议" :api="aiNcrAdvice" :params="[dispositionForm.ncrId]"
+        v-show="dispositionForm.ncrStatus === '2'" style="margin-left: 16px" @result="onNcrAdvice" />
+      <AiResultPanel :visible="ncrAdviceVisible" :content="ncrAdviceText" :latency-ms="ncrAdviceLatency"
+        @close="ncrAdviceVisible = false" />
       <template #footer><el-button type="primary" @click="submitDispositionForm">确 定</el-button><el-button @click="dispositionOpen = false">取 消</el-button></template>
     </el-dialog>
 
@@ -681,6 +685,9 @@
 
 <script setup name="QmsNcr">
 import { listNcr, getNcr, addNcr, updateNcr, delNcr, verifyNcr, closeNcr, submitReview, approveNcr, rejectNcr, submitDisposition } from '@/api/qms/ncr'
+import { aiNcrAdvice } from '@/api/ai/assist'
+import AiAssistButton from '@/components/AiAssist/AiAssistButton.vue'
+import AiResultPanel from '@/components/AiAssist/AiResultPanel.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
 import { QuestionFilled, ArrowRight, CircleClose } from '@element-plus/icons-vue'
@@ -924,6 +931,25 @@ function handleDisposition(row) {
     dispositionOpen.value = true
   })
 }
+// ===== AI处置建议（外挂式增量） =====
+const ncrAdviceVisible = ref(false)
+const ncrAdviceText = ref('')
+const ncrAdviceLatency = ref(0)
+
+function onNcrAdvice(d) {
+  const parsed = d.parsed || {}
+  const lines = []
+  if (parsed.disposition) lines.push('建议处置方式：' + dispositionLabel(parsed.disposition))
+  if (parsed.reason) lines.push('推荐理由：' + parsed.reason)
+  if (parsed.risk) lines.push('风险提示：' + parsed.risk)
+  if (parsed.isolation !== undefined && parsed.isolation !== null) lines.push('建议隔离：' + (parsed.isolation === true || parsed.isolation === 'true' ? '是' : '否'))
+  if (parsed.notes) lines.push('补充说明：' + parsed.notes)
+  if (!lines.length) lines.push(d.content || d.error || 'AI未返回有效建议')
+  ncrAdviceText.value = lines.join('\n')
+  ncrAdviceLatency.value = d.latencyMs || 0
+  ncrAdviceVisible.value = true
+}
+
 
 function submitDispositionForm() {
   proxy.$refs['dispositionRef'].validate(valid => {

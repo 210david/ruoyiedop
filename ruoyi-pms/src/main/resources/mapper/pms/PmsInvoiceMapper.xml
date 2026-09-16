@@ -64,7 +64,8 @@
             <if test="invoiceNumber != null and invoiceNumber != ''"> AND invoice_number LIKE CONCAT('%', #{invoiceNumber}, '%')</if>
             <if test="params.beginDate != null and params.beginDate != ''"> AND date(invoice_date) &gt;= #{params.beginDate}</if>
             <if test="params.endDate != null and params.endDate != ''"> AND date(invoice_date) &lt;= #{params.endDate}</if>
-        </where>
+                  <if test="params.dataScope != null and params.dataScope != ''">${params.dataScope}</if>
+</where>
         ORDER BY invoice_id DESC
     </select>
 

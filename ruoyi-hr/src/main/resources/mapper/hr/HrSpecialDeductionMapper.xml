@@ -44,7 +44,8 @@
             <if test="params.beginExpiryDate != null and params.beginExpiryDate != ''"> AND expiry_date &gt;= #{params.beginExpiryDate}</if>
             <if test="params.endExpiryDate != null and params.endExpiryDate != ''"> AND expiry_date &lt;= #{params.endExpiryDate}</if>
             <if test="delFlag != null and delFlag != ''"> AND del_flag LIKE CONCAT('%', #{delFlag}, '%')</if>
-        </where>
+                  <if test="params.dataScope != null and params.dataScope != ''">${params.dataScope}</if>
+</where>
         ORDER BY create_time DESC
     </select>
 

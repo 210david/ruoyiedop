@@ -80,7 +80,8 @@
             <if test="params.endTime != null and params.endTime != ''"><!-- 结束时间检索 -->
                 AND date_format(create_time,'%Y%m%d') &lt;= date_format(#{params.endTime},'%Y%m%d')
             </if>
-        </where>
+                  <if test="params.dataScope != null and params.dataScope != ''">${params.dataScope}</if>
+</where>
         ORDER BY ncr_id DESC
     </select>
 

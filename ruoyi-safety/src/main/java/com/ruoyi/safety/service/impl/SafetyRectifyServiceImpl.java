@@ -1,5 +1,6 @@
 package com.ruoyi.safety.service.impl;
 
+import com.ruoyi.common.annotation.DataScope;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -17,6 +18,7 @@ public class SafetyRectifyServiceImpl implements ISafetyRectifyService
     public SafetyRectify selectSafetyRectifyById(Long rectifyId) { return safetyRectifyMapper.selectSafetyRectifyById(rectifyId); }
 
     @Override
+    @DataScope(deptAlias = "biz_safety_rectify")
     public List<SafetyRectify> selectSafetyRectifyList(SafetyRectify safetyRectify) { return safetyRectifyMapper.selectSafetyRectifyList(safetyRectify); }
 
     @Override

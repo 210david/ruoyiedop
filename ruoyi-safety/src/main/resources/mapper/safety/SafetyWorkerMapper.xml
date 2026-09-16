@@ -46,7 +46,8 @@
             <if test="deptName != null and deptName != ''"> AND dept_name LIKE CONCAT('%', #{deptName}, '%')</if>
             <if test="phone != null and phone != ''"> AND phone LIKE CONCAT('%', #{phone}, '%')</if>
             <if test="status != null and status != ''"> AND status = #{status}</if>
-        </where>
+                  <if test="params.dataScope != null and params.dataScope != ''">${params.dataScope}</if>
+</where>
         ORDER BY create_time DESC
     </select>
 

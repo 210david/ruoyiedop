@@ -1,5 +1,6 @@
 package com.ruoyi.mms.service.impl;
 
+import com.ruoyi.common.annotation.DataScope;
 import java.math.BigDecimal;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +24,7 @@ public class MmsOutsourceServiceImpl implements IMmsOutsourceService
     private IMkNumberRuleService mkNumberRuleService;
 
     @Override
+    @DataScope(deptAlias = "mms_outsource")
     public List<MmsOutsource> selectOutsourceList(MmsOutsource outsource)
     {
         return outsourceMapper.selectOutsourceList(outsource);

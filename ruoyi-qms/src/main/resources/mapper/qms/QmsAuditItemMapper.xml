@@ -32,7 +32,8 @@
             <if test="ncType != null and ncType != ''">and nc_type = #{ncType}</if>
             <if test="itemStatus != null and itemStatus != ''">and item_status = #{itemStatus}</if>
             <if test="deptName != null and deptName != ''">and dept_name like concat('%', #{deptName}, '%')</if>
-        </where>
+                  <if test="params.dataScope != null and params.dataScope != ''">${params.dataScope}</if>
+</where>
         order by item_id asc
     </select>
 

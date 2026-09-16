@@ -1,5 +1,6 @@
 package com.ruoyi.mms.service.impl;
 
+import com.ruoyi.common.annotation.DataScope;
 import java.util.Date;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,6 +44,7 @@ public class MmsScheduleServiceImpl implements IMmsScheduleService
     // ========== 标准 CRUD ==========
 
     @Override
+    @DataScope(deptAlias = "mms_schedule_task")
     public List<MmsSchedule> selectScheduleList(MmsSchedule schedule)
     {
         return scheduleMapper.selectScheduleList(schedule);

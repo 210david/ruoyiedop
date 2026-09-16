@@ -51,7 +51,8 @@
             <if test="content != null and content != ''"> AND i.content LIKE CONCAT('%', #{content}, '%')</if>
             <if test="params.beginInteractTime != null and params.beginInteractTime != ''"> AND i.interact_time &gt;= #{params.beginInteractTime}</if>
             <if test="params.endInteractTime != null and params.endInteractTime != ''"> AND i.interact_time &lt;= #{params.endInteractTime}</if>
-        </where>
+                  <if test="params.dataScope != null and params.dataScope != ''">${params.dataScope}</if>
+</where>
         ORDER BY i.interact_time DESC
     </select>
 

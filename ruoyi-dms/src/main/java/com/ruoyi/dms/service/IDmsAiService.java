@@ -25,4 +25,10 @@ public interface IDmsAiService
      * 维修知识问答：历史工单检索+大模型总结
      */
     Map<String, Object> knowledgeQA(String question);
+
+    /**
+     * AI知识沉淀：从已完工/已验收工单自动生成FAQ（待人工审核）
+     * 返回 generated 生成条数、skipped 跳过条数
+     */
+    Map<String, Object> generateFaqFromOrders(Integer limit);
 }

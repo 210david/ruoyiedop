@@ -48,7 +48,8 @@
             <if test="trainer != null and trainer != ''"> AND r.trainer LIKE CONCAT('%', #{trainer}, '%')</if>
             <if test="params.beginTime != null and params.beginTime != ''"> AND r.training_date &gt;= #{params.beginTime}</if>
             <if test="params.endTime != null and params.endTime != ''"> AND r.training_date &lt;= #{params.endTime}</if>
-        </where>
+                  <if test="params.dataScope != null and params.dataScope != ''">${params.dataScope}</if>
+</where>
         ORDER BY r.training_date DESC
     </select>
 

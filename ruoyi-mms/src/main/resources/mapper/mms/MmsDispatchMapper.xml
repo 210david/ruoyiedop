@@ -57,7 +57,8 @@
             <if test="status != null and status != ''"> AND d.status = #{status}</if>
             <if test="params.beginTime != null and params.beginTime != ''"> AND date(d.create_time) &gt;= #{params.beginTime}</if>
             <if test="params.endTime != null and params.endTime != ''"> AND date(d.create_time) &lt;= #{params.endTime}</if>
-        </where>
+                  <if test="params.dataScope != null and params.dataScope != ''">${params.dataScope}</if>
+</where>
         ORDER BY d.dispatch_id DESC
     </select>
 

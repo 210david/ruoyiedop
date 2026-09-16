@@ -1,5 +1,6 @@
 package com.ruoyi.qms.service.impl;
 
+import com.ruoyi.common.annotation.DataScope;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,6 +22,7 @@ public class QmsDocServiceImpl implements IQmsDocService {
     private IMkNumberRuleService mkNumberRuleService;
 
     @Override
+    @DataScope(deptAlias = "qms_doc")
     public List<QmsDoc> selectDocList(QmsDoc doc) { return mapper.selectDocList(doc); }
     @Override
     public QmsDoc selectDocById(Long docId) { return mapper.selectDocById(docId); }

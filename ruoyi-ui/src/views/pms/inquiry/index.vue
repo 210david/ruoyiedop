@@ -244,6 +244,8 @@
           <div class="rd-card-body" v-show="!collapsedCards.v0" style="display:block"><div class="rd-grid"><div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value">{{ viewData.remark || '暂无备注' }}</div></div></div></div>
         </section>
       </div>
+      <AiAssistButton button-text="AI比价摘要" :api="aiPriceSummary" :params="[viewData.inquiryId]" style="margin-left: 16px" @result="onPriceSummary" />
+      <AiResultPanel :visible="priceSummaryVisible" :content="priceSummaryText" :latency-ms="priceSummaryLatency" @close="priceSummaryVisible = false" />
       <template #footer>
         <el-button @click="viewOpen = false">关 闭</el-button>
       </template>
@@ -487,6 +489,9 @@
 
 <script setup name="PmsInquiry">
 import { listInquiry, getInquiry, delInquiry, addInquiry, updateInquiry, publishInquiry, closeInquiry, compareInquiry, awardInquiry, addQuotation } from "@/api/pms/inquiry";
+import { aiPriceSummary } from '@/api/ai/assist'
+import AiAssistButton from '@/components/AiAssist/AiAssistButton.vue'
+import AiResultPanel from '@/components/AiAssist/AiResultPanel.vue'
 import SupplierPicker from '@/components/SupplierPicker/index.vue'
 import MaterialPicker from '@/components/MaterialPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
@@ -857,6 +862,17 @@ function submitQuotation() {
       addQuotation(submitData).then(() => { proxy.$modal.msgSuccess("报价录入成功，询价单已自动转为「比价中」状态"); quotationOpen.value = false; getList(); loadStatusCounts(); }).catch(() => {});
     }
   });
+}
+
+// ===== AI比价摘要（外挂式增量） =====
+const priceSummaryVisible = ref(false)
+const priceSummaryText = ref('')
+const priceSummaryLatency = ref(0)
+
+function onPriceSummary(d) {
+  priceSummaryText.value = d.content || d.error || 'AI未返回内容'
+  priceSummaryLatency.value = d.latencyMs || 0
+  priceSummaryVisible.value = true
 }
 
 async function handleAward(row) {

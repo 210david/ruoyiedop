@@ -110,6 +110,9 @@
           <button type="button" class="btn-soft is-outline" @click="handleExport" v-hasPermi="['dms:equipment:export']">
             <el-icon><Download /></el-icon> 导出
           </button>
+          <AiAssistButton button-text="AI设备健康总览" button-type="success" :button-plain="false" :api="aiEquipmentHealthOverview" @result="d => onAiText(d, '设备健康度总览（风险排名前'+ (d.ranking? d.ranking.length:0) +'台）')" />
+          <AiAssistButton button-text="备件消耗预测" button-type="warning" :button-plain="false" :api="aiSparepartForecast" @result="d => onAiText(d, '备件消耗预测与采购建议')" />
+          <AiResultPanel :visible="aiPanelVisible" :content="aiPanelText" :latency-ms="aiLatency" @close="aiPanelVisible = false" />
           <button type="button" class="btn-soft is-outline" @click="handleImport" v-hasPermi="['dms:equipment:import']">
             <el-icon><Upload /></el-icon> 导入
           </button>
@@ -331,6 +334,9 @@
 
 <script setup name="DmsEquipment">
 import { listEquipment, getEquipment, addEquipment, updateEquipment, delEquipment } from '@/api/dms/equipment'
+import { aiEquipmentHealthOverview, aiSparepartForecast } from '@/api/ai/manage'
+import AiAssistButton from '@/components/AiAssist/AiAssistButton.vue'
+import AiResultPanel from '@/components/AiAssist/AiResultPanel.vue'
 import { listCategory } from '@/api/dms/category'
 import DmsEquipmentViewDrawer from './view.vue'
 import UserPicker from '@/components/UserPicker/index.vue'
@@ -560,6 +566,16 @@ function handleScreen(row) {
 getCategoryTree()
 getList()
 loadStatusCounts()
+
+// ===== AI预测辅助（外挂式增量） =====
+const aiPanelVisible = ref(false)
+const aiPanelText = ref('')
+const aiLatency = ref(0)
+function onAiText(d, title) {
+  aiPanelText.value = (title ? '【' + title + '】\n\n' : '') + (d.content || d.aiSummary || d.error || 'AI未返回内容')
+  aiLatency.value = d.latencyMs || 0
+  aiPanelVisible.value = true
+}
 </script>
 
 <style scoped>

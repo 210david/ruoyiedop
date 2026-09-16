@@ -1,5 +1,6 @@
 package com.ruoyi.hr.service.impl;
 
+import com.ruoyi.common.annotation.DataScope;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -21,6 +22,7 @@ public class HrCertificateServiceImpl implements IHrCertificateService
     public HrCertificate selectHrCertificateById(Long certId) { return hrCertificateMapper.selectHrCertificateById(certId); }
 
     @Override
+    @DataScope(deptAlias = "biz_hr_certificate")
     public List<HrCertificate> selectHrCertificateList(HrCertificate hrCertificate) { return hrCertificateMapper.selectHrCertificateList(hrCertificate); }
 
     @Override

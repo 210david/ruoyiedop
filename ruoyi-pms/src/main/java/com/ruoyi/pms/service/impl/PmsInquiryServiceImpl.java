@@ -1,5 +1,6 @@
 package com.ruoyi.pms.service.impl;
 
+import com.ruoyi.common.annotation.DataScope;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -62,6 +63,7 @@ public class PmsInquiryServiceImpl implements IPmsInquiryService
     }
 
     @Override
+    @DataScope(deptAlias = "pms_inquiry")
     public List<PmsInquiry> selectPmsInquiryList(PmsInquiry pmsInquiry)
     {
         return pmsInquiryMapper.selectPmsInquiryList(pmsInquiry);

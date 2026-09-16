@@ -84,7 +84,8 @@
             <if test="issueBy != null and issueBy != ''"> AND i.issue_by LIKE CONCAT('%', #{issueBy}, '%')</if>
             <if test="params.beginTime != null and params.beginTime != ''"> AND date(i.create_time) &gt;= #{params.beginTime}</if>
             <if test="params.endTime != null and params.endTime != ''"> AND date(i.create_time) &lt;= #{params.endTime}</if>
-        </where>
+                  <if test="params.dataScope != null and params.dataScope != ''">${params.dataScope}</if>
+</where>
         ORDER BY i.issue_id DESC
     </select>
 

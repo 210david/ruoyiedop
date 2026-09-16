@@ -1,5 +1,6 @@
 package com.ruoyi.qms.service.impl;
 
+import com.ruoyi.common.annotation.DataScope;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,6 +26,7 @@ public class QmsAuditItemServiceImpl implements IQmsAuditItemService {
     private IMkNumberRuleService mkNumberRuleService;
 
     @Override
+    @DataScope(deptAlias = "qms_audit_item")
     public List<QmsAuditItem> selectAuditItemList(QmsAuditItem item) { return mapper.selectAuditItemList(item); }
 
     @Override

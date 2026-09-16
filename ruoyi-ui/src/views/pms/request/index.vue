@@ -407,6 +407,8 @@
           </div>
         </section>
       </div>
+      <AiAssistButton button-text="AI采购建议" :api="aiRequestAdvice" :params="[viewData.requestId]" style="margin-left: 16px" @result="onRequestAdvice" />
+      <AiResultPanel :visible="requestAdviceVisible" :content="requestAdviceText" :latency-ms="requestAdviceLatency" @close="requestAdviceVisible = false" />
       <template #footer>
         <el-button @click="viewOpen = false">关 闭</el-button>
       </template>
@@ -634,6 +636,9 @@
 
 <script setup name="PmsRequest">
 import { listRequest, getRequest, addRequest, updateRequest, delRequest, auditRequest } from '@/api/pms/request'
+import { aiRequestAdvice } from '@/api/ai/assist'
+import AiAssistButton from '@/components/AiAssist/AiAssistButton.vue'
+import AiResultPanel from '@/components/AiAssist/AiResultPanel.vue'
 import { getPlan } from '@/api/pms/plan'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard, formatAmount, formatMoney } from '@/composables/useDetailCard'
@@ -855,6 +860,24 @@ function handleUpdate(row) {
   })
 }
 function handleView(row) { getRequest(row.requestId).then(res => { viewData.value = res.data; viewOpen.value = true }) }
+
+// ===== AI采购建议（外挂式增量） =====
+const requestAdviceVisible = ref(false)
+const requestAdviceText = ref('')
+const requestAdviceLatency = ref(0)
+
+function onRequestAdvice(d) {
+  const parsed = d.parsed || {}
+  const lines = []
+  if (parsed.suggestion) lines.push('建议：' + ({proceed:'推进采购',hold:'暂缓',split:'拆分采购'}[parsed.suggestion] || parsed.suggestion))
+  if (parsed.reason) lines.push('推荐理由：' + parsed.reason)
+  if (parsed.risk) lines.push('风险提示：' + parsed.risk)
+  if (parsed.notes) lines.push('补充建议：' + parsed.notes)
+  if (!lines.length) lines.push(d.content || d.error || 'AI未返回有效建议')
+  requestAdviceText.value = lines.join('\n')
+  requestAdviceLatency.value = d.latencyMs || 0
+  requestAdviceVisible.value = true
+}
 
 function calcDetailAmount(row) {
   if (row.qty != null && row.estimatedPrice != null) {

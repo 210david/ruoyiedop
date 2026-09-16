@@ -1,5 +1,6 @@
 package com.ruoyi.wms.service.impl;
 
+import com.ruoyi.common.annotation.DataScope;
 import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
@@ -46,6 +47,7 @@ public class WmsStockTakeServiceImpl implements IWmsStockTakeService
     private MessageHelper messageHelper;
 
     @Override
+    @DataScope(deptAlias = "wms_stock_take")
     public List<WmsStockTake> selectStockTakeList(WmsStockTake take)
     {
         return wmsStockTakeMapper.selectStockTakeList(take);

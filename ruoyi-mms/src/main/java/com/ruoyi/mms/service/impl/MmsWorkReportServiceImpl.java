@@ -1,5 +1,6 @@
 package com.ruoyi.mms.service.impl;
 
+import com.ruoyi.common.annotation.DataScope;
 import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
@@ -48,6 +49,7 @@ public class MmsWorkReportServiceImpl implements IMmsWorkReportService
     private MessageHelper messageHelper;
 
     @Override
+    @DataScope(deptAlias = "mms_work_report")
     public List<MmsWorkReport> selectWorkReportList(MmsWorkReport workReport)
     {
         return workReportMapper.selectWorkReportList(workReport);

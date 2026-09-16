@@ -47,7 +47,8 @@
             <if test="reportBy != null and reportBy != ''"> AND report_by LIKE CONCAT('%', #{reportBy}, '%')</if>
             <if test="params.beginTime != null and params.beginTime != ''"> AND date(start_time) &gt;= #{params.beginTime}</if>
             <if test="params.endTime != null and params.endTime != ''"> AND date(start_time) &lt;= #{params.endTime}</if>
-        </where>
+                  <if test="params.dataScope != null and params.dataScope != ''">${params.dataScope}</if>
+</where>
         ORDER BY downtime_id DESC
     </select>
 

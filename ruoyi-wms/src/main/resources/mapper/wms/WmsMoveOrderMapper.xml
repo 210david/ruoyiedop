@@ -66,7 +66,8 @@
             <if test="status != null and status != ''"> AND mo.status = #{status}</if>
             <if test="params.beginTime != null and params.beginTime != ''"> AND mo.create_time &gt;= #{params.beginTime}</if>
             <if test="params.endTime != null and params.endTime != ''"> AND mo.create_time &lt;= #{params.endTime}</if>
-        </where>
+                  <if test="params.dataScope != null and params.dataScope != ''">${params.dataScope}</if>
+</where>
         ORDER BY mo.move_id DESC
     </select>
 

@@ -1,5 +1,6 @@
 package com.ruoyi.pms.service.impl;
 
+import com.ruoyi.common.annotation.DataScope;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Date;
@@ -47,6 +48,7 @@ public class PmsReceiveServiceImpl implements IPmsReceiveService
     private IWmsInboundOrderService wmsInboundOrderService;
 
     @Override
+    @DataScope(deptAlias = "pms_receive")
     public List<PmsReceive> selectReceiveList(PmsReceive receive)
     {
         return pmsReceiveMapper.selectReceiveList(receive);

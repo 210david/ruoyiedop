@@ -1,5 +1,6 @@
 package com.ruoyi.hr.service.impl;
 
+import com.ruoyi.common.annotation.DataScope;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -32,6 +33,7 @@ public class HrLeaveBalanceServiceImpl implements IHrLeaveBalanceService
     public HrLeaveBalance selectHrLeaveBalanceById(Long balanceId) { return hrLeaveBalanceMapper.selectHrLeaveBalanceById(balanceId); }
 
     @Override
+    @DataScope(deptAlias = "biz_hr_leave_balance")
     public List<HrLeaveBalance> selectHrLeaveBalanceList(HrLeaveBalance hrLeaveBalance) { return hrLeaveBalanceMapper.selectHrLeaveBalanceList(hrLeaveBalance); }
 
     @Override

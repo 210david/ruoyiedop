@@ -1,4 +1,6 @@
-package com.ruoyi.safety.service.impl;
+package com.ruoyi.safety.service.impl;
+
+import com.ruoyi.common.annotation.DataScope;
 import java.util.HashMap;
 
 
@@ -31,6 +33,7 @@ public class SafetyRiskPointServiceImpl implements ISafetyRiskPointService
     public SafetyRiskPoint selectSafetyRiskPointById(Long riskPointId) { return safetyRiskPointMapper.selectSafetyRiskPointById(riskPointId); }
 
     @Override
+    @DataScope(deptAlias = "biz_safety_risk_point")
     public List<SafetyRiskPoint> selectSafetyRiskPointList(SafetyRiskPoint safetyRiskPoint) { return safetyRiskPointMapper.selectSafetyRiskPointList(safetyRiskPoint); }
 
     @Override

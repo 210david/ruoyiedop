@@ -430,6 +430,9 @@
 
 <script setup name="Abnormal">
 import { listAbnormal, getAbnormal, addAbnormal, updateAbnormal, delAbnormal, respondAbnormal, resolveAbnormal, linkDowntime } from "@/api/mms/abnormal";
+import { aiAbnormalAdvice } from '@/api/ai/assist'
+import AiAssistButton from '@/components/AiAssist/AiAssistButton.vue'
+import AiResultPanel from '@/components/AiAssist/AiResultPanel.vue'
 import { listWorkOrder, listWorkOrderProcesses } from "@/api/mms/workorder";
 import UserPicker from '@/components/UserPicker/index.vue'
 import useUserStore from '@/store/modules/user'
@@ -509,6 +512,28 @@ function handleExport() { proxy.download("mms/abnormal/export", proxy.withExport
 function handleRespond(row) { respondForm.value = { abnormalId: row.abnormalId, abnormalNo: row.abnormalNo, workOrderNo: row.workOrderNo, resourceName: row.resourceName, productCode: row.productCode, productName: row.productName, specModel: row.specModel, unit: row.unit, abnormalType: row.abnormalType, severity: row.severity, description: row.description, reportBy: row.reportBy, reportTime: row.reportTime, responseBy: '', responseTime: proxy.parseTime(new Date(), '{y}-{m}-{d} {h}:{i}:{s}'), responseMeasure: '', impactScope: '', estimatedRestoreTime: null, responseRemark: '' }; respondOpen.value = true; }
 function submitRespond() { if (!respondForm.value.responseBy) { proxy.$modal.msgError('请选择响应人'); return; } if (!respondForm.value.responseMeasure) { proxy.$modal.msgError('请输入响应措施'); return; } respondAbnormal(respondForm.value.abnormalId, { responseBy: respondForm.value.responseBy, responseTime: respondForm.value.responseTime, responseMeasure: respondForm.value.responseMeasure, impactScope: respondForm.value.impactScope, estimatedRestoreTime: respondForm.value.estimatedRestoreTime, responseRemark: respondForm.value.responseRemark }).then(() => { respondOpen.value = false; getList(); loadStatusCounts(); proxy.$modal.msgSuccess("响应成功"); }); }
 function handleResolve(row) { resolveForm.value = { abnormalId: row.abnormalId, abnormalNo: row.abnormalNo, workOrderNo: row.workOrderNo, resourceName: row.resourceName, productCode: row.productCode, productName: row.productName, specModel: row.specModel, unit: row.unit, abnormalType: row.abnormalType, severity: row.severity, description: row.description, reportBy: row.reportBy, reportTime: row.reportTime, responseBy: row.responseBy, responseTime: row.responseTime, responseMeasure: row.responseMeasure, impactScope: row.impactScope, handleResult: '', handleBy: row.responseBy || '', handleTime: proxy.parseTime(new Date(), '{y}-{m}-{d} {h}:{i}:{s}'), handleMethod: '', rootCause: '', preventiveMeasure: '', downtimeHours: null, needPursuit: '0' }; resolveOpen.value = true; }
+
+// ===== AI诊断建议（外挂式增量） =====
+const abnormalAdviceVisible = ref(false)
+const abnormalAdviceText = ref('')
+const abnormalAdviceLatency = ref(0)
+
+function onAbnormalAdvice(d) {
+  const parsed = d.parsed || {}
+  const lines = []
+  if (Array.isArray(parsed.possibleCauses) && parsed.possibleCauses.length) {
+    lines.push('可能原因（按可能性排序）：')
+    parsed.possibleCauses.forEach((c, i) => lines.push('  ' + (i + 1) + '. ' + c))
+  }
+  if (parsed.urgentAction) lines.push('紧急处置建议：' + parsed.urgentAction)
+  if (parsed.rootCauseHint) lines.push('根因排查方向：' + parsed.rootCauseHint)
+  if (parsed.preventiveAdvice) lines.push('预防再发建议：' + parsed.preventiveAdvice)
+  if (parsed.riskLevel) lines.push('建议关注等级：' + parsed.riskLevel)
+  if (!lines.length) lines.push(d.content || d.error || 'AI未返回有效建议')
+  abnormalAdviceText.value = lines.join('\n')
+  abnormalAdviceLatency.value = d.latencyMs || 0
+  abnormalAdviceVisible.value = true
+}
 function submitResolve() { if (!resolveForm.value.handleBy) { proxy.$modal.msgError('请选择处理人'); return; } if (!resolveForm.value.handleResult) { proxy.$modal.msgError('请输入处理结果'); return; } resolveAbnormal(resolveForm.value.abnormalId, { handleResult: resolveForm.value.handleResult, handleBy: resolveForm.value.handleBy, handleTime: resolveForm.value.handleTime, handleMethod: resolveForm.value.handleMethod, rootCause: resolveForm.value.rootCause, preventiveMeasure: resolveForm.value.preventiveMeasure, downtimeHours: resolveForm.value.downtimeHours, needPursuit: resolveForm.value.needPursuit }).then(() => { resolveOpen.value = false; getList(); loadStatusCounts(); proxy.$modal.msgSuccess("处理关闭成功，关联停机记录已自动恢复"); }); }
 function handleLinkDowntime(row) { proxy.$modal.confirm('确认为异常[' + row.abnormalNo + ']联动生成停机记录？将自动创建一条停机中状态的停机单。').then(() => linkDowntime(row.abnormalId)).then(res => { proxy.$modal.msgSuccess("停机记录已联动生成，单号：" + (res.data ? res.data : '')); getList(); }).catch(() => {}); }
 

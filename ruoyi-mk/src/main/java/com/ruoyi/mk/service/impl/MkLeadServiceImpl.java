@@ -1,5 +1,6 @@
 package com.ruoyi.mk.service.impl;
 
+import com.ruoyi.common.annotation.DataScope;
 import java.util.Date;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -62,6 +63,7 @@ public class MkLeadServiceImpl implements IMkLeadService
     }
 
     @Override
+    @DataScope(deptAlias = "l", userAlias = "l")
     public List<MkLead> selectLeadList(MkLead lead)
     {
         return mkLeadMapper.selectLeadList(lead);

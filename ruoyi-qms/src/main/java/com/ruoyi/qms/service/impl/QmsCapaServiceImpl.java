@@ -1,5 +1,6 @@
 package com.ruoyi.qms.service.impl;
 
+import com.ruoyi.common.annotation.DataScope;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -37,6 +38,7 @@ public class QmsCapaServiceImpl implements IQmsCapaService {
     private MessageHelper messageHelper;
 
     @Override
+    @DataScope(deptAlias = "qms_capa")
     public List<QmsCapa> selectCapaList(QmsCapa capa) { return qmsCapaMapper.selectCapaList(capa); }
 
     @Override

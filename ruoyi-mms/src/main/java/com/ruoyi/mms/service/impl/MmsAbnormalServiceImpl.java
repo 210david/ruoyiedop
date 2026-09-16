@@ -1,5 +1,6 @@
 package com.ruoyi.mms.service.impl;
 
+import com.ruoyi.common.annotation.DataScope;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Date;
@@ -41,6 +42,7 @@ public class MmsAbnormalServiceImpl implements IMmsAbnormalService
     private MmsDowntimeMapper downtimeMapper;
 
     @Override
+    @DataScope(deptAlias = "mms_abnormal")
     public List<MmsAbnormal> selectAbnormalList(MmsAbnormal abnormal)
     {
         return abnormalMapper.selectAbnormalList(abnormal);

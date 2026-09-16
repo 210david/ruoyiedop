@@ -49,7 +49,8 @@
             <if test="drillCommander != null and drillCommander != ''"> AND drill_commander LIKE CONCAT('%', #{drillCommander}, '%')</if>
             <if test="params.beginDrillDate != null and params.beginDrillDate != ''"> AND drill_date &gt;= #{params.beginDrillDate}</if>
             <if test="params.endDrillDate != null and params.endDrillDate != ''"> AND drill_date &lt;= #{params.endDrillDate}</if>
-        </where>
+                  <if test="params.dataScope != null and params.dataScope != ''">${params.dataScope}</if>
+</where>
         ORDER BY drill_date DESC
     </select>
 
