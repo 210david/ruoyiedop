@@ -1,4 +1,5 @@
 @echo off
+chcp 65001 >nul
 echo.
 echo [消息] 使用优化JVM参数启动RuoYi服务（2核4G服务器优化版）
 echo.

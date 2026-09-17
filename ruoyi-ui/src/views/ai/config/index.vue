@@ -45,6 +45,10 @@
           <span class="form-tip-inline">次/月</span>
           <div class="form-tip">超出上限后自动降级，业务不中断；本月已用 {{ monthlyUsed }} 次</div>
         </el-form-item>
+        <el-form-item label="智能查数（NL2Query）">
+          <el-switch v-model="form.nl2queryEnabled" active-text="开启" inactive-text="关闭" />
+          <div class="form-tip">允许用户用自然语言查询业务数据；可查范围为库中放行前缀表减去黑名单表（ai.nl2query.blockedTables）</div>
+        </el-form-item>
 
         <el-form-item>
           <el-button type="primary" @click="handleSaveMain" :loading="saving">保 存 配 置</el-button>
@@ -158,6 +162,7 @@ const data = reactive({
     apiKey: '',
     modelName: 'deepseek-chat',
     monthlyLimit: 1000,
+    nl2queryEnabled: false,
     embeddingUrl: '',
     embeddingKey: '',
     embeddingModel: ''
@@ -176,6 +181,7 @@ function loadConfig() {
       apiKey: '',
       modelName: d.modelName || 'deepseek-chat',
       monthlyLimit: parseInt(d.monthlyLimit) || 1000,
+      nl2queryEnabled: d.nl2queryEnabled === true || d.nl2queryEnabled === 'true',
       embeddingUrl: d.embeddingUrl || '',
       embeddingKey: '',
       embeddingModel: d.embeddingModel || ''
@@ -207,7 +213,8 @@ function handleSaveMain() {
     apiUrl: form.value.apiUrl,
     apiKey: form.value.apiKey,
     modelName: form.value.modelName,
-    monthlyLimit: form.value.monthlyLimit
+    monthlyLimit: form.value.monthlyLimit,
+    nl2queryEnabled: form.value.nl2queryEnabled
   }).then(() => {
     proxy.$modal.msgSuccess('大模型配置保存成功')
     saving.value = false
@@ -238,6 +245,7 @@ function handleResetMain() {
   form.value.apiKey = ''
   form.value.modelName = originalForm.value.modelName
   form.value.monthlyLimit = originalForm.value.monthlyLimit
+  form.value.nl2queryEnabled = originalForm.value.nl2queryEnabled
   proxy.$modal.msgSuccess('已还原为最近保存的大模型配置（密钥留空表示沿用已存密钥）')
 }
 

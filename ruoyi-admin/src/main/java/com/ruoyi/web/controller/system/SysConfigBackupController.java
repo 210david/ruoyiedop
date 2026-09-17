@@ -70,8 +70,10 @@ public class SysConfigBackupController extends BaseController
     {
         Map<String, Object> backup = new LinkedHashMap<>();
 
-        // 1. 导出参数配置
-        List<SysConfig> configList = configService.selectConfigList(new SysConfig());
+        // 1. 导出参数配置（备份需全量，绕过列表页的业务托管键隐藏过滤）
+        SysConfig configQuery = new SysConfig();
+        configQuery.getParams().put("hideBizKeys", "0");
+        List<SysConfig> configList = configService.selectConfigList(configQuery);
         backup.put("sys_config", configList);
 
         // 2. 导出字典类型

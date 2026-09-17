@@ -106,6 +106,13 @@ public class SysConfigServiceImpl implements ISysConfigService
     @Override
     public List<SysConfig> selectConfigList(SysConfig config)
     {
+        // 前台业务页面已托管管理的配置键（企业信息查询、Embedding、NL2Query开关等）
+        // 不在参数设置列表展示，仅作为数据存储，避免与业务设置页重复展示误导用户。
+        // 精确按configKey查询时不过滤，保证业务代码按键读写的兼容性。
+        if (StringUtils.isEmpty(config.getConfigKey()))
+        {
+            config.getParams().put("hideBizKeys", "1");
+        }
         return configMapper.selectConfigList(config);
     }
 

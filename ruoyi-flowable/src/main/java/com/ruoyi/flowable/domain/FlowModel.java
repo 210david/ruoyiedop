@@ -47,6 +47,15 @@ public class FlowModel extends BaseEntity
     /** 流程定义是否挂起 */
     private Boolean suspended;
 
+    /** 关联表单ID（存于模型 metaInfo） */
+    private Long formId;
+
+    /** 关联表单名称（展示用） */
+    private String formName;
+
+    /** 是否解除表单绑定 */
+    private Boolean unbind;
+
     public String getModelId() { return modelId; }
     public void setModelId(String modelId) { this.modelId = modelId; }
     public String getModelName() { return modelName; }
@@ -69,4 +78,10 @@ public class FlowModel extends BaseEntity
     public void setDeployed(String deployed) { this.deployed = deployed; }
     public Boolean getSuspended() { return suspended; }
     public void setSuspended(Boolean suspended) { this.suspended = suspended; }
+    public Long getFormId() { return formId; }
+    public void setFormId(Long formId) { this.formId = formId; }
+    public String getFormName() { return formName; }
+    public void setFormName(String formName) { this.formName = formName; }
+    public Boolean getUnbind() { return unbind; }
+    public void setUnbind(Boolean unbind) { this.unbind = unbind; }
 }

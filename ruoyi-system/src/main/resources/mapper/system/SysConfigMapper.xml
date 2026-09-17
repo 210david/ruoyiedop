@@ -50,6 +50,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 			<if test="configKey != null and configKey != ''">
 				AND config_key like concat('%', #{configKey}, '%')
 			</if>
+			<if test="params.hideBizKeys != null and params.hideBizKeys.toString() == '1'.toString()"><!-- 隐藏业务页面托管的配置键（AI中心/DMS AI配置/PMS企业查询设置页已提供管理入口） -->
+				AND config_key NOT LIKE 'ai.%'
+				AND config_key NOT LIKE 'dms.ai.%'
+				AND config_key NOT LIKE 'pms.enterprise.lookup.%'
+			</if>
 			<if test="params.beginTime != null and params.beginTime != ''"><!-- 开始时间检索 -->
 				and date_format(create_time,'%Y%m%d') &gt;= date_format(#{params.beginTime},'%Y%m%d')
 			</if>

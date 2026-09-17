@@ -8,6 +8,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <id     property="formId"     column="form_id"/>
         <result property="formKey"    column="form_key"/>
         <result property="formName"   column="form_name"/>
+        <result property="formDesc"   column="form_desc"/>
         <result property="processKey" column="process_key"/>
         <result property="fieldsJson" column="fields_json"/>
         <result property="tableName"  column="table_name"/>
@@ -20,7 +21,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectFlowFormVo">
-        select form_id, form_key, form_name, process_key, fields_json, table_name, del_flag,
+        select form_id, form_key, form_name, form_desc, process_key, fields_json, table_name, del_flag,
                create_by, create_time, update_by, update_time, remark from flow_form
     </sql>
 
@@ -52,6 +53,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="formKey != null">form_key,</if>
             <if test="formName != null">form_name,</if>
+            <if test="formDesc != null">form_desc,</if>
             <if test="processKey != null">process_key,</if>
             <if test="fieldsJson != null">fields_json,</if>
             <if test="tableName != null">table_name,</if>
@@ -63,6 +65,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="formKey != null">#{formKey},</if>
             <if test="formName != null">#{formName},</if>
+            <if test="formDesc != null">#{formDesc},</if>
             <if test="processKey != null">#{processKey},</if>
             <if test="fieldsJson != null">#{fieldsJson},</if>
             <if test="tableName != null">#{tableName},</if>
@@ -78,6 +81,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <trim prefix="SET" suffixOverrides=",">
             <if test="formKey != null">form_key = #{formKey},</if>
             <if test="formName != null">form_name = #{formName},</if>
+            <if test="formDesc != null">form_desc = #{formDesc},</if>
             <if test="processKey != null">process_key = #{processKey},</if>
             <if test="fieldsJson != null">fields_json = #{fieldsJson},</if>
             <if test="tableName != null">table_name = #{tableName},</if>

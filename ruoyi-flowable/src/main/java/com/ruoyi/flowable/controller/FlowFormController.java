@@ -80,7 +80,8 @@ public class FlowFormController extends BaseController
     @PostMapping
     public AjaxResult add(@RequestBody FlowForm form)
     {
-        return toAjax(flowFormService.insertFlowForm(form));
+        flowFormService.insertFlowForm(form);
+        return success(form.getFormId());
     }
 
     /**

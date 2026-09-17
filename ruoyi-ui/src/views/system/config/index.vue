@@ -240,6 +240,7 @@ const activeFilterCount = computed(() => {
 function getList() {
   loading.value = true
   listConfig(proxy.addDateRange(queryParams.value, dateRange.value)).then(response => {
+    // AI/企业查询/Embedding/NL2Query 等业务托管键已在后端统一过滤，前端直接展示
     configList.value = response.rows
     total.value = response.total
     loading.value = false

@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import com.ruoyi.ai.core.AiPromptDefaults;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.system.domain.SysConfig;
 import com.ruoyi.system.service.ISysConfigService;
@@ -73,6 +74,16 @@ public class AiPromptController extends AiBaseConfigController
     }
 
     /**
+     * 查询各功能内置默认提示词（供管理页回显，避免"默认"状态编辑框为空）
+     */
+    @PreAuthorize("@ss.hasPermi('ai:prompt:list')")
+    @GetMapping("/defaults")
+    public AjaxResult defaults()
+    {
+        return AjaxResult.success(AiPromptDefaults.DEFAULTS);
+    }
+
+    /**
      * 修改提示词模板（热生效）
      */
     @PreAuthorize("@ss.hasPermi('ai:prompt:edit')")
@@ -91,5 +102,45 @@ public class AiPromptController extends AiBaseConfigController
         }
         updateConfigByKey(configKey, template);
         return AjaxResult.success("保存成功，即时生效");
+    }
+
+    /**
+     * 恢复默认模板（删除 ai.prompt.* 自定义配置，回退系统内置模板，热生效）
+     */
+    @PreAuthorize("@ss.hasPermi('ai:prompt:edit')")
+    @DeleteMapping("/{configKey}")
+    public AjaxResult reset(@PathVariable String configKey)
+    {
+        if (StringUtils.isEmpty(configKey) || !configKey.startsWith("ai.prompt."))
+        {
+            return AjaxResult.error("提示词键必须以 ai.prompt. 开头");
+        }
+        SysConfig query = new SysConfig();
+        query.setConfigKey(configKey);
+        List<SysConfig> list = configService.selectConfigList(query);
+        SysConfig target = null;
+        if (list != null)
+        {
+            for (SysConfig c : list)
+            {
+                if (configKey.equals(c.getConfigKey()))
+                {
+                    target = c;
+                    break;
+                }
+            }
+        }
+        if (target == null)
+        {
+            return AjaxResult.success("该功能未配置自定义模板，无需恢复");
+        }
+        // 历史保存可能写为 Y（内置参数），deleteConfigByIds 会拦截；先改为 N 再删除
+        if ("Y".equals(target.getConfigType()))
+        {
+            target.setConfigType("N");
+            configService.updateConfig(target);
+        }
+        configService.deleteConfigByIds(new Long[] { target.getConfigId() });
+        return AjaxResult.success("已恢复默认模板，即时生效");
     }
 }

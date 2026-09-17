@@ -14,7 +14,8 @@ import com.ruoyi.system.service.ISysConfigService;
 
 /**
  * AI配置管理
- * 读写 sys_config 表中 dms.ai.* 系列参数
+ * 基础配置读写 sys_config 表中 ai.* 系列参数（与AI中心共用），
+ * 功能级开关（dms.ai.repair_assistant 等）仍沿用 dms 模块自有键
  */
 @RestController
 @RequestMapping("/dms/ai/config")
@@ -32,17 +33,18 @@ public class DmsAiConfigController extends BaseController
     public AjaxResult getConfig()
     {
         Map<String, Object> config = new HashMap<>();
-        config.put("enabled", getConfigBool("dms.ai.enabled"));
-        config.put("apiUrl", getConfigStr("dms.ai.api_url"));
+        // 基础配置与AI中心共用 ai.* 键（单一份配置，不再维护 dms.ai.* 旧键）
+        config.put("enabled", getConfigBool("ai.enabled"));
+        config.put("apiUrl", getConfigStr("ai.api_url"));
         // API Key 保存后不允许查看：不返回任何明文/掩码，仅返回是否已配置
-        String apiKey = getConfigStr("dms.ai.api_key");
+        String apiKey = getConfigStr("ai.api_key");
         config.put("apiKey", "");
         config.put("apiKeyConfigured", StringUtils.isNotEmpty(apiKey));
-        config.put("modelName", getConfigStr("dms.ai.model_name"));
+        config.put("modelName", getConfigStr("ai.model_name"));
         config.put("repairAssistant", getConfigBool("dms.ai.repair_assistant"));
         config.put("dispatchRecommend", getConfigBool("dms.ai.dispatch_recommend"));
         config.put("knowledgeQa", getConfigBool("dms.ai.knowledge_qa"));
-        config.put("monthlyLimit", getConfigStr("dms.ai.monthly_limit"));
+        config.put("monthlyLimit", getConfigStr("ai.monthly_limit"));
         return AjaxResult.success(config);
     }
 
@@ -64,7 +66,7 @@ public class DmsAiConfigController extends BaseController
         if (StringUtils.isEmpty(apiKey) || apiKey.contains("****"))
         {
             // 掩码或未填写时回退到已保存密钥
-            apiKey = getConfigStr("dms.ai.api_key");
+            apiKey = getConfigStr("ai.api_key");
         }
         String modelName = toString(body.get("modelName"));
         com.ruoyi.ai.core.AiResult result = aiClient.testConnection(apiUrl, apiKey, modelName);
@@ -83,19 +85,19 @@ public class DmsAiConfigController extends BaseController
             return AjaxResult.error("API地址必须以 http:// 或 https:// 开头");
         }
 
-        updateConfigByKey("dms.ai.enabled", toString(config.get("enabled")));
-        updateConfigByKey("dms.ai.api_url", apiUrl);
+        updateConfigByKey("ai.enabled", toString(config.get("enabled")));
+        updateConfigByKey("ai.api_url", apiUrl);
         // API Key 保护：空值或脱敏掩码不覆盖已有密钥
         String apiKey = toString(config.get("apiKey"));
         if (StringUtils.isNotEmpty(apiKey) && !apiKey.contains("****"))
         {
-            updateConfigByKey("dms.ai.api_key", apiKey);
+            updateConfigByKey("ai.api_key", apiKey);
         }
-        updateConfigByKey("dms.ai.model_name", toString(config.get("modelName")));
+        updateConfigByKey("ai.model_name", toString(config.get("modelName")));
         updateConfigByKey("dms.ai.repair_assistant", toString(config.get("repairAssistant")));
         updateConfigByKey("dms.ai.dispatch_recommend", toString(config.get("dispatchRecommend")));
         updateConfigByKey("dms.ai.knowledge_qa", toString(config.get("knowledgeQa")));
-        updateConfigByKey("dms.ai.monthly_limit", toString(config.get("monthlyLimit")));
+        updateConfigByKey("ai.monthly_limit", toString(config.get("monthlyLimit")));
         return AjaxResult.success("配置保存成功");
     }
 
@@ -144,14 +146,14 @@ public class DmsAiConfigController extends BaseController
     {
         switch (key)
         {
-            case "dms.ai.enabled": return "AI功能总开关";
-            case "dms.ai.api_url": return "AI大模型API地址";
-            case "dms.ai.api_key": return "AI大模型API密钥";
-            case "dms.ai.model_name": return "AI大模型名称";
+            case "ai.enabled": return "AI功能总开关";
+            case "ai.api_url": return "AI大模型API地址";
+            case "ai.api_key": return "AI大模型API密钥";
+            case "ai.model_name": return "AI大模型名称";
+            case "ai.monthly_limit": return "AI月度调用上限";
             case "dms.ai.repair_assistant": return "智能报修助手开关";
             case "dms.ai.dispatch_recommend": return "智能派工推荐开关";
             case "dms.ai.knowledge_qa": return "维修知识问答开关";
-            case "dms.ai.monthly_limit": return "AI月度调用上限";
             default: return "AI配置-" + key;
         }
     }

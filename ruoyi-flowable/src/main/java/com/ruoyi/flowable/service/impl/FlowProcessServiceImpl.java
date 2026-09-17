@@ -15,6 +15,7 @@ import org.flowable.engine.history.HistoricProcessInstanceQuery;
 import org.flowable.engine.repository.ProcessDefinition;
 import org.flowable.engine.runtime.ProcessInstance;
 import org.flowable.image.ProcessDiagramGenerator;
+import com.ruoyi.flowable.config.CurrentNodeProcessDiagramGenerator;
 import org.flowable.engine.ProcessEngine;
 import org.flowable.task.api.Task;
 import org.flowable.task.api.history.HistoricTaskInstance;
@@ -161,6 +162,11 @@ public class FlowProcessServiceImpl implements IFlowProcessService
         {
             return false;
         }
+        if (StringUtils.isNotEmpty(query.getCurrentActivityName())
+                && (fi.getCurrentActivityName() == null || !fi.getCurrentActivityName().contains(query.getCurrentActivityName())))
+        {
+            return false;
+        }
         java.util.Map<String, Object> params = query.getParams();
         if (params != null)
         {
@@ -207,6 +213,10 @@ public class FlowProcessServiceImpl implements IFlowProcessService
         {
             hisQuery.processDefinitionKey(query.getProcessDefinitionKey());
         }
+        if (StringUtils.isNotEmpty(query.getInstanceId()))
+        {
+            hisQuery.processInstanceId(query.getInstanceId());
+        }
         if ("running".equals(query.getStatus()))
         {
             hisQuery.unfinished();
@@ -220,6 +230,10 @@ public class FlowProcessServiceImpl implements IFlowProcessService
         for (HistoricProcessInstance hpi : instances)
         {
             FlowInstance fi = convertInstance(hpi);
+            if (!matchInstanceFilter(fi, query))
+            {
+                continue;
+            }
             // 标注我是否为发起人
             fi.setStartUserId(userId.equals(fi.getStartUserId()) ? userId : fi.getStartUserId());
             list.add(fi);
@@ -488,11 +502,29 @@ public class FlowProcessServiceImpl implements IFlowProcessService
     @Override
     public List<FlowTask> selectHistoryTasks(String instanceId)
     {
+        HistoricProcessInstance hpi = historyService.createHistoricProcessInstanceQuery()
+                .processInstanceId(instanceId).singleResult();
         List<HistoricTaskInstance> tasks = historyService.createHistoricTaskInstanceQuery()
                 .processInstanceId(instanceId)
                 .orderByHistoricTaskInstanceStartTime().asc()
                 .list();
         List<FlowTask> list = new ArrayList<>();
+        // 发起节点（开始事件）：发起人=实例发起人，接收/操作时间=实例开始时间
+        if (hpi != null)
+        {
+            FlowTask start = new FlowTask();
+            start.setTaskId("__start__");
+            start.setTaskName("发起");
+            start.setInstanceId(instanceId);
+            start.setCreateTime(hpi.getStartTime());
+            start.setEndTime(hpi.getStartTime());
+            start.setOutcome("start");
+            if (StringUtils.isNotEmpty(hpi.getStartUserId()))
+            {
+                start.setAssigneeName(resolveUserNickname(hpi.getStartUserId()));
+            }
+            list.add(start);
+        }
         for (HistoricTaskInstance task : tasks)
         {
             FlowTask ft = convertHistoricTask(task);
@@ -506,6 +538,18 @@ public class FlowProcessServiceImpl implements IFlowProcessService
                 ft.setAssigneeName(resolveUserNickname(task.getAssignee()));
             }
             list.add(ft);
+        }
+        // 结束节点（结束事件）：流程已结束时补充"流程结束"记录
+        if (hpi != null && hpi.getEndTime() != null)
+        {
+            FlowTask end = new FlowTask();
+            end.setTaskId("__end__");
+            end.setTaskName("流程结束");
+            end.setInstanceId(instanceId);
+            end.setCreateTime(hpi.getStartTime());
+            end.setEndTime(hpi.getEndTime());
+            end.setOutcome(StringUtils.isNotEmpty(hpi.getDeleteReason()) ? "canceled" : "end");
+            list.add(end);
         }
         return list;
     }
@@ -536,10 +580,19 @@ public class FlowProcessServiceImpl implements IFlowProcessService
                     highLightedFlows.add(hai.getActivityId());
                 }
             }
-            ProcessDiagramGenerator diagramGenerator = processEngine.getProcessEngineConfiguration()
-                    .getProcessDiagramGenerator();
-            try (InputStream in = diagramGenerator.generateDiagram(bpmnModel, "png",
-                    highLightedActivities, highLightedFlows,
+            // 当前停留节点：未结束的活动（红框标注）
+            List<String> currentActivityIds = new ArrayList<>();
+            for (HistoricActivityInstance hai : activityInstances)
+            {
+                if (hai.getEndTime() == null && !"sequenceFlow".equals(hai.getActivityType()))
+                {
+                    currentActivityIds.add(hai.getActivityId());
+                }
+            }
+            CurrentNodeProcessDiagramGenerator diagramGenerator =
+                    new CurrentNodeProcessDiagramGenerator();
+            try (InputStream in = diagramGenerator.generateDiagramWithCurrent(bpmnModel, "png",
+                    highLightedActivities, highLightedFlows, currentActivityIds,
                     "宋体", "宋体", "宋体", null, 1.0, false))
             {
                 return in.readAllBytes();

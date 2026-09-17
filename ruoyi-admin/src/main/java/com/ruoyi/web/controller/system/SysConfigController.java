@@ -51,6 +51,11 @@ public class SysConfigController extends BaseController
     @PostMapping("/export")
     public void export(HttpServletResponse response, SysConfig config)
     {
+        // 导出需全量，绕过列表页的业务托管键隐藏过滤
+        if (com.ruoyi.common.utils.StringUtils.isEmpty(config.getConfigKey()))
+        {
+            config.getParams().put("hideBizKeys", "0");
+        }
         List<SysConfig> list = configService.selectConfigList(config);
         list = com.ruoyi.common.utils.ExportIdFilter.filter(list, config);
         ExcelUtil<SysConfig> util = new ExcelUtil<SysConfig>(SysConfig.class);

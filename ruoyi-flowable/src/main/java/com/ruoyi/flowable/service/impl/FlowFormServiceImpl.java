@@ -42,14 +42,7 @@ public class FlowFormServiceImpl implements IFlowFormService
     @Autowired
     private ISysUserService userService;
 
-    /** 字段类型 → 数据库类型 */
-    private static final Map<String, String> COLUMN_TYPES = Map.of(
-            "text", "varchar(500)",
-            "textarea", "text",
-            "number", "decimal(18,2)",
-            "date", "datetime",
-            "select", "varchar(255)"
-    );
+    /** 字段类型 → 数据库类型（由 columnType(JSONObject) 按表现形式/类型/长度动态推导） */
 
     @Override
     public List<FlowForm> selectFlowFormList(FlowForm form)
@@ -66,6 +59,34 @@ public class FlowFormServiceImpl implements IFlowFormService
     @Override
     public FlowForm selectFlowFormByProcessKey(String processKey)
     {
+        // 优先：流程模型绑定的表单（模型 metaInfo.formId，一个表单可被多个模型关联）
+        org.flowable.engine.repository.Model model = null;
+        for (org.flowable.engine.repository.Model m : repositoryService.createModelQuery().modelKey(processKey).list())
+        {
+            if (model == null || (m.getVersion() != null && model.getVersion() != null && m.getVersion() > model.getVersion()))
+            {
+                model = m;
+            }
+        }
+        if (model != null && StringUtils.isNotEmpty(model.getMetaInfo()))
+        {
+            try
+            {
+                Long formId = com.alibaba.fastjson2.JSONObject.parseObject(model.getMetaInfo()).getLong("formId");
+                if (formId != null)
+                {
+                    FlowForm bound = flowFormMapper.selectFlowFormByFormId(formId);
+                    if (bound != null)
+                    {
+                        return bound;
+                    }
+                }
+            }
+            catch (Exception ignored)
+            {
+            }
+        }
+        // 兼容旧数据：表单侧绑定的 process_key
         return flowFormMapper.selectFlowFormByProcessKey(processKey);
     }
 
@@ -73,14 +94,26 @@ public class FlowFormServiceImpl implements IFlowFormService
     @Transactional
     public int insertFlowForm(FlowForm form)
     {
-        if (flowFormMapper.selectFlowFormByFormKey(form.getFormKey()) != null)
+        // 表单Key：用户不填，使用自增主键ID作为唯一数字Key（表名 flow_data_{id} 简短）
+        boolean autoKey = StringUtils.isEmpty(form.getFormKey());
+        if (autoKey)
+        {
+            form.setFormKey("tmp_" + System.nanoTime());
+        }
+        else if (flowFormMapper.selectFlowFormByFormKey(form.getFormKey()) != null)
         {
             throw new ServiceException("表单Key已存在：" + form.getFormKey());
         }
         validateFields(form.getFieldsJson());
         SysUser user = userService.selectUserById(SecurityUtils.getUserId());
         form.setCreateBy(user.getUserName());
-        return flowFormMapper.insertFlowForm(form);
+        int rows = flowFormMapper.insertFlowForm(form);
+        if (autoKey && form.getFormId() != null)
+        {
+            form.setFormKey(String.valueOf(form.getFormId()));
+            flowFormMapper.updateFlowForm(form);
+        }
+        return rows;
     }
 
     @Override
@@ -99,6 +132,73 @@ public class FlowFormServiceImpl implements IFlowFormService
         return flowFormMapper.deleteFlowFormByFormIds(formIds);
     }
 
+    /** 表现形式 → 数据库列类型（按字段类型/长度/小数位推导） */
+    private String columnType(JSONObject f)
+    {
+        String dtype = f.getString("dtype");
+        if ("date".equals(dtype))
+        {
+            return "datetime";
+        }
+        if ("float".equals(dtype))
+        {
+            int scale = f.getIntValue("scale");
+            return "decimal(18," + (scale > 0 ? scale : 2) + ")";
+        }
+        if ("int".equals(dtype))
+        {
+            return "int";
+        }
+        int len = f.getIntValue("length");
+        if (len <= 0)
+        {
+            len = 500;
+        }
+        return "varchar(" + len + ")";
+    }
+
+    /** 兼容旧字段结构：{type:text/textarea/number/date/select} → {form,dtype,length,scale} */
+    private void normalizeField(JSONObject f)
+    {
+        if (f.containsKey("form"))
+        {
+            return;
+        }
+        String legacy = f.getString("type");
+        String form = "text";
+        String dtype = "text";
+        if ("textarea".equals(legacy))
+        {
+            form = "textarea";
+        }
+        else if ("number".equals(legacy))
+        {
+            dtype = "float";
+        }
+        else if ("date".equals(legacy))
+        {
+            dtype = "date";
+        }
+        else if ("select".equals(legacy))
+        {
+            form = "select";
+        }
+        f.put("form", form);
+        f.put("dtype", dtype);
+        if (f.getIntValue("length") <= 0)
+        {
+            f.put("length", 500);
+        }
+        if (f.getIntValue("scale") <= 0)
+        {
+            f.put("scale", 2);
+        }
+        if (StringUtils.isEmpty(f.getString("table")))
+        {
+            f.put("table", "main");
+        }
+    }
+
     @Override
     @Transactional
     public String createTable(Long formId)
@@ -109,31 +209,38 @@ public class FlowFormServiceImpl implements IFlowFormService
             throw new ServiceException("表单不存在");
         }
         String formKey = form.getFormKey();
-        if (!formKey.matches("^[a-z][a-z0-9_]{1,40}$"))
+        if (!formKey.matches("^[a-z0-9][a-z0-9_]{0,39}$"))
         {
             throw new ServiceException("表单Key仅允许小写字母开头的字母/数字/下划线（1-40位），当前：" + formKey);
         }
-        String tableName = "flow_data_" + formKey;
-        StringBuilder ddl = new StringBuilder();
-        ddl.append("CREATE TABLE IF NOT EXISTS `").append(tableName).append("` (\n");
-        ddl.append("  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n");
-        for (JSONObject f : parseFields(form.getFieldsJson()))
+        List<JSONObject> fields = parseFields(form.getFieldsJson());
+        for (JSONObject f : fields)
         {
-            String col = f.getString("field");
-            if (!col.matches("^[a-z][a-z0-9_]{0,39}$"))
-            {
-                throw new ServiceException("字段名[" + col + "]不合法：仅允许小写字母开头的字母/数字/下划线");
-            }
-            String type = COLUMN_TYPES.getOrDefault(f.getString("type"), "varchar(500)");
-            ddl.append("  `").append(col).append("` ").append(type).append(" COMMENT '")
-               .append(f.getString("label")).append("',\n");
+            normalizeField(f);
         }
-        ddl.append("  `process_instance_id` varchar(64) COMMENT '流程实例ID',\n");
-        ddl.append("  `create_by` varchar(64) COMMENT '创建人',\n");
-        ddl.append("  `create_time` datetime COMMENT '创建时间',\n");
-        ddl.append("  PRIMARY KEY (`id`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='")
-           .append(form.getFormName()).append("流程数据'");
-        jdbcTemplate.execute(ddl.toString());
+        // 按所属表分组（main / dt1 / dt2 ...，参照泛微e9明细表规则）
+        java.util.Map<String, List<JSONObject>> groups = new java.util.LinkedHashMap<>();
+        for (JSONObject f : fields)
+        {
+            String table = StringUtils.isEmpty(f.getString("table")) ? "main" : f.getString("table");
+            if (!table.matches("^(main|dt[1-9])$"))
+            {
+                throw new ServiceException("非法的字段所属表标识：" + table);
+            }
+            groups.computeIfAbsent(table, k -> new ArrayList<>()).add(f);
+        }
+        String tableName = "flow_data_" + formKey;
+        createOrPatchTable(tableName, form.getFormName() + "流程数据", groups.get("main"), false);
+        // 明细表：flow_data_{key}_dtN，含 mainid 关联主表主键
+        for (int i = 1; i <= 9; i++)
+        {
+            List<JSONObject> dtFields = groups.get("dt" + i);
+            if (dtFields == null)
+            {
+                continue;
+            }
+            createOrPatchTable(tableName + "_dt" + i, form.getFormName() + "明细表" + i, dtFields, true);
+        }
         // 回写表名
         FlowForm update = new FlowForm();
         update.setFormId(formId);
@@ -141,6 +248,71 @@ public class FlowFormServiceImpl implements IFlowFormService
         update.setUpdateBy(SecurityUtils.getUsername());
         flowFormMapper.updateFlowForm(update);
         return tableName;
+    }
+
+    /** 建表（不存在则建，存在则补齐缺失列）；isDetail=true 时含 mainid 关联字段 */
+    private void createOrPatchTable(String tableName, String comment, List<JSONObject> fields, boolean isDetail)
+    {
+        if (fields == null || fields.isEmpty())
+        {
+            return;
+        }
+        java.util.LinkedHashSet<String> existing = new java.util.LinkedHashSet<>();
+        boolean tableExists = jdbcTemplate.queryForObject(
+            "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = ?",
+            Long.class, tableName) > 0;
+        if (tableExists)
+        {
+            existing.addAll(jdbcTemplate.queryForList(
+                "SELECT column_name FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = ?",
+                String.class, tableName));
+        }
+        if (!tableExists)
+        {
+            StringBuilder ddl = new StringBuilder();
+            ddl.append("CREATE TABLE `").append(tableName).append("` (\n");
+            ddl.append("  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n");
+            if (isDetail)
+            {
+                ddl.append("  `mainid` bigint(20) NOT NULL COMMENT '主表主键ID',\n");
+            }
+            appendColumns(ddl, fields, existing);
+            ddl.append("  PRIMARY KEY (`id`)");
+            if (isDetail)
+            {
+                ddl.append(",\n  KEY `idx_mainid` (`mainid`)");
+            }
+            ddl.append("\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='").append(comment).append("'");
+            jdbcTemplate.execute(ddl.toString());
+            return;
+        }
+        // 已存在：补齐缺失字段列
+        for (JSONObject f : fields)
+        {
+            String col = f.getString("field");
+            if (!existing.contains(col))
+            {
+                jdbcTemplate.execute("ALTER TABLE `" + tableName + "` ADD COLUMN `" + col + "` "
+                    + columnType(f) + " COMMENT '" + f.getString("label") + "'");
+            }
+        }
+    }
+
+    private void appendColumns(StringBuilder ddl, List<JSONObject> fields, java.util.Set<String> existing)
+    {
+        for (JSONObject f : fields)
+        {
+            String col = f.getString("field");
+            if (existing.contains(col))
+            {
+                continue;
+            }
+            ddl.append("  `").append(col).append("` ").append(columnType(f)).append(" COMMENT '")
+               .append(f.getString("label")).append("',\n");
+        }
+        ddl.append("  `process_instance_id` varchar(64) COMMENT '流程实例ID',\n");
+        ddl.append("  `create_by` varchar(64) COMMENT '创建人',\n");
+        ddl.append("  `create_time` datetime COMMENT '创建时间',\n");
     }
 
     @Override
@@ -216,10 +388,19 @@ public class FlowFormServiceImpl implements IFlowFormService
         }
     }
 
-    /** 表单数据写入动态数据表，返回自增ID */
+    /** 表单数据写入动态数据表（仅主表字段），返回自增ID */
     private String insertFormData(FlowForm form, Map<String, Object> data)
     {
-        List<JSONObject> fields = parseFields(form.getFieldsJson());
+        List<JSONObject> fields = new ArrayList<>();
+        for (JSONObject f : parseFields(form.getFieldsJson()))
+        {
+            normalizeField(f);
+            String table = f.getString("table");
+            if (table == null || "main".equals(table))
+            {
+                fields.add(f);
+            }
+        }
         StringBuilder cols = new StringBuilder("`process_instance_id`");
         StringBuilder marks = new StringBuilder("?");
         List<Object> params = new ArrayList<>();
@@ -271,8 +452,19 @@ public class FlowFormServiceImpl implements IFlowFormService
         {
             return;
         }
-        for (JSONObject f : parseFields(fieldsJson))
+        JSONArray arr = JSON.parseArray(fieldsJson);
+        // 新建表单允许暂无字段（先建表单、后设计字段）
+        if (arr == null || arr.isEmpty())
         {
+            return;
+        }
+        for (int i = 0; i < arr.size(); i++)
+        {
+            JSONObject f = arr.getJSONObject(i);
+            if (StringUtils.isEmpty(f.getString("field")) || StringUtils.isEmpty(f.getString("label")))
+            {
+                throw new ServiceException("第" + (i + 1) + "个字段缺少字段名或显示名");
+            }
             if (!f.getString("field").matches("^[a-z][a-z0-9_]{0,39}$"))
             {
                 throw new ServiceException("字段名[" + f.getString("field")

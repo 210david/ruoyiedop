@@ -16,7 +16,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.StringUtils;
+import com.alibaba.fastjson2.JSONObject;
 import com.ruoyi.flowable.domain.FlowModel;
+import com.ruoyi.flowable.mapper.FlowFormMapper;
 import com.ruoyi.flowable.service.IFlowModelService;
 
 /**
@@ -29,6 +31,9 @@ public class FlowModelServiceImpl implements IFlowModelService
 {
     @Autowired
     private RepositoryService repositoryService;
+
+    @Autowired
+    private FlowFormMapper flowFormMapper;
 
     /** 空模型 BPMN XML 模板 */
     private static final String EMPTY_BPMN_TEMPLATE =
@@ -110,7 +115,7 @@ public class FlowModelServiceImpl implements IFlowModelService
         model.setName(flowModel.getModelName());
         model.setKey(flowModel.getModelKey());
         model.setCategory(flowModel.getCategory());
-        model.setMetaInfo(buildMetaInfo(flowModel.getDescription()));
+        model.setMetaInfo(buildMetaInfo(flowModel.getDescription(), flowModel.getFormId()));
         repositoryService.saveModel(model);
         // 初始化空 BPMN XML
         String xml = String.format(EMPTY_BPMN_TEMPLATE, flowModel.getModelKey(), flowModel.getModelName());
@@ -135,7 +140,20 @@ public class FlowModelServiceImpl implements IFlowModelService
         {
             model.setCategory(flowModel.getCategory());
         }
-        model.setMetaInfo(buildMetaInfo(flowModel.getDescription()));
+        JSONObject oldMeta = parseMetaInfo(model.getMetaInfo());
+        String desc = flowModel.getDescription() != null ? flowModel.getDescription()
+                : oldMeta.getString("description");
+        // 前端传 formId 覆盖；unbind=true 解除绑定；未传则沿用原绑定
+        Long formId;
+        if (Boolean.TRUE.equals(flowModel.getUnbind()))
+        {
+            formId = null;
+        }
+        else
+        {
+            formId = flowModel.getFormId() != null ? flowModel.getFormId() : oldMeta.getLong("formId");
+        }
+        model.setMetaInfo(buildMetaInfo(desc, formId));
         repositoryService.saveModel(model);
         if (StringUtils.isNotEmpty(flowModel.getBpmnXml()))
         {
@@ -282,11 +300,47 @@ public class FlowModelServiceImpl implements IFlowModelService
         fm.setCategory(model.getCategory());
         fm.setVersion(model.getVersion());
         fm.setCreateTime(model.getCreateTime() != null ? model.getCreateTime() : new Date());
+        JSONObject meta = parseMetaInfo(model.getMetaInfo());
+        fm.setDescription(meta.getString("description"));
+        Long formId = meta.getLong("formId");
+        fm.setFormId(formId);
+        if (formId != null)
+        {
+            try
+            {
+                com.ruoyi.flowable.domain.FlowForm f = flowFormMapper.selectFlowFormByFormId(formId);
+                if (f != null)
+                {
+                    fm.setFormName(f.getFormName());
+                }
+            }
+            catch (Exception ignored)
+            {
+            }
+        }
         return fm;
     }
 
-    private String buildMetaInfo(String description)
+    private String buildMetaInfo(String description, Long formId)
     {
-        return "{\"description\":\"" + (description == null ? "" : description.replace("\"", "'")) + "\"}";
+        JSONObject meta = new JSONObject();
+        meta.put("description", description == null ? "" : description.replace("\"", "'"));
+        if (formId != null)
+        {
+            meta.put("formId", formId);
+        }
+        return meta.toJSONString();
+    }
+
+    private JSONObject parseMetaInfo(String metaInfo)
+    {
+        try
+        {
+            return JSONObject.parseObject(metaInfo == null ? "{}" : metaInfo);
+        }
+        catch (Exception e)
+        {
+            return new JSONObject();
+        }
     }
 }

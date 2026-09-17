@@ -102,25 +102,25 @@
       </div>
       <!-- 表格 -->
       <div class="table-wrap">
-        <el-table v-loading="loading" :data="list" border class="app-table" :key="activeTab">
-          <el-table-column type="index" label="序号" width="60" align="center" />
-          <el-table-column v-if="columns.title.visible" label="流程标题" prop="title" key="title" min-width="220" show-overflow-tooltip>
+        <el-table ref="tableRef" v-loading="loading" :data="list" border class="app-table" :key="activeTab" @header-dragend="onHeaderDragEnd">
+          <el-table-column type="index" label="序号" :width="colWidth('序号', 85)" align="center" />
+          <el-table-column v-if="columns.title.visible" label="流程标题" prop="title" key="title" :min-width="colWidth('title', 220)" show-overflow-tooltip>
             <template #default="scope">
               <span class="col-strong link-like" @click="handleView(scope.row)">{{ scope.row.title || scope.row.processDefinitionName || '-' }}</span>
             </template>
           </el-table-column>
-          <el-table-column v-if="columns.startUserName.visible" label="创建人" prop="startUserName" key="startUserName" width="120" show-overflow-tooltip>
+          <el-table-column v-if="columns.startUserName.visible" label="创建人" prop="startUserName" key="startUserName" :width="colWidth('startUserName', 120)" show-overflow-tooltip>
             <template #default="scope">{{ scope.row.startUserName || '-' }}</template>
           </el-table-column>
-          <el-table-column v-if="activeTab === 'done' && columns.endTime.visible" label="完成时间" prop="endTime" key="endTime" width="170" align="center" />
-          <el-table-column v-else-if="columns.createTime.visible" label="创建时间" prop="createTime" key="createTime" width="170" align="center" />
-          <el-table-column v-if="activeTab === 'todo' && columns.taskName.visible" label="办理环节" prop="taskName" key="taskName" min-width="130" show-overflow-tooltip>
+          <el-table-column v-if="activeTab === 'done' && columns.endTime.visible" label="完成时间" prop="endTime" key="endTime" :width="colWidth('endTime', 170)" align="center" />
+          <el-table-column v-else-if="columns.createTime.visible" label="创建时间" prop="createTime" key="createTime" :width="colWidth('createTime', 170)" align="center" />
+          <el-table-column v-if="activeTab === 'todo' && columns.taskName.visible" label="办理环节" prop="taskName" key="taskName" :min-width="colWidth('taskName', 130)" show-overflow-tooltip>
             <template #default="scope">
               <span class="badge blue"><span class="dot"></span>{{ scope.row.taskName || '-' }}</span>
             </template>
           </el-table-column>
-          <el-table-column v-if="activeTab === 'done' && columns.comment.visible" label="审批意见" prop="comment" key="comment" min-width="160" show-overflow-tooltip />
-          <el-table-column v-if="activeTab === 'done' && columns.outcome.visible" label="审批结果" prop="outcome" key="outcome" width="100" align="center">
+          <el-table-column v-if="activeTab === 'done' && columns.comment.visible" label="审批意见" prop="comment" key="comment" :min-width="colWidth('comment', 160)" show-overflow-tooltip />
+          <el-table-column v-if="activeTab === 'done' && columns.outcome.visible" label="审批结果" prop="outcome" key="outcome" :width="colWidth('outcome', 100)" align="center">
             <template #default="scope">
               <span class="badge" :class="outcomeClass(scope.row.outcome)">
                 <span class="dot"></span>{{ outcomeLabel(scope.row.outcome) }}
@@ -205,10 +205,13 @@
 <script setup name="FlowTask">
 import { listTodoTask, listDoneTask, countTodoTask, completeTask, getProcessTree } from '@/api/flowable/flow'
 import FlowDetail from '@/components/FlowDetail/index.vue'
+import { useColumnResize } from '@/composables/useColumnResize'
 import { Search, Filter, Document, Folder, User, Fold, Expand } from '@element-plus/icons-vue'
 
 const { proxy } = getCurrentInstance()
 const route = useRoute()
+
+const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('flowable_task_index')
 
 const list = ref([])
 const loading = ref(true)
@@ -308,6 +311,7 @@ function getList() {
     list.value = res.rows || []
     if (activeTab.value === 'todo') todoTotal.value = res.total; else doneTotal.value = res.total
     loading.value = false
+    applySavedWidths()
   }).catch(() => { loading.value = false })
 }
 

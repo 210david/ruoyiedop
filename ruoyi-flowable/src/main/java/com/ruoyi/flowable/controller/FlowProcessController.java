@@ -86,7 +86,7 @@ public class FlowProcessController extends BaseController
     /**
      * 流程分类树（左侧树）
      */
-    @PreAuthorize("@ss.hasAnyPermi('flowable:task:todo,flowable:task:done,flowable:process:query,flowable:process:start')")
+    @PreAuthorize("@ss.hasAnyPermi('flowable:task:todo,flowable:task:done,flowable:process:query,flowable:process:start,flowable:process:myList')")
     @GetMapping("/tree")
     public AjaxResult tree()
     {

@@ -7,10 +7,65 @@ export function listPrompt() {
 export function updatePrompt(data) {
   return request({ url: '/ai/prompt', method: 'put', data: data })
 }
+export function resetPrompt(configKey) {
+  return request({ url: '/ai/prompt/' + configKey, method: 'delete' })
+}
+export function getPromptDefaults() {
+  return request({ url: '/ai/prompt/defaults', method: 'get' })
+}
 
 // ===== NL2Query 智能查询 =====
 export function nlQuery(question) {
   return request({ url: '/ai/nlquery/query', method: 'post', data: { question }, timeout: 90000 })
+}
+
+// 流式查询：POST + fetch ReadableStream 解析 SSE（EventSource 不支持 POST/自定义头）
+export function nlQueryStream(question, onStage, onResult, signal) {
+  const baseURL = import.meta.env.VITE_APP_BASE_API || ''
+  const token = getToken()
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), 60000)
+  let externalAbort = false
+  if (signal) {
+    signal.addEventListener('abort', () => { externalAbort = true; controller.abort() })
+  }
+  return fetch(baseURL + '/ai/nlquery/stream', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+    body: JSON.stringify({ question }),
+    signal: controller.signal
+  }).then(async resp => {
+    if (!resp.ok || !resp.body) throw new Error('stream unavailable')
+    const reader = resp.body.getReader()
+    const decoder = new TextDecoder('utf-8')
+    let buf = ''
+    for (;;) {
+      const { done, value } = await reader.read()
+      if (done) break
+      buf += decoder.decode(value, { stream: true })
+      let idx
+      while ((idx = buf.indexOf('\n\n')) >= 0) {
+        const block = buf.slice(0, idx)
+        buf = buf.slice(idx + 2)
+        let event = 'message', data = ''
+        for (const line of block.split('\n')) {
+          if (line.startsWith(':')) continue
+          if (line.startsWith('event:')) event = line.slice(6).trim()
+          else if (line.startsWith('data:')) data += line.slice(5).trim()
+        }
+        if (!data) continue
+        try {
+          const payload = JSON.parse(data)
+          if (event === 'stage') onStage && onStage(payload.stage, payload.status)
+          else if (event === 'result') onResult && onResult(payload)
+        } catch (e) { /* 跳过解析失败的块 */ }
+      }
+    }
+  }).finally(() => {
+    clearTimeout(timer)
+    // 60秒超时与外部取消通过错误名区分，交由调用方处理
+    return Promise.reject(Object.assign(new Error('timeout'), { isTimeout: !externalAbort, isExternal: externalAbort }))
+  })
 }
 
 // ===== WMS AI辅助 =====

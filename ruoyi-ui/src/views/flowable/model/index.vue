@@ -78,6 +78,12 @@
               <span class="badge violet">{{ categoryLabel(scope.row.category) }}</span>
             </template>
           </el-table-column>
+          <el-table-column label="关联表单" prop="formName" width="150" align="center" show-overflow-tooltip>
+            <template #default="scope">
+              <span v-if="scope.row.formName" class="badge blue"><span class="dot"></span>{{ scope.row.formName }}</span>
+              <span v-else class="badge gray"><span class="dot"></span>未关联</span>
+            </template>
+          </el-table-column>
           <el-table-column label="版本" prop="version" width="80" align="center" />
           <el-table-column label="部署状态" prop="deployed" width="100" align="center">
             <template #default="scope">
@@ -93,6 +99,7 @@
                 <el-button link type="primary" icon="Edit" @click="handleDesign(scope.row)" v-hasPermi="['flowable:model:edit']">设计</el-button>
                 <el-button link type="success" icon="Promotion" @click="handleDeploy(scope.row)" v-hasPermi="['flowable:model:deploy']">部署</el-button>
                 <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['flowable:model:query']">查看</el-button>
+                <el-button link type="warning" icon="Link" @click="handleBindForm(scope.row)" v-hasPermi="['flowable:model:edit']">表单</el-button>
                 <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['flowable:model:remove']">删除</el-button>
               </div>
             </template>
@@ -131,6 +138,12 @@
         </el-form-item>
         <el-form-item label="模型描述" prop="description">
           <el-input v-model="form.description" type="textarea" :rows="3" placeholder="请输入流程用途描述" maxlength="200" />
+        </el-form-item>
+        <el-form-item label="关联表单">
+          <el-select v-model="form.formId" filterable clearable placeholder="选择流程表单（发起时渲染填写）" style="width:100%">
+            <el-option v-for="f in formOptions" :key="f.formId" :label="f.formName" :value="f.formId" />
+          </el-select>
+          <div class="form-tip">一个表单可关联多个流程模型；也可创建后通过列表"表单"按钮设置</div>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -266,6 +279,7 @@
 
 <script setup name="FlowModel">
 import { listModel, getModel, addModel, updateModel, delModel, deployModel } from '@/api/flowable/flow'
+import { allForms } from '@/api/flowable/form'
 import request from '@/utils/request'
 import { ElMessageBox } from 'element-plus'
 import { h } from 'vue'
@@ -373,8 +387,29 @@ function resetQuery() {
 }
 
 function handleAdd() {
-  form.value = { modelName: undefined, modelKey: undefined, category: 'oa', description: undefined }
+  form.value = { modelName: undefined, modelKey: undefined, category: 'oa', description: undefined, formId: undefined }
+  loadFormOptions()
   addOpen.value = true
+}
+
+// ===== 关联表单设置（模型侧绑定表单，一个表单可关联多个模型） =====
+const formOptions = ref([])
+const bindOpen = ref(false)
+const bindForm = ref({})
+function loadFormOptions() {
+  allForms().then(res => { formOptions.value = res.data || [] })
+}
+function handleBindForm(row) {
+  bindForm.value = { modelId: row.modelId, modelName: row.modelName, formId: row.formId || undefined }
+  loadFormOptions()
+  bindOpen.value = true
+}
+function submitBindForm() {
+  updateModel({ modelId: bindForm.value.modelId, formId: bindForm.value.formId || null, unbind: !bindForm.value.formId }).then(() => {
+    proxy.$modal.msgSuccess('关联表单已更新')
+    bindOpen.value = false
+    getList()
+  })
 }
 
 function submitAdd() {
@@ -735,6 +770,7 @@ async function saveDesigner() {
       modelName: designModel.value.modelName,
       category: designModel.value.category,
       description: designModel.value.description,
+      formId: designModel.value.formId || null,
       bpmnXml: xml
     })
     proxy.$modal.msgSuccess('流程设计已保存，可点击"部署"发布流程')

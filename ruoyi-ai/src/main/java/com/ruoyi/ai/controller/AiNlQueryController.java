@@ -10,7 +10,7 @@ import com.ruoyi.common.core.domain.AjaxResult;
 
 /**
  * NL2Query 自然语言查数 Controller
- * 安全：仅白名单表、只读SELECT、强制LIMIT（详见 AiNlQueryServiceImpl）
+ * 安全：可查范围按登录人权限动态裁剪、只读SELECT、强制LIMIT（详见 AiNlQueryServiceImpl）
  *
  * @author ruoyi
  */

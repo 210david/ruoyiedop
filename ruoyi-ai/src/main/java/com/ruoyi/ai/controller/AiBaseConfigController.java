@@ -35,23 +35,7 @@ public abstract class AiBaseConfigController extends BaseController
         return "true".equalsIgnoreCase(configService.selectConfigByKey(key));
     }
 
-    /** 新键优先读，为空回退旧键（dms.ai.* 迁移兼容） */
-    protected String mergeKey(String newKey)
-    {
-        if (configService.selectConfigByKey(newKey) == null
-                || StringUtils.isEmpty(configService.selectConfigByKey(newKey)))
-        {
-            String oldKey = "dms." + newKey;
-            String oldVal = configService.selectConfigByKey(oldKey);
-            if (StringUtils.isNotEmpty(oldVal))
-            {
-                return oldKey;
-            }
-        }
-        return newKey;
-    }
-
-    /** 按configKey更新配置值（config_key需精确匹配，避免like模糊命中dms.ai.*等相似键） */
+    /** 按configKey更新配置值（config_key需精确匹配，避免like模糊命中相似键） */
     protected void updateConfigByKey(String key, String value)
     {
         SysConfig query = new SysConfig();

@@ -49,26 +49,26 @@
           @header-dragend="onHeaderDragEnd" class="app-table">
           <el-table-column type="index" label="序号" width="85" align="center" />
           <el-table-column label="文档名称" prop="docName" key="docName" :min-width="colWidth('docName', 240)" resizable show-overflow-tooltip v-if="columns.docName.visible" />
-          <el-table-column label="所属模块" prop="module" key="module" width="120" align="center" v-if="columns.module.visible">
+          <el-table-column label="所属模块" prop="module" key="module" :width="colWidth('module', 120)" align="center" resizable v-if="columns.module.visible">
             <template #default="scope">
               <span class="badge violet">{{ moduleNames[scope.row.module] || scope.row.module }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="类型" prop="fileType" key="fileType" width="90" align="center" v-if="columns.fileType.visible">
+          <el-table-column label="类型" prop="fileType" key="fileType" :width="colWidth('fileType', 90)" align="center" resizable v-if="columns.fileType.visible">
             <template #default="scope">
               <span class="badge blue">{{ (scope.row.fileType || '').toUpperCase() }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="切片数" prop="chunkCount" key="chunkCount" width="100" align="center" v-if="columns.chunkCount.visible" />
-          <el-table-column label="状态" prop="status" key="status" width="110" align="center" v-if="columns.status.visible">
+          <el-table-column label="切片数" prop="chunkCount" key="chunkCount" :width="colWidth('chunkCount', 100)" align="center" resizable v-if="columns.chunkCount.visible" />
+          <el-table-column label="状态" prop="status" key="status" :width="colWidth('status', 110)" align="center" resizable v-if="columns.status.visible">
             <template #default="scope">
               <span class="badge" :class="badgeClass(scope.row.status)">
                 <span class="dot"></span>{{ statusText[scope.row.status] || scope.row.status }}
               </span>
             </template>
           </el-table-column>
-          <el-table-column label="上传人" prop="createBy" key="createBy" width="110" align="center" v-if="columns.createBy.visible" />
-          <el-table-column label="上传时间" prop="createTime" key="createTime" width="180" align="center" v-if="columns.createTime.visible" />
+          <el-table-column label="上传人" prop="createBy" key="createBy" :width="colWidth('createBy', 110)" align="center" resizable v-if="columns.createBy.visible" />
+          <el-table-column label="上传时间" prop="createTime" key="createTime" :width="colWidth('createTime', 180)" align="center" resizable v-if="columns.createTime.visible" />
           <el-table-column label="操作" width="100" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
               <div class="action-btn-row">
@@ -343,11 +343,11 @@ getList()
 .upload-tip { display:flex; align-items:flex-start; gap:6px; font-size:12px; color:#6b7280; background:#f8faff; border:1px solid #e4e8ff; border-radius:8px; padding:9px 12px; line-height:1.6; margin-top:2px; }
 .upload-tip .el-icon { margin-top:2px; color:#6366f1; flex:none; }
 
-/* 全局兜底：el-dialog弹层在body下，scoped样式无法命中，用非scoped保证铺满 */
+/* 全局兜底：el-dialog 弹层在 body 下，scoped 样式无法命中，用非 scoped 保证铺满 */
 </style>
 
 <style>
-/* 弹窗上传区铺满整行（append层在body下，必须用全局样式） */
+/* 弹窗上传区铺满整行（弹层挂载在 body 下，必须用全局样式） */
 .ai-upload-dialog .el-upload,
 .ai-upload-dialog .el-upload-dragger {
   width: 100% !important;

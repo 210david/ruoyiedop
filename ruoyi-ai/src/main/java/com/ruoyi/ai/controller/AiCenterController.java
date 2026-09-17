@@ -39,14 +39,14 @@ public class AiCenterController extends AiBaseConfigController
     public AjaxResult getConfig()
     {
         Map<String, Object> config = new HashMap<>();
-        config.put("enabled", getConfigBool(mergeKey("ai.enabled")));
-        config.put("apiUrl", getConfigStr(mergeKey("ai.api_url")));
+        config.put("enabled", getConfigBool("ai.enabled"));
+        config.put("apiUrl", getConfigStr("ai.api_url"));
         // API Key 保存后不允许查看：不返回任何明文/掩码，仅返回是否已配置
-        String apiKey = getConfigStr(mergeKey("ai.api_key"));
+        String apiKey = getConfigStr("ai.api_key");
         config.put("apiKey", "");
         config.put("apiKeyConfigured", StringUtils.isNotEmpty(apiKey));
-        config.put("modelName", getConfigStr(mergeKey("ai.model_name")));
-        config.put("monthlyLimit", getConfigStr(mergeKey("ai.monthly_limit")));
+        config.put("modelName", getConfigStr("ai.model_name"));
+        config.put("monthlyLimit", getConfigStr("ai.monthly_limit"));
         config.put("monthlyUsed", aiClient.getMonthlyUsed());
         // RAG向量检索（可选）：与对话模型解耦，未配置时知识库降级关键词检索
         config.put("embeddingUrl", getConfigStr("ai.embedding_url"));
@@ -54,6 +54,8 @@ public class AiCenterController extends AiBaseConfigController
         config.put("embeddingKey", "");
         config.put("embeddingKeyConfigured", StringUtils.isNotEmpty(embeddingKey));
         config.put("embeddingModel", getConfigStr("ai.embedding_model"));
+        // 智能查数（NL2Query）开关：原系统参数 ai.nl2query.enabled 已收口到此页面
+        config.put("nl2queryEnabled", getConfigBool("ai.nl2query.enabled"));
         return AjaxResult.success(config);
     }
 
@@ -87,6 +89,11 @@ public class AiCenterController extends AiBaseConfigController
             updateConfigByKey("ai.embedding_key", embeddingKey);
         }
         updateConfigByKey("ai.embedding_model", toString(config.get("embeddingModel")));
+        // 智能查数（NL2Query）开关：仅在请求携带该字段时更新，避免分区保存误清空
+        if (config.containsKey("nl2queryEnabled") && config.get("nl2queryEnabled") != null)
+        {
+            updateConfigByKey("ai.nl2query.enabled", toString(config.get("nl2queryEnabled")));
+        }
         return AjaxResult.success("配置保存成功");
     }
 
@@ -106,7 +113,7 @@ public class AiCenterController extends AiBaseConfigController
         String apiKey = toString(body.get("apiKey"));
         if (StringUtils.isEmpty(apiKey))
         {
-            apiKey = getConfigStr(mergeKey("ai.api_key"));
+            apiKey = getConfigStr("ai.api_key");
         }
         String modelName = toString(body.get("modelName"));
         AiResult result = aiClient.testConnection(apiUrl, apiKey, modelName);

@@ -95,3 +95,7 @@ CREATE TABLE IF NOT EXISTS `flow_form` (
   PRIMARY KEY (`form_id`),
   UNIQUE KEY `uk_form_key` (`form_key`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='流程表单定义';
+
+-- ========== 表单描述字段（泛微e9字段设计改造，2026-09-17） ==========
+-- flow_form 增加 form_desc 表单描述列（重复执行报 Duplicate column 可忽略）
+ALTER TABLE flow_form ADD COLUMN form_desc varchar(500) DEFAULT NULL COMMENT '表单描述' AFTER form_name;

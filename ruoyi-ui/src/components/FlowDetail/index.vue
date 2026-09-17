@@ -71,6 +71,13 @@
       <section class="rd-card">
         <div class="rd-card-header">
           <div class="rd-card-title"><span class="rd-card-icon">◈</span>流程图</div>
+          <!-- 颜色图例说明 -->
+          <div class="diagram-legend">
+            <span class="legend-item"><span class="legend-swatch swatch-current-node"></span>当前停留节点</span>
+            <span class="legend-item"><span class="legend-swatch swatch-highlight"></span>已流转节点/路径</span>
+            <span class="legend-item"><span class="legend-swatch swatch-default"></span>未流转节点/路径</span>
+            <span class="legend-item"><span class="legend-swatch swatch-end-event"></span>结束事件（红色圆心）</span>
+          </div>
         </div>
         <div class="rd-card-body" style="display:block">
           <div class="diagram-wrap">
@@ -169,11 +176,11 @@ const statusStats = computed(() => {
 })
 
 function outcomeClass(outcome) {
-  const map = { approved: 'green', rejected: 'red', delegate: 'blue' }
+  const map = { approved: 'green', rejected: 'red', delegate: 'blue', start: 'violet', end: 'green', canceled: 'gray' }
   return map[outcome] || 'gray'
 }
 function outcomeLabel(outcome) {
-  const map = { approved: '同意', rejected: '驳回', delegate: '转办' }
+  const map = { approved: '同意', rejected: '驳回', delegate: '转办', start: '发起', end: '结束', canceled: '已撤销' }
   return map[outcome] || ''
 }
 function durationText(begin, end) {
@@ -281,4 +288,47 @@ function load() {
 .diagram-wrap { text-align: center; min-height: 120px; }
 .diagram-img { max-width: 100%; }
 .diagram-empty { color: var(--rd-muted, #9ca3af); font-size: 13px; padding: 24px 0; }
+/* 流程图颜色图例 */
+.diagram-legend {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  .legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--rd-muted, #6b7280);
+  }
+  .legend-swatch {
+    width: 14px;
+    height: 10px;
+    border-radius: 2px;
+    border: 1px solid rgba(15, 23, 42, .12);
+    flex-shrink: 0;
+    &.swatch-highlight { background: #10b981; }    /* 已流转：Flowable 默认高亮绿 */
+    &.swatch-default { background: #fff; }          /* 未流转：白底默认样式 */
+    &.swatch-current-node {                         /* 当前停留节点：红框标注 */
+      background: #fff;
+      border: 2px solid #ef4444;
+    }
+    &.swatch-end-event {                            /* 结束事件：红色实心圆心 */
+      background: #fff;
+      border: 2px solid #dc2626;
+      border-radius: 50%;
+      position: relative;
+      &::after {
+        content: '';
+        position: absolute;
+        inset: 2px;
+        margin: auto;
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: #dc2626;
+      }
+    }
+  }
+}
 </style>

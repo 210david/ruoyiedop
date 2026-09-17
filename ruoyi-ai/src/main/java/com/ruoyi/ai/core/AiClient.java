@@ -30,7 +30,7 @@ import com.ruoyi.system.service.ISysConfigService;
  * 职责：开关校验 → 限额校验 → 脱敏 → 调用 → 审计落库
  * 各业务模块统一通过本客户端调用大模型，禁止自行发起HTTP请求
  *
- * 配置键（sys_config，兼容旧 dms.ai.* 键一个版本周期）：
+ * 配置键（sys_config）：
  * ai.enabled / ai.api_url / ai.api_key / ai.model_name / ai.monthly_limit
  * ai.feature.<module>.<feature> 功能级开关
  * ai.prompt.<module>.<feature>   提示词模板（占位符 {input} 等）
@@ -73,6 +73,23 @@ public class AiClient
         return chat(module, feature, prompt, 1000);
     }
 
+    /** 短超时快速失败的调用入口（适用于SQL生成等轻量任务，避免模型服务抖动时长时间挂起） */
+    public AiResult chatWithTimeout(String module, String feature, String prompt, int timeoutSeconds)
+    {
+        TIMEOUT_OVERRIDE.set(timeoutSeconds);
+        try
+        {
+            return chat(module, feature, prompt);
+        }
+        finally
+        {
+            TIMEOUT_OVERRIDE.remove();
+        }
+    }
+
+    /** 线程级超时覆盖（秒）：chatWithTimeout 设置，send() 读取 */
+    private static final ThreadLocal<Integer> TIMEOUT_OVERRIDE = new ThreadLocal<>();
+
     /** 缓存条目上限：超过则清空重建，避免长期运行内存膨胀 */
     private static final int RESPONSE_CACHE_MAX = 300;
     /** 缓存有效期：30分钟兜底（期间即使重复点击也不再调用） */
@@ -86,8 +103,10 @@ public class AiClient
      */
     public AiResult chatCached(String module, String feature, String prompt, int maxTokens)
     {
+        // 缓存键使用应用模板覆盖后的最终提示词指纹：修改模板后立即走新键，不命中旧缓存
+        String effective = applyTemplateOverride(module, feature, prompt);
         String key = module + ":" + feature + ":"
-            + com.ruoyi.common.utils.sign.Md5Utils.hash(prompt + "|" + maxTokens);
+            + com.ruoyi.common.utils.sign.Md5Utils.hash(effective + "|" + maxTokens);
         Object[] entry = responseCache.get(key);
         if (entry != null && System.currentTimeMillis() - (Long) entry[0] < RESPONSE_CACHE_TTL_MS)
         {
@@ -124,6 +143,10 @@ public class AiClient
         String content = null;
         try
         {
+            // 0. 自定义模板覆盖：ai.prompt.<module>.<feature> 配置存在时优先生效
+            //    模板含 {prompt} 占位符则嵌入业务原始提示词，否则整体替换
+            prompt = applyTemplateOverride(module, feature, prompt);
+
             // 1. 开关校验：平台总开关 + 模块开关 + 功能开关
             if (!isEnabled(module, feature))
             {
@@ -169,6 +192,25 @@ public class AiClient
             audit(module, feature, status, System.currentTimeMillis() - start, prompt, abbreviate(error, 500));
             return r;
         }
+    }
+
+    /**
+     * 应用自定义模板覆盖：读取 ai.prompt.<module>.<feature>，
+     * 含 {prompt} 占位符则嵌入业务原始提示词（含业务数据），否则整体替换
+     */
+    private String applyTemplateOverride(String module, String feature, String prompt)
+    {
+        String tpl = getConfig("ai.prompt." + module + "." + feature);
+        if (StringUtils.isEmpty(tpl) && "knowledge_qa".equals(feature))
+        {
+            // RAG问答module跟随文档所属模块，回退到注册键
+            tpl = getConfig("ai.prompt.dms.knowledge_qa");
+        }
+        if (StringUtils.isEmpty(tpl))
+        {
+            return prompt;
+        }
+        return tpl.contains("{prompt}") ? tpl.replace("{prompt}", prompt) : tpl;
     }
 
     /**
@@ -409,11 +451,17 @@ public class AiClient
 
     private HttpResponse<String> send(String apiUrl, String apiKey, JSONObject requestBody) throws Exception
     {
+        Integer override = TIMEOUT_OVERRIDE.get();
+        return send(apiUrl, apiKey, requestBody, override != null ? override : 45);
+    }
+
+    private HttpResponse<String> send(String apiUrl, String apiKey, JSONObject requestBody, int timeoutSeconds) throws Exception
+    {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(apiUrl))
                 .header("Content-Type", "application/json")
                 .header("Authorization", "Bearer " + apiKey)
-                .timeout(Duration.ofSeconds(45))
+                .timeout(Duration.ofSeconds(timeoutSeconds))
                 .POST(HttpRequest.BodyPublishers.ofString(requestBody.toString()))
                 .build();
         return httpClient.send(request, HttpResponse.BodyHandlers.ofString());
@@ -422,7 +470,7 @@ public class AiClient
     /** 平台总开关 + 模块开关 + 功能开关（三级） */
     public boolean isEnabled(String module, String feature)
     {
-        if (!"true".equalsIgnoreCase(getConfigWithFallback("ai.enabled", "dms.ai.enabled")))
+        if (!"true".equalsIgnoreCase(getConfig("ai.enabled")))
         {
             return false;
         }
@@ -443,7 +491,7 @@ public class AiClient
     /** 月度限额校验 */
     public boolean isOverLimit()
     {
-        int monthlyLimit = parseLimit(getConfigWithFallback("ai.monthly_limit", "dms.ai.monthly_limit"));
+        int monthlyLimit = parseLimit(getConfig("ai.monthly_limit"));
         if (monthlyLimit <= 0)
         {
             return false;
@@ -462,7 +510,7 @@ public class AiClient
     /** 月度限额值（0=不限） */
     public int getMonthlyLimit()
     {
-        return parseLimit(getConfigWithFallback("ai.monthly_limit", "dms.ai.monthly_limit"));
+        return parseLimit(getConfig("ai.monthly_limit"));
     }
 
     private void increaseCount()
@@ -483,7 +531,7 @@ public class AiClient
 
     private String getApiUrl()
     {
-        String url = getConfigWithFallback("ai.api_url", "dms.ai.api_url");
+        String url = getConfig("ai.api_url");
         if (StringUtils.isNotEmpty(url) && !url.endsWith("/chat/completions"))
         {
             // 容错：用户只填到 /v1 时自动补全
