@@ -348,16 +348,22 @@ public class AiKnowledgeServiceImpl implements IAiKnowledgeService
         return val != null ? val.trim() : "";
     }
 
+    /** 读敏感配置（API Key等）：密文自动解密 */
+    private String getSecretConfig(String key)
+    {
+        return com.ruoyi.common.utils.SecureKeyUtils.decrypt(getConfig(key));
+    }
+
     /** 调用embedding接口（OpenAI兼容 /v1/embeddings），返回向量JSON数组字符串 */
     private String callEmbedding(String text) throws Exception
     {
         String url = getConfig("ai.embedding_url");
-        String key = getConfig("ai.embedding_key");
+        String key = getSecretConfig("ai.embedding_key");
         String model = getConfig("ai.embedding_model");
         if (StringUtils.isEmpty(key))
         {
             // 未单独配置key时沿用对话模型密钥
-            key = getConfig("ai.api_key");
+            key = getSecretConfig("ai.api_key");
         }
         JSONObject body = new JSONObject();
         body.put("model", model);

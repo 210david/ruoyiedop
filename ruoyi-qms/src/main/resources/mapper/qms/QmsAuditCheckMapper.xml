@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.qms.mapper.QmsAuditCheckMapper">
+    <resultMap type="QmsAuditCheckTemplate" id="TemplateResult">
+        <id property="templateId" column="template_id"/>
+        <result property="templateName" column="template_name"/>
+        <result property="standard" column="standard"/>
+        <result property="remark" column="remark"/>
+        <result property="delFlag" column="del_flag"/>
+    </resultMap>
+
+    <resultMap type="QmsAuditCheckTemplateItem" id="TemplateItemResult">
+        <id property="tmplItemId" column="tmpl_item_id"/>
+        <result property="templateId" column="template_id"/>
+        <result property="clauseRef" column="clause_ref"/>
+        <result property="checkContent" column="check_content"/>
+        <result property="sortNo" column="sort_no"/>
+        <result property="delFlag" column="del_flag"/>
+    </resultMap>
+
+    <resultMap type="QmsAuditCheckItem" id="CheckItemResult">
+        <id property="checkId" column="check_id"/>
+        <result property="auditPlanId" column="audit_plan_id"/>
+        <result property="clauseRef" column="clause_ref"/>
+        <result property="checkContent" column="check_content"/>
+        <result property="checkResult" column="check_result"/>
+        <result property="evidence" column="evidence"/>
+        <result property="sortNo" column="sort_no"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <select id="selectTemplateList" parameterType="QmsAuditCheckTemplate" resultMap="TemplateResult">
+        select template_id, template_name, standard, remark, del_flag
+        from qms_audit_check_template
+        where del_flag = '0'
+        <if test="templateName != null and templateName != ''">and template_name like concat('%', #{templateName}, '%')</if>
+        <if test="standard != null and standard != ''">and standard = #{standard}</if>
+        order by template_id asc
+    </select>
+
+    <select id="selectTemplateById" parameterType="Long" resultMap="TemplateResult">
+        select template_id, template_name, standard, remark, del_flag
+        from qms_audit_check_template where template_id = #{templateId} and del_flag = '0'
+    </select>
+
+    <select id="selectTemplateItems" parameterType="Long" resultMap="TemplateItemResult">
+        select tmpl_item_id, template_id, clause_ref, check_content, sort_no, del_flag
+        from qms_audit_check_template_item
+        where template_id = #{templateId} and del_flag = '0'
+        order by sort_no asc, tmpl_item_id asc
+    </select>
+
+    <select id="selectCheckItemsByPlanId" parameterType="Long" resultMap="CheckItemResult">
+        select check_id, audit_plan_id, clause_ref, check_content, check_result, evidence, sort_no, del_flag, create_by, create_time, update_by, update_time
+        from qms_audit_check_item
+        where audit_plan_id = #{auditPlanId} and del_flag = '0'
+        order by sort_no asc, check_id asc
+    </select>
+
+    <select id="selectCheckItemById" parameterType="Long" resultMap="CheckItemResult">
+        select check_id, audit_plan_id, clause_ref, check_content, check_result, evidence, sort_no, del_flag, create_by, create_time, update_by, update_time
+        from qms_audit_check_item where check_id = #{checkId} and del_flag = '0'
+    </select>
+
+    <insert id="insertCheckItem" parameterType="QmsAuditCheckItem" useGeneratedKeys="true" keyProperty="checkId">
+        insert into qms_audit_check_item(audit_plan_id, clause_ref, check_content, check_result, evidence, sort_no, del_flag, create_by, create_time)
+        values(#{auditPlanId}, #{clauseRef}, #{checkContent}, #{checkResult}, #{evidence}, #{sortNo}, '0', #{createBy}, sysdate())
+    </insert>
+
+    <update id="updateCheckItem" parameterType="QmsAuditCheckItem">
+        update qms_audit_check_item
+        <set>
+            <if test="clauseRef != null">clause_ref = #{clauseRef},</if>
+            <if test="checkContent != null">check_content = #{checkContent},</if>
+            <if test="checkResult != null">check_result = #{checkResult},</if>
+            <if test="evidence != null">evidence = #{evidence},</if>
+            <if test="sortNo != null">sort_no = #{sortNo},</if>
+            update_by = #{updateBy}, update_time = sysdate()
+        </set>
+        where check_id = #{checkId}
+    </update>
+
+    <delete id="deleteCheckItemsByPlanId">
+        update qms_audit_check_item set del_flag = '1' where audit_plan_id = #{auditPlanId}
+    </delete>
+
+    <select id="countCheckItemsByPlanId" parameterType="Long" resultType="int">
+        select count(1) from qms_audit_check_item where audit_plan_id = #{auditPlanId} and del_flag = '0'
+    </select>
+</mapper>

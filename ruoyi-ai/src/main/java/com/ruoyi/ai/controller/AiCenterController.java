@@ -113,7 +113,7 @@ public class AiCenterController extends AiBaseConfigController
         String apiKey = toString(body.get("apiKey"));
         if (StringUtils.isEmpty(apiKey))
         {
-            apiKey = getConfigStr("ai.api_key");
+            apiKey = getSecretConfigStr("ai.api_key");
         }
         String modelName = toString(body.get("modelName"));
         AiResult result = aiClient.testConnection(apiUrl, apiKey, modelName);
@@ -157,7 +157,7 @@ public class AiCenterController extends AiBaseConfigController
         String key = toString(body.get("embeddingKey"));
         if (StringUtils.isEmpty(key))
         {
-            key = getConfigStr("ai.embedding_key");
+            key = getSecretConfigStr("ai.embedding_key");
         }
         String model = toString(body.get("embeddingModel"));
         return AjaxResult.success(aiClient.testEmbedding(url, key, model));

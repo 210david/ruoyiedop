@@ -1,31 +1,35 @@
-ï»¿@echo off
-chcp 65001 >nul
-rem åŽç«¯å¯åŠ¨è„šæœ¬
-rem è¯´æ˜Žï¼šjar äº§ç‰©åå¸¦ç‰ˆæœ¬å·ï¼ˆå¦‚ edop-admin-v10.jarï¼‰ï¼ŒåŠ¨æ€è§£æž target ä¸‹æœ€æ–° jarï¼Œ
-rem       é¿å…å†™æ­» jar åå¯¼è‡´ "Unable to access jarfile" æŠ¥é”™ã€‚
-rem       ç³»ç»Ÿ PATH æ—  java æ—¶ï¼Œå›žé€€ä½¿ç”¨æœ¬æœº JDK17ã€‚
+@echo off
+rem ºó¶ËÆô¶¯½Å±¾
+rem ËµÃ÷£ºjar ²úÎïÃû´ø°æ±¾ºÅ£¨Èç edop-admin-v10.jar£©£¬¶¯Ì¬½âÎö target ÏÂ×îÐÂ jar£¬
+rem       ±ÜÃâÐ´ËÀ jar Ãûµ¼ÖÂ "Unable to access jarfile" ±¨´í¡£
+rem       java ½âÎöË³Ðò£º±¾»ú JDK17 ÍêÕûÂ·¾¶ > JAVA_HOME > PATH ÖÐµÄ java¡£
 
 cd /d E:\AIcode\EDOP\RuoYi\RuoYi-Vue3\ruoyi-admin
 
-rem ---- åŠ¨æ€è§£æž target ä¸‹çš„ fat jarï¼ˆæŽ’é™¤ .originalï¼Œå–æœ€æ–°ä¸€ä¸ªï¼‰ ----
+rem ---- ¶¯Ì¬½âÎö target ÏÂµÄ fat jar£¨ÅÅ³ý .original£¬È¡×îÐÂÒ»¸ö£© ----
 set "JARFILE="
 for /f "delims=" %%f in ('dir /b /o-d target\*.jar 2^>nul ^| findstr /v /i ".original$"') do (
     if not defined JARFILE set "JARFILE=%%f"
 )
 if not defined JARFILE (
-    echo [ERROR] target ä¸‹æœªæ‰¾åˆ°å¯æ‰§è¡Œ jarï¼Œè¯·å…ˆæ‰§è¡Œ mvn package æ‰“åŒ…
+    echo [ERROR] target ÏÂÎ´ÕÒµ½¿ÉÖ´ÐÐ jar£¬ÇëÏÈÖ´ÐÐ mvn package ´ò°ü
     pause
     exit /b 1
 )
-echo [INFO] å¯åŠ¨ jar: target\%JARFILE%
+echo [INFO] Æô¶¯ jar: target\%JARFILE%
 
-rem ---- è§£æž java å‘½ä»¤ï¼šä¼˜å…ˆ PATHï¼Œå…¶æ¬¡æœ¬æœº JDK17 ----
-set "JAVA_EXE=java"
-where java >nul 2>nul || set "JAVA_EXE=E:\Java\jdk-17.0.4\bin\java.exe"
-if not exist "%JAVA_EXE%" if "%JAVA_EXE%"=="E:\Java\jdk-17.0.4\bin\java.exe" (
-    echo [ERROR] æœªæ‰¾åˆ°å¯ç”¨çš„ javaï¼ˆPATH æ—  java ä¸”é»˜è®¤ JDK17 è·¯å¾„ä¸å­˜åœ¨ï¼‰
+rem ---- ½âÎö java£ºÓÅÏÈ±¾»ú JDK17 ÍêÕûÂ·¾¶£¬Æä´Î JAVA_HOME£¬×îºó PATH ----
+set "JAVA_EXE="
+if exist "E:\Java\jdk-17.0.4\bin\java.exe" set "JAVA_EXE=E:\Java\jdk-17.0.4\bin\java.exe"
+if not defined JAVA_EXE if defined JAVA_HOME if exist "%JAVA_HOME%\bin\java.exe" set "JAVA_EXE=%JAVA_HOME%\bin\java.exe"
+if not defined JAVA_EXE (
+    for /f "delims=" %%p in ('where java 2^>nul') do if not defined JAVA_EXE set "JAVA_EXE=%%p"
+)
+if not defined JAVA_EXE (
+    echo [ERROR] Î´ÕÒµ½¿ÉÓÃµÄ java£º±¾»ú JDK17 Â·¾¶¡¢JAVA_HOME¡¢PATH ¾ùÎ´ÃüÖÐ
     pause
     exit /b 1
 )
+echo [INFO] Ê¹ÓÃ java: %JAVA_EXE%
 
 "%JAVA_EXE%" -Xmx512m -jar target\%JARFILE% 1> backend-run.log 2>&1

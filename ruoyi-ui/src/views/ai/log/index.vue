@@ -21,7 +21,7 @@
         <div class="field">
           <label>功能</label>
           <div class="control">
-            <el-input v-model="queryParams.feature" placeholder="如 repair_assistant" clearable @keyup.enter="handleQuery">
+            <el-input v-model="queryParams.feature" placeholder="如：智能查数 / 工单智能助手" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
@@ -102,12 +102,14 @@
               <span class="badge violet">{{ moduleNames[scope.row.module] || scope.row.module }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="功能" prop="feature" key="feature" :min-width="colWidth('feature', 160)" resizable show-overflow-tooltip v-if="columns.feature.visible">
+          <el-table-column label="功能" prop="feature" key="feature" :min-width="colWidth('feature', 180)" resizable show-overflow-tooltip v-if="columns.feature.visible">
             <template #default="scope">
-              <span class="col-mono">{{ scope.row.feature }}</span>
+              <span :title="scope.row.feature">{{ featureLabel(scope.row.feature) }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="操作人" prop="userName" key="userName" :width="colWidth('userName', 110)" resizable align="center" v-if="columns.userName.visible" />
+          <el-table-column label="操作人" prop="userName" key="userName" :width="colWidth('userName', 110)" resizable align="center" v-if="columns.userName.visible">
+            <template #default="scope">{{ scope.row.userName || '系统' }}</template>
+          </el-table-column>
           <el-table-column label="状态" prop="status" key="status" :width="colWidth('status', 110)" resizable align="center" v-if="columns.status.visible">
             <template #default="scope">
               <span class="badge" :class="badgeClass(scope.row.status)">
@@ -116,7 +118,7 @@
             </template>
           </el-table-column>
           <el-table-column label="耗时" prop="durationMs" key="durationMs" :width="colWidth('durationMs', 100)" resizable align="center" v-if="columns.durationMs.visible">
-            <template #default="scope">{{ scope.row.durationMs || 0 }} ms</template>
+            <template #default="scope">{{ formatDuration(scope.row.durationMs) }}</template>
           </el-table-column>
           <el-table-column label="调用时间" prop="callTime" key="callTime" :width="colWidth('callTime', 180)" resizable align="center" v-if="columns.callTime.visible" />
           <el-table-column label="错误信息" prop="errorMsg" key="errorMsg" :min-width="colWidth('errorMsg', 200)" resizable show-overflow-tooltip v-if="columns.errorMsg.visible">
@@ -154,6 +156,59 @@ const showAdvanced = ref(false)
 const moduleNames = {
   dms: '设备管理', qms: '质量管理', pms: '采购管理', mms: '生产管控',
   wms: '仓储管理', mk: '营销管理', hr: '人力资源', safety: '安全生产', platform: '平台'
+}
+/* 功能标识 → 中文名称（用户可读，未命中时原样展示） */
+const featureNames = {
+  // 平台
+  nl2query: '智能查数（自然语言转SQL）',
+  tool_route: '高频问题智能路由',
+  knowledge_qa: '知识库智能问答',
+  // 设备管理 dms
+  equipment_health: '设备健康智能分析',
+  sparepart_forecast: '备件需求预测',
+  complete_report: '工单完工报告生成',
+  workorder_agent: '工单智能助手',
+  // 质量管理 qms
+  ncr_advice: '不合格品处置建议',
+  report_draft: '质量报告起草',
+  // 采购管理 pms
+  price_summary: '询价智能比价总结',
+  request_advice: '采购申请审批建议',
+  // 生产管控 mms
+  daily_report: '生产日报智能生成',
+  abnormal_advice: '生产异常处置建议',
+  // 仓储管理 wms
+  stock_analysis: '库存智能分析',
+  stocktake_analysis: '盘点差异智能分析',
+  stale_inventory: '呆滞库存分析',
+  // 营销管理 mk
+  sales_weekly_report: '销售周报智能生成',
+  customer_churn_report: '客户流失分析报告',
+  churn_prediction: '客户流失预测',
+  // 人力资源 hr
+  attendance_summary: '考勤月报智能总结',
+  // 安全生产 safety
+  hazard_advice: '隐患整改建议',
+  training_quiz: '培训智能出题'
+}
+/* 功能标识 → 中文名称（含模糊匹配兜底） */
+function featureLabel(feature) {
+  if (!feature) return '—'
+  if (featureNames[feature]) return featureNames[feature]
+  // 部分匹配：如带后缀的变体
+  const key = Object.keys(featureNames).find(k => feature.startsWith(k))
+  return key ? featureNames[key] : feature
+}
+/* 耗时格式化（三级展示）：<1秒 毫秒；1秒~1分钟 秒（1位小数）；≥1分钟 分钟（1位小数） */
+function formatDuration(ms) {
+  const v = Number(ms) || 0
+  if (v < 1000) return v + ' ms'
+  if (v < 60000) {
+    const s = v / 1000
+    return (s >= 10 ? Math.round(s) : Math.round(s * 10) / 10) + ' 秒'
+  }
+  const min = v / 60000
+  return (min >= 10 ? Math.round(min) : Math.round(min * 10) / 10) + ' 分钟'
 }
 const statusText = { '0': '成功', '1': '降级', '2': '失败', '3': '限额拦截' }
 const statusTabList = [
@@ -250,9 +305,24 @@ const data = reactive({
 
 const { queryParams } = toRefs(data)
 
+/* 中文功能名 → 英文标识（筛选时反向映射，支持中文名搜索） */
+function featureToKey(input) {
+  if (!input) return input
+  // 精确匹配中文名或英文标识本身
+  for (const [k, v] of Object.entries(featureNames)) {
+    if (v === input || k === input) return k
+  }
+  // 包含匹配：输入是某中文名的一部分
+  for (const [k, v] of Object.entries(featureNames)) {
+    if (v.includes(input)) return k
+  }
+  return input
+}
+
 function getList() {
   loading.value = true
-  listAiLog(proxy.addDateRange(queryParams.value, dateRange.value)).then(res => {
+  const params = { ...queryParams.value, feature: featureToKey(queryParams.value.feature) }
+  listAiLog(proxy.addDateRange(params, dateRange.value)).then(res => {
     logList.value = res.rows
     total.value = res.total
     loading.value = false

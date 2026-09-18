@@ -20,6 +20,9 @@ public interface IAiAuditService
     /** 用量统计看板数据（近N天） */
     public Map<String, Object> selectUsageStat(int days);
 
+    /** 多维度丰富看板数据（趋势/人员/时段/状态/预警） */
+    public Map<String, Object> selectUsageRichStat(int days);
+
     /** 按状态统计记录数（状态标签栏数量徽章用） */
     public java.util.List<Map<String, Object>> selectStatusCounts();
 }

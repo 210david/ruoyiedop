@@ -212,3 +212,98 @@ AI配置 | 用量统计 | 调用日志 | 知识库 | 提示词模板 | 智能查
 - **数据修复**：将 `dms.ai.api_url / dms.ai.model_name / dms.ai.api_key` 的 DeepSeek 值迁移回 `ai.*` 正式键。
 - **验证**：重启后 Redis 配置缓存中 `sys_config:ai.api_url = https://api.deepseek.com/v1/chat/completions`、`sys_config:ai.model_name = deepseek-chat`，配置读取与保存键一致。
 - **经验**：凡基于 `selectConfigList` 做按键更新，必须精确比对 `configKey`；RuoYi 配置键存在 `dms.*` 历史前缀时尤其易踩坑。
+
+## 十三、DMS 重复 AI 配置入口收敛（2026-09-18）
+
+- **问题**：设备管理 → AI助手 → AI配置与独立的 AI中心 → AI配置功能重复，容易造成配置入口混淆。
+- **处理**：将 DMS 旧菜单 `dms/ai/config` 设置为 `visible='1'`，不再生成可见动态路由；AI中心正式入口 `ai/config/index` 保持显示。
+- **兼容策略**：暂不删除 DMS 配置页面、API 与 `DmsAiConfigController`，保留 `dms.ai.*` 功能级开关兼容；维修知识库菜单和业务能力不受影响。
+- **文案统一**：DMS 派工推荐、FAQ生成和调用失败提示统一引导至【AI中心 → AI配置】。
+- **SQL**：新增 `sql/hide_legacy_dms_ai_config_menu.sql`，并同步修正历史初始化/修复脚本，避免新环境重新显示旧入口。
+- **验证**：运行库旧入口 menu_id=3126 为 visible=1，AI中心入口 menu_id=905789 为 visible=0；`mvn -pl ruoyi-dms -am -DskipTests compile` 构建成功。
+
+## 十四、DMS 维修知识库菜单层级调整（2026-09-18）
+
+- **调整原因**：维修知识库属于设备维修业务资产，不需要继续挂在已收敛的“AI助手”目录下。
+- **菜单调整**：`menu_id=3100` 从 `parent_id=3007` 迁移到设备管理根目录 `parent_id=3000`，路径改为 `repairKnowledge`，排序为6。
+- **顺序调整**：维修知识库之后依次为数据采集（7）、报表看板（8）；历史AI助手目录排序9并隐藏。
+- **权限兼容**：FAQ查询、新增、修改、删除按钮仍以3100为父菜单，原角色菜单授权无需调整。
+- **SQL**：新增 `sql/move_dms_repair_knowledge_menu.sql`，并同步修正DMS历史初始化脚本。
+
+## 十五、MMS 工艺路线重复工序校验（2026-09-18）
+
+- **问题**：工艺路线编辑页可在同一步骤（含并行组）内重复添加同一工序（如两个“老化测试”），属于无效配置，正常业务不应出现。
+- **后端修复**：`MmsRouteServiceImpl.insertRouteProcesses` 前置 `validateDuplicateProcess` 校验——同一工艺路线内按 `processId` 或 `processCode` 判重，重复即抛出 ServiceException，新增/修改/复制链路统一生效。
+- **前端修复**：`submitForm` 提交前调用 `checkDuplicateProcess`，命中重复时直接提示并阻断提交，避免用户保存后才收到后端报错。
+- **校验口径**：不区分串行或并行；只要同一工序在同一工艺路线中出现两次即拦截。
+
+## 十六、MMS 工艺路线产品类型限制（2026-09-18）
+
+- **问题**：工艺路线新增/编辑页的产品选择器未过滤物料类型，原材料也可被选为工艺路线产品；原材料不需要工艺加工，属于无效配置。
+- **前端修复**：`route/index.vue` 的产品选择器增加 `:material-types="['1','2']"`，与 BOM、工单页保持一致，仅可选半成品+成品。
+- **后端兜底**：`MmsRouteServiceImpl` 新增 `validateProductType`，新增/修改时查询 `wms_material.material_type`，非半成品(1)/成品(2)即抛出 ServiceException；`MmsRouteMapper` 新增 `selectMaterialTypeById`。
+- **验证**：`mvn -pl ruoyi-mms -am -DskipTests compile` BUILD SUCCESS。
+
+## 十八、质检执行数量逻辑校验（2026-09-18）
+
+- **问题**：质检执行弹框中检验数量、不良数、报废数量无逻辑校验，可出现不良数大于检验数量、负数、有不良却未选缺陷类型等无效数据。
+- **校验规则**（前端提交前+后端保存前双重拦截，口径一致）：
+  1. 检验数量必须大于0；
+  2. 不良数、报废数量不能为负数；
+  3. 不良数、报废数量各自不能大于检验数量；
+  4. 不良数+报废数量之和不能大于检验数量；
+  5. 不良数或报废数量大于0时，缺陷类型必填。
+- **位置**：前端 `qc/index.vue submitInspect` 新增 `checkQcQuantities`；后端 `MmsQcServiceImpl.inspectQc` 新增 `validateQcQuantities`（数量字段为 Integer）。
+- **验证**：`mvn -pl ruoyi-mms -am -DskipTests compile` BUILD SUCCESS。
+
+## 十九、外协管理日期逻辑校验（2026-09-18）
+
+- **问题**：发料外协弹框中计划回厂日期可以早于或等于外协日期；回厂验收时实际回厂日期同样缺少校验，不符合业务时序。
+- **前端**：`outsource/index.vue` 新增 `checkOutsourceDate` 共用校验——`submitSendOut` 校验计划回厂日期、`submitBackAccept` 校验实际回厂日期，均必须晚于外协日期。
+- **后端**：`MmsOutsourceServiceImpl` 新增 `validateBackDateAfterOutDate`，sendOut 与 backAccept 链路兜底校验（按天截断比较，严格大于）。
+- **验证**：`mvn -pl ruoyi-mms -am -DskipTests compile` BUILD SUCCESS。
+
+## 二十一、客诉处理弹框按处理方式联动（2026-09-18）
+
+- **问题**：客诉处理弹框中退货数量、退货金额、索赔金额无条件全部必填，质量改善类客诉也被迫填退货信息；且退货/索赔分组排在处理方式之前，交互顺序颠倒。
+- **联动规则**（处理方式字典 qms_complaint_handle_result）：
+  - 1=退货退款：退货数量、退货金额必填，索赔金额选填
+  - 2=换货处理：退货数量必填，退货金额、索赔金额选填
+  - 3=折扣补偿：均选填（如涉及部分退货可填）
+  - 4=质量改善 / 5=其他处理：不涉及退货索赔，分组隐藏
+- **前端**：`complaint/index.vue` 处理信息卡片移至退货/索赔之前；退货/索赔分组按处理方式显隐；`requiredByHandleResult` 驱动动态必填，切换方式时同步规则、清空不再必填字段的值并清除校验残留；业务说明同步更新。
+- **后端**：`QmsComplaintServiceImpl.completeComplaint` 新增 `validateComplete` 兜底校验（处理描述/处理结果必填 + 按方式校验退货字段），与前端口径一致。
+- **验证**：`mvn -pl ruoyi-qms -am -DskipTests compile` BUILD SUCCESS。
+
+## 二十三、内部审核方案B：检查表模板与审核报告（2026-09-18）
+
+- **背景**：内审模块仅有计划与不符合项台账，缺检查表和报告输出，实际内审仍在 Excel 中进行。
+- **新增表**：`qms_audit_check_template`（模板）、`qms_audit_check_template_item`（模板检查项）、`qms_audit_check_item`（计划实际检查项）；SQL `sql/add_audit_checklist_and_report.sql` 含预置 ISO9001 全要素模板（20 项检查内容）与按钮权限（qms:audit:check / qms:audit:report）。
+- **后端**：`QmsAuditCheckController`（/qms/auditCheck）提供模板列表、按模板覆盖式生成检查表、检查项查询/批量保存、Word 报告下载（POI XWPF：基本信息+检查表汇总+符合率统计+不符合项+结论）。
+- **前端**：`audit/index.vue` 操作列增加「检查表」「报告」按钮；检查表弹窗支持选模板生成、逐项录入检查结果（符合/不符合/不适用）与客观证据并批量保存。
+- **验证**：`mvn -pl ruoyi-qms -am -DskipTests compile` BUILD SUCCESS；前端 Vite 编译通过。
+
+## 二十二、质量目标达成判定完善（2026-09-18）
+- **原逻辑缺陷**：4 项指标（合格率、PPM、客诉率、CAPA关闭率）的目标与实际全部为空时，默认判定为"达成(Y)"，空目标等于无条件达标。
+- **通用标准**（一票否决 + 有效性门槛）：
+  1. 仅当至少存在一组"目标值与实际值均已填写"的指标时才判定；
+  2. 任一已对比指标未达标即未达成(N)（合格率/CAPA关闭率低于目标，PPM/客诉率高于目标）；
+  3. 全部已对比指标达标为达成(Y)；
+  4. 无任何有效对比为待定(P)，不默认达成。
+- **后端**：`QmsQualityTargetServiceImpl.checkAchievement` 重构为三态判定（Y/N/P）。
+- **数据**：`qms_quality_target.achievement` 注释更新为三态；存量空判定数据修正为 P（本次实查无受影响行）；新增 `sql/fix_quality_target_achievement.sql`。
+- **前端**：`target/index.vue` 达成徽标/详情三态展示（待定为灰色）、筛选下拉与统计 Tabs 增加"待定"，`achievementLabel/achievementClass` 统一映射。
+- **验证**：`mvn -pl ruoyi-qms -am -DskipTests compile` BUILD SUCCESS。
+
+## 二十、生产执行工单选择与工单状态筛选（2026-09-18）
+- **工单状态口径**：0=草稿、1=已下达、2=执行中、3=已完工、4=已关闭、5=已暂停、6=已作废。
+- **业务分析**：领料、外协均发生在生产进行中，仅已下达(1)/执行中(2)的工单可关联；草稿未下达、完工/关闭后生产结束、暂停暂不作业、作废无效，均不应选择。退料页选择的是领料单而非工单，工单有效性已由领料单保证，无需处理。
+- **选择器修复**：外协、领料页工单选择器由排除单状态 `excludeStatus:'0'` 改为白名单 `statusList:['1','2']`；`MmsWorkOrderMapper` 新增 `params.statusList` 支持。
+- **列表筛选**：外协、领料、退料三页顶部筛选增加「工单状态」下拉（按关联工单状态过滤），后端分别通过 join 工单表 + `params.workOrderStatus` 实现；外协列表 SQL 改为显式别名并 join 工单表，退料列表补 join 工单表。
+- **验证**：`mvn -pl ruoyi-mms -am -DskipTests compile` BUILD SUCCESS。
+
+## 十七、领料确认弹框增加备注字段（2026-09-18）
+- **问题**：领料管理「确认领料」弹框只有领料人、领料时间和明细数量，缺少备注输入。
+- **前端**：确认信息卡片新增「备注」textarea（选填，500字上限，带字数提示），随确认请求提交。
+- **后端**：`MmsIssueServiceImpl.confirmIssue` 处理备注——前端传入时更新，未传保留原备注（updateIssue 的 if 判空动态更新语义一致）。
+- **验证**：`mvn -pl ruoyi-mms -am -DskipTests compile` BUILD SUCCESS。

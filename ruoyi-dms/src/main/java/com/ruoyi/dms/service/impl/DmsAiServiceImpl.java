@@ -137,7 +137,7 @@ public class DmsAiServiceImpl implements IDmsAiService
         {
             Map<String, Object> off = new HashMap<>();
             off.put("recommendations", new ArrayList<>());
-            off.put("tip", "智能派工推荐未开启，请管理员在【AI助手-AI配置】中开启后使用");
+            off.put("tip", "智能派工推荐未开启，请管理员在【AI中心 → AI配置】中完成全局配置，并开启设备管理相关能力后使用");
             return off;
         }
 
@@ -393,7 +393,7 @@ public class DmsAiServiceImpl implements IDmsAiService
         if (!isAiEnabled("dms.ai.knowledge_qa"))
         {
             result.put("success", false);
-            result.put("msg", "AI功能未开启，请先在【AI配置】中开启总开关与维修知识问答");
+            result.put("msg", "AI功能未开启，请先在【AI中心 → AI配置】中完成全局配置，并开启设备管理相关能力");
             return result;
         }
 
@@ -459,7 +459,7 @@ public class DmsAiServiceImpl implements IDmsAiService
         if (aiResp == null)
         {
             result.put("success", false);
-            result.put("msg", "AI调用失败，请检查AI配置（API地址/密钥/月度限额）");
+            result.put("msg", "AI调用失败，请检查【AI中心 → AI配置】中的API地址、密钥和月度限额");
             return result;
         }
 

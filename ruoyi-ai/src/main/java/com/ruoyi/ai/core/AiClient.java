@@ -58,6 +58,34 @@ public class AiClient
     /** Redis月度计数key前缀 */
     private static final String CALL_COUNT_KEY = "ai:call:";
 
+    /** 异步线程用户上下文（SSE等无SecurityContext的线程，由入口请求线程显式捕获并传入，用于审计落库操作人） */
+    private static final ThreadLocal<Long> ASYNC_USER_ID = new ThreadLocal<>();
+    private static final ThreadLocal<String> ASYNC_USER_NAME = new ThreadLocal<>();
+
+    /** 在异步线程执行AI调用前设置当前用户（入口请求线程捕获后传入） */
+    public static void setUserContext(Long userId, String userName)
+    {
+        ASYNC_USER_ID.set(userId);
+        ASYNC_USER_NAME.set(userName);
+    }
+
+    /** 异步线程结束后清理，避免线程复用导致串号 */
+    public static void clearUserContext()
+    {
+        ASYNC_USER_ID.remove();
+        ASYNC_USER_NAME.remove();
+    }
+
+    public static Long getAsyncUserId()
+    {
+        return ASYNC_USER_ID.get();
+    }
+
+    public static String getAsyncUserName()
+    {
+        return ASYNC_USER_NAME.get();
+    }
+
     // ==================== 对外主入口 ====================
 
     /**
@@ -320,7 +348,7 @@ public class AiClient
         if (StringUtils.isEmpty(apiKey))
         {
             // 未单独填写Key时沿用对话模型密钥（与运行时行为一致）
-            apiKey = getConfig("ai.api_key");
+            apiKey = getSecretConfig("ai.api_key");
         }
         if (StringUtils.isEmpty(apiKey))
         {
@@ -405,7 +433,7 @@ public class AiClient
         try
         {
             String apiUrl = getApiUrl();
-            String apiKey = getConfig("ai.api_key");
+            String apiKey = getSecretConfig("ai.api_key");
             String modelName = getConfig("ai.model_name");
 
             if (StringUtils.isEmpty(apiUrl) || StringUtils.isEmpty(apiKey))
@@ -551,6 +579,49 @@ public class AiClient
         return StringUtils.isNotEmpty(val) ? val : getConfig(oldKey);
     }
 
+    /** 读敏感配置（API Key等）：密文自动解密（ENC:前缀），明文原样返回（存量兼容） */
+    private String getSecretConfig(String key)
+    {
+        return com.ruoyi.common.utils.SecureKeyUtils.decrypt(getConfig(key));
+    }
+
+    /** 启动完成后自动迁移：将存量明文密钥加密为 ENC: 密文落库（幂等）；同时把早期默认密钥加密的密文用当前配置密钥重加密统一 */
+    @org.springframework.context.event.EventListener(org.springframework.boot.context.event.ApplicationReadyEvent.class)
+    public void migratePlainKeysToEncrypted()
+    {
+        try
+        {
+            String[] secretKeys = { "ai.api_key", "ai.embedding_key" };
+            for (String key : secretKeys)
+            {
+                String raw = getConfig(key);
+                if (StringUtils.isEmpty(raw))
+                {
+                    continue;
+                }
+                if (!com.ruoyi.common.utils.SecureKeyUtils.isEncrypted(raw))
+                {
+                    configService.updateConfigByKeyForced(key, com.ruoyi.common.utils.SecureKeyUtils.encrypt(raw));
+                    log.info("AI密钥已自动加密存储: {}", key);
+                }
+                else
+                {
+                    // 密文但非当前配置密钥加密（迁移期默认密钥产物）：解密后用当前密钥重加密
+                    String plain = com.ruoyi.common.utils.SecureKeyUtils.decrypt(raw);
+                    if (plain != null && !plain.startsWith(com.ruoyi.common.utils.SecureKeyUtils.CIPHER_PREFIX))
+                    {
+                        configService.updateConfigByKeyForced(key, com.ruoyi.common.utils.SecureKeyUtils.encrypt(plain));
+                        log.info("AI密钥已统一为当前配置密钥加密: {}", key);
+                    }
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            log.warn("AI密钥加密迁移失败（不影响启动，将在下次保存时加密）: {}", e.getMessage());
+        }
+    }
+
     private String getConfig(String key)
     {
         String val = configService.selectConfigByKey(key);
@@ -579,7 +650,7 @@ public class AiClient
             logEntry.setFeature(feature);
             logEntry.setStatus(status);
             logEntry.setDurationMs((int) latencyMs);
-            logEntry.setPromptDigest(abbreviate(prompt, 500));
+            logEntry.setPromptDigest(abbreviateKeepTail(prompt, 500));
             logEntry.setErrorMsg(abbreviate(error, 500));
             auditService.insertLog(logEntry);
         }
@@ -658,7 +729,20 @@ public class AiClient
     private String abbreviate(String text, int maxLen)
     {
         if (text == null) return "";
-        // 总长不超过maxLen（含省略号），避免超过数据库字段长度
         return text.length() <= maxLen ? text : text.substring(0, Math.max(0, maxLen - 3)) + "...";
+    }
+
+    /** 审计摘要：超长时把尾部（用户问题所在）置顶展示，后接省略号与提示词头部摘要，确保用户问题第一眼可见 */
+    private String abbreviateKeepTail(String text, int maxLen)
+    {
+        if (text == null) return "";
+        if (text.length() <= maxLen) return text;
+        // 固定前缀与分隔符共约30字符，需从预算中扣除，确保总长不超maxLen（数据库varchar上限）
+        final String head = "[用户问题]";
+        final String mid = " ...[提示词开头]";
+        int budget = maxLen - head.length() - mid.length();
+        int tailLen = Math.min(200, budget / 2);
+        int headLen = budget - tailLen;
+        return head + text.substring(text.length() - tailLen) + mid + text.substring(0, headLen);
     }
 }

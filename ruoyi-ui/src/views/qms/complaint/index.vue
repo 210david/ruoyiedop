@@ -309,21 +309,22 @@
             </div></div>
           </section>
           <section class="rd-card">
-            <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>退货/索赔信息</div></div>
-            <div class="rd-card-body">
-              <el-row :gutter="20">
-                <el-col :span="8"><el-form-item label="退货数量" prop="returnQty"><el-input-number v-model="processForm.returnQty" :min="0" :precision="2" style="width: 100%" /></el-form-item></el-col>
-                <el-col :span="8"><el-form-item label="退货金额" prop="returnAmt"><el-input-number v-model="processForm.returnAmt" :min="0" :precision="2" style="width: 100%" /></el-form-item></el-col>
-                <el-col :span="8"><el-form-item label="索赔金额" prop="claimAmt"><el-input-number v-model="processForm.claimAmt" :min="0" :precision="2" style="width: 100%" /></el-form-item></el-col>
-              </el-row>
-            </div>
-          </section>
-          <section class="rd-card">
             <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>处理信息</div></div>
             <div class="rd-card-body">
               <el-form-item label="处理描述" prop="handleDesc"><el-input v-model="processForm.handleDesc" type="textarea" :rows="3" placeholder="8D回复内容" /></el-form-item>
               <el-form-item label="处理结果" prop="handleResult"><el-select v-model="processForm.handleResult" placeholder="请选择" style="width: 100%"><el-option v-for="d in handleResultOptions" :key="d.value" :label="d.label" :value="d.value" /></el-select></el-form-item>
               <el-form-item label="备注"><el-input v-model="processForm.remark" type="textarea" :rows="2" placeholder="请输入" /></el-form-item>
+            </div>
+          </section>
+          <section class="rd-card" v-if="showReturnClaimFields">
+            <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>退货/索赔信息</div></div>
+            <div class="rd-card-body">
+              <el-alert v-if="processForm.handleResult === '3'" type="info" :closable="false" show-icon style="margin-bottom:12px"><template #title>折扣补偿方式：如涉及部分退货可填写退货信息，索赔金额可选填</template></el-alert>
+              <el-row :gutter="20">
+                <el-col :span="8"><el-form-item label="退货数量" prop="returnQty"><el-input-number v-model="processForm.returnQty" :min="0" :precision="2" style="width: 100%" /></el-form-item></el-col>
+                <el-col :span="8"><el-form-item label="退货金额" prop="returnAmt"><el-input-number v-model="processForm.returnAmt" :min="0" :precision="2" style="width: 100%" /></el-form-item></el-col>
+                <el-col :span="8"><el-form-item label="索赔金额" prop="claimAmt"><el-input-number v-model="processForm.claimAmt" :min="0" :precision="2" style="width: 100%" /></el-form-item></el-col>
+              </el-row>
             </div>
           </section>
         </div>
@@ -422,11 +423,9 @@
         <div class="highlight-card highlight-primary" style="margin-top: 12px;">
           <div class="highlight-card-title">处理信息区（处理时填写）</div>
           <div class="highlight-card-body">
-            <p>• <strong>退货数量：</strong>因客诉产生的退货数量<span style="color: #f56c6c;">*必填</span></p>
-            <p>• <strong>退货金额：</strong>退货产生的退款金额<span style="color: #f56c6c;">*必填</span></p>
-            <p>• <strong>索赔金额：</strong>客户索赔的金额<span style="color: #f56c6c;">*必填</span></p>
             <p>• <strong>处理描述：</strong>调查处理过程及8D回复内容，记录根因分析、临时措施、永久措施等<span style="color: #f56c6c;">*必填</span></p>
             <p>• <strong>处理结果：</strong>处理结果分类：退货退款、换货处理、折扣补偿、质量改善、其他处理<span style="color: #f56c6c;">*必填</span></p>
+            <p>• <strong>退货/索赔信息按处理方式联动：</strong>退货退款需填退货数量和退货金额；换货处理仅需退货数量；折扣补偿/质量改善/其他处理不涉及退货索赔，可不填</p>
           </div>
         </div>
       </div>
@@ -513,9 +512,33 @@ const processRules = {
   handleDesc: [{ required: true, message: '请输入处理描述', trigger: 'blur' }],
   handleResult: [{ required: true, message: '请选择处理结果', trigger: 'change' }],
   returnQty: [{ required: true, message: '请输入退货数量', trigger: 'blur' }],
-  returnAmt: [{ required: true, message: '请输入退货金额', trigger: 'blur' }],
-  claimAmt: [{ required: true, message: '请输入索赔金额', trigger: 'blur' }]
+  returnAmt: [{ required: true, message: '请输入退货金额', trigger: 'blur' }]
 }
+// 处理方式驱动的动态必填（与后端 QmsComplaintServiceImpl.validateComplete 口径一致）：
+// 1=退货退款：退货数量、退货金额必填，索赔金额选填
+// 2=换货处理：退货数量必填，退货金额、索赔金额选填
+// 3=折扣补偿：三个字段均选填（如涉及部分退货可填退货信息）
+// 4=质量改善 / 5=其他处理：不涉及退货索赔，三个字段均选填
+const requiredByHandleResult = {
+  '1': ['returnQty', 'returnAmt'],
+  '2': ['returnQty'],
+  '3': [],
+  '4': [],
+  '5': []
+}
+// 是否显示退货/索赔信息分组（1/2/3 显示，4/5 隐藏）
+const showReturnClaimFields = computed(() => ['1', '2', '3'].includes(processForm.value.handleResult))
+// 动态必填：处理方式切换时同步规则并清除不再必填字段的校验残留
+watch(() => processForm.value.handleResult, (val, oldVal) => {
+  if (val === oldVal) return
+  const required = requiredByHandleResult[val] || []
+  Object.keys(requiredByHandleResult['1']).forEach(field => {
+    const rule = processRules[field]
+    if (rule && rule.length > 0) rule[0].required = required.includes(field)
+    if (!required.includes(field) && processForm.value[field] != null) processForm.value[field] = undefined
+  })
+  nextTick(() => { proxy.$refs['processRef'] && proxy.$refs['processRef'].clearValidate(['returnQty', 'returnAmt', 'claimAmt']) })
+})
 
 const activeFilterCount = computed(() => {
   let count = 0
@@ -539,7 +562,16 @@ function handleAccept(row) {
   proxy.$modal.confirm('确认受理客诉 "' + row.complaintNo + '"？受理后将进入处理中状态。').then(() => acceptComplaint(row.complaintId)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('受理成功') }).catch(() => {})
 }
 function handleProcess(row) {
-  getComplaint(row.complaintId).then(res => { processForm.value = res.data; processOpen.value = true })
+  getComplaint(row.complaintId).then(res => {
+    processForm.value = res.data
+    // 按处理方式初始化动态必填规则（进入弹框时同步一次）
+    const required = requiredByHandleResult[processForm.value.handleResult] || []
+    ;['returnQty', 'returnAmt'].forEach(field => {
+      const rule = processRules[field]
+      if (rule && rule.length > 0) rule[0].required = required.includes(field)
+    })
+    processOpen.value = true
+  }).catch(() => { proxy.$modal.msgError('加载客诉信息失败，请刷新页面后重试') })
 }
 function submitProcess() {
   proxy.$refs['processRef'].validate(valid => {

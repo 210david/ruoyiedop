@@ -137,6 +137,39 @@ public class SysConfigServiceImpl implements ISysConfigService
     }
 
     /**
+     * 按键名强制更新配置值（用于内部程序化写入，如敏感密钥加密迁移）
+     * 键不存在时插入；自动清缓存（Redis + Spring Cache）
+     */
+    @Override
+    @CacheEvict(value = "sysConfig", key = "'config:' + #configKey")
+    public int updateConfigByKeyForced(String configKey, String configValue)
+    {
+        SysConfig query = new SysConfig();
+        query.setConfigKey(configKey);
+        SysConfig existing = configMapper.selectConfig(query);
+        int row;
+        if (existing != null)
+        {
+            existing.setConfigValue(configValue);
+            existing.setUpdateBy("system");
+            row = configMapper.updateConfig(existing);
+        }
+        else
+        {
+            SysConfig insert = new SysConfig();
+            insert.setConfigName(configKey);
+            insert.setConfigKey(configKey);
+            insert.setConfigValue(configValue);
+            insert.setConfigType("Y");
+            insert.setCreateBy("system");
+            row = configMapper.insertConfig(insert);
+        }
+        redisCache.deleteObject(getCacheKey(configKey));
+        redisCache.setCacheObject(getCacheKey(configKey), configValue, 30, TimeUnit.MINUTES);
+        return row;
+    }
+
+    /**
      * 修改参数配置（清除对应缓存）
      * 系统内置参数允许修改参数键值，但不允许修改参数键名和内置类型
      * 修改后立即生效：先清除Redis手动缓存，再写入新值，Spring @CacheEvict 自动清除 Spring Cache 层

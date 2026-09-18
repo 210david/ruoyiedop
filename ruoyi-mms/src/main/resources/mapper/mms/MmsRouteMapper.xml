@@ -199,6 +199,11 @@
         WHERE product_id = #{productId} AND status = '2' AND del_flag = '0'
     </select>
 
+    <!-- 查询物料类型（用于工艺路线产品类型校验：1=半成品 2=成品） -->
+    <select id="selectMaterialTypeById" parameterType="Long" resultType="String">
+        SELECT material_type FROM wms_material WHERE material_id = #{materialId} AND del_flag = '0'
+    </select>
+
     <!-- 根据产品ID查询已审核（生效）的工艺路线 -->
     <select id="selectRouteByProductId" parameterType="Long" resultMap="MmsRouteResult">
         <include refid="selectRouteVo"/>

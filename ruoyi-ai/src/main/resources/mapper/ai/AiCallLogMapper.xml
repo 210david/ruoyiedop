@@ -89,4 +89,62 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         group by status
     </select>
 
+    <!-- 按日期趋势：调用量/成功/失败/平均耗时 -->
+    <select id="selectDailyTrend" parameterType="map" resultType="map">
+        select date_format(call_time, '%Y-%m-%d') as date,
+               count(*) as total,
+               sum(case when status = '0' then 1 else 0 end) as success,
+               sum(case when status = '2' then 1 else 0 end) as failed,
+               sum(case when status = '3' then 1 else 0 end) as limited,
+               round(avg(duration_ms)) as avgDuration
+        from ai_call_log
+        where call_time &gt;= date_sub(now(), interval #{days} day)
+        group by date_format(call_time, '%Y-%m-%d')
+        order by date
+    </select>
+
+    <!-- 按操作人统计 TOP 15 -->
+    <select id="selectUserStat" parameterType="map" resultType="map">
+        select user_name,
+               count(*) as total,
+               sum(case when status = '0' then 1 else 0 end) as success,
+               sum(case when status = '2' then 1 else 0 end) as failed,
+               count(distinct date_format(call_time, '%Y-%m-%d')) as activeDays,
+               round(avg(duration_ms)) as avgDuration
+        from ai_call_log
+        where call_time &gt;= date_sub(now(), interval #{days} day)
+          and user_name is not null and user_name != '' and user_name != 'null'
+        group by user_name
+        order by total desc
+        limit 15
+    </select>
+
+    <!-- 按小时时段统计（使用习惯热力） -->
+    <select id="selectHourStat" parameterType="map" resultType="map">
+        select hour(call_time) as hour,
+               count(*) as total,
+               sum(case when status = '2' then 1 else 0 end) as failed
+        from ai_call_log
+        where call_time &gt;= date_sub(now(), interval #{days} day)
+        group by hour(call_time)
+        order by hour
+    </select>
+
+    <!-- 状态分布 -->
+    <select id="selectStatusStat" parameterType="map" resultType="map">
+        select status, count(*) as total
+        from ai_call_log
+        where call_time &gt;= date_sub(now(), interval #{days} day)
+        group by status
+    </select>
+
+    <!-- 模块×日期 堆叠趋势 -->
+    <select id="selectModuleDailyStat" parameterType="map" resultType="map">
+        select module, date_format(call_time, '%Y-%m-%d') as date, count(*) as total
+        from ai_call_log
+        where call_time &gt;= date_sub(now(), interval #{days} day)
+        group by module, date_format(call_time, '%Y-%m-%d')
+        order by date
+    </select>
+
 </mapper>

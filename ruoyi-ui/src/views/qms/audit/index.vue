@@ -112,11 +112,13 @@
           <el-table-column label="开始日期" prop="auditDateFrom" key="auditDateFrom" :width="colWidth('auditDateFrom', 120)" resizable align="center" v-if="columns.auditDateFrom.visible"><template #default="scope"><span>{{ parseTime(scope.row.auditDateFrom, '{y}-{m}-{d}') }}</span></template></el-table-column>
           <el-table-column label="结束日期" prop="auditDateTo" key="auditDateTo" :width="colWidth('auditDateTo', 120)" resizable align="center" v-if="columns.auditDateTo.visible"><template #default="scope"><span>{{ parseTime(scope.row.auditDateTo, '{y}-{m}-{d}') }}</span></template></el-table-column>
           <el-table-column label="状态" prop="planStatus" key="planStatus" :width="colWidth('planStatus', 100)" resizable align="center" v-if="columns.planStatus.visible"><template #default="scope"><span class="badge" :class="planStatusBadgeClass(scope.row.planStatus)"><span class="dot"></span>{{ planStatusLabel(scope.row.planStatus) }}</span></template></el-table-column>
-          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
+          <el-table-column label="操作" width="220" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
               <div class="action-btn-row">
                 <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
                 <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['qms:audit:edit']">修改</el-button>
+                <el-button link type="success" icon="List" @click="handleChecklist(scope.row)" v-hasPermi="['qms:audit:check']">检查表</el-button>
+                <el-button link type="warning" icon="Document" @click="handleGenerateReport(scope.row)" v-hasPermi="['qms:audit:report']">报告</el-button>
                 <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['qms:audit:remove']">删除</el-button>
               </div>
             </template>
@@ -166,6 +168,48 @@
         </section>
       </div>
       <template #footer><el-button @click="viewOpen = false">关 闭</el-button></template>
+    </el-dialog>
+
+    <!-- Checklist Dialog -->
+    <el-dialog v-model="checkOpen" width="1100px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+          <span class="rd-detail-header-title">审核检查表</span>
+          <div class="rd-detail-header-sub" v-if="checkPlan.auditPlanNo"><span class="rd-detail-header-no">{{ checkPlan.auditPlanNo }}</span></div>
+        </div>
+      </template>
+      <div class="rd-page">
+        <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center">
+          <el-select v-model="selectedTemplateId" placeholder="选择检查表模板" style="width:320px">
+            <el-option v-for="t in templateList" :key="t.templateId" :label="t.templateName" :value="t.templateId" />
+          </el-select>
+          <el-button type="primary" plain icon="Refresh" @click="handleGenerateChecklist" v-hasPermi="['qms:audit:check']">按模板生成</el-button>
+          <el-button type="success" icon="Check" @click="handleSaveChecklist" v-hasPermi="['qms:audit:check']">保存检查结果</el-button>
+          <span style="color:#94a3b8;font-size:13px">按模板生成将覆盖当前检查项；结果为「不符合」的条款请到不符合项台账登记</span>
+        </div>
+        <el-table :data="checkItems" border size="small" max-height="480">
+          <el-table-column type="index" label="序号" width="60" align="center" />
+          <el-table-column label="条款" prop="clauseRef" width="110" />
+          <el-table-column label="检查内容" prop="checkContent" min-width="320" show-overflow-tooltip />
+          <el-table-column label="检查结果" width="110" align="center">
+            <template #default="scope">
+              <el-select v-model="scope.row.checkResult" size="small">
+                <el-option label="符合" value="0" />
+                <el-option label="不符合" value="1" />
+                <el-option label="不适用" value="2" />
+              </el-select>
+            </template>
+          </el-table-column>
+          <el-table-column label="客观证据/审核记录" min-width="260">
+            <template #default="scope">
+              <el-input v-model="scope.row.evidence" type="textarea" :rows="1" size="small" placeholder="记录客观证据" />
+            </template>
+          </el-table-column>
+        </el-table>
+        <el-empty v-if="checkItems.length === 0" description="暂无检查项，请选择模板后点击「按模板生成」" :image-size="60" />
+      </div>
+      <template #footer><el-button @click="checkOpen = false">关 闭</el-button></template>
     </el-dialog>
 
     <!-- Add/Edit Dialog -->
@@ -313,6 +357,7 @@
 
 <script setup name="QmsAudit">
 import { listAudit, getAudit, addAudit, updateAudit, delAudit } from '@/api/qms/audit'
+import { listCheckTemplates, generateCheckItems, getCheckItems, saveCheckItems } from '@/api/qms/auditCheck'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
 import { QuestionFilled } from '@element-plus/icons-vue'
@@ -380,6 +425,41 @@ function handleUpdate(row) {
   getAudit(id).then(res => { data.form = res.data; open.value = true; title.value = '修改内审计划' })
 }
 function handleView(row) { getAudit(row.auditPlanId).then(res => { viewData.value = res.data; viewOpen.value = true }) }
+
+// ===== 检查表 =====
+const checkOpen = ref(false)
+const checkPlan = ref({})
+const templateList = ref([])
+const selectedTemplateId = ref(null)
+const checkItems = ref([])
+function handleChecklist(row) {
+  checkPlan.value = row
+  checkOpen.value = true
+  listCheckTemplates({}).then(res => {
+    templateList.value = res.data || []
+    if (templateList.value.length > 0 && !selectedTemplateId.value) selectedTemplateId.value = templateList.value[0].templateId
+  })
+  getCheckItems(row.auditPlanId).then(res => { checkItems.value = res.data || [] })
+}
+function handleGenerateChecklist() {
+  if (!selectedTemplateId.value) { proxy.$modal.msgWarning('请先选择检查表模板'); return }
+  proxy.$modal.confirm('按模板生成将覆盖当前检查项，确认继续？').then(() => {
+    return generateCheckItems(checkPlan.value.auditPlanId, selectedTemplateId.value)
+  }).then(res => {
+    proxy.$modal.msgSuccess(res.msg || '生成成功')
+    return getCheckItems(checkPlan.value.auditPlanId)
+  }).then(res => { checkItems.value = res.data || [] }).catch(() => {})
+}
+function handleSaveChecklist() {
+  saveCheckItems(checkPlan.value.auditPlanId, checkItems.value).then(() => {
+    proxy.$modal.msgSuccess('检查结果已保存')
+  })
+}
+
+// ===== 审核报告 =====
+function handleGenerateReport(row) {
+  proxy.download('qms/auditCheck/report/' + row.auditPlanId, {}, `内部审核报告_${row.auditPlanNo || row.auditPlanId}.docx`)
+}
 function handleSelectionChange(selection) { selectedIds.value = selection.map(item => item.auditPlanId); selectedId.value = selectedIds.value[0] }
 function submitForm() {
   proxy.$refs['auditRef'].validate(valid => {

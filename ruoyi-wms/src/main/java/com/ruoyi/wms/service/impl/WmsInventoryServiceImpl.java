@@ -346,7 +346,13 @@ public class WmsInventoryServiceImpl implements IWmsInventoryService
             return 0;
         }
         inv = wmsInventoryMapper.selectInventoryForUpdate(inv.getInventoryId());
-        inv.setLockQty(inv.getLockQty().subtract(qty));
+        // 防御性校验：锁定库存不足时按实际锁定量释放，避免 lock_qty 被扣成负数
+        BigDecimal releaseQty = qty;
+        if (inv.getLockQty().compareTo(releaseQty) < 0)
+        {
+            releaseQty = inv.getLockQty().max(BigDecimal.ZERO);
+        }
+        inv.setLockQty(inv.getLockQty().subtract(releaseQty));
         inv.setDelFlag("0");
         inv.setUpdateBy(createBy);
         wmsInventoryMapper.updateInventory(inv);
@@ -358,7 +364,7 @@ public class WmsInventoryServiceImpl implements IWmsInventoryService
         log.setLocationId(locationId);
         log.setBatchNo(batchNo);
         log.setChangeType("1");
-        log.setChangeQty(qty.negate());
+        log.setChangeQty(releaseQty.negate());
         log.setBeforeQty(inv.getQty());
         log.setAfterQty(inv.getQty());
         log.setRefOrderType(refOrderType);

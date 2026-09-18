@@ -78,13 +78,13 @@ public class MmsAiAssistController extends BaseController
      * 生产日报生成：基于当日统计快照生成管理视角日报草稿
      */
     @PreAuthorize("@ss.hasPermi('mms:ai:dailyReport')")
-    @GetMapping("/dailyReport/{statId}")
-    public AjaxResult dailyReport(@PathVariable Long statId)
+    @GetMapping("/dailyReport/{statDate}")
+    public AjaxResult dailyReport(@PathVariable String statDate)
     {
-        MmsStatDaily stat = statDailyService.selectStatDailyById(statId);
+        MmsStatDaily stat = statDailyService.selectStatDailyByDate(statDate);
         if (stat == null)
         {
-            return AjaxResult.error("日报统计记录不存在");
+            return AjaxResult.error("当日无生产统计数据，无法生成日报");
         }
 
         StringBuilder prompt = new StringBuilder();

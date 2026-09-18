@@ -136,9 +136,13 @@ public class FlowFormServiceImpl implements IFlowFormService
     private String columnType(JSONObject f)
     {
         String dtype = f.getString("dtype");
-        if ("date".equals(dtype))
+        if ("datetime".equals(dtype))
         {
             return "datetime";
+        }
+        if ("date".equals(dtype))
+        {
+            return "date";
         }
         if ("float".equals(dtype))
         {
@@ -153,6 +157,11 @@ public class FlowFormServiceImpl implements IFlowFormService
         if (len <= 0)
         {
             len = 500;
+        }
+        // 超长文本（多行文本等）落 text 类型，避免 varchar 上限
+        if (len > 4000)
+        {
+            return "text";
         }
         return "varchar(" + len + ")";
     }
@@ -469,6 +478,18 @@ public class FlowFormServiceImpl implements IFlowFormService
             {
                 throw new ServiceException("字段名[" + f.getString("field")
                         + "]不合法：仅允许小写字母开头的字母/数字/下划线");
+            }
+        }
+        // 同一张表内数据库字段名不得重复（主表与明细表为独立物理表，跨表允许同名）
+        java.util.Set<String> seen = new java.util.HashSet<>();
+        for (int i = 0; i < arr.size(); i++)
+        {
+            JSONObject f = arr.getJSONObject(i);
+            String tbl = StringUtils.isEmpty(f.getString("table")) ? "main" : f.getString("table");
+            if (!seen.add(tbl + "." + f.getString("field")))
+            {
+                throw new ServiceException("字段名[" + f.getString("field") + "]在"
+                        + ("main".equals(tbl) ? "主表" : "明细表 " + tbl) + "中重复出现，请修改后再保存");
             }
         }
     }

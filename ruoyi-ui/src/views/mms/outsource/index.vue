@@ -10,6 +10,7 @@
         <div class="field"><label>工单编号</label><div class="control"><el-input v-model="queryParams.workOrderNo" placeholder="请输入" clearable @keyup.enter="handleQuery" /></div></div>
         <div class="field"><label>供应商</label><div class="control"><el-input v-model="queryParams.supplierName" placeholder="请输入" clearable @keyup.enter="handleQuery" /></div></div>
         <div class="field"><label>状态</label><div class="control is-select"><el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery"><el-option v-for="d in mms_outsource_status" :key="d.value" :label="d.label" :value="d.value" /></el-select></div></div>
+        <div class="field" v-show="showAdvanced"><label>工单状态</label><div class="control is-select"><el-select v-model="queryParams.params.workOrderStatus" placeholder="全部" clearable @change="handleQuery"><el-option v-for="d in mms_workorder_status" :key="d.value" :label="d.label" :value="d.value" /></el-select></div></div>
         <div class="field" v-show="showAdvanced"><label>外协日期</label><div class="control"><el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始" end-placeholder="结束" value-format="YYYY-MM-DD" style="width:100%" /></div></div>
       </div>
       <div class="filter-actions"><div class="filter-info"><el-icon><Filter /></el-icon> 支持回车快速搜索</div><div class="filter-buttons"><el-button icon="RefreshLeft" @click="resetQuery">重置</el-button><el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button></div></div>
@@ -472,13 +473,13 @@ function loadColumnVisibility() { try { const saved = localStorage.getItem('mms_
 const columns = ref(loadColumnVisibility());
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, outsourceNo: undefined, workOrderNo: undefined, supplierName: undefined, status: undefined, params: {} },
+  queryParams: { pageNum: 1, pageSize: 10, outsourceNo: undefined, workOrderNo: undefined, supplierName: undefined, status: undefined, params: { workOrderStatus: undefined } },
   rules: { workOrderNo: [{ required: true, message: "请选择工单", trigger: "change" }], supplierName: [{ required: true, message: "请选择供应商", trigger: "change" }], outQty: [{ required: true, message: "请输入外协数量", trigger: "blur" }] }
 });
 const { queryParams, form, rules } = toRefs(data);
 function getList() { loading.value = true; listOutsource(proxy.addDateRange(queryParams.value, dateRange.value)).then(res => { dataList.value = res.rows; total.value = res.total; loading.value = false; applySavedWidths(); }); fetchStatusCounts(); }
 function handleQuery() { queryParams.value.pageNum = 1; getList(); }
-function resetQuery() { queryParams.value.outsourceNo = undefined; queryParams.value.workOrderNo = undefined; queryParams.value.supplierName = undefined; queryParams.value.status = undefined; dateRange.value = []; activeStatusTab.value = 'all'; handleQuery(); }
+function resetQuery() { queryParams.value.outsourceNo = undefined; queryParams.value.workOrderNo = undefined; queryParams.value.supplierName = undefined; queryParams.value.status = undefined; queryParams.value.params.workOrderStatus = undefined; dateRange.value = []; activeStatusTab.value = 'all'; handleQuery(); }
 function handleStatusTabClick(status) { activeStatusTab.value = status; queryParams.value.status = status === "all" ? undefined : status; handleQuery(); }
 function handleSelectionChange(sel) { ids.value = sel.map(i => i.outsourceId); single.value = sel.length !== 1; multiple.value = !sel.length; }
 function reset() { form.value = { outsourceId: undefined, outsourceNo: undefined, workOrderId: undefined, workOrderNo: undefined, opSeq: undefined, processName: undefined, productId: undefined, productCode: undefined, productName: undefined, specModel: undefined, unit: undefined, planQty: undefined, supplierId: undefined, supplierName: undefined, outQty: undefined, unitPrice: undefined, outDate: undefined, planBackDate: undefined, actualBackDate: undefined, status: "0", remark: undefined }; processOptions.value = []; proxy.resetForm("formRef"); }
@@ -542,11 +543,22 @@ function handleSendOut(row) {
 function submitSendOut() {
   proxy.$refs["sendOutFormRef"].validate(v => {
     if (v) {
+      const dateErr = checkOutsourceDate(sendOutForm.value.outDate, sendOutForm.value.planBackDate, '计划回厂日期');
+      if (dateErr) { proxy.$modal.msgWarning(dateErr); return; }
       sendOutOutsource(sendOutForm.value.outsourceId, { outDate: sendOutForm.value.outDate, planBackDate: sendOutForm.value.planBackDate }).then(() => {
         proxy.$modal.msgSuccess('发料成功'); sendOutOpen.value = false; getList();
       });
     }
   });
+}
+// 外协日期逻辑校验：回厂日期必须晚于外协日期（严格大于，等于不允许）
+function checkOutsourceDate(outDate, backDate, backLabel) {
+  if (!outDate) return '请选择外协日期';
+  if (!backDate) return `请选择${backLabel}`;
+  if (new Date(backDate).getTime() <= new Date(outDate).getTime()) {
+    return `${backLabel}必须晚于外协日期`;
+  }
+  return null;
 }
 
 // ===== 回厂验收 =====
@@ -606,6 +618,8 @@ function handleBackAccept(row) {
 function submitBackAccept() {
   proxy.$refs["backAcceptFormRef"].validate(v => {
     if (v) {
+      const dateErr = checkOutsourceDate(backAcceptForm.value.outDate, backAcceptForm.value.actualBackDate, '实际回厂日期');
+      if (dateErr) { proxy.$modal.msgWarning(dateErr); return; }
       backAcceptOutsource(backAcceptForm.value.outsourceId, { actualBackDate: backAcceptForm.value.actualBackDate, backQty: backAcceptForm.value.backQty }).then(() => {
         proxy.$modal.msgSuccess('回厂验收成功'); backAcceptOpen.value = false; getList();
       });
@@ -615,7 +629,7 @@ function submitBackAccept() {
 
 // ===== 工单选择器 =====
 const woPickerOpen = ref(false); const woPickerLoading = ref(false); const woPickerList = ref([]); const woPickerTotal = ref(0); const woPickerSelectedId = ref(null); const woPickerSelectedRow = ref(null);
-const woPickerQuery = reactive({ pageNum: 1, pageSize: 10, workOrderNo: undefined, productName: undefined, params: { excludeStatus: '0' } });
+const woPickerQuery = reactive({ pageNum: 1, pageSize: 10, workOrderNo: undefined, productName: undefined, params: { statusList: ['1', '2'] } });
 function openWoPicker() { woPickerOpen.value = true; woPickerSelectedId.value = form.value.workOrderId || null; woPickerSelectedRow.value = null; woPickerQuery.pageNum = 1; woPickerQuery.workOrderNo = undefined; woPickerQuery.productName = undefined; getWoPickerList(); }
 function getWoPickerList() { woPickerLoading.value = true; listWorkOrder(woPickerQuery).then(res => { woPickerList.value = res.rows; woPickerTotal.value = res.total; woPickerLoading.value = false; }).catch(() => { woPickerLoading.value = false; }); }
 function handleWoPickerQuery() { woPickerQuery.pageNum = 1; getWoPickerList(); }

@@ -76,7 +76,31 @@ public class QmsComplaintServiceImpl implements IQmsComplaintService {
         update.setReturnAmt(complaint.getReturnAmt());
         update.setClaimAmt(complaint.getClaimAmt());
         update.setRemark(complaint.getRemark());
+        validateComplete(complaint, existing);
         return mapper.updateComplaint(update);
+    }
+
+    /**
+     * 客诉处理校验：退货/索赔金额字段按处理方式联动校验（与前端 requiredByHandleResult 口径一致）。
+     * 1=退货退款：退货数量、退货金额必填
+     * 2=换货处理：退货数量必填
+     * 3/4/5：均选填
+     */
+    private void validateComplete(QmsComplaint complaint, QmsComplaint existing) {
+        String handleResult = complaint.getHandleResult();
+        if (handleResult == null || handleResult.isEmpty()) throw new RuntimeException("处理结果不能为空");
+        if (complaint.getHandleDesc() == null || complaint.getHandleDesc().trim().isEmpty()) throw new RuntimeException("处理描述不能为空");
+        switch (handleResult) {
+            case "1":
+                if (complaint.getReturnQty() == null) throw new RuntimeException("退货退款方式下必须填写退货数量");
+                if (complaint.getReturnAmt() == null) throw new RuntimeException("退货退款方式下必须填写退货金额");
+                break;
+            case "2":
+                if (complaint.getReturnQty() == null) throw new RuntimeException("换货处理方式下必须填写退货数量");
+                break;
+            default:
+                break;
+        }
     }
     @Override
     @Transactional(rollbackFor = Exception.class)

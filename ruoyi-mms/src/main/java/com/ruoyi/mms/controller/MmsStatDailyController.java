@@ -39,9 +39,9 @@ public class MmsStatDailyController extends BaseController
     }
 
     @PreAuthorize("@ss.hasPermi('mms:daily:query')")
-    @GetMapping(value = "/{statId}")
-    public AjaxResult getInfo(@PathVariable("statId") Long statId)
+    @GetMapping(value = "/{statDate}")
+    public AjaxResult getInfo(@PathVariable("statDate") String statDate)
     {
-        return AjaxResult.success(mmsStatDailyService.selectStatDailyById(statId));
+        return AjaxResult.success(mmsStatDailyService.selectStatDailyByDate(statDate));
     }
 }

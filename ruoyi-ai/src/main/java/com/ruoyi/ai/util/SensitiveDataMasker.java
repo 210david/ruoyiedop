@@ -40,4 +40,48 @@ public class SensitiveDataMasker
         }
         return s.substring(0, 3) + "****" + s.substring(s.length() - 4);
     }
+
+    /**
+     * 从原文中提取敏感值并建立「脱敏值 -> 原始值」映射。
+     * 用途：NL2Query 场景下，问题文本进入大模型前已脱敏，模型生成的 SQL 只含打码值；
+     * 执行 SQL 前需将打码值还原为原文，否则等值查询必然查不到数据。
+     */
+    public static java.util.Map<String, String> maskedToOriginal(String text)
+    {
+        java.util.Map<String, String> mapping = new java.util.LinkedHashMap<>();
+        if (text == null || text.isEmpty())
+        {
+            return mapping;
+        }
+        for (Pattern p : new Pattern[]{ ID_CARD, MOBILE, BANK_CARD })
+        {
+            java.util.regex.Matcher m = p.matcher(text);
+            while (m.find())
+            {
+                String original = m.group();
+                String masked = maskMiddle(original);
+                if (!masked.equals(original))
+                {
+                    mapping.putIfAbsent(masked, original);
+                }
+            }
+        }
+        return mapping;
+    }
+
+    /**
+     * 将文本中的脱敏值还原为原始值（仅用于送库执行的SQL，不用于展示/入模型）。
+     */
+    public static String restore(String text, java.util.Map<String, String> maskedToOriginal)
+    {
+        if (text == null || text.isEmpty() || maskedToOriginal == null || maskedToOriginal.isEmpty())
+        {
+            return text;
+        }
+        for (java.util.Map.Entry<String, String> e : maskedToOriginal.entrySet())
+        {
+            text = text.replace(e.getKey(), e.getValue());
+        }
+        return text;
+    }
 }

@@ -60,8 +60,16 @@
       </div>
     </section>
 
-    <!-- 错误提示 -->
-    <el-alert v-if="error" :title="error" type="warning" :closable="false" show-icon class="nlq-error" />
+    <!-- 错误/空结果提示：空结果为信息型（info），异常为警告型（warning） -->
+    <el-alert v-if="error" :title="error"
+      :type="emptyResult ? 'info' : 'warning'" :closable="false" show-icon class="nlq-error" />
+    <div v-if="error && emptyResult && resultSql" class="nlq-error-sql-row">
+      <button class="nlq-sql-toggle" :class="{ 'is-open': sqlVisible }" type="button" @click="sqlVisible = !sqlVisible">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+        {{ sqlVisible ? '隐藏 SQL' : '查看 SQL' }}
+      </button>
+      <pre v-if="sqlVisible" class="nlq-sql-view">{{ resultSql }}</pre>
+    </div>
 
     <!-- 加载态：分段思考进度 -->
     <section v-if="querying" class="rd-card nlq-card">
@@ -82,11 +90,11 @@
               <span v-else-if="s.state === 'active'" class="nlq-step-spinner"></span>
             </span>
             <span class="nlq-step-label">{{ s.label }}</span>
-            <span v-if="i < steps.length - 1" class="nlq-step-line" :class="{ 'is-done': s.state === 'done' }"></span>
+            <span v-if="i < steps.length - 1" class="nlq-step-line" :class="{ 'is-done': s.state === 'done', 'is-running': s.state === 'done' && steps[i + 1] && steps[i + 1].state === 'active' }"></span>
           </div>
         </div>
         <div class="nlq-skeleton">
-          <div class="nlq-skeleton-row" v-for="n in 3" :key="n"></div>
+          <div class="nlq-skeleton-row" v-for="(w, n) in [92, 78, 85]" :key="n" :style="{ width: w + '%', animationDelay: (n * 0.18) + 's' }"></div>
         </div>
       </div>
     </section>
@@ -114,6 +122,16 @@
       </div>
 
       <pre v-if="sqlVisible" class="nlq-sql-view">{{ resultSql }}</pre>
+
+      <!-- AI 结论条：把查询结果翻译成"说人话"的回答 -->
+      <div v-if="resultSummary" class="nlq-summary">
+        <span class="nlq-summary-icon">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 9h6v6H9z"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M1 9h3M1 15h3M20 9h3M20 15h3"/>
+          </svg>
+        </span>
+        <span class="nlq-summary-text">{{ resultSummary }}</span>
+      </div>
 
       <el-table :data="resultRows" border size="small" max-height="480" class="nlq-table" :header-cell-style="{ background: '#F8FAFC', color: '#111827', fontWeight: 600 }">
         <el-table-column type="index" label="#" width="56" align="center" />
@@ -152,6 +170,7 @@ const error = ref('')
 const resultColumns = ref([])
 const resultRows = ref([])
 const resultSql = ref('')
+const resultSummary = ref('')
 const sqlVisible = ref(false)
 
 // ===== 分段思考进度 =====
@@ -160,8 +179,10 @@ const steps = ref([
   { key: 'tables', label: '检索相关数据表', state: 'pending' },
   { key: 'sql', label: '生成查询语句', state: 'pending' },
   { key: 'exec', label: '执行查询', state: 'pending' },
+  { key: 'summary', label: '生成结论', state: 'pending' },
 ])
 const elapsed = ref(0)
+const emptyResult = ref(false)
 let stepTimer = null
 let stepIndex = 0
 
@@ -174,17 +195,6 @@ function startThinking() {
   stepTimer = setInterval(() => {
     elapsed.value++
   }, 1000)
-  // 阶段推进：0s激活第1步，1.2s第2步，2.4s第3步，3.6s第4步
-  const advance = () => {
-    stepIndex++
-    if (stepIndex < steps.value.length) {
-      steps.value[stepIndex - 1].state = 'done'
-      steps.value[stepIndex].state = 'active'
-    }
-  }
-  setTimeout(advance, 1200)
-  setTimeout(advance, 2400)
-  setTimeout(advance, 3600)
 }
 
 function stopThinking(ok) {
@@ -212,7 +222,7 @@ function formatCell(v) {
   return v
 }
 
-const STAGE_INDEX = { understand: 0, tables: 1, sql: 2, exec: 3 }
+const STAGE_INDEX = { understand: 0, tables: 1, sql: 2, exec: 3, summary: 4 }
 let currentAbort = null
 
 function handleQuery() {
@@ -224,8 +234,10 @@ function handleQuery() {
   const mySignal = currentAbort.signal
   querying.value = true
   error.value = ''
+  emptyResult.value = false
   resultColumns.value = []
   resultRows.value = []
+  resultSummary.value = ''
   sqlVisible.value = false
   startThinking()
   const onDone = (d) => {
@@ -239,8 +251,15 @@ function handleQuery() {
     resultColumns.value = d.columns || []
     resultRows.value = d.rows || []
     resultSql.value = d.sql || ''
+    resultSummary.value = d.summary || ''
     if (!resultRows.value.length) {
-      error.value = '查询结果为空，请尝试调整问题表述'
+      // 执行成功但0行：不是问法错误，改为信息型提示并引导查看SQL（后端返回 empty/emptyReason）
+      emptyResult.value = true
+      if (!resultColumns.value.length && !resultSql.value) {
+        error.value = '查询结果为空，请尝试调整问题表述'
+      } else {
+        error.value = d.emptyReason || '查询执行成功，但没有查到匹配数据——查询对象可能尚无关联业务记录。可点击【查看 SQL】核对查询范围，或到对应业务模块确认数据是否已录入。'
+      }
     }
   }
   // 真流式：后端实时推送阶段事件；失败降级为普通接口
@@ -355,33 +374,52 @@ function handleQuery() {
 }
 
 /* ===== 加载态：分段思考 ===== */
-.nlq-thinking { max-width: 560px; margin: 0 auto; }
-.nlq-thinking-head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.nlq-thinking { max-width: 620px; margin: 0 auto; }
+.nlq-thinking-head { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
 .nlq-thinking-avatar {
   width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0;
   background: linear-gradient(135deg, #eff6ff, #dbeafe);
   border: 1px solid #bfdbfe; color: #2563eb;
   display: flex; align-items: center; justify-content: center;
+  animation: nlqAvatarPulse 2s ease-in-out infinite;
+}
+@keyframes nlqAvatarPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.25); }
+  50% { box-shadow: 0 0 0 6px rgba(37, 99, 235, 0); }
 }
 .nlq-thinking-title { font-size: 14px; font-weight: 600; color: #111827; }
 .nlq-thinking-time { margin-left: auto; font-size: 12px; color: #9ca3af; font-variant-numeric: tabular-nums; }
-.nlq-steps { display: flex; align-items: center; margin-bottom: 16px; }
+.nlq-steps { display: flex; align-items: center; margin-bottom: 20px; flex-wrap: wrap; row-gap: 8px; }
 .nlq-step { display: flex; align-items: center; }
 .nlq-step-dot {
-  width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
-  border: 2px solid #e5e7eb; background: #f9fafb;
+  width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0;
+  border: 2px solid #e5e7eb; background: #fff;
   display: flex; align-items: center; justify-content: center;
-  transition: all 0.3s;
+  transition: all 0.35s cubic-bezier(0.16, 84, 0.44, 1);
 }
-.nlq-step.is-done .nlq-step-dot { background: #2563eb; border-color: #2563eb; color: #fff; }
-.nlq-step.is-active .nlq-step-dot { border-color: #2563eb; background: #eff6ff; }
-.nlq-step-label { margin: 0 8px 0 6px; font-size: 12px; color: #9ca3af; white-space: nowrap; transition: color 0.3s; }
-.nlq-step.is-done .nlq-step-label, .nlq-step.is-active .nlq-step-label { color: #111827; font-weight: 600; }
-.nlq-step-line { width: 18px; height: 2px; background: #e5e7eb; margin-right: 8px; border-radius: 1px; transition: background 0.3s; }
+.nlq-step.is-done .nlq-step-dot {
+  background: #2563eb; border-color: #2563eb; color: #fff;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.35);
+}
+.nlq-step.is-active .nlq-step-dot {
+  border-color: #2563eb; background: #eff6ff;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12), 0 0 10px rgba(37, 99, 235, 0.25);
+}
+.nlq-step-label { margin: 0 8px 0 6px; font-size: 12px; color: #b0b7c3; white-space: nowrap; transition: color 0.3s; }
+.nlq-step.is-done .nlq-step-label { color: #374151; font-weight: 500; }
+.nlq-step.is-active .nlq-step-label { color: #1d4ed8; font-weight: 600; }
+.nlq-step-line { position: relative; width: 22px; height: 2px; background: #e5e7eb; margin-right: 8px; border-radius: 1px; transition: background 0.3s; overflow: hidden; }
 .nlq-step-line.is-done { background: #2563eb; }
+/* 正在流向下一步的连接线：细流光从左往右 */
+.nlq-step-line.is-running::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent, #60a5fa, transparent);
+  animation: nlqLineFlow 1.1s linear infinite;
+}
+@keyframes nlqLineFlow { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
 .nlq-step-spinner {
   width: 10px; height: 10px; border-radius: 50%;
-  border: 2px solid #93c5fd; border-top-color: #2563eb;
+  border: 2px solid #bfdbfe; border-top-color: #2563eb;
   display: inline-block; animation: nlqSpin 0.8s linear infinite;
 }
 @keyframes nlqSpin { to { transform: rotate(360deg); } }
@@ -398,17 +436,22 @@ function handleQuery() {
   40% { transform: scale(1); opacity: 1; }
 }
 .nlq-loading-text { margin-left: 8px; font-size: 13px; color: #6b7280; }
+/* 骨架屏：错落宽度 + 柔和流光 + 高度渐变（模拟内容行而非生硬等宽块） */
 .nlq-skeleton { display: flex; flex-direction: column; gap: 10px; }
 .nlq-skeleton-row {
-  height: 34px; border-radius: 6px;
-  background: linear-gradient(90deg, #f1f5f9 25%, #e5e7eb 50%, #f1f5f9 75%);
-  background-size: 200% 100%;
-  animation: nlqShimmer 1.4s infinite;
+  height: 14px; border-radius: 7px;
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 45%, #f1f5f9 65%);
+  background-size: 220% 100%;
+  animation: nlqShimmer 1.6s infinite ease-in-out;
 }
-@keyframes nlqShimmer { to { background-position: -200% 0; } }
+.nlq-skeleton-row:nth-child(1) { height: 16px; }
+.nlq-skeleton-row:nth-child(3) { height: 12px; }
+@keyframes nlqShimmer { to { background-position: -220% 0; } }
 
 /* ===== 错误提示 ===== */
 .nlq-error { border-radius: 8px; }
+.nlq-error-sql-row { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+.nlq-error-sql-row .nlq-sql-toggle { margin-left: 2px; }
 
 /* ===== 结果卡片 ===== */
 .nlq-result-head {
@@ -439,6 +482,28 @@ function handleQuery() {
   word-break: break-all;
   margin: 0 0 12px 0;
   border: 1px solid #1e293b;
+}
+
+/* ===== AI 结论条：说人话的回答 ===== */
+.nlq-summary {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #eff6ff, #f0f9ff);
+  border: 1px solid #bfdbfe;
+}
+.nlq-summary-icon {
+  width: 26px; height: 26px; border-radius: 7px; flex-shrink: 0;
+  background: #2563eb; color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  margin-top: 1px;
+}
+.nlq-summary-text {
+  font-size: 14px; line-height: 1.7; color: #1e3a8a; font-weight: 500;
+  word-break: break-all;
 }
 
 .nlq-table { width: 100%; border-radius: 8px; }

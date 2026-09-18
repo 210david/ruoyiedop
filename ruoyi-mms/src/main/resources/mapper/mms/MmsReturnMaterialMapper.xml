@@ -58,6 +58,7 @@
                sub.detail_count, sub.material_codes, sub.material_names
         FROM mms_return_material r
         LEFT JOIN mms_issue i ON r.issue_id = i.issue_id
+        LEFT JOIN mms_work_order wo ON r.work_order_id = wo.work_order_id
         LEFT JOIN (
             SELECT return_id,
                    COUNT(*) AS detail_count,
@@ -79,6 +80,7 @@
             <if test="materialName != null and materialName != ''"> AND sub.material_names LIKE CONCAT('%', #{materialName}, '%')</if>
             <if test="status != null and status != ''"> AND r.status = #{status}</if>
             <if test="returnBy != null and returnBy != ''"> AND r.return_by LIKE CONCAT('%', #{returnBy}, '%')</if>
+            <if test="params.workOrderStatus != null and params.workOrderStatus != ''"> AND wo.status = #{params.workOrderStatus}</if>
             <if test="params.beginTime != null and params.beginTime != ''"> AND date(r.create_time) &gt;= #{params.beginTime}</if>
             <if test="params.endTime != null and params.endTime != ''"> AND date(r.create_time) &lt;= #{params.endTime}</if>
                   <if test="params.dataScope != null and params.dataScope != ''">${params.dataScope}</if>

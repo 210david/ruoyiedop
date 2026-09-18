@@ -18,3 +18,6 @@ export function delDoc(docIds) {
 export function obsoleteDoc(docId) {
   return request({ url: '/qms/doc/obsolete/' + docId, method: 'put' })
 }
+export function publishDoc(docId) {
+  return request({ url: '/qms/doc/publish/' + docId, method: 'put' })
+}

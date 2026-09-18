@@ -177,6 +177,11 @@ public class MmsIssueServiceImpl implements IMmsIssueService
         issue.setWorkOrderId(existing.getWorkOrderId());
         issue.setWorkOrderNo(existing.getWorkOrderNo());
         issue.setStatus("1");
+        // 备注选填：前端传入时更新，未传保留原备注
+        if (issue.getRemark() == null)
+        {
+            issue.setRemark(existing.getRemark());
+        }
         // 优先使用前端传入的领料时间，未传则用当前时间
         issue.setIssueTime(issue.getIssueTime() != null ? issue.getIssueTime() : new Date());
         issue.setUpdateBy(SecurityUtils.getUsername());

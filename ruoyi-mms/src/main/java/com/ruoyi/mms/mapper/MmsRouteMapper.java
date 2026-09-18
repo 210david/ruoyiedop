@@ -25,6 +25,11 @@ public interface MmsRouteMapper {
     public int countAuditedByProductId(Long productId);
 
     /**
+     * 查询物料类型（1=半成品 2=成品，用于工艺路线产品类型校验）
+     */
+    public String selectMaterialTypeById(Long materialId);
+
+    /**
      * 根据产品ID查询已审核（生效）的工艺路线
      */
     public MmsRoute selectRouteByProductId(Long productId);

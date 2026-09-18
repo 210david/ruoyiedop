@@ -69,6 +69,8 @@
             <if test="sourceType != null and sourceType != ''"> AND source_type = #{sourceType}</if>
             <if test="status != null and status != ''"> AND status = #{status}</if>
             <if test="params.excludeStatus != null and params.excludeStatus != ''"> AND status != #{params.excludeStatus}</if>
+            <if test="params.excludeStatusList != null and params.excludeStatusList.size() > 0"> AND status NOT IN <foreach item="es" collection="params.excludeStatusList" open="(" separator="," close=")">#{es}</foreach></if>
+            <if test="params.statusList != null and params.statusList.size() > 0"> AND status IN <foreach item="st" collection="params.statusList" open="(" separator="," close=")">#{st}</foreach></if>
             <if test="priority != null and priority != ''"> AND priority = #{priority}</if>
             <if test="bomNo != null and bomNo != ''"> AND bom_no LIKE CONCAT('%', #{bomNo}, '%')</if>
             <if test="routeNo != null and routeNo != ''"> AND route_no LIKE CONCAT('%', #{routeNo}, '%')</if>

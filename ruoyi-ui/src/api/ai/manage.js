@@ -1,4 +1,5 @@
 import request from '@/utils/request'
+import { getToken } from '@/utils/auth'
 
 // ===== 提示词模板 =====
 export function listPrompt() {
@@ -20,6 +21,8 @@ export function nlQuery(question) {
 }
 
 // 流式查询：POST + fetch ReadableStream 解析 SSE（EventSource 不支持 POST/自定义头）
+// 说明：dev 代理下 SSE 连接可能不会主动关闭，因此收到 result 事件后立即主动断开并 resolve，
+//       不依赖流结束信号；超时/外部取消通过 reject 的 error 标记区分
 export function nlQueryStream(question, onStage, onResult, signal) {
   const baseURL = import.meta.env.VITE_APP_BASE_API || ''
   const token = getToken()
@@ -29,42 +32,60 @@ export function nlQueryStream(question, onStage, onResult, signal) {
   if (signal) {
     signal.addEventListener('abort', () => { externalAbort = true; controller.abort() })
   }
-  return fetch(baseURL + '/ai/nlquery/stream', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-    body: JSON.stringify({ question }),
-    signal: controller.signal
-  }).then(async resp => {
-    if (!resp.ok || !resp.body) throw new Error('stream unavailable')
-    const reader = resp.body.getReader()
-    const decoder = new TextDecoder('utf-8')
-    let buf = ''
-    for (;;) {
-      const { done, value } = await reader.read()
-      if (done) break
-      buf += decoder.decode(value, { stream: true })
-      let idx
-      while ((idx = buf.indexOf('\n\n')) >= 0) {
-        const block = buf.slice(0, idx)
-        buf = buf.slice(idx + 2)
-        let event = 'message', data = ''
-        for (const line of block.split('\n')) {
-          if (line.startsWith(':')) continue
-          if (line.startsWith('event:')) event = line.slice(6).trim()
-          else if (line.startsWith('data:')) data += line.slice(5).trim()
+  return new Promise((resolve, reject) => {
+    fetch(baseURL + '/ai/nlquery/stream', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ question }),
+      signal: controller.signal
+    }).then(async resp => {
+      if (!resp.ok || !resp.body) throw new Error('stream unavailable')
+      const reader = resp.body.getReader()
+      const decoder = new TextDecoder('utf-8')
+      let buf = ''
+      let finished = false
+      for (;;) {
+        const { done, value } = await reader.read()
+        if (done || finished) break
+        buf += decoder.decode(value, { stream: true })
+        let idx
+        while ((idx = buf.indexOf('\n\n')) >= 0) {
+          const block = buf.slice(0, idx)
+          buf = buf.slice(idx + 2)
+          let event = 'message', data = ''
+          for (const line of block.split('\n')) {
+            if (line.startsWith(':')) continue
+            if (line.startsWith('event:')) event = line.slice(6).trim()
+            else if (line.startsWith('data:')) data += line.slice(5).trim()
+          }
+          if (!data) continue
+          try {
+            const payload = JSON.parse(data)
+            if (event === 'stage') onStage && onStage(payload.stage, payload.status)
+            else if (event === 'result') {
+              // 收到结果即完成：主动断开连接（代理下连接可能不关闭），不再等待流结束
+              finished = true
+              clearTimeout(timer)
+              try { controller.abort() } catch (e) { /* 忽略 */ }
+              onResult && onResult(payload)
+              resolve()
+            }
+          } catch (e) { /* 跳过解析失败的块 */ }
         }
-        if (!data) continue
-        try {
-          const payload = JSON.parse(data)
-          if (event === 'stage') onStage && onStage(payload.stage, payload.status)
-          else if (event === 'result') onResult && onResult(payload)
-        } catch (e) { /* 跳过解析失败的块 */ }
       }
-    }
-  }).finally(() => {
-    clearTimeout(timer)
-    // 60秒超时与外部取消通过错误名区分，交由调用方处理
-    return Promise.reject(Object.assign(new Error('timeout'), { isTimeout: !externalAbort, isExternal: externalAbort }))
+      if (!finished) {
+        // 流意外结束且无结果
+        clearTimeout(timer)
+        reject(new Error('stream ended without result'))
+      }
+    }).catch(err => {
+      clearTimeout(timer)
+      if (externalAbort) return reject(Object.assign(new Error('aborted'), { isExternal: true }))
+      if (err && (err.name === 'AbortError' || controller.signal.aborted)) {
+        return reject(Object.assign(new Error('timeout'), { isTimeout: true }))
+      }
+      reject(err)
+    })
   })
 }
 

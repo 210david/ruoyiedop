@@ -20,9 +20,9 @@ export function aiReportDraft(data) {
 export function aiAbnormalAdvice(abnormalId) {
   return request({ url: '/mms/ai/abnormalAdvice/' + abnormalId, method: 'get', timeout: 60000 })
 }
-// 生产日报生成
-export function aiDailyReport(statId) {
-  return request({ url: '/mms/ai/dailyReport/' + statId, method: 'get', timeout: 60000 })
+// 生产日报生成（按生产日期 yyyy-MM-dd 定位，日报为实时聚合无物理主键）
+export function aiDailyReport(statDate) {
+  return request({ url: '/mms/ai/dailyReport/' + statDate, method: 'get', timeout: 60000 })
 }
 
 // ===== PMS =====

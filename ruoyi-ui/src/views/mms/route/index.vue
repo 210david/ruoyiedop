@@ -377,7 +377,7 @@
       <template #footer><el-button @click="resourcePickerOpen = false">取 消</el-button><el-button type="primary" @click="confirmResourcePicker" :disabled="!resourcePickerSelectedId">确 定</el-button></template>
     </el-dialog>
     <!-- Product Picker -->
-    <material-picker ref="productPickerRef" title="选择产品" @confirm="onProductPickerConfirm" />
+    <material-picker ref="productPickerRef" title="选择产品" :material-types="['1','2']" @confirm="onProductPickerConfirm" />
     <!-- 业务操作说明 -->
     <el-dialog v-model="showStatusHelp" title="工艺路线管理业务操作说明" width="820px" append-to-body draggable class="rd-dialog status-help-dialog">
       <div class="status-help-content">
@@ -839,6 +839,11 @@ function submitForm() {
         proxy.$modal.msgWarning('工序明细至少需要添加一个工序');
         return;
       }
+      const dup = checkDuplicateProcess(form.value.processList);
+      if (dup) {
+        proxy.$modal.msgWarning(`工序[${dup}]重复添加，同一工艺路线内同一工序只能出现一次，请删除重复工序`);
+        return;
+      }
       const missing = form.value.processList.filter(p => !p.resourceId);
       if (missing.length > 0) {
         proxy.$modal.confirm(`有 ${missing.length} 道工序未选择产能单元，未选择产能单元的工序在排产时将使用工单头上的产能单元。是否继续提交？`).then(() => {
@@ -919,6 +924,22 @@ function recalcTotalStdTime() {
   let total = 0;
   form.value.processList.forEach(p => { if (p.stdTime) total += p.stdTime; });
   form.value.totalStdTime = Math.round(total * 100) / 100;
+}
+
+// 校验同一工艺路线内不允许重复添加同一工序（并行或串行均不允许）
+function checkDuplicateProcess(list) {
+  const seenIds = new Set();
+  const seenCodes = new Set();
+  for (const p of list) {
+    if (p.processId != null) {
+      if (seenIds.has(p.processId)) return p.processName || p.processCode;
+      seenIds.add(p.processId);
+    } else if (p.processCode) {
+      if (seenCodes.has(p.processCode)) return p.processName || p.processCode;
+      seenCodes.add(p.processCode);
+    }
+  }
+  return null;
 }
 
 // ===== 可视化流程图：并行分组计算 =====

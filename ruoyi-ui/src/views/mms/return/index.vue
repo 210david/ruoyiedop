@@ -8,6 +8,7 @@
         <div class="field"><label>物料编码</label><div class="control"><el-input v-model="queryParams.materialCode" placeholder="请输入" clearable @keyup.enter="handleQuery" /></div></div>
         <div class="field"><label>物料名称</label><div class="control"><el-input v-model="queryParams.materialName" placeholder="请输入" clearable @keyup.enter="handleQuery" /></div></div>
         <div class="field" v-show="showAdvanced"><label>状态</label><div class="control is-select"><el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery"><el-option v-for="d in mms_return_status" :key="d.value" :label="d.label" :value="d.value" /></el-select></div></div>
+        <div class="field" v-show="showAdvanced"><label>工单状态</label><div class="control is-select"><el-select v-model="queryParams.params.workOrderStatus" placeholder="全部" clearable @change="handleQuery"><el-option v-for="d in mms_workorder_status" :key="d.value" :label="d.label" :value="d.value" /></el-select></div></div>
         <div class="field" v-show="showAdvanced"><label>退料人</label><div class="control"><el-input v-model="queryParams.returnBy" placeholder="请输入" clearable @keyup.enter="handleQuery" /></div></div>
         <div class="field" v-show="showAdvanced"><label>创建日期</label><div class="control"><el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" /></div></div>
       </div>
@@ -176,7 +177,7 @@ import { useDetailCard } from '@/composables/useDetailCard'
 import { Search, Filter, RefreshLeft, ArrowDown, WarningFilled, ArrowRight, QuestionFilled, CircleClose } from '@element-plus/icons-vue'
 
 const { proxy } = getCurrentInstance();
-const { mms_return_status, wms_unit } = proxy.useDict("mms_return_status", "wms_unit");
+const { mms_return_status, mms_workorder_status, wms_unit } = proxy.useDict("mms_return_status", "mms_workorder_status", "wms_unit");
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('mms_return_index')
 const { collapsedCards, toggleCard } = useDetailCard(["c0","c1","c3","vc0","vc1","vc3","cc0","cc1","cc2"])
 
@@ -189,13 +190,13 @@ function loadColumnVisibility() { try { const saved = localStorage.getItem('mms_
 const columns = ref(loadColumnVisibility())
 const activeFilterCount = computed(() => { let c = 0; if (queryParams.value.returnNo) c++; if (queryParams.value.workOrderNo) c++; if (queryParams.value.materialCode) c++; if (queryParams.value.materialName) c++; if (queryParams.value.status) c++; if (queryParams.value.returnBy) c++; if (dateRange.value && dateRange.value.length === 2) c++; return c; });
 
-const data = reactive({ form: {}, queryParams: { pageNum: 1, pageSize: 10, returnNo: undefined, workOrderNo: undefined, materialCode: undefined, materialName: undefined, status: undefined, returnBy: undefined, params: {} }, rules: { returnNo: [{ required: false, message: "退料编号自动生成", trigger: "blur" }], returnBy: [{ required: true, message: '请选择退料人', trigger: 'change' }], returnReason: [{ required: true, message: '请输入退料原因', trigger: 'blur' }] } });
+const data = reactive({ form: {}, queryParams: { pageNum: 1, pageSize: 10, returnNo: undefined, workOrderNo: undefined, materialCode: undefined, materialName: undefined, status: undefined, returnBy: undefined, params: { workOrderStatus: undefined } }, rules: { returnNo: [{ required: false, message: "退料编号自动生成", trigger: "blur" }], returnBy: [{ required: true, message: '请选择退料人', trigger: 'change' }], returnReason: [{ required: true, message: '请输入退料原因', trigger: 'blur' }] } });
 const { queryParams, form, rules } = toRefs(data);
 
 function getList() { loading.value = true; listReturnMaterial(proxy.addDateRange(queryParams.value, dateRange.value)).then(response => { dataList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths(); loadStatusCounts(); }).catch(() => { loading.value = false; }); }
 function loadStatusCounts() { const baseQuery = { pageNum: 1, pageSize: 999 }; if (queryParams.value.returnNo) baseQuery.returnNo = queryParams.value.returnNo; if (queryParams.value.workOrderNo) baseQuery.workOrderNo = queryParams.value.workOrderNo; if (queryParams.value.materialCode) baseQuery.materialCode = queryParams.value.materialCode; if (queryParams.value.materialName) baseQuery.materialName = queryParams.value.materialName; if (queryParams.value.returnBy) baseQuery.returnBy = queryParams.value.returnBy; listReturnMaterial(proxy.addDateRange(baseQuery, dateRange.value)).then(res => { const counts = { all: res.total }; if (mms_return_status.value) { mms_return_status.value.forEach(d => { counts[d.value] = 0; }); (res.rows || []).forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++; }); } statusCounts.value = counts; }).catch(() => {}); }
 function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList(); }
-function resetQuery() { queryParams.value.returnNo = undefined; queryParams.value.workOrderNo = undefined; queryParams.value.materialCode = undefined; queryParams.value.materialName = undefined; queryParams.value.status = undefined; queryParams.value.returnBy = undefined; dateRange.value = []; queryParams.value.params = {}; activeStatusTab.value = 'all'; handleQuery(); }
+function resetQuery() { queryParams.value.returnNo = undefined; queryParams.value.workOrderNo = undefined; queryParams.value.materialCode = undefined; queryParams.value.materialName = undefined; queryParams.value.status = undefined; queryParams.value.returnBy = undefined; dateRange.value = []; queryParams.value.params = { workOrderStatus: undefined }; activeStatusTab.value = 'all'; handleQuery(); }
 function handleStatusTabClick(status) { activeStatusTab.value = status; queryParams.value.status = status === "all" ? undefined : status; handleQuery(); }
 function handleSelectionChange(selection) { ids.value = selection.map(item => item.returnId); single.value = selection.length !== 1; multiple.value = !selection.length; }
 function reset() { form.value = { returnNo: undefined, issueId: undefined, issueNo: undefined, workOrderId: undefined, workOrderNo: undefined, productCode: undefined, productName: undefined, returnBy: undefined, returnByName: undefined, returnReason: undefined, status: '0', remark: undefined, detailList: [] }; proxy.resetForm("formRef"); }
@@ -364,7 +365,13 @@ function handleIssuePickerConfirm() {
 }
 function clearIssue() { form.value.issueId = undefined; form.value.issueNo = undefined; form.value.workOrderId = undefined; form.value.workOrderNo = undefined; form.value.productCode = undefined; form.value.productName = undefined; form.value.detailList = []; proxy.$refs["formRef"] && proxy.$refs["formRef"].validateField('issueNo'); }
 
-function removeDetail(index) { form.value.detailList.splice(index, 1); }
+function removeDetail(index) {
+  if (!form.value.detailList || form.value.detailList.length <= 1) {
+    proxy.$modal.msgWarning('退料明细必须至少保留一条，不能删除最后一行');
+    return;
+  }
+  form.value.detailList.splice(index, 1);
+}
 
 // ===== 退料人选择器 =====
 function openReturnByPicker() { proxy.$refs.userPickerRef.open(); }

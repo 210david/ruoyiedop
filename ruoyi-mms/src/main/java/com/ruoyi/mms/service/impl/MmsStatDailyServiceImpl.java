@@ -24,4 +24,10 @@ public class MmsStatDailyServiceImpl implements IMmsStatDailyService
     {
         return statDailyMapper.selectStatDailyById(statId);
     }
+
+    @Override
+    public MmsStatDaily selectStatDailyByDate(String statDate)
+    {
+        return statDailyMapper.selectStatDailyByDate(statDate);
+    }
 }

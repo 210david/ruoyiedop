@@ -11,6 +11,7 @@
         <div class="field"><label>物料编码</label><div class="control"><el-input v-model="queryParams.materialCode" placeholder="请输入" clearable @keyup.enter="handleQuery" /></div></div>
         <div class="field"><label>物料名称</label><div class="control"><el-input v-model="queryParams.materialName" placeholder="请输入" clearable @keyup.enter="handleQuery" /></div></div>
         <div class="field" v-show="showAdvanced"><label>状态</label><div class="control is-select"><el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery"><el-option v-for="d in mms_issue_status" :key="d.value" :label="d.label" :value="d.value" /></el-select></div></div>
+        <div class="field" v-show="showAdvanced"><label>工单状态</label><div class="control is-select"><el-select v-model="queryParams.params.workOrderStatus" placeholder="全部" clearable @change="handleQuery"><el-option v-for="d in mms_workorder_status" :key="d.value" :label="d.label" :value="d.value" /></el-select></div></div>
         <div class="field" v-show="showAdvanced"><label>领料人</label><div class="control"><el-input v-model="queryParams.issueBy" placeholder="请输入" clearable @keyup.enter="handleQuery" /></div></div>
         <div class="field" v-show="showAdvanced"><label>创建日期</label><div class="control"><el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" /></div></div>
       </div>
@@ -208,6 +209,7 @@
             <p>• 确认领料时需指定<strong>领料人</strong><span style="color: #f56c6c;">*必填</span>和<strong>领料时间</strong><span style="color: #f56c6c;">*必填</span></p>
             <p>• 领料时间默认为当前时间，可手动调整</p>
             <p>• 确认领料时可在弹窗中微调每条明细的领料数量</p>
+            <p>• 可填写备注（选填），记录领料说明、代领信息等，随确认保存到领料单</p>
             <p>• 确认后状态变为「已领料」，领料人和领料时间持久化记录</p>
           </div>
         </div>
@@ -255,7 +257,7 @@
         </section>
         <section class="rd-card">
           <div class="rd-card-header" @click="toggleCard('cc2')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg></span>确认信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.cc2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
-          <div class="rd-card-body" v-show="!collapsedCards.cc2" style="display:block;padding:16px 20px"><el-form ref="confirmFormRef" :model="confirmData" label-width="100px" size="default"><el-row :gutter="20"><el-col :span="12"><el-form-item label="领料人" prop="issueBy" :rules="[{ required: true, message: '请选择领料人', trigger: 'change' }]"><el-input v-model="confirmData.issueBy" readonly placeholder="请选择领料人" style="width: 100%" @click="openConfirmIssueByPicker"><template #append><el-button icon="Search" @click="openConfirmIssueByPicker" /></template><template #suffix><el-icon v-if="confirmData.issueBy" class="rd-form-tip" style="cursor:pointer" @click.stop="confirmData.issueBy = undefined"><CircleClose /></el-icon></template></el-input></el-form-item></el-col><el-col :span="12"><el-form-item label="领料时间" prop="issueTime" :rules="[{ required: true, message: '请选择领料时间', trigger: 'change' }]"><el-date-picker v-model="confirmData.issueTime" type="datetime" placeholder="选择领料时间" value-format="YYYY-MM-DD HH:mm:ss" style="width: 100%" /></el-form-item></el-col></el-row></el-form></div>
+          <div class="rd-card-body" v-show="!collapsedCards.cc2" style="display:block;padding:16px 20px"><el-form ref="confirmFormRef" :model="confirmData" label-width="100px" size="default"><el-row :gutter="20"><el-col :span="12"><el-form-item label="领料人" prop="issueBy" :rules="[{ required: true, message: '请选择领料人', trigger: 'change' }]"><el-input v-model="confirmData.issueBy" readonly placeholder="请选择领料人" style="width: 100%" @click="openConfirmIssueByPicker"><template #append><el-button icon="Search" @click="openConfirmIssueByPicker" /></template><template #suffix><el-icon v-if="confirmData.issueBy" class="rd-form-tip" style="cursor:pointer" @click.stop="confirmData.issueBy = undefined"><CircleClose /></el-icon></template></el-input></el-form-item></el-col><el-col :span="12"><el-form-item label="领料时间" prop="issueTime" :rules="[{ required: true, message: '请选择领料时间', trigger: 'change' }]"><el-date-picker v-model="confirmData.issueTime" type="datetime" placeholder="选择领料时间" value-format="YYYY-MM-DD HH:mm:ss" style="width: 100%" /></el-form-item></el-col></el-row><el-row :gutter="20"><el-col :span="24"><el-form-item label="备注" prop="remark"><el-input v-model="confirmData.remark" type="textarea" :rows="2" maxlength="500" show-word-limit placeholder="可填写领料说明、代领信息或其他补充说明（选填）" /></el-form-item></el-col></el-row></el-form></div>
         </section>
         <section class="rd-card">
           <div class="rd-card-header" @click="toggleCard('cc1')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7l-8-4-8 4 8 4 8-4z"/><path d="M4 7v10l8 4 8-4V7"/></svg></span>领料明细</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.cc1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
@@ -317,13 +319,13 @@ function loadColumnVisibility() { try { const saved = localStorage.getItem('mms_
 const columns = ref(loadColumnVisibility())
 const activeFilterCount = computed(() => { let c = 0; if (queryParams.value.issueNo) c++; if (queryParams.value.workOrderNo) c++; if (queryParams.value.materialCode) c++; if (queryParams.value.materialName) c++; if (queryParams.value.status) c++; if (queryParams.value.issueBy) c++; if (dateRange.value && dateRange.value.length === 2) c++; return c; });
 
-const data = reactive({ form: {}, queryParams: { pageNum: 1, pageSize: 10, issueNo: undefined, workOrderNo: undefined, materialCode: undefined, materialName: undefined, status: undefined, issueBy: undefined, params: {} }, rules: { issueNo: [{ required: false, message: "领料编号自动生成", trigger: "blur" }], workOrderNo: [{ required: true, message: '请选择工单', trigger: 'change' }], issueBy: [{ required: true, message: '请选择领料人', trigger: 'change' }] } });
+const data = reactive({ form: {}, queryParams: { pageNum: 1, pageSize: 10, issueNo: undefined, workOrderNo: undefined, materialCode: undefined, materialName: undefined, status: undefined, issueBy: undefined, params: { workOrderStatus: undefined } }, rules: { issueNo: [{ required: false, message: "领料编号自动生成", trigger: "blur" }], workOrderNo: [{ required: true, message: '请选择工单', trigger: 'change' }], issueBy: [{ required: true, message: '请选择领料人', trigger: 'change' }] } });
 const { queryParams, form, rules } = toRefs(data);
 
 function getList() { loading.value = true; listIssue(proxy.addDateRange(queryParams.value, dateRange.value)).then(response => { dataList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths(); loadStatusCounts(); }); }
 function loadStatusCounts() { const baseQuery = { pageNum: 1, pageSize: 999 }; if (queryParams.value.issueNo) baseQuery.issueNo = queryParams.value.issueNo; if (queryParams.value.workOrderNo) baseQuery.workOrderNo = queryParams.value.workOrderNo; if (queryParams.value.materialCode) baseQuery.materialCode = queryParams.value.materialCode; if (queryParams.value.materialName) baseQuery.materialName = queryParams.value.materialName; if (queryParams.value.issueBy) baseQuery.issueBy = queryParams.value.issueBy; listIssue(proxy.addDateRange(baseQuery, dateRange.value)).then(res => { const counts = { all: res.total }; if (mms_issue_status.value) { mms_issue_status.value.forEach(d => { counts[d.value] = 0; }); (res.rows || []).forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++; }); } statusCounts.value = counts; }).catch(() => {}); }
 function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList(); }
-function resetQuery() { queryParams.value.issueNo = undefined; queryParams.value.workOrderNo = undefined; queryParams.value.materialCode = undefined; queryParams.value.materialName = undefined; queryParams.value.status = undefined; queryParams.value.issueBy = undefined; dateRange.value = []; queryParams.value.params = {}; activeStatusTab.value = 'all'; handleQuery(); }
+function resetQuery() { queryParams.value.issueNo = undefined; queryParams.value.workOrderNo = undefined; queryParams.value.materialCode = undefined; queryParams.value.materialName = undefined; queryParams.value.status = undefined; queryParams.value.issueBy = undefined; dateRange.value = []; queryParams.value.params = { workOrderStatus: undefined }; activeStatusTab.value = 'all'; handleQuery(); }
 function handleStatusTabClick(status) { activeStatusTab.value = status; queryParams.value.status = status === "all" ? undefined : status; handleQuery(); }
 function handleSelectionChange(selection) { ids.value = selection.map(item => item.issueId); single.value = selection.length !== 1; multiple.value = !selection.length; }
 function reset() { form.value = { issueNo: undefined, workOrderId: undefined, workOrderNo: undefined, productCode: undefined, productName: undefined, planQty: undefined, issueBy: undefined, issueByName: undefined, status: '0', remark: undefined, detailList: [] }; proxy.resetForm("formRef"); }
@@ -408,7 +410,7 @@ function onConfirmUserPickerConfirm(user) {
 
 // ===== 工单选择器 =====
 const woPickerOpen = ref(false); const woPickerLoading = ref(false); const woPickerList = ref([]); const woPickerTotal = ref(0); const woPickerSelectedId = ref(null); const woPickerSelectedRow = ref(null);
-const woPickerQuery = reactive({ pageNum: 1, pageSize: 10, workOrderNo: undefined, productName: undefined, params: { excludeStatus: '0' } });
+const woPickerQuery = reactive({ pageNum: 1, pageSize: 10, workOrderNo: undefined, productName: undefined, params: { statusList: ['1', '2'] } });
 function openWorkOrderPicker() { woPickerOpen.value = true; woPickerSelectedId.value = null; woPickerSelectedRow.value = null; woPickerQuery.pageNum = 1; woPickerQuery.workOrderNo = undefined; woPickerQuery.productName = undefined; getWoPickerList(); }
 function getWoPickerList() { woPickerLoading.value = true; listWorkOrder(woPickerQuery).then(res => { woPickerList.value = res.rows; woPickerTotal.value = res.total; woPickerLoading.value = false; }).catch(() => { woPickerLoading.value = false; }); }
 function handleWoPickerQuery() { woPickerQuery.pageNum = 1; getWoPickerList(); }
@@ -486,7 +488,13 @@ function handleMatPickerConfirm() {
   collapsedCards.c1 = false;
   if (newRows.length === 0) { proxy.$modal.msgSuccess('所选物料已在列表中'); }
 }
-function removeDetail(index) { form.value.detailList.splice(index, 1); }
+function removeDetail(index) {
+  if (!form.value.detailList || form.value.detailList.length <= 1) {
+    proxy.$modal.msgWarning('领料明细必须至少保留一条，不能删除最后一行');
+    return;
+  }
+  form.value.detailList.splice(index, 1);
+}
 
 // ===== 领料人选择器 =====
 function openIssueByPicker() { proxy.$refs.userPickerRef.open(); }

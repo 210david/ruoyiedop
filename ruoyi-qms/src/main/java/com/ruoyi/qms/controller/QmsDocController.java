@@ -163,6 +163,22 @@ public class QmsDocController extends BaseController {
         return toAjax(service.updateDoc(doc));
     }
 
+    /**
+     * 文档发布：草稿(0) → 生效(2)，生效日期为空时自动取当天。
+     */
+    @Log(title = "文档发布", businessType = BusinessType.UPDATE)
+    @PreAuthorize("@ss.hasPermi('qms:doc:edit')")
+    @PutMapping("/publish/{docId}")
+    public AjaxResult publishDoc(@PathVariable Long docId) {
+        QmsDoc doc = service.selectDocById(docId);
+        if (doc == null) return AjaxResult.error("文档不存在");
+        if (!"0".equals(doc.getDocStatus())) return AjaxResult.error("只有草稿状态的文档才能发布");
+        if (doc.getFileUrl() == null || doc.getFileUrl().trim().isEmpty()) return AjaxResult.error("文档未上传附件，无法发布");
+        doc.setDocStatus("2");
+        if (doc.getPublishDate() == null) doc.setPublishDate(new java.util.Date());
+        return toAjax(service.updateDoc(doc));
+    }
+
     @PreAuthorize("@ss.hasPermi('qms:doc:query')")
     @GetMapping("/reference/{docId}")
     public AjaxResult referenceCheck(@PathVariable Long docId) {

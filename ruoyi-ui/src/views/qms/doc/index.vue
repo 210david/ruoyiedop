@@ -95,6 +95,7 @@
                 <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
                 <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['qms:doc:edit']">修改</el-button>
                 <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['qms:doc:remove']">删除</el-button>
+                <el-button link type="success" icon="Promotion" @click="handlePublish(scope.row)" v-if="scope.row.docStatus == '0'" v-hasPermi="['qms:doc:edit']">发布</el-button>
                 <el-button link type="warning" icon="CircleClose" @click="handleObsolete(scope.row)" v-if="scope.row.docStatus != '3'" v-hasPermi="['qms:doc:edit']">作废</el-button>
               </div>
             </template>
@@ -120,9 +121,14 @@
             <div class="rd-item"><span class="rd-label">文档标题</span><div class="rd-value">{{ viewData.docTitle || '-' }}</div></div>
             <div class="rd-item"><span class="rd-label">分类</span><div class="rd-value">{{ docCategoryLabel(viewData.docCategory) }}</div></div>
             <div class="rd-item"><span class="rd-label">版本号</span><div class="rd-value">{{ viewData.versionNo || '-' }}</div></div>
+          </div></div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('v_dept')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/></svg></span>归属信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v_dept }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.v_dept" style="display:block"><div class="rd-grid">
             <div class="rd-item"><span class="rd-label">归属部门</span><div class="rd-value">{{ viewData.deptName || '-' }}</div></div>
-            <div class="rd-item"><span class="rd-label">状态</span><div class="rd-value"><span class="badge" :class="docStatusBadgeClass(viewData.docStatus)"><span class="dot"></span>{{ docStatusLabel(viewData.docStatus) }}</span></div></div>
             <div class="rd-item"><span class="rd-label">生效日期</span><div class="rd-value">{{ parseTime(viewData.publishDate, '{y}-{m}-{d}') || '-' }}</div></div>
+            <div class="rd-item"><span class="rd-label">状态</span><div class="rd-value"><span class="badge" :class="docStatusBadgeClass(viewData.docStatus)"><span class="dot"></span>{{ docStatusLabel(viewData.docStatus) }}</span></div></div>
           </div></div>
         </section>
         <section class="rd-card" v-if="viewData.fileUrl">
@@ -231,7 +237,7 @@
 </template>
 
 <script setup name="QmsDoc">
-import { listDoc, getDoc, addDoc, updateDoc, delDoc, obsoleteDoc } from '@/api/qms/doc'
+import { listDoc, getDoc, addDoc, updateDoc, delDoc, obsoleteDoc, publishDoc } from '@/api/qms/doc'
 import DeptPicker from '@/components/DeptPicker/index.vue'
 import FilePreview from '@/components/FilePreview/index.vue'
 import { downloadFile } from '@/utils/downloadFile'
@@ -240,7 +246,7 @@ import { useDetailCard } from '@/composables/useDetailCard'
 import { CircleClose } from '@element-plus/icons-vue'
 const baseUrl = import.meta.env.VITE_APP_BASE_API
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('qms_doc_index')
-const { collapsedCards, toggleCard } = useDetailCard(["c0","c1","c2","c3","v_basic","v_file","v_other"])
+const { collapsedCards, toggleCard } = useDetailCard(["c0","c1","c2","c3","v_basic","v_dept","v_file","v_other"])
 const { proxy } = getCurrentInstance()
 const { qms_doc_category: categoryOptions, qms_doc_status: statusOptions } = proxy.useDict('qms_doc_category', 'qms_doc_status')
 
@@ -298,6 +304,9 @@ function handleDelete(row) {
 }
 function handleObsolete(row) {
   proxy.$modal.confirm('确认作废该文档？作废后文档将标记为作废状态。').then(() => obsoleteDoc(row.docId)).then(() => { getList(); proxy.$modal.msgSuccess('作废成功') }).catch(() => {})
+}
+function handlePublish(row) {
+  proxy.$modal.confirm(`确认发布文档 "${row.docTitle}"？发布后状态变为生效，生效日期默认为当天。`).then(() => publishDoc(row.docId)).then(() => { getList(); proxy.$modal.msgSuccess('发布成功，文档已生效') }).catch(() => {})
 }
 function handleExport() { proxy.download('qms/doc/export', proxy.withExportIds({ ...proxy.addDateRange(queryParams.value, dateRange.value) }, selectedIds.value, 'docId'), `doc_${new Date().getTime()}.xlsx`) }
 /** 打开部门选择弹窗 */

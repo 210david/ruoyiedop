@@ -96,6 +96,7 @@ public class MmsQcServiceImpl implements IMmsQcService
         {
             throw new com.ruoyi.common.exception.ServiceException("该质检单已检验，不可重复质检");
         }
+        validateQcQuantities(qc);
         // 更新检验相关字段
         existing.setInspectQty(qc.getInspectQty());
         existing.setDefectQty(qc.getDefectQty());
@@ -108,5 +109,43 @@ public class MmsQcServiceImpl implements IMmsQcService
         existing.setUpdateBy(SecurityUtils.getUsername());
         existing.setUpdateTime(DateUtils.getNowDate());
         return qcMapper.updateQc(existing);
+    }
+
+    /**
+     * 质检数量逻辑校验：
+     * 1. 检验数量必须大于0；
+     * 2. 不良数、报废数量不能大于检验数量；
+     * 3. 不良数+报废数量不能大于检验数量；
+     * 4. 不良数或报废数量大于0时，缺陷类型必填。
+     */
+    private void validateQcQuantities(MmsQc qc)
+    {
+        if (qc.getInspectQty() == null || qc.getInspectQty() <= 0)
+        {
+            throw new com.ruoyi.common.exception.ServiceException("检验数量必须大于0");
+        }
+        int inspect = qc.getInspectQty();
+        int defect = qc.getDefectQty() != null ? qc.getDefectQty() : 0;
+        int scrap = qc.getScrapQty() != null ? qc.getScrapQty() : 0;
+        if (defect < 0 || scrap < 0)
+        {
+            throw new com.ruoyi.common.exception.ServiceException("不良数和报废数量不能为负数");
+        }
+        if (defect > inspect)
+        {
+            throw new com.ruoyi.common.exception.ServiceException("不良数不能大于检验数量");
+        }
+        if (scrap > inspect)
+        {
+            throw new com.ruoyi.common.exception.ServiceException("报废数量不能大于检验数量");
+        }
+        if (defect + scrap > inspect)
+        {
+            throw new com.ruoyi.common.exception.ServiceException("不良数与报废数量之和不能大于检验数量");
+        }
+        if ((defect > 0 || scrap > 0) && StringUtils.isEmpty(qc.getDefectType()))
+        {
+            throw new com.ruoyi.common.exception.ServiceException("存在不良数或报废数量时，必须选择缺陷类型");
+        }
     }
 }

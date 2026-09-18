@@ -67,13 +67,26 @@
         <el-form ref="dynRef" :model="dynData" label-width="120px">
           <el-form-item v-for="f in boundForm.fields" :key="f.field" :label="f.label" :prop="f.field"
             :rules="f.required ? [{ required: true, message: '请填写' + f.label, trigger: ['blur','change'] }] : []">
-            <el-select v-if="f.type==='select'" v-model="dynData[f.field]" style="width:100%">
-              <el-option v-for="o in (f.options||[])" :key="o" :label="o" :value="o" />
+            <el-select v-if="f.rtype==='select'" v-model="dynData[f.field]" style="width:100%">
+              <el-option v-for="o in (f.optionList||[])" :key="o.value" :label="o.label" :value="o.value" />
             </el-select>
-            <el-input v-else-if="f.type==='text'" v-model="dynData[f.field]" />
-            <el-input v-else-if="f.type==='textarea'" v-model="dynData[f.field]" type="textarea" :rows="3" />
-            <el-input-number v-else-if="f.type==='number'" v-model="dynData[f.field]" :controls="false" style="width:100%" />
-            <el-date-picker v-else-if="f.type==='date'" v-model="dynData[f.field]" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" style="width:100%" />
+            <el-radio-group v-else-if="f.rtype==='radio'" v-model="dynData[f.field]">
+              <el-radio v-for="o in (f.optionList||[])" :key="o.value" :value="o.value">{{ o.label }}</el-radio>
+            </el-radio-group>
+            <el-checkbox v-else-if="f.rtype==='check'" v-model="dynData[f.field]" true-value="1" false-value="0">是</el-checkbox>
+            <el-switch v-else-if="f.rtype==='switch'" v-model="dynData[f.field]" active-value="1" inactive-value="0" />
+            <el-rate v-else-if="f.rtype==='rate'" v-model="dynData[f.field]" />
+            <div v-else-if="f.rtype==='browse'" style="display:flex;gap:8px;width:100%">
+              <el-input v-model="dynData[f.field]" readonly :placeholder="'点击右侧按钮选择' + (browseTypeLabel(f) || '数据')" />
+              <el-button @click="openBrowse(f)">浏览…</el-button>
+            </div>
+            <file-upload v-else-if="f.rtype==='attach'" v-model="dynData[f.field]" :limit="f.attachLimit || 5" :file-type="attachAccept(f)" :file-size="50" />
+            <el-input v-else-if="f.rtype==='text'" v-model="dynData[f.field]" />
+            <el-input v-else-if="f.rtype==='textarea'" v-model="dynData[f.field]" type="textarea" :rows="f.rows || 4" />
+            <el-input-number v-else-if="f.rtype==='number'" v-model="dynData[f.field]" :controls="false" style="width:100%" />
+            <el-date-picker v-else-if="f.rtype==='date'" v-model="dynData[f.field]" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" style="width:100%" />
+            <el-date-picker v-else-if="f.rtype==='datetime'" v-model="dynData[f.field]" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" placeholder="选择日期时间" style="width:100%" />
+            <el-input v-else v-model="dynData[f.field]" />
           </el-form-item>
         </el-form>
       </div>
@@ -96,6 +109,20 @@
       <template #footer>
         <el-button type="primary" :loading="submitting" @click="doLaunch">提交并发起</el-button>
         <el-button @click="open = false">取 消</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 浏览按钮：主数据选择弹窗（人员/部门/岗位/角色/物料/客户/供应商/合同） -->
+    <el-dialog v-model="browseOpen" :title="'选择' + (browseTypeLabel(currentBrowse) || '数据')" width="640px" append-to-body :close-on-click-modal="false">
+      <el-input v-model="browseKeyword" placeholder="输入关键字搜索，回车确认" clearable style="margin-bottom:10px" @keyup.enter="loadBrowseData" />
+      <el-table :data="browseRows" border size="small" max-height="380" v-loading="browseLoading"
+        @selection-change="s => browseSelection = s" @row-dblclick="row => { browseSelection = [row]; confirmBrowse() }">
+        <el-table-column type="selection" width="45" align="center" />
+        <el-table-column v-for="col in browseColumns" :key="col.prop" :label="col.label" :prop="col.prop" show-overflow-tooltip />
+      </el-table>
+      <template #footer>
+        <el-button type="primary" @click="confirmBrowse">确 定</el-button>
+        <el-button @click="browseOpen = false">取 消</el-button>
       </template>
     </el-dialog>
   </div>
@@ -163,6 +190,37 @@ function loadUsers() {
     .then(res => { userOptions.value = res.rows || [] }).catch(() => {})
 }
 
+/** 字段归一化：新版 {form,dtype} 与旧版 {type} 统一为渲染类型 rtype；select 兼容键值对/字符串/数组 */
+function normalizeField(f) {
+  const g = { ...f }
+  let t = f.type
+  if (f.form) {
+    if (['check', 'browse', 'attach', 'select', 'textarea', 'radio', 'switch', 'rate'].includes(f.form)) t = f.form
+    else if (f.form === 'date' || f.form === 'datetime') t = f.form
+    else if (f.form === 'number') t = 'number'
+    else t = f.dtype === 'datetime' ? 'datetime' : f.dtype === 'date' ? 'date' : (f.dtype === 'float' || f.dtype === 'int') ? 'number' : 'text'
+  } else if (!t) t = 'text'
+  g.rtype = t
+  if (t === 'select' || t === 'radio') {
+    // 新版键值对 selectOptions: [{label,value}]；旧版 options 字符串/数组兼容（label=value）
+    if (Array.isArray(f.selectOptions) && f.selectOptions.length) {
+      g.optionList = f.selectOptions.map(o => typeof o === 'object' ? { label: o.label, value: o.value !== undefined ? o.value : o.label } : { label: o, value: o })
+    } else {
+      const raw = f.options
+      const arr = Array.isArray(raw) ? raw : String(raw || '').split(/[,，、;；]/).map(s => s.trim()).filter(Boolean)
+      g.optionList = arr.map(o => (typeof o === 'object') ? o : parseOptionPair(o))
+    }
+  }
+  return g
+}
+
+/** 单个选项文本 "显示值:存储值" → {label,value} */
+function parseOptionPair(s) {
+  const idx = String(s).indexOf(':')
+  if (idx > 0) return { label: String(s).substring(0, idx).trim(), value: String(s).substring(idx + 1).trim() }
+  return { label: s, value: s }
+}
+
 async function handleLaunch(d) {
   current.value = d
   approverUserId.value = undefined
@@ -173,12 +231,79 @@ async function handleLaunch(d) {
     const res = await formByProcess(d.modelKey)
     if (res.data && res.data.fieldsJson) {
       let fields = []
-      try { fields = JSON.parse(res.data.fieldsJson) } catch (e) {}
+      try { fields = (JSON.parse(res.data.fieldsJson) || []).map(normalizeField) } catch (e) {}
       boundForm.value = { ...res.data, fields }
     }
   } catch (e) { /* 无绑定表单 */ }
   loadUsers()
   open.value = true
+}
+
+// 浏览按钮（browse）：多数据源主数据选择（人员/部门/岗位/角色/物料/客户/供应商/合同，支持自定义扩展）
+const browseOpen = ref(false)
+const browseField = ref(null)
+const browseSelection = ref([])
+const browseRows = ref([])
+const browseColumns = ref([])
+const browseKeyword = ref('')
+const browseLoading = ref(false)
+
+/** 数据源定义：API + 列配置 + 选中取值字段（与显示字段分离） */
+const BROWSE_SOURCES = {
+  user:     { label: '人员',     api: '/system/user/list',    columns: [{ prop: 'nickName', label: '姓名' }, { prop: 'userName', label: '账号' }, { prop: 'email', label: '邮箱' }], valueKey: 'userName', labelKey: 'nickName' },
+  dept:     { label: '部门',     api: '/system/dept/list',    columns: [{ prop: 'deptName', label: '部门名称' }, { prop: 'leader', label: '负责人' }], valueKey: 'deptId', labelKey: 'deptName' },
+  post:     { label: '岗位',     api: '/system/post/list',    columns: [{ prop: 'postName', label: '岗位名称' }, { prop: 'postCode', label: '岗位编码' }], valueKey: 'postCode', labelKey: 'postName' },
+  role:     { label: '角色',     api: '/system/role/list',    columns: [{ prop: 'roleName', label: '角色名称' }, { prop: 'roleKey', label: '权限字符' }], valueKey: 'roleId', labelKey: 'roleName' },
+  material: { label: '物料',     api: '/wms/material/list',   columns: [{ prop: 'materialName', label: '物料名称' }, { prop: 'materialCode', label: '物料编码' }, { prop: 'specModel', label: '规格型号' }], valueKey: 'materialCode', labelKey: 'materialName' },
+  customer: { label: '客户',     api: '/mk/customer/list',    columns: [{ prop: 'customerName', label: '客户名称' }, { prop: 'customerNo', label: '客户编码' }], valueKey: 'customerNo', labelKey: 'customerName' },
+  supplier: { label: '供应商',   api: '/wms/supplier/list',   columns: [{ prop: 'supplierName', label: '供应商名称' }, { prop: 'supplierCode', label: '供应商编码' }], valueKey: 'supplierCode', labelKey: 'supplierName' },
+  contract: { label: '合同',     api: '/mk/contract/list',    columns: [{ prop: 'contractName', label: '合同名称' }, { prop: 'contractNo', label: '合同编号' }], valueKey: 'contractNo', labelKey: 'contractName' },
+  custom:   { label: '自定义',   api: null, columns: [{ prop: 'name', label: '名称' }], valueKey: 'id', labelKey: 'name' }
+}
+
+function browseTypeLabel(f) {
+  const bt = (f && (f.browseType || 'user')) || 'user'
+  return (BROWSE_SOURCES[bt] || {}).label
+}
+
+/** 附件类型约束 → file-upload 组件 accept */
+function attachAccept(f) {
+  const t = (f && f.attachType) || 'all'
+  if (t === 'image') return ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp']
+  if (t === 'doc') return ['doc', 'docx', 'pdf', 'xls', 'xlsx', 'ppt', 'pptx', 'txt']
+  return undefined
+}
+
+function openBrowse(f) {
+  browseField.value = f
+  browseSelection.value = []
+  browseKeyword.value = ''
+  const src = BROWSE_SOURCES[f.browseType || 'user'] || BROWSE_SOURCES.user
+  browseColumns.value = src.columns
+  browseOpen.value = true
+  loadBrowseData()
+}
+
+/** 按数据源加载主数据列表 */
+function loadBrowseData() {
+  const f = browseField.value
+  const src = BROWSE_SOURCES[(f && f.browseType) || 'user'] || BROWSE_SOURCES.user
+  if (!src.api) { browseRows.value = []; return }
+  browseLoading.value = true
+  request({ url: src.api, method: 'get', params: { pageNum: 1, pageSize: 200, keyword: browseKeyword.value || undefined } })
+    .then(res => { browseRows.value = res.rows || res.data || [] })
+    .catch(() => { browseRows.value = [] })
+    .finally(() => { browseLoading.value = false })
+}
+
+function confirmBrowse() {
+  const f = browseField.value
+  if (!f) return
+  const src = BROWSE_SOURCES[f.browseType || 'user'] || BROWSE_SOURCES.user
+  // 存储实际值（编码/ID），非显示名称（泛微式：显示与存储分离）
+  const values = (browseSelection.value || []).map(r => String(r[src.valueKey] !== undefined ? r[src.valueKey] : (r[src.labelKey] || '')))
+  dynData.value[f.field] = values.join(',')
+  browseOpen.value = false
 }
 
 function doLaunch() {

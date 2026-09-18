@@ -24,12 +24,13 @@
       <div class="toolbar">
         <div class="left">
           <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['mms:daily:export']">导出</el-button>
-          <AiAssistButton v-hasPermi="['mms:ai:dailyReport']" button-text="AI生成日报" :api="aiDailyReport" :params="[currentStatId]" :disabled="!currentStatId" @result="onDailyReport" />
+          <el-button type="success" plain icon="MagicStick" @click="handleBatchDailyReport" v-hasPermi="['mms:ai:dailyReport']">AI生成日报</el-button>
         </div>
         <div class="right"><right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="mms_daily_columns" /></div>
       </div>
       <div class="table-wrap">
-        <el-table ref="tableRef" v-loading="loading" :data="dataList" border highlight-current-row @current-change="onRowChange" @header-dragend="onHeaderDragEnd" class="app-table">
+        <el-table ref="tableRef" v-loading="loading" :data="dataList" border @selection-change="onSelectionChange" @header-dragend="onHeaderDragEnd" class="app-table">
+          <el-table-column type="selection" width="50" align="center" fixed="left" />
           <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
           <el-table-column label="生产日期" prop="statDate" key="statDate" :width="colWidth('statDate', 120)" resizable align="center" v-if="columns.statDate.visible"><template #default="scope">{{ parseTime(scope.row.statDate, '{y}-{m}-{d}') }}</template></el-table-column>
           <el-table-column label="工单数" prop="workOrderCount" key="workOrderCount" :width="colWidth('workOrderCount', 100)" resizable align="center" v-if="columns.workOrderCount.visible" />
@@ -44,12 +45,33 @@
           <el-table-column label="报工次数" prop="reportCount" key="reportCount" :width="colWidth('reportCount', 100)" resizable align="center" v-if="columns.reportCount.visible" />
           <el-table-column label="AI日报" width="110" align="center" fixed="right">
             <template #default="scope">
-              <AiAssistButton v-hasPermi="['mms:ai:dailyReport']" button-text="生成" size="small" button-type="primary" :api="aiDailyReport" :params="[scope.row.statId]" @result="d => onDailyReport(d, scope.row)" />
+              <AiAssistButton v-hasPermi="['mms:ai:dailyReport']" button-text="生成" size="small" button-type="primary" :api="aiDailyReport" :params="[scope.row.statDate ? parseTime(scope.row.statDate, '{y}-{m}-{d}') : null]" @result="d => onDailyReport(d, scope.row)" />
             </template>
           </el-table-column>
         </el-table>
       </div>
       <AiResultPanel :visible="dailyReportVisible" :content="dailyReportText" :latency-ms="dailyReportLatency" @close="dailyReportVisible = false" />
+      <!-- 批量生成进度面板 -->
+      <div v-if="batchItems.length" class="ai-batch-panel">
+        <div class="ai-batch-head">
+          <span class="ai-batch-title">AI 批量生成日报（{{ batchItems.filter(i => i.status !== 'loading').length }}/{{ batchItems.length }}）</span>
+          <span v-if="batchElapsed" class="ai-batch-elapsed">已等待 {{ batchElapsed }} 秒</span>
+          <el-button link type="primary" size="small" @click="batchItems = []; batchTimer && clearInterval(batchTimer); batchTimer = null">关闭</el-button>
+        </div>
+        <div v-for="(item, i) in batchItems" :key="i" class="ai-batch-item" :class="'is-' + item.status">
+          <div class="ai-batch-item-head">
+            <span class="ai-batch-date">{{ item.date }} 生产日报</span>
+            <el-tag v-if="item.status === 'loading'" size="small" type="info">生成中…</el-tag>
+            <el-tag v-else-if="item.status === 'done'" size="small" type="success">完成</el-tag>
+            <template v-else>
+              <el-tag size="small" type="danger">失败</el-tag>
+              <el-button link type="primary" size="small" icon="RefreshRight" @click="retryBatchItem(item)">重试</el-button>
+            </template>
+          </div>
+          <pre v-if="item.content" class="ai-batch-content">{{ item.content }}</pre>
+        </div>
+        <div class="ai-batch-foot">AI 结果仅供参考，请确认后使用</div>
+      </div>
       <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
     </div>
 
@@ -98,6 +120,7 @@
 <script setup name="Daily">
 import { listDaily } from "@/api/mms/daily";
 import { aiDailyReport } from '@/api/ai/assist'
+import { parseTime } from '@/utils/ruoyi'
 import AiAssistButton from '@/components/AiAssist/AiAssistButton.vue'
 import AiResultPanel from '@/components/AiAssist/AiResultPanel.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
@@ -128,12 +151,80 @@ function handleExport() { proxy.download("mms/daily/export", { ...queryParams.va
 const dailyReportVisible = ref(false)
 const dailyReportText = ref('')
 const dailyReportLatency = ref(0)
-const currentStatId = ref(null)
+const selectedRows = ref([])
 
-function onRowChange(row) { currentStatId.value = row ? row.statId : null }
+function onSelectionChange(rows) { selectedRows.value = rows }
+
+function rowDate(row) { return row.statDate ? parseTime(row.statDate, '{y}-{m}-{d}') : null }
+
+// 批量生成：为勾选的每一天并行调用AI，结果按日期分段汇总到一个面板（实时进度+超时保护）
+const batchItems = ref([])
+const batchElapsed = ref(0)
+let batchTimer = null
+
+function handleBatchDailyReport() {
+  const rows = selectedRows.value
+  if (!rows.length) { proxy.$modal.msgWarning('请先勾选要生成日报的日期行（可全选）'); return }
+  if (batchTimer) { proxy.$modal.msgWarning('正在生成中，请等待完成或关闭面板'); return }
+  batchItems.value = rows.map(r => ({ date: rowDate(r) || ('第' + (r.statDate || '?') + '天'), status: 'loading', content: '' }))
+  const items = batchItems.value
+  dailyReportVisible.value = true
+  dailyReportLatency.value = 0
+  const startAt = Date.now()
+  batchTimer = setInterval(() => { batchElapsed.value = Math.round((Date.now() - startAt) / 1000) }, 1000)
+  let done = 0, failed = 0
+  items.forEach((item, idx) => {
+    const d = rowDate(rows[idx])
+    if (!d) { item.status = 'failed'; item.content = '日期缺失，无法生成'; done++; failed++; checkDone(); return }
+    // 单日超过75秒视为超时失败，避免无限挂起
+    const timeout = setTimeout(() => {
+      if (item.status === 'loading') { item.status = 'failed'; item.content = '生成超时（75秒无响应），请点击重试'; done++; failed++; checkDone() }
+    }, 75000)
+    aiDailyReport(d).then(res => {
+      if (item.status !== 'loading') return
+      const d0 = res.data || res
+      item.content = d0.content || d0.error || 'AI未返回内容'
+      item.status = (d0.success === false) ? 'failed' : 'done'
+      if (d0.latencyMs) dailyReportLatency.value += d0.latencyMs
+      if (item.status === 'failed') failed++
+      done++
+    }).catch(() => {
+      if (item.status !== 'loading') return
+      item.status = 'failed'
+      item.content = '生成失败（网络/服务异常），请重试'
+      failed++; done++
+    }).finally(() => { clearTimeout(timeout); checkDone() })
+  })
+  function checkDone() {
+    if (done < items.length) return
+    clearInterval(batchTimer); batchTimer = null
+    if (failed) proxy.$modal.msgWarning(failed + ' 天日报生成失败，可在面板中查看原因后重试')
+    else proxy.$modal.msgSuccess('已生成 ' + items.length + ' 天生产日报，耗时 ' + batchElapsed.value + ' 秒')
+  }
+}
+
+function retryBatchItem(item) {
+  if (batchTimer) { proxy.$modal.msgWarning('正在生成中，请稍候'); return }
+  if (!item.date || item.date.startsWith('第')) { proxy.$modal.msgError('该行日期缺失，无法重试'); return }
+  item.status = 'loading'; item.content = ''
+  dailyReportVisible.value = true
+  const startAt = Date.now()
+  batchTimer = setInterval(() => { batchElapsed.value = Math.round((Date.now() - startAt) / 1000) }, 1000)
+  const timeout = setTimeout(() => {
+    if (item.status === 'loading') { item.status = 'failed'; item.content = '生成超时（75秒无响应）'; clearInterval(batchTimer); batchTimer = null }
+  }, 75000)
+  aiDailyReport(item.date).then(res => {
+    const d0 = res.data || res
+    item.content = d0.content || d0.error || 'AI未返回内容'
+    item.status = (d0.success === false) ? 'failed' : 'done'
+  }).catch(() => { item.status = 'failed'; item.content = '生成失败（网络/服务异常）' }).finally(() => {
+    clearTimeout(timeout); clearInterval(batchTimer); batchTimer = null
+    item.status === 'done' ? proxy.$modal.msgSuccess(item.date + ' 日报生成成功') : proxy.$modal.msgError(item.date + ' 日报生成失败')
+  })
+}
 
 function onDailyReport(d, row) {
-  dailyReportText.value = (row ? '【' + (row.statDate || '') + ' 生产日报】\n\n' : '') + (d.content || d.error || 'AI未返回内容')
+  dailyReportText.value = (row ? '【' + rowDate(row) + ' 生产日报】\n\n' : '') + (d.content || d.error || 'AI未返回内容')
   dailyReportLatency.value = d.latencyMs || 0
   dailyReportVisible.value = true
 }
@@ -194,4 +285,16 @@ getList();
 .status-help-content .highlight-warning .highlight-card-title { color: #e6a23c; }
 .status-help-content .highlight-danger { background-color: #fef0f0; border-color: #fbc4c4; }
 .status-help-content .highlight-danger .highlight-card-title { color: #f56c6c; }
+
+/* 批量AI日报面板 */
+.ai-batch-panel { margin: 0 12px 12px; border: 1px solid #d9ecff; background: #f4f9ff; border-radius: 10px; padding: 10px 14px; }
+.ai-batch-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.ai-batch-title { font-weight: 600; color: #1d39c4; font-size: 14px; }
+.ai-batch-elapsed { color: #909399; font-size: 12px; }
+.ai-batch-item { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 12px; margin-bottom: 8px; }
+.ai-batch-item.is-failed { border-color: #fbc4c4; background: #fffaf9; }
+.ai-batch-item-head { display: flex; align-items: center; gap: 8px; }
+.ai-batch-date { font-weight: 600; font-size: 13px; color: #303133; }
+.ai-batch-content { margin: 6px 0 0; white-space: pre-wrap; word-break: break-word; font-family: inherit; font-size: 13px; line-height: 1.7; color: #303133; max-height: 320px; overflow: auto; }
+.ai-batch-foot { color: #909399; font-size: 12px; margin-top: 4px; }
 </style>

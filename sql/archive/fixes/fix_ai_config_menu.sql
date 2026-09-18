@@ -8,8 +8,8 @@
 -- 1. 确保 AI配置 菜单存在且 route_name 正确
 --    （menu_id=3126，挂在 AI助手目录 3007 下）
 INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark) VALUES
-(3126, 'AI配置', 3007, 2, 'config', 'dms/ai/config', '', 'DmsAiConfig', 1, 0, 'C', '0', '0', 'dms:ai:config', 'setting', 'admin', sysdate(), 'AI大模型参数配置')
-ON DUPLICATE KEY UPDATE route_name = 'DmsAiConfig', component = 'dms/ai/config', perms = 'dms:ai:config', status = '0', visible = '0';
+(3126, 'AI配置', 3007, 2, 'config', 'dms/ai/config', '', 'DmsAiConfig', 1, 0, 'C', '1', '0', 'dms:ai:config', 'setting', 'admin', sysdate(), '历史兼容入口：全局AI配置已统一迁移至AI中心，禁止从菜单展示')
+ON DUPLICATE KEY UPDATE route_name = 'DmsAiConfig', component = 'dms/ai/config', perms = 'dms:ai:config', status = '0', visible = '1', remark = '历史兼容入口：全局AI配置已统一迁移至AI中心，禁止从菜单展示';
 
 -- 2. 确保 admin 角色（role_id=1）拥有 AI配置 菜单权限
 INSERT IGNORE INTO sys_role_menu (role_id, menu_id) VALUES

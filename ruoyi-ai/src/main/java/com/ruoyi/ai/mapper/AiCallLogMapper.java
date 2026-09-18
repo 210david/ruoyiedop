@@ -27,4 +27,19 @@ public interface AiCallLogMapper
 
     /** 按状态统计记录数（状态标签栏数量徽章用） */
     public java.util.List<java.util.Map<String, Object>> selectStatusCounts();
+
+    /** 按日期统计调用量与耗时趋势 */
+    public List<java.util.Map<String, Object>> selectDailyTrend(java.util.Map<String, Object> params);
+
+    /** 按操作人统计（TOP 15） */
+    public List<java.util.Map<String, Object>> selectUserStat(java.util.Map<String, Object> params);
+
+    /** 按小时时段统计 */
+    public List<java.util.Map<String, Object>> selectHourStat(java.util.Map<String, Object> params);
+
+    /** 状态分布统计 */
+    public List<java.util.Map<String, Object>> selectStatusStat(java.util.Map<String, Object> params);
+
+    /** 模块×日期 联合趋势（堆叠面积图用） */
+    public List<java.util.Map<String, Object>> selectModuleDailyStat(java.util.Map<String, Object> params);
 }

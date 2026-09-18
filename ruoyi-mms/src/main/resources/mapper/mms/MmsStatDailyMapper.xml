@@ -54,19 +54,58 @@
         ORDER BY DATE(wo.actual_start) DESC
     </select>
 
+    <select id="selectStatDailyByDate" parameterType="String" resultMap="MmsStatDailyResult">
+        SELECT
+            NULL AS stat_id,
+            DATE(wo.actual_start) AS stat_date,
+            COUNT(*) AS work_order_count,
+            SUM(CASE WHEN wo.actual_finish IS NOT NULL THEN 1 ELSE 0 END) AS completed_count,
+            SUM(CASE WHEN wo.actual_start IS NOT NULL AND wo.actual_finish IS NULL THEN 1 ELSE 0 END) AS in_progress_count,
+            SUM(CASE WHEN COALESCE(wo.defect_qty, 0) > 0 THEN 1 ELSE 0 END) AS abnormal_count,
+            COALESCE(SUM(wo.plan_qty), 0) AS total_plan_qty,
+            COALESCE(SUM(wo.qualified_qty), 0) AS total_good_qty,
+            COALESCE(SUM(wo.defect_qty), 0) AS total_defect_qty,
+            0 AS avg_oee,
+            COALESCE(SUM(rpt_sum.report_count), 0) AS report_count,
+            NULL AS create_time
+        FROM mms_work_order wo
+        LEFT JOIN (
+            SELECT r.work_order_id, COUNT(*) AS report_count
+            FROM mms_work_report r
+            WHERE r.del_flag = '0'
+            GROUP BY r.work_order_id
+        ) rpt_sum ON rpt_sum.work_order_id = wo.work_order_id
+        WHERE wo.del_flag = '0'
+            AND wo.actual_start IS NOT NULL
+            AND DATE(wo.actual_start) = #{statDate}
+        GROUP BY DATE(wo.actual_start)
+    </select>
+
     <select id="selectStatDailyById" parameterType="Long" resultMap="MmsStatDailyResult">
-        SELECT * FROM (
-            SELECT
-                NULL AS stat_id,
-                DATE(wo.actual_start) AS stat_date,
-                COUNT(*) AS work_order_count,
-                0 AS completed_count, 0 AS in_progress_count, 0 AS abnormal_count,
-                0 AS total_plan_qty, 0 AS total_good_qty, 0 AS total_defect_qty,
-                0 AS avg_oee, 0 AS report_count, NULL AS create_time
-            FROM mms_work_order wo
-            WHERE wo.del_flag = '0' AND wo.actual_start IS NOT NULL
-            GROUP BY DATE(wo.actual_start)
-        ) t WHERE t.stat_id = #{statId}
+        SELECT
+            NULL AS stat_id,
+            DATE(wo.actual_start) AS stat_date,
+            COUNT(*) AS work_order_count,
+            SUM(CASE WHEN wo.actual_finish IS NOT NULL THEN 1 ELSE 0 END) AS completed_count,
+            SUM(CASE WHEN wo.actual_start IS NOT NULL AND wo.actual_finish IS NULL THEN 1 ELSE 0 END) AS in_progress_count,
+            SUM(CASE WHEN COALESCE(wo.defect_qty, 0) > 0 THEN 1 ELSE 0 END) AS abnormal_count,
+            COALESCE(SUM(wo.plan_qty), 0) AS total_plan_qty,
+            COALESCE(SUM(wo.qualified_qty), 0) AS total_good_qty,
+            COALESCE(SUM(wo.defect_qty), 0) AS total_defect_qty,
+            0 AS avg_oee,
+            COALESCE(SUM(rpt_sum.report_count), 0) AS report_count,
+            NULL AS create_time
+        FROM mms_work_order wo
+        LEFT JOIN (
+            SELECT r.work_order_id, COUNT(*) AS report_count
+            FROM mms_work_report r
+            WHERE r.del_flag = '0'
+            GROUP BY r.work_order_id
+        ) rpt_sum ON rpt_sum.work_order_id = wo.work_order_id
+        WHERE wo.del_flag = '0'
+            AND wo.actual_start IS NOT NULL
+            AND DATE(wo.actual_start) = DATE(DATE_ADD(NOW(), INTERVAL -(#{statId}) DAY))
+        GROUP BY DATE(wo.actual_start)
     </select>
 
 </mapper>

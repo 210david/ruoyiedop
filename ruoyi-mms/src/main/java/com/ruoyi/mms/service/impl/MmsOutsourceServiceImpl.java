@@ -95,8 +95,29 @@ public class MmsOutsourceServiceImpl implements IMmsOutsourceService
         existing.setStatus("1");
         if (outsource.getOutDate() != null) existing.setOutDate(outsource.getOutDate());
         if (outsource.getPlanBackDate() != null) existing.setPlanBackDate(outsource.getPlanBackDate());
+        // 日期逻辑校验：计划回厂日期必须晚于外协日期
+        validateBackDateAfterOutDate(existing.getOutDate(), existing.getPlanBackDate(), "计划回厂日期");
         existing.setUpdateBy(SecurityUtils.getUsername());
         return outsourceMapper.updateOutsource(existing);
+    }
+
+    /**
+     * 日期逻辑校验：回厂类日期必须晚于外协日期（严格大于，等于不允许）。
+     */
+    private void validateBackDateAfterOutDate(java.util.Date outDate, java.util.Date backDate, String backLabel)
+    {
+        if (outDate == null || backDate == null)
+        {
+            throw new RuntimeException("外协日期和" + backLabel + "均不能为空");
+        }
+        java.util.Calendar bc = java.util.Calendar.getInstance();
+        bc.setTime(backDate); bc.set(java.util.Calendar.HOUR_OF_DAY, 0); bc.set(java.util.Calendar.MINUTE, 0); bc.set(java.util.Calendar.SECOND, 0); bc.set(java.util.Calendar.MILLISECOND, 0);
+        java.util.Calendar oc = java.util.Calendar.getInstance();
+        oc.setTime(outDate); oc.set(java.util.Calendar.HOUR_OF_DAY, 0); oc.set(java.util.Calendar.MINUTE, 0); oc.set(java.util.Calendar.SECOND, 0); oc.set(java.util.Calendar.MILLISECOND, 0);
+        if (!bc.after(oc))
+        {
+            throw new RuntimeException(backLabel + "必须晚于外协日期");
+        }
     }
 
     @Override
@@ -114,6 +135,8 @@ public class MmsOutsourceServiceImpl implements IMmsOutsourceService
         }
         existing.setStatus("2");
         if (outsource.getActualBackDate() != null) existing.setActualBackDate(outsource.getActualBackDate());
+        // 日期逻辑校验：实际回厂日期必须晚于外协日期
+        validateBackDateAfterOutDate(existing.getOutDate(), existing.getActualBackDate(), "实际回厂日期");
         if (outsource.getBackQty() != null) existing.setBackQty(outsource.getBackQty());
         // 自动计算损耗 = 外协数量 - 回厂数量，不允许负数（回厂数量不应超过外协数量）
         if (existing.getOutQty() != null && existing.getBackQty() != null)

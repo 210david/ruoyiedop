@@ -35,8 +35,30 @@ public abstract class AiBaseConfigController extends BaseController
         return "true".equalsIgnoreCase(configService.selectConfigByKey(key));
     }
 
-    /** 按configKey更新配置值（config_key需精确匹配，避免like模糊命中相似键） */
+    /** 读敏感配置（API Key等）：解密后返回（仅内部使用，不回显前端） */
+    protected String getSecretConfigStr(String key)
+    {
+        return com.ruoyi.common.utils.SecureKeyUtils.decrypt(getConfigStr(key));
+    }
+
+    /** 按configKey更新配置值（敏感key自动加密后落库） */
     protected void updateConfigByKey(String key, String value)
+    {
+        if (isSecretKey(key))
+        {
+            value = com.ruoyi.common.utils.SecureKeyUtils.encrypt(value);
+        }
+        updateConfigByKeyForced(key, value);
+    }
+
+    /** 判断是否敏感配置键（存库需加密） */
+    protected boolean isSecretKey(String key)
+    {
+        return "ai.api_key".equals(key) || "ai.embedding_key".equals(key);
+    }
+
+    /** 按configKey更新配置值（不加密直写，config_key需精确匹配，避免like模糊命中相似键） */
+    protected void updateConfigByKeyForced(String key, String value)
     {
         SysConfig query = new SysConfig();
         query.setConfigKey(key);

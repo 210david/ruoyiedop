@@ -35,28 +35,30 @@
     </resultMap>
 
     <sql id="selectOutsourceVo">
-        SELECT outsource_id, outsource_no, work_order_id, work_order_no, op_seq, process_name, product_id, product_code, product_name, spec_model, unit, supplier_id, supplier_name, plan_qty, out_qty, unit_price, total_amount, out_date, plan_back_date, actual_back_date, back_qty, loss_qty, status, del_flag, create_by, create_time, update_by, update_time, remark
-        FROM mms_outsource
+        SELECT o.outsource_id, o.outsource_no, o.work_order_id, o.work_order_no, o.op_seq, o.process_name, o.product_id, o.product_code, o.product_name, o.spec_model, o.unit, o.supplier_id, o.supplier_name, o.plan_qty, o.out_qty, o.unit_price, o.total_amount, o.out_date, o.plan_back_date, o.actual_back_date, o.back_qty, o.loss_qty, o.status, o.del_flag, o.create_by, o.create_time, o.update_by, o.update_time, o.remark
+        FROM mms_outsource o
+        LEFT JOIN mms_work_order wo ON o.work_order_id = wo.work_order_id
     </sql>
 
     <select id="selectOutsourceList" parameterType="MmsOutsource" resultMap="MmsOutsourceResult">
         <include refid="selectOutsourceVo"/>
         <where>
-            del_flag = '0'
-            <if test="outsourceNo != null and outsourceNo != ''"> AND outsource_no LIKE CONCAT('%', #{outsourceNo}, '%')</if>
-            <if test="workOrderNo != null and workOrderNo != ''"> AND work_order_no LIKE CONCAT('%', #{workOrderNo}, '%')</if>
-            <if test="supplierName != null and supplierName != ''"> AND supplier_name LIKE CONCAT('%', #{supplierName}, '%')</if>
-            <if test="status != null and status != ''"> AND status = #{status}</if>
-            <if test="params.beginTime != null and params.beginTime != ''"> AND date(out_date) &gt;= #{params.beginTime}</if>
-            <if test="params.endTime != null and params.endTime != ''"> AND date(out_date) &lt;= #{params.endTime}</if>
+            o.del_flag = '0'
+            <if test="outsourceNo != null and outsourceNo != ''"> AND o.outsource_no LIKE CONCAT('%', #{outsourceNo}, '%')</if>
+            <if test="workOrderNo != null and workOrderNo != ''"> AND o.work_order_no LIKE CONCAT('%', #{workOrderNo}, '%')</if>
+            <if test="supplierName != null and supplierName != ''"> AND o.supplier_name LIKE CONCAT('%', #{supplierName}, '%')</if>
+            <if test="status != null and status != ''"> AND o.status = #{status}</if>
+            <if test="params.workOrderStatus != null and params.workOrderStatus != ''"> AND wo.status = #{params.workOrderStatus}</if>
+            <if test="params.beginTime != null and params.beginTime != ''"> AND date(o.out_date) &gt;= #{params.beginTime}</if>
+            <if test="params.endTime != null and params.endTime != ''"> AND date(o.out_date) &lt;= #{params.endTime}</if>
                   <if test="params.dataScope != null and params.dataScope != ''">${params.dataScope}</if>
 </where>
-        ORDER BY outsource_id DESC
+        ORDER BY o.outsource_id DESC
     </select>
 
     <select id="selectOutsourceById" parameterType="Long" resultMap="MmsOutsourceResult">
         <include refid="selectOutsourceVo"/>
-        WHERE outsource_id = #{outsourceId}
+        WHERE o.outsource_id = #{outsourceId}
     </select>
 
     <insert id="insertOutsource" parameterType="MmsOutsource" useGeneratedKeys="true" keyProperty="outsourceId">

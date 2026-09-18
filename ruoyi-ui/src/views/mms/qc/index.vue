@@ -263,7 +263,28 @@ function resultTabClass(value) { const map = { '0': 'tab-done', '1': 'tab-reject
 
 // ===== 执行质检 =====
 function handleInspect(row) { const id = row.qcId || ids.value[0]; getQc(id).then(response => { const d = response.data; if (d.qcResult) { proxy.$modal.msgWarning('该质检单已检验，不可重复质检'); return; } inspectForm.value = { qcId: d.qcId, qcNo: d.qcNo, workOrderId: d.workOrderId, workOrderNo: d.workOrderNo, productCode: d.productCode, productName: d.productName, specModel: d.specModel, unit: d.unit, planQty: d.planQty, processName: d.processName, qcType: d.qcType, inspectQty: d.inspectQty, defectQty: d.defectQty, scrapQty: d.scrapQty != null ? d.scrapQty : 0, defectType: d.defectType, qcResult: undefined, qcBy: d.qcBy, qcTime: d.qcTime, remark: d.remark }; inspectOpen.value = true; }); }
-function submitInspect() { proxy.$refs["inspectFormRef"].validate(valid => { if (valid) { if (!inspectForm.value.qcBy) { proxy.$modal.msgWarning('请选择检验人'); return; } inspectQc(inspectForm.value).then(() => { proxy.$modal.msgSuccess("质检完成"); inspectOpen.value = false; getList(); loadStatusCounts(); }); } }); }
+function submitInspect() { proxy.$refs["inspectFormRef"].validate(valid => {
+    if (valid) {
+      if (!inspectForm.value.qcBy) { proxy.$modal.msgWarning('请选择检验人'); return; }
+      const qtyErr = checkQcQuantities(inspectForm.value);
+      if (qtyErr) { proxy.$modal.msgWarning(qtyErr); return; }
+      inspectQc(inspectForm.value).then(() => { proxy.$modal.msgSuccess("质检完成"); inspectOpen.value = false; getList(); loadStatusCounts(); });
+    }
+  });
+}
+// 质检数量逻辑校验：与后端 validateQcQuantities 口径一致
+function checkQcQuantities(f) {
+  const inspect = Number(f.inspectQty || 0);
+  const defect = Number(f.defectQty || 0);
+  const scrap = Number(f.scrapQty || 0);
+  if (inspect <= 0) return '检验数量必须大于0';
+  if (defect < 0 || scrap < 0) return '不良数和报废数量不能为负数';
+  if (defect > inspect) return '不良数不能大于检验数量';
+  if (scrap > inspect) return '报废数量不能大于检验数量';
+  if (defect + scrap > inspect) return '不良数与报废数量之和不能大于检验数量';
+  if ((defect > 0 || scrap > 0) && !f.defectType) return '存在不良数或报废数量时，必须选择缺陷类型';
+  return null;
+}
 
 // ===== 工单选择器 =====
 function openWorkOrderPicker() { woPickerOpen.value = true; woPickerSelectedId.value = null; woPickerSelectedRow.value = null; woPickerQuery.pageNum = 1; woPickerQuery.workOrderNo = undefined; woPickerQuery.productName = undefined; getWoPickerList(); }

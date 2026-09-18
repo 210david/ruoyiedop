@@ -256,7 +256,7 @@ INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component,
 
 -- 二级目录：数据采集
 INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark) VALUES
-(3005, '数据采集', 3000, 5, 'data', NULL, '', '', 1, 0, 'M', '0', '0', '', 'monitor', 'admin', sysdate(), '数据采集与监控');
+(3005, '数据采集', 3000, 7, 'data', NULL, '', '', 1, 0, 'M', '0', '0', '', 'monitor', 'admin', sysdate(), '数据采集与监控');
 
 INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark) VALUES
 (3080, '采集配置', 3005, 1, 'config', 'dms/data/config/index', '', 'DmsDataConfig', 1, 0, 'C', '0', '0', 'dms:data:config:list', 'edit', 'admin', sysdate(), ''),
@@ -286,17 +286,18 @@ INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component,
 
 -- 二级目录：报表看板
 INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark) VALUES
-(3006, '报表看板', 3000, 6, 'dashboard', NULL, '', '', 1, 0, 'M', '0', '0', '', 'dashboard', 'admin', sysdate(), '报表与看板');
+(3006, '报表看板', 3000, 8, 'dashboard', NULL, '', '', 1, 0, 'M', '0', '0', '', 'dashboard', 'admin', sysdate(), '报表与看板');
 
 INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark) VALUES
 (3090, '数据看板', 3006, 1, 'overview', 'dms/dashboard/index', '', 'DmsDashboard', 1, 0, 'C', '0', '0', 'dms:dashboard:list', 'chart', 'admin', sysdate(), 'KPI看板');
 
--- 二级目录：AI助手
+-- 维修知识库：设备管理直属菜单，位于数据采集之前
 INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark) VALUES
-(3007, 'AI助手', 3000, 7, 'ai', NULL, '', '', 1, 0, 'M', '0', '0', '', 'tool', 'admin', sysdate(), 'AI智能功能');
+(3100, '维修知识库', 3000, 6, 'repairKnowledge', 'dms/ai/faq/index', '', 'DmsRepairFaq', 1, 0, 'C', '0', '0', 'dms:ai:faq:list', 'documentation', 'admin', sysdate(), '设备维修知识库，设备管理直属菜单');
 
+-- 历史兼容目录：可见业务入口已迁移或统一到AI中心，保留但隐藏
 INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark) VALUES
-(3100, '维修知识库', 3007, 1, 'faq', 'dms/ai/faq/index', '', 'DmsRepairFaq', 1, 0, 'C', '0', '0', 'dms:ai:faq:list', 'documentation', 'admin', sysdate(), '维修FAQ管理');
+(3007, 'AI助手', 3000, 9, 'ai', NULL, '', '', 1, 0, 'M', '1', '0', '', 'tool', 'admin', sysdate(), '历史兼容目录：维修知识库已迁移至设备管理直属菜单，AI配置已统一至AI中心');
 
 INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark) VALUES
 (3101, 'FAQ查询', 3100, 1, '', '', '', '', 1, 0, 'F', '0', '0', 'dms:ai:faq:query', '#', 'admin', sysdate(), ''),
@@ -306,7 +307,7 @@ INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component,
 
 -- AI配置菜单（menu_id=3126，3105已被备件主数据占用）
 INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark) VALUES
-(3126, 'AI配置', 3007, 2, 'config', 'dms/ai/config', '', 'DmsAiConfig', 1, 0, 'C', '0', '0', 'dms:ai:config', 'setting', 'admin', sysdate(), 'AI大模型参数配置');
+(3126, 'AI配置', 3007, 2, 'config', 'dms/ai/config', '', 'DmsAiConfig', 1, 0, 'C', '1', '0', 'dms:ai:config', 'setting', 'admin', sysdate(), '历史兼容入口：全局AI配置已统一迁移至AI中心，禁止从菜单展示');
 
 
 -- 给admin角色（role_id=1）分配所有新增DMS菜单权限

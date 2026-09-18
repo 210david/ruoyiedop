@@ -65,6 +65,7 @@ public class MmsRouteServiceImpl implements IMmsRouteService
     @Transactional(rollbackFor = Exception.class)
     public int insertRoute(MmsRoute route)
     {
+        validateProductType(route);
         route.setDelFlag("0");
         if (route.getStatus() == null)
         {
@@ -97,6 +98,7 @@ public class MmsRouteServiceImpl implements IMmsRouteService
         {
             throw new ServiceException("工艺路线不存在");
         }
+        validateProductType(route);
         // 已审核或已停用的路线不允许直接修改
         if ("2".equals(existing.getStatus()) || "3".equals(existing.getStatus()))
         {
@@ -302,6 +304,23 @@ public class MmsRouteServiceImpl implements IMmsRouteService
     // ====== 私有辅助方法 ======
 
     /**
+     * 校验工艺路线的产品必须是半成品或成品。
+     * 原材料不需要工艺加工，不允许配置工艺路线。
+     */
+    private void validateProductType(MmsRoute route)
+    {
+        if (route.getProductId() == null)
+        {
+            return;
+        }
+        String materialType = routeMapper.selectMaterialTypeById(route.getProductId());
+        if (materialType != null && !"1".equals(materialType) && !"2".equals(materialType))
+        {
+            throw new ServiceException("工艺路线仅支持半成品或成品，原材料[" + route.getProductCode() + "]不需要工艺加工，请重新选择产品");
+        }
+    }
+
+    /**
      * 自动生成路线编号
      * 通过编码规则服务（mk_number_rule 表中 rule_code='mms_route'）生成标准编号。
      * 编号格式：RT-yyyyMMdd-0001（前缀+日期+流水号）
@@ -350,6 +369,7 @@ public class MmsRouteServiceImpl implements IMmsRouteService
     {
         if (route.getProcessList() != null && !route.getProcessList().isEmpty())
         {
+            validateDuplicateProcess(route.getProcessList());
             int seq = 10;
             for (MmsRouteProcess rp : route.getProcessList())
             {
@@ -377,6 +397,33 @@ public class MmsRouteServiceImpl implements IMmsRouteService
                 routeMapper.insertRouteProcess(rp);
             }
         }
+    }
+
+    /**
+     * 校验工序明细中不允许出现重复工序。
+     * 同一工艺路线内，同一工序（按工序ID或工序编码判断）只能出现一次；
+     * 无论串行还是并行，重复工序均属于无效配置。
+     */
+    private void validateDuplicateProcess(List<MmsRouteProcess> processList)
+    {
+        java.util.Set<Long> seenProcessIds = new java.util.HashSet<>();
+        java.util.Set<String> seenProcessCodes = new java.util.HashSet<>();
+        for (MmsRouteProcess rp : processList)
+        {
+            if (rp.getProcessId() != null && !seenProcessIds.add(rp.getProcessId()))
+            {
+                throw new ServiceException("工序[" + safeName(rp) + "]重复添加，同一工艺路线内同一工序只能出现一次，请删除重复工序");
+            }
+            if (StringUtils.isNotEmpty(rp.getProcessCode()) && !seenProcessCodes.add(rp.getProcessCode()))
+            {
+                throw new ServiceException("工序编码[" + rp.getProcessCode() + "]重复添加，同一工艺路线内同一工序只能出现一次，请删除重复工序");
+            }
+        }
+    }
+
+    private String safeName(MmsRouteProcess rp)
+    {
+        return StringUtils.isNotEmpty(rp.getProcessName()) ? rp.getProcessName() : rp.getProcessCode();
     }
 
     /**

@@ -198,20 +198,36 @@
             </el-table-column>
             <el-table-column label="类型" width="110" align="center">
               <template #default="scope">
-                <el-select v-model="scope.row.dtype" size="small" :disabled="scope.row.form === 'textarea'">
-                  <el-option label="文本" value="text" /><el-option label="日期" value="date" />
-                  <el-option label="浮点数" value="float" /><el-option label="整数" value="int" />
+                <el-select v-model="scope.row.dtype" size="small" :disabled="isDtypeLocked(scope.row.form)">
+                  <el-option v-for="(v, k) in DTYPE_OPTIONS" :key="k" :label="v" :value="k" />
                 </el-select>
               </template>
             </el-table-column>
             <el-table-column label="文本长度" width="100" align="center">
-              <template #default="scope"><el-input-number v-if="scope.row.dtype === 'text'" v-model="scope.row.length" :min="1" :max="2000" :controls="false" size="small" style="width:100%" /><span v-else style="color:#cbd5e1">—</span></template>
+              <template #default="scope"><el-input-number v-if="scope.row.dtype === 'text' && !isLengthLocked(scope.row)" v-model="scope.row.length" :min="1" :max="8000" :controls="false" size="small" style="width:100%" /><span v-else style="color:#cbd5e1">自动</span></template>
+            </el-table-column>
+            <el-table-column label="格式/配置" min-width="150" align="center">
+              <template #default="scope">
+                <!-- 多行文本：行数（默认4，可自定义1-20） -->
+                <el-input-number v-if="scope.row.form === 'textarea'" v-model="scope.row.rows" :min="1" :max="20" :controls="false" size="small" style="width:80px" />
+                <!-- 浏览框：数据源类型 -->
+                <el-select v-else-if="scope.row.form === 'browse'" v-model="scope.row.browseType" size="small" style="width:100%">
+                  <el-option v-for="(v, k) in BROWSE_TYPES" :key="k" :label="v" :value="k" />
+                </el-select>
+                <!-- 附件：类型+数量 -->
+                <div v-else-if="scope.row.form === 'attach'" style="display:flex;gap:4px">
+                  <el-select v-model="scope.row.attachType" size="small" style="flex:1">
+                    <el-option v-for="(v, k) in ATTACH_TYPES" :key="k" :label="v" :value="k" />
+                  </el-select>
+                  <el-input-number v-model="scope.row.attachLimit" :min="1" :max="20" :controls="false" size="small" style="width:64px" />
+                </div>
+                <!-- 选择框/单选框：选项键值对 -->
+                <el-input v-else-if="scope.row.form === 'select' || scope.row.form === 'radio'" :model-value="selectOptionsText(scope.row)" @input="v => setSelectOptions(scope.row, v)" placeholder="显示值:存储值 每行一对" size="small" />
+                <span v-else style="color:#cbd5e1">—</span>
+              </template>
             </el-table-column>
             <el-table-column label="小数位数" width="95" align="center">
               <template #default="scope"><el-input-number v-if="scope.row.dtype === 'float'" v-model="scope.row.scale" :min="1" :max="6" :controls="false" size="small" style="width:100%" /><span v-else style="color:#cbd5e1">—</span></template>
-            </el-table-column>
-            <el-table-column label="选项(选择框)" min-width="130" align="center">
-              <template #default="scope"><el-input v-if="scope.row.form === 'select'" v-model="scope.row.options" placeholder="逗号分隔" size="small" /><span v-else style="color:#cbd5e1">—</span></template>
             </el-table-column>
             <el-table-column label="必填" width="70" align="center"><template #default="scope"><el-switch v-model="scope.row.required" size="small" /></template></el-table-column>
             <el-table-column label="显示顺序" width="100" align="center"><template #default="scope"><el-input-number v-model="scope.row.order" :min="1" :max="999" :controls="false" size="small" style="width:100%" /></template></el-table-column>
@@ -227,9 +243,9 @@
     <!-- ===== 添加字段弹窗（参照泛微e9） ===== -->
     <el-dialog v-model="addFieldOpen" width="520px" append-to-body draggable class="rd-dialog" title="添加字段" :close-on-click-modal="false">
       <el-form ref="addFieldRef" :model="newField" :rules="fieldRules" label-width="120px" size="small">
-        <el-form-item label="字段显示名" prop="label"><el-input v-model="newField.label" placeholder="如：合同名称" /></el-form-item>
+        <el-form-item label="字段显示名" prop="label"><el-input v-model="newField.label" placeholder="如：合同名称" @input="autoFillFieldName(newField, newField.label)" /></el-form-item>
         <el-form-item label="数据库字段名称" prop="field">
-          <el-input v-model="newField.field" placeholder="小写英文，如 htmc" />
+          <el-input v-model="newField.field" placeholder="小写英文，如 htmc（自动取首字母，可修改）" @input="newField.autoField = false" />
           <div class="form-tip">仅允许小写字母开头的字母/数字/下划线</div>
         </el-form-item>
         <el-form-item label="字段位置">
@@ -240,19 +256,37 @@
         </el-form-item>
         <el-form-item label="显示顺序"><el-input-number v-model="newField.order" :min="1" :max="999" :controls="false" style="width:160px" /></el-form-item>
         <el-form-item label="表现形式">
-          <el-select v-model="newField.form" style="width:100%" @change="newField.dtype = newField.form === 'textarea' ? 'text' : newField.dtype">
+          <el-select v-model="newField.form" style="width:100%" @change="onNewFormChange">
             <el-option v-for="(v, k) in FORM_OPTIONS" :key="k" :label="v" :value="k" />
           </el-select>
         </el-form-item>
         <el-form-item label="类型">
-          <el-select v-model="newField.dtype" style="width:100%" :disabled="newField.form === 'textarea'">
-            <el-option label="文本" value="text" /><el-option label="日期" value="date" />
-            <el-option label="浮点数" value="float" /><el-option label="整数" value="int" />
+          <el-select v-model="newField.dtype" style="width:100%" :disabled="isDtypeLocked(newField.form)">
+            <el-option v-for="(v, k) in DTYPE_OPTIONS" :key="k" :label="v" :value="k" />
           </el-select>
         </el-form-item>
-        <el-form-item label="文本长度" v-if="newField.dtype === 'text'"><el-input-number v-model="newField.length" :min="1" :max="2000" :controls="false" style="width:160px" /></el-form-item>
+        <el-form-item label="文本长度" v-if="newField.dtype === 'text' && !isLengthLocked(newField)"><el-input-number v-model="newField.length" :min="1" :max="8000" :controls="false" style="width:160px" /></el-form-item>
+        <el-form-item label="多行行数" v-if="newField.form === 'textarea'"><el-input-number v-model="newField.rows" :min="1" :max="20" :controls="false" style="width:160px" /><div class="form-tip">默认4行，可自定义1-20行</div></el-form-item>
         <el-form-item label="小数位数" v-if="newField.dtype === 'float'"><el-input-number v-model="newField.scale" :min="1" :max="6" :controls="false" style="width:160px" /></el-form-item>
-        <el-form-item label="选项(选择框)" v-if="newField.form === 'select'"><el-input v-model="newField.options" placeholder="逗号分隔，如：解除,终止,暂停" /></el-form-item>
+        <el-form-item label="浏览数据源" v-if="newField.form === 'browse'">
+          <el-select v-model="newField.browseType" style="width:100%">
+            <el-option v-for="(v, k) in BROWSE_TYPES" :key="k" :label="v" :value="k" />
+          </el-select>
+          <div class="form-tip">人员/部门/岗位/物料/客户/供应商等主数据，选择"自定义"可在数据表扩展</div>
+        </el-form-item>
+        <el-form-item label="附件类型" v-if="newField.form === 'attach'">
+          <div style="display:flex;gap:8px;width:100%">
+            <el-select v-model="newField.attachType" style="flex:1">
+              <el-option v-for="(v, k) in ATTACH_TYPES" :key="k" :label="v" :value="k" />
+            </el-select>
+            <el-input-number v-model="newField.attachLimit" :min="1" :max="20" :controls="false" style="width:100px" />
+          </div>
+          <div class="form-tip">类型约束+最大数量</div>
+        </el-form-item>
+        <el-form-item label="选项(显示值:存储值)" v-if="newField.form === 'select' || newField.form === 'radio'">
+          <el-input :model-value="selectOptionsText(newField)" @input="v => setSelectOptions(newField, v)" type="textarea" :rows="4" placeholder="每行一个，格式：显示值:存储值（省略则存显示值）&#10;如：&#10;解除:1&#10;终止:2&#10;暂停:3" />
+          <div class="form-tip">泛微式键值分离：界面显示中文，数据库存储实际值</div>
+        </el-form-item>
         <el-form-item label="必填"><el-switch v-model="newField.required" /></el-form-item>
       </el-form>
       <template #footer>
@@ -277,31 +311,34 @@
       </div>
       <el-table :data="batchRows" border size="small" row-key="batchKey" max-height="360" class="field-table">
         <el-table-column type="index" label="序号" width="55" align="center" />
-        <el-table-column label="字段显示名" min-width="130" align="center"><template #default="scope"><el-input v-model="scope.row.label" placeholder="如：合同名称" size="small" /></template></el-table-column>
-        <el-table-column label="数据库字段名称" min-width="130" align="center"><template #default="scope"><el-input v-model="scope.row.field" placeholder="小写英文，如 htmc" size="small" /></template></el-table-column>
+        <el-table-column label="字段显示名" min-width="130" align="center"><template #default="scope"><el-input v-model="scope.row.label" placeholder="如：合同名称" size="small" @input="autoFillFieldName(scope.row, scope.row.label)" /></template></el-table-column>
+        <el-table-column label="数据库字段名称" min-width="130" align="center"><template #default="scope"><el-input v-model="scope.row.field" placeholder="小写英文，如 htmc（自动取首字母，可修改）" size="small" @input="scope.row.autoField = false" /></template></el-table-column>
         <el-table-column label="表现形式" width="125" align="center">
           <template #default="scope">
-            <el-select v-model="scope.row.form" size="small" @change="scope.row.dtype = scope.row.form === 'textarea' ? 'text' : scope.row.dtype">
+            <el-select v-model="scope.row.form" size="small" @change="onBatchFormChange(scope.row)">
               <el-option v-for="(v, k) in FORM_OPTIONS" :key="k" :label="v" :value="k" />
             </el-select>
           </template>
         </el-table-column>
         <el-table-column label="类型" width="105" align="center">
           <template #default="scope">
-            <el-select v-model="scope.row.dtype" size="small" :disabled="scope.row.form === 'textarea'">
-              <el-option label="文本" value="text" /><el-option label="日期" value="date" />
-              <el-option label="浮点数" value="float" /><el-option label="整数" value="int" />
+            <el-select v-model="scope.row.dtype" size="small" :disabled="isDtypeLocked(scope.row.form)">
+              <el-option v-for="(v, k) in DTYPE_OPTIONS" :key="k" :label="v" :value="k" />
             </el-select>
           </template>
         </el-table-column>
         <el-table-column label="文本长度" width="90" align="center">
-          <template #default="scope"><el-input-number v-if="scope.row.dtype === 'text'" v-model="scope.row.length" :min="1" :max="2000" :controls="false" size="small" style="width:100%" /><span v-else style="color:#cbd5e1">—</span></template>
+          <template #default="scope"><el-input-number v-if="scope.row.dtype === 'text' && !isLengthLocked(scope.row)" v-model="scope.row.length" :min="1" :max="8000" :controls="false" size="small" style="width:100%" /><span v-else style="color:#cbd5e1">自动</span></template>
         </el-table-column>
-        <el-table-column label="小数位数" width="90" align="center">
-          <template #default="scope"><el-input-number v-if="scope.row.dtype === 'float'" v-model="scope.row.scale" :min="1" :max="6" :controls="false" size="small" style="width:100%" /><span v-else style="color:#cbd5e1">—</span></template>
-        </el-table-column>
-        <el-table-column label="选项(选择框)" min-width="120" align="center">
-          <template #default="scope"><el-input v-if="scope.row.form === 'select'" v-model="scope.row.options" placeholder="逗号分隔" size="small" /><span v-else style="color:#cbd5e1">—</span></template>
+        <el-table-column label="格式/配置" min-width="130" align="center">
+          <template #default="scope">
+            <el-input-number v-if="scope.row.form === 'textarea'" v-model="scope.row.rows" :min="1" :max="20" :controls="false" size="small" style="width:72px" />
+            <el-select v-else-if="scope.row.form === 'browse'" v-model="scope.row.browseType" size="small" style="width:100%">
+              <el-option v-for="(v, k) in BROWSE_TYPES" :key="k" :label="v" :value="k" />
+            </el-select>
+            <el-input v-else-if="scope.row.form === 'select' || scope.row.form === 'radio'" :model-value="selectOptionsText(scope.row)" @input="v => setSelectOptions(scope.row, v)" placeholder="显示值:存储值,逗号分隔" size="small" />
+            <span v-else style="color:#cbd5e1">—</span>
+          </template>
         </el-table-column>
         <el-table-column label="必填" width="65" align="center"><template #default="scope"><el-switch v-model="scope.row.required" size="small" /></template></el-table-column>
         <el-table-column label="操作" width="60" align="center"><template #default="scope"><el-button link type="danger" icon="Delete" size="small" @click="removeBatchRow(scope.$index)" /></template></el-table-column>
@@ -318,6 +355,25 @@
 import { listForm, getForm, addForm, updateForm, delForm, createTable } from '@/api/flowable/form'
 import { Search, Filter, CircleClose } from '@element-plus/icons-vue'
 import { useColumnResize } from '@/composables/useColumnResize'
+import { pinyin } from 'pinyin-pro'
+
+/** 中文名称 → 拼音首字母字段名（小写字母开头，仅含字母/数字/下划线），如：合同名称 → htmc */
+function toFieldInitials(label) {
+  if (!label) return ''
+  const s = pinyin(String(label), { pattern: 'first', toneType: 'none', type: 'array', nonZh: 'concurrent' }).join('')
+  return s.toLowerCase().replace(/[^a-z0-9_]/g, '').replace(/^[^a-z]+/, '').slice(0, 30)
+}
+
+/** 输入显示名时自动填充数据库字段名称：仅在字段为空或之前是自动生成的情况下覆盖，用户手工修改过则不覆盖 */
+function autoFillFieldName(target, label) {
+  const gen = toFieldInitials(label)
+  if (target.autoField || !target.field) {
+    target.field = gen || undefined
+    target.autoField = !!gen
+  } else if (gen && target.field === gen) {
+    target.autoField = true
+  }
+}
 
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('flowable_form_index')
@@ -378,7 +434,35 @@ function clearCopySource() {
 }
 
 // 表现形式（参照泛微e9）
-const FORM_OPTIONS = { text: '单行文本框', textarea: '多行文本框', browse: '浏览按钮', check: 'Check框', select: '选择框', attach: '附件上传' }
+const FORM_OPTIONS = {
+  text: '单行文本框', textarea: '多行文本框', browse: '浏览按钮', check: 'Check框',
+  select: '选择框', attach: '附件上传', date: '日期框', datetime: '日期时间框',
+  number: '数字框', radio: '单选框', switch: '开关框', rate: '评分框'
+}
+/** 数据类型（dtype）：决定数据库列类型 */
+const DTYPE_OPTIONS = { text: '文本', date: '日期', datetime: '日期时间', float: '浮点数', int: '整数' }
+/** 浏览框数据源（主数据类型，支持自定义扩展） */
+const BROWSE_TYPES = {
+  user: '人员', dept: '部门', post: '岗位', role: '角色',
+  material: '物料', customer: '客户', supplier: '供应商', contract: '合同', custom: '自定义'
+}
+/** 附件类型约束 */
+const ATTACH_TYPES = { all: '不限类型', image: '图片(image/*)', doc: '文档(doc/pdf/xls…)', custom: '自定义后缀' }
+/** 表现形式→默认dtype/长度/默认配置（新增字段与切换类型时应用） */
+const FORM_DEFAULTS = {
+  text:     { dtype: 'text', length: 500 },
+  textarea: { dtype: 'text', rows: 4, length: 4000 },
+  browse:   { dtype: 'text', browseType: 'user', length: 1000 },
+  check:    { dtype: 'text', length: 10 },
+  select:   { dtype: 'text', length: 100, selectOptions: [] },
+  attach:   { dtype: 'text', length: 2000, attachType: 'all', attachLimit: 5 },
+  date:     { dtype: 'date' },
+  datetime: { dtype: 'datetime' },
+  number:   { dtype: 'float', scale: 2 },
+  radio:    { dtype: 'text', length: 100, selectOptions: [] },
+  switch:   { dtype: 'text', length: 10 },
+  rate:     { dtype: 'int' }
+}
 
 const data = reactive({
   form: {},
@@ -422,6 +506,14 @@ function normalizeFields(arr) {
     n.scale = n.scale || 2
     n.table = n.table || 'main'
     n.order = n.order || 1
+    // 旧选项字符串兼容：options逗号串 → selectOptions[{label,value}]
+    if ((n.form === 'select' || n.form === 'radio') && !n.selectOptions && n.options) {
+      n.selectOptions = String(n.options).split(/[,，]/).map(s => s.trim()).filter(Boolean).map(s => ({ label: s, value: s }))
+    }
+    // 新类型默认值兜底
+    if (n.form === 'textarea') n.rows = n.rows || 4
+    if (n.form === 'browse') n.browseType = n.browseType || 'user'
+    if (n.form === 'attach') { n.attachType = n.attachType || 'all'; n.attachLimit = n.attachLimit || 5 }
     return n
   })
 }
@@ -489,11 +581,54 @@ function rebuildDetailTables() {
 }
 
 function onFormChange(row) {
-  if (row.form === 'textarea') row.dtype = 'text'
+  applyFormDefaults(row)
 }
 
+/** 应用表现形式默认配置（保留用户已填项） */
+function applyFormDefaults(row) {
+  const d = FORM_DEFAULTS[row.form] || {}
+  row.dtype = d.dtype || row.dtype
+  if (d.length) row.length = d.length
+  if (d.rows) row.rows = d.rows
+  if (d.browseType) row.browseType = d.browseType
+  if (d.attachType) row.attachType = d.attachType
+  if (d.attachLimit) row.attachLimit = d.attachLimit
+  if (d.selectOptions) row.selectOptions = d.selectOptions
+  if (d.scale) row.scale = d.scale
+  if (row.form === 'textarea') { row.dtype = 'text'; row.length = Math.max(row.length || 4000, 4000) }
+  if (row.form === 'date') row.dtype = 'date'
+  if (row.form === 'datetime') row.dtype = 'datetime'
+  if (row.form === 'number') row.dtype = row.dtype === 'int' ? 'int' : 'float'
+}
+
+/** dtype 是否随表现形式锁定（日期/日期时间/数字类不允许改dtype） */
+function isDtypeLocked(form) { return ['date', 'datetime', 'number'].includes(form) || form === 'textarea' }
+
+/** 长度是否自动推导（browse/attach/check 等不需要用户填长度） */
+function isLengthLocked(row) { return ['browse', 'attach', 'check', 'switch'].includes(row.form) }
+
+/** 选择框选项：[{label,value}] → 文本（显示值:存储值，每行一对） */
+function selectOptionsText(row) {
+  const opts = row.selectOptions || []
+  return opts.map(o => (o.value === o.label || o.value === undefined) ? o.label : (o.label + ':' + o.value)).join('\n')
+}
+
+/** 文本 → 选项数组（兼容旧的逗号分隔字符串 options） */
+function setSelectOptions(row, text) {
+  const arr = (text || '').split(/[\n,，]/).map(s => s.trim()).filter(Boolean).map(pair => {
+    const idx = pair.indexOf(':')
+    if (idx > 0) return { label: pair.substring(0, idx).trim(), value: pair.substring(idx + 1).trim() }
+    return { label: pair, value: pair }
+  })
+  row.selectOptions = arr
+  row.length = Math.max(...arr.map(o => String(o.value || '').length), 10) * 2 + 20
+}
+
+function onNewFormChange() { applyFormDefaults(newField.value) }
+function onBatchFormChange(row) { applyFormDefaults(row) }
+
 function openAddField() {
-  newField.value = { label: undefined, field: undefined, table: activeTableTab.value === '__add' ? 'main' : activeTableTab.value, order: fields.value.length + 1, form: 'text', dtype: 'text', length: 500, scale: 2, options: undefined, required: false }
+  newField.value = { label: undefined, field: undefined, autoField: true, table: activeTableTab.value === '__add' ? 'main' : activeTableTab.value, order: fields.value.length + 1, form: 'text', dtype: 'text', length: 500, scale: 2, options: undefined, required: false }
   addFieldOpen.value = true
   nextTick(() => addFieldRef.value && addFieldRef.value.clearValidate())
 }
@@ -519,7 +654,7 @@ function onFieldSelChange(rows) { checkedFields.value = rows }
 const batchOpen = ref(false)
 const batchRows = ref([])
 function blankBatchRow() {
-  return { batchKey: 'b' + Math.random().toString(36).slice(2, 8), label: undefined, field: undefined, form: 'text', dtype: 'text', length: 500, scale: 2, options: undefined, required: false }
+  return { batchKey: 'b' + Math.random().toString(36).slice(2, 8), label: undefined, field: undefined, autoField: true, form: 'text', dtype: 'text', length: 500, scale: 2, options: undefined, required: false }
 }
 function openBatchAdd() {
   batchRows.value = [blankBatchRow(), blankBatchRow(), blankBatchRow(), blankBatchRow(), blankBatchRow()]
@@ -534,9 +669,13 @@ function confirmBatchAdd() {
   for (const r of rows) {
     if (!r.label || !r.field) { proxy.$modal.msgWarning('存在未填写完整的行（字段显示名/数据库字段名称）'); return }
     if (!/^[a-z][a-z0-9_]{0,39}$/.test(r.field)) { proxy.$modal.msgWarning('字段名[' + r.field + ']不合法：小写字母开头的字母/数字/下划线'); return }
-    if (fields.value.some(f => f.field === r.field)) { proxy.$modal.msgWarning('数据库字段名称已存在：' + r.field); return }
   }
   const table = activeTableTab.value === '__add' ? 'main' : activeTableTab.value
+  const seen = new Set(fields.value.filter(f => (f.table || 'main') === table).map(f => f.field))
+  for (const r of rows) {
+    if (seen.has(r.field)) { proxy.$modal.msgWarning('字段名[' + r.field + ']在当前表已存在或本批重复，请修改后再添加'); return }
+    seen.add(r.field)
+  }
   rows.forEach(r => {
     order++
     fields.value.push({ rowKey: 'r' + Math.random().toString(36).slice(2, 8), table, order, ...r })
@@ -584,6 +723,13 @@ function submitForm() {
     if (!f.label || !f.field) { proxy.$modal.msgWarning('存在未填写完整（显示名/字段名）的字段'); return }
     if (!/^[a-z][a-z0-9_]{0,39}$/.test(f.field)) { proxy.$modal.msgWarning('字段名[' + f.field + ']不合法：小写字母开头的字母/数字/下划线'); return }
     if (f.dtype === 'text' && (!f.length || f.length < 1)) { proxy.$modal.msgWarning('字段[' + f.label + ']请填写文本长度'); return }
+  }
+  // 同一张表内数据库字段名不得重复（主表与明细表为独立物理表，跨表允许同名）
+  const seen = {}
+  for (const f of fields.value) {
+    const key = (f.table || 'main') + '.' + f.field
+    if (seen[key]) { proxy.$modal.msgWarning('字段名[' + f.field + ']在' + (f.table === 'main' || !f.table ? '主表' : '明细表 ' + f.table + ' ') + '中重复出现（' + seen[key] + ' / ' + f.label + '），请修改后再保存'); return }
+    seen[key] = f.label
   }
   const payload = {
     formId: form.value.formId, formKey: form.value.formKey, formName: form.value.formName,

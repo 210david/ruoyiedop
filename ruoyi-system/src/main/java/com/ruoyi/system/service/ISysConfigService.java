@@ -58,6 +58,16 @@ public interface ISysConfigService
     public int updateConfig(SysConfig config);
 
     /**
+     * 按键名强制更新配置值（用于内部程序化写入，如敏感密钥加密迁移）
+     * 键不存在时插入；自动清缓存（Redis + Spring Cache）
+     *
+     * @param configKey 参数键
+     * @param configValue 参数值
+     * @return 影响行数
+     */
+    public int updateConfigByKeyForced(String configKey, String configValue);
+
+    /**
      * 批量删除参数信息
      * 
      * @param configIds 需要删除的参数ID
