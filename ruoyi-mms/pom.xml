@@ -41,6 +41,12 @@
             <artifactId>ruoyi-mk</artifactId>
         </dependency>
 
+        <!-- 质量模块（谱系追溯引擎：领料/完工联动写谱系） -->
+        <dependency>
+            <groupId>com.ruoyi</groupId>
+            <artifactId>ruoyi-qms</artifactId>
+        </dependency>
+
         <!-- 单元测试 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

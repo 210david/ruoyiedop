@@ -1439,6 +1439,7 @@
 </template>
 
 <script setup name="WorkOrder">
+import { useRoute } from 'vue-router'
 import { listWorkOrder, getWorkOrder, addWorkOrder, updateWorkOrder, delWorkOrder,
          getReleasePreview, releaseWorkOrder, pauseWorkOrder, resumeWorkOrder, finishWorkOrder,
          closeWorkOrder, cancelWorkOrder, getWorkOrderAuditLog, createReworkOrder } from "@/api/mms/workorder";
@@ -1457,6 +1458,7 @@ import { useDetailCard } from '@/composables/useDetailCard'
 import { Search, Filter, RefreshLeft, ArrowRight, ArrowDown, WarningFilled, QuestionFilled, CircleClose, MagicStick, Box, CircleCheck, DataAnalysis } from '@element-plus/icons-vue'
 
 const { proxy } = getCurrentInstance();
+const route = useRoute();
 const { mms_order_type, mms_work_order_source_type, mms_priority, mms_workorder_status, wms_unit, mms_schedule_status, mms_kit_status, mms_yes_no, marketing_order_status, mms_issue_status, mms_return_status, mms_qc_type, mms_qc_result, mms_defect_type, mms_finish_status } = proxy.useDict("mms_order_type", "mms_work_order_source_type", "mms_priority", "mms_workorder_status", "wms_unit", "mms_schedule_status", "mms_kit_status", "mms_yes_no", "marketing_order_status", "mms_issue_status", "mms_return_status", "mms_qc_type", "mms_qc_result", "mms_defect_type", "mms_finish_status");
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('mms_workorder_index')
 const { collapsedCards, toggleCard } = useDetailCard(["c0","c1","c2","vc0","vc1","vc2","vc_sched","vc_bom","vc_route","vc_progress","rc_bom","rc_route","rc_warn","rc_kit","pc_wo","pc_reason","cc_wo","cc_reason","kc_info","kc_summary","kc_detail","pc_overview","pc_timeline","vc_issue","vc_return","vc_qc","vc_finish"])
@@ -1783,6 +1785,7 @@ function handleQuery() {
   showAdvanced.value = false;
   queryParams.value.pageNum = 1;
   getList();
+
 }
 
 function resetQuery() {
@@ -1817,6 +1820,7 @@ function handleSortChange(column) {
     queryParams.value.params.isAsc = undefined;
   }
   getList();
+
 }
 
 function handleSelectionChange(selection) {
@@ -2112,12 +2116,14 @@ function submitForm() {
           proxy.$modal.msgSuccess("修改成功");
           open.value = false;
           getList();
+
         });
       } else {
         addWorkOrder(form.value).then(response => {
           proxy.$modal.msgSuccess("新增成功");
           open.value = false;
           getList();
+
         });
       }
     }
@@ -2134,7 +2140,8 @@ function handleDelete(row) {
   proxy.$modal.confirm('是否确认删除选中的工单？').then(function() {
     return delWorkOrder(delIds);
   }).then(() => {
-    getList(); loadStatusCounts();
+    getList();
+
     proxy.$modal.msgSuccess("删除成功");
   }).catch(() => {});
 }
@@ -2165,7 +2172,8 @@ function submitRelease() {
   releaseSubmitting.value = true;
   releaseWorkOrder(wo.workOrderId).then(() => {
     releaseOpen.value = false;
-    getList(); loadStatusCounts();
+    getList();
+
     proxy.$modal.msgSuccess("下达成功");
   }).finally(() => {
     releaseSubmitting.value = false;
@@ -2193,7 +2201,8 @@ function submitPause() {
     if (valid) {
       pauseWorkOrder(pauseForm.value.workOrderId, pauseForm.value.pauseReason).then(() => {
         pauseOpen.value = false;
-        getList(); loadStatusCounts();
+        getList();
+
         proxy.$modal.msgSuccess("暂停成功");
       });
     }
@@ -2204,7 +2213,8 @@ function handleResume(row) {
   proxy.$modal.confirm('是否确认恢复工单"' + row.workOrderNo + '"？').then(function() {
     return resumeWorkOrder(row.workOrderId);
   }).then(() => {
-    getList(); loadStatusCounts();
+    getList();
+
     proxy.$modal.msgSuccess("恢复成功");
   }).catch(() => {});
 }
@@ -2213,7 +2223,8 @@ function handleFinish(row) {
   proxy.$modal.confirm('是否确认完工工单"' + row.workOrderNo + '"？').then(function() {
     return finishWorkOrder(row.workOrderId);
   }).then(() => {
-    getList(); loadStatusCounts();
+    getList();
+
     proxy.$modal.msgSuccess("完工成功");
   }).catch(() => {});
 }
@@ -2264,13 +2275,15 @@ function submitClose() {
       if (closeForm.value.type === "close" || closeForm.value.type === "forceClose") {
         closeWorkOrder(closeForm.value.workOrderId, closeForm.value.remark).then(() => {
           closeOpen.value = false;
-          getList(); loadStatusCounts();
+          getList();
+
           proxy.$modal.msgSuccess(closeForm.value.type === "forceClose" ? "强制关闭成功" : "关闭成功");
         });
       } else {
         cancelWorkOrder(closeForm.value.workOrderId, closeForm.value.remark).then(() => {
           closeOpen.value = false;
-          getList(); loadStatusCounts();
+          getList();
+
           proxy.$modal.msgSuccess("作废成功");
         });
       }
@@ -2326,7 +2339,8 @@ function submitRework() {
     if (valid) {
       createReworkOrder(reworkForm.value.workOrderId, reworkForm.value.reworkQty, reworkForm.value.reworkReason).then(() => {
         reworkOpen.value = false;
-        getList(); loadStatusCounts();
+        getList();
+
         proxy.$modal.msgSuccess("返工工单创建成功，请到工单列表下达");
       });
     }
@@ -2354,6 +2368,7 @@ function handleKitCheck(row) {
       kitCheckResultOpen.value = true;
     });
     getList();
+
   }).catch(() => {
     loadingInstance.close();
   });
@@ -2371,6 +2386,7 @@ function handleBatchKitCheck() {
       loadingInstance.close();
       proxy.$modal.msgSuccess(response.msg);
       getList();
+
     }).catch(() => {
       loadingInstance.close();
     });
@@ -2931,6 +2947,16 @@ function clearSourceOrder() {
 }
 
 getList();
+
+// 支持从其他页面带参跳转：/mms/workorder/list?workOrderNo=xxx
+onMounted(() => {
+  const { workOrderNo, productCode, status } = route.query
+  let hit = false
+  if (workOrderNo) { queryParams.value.workOrderNo = String(workOrderNo); hit = true }
+  if (productCode) { queryParams.value.productCode = String(productCode); hit = true }
+  if (status) { queryParams.value.status = String(status); hit = true }
+  if (hit) { queryParams.value.pageNum = 1; getList() }
+})
 </script>
 
 <style scoped>

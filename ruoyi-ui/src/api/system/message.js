@@ -51,3 +51,19 @@ export function markMessageReadAll(ids) {
     params: { ids }
   })
 }
+
+// ===== 通知设置（按用户隔离，控制顶部铃铛提醒类型） =====
+export function getNotifySetting() {
+  return request({
+    url: '/system/message/notifySetting',
+    method: 'get'
+  })
+}
+
+export function saveNotifySetting(data) {
+  return request({
+    url: '/system/message/notifySetting',
+    method: 'post',
+    data
+  })
+}

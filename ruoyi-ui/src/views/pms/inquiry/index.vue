@@ -224,8 +224,9 @@
         </section>
         <!-- 比价汇总（查看模式） -->
         <section class="rd-card" v-if="viewData.quotationList && viewData.quotationList.length > 0">
-          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11H1v12h8V11zM23 11h-8v12h8V11zM9 1H1v6h8V1zM23 1h-8v6h8V1z"/></svg></span>比价汇总</div></div>
+          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11H1v12h8V11zM23 11h-8v12h8V11zM9 1H1v6h8V1zM23 1h-8v6h8V1z"/></svg></span>比价汇总</div><AiAssistButton v-hasPermi="['pms:ai:priceSummary']" button-text="AI比价摘要" :api="aiPriceSummary" :params="[viewData.inquiryId]" size="small" style="margin-left: auto" @result="onPriceSummary" /></div>
           <div class="rd-card-body" style="display:block">
+            <AiResultPanel :visible="priceSummaryVisible" :content="priceSummaryText" :latency-ms="priceSummaryLatency" style="margin-bottom: 12px" @close="priceSummaryVisible = false" />
             <el-table :data="viewData.quotationList" border size="small" :row-class-name="viewQuotationRowClassName">
               <el-table-column label="供应商" prop="supplierName" min-width="160" align="center"><template #default="scope"><span>{{ scope.row.supplierName }}</span><el-tag v-if="isAwardedQuotation(scope.row)" type="success" size="small" effect="dark" style="margin-left:6px">已中标</el-tag></template></el-table-column>
               <el-table-column label="报价单价" width="120" align="right"><template #default="scope"><span class="rd-amount" :class="{ 'rd-price-best': isLowestPrice(scope.row, viewData.quotationList) }">{{ formatMoney(getQuotationPrice(scope.row)) }}</span><el-tag v-if="isLowestPrice(scope.row, viewData.quotationList)" type="success" size="small" style="margin-left:4px">最低</el-tag></template></el-table-column>
@@ -244,8 +245,6 @@
           <div class="rd-card-body" v-show="!collapsedCards.v0" style="display:block"><div class="rd-grid"><div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value">{{ viewData.remark || '暂无备注' }}</div></div></div></div>
         </section>
       </div>
-      <AiAssistButton v-hasPermi="['pms:ai:priceSummary']" button-text="AI比价摘要" :api="aiPriceSummary" :params="[viewData.inquiryId]" style="margin-left: 16px" @result="onPriceSummary" />
-      <AiResultPanel :visible="priceSummaryVisible" :content="priceSummaryText" :latency-ms="priceSummaryLatency" @close="priceSummaryVisible = false" />
       <template #footer>
         <el-button @click="viewOpen = false">关 闭</el-button>
       </template>
@@ -453,8 +452,9 @@
         </section>
         <template v-if="awardForm.quotationList && awardForm.quotationList.length > 0">
           <section class="rd-card">
-            <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11H1v12h8V11zM23 11h-8v12h8V11zM9 1H1v6h8V1zM23 1h-8v6h8V1z"/></svg></span>比价汇总</div></div>
+            <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11H1v12h8V11zM23 11h-8v12h8V11zM9 1H1v6h8V1zM23 1h-8v6h8V1z"/></svg></span>比价汇总</div><AiAssistButton v-hasPermi="['pms:ai:priceSummary']" button-text="AI比价摘要" :api="aiPriceSummary" :params="[awardForm.inquiryId]" size="small" style="margin-left: auto" @result="onPriceSummary" /></div>
             <div class="rd-card-body" style="display:block">
+              <AiResultPanel :visible="priceSummaryVisible" :content="priceSummaryText" :latency-ms="priceSummaryLatency" style="margin-bottom: 12px" @close="priceSummaryVisible = false" />
               <el-table :data="awardForm.quotationList" border size="small" @row-click="onAwardRowClick">
                 <el-table-column label="" width="50" align="center"><template #default="scope"><el-radio v-model="awardForm.supplierId" :value="scope.row.supplierId" @change="onAwardSupplierChange(scope.row)"><span></span></el-radio></template></el-table-column>
                 <el-table-column label="供应商" prop="supplierName" min-width="160" align="center" />

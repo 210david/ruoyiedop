@@ -48,6 +48,9 @@ public class MmsWorkReportServiceImpl implements IMmsWorkReportService
     @Autowired
     private MessageHelper messageHelper;
 
+    @Autowired
+    private com.ruoyi.mms.service.IMmsGenealogySyncService genealogySyncService;
+
     @Override
     @DataScope(deptAlias = "mms_work_report")
     public List<MmsWorkReport> selectWorkReportList(MmsWorkReport workReport)
@@ -197,6 +200,16 @@ public class MmsWorkReportServiceImpl implements IMmsWorkReportService
         report.setAuditTime(new Date());
         report.setAuditRemark(auditRemark);
         int rows = workReportMapper.updateWorkReport(report);
+
+        // ===== 谱系联动：报工审核通过 → 写入报工谱系（report，工序维度，幂等，失败不阻断） =====
+        if ("1".equals(status))
+        {
+            genealogySyncService.syncReport(
+                    report.getReportNo(), report.getWorkOrderNo(),
+                    report.getProcessId(), report.getProcessName(),
+                    report.getResourceName(), report.getTeamName(),
+                    report.getGoodQty(), report.getReportBy(), report.getReportTime());
+        }
 
         // 审核通过时联动更新工单进度
         if ("1".equals(status) && report.getWorkOrderId() != null)

@@ -479,9 +479,11 @@ import { lookupEnterprise } from '@/api/pms/enterprise'
 import { fetchAllPages, downloadXlsx } from '@/utils/csvExport'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard, formatAmount } from '@/composables/useDetailCard'
+import { useRoute } from 'vue-router'
 import ExcelImportDialog from '@/components/ExcelImportDialog'
 
 const { proxy } = getCurrentInstance()
+const route = useRoute()
 const { wms_supplier_type, wms_supplier_level, wms_enterprise_nature, sys_normal_disable } = proxy.useDict(
   'wms_supplier_type', 'wms_supplier_level', 'wms_enterprise_nature', 'sys_normal_disable'
 )
@@ -703,6 +705,7 @@ function handleQuery() {
   proxy.addDateRange(queryParams.value, dateRange.value, 'CreateTime')
   showAdvanced.value = false
   getList()
+
 }
 
 function resetQuery() {
@@ -732,6 +735,7 @@ function handleSortChange(column) {
     queryParams.value.params.isAsc = undefined
   }
   getList()
+
 }
 
 function handleSelectionChange(selection) {
@@ -803,13 +807,15 @@ function submitForm() {
         updateSupplier(form.value).then(() => {
           proxy.$modal.msgSuccess('修改成功')
           open.value = false
-          getList(); loadStatusCounts()
+          getList()
+
         })
       } else {
         addSupplier(form.value).then(() => {
           proxy.$modal.msgSuccess('新增成功')
           open.value = false
-          getList(); loadStatusCounts()
+          getList()
+
         })
       }
     }
@@ -819,7 +825,8 @@ function submitForm() {
 function handleDelete(row) {
   const supplierIds = row.supplierId || ids.value
   proxy.$modal.confirm('是否确认删除选中的供应商数据？').then(() => delSupplier(supplierIds)).then(() => {
-    getList(); loadStatusCounts()
+    getList()
+
     proxy.$modal.msgSuccess('删除成功')
   }).catch(() => {})
 }
@@ -906,6 +913,15 @@ function handleEnterpriseLookup() {
   })
 }
 getList()
+
+// 支持从其他页面带参跳转：/wms/supplier?supplierName=xxx
+onMounted(() => {
+  const { supplierName, supplierCode } = route.query
+  let hit = false
+  if (supplierName) { queryParams.value.supplierName = String(supplierName); hit = true }
+  if (supplierCode) { queryParams.value.supplierCode = String(supplierCode); hit = true }
+  if (hit) { queryParams.value.pageNum = 1; getList() }
+})
 </script>
 
 <style scoped>

@@ -130,8 +130,16 @@ function beforeUpload(file) {
 /** 上传图片 */
 function uploadImg() {
   proxy.$refs.cropper.getCropBlob(data => {
+    // 裁剪导出的 blob 实际格式可能与原文件名后缀不一致（如 canvas 导出为 png），按真实类型重写后缀
+    let filename = options.filename || "avatar.jpg"
+    const typeExt = { "image/jpeg": "jpg", "image/jpg": "jpg", "image/png": "png", "image/gif": "gif", "image/bmp": "bmp" }
+    const realExt = typeExt[data.type]
+    if (realExt) {
+      const base = filename.replace(/\.[^.]*$/, "")
+      filename = (base || "avatar") + "." + realExt
+    }
     let formData = new FormData()
-    formData.append("avatarfile", data, options.filename)
+    formData.append("avatarfile", data, filename)
     uploadAvatar(formData).then(response => {
       open.value = false
       options.img = import.meta.env.VITE_APP_BASE_API + '/common/file/access?resource=' + encodeURIComponent(response.imgUrl) + '&token=' + getToken()

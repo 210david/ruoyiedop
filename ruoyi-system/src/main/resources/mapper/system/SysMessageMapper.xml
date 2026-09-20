@@ -76,6 +76,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="message.messageType != null and message.messageType != ''">
                 AND m.message_type = #{message.messageType}
             </if>
+            <if test="message.messageTypes != null and message.messageTypes.size() > 0">
+                AND m.message_type in
+                <foreach collection="message.messageTypes" item="mt" open="(" separator="," close=")">
+                    #{mt}
+                </foreach>
+            </if>
             <if test="message.messageLevel != null and message.messageLevel != ''">
                 AND m.message_level = #{message.messageLevel}
             </if>
@@ -135,6 +141,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             </if>
             <if test="message.messageType != null and message.messageType != ''">
                 AND m.message_type = #{message.messageType}
+            </if>
+            <if test="message.messageTypes != null and message.messageTypes.size() > 0">
+                AND m.message_type in
+                <foreach collection="message.messageTypes" item="mt" open="(" separator="," close=")">
+                    #{mt}
+                </foreach>
             </if>
             <if test="message.messageLevel != null and message.messageLevel != ''">
                 AND m.message_level = #{message.messageLevel}
@@ -201,11 +213,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         )
     </insert>
 
-    <!-- 查询当前用户未读消息数量（排除已读和已处理） -->
+    <!-- 查询当前用户未读消息数量（排除已读和已处理；notifyTypes为用户通知设置放行的消息类型） -->
     <select id="selectUnreadCount" resultType="int">
         select count(*) from sys_message m
         where m.status = '1'
         and (m.biz_handled is null or m.biz_handled = '0')
+        <if test='notifyTypes != null and notifyTypes.size() > 0'>
+            and m.message_type in
+            <foreach collection="notifyTypes" item="t" open="(" separator="," close=")">
+                #{t}
+            </foreach>
+        </if>
         <choose>
             <when test='roleKeys == null'>
                 /* admin用户不做权限过滤 */
@@ -251,6 +269,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where m.status = '1'
         and r.message_id is null
         and (m.biz_handled is null or m.biz_handled = '0')
+        <if test='notifyTypes != null and notifyTypes.size() > 0'>
+            and m.message_type in
+            <foreach collection="notifyTypes" item="t" open="(" separator="," close=")">
+                #{t}
+            </foreach>
+        </if>
         <choose>
             <when test='roleKeys == null'>
                 /* admin用户不做权限过滤 */

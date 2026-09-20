@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.SysMessageSettingMapper">
+
+    <resultMap type="SysMessageSetting" id="SysMessageSettingResult">
+        <id     property="userId"       column="user_id"/>
+        <result property="notifySystem" column="notify_system"/>
+        <result property="notifyAlert"  column="notify_alert"/>
+        <result property="notifyAudit"  column="notify_audit"/>
+        <result property="notifyTodo"   column="notify_todo"/>
+        <result property="updateTime"   column="update_time"/>
+    </resultMap>
+
+    <select id="selectSettingByUserId" parameterType="Long" resultMap="SysMessageSettingResult">
+        select user_id, notify_system, notify_alert, notify_audit, notify_todo, update_time
+        from sys_message_setting
+        where user_id = #{userId}
+    </select>
+
+    <insert id="insertSetting" parameterType="SysMessageSetting">
+        insert into sys_message_setting (user_id, notify_system, notify_alert, notify_audit, notify_todo, update_time)
+        values (#{userId}, #{notifySystem}, #{notifyAlert}, #{notifyAudit}, #{notifyTodo}, sysdate())
+    </insert>
+
+    <update id="updateSetting" parameterType="SysMessageSetting">
+        update sys_message_setting
+        set notify_system = #{notifySystem},
+            notify_alert = #{notifyAlert},
+            notify_audit = #{notifyAudit},
+            notify_todo = #{notifyTodo},
+            update_time = sysdate()
+        where user_id = #{userId}
+    </update>
+
+</mapper>

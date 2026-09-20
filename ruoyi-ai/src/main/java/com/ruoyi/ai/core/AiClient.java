@@ -543,13 +543,11 @@ public class AiClient
 
     private void increaseCount()
     {
-        int monthlyLimit = getMonthlyLimit();
-        if (monthlyLimit > 0)
-        {
-            String key = countKey();
-            Integer used = redisCache.getCacheObject(key);
-            redisCache.setCacheObject(key, used == null ? 1 : used + 1, 45, TimeUnit.DAYS);
-        }
+        // 计数与限额解耦（2026-09-19 修复）：无论是否配置限额都计数，
+        // 否则"月度上限=0(不限)"时"本月已用"恒为0，使用统计失真
+        String key = countKey();
+        Integer used = redisCache.getCacheObject(key);
+        redisCache.setCacheObject(key, used == null ? 1 : used + 1, 45, TimeUnit.DAYS);
     }
 
     private String countKey()

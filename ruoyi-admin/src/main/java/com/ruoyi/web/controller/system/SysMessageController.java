@@ -24,6 +24,7 @@ import com.ruoyi.common.core.page.TableSupport;
 import com.ruoyi.common.enums.BusinessType;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.system.domain.SysMessage;
+import com.ruoyi.system.domain.SysMessageSetting;
 import com.ruoyi.system.service.ISysMessageService;
 
 /**
@@ -57,6 +58,23 @@ public class SysMessageController extends BaseController
         PageHelper.startPage(pageNum, pageSize, false);
         Long userId = getUserId();
         List<String> roleKeys = getCurrentUserPermissions();
+        // 通知设置放行类型（逗号分隔 GET 参数转多值 in 过滤；空=不过滤即全量）
+        String typesParam = com.ruoyi.common.utils.ServletUtils.getParameter("messageTypes");
+        if (typesParam != null && !typesParam.trim().isEmpty())
+        {
+            List<String> types = new ArrayList<>();
+            for (String t : typesParam.split(","))
+            {
+                if (t != null && !t.trim().isEmpty())
+                {
+                    types.add(t.trim());
+                }
+            }
+            if (!types.isEmpty())
+            {
+                message.setMessageTypes(types);
+            }
+        }
         List<SysMessage> list = messageService.selectMessageListWithReadStatus(message, userId, roleKeys);
         // 手动查询总数（简单COUNT，不走派生表子查询）
         long total = messageService.selectMessageListCount(message, userId, roleKeys);
@@ -101,7 +119,7 @@ public class SysMessageController extends BaseController
 
     /**
      * 首页顶部消息列表（带当前用户已读状态，最多10条）
-     * 按当前用户的角色权限过滤可见消息
+     * 按当前用户的角色权限过滤可见消息；按通知设置过滤消息类型
      */
     @GetMapping("/listTop")
     @ResponseBody
@@ -109,11 +127,38 @@ public class SysMessageController extends BaseController
     {
         Long userId = getUserId();
         List<String> roleKeys = getCurrentUserPermissions();
-        List<SysMessage> list = messageService.selectMessageListTop(userId, roleKeys, 10);
-        int unreadCount = messageService.selectUnreadCount(userId, roleKeys);
+        List<String> notifyTypes = messageService.resolveNotifyTypes(messageService.getNotifySetting(userId));
+        List<SysMessage> list = messageService.selectMessageListTop(userId, roleKeys, 10, notifyTypes);
+        int unreadCount = messageService.selectUnreadCount(userId, roleKeys, notifyTypes);
         AjaxResult result = AjaxResult.success(list);
         result.put("unreadCount", unreadCount);
         return result;
+    }
+
+    // ==================== 通知设置（2026-09-19） ====================
+
+    /**
+     * 获取当前用户通知设置（无记录返回默认全开）
+     */
+    @GetMapping("/notifySetting")
+    @ResponseBody
+    public AjaxResult getNotifySetting()
+    {
+        return success(messageService.getNotifySetting(getUserId()));
+    }
+
+    /**
+     * 保存当前用户通知设置（按用户隔离，每人一行）
+     */
+    @Log(title = "消息通知设置", businessType = BusinessType.UPDATE)
+    @PostMapping("/notifySetting")
+    @ResponseBody
+    public AjaxResult saveNotifySetting(@RequestBody SysMessageSetting body)
+    {
+        Long userId = getUserId();
+        // 强制以当前登录人身份保存，防止改别人的设置
+        body.setUserId(userId);
+        return toAjax(messageService.saveNotifySetting(body));
     }
 
     /**

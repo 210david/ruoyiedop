@@ -10,6 +10,7 @@
 
     <div class="right-menu">
       <template v-if="appStore.device !== 'mobile'">
+        <!-- AI 智能问答快捷入口：置于右侧功能区最左，醒目且不与左侧导航争空间 -->
         <ai-assistant id="header-ai-assistant" />
         <header-notice id="header-notice" />
       </template>

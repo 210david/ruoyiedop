@@ -43,7 +43,7 @@
         <el-form-item label="月度调用上限" v-show="form.enabled">
           <el-input-number v-model="form.monthlyLimit" :min="0" :max="100000" controls-position="right" style="width: 200px" />
           <span class="form-tip-inline">次/月</span>
-          <div class="form-tip">超出上限后自动降级，业务不中断；本月已用 {{ monthlyUsed }} 次</div>
+          <div class="form-tip">超出上限后自动降级，业务不中断；本月已调用大模型 <b>{{ monthlyUsed }}</b> 次（限额按调用次数计）<span v-if="monthlyQuestions !== null">，用户提问 <b>{{ monthlyQuestions }}</b> 次（一次提问内部可能多次调用）</span></div>
         </el-form-item>
         <el-form-item label="智能查数（NL2Query）">
           <el-switch v-model="form.nl2queryEnabled" active-text="开启" inactive-text="关闭" />
@@ -139,6 +139,7 @@ function applyEmbeddingProvider(name) {
 }
 const embeddingReady = computed(() => !!(form.value.embeddingUrl && form.value.embeddingModel && (form.value.embeddingKey || embeddingKeyConfigured.value)))
 const monthlyUsed = ref(0)
+const monthlyQuestions = ref(null)
 const originalForm = ref({})
 
 // 主流大模型服务商预设（OpenAI兼容格式），选择后自动填入，仍可手动修改
@@ -190,11 +191,15 @@ function loadConfig() {
     apiKeyConfigured.value = d.apiKeyConfigured === true
     embeddingKeyConfigured.value = d.embeddingKeyConfigured === true
     const embedMatched = embeddingPresets.find(p => p.url && p.url === form.value.embeddingUrl)
-    embeddingProvider.value = embedMatched ? embedMatched.name : 
+    embeddingProvider.value = embedMatched ? embedMatched.name : ''
     monthlyUsed.value = d.monthlyUsed || 0
+    monthlyQuestions.value = d.monthlyQuestions ?? null
     const matched = providerPresets.find(p => p.url && p.url === form.value.apiUrl)
     provider.value = matched ? matched.name : ''
     loading.value = false
+  }).catch(() => {
+    loading.value = false
+    proxy.$modal.msgError('AI配置加载失败，页面显示数据可能不准确，请刷新重试')
   })
 }
 

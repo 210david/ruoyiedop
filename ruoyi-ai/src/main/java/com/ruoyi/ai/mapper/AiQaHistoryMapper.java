@@ -18,4 +18,7 @@ public interface AiQaHistoryMapper
 
     /** 清空用户本人的历史记录 */
     public int deleteHistoryByUser(Long userId);
+
+    /** 本月提问总数（配置页双口径统计：提问次数 vs 调用次数） */
+    public int selectMonthlyCount();
 }

@@ -50,3 +50,8 @@ export function getDocChunks(docId) {
 export function downloadDoc(docId) {
   return request({ url: '/ai/knowledge/download/' + docId, method: 'get', responseType: 'blob', timeout: 300000 })
 }
+
+// 取文档 PDF 预览地址（服务端转换缓存，Office 文档高保真预览用）
+export function getDocPreviewUrl(docId) {
+  return request({ url: '/ai/knowledge/preview/' + docId, method: 'get', responseType: 'blob', timeout: 300000 })
+}

@@ -174,7 +174,7 @@
             <div class="rd-card-body">
               <el-row :gutter="20">
                 <el-col :span="12"><el-form-item label="入库时间" prop="inboundTime"><el-date-picker v-model="confirmForm.inboundTime" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" placeholder="选择入库时间" style="width: 100%" /></el-form-item></el-col>
-                <el-col :span="12"><el-form-item label="批次号" prop="batchNo"><el-input v-model="confirmForm.batchNo" placeholder="请输入批次号" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="批次号" prop="batchNo" required><el-input v-model="confirmForm.batchNo" placeholder="必填：完工批次号（用于批次追溯）" /></el-form-item></el-col>
               </el-row>
               <el-row :gutter="20">
                 <el-col :span="24"><el-form-item label="备注" prop="remark"><el-input v-model="confirmForm.remark" placeholder="请输入" /></el-form-item></el-col>
@@ -375,6 +375,11 @@ function handleConfirm(row) {
   });
 }
 function submitConfirm() {
+  // 批次号强制必填：产出批次是追溯谱系的目的地（complete 事件）
+  if (!confirmForm.value.batchNo || !String(confirmForm.value.batchNo).trim()) {
+    proxy.$modal.msgError('批次号必填，请填写完工批次后提交');
+    return;
+  }
   proxy.$modal.confirm('确认将该完工入库单状态变更为「已入库」？').then(() => {
     return confirmFinishReceipt(confirmForm.value.finishId, confirmForm.value);
   }).then(() => {

@@ -149,6 +149,8 @@ public class AiKnowledgeServiceImpl implements IAiKnowledgeService
                 docMapper.insertChunk(doc.getDocId(), i, chunks.get(i), embedding);
             }
             docMapper.updateParseResult(doc.getDocId(), "0", chunks.size());
+            // 5. 异步预转换 PDF 预览缓存（不阻塞上传响应；失败仅记录日志，预览时回退前端渲染）
+            preConvertAsync(doc.getDocId(), filePath, fileType);
             return doc.getDocId();
         }
         catch (ServiceException e)
@@ -160,6 +162,37 @@ public class AiKnowledgeServiceImpl implements IAiKnowledgeService
             docMapper.updateParseResult(doc.getDocId(), "2", 0);
             throw new ServiceException("文档解析失败：" + e.getMessage());
         }
+    }
+
+    // ==================== PDF 预览预转换 ====================
+
+    /**
+     * 上传后异步预转换 PDF 预览缓存
+     * 目的：把转换耗时提前到上传阶段，用户首次点击预览时直接命中缓存
+     * 失败仅记录日志，不抛异常（预览时仍可回退前端渲染）
+     */
+    private void preConvertAsync(Long docId, String filePath, String fileType)
+    {
+        if (!com.ruoyi.ai.core.OfficeConvertUtils.isConvertible(fileType))
+        {
+            return;
+        }
+        new Thread(() ->
+        {
+            try
+            {
+                java.io.File src = java.nio.file.Paths.get(RuoYiConfig.getProfile(), filePath).toFile();
+                java.io.File pdf = com.ruoyi.ai.core.OfficeConvertUtils.getOrCreatePdf(docId, src);
+                if (pdf == null)
+                {
+                    log.warn("文档[{}]预转换PDF失败，预览时将回退前端渲染", docId);
+                }
+            }
+            catch (Exception e)
+            {
+                log.warn("文档[{}]预转换PDF异常: {}", docId, e.getMessage());
+            }
+        }, "doc-preconvert-" + docId).start();
     }
 
     // ==================== 知识问答 ====================

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.bid.mapper.BidCrawlLogMapper">
+
+    <resultMap type="BidCrawlLog" id="BidCrawlLogResult">
+        <result property="logId"         column="log_id"/>
+        <result property="sourceId"      column="source_id"/>
+        <result property="sourceName"    column="source_name"/>
+        <result property="runStatus"     column="run_status"/>
+        <result property="fetchedCount"  column="fetched_count"/>
+        <result property="insertedCount" column="inserted_count"/>
+        <result property="matchedCount"  column="matched_count"/>
+        <result property="errorMsg"      column="error_msg"/>
+        <result property="startTime"     column="start_time"/>
+        <result property="endTime"       column="end_time"/>
+    </resultMap>
+
+    <select id="selectLogList" parameterType="BidCrawlLog" resultMap="BidCrawlLogResult">
+        SELECT l.log_id, l.source_id, l.source_name, l.run_status, l.fetched_count, l.inserted_count,
+               l.matched_count, l.error_msg, l.start_time, l.end_time
+        FROM bid_crawl_log l
+        <where>
+            <if test="sourceId != null"> AND l.source_id = #{sourceId}</if>
+            <if test="sourceName != null and sourceName != ''"> AND l.source_name LIKE CONCAT('%', #{sourceName}, '%')</if>
+            <if test="runStatus != null and runStatus != ''"> AND l.run_status = #{runStatus}</if>
+            <if test="errorMsg != null and errorMsg != ''"> AND l.error_msg LIKE CONCAT('%', #{errorMsg}, '%')</if>
+            <if test="params.beginStartTime != null and params.beginStartTime != ''"> AND l.start_time &gt;= #{params.beginStartTime}</if>
+            <if test="params.endStartTime != null and params.endStartTime != ''"> AND l.start_time &lt;= #{params.endStartTime}</if>
+        </where>
+        ORDER BY l.log_id DESC
+    </select>
+
+    <select id="selectLogById" parameterType="Long" resultMap="BidCrawlLogResult">
+        SELECT l.log_id, l.source_id, l.source_name, l.run_status, l.fetched_count, l.inserted_count,
+               l.matched_count, l.error_msg, l.start_time, l.end_time
+        FROM bid_crawl_log l WHERE l.log_id = #{logId}
+    </select>
+
+    <select id="selectRecentBySourceId" parameterType="Long" resultMap="BidCrawlLogResult">
+        SELECT l.log_id, l.source_id, l.source_name, l.run_status, l.fetched_count, l.inserted_count,
+               l.matched_count, l.error_msg, l.start_time, l.end_time
+        FROM bid_crawl_log l WHERE l.source_id = #{sourceId}
+        ORDER BY l.log_id DESC LIMIT 10
+    </select>
+
+    <insert id="insertLog" parameterType="BidCrawlLog" useGeneratedKeys="true" keyProperty="logId">
+        INSERT INTO bid_crawl_log (source_id, source_name, run_status, fetched_count, inserted_count,
+            matched_count, error_msg, start_time, end_time)
+        VALUES (#{sourceId}, #{sourceName}, #{runStatus}, #{fetchedCount}, #{insertedCount},
+            #{matchedCount}, #{errorMsg}, #{startTime}, #{endTime})
+    </insert>
+
+</mapper>

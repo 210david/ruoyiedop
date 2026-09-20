@@ -248,6 +248,20 @@
                 <version>${ruoyi.version}</version>
             </dependency>
 
+            <!-- BID招投标管理模块-->
+            <dependency>
+                <groupId>com.ruoyi</groupId>
+                <artifactId>ruoyi-bid</artifactId>
+                <version>${ruoyi.version}</version>
+            </dependency>
+
+            <!-- HTML解析-->
+            <dependency>
+                <groupId>org.jsoup</groupId>
+                <artifactId>jsoup</artifactId>
+                <version>1.17.2</version>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
 
@@ -268,6 +282,7 @@
         <module>ruoyi-mms</module>
         <module>ruoyi-hr</module>
         <module>ruoyi-flowable</module>
+        <module>ruoyi-bid</module>
     </modules>
     <packaging>pom</packaging>
 

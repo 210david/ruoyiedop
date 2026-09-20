@@ -66,7 +66,7 @@
                 <el-table-column label="损耗率(%)" width="80" align="center"><template #default="scope"><span v-if="scope.row.lossRate != null">{{ scope.row.lossRate }}%</span><span v-else class="text-muted">—</span></template></el-table-column>
                 <el-table-column label="建议数量" prop="suggestedQty" width="90" align="center" />
                 <el-table-column label="领料数量" width="110" align="center"><template #default="scope"><el-input-number v-model="scope.row.issueQty" :min="0" :precision="2" :controls="false" size="small" style="width: 100%" placeholder="数量" /></template></el-table-column>
-                <el-table-column label="批次号" width="110"><template #default="scope"><el-input v-model="scope.row.batchNo" size="small" placeholder="批次号" /></template></el-table-column>
+                <el-table-column label="批次号" width="110"><template #header><span style="color:#f56c6c">*</span> 批次号</template><template #default="scope"><el-input v-model="scope.row.batchNo" size="small" placeholder="必填" /></template></el-table-column>
                 <el-table-column label="操作" width="60" align="center" fixed="right"><template #default="scope"><el-button link type="danger" icon="Delete" @click="removeDetail(scope.$index)" /></template></el-table-column>
               </el-table>
               <div v-if="!form.detailList || form.detailList.length === 0" class="empty-detail-tip">
@@ -389,6 +389,11 @@ function submitConfirm() {
     const d = confirmData.value.detailList[i];
     if (!d.issueQty || d.issueQty <= 0) {
       proxy.$modal.msgError('第' + (i + 1) + '行领料数量必须大于0');
+      return;
+    }
+    // 批次号强制必填：批次追溯谱系源头，缺失导致追溯链断点
+    if (!d.batchNo || !String(d.batchNo).trim()) {
+      proxy.$modal.msgError('第' + (i + 1) + '行（' + (d.materialCode || '') + '）批次号必填，请填写后提交');
       return;
     }
   }

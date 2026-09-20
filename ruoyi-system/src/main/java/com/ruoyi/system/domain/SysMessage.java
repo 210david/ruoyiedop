@@ -23,6 +23,12 @@ public class SysMessage extends BaseEntity
     /** 消息类型（1系统通知 2业务预警 3审批消息 4待办事项） */
     private String messageType;
 
+    /** 消息类型多值过滤（通知设置放行类型，in 查询；仅查询用，非表字段） */
+    private transient java.util.List<String> messageTypes;
+
+    public java.util.List<String> getMessageTypes() { return messageTypes; }
+    public void setMessageTypes(java.util.List<String> messageTypes) { this.messageTypes = messageTypes; }
+
     /** 消息内容 */
     private String messageContent;
 

@@ -114,6 +114,12 @@
             <artifactId>ruoyi-flowable</artifactId>
         </dependency>
 
+        <!-- BID招投标管理 -->
+        <dependency>
+            <groupId>com.ruoyi</groupId>
+            <artifactId>ruoyi-bid</artifactId>
+        </dependency>
+
     </dependencies>
 
     <build>

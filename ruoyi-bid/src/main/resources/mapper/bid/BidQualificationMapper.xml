@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.bid.mapper.BidQualificationMapper">
+
+    <resultMap type="BidQualification" id="BidQualificationResult">
+        <result property="qualificationId" column="qualification_id"/>
+        <result property="qualType"        column="qual_type"/>
+        <result property="name"            column="name"/>
+        <result property="certNo"          column="cert_no"/>
+        <result property="qualLevel"       column="qual_level"/>
+        <result property="ownerType"       column="owner_type"/>
+        <result property="ownerUserId"     column="owner_user_id"/>
+        <result property="ownerName"       column="owner_name"/>
+        <result property="issueDate"       column="issue_date"/>
+        <result property="expireDate"      column="expire_date"/>
+        <result property="warnDays"        column="warn_days"/>
+        <result property="fileUrl"         column="file_url"/>
+        <result property="deptId"          column="dept_id"/>
+        <result property="delFlag"         column="del_flag"/>
+        <result property="createBy"        column="create_by"/>
+        <result property="createTime"      column="create_time"/>
+        <result property="updateBy"        column="update_by"/>
+        <result property="updateTime"      column="update_time"/>
+        <result property="remark"          column="remark"/>
+    </resultMap>
+
+    <sql id="selectQualificationVo">
+        SELECT q.qualification_id, q.qual_type, q.name, q.cert_no, q.qual_level, q.owner_type,
+               q.owner_user_id, q.owner_name, q.issue_date, q.expire_date, q.warn_days, q.file_url,
+               q.dept_id, q.del_flag, q.create_by, q.create_time, q.update_by, q.update_time, q.remark
+        FROM bid_qualification q
+    </sql>
+
+    <select id="selectQualificationList" parameterType="BidQualification" resultMap="BidQualificationResult">
+        <include refid="selectQualificationVo"/>
+        <where>
+            q.del_flag = '0'
+            <if test="qualType != null and qualType != ''"> AND q.qual_type = #{qualType}</if>
+            <if test="name != null and name != ''"> AND q.name LIKE CONCAT('%', #{name}, '%')</if>
+            <if test="certNo != null and certNo != ''"> AND q.cert_no LIKE CONCAT('%', #{certNo}, '%')</if>
+            <if test="qualLevel != null and qualLevel != ''"> AND q.qual_level LIKE CONCAT('%', #{qualLevel}, '%')</if>
+            <if test="ownerType != null and ownerType != ''"> AND q.owner_type = #{ownerType}</if>
+            <if test="ownerUserId != null"> AND q.owner_user_id = #{ownerUserId}</if>
+            <if test="ownerName != null and ownerName != ''"> AND q.owner_name LIKE CONCAT('%', #{ownerName}, '%')</if>
+            <if test="params.dataScope != null and params.dataScope != ''"> AND ${params.dataScope}</if>
+            <if test="expireStatus != null and expireStatus == 'soon30'.toString()"> AND q.expire_date IS NOT NULL AND q.expire_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY)</if>
+            <if test="expireStatus != null and expireStatus == 'soon60'.toString()"> AND q.expire_date IS NOT NULL AND q.expire_date BETWEEN DATE_ADD(CURDATE(), INTERVAL 31 DAY) AND DATE_ADD(CURDATE(), INTERVAL 60 DAY)</if>
+            <if test="expireStatus != null and expireStatus == 'long'.toString()"> AND q.expire_date IS NULL</if>
+            <if test="params.beginIssueDate != null and params.beginIssueDate != ''"> AND q.issue_date &gt;= #{params.beginIssueDate}</if>
+            <if test="params.endIssueDate != null and params.endIssueDate != ''"> AND q.issue_date &lt;= #{params.endIssueDate}</if>
+        </where>
+        ORDER BY q.qualification_id DESC
+    </select>
+
+    <select id="selectQualificationById" parameterType="Long" resultMap="BidQualificationResult">
+        <include refid="selectQualificationVo"/>
+        WHERE q.qualification_id = #{qualificationId}
+    </select>
+
+    <select id="selectExpiringQualifications" resultMap="BidQualificationResult">
+        <include refid="selectQualificationVo"/>
+        WHERE q.del_flag = '0' AND q.expire_date IS NOT NULL
+        AND q.expire_date &lt;= DATE_ADD(CURDATE(), INTERVAL IFNULL(q.warn_days, 60) DAY)
+        AND q.expire_date &gt;= CURDATE()
+    </select>
+
+    <insert id="insertQualification" parameterType="BidQualification" useGeneratedKeys="true" keyProperty="qualificationId">
+        INSERT INTO bid_qualification (qual_type, name, cert_no, qual_level, owner_type, owner_user_id,
+            owner_name, issue_date, expire_date, warn_days, file_url, dept_id, del_flag, create_by, create_time, remark)
+        VALUES (#{qualType}, #{name}, #{certNo}, #{qualLevel}, #{ownerType}, #{ownerUserId},
+            #{ownerName}, #{issueDate}, #{expireDate}, #{warnDays}, #{fileUrl}, #{deptId}, '0', #{createBy}, sysdate(), #{remark})
+    </insert>
+
+    <update id="updateQualification" parameterType="BidQualification">
+        UPDATE bid_qualification
+        <set>
+            <if test="qualType != null and qualType != ''">qual_type = #{qualType},</if>
+            <if test="name != null and name != ''">name = #{name},</if>
+            <if test="certNo != null">cert_no = #{certNo},</if>
+            <if test="qualLevel != null">qual_level = #{qualLevel},</if>
+            <if test="ownerType != null and ownerType != ''">owner_type = #{ownerType},</if>
+            <if test="ownerUserId != null">owner_user_id = #{ownerUserId},</if>
+            <if test="ownerName != null">owner_name = #{ownerName},</if>
+            <if test="issueDate != null">issue_date = #{issueDate},</if>
+            <if test="expireDate != null">expire_date = #{expireDate},</if>
+            <if test="warnDays != null">warn_days = #{warnDays},</if>
+            <if test="fileUrl != null">file_url = #{fileUrl},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE qualification_id = #{qualificationId}
+    </update>
+
+    <delete id="deleteQualificationByIds" parameterType="Long">
+        UPDATE bid_qualification SET del_flag = '2' WHERE qualification_id IN
+        <foreach item="qualificationId" collection="array" open="(" separator="," close=")">#{qualificationId}</foreach>
+    </delete>
+
+</mapper>

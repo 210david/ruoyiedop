@@ -414,4 +414,154 @@ public class QmsTraceServiceImpl implements IQmsTraceService
                 result.getShipmentList().size());
         return result;
     }
+
+    // ==================== 谱系事件写入（业务模块联动，幂等） ====================
+
+    /**
+     * 写入业务谱系事件（幂等）：sourceType+sourceNo 已存在则跳过。
+     * 与手工 insertGenealogy 的区别：不抛异常、空投入批次也允许写入（记断点），
+     * 由调用方（业务模块）决定异常策略，避免阻断发料/完工主流程。
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int recordGenealogyEvent(QmsLotGenealogy event)
+    {
+        if (event == null || StringUtils.isEmpty(event.getSourceType()) || StringUtils.isEmpty(event.getSourceNo()))
+        {
+            log.warn("谱系事件缺少 sourceType/sourceNo，跳过写入");
+            return 0;
+        }
+        // 幂等检查
+        if (qmsLotGenealogyMapper.countBySource(event.getSourceType(), event.getSourceNo()) > 0)
+        {
+            log.info("谱系事件已存在，跳过：{}-{}", event.getSourceType(), event.getSourceNo());
+            return 0;
+        }
+        // 批次语义处理（2026-09-19 修订）：
+        // - 事件本身无投入侧（如报工/完工，只产出或只消耗）：parent 保持 NULL，仅按业务语义记断点标记，禁止用单据号冒充批次
+        // - 事件有投入侧但批次缺失（如发料未录批次）：同样 parent 留 NULL + 断点原因，禁止用 sourceNo 兜底
+        boolean noInputSide = "report".equals(event.getSourceType()) || "complete".equals(event.getSourceType());
+        if (StringUtils.isEmpty(event.getParentBatchNo()))
+        {
+            // 不再用 sourceNo 冒充批次号（历史 bug：导致追溯树出现幽灵批次节点）
+            if (StringUtils.isEmpty(event.getBreakReason()))
+            {
+                event.setBreakReason(noInputSide ? "该事件无投入批次" : "投入批次未登记");
+            }
+            if (StringUtils.isEmpty(event.getChildBatchNo()))
+            {
+                event.setBreakFlag(1);
+            }
+            else
+            {
+                // 有产出批次、无投入侧：不算断点（如完工入库的产出登记）
+                event.setBreakFlag(noInputSide ? 0 : 1);
+                if (noInputSide) event.setBreakReason(null);
+            }
+        }
+        else if (StringUtils.isEmpty(event.getChildBatchNo()))
+        {
+            event.setBreakFlag(1);
+            if (StringUtils.isEmpty(event.getBreakReason()))
+            {
+                event.setBreakReason("产出批次未登记");
+            }
+        }
+        else
+        {
+            event.setBreakFlag(0);
+        }
+        if (event.getStatus() == null) event.setStatus("0");
+        if (event.getTraceTime() == null) event.setTraceTime(new Date());
+        return qmsLotGenealogyMapper.insertGenealogy(event);
+    }
+
+    /**
+     * 回填产出批次：领料谱系（childBatchNo 空）在完工入库后回填完工批次号。
+     * sourceNoPrefix 支持按单据号前缀批量回填（如同一工单的领料明细 source_no = 领料单号-序号）。
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int backfillChildBatch(String sourceType, String sourceNoPrefix, String childBatchNo)
+    {
+        if (StringUtils.isAnyEmpty(sourceType, sourceNoPrefix, childBatchNo))
+        {
+            log.warn("回填产出批次参数不完整，跳过：{}-{} -> {}", sourceType, sourceNoPrefix, childBatchNo);
+            return 0;
+        }
+        List<QmsLotGenealogy> list = qmsLotGenealogyMapper.selectBySource(sourceType, sourceNoPrefix, 0);
+        int updated = 0;
+        for (QmsLotGenealogy node : list)
+        {
+            // 前缀匹配（source_no = 单号 或 单号-序号）且产出批次为空才回填
+            String sn = node.getSourceNo();
+            if (sn != null && (sn.equals(sourceNoPrefix) || sn.startsWith(sourceNoPrefix + "-"))
+                    && StringUtils.isEmpty(node.getChildBatchNo()))
+            {
+                node.setChildBatchNo(childBatchNo);
+                node.setBreakFlag(0);
+                node.setBreakReason(null);
+                node.setUpdateTime(new Date());
+                updated += qmsLotGenealogyMapper.updateGenealogy(node);
+            }
+        }
+        log.info("回填产出批次完成：{}-{} -> {}，回填 {} 条", sourceType, sourceNoPrefix, childBatchNo, updated);
+        return updated;
+    }
+
+    /**
+     * 按工单回填产出批次：完工入库确认后，把该工单所有 childBatchNo 为空的
+     * 谱系（feeding/report 断点）回填为完工批次号并清除断点。
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int backfillChildBatchByWorkOrder(String sourceType, String workOrderNo, String childBatchNo)
+    {
+        if (StringUtils.isAnyEmpty(workOrderNo, childBatchNo))
+        {
+            log.warn("按工单回填产出批次参数不完整，跳过：工单 {} -> {}", workOrderNo, childBatchNo);
+            return 0;
+        }
+        QmsLotGenealogy query = new QmsLotGenealogy();
+        query.setWorkOrderNo(workOrderNo);
+        if (StringUtils.isNotEmpty(sourceType))
+        {
+            query.setSourceType(sourceType);
+        }
+        List<QmsLotGenealogy> list = qmsLotGenealogyMapper.selectGenealogyList(query);
+        int updated = 0;
+        for (QmsLotGenealogy node : list)
+        {
+            if (StringUtils.isEmpty(node.getChildBatchNo()))
+            {
+                node.setChildBatchNo(childBatchNo);
+                node.setBreakFlag(0);
+                node.setBreakReason(null);
+                node.setUpdateTime(new Date());
+                updated += qmsLotGenealogyMapper.updateGenealogy(node);
+            }
+        }
+        log.info("按工单回填产出批次完成：工单 {} -> {}，回填 {} 条", workOrderNo, childBatchNo, updated);
+        return updated;
+    }
+
+    /**
+     * 撤销谱系事件：业务单据删除/取消时逻辑删除对应谱系。
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int revokeGenealogyEvent(String sourceType, String sourceNo)    {
+        if (StringUtils.isAnyEmpty(sourceType, sourceNo))
+        {
+            return 0;
+        }
+        // 前缀匹配撤销：source_no = 单号 或 单号-序号（feeding 明细谱系）
+        List<QmsLotGenealogy> list = qmsLotGenealogyMapper.selectBySource(sourceType, sourceNo, 0);
+        if (list.isEmpty())
+        {
+            return 0;
+        }
+        Long[] ids = list.stream().map(QmsLotGenealogy::getId).toArray(Long[]::new);
+        return qmsLotGenealogyMapper.deleteGenealogyByIds(ids);
+    }
 }

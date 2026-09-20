@@ -36,4 +36,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         delete from ai_qa_history where user_id = #{userId}
     </delete>
 
+    <!-- 本月提问数（配置页双口径统计：提问次数 vs 调用次数） -->
+    <select id="selectMonthlyCount" resultType="int">
+        select count(*) from ai_qa_history
+        where create_time &gt;= date_format(now(), '%Y-%m-01')
+    </select>
+
 </mapper>

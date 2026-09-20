@@ -2,6 +2,7 @@ package com.ruoyi.qms.mapper;
 
 import java.util.List;
 import java.util.Map;
+import org.apache.ibatis.annotations.Param;
 import com.ruoyi.qms.domain.QmsLotGenealogy;
 
 /**
@@ -46,4 +47,10 @@ public interface QmsLotGenealogyMapper
 
     /** 检测谱系环：查询某批次是否已经是某路径上的祖先 */
     int checkCycle(String parentBatchNo, String childBatchNo);
+
+    /** 幂等检查：按来源类型+来源单据号统计未删除谱系数 */
+    int countBySource(@Param("sourceType") String sourceType, @Param("sourceNo") String sourceNo);
+
+    /** 按来源类型+来源单据号查询谱系记录（业务单据联动回填/撤销用；exact=1 精确匹配，否则含 单号-序号 前缀匹配） */
+    List<QmsLotGenealogy> selectBySource(@Param("sourceType") String sourceType, @Param("sourceNo") String sourceNo, @Param("exact") Integer exact);
 }

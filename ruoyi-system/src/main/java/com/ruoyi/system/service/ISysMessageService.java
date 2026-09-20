@@ -53,7 +53,7 @@ public interface ISysMessageService
      * @param roleKeys 当前用户的权限标识列表
      * @return 未读数量
      */
-    public int selectUnreadCount(Long userId, List<String> roleKeys);
+    public int selectUnreadCount(Long userId, List<String> roleKeys, List<String> notifyTypes);
 
     /**
      * 查询当前用户消息列表（首页铃铛用，带已读状态）
@@ -63,7 +63,18 @@ public interface ISysMessageService
      * @param limit   最多返回条数
      * @return 消息列表
      */
-    public List<SysMessage> selectMessageListTop(Long userId, List<String> roleKeys, int limit);
+    public List<SysMessage> selectMessageListTop(Long userId, List<String> roleKeys, int limit, List<String> notifyTypes);
+
+    // ==================== 通知设置（2026-09-19） ====================
+
+    /** 获取用户通知设置（无记录时兜底全开） */
+    public com.ruoyi.system.domain.SysMessageSetting getNotifySetting(Long userId);
+
+    /** 保存用户通知设置（无记录插入，有记录更新） */
+    public int saveNotifySetting(com.ruoyi.system.domain.SysMessageSetting setting);
+
+    /** 由通知设置换算铃铛放行的消息类型列表 */
+    public List<String> resolveNotifyTypes(com.ruoyi.system.domain.SysMessageSetting setting);
 
     /**
      * 标记已读

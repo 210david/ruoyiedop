@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.bid.mapper.BidDepositMapper">
+
+    <resultMap type="BidDeposit" id="BidDepositResult">
+        <result property="depositId"        column="deposit_id"/>
+        <result property="projectId"        column="project_id"/>
+        <result property="bidNo"            column="bid_no"/>
+        <result property="projectName"      column="project_name"/>
+        <result property="depositType"      column="deposit_type"/>
+        <result property="payType"          column="pay_type"/>
+        <result property="amount"           column="amount"/>
+        <result property="payTime"          column="pay_time"/>
+        <result property="expectRefundTime" column="expect_refund_time"/>
+        <result property="actualRefundTime" column="actual_refund_time"/>
+        <result property="refundStatus"     column="refund_status"/>
+        <result property="voucherUrl"       column="voucher_url"/>
+        <result property="deptId"           column="dept_id"/>
+        <result property="delFlag"          column="del_flag"/>
+        <result property="createBy"         column="create_by"/>
+        <result property="createTime"       column="create_time"/>
+        <result property="updateBy"         column="update_by"/>
+        <result property="updateTime"       column="update_time"/>
+        <result property="remark"           column="remark"/>
+    </resultMap>
+
+    <sql id="selectDepositVo">
+        SELECT d.deposit_id, d.project_id, d.bid_no, d.project_name, d.deposit_type, d.pay_type,
+               d.amount, d.pay_time, d.expect_refund_time, d.actual_refund_time, d.refund_status,
+               d.voucher_url, d.dept_id, d.del_flag, d.create_by, d.create_time, d.update_by, d.update_time, d.remark
+        FROM bid_deposit d
+    </sql>
+
+    <select id="selectDepositList" parameterType="BidDeposit" resultMap="BidDepositResult">
+        <include refid="selectDepositVo"/>
+        <where>
+            d.del_flag = '0'
+            <if test="projectId != null"> AND d.project_id = #{projectId}</if>
+            <if test="bidNo != null and bidNo != ''"> AND d.bid_no LIKE CONCAT('%', #{bidNo}, '%')</if>
+            <if test="projectName != null and projectName != ''"> AND d.project_name LIKE CONCAT('%', #{projectName}, '%')</if>
+            <if test="depositType != null and depositType != ''"> AND d.deposit_type = #{depositType}</if>
+            <if test="payType != null and payType != ''"> AND d.pay_type = #{payType}</if>
+            <if test="refundStatus != null and refundStatus != ''"> AND d.refund_status = #{refundStatus}</if>
+            <if test="params.dataScope != null and params.dataScope != ''"> AND ${params.dataScope}</if>
+            <if test="params.beginExpectRefundTime != null and params.beginExpectRefundTime != ''"> AND d.expect_refund_time &gt;= #{params.beginExpectRefundTime}</if>
+            <if test="params.endExpectRefundTime != null and params.endExpectRefundTime != ''"> AND d.expect_refund_time &lt;= #{params.endExpectRefundTime}</if>
+        </where>
+        ORDER BY d.deposit_id DESC
+    </select>
+
+    <select id="selectDepositById" parameterType="Long" resultMap="BidDepositResult">
+        <include refid="selectDepositVo"/>
+        WHERE d.deposit_id = #{depositId}
+    </select>
+
+    <select id="selectDepositByProjectId" parameterType="Long" resultMap="BidDepositResult">
+        <include refid="selectDepositVo"/>
+        WHERE d.project_id = #{projectId} AND d.del_flag = '0'
+        ORDER BY d.deposit_id DESC
+    </select>
+
+    <select id="selectOverdueDeposits" resultMap="BidDepositResult">
+        <include refid="selectDepositVo"/>
+        WHERE d.del_flag = '0' AND d.refund_status = '0'
+        AND d.expect_refund_time IS NOT NULL AND d.expect_refund_time &lt; sysdate()
+    </select>
+
+    <insert id="insertDeposit" parameterType="BidDeposit" useGeneratedKeys="true" keyProperty="depositId">
+        INSERT INTO bid_deposit (project_id, bid_no, project_name, deposit_type, pay_type, amount,
+            pay_time, expect_refund_time, actual_refund_time, refund_status, voucher_url, dept_id,
+            del_flag, create_by, create_time, remark)
+        VALUES (#{projectId}, #{bidNo}, #{projectName}, #{depositType}, #{payType}, #{amount},
+            #{payTime}, #{expectRefundTime}, #{actualRefundTime}, #{refundStatus}, #{voucherUrl}, #{deptId},
+            '0', #{createBy}, sysdate(), #{remark})
+    </insert>
+
+    <update id="updateDeposit" parameterType="BidDeposit">
+        UPDATE bid_deposit
+        <set>
+            <if test="depositType != null and depositType != ''">deposit_type = #{depositType},</if>
+            <if test="payType != null and payType != ''">pay_type = #{payType},</if>
+            <if test="amount != null">amount = #{amount},</if>
+            <if test="payTime != null">pay_time = #{payTime},</if>
+            <if test="expectRefundTime != null">expect_refund_time = #{expectRefundTime},</if>
+            <if test="actualRefundTime != null">actual_refund_time = #{actualRefundTime},</if>
+            <if test="refundStatus != null and refundStatus != ''">refund_status = #{refundStatus},</if>
+            <if test="voucherUrl != null">voucher_url = #{voucherUrl},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE deposit_id = #{depositId}
+    </update>
+
+    <delete id="deleteDepositByIds" parameterType="Long">
+        UPDATE bid_deposit SET del_flag = '2' WHERE deposit_id IN
+        <foreach item="depositId" collection="array" open="(" separator="," close=")">#{depositId}</foreach>
+    </delete>
+
+    <select id="selectOccupancySummary" resultType="java.util.HashMap">
+        SELECT COUNT(1) AS "outCount", COALESCE(SUM(d.amount), 0) AS "outAmount"
+        FROM bid_deposit d
+        WHERE d.del_flag = '0' AND d.refund_status = '0'
+    </select>
+
+</mapper>

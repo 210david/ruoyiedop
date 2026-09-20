@@ -128,7 +128,8 @@ import { nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 
 const loading = ref(true)
 const days = ref(30)
-const autoRefresh = ref(false)
+// 自动刷新开关持久化：刷新页面后保持用户上次的选择
+const autoRefresh = ref(sessionStorage.getItem('ai-usage-auto-refresh') === '1')
 const total = ref({})
 const moduleStat = ref([])
 const featureStat = ref([])
@@ -478,7 +479,7 @@ function renderUser()
   if (!userChart.value) return
   const chart = initChart('user', userChart.value)
   const list = userStat.value.map(u => ({
-    name: u.userName,
+    name: u.userName || u.user_name || u.nickName || u.nick_name || '未知用户',
     total: Number(u.total) || 0,
     success: (Number(u.total) || 0) - (Number(u.failed) || 0),
     failed: Number(u.failed) || 0,
@@ -523,6 +524,7 @@ function renderUser()
 
 // ===== 自动刷新 =====
 watch(autoRefresh, v => {
+  sessionStorage.setItem('ai-usage-auto-refresh', v ? '1' : '0')
   if (v) { autoTimer = setInterval(load, 60000) }
   else if (autoTimer) { clearInterval(autoTimer); autoTimer = null }
 })
@@ -532,7 +534,11 @@ const resizeHandler = () => Object.values(chartInstances).forEach(c => c && c.re
 window.addEventListener('resize', resizeHandler)
 
 // ===== 生命周期 =====
-onMounted(() => { load() })
+onMounted(() => {
+  load()
+  // 恢复持久化的自动刷新状态（watch 不触发初始值）
+  if (autoRefresh.value) { autoTimer = setInterval(load, 60000) }
+})
 onBeforeUnmount(() => {
   Object.values(chartInstances).forEach(c => c && c.dispose())
   if (autoTimer) clearInterval(autoTimer)

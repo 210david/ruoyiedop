@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.bid.mapper.BidNoticeMapper">
+
+    <resultMap type="BidNotice" id="BidNoticeResult">
+        <result property="noticeId"        column="notice_id"/>
+        <result property="projectKey"      column="project_key"/>
+        <result property="title"           column="title"/>
+        <result property="noticeType"      column="notice_type"/>
+        <result property="sourceId"        column="source_id"/>
+        <result property="sourceName"      column="source_name"/>
+        <result property="tenderee"        column="tenderee"/>
+        <result property="agent"           column="agent"/>
+        <result property="regionCode"      column="region_code"/>
+        <result property="industry"        column="industry"/>
+        <result property="budgetAmount"    column="budget_amount"/>
+        <result property="publishTime"     column="publish_time"/>
+        <result property="deadlineTime"    column="deadline_time"/>
+        <result property="openTime"        column="open_time"/>
+        <result property="contactPerson"   column="contact_person"/>
+        <result property="contactPhone"    column="contact_phone"/>
+        <result property="sourceUrl"       column="source_url"/>
+        <result property="content"         column="content"/>
+        <result property="matchedKeywords" column="matched_keywords"/>
+        <result property="aiExtracted"     column="ai_extracted"/>
+        <result property="inputType"       column="input_type"/>
+        <result property="delFlag"         column="del_flag"/>
+        <result property="createBy"        column="create_by"/>
+        <result property="createTime"      column="create_time"/>
+        <result property="updateBy"        column="update_by"/>
+        <result property="updateTime"      column="update_time"/>
+        <result property="remark"          column="remark"/>
+    </resultMap>
+
+    <sql id="selectNoticeVo">
+        SELECT n.notice_id, n.project_key, n.title, n.notice_type, n.source_id, n.source_name,
+               n.tenderee, n.agent, n.region_code, n.industry, n.budget_amount, n.publish_time,
+               n.deadline_time, n.open_time, n.contact_person, n.contact_phone, n.source_url,
+               n.content, n.matched_keywords, n.ai_extracted, n.input_type, n.del_flag,
+               n.create_by, n.create_time, n.update_by, n.update_time, n.remark
+        FROM bid_notice n
+    </sql>
+
+    <select id="selectNoticeList" parameterType="BidNotice" resultMap="BidNoticeResult">
+        <include refid="selectNoticeVo"/>
+        <where>
+            n.del_flag = '0'
+            <if test="title != null and title != ''"> AND n.title LIKE CONCAT('%', #{title}, '%')</if>
+            <if test="noticeType != null and noticeType != ''"> AND n.notice_type = #{noticeType}</if>
+            <if test="regionCode != null and regionCode != ''"> AND n.region_code LIKE CONCAT(#{regionCode}, '%')</if>
+            <if test="industry != null and industry != ''"> AND n.industry = #{industry}</if>
+            <if test="tenderee != null and tenderee != ''"> AND n.tenderee LIKE CONCAT('%', #{tenderee}, '%')</if>
+            <if test="agent != null and agent != ''"> AND n.agent LIKE CONCAT('%', #{agent}, '%')</if>
+            <if test="sourceId != null"> AND n.source_id = #{sourceId}</if>
+            <if test="projectKey != null and projectKey != ''"> AND n.project_key = #{projectKey}</if>
+            <if test="inputType != null and inputType != ''"> AND n.input_type = #{inputType}</if>
+            <if test="params.beginPublishTime != null and params.beginPublishTime != ''"> AND n.publish_time &gt;= #{params.beginPublishTime}</if>
+            <if test="params.endPublishTime != null and params.endPublishTime != ''"> AND n.publish_time &lt;= #{params.endPublishTime}</if>
+            <if test="params.beginDeadlineTime != null and params.beginDeadlineTime != ''"> AND n.deadline_time &gt;= #{params.beginDeadlineTime}</if>
+            <if test="params.endDeadlineTime != null and params.endDeadlineTime != ''"> AND n.deadline_time &lt;= #{params.endDeadlineTime}</if>
+        </where>
+        ORDER BY n.notice_id DESC
+    </select>
+
+    <select id="selectNoticeById" parameterType="Long" resultMap="BidNoticeResult">
+        <include refid="selectNoticeVo"/>
+        WHERE n.notice_id = #{noticeId}
+    </select>
+
+    <select id="selectNoticeByUrl" parameterType="String" resultMap="BidNoticeResult">
+        <include refid="selectNoticeVo"/>
+        WHERE n.source_url = #{sourceUrl} AND n.del_flag = '0' LIMIT 1
+    </select>
+
+    <select id="selectArchiveByProjectKey" parameterType="String" resultMap="BidNoticeResult">
+        <include refid="selectNoticeVo"/>
+        WHERE n.project_key = #{projectKey} AND n.del_flag = '0'
+        ORDER BY n.publish_time ASC
+    </select>
+
+    <insert id="insertNotice" parameterType="BidNotice" useGeneratedKeys="true" keyProperty="noticeId">
+        INSERT INTO bid_notice (project_key, title, notice_type, source_id, source_name, tenderee, agent,
+            region_code, industry, budget_amount, publish_time, deadline_time, open_time,
+            contact_person, contact_phone, source_url, content, matched_keywords, ai_extracted,
+            input_type, del_flag, create_by, create_time, remark)
+        VALUES (#{projectKey}, #{title}, #{noticeType}, #{sourceId}, #{sourceName}, #{tenderee}, #{agent},
+            #{regionCode}, #{industry}, #{budgetAmount}, #{publishTime}, #{deadlineTime}, #{openTime},
+            #{contactPerson}, #{contactPhone}, #{sourceUrl}, #{content}, #{matchedKeywords}, '0',
+            #{inputType}, '0', #{createBy}, sysdate(), #{remark})
+    </insert>
+
+    <update id="updateNotice" parameterType="BidNotice">
+        UPDATE bid_notice
+        <set>
+            <if test="projectKey != null">project_key = #{projectKey},</if>
+            <if test="title != null and title != ''">title = #{title},</if>
+            <if test="noticeType != null and noticeType != ''">notice_type = #{noticeType},</if>
+            <if test="sourceName != null">source_name = #{sourceName},</if>
+            <if test="tenderee != null">tenderee = #{tenderee},</if>
+            <if test="agent != null">agent = #{agent},</if>
+            <if test="regionCode != null">region_code = #{regionCode},</if>
+            <if test="industry != null">industry = #{industry},</if>
+            <if test="budgetAmount != null">budget_amount = #{budgetAmount},</if>
+            <if test="publishTime != null">publish_time = #{publishTime},</if>
+            <if test="deadlineTime != null">deadline_time = #{deadlineTime},</if>
+            <if test="openTime != null">open_time = #{openTime},</if>
+            <if test="contactPerson != null">contact_person = #{contactPerson},</if>
+            <if test="contactPhone != null">contact_phone = #{contactPhone},</if>
+            <if test="sourceUrl != null">source_url = #{sourceUrl},</if>
+            <if test="content != null">content = #{content},</if>
+            <if test="matchedKeywords != null">matched_keywords = #{matchedKeywords},</if>
+            <if test="aiExtracted != null and aiExtracted != ''">ai_extracted = #{aiExtracted},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE notice_id = #{noticeId}
+    </update>
+
+    <delete id="deleteNoticeByIds" parameterType="Long">
+        UPDATE bid_notice SET del_flag = '2' WHERE notice_id IN
+        <foreach item="noticeId" collection="array" open="(" separator="," close=")">#{noticeId}</foreach>
+    </delete>
+
+    <select id="countAll" resultType="int">
+        SELECT COUNT(1) FROM bid_notice WHERE del_flag = '0'
+    </select>
+
+    <select id="countByType" parameterType="String" resultType="int">
+        SELECT COUNT(1) FROM bid_notice WHERE del_flag = '0' AND notice_type = #{noticeType}
+    </select>
+
+</mapper>

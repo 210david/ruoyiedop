@@ -20,6 +20,14 @@ export function nlQuery(question) {
   return request({ url: '/ai/nlquery/query', method: 'post', data: { question }, timeout: 90000 })
 }
 
+// 数据查询历史（本人，按用户隔离）
+export function listNlqHistory(params) {
+  return request({ url: '/ai/nlquery/history', method: 'get', params })
+}
+export function clearNlqHistory() {
+  return request({ url: '/ai/nlquery/history', method: 'delete' })
+}
+
 // 流式查询：POST + fetch ReadableStream 解析 SSE（EventSource 不支持 POST/自定义头）
 // 说明：dev 代理下 SSE 连接可能不会主动关闭，因此收到 result 事件后立即主动断开并 resolve，
 //       不依赖流结束信号；超时/外部取消通过 reject 的 error 标记区分

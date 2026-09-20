@@ -473,13 +473,14 @@
 </template>
 
 <script setup name="QmsTraceSearch">
-import { ref, reactive, getCurrentInstance } from 'vue'
+import { ref, reactive, getCurrentInstance, onMounted } from 'vue'
 import { forwardTrace, backwardTrace, fallbackTrace } from '@/api/qms/trace'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 
 const { proxy } = getCurrentInstance()
 const { qms_genealogy_source } = proxy.useDict('qms_genealogy_source')
 const router = useRouter()
+const route = useRoute()
 
 const loading = ref(false)
 const traceData = ref(null)
@@ -508,6 +509,16 @@ function handleTrace() {
     }
   }).finally(() => { loading.value = false })
 }
+
+// 支持从其他页面（如 MMS 批次追溯）带参跳转：/qms/trace/search?batchNo=xxx&direction=backward
+onMounted(() => {
+  const { batchNo, direction } = route.query
+  if (batchNo) {
+    queryParams.batchNo = String(batchNo)
+    queryParams.direction = direction === 'forward' ? 'forward' : 'backward'
+    handleTrace()
+  }
+})
 
 function goGenealogy() {
   router.push('/qms/trace/genealogy')
@@ -543,7 +554,68 @@ function countNodes(node) {
 
 function handleViewDetail(row) { currentDetail.value = row; detailTab.value = 'insp'; detailOpen.value = true }
 
-function handlePrint() { proxy.$modal.msgSuccess('追溯报告打印功能（PDF导出待对接文件服务）') }
+function handlePrint() {
+  if (!traceData.value) { proxy.$modal.msgWarning('请先执行追溯查询生成追溯结果'); return }
+  const rows = []
+  const walk = (nodes, level) => { for (const n of nodes || []) { rows.push({ ...n, _level: level }); walk(n.children, level + 1) } }
+  walk(traceData.value.children || [], 0)
+  const esc = v => (v === null || v === undefined || v === '') ? '-' : String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+  const dictLabel = v => { const d = (qms_genealogy_source.value || []).find(x => x.value == v); return d ? d.label : (esc(v) || '-') }
+  const isForward = queryParams.direction === 'forward'
+  const dirText = isForward ? '正向（原料→成品）' : '反向（成品→原料）'
+  const traceBatch = isForward ? traceData.value.parentBatchNo : traceData.value.childBatchNo
+  const breakCount = rows.filter(r => r.breakFlag === 1).length
+  const now = proxy.parseTime(new Date(), '{y}-{m}-{d} {h}:{i}:{s}')
+  const trs = rows.map(r => {
+    const indent = r._level ? 'padding-left:' + (12 + r._level * 22) + 'px' : 'padding-left:12px'
+    const prefix = r._level ? '<span style="color:#94a3b8;margin-right:6px">└</span>' : ''
+    const nodeBatch = isForward ? (r.childBatchNo || '断点') : (r.parentBatchNo || '断点')
+    const peerBatch = isForward ? (r.parentBatchNo || '-') : (r.childBatchNo || '-')
+    return '<tr>' +
+      `<td style="${indent}">${prefix}${esc(nodeBatch)}${r.breakFlag === 1 ? ' <span class="bk">断点</span>' : ''}</td>` +
+      `<td>${esc(peerBatch)}</td>` +
+      `<td>${r.materialCode ? esc(r.materialCode + ' / ' + r.materialName) : '-'}</td>` +
+      `<td>${esc(r.workOrderNo)}</td><td>${esc(r.opName)}</td><td>${esc(r.supplierName)}</td>` +
+      `<td class="num">${r.qtyIn == null ? '-' : r.qtyIn}</td><td class="num">${r.qtyOut == null ? '-' : r.qtyOut}</td>` +
+      `<td>${esc(dictLabel(r.sourceType))}</td><td>${esc(r.operator)}</td><td>${esc(r.traceTime)}</td>` +
+      '</tr>'
+  }).join('')
+  const html = '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><title>质量追溯报告 - ' + esc(traceBatch) + '</title><style>' +
+    'body{font-family:"Microsoft YaHei",Arial,sans-serif;color:#1f2937;margin:0;padding:32px;background:#f5f7fa}' +
+    '.sheet{background:#fff;padding:40px 48px;box-shadow:0 1px 4px rgba(0,0,0,.08)}' +
+    'h1{font-size:20px;text-align:center;margin:0 0 4px} .sub{color:#6b7280;text-align:center;font-size:12px;margin-bottom:24px}' +
+    'h2{font-size:14px;border-left:4px solid #2563eb;padding-left:8px;margin:24px 0 10px}' +
+    'table{width:100%;border-collapse:collapse;font-size:12px}' +
+    'th,td{border:1px solid #d1d5db;padding:6px 8px;text-align:left;vertical-align:middle}' +
+    'th{background:#f1f5f9;font-weight:600;white-space:nowrap} td.num{text-align:center}' +
+    '.meta td{border:1px solid #d1d5db;padding:8px 10px;font-size:12px} .meta td:first-child{background:#f8fafc;font-weight:600;width:110px;white-space:nowrap}' +
+    '.bk{display:inline-block;background:#fee2e2;color:#b91c1c;border-radius:3px;padding:0 5px;font-size:11px;margin-left:4px}' +
+    '.toolbar{max-width:1000px;margin:0 auto 16px;display:flex;gap:10px;justify-content:flex-end}' +
+    '.toolbar button{padding:8px 18px;font-size:14px;cursor:pointer;border-radius:6px;border:1px solid #2563eb;background:#2563eb;color:#fff}' +
+    '.toolbar button.ghost{background:#fff;color:#2563eb}' +
+    '.foot{margin-top:28px;font-size:11px;color:#9ca3af;display:flex;justify-content:space-between}' +
+    '@media print{body{background:#fff;padding:0}.sheet{box-shadow:none;padding:0}.toolbar{display:none}}' +
+    '@page{size:A4 landscape;margin:12mm}' +
+    '</style></head><body>' +
+    '<div class="toolbar"><button class="ghost" id="btnDl">下载 HTML 报告</button><button id="btnPrint">打印 / 保存 PDF</button></div>' +
+    '<div class="sheet"><h1>质量追溯报告</h1><div class="sub">EDOP 企业数字化平台 · 质量管理 · 质量追溯</div>' +
+    '<h2>一、追溯概要</h2><table class="meta"><tr><td>追溯批次</td><td>' + esc(traceBatch) + '</td><td>追溯方向</td><td>' + dirText + '</td></tr>' +
+    '<tr><td>关联节点数</td><td>' + rows.length + '</td><td>断点节点数</td><td>' + breakCount + '</td></tr>' +
+    '<tr><td>追溯时间</td><td>' + esc(traceData.value.traceTime) + '</td><td>报告生成时间</td><td>' + now + '</td></tr></table>' +
+    '<h2>二、谱系追溯明细</h2><table><thead><tr>' +
+    '<th>' + (isForward ? '产出批次' : '投入批次') + '</th><th>批次号</th><th>物料</th><th>工单号</th><th>工序</th><th>供应商</th><th>投入数量</th><th>产出数量</th><th>来源</th><th>操作员</th><th>谱系时间</th>' +
+    '</tr></thead><tbody>' + (trs || '<tr><td colspan="11" style="text-align:center;color:#9ca3af">无追溯节点</td></tr>') + '</tbody></table>' +
+    '<div class="foot"><span>报告生成人：系统管理员（自动生成）</span><span>第 1 / 1 页</span></div></div>' +
+    '<script>document.getElementById("btnPrint").onclick=function(){window.print()};' +
+    'document.getElementById("btnDl").onclick=function(){var b=new Blob([document.documentElement.outerHTML],{type:"text/html;charset=utf-8"});' +
+    'var a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=' + JSON.stringify('追溯报告_' + (traceBatch || 'report') + '.html') + ';a.click()};' +
+    '<\/script></body></html>'
+  const win = window.open('', '_blank')
+  if (!win) { proxy.$modal.msgError('浏览器拦截了弹出窗口，请允许本站弹出窗口后重试'); return }
+  win.document.open(); win.document.write(html); win.document.close()
+  setTimeout(() => { try { win.focus(); win.print() } catch (e) { /* 用户可手动点击打印按钮 */ } }, 400)
+  proxy.$modal.msgSuccess('追溯报告已生成')
+}
 </script>
 
 <style scoped>

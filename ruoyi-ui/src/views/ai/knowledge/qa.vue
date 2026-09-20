@@ -105,9 +105,26 @@
       </template>
     </el-drawer>
 
-    <!-- 来源文档预览弹窗 -->
-    <el-dialog v-model="previewOpen" :title="previewDoc.docName || '文档预览'" width="780px" append-to-body
+    <!-- 来源文档预览弹窗（支持最大化/还原） -->
+    <el-dialog v-model="previewOpen" :fullscreen="previewMaximized" width="780px" append-to-body
+      class="doc-preview-dialog" :class="{ 'is-max': previewMaximized }"
       destroy-on-close @closed="cleanupPreview">
+      <template #header>
+        <div class="doc-dialog-header">
+          <span class="doc-dialog-title" :title="previewDoc.docName || '文档预览'">{{ previewDoc.docName || '文档预览' }}</span>
+          <el-button class="doc-collapse-btn" link type="primary" @click="metaCollapsed = !metaCollapsed">
+            <el-icon :class="{ 'is-collapsed': metaCollapsed }"><ArrowUp /></el-icon>
+            <span class="doc-collapse-text">{{ metaCollapsed ? '展开信息' : '收起信息' }}</span>
+          </el-button>
+          <el-tooltip :content="previewMaximized ? '还原' : '最大化'" placement="bottom">
+            <el-button class="doc-max-btn" link @click="previewMaximized = !previewMaximized">
+              <el-icon v-if="!previewMaximized"><FullScreen /></el-icon>
+              <el-icon v-else><ScaleToOriginal /></el-icon>
+            </el-button>
+          </el-tooltip>
+        </div>
+      </template>
+      <div v-show="!metaCollapsed" class="doc-top-block">
       <div class="doc-meta">
         <div class="doc-meta-item"><span class="doc-meta-label">所属模块</span><span class="badge violet">{{ moduleNames[previewDoc.module] || previewDoc.module || '—' }}</span></div>
         <div class="doc-meta-item"><span class="doc-meta-label">文件类型</span><span class="badge blue">{{ (previewDoc.fileType || '').toUpperCase() || '—' }}</span></div>
@@ -122,14 +139,16 @@
         </el-radio-group>
         <el-button size="small" type="primary" plain icon="Download" :loading="downloading" @click="handleDownloadDoc">下载原文件</el-button>
       </div>
+      </div>
       <!-- 在线预览 -->
-      <div class="doc-preview-area" v-loading="previewLoading">
+      <div class="doc-preview-area" :style="previewAreaStyle" v-loading="previewLoading">
         <template v-if="previewTab === 'preview'">
           <iframe v-if="previewType === 'pdf' && previewUrl" :src="previewUrl" class="doc-frame"></iframe>
           <pre v-else-if="previewType === 'text'" class="doc-text">{{ previewText }}</pre>
+          <div v-else-if="previewType === 'docx'" ref="docxContainer" class="docx-preview-wrap"></div>
           <div v-else class="doc-preview-empty">
             <el-icon :size="30" color="#c0c4cc"><Document /></el-icon>
-            <div>{{ previewDoc.fileType === 'docx' ? 'docx 格式暂不支持在线预览，请下载原文件后查看' : '该格式暂不支持在线预览，请下载原文件后查看' }}</div>
+            <div>该格式暂不支持在线预览，请下载原文件后查看</div>
           </div>
         </template>
         <!-- 切片列表 -->
@@ -148,10 +167,11 @@
 </template>
 
 <script setup name="AiKnowledgeQa">
-import { knowledgeQa, listQaHistory, clearQaHistory, getDocInfo, getDocChunks, downloadDoc, findDocByName } from '@/api/ai/knowledge'
+import { knowledgeQa, listQaHistory, clearQaHistory, getDocInfo, getDocChunks, downloadDoc, findDocByName, getDocPreviewUrl } from '@/api/ai/knowledge'
+import { renderAsync } from 'docx-preview'
 import { parseTime } from '@/utils/ruoyi'
 import { saveAs } from 'file-saver'
-import { ChatDotRound, Clock, Delete, Document, Promotion, InfoFilled, Collection, Download } from '@element-plus/icons-vue'
+import { ChatDotRound, Clock, Delete, Document, Promotion, InfoFilled, Collection, Download, FullScreen, ScaleToOriginal, ArrowUp } from '@element-plus/icons-vue'
 import useUserStore from '@/store/modules/user'
 
 const { proxy } = getCurrentInstance()
@@ -254,11 +274,19 @@ function uniqueSources(sources) {
 
 /* ---------- 来源文档预览 ---------- */
 const previewOpen = ref(false)
+const previewMaximized = ref(false)
+const metaCollapsed = ref(false)
+/** 预览区高度：普通弹窗按收起状态估算；全屏时交由 flex 精确撑满，避免底部残留空白 */
+const previewAreaStyle = computed(() => {
+  if (previewMaximized.value) return { height: '100%' }
+  return { height: metaCollapsed.value ? '70vh' : '55vh', minHeight: '320px' }
+})
 const previewDoc = ref({})
 const previewTab = ref('preview')
-const previewType = ref('none') // pdf / text / none
+const previewType = ref('none') // pdf / text / docx / none
 const previewUrl = ref('')
 const previewText = ref('')
+const docxContainer = ref(null)
 const previewLoading = ref(false)
 const chunkList = ref([])
 const chunkLoading = ref(false)
@@ -274,27 +302,69 @@ function cleanupPreview() {
   previewText.value = ''
 }
 
-/** 加载在线预览内容：pdf用iframe渲染，txt/md显示全文，docx仅下载 */
-function loadPreviewContent(fileType) {
+/** 加载在线预览内容：pdf用iframe渲染，txt/md显示全文，Office文档优先服务端转PDF（保真），失败回退docx-preview */
+async function loadPreviewContent(fileType) {
   previewType.value = 'none'
   previewUrl.value = ''
   previewText.value = ''
   if (!previewDoc.value.docId) return
   const ft = (fileType || '').toLowerCase()
-  if (ft !== 'pdf' && ft !== 'txt' && ft !== 'md') return
+  const convertible = ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'rtf', 'odt', 'ods', 'odp']
+  if (ft !== 'pdf' && ft !== 'txt' && ft !== 'md' && !convertible.includes(ft)) return
   previewLoading.value = true
-  downloadDoc(previewDoc.value.docId).then(data => {
+  try {
+    // Office 文档：先尝试服务端转换后的 PDF（保真渲染，客户端无需控件）
+    if (convertible.includes(ft)) {
+      const ok = await tryServerPdfPreview()
+      if (ok) return
+      // 服务端转换不可用：docx 回退前端渲染，其他格式提示下载
+      if (ft !== 'docx') {
+        previewType.value = 'none'
+        return
+      }
+    }
+    const data = await downloadDoc(previewDoc.value.docId)
     if (!data || data.type === 'application/json') return
     if (ft === 'pdf') {
       previewUrl.value = URL.createObjectURL(new Blob([data], { type: 'application/pdf' }))
       previewType.value = 'pdf'
+    } else if (ft === 'docx') {
+      previewType.value = 'docx'
+      await nextTick()
+      if (!docxContainer.value) return
+      try {
+        await renderAsync(data, docxContainer.value, null, {
+          className: 'docx', inWrapper: true, ignoreWidth: false, ignoreHeight: false,
+          breakPages: true, experimental: true, useBase64URL: true
+        })
+      } catch (e) {
+        previewType.value = 'none'
+        proxy.$modal.msgError('文档渲染失败，请下载原文件查看')
+      }
     } else {
-      data.text().then(t => {
-        previewText.value = t
-        previewType.value = 'text'
-      })
+      const t = await data.text()
+      previewText.value = t
+      previewType.value = 'text'
     }
-  }).finally(() => { previewLoading.value = false })
+  } catch (e) {
+    previewType.value = 'none'
+  } finally {
+    previewLoading.value = false
+  }
+}
+
+/** 尝试用服务端转换的 PDF 预览（保真渲染）；成功返回 true */
+async function tryServerPdfPreview() {
+  try {
+    const data = await getDocPreviewUrl(previewDoc.value.docId)
+    // 转换失败时后端返回 JSON 错误体，需识别并回退
+    if (!data || data.type === 'application/json' || data.size < 1000) return false
+    previewUrl.value = URL.createObjectURL(new Blob([data], { type: 'application/pdf' }))
+    previewType.value = 'pdf'
+    return true
+  } catch (e) {
+    return false
+  }
 }
 
 function openSourceDoc(s) {
@@ -315,6 +385,8 @@ function openSourceDoc(s) {
     proxy.$modal.msgWarning('该来源缺少文档标识，无法打开')
     return
   }
+  previewMaximized.value = false
+  metaCollapsed.value = false
   previewOpen.value = true
   previewDoc.value = { docId: s.docId, docName: s.docName, module: s.module }
   chunkList.value = []
@@ -496,10 +568,17 @@ function inline(s) {
 .doc-meta-item .badge.violet { background:#f5f3ff; color:#4338ca; }
 .doc-meta-item .badge.blue { background:#eff6ff; color:#1d4ed8; }
 .doc-toolbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
-.doc-preview-area { min-height:360px; max-height:480px; overflow:auto; border:1px solid #e2e8f0; border-radius:10px; background:#fff; }
-.doc-frame { width:100%; height:480px; border:0; display:block; }
+.doc-preview-area { overflow:auto; border:1px solid #e2e8f0; border-radius:10px; background:#fff; }
+.doc-frame { width:100%; height:100%; border:0; display:block; }
 .doc-text { margin:0; padding:16px 18px; white-space:pre-wrap; word-break:break-word; font-size:13.5px; color:#374151; line-height:1.9; font-family:inherit; }
 .doc-preview-empty { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; padding:80px 0; color:#9ca3af; font-size:13px; }
+.docx-preview-wrap {
+  height: 100%; overflow: auto; padding: 10px; background: #f5f5f5;
+  :deep(.docx-wrapper) { background: #f5f5f5; padding: 10px; }
+  :deep(.docx-wrapper > section.docx) {
+    box-shadow: 0 2px 12px rgba(0,0,0,0.15); margin-bottom: 16px; background: #fff;
+  }
+}
 .doc-chunks { min-height:200px; }
 .doc-chunk-content { white-space:pre-wrap; font-size:13px; color:#4b5563; line-height:1.8; background:#f8fafc; border-radius:8px; padding:10px 12px; }
 .doc-chunks-empty { text-align:center; color:#9ca3af; font-size:13px; padding:20px 0; }
@@ -536,5 +615,38 @@ function inline(s) {
 .ai-history-time { flex:none; font-size:11px; color:#c0c4cc; margin-top:3px; }
 .ai-history-a { display:flex; align-items:flex-start; gap:6px; }
 .ai-history-atext { font-size:12px; color:#6b7280; line-height:1.6; }
+
+/* 来源文档预览弹窗：自定义头部（标题 + 最大化按钮） */
+.doc-dialog-header { display: flex; align-items: center; min-width: 0; padding-right: 30px; }
+.doc-dialog-title { font-size: 16px; font-weight: 600; color: #1f2937; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.doc-max-btn { margin-left: auto; margin-right: 24px; font-size: 16px; color: #6b7280; }
+.doc-max-btn:hover { color: #1d4ed8; }
+.doc-collapse-btn { margin-right: 6px; font-size: 14px; }
+.doc-collapse-btn:hover { color: #1d4ed8; }
+.doc-collapse-text { margin-left: 3px; font-size: 13px; font-weight: 600; }
+.doc-collapse-btn .el-icon { transition: transform .2s; }
+.doc-collapse-btn .el-icon.is-collapsed { transform: rotate(180deg); }
+</style>
+
+<!-- 弹窗根节点 append-to-body 挂到 body 下，需用非 scoped 样式覆盖 -->
+<style lang="scss">
+/* 弹窗内容高度由预览区内联样式精确控制（见 previewAreaStyle），此处只做容器配合 */
+.doc-preview-dialog {
+  .el-dialog__body { overflow: hidden; }
+  .doc-preview-area { overflow: auto; }
+  .doc-frame { height: 100%; }
+  .docx-preview-wrap { height: 100%; }
+}
+.doc-preview-dialog.is-max {
+  /* 注意：doc-preview-dialog 类就挂在 .el-dialog 根元素上，flex 必须设在根节点本身 */
+  display: flex;
+  flex-direction: column;
+  .el-dialog__header { flex: none; }
+  .el-dialog__body { flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; padding-bottom: 12px; }
+  .doc-top-block { flex: none; }
+  .doc-preview-area { flex: 1; min-height: 0; overflow: auto; }
+  .doc-frame { height: 100%; }
+  .docx-preview-wrap { height: 100%; }
+}
 .ai-history-loading { text-align:center; font-size:12px; color:#c0c4cc; padding:8px 0; }
 </style>

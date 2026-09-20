@@ -196,6 +196,82 @@ public class AiKnowledgeController extends BaseController
     }
 
     /**
+     * Office 文档在线预览（服务端转 PDF 后返回，供 iframe 内嵌渲染）
+     *
+     * 说明：前端 docx-preview 对复杂表格渲染保真度差，改由服务端 LibreOffice 转 PDF。
+     * 首次预览转换并缓存（uploadPath/convert/{docId}.pdf），之后直接命中缓存。
+     * 转换失败/不支持转换时返回 500，前端自动回退原有渲染方式。
+     */
+    @PreAuthorize("@ss.hasPermi('ai:knowledge:query')")
+    @GetMapping("/preview/{docId}")
+    public void previewDoc(@PathVariable Long docId, HttpServletResponse response)
+    {
+        try
+        {
+            AiKnowledgeDoc doc = docMapper.selectDocById(docId);
+            if (doc == null)
+            {
+                writeJsonError(response, "文档不存在或已被删除");
+                return;
+            }
+            if (!com.ruoyi.ai.core.OfficeConvertUtils.isConvertible(doc.getFileType()))
+            {
+                writeJsonError(response, "该格式不支持服务端转换预览");
+                return;
+            }
+            java.nio.file.Path srcPath = java.nio.file.Paths.get(RuoYiConfig.getProfile(), doc.getFilePath());
+            java.io.File srcFile = srcPath.toFile();
+            if (!srcFile.exists())
+            {
+                writeJsonError(response, "原文件已丢失，请重新上传");
+                return;
+            }
+            java.io.File pdf = com.ruoyi.ai.core.OfficeConvertUtils.getOrCreatePdf(docId, srcFile);
+            if (pdf == null || !pdf.exists())
+            {
+                writeJsonError(response, "文档转换预览失败，请下载原文件查看");
+                return;
+            }
+            response.setContentType("application/pdf");
+            // inline 内嵌展示，非下载
+            String encodedName = java.net.URLEncoder.encode(doc.getDocName() + ".pdf", "UTF-8").replace("+", "%20");
+            response.setHeader("Content-Disposition", "inline; filename*=UTF-8''" + encodedName);
+            response.setContentLengthLong(pdf.length());
+            // 允许前端 iframe 内嵌
+            response.setHeader("X-Frame-Options", "SAMEORIGIN");
+            try (java.io.InputStream in = java.nio.file.Files.newInputStream(pdf.toPath());
+                 java.io.OutputStream out = response.getOutputStream())
+            {
+                byte[] buf = new byte[8192];
+                int n;
+                while ((n = in.read(buf)) > 0)
+                {
+                    out.write(buf, 0, n);
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            logger.error("文档转换预览失败 docId={}: {}", docId, e.getMessage());
+        }
+    }
+
+    /** 输出 JSON 错误（预览接口为流式响应，不能直接返回 AjaxResult） */
+    private void writeJsonError(HttpServletResponse response, String msg)
+    {
+        try
+        {
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            response.setContentType("application/json;charset=UTF-8");
+            response.getWriter().write("{\"msg\":\"" + msg + "\",\"code\":500}");
+        }
+        catch (Exception ignored)
+        {
+            // 响应已提交时忽略
+        }
+    }
+
+    /**
      * 下载知识文档原文件
      */
     @PreAuthorize("@ss.hasPermi('ai:knowledge:query')")

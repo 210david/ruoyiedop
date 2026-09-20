@@ -55,4 +55,33 @@ public interface IQmsTraceService
      * @return 降级追溯结果（检验记录/NCR/仓库流转/采购收货/客诉等）
      */
     TraceFallbackVO fallbackTrace(String batchNo, String direction);
+
+    // ==================== 谱系事件写入（业务模块联动，幂等） ====================
+
+    /**
+     * 写入业务谱系事件（幂等）：以 sourceType + sourceNo 为幂等键，已存在则跳过返回0。
+     * 供 MMS 等业务模块在单据确认时调用；不抛业务异常阻断主流程（由调用方决定异常策略）。
+     * @return 实际写入条数（0=已存在跳过）
+     */
+    int recordGenealogyEvent(QmsLotGenealogy event);
+
+    /**
+     * 回填产出批次：业务单据（如完工入库）产生产出批次后，按 sourceType + sourceNo
+     * 找到此前写入的投入侧谱系（childBatchNo 为空的断点记录），回填产出批次并清除断点。
+     * @return 回填条数
+     */
+    int backfillChildBatch(String sourceType, String sourceNoPrefix, String childBatchNo);
+
+    /**
+     * 按工单回填产出批次：完工入库确认后，把该工单所有断点谱系
+     * （childBatchNo 为空，含 feeding/report 等）回填为完工批次号并清除断点。
+     * @return 回填条数
+     */
+    int backfillChildBatchByWorkOrder(String sourceType, String workOrderNo, String childBatchNo);
+
+    /**
+     * 撤销谱系事件：业务单据删除/取消时按 sourceType + sourceNo 逻辑删除对应谱系记录。
+     * @return 删除条数
+     */
+    int revokeGenealogyEvent(String sourceType, String sourceNo);
 }

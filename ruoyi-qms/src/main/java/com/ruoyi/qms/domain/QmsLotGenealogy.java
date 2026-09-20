@@ -81,6 +81,9 @@ public class QmsLotGenealogy extends BaseEntity
     @Excel(name = "来源类型", readConverterExp = "feeding=投料,report=报工,complete=完工,transfer=调拨,rework=返工,merge=合并,split=拆分,manual=补录")
     private String sourceType;
 
+    /** 来源单据号（幂等键：source_type+source_no 防止业务事件重复写入） */
+    private String sourceNo;
+
     /** 谱系时间 */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @Excel(name = "谱系时间", width = 20, dateFormat = "yyyy-MM-dd HH:mm:ss")
@@ -142,6 +145,8 @@ public class QmsLotGenealogy extends BaseEntity
     public void setSupplierName(String supplierName) { this.supplierName = supplierName; }
     public String getSourceType() { return sourceType; }
     public void setSourceType(String sourceType) { this.sourceType = sourceType; }
+    public String getSourceNo() { return sourceNo; }
+    public void setSourceNo(String sourceNo) { this.sourceNo = sourceNo; }
     public Date getTraceTime() { return traceTime; }
     public void setTraceTime(Date traceTime) { this.traceTime = traceTime; }
     public Integer getBreakFlag() { return breakFlag; }

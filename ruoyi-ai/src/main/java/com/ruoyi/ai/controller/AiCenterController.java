@@ -29,6 +29,12 @@ public class AiCenterController extends AiBaseConfigController
     @Autowired
     private AiClient aiClient;
 
+    @Autowired
+    private com.ruoyi.ai.mapper.AiQaHistoryMapper qaHistoryMapper;
+
+    @Autowired
+    private com.ruoyi.ai.mapper.AiNlqHistoryMapper nlqHistoryMapper;
+
     // ==================== AI配置 ====================
 
     /**
@@ -48,6 +54,17 @@ public class AiCenterController extends AiBaseConfigController
         config.put("modelName", getConfigStr("ai.model_name"));
         config.put("monthlyLimit", getConfigStr("ai.monthly_limit"));
         config.put("monthlyUsed", aiClient.getMonthlyUsed());
+        // 双口径统计（2026-09-19）：monthlyUsed=LLM调用次数（限额控制单位），
+        // monthlyQuestions=用户提问次数（一次提问内部可能多次调用 LLM）
+        try
+        {
+            config.put("monthlyQuestions", qaHistoryMapper.selectMonthlyCount() + nlqHistoryMapper.selectMonthlyCount());
+        }
+        catch (Exception e)
+        {
+            logger.warn("统计本月提问数失败: {}", e.getMessage());
+            config.put("monthlyQuestions", 0);
+        }
         // RAG向量检索（可选）：与对话模型解耦，未配置时知识库降级关键词检索
         config.put("embeddingUrl", getConfigStr("ai.embedding_url"));
         String embeddingKey = getConfigStr("ai.embedding_key");

@@ -15,6 +15,7 @@ import com.ruoyi.mk.service.IMkNumberRuleService;
 import com.ruoyi.mms.domain.MmsIssue;
 import com.ruoyi.mms.domain.MmsIssueDetail;
 import com.ruoyi.mms.mapper.MmsIssueMapper;
+import com.ruoyi.mms.service.IMmsGenealogySyncService;
 import com.ruoyi.mms.service.IMmsIssueService;
 
 /**
@@ -30,6 +31,9 @@ public class MmsIssueServiceImpl implements IMmsIssueService
 
     @Autowired
     private IMkNumberRuleService mkNumberRuleService;
+
+    @Autowired
+    private IMmsGenealogySyncService genealogySyncService;
 
     @Override
     @DataScope(deptAlias = "mms_issue")
@@ -113,6 +117,15 @@ public class MmsIssueServiceImpl implements IMmsIssueService
     @Transactional(rollbackFor = Exception.class)
     public int deleteIssueByIds(Long[] IssueIds)
     {
+        // ===== 谱系联动：撤销对应 feeding 谱系（失败不阻断） =====
+        for (Long id : IssueIds)
+        {
+            MmsIssue issue = issueMapper.selectIssueById(id);
+            if (issue != null && "1".equals(issue.getStatus()))
+            {
+                genealogySyncService.revoke("feeding", issue.getIssueNo());
+            }
+        }
         // 软删除明细
         for (Long id : IssueIds)
         {
@@ -154,6 +167,11 @@ public class MmsIssueServiceImpl implements IMmsIssueService
             {
                 throw new ServiceException("第" + (i + 1) + "行领料数量必须大于0");
             }
+            // 批次号强制必填：批次追溯谱系源头（feeding 事件），缺失将导致追溯链断点
+            if (StringUtils.isEmpty(d.getBatchNo()))
+            {
+                throw new ServiceException("第" + (i + 1) + "行（" + d.getMaterialCode() + "）批次号必填，请填写后重新提交");
+            }
         }
 
         // 同步明细数量到主表（兼容列表显示）
@@ -186,7 +204,19 @@ public class MmsIssueServiceImpl implements IMmsIssueService
         issue.setIssueTime(issue.getIssueTime() != null ? issue.getIssueTime() : new Date());
         issue.setUpdateBy(SecurityUtils.getUsername());
         issue.setUpdateTime(DateUtils.getNowDate());
-        return issueMapper.updateIssue(issue);
+        int rows = issueMapper.updateIssue(issue);
+
+        // ===== 谱系联动：领料确认 → 写入投料谱系（feeding，幂等，失败不阻断） =====
+        for (MmsIssueDetail d : issue.getDetailList())
+        {
+            genealogySyncService.syncFeeding(
+                    existing.getIssueNo(), existing.getWorkOrderNo(),
+                    null, null, // 领料明细当前无工序字段，工序维度由派工/报工谱系补充
+                    d.getMaterialId(), d.getMaterialCode(), d.getMaterialName(),
+                    d.getBatchNo(), d.getIssueQty(),
+                    issue.getIssueBy(), d.getSeq() != null ? d.getSeq() : 0);
+        }
+        return rows;
     }
 
     /**

@@ -141,9 +141,10 @@
                 <div class="title" :class="{ 'is-handled': msg.bizHandled == '1' || msg.bizHandled === true }">
                   {{ msg.messageTitle }}
                 </div>
-                <div class="desc" v-if="msg.messageContent">
+                <div class="desc">
                   <span v-if="msg.bizHandled == '1' || msg.bizHandled === true" class="handled-tag">已处理</span>
                   <span v-if="msg.bizHandled == '1' || msg.bizHandled === true" class="desc-sep">·</span>
+                  <span v-if="msg.messageContent" class="desc-text" v-html="highlightContent(msg.messageContent)"></span>
                   <span class="level-badge" :class="levelClass(msg.messageLevel)">{{ levelLabel(msg.messageLevel) }}</span>
                 </div>
               </div>
@@ -181,20 +182,28 @@
     <!-- 消息详情弹窗 -->
     <message-detail-view ref="messageViewRef" @read="onMessageRead" />
 
-    <!-- 通知设置弹窗 -->
-    <el-dialog v-model="showSettings" title="通知设置" width="520px" append-to-body>
-      <div class="settings-body">
+    <!-- 通知设置弹窗：卡片式设计，读写走后端（按用户隔离），控制顶部铃铛提醒类型 -->
+    <el-dialog v-model="showSettings" width="540px" append-to-body class="settings-dialog">
+      <template #header>
+        <div class="set-head">
+          <span class="set-head-icon"><el-icon><Setting /></el-icon></span>
+          <span class="set-head-title">通知设置</span>
+          <span class="set-head-sub">关闭后，该类消息不再出现在顶部铃铛提醒与消息中心列表中（历史记录不删除）</span>
+        </div>
+      </template>
+      <div class="settings-body" v-loading="settingsLoading">
         <div class="setting-row" v-for="item in settingItems" :key="item.key">
+          <span class="setting-glyph" :style="item.glyphStyle"><el-icon><component :is="item.icon" /></el-icon></span>
           <div class="setting-info">
-            <div class="setting-name">{{ item.name }}</div>
+            <div class="setting-name">{{ item.name }}<span v-if="item.count > 0" class="setting-count">{{ item.count }} 条未读</span></div>
             <div class="setting-desc">{{ item.desc }}</div>
           </div>
-          <el-switch v-model="item.enabled" />
+          <el-switch v-model="item.enabled" :disabled="settingsLoading" />
         </div>
       </div>
       <template #footer>
         <el-button @click="showSettings = false">取 消</el-button>
-        <el-button type="primary" @click="handleSaveSettings">保 存</el-button>
+        <el-button type="primary" :loading="settingsSaving" @click="handleSaveSettings">保 存</el-button>
       </template>
     </el-dialog>
   </div>
@@ -202,7 +211,7 @@
 
 <script setup name="Message">
 import MessageDetailView from "./DetailView"
-import { listMessage } from "@/api/system/message"
+import { listMessage, getNotifySetting, saveNotifySetting } from "@/api/system/message"
 import { useMessageStore } from '@/store/modules/message'
 import { Filter, Search, Check, View, DocumentChecked, MessageBox,
   WarningFilled, Bell, Tickets, Files, Memo, Setting } from '@element-plus/icons-vue'
@@ -212,6 +221,27 @@ const messageStore = useMessageStore()
 
 const { proxy } = getCurrentInstance()
 const { sys_message_type, sys_message_level, sys_message_biz_source } = useDict("sys_message_type", "sys_message_level", "sys_message_biz_source")
+
+// 通知设置（按用户落库）：关闭的消息类型在铃铛与消息中心列表同步隐藏
+const notifyTypes = ref(['1', '2', '3', '4']) // 默认全放行，onMounted 后按设置刷新
+
+/** 加载通知设置 → 刷新放行类型（铃铛与列表共用） */
+function loadNotifySetting() {
+  getNotifySetting().then(res => {
+    const d = res.data || {}
+    const types = []
+    if ((d.notifySystem ?? '1') !== '0') types.push('1')
+    if ((d.notifyAlert ?? '1') !== '0') types.push('2')
+    if ((d.notifyAudit ?? '1') !== '0') types.push('3')
+    if ((d.notifyTodo ?? '1') !== '0') types.push('4')
+    notifyTypes.value = types
+    // 若当前激活的分类被关闭，回到"全部"
+    if (activeCategory.value !== 'all' && activeCategory.value !== 'read' && !types.includes(activeCategory.value)) {
+      activeCategory.value = 'all'
+    }
+    getList()
+  }).catch(() => {})
+}
 
 const messageList = ref([])
 const loading = ref(true)
@@ -225,19 +255,48 @@ const activeCategory = ref('all')
 const unreadTotal = ref(0)
 const batchReading = ref(false)
 
-// 通知设置项
+// 通知设置项：与左侧分类同图标同配色；开关落库（sys_message_setting），控制顶部铃铛提醒
+const settingsLoading = ref(false)
+const settingsSaving = ref(false)
 const settingItems = ref([
-  { key: 'system', name: '系统通知', desc: '系统升级、维护等重要通知', enabled: true },
-  { key: 'alert', name: '业务预警', desc: '库存不足、订单异常等预警消息', enabled: true },
-  { key: 'audit', name: '审批消息', desc: '待审批、审批结果等消息提醒', enabled: true },
-  { key: 'todo', name: '待办事项', desc: '任务分配、到期提醒等待办消息', enabled: true },
-  { key: 'email', name: '邮件通知', desc: '同步发送邮件到您的邮箱', enabled: false },
+  { key: 'notifySystem', type: '1', name: '系统通知', desc: '系统升级、维护等重要通知', enabled: true, icon: Bell, glyphStyle: 'background:#ef4444; color:#fff;' },
+  { key: 'notifyAlert', type: '2', name: '业务预警', desc: '库存不足、订单异常等预警消息', enabled: true, icon: WarningFilled, glyphStyle: 'background:#f59e0b; color:#fff;' },
+  { key: 'notifyAudit', type: '3', name: '审批消息', desc: '待审批、审批结果等消息提醒', enabled: true, icon: Memo, glyphStyle: 'background:#10b981; color:#fff;' },
+  { key: 'notifyTodo', type: '4', name: '待办事项', desc: '任务分配、到期提醒等待办消息', enabled: true, icon: Tickets, glyphStyle: 'background:#3b82f6; color:#fff;' },
 ])
+// 注意：无"邮件通知"项 —— 平台无邮件推送能力，虚假开关已于 2026-09-19 移除
 
-/** 保存通知设置 */
+/** 打开设置弹窗：加载本人设置（落库）+ 各类型未读数 */
+watch(showSettings, (v) => {
+  if (!v) return
+  settingsLoading.value = true
+  Promise.all([
+    getNotifySetting(),
+    listMessage({ pageNum: 1, pageSize: 1, readStatus: '0', messageType: '1' }),
+    listMessage({ pageNum: 1, pageSize: 1, readStatus: '0', messageType: '2' }),
+    listMessage({ pageNum: 1, pageSize: 1, readStatus: '0', messageType: '3' }),
+    listMessage({ pageNum: 1, pageSize: 1, readStatus: '0', messageType: '4' })
+  ]).then(([setting, t1, t2, t3, t4]) => {
+    const d = setting.data || {}
+    const counts = { '1': t1.total, '2': t2.total, '3': t3.total, '4': t4.total }
+    settingItems.value.forEach(item => {
+      item.enabled = (d[item.key] ?? '1') !== '0'
+      item.count = counts[item.type] || 0
+    })
+  }).finally(() => { settingsLoading.value = false })
+})
+
+/** 保存通知设置：落库后刷新顶部铃铛与消息列表 */
 function handleSaveSettings() {
-  showSettings.value = false
-  proxy.$modal.msgSuccess('通知设置已保存')
+  settingsSaving.value = true
+  const body = {}
+  settingItems.value.forEach(item => { body[item.key] = item.enabled ? '1' : '0' })
+  saveNotifySetting(body).then(() => {
+    showSettings.value = false
+    proxy.$modal.msgSuccess('通知设置已保存，铃铛与消息列表即时生效')
+    loadNotifySetting()
+    messageStore.loadNoticeTop()
+  }).finally(() => { settingsSaving.value = false })
 }
 
 // 阅读状态页签
@@ -246,15 +305,15 @@ const readStatusTabs = [
   { label: '已读', value: '1' }
 ]
 
-// 分类导航 — 从后端独立查询各类型未读数，不依赖当前页数据
+// 分类导航 — 从后端独立查询各类型未读数，不依赖当前页数据；按通知设置隐藏已关闭类型
 const catCounts = ref({})
 const categories = computed(() => [
-  { key: 'all', label: '全部消息', icon: Files, glyphStyle: '', count: catCounts.value.total || 0 },
-  { key: '1', label: '系统通知', icon: Bell, glyphStyle: 'background:var(--green-50); color:var(--green-700);', count: catCounts.value['1'] || 0, hot: (catCounts.value['1'] || 0) > 0 },
-  { key: '2', label: '业务预警', icon: WarningFilled, glyphStyle: 'background:var(--red-50); color:var(--red-700);', count: catCounts.value['2'] || 0, hot: (catCounts.value['2'] || 0) > 0 },
-  { key: '3', label: '审批消息', icon: Memo, glyphStyle: 'background:var(--amber-50); color:var(--amber-700);', count: catCounts.value['3'] || 0, hot: (catCounts.value['3'] || 0) > 0 },
-  { key: '4', label: '待办事项', icon: Tickets, glyphStyle: 'background:var(--blue-50); color:var(--blue-700);', count: catCounts.value['4'] || 0, hot: (catCounts.value['4'] || 0) > 0 },
-])
+  { key: 'all', label: '全部消息', icon: Files, glyphStyle: 'background:#64748b; color:#fff;', count: catCounts.value.total || 0 },
+  { key: '1', label: '系统通知', icon: Bell, glyphStyle: 'background:#ef4444; color:#fff;', count: catCounts.value['1'] || 0, hot: (catCounts.value['1'] || 0) > 0 },
+  { key: '2', label: '业务预警', icon: WarningFilled, glyphStyle: 'background:#f59e0b; color:#fff;', count: catCounts.value['2'] || 0, hot: (catCounts.value['2'] || 0) > 0 },
+  { key: '3', label: '审批消息', icon: Memo, glyphStyle: 'background:#10b981; color:#fff;', count: catCounts.value['3'] || 0, hot: (catCounts.value['3'] || 0) > 0 },
+  { key: '4', label: '待办事项', icon: Tickets, glyphStyle: 'background:#3b82f6; color:#fff;', count: catCounts.value['4'] || 0, hot: (catCounts.value['4'] || 0) > 0 },
+].filter(cat => cat.key === 'all' || notifyTypes.value.includes(cat.key)))
 
 const hasUnread = computed(() => (catCounts.value.total || 0) > 0)
 
@@ -294,7 +353,23 @@ function msgKindClass(msg) {
   return map[msg.messageType] || 'kind-system'
 }
 
-/** 字典label查询 */
+/** 消息内容关键字段高亮：单号/编号→hl-mono；金额/日期/数量→hl-em（先转义保安全） */
+function highlightContent(text) {
+  if (!text) return ''
+  const esc = String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  return esc
+    // 单号/编号（字母开头编号，含多段连字符）：EQ202609160003、WO-202609010047、CAPA-2026090105
+    .replace(/\b([A-Z]{2,}[-]?[A-Z0-9][A-Z0-9-]{3,})\b/g, '<span class="hl-mono">$1</span>')
+    // 日期时间：2026-09-19、2026/09/19 14:30
+    .replace(/\d{4}[-/]\d{1,2}[-/]\d{1,2}(\s+\d{1,2}:\d{2}(:\d{2})?)?/g, '<span class="hl-em">$&</span>')
+    // 金额：¥123.45 / 1,234.56元 / 3万元
+    .replace(/(¥|￥)?\d[\d,]*(\.\d{1,2})?(元|万元)/g, '<span class="hl-em">$&</span>')
+    // 关键对象名：「」引号内容（计划名/客户名/设备名）
+    .replace(/「([^」]{2,30})」/g, '「<span class="hl-em">$1</span>」')
+    // 冒号枚举值：设备：数控加工中心 / 故障类型：PM维护 / 优先级：低
+    .replace(/(设备|故障类型|优先级|客户|订单号|工单号|批次号|规格|型号|数量|状态|原因|类型|等级)[:：]\s*([^，。、；\s]{2,20})/g,
+      '$1: <span class="hl-em">$2</span>')
+}
 function typeLabel(value) {
   const item = sys_message_type.value.find(d => d.value == value)
   return item ? item.label : '消息'
@@ -352,7 +427,12 @@ function handleCategoryClick(key) {
 /** 查询消息列表 */
 function getList() {
   loading.value = true
-  listMessage(proxy.addDateRange(queryParams.value, dateRange.value)).then(response => {
+  const params = { ...proxy.addDateRange(queryParams.value, dateRange.value) }
+  // 通知设置放行类型过滤（铃铛与列表同步生效）
+  if (notifyTypes.value.length < 4) {
+    params.messageTypes = notifyTypes.value.join(',')
+  }
+  listMessage(params).then(response => {
     messageList.value = response.rows
     total.value = response.total
     loading.value = false
@@ -399,6 +479,10 @@ function loadStatusCounts() {
       '4': t4.total
     }
     unreadTotal.value = catCounts.value.total
+    // "全部"计数按放行类型求和（隐藏类型不参与），避免与列表 total 不一致
+    catCounts.value.total = ['1', '2', '3', '4']
+      .filter(t => notifyTypes.value.includes(t))
+      .reduce((sum, t) => sum + (catCounts.value[t] || 0), 0)
   }).catch(() => {})
 }
 
@@ -470,11 +554,13 @@ function onMessageRead(messageId) {
   loadStatusCounts()
   messageStore.loadNoticeTop()
   if (activeStatusTab.value === '0') {
-    setTimeout(() => getList(), 300)
+    setTimeout(() => // 初始化：先加载通知设置（决定放行类型），再查列表
+loadNotifySetting(), 300)
   }
 }
 
-getList()
+// 初始化：先加载通知设置（决定放行类型），再查列表
+loadNotifySetting()
 </script>
 
 <style scoped>
@@ -537,7 +623,7 @@ getList()
 /* ===== Inbox Layout ===== */
 .sys-message-page .inbox {
   display: grid;
-  grid-template-columns: 260px 1fr;
+  grid-template-columns: 280px 1fr;
   gap: 16px;
   align-items: flex-start;
 }
@@ -550,6 +636,13 @@ getList()
   max-height: calc(100vh - 100px);
   overflow-y: auto;
   overscroll-behavior: contain;
+  /* 覆盖全局 aside 样式（index.scss 对 <aside> 的 padding/背景），分类背景才能贴近边框 */
+  padding: 0;
+  background: #fff;
+  margin-bottom: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: normal;
 }
 .sys-message-page .side-head {
   padding: 14px 16px 10px;
@@ -577,21 +670,23 @@ getList()
 }
 .sys-message-page .side-search input::placeholder { color: var(--ink-400); }
 
-.sys-message-page .cat-list { padding: 8px; }
+.sys-message-page .cat-list { padding: 0; }
 .sys-message-page .cat {
   display: flex; align-items: center; gap: 10px;
-  padding: 9px 10px; border-radius: var(--r-sm);
+  padding: 9px 10px; border-radius: 8px;
+  margin: 0 4px; /* 左右各留4px 小间距，背景色接近贴边但不压死 */
   cursor: pointer; transition: all .12s var(--ease-out);
   position: relative; color: var(--ink-700);
 }
 .sys-message-page .cat:hover { background: var(--ink-50); }
 .sys-message-page .cat .glyph {
-  width: 26px; height: 26px; border-radius: 7px;
+  width: 30px; height: 30px; border-radius: 50%;
   display: grid; place-items: center;
-  font-size: 13px; flex-shrink: 0;
+  font-size: 14px; flex-shrink: 0;
   background: #e2e8f0; color: #475569;
 }
-.sys-message-page .cat .glyph.glyph-gray { background: var(--ink-100); color: var(--ink-500); }
+.sys-message-page .cat.has-hot .glyph { box-shadow: 0 0 0 3px rgba(239,68,68,.08); }
+.sys-message-page .cat .glyph.glyph-gray { background: #94a3b8; color: #fff; }
 .sys-message-page .cat .name { flex: 1; font-size: 13.5px; font-weight: 500; }
 .sys-message-page .cat .count {
   min-width: 22px; height: 20px; padding: 0 6px;
@@ -606,11 +701,11 @@ getList()
 .sys-message-page .cat.is-active .name { font-weight: 600; }
 .sys-message-page .cat.is-active .count { background: var(--brand-600); color: #fff; }
 .sys-message-page .cat.is-active::before {
-  content: ''; position: absolute; left: -8px; top: 8px; bottom: 8px;
+  content: ''; position: absolute; left: -4px; top: 8px; bottom: 8px;
   width: 3px; border-radius: 2px; background: var(--brand-600);
 }
 .sys-message-page .cat.has-hot .count { background: var(--red-500); color: #fff; }
-.sys-message-page .cat-divider { height: 1px; background: var(--ink-200); margin: 8px 12px; }
+.sys-message-page .cat-divider { height: 1px; background: var(--ink-200); margin: 6px 0; }
 
 /* ===== Side Footer ===== */
 .sys-message-page .side-foot {
@@ -636,17 +731,49 @@ getList()
 }
 .sys-message-page .side-action-btn .el-icon { font-size: 14px; }
 
-/* ===== Notification Settings Dialog ===== */
+/* ===== Notification Settings Dialog（卡片式，对齐消息中心设计语言） ===== */
+:deep(.settings-dialog) { border-radius: 14px; overflow: hidden; }
+:deep(.settings-dialog .el-dialog__header) { padding: 0; margin: 0; }
+:deep(.settings-dialog .el-dialog__headerbtn) { top: 14px; right: 14px; }
+:deep(.settings-dialog .el-dialog__body) { padding: 8px 20px 4px; }
+.sys-message-page .set-head {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px;
+  padding: 16px 20px; background: linear-gradient(120deg, var(--brand-50), var(--ink-50));
+  border-bottom: 1px solid var(--ink-100);
+}
+.sys-message-page .set-head-icon {
+  width: 32px; height: 32px; border-radius: 9px; flex: none;
+  background: var(--brand-500); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 2px 8px rgba(99,102,241,.35);
+}
+.sys-message-page .set-head-title { font-size: 16px; font-weight: 700; color: var(--ink-900); }
+.sys-message-page .set-head-sub { flex-basis: 100%; font-size: 12px; color: var(--ink-500); }
 .sys-message-page .settings-body {
-  display: flex; flex-direction: column; gap: 4px;
+  display: flex; flex-direction: column; gap: 2px;
 }
 .sys-message-page .setting-row {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 14px 0; border-bottom: 1px solid var(--ink-100);
+  display: flex; align-items: center; gap: 12px;
+  padding: 13px 12px; border-radius: var(--r-md);
+  transition: background .15s;
+  flex-wrap: nowrap;
 }
-.sys-message-page .setting-row:last-child { border-bottom: 0; }
-.sys-message-page .setting-info { flex: 1; }
-.sys-message-page .setting-name { font-size: 14px; font-weight: 600; color: var(--ink-900); margin-bottom: 4px; }
+.sys-message-page .setting-row:hover { background: var(--ink-50); }
+.sys-message-page .setting-glyph {
+  flex: none; width: 34px; height: 34px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; font-size: 16px;
+}
+.sys-message-page .setting-info { flex: 1; min-width: 0; }
+.sys-message-page .setting-name {
+  font-size: 14px; font-weight: 600; color: var(--ink-900);
+  display: flex; align-items: center; gap: 8px; margin-bottom: 3px;
+  flex-wrap: nowrap;
+}
+.sys-message-page .setting-count {
+  flex: none; font-size: 11px; font-weight: 500; color: var(--brand-600);
+  background: var(--brand-50); border-radius: 9px; padding: 1px 8px;
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
 .sys-message-page .setting-desc { font-size: 12px; color: var(--ink-500); }
 
 /* ===== 右侧主区域 ===== */
@@ -807,9 +934,23 @@ getList()
   font-size: 11px; font-weight: 600;
 }
 .sys-message-page .msg .desc .desc-sep { color: var(--ink-300); }
+.sys-message-page .msg .desc .desc-text {
+  flex: 1; min-width: 0;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden; word-break: break-word;
+}
+/* 关键字段高亮：单号/编号（mono 等宽）与金额/日期/数量（em 强调） */
+.sys-message-page .msg .desc .desc-text :deep(.hl-mono) {
+  font-family: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, monospace;
+  font-size: 12px; color: var(--brand-700); font-weight: 600;
+  background: var(--brand-50); padding: 0 4px; border-radius: 4px;
+}
+.sys-message-page .msg .desc .desc-text :deep(.hl-em) {
+  color: var(--ink-900); font-weight: 600;
+}
 .sys-message-page .msg .desc .level-badge {
   padding: 1px 7px; border-radius: 4px;
-  font-size: 11px; font-weight: 600;
+  font-size: 11px; font-weight: 600; flex-shrink: 0;
 }
 .sys-message-page .msg .desc .level-normal { background: var(--ink-100); color: var(--ink-500); }
 .sys-message-page .msg .desc .level-important { background: var(--amber-50); color: var(--amber-700); }

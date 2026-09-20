@@ -23,7 +23,7 @@
       <el-col :xs="12" :sm="12" :md="6" :lg="6">
         <div class="completeness-card">
           <div class="completeness-card__label">目标差距</div>
-          <div class="completeness-card__value" :style="{ color: (completeness.gap || 0) <= 0 ? 'var(--green-500)' : 'var(--red-500)' }">{{ completeness.gap || 0 }}%</div>
+          <div class="completeness-card__value" :style="{ color: (completeness.gap || 0) <= 0 ? 'var(--green-500)' : 'var(--red-500)' }">{{ (completeness.gap || 0).toFixed(2) }}%</div>
         </div>
       </el-col>
     </el-row>

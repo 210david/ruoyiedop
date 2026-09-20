@@ -54,7 +54,7 @@ public interface SysMessageMapper
      * @param roleKeys 当前用户的权限标识列表
      * @return 未读数量
      */
-    public int selectUnreadCount(@Param("userId") Long userId, @Param("roleKeys") List<String> roleKeys);
+    public int selectUnreadCount(@Param("userId") Long userId, @Param("roleKeys") List<String> roleKeys, @Param("notifyTypes") List<String> notifyTypes);
 
     /**
      * 查询当前用户消息列表（首页铃铛用，带已读状态）
@@ -64,7 +64,7 @@ public interface SysMessageMapper
      * @param limit   最多返回条数
      * @return 消息列表
      */
-    public List<SysMessage> selectMessageListTop(@Param("userId") Long userId, @Param("roleKeys") List<String> roleKeys, @Param("limit") int limit);
+    public List<SysMessage> selectMessageListTop(@Param("userId") Long userId, @Param("roleKeys") List<String> roleKeys, @Param("limit") int limit, @Param("notifyTypes") List<String> notifyTypes);
 
     /**
      * 新增消息已读记录（幂等）

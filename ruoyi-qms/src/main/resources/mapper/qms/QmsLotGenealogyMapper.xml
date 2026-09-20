@@ -19,6 +19,7 @@
         <result property="supplierId" column="supplier_id"/>
         <result property="supplierName" column="supplier_name"/>
         <result property="sourceType" column="source_type"/>
+        <result property="sourceNo" column="source_no"/>
         <result property="traceTime" column="trace_time"/>
         <result property="breakFlag" column="break_flag"/>
         <result property="breakReason" column="break_reason"/>
@@ -35,7 +36,7 @@
         SELECT id, parent_batch_no, child_batch_no, work_order_no, op_id, op_name,
                material_id, material_code, material_name, qty_in, qty_out,
                line_id, line_name, operator, supplier_id, supplier_name,
-               source_type, trace_time, break_flag, break_reason,
+               source_type, source_no, trace_time, break_flag, break_reason,
                del_flag, status, create_by, create_time, update_by, update_time, remark
         FROM qms_lot_genealogy
     </sql>
@@ -99,13 +100,13 @@
             parent_batch_no, child_batch_no, work_order_no, op_id, op_name,
             material_id, material_code, material_name, qty_in, qty_out,
             line_id, line_name, operator, supplier_id, supplier_name,
-            source_type, trace_time, break_flag, break_reason,
+            source_type, source_no, trace_time, break_flag, break_reason,
             del_flag, status, create_by, create_time, remark
         ) VALUES (
             #{parentBatchNo}, #{childBatchNo}, #{workOrderNo}, #{opId}, #{opName},
             #{materialId}, #{materialCode}, #{materialName}, #{qtyIn}, #{qtyOut},
             #{lineId}, #{lineName}, #{operator}, #{supplierId}, #{supplierName},
-            #{sourceType}, #{traceTime}, #{breakFlag}, #{breakReason},
+            #{sourceType}, #{sourceNo}, #{traceTime}, #{breakFlag}, #{breakReason},
             '0', #{status}, #{createBy}, sysdate(), #{remark}
         )
     </insert>
@@ -115,7 +116,7 @@
             parent_batch_no, child_batch_no, work_order_no, op_id, op_name,
             material_id, material_code, material_name, qty_in, qty_out,
             line_id, line_name, operator, supplier_id, supplier_name,
-            source_type, trace_time, break_flag, break_reason,
+            source_type, source_no, trace_time, break_flag, break_reason,
             del_flag, status, create_by, create_time, remark
         ) VALUES
         <foreach item="item" collection="list" separator=",">
@@ -123,11 +124,17 @@
             #{item.parentBatchNo}, #{item.childBatchNo}, #{item.workOrderNo}, #{item.opId}, #{item.opName},
             #{item.materialId}, #{item.materialCode}, #{item.materialName}, #{item.qtyIn}, #{item.qtyOut},
             #{item.lineId}, #{item.lineName}, #{item.operator}, #{item.supplierId}, #{item.supplierName},
-            #{item.sourceType}, #{item.traceTime}, #{item.breakFlag}, #{item.breakReason},
+            #{item.sourceType}, #{item.sourceNo}, #{item.traceTime}, #{item.breakFlag}, #{item.breakReason},
             '0', '0', #{item.createBy}, sysdate(), #{item.remark}
         )
         </foreach>
     </insert>
+
+    <!-- 幂等检查：按 source_type + source_no 判断谱系事件是否已写入 -->
+    <select id="countBySource" resultType="int">
+        SELECT COUNT(1) FROM qms_lot_genealogy
+        WHERE del_flag = '0' AND source_type = #{sourceType} AND source_no = #{sourceNo}
+    </select>
 
     <update id="updateGenealogy" parameterType="QmsLotGenealogy">
         UPDATE qms_lot_genealogy
@@ -163,6 +170,21 @@
         UPDATE qms_lot_genealogy SET del_flag = '2' WHERE id IN
         <foreach item="id" collection="array" open="(" separator="," close=")">#{id}</foreach>
     </delete>
+
+    <!-- 按来源查谱系（业务单据联动回填/撤销用）；exact=0 时支持单据号前缀匹配（source_no = X 或 X-序号） -->
+    <select id="selectBySource" resultMap="QmsLotGenealogyResult">
+        <include refid="selectGenealogyVo"/>
+        WHERE del_flag = '0' AND source_type = #{sourceType}
+        <choose>
+            <when test="exact != null and exact == 1">
+                AND source_no = #{sourceNo}
+            </when>
+            <otherwise>
+                AND (source_no = #{sourceNo} OR source_no LIKE CONCAT(#{sourceNo}, '-%'))
+            </otherwise>
+        </choose>
+        ORDER BY trace_time
+    </select>
 
     <select id="checkCycle" resultType="int">
         SELECT COUNT(1) FROM qms_lot_genealogy

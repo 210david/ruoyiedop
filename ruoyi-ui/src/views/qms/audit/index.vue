@@ -227,7 +227,7 @@
             <div class="rd-card-body" v-show="!collapsedCards.e_basic">
               <el-row :gutter="20">
                 <el-col :span="12"><el-form-item label="审核标题" prop="auditTitle"><el-input v-model="form.auditTitle" placeholder="请输入" /></el-form-item></el-col>
-                <el-col :span="12"><el-form-item label="审核年度"><el-input-number v-model="form.auditYear" :min="2020" :max="2099" style="width: 100%" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="审核年度" prop="auditYear"><el-input-number v-model="form.auditYear" :min="2020" :max="2099" style="width: 100%" /></el-form-item></el-col>
               </el-row>
               <el-row :gutter="20">
                 <el-col :span="12"><el-form-item label="审核类型"><el-select v-model="form.auditType" style="width: 100%"><el-option label="年度计划" value="annual" /><el-option label="临时审核" value="adhoc" /></el-select></el-form-item></el-col>
@@ -239,16 +239,16 @@
             <div class="rd-card-header" @click="toggleCard('e_auditor')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>审核人员与时间</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.e_auditor }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
             <div class="rd-card-body" v-show="!collapsedCards.e_auditor">
               <el-row :gutter="20">
-                <el-col :span="8"><el-form-item label="主审人"><el-input v-model="form.leadAuditor" placeholder="请输入" /></el-form-item></el-col>
-                <el-col :span="8"><el-form-item label="开始日期"><el-date-picker v-model="form.auditDateFrom" type="date" value-format="YYYY-MM-DD" style="width: 100%" /></el-form-item></el-col>
-                <el-col :span="8"><el-form-item label="结束日期"><el-date-picker v-model="form.auditDateTo" type="date" value-format="YYYY-MM-DD" style="width: 100%" /></el-form-item></el-col>
+                <el-col :span="8"><el-form-item label="主审人" prop="leadAuditor"><el-input v-model="form.leadAuditor" placeholder="请输入" /></el-form-item></el-col>
+                <el-col :span="8"><el-form-item label="开始日期" prop="auditDateFrom"><el-date-picker v-model="form.auditDateFrom" type="date" value-format="YYYY-MM-DD" placeholder="请选择" style="width: 100%" @change="handleDateFromChange" /></el-form-item></el-col>
+                <el-col :span="8"><el-form-item label="结束日期" prop="auditDateTo"><el-date-picker v-model="form.auditDateTo" type="date" value-format="YYYY-MM-DD" placeholder="请选择" :disabled-date="disabledEndDate" style="width: 100%" /></el-form-item></el-col>
               </el-row>
             </div>
           </section>
           <section class="rd-card">
             <div class="rd-card-header" @click="toggleCard('e_content')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>审核范围与结论</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.e_content }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
             <div class="rd-card-body" v-show="!collapsedCards.e_content">
-              <el-form-item label="审核范围"><el-input v-model="form.auditScope" type="textarea" :rows="2" placeholder="请输入" /></el-form-item>
+              <el-form-item label="审核范围" prop="auditScope"><el-input v-model="form.auditScope" type="textarea" :rows="2" placeholder="请输入本次审核覆盖的部门、过程、产品范围" /></el-form-item>
               <el-form-item label="审核结论"><el-input v-model="form.auditConclusion" type="textarea" :rows="3" placeholder="请输入" /></el-form-item>
             </div>
           </section>
@@ -301,7 +301,7 @@
           <div class="highlight-card-title">审核基本信息区</div>
           <div class="highlight-card-body">
             <p>• <strong>审核标题：</strong>填写审核活动名称，如「2026年度质量管理体系内部审核」。<span style="color:#f56c6c;">*必填</span></p>
-            <p>• <strong>审核年度：</strong>选择审核所属年度</p>
+            <p>• <strong>审核年度：</strong>选择审核所属年度。<span style="color:#f56c6c;">*必填</span></p>
             <p>• <strong>审核类型：</strong>选择「年度计划」或「临时审核」</p>
             <p>• <strong>状态：</strong>设为审核当前状态（已计划/执行中/已完成/已关闭）</p>
           </div>
@@ -309,15 +309,15 @@
         <div class="highlight-card highlight-success" style="margin-top:12px;">
           <div class="highlight-card-title">审核人员与时间区</div>
           <div class="highlight-card-body">
-            <p>• <strong>主审人：</strong>填写具备内审员资质的主审核人姓名</p>
-            <p>• <strong>开始日期：</strong>选择审核计划开始日期</p>
-            <p>• <strong>结束日期：</strong>选择审核计划结束日期（应不早于开始日期）</p>
+            <p>• <strong>主审人：</strong>填写具备内审员资质的主审核人姓名。<span style="color:#f56c6c;">*必填</span></p>
+            <p>• <strong>开始日期：</strong>选择审核计划开始日期。<span style="color:#f56c6c;">*必填</span></p>
+            <p>• <strong>结束日期：</strong>选择审核计划结束日期，不得早于开始日期（早于开始日期的选项已被禁用）。<span style="color:#f56c6c;">*必填</span></p>
           </div>
         </div>
         <div class="highlight-card highlight-primary" style="margin-top:12px;">
           <div class="highlight-card-title">审核范围与结论区</div>
           <div class="highlight-card-body">
-            <p>• <strong>审核范围：</strong>描述本次审核覆盖的部门、过程、产品范围，如「生产部、质量部、采购部全部过程」</p>
+            <p>• <strong>审核范围：</strong>描述本次审核覆盖的部门、过程、产品范围，如「生产部、质量部、采购部全部过程」。<span style="color:#f56c6c;">*必填</span></p>
             <p>• <strong>审核结论：</strong>填写审核总体结论，包括体系符合性评价、主要问题概述、改进建议等</p>
           </div>
         </div>
@@ -386,7 +386,17 @@ function loadColumnVisibility() { try { const saved = localStorage.getItem('qms_
 const columns = ref(loadColumnVisibility())
 const data = reactive({ form: {}, queryParams: { pageNum: 1, pageSize: 10, auditPlanNo: undefined, auditTitle: undefined, auditYear: new Date().getFullYear(), planStatus: undefined, remark: undefined, params: {} } })
 const { queryParams, form } = toRefs(data)
-const rules = { auditTitle: [{ required: true, message: '请输入审核标题', trigger: 'blur' }] }
+const validateEndDate = (rule, value, callback) => { if (value && form.value.auditDateFrom && value < form.value.auditDateFrom) { callback(new Error('结束日期不能早于开始日期')) } else { callback() } }
+const rules = {
+  auditTitle: [{ required: true, message: '请输入审核标题', trigger: 'blur' }],
+  auditYear: [{ required: true, type: 'number', message: '请选择审核年度', trigger: 'change' }],
+  leadAuditor: [{ required: true, message: '请输入主审人', trigger: 'blur' }],
+  auditDateFrom: [{ required: true, message: '请选择开始日期', trigger: 'change' }],
+  auditDateTo: [{ required: true, message: '请选择结束日期', trigger: 'change' }, { validator: validateEndDate, trigger: 'change' }],
+  auditScope: [{ required: true, message: '请输入审核范围', trigger: 'blur' }]
+}
+function disabledEndDate(d) { if (!form.value.auditDateFrom) return false; const from = new Date(form.value.auditDateFrom + 'T00:00:00'); return d.getTime() < from.getTime() }
+function handleDateFromChange(val) { if (val && form.value.auditDateTo && form.value.auditDateTo < val) { form.value.auditDateTo = undefined } if (form.value.auditDateTo) { proxy.$refs['auditRef']?.validateField('auditDateTo') } }
 
 const activeFilterCount = computed(() => {
   let count = 0

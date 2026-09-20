@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.qms.domain.QmsAuditPlan;
 import com.ruoyi.qms.mapper.QmsAuditPlanMapper;
@@ -27,6 +28,7 @@ public class QmsAuditPlanServiceImpl implements IQmsAuditPlanService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertAuditPlan(QmsAuditPlan plan) {
+        validateAuditPlan(plan);
         if (StringUtils.isEmpty(plan.getAuditPlanNo())) {
             plan.setAuditPlanNo(mkNumberRuleService.generateNumber("qms_audit_plan"));
         }
@@ -36,8 +38,19 @@ public class QmsAuditPlanServiceImpl implements IQmsAuditPlanService {
     }
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public int updateAuditPlan(QmsAuditPlan plan) { return mapper.updateAuditPlan(plan); }
+    public int updateAuditPlan(QmsAuditPlan plan) { validateAuditPlan(plan); return mapper.updateAuditPlan(plan); }
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteAuditPlanByIds(Long[] auditPlanIds) { return mapper.deleteAuditPlanByIds(auditPlanIds); }
+
+    /** 保存前兜底校验：关键必填项 + 日期先后关系（与前端口径一致） */
+    private void validateAuditPlan(QmsAuditPlan plan) {
+        if (StringUtils.isEmpty(plan.getAuditTitle())) { throw new ServiceException("审核标题不能为空"); }
+        if (plan.getAuditYear() == null) { throw new ServiceException("审核年度不能为空"); }
+        if (StringUtils.isEmpty(plan.getLeadAuditor())) { throw new ServiceException("主审人不能为空"); }
+        if (plan.getAuditDateFrom() == null) { throw new ServiceException("开始日期不能为空"); }
+        if (plan.getAuditDateTo() == null) { throw new ServiceException("结束日期不能为空"); }
+        if (StringUtils.isEmpty(plan.getAuditScope())) { throw new ServiceException("审核范围不能为空"); }
+        if (plan.getAuditDateTo().before(plan.getAuditDateFrom())) { throw new ServiceException("结束日期不能早于开始日期"); }
+    }
 }
