@@ -15,7 +15,9 @@ import com.ruoyi.common.core.redis.RedisCache;
 import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.mk.domain.MkActivity;
+import com.ruoyi.mk.domain.MkActivityChannelLink;
 import com.ruoyi.mk.domain.MkActivityParticipant;
+import com.ruoyi.mk.mapper.MkActivityChannelLinkMapper;
 import com.ruoyi.mk.mapper.MkActivityMapper;
 import com.ruoyi.mk.mapper.MkActivityParticipantMapper;
 import com.ruoyi.mk.service.IMkPublicService;
@@ -62,6 +64,9 @@ public class MkPublicServiceImpl implements IMkPublicService
 
     @Autowired
     private MkActivityParticipantMapper mkActivityParticipantMapper;
+
+    @Autowired
+    private MkActivityChannelLinkMapper mkActivityChannelLinkMapper;
 
     @Autowired
     private RedisCache redisCache;
@@ -121,7 +126,7 @@ public class MkPublicServiceImpl implements IMkPublicService
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public Map<String, Object> register(MkActivityParticipant participant, String token)
+    public Map<String, Object> register(MkActivityParticipant participant, String token, String ch)
     {
         Long activityId = participant.getActivityId();
 
@@ -198,8 +203,29 @@ public class MkPublicServiceImpl implements IMkPublicService
             participant.setCreateBy("报名链接");
             participant.setRemark(null); // 清除用户输入的备注，防止XSS
 
+            // 推广归因：ch 非空时解析归因链接（归因失败不阻塞报名）
+            MkActivityChannelLink chLink = null;
+            if (StringUtils.isNotEmpty(ch))
+            {
+                chLink = mkActivityChannelLinkMapper.selectByChannelCode(ch);
+                if (chLink != null && chLink.getActivityId() != null && chLink.getActivityId().equals(activityId))
+                {
+                    participant.setChannelId(chLink.getChannelId());
+                }
+                else
+                {
+                    chLink = null; // 无效归因码，不记归因
+                }
+            }
+
             // 插入数据库
             mkActivityParticipantMapper.insertParticipant(participant);
+
+            // 归因链接报名数+1
+            if (chLink != null)
+            {
+                mkActivityChannelLinkMapper.increaseSignupCount(chLink.getLinkId());
+            }
 
             log.info("活动报名成功: activityId={}, phone={}, signInCode={}", activityId, participant.getContactPhone(), signInCode);
 

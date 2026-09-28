@@ -42,6 +42,10 @@
 .mk-list-page .filter-card .filter-actions { display:flex; align-items:center; justify-content:space-between; margin-top:14px; padding-top:14px; border-top:1px dashed var(--ink-200); }
 .mk-list-page .filter-card .filter-info { font-size:13px; color:var(--ink-500); display:flex; align-items:center; gap:6px; }
 .mk-list-page .filter-card .filter-buttons { display:flex; gap:8px; }
+/* 归因链接页：selector-card 复用 filter-actions 操作行 */
+.mk-list-page .selector-card .filter-actions { display:flex; align-items:center; justify-content:space-between; margin-top:14px; padding-top:14px; border-top:1px dashed var(--ink-200); }
+.mk-list-page .selector-card .filter-info { font-size:13px; color:var(--ink-500); display:flex; align-items:center; gap:6px; }
+.mk-list-page .selector-card .filter-buttons { display:flex; gap:8px; }
 
 /* ===== Form Field ===== */
 .mk-list-page .field { display:flex; flex-direction:column; gap:6px; }

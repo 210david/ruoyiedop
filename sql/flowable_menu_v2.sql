@@ -6,10 +6,11 @@
 SET NAMES utf8mb4;
 
 -- ========== 清理旧菜单树 ==========
-DELETE FROM sys_menu WHERE menu_name = '工作流管理' AND parent_id = 0;
+-- 先清理已知业务权限节点，避免直接删除父菜单后遗留孤儿按钮
+DELETE FROM sys_menu WHERE perms LIKE 'flowable:%';
+DELETE FROM sys_menu WHERE menu_name IN ('工作流管理', '流程中心') AND parent_id = 0;
 
 -- ========== 前台一级菜单：流程中心 ==========
-DELETE FROM sys_menu WHERE menu_name = '流程中心' AND parent_id = 0;
 INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark)
 VALUES ('流程中心', 0, 3, 'flow', NULL, 1, 0, 'M', '0', '0', '', 'example', 'admin', sysdate(), '业务用户流程入口（参照泛微前端）');
 SET @fc = LAST_INSERT_ID();

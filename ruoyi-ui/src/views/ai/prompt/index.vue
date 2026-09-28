@@ -96,7 +96,8 @@ const FEATURES = [
   { module: 'mms', feature: 'abnormal_advice', featureName: '异常诊断建议' },
   { module: 'mms', feature: 'daily_report', featureName: '生产日报生成' },
   { module: 'pms', feature: 'request_advice', featureName: '采购申请建议' },
-  { module: 'pms', feature: 'price_summary', featureName: '比价分析摘要' }
+  { module: 'pms', feature: 'price_summary', featureName: '比价分析摘要' },
+  { module: 'mk', feature: 'content_copy', featureName: '内容文案生成（营销）' }
 ]
 
 /* 内置默认提示词（后端集中注册，供默认状态回显） */

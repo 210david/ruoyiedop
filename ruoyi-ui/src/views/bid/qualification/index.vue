@@ -1,13 +1,19 @@
 <template>
   <div class="app-container bid-qualification-page">
     <div class="surface filter-card" v-show="showSearch">
-      <div class="filter-head"><div class="filter-title"><span class="glyph"></span> 筛选条件</div></div>
+      <div class="filter-head">
+        <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+        <a class="adv-link" :class="{ 'is-open': showAdvanced }" @click.prevent="showAdvanced = !showAdvanced">
+          <span>{{ showAdvanced ? '收起' : '高级筛选' }}</span><el-icon class="chev"><ArrowDown /></el-icon>
+        </a>
+      </div>
       <div class="filter-bar">
         <div class="field"><label>名称/证书编号</label><div class="control"><el-input v-model="queryParams.name" placeholder="请输入" clearable @keyup.enter="handleQuery" /></div></div>
         <div class="field"><label>资料类型</label><div class="control"><el-select v-model="queryParams.qualType" placeholder="全部" clearable style="width:100%"><el-option v-for="d in bid_qual_type" :key="d.value" :label="d.label" :value="d.value" /></el-select></div></div>
         <div class="field"><label>到期状态</label><div class="control"><el-select v-model="queryParams.expireStatus" placeholder="全部" clearable style="width:100%"><el-option label="30天内到期" value="soon30" /><el-option label="31-60天到期" value="soon60" /><el-option label="长期有效" value="long" /></el-select></div></div>
         <div class="field"><label>发证日期</label><div class="control"><el-date-picker v-model="issueRange" type="daterange" range-separator="-" start-placeholder="开始" end-placeholder="结束" value-format="YYYY-MM-DD" style="width:100%" /></div></div>
-        <div class="field"><label>持有人</label><div class="control"><el-input v-model="queryParams.ownerName" placeholder="请输入" clearable @keyup.enter="handleQuery" /></div></div>
+        <div class="field" v-show="showAdvanced"><label>持有人</label><div class="control"><el-input v-model="queryParams.ownerName" placeholder="请输入" clearable @keyup.enter="handleQuery" /></div></div>
+        <div class="field" v-show="showAdvanced"><label>资质等级</label><div class="control"><el-input v-model="queryParams.qualLevel" placeholder="请输入" clearable @keyup.enter="handleQuery" /></div></div>
       </div>
       <div class="filter-actions">
         <div class="filter-info"><el-icon><Filter /></el-icon> 已选 {{ activeFilterCount }} 个条件，支持回车快速搜索</div>
@@ -22,6 +28,7 @@
           <button class="status-tab" :class="{ 'is-active': activeTab === '1' }" @click="handleTabClick('1')"><span class="dot" style="background:var(--brand-500)"></span><span>企业资质</span><span class="count">{{ tabCounts['1'] || 0 }}</span></button>
           <button class="status-tab" :class="{ 'is-active': activeTab === '2' }" @click="handleTabClick('2')"><span class="dot" style="background:var(--blue-500)"></span><span>人员证书</span><span class="count">{{ tabCounts['2'] || 0 }}</span></button>
           <button class="status-tab" :class="{ 'is-active': activeTab === '3' }" @click="handleTabClick('3')"><span class="dot" style="background:var(--green-500)"></span><span>工程业绩</span><span class="count">{{ tabCounts['3'] || 0 }}</span></button>
+          <button class="status-tab" :class="{ 'is-active': activeTab === '4' }" @click="handleTabClick('4')"><span class="dot" style="background:var(--amber-500)"></span><span>获奖荣誉</span><span class="count">{{ tabCounts['4'] || 0 }}</span></button>
         </div>
         <button class="tip-pill" @click="showStatusHelp = true"><el-icon><QuestionFilled /></el-icon><span>业务操作说明</span></button>
       </div>
@@ -36,19 +43,19 @@
         <el-table ref="tableRef" v-loading="loading" :data="list" border class="app-table" @header-dragend="onHeaderDragEnd">
           <el-table-column type="index" label="序号" width="85" align="center" />
           <el-table-column label="名称" prop="name" key="name" :min-width="colWidth('name', 240)" show-overflow-tooltip resizable />
-          <el-table-column label="类型" prop="qualType" key="qualType" width="110" align="center">
+          <el-table-column label="类型" prop="qualType" key="qualType" :width="colWidth('qualType', 110)" resizable align="center">
             <template #default="scope"><span class="badge" :class="typeBadge(scope.row.qualType)">{{ typeLabel(scope.row.qualType) }}</span></template>
           </el-table-column>
-          <el-table-column label="证书编号" prop="certNo" key="certNo" width="180" align="center" />
+          <el-table-column label="证书编号" prop="certNo" key="certNo" :width="colWidth('certNo', 180)" resizable align="center" />
           <el-table-column label="资质等级" prop="qualLevel" key="qualLevel" :min-width="colWidth('qualLevel', 180)" show-overflow-tooltip resizable />
-          <el-table-column label="持有人" prop="ownerName" key="ownerName" width="110" align="center">
+          <el-table-column label="持有人" prop="ownerName" key="ownerName" :width="colWidth('ownerName', 110)" resizable align="center">
             <template #default="scope">{{ scope.row.ownerType === '1' ? '企业' : (scope.row.ownerName || '—') }}</template>
           </el-table-column>
-          <el-table-column label="发证日期" prop="issueDate" key="issueDate" width="120" align="center" />
-          <el-table-column label="有效期至" prop="expireDate" key="expireDate" width="130" align="center">
+          <el-table-column label="发证日期" prop="issueDate" key="issueDate" :width="colWidth('issueDate', 120)" resizable align="center" />
+          <el-table-column label="有效期至" prop="expireDate" key="expireDate" :width="colWidth('expireDate', 130)" resizable align="center">
             <template #default="scope">{{ scope.row.expireDate || '长期' }}</template>
           </el-table-column>
-          <el-table-column label="到期预警" key="remain" width="120" align="center">
+          <el-table-column label="到期预警" prop="remain" key="remain" :width="colWidth('remain', 120)" resizable align="center">
             <template #default="scope"><span class="badge" :class="remainBadge(scope.row)">{{ remainText(scope.row) }}</span></template>
           </el-table-column>
           <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
@@ -69,7 +76,7 @@
 
     <el-dialog v-model="open" width="860px" append-to-body draggable class="rd-dialog">
       <template #header><div class="rd-detail-header"><div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg></div><span class="rd-detail-header-title">{{ title }}</span></div></template>
-      <el-form ref="qualRef" :model="form" :rules="rules" label-width="110px">
+      <el-form ref="qualRef" :model="form" :rules="rules" label-width="110px" :disabled="isView">
         <section class="rd-card">
           <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg></span>资质信息</div></div>
           <div class="rd-card-body" style="display:block">
@@ -84,7 +91,7 @@
           </div>
         </section>
         <section class="rd-card">
-          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>归属与有效期</div></div>
+          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21V8l-8-5-8 5v13"/><path d="M2 21h20"/><path d="M9 21v-6h6v6"/></svg></span>归属与附件</div></div>
           <div class="rd-card-body" style="display:block">
             <el-row :gutter="20">
               <el-col :span="12"><el-form-item label="归属" prop="ownerType">
@@ -97,15 +104,25 @@
                   <template #append><el-button icon="Search" @click="openUserPicker" /></template>
                 </el-input>
               </el-form-item></el-col>
+              <el-col :span="24"><el-form-item label="扫描件" prop="fileUrl"><file-upload v-model="form.fileUrl" :disabled="isView" :fileSize="10" :fileType="['png','jpg','jpeg','gif','bmp','webp','pdf','doc','docx']" /></el-form-item></el-col>
+            </el-row>
+          </div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>有效期与预警</div></div>
+          <div class="rd-card-body" style="display:block">
+            <el-row :gutter="20">
               <el-col :span="12"><el-form-item label="发证日期" prop="issueDate"><el-date-picker v-model="form.issueDate" type="date" value-format="YYYY-MM-DD" style="width:100%" /></el-form-item></el-col>
               <el-col :span="12"><el-form-item label="有效期至" prop="expireDate"><el-date-picker v-model="form.expireDate" type="date" value-format="YYYY-MM-DD" placeholder="留空=长期有效" style="width:100%" /></el-form-item></el-col>
               <el-col :span="12"><el-form-item label="预警天数" prop="warnDays"><el-input-number v-model="form.warnDays" :min="7" :step="30" style="width:100%" /></el-form-item></el-col>
-              <el-col :span="24"><el-form-item label="扫描件" prop="fileUrl"><file-upload v-model="form.fileUrl" :fileSize="10" :fileType="['png','jpg','jpeg','gif','bmp','webp','pdf','doc','docx']" /></el-form-item></el-col>
             </el-row>
           </div>
         </section>
       </el-form>
-      <template #footer><el-button type="primary" @click="submitForm">确 定</el-button><el-button @click="cancel">取 消</el-button></template>
+      <template #footer>
+        <template v-if="isView"><el-button type="primary" @click="cancel">关 闭</el-button></template>
+        <template v-else><el-button type="primary" @click="submitForm">确 定</el-button><el-button @click="cancel">取 消</el-button></template>
+      </template>
     </el-dialog>
 
     <el-dialog v-model="showStatusHelp" title="资质资料库业务操作说明" width="820px" append-to-body>
@@ -140,9 +157,11 @@ const loading = ref(true)
 const list = ref([])
 const total = ref(0)
 const open = ref(false)
+const isView = ref(false)
 const title = ref('')
 const showSearch = ref(true)
 const issueRange = ref([])
+const showAdvanced = ref(false)
 const activeTab = ref('all')
 const tabCounts = ref({})
 const showStatusHelp = ref(false)
@@ -153,14 +172,18 @@ const data = reactive({
   queryParams: { pageNum: 1, pageSize: 10, name: undefined, qualType: undefined, expireStatus: undefined, ownerName: undefined, params: {} },
   rules: {
     qualType: [{ required: true, message: '资料类型不能为空', trigger: 'change' }],
-    name: [{ required: true, message: '名称不能为空', trigger: 'blur' }]
+    name: [{ required: true, message: '名称不能为空', trigger: 'blur' }],
+    certNo: [{ required: true, message: '证书编号不能为空', trigger: 'blur' }],
+    qualLevel: [{ required: true, message: '资质等级不能为空', trigger: 'blur' }],
+    ownerType: [{ required: true, message: '归属不能为空', trigger: 'change' }],
+    issueDate: [{ required: true, message: '发证日期不能为空', trigger: 'change' }]
   }
 })
 const { queryParams, form, rules } = toRefs(data)
 
 const activeFilterCount = computed(() => {
   const q = queryParams.value
-  return ['name','qualType','expireStatus','ownerName'].filter(k => q[k]).length + (issueRange.value.length ? 1 : 0)
+  return ['name','qualType','expireStatus','ownerName','qualLevel'].filter(k => q[k]).length + (issueRange.value.length ? 1 : 0)
 })
 
 function typeLabel(v) { const d = bid_qual_type.value.find(x => x.value == v); return d ? d.label : '—' }
@@ -181,19 +204,28 @@ function remainText(row) {
 
 function getList() {
   loading.value = true
-  listQualification(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; tabCounts.value = { all: res.total }; loading.value = false; applySavedWidths() })
+  listQualification(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false; applySavedWidths() })
+  loadCounts()
+}
+/** 分类页签计数：逐类型取 total，与列表口径一致 */
+function loadCounts() {
+  const types = ['1', '2', '3', '4']
+  listQualification({ pageNum: 1, pageSize: 1 }).then(res => { tabCounts.value.all = res.total })
+  types.forEach(t => {
+    listQualification({ pageNum: 1, pageSize: 1, qualType: t }).then(res => { tabCounts.value[t] = res.total })
+  })
 }
 function handleTabClick(tab) { activeTab.value = tab; queryParams.value.qualType = tab === 'all' ? undefined : tab; handleQuery() }
-function handleQuery() { queryParams.value.pageNum = 1; proxy.addDateRange(queryParams.value, issueRange.value, 'IssueDate'); getList() }
-function resetQuery() { proxy.resetForm('queryRef'); queryParams.value.params = {}; issueRange.value = []; activeTab.value = 'all'; handleQuery() }
+function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; proxy.addDateRange(queryParams.value, issueRange.value, 'IssueDate'); getList() }
+function resetQuery() { queryParams.value = { pageNum: 1, pageSize: queryParams.value.pageSize, name: undefined, qualType: undefined, expireStatus: undefined, ownerName: undefined, params: {} }; issueRange.value = []; activeTab.value = 'all'; getList() }
 
 function reset() {
   form.value = { qualificationId: undefined, qualType: '1', name: undefined, certNo: undefined, qualLevel: undefined, ownerType: '1', ownerUserId: undefined, ownerName: undefined, issueDate: undefined, expireDate: undefined, warnDays: 60, fileUrl: undefined }
   proxy.resetForm('qualRef')
 }
-function handleAdd() { reset(); open.value = true; title.value = '登记资质资料' }
-function handleUpdate(row) { reset(); getQualification(row.qualificationId).then(res => { form.value = res.data; open.value = true; title.value = '修改资质资料' }) }
-function handleDetail(row) { handleUpdate(row) }
+function handleAdd() { reset(); isView.value = false; open.value = true; title.value = '登记资质资料' }
+function handleUpdate(row) { reset(); isView.value = false; getQualification(row.qualificationId).then(res => { form.value = res.data; open.value = true; title.value = '修改资质资料' }) }
+function handleDetail(row) { reset(); isView.value = true; getQualification(row.qualificationId).then(res => { form.value = res.data; open.value = true; title.value = '资质详情' }) }
 function openUserPicker() { proxy.$refs.userPickerRef.open(form.value.ownerUserId) }
 function onUserPickerConfirm(user) { form.value.ownerUserId = user.userId; form.value.ownerName = user.nickName; if (user.deptId) { form.value.deptId = user.deptId } }
 function submitForm() {
@@ -221,7 +253,11 @@ onActivated(() => { getList() })
 <style scoped>
 .bid-qualification-page { padding-top:10px; --brand-50:#eef2ff; --brand-200:#c7d2fe; --brand-500:#6366f1; --brand-600:#4f46e5; --brand-700:#4338ca; --ink-900:#0f172a; --ink-700:#334155; --ink-500:#64748b; --ink-400:#94a3b8; --ink-300:#cbd5e1; --ink-200:#e2e8f0; --ink-100:#f1f5f9; --ink-50:#f8fafc; --amber-50:#fffbeb; --amber-500:#f59e0b; --amber-700:#b45309; --blue-50:#eff6ff; --blue-500:#3b82f6; --blue-700:#1d4ed8; --green-50:#ecfdf5; --green-500:#10b981; --green-700:#047857; --red-50:#fef2f2; --red-500:#ef4444; --red-700:#b91c1c; --violet-50:#f5f3ff; --r-sm:6px; --r-lg:14px; --shadow-card:0 1px 0 rgba(15,23,42,.04),0 1px 2px rgba(15,23,42,.04); font-feature-settings:"tnum" 1; color:var(--ink-900); }
 .bid-qualification-page .surface { background:#fff; border:1px solid var(--ink-200); border-radius:var(--r-lg); box-shadow:var(--shadow-card); overflow:hidden; margin-bottom:8px; }
-.bid-qualification-page .filter-head { display:flex; align-items:center; padding:12px 20px 0; }
+.bid-qualification-page .filter-head { display:flex; align-items:center; justify-content:space-between; padding:12px 20px 0; }
+.bid-qualification-page .adv-link { display:inline-flex; align-items:center; gap:4px; color:var(--ink-500); cursor:pointer; font-size:13px; }
+.bid-qualification-page .adv-link:hover { color:var(--brand-600); }
+.bid-qualification-page .adv-link.is-open .chev { transform:rotate(180deg); }
+.bid-qualification-page .adv-link .chev { transition:transform .2s; }
 .bid-qualification-page .filter-title { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; }
 .bid-qualification-page .filter-title .glyph { width:4px; height:14px; border-radius:2px; background:var(--brand-500); }
 .bid-qualification-page .filter-bar { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px 16px; padding:12px 20px; }

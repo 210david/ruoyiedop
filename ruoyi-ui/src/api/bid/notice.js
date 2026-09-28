@@ -21,6 +21,9 @@ export function getArchive(projectKey) {
 export function aiExtractNotice(noticeId) {
   return request({ url: '/bid/notice/aiExtract/' + noticeId, method: 'post' })
 }
+export function applyAiExtract(noticeId, fields) {
+  return request({ url: '/bid/notice/aiExtract/' + noticeId + '/apply', method: 'post', data: fields })
+}
 export function toProject(noticeId) {
   return request({ url: '/bid/notice/toProject/' + noticeId, method: 'post' })
 }

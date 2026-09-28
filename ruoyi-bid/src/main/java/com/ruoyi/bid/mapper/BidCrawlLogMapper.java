@@ -14,5 +14,7 @@ public interface BidCrawlLogMapper
 
     public List<BidCrawlLog> selectRecentBySourceId(Long sourceId);
 
+    public List<java.util.Map<String, Object>> selectStatusCounts(BidCrawlLog log);
+
     public int insertLog(BidCrawlLog log);
 }

@@ -1,6 +1,7 @@
 package com.ruoyi.bid.controller;
 
 import java.util.List;
+import java.util.Map;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -95,13 +96,22 @@ public class BidNoticeController extends BaseController
         return toAjax(noticeService.deleteNoticeByIds(noticeIds));
     }
 
-    /** AI 智能抽取 */
-    @Log(title = "招标公告AI抽取", businessType = BusinessType.UPDATE)
+    /** AI 智能抽取（仅预览，不落库） */
+    @Log(title = "招标公告AI抽取", businessType = BusinessType.OTHER)
     @PreAuthorize("@ss.hasPermi('bid:notice:edit')")
     @PostMapping("/aiExtract/{noticeId}")
     public AjaxResult aiExtract(@PathVariable("noticeId") Long noticeId)
     {
         return AjaxResult.success(noticeService.aiExtract(noticeId));
+    }
+
+    /** AI 抽取结果确认回填：仅采纳字段，已有值不覆盖 */
+    @Log(title = "招标公告AI抽取回填", businessType = BusinessType.UPDATE)
+    @PreAuthorize("@ss.hasPermi('bid:notice:edit')")
+    @PostMapping("/aiExtract/{noticeId}/apply")
+    public AjaxResult applyAiExtract(@PathVariable("noticeId") Long noticeId, @RequestBody Map<String, String> fields)
+    {
+        return toAjax(noticeService.applyAiExtract(noticeId, fields));
     }
 
     /** 公告一键转投标项目 */

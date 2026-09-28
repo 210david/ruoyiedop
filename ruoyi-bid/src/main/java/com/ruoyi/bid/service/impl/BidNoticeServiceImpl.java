@@ -1,6 +1,9 @@
 package com.ruoyi.bid.service.impl;
 
+import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -92,7 +95,7 @@ public class BidNoticeServiceImpl implements IBidNoticeService
     }
 
     @Override
-    public BidNotice aiExtract(Long noticeId)
+    public Map<String, Object> aiExtract(Long noticeId)
     {
         BidNotice notice = bidNoticeMapper.selectNoticeById(noticeId);
         if (notice == null)
@@ -123,36 +126,20 @@ public class BidNoticeServiceImpl implements IBidNoticeService
             // 剥离可能的 markdown 代码块包裹
             content = content.replaceAll("^```(json)?", "").replaceAll("```$", "").trim();
             JSONObject json = JSON.parseObject(content);
-            BidNotice update = new BidNotice();
-            update.setNoticeId(noticeId);
-            update.setTenderee(json.getString("tenderee"));
-            update.setAgent(json.getString("agent"));
-            update.setContactPerson(json.getString("contactPerson"));
-            update.setContactPhone(json.getString("contactPhone"));
-            String deadline = json.getString("deadlineTime");
-            if (StringUtils.isNotEmpty(deadline) && !"null".equals(deadline))
-            {
-                update.setDeadlineTime(DateUtils.parseDate(deadline.replace('T', ' ')));
-            }
-            String open = json.getString("openTime");
-            if (StringUtils.isNotEmpty(open) && !"null".equals(open))
-            {
-                update.setOpenTime(DateUtils.parseDate(open.replace('T', ' ')));
-            }
-            String budget = json.getString("budgetAmount");
-            if (StringUtils.isNotEmpty(budget) && !"null".equals(budget))
-            {
-                update.setBudgetAmount(new java.math.BigDecimal(budget.replaceAll("[^0-9.]", "")));
-            }
-            String region = json.getString("region");
-            if (StringUtils.isNotEmpty(region) && !"null".equals(region))
-            {
-                update.setRegionCode(region);
-            }
-            update.setAiExtracted("1");
-            bidNoticeMapper.updateNotice(update);
-            // 返回合并后的最新数据
-            return bidNoticeMapper.selectNoticeById(noticeId);
+            // 组装预览字段（字符串形式，供前端确认；不落库）
+            Map<String, Object> preview = new LinkedHashMap<>();
+            preview.put("deadlineTime", normalizeNull(json.getString("deadlineTime")));
+            preview.put("openTime", normalizeNull(json.getString("openTime")));
+            preview.put("budgetAmount", normalizeNull(json.getString("budgetAmount")));
+            preview.put("tenderee", normalizeNull(json.getString("tenderee")));
+            preview.put("agent", normalizeNull(json.getString("agent")));
+            preview.put("contactPerson", normalizeNull(json.getString("contactPerson")));
+            preview.put("contactPhone", normalizeNull(json.getString("contactPhone")));
+            preview.put("region", normalizeNull(json.getString("region")));
+            Map<String, Object> resp = new LinkedHashMap<>();
+            resp.put("noticeId", noticeId);
+            resp.put("fields", preview);
+            return resp;
         }
         catch (ServiceException e)
         {
@@ -167,6 +154,78 @@ public class BidNoticeServiceImpl implements IBidNoticeService
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    public int applyAiExtract(Long noticeId, Map<String, String> fields)
+    {
+        BidNotice notice = bidNoticeMapper.selectNoticeById(noticeId);
+        if (notice == null)
+        {
+            throw new ServiceException("公告不存在");
+        }
+        if (fields == null || fields.isEmpty())
+        {
+            throw new ServiceException("未选择任何要回填的字段");
+        }
+        BidNotice update = new BidNotice();
+        update.setNoticeId(noticeId);
+        // 已有值不覆盖：仅当字段为空时才采纳 AI 抽取值
+        if (fields.containsKey("deadlineTime") && notice.getDeadlineTime() == null)
+        {
+            update.setDeadlineTime(parseDateField(fields.get("deadlineTime")));
+        }
+        if (fields.containsKey("openTime") && notice.getOpenTime() == null)
+        {
+            update.setOpenTime(parseDateField(fields.get("openTime")));
+        }
+        if (fields.containsKey("budgetAmount") && notice.getBudgetAmount() == null)
+        {
+            String budget = fields.get("budgetAmount");
+            if (StringUtils.isNotEmpty(budget))
+            {
+                update.setBudgetAmount(new java.math.BigDecimal(budget.replaceAll("[^0-9.]", "")));
+            }
+        }
+        if (fields.containsKey("tenderee") && StringUtils.isEmpty(notice.getTenderee()))
+        {
+            update.setTenderee(fields.get("tenderee"));
+        }
+        if (fields.containsKey("agent") && StringUtils.isEmpty(notice.getAgent()))
+        {
+            update.setAgent(fields.get("agent"));
+        }
+        if (fields.containsKey("contactPerson") && StringUtils.isEmpty(notice.getContactPerson()))
+        {
+            update.setContactPerson(fields.get("contactPerson"));
+        }
+        if (fields.containsKey("contactPhone") && StringUtils.isEmpty(notice.getContactPhone()))
+        {
+            update.setContactPhone(fields.get("contactPhone"));
+        }
+        if (fields.containsKey("region") && StringUtils.isEmpty(notice.getRegionCode()))
+        {
+            update.setRegionCode(fields.get("region"));
+        }
+        update.setAiExtracted("1");
+        return bidNoticeMapper.updateNotice(update);
+    }
+
+    /** 解析 AI 抽取的时间字段，空/null 返回 null */
+    private Date parseDateField(String value)
+    {
+        if (StringUtils.isEmpty(value) || "null".equals(value))
+        {
+            return null;
+        }
+        return DateUtils.parseDate(value.replace('T', ' '));
+    }
+
+    /** 归一化 AI 返回值：null 字符串转为 null */
+    private String normalizeNull(String value)
+    {
+        return (value == null || "null".equals(value)) ? null : value;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
     public String toProject(Long noticeId)
     {
         BidNotice notice = bidNoticeMapper.selectNoticeById(noticeId);
@@ -174,13 +233,11 @@ public class BidNoticeServiceImpl implements IBidNoticeService
         {
             throw new ServiceException("公告不存在");
         }
-        // 简单防重：同公告已存在未删除的投标项目则拒绝
-        BidProject query = new BidProject();
-        query.setNoticeId(noticeId);
-        List<com.ruoyi.bid.domain.BidProject> exists = bidProjectMapper.selectProjectList(query);
-        if (exists != null && !exists.isEmpty())
+        // 精确防重：仅同公告已存在未删除的投标项目时拒绝
+        BidProject existingProject = bidProjectMapper.selectActiveProjectByNoticeId(noticeId);
+        if (existingProject != null)
         {
-            throw new ServiceException("该公告已登记投标项目（" + exists.get(0).getBidNo() + "），请勿重复登记");
+            throw new ServiceException("该公告已登记投标项目（" + existingProject.getBidNo() + "），请勿重复登记");
         }
         BidProject project = new BidProject();
         project.setNoticeId(noticeId);

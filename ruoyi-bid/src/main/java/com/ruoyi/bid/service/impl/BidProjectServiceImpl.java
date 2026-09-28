@@ -11,7 +11,6 @@ import com.ruoyi.bid.service.IBidProjectService;
 import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.StringUtils;
-import com.ruoyi.mk.service.IMkNumberRuleService;
 
 /**
  * 投标项目 Service 实现（含状态机、节点、预警）
@@ -36,9 +35,6 @@ public class BidProjectServiceImpl implements IBidProjectService
     @Autowired
     private BidProjectMapper projectMapper;
 
-    @Autowired
-    private IMkNumberRuleService mkNumberRuleService;
-
     @Override
     public List<BidProject> selectProjectList(BidProject project)
     {
@@ -58,24 +54,6 @@ public class BidProjectServiceImpl implements IBidProjectService
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public int insertProject(BidProject project)
-    {
-        validate(project);
-        if (StringUtils.isEmpty(project.getBidNo()))
-        {
-            project.setBidNo(mkNumberRuleService.generateNumber("bid_project"));
-        }
-        if (StringUtils.isEmpty(project.getStatus()))
-        {
-            project.setStatus("0");
-        }
-        int rows = projectMapper.insertProject(project);
-        saveNodes(project);
-        return rows;
-    }
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
     public int updateProject(BidProject project)
     {
         validate(project);
@@ -91,10 +69,35 @@ public class BidProjectServiceImpl implements IBidProjectService
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    public int updateNode(BidProjectNode node)
+    {
+        BidProjectNode exist = projectMapper.selectNodeById(node.getNodeId());
+        if (exist == null)
+        {
+            throw new ServiceException("进度节点不存在");
+        }
+        BidProjectNode update = new BidProjectNode();
+        update.setNodeId(node.getNodeId());
+        update.setPlanTime(node.getPlanTime());
+        update.setActualTime(node.getActualTime());
+        update.setBlockDesc(node.getBlockDesc());
+        update.setFinishFlag(node.getFinishFlag());
+        update.setHandlerId(node.getHandlerId());
+        update.setHandlerName(node.getHandlerName());
+        return projectMapper.updateNode(update);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
     public int deleteProjectByIds(Long[] projectIds)
     {
         for (Long id : projectIds)
         {
+            BidProject project = projectMapper.selectProjectById(id);
+            if (project != null && !"0".equals(project.getStatus()))
+            {
+                throw new ServiceException("仅草稿状态的投标项目可删除：「" + project.getBidNo() + "」当前不可删除");
+            }
             projectMapper.deleteNodeByProjectId(id);
         }
         return projectMapper.deleteProjectByIds(projectIds);

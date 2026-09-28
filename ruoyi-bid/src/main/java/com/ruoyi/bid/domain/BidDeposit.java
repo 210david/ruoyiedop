@@ -27,6 +27,9 @@ public class BidDeposit extends BaseEntity
     private String payType;
     @Excel(name = "缴纳金额")
     private BigDecimal amount;
+    /** 已退金额 */
+    @Excel(name = "已退金额")
+    private BigDecimal refundAmount;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @Excel(name = "缴纳时间", width = 30, dateFormat = "yyyy-MM-dd HH:mm:ss")
     private Date payTime;
@@ -57,6 +60,8 @@ public class BidDeposit extends BaseEntity
     public void setPayType(String payType) { this.payType = payType; }
     public BigDecimal getAmount() { return amount; }
     public void setAmount(BigDecimal amount) { this.amount = amount; }
+    public BigDecimal getRefundAmount() { return refundAmount; }
+    public void setRefundAmount(BigDecimal refundAmount) { this.refundAmount = refundAmount; }
     public Date getPayTime() { return payTime; }
     public void setPayTime(Date payTime) { this.payTime = payTime; }
     public Date getExpectRefundTime() { return expectRefundTime; }

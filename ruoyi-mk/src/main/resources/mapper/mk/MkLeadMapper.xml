@@ -38,6 +38,8 @@
         <result property="ineffectiveRemark"   column="ineffective_remark"/>
         <result property="convertCustomerId"   column="convert_customer_id"/>
         <result property="convertTime"         column="convert_time"/>
+        <result property="channelId"           column="channel_id"/>
+        <result property="channelType"         column="channel_type"/>
         <result property="delFlag"             column="del_flag"/>
         <result property="createBy"            column="create_by"/>
         <result property="createTime"          column="create_time"/>
@@ -54,7 +56,7 @@
                l.receive_apply_user_id, l.receive_apply_time,
                l.receive_approve_user_id, l.receive_approve_time,
                l.last_follow_time, l.ineffective_reason,
-               l.ineffective_remark, l.convert_customer_id, l.convert_time, l.del_flag,
+               l.ineffective_remark, l.convert_customer_id, l.convert_time, l.channel_id, l.channel_type, l.del_flag,
                l.create_by, l.create_time, l.update_by, l.update_time, l.remark,
                u.nick_name as user_name, d.dept_name,
                u2.nick_name as receive_apply_user_name,
@@ -96,10 +98,12 @@
     <insert id="insertLead" parameterType="MkLead" useGeneratedKeys="true" keyProperty="leadId">
         INSERT INTO mk_lead (lead_no, company_name, contact_name, contact_phone, contact_email, position,
             industry, company_size, address, lead_source, activity_id, requirement_desc,
-            lead_score, lead_grade, lead_status, is_public, user_id, dept_id, receive_time, create_by, create_time, remark)
+            lead_score, lead_grade, lead_status, is_public, user_id, dept_id, receive_time,
+            channel_id, channel_type, create_by, create_time, remark)
         VALUES (#{leadNo}, #{companyName}, #{contactName}, #{contactPhone}, #{contactEmail}, #{position},
             #{industry}, #{companySize}, #{address}, #{leadSource}, #{activityId}, #{requirementDesc},
-            #{leadScore}, #{leadGrade}, #{leadStatus}, #{isPublic}, #{userId}, #{deptId}, #{receiveTime}, #{createBy}, sysdate(), #{remark})
+            #{leadScore}, #{leadGrade}, #{leadStatus}, #{isPublic}, #{userId}, #{deptId}, #{receiveTime},
+            #{channelId}, #{channelType}, #{createBy}, sysdate(), #{remark})
     </insert>
 
     <update id="updateLead" parameterType="MkLead">
@@ -133,6 +137,8 @@
             <if test="ineffectiveRemark != null">ineffective_remark = #{ineffectiveRemark},</if>
             <if test="convertCustomerId != null">convert_customer_id = #{convertCustomerId},</if>
             <if test="convertTime != null">convert_time = #{convertTime},</if>
+            <if test="channelId != null">channel_id = #{channelId},</if>
+            <if test="channelType != null">channel_type = #{channelType},</if>
             <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
             <if test="remark != null">remark = #{remark},</if>
             update_time = sysdate()

@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mk.mapper.MkPromotionDataMapper">
+
+    <resultMap type="MkPromotionData" id="MkPromotionDataResult">
+        <result property="dataId"         column="data_id"/>
+        <result property="packageId"       column="package_id"/>
+        <result property="dataDate"       column="data_date"/>
+        <result property="exposureCount"   column="exposure_count"/>
+        <result property="readCount"      column="read_count"/>
+        <result property="likeCount"      column="like_count"/>
+        <result property="commentCount"   column="comment_count"/>
+        <result property="leadCount"      column="lead_count"/>
+        <result property="delFlag"        column="del_flag"/>
+        <result property="createBy"        column="create_by"/>
+        <result property="createTime"     column="create_time"/>
+        <result property="updateBy"        column="update_by"/>
+        <result property="updateTime"     column="update_time"/>
+        <result property="remark"         column="remark"/>
+        <result property="packageTitle"  column="package_title"/>
+        <result property="channelId"      column="channel_id"/>
+        <result property="channelType"    column="channel_type"/>
+        <result property="contentId"      column="content_id"/>
+        <result property="contentTitle"   column="content_title"/>
+    </resultMap>
+
+    <sql id="selectPromotionDataVo">
+        SELECT d.data_id, d.package_id, d.data_date, d.exposure_count, d.read_count, d.like_count,
+               d.comment_count, d.lead_count, d.del_flag, d.create_by, d.create_time, d.update_by,
+               d.update_time, d.remark,
+               p.package_title, p.channel_id, p.channel_type, p.content_id, c.title AS content_title
+        FROM mk_promotion_data d
+        LEFT JOIN mk_content_package p ON d.package_id = p.package_id
+        LEFT JOIN mk_content c ON p.content_id = c.content_id
+    </sql>
+
+    <select id="selectPromotionDataList" parameterType="MkPromotionData" resultMap="MkPromotionDataResult">
+        <include refid="selectPromotionDataVo"/>
+        <where>
+            <if test="packageId != null"> AND d.package_id = #{packageId}</if>
+            <if test="contentId != null"> AND p.content_id = #{contentId}</if>
+            <if test="channelId != null"> AND p.channel_id = #{channelId}</if>
+            <if test="channelType != null and channelType != ''"> AND p.channel_type = #{channelType}</if>
+            <if test="params.beginDataTime != null and params.beginDataTime != ''"> AND d.data_date &gt;= #{params.beginDataTime}</if>
+            <if test="params.endDataTime != null and params.endDataTime != ''"> AND d.data_date &lt;= #{params.endDataTime}</if>
+        </where>
+        ORDER BY d.data_id DESC
+    </select>
+
+    <select id="selectPromotionDataById" parameterType="Long" resultMap="MkPromotionDataResult">
+        <include refid="selectPromotionDataVo"/> WHERE d.data_id = #{dataId}
+    </select>
+
+    <select id="selectByPackageAndDate" resultMap="MkPromotionDataResult">
+        <include refid="selectPromotionDataVo"/>
+        WHERE d.package_id = #{packageId} AND d.data_date = #{dataDate}
+    </select>
+
+    <insert id="insertPromotionData" parameterType="MkPromotionData" useGeneratedKeys="true" keyProperty="dataId">
+        INSERT INTO mk_promotion_data (package_id, data_date, exposure_count, read_count, like_count,
+            comment_count, lead_count, create_by, create_time, remark)
+        VALUES (#{packageId}, #{dataDate}, #{exposureCount}, #{readCount}, #{likeCount},
+            #{commentCount}, #{leadCount}, #{createBy}, sysdate(), #{remark})
+    </insert>
+
+    <update id="updatePromotionData" parameterType="MkPromotionData">
+        UPDATE mk_promotion_data
+        <set>
+            <if test="packageId != null">package_id = #{packageId},</if>
+            <if test="dataDate != null">data_date = #{dataDate},</if>
+            <if test="exposureCount != null">exposure_count = #{exposureCount},</if>
+            <if test="readCount != null">read_count = #{readCount},</if>
+            <if test="likeCount != null">like_count = #{likeCount},</if>
+            <if test="commentCount != null">comment_count = #{commentCount},</if>
+            <if test="leadCount != null">lead_count = #{leadCount},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE data_id = #{dataId}
+    </update>
+
+    <delete id="deletePromotionDataByIds" parameterType="Long">
+        DELETE FROM mk_promotion_data WHERE data_id IN
+        <foreach item="dataId" collection="array" open="(" separator="," close=")">#{dataId}</foreach>
+    </delete>
+
+</mapper>

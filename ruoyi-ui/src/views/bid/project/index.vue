@@ -35,30 +35,41 @@
       </div>
       <div class="toolbar">
         <div class="left">
-          <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['bid:project:add']">新增投标项目</el-button>
           <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['bid:project:export']">导出</el-button>
+          <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()" v-hasPermi="['bid:project:remove']">批量删除</el-button>
         </div>
-        <div class="right"><right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar></div>
+        <div class="right"><right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="bid_project_columns" /></div>
       </div>
       <div class="table-wrap">
-        <el-table ref="tableRef" v-loading="loading" :data="list" border class="app-table" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange">
+        <el-table ref="tableRef" v-loading="loading" :data="list" border class="app-table" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" @selection-change="handleSelectionChange">
+          <el-table-column type="selection" width="55" align="center" />
           <el-table-column type="index" label="序号" width="85" align="center" />
-          <el-table-column label="投标编号" prop="bidNo" key="bidNo" width="180" align="center" sortable="custom" :sort-orders="['descending','ascending']" />
-          <el-table-column label="项目名称" prop="projectName" key="projectName" :min-width="colWidth('projectName', 260)" show-overflow-tooltip resizable />
-          <el-table-column label="状态" prop="status" key="status" width="120" align="center">
+          <el-table-column label="投标编号" prop="bidNo" key="bidNo" :width="colWidth('bidNo', 180)" resizable align="center" sortable="custom" :sort-orders="['descending','ascending']" v-if="columns.bidNo.visible" />
+          <el-table-column label="项目名称" prop="projectName" key="projectName" :min-width="colWidth('projectName', 260)" show-overflow-tooltip resizable v-if="columns.projectName.visible" />
+          <el-table-column label="状态" prop="status" key="status" :width="colWidth('status', 120)" resizable align="center" v-if="columns.status.visible">
             <template #default="scope"><span class="badge" :class="badgeClass(scope.row.status)">{{ statusLabel(scope.row.status) }}</span></template>
           </el-table-column>
-          <el-table-column label="我方报价" prop="bidAmount" key="bidAmount" width="130" align="center" sortable="custom" :sort-orders="['descending','ascending']">
-            <template #default="scope">{{ scope.row.bidAmount ? '￥' + formatAmount(scope.row.bidAmount) : '—' }}</template>
+          <el-table-column label="我方报价" prop="bidAmount" key="bidAmount" :width="colWidth('bidAmount', 150)" resizable align="center" sortable="custom" :sort-orders="['descending','ascending']" v-if="columns.bidAmount.visible">
+            <template #default="scope">{{ scope.row.bidAmount != null ? formatWan(scope.row.bidAmount) + ' 万元' : '—' }}</template>
           </el-table-column>
-          <el-table-column label="递交截止" prop="submitDeadline" key="submitDeadline" width="180" align="center" sortable="custom" :sort-orders="['descending','ascending']">
+          <el-table-column label="地区" prop="regionCode" key="regionCode" :width="colWidth('regionCode', 100)" resizable align="center" v-if="columns.regionCode.visible">
+            <template #default="scope">{{ scope.row.regionCode || '—' }}</template>
+          </el-table-column>
+          <el-table-column label="行业分类" prop="industry" key="industry" :width="colWidth('industry', 110)" resizable align="center" v-if="columns.industry.visible">
+            <template #default="scope"><span class="badge violet">{{ industryLabel(scope.row.industry) }}</span></template>
+          </el-table-column>
+          <el-table-column label="承接方式" prop="joinType" key="joinType" :width="colWidth('joinType', 110)" resizable align="center" v-if="columns.joinType.visible">
+            <template #default="scope"><span class="badge blue">{{ joinTypeLabel(scope.row.joinType) }}</span></template>
+          </el-table-column>
+          <el-table-column label="递交截止" prop="submitDeadline" key="submitDeadline" :width="colWidth('submitDeadline', 180)" resizable align="center" sortable="custom" :sort-orders="['descending','ascending']" v-if="columns.submitDeadline.visible">
             <template #default="scope"><span v-if="scope.row.submitDeadline" :class="deadlineClass(scope.row.submitDeadline, scope.row.status)">{{ String(scope.row.submitDeadline).slice(0,16) }}</span><span v-else>—</span></template>
           </el-table-column>
-          <el-table-column label="负责人" prop="ownerName" key="ownerName" width="110" align="center" />
-          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
+          <el-table-column label="负责人" prop="ownerName" key="ownerName" :width="colWidth('ownerName', 110)" resizable align="center" v-if="columns.ownerName.visible" />
+          <el-table-column label="操作" width="200" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
               <div class="action-btn-row">
                 <el-button link type="primary" icon="View" @click="handleDetail(scope.row)">详情</el-button>
+                <el-button link type="primary" icon="Edit" @click="handleEdit(scope.row)" v-hasPermi="['bid:project:edit']">编辑</el-button>
                 <el-button link type="primary" icon="Switch" @click="handleChangeStatus(scope.row)" v-if="nextStatusOptions(scope.row.status).length" v-hasPermi="['bid:project:edit']">流转</el-button>
                 <el-button link type="success" icon="Promotion" @click="handleToPms(scope.row)" v-if="scope.row.status === '7'" v-hasPermi="['bid:project:edit']">转立项</el-button>
                 <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-if="scope.row.status === '0'" v-hasPermi="['bid:project:remove']">删除</el-button>
@@ -90,30 +101,76 @@
       <template #footer><el-button type="primary" @click="submitStatus">确 定</el-button><el-button @click="statusOpen = false">取 消</el-button></template>
     </el-dialog>
 
-    <!-- 新增/修改弹窗 -->
-    <el-dialog v-model="open" width="1080px" append-to-body draggable class="rd-dialog">
+    <!-- 公告详情弹窗 -->
+    <el-dialog v-model="noticeOpen" width="820px" append-to-body draggable class="rd-dialog">
       <template #header>
-        <div class="rd-detail-header"><div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg></div>
-          <span class="rd-detail-header-title">{{ title }}</span>
+        <div class="rd-detail-header"><div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l18-7-7 18-2.5-7.5z"/></svg></div>
+          <span class="rd-detail-header-title">关联公告详情</span>
+        </div>
+      </template>
+      <div v-loading="noticeLoading" class="rd-page">
+        <section class="rd-card">
+          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg></span>基本信息</div></div>
+          <div class="rd-card-body" style="display:block">
+            <div class="rd-grid">
+              <div class="rd-item rd-item--full"><span class="rd-label">公告标题</span><div class="rd-value">{{ noticeData.title || '—' }}</div></div>
+              <div class="rd-item"><span class="rd-label">信息类型</span><div class="rd-value">{{ dictLabel(bid_notice_type, noticeData.noticeType) }}</div></div>
+              <div class="rd-item"><span class="rd-label">招标人</span><div class="rd-value">{{ noticeData.tenderee || '—' }}</div></div>
+              <div class="rd-item"><span class="rd-label">代理机构</span><div class="rd-value">{{ noticeData.agent || '—' }}</div></div>
+              <div class="rd-item"><span class="rd-label">发布时间</span><div class="rd-value">{{ (noticeData.publishTime || '—').slice(0,16) }}</div></div>
+              <div class="rd-item"><span class="rd-label">截止时间</span><div class="rd-value">{{ (noticeData.deadlineTime || '—').slice(0,16) }}</div></div>
+              <div class="rd-item"><span class="rd-label">联系人</span><div class="rd-value">{{ noticeData.contactPerson || '—' }}</div></div>
+              <div class="rd-item"><span class="rd-label">联系电话</span><div class="rd-value">{{ noticeData.contactPhone || '—' }}</div></div>
+              <div class="rd-item"><span class="rd-label">信息来源</span><div class="rd-value">{{ noticeData.sourceName || '—' }}</div></div>
+              <div class="rd-item rd-item--full" v-if="noticeData.sourceUrl"><span class="rd-label">原文链接</span><div class="rd-value"><el-link type="primary" :href="noticeData.sourceUrl" target="_blank" style="vertical-align:top">{{ noticeData.sourceUrl }}</el-link></div></div>
+            </div>
+          </div>
+        </section>
+        <section class="rd-card" v-if="noticeData.content">
+          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></span>公告内容</div></div>
+          <div class="rd-card-body" style="display:block">
+            <div class="notice-content">{{ noticeData.content }}</div>
+          </div>
+        </section>
+      </div>
+      <template #footer><el-button @click="noticeOpen = false">关 闭</el-button></template>
+    </el-dialog>
+
+    <!-- 编辑投标项目弹窗 -->
+    <el-dialog v-model="editOpen" width="1080px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header"><div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></div>
+          <span class="rd-detail-header-title">编辑投标项目</span>
           <div class="rd-detail-header-sub" v-if="form.bidNo"><div class="rd-detail-header-divider"></div><span class="rd-detail-header-no">{{ form.bidNo }}</span></div>
         </div>
       </template>
-      <el-form ref="projectRef" :model="form" :rules="rules" label-width="110px">
+      <el-form ref="projectRef" :model="form" :rules="rules" label-width="130px">
         <section class="rd-card">
           <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg></span>基本信息</div></div>
           <div class="rd-card-body" style="display:block">
             <el-row :gutter="20">
-              <el-col :span="12"><el-form-item label="投标编号" prop="bidNo"><el-input v-model="form.bidNo" placeholder="自动生成" disabled /></el-form-item></el-col>
-              <el-col :span="12"><el-form-item label="关联公告ID" prop="noticeId"><el-input v-model="form.noticeId" placeholder="从公告库「转投标」自动带入，可留空" /></el-form-item></el-col>
+              <el-col :span="12"><el-form-item label="投标编号" prop="bidNo"><el-input v-model="form.bidNo" disabled /></el-form-item></el-col>
+              <el-col :span="12"><el-form-item label="关联公告"><el-input :model-value="form.noticeId ? (noticeTitleMap[form.noticeId] || ('公告 #' + form.noticeId)) : '—'" disabled /></el-form-item></el-col>
               <el-col :span="24"><el-form-item label="项目名称" prop="projectName"><el-input v-model="form.projectName" placeholder="请输入投标项目名称" /></el-form-item></el-col>
+            </el-row>
+          </div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7h-4V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v3H4a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M10 5h4v2h-4z"/></svg></span>招标与承接</div></div>
+          <div class="rd-card-body" style="display:block">
+            <el-row :gutter="20">
               <el-col :span="12"><el-form-item label="招标人" prop="tenderee"><el-input v-model="form.tenderee" placeholder="请输入" /></el-form-item></el-col>
               <el-col :span="12"><el-form-item label="代理机构" prop="agent"><el-input v-model="form.agent" placeholder="请输入" /></el-form-item></el-col>
+              <el-col :span="12"><el-form-item label="地区" prop="regionCode"><el-input v-model="form.regionCode" placeholder="如：云南 / 昆明" clearable /></el-form-item></el-col>
+              <el-col :span="12"><el-form-item label="行业分类" prop="industry">
+                <el-select v-model="form.industry" placeholder="请选择" clearable style="width:100%"><el-option v-for="d in bid_industry" :key="d.value" :label="d.label" :value="d.value" /></el-select>
+              </el-form-item></el-col>
               <el-col :span="12"><el-form-item label="承接方式" prop="joinType">
                 <el-radio-group v-model="form.joinType"><el-radio v-for="d in bid_join_type" :key="d.value" :value="d.value">{{ d.label }}</el-radio></el-radio-group>
               </el-form-item></el-col>
               <el-col :span="12"><el-form-item label="联营合作方" prop="partner" v-if="form.joinType === '2'"><el-input v-model="form.partner" placeholder="联营时必填" /></el-form-item></el-col>
               <el-col :span="12"><el-form-item label="负责人" prop="ownerUserId">
-                <el-input v-model="form.ownerName" readonly placeholder="请选择负责人" style="width:100%" @click="openUserPicker">
+                <el-input v-model="form.ownerName" readonly placeholder="请选择投标负责人（我方跟进人）" style="width:100%" @click="openUserPicker">
                   <template #append><el-button icon="Search" @click="openUserPicker" /></template>
                   <template #suffix><el-icon v-if="form.ownerName" class="clear-icon" @click.stop="clearOwner"><CircleClose /></el-icon></template>
                 </el-input>
@@ -128,15 +185,30 @@
               <el-col :span="12"><el-form-item label="报名截止" prop="applyDeadline"><el-date-picker v-model="form.applyDeadline" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" style="width:100%" /></el-form-item></el-col>
               <el-col :span="12"><el-form-item label="递交截止" prop="submitDeadline"><el-date-picker v-model="form.submitDeadline" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" style="width:100%" /></el-form-item></el-col>
               <el-col :span="12"><el-form-item label="开标时间" prop="openTime"><el-date-picker v-model="form.openTime" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" style="width:100%" /></el-form-item></el-col>
-              <el-col :span="12"><el-form-item label="项目预算" prop="budgetAmount"><el-input-number v-model="form.budgetAmount" :precision="2" :min="0" style="width:100%" /></el-form-item></el-col>
-              <el-col :span="12"><el-form-item label="我方报价" prop="bidAmount"><el-input-number v-model="form.bidAmount" :precision="2" :min="0" style="width:100%" /></el-form-item></el-col>
-              <el-col :span="12"><el-form-item label="行业分类" prop="industry"><el-select v-model="form.industry" placeholder="请选择" clearable style="width:100%"><el-option v-for="d in bid_industry" :key="d.value" :label="d.label" :value="d.value" /></el-select></el-form-item></el-col>
+              <el-col :span="12"><el-form-item label="项目预算（万元）" prop="budgetAmount"><el-input-number v-model="budgetWan" :precision="4" :min="0" style="width:100%" /></el-form-item></el-col>
+              <el-col :span="12"><el-form-item label="我方报价（万元）" prop="bidAmount"><el-input-number v-model="bidWan" :precision="4" :min="0" style="width:100%" /></el-form-item></el-col>
               <el-col :span="24"><el-form-item label="备注" prop="remark"><el-input v-model="form.remark" type="textarea" :rows="2" /></el-form-item></el-col>
             </el-row>
           </div>
         </section>
       </el-form>
-      <template #footer><el-button type="primary" @click="submitForm">确 定</el-button><el-button @click="cancel">取 消</el-button></template>
+      <template #footer><el-button type="primary" @click="submitForm">确 定</el-button><el-button @click="editOpen = false">取 消</el-button></template>
+    </el-dialog>
+
+    <!-- 节点维护弹窗 -->
+    <el-dialog v-model="nodeOpen" width="560px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header"><div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>
+          <span class="rd-detail-header-title">维护节点：{{ nodeLabel(nodeForm.nodeType) }}</span>
+        </div>
+      </template>
+      <el-form label-width="110px">
+        <el-form-item label="计划时间"><el-date-picker v-model="nodeForm.planTime" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" placeholder="选择计划时间" style="width:100%" /></el-form-item>
+        <el-form-item label="实际完成时间"><el-date-picker v-model="nodeForm.actualTime" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" placeholder="留空表示未完成" style="width:100%" /></el-form-item>
+        <el-form-item label="是否完成"><el-radio-group v-model="nodeForm.finishFlag"><el-radio value="1">已完成</el-radio><el-radio value="0">进行中</el-radio></el-radio-group></el-form-item>
+        <el-form-item label="卡点说明"><el-input v-model="nodeForm.blockDesc" type="textarea" :rows="3" placeholder="风险、卡点或完成情况说明" show-word-limit maxlength="500" /></el-form-item>
+      </el-form>
+      <template #footer><el-button type="primary" @click="submitNodeEdit">确 定</el-button><el-button @click="nodeOpen = false">取 消</el-button></template>
     </el-dialog>
 
     <!-- 详情弹窗 -->
@@ -155,15 +227,37 @@
               <div class="rd-item rd-item--full"><span class="rd-label">项目名称</span><div class="rd-value">{{ detailData.projectName }}</div></div>
               <div class="rd-item"><span class="rd-label">投标编号</span><div class="rd-value">{{ detailData.bidNo }}</div></div>
               <div class="rd-item"><span class="rd-label">状态</span><div class="rd-value"><span class="badge" :class="badgeClass(detailData.status)">{{ statusLabel(detailData.status) }}</span></div></div>
+              <div class="rd-item rd-item--full"><span class="rd-label">关联公告</span><div class="rd-value"><span v-if="detailData.noticeId"><el-link type="primary" @click="openNoticeDetail(detailData.noticeId)">{{ noticeTitleMap[detailData.noticeId] || ('公告 #' + detailData.noticeId) }}</el-link></span><span v-else>—（未关联公告）</span></div></div>
+              <div class="rd-item"><span class="rd-label">负责人</span><div class="rd-value">{{ detailData.ownerName || '—' }}</div></div>
+            </div>
+          </div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7h-4V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v3H4a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M10 5h4v2h-4z"/></svg></span>招标与承接</div></div>
+          <div class="rd-card-body" style="display:block">
+            <div class="rd-grid">
               <div class="rd-item"><span class="rd-label">招标人</span><div class="rd-value">{{ detailData.tenderee || '—' }}</div></div>
               <div class="rd-item"><span class="rd-label">代理机构</span><div class="rd-value">{{ detailData.agent || '—' }}</div></div>
-              <div class="rd-item"><span class="rd-label">项目预算</span><div class="rd-value rd-amount">{{ detailData.budgetAmount ? '￥' + formatAmount(detailData.budgetAmount) : '￥0.00' }}</div></div>
-              <div class="rd-item"><span class="rd-label">我方报价</span><div class="rd-value rd-amount rd-value--large">{{ detailData.bidAmount ? '￥' + formatAmount(detailData.bidAmount) : '￥0.00' }}</div></div>
+            </div>
+          </div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>关键时间</div></div>
+          <div class="rd-card-body" style="display:block">
+            <div class="rd-grid">
               <div class="rd-item"><span class="rd-label">报名截止</span><div class="rd-value">{{ detailData.applyDeadline || '—' }}</div></div>
               <div class="rd-item"><span class="rd-label">递交截止</span><div class="rd-value">{{ detailData.submitDeadline || '—' }}</div></div>
               <div class="rd-item"><span class="rd-label">开标时间</span><div class="rd-value">{{ detailData.openTime || '—' }}</div></div>
-              <div class="rd-item"><span class="rd-label">负责人</span><div class="rd-value">{{ detailData.ownerName || '—' }}</div></div>
-              <div class="rd-item" v-if="detailData.failReason"><span class="rd-label">未中标原因</span><div class="rd-value">{{ failLabel(detailData.failReason) }}</div></div>
+            </div>
+          </div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></span>金额信息</div></div>
+          <div class="rd-card-body" style="display:block">
+            <div class="rd-grid">
+              <div class="rd-item"><span class="rd-label">项目预算（万元）</span><div class="rd-value rd-amount">{{ detailData.budgetAmount != null ? formatWan(detailData.budgetAmount) : '—' }}</div></div>
+              <div class="rd-item"><span class="rd-label">我方报价（万元）</span><div class="rd-value rd-amount rd-value--large">{{ detailData.bidAmount != null ? formatWan(detailData.bidAmount) : '—' }}</div></div>
+              <div class="rd-item rd-item--full" v-if="detailData.failReason"><span class="rd-label">未中标原因</span><div class="rd-value">{{ failLabel(detailData.failReason) }}</div></div>
             </div>
           </div>
         </section>
@@ -176,32 +270,34 @@
               <el-table-column label="实际完成" prop="actualTime" width="170" align="center"><template #default="scope">{{ (scope.row.actualTime || '—').slice(0,16) }}</template></el-table-column>
               <el-table-column label="状态" width="100" align="center"><template #default="scope"><span class="badge" :class="scope.row.finishFlag === '1' ? 'green' : 'amber'">{{ scope.row.finishFlag === '1' ? '已完成' : '进行中' }}</span></template></el-table-column>
               <el-table-column label="卡点说明" prop="blockDesc" show-overflow-tooltip align="center" />
-              <el-table-column label="操作" width="100" align="center">
+              <el-table-column label="操作" width="140" align="center">
                 <template #default="scope">
-                  <el-button link type="primary" @click="handleFinishNode(scope.row)" v-if="scope.row.finishFlag !== '1'" v-hasPermi="['bid:project:edit']">完成</el-button>
+                  <el-button link type="primary" @click="openNodeEdit(scope.row)" v-hasPermi="['bid:project:edit']">编辑</el-button>
+                  <el-button link type="success" @click="handleFinishNode(scope.row)" v-if="scope.row.finishFlag !== '1'" v-hasPermi="['bid:project:edit']">完成</el-button>
                 </template>
               </el-table-column>
             </el-table>
           </div>
         </section>
         <section class="rd-card" v-if="(detailData.nodeList || []).length">
-          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>节点时间线</div></div>
+          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>节点时间线</div><div class="rd-card-extra"><span class="rd-steps-legend"><span class="rd-steps-legend-item"><span class="rd-steps-dot is-done"></span>已完成</span><span class="rd-steps-legend-item"><span class="rd-steps-dot is-doing"></span>进行中</span></span></div></div>
           <div class="rd-card-body" style="display:block">
-            <div class="rd-timeline">
-              <div class="rd-timeline-item" v-for="node in detailData.nodeList" :key="node.nodeId">
-                <div class="rd-timeline-dot" :class="{ 'rd-timeline-dot--success': node.finishFlag === '1' }"></div>
-                <div class="rd-timeline-content">
-                  <div class="rd-timeline-header">
-                    <span class="rd-timeline-title">{{ nodeLabel(node.nodeType) }}</span>
-                    <span class="rd-timeline-time">{{ node.actualTime || node.planTime || '' }}</span>
-                  </div>
-                  <div class="rd-timeline-body"><div class="rd-item"><span class="rd-label">说明</span><div class="rd-value">{{ node.blockDesc || (node.finishFlag === '1' ? '已完成' : '进行中') }}</div></div></div>
+            <div class="rd-steps">
+              <div class="rd-steps-item" v-for="(node, idx) in detailData.nodeList" :key="node.nodeId" @click="openNodeEdit(node)" :title="node.blockDesc || (node.finishFlag === '1' ? '已完成' : '进行中')">
+                <div class="rd-steps-line" :class="{ 'is-done': node.finishFlag === '1' }" v-if="idx > 0"></div>
+                <div class="rd-steps-dot" :class="{ 'is-done': node.finishFlag === '1' }">
+                  <span v-if="node.finishFlag === '1'" style="font-size:14px;line-height:1">✓</span>
                 </div>
+                <div class="rd-steps-label">{{ nodeLabel(node.nodeType) }}</div>
+                <div class="rd-steps-time">{{ (node.actualTime || node.planTime || '—').slice(0,10) }}</div>
               </div>
             </div>
           </div>
         </section>
       </div>
+      <template #footer>
+        <el-button @click="detailOpen = false">关 闭</el-button>
+      </template>
     </el-dialog>
 
     <el-dialog v-model="showStatusHelp" title="投标管理业务操作说明" width="820px" append-to-body>
@@ -219,7 +315,7 @@
         </div>
         <h4>三、操作流程</h4>
         <el-timeline>
-          <el-timeline-item type="primary" :hollow="true"><strong>登记商机：</strong>从公告库「转投标」或手动新增</el-timeline-item>
+          <el-timeline-item type="primary" :hollow="true"><strong>登记商机：</strong>在招标公告库中对目标公告点击「转投标」登记</el-timeline-item>
           <el-timeline-item type="warning" :hollow="true"><strong>过程跟进：</strong>按节点推进并「流转」状态，临近截止自动预警</el-timeline-item>
           <el-timeline-item type="success" :hollow="true"><strong>结果闭环：</strong>开标后登记中标/未中标；中标项目可「转立项」</el-timeline-item>
         </el-timeline>
@@ -227,25 +323,44 @@
       <template #footer><el-button type="primary" @click="showStatusHelp = false">我知道了</el-button></template>
     </el-dialog>
 
-    <user-picker ref="userPickerRef" title="选择投标负责人" @confirm="onUserPickerConfirm" />
   </div>
 </template>
 
 <script setup name="BidProject">
-import { listProject, getProject, addProject, updateProject, delProject, changeProjectStatus, finishNode, toPms } from '@/api/bid/project'
+import { listProject, getProject, updateProject, updateNode, delProject, changeProjectStatus, toPms } from '@/api/bid/project'
+import { getNotice } from '@/api/bid/notice'
 import { useColumnResize } from '@/composables/useColumnResize'
-import { formatAmount } from '@/composables/useDetailCard'
+import { formatWan, yuanToWan, wanToYuan } from '@/composables/useDetailCard'
 import UserPicker from '@/components/UserPicker/index.vue'
 
 const { proxy } = getCurrentInstance()
-const { bid_project_status, bid_industry, bid_join_type, bid_fail_reason, bid_node_type } = proxy.useDict('bid_project_status', 'bid_industry', 'bid_join_type', 'bid_fail_reason', 'bid_node_type')
+const { bid_project_status, bid_industry, bid_join_type, bid_fail_reason, bid_node_type, bid_notice_type } = proxy.useDict('bid_project_status', 'bid_industry', 'bid_join_type', 'bid_fail_reason', 'bid_node_type', 'bid_notice_type')
+
+// 字典值转标签（未命中时原样返回）
+function dictLabel(dict, v) {
+  // 兼容模板调用时 ref 被自动解包为数组的情况
+  const list = Array.isArray(dict) ? dict : (dict.value || [])
+  if (v == null || v === '') return '—'
+  const item = list.find(d => d.value == v)
+  return item ? item.label : v
+}
+function industryLabel(v) {
+  if (v == null || v === '') return '—'
+  const item = bid_industry.value.find(d => d.value == v)
+  return item ? item.label : v
+}
+function joinTypeLabel(v) {
+  if (v == null || v === '') return '—'
+  const item = bid_join_type.value.find(d => d.value == v)
+  return item ? item.label : v
+}
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('bid_project_index')
 
 const loading = ref(true)
 const list = ref([])
 const total = ref(0)
-const open = ref(false)
-const title = ref('')
+const ids = ref([])
+const multiple = ref(true)
 const showSearch = ref(true)
 const showAdvanced = ref(false)
 const deadlineRange = ref([])
@@ -258,7 +373,28 @@ const detailData = ref({})
 const statusOpen = ref(false)
 const statusRow = ref({})
 const statusForm = ref({ status: undefined, reason: undefined })
+const noticeOpen = ref(false)
+const noticeLoading = ref(false)
+const noticeData = ref({})
+const noticeTitleMap = ref({})
+const editOpen = ref(false)
+const nodeOpen = ref(false)
+const nodeForm = ref({ nodeId: undefined, nodeType: undefined, planTime: undefined, actualTime: undefined, blockDesc: undefined, finishFlag: '0' })
 const userPickerRef = ref(null)
+
+const defaultColumns = {
+  bidNo: { label: '投标编号', visible: true },
+  projectName: { label: '项目名称', visible: true },
+  status: { label: '状态', visible: true },
+  bidAmount: { label: '我方报价', visible: true },
+  regionCode: { label: '地区', visible: true },
+  industry: { label: '行业分类', visible: true },
+  joinType: { label: '承接方式', visible: true },
+  submitDeadline: { label: '递交截止', visible: true },
+  ownerName: { label: '负责人', visible: true }
+}
+function loadColumnVisibility() { try { const saved = localStorage.getItem('bid_project_columns'); if (saved) { const parsed = JSON.parse(saved); const result = {}; Object.keys(defaultColumns).forEach(key => { result[key] = { label: defaultColumns[key].label, visible: parsed[key] !== undefined ? parsed[key] : defaultColumns[key].visible } }); return result } } catch (e) {} return { ...defaultColumns } }
+const columns = ref(loadColumnVisibility())
 
 const mainTabs = [
   { value: '1', label: '进行中' }, { value: '6', label: '已开标' }, { value: '7', label: '中标' }, { value: '8', label: '未中标' }, { value: '10', label: '已放弃' }
@@ -269,10 +405,22 @@ const data = reactive({
   queryParams: { pageNum: 1, pageSize: 10, bidNo: undefined, projectName: undefined, status: undefined, ownerName: undefined, regionCode: undefined, industry: undefined, joinType: undefined, params: {} },
   rules: {
     projectName: [{ required: true, message: '项目名称不能为空', trigger: 'blur' }],
-    ownerUserId: [{ required: true, message: '投标负责人不能为空', trigger: 'change' }]
+    tenderee: [{ required: true, message: '招标人不能为空', trigger: 'blur' }],
+    ownerUserId: [{ required: true, message: '投标负责人不能为空', trigger: 'change' }],
+    submitDeadline: [{ required: true, message: '递交截止时间不能为空', trigger: 'change' }]
   }
 })
 const { queryParams, form, rules } = toRefs(data)
+
+// 金额：存储单位为元，录入/展示以万元换算
+const budgetWan = computed({
+  get: () => yuanToWan(form.value.budgetAmount),
+  set: v => { form.value.budgetAmount = wanToYuan(v) }
+})
+const bidWan = computed({
+  get: () => yuanToWan(form.value.bidAmount),
+  set: v => { form.value.bidAmount = wanToYuan(v) }
+})
 
 const activeFilterCount = computed(() => {
   const q = queryParams.value
@@ -313,28 +461,53 @@ function loadCounts() {
 }
 function handleTabClick(tab) { activeTab.value = tab; queryParams.value.status = tab === 'all' ? undefined : tab; handleQuery() }
 function handleQuery() { showAdvanced.value = false; proxy.addDateRange(queryParams.value, deadlineRange.value, 'SubmitDeadline'); queryParams.value.pageNum = 1; getList() }
-function resetQuery() { proxy.resetForm('queryRef'); queryParams.value.params = {}; deadlineRange.value = []; activeTab.value = 'all'; handleQuery() }
+function resetQuery() { queryParams.value = { pageNum: 1, pageSize: queryParams.value.pageSize, bidNo: undefined, projectName: undefined, status: undefined, ownerName: undefined, regionCode: undefined, industry: undefined, joinType: undefined, params: {} }; deadlineRange.value = []; activeTab.value = 'all'; getList() }
 function handleSortChange(column) {
   if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' }
   else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }
   getList()
 }
 
-function reset() {
-  form.value = { projectId: undefined, bidNo: undefined, noticeId: undefined, projectName: undefined, tenderee: undefined, agent: undefined,
-    joinType: '1', partner: undefined, ownerUserId: undefined, ownerName: undefined, applyDeadline: undefined, submitDeadline: undefined,
-    openTime: undefined, budgetAmount: undefined, bidAmount: undefined, industry: undefined, remark: undefined, nodeList: [] }
-  proxy.resetForm('projectRef')
-}
-function handleAdd() { reset(); open.value = true; title.value = '新增投标项目' }
 function handleDetail(row) {
   detailData.value = {}; archiveListReset()
   detailOpen.value = true
   detailLoading.value = true
-  getProject(row.projectId).then(res => { detailData.value = res.data }).finally(() => { detailLoading.value = false })
+  getProject(row.projectId).then(res => {
+    detailData.value = res.data
+    if (res.data && res.data.noticeId) loadNoticeTitle(res.data.noticeId)
+  }).finally(() => { detailLoading.value = false })
 }
 function archiveListReset() {}
 
+function loadNoticeTitle(noticeId) {
+  if (noticeTitleMap.value[noticeId]) return
+  getNotice(noticeId).then(res => {
+    noticeTitleMap.value[noticeId] = (res.data && res.data.title) || ('公告 #' + noticeId)
+  })
+}
+function openNoticeDetail(noticeId) {
+  noticeOpen.value = true
+  noticeLoading.value = true
+  noticeData.value = {}
+  getNotice(noticeId).then(res => { noticeData.value = res.data || {} }).finally(() => { noticeLoading.value = false })
+}
+
+function handleEdit(row) {
+  detailOpen.value = false
+  getProject(row.projectId).then(res => {
+    const p = res.data || {}
+    form.value = {
+      projectId: p.projectId, bidNo: p.bidNo, noticeId: p.noticeId,
+      projectName: p.projectName, tenderee: p.tenderee, agent: p.agent,
+      regionCode: p.regionCode, joinType: p.joinType || '1', partner: p.partner,
+      ownerUserId: p.ownerUserId, ownerName: p.ownerName,
+      applyDeadline: p.applyDeadline, submitDeadline: p.submitDeadline, openTime: p.openTime,
+      budgetAmount: p.budgetAmount, bidAmount: p.bidAmount, industry: p.industry, remark: p.remark
+    }
+    if (p.noticeId) loadNoticeTitle(p.noticeId)
+    editOpen.value = true
+  })
+}
 function openUserPicker() { proxy.$refs.userPickerRef.open(form.value.ownerUserId) }
 function onUserPickerConfirm(user) {
   form.value.ownerUserId = user.userId
@@ -342,21 +515,49 @@ function onUserPickerConfirm(user) {
   if (user.deptId) { form.value.deptId = user.deptId }
 }
 function clearOwner() { form.value.ownerUserId = undefined; form.value.ownerName = undefined }
-
 function submitForm() {
   proxy.$refs['projectRef'].validate(v => {
     if (v) {
-      if (form.value.projectId != null) {
-        updateProject(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList() })
-      } else {
-        addProject(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList() })
-      }
+      updateProject(form.value).then(() => {
+        proxy.$modal.msgSuccess('保存成功'); editOpen.value = false
+        getProject(form.value.projectId).then(res => { detailData.value = res.data; getList() })
+      })
     }
   })
 }
-function cancel() { open.value = false; reset() }
+function openNodeEdit(node) {
+  nodeForm.value = {
+    nodeId: node.nodeId, nodeType: node.nodeType,
+    planTime: node.planTime || undefined, actualTime: node.actualTime || undefined,
+    blockDesc: node.blockDesc || undefined, finishFlag: node.finishFlag || '0'
+  }
+  nodeOpen.value = true
+}
+function submitNodeEdit() {
+  updateNode(nodeForm.value.nodeId, nodeForm.value).then(() => {
+    proxy.$modal.msgSuccess('节点已保存'); nodeOpen.value = false
+    getProject(detailData.value.projectId).then(res => { detailData.value = res.data })
+  })
+}
 function handleDelete(row) {
-  proxy.$modal.confirm('确认删除投标项目「' + row.bidNo + '」？').then(() => delProject(row.projectId)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {})
+  let projectIds, label
+  if (row && row.projectId) {
+    projectIds = [row.projectId]
+    label = '投标项目「' + row.bidNo + '」'
+  } else {
+    // 批量删除仅允许草稿（'0'）状态，与单行删除口径一致
+    const rows = list.value.filter(r => ids.value.includes(r.projectId) && r.status === '0')
+    if (!rows.length) { proxy.$modal.msgWarning('仅草稿状态的项目可删除，未选中任何可删除项'); return }
+    if (rows.length < ids.value.length) proxy.$modal.msgWarning('仅草稿状态可删除，已自动过滤 ' + (ids.value.length - rows.length) + ' 个非草稿项目')
+    projectIds = rows.map(r => r.projectId)
+    label = '选中的 ' + projectIds.length + ' 个草稿项目'
+  }
+  proxy.$modal.confirm('确认删除' + label + '？').then(() => delProject(projectIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {})
+}
+
+function handleSelectionChange(selection) {
+  ids.value = selection.map(item => item.projectId)
+  multiple.value = !selection.length
 }
 
 function handleChangeStatus(row) {
@@ -372,10 +573,8 @@ function submitStatus() {
   })
 }
 function handleFinishNode(node) {
-  proxy.$modal.confirm('确认完成节点「' + nodeLabel(node.nodeType) + '」？可在确认后补充卡点说明。').then(() => finishNode(node.nodeId, '')).then(() => {
-    proxy.$modal.msgSuccess('节点已完成')
-    getProject(detailData.value.projectId).then(res => { detailData.value = res.data })
-  }).catch(() => {})
+  // 打开节点维护弹窗并预置为完成，可同时填写实际完成时间与卡点说明
+  openNodeEdit({ ...node, finishFlag: '1' })
 }
 function handleToPms(row) {
   proxy.$modal.confirm('确认为中标项目「' + row.bidNo + '」发起项目立项？').then(() => toPms(row.projectId)).then(res => {
@@ -442,4 +641,22 @@ onActivated(() => { getList() })
 .status-help-content .highlight-card-body { font-size:13px; color:#606266; line-height:1.6; }
 .status-help-content .highlight-primary { background-color:#ecf5ff; border-color:#a0cfff; }
 .status-help-content .highlight-primary .highlight-card-title { color:#409eff; }
+.bid-project-page .notice-content { white-space:pre-wrap; word-break:break-all; font-size:13px; line-height:1.8; color:var(--ink-700); }
 </style>
+<style>
+/* 详情弹窗 append-to-body 挂载于 body 下，脱离 .bid-project-page 作用域，样式使用全局类名 */
+.rd-card-extra { margin-left:auto; }
+.rd-steps-legend { display:inline-flex; align-items:center; gap:14px; font-size:12px; color:#64748b; }
+.rd-steps-legend-item { display:inline-flex; align-items:center; gap:5px; }
+.rd-steps { display:flex; align-items:flex-start; overflow-x:auto; padding:6px 4px 2px; }
+.rd-steps-item { position:relative; flex:1; min-width:88px; display:flex; flex-direction:column; align-items:center; text-align:center; cursor:pointer; padding:0 2px; }
+.rd-steps-item:hover .rd-steps-label { color:#4f46e5; }
+.rd-steps-line { position:absolute; top:13px; left:calc(-50% + 14px); right:calc(50% + 14px); height:2px; background:#e2e8f0; }
+.rd-steps-line.is-done { background:#10b981; }
+.rd-steps-dot { position:relative; z-index:1; width:26px; height:26px; border-radius:50%; background:#fff; border:2px solid #f59e0b; color:#f59e0b; display:flex; align-items:center; justify-content:center; font-size:14px; }
+.rd-steps-dot.is-done { background:#10b981; border-color:#10b981; color:#fff; }
+.rd-steps-label { margin-top:8px; font-size:13px; font-weight:600; color:#0f172a; white-space:nowrap; }
+.rd-steps-time { margin-top:2px; font-size:12px; color:#64748b; white-space:nowrap; }
+.rd-steps-legend .rd-steps-dot { width:12px; height:12px; border-width:1px; cursor:default; }
+</style>
+

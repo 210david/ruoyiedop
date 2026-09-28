@@ -21,6 +21,7 @@
         <result property="contactPhone"    column="contact_phone"/>
         <result property="sourceUrl"       column="source_url"/>
         <result property="content"         column="content"/>
+        <result property="attachmentUrl"   column="attachment_url"/>
         <result property="matchedKeywords" column="matched_keywords"/>
         <result property="aiExtracted"     column="ai_extracted"/>
         <result property="inputType"       column="input_type"/>
@@ -36,7 +37,7 @@
         SELECT n.notice_id, n.project_key, n.title, n.notice_type, n.source_id, n.source_name,
                n.tenderee, n.agent, n.region_code, n.industry, n.budget_amount, n.publish_time,
                n.deadline_time, n.open_time, n.contact_person, n.contact_phone, n.source_url,
-               n.content, n.matched_keywords, n.ai_extracted, n.input_type, n.del_flag,
+               n.content, n.attachment_url, n.matched_keywords, n.ai_extracted, n.input_type, n.del_flag,
                n.create_by, n.create_time, n.update_by, n.update_time, n.remark
         FROM bid_notice n
     </sql>
@@ -81,11 +82,11 @@
     <insert id="insertNotice" parameterType="BidNotice" useGeneratedKeys="true" keyProperty="noticeId">
         INSERT INTO bid_notice (project_key, title, notice_type, source_id, source_name, tenderee, agent,
             region_code, industry, budget_amount, publish_time, deadline_time, open_time,
-            contact_person, contact_phone, source_url, content, matched_keywords, ai_extracted,
+            contact_person, contact_phone, source_url, content, attachment_url, matched_keywords, ai_extracted,
             input_type, del_flag, create_by, create_time, remark)
         VALUES (#{projectKey}, #{title}, #{noticeType}, #{sourceId}, #{sourceName}, #{tenderee}, #{agent},
             #{regionCode}, #{industry}, #{budgetAmount}, #{publishTime}, #{deadlineTime}, #{openTime},
-            #{contactPerson}, #{contactPhone}, #{sourceUrl}, #{content}, #{matchedKeywords}, '0',
+            #{contactPerson}, #{contactPhone}, #{sourceUrl}, #{content}, #{attachmentUrl}, #{matchedKeywords}, '0',
             #{inputType}, '0', #{createBy}, sysdate(), #{remark})
     </insert>
 
@@ -108,6 +109,7 @@
             <if test="contactPhone != null">contact_phone = #{contactPhone},</if>
             <if test="sourceUrl != null">source_url = #{sourceUrl},</if>
             <if test="content != null">content = #{content},</if>
+            <if test="attachmentUrl != null">attachment_url = #{attachmentUrl},</if>
             <if test="matchedKeywords != null">matched_keywords = #{matchedKeywords},</if>
             <if test="aiExtracted != null and aiExtracted != ''">ai_extracted = #{aiExtracted},</if>
             <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>

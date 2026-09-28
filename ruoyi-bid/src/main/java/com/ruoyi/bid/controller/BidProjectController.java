@@ -20,6 +20,7 @@ import com.ruoyi.common.core.page.TableDataInfo;
 import com.ruoyi.common.enums.BusinessType;
 import com.ruoyi.common.utils.poi.ExcelUtil;
 import com.ruoyi.bid.domain.BidProject;
+import com.ruoyi.bid.domain.BidProjectNode;
 import com.ruoyi.bid.service.IBidProjectService;
 
 /**
@@ -58,20 +59,22 @@ public class BidProjectController extends BaseController
         return AjaxResult.success(projectService.selectProjectById(projectId));
     }
 
-    @Log(title = "投标项目", businessType = BusinessType.INSERT)
-    @PreAuthorize("@ss.hasPermi('bid:project:add')")
-    @PostMapping
-    public AjaxResult add(@org.springframework.validation.annotation.Validated @RequestBody BidProject project)
-    {
-        return toAjax(projectService.insertProject(project));
-    }
-
     @Log(title = "投标项目", businessType = BusinessType.UPDATE)
     @PreAuthorize("@ss.hasPermi('bid:project:edit')")
     @PutMapping
     public AjaxResult edit(@org.springframework.validation.annotation.Validated @RequestBody BidProject project)
     {
         return toAjax(projectService.updateProject(project));
+    }
+
+    /** 节点维护：计划时间、实际完成时间、卡点说明、完成标记 */
+    @Log(title = "投标节点维护", businessType = BusinessType.UPDATE)
+    @PreAuthorize("@ss.hasPermi('bid:project:edit')")
+    @PutMapping("/node/{nodeId}")
+    public AjaxResult editNode(@PathVariable("nodeId") Long nodeId, @RequestBody BidProjectNode node)
+    {
+        node.setNodeId(nodeId);
+        return toAjax(projectService.updateNode(node));
     }
 
     @Log(title = "投标项目", businessType = BusinessType.DELETE)
@@ -109,6 +112,6 @@ public class BidProjectController extends BaseController
     public AjaxResult toPms(@PathVariable("projectId") Long projectId)
     {
         String bidNo = projectService.toPms(projectId);
-        return AjaxResult.success("中标项目「" + bidNo + "」数据已就绪，请在项目立项页完成登记", bidNo);
+        return AjaxResult.success("中标项目「" + bidNo + "」已标记为待立项；项目立项模块尚未上线，上线后可在此完成立项登记", bidNo);
     }
 }

@@ -551,6 +551,7 @@
         <div class="promote-actions">
           <el-button type="primary" icon="Download" @click="downloadQrCode">下载二维码</el-button>
           <el-button type="success" icon="Promotion" @click="openPromotePage">预览报名页</el-button>
+          <el-button icon="Link" @click="gotoChannelLink(promoteData.activityId)">渠道归因链接</el-button>
         </div>
 
         <!-- 业务说明 -->
@@ -872,6 +873,7 @@
 import QRCode from 'qrcode'
 import { CircleClose, ArrowRight, ArrowDown, QuestionFilled, WarningFilled, Search, Filter, Edit, Delete, Download, Promotion, FolderOpened, User } from '@element-plus/icons-vue'
 import { getToken } from '@/utils/auth'
+import { useRouter } from 'vue-router'
 import { listActivity, getActivity, addActivity, updateActivity, delActivity, changeActivityStatus, copyActivity, batchChangeStatus, batchUpdateOwner, getRegisterUrl, getActivityStatusLogs, reviewActivity, saveReview } from '@/api/mk/activity'
 import { getParticipantsByActivity, addParticipant, signInParticipant, convertToLead } from '@/api/mk/participant'
 import { listContact } from '@/api/mk/contact'
@@ -883,6 +885,7 @@ import { useDetailCard, formatAmount } from '@/composables/useDetailCard'
 const { collapsedCards, toggleCard } = useDetailCard(['basic', 'schedule', 'owner', 'detail', 'attachment', 'result', 'viewInfo', 'viewSchedule', 'viewOwner', 'viewDesc', 'viewAttach', 'viewParticipants', 'viewResult', 'viewPromote', 'viewLogs', 'settleInfo', 'settleCost', 'settleLead', 'settleDeal'])
 
 const { proxy } = getCurrentInstance()
+const router = useRouter()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('mk_activity_index')
 const { marketing_activity_type, marketing_activity_form, marketing_activity_status, marketing_participate_status } = proxy.useDict('marketing_activity_type', 'marketing_activity_form', 'marketing_activity_status', 'marketing_participate_status')
 
@@ -1341,11 +1344,11 @@ function confirmBatchOwner() {
 async function handleRegisterUrl(row) {
   promoteOpen.value = true
   promoteLoading.value = true
-  promoteData.value = { url: '', token: '', activityName: row.activityName }
+  promoteData.value = { url: '', token: '', activityName: row.activityName, activityId: row.activityId }
   try {
     const res = await getRegisterUrl(row.activityId)
     const fullUrl = window.location.origin + res.url
-    promoteData.value = { url: fullUrl, token: res.token, activityName: row.activityName }
+    promoteData.value = { url: fullUrl, token: res.token, activityName: row.activityName, activityId: row.activityId }
     // 生成二维码
     await nextTick()
     if (qrCanvasRef.value) {
@@ -1382,6 +1385,12 @@ function downloadQrCode() {
 }
 function openPromotePage() {
   window.open(promoteData.value.url, '_blank')
+}
+
+// 跳转渠道归因链接页（带上活动ID）
+function gotoChannelLink(activityId) {
+  const { href } = router.resolve({ path: '/mk/promotion/channelLink', query: { activityId } })
+  window.open(href, '_blank')
 }
 
 // 附件上传相关

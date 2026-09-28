@@ -38,6 +38,12 @@ public class MkActivity extends BaseEntity
     @Excel(name = "活动状态", dictType = "marketing_activity_status")
     private String activityStatus;
 
+    /** 排除的活动状态（非表字段，逗号分隔，选择器等场景排除草稿/已取消） */
+    private String excludeStatuses;
+
+    public String getExcludeStatuses() { return excludeStatuses; }
+    public void setExcludeStatuses(String excludeStatuses) { this.excludeStatuses = excludeStatuses; }
+
     /** 开始时间 */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @Excel(name = "开始时间", width = 30, dateFormat = "yyyy-MM-dd HH:mm:ss")

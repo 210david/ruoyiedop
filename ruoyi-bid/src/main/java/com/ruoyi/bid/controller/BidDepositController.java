@@ -82,21 +82,33 @@ public class BidDepositController extends BaseController
         return toAjax(commonService.deleteDepositByIds(depositIds));
     }
 
-    /** 登记退回 */
+        /** 登记退回 */
     @Log(title = "保证金退回", businessType = BusinessType.UPDATE)
     @PreAuthorize("@ss.hasPermi('bid:deposit:edit')")
     @PutMapping("/refund/{depositId}")
     public AjaxResult refund(@PathVariable("depositId") Long depositId,
-            @RequestParam String actualRefundTime, @RequestParam(required = false) String remark)
+            @RequestParam String actualRefundTime,
+            @RequestParam(required = false) java.math.BigDecimal refundAmount,
+            @RequestParam(required = false) String remark)
     {
         try
         {
             return toAjax(commonService.refundDeposit(depositId,
-                    com.ruoyi.common.utils.DateUtils.parseDate(actualRefundTime), remark));
+                    com.ruoyi.common.utils.DateUtils.parseDate(actualRefundTime), refundAmount, remark));
         }
         catch (Exception e)
         {
             return AjaxResult.error("退回时间格式不正确，应为 yyyy-MM-dd HH:mm:ss");
         }
+    }
+
+    /** 登记没收 */
+    @Log(title = "保证金没收", businessType = BusinessType.UPDATE)
+    @PreAuthorize("@ss.hasPermi('bid:deposit:edit')")
+    @PutMapping("/confiscate/{depositId}")
+    public AjaxResult confiscate(@PathVariable("depositId") Long depositId,
+            @RequestParam(required = false) String remark)
+    {
+        return toAjax(commonService.confiscateDeposit(depositId, remark));
     }
 }

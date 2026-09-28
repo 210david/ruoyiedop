@@ -90,6 +90,7 @@ CREATE TABLE bid_notice (
     contact_phone    VARCHAR(32)   COMMENT '联系电话',
     source_url       VARCHAR(500)  COMMENT '原文链接',
     content          TEXT          COMMENT '公告正文（纯文本摘要）',
+    attachment_url   VARCHAR(1000) COMMENT '招标附件（逗号分隔文件URL）',
     matched_keywords VARCHAR(500)  COMMENT '命中关键词（逗号分隔）',
     ai_extracted     CHAR(1)       DEFAULT '0' COMMENT '是否已AI抽取（0否 1是）',
     input_type       CHAR(1)       DEFAULT '0' COMMENT '录入方式（0手动 1采集）',
@@ -419,9 +420,10 @@ WHERE NOT EXISTS (SELECT 1 FROM mk_number_rule WHERE rule_code='bid_project');
 
 -- 一级菜单
 INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, route_name, is_frame, is_cache, menu_type, visible, status, icon, create_by, create_time)
-SELECT '招投标管理', 0, 60, 'bid', NULL, '', 1, 0, 'M', '0', '0', 'money', 'admin', sysdate()
+SELECT '招投标管理', 0, 60, 'bid', NULL, '', 1, 0, 'M', '0', '0', 'form', 'admin', sysdate()
 WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_name='招投标管理' AND parent_id=0);
 SET @parentId = (SELECT menu_id FROM sys_menu WHERE menu_name='招投标管理' AND parent_id=0 LIMIT 1);
+UPDATE sys_menu SET icon='form' WHERE menu_name='招投标管理' AND parent_id=0 AND icon='money';
 
 -- 二级菜单
 INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time)

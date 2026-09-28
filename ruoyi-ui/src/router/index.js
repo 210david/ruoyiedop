@@ -220,7 +220,21 @@ export const dynamicRoutes = [
         path: ':activityId(\\d+)',
         component: () => import('@/views/mk/activity/detail'),
         name: 'MkActivityDetail',
-        meta: { title: '活动详情', activeMenu: '/mk/activity/list' }
+        meta: { title: '活动详情', activeMenu: '/mk/activity/list', noCache: true }
+      }
+    ]
+  },
+  {
+    path: '/mk/content-detail',
+    component: Layout,
+    hidden: true,
+    permissions: ['marketing:content:query'],
+    children: [
+      {
+        path: ':contentId(\\d+)',
+        component: () => import('@/views/mk/content/detail'),
+        name: 'MkContentDetail',
+        meta: { title: '内容详情', activeMenu: '/mk/promotion/content', noCache: true }
       }
     ]
   },

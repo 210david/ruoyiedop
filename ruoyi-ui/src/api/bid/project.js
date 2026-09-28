@@ -6,11 +6,11 @@ export function listProject(query) {
 export function getProject(projectId) {
   return request({ url: '/bid/project/' + projectId, method: 'get' })
 }
-export function addProject(data) {
-  return request({ url: '/bid/project', method: 'post', data })
-}
 export function updateProject(data) {
   return request({ url: '/bid/project', method: 'put', data })
+}
+export function updateNode(nodeId, data) {
+  return request({ url: '/bid/project/node/' + nodeId, method: 'put', data })
 }
 export function delProject(projectIds) {
   return request({ url: '/bid/project/' + projectIds, method: 'delete' })

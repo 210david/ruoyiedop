@@ -43,13 +43,27 @@ export function getPublicActivityInfo(activityId, token) {
   })
 }
 
-// 提交报名（公开接口）
-export function submitRegistration(data, token) {
+// 提交报名（公开接口，ch 为可选归因码）
+export function submitRegistration(data, token, ch) {
+  const params = { token }
+  // 归因码非空时才携带，无 ch 参数时行为与原版一致
+  if (ch) {
+    params.ch = ch
+  }
   return publicService({
     url: '/mk/public/register',
     method: 'post',
-    params: { token },
+    params: params,
     data: data
+  })
+}
+
+// 归因链接跟踪（公开接口，H5 带 ch 参数访问时计点击）
+export function trackChannelLink(code) {
+  return publicService({
+    url: '/mk/channelLink/track',
+    method: 'get',
+    params: { code }
   })
 }
 

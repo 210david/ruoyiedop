@@ -65,6 +65,7 @@
         <include refid="selectProjectVo"/>
         <where>
             p.del_flag = '0'
+            <if test="noticeId != null"> AND p.notice_id = #{noticeId}</if>
             <if test="bidNo != null and bidNo != ''"> AND p.bid_no LIKE CONCAT('%', #{bidNo}, '%')</if>
             <if test="projectName != null and projectName != ''"> AND p.project_name LIKE CONCAT('%', #{projectName}, '%')</if>
             <if test="tenderee != null and tenderee != ''"> AND p.tenderee LIKE CONCAT('%', #{tenderee}, '%')</if>
@@ -79,6 +80,13 @@
             <if test="params.dataScope != null and params.dataScope != ''"> AND ${params.dataScope}</if>
         </where>
         ORDER BY p.project_id DESC
+    </select>
+
+    <select id="selectActiveProjectByNoticeId" parameterType="Long" resultMap="BidProjectResult">
+        <include refid="selectProjectVo"/>
+        WHERE p.notice_id = #{noticeId} AND p.del_flag = '0'
+        ORDER BY p.project_id DESC
+        LIMIT 1
     </select>
 
     <select id="selectProjectById" parameterType="Long" resultMap="BidProjectResult">
@@ -199,7 +207,9 @@
 
     <select id="selectMonthlyTrend" resultType="java.util.HashMap">
         SELECT DATE_FORMAT(p.create_time, '%Y-%m') AS "month", COUNT(1) AS "total",
-               SUM(CASE WHEN p.status = '7' THEN 1 ELSE 0 END) AS "won"
+               SUM(CASE WHEN p.status = '7' THEN 1 ELSE 0 END) AS "won",
+               COALESCE(SUM(p.bid_amount), 0) AS "bidAmount",
+               COALESCE(SUM(CASE WHEN p.status = '7' THEN p.bid_amount ELSE 0 END), 0) AS "wonAmount"
         FROM bid_project p
         WHERE p.del_flag = '0' AND p.create_time &gt;= DATE_SUB(CURDATE(), INTERVAL 12 MONTH)
         GROUP BY DATE_FORMAT(p.create_time, '%Y-%m') ORDER BY "month"

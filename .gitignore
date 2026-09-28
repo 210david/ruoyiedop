@@ -42,6 +42,10 @@ nbdist/
 *.xml.versionsBackup
 *.swp
 
+# 解包 class（防误入库）
+ruoyi-admin/BOOT-INF/
+ruoyi-admin/com/
+
 !*/build/*.java
 !*/build/*.html
 !*/build/*.xml

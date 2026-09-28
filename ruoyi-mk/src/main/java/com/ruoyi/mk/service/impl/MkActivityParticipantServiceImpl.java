@@ -27,6 +27,12 @@ public class MkActivityParticipantServiceImpl implements IMkActivityParticipantS
     private com.ruoyi.mk.mapper.MkActivityMapper mkActivityMapper;
 
     @Autowired
+    private com.ruoyi.mk.mapper.MkChannelMapper mkChannelMapper;
+
+    @Autowired
+    private com.ruoyi.mk.mapper.MkActivityChannelLinkMapper mkActivityChannelLinkMapper;
+
+    @Autowired
     private IMkLeadService mkLeadService;
 
     @Override
@@ -143,8 +149,33 @@ public class MkActivityParticipantServiceImpl implements IMkActivityParticipantS
         lead.setContactPhone(p.getContactPhone());
         lead.setContactEmail(p.getContactEmail());
         lead.setPosition(p.getPosition());
-        lead.setLeadSource("活动");
+        lead.setLeadSource("5"); // 线索来源字典 marketing_customer_source：5=活动
         lead.setActivityId(p.getActivityId());
+        // 推广归因：参与人带渠道时传递给线索，并累加归因链接线索数
+        if (p.getChannelId() != null)
+        {
+            lead.setChannelId(p.getChannelId());
+            com.ruoyi.mk.domain.MkChannel channel = mkChannelMapper.selectChannelById(p.getChannelId());
+            if (channel != null)
+            {
+                lead.setChannelType(channel.getChannelType());
+            }
+            try
+            {
+                com.ruoyi.mk.domain.MkActivityChannelLink linkQuery = new com.ruoyi.mk.domain.MkActivityChannelLink();
+                linkQuery.setActivityId(p.getActivityId());
+                linkQuery.setChannelId(p.getChannelId());
+                java.util.List<com.ruoyi.mk.domain.MkActivityChannelLink> links = mkActivityChannelLinkMapper.selectActivityChannelLinkList(linkQuery);
+                if (links != null && !links.isEmpty())
+                {
+                    mkActivityChannelLinkMapper.increaseLeadCount(links.get(0).getLinkId());
+                }
+            }
+            catch (Exception ignored)
+            {
+                // 归因计数失败不影响线索转化
+            }
+        }
         lead.setCreateBy(SecurityUtils.getUsername());
         mkLeadService.insertLead(lead);
         // 回写leadId

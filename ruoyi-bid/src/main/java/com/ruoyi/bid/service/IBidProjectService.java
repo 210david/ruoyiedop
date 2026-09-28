@@ -2,6 +2,7 @@ package com.ruoyi.bid.service;
 
 import java.util.List;
 import com.ruoyi.bid.domain.BidProject;
+import com.ruoyi.bid.domain.BidProjectNode;
 
 /**
  * 投标项目 Service 接口
@@ -12,9 +13,10 @@ public interface IBidProjectService
 
     public BidProject selectProjectById(Long projectId);
 
-    public int insertProject(BidProject project);
-
     public int updateProject(BidProject project);
+
+    /** 节点维护（计划时间/实际完成/卡点说明/完成标记） */
+    public int updateNode(BidProjectNode node);
 
     public int deleteProjectByIds(Long[] projectIds);
 

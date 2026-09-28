@@ -143,13 +143,14 @@ public class BidCrawlServiceImpl implements IBidCrawlService
         crawlLog.setErrorMsg(errorMsg);
         crawlLog.setEndTime(end);
         logMapper.insertLog(crawlLog);
-        // 更新采集源最近执行状态
+        // 更新采集源最近执行状态（摘要限制在 500 字符内）
         BidCrawlSource update = new BidCrawlSource();
         update.setSourceId(source.getSourceId());
         update.setLastRunTime(end);
         update.setLastRunStatus(status);
-        update.setLastRunMsg("抓取" + fetched + "条，新增" + inserted + "条，命中" + matched + "条"
-                + (errorMsg == null ? "" : "；错误：" + errorMsg));
+        String runMsg = "抓取" + fetched + "条，新增" + inserted + "条，命中" + matched + "条"
+                + (errorMsg == null ? "" : "；错误：" + errorMsg);
+        update.setLastRunMsg(StringUtils.substring(runMsg, 0, 490));
         sourceMapper.updateSource(update);
         return crawlLog.getLogId();
     }
@@ -176,6 +177,7 @@ public class BidCrawlServiceImpl implements IBidCrawlService
         if (!hitWords.isEmpty())
         {
             notice.setMatchedKeywords(String.join(",", hitWords));
+            log.info("关键词命中：title={}, words={}", notice.getTitle(), hitWords);
         }
         if (!userSubscribers.isEmpty() || deptBroadcast)
         {
@@ -243,20 +245,26 @@ public class BidCrawlServiceImpl implements IBidCrawlService
                 return false;
             }
         }
-        // 主词/同义词命中
-        boolean titleHit = containsAny(notice.getTitle(), splitWords(k.getSynonymWords()));
+        // 主词/同义词命中：关键词本身也参与匹配
+        List<String> words = splitWords(k.getSynonymWords());
+        if (StringUtils.isNotEmpty(k.getKeyword()) && !words.contains(k.getKeyword()))
+        {
+            words.add(k.getKeyword());
+        }
+        boolean titleHit = containsAny(notice.getTitle(), words);
         boolean hit = titleHit;
         if (!hit && "2".equals(k.getMatchType()) && notice.getContent() != null)
         {
-            hit = containsAny(notice.getContent(), splitWords(k.getSynonymWords()));
+            hit = containsAny(notice.getContent(), words);
         }
         if (!hit)
         {
             return false;
         }
-        // 过滤条件：地区/行业/金额/信息类型
+        // 过滤条件：地区/行业/金额/信息类型（地区双向包含：关键词"曲靖"可命中"云南曲靖沾益区"）
         if (StringUtils.isNotEmpty(k.getRegionCode()) && notice.getRegionCode() != null
-                && !notice.getRegionCode().startsWith(k.getRegionCode()))
+                && !notice.getRegionCode().contains(k.getRegionCode())
+                && !k.getRegionCode().contains(notice.getRegionCode()))
         {
             return false;
         }

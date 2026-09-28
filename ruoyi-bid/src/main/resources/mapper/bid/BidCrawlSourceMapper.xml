@@ -34,6 +34,7 @@
         <where>
             s.del_flag = '0'
             <if test="sourceName != null and sourceName != ''"> AND s.source_name LIKE CONCAT('%', #{sourceName}, '%')</if>
+            <if test="baseUrl != null and baseUrl != ''"> AND s.base_url LIKE CONCAT('%', #{baseUrl}, '%')</if>
             <if test="sourceType != null and sourceType != ''"> AND s.source_type = #{sourceType}</if>
             <if test="enabled != null and enabled != ''"> AND s.enabled = #{enabled}</if>
             <if test="lastRunStatus != null and lastRunStatus != ''"> AND s.last_run_status = #{lastRunStatus}</if>

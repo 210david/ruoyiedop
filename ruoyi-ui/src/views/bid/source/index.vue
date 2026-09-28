@@ -1,13 +1,19 @@
 <template>
   <div class="app-container bid-source-page">
     <div class="surface filter-card" v-show="showSearch">
-      <div class="filter-head"><div class="filter-title"><span class="glyph"></span> 筛选条件</div></div>
+      <div class="filter-head">
+        <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+        <a class="adv-link" :class="{ 'is-open': showAdvanced }" @click.prevent="showAdvanced = !showAdvanced">
+          <span>{{ showAdvanced ? '收起' : '高级筛选' }}</span><el-icon class="chev"><ArrowDown /></el-icon>
+        </a>
+      </div>
       <div class="filter-bar">
         <div class="field"><label>采集源名称</label><div class="control"><el-input v-model="queryParams.sourceName" placeholder="请输入" clearable @keyup.enter="handleQuery" /></div></div>
         <div class="field"><label>类型</label><div class="control"><el-select v-model="queryParams.sourceType" placeholder="全部" clearable style="width:100%"><el-option v-for="d in bid_source_type" :key="d.value" :label="d.label" :value="d.value" /></el-select></div></div>
         <div class="field"><label>启用状态</label><div class="control"><el-select v-model="queryParams.enabled" placeholder="全部" clearable style="width:100%"><el-option label="启用" value="0" /><el-option label="停用" value="1" /></el-select></div></div>
         <div class="field"><label>最近执行结果</label><div class="control"><el-select v-model="queryParams.lastRunStatus" placeholder="全部" clearable style="width:100%"><el-option v-for="d in bid_crawl_status" :key="d.value" :label="d.label" :value="d.value" /></el-select></div></div>
-        <div class="field"><label>最近执行时间</label><div class="control"><el-date-picker v-model="lastRunRange" type="daterange" range-separator="-" start-placeholder="开始" end-placeholder="结束" value-format="YYYY-MM-DD" style="width:100%" /></div></div>
+        <div class="field" v-show="showAdvanced"><label>最近执行时间</label><div class="control"><el-date-picker v-model="lastRunRange" type="daterange" range-separator="-" start-placeholder="开始" end-placeholder="结束" value-format="YYYY-MM-DD" style="width:100%" /></div></div>
+        <div class="field" v-show="showAdvanced"><label>采集地址</label><div class="control"><el-input v-model="queryParams.baseUrl" placeholder="请输入" clearable @keyup.enter="handleQuery" /></div></div>
       </div>
       <div class="filter-actions">
         <div class="filter-info"><el-icon><Filter /></el-icon> 已选 {{ activeFilterCount }} 个条件，支持回车快速搜索</div>
@@ -16,6 +22,14 @@
     </div>
 
     <div class="surface">
+      <div class="status-tabs">
+        <div class="tabs-track">
+          <button class="status-tab" :class="{ 'is-active': activeTab === 'all' }" @click="handleTabClick('all')"><span class="dot"></span><span>全部</span><span class="count">{{ tabCounts.all || 0 }}</span></button>
+          <button class="status-tab" :class="{ 'is-active': activeTab === '0' }" @click="handleTabClick('0')"><span class="dot" style="background:var(--green-500)"></span><span>启用</span><span class="count">{{ tabCounts['0'] || 0 }}</span></button>
+          <button class="status-tab" :class="{ 'is-active': activeTab === '1' }" @click="handleTabClick('1')"><span class="dot" style="background:var(--ink-400)"></span><span>停用</span><span class="count">{{ tabCounts['1'] || 0 }}</span></button>
+        </div>
+        <button class="tip-pill" @click="showStatusHelp = true"><el-icon><QuestionFilled /></el-icon><span>业务操作说明</span></button>
+      </div>
       <div class="toolbar">
         <div class="left"><el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['bid:source:add']">新增采集源</el-button></div>
         <div class="right"><right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar></div>
@@ -24,18 +38,18 @@
         <el-table ref="tableRef" v-loading="loading" :data="list" border class="app-table" @header-dragend="onHeaderDragEnd">
           <el-table-column type="index" label="序号" width="85" align="center" />
           <el-table-column label="采集源名称" prop="sourceName" key="sourceName" :min-width="colWidth('sourceName', 200)" show-overflow-tooltip resizable />
-          <el-table-column label="类型" prop="sourceType" key="sourceType" width="110" align="center">
+          <el-table-column label="类型" prop="sourceType" key="sourceType" :width="colWidth('sourceType', 110)" resizable align="center">
             <template #default="scope"><span class="badge violet">{{ typeLabel(scope.row.sourceType) }}</span></template>
           </el-table-column>
           <el-table-column label="采集地址" prop="baseUrl" key="baseUrl" :min-width="colWidth('baseUrl', 260)" show-overflow-tooltip resizable />
-          <el-table-column label="抓取间隔" prop="crawlInterval" key="crawlInterval" width="100" align="center">
+          <el-table-column label="抓取间隔" prop="crawlInterval" key="crawlInterval" :width="colWidth('crawlInterval', 100)" resizable align="center">
             <template #default="scope">{{ scope.row.crawlInterval }}分钟</template>
           </el-table-column>
-          <el-table-column label="启用" prop="enabled" key="enabled" width="90" align="center">
+          <el-table-column label="启用" prop="enabled" key="enabled" :width="colWidth('enabled', 90)" resizable align="center">
             <template #default="scope"><span class="badge" :class="scope.row.enabled === '0' ? 'green' : 'gray'">{{ scope.row.enabled === '0' ? '启用' : '停用' }}</span></template>
           </el-table-column>
-          <el-table-column label="最近执行时间" prop="lastRunTime" key="lastRunTime" width="170" align="center" />
-          <el-table-column label="执行结果" prop="lastRunStatus" key="lastRunStatus" width="100" align="center">
+          <el-table-column label="最近执行时间" prop="lastRunTime" key="lastRunTime" :width="colWidth('lastRunTime', 170)" resizable align="center" />
+          <el-table-column label="执行结果" prop="lastRunStatus" key="lastRunStatus" :width="colWidth('lastRunStatus', 100)" resizable align="center">
             <template #default="scope"><span class="badge" :class="statusBadge(scope.row.lastRunStatus)">{{ statusLabel(scope.row.lastRunStatus) }}</span></template>
           </el-table-column>
           <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
@@ -102,6 +116,34 @@
       </el-form>
       <template #footer><el-button type="primary" @click="submitForm">确 定</el-button><el-button @click="cancel">取 消</el-button></template>
     </el-dialog>
+
+    <!-- 业务操作说明 -->
+    <el-dialog v-model="showStatusHelp" title="采集源管理业务操作说明" width="820px" append-to-body>
+      <div class="status-help-content">
+        <h4>一、业务释义</h4>
+        <div class="highlight-card highlight-primary">
+          <div class="highlight-card-title">采集源是什么？</div>
+          <div class="highlight-card-body"><p>采集源是公告采集的数据入口。系统按采集源的地址与解析规则定期抓取各平台招标公告，抓取结果进入招标公告库，供关键词订阅匹配推送。</p></div>
+        </div>
+        <h4>二、状态流转</h4>
+        <div class="status-flow">
+          <div class="flow-item"><el-tag type="success">启用</el-tag><el-icon class="flow-arrow"><ArrowRight /></el-icon><el-tag type="info">停用</el-tag><el-icon class="flow-arrow"><ArrowRight /></el-icon><el-tag type="success">重新启用</el-tag></div>
+        </div>
+        <h4>三、执行结果说明</h4>
+        <el-timeline>
+          <el-timeline-item type="success" :hollow="true"><strong>成功：</strong>最近一次抓取正常，新公告已入库</el-timeline-item>
+          <el-timeline-item type="warning" :hollow="true"><strong>部分失败：</strong>抓取过程中存在解析异常，部分数据可能缺失，可重试</el-timeline-item>
+          <el-timeline-item type="danger" :hollow="true"><strong>失败：</strong>地址不可达或解析失败，请检查采集地址与解析配置后重试</el-timeline-item>
+        </el-timeline>
+        <h4>四、操作流程</h4>
+        <el-timeline>
+          <el-timeline-item type="primary" :hollow="true"><strong>新增采集源：</strong>填写名称、类型、采集地址并选择解析规则</el-timeline-item>
+          <el-timeline-item type="warning" :hollow="true"><strong>测试执行：</strong>启用后按抓取间隔自动执行，也可手动触发立即抓取</el-timeline-item>
+          <el-timeline-item type="success" :hollow="true"><strong>结果检查：</strong>通过"最近执行结果"列确认抓取是否正常，异常及时修复</el-timeline-item>
+        </el-timeline>
+      </div>
+      <template #footer><el-button type="primary" @click="showStatusHelp = false">我知道了</el-button></template>
+    </el-dialog>
   </div>
 </template>
 
@@ -120,11 +162,15 @@ const open = ref(false)
 const title = ref('')
 const showSearch = ref(true)
 const lastRunRange = ref([])
+const showAdvanced = ref(false)
+const activeTab = ref('all')
+const tabCounts = ref({})
+const showStatusHelp = ref(false)
 const configError = ref('')
 
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, sourceName: undefined, sourceType: undefined, enabled: undefined, lastRunStatus: undefined, params: {} },
+  queryParams: { pageNum: 1, pageSize: 10, sourceName: undefined, sourceType: undefined, enabled: undefined, lastRunStatus: undefined, baseUrl: undefined, params: {} },
   rules: {
     sourceName: [{ required: true, message: '名称不能为空', trigger: 'blur' }],
     baseUrl: [{ required: true, message: '采集地址不能为空', trigger: 'blur' }],
@@ -135,7 +181,7 @@ const { queryParams, form, rules } = toRefs(data)
 
 const activeFilterCount = computed(() => {
   const q = queryParams.value
-  return ['sourceName','sourceType','enabled','lastRunStatus'].filter(k => q[k]).length + (lastRunRange.value.length ? 1 : 0)
+  return ['sourceName','sourceType','enabled','lastRunStatus','baseUrl'].filter(k => q[k]).length + (lastRunRange.value.length ? 1 : 0)
 })
 
 const configPlaceholder = computed(() => {
@@ -155,9 +201,18 @@ function statusLabel(v) { const d = bid_crawl_status.value.find(x => x.value == 
 function getList() {
   loading.value = true
   listSource(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false; applySavedWidths() })
+  loadCounts()
 }
-function handleQuery() { queryParams.value.pageNum = 1; proxy.addDateRange(queryParams.value, lastRunRange.value, 'LastRunTime'); getList() }
-function resetQuery() { proxy.resetForm('queryRef'); queryParams.value.params = {}; lastRunRange.value = []; handleQuery() }
+/** 状态页签计数：逐状态取 total，与列表口径一致 */
+function loadCounts() {
+  listSource({ pageNum: 1, pageSize: 1 }).then(res => { tabCounts.value.all = res.total })
+  ;['0', '1'].forEach(s => {
+    listSource({ pageNum: 1, pageSize: 1, enabled: s }).then(res => { tabCounts.value[s] = res.total })
+  })
+}
+function handleTabClick(tab) { activeTab.value = tab; queryParams.value.enabled = tab === 'all' ? undefined : tab; handleQuery() }
+function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; proxy.addDateRange(queryParams.value, lastRunRange.value, 'LastRunTime'); getList() }
+function resetQuery() { queryParams.value = { pageNum: 1, pageSize: queryParams.value.pageSize, sourceName: undefined, sourceType: undefined, enabled: undefined, lastRunStatus: undefined, baseUrl: undefined, params: {} }; lastRunRange.value = []; activeTab.value = 'all'; getList() }
 
 function reset() {
   form.value = { sourceId: undefined, sourceName: undefined, sourceType: '1', baseUrl: undefined, parserCode: 'common-html', parseConfig: undefined, crawlInterval: 120, enabled: '0' }
@@ -205,7 +260,11 @@ onActivated(() => { getList() })
 <style scoped>
 .bid-source-page { padding-top:10px; --brand-50:#eef2ff; --brand-200:#c7d2fe; --brand-500:#6366f1; --brand-600:#4f46e5; --brand-700:#4338ca; --ink-900:#0f172a; --ink-700:#334155; --ink-500:#64748b; --ink-400:#94a3b8; --ink-300:#cbd5e1; --ink-200:#e2e8f0; --ink-100:#f1f5f9; --ink-50:#f8fafc; --amber-50:#fffbeb; --amber-500:#f59e0b; --amber-700:#b45309; --blue-50:#eff6ff; --blue-500:#3b82f6; --blue-700:#1d4ed8; --green-50:#ecfdf5; --green-500:#10b981; --green-700:#047857; --red-50:#fef2f2; --red-500:#ef4444; --red-700:#b91c1c; --violet-50:#f5f3ff; --r-lg:14px; --shadow-card:0 1px 0 rgba(15,23,42,.04),0 1px 2px rgba(15,23,42,.04); font-feature-settings:"tnum" 1; color:var(--ink-900); }
 .bid-source-page .surface { background:#fff; border:1px solid var(--ink-200); border-radius:var(--r-lg); box-shadow:var(--shadow-card); overflow:hidden; margin-bottom:8px; }
-.bid-source-page .filter-head { display:flex; align-items:center; padding:12px 20px 0; }
+.bid-source-page .filter-head { display:flex; align-items:center; justify-content:space-between; padding:12px 20px 0; }
+.bid-source-page .adv-link { display:inline-flex; align-items:center; gap:4px; color:var(--ink-500); cursor:pointer; font-size:13px; }
+.bid-source-page .adv-link:hover { color:var(--brand-600); }
+.bid-source-page .adv-link.is-open .chev { transform:rotate(180deg); }
+.bid-source-page .adv-link .chev { transition:transform .2s; }
 .bid-source-page .filter-title { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; }
 .bid-source-page .filter-title .glyph { width:4px; height:14px; border-radius:2px; background:var(--brand-500); }
 .bid-source-page .filter-bar { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px 16px; padding:12px 20px; }
@@ -230,4 +289,26 @@ onActivated(() => { getList() })
 .config-editor :deep(textarea) { font-family: Consolas, Monaco, monospace; font-size: 13px; }
 .form-tip { font-size: 12px; color: var(--ink-400); margin-top: 4px; }
 .form-tip.is-error { color: var(--red-500); }
+.bid-source-page .status-tabs { display:flex; align-items:center; gap:12px; padding:6px 10px 6px 12px; border-bottom:1px solid var(--ink-200); background:#fff; }
+.bid-source-page .tabs-track { display:flex; align-items:center; gap:4px; flex:1; min-width:0; overflow-x:auto; scrollbar-width:none; }
+.bid-source-page .tabs-track::-webkit-scrollbar { display:none; }
+.bid-source-page .status-tab { display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 12px; border-radius:var(--r-sm); font-size:14px; color:var(--ink-500); cursor:pointer; user-select:none; white-space:nowrap; border:1px solid transparent; background:transparent; }
+.bid-source-page .status-tab .dot { width:6px; height:6px; border-radius:50%; background:var(--ink-300); }
+.bid-source-page .status-tab .count { font-size:12px; font-weight:600; padding:1px 6px; border-radius:999px; background:var(--ink-100); color:var(--ink-500); min-width:18px; text-align:center; }
+.bid-source-page .status-tab:hover { background:var(--ink-50); }
+.bid-source-page .status-tab.is-active { background:var(--brand-50); color:var(--brand-700); font-weight:600; border-color:var(--brand-200); }
+.bid-source-page .status-tab.is-active .count { background:var(--brand-600); color:#fff; }
+.tip-pill { display:inline-flex; align-items:center; gap:6px; height:30px; padding:0 12px; background:#fffaf0; border:1px solid #fde68a; color:#92400e; border-radius:999px; font-size:13px; font-weight:500; cursor:pointer; white-space:nowrap; flex-shrink:0; }
+.tip-pill:hover { background:#fffbeb; border-color:#f59e0b; }
+.status-help-content { max-height:520px; overflow-y:auto; padding-right:10px; }
+.status-help-content h4 { margin:20px 0 12px 0; color:#303133; font-weight:600; border-left:4px solid #409eff; padding-left:10px; }
+.status-help-content h4:first-child { margin-top:0; }
+.status-help-content .status-flow { display:flex; align-items:center; flex-wrap:wrap; gap:8px; padding:16px; background-color:#f5f7fa; border-radius:8px; margin-bottom:8px; }
+.status-help-content .flow-item { display:flex; align-items:center; gap:8px; }
+.status-help-content .flow-arrow { color:#909399; font-size:16px; }
+.status-help-content .highlight-card { border-radius:8px; padding:16px; border:1px solid; }
+.status-help-content .highlight-card-title { font-size:14px; font-weight:600; margin-bottom:8px; }
+.status-help-content .highlight-card-body { font-size:13px; color:#606266; line-height:1.6; }
+.status-help-content .highlight-primary { background-color:#ecf5ff; border-color:#a0cfff; }
+.status-help-content .highlight-primary .highlight-card-title { color:#409eff; }
 </style>

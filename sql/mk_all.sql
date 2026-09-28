@@ -234,6 +234,7 @@ CREATE TABLE mk_activity (
     sql_count           INT           DEFAULT 0                COMMENT 'SQL数量',
     opportunity_count   INT           DEFAULT 0                COMMENT '转化商机数',
     deal_amount         DECIMAL(14,2) DEFAULT 0                COMMENT '成交金额',
+    register_token      VARCHAR(64)                            COMMENT 'H5报名安全令牌',
     del_flag            CHAR(1)       DEFAULT '0'              COMMENT '删除标志',
     create_by           VARCHAR(64)   DEFAULT ''               COMMENT '创建者',
     create_time         DATETIME                               COMMENT '创建时间',
@@ -437,6 +438,7 @@ INSERT INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, css_cla
 (3, '转介绍', '2', 'marketing_customer_source', '', 'warning', 'N', '0', 'admin', sysdate(), ''),
 (4, '官网', '3', 'marketing_customer_source', '', 'info', 'N', '0', 'admin', sysdate(), ''),
 (5, '其他', '4', 'marketing_customer_source', '', '', 'N', '0', 'admin', sysdate(), ''),
+(6, '活动', '5', 'marketing_customer_source', '', 'primary', 'N', '0', 'admin', sysdate(), ''),
 
 (1, '互联网/IT', '0', 'marketing_industry', '', 'primary', 'Y', '0', 'admin', sysdate(), ''),
 (2, '制造业', '1', 'marketing_industry', '', 'success', 'N', '0', 'admin', sysdate(), ''),

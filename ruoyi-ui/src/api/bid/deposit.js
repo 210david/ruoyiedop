@@ -15,6 +15,9 @@ export function updateDeposit(data) {
 export function delDeposit(depositIds) {
   return request({ url: '/bid/deposit/' + depositIds, method: 'delete' })
 }
-export function refundDeposit(depositId, actualRefundTime, remark) {
-  return request({ url: '/bid/deposit/refund/' + depositId, method: 'put', params: { actualRefundTime, remark } })
+export function refundDeposit(depositId, actualRefundTime, remark, refundAmount) {
+  return request({ url: '/bid/deposit/refund/' + depositId, method: 'put', params: { actualRefundTime, remark, refundAmount } })
+}
+export function confiscateDeposit(depositId, remark) {
+  return request({ url: '/bid/deposit/confiscate/' + depositId, method: 'put', params: { remark } })
 }

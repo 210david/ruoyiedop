@@ -16,6 +16,7 @@
         <result property="source"            column="source"/>
         <result property="signTime"          column="sign_time"/>
         <result property="signInCode"        column="sign_in_code"/>
+        <result property="channelId"         column="channel_id"/>
         <result property="activityName"      column="activity_name"/>
         <result property="activityStatus"    column="activity_status"/>
         <result property="createBy"          column="create_by"/>
@@ -28,6 +29,7 @@
     <sql id="selectParticipantVo">
         SELECT p.participant_id, p.activity_id, p.lead_id, p.contact_id, p.company_name, p.contact_name,
                p.contact_phone, p.contact_email, p.position, p.participate_status, p.source, p.sign_time, p.sign_in_code,
+               p.channel_id,
                p.create_by, p.create_time, p.update_by, p.update_time, p.remark, a.activity_name, a.activity_status
         FROM mk_activity_participant p
         LEFT JOIN mk_activity a ON p.activity_id = a.activity_id
@@ -55,9 +57,9 @@
 
     <insert id="insertParticipant" parameterType="MkActivityParticipant" useGeneratedKeys="true" keyProperty="participantId">
         INSERT INTO mk_activity_participant (activity_id, lead_id, contact_id, company_name, contact_name, contact_phone,
-            contact_email, position, participate_status, source, sign_time, sign_in_code, create_by, create_time, remark)
+            contact_email, position, participate_status, source, sign_time, sign_in_code, channel_id, create_by, create_time, remark)
         VALUES (#{activityId}, #{leadId}, #{contactId}, #{companyName}, #{contactName}, #{contactPhone},
-            #{contactEmail}, #{position}, #{participateStatus}, #{source}, #{signTime}, #{signInCode}, #{createBy}, sysdate(), #{remark})
+            #{contactEmail}, #{position}, #{participateStatus}, #{source}, #{signTime}, #{signInCode}, #{channelId}, #{createBy}, sysdate(), #{remark})
     </insert>
 
     <update id="updateParticipant" parameterType="MkActivityParticipant">
@@ -75,6 +77,7 @@
             <if test="source != null">source = #{source},</if>
             <if test="signTime != null">sign_time = #{signTime},</if>
             <if test="signInCode != null">sign_in_code = #{signInCode},</if>
+            <if test="channelId != null">channel_id = #{channelId},</if>
             <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
             <if test="remark != null">remark = #{remark},</if>
             update_time = sysdate()

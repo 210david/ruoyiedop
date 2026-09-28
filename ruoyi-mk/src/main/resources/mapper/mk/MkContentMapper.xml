@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mk.mapper.MkContentMapper">
+
+    <resultMap type="MkContent" id="MkContentResult">
+        <result property="contentId"       column="content_id"/>
+        <result property="contentNo"        column="content_no"/>
+        <result property="title"           column="title"/>
+        <result property="contentType"     column="content_type"/>
+        <result property="theme"           column="theme"/>
+        <result property="activityId"      column="activity_id"/>
+        <result property="planPublishDate"  column="plan_publish_date"/>
+        <result property="auditStatus"     column="audit_status"/>
+        <result property="auditUserId"      column="audit_user_id"/>
+        <result property="auditTime"       column="audit_time"/>
+        <result property="auditRemark"     column="audit_remark"/>
+        <result property="userId"          column="user_id"/>
+        <result property="delFlag"          column="del_flag"/>
+        <result property="createBy"        column="create_by"/>
+        <result property="createTime"      column="create_time"/>
+        <result property="updateBy"        column="update_by"/>
+        <result property="updateTime"      column="update_time"/>
+        <result property="remark"          column="remark"/>
+        <result property="activityName"    column="activity_name"/>
+        <result property="userName"       column="user_name"/>
+        <result property="auditUserName"   column="audit_user_name"/>
+    </resultMap>
+
+    <sql id="selectContentVo">
+        SELECT c.content_id, c.content_no, c.title, c.content_type, c.theme, c.activity_id,
+               c.plan_publish_date, c.audit_status, c.audit_user_id, c.audit_time, c.audit_remark,
+               c.user_id, c.del_flag, c.create_by, c.create_time, c.update_by, c.update_time, c.remark,
+               a.activity_name, u.nick_name as user_name, au.nick_name as audit_user_name
+        FROM mk_content c
+        LEFT JOIN mk_activity a ON c.activity_id = a.activity_id
+        LEFT JOIN sys_user u ON c.user_id = u.user_id
+        LEFT JOIN sys_user au ON c.audit_user_id = au.user_id
+    </sql>
+
+    <select id="selectContentList" parameterType="MkContent" resultMap="MkContentResult">
+        <include refid="selectContentVo"/>
+        <where>
+            c.del_flag = '0'
+            <if test="contentNo != null and contentNo != ''"> AND c.content_no LIKE CONCAT('%', #{contentNo}, '%')</if>
+            <if test="title != null and title != ''"> AND c.title LIKE CONCAT('%', #{title}, '%')</if>
+            <if test="contentType != null and contentType != ''"> AND c.content_type = #{contentType}</if>
+            <if test="activityId != null"> AND c.activity_id = #{activityId}</if>
+            <if test="auditStatus != null and auditStatus != ''"> AND c.audit_status = #{auditStatus}</if>
+            <if test="userId != null"> AND c.user_id = #{userId}</if>
+        </where>
+        ORDER BY c.content_id DESC
+    </select>
+
+    <select id="selectContentById" parameterType="Long" resultMap="MkContentResult">
+        <include refid="selectContentVo"/> WHERE c.content_id = #{contentId}
+    </select>
+
+    <insert id="insertContent" parameterType="MkContent" useGeneratedKeys="true" keyProperty="contentId">
+        INSERT INTO mk_content (content_no, title, content_type, theme, activity_id, plan_publish_date,
+            audit_status, audit_user_id, audit_time, audit_remark, user_id, create_by, create_time, remark)
+        VALUES (#{contentNo}, #{title}, #{contentType}, #{theme}, #{activityId}, #{planPublishDate},
+            #{auditStatus}, #{auditUserId}, #{auditTime}, #{auditRemark}, #{userId}, #{createBy}, sysdate(), #{remark})
+    </insert>
+
+    <update id="updateContent" parameterType="MkContent">
+        UPDATE mk_content
+        <set>
+            <if test="contentNo != null and contentNo != ''">content_no = #{contentNo},</if>
+            <if test="title != null and title != ''">title = #{title},</if>
+            <if test="contentType != null and contentType != ''">content_type = #{contentType},</if>
+            <if test="theme != null">theme = #{theme},</if>
+            <if test="activityId != null">activity_id = #{activityId},</if>
+            <if test="planPublishDate != null">plan_publish_date = #{planPublishDate},</if>
+            <if test="auditStatus != null and auditStatus != ''">audit_status = #{auditStatus},</if>
+            <if test="auditUserId != null">audit_user_id = #{auditUserId},</if>
+            <if test="auditTime != null">audit_time = #{auditTime},</if>
+            <if test="auditRemark != null">audit_remark = #{auditRemark},</if>
+            <if test="userId != null">user_id = #{userId},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE content_id = #{contentId}
+    </update>
+
+    <update id="deleteContentByIds" parameterType="Long">
+        UPDATE mk_content SET del_flag = '2' WHERE content_id IN
+        <foreach item="contentId" collection="array" open="(" separator="," close=")">#{contentId}</foreach>
+    </update>
+
+</mapper>

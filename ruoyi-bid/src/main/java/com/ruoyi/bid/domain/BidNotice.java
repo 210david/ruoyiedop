@@ -85,6 +85,9 @@ public class BidNotice extends BaseEntity
     /** 公告正文 */
     private String content;
 
+    /** 招标附件（逗号分隔文件URL） */
+    private String attachmentUrl;
+
     /** 命中关键词（逗号分隔） */
     @Excel(name = "命中关键词")
     private String matchedKeywords;
@@ -135,6 +138,8 @@ public class BidNotice extends BaseEntity
     public void setSourceUrl(String sourceUrl) { this.sourceUrl = sourceUrl; }
     public String getContent() { return content; }
     public void setContent(String content) { this.content = content; }
+    public String getAttachmentUrl() { return attachmentUrl; }
+    public void setAttachmentUrl(String attachmentUrl) { this.attachmentUrl = attachmentUrl; }
     public String getMatchedKeywords() { return matchedKeywords; }
     public void setMatchedKeywords(String matchedKeywords) { this.matchedKeywords = matchedKeywords; }
     public String getAiExtracted() { return aiExtracted; }

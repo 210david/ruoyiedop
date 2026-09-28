@@ -51,10 +51,11 @@ public class MkPublicController extends BaseController
      */
     @RateLimiter(time = 60, count = 5, limitType = LimitType.IP)
     @PostMapping("/register")
-    public AjaxResult register(@RequestBody MkActivityParticipant participant, @RequestParam String token)
+    public AjaxResult register(@RequestBody MkActivityParticipant participant, @RequestParam String token,
+            @RequestParam(required = false) String ch)
     {
         // 强制设置activityId来自路径安全层，不接受前端任意指定
-        Map<String, Object> result = mkPublicService.register(participant, token);
+        Map<String, Object> result = mkPublicService.register(participant, token, ch);
         return AjaxResult.success("报名成功", result);
     }
 

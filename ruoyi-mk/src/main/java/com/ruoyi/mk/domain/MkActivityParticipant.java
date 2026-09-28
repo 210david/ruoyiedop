@@ -60,6 +60,9 @@ public class MkActivityParticipant extends BaseEntity
     /** 签到码（报名成功后生成，用于现场扫码签到） */
     private String signInCode;
 
+    /** 报名来源渠道ID（推广归因，可空） */
+    private Long channelId;
+
     /** 活动名称（关联查询） */
     private String activityName;
 
@@ -101,4 +104,6 @@ public class MkActivityParticipant extends BaseEntity
     public void setCustomerId(Long customerId) { this.customerId = customerId; }
     public String getSignInCode() { return signInCode; }
     public void setSignInCode(String signInCode) { this.signInCode = signInCode; }
+    public Long getChannelId() { return channelId; }
+    public void setChannelId(Long channelId) { this.channelId = channelId; }
 }

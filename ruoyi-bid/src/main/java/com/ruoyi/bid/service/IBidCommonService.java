@@ -18,6 +18,8 @@ public interface IBidCommonService
 
     public List<BidCrawlLog> selectRecentBySourceId(Long sourceId);
 
+    public java.util.Map<String, Object> selectLogStatusCounts(BidCrawlLog log);
+
     // ===== 保证金 =====
     public List<BidDeposit> selectDepositList(BidDeposit deposit);
 
@@ -32,7 +34,10 @@ public interface IBidCommonService
     public int deleteDepositByIds(Long[] depositIds);
 
     /** 登记退回 */
-    public int refundDeposit(Long depositId, java.util.Date actualRefundTime, String remark);
+    public int refundDeposit(Long depositId, java.util.Date actualRefundTime, java.math.BigDecimal refundAmount, String remark);
+
+    /** 登记没收 */
+    public int confiscateDeposit(Long depositId, String remark);
 
     /** 保证金预警扫描（超期未退推送），返回超期条数 */
     public int checkDepositOverdue();

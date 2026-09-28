@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mk.mapper.MkChannelMapper">
+
+    <resultMap type="MkChannel" id="MkChannelResult">
+        <result property="channelId"     column="channel_id"/>
+        <result property="channelType"    column="channel_type"/>
+        <result property="accountName"    column="account_name"/>
+        <result property="accountId"      column="account_id"/>
+        <result property="accountUrl"    column="account_url"/>
+        <result property="fansCount"     column="fans_count"/>
+        <result property="userId"        column="user_id"/>
+        <result property="channelStatus" column="channel_status"/>
+        <result property="delFlag"       column="del_flag"/>
+        <result property="createBy"      column="create_by"/>
+        <result property="createTime"    column="create_time"/>
+        <result property="updateBy"      column="update_by"/>
+        <result property="updateTime"    column="update_time"/>
+        <result property="remark"        column="remark"/>
+        <result property="userName"      column="user_name"/>
+    </resultMap>
+
+    <sql id="selectChannelVo">
+        SELECT c.channel_id, c.channel_type, c.account_name, c.account_id, c.account_url,
+               c.fans_count, c.user_id, c.channel_status, c.del_flag, c.create_by, c.create_time,
+               c.update_by, c.update_time, c.remark,
+               u.nick_name as user_name
+        FROM mk_channel c
+        LEFT JOIN sys_user u ON c.user_id = u.user_id
+    </sql>
+
+    <select id="selectChannelList" parameterType="MkChannel" resultMap="MkChannelResult">
+        <include refid="selectChannelVo"/>
+        <where>
+            c.del_flag = '0'
+            <if test="channelType != null and channelType != ''"> AND c.channel_type = #{channelType}</if>
+            <if test="accountName != null and accountName != ''"> AND c.account_name LIKE CONCAT('%', #{accountName}, '%')</if>
+            <if test="channelStatus != null and channelStatus != ''"> AND c.channel_status = #{channelStatus}</if>
+            <if test="userId != null"> AND c.user_id = #{userId}</if>
+        </where>
+        ORDER BY c.channel_id DESC
+    </select>
+
+    <select id="selectChannelById" parameterType="Long" resultMap="MkChannelResult">
+        <include refid="selectChannelVo"/> WHERE c.channel_id = #{channelId}
+    </select>
+
+    <insert id="insertChannel" parameterType="MkChannel" useGeneratedKeys="true" keyProperty="channelId">
+        INSERT INTO mk_channel (channel_type, account_name, account_id, account_url, fans_count,
+            user_id, channel_status, create_by, create_time, remark)
+        VALUES (#{channelType}, #{accountName}, #{accountId}, #{accountUrl}, #{fansCount},
+            #{userId}, #{channelStatus}, #{createBy}, sysdate(), #{remark})
+    </insert>
+
+    <update id="updateChannel" parameterType="MkChannel">
+        UPDATE mk_channel
+        <set>
+            <if test="channelType != null and channelType != ''">channel_type = #{channelType},</if>
+            <if test="accountName != null and accountName != ''">account_name = #{accountName},</if>
+            <if test="accountId != null">account_id = #{accountId},</if>
+            <if test="accountUrl != null">account_url = #{accountUrl},</if>
+            <if test="fansCount != null">fans_count = #{fansCount},</if>
+            <if test="userId != null">user_id = #{userId},</if>
+            <if test="channelStatus != null and channelStatus != ''">channel_status = #{channelStatus},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE channel_id = #{channelId}
+    </update>
+
+    <update id="deleteChannelByIds" parameterType="Long">
+        UPDATE mk_channel SET del_flag = '2' WHERE channel_id IN
+        <foreach item="channelId" collection="array" open="(" separator="," close=")">#{channelId}</foreach>
+    </update>
+
+</mapper>

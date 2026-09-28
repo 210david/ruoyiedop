@@ -13,6 +13,9 @@ public interface BidProjectMapper
 {
     public List<BidProject> selectProjectList(BidProject project);
 
+    /** 按公告查询未删除的投标项目，用于转投标防重 */
+    public BidProject selectActiveProjectByNoticeId(Long noticeId);
+
     public BidProject selectProjectById(Long projectId);
 
     public int insertProject(BidProject project);

@@ -275,6 +275,109 @@ public class CommonController
     }
 
     /**
+     * Office 文档通用在线预览（服务端 LibreOffice 转 PDF，与 AI 知识问答数据来源预览同一能力）
+     *
+     * 规范（unified-development-standards.md「Office 文档预览规范」）：
+     * - doc/docx/xls/xlsx/ppt/pptx/rtf 等禁止仅依赖前端 docx-preview 渲染，必须优先服务端转 PDF
+     * - 转换结果缓存 uploadPath/convert/{md5(resource)}.pdf，源文件 mtime 变化自动失效重转
+     * - 失败/不支持时返回 500 + JSON 错误体，前端按规范回退前端渲染或提示下载
+     *
+     * @param resource 资源路径，如 /profile/upload/2026/09/21/xxx.docx
+     */
+    @GetMapping("/file/preview")
+    public void filePreview(String resource, HttpServletResponse response)
+    {
+        try
+        {
+            // 安全校验：与 /common/file/access 同口径（禁目录穿越、限 /profile/、扩展名白名单）
+            if (StringUtils.isEmpty(resource) || resource.contains(".."))
+            {
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                return;
+            }
+            String normalized = resource.startsWith("/") ? resource : "/" + resource;
+            if (!normalized.startsWith("/profile/"))
+            {
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                return;
+            }
+            String extension = StringUtils.substringAfterLast(normalized, ".").toLowerCase();
+            if (StringUtils.isEmpty(extension) || !isAllowedAccessExtension(extension))
+            {
+                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                return;
+            }
+            if (!com.ruoyi.ai.core.OfficeConvertUtils.isConvertible(extension))
+            {
+                writeJsonError(response, "该格式不支持服务端转换预览");
+                return;
+            }
+
+            // 定位本地文件
+            String relativePath = StringUtils.substringAfter(normalized, "/profile");
+            Path basePath = Paths.get(RuoYiConfig.getProfile()).toAbsolutePath().normalize();
+            Path targetPath = basePath.resolve(relativePath.substring(1)).normalize();
+            if (!targetPath.startsWith(basePath))
+            {
+                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                return;
+            }
+            File srcFile = targetPath.toFile();
+            if (!srcFile.exists() || !srcFile.isFile())
+            {
+                writeJsonError(response, "原文件已丢失，请下载后查看");
+                return;
+            }
+
+            // 解密解压到临时文件后转换（磁盘文件可能为加密存储）
+            File decFile = File.createTempFile("edop-preview-src-", "." + extension);
+            try (FileInputStream fis = new FileInputStream(srcFile))
+            {
+                FileStorageUtils.decryptStream(fis, java.nio.file.Files.newOutputStream(decFile.toPath()));
+            }
+            String cacheKey = org.springframework.util.DigestUtils.md5DigestAsHex(normalized.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            File pdf = com.ruoyi.ai.core.OfficeConvertUtils.getOrCreatePdf(cacheKey, decFile);
+            decFile.delete();
+            if (pdf == null || !pdf.exists())
+            {
+                writeJsonError(response, "文档转换预览失败，请下载原文件查看");
+                return;
+            }
+
+            response.setContentType(MediaType.APPLICATION_PDF_VALUE);
+            response.setHeader("Content-Disposition", "inline");
+            response.setContentLengthLong(pdf.length());
+            FileInputStream pis = new FileInputStream(pdf);
+            OutputStream os = response.getOutputStream();
+            byte[] buf = new byte[8192];
+            int len;
+            while ((len = pis.read(buf)) > 0)
+            {
+                os.write(buf, 0, len);
+            }
+            pis.close();
+        }
+        catch (Exception e)
+        {
+            log.error("Office 文档预览失败: {}", resource, e);
+        }
+    }
+
+    /** 预览失败时输出 JSON 错误体（前端据此回退渲染方式） */
+    private void writeJsonError(HttpServletResponse response, String msg)
+    {
+        try
+        {
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            response.setContentType("application/json;charset=UTF-8");
+            response.getWriter().write("{\"msg\":\"" + msg + "\",\"code\":500}");
+        }
+        catch (Exception ignored)
+        {
+        }
+    }
+
+    /**
      * 判断文件扩展名是否允许通过 /common/file/access 访问
      * 只允许图片、文档、视频、压缩包等安全类型
      */

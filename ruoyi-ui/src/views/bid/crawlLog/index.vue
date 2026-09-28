@@ -1,13 +1,18 @@
 <template>
   <div class="app-container bid-crawlLog-page">
     <div class="surface filter-card" v-show="showSearch">
-      <div class="filter-head"><div class="filter-title"><span class="glyph"></span> 筛选条件</div></div>
+      <div class="filter-head">
+        <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+        <a class="adv-link" :class="{ 'is-open': showAdvanced }" @click.prevent="showAdvanced = !showAdvanced">
+          <span>{{ showAdvanced ? '收起' : '高级筛选' }}</span><el-icon class="chev"><ArrowDown /></el-icon>
+        </a>
+      </div>
       <div class="filter-bar">
-        <div class="field"><label>采集源</label><div class="control"><el-input v-model="queryParams.sourceName" placeholder="请输入" clearable @keyup.enter="handleQuery" /></div></div>
+        <div class="field"><label>采集源</label><div class="control"><el-select v-model="queryParams.sourceId" placeholder="全部" clearable filterable style="width:100%"><el-option v-for="s in sourceOptions" :key="s.sourceId" :label="s.sourceName" :value="s.sourceId" /></el-select></div></div>
         <div class="field"><label>执行结果</label><div class="control"><el-select v-model="queryParams.runStatus" placeholder="全部" clearable style="width:100%"><el-option v-for="d in bid_crawl_status" :key="d.value" :label="d.label" :value="d.value" /></el-select></div></div>
-        <div class="field"><label>错误关键字</label><div class="control"><el-input v-model="queryParams.errorMsg" placeholder="请输入" clearable @keyup.enter="handleQuery" /></div></div>
         <div class="field"><label>开始时间</label><div class="control"><el-date-picker v-model="startRange" type="daterange" range-separator="-" start-placeholder="开始" end-placeholder="结束" value-format="YYYY-MM-DD" style="width:100%" /></div></div>
-        <div class="field"><label>采集源ID</label><div class="control"><el-input-number v-model="queryParams.sourceId" :min="1" controls-position="right" style="width:100%" /></div></div>
+        <div class="field"><label>错误关键字</label><div class="control"><el-input v-model="queryParams.errorMsg" placeholder="请输入" clearable @keyup.enter="handleQuery" /></div></div>
+        <div class="field" v-show="showAdvanced"><label>结束时间</label><div class="control"><el-date-picker v-model="endRange" type="daterange" range-separator="-" start-placeholder="开始" end-placeholder="结束" value-format="YYYY-MM-DD" style="width:100%" /></div></div>
       </div>
       <div class="filter-actions">
         <div class="filter-info"><el-icon><Filter /></el-icon> 只读日志，用于排查"为什么没抓到"</div>
@@ -29,14 +34,15 @@
         <el-table ref="tableRef" v-loading="loading" :data="list" border class="app-table" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange">
           <el-table-column type="index" label="序号" width="85" align="center" />
           <el-table-column label="采集源" prop="sourceName" key="sourceName" :min-width="colWidth('sourceName', 180)" show-overflow-tooltip resizable />
-          <el-table-column label="执行结果" prop="runStatus" key="runStatus" width="110" align="center">
+          <el-table-column label="执行结果" prop="runStatus" key="runStatus" :width="colWidth('runStatus', 110)" resizable align="center">
             <template #default="scope"><span class="badge" :class="statusBadge(scope.row.runStatus)">{{ statusLabel(scope.row.runStatus) }}</span></template>
           </el-table-column>
-          <el-table-column label="抓取条数" prop="fetchedCount" key="fetchedCount" width="100" align="center" sortable="custom" :sort-orders="['descending','ascending']" />
-          <el-table-column label="新增条数" prop="insertedCount" key="insertedCount" width="100" align="center" sortable="custom" :sort-orders="['descending','ascending']" />
-          <el-table-column label="命中条数" prop="matchedCount" key="matchedCount" width="100" align="center" sortable="custom" :sort-orders="['descending','ascending']" />
-          <el-table-column label="开始时间" prop="startTime" key="startTime" width="170" align="center" sortable="custom" :sort-orders="['descending','ascending']" />
-          <el-table-column label="耗时" key="duration" width="100" align="center">
+          <el-table-column label="抓取条数" prop="fetchedCount" key="fetchedCount" :width="colWidth('fetchedCount', 100)" resizable align="center" sortable="custom" :sort-orders="['descending','ascending']" />
+          <el-table-column label="新增条数" prop="insertedCount" key="insertedCount" :width="colWidth('insertedCount', 100)" resizable align="center" sortable="custom" :sort-orders="['descending','ascending']" />
+          <el-table-column label="命中条数" prop="matchedCount" key="matchedCount" :width="colWidth('matchedCount', 100)" resizable align="center" sortable="custom" :sort-orders="['descending','ascending']" />
+          <el-table-column label="开始时间" prop="startTime" key="startTime" :width="colWidth('startTime', 170)" resizable align="center" sortable="custom" :sort-orders="['descending','ascending']" />
+          <el-table-column label="结束时间" prop="endTime" key="endTime" :width="colWidth('endTime', 170)" resizable align="center" sortable="custom" :sort-orders="['descending','ascending']" />
+          <el-table-column label="耗时" prop="duration" key="duration" :width="colWidth('duration', 100)" resizable align="center">
             <template #default="scope">{{ duration(scope.row) }}</template>
           </el-table-column>
           <el-table-column label="错误信息" prop="errorMsg" key="errorMsg" :min-width="colWidth('errorMsg', 260)" show-overflow-tooltip resizable>
@@ -74,7 +80,8 @@
 </template>
 
 <script setup name="BidCrawlLog">
-import { listCrawlLog } from '@/api/bid/crawlLog'
+import { listCrawlLog, statusCountsCrawlLog } from '@/api/bid/crawlLog'
+import { listSource } from '@/api/bid/source'
 import { useColumnResize } from '@/composables/useColumnResize'
 
 const { proxy } = getCurrentInstance()
@@ -86,12 +93,17 @@ const list = ref([])
 const total = ref(0)
 const showSearch = ref(true)
 const startRange = ref([])
+const endRange = ref([])
+const showAdvanced = ref(false)
 const activeTab = ref('all')
 const showStatusHelp = ref(false)
 const tabCounts = ref({ all: 0 })
+const sourceOptions = ref([])
+
+listSource({ pageNum: 1, pageSize: 500 }).then(res => { sourceOptions.value = res.rows || [] })
 
 const data = reactive({
-  queryParams: { pageNum: 1, pageSize: 10, sourceName: undefined, runStatus: undefined, errorMsg: undefined, sourceId: undefined, params: {} }
+  queryParams: { pageNum: 1, pageSize: 10, runStatus: undefined, errorMsg: undefined, sourceId: undefined, params: {} }
 })
 const { queryParams } = toRefs(data)
 
@@ -104,17 +116,25 @@ function duration(row) {
 
 function getList() {
   loading.value = true
+  const countsQuery = { pageNum: 1, pageSize: 1, errorMsg: queryParams.value.errorMsg, sourceId: queryParams.value.sourceId, params: { ...(queryParams.value.params || {}) } }
+  delete countsQuery.params.orderByColumn
+  delete countsQuery.params.isAsc
+  proxy.addDateRange(countsQuery, startRange.value, 'StartTime')
+  proxy.addDateRange(countsQuery, endRange.value, 'EndTime')
+  statusCountsCrawlLog(countsQuery).then(res => {
+    const d = res.data || {}
+    tabCounts.value = { all: Number(d.all || 0), '0': Number(d['0'] || 0), '1': Number(d['1'] || 0), '2': Number(d['2'] || 0) }
+  })
   listCrawlLog(queryParams.value).then(res => {
     list.value = res.rows
     total.value = res.total
-    tabCounts.value = { all: res.total, ...(list.value && list.value.length ? {} : {}) }
     loading.value = false
     applySavedWidths()
   })
 }
 function handleTabClick(tab) { activeTab.value = tab; queryParams.value.runStatus = tab === 'all' ? undefined : tab; handleQuery() }
-function handleQuery() { queryParams.value.pageNum = 1; proxy.addDateRange(queryParams.value, startRange.value, 'StartTime'); getList() }
-function resetQuery() { proxy.resetForm('queryRef'); queryParams.value.params = {}; startRange.value = []; activeTab.value = 'all'; handleQuery() }
+function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; proxy.addDateRange(queryParams.value, startRange.value, 'StartTime'); proxy.addDateRange(queryParams.value, endRange.value, 'EndTime'); getList() }
+function resetQuery() { queryParams.value = { pageNum: 1, pageSize: queryParams.value.pageSize, runStatus: undefined, errorMsg: undefined, sourceId: undefined, params: {} }; startRange.value = []; endRange.value = []; activeTab.value = 'all'; getList() }
 function handleSortChange(column) {
   if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' }
   else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }
@@ -127,7 +147,11 @@ onActivated(() => { getList() })
 <style scoped>
 .bid-crawlLog-page { padding-top:10px; --brand-50:#eef2ff; --brand-200:#c7d2fe; --brand-500:#6366f1; --brand-600:#4f46e5; --brand-700:#4338ca; --ink-900:#0f172a; --ink-700:#334155; --ink-500:#64748b; --ink-400:#94a3b8; --ink-300:#cbd5e1; --ink-200:#e2e8f0; --ink-100:#f1f5f9; --ink-50:#f8fafc; --amber-50:#fffbeb; --amber-500:#f59e0b; --amber-700:#b45309; --blue-50:#eff6ff; --blue-500:#3b82f6; --blue-700:#1d4ed8; --green-50:#ecfdf5; --green-500:#10b981; --green-700:#047857; --red-50:#fef2f2; --red-500:#ef4444; --red-700:#b91c1c; --violet-50:#f5f3ff; --r-sm:6px; --r-lg:14px; --shadow-card:0 1px 0 rgba(15,23,42,.04),0 1px 2px rgba(15,23,42,.04); font-feature-settings:"tnum" 1; color:var(--ink-900); }
 .bid-crawlLog-page .surface { background:#fff; border:1px solid var(--ink-200); border-radius:var(--r-lg); box-shadow:var(--shadow-card); overflow:hidden; margin-bottom:8px; }
-.bid-crawlLog-page .filter-head { display:flex; align-items:center; padding:12px 20px 0; }
+.bid-crawlLog-page .filter-head { display:flex; align-items:center; justify-content:space-between; padding:12px 20px 0; }
+.bid-crawlLog-page .adv-link { display:inline-flex; align-items:center; gap:4px; color:var(--ink-500); cursor:pointer; font-size:13px; }
+.bid-crawlLog-page .adv-link:hover { color:var(--brand-600); }
+.bid-crawlLog-page .adv-link.is-open .chev { transform:rotate(180deg); }
+.bid-crawlLog-page .adv-link .chev { transition:transform .2s; }
 .bid-crawlLog-page .filter-title { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; }
 .bid-crawlLog-page .filter-title .glyph { width:4px; height:14px; border-radius:2px; background:var(--brand-500); }
 .bid-crawlLog-page .filter-bar { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px 16px; padding:12px 20px; }

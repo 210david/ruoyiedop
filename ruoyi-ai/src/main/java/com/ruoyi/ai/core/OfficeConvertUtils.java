@@ -61,7 +61,19 @@ public class OfficeConvertUtils
      */
     public static File getOrCreatePdf(Long docId, File srcFile)
     {
-        if (docId == null || srcFile == null || !srcFile.exists())
+        return getOrCreatePdf(docId == null ? null : String.valueOf(docId), srcFile);
+    }
+
+    /**
+     * 获取（必要时生成）文档的 PDF 预览缓存（通用版：缓存键由调用方给定，如资源路径 MD5）
+     *
+     * @param cacheKey 缓存键（用于缓存命名，需为安全文件名字符）
+     * @param srcFile  源文件
+     * @return 缓存 PDF 文件；不支持转换/转换失败/LibreOffice 不可用时返回 null
+     */
+    public static File getOrCreatePdf(String cacheKey, File srcFile)
+    {
+        if (cacheKey == null || cacheKey.isEmpty() || srcFile == null || !srcFile.exists())
         {
             return null;
         }
@@ -72,23 +84,23 @@ public class OfficeConvertUtils
             {
                 Files.createDirectories(cacheDir);
             }
-            File cached = cacheDir.resolve(docId + ".pdf").toFile();
+            File cached = cacheDir.resolve(cacheKey + ".pdf").toFile();
             // 缓存有效：已存在且比源文件新
             if (cached.exists() && cached.length() > 0 && cached.lastModified() >= srcFile.lastModified())
             {
                 return cached;
             }
-            return convert(docId, srcFile, cacheDir.toFile());
+            return convert(cacheKey, srcFile, cacheDir.toFile());
         }
         catch (Exception e)
         {
-            log.warn("文档转PDF预览失败（将回退前端渲染）docId={}: {}", docId, e.getMessage());
+            log.warn("文档转PDF预览失败（将回退前端渲染）cacheKey={}: {}", cacheKey, e.getMessage());
             return null;
         }
     }
 
     /** 执行转换：soffice --headless --convert-to pdf --outdir <tmp> <src> */
-    private static File convert(Long docId, File srcFile, File cacheDir) throws Exception
+    private static File convert(String cacheKey, File srcFile, File cacheDir) throws Exception
     {
         String soffice = resolveSoffice();
         if (soffice == null)
@@ -96,7 +108,7 @@ public class OfficeConvertUtils
             log.warn("未找到 LibreOffice(soffice)，Office 文档将使用前端渲染预览");
             return null;
         }
-        // 中转目录：LibreOffice 以源文件名输出，转换后重命名为 docId.pdf，避免中文/特殊字符问题
+        // 中转目录：LibreOffice 以源文件名输出，转换后重命名为缓存键.pdf，避免中文/特殊字符问题
         Path tmpDir = Files.createTempDirectory("edop-convert-");
         try
         {
@@ -132,12 +144,12 @@ public class OfficeConvertUtils
             if (!finished)
             {
                 process.destroyForcibly();
-                log.warn("文档转PDF超时({}s) docId={}", CONVERT_TIMEOUT_SECONDS, docId);
+                log.warn("文档转PDF超时({}s) docId={}", CONVERT_TIMEOUT_SECONDS, cacheKey);
                 return null;
             }
             if (process.exitValue() != 0)
             {
-                log.warn("文档转PDF失败 docId={} exit={} output={}", docId, process.exitValue(), out);
+                log.warn("文档转PDF失败 cacheKey={} exit={} output={}", cacheKey, process.exitValue(), out);
                 return null;
             }
             // 查找输出 PDF（文件名与源文件同名，扩展名 pdf）
@@ -149,14 +161,14 @@ public class OfficeConvertUtils
             }
             if (produced == null || !produced.exists() || produced.length() == 0)
             {
-                log.warn("文档转PDF无输出文件 docId={} output={}", docId, out);
+                log.warn("文档转PDF无输出文件 cacheKey={} output={}", cacheKey, out);
                 return null;
             }
-            File target = new File(cacheDir, docId + ".pdf");
+            File target = new File(cacheDir, cacheKey + ".pdf");
             Files.copy(produced.toPath(), target.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
             // 缓存时间对齐源文件，便于后续按 mtime 判断失效
             target.setLastModified(Math.max(System.currentTimeMillis(), srcFile.lastModified()));
-            log.info("文档转PDF预览成功 docId={} size={}KB", docId, target.length() / 1024);
+            log.info("文档转PDF预览成功 cacheKey={} size={}KB", cacheKey, target.length() / 1024);
             return target;
         }
         finally

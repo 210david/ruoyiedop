@@ -139,6 +139,12 @@ public class MkLead extends BaseEntity
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date convertTime;
 
+    /** 归因渠道账号ID（推广归因，可空） */
+    private Long channelId;
+
+    /** 归因渠道类型（推广归因，可空） */
+    private String channelType;
+
     /** 删除标志 */
     private String delFlag;
 
@@ -212,6 +218,10 @@ public class MkLead extends BaseEntity
     public void setConvertCustomerId(Long convertCustomerId) { this.convertCustomerId = convertCustomerId; }
     public Date getConvertTime() { return convertTime; }
     public void setConvertTime(Date convertTime) { this.convertTime = convertTime; }
+    public Long getChannelId() { return channelId; }
+    public void setChannelId(Long channelId) { this.channelId = channelId; }
+    public String getChannelType() { return channelType; }
+    public void setChannelType(String channelType) { this.channelType = channelType; }
     public String getDelFlag() { return delFlag; }
     public void setDelFlag(String delFlag) { this.delFlag = delFlag; }
 }

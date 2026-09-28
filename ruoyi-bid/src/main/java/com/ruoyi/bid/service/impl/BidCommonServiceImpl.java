@@ -59,6 +59,22 @@ public class BidCommonServiceImpl implements IBidCommonService
         return logMapper.selectRecentBySourceId(sourceId);
     }
 
+    @Override
+    public java.util.Map<String, Object> selectLogStatusCounts(BidCrawlLog log)
+    {
+        java.util.Map<String, Object> counts = new HashMap<>();
+        long all = 0;
+        for (java.util.Map<String, Object> row : logMapper.selectStatusCounts(log))
+        {
+            String key = row.get("statusKey") == null ? "" : String.valueOf(row.get("statusKey"));
+            long cnt = ((Number) row.get("cnt")).longValue();
+            counts.put(key, cnt);
+            all += cnt;
+        }
+        counts.put("all", all);
+        return counts;
+    }
+
     // ===== 保证金 =====
 
     @Override
@@ -107,7 +123,7 @@ public class BidCommonServiceImpl implements IBidCommonService
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public int refundDeposit(Long depositId, java.util.Date actualRefundTime, String remark)
+    public int refundDeposit(Long depositId, java.util.Date actualRefundTime, java.math.BigDecimal refundAmount, String remark)
     {
         BidDeposit deposit = depositMapper.selectDepositById(depositId);
         if (deposit == null)
@@ -126,10 +142,38 @@ public class BidCommonServiceImpl implements IBidCommonService
         {
             throw new ServiceException("实际退回时间不能早于缴纳时间");
         }
+        java.math.BigDecimal refunded = refundAmount == null ? deposit.getAmount()
+                : (deposit.getRefundAmount() == null ? java.math.BigDecimal.ZERO : deposit.getRefundAmount()).add(refundAmount);
+        if (refunded.compareTo(deposit.getAmount()) > 0)
+        {
+            throw new ServiceException("累计退回金额不能超过缴纳金额");
+        }
         BidDeposit update = new BidDeposit();
         update.setDepositId(depositId);
         update.setActualRefundTime(actualRefundTime);
-        update.setRefundStatus("1");
+        update.setRefundAmount(refunded);
+        // 累计退回金额 >= 缴纳金额 → 已退回；否则 → 部分退回
+        update.setRefundStatus(refunded.compareTo(deposit.getAmount()) >= 0 ? "1" : "2");
+        update.setRemark(remark);
+        return depositMapper.updateDeposit(update);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int confiscateDeposit(Long depositId, String remark)
+    {
+        BidDeposit deposit = depositMapper.selectDepositById(depositId);
+        if (deposit == null)
+        {
+            throw new ServiceException("保证金记录不存在");
+        }
+        if (!"0".equals(deposit.getRefundStatus()) && !"2".equals(deposit.getRefundStatus()))
+        {
+            throw new ServiceException("只有在外/部分退回状态的保证金才能登记没收");
+        }
+        BidDeposit update = new BidDeposit();
+        update.setDepositId(depositId);
+        update.setRefundStatus("3");
         update.setRemark(remark);
         return depositMapper.updateDeposit(update);
     }

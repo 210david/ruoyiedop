@@ -2652,6 +2652,7 @@ INSERT INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, css_cla
 (3, '转介绍', '2', 'marketing_customer_source', '', 'warning', 'N', '0', 'admin', sysdate(), ''),
 (4, '官网', '3', 'marketing_customer_source', '', 'info', 'N', '0', 'admin', sysdate(), ''),
 (5, '其他', '4', 'marketing_customer_source', '', '', 'N', '0', 'admin', sysdate(), ''),
+(6, '活动', '5', 'marketing_customer_source', '', 'primary', 'N', '0', 'admin', sysdate(), ''),
 
 (1, '互联网/IT', '0', 'marketing_industry', '', 'primary', 'Y', '0', 'admin', sysdate(), ''),
 (2, '制造业', '1', 'marketing_industry', '', 'success', 'N', '0', 'admin', sysdate(), ''),

@@ -32,6 +32,13 @@ public class BidCrawlLogController extends BaseController
         return getDataTable(list);
     }
 
+    @PreAuthorize("@ss.hasPermi('bid:crawlLog:list')")
+    @GetMapping("/statusCounts")
+    public AjaxResult statusCounts(BidCrawlLog log)
+    {
+        return AjaxResult.success(commonService.selectLogStatusCounts(log));
+    }
+
     @PreAuthorize("@ss.hasPermi('bid:crawlLog:query')")
     @GetMapping("/{logId}")
     public AjaxResult getInfo(@PathVariable("logId") Long logId)

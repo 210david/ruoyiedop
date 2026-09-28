@@ -26,7 +26,7 @@ public interface IMkPublicService
      * @param token 安全令牌
      * @return 报名结果（含签到码）
      */
-    public Map<String, Object> register(MkActivityParticipant participant, String token);
+    public Map<String, Object> register(MkActivityParticipant participant, String token, String ch);
 
     /**
      * 签到码签到（现场扫码签到）

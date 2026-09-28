@@ -1,5 +1,17 @@
 <template>
-  <el-dialog :title="title" v-model="visible" width="900px" append-to-body :before-close="handleClose" class="file-preview-dialog">
+  <el-dialog v-model="visible" width="900px" append-to-body :before-close="handleClose" draggable
+    :fullscreen="maximized" class="file-preview-dialog" :class="{ 'is-max': maximized }">
+    <template #header>
+      <div class="fp-header">
+        <span class="fp-title" :title="title">{{ title }}</span>
+        <el-tooltip :content="maximized ? '还原' : '最大化'" placement="bottom">
+          <el-button class="fp-max-btn" link @click="maximized = !maximized">
+            <el-icon v-if="!maximized"><FullScreen /></el-icon>
+            <el-icon v-else><ScaleToOriginal /></el-icon>
+          </el-button>
+        </el-tooltip>
+      </div>
+    </template>
     <div v-loading="loading" element-loading-text="正在加载文件，请稍候..." class="preview-container">
       <!-- 图片预览 -->
       <div v-if="previewType === 'image'" class="image-preview-wrap">
@@ -34,11 +46,12 @@
 <script setup>
 import { renderAsync } from 'docx-preview'
 import * as XLSX from 'xlsx'
-import { Download } from '@element-plus/icons-vue'
+import { Download, FullScreen, ScaleToOriginal } from '@element-plus/icons-vue'
 import { getToken } from '@/utils/auth'
 
 const { proxy } = getCurrentInstance()
 const visible = ref(false)
+const maximized = ref(false)
 const loading = ref(false)
 const title = ref('文件预览')
 const fileName = ref('')
@@ -77,6 +90,7 @@ async function open(url, name) {
   fileName.value = name || getFileNameFromUrl(url)
   title.value = '预览：' + fileName.value
   visible.value = true
+  maximized.value = false
   loading.value = true
   excelHtml.value = ''
   // 清理上一次的 objectUrl
@@ -91,6 +105,15 @@ async function open(url, name) {
   await nextTick()
 
   try {
+    // Office 文档规范：优先服务端 LibreOffice 转 PDF 预览（与 AI 知识问答数据来源一致），失败回退前端渲染
+    if (previewType.value === 'word' || previewType.value === 'excel') {
+      const pdfBlob = await tryServerPdfPreview(url)
+      if (pdfBlob) {
+        previewType.value = 'pdf'
+        objectUrl.value = URL.createObjectURL(pdfBlob)
+        return
+      }
+    }
     if (previewType.value === 'word') {
       await previewWord(url, ext)
     } else if (previewType.value === 'excel') {
@@ -105,6 +128,27 @@ async function open(url, name) {
     previewType.value = ''
   } finally {
     loading.value = false
+  }
+}
+
+/**
+ * 尝试服务端转 PDF 预览（Office 文档预览规范）：
+ * 请求 /common/file/preview，命中（application/pdf 且非 JSON 错误体、size>1000）返回 PDF Blob
+ * 转换失败/不支持时返回 null，由调用方回退前端渲染
+ */
+async function tryServerPdfPreview(resourceUrl) {
+  try {
+    const resp = await fetch(baseUrl + '/common/file/preview?resource=' + encodeURIComponent(resourceUrl), {
+      headers: { Authorization: 'Bearer ' + getToken() }
+    })
+    if (!resp.ok) return null
+    const ct = (resp.headers.get('Content-Type') || '').toLowerCase()
+    if (ct.includes('application/json')) return null
+    const blob = await resp.blob()
+    if (blob.size <= 1000) return null
+    return blob
+  } catch (e) {
+    return null
   }
 }
 
@@ -232,6 +276,8 @@ defineExpose({ open })
   max-height: 70vh;
   overflow: auto;
 }
+/* 最大化时取消 70vh 限制，由 is-max flex 布局精确撑满 */
+.file-preview-dialog.is-max .preview-container { max-height: none; }
 
 .image-preview-wrap {
   text-align: center;
@@ -247,6 +293,18 @@ defineExpose({ open })
   height: 70vh;
   border: none;
 }
+/* 最大化时预览区各容器随 flex 撑满弹窗，消除底部空白 */
+.file-preview-dialog.is-max .preview-container,
+.file-preview-dialog.is-max .image-preview-wrap,
+.file-preview-dialog.is-max .pdf-preview-frame,
+.file-preview-dialog.is-max .word-preview-wrap,
+.file-preview-dialog.is-max .excel-preview-wrap,
+.file-preview-dialog.is-max .video-preview,
+.file-preview-dialog.is-max .unsupported-wrap {
+  height: 100%;
+  max-height: none;
+}
+.file-preview-dialog.is-max .preview-image { max-height: 100%; }
 
 .word-preview-wrap {
   max-height: 70vh;
@@ -319,4 +377,19 @@ defineExpose({ open })
     word-break: break-all;
   }
 }
+</style>
+
+<!-- 弹窗 append-to-body 挂在 body 下，最大化与头部样式需非 scoped 覆盖（与 AI 知识库来源预览一致） -->
+<style lang="scss">
+.file-preview-dialog.is-max {
+  display: flex;
+  flex-direction: column;
+  .el-dialog__header { flex: none; }
+  .el-dialog__body { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+  .preview-container { flex: 1; min-height: 0; height: 100%; }
+}
+.fp-header { display: flex; align-items: center; min-width: 0; padding-right: 30px; }
+.fp-title { font-size: 16px; font-weight: 600; color: #1f2937; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fp-max-btn { margin-left: auto; margin-right: 24px; font-size: 16px; color: #6b7280; }
+.fp-max-btn:hover { color: #1d4ed8; }
 </style>

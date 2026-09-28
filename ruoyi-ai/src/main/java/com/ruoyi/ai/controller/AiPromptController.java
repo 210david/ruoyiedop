@@ -38,6 +38,7 @@ public class AiPromptController extends AiBaseConfigController
         FEATURE_NAMES.put("daily_report", "生产日报生成（MMS）");
         FEATURE_NAMES.put("request_advice", "采购申请建议（PMS）");
         FEATURE_NAMES.put("price_summary", "比价分析摘要（PMS）");
+        FEATURE_NAMES.put("content_copy", "内容文案生成（MK）");
     }
 
     /**

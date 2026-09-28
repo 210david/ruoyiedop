@@ -195,7 +195,7 @@
 import { ref, reactive, computed, onMounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import QRCode from 'qrcode'
-import { getPublicActivityInfo, submitRegistration } from '@/api/mk/public'
+import { getPublicActivityInfo, submitRegistration, trackChannelLink } from '@/api/mk/public'
 
 const route = useRoute()
 const router = useRouter()
@@ -269,7 +269,9 @@ const handleSubmit = async () => {
         contactEmail: form.contactEmail.trim(),
         position: form.position.trim()
       },
-      route.query.token
+      route.query.token,
+      // 归因码（可选）：URL 带 ch 参数时随报名提交，用于渠道归因
+      route.query.ch
     )
 
     successData.value = res.data
@@ -310,6 +312,10 @@ onMounted(async () => {
   try {
     const res = await getPublicActivityInfo(activityId, token)
     activityInfo.value = res.data
+    // 推广归因：URL 带 ch 参数时上报点击（可选，失败静默忽略，不影响页面）
+    if (route.query.ch) {
+      trackChannelLink(route.query.ch).catch(() => {})
+    }
   } catch (err) {
     loadError.value = err.msg || '活动信息加载失败'
   } finally {

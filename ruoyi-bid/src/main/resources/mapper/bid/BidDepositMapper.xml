@@ -10,6 +10,7 @@
         <result property="depositType"      column="deposit_type"/>
         <result property="payType"          column="pay_type"/>
         <result property="amount"           column="amount"/>
+        <result property="refundAmount"     column="refund_amount"/>
         <result property="payTime"          column="pay_time"/>
         <result property="expectRefundTime" column="expect_refund_time"/>
         <result property="actualRefundTime" column="actual_refund_time"/>
@@ -26,7 +27,7 @@
 
     <sql id="selectDepositVo">
         SELECT d.deposit_id, d.project_id, d.bid_no, d.project_name, d.deposit_type, d.pay_type,
-               d.amount, d.pay_time, d.expect_refund_time, d.actual_refund_time, d.refund_status,
+               d.amount, d.refund_amount, d.pay_time, d.expect_refund_time, d.actual_refund_time, d.refund_status,
                d.voucher_url, d.dept_id, d.del_flag, d.create_by, d.create_time, d.update_by, d.update_time, d.remark
         FROM bid_deposit d
     </sql>
@@ -66,10 +67,10 @@
     </select>
 
     <insert id="insertDeposit" parameterType="BidDeposit" useGeneratedKeys="true" keyProperty="depositId">
-        INSERT INTO bid_deposit (project_id, bid_no, project_name, deposit_type, pay_type, amount,
+        INSERT INTO bid_deposit (project_id, bid_no, project_name, deposit_type, pay_type, amount, refund_amount,
             pay_time, expect_refund_time, actual_refund_time, refund_status, voucher_url, dept_id,
             del_flag, create_by, create_time, remark)
-        VALUES (#{projectId}, #{bidNo}, #{projectName}, #{depositType}, #{payType}, #{amount},
+        VALUES (#{projectId}, #{bidNo}, #{projectName}, #{depositType}, #{payType}, #{amount}, #{refundAmount},
             #{payTime}, #{expectRefundTime}, #{actualRefundTime}, #{refundStatus}, #{voucherUrl}, #{deptId},
             '0', #{createBy}, sysdate(), #{remark})
     </insert>
@@ -80,6 +81,7 @@
             <if test="depositType != null and depositType != ''">deposit_type = #{depositType},</if>
             <if test="payType != null and payType != ''">pay_type = #{payType},</if>
             <if test="amount != null">amount = #{amount},</if>
+            <if test="refundAmount != null">refund_amount = #{refundAmount},</if>
             <if test="payTime != null">pay_time = #{payTime},</if>
             <if test="expectRefundTime != null">expect_refund_time = #{expectRefundTime},</if>
             <if test="actualRefundTime != null">actual_refund_time = #{actualRefundTime},</if>
