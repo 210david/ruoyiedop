@@ -216,6 +216,10 @@
                   <el-input v-model="selectedElement.formKey" placeholder="关联业务表单Key（可选）" @change="updateFormKey" />
                   <div class="props-tip">原型能力：任务办理页可按此 Key 加载业务表单</div>
                 </el-form-item>
+                <el-form-item label="字段权限">
+                  <el-button size="small" style="width:100%" @click="openFieldPerms">配置本节点字段权限</el-button>
+                  <div class="props-tip">{{ fieldPermsSummary }}</div>
+                </el-form-item>
               </template>
 
               <!-- 连线条件（网关分支） -->
@@ -251,6 +255,46 @@
         </div>
       </div>
       <input ref="xmlFileRef" type="file" accept=".xml,.bpmn" style="display:none" @change="onXmlFileChange" />
+    </el-dialog>
+
+    <!-- ===== 节点字段权限配置弹窗 ===== -->
+    <el-dialog v-model="fieldPermsOpen" width="560px" append-to-body draggable class="rd-dialog" :close-on-click-modal="false">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </div>
+          <span class="rd-detail-header-title">字段权限：{{ fieldPermsNodeName }}</span>
+        </div>
+      </template>
+      <div class="field-perms-tip">控制该审批节点办理人在任务审批页看到的表单字段：可编辑 / 只读 / 隐藏。未配置的字段默认只读展示。</div>
+      <div class="field-perms-copybar" v-if="otherPermNodes.length">
+        <span class="fpc-label">复制其他节点：</span>
+        <el-select v-model="copyPermFrom" size="small" placeholder="选择已配置权限的节点" style="width:220px">
+          <el-option v-for="n in otherPermNodes" :key="n.id" :label="n.name + '（' + n.summary + '）'" :value="n.id" />
+        </el-select>
+        <el-button size="small" type="primary" plain :disabled="!copyPermFrom" @click="applyCopyPerms">复制</el-button>
+      </div>
+      <el-table :data="fieldPermsRows" border size="small" max-height="360" class="field-perms-table" v-loading="fieldPermsLoading">
+        <el-table-column type="index" label="序号" width="55" align="center" />
+        <el-table-column label="字段" min-width="150">
+          <template #default="s"><span class="col-strong">{{ s.row.label }}</span><em class="fp-field">{{ s.row.field }}</em></template>
+        </el-table-column>
+        <el-table-column label="权限" width="260" align="center">
+          <template #default="s">
+            <el-radio-group v-model="fieldPermsRows[s.$index].perm" size="small">
+              <el-radio-button value="edit">可编辑</el-radio-button>
+              <el-radio-button value="readonly">只读</el-radio-button>
+              <el-radio-button value="hidden">隐藏</el-radio-button>
+            </el-radio-group>
+          </template>
+        </el-table-column>
+      </el-table>
+      <div class="field-perms-empty" v-if="!fieldPermsLoading && !fieldPermsRows.length">当前流程模型未绑定表单，请先在列表"表单"按钮关联表单后再配置字段权限</div>
+      <template #footer>
+        <el-button type="primary" @click="saveFieldPerms">确 定</el-button>
+        <el-button @click="fieldPermsOpen = false">取 消</el-button>
+      </template>
     </el-dialog>
 
     <!-- ===== 查看流程图弹窗 ===== -->
@@ -647,6 +691,7 @@ function loadSelectedElement(el) {
     assignee: (bo.get && bo.get('flowable:assignee')) || bo.assignee || '',
     candidateGroups: (bo.get && bo.get('flowable:candidateGroups')) || bo.candidateGroups || '',
     formKey: (bo.get && bo.get('flowable:formKey')) || bo.formKey || '',
+    fieldPerms: parseFieldPerms(bo),
     multiInstance: !!bo.loopCharacteristics
   }
 }
@@ -671,6 +716,100 @@ function updateFormKey() {
   if (!selectedEl) return
   const bo = selectedEl.businessObject
   modeling.updateModdleProperties(selectedEl, bo, { 'flowable:formKey': selectedElement.value.formKey || undefined })
+}
+
+// ===== 节点字段权限（存节点扩展属性 flowable:fieldPerms，随 BPMN XML 保存部署） =====
+const fieldPermsOpen = ref(false)
+const fieldPermsLoading = ref(false)
+const fieldPermsNodeName = ref('')
+const fieldPermsRows = ref([])
+
+function parseFieldPerms(bo) {
+  const raw = (bo.get && bo.get('flowable:fieldPerms')) || bo.fieldPerms || ''
+  if (!raw) return {}
+  try { return JSON.parse(raw) || {} } catch (e) { return {} }
+}
+const fieldPermsSummary = computed(() => {
+  if (!selectedElement.value || !selectedElement.value.isUserTask) return ''
+  const perms = selectedElement.value.fieldPerms || {}
+  const keys = Object.keys(perms)
+  if (!keys.length) return '未配置：默认全部只读展示'
+  const edit = keys.filter(k => perms[k] === 'edit').length
+  const hidden = keys.filter(k => perms[k] === 'hidden').length
+  return `可编辑 ${edit} / 只读 ${keys.length - edit - hidden} / 隐藏 ${hidden}`
+})
+
+async function openFieldPerms() {
+  if (!selectedEl) return
+  fieldPermsNodeName.value = selectedElement.value.name || selectedElement.value.id
+  const perms = parseFieldPerms(selectedEl.businessObject)
+  copyPermFrom.value = ''
+  fieldPermsOpen.value = true
+  fieldPermsLoading.value = true
+  try {
+    // 模型绑定的表单字段（模型需先关联表单）
+    const formId = designModel.value.formId
+    if (!formId) { fieldPermsRows.value = []; return }
+    const res = await request({ url: '/flowable/form/' + formId, method: 'get' })
+    const f = res.data || {}
+    let fields = []
+    try { fields = JSON.parse(f.fieldsJson || '[]') } catch (e) {}
+    fieldPermsRows.value = fields.map(fd => ({ label: fd.label, field: fd.field, perm: perms[fd.field] || 'readonly' }))
+  } catch (e) {
+    fieldPermsRows.value = []
+  } finally {
+    fieldPermsLoading.value = false
+  }
+}
+
+// ===== 复制其他节点权限 =====
+const copyPermFrom = ref('')
+
+/** 画布上其他已配置字段权限的用户任务节点 */
+const otherPermNodes = computed(() => {
+  if (!bpmnModeler) return []
+  try {
+    const canvas = bpmnModeler.get('canvas')
+    const root = canvas.getRootElement()
+    const nodes = []
+    for (const el of (root.children || [])) {
+      if (el.type !== 'bpmn:UserTask' || el.id === selectedElement.value?.id) continue
+      const perms = parseFieldPerms(el.businessObject)
+      const keys = Object.keys(perms)
+      if (!keys.length) continue
+      const edit = keys.filter(k => perms[k] === 'edit').length
+      const hidden = keys.filter(k => perms[k] === 'hidden').length
+      nodes.push({ id: el.id, name: el.businessObject.name || el.id, perms, summary: `可编辑${edit}/只读${keys.length - edit - hidden}/隐藏${hidden}` })
+    }
+    return nodes
+  } catch (e) { return [] }
+})
+
+function applyCopyPerms() {
+  const src = otherPermNodes.value.find(n => n.id === copyPermFrom.value)
+  if (!src || !fieldPermsRows.value.length) return
+  for (const r of fieldPermsRows.value) {
+    r.perm = src.perms[r.field] || 'readonly'
+  }
+  proxy.$modal.msgSuccess('已复制「' + src.name + '」的权限配置，可继续调整后确定')
+}
+
+function saveFieldPerms() {
+  if (!selectedEl) { fieldPermsOpen.value = false; return }
+  const perms = {}
+  for (const r of fieldPermsRows.value) {
+    if (r.perm !== 'readonly') perms[r.field] = r.perm  // 只读为默认态，仅存差异项，保持 XML 精简
+  }
+  const json = Object.keys(perms).length ? JSON.stringify(perms) : undefined
+  modeling.updateModdleProperties(selectedEl, selectedEl.businessObject, { 'flowable:fieldPerms': json })
+  // bpmn-js moddle 未知属性可能不序列化，兜底写入 extensionAttributes
+  try {
+    const bo = selectedEl.businessObject
+    bo.$attrs['flowable:fieldPerms'] = json
+  } catch (e) {}
+  selectedElement.value.fieldPerms = perms
+  fieldPermsOpen.value = false
+  proxy.$modal.msgSuccess('字段权限已保存到节点，流程保存后生效')
 }
 
 function updateCondition() {
@@ -855,4 +994,11 @@ onActivated(() => { getList() })
 
 <style lang="scss" scoped>
 @use './flow-model.scss';
+
+.field-perms-tip { font-size: 12px; color: #64748b; margin-bottom: 10px; line-height: 1.5; }
+.field-perms-copybar { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.field-perms-copybar .fpc-label { font-size: 12px; color: #475569; flex: none; }
+.field-perms-table { width: 100%; }
+.field-perms-table .fp-field { font-style: normal; color: #94a3b8; font-size: 11px; margin-left: 6px; }
+.field-perms-empty { text-align: center; color: #94a3b8; font-size: 13px; padding: 20px 0; }
 </style>

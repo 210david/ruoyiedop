@@ -53,10 +53,11 @@
             <template #default="scope">{{ fieldCount(scope.row.fieldsJson) }}</template>
           </el-table-column>
           <el-table-column label="创建时间" prop="createTime" key="createTime" width="170" align="center" />
-          <el-table-column label="操作" width="280" align="center" fixed="right" class-name="col-action">
+          <el-table-column label="操作" width="340" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
               <div class="action-btn-row">
                 <el-button link type="primary" icon="Edit" @click="handleDesign(scope.row)" v-hasPermi="['flowable:form:edit']">设计</el-button>
+                <el-button link type="success" icon="FullScreen" @click="handleDesign(scope.row, 'layout')" v-hasPermi="['flowable:form:edit']">页面设计</el-button>
                 <el-button link type="warning" icon="Coin" @click="handleCreateTable(scope.row)" v-hasPermi="['flowable:form:table']">{{ scope.row.tableName ? '重建数据表' : '生成数据表' }}</el-button>
                 <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['flowable:form:remove']">删除</el-button>
               </div>
@@ -131,13 +132,15 @@
     </el-dialog>
 
     <!-- ===== 表单设计弹窗（基本信息 / 编辑字段，参照泛微e9） ===== -->
-    <el-dialog v-model="open" width="1100px" append-to-body draggable class="rd-dialog" :close-on-click-modal="false">
+    <el-dialog v-model="open" width="1100px" append-to-body draggable class="rd-dialog" :close-on-click-modal="false" :fullscreen="designMax"
+      :class="{ 'rd-no-footer': designMax || (activeTab === 'layout' && layout.mode === 'grid') }">
       <template #header>
-        <div class="rd-detail-header">
+        <div class="rd-detail-header" style="position:relative">
           <div class="rd-detail-header-icon">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
           </div>
           <span class="rd-detail-header-title">编辑表单：{{ form.formName || '新建表单' }}</span>
+          <el-button class="rd-max-btn" type="warning" size="default" icon="FullScreen" @click="designMax = !designMax">{{ designMax ? '还原窗口' : '最大化' }}</el-button>
         </div>
       </template>
       <el-tabs v-model="activeTab" class="form-design-tabs">
@@ -198,8 +201,9 @@
             </el-table-column>
             <el-table-column label="类型" width="110" align="center">
               <template #default="scope">
-                <el-select v-model="scope.row.dtype" size="small" :disabled="isDtypeLocked(scope.row.form)">
-                  <el-option v-for="(v, k) in DTYPE_OPTIONS" :key="k" :label="v" :value="k" />
+                <span v-if="isDtypeLocked(scope.row.form)" style="color:#909399">{{ DTYPE_OPTIONS[scope.row.dtype] || scope.row.dtype }}（自动）</span>
+                <el-select v-else v-model="scope.row.dtype" size="small">
+                  <el-option v-for="(v, k) in dtypeOptions(scope.row.form)" :key="k" :label="v" :value="k" />
                 </el-select>
               </template>
             </el-table-column>
@@ -233,6 +237,174 @@
             <el-table-column label="显示顺序" width="100" align="center"><template #default="scope"><el-input-number v-model="scope.row.order" :min="1" :max="999" :controls="false" size="small" style="width:100%" /></template></el-table-column>
           </el-table>
         </el-tab-pane>
+
+        <!-- ===== 页面设计（类Excel设计器：拖拽布局/分栏/分组/说明行 + 预览） ===== -->
+        <el-tab-pane label="页面设计" name="layout">
+          <div class="layout-mode-bar">
+            <el-button size="small" :type="layout.mode === 'grid' ? 'warning' : 'primary'" plain icon="Switch"
+              @click="toggleLayoutMode">{{ layout.mode === 'grid' ? '切换为简易分组' : '切换为 Excel 网格（泛微式）' }}</el-button>
+            <span class="field-tip">当前模式：{{ layout.mode === 'grid' ? 'Excel 网格（泛微式）' : '简易分组' }}<template v-if="layout.mode === 'grid'">，深蓝菜单栏 / 格式工具条 / 行列合并 / 单元格样式，操作见右上"帮助"</template></span>
+          </div>
+          <div class="ed-wrap" v-if="layout.mode !== 'grid'">
+            <div class="ed-main">
+              <div class="ed-toolbar">
+                <el-button size="small" icon="RefreshLeft" :disabled="!canUndo" @click="undoLayout" title="撤销上一步">撤销</el-button>
+                <el-button size="small" icon="RefreshRight" :disabled="!canRedo" @click="redoLayout" title="重做">重做</el-button>
+                <el-button size="small" type="primary" plain icon="Plus" @click="addSection">添加分组</el-button>
+                <el-button size="small" plain icon="MagicStick" @click="autoLayout">自动布局</el-button>
+                <el-button size="small" plain icon="ChatLineSquare" @click="addNoteRow">插入说明行</el-button>
+                <el-button size="small" :type="layoutPreview ? 'primary' : 'default'" :icon="layoutPreview ? 'EditPen' : 'View'" @click="layoutPreview = !layoutPreview">{{ layoutPreview ? '返回设计' : '预览效果' }}</el-button>
+                <span class="field-tip">像 Excel 一样操作：拖拽布局、右键合并/拆分单元格、Ctrl+Z 撤销、Delete 删除选中</span>
+              </div>
+              <div class="ed-canvas" v-if="!layoutPreview">
+                <div class="ed-ruler">
+                  <span class="ed-ruler-corner"></span>
+                  <span class="ed-ruler-col ed-ruler-label">标签</span>
+                  <span class="ed-ruler-col" v-for="c in 4" :key="c">{{ String.fromCharCode(65 + c) }}</span>
+                </div>
+                <div v-if="!layout.sections.length" class="ed-empty">暂无分组：点击"添加分组"或"自动布局"开始设计，也可直接把右侧字段拖到下方</div>
+                <div class="ed-section" v-for="(sec, si) in layout.sections" :key="si"
+                  @dragover.prevent @drop.prevent="onDropToSection($event, si)">
+                  <div class="ed-sec-bar">
+                    <el-button size="small" link :icon="sec.collapsed ? 'CaretRight' : 'CaretBottom'" @click="sec.collapsed = !sec.collapsed" :title="sec.collapsed ? '展开分组' : '折叠分组'" />
+                    <el-tag size="small" type="info" effect="plain">分组{{ si + 1 }}</el-tag>
+                    <input class="ed-sec-title" v-model="sec.title" placeholder="输入分组标题，如：基本信息" />
+                    <span class="ed-sec-ops">
+                      <el-button size="small" link icon="Top" title="上移" @click="moveSection(si, -1)" />
+                      <el-button size="small" link icon="Bottom" title="下移" @click="moveSection(si, 1)" />
+                      <el-button size="small" link type="primary" icon="Plus" title="添加行" @click="addRow(si)" />
+                      <el-button size="small" link type="danger" icon="Delete" title="删除分组" @click="removeSection(si)" />
+                    </span>
+                  </div>
+                  <div class="ed-row" v-show="!sec.collapsed" v-for="(row, ri) in sec.rows" :key="ri">
+                    <div class="ed-row-cells" @dragover.prevent @drop.prevent="onDropToRow($event, si, ri)">
+                      <div class="ed-cell" v-for="(cell, ci) in row" :key="ci"
+                        :class="['ed-cell', { 'is-active': isCellActive(si, ri, ci), 'is-note': !!cell.note, 'cell-b-all': cell.border === 'all', 'cell-b-bottom': cell.border === 'bottom', 'cell-b-none': cell.border === 'none' }]"
+                        :style="[{ width: (cell.span / 24 * 100) + '%' }, cellStyle(cell)]"
+                        draggable="true" @dragstart="onCellDragStart($event, si, ri, ci)"
+                        @dragover.prevent.stop @drop.prevent.stop="onDropToCell($event, si, ri, ci)"
+                        @click.stop="selectCell(si, ri, ci)"
+                        @dblclick.stop="cellEdit(si, ri, ci)"
+                        @contextmenu.prevent.stop="openCtxMenu($event, si, ri, ci)">
+                        <div class="ed-cell-label">
+                          <el-icon v-if="cell.note"><ChatLineSquare /></el-icon>
+                          <span>{{ cell.note ? (cell.noteLabel || '说明') : (cell.label || fieldShortLabel(cell.field) || '未选字段') }}</span>
+                          <span class="ed-merge-badge" v-if="cell.span > 12" title="合并单元格：右键可拆分">{{ (cell.span / 24 * 4).toFixed(cell.span % 6 === 0 ? 0 : 1) }}格</span>
+                        </div>
+                        <div class="ed-cell-ctrl">
+                          <span v-if="cell.note" class="ed-note-text">{{ cell.note || '（点击输入说明文字）' }}</span>
+                          <template v-else-if="cell.field"><span class="ed-ctrl-demo"></span>{{ fieldShortLabel(cell.field) }}输入框</template>
+                          <span v-else class="ed-cell-placeholder">拖入字段 / 双击编辑</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="ed-row-ops">
+                      <el-button size="small" link icon="Top" title="上移" @click.stop="moveRow(si, ri, -1)" />
+                      <el-button size="small" link icon="Bottom" title="下移" @click.stop="moveRow(si, ri, 1)" />
+                      <el-button size="small" link icon="Plus" title="在此行后插入" @click.stop="insertRow(si, ri)" />
+                      <el-button size="small" link type="danger" icon="Delete" title="删除本行" @click.stop="removeRow(si, ri)" />
+                    </div>
+                  </div>
+                  <div class="ed-sec-empty" v-show="!sec.collapsed" v-if="!sec.rows.length">空分组：把右侧字段拖到这里，或点击"行"添加</div>
+                </div>
+                <div class="ed-drop-last" @dragover.prevent @drop.prevent="onDropToEnd($event)">拖字段到此处 → 新建分组存放</div>
+              </div>
+              <div class="layout-preview" v-else>
+                <template v-for="(sec, si) in previewSections" :key="si">
+                  <div class="pv-section-title" v-if="sec.title">{{ sec.title }}</div>
+                  <el-row :gutter="12" class="pv-row">
+                    <el-col v-for="(c, idx) in sec.cells" :key="idx" :span="c.span">
+                      <div v-if="c.note" class="pv-note" :style="cellStyle(c)">{{ c.note }}</div>
+                      <div v-else class="pv-item" :class="{ 'pv-b-all': c.border === 'all', 'pv-b-bottom': c.border === 'bottom' }" :style="cellStyle(c)">
+                        <span class="pv-label">{{ c.field ? mainFieldLabel(c.field) : '（未选字段）' }}</span><div class="pv-value">—</div>
+                      </div>
+                    </el-col>
+                  </el-row>
+                </template>
+                <div class="pv-section-title" v-if="detailFields.length">明细表</div>
+                <div class="pv-item" v-for="f in detailFields" :key="f.field" style="width:100%"><span class="pv-label">{{ f.label }}</span><div class="pv-value">明细表字段随明细录入展示</div></div>
+                <div v-if="!previewSections.length" class="layout-empty">未设计布局，发起时将按字段顺序单栏展示</div>
+              </div>
+            </div>
+            <div class="ed-side">
+              <div class="ed-side-title"><el-icon><Menu /></el-icon> 字段（拖拽到左侧画布）</div>
+              <div class="ed-pool">
+                <div class="ed-pool-item" v-for="f in unplacedFields" :key="f.field" draggable="true"
+                  @dragstart="onPoolDragStart($event, f.field)" @dblclick="appendFieldToLastRow(f.field)" title="拖拽或双击添加">
+                  <el-icon><Document /></el-icon><span class="pi-label">{{ f.label }}</span><em>{{ f.field }}</em>
+                </div>
+                <div class="ed-pool-empty" v-if="!unplacedFields.length">主表字段均已布局</div>
+              </div>
+              <div class="ed-side-title"><el-icon><Setting /></el-icon> 单元格属性</div>
+              <div class="ed-props" v-if="activeCell">
+                <div class="ed-prop"><label>宽度{{ activeCell.span > 12 ? '（已合并 ' + activeCell.span + '/24）' : '' }}</label>
+                  <el-select v-model="activeCell.span" size="small">
+                    <el-option :value="6" label="1/4 宽" /><el-option :value="8" label="1/3 宽" />
+                    <el-option :value="12" label="1/2 宽" /><el-option :value="24" label="整行" />
+                    <el-option v-if="![6, 8, 12, 24].includes(activeCell.span)" :value="activeCell.span" :label="activeCell.span + '/24'" />
+                  </el-select>
+                </div>
+                <div class="ed-prop" v-if="!activeCell.note"><label>字段</label>
+                  <el-select v-model="activeCell.field" size="small" filterable clearable placeholder="选择字段">
+                    <el-option v-for="f in mainFields" :key="f.field" :label="f.label + '（' + f.field + '）'" :value="f.field" />
+                  </el-select>
+                </div>
+                <div class="ed-prop"><label>{{ activeCell.note ? '说明文字' : '显示标签（留空用字段显示名）' }}</label>
+                  <el-input v-if="activeCell.note" v-model="activeCell.note" type="textarea" :rows="3" placeholder="如：有出差报销的必须填写出差天数" />
+                  <el-input v-else v-model="activeCell.label" placeholder="留空使用字段显示名" />
+                </div>
+                <div class="ed-prop"><label>字体</label>
+                  <el-select v-model="activeCell.fontFamily" size="small" clearable placeholder="默认">
+                    <el-option v-for="f in FONT_OPTIONS" :key="f.v" :label="f.l" :value="f.v" />
+                  </el-select>
+                </div>
+                <div class="ed-prop"><label>字号 / 字体样式</label>
+                  <div class="ed-prop-row">
+                    <el-select v-model="activeCell.fontSize" size="small" clearable placeholder="字号" style="width:86px">
+                      <el-option v-for="s in [12, 13, 14, 16, 18, 20]" :key="s" :label="s + 'px'" :value="s" />
+                    </el-select>
+                    <el-button size="small" :type="activeCell.bold ? 'primary' : 'default'" @click="activeCell.bold = !activeCell.bold" title="加粗"><b>B</b></el-button>
+                    <el-button size="small" :type="activeCell.italic ? 'primary' : 'default'" @click="activeCell.italic = !activeCell.italic" title="斜体"><i>I</i></el-button>
+                  </div>
+                </div>
+                <div class="ed-prop"><label>颜色</label>
+                  <div class="ed-prop-row">
+                    <span class="ed-color-item">文字<el-color-picker v-model="activeCell.color" size="small" /></span>
+                    <span class="ed-color-item">背景<el-color-picker v-model="activeCell.bgColor" size="small" /></span>
+                  </div>
+                </div>
+                <div class="ed-prop"><label>边框（单元格）</label>
+                  <div class="ed-prop-row">
+                    <el-select v-model="activeCell.border" size="small" clearable placeholder="无边框" style="width:100px">
+                      <el-option value="all" label="四边框" /><el-option value="bottom" label="仅下边框" /><el-option value="none" label="隐藏边框" />
+                    </el-select>
+                    <el-color-picker v-model="activeCell.borderColor" size="small" />
+                  </div>
+                </div>
+                <el-button size="small" link @click="clearCellStyle">清除全部样式</el-button>
+                <el-button size="small" type="danger" link icon="Delete" @click="removeActiveCell">删除该单元格</el-button>
+              </div>
+              <div class="ed-props-empty" v-else>点选左侧单元格后在此设置属性</div>
+            </div>
+          </div>
+          <!-- 单元格右键菜单 -->
+          <div class="ed-ctxmenu" v-if="ctxMenu.show" :style="{ left: ctxMenu.x + 'px', top: ctxMenu.y + 'px' }" @click.stop>
+            <div class="ed-ctx-item" @click="ctxAction('mergeRight')" v-if="canMergeRight">与右侧单元格合并</div>
+            <div class="ed-ctx-item" @click="ctxAction('splitCell')" v-if="ctxCell && ctxCell.span > 6">拆分单元格</div>
+            <div class="ed-ctx-sep"></div>
+            <div class="ed-ctx-item" @click="ctxAction('insertRight')">向右插入单元格</div>
+            <div class="ed-ctx-item" @click="ctxAction('insertRowBelow')">下方插入一行</div>
+            <div class="ed-ctx-item" @click="ctxAction('duplicate')">复制单元格</div>
+            <div class="ed-ctx-item" v-if="!ctxCell?.note" @click="ctxAction('toNote')">转为说明行</div>
+            <div class="ed-ctx-item" @click="ctxAction('editLabel')">{{ ctxCell?.note ? '编辑说明文字' : '自定义标签' }}</div>
+            <div class="ed-ctx-item danger" @click="ctxAction('del')">删除单元格</div>
+          </div>
+          <!-- Excel 网格设计器（泛微式，P0） -->
+          <ExcelGridDesigner v-if="layout.mode === 'grid'" :model-value="layout.grid"
+            :fields="poolFields" :form="{ formName: form.formName, formKey: form.formKey }"
+            :active="open && activeTab === 'layout'" :fullscreen="designMax"
+            @update:model-value="v => (layout.grid = v)" @save="submitForm(true)" @toggle-fullscreen="designMax = !designMax" />
+        </el-tab-pane>
       </el-tabs>
       <template #footer>
         <el-button type="primary" @click="submitForm">保 存</el-button>
@@ -261,8 +433,9 @@
           </el-select>
         </el-form-item>
         <el-form-item label="类型">
-          <el-select v-model="newField.dtype" style="width:100%" :disabled="isDtypeLocked(newField.form)">
-            <el-option v-for="(v, k) in DTYPE_OPTIONS" :key="k" :label="v" :value="k" />
+          <span v-if="isDtypeLocked(newField.form)" style="color:#909399">{{ DTYPE_OPTIONS[newField.dtype] || newField.dtype }}（随表现形式自动）</span>
+          <el-select v-else v-model="newField.dtype" style="width:100%">
+            <el-option v-for="(v, k) in dtypeOptions(newField.form)" :key="k" :label="v" :value="k" />
           </el-select>
         </el-form-item>
         <el-form-item label="文本长度" v-if="newField.dtype === 'text' && !isLengthLocked(newField)"><el-input-number v-model="newField.length" :min="1" :max="8000" :controls="false" style="width:160px" /></el-form-item>
@@ -322,8 +495,9 @@
         </el-table-column>
         <el-table-column label="类型" width="105" align="center">
           <template #default="scope">
-            <el-select v-model="scope.row.dtype" size="small" :disabled="isDtypeLocked(scope.row.form)">
-              <el-option v-for="(v, k) in DTYPE_OPTIONS" :key="k" :label="v" :value="k" />
+            <span v-if="isDtypeLocked(scope.row.form)" style="color:#909399">{{ DTYPE_OPTIONS[scope.row.dtype] || scope.row.dtype }}（自动）</span>
+            <el-select v-else v-model="scope.row.dtype" size="small">
+              <el-option v-for="(v, k) in dtypeOptions(scope.row.form)" :key="k" :label="v" :value="k" />
             </el-select>
           </template>
         </el-table-column>
@@ -356,6 +530,8 @@ import { listForm, getForm, addForm, updateForm, delForm, createTable } from '@/
 import { Search, Filter, CircleClose } from '@element-plus/icons-vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { pinyin } from 'pinyin-pro'
+import ExcelGridDesigner from './designer/ExcelGridDesigner.vue'
+import { parseLayout, sectionsToGrid, fieldsToGrid, serializeLayout } from './designer/converters'
 
 /** 中文名称 → 拼音首字母字段名（小写字母开头，仅含字母/数字/下划线），如：合同名称 → htmc */
 function toFieldInitials(label) {
@@ -553,20 +729,26 @@ function submitAdd(enterDesign) {
       const detail = await getForm(newId)
       form.value = detail.data
       fields.value = normalizeFields(safeParse(detail.data.fieldsJson))
+      layout.value = normalizeLayout(detail.data.layoutJson)
       rebuildDetailTables()
       activeTab.value = 'fields'
+      designMax.value = false
       activeTableTab.value = 'main'
       open.value = true
     }
   })
 }
 
-async function handleDesign(row) {
+async function handleDesign(row, tab = 'basic') {
   const res = await getForm(row.formId)
   form.value = res.data
   fields.value = normalizeFields(safeParse(res.data.fieldsJson))
+  layout.value = normalizeLayout(res.data.layoutJson)
+  undoStack.value = []
+  redoStack.value = []
   rebuildDetailTables()
-  activeTab.value = 'basic'
+  if (tab === 'layout') { ensureGridMode(); designMax.value = true } else { designMax.value = false }
+  activeTab.value = tab
   activeTableTab.value = 'main'
   open.value = true
 }
@@ -603,6 +785,13 @@ function applyFormDefaults(row) {
 
 /** dtype 是否随表现形式锁定（日期/日期时间/数字类不允许改dtype） */
 function isDtypeLocked(form) { return ['date', 'datetime', 'number'].includes(form) || form === 'textarea' }
+
+/** 自由表现形式下可选的数据类型：日期/日期时间只能通过表现形式（日期框/日期时间框）选择，避免两处重复 */
+function dtypeOptions(form) {
+  if (isDtypeLocked(form)) return DTYPE_OPTIONS
+  const { date, datetime, ...rest } = DTYPE_OPTIONS
+  return rest
+}
 
 /** 长度是否自动推导（browse/attach/check 等不需要用户填长度） */
 function isLengthLocked(row) { return ['browse', 'attach', 'check', 'switch'].includes(row.form) }
@@ -657,7 +846,7 @@ function blankBatchRow() {
   return { batchKey: 'b' + Math.random().toString(36).slice(2, 8), label: undefined, field: undefined, autoField: true, form: 'text', dtype: 'text', length: 500, scale: 2, options: undefined, required: false }
 }
 function openBatchAdd() {
-  batchRows.value = [blankBatchRow(), blankBatchRow(), blankBatchRow(), blankBatchRow(), blankBatchRow()]
+  batchRows.value = [blankBatchRow()]
   batchOpen.value = true
 }
 function addBatchRow() { batchRows.value.push(blankBatchRow()) }
@@ -703,6 +892,341 @@ function removeDetailTable(name) {
   activeTableTab.value = 'main'
 }
 
+// ===== 页面设计（类Excel布局设计器） =====
+const layoutPreview = ref(false)
+const designMax = ref(false)
+const layout = ref({ mode: 'section', sections: [], grid: null })
+
+const mainFields = computed(() => fields.value.filter(f => (f.table || 'main') === 'main'))
+const detailFields = computed(() => fields.value.filter(f => f.table && f.table !== 'main'))
+/** 字段池可选项：主表全部 + 明细表全部（明细可拖入布局单独成行） */
+const poolFields = computed(() => [...mainFields.value, ...detailFields.value])
+
+/** 已被布局占用的主表字段（说明行不占用字段） */
+function placedFieldSet() {
+  const used = new Set()
+  for (const sec of layout.value.sections) for (const row of sec.rows) for (const c of row) if (c.field) used.add(c.field)
+  return used
+}
+const unplacedFields = computed(() => {
+  const used = placedFieldSet()
+  return poolFields.value.filter(f => !used.has(f.field))
+})
+function mainFieldLabel(field) {
+  const f = poolFields.value.find(x => x.field === field)
+  return f ? (f.label + '（' + f.field + '）') : (field || '（未选字段）')
+}
+function fieldShortLabel(field) {
+  const f = poolFields.value.find(x => x.field === field)
+  return f ? f.label : field || ''
+}
+function addSection() { layout.value.sections.push({ title: '', rows: [] }) }
+function removeSection(si) { layout.value.sections.splice(si, 1); sel.value = null }
+function moveSection(si, dir) {
+  const arr = layout.value.sections
+  const t = si + dir
+  if (t < 0 || t >= arr.length) return
+  const [s] = arr.splice(si, 1); arr.splice(t, 0, s)
+}
+function addRow(si) { layout.value.sections[si].rows.push([{ field: undefined, span: 12 }]) }
+function insertRow(si, ri) { layout.value.sections[si].rows.splice(ri + 1, 0, [{ field: undefined, span: 12 }]) }
+function removeRow(si, ri) { layout.value.sections[si].rows.splice(ri, 1); sel.value = null }
+function moveRow(si, ri, dir) {
+  const rows = layout.value.sections[si].rows
+  const t = ri + dir
+  if (t < 0 || t >= rows.length) return
+  const [r] = rows.splice(ri, 1); rows.splice(t, 0, r)
+}
+function addNoteRow() {
+  if (!layout.value.sections.length) addSection()
+  const sec = layout.value.sections[layout.value.sections.length - 1]
+  sec.rows.push([{ note: '', span: 24 }])
+  sel.value = { si: layout.value.sections.length - 1, ri: sec.rows.length - 1, ci: 0 }
+}
+function appendFieldToLastRow(field) {
+  if (!layout.value.sections.length) addSection()
+  const sec = layout.value.sections[layout.value.sections.length - 1]
+  if (!sec.rows.length) sec.rows.push([])
+  const row = sec.rows[sec.rows.length - 1]
+  const usedSpan = row.reduce((s, c) => s + (c.span || 12), 0)
+  if (usedSpan + 12 <= 24) row.push({ field, span: 12 })
+  else sec.rows.push([{ field, span: 12 }])
+}
+
+// ---- 撤销/重做（快照栈，上限50步） ----
+const undoStack = ref([])
+const redoStack = ref([])
+function pushUndo() {
+  undoStack.value.push(JSON.stringify(layout.value))
+  if (undoStack.value.length > 50) undoStack.value.shift()
+  redoStack.value = []
+}
+const canUndo = computed(() => undoStack.value.length > 0)
+const canRedo = computed(() => redoStack.value.length > 0)
+function undoLayout() {
+  if (!undoStack.value.length) return
+  redoStack.value.push(JSON.stringify(layout.value))
+  layout.value = JSON.parse(undoStack.value.pop())
+  sel.value = null
+}
+function redoLayout() {
+  if (!redoStack.value.length) return
+  undoStack.value.push(JSON.stringify(layout.value))
+  layout.value = JSON.parse(redoStack.value.pop())
+  sel.value = null
+}
+
+// ---- 单元格右键菜单 ----
+const ctxMenu = reactive({ show: false, x: 0, y: 0, si: 0, ri: 0, ci: 0 })
+const ctxCell = computed(() => {
+  const sec = layout.value.sections[ctxMenu.si]
+  const row = sec && sec.rows[ctxMenu.ri]
+  return row ? row[ctxMenu.ci] : null
+})
+function openCtxMenu(e, si, ri, ci) {
+  selectCell(si, ri, ci)
+  const wrap = e.currentTarget.closest('.ed-wrap')
+  const rect = wrap ? wrap.getBoundingClientRect() : { left: 0, top: 0 }
+  ctxMenu.x = Math.min(e.clientX - rect.left, 620)
+  ctxMenu.y = Math.min(e.clientY - rect.top, 360)
+  ctxMenu.si = si; ctxMenu.ri = ri; ctxMenu.ci = ci
+  ctxMenu.show = true
+}
+function closeCtxMenu() { ctxMenu.show = false }
+// ---- 合并/拆分单元格（横向合并：并入右侧相邻单元格，宽度累加） ----
+const canMergeRight = computed(() => {
+  const { si, ri, ci } = ctxMenu
+  const row = layout.value.sections[si]?.rows?.[ri]
+  if (!row || ci >= row.length - 1) return false
+  const cur = row[ci], nxt = row[ci + 1]
+  return (cur.span + nxt.span) <= 24
+})
+function ctxAction(action) {
+  const { si, ri, ci } = ctxMenu
+  const sec = layout.value.sections[si]
+  const row = sec && sec.rows[ri]
+  const cell = row && row[ci]
+  if (!cell) { ctxMenu.show = false; return }
+  if (action !== 'mergeRight' && action !== 'splitCell') ctxMenu.show = false
+  else ctxMenu.show = false
+  pushUndo()
+  if (action === 'mergeRight') {
+    const nxt = row[ci + 1]
+    if (!nxt) return
+    cell.span = (cell.span || 12) + (nxt.span || 12)
+    // 内容合并策略：本格为空则吸收右格内容，否则丢弃右格内容
+    if (!cell.field && !cell.note && !cell.label) { cell.field = nxt.field; cell.note = nxt.note; cell.label = nxt.label }
+    row.splice(ci + 1, 1)
+  }
+  else if (action === 'splitCell') {
+    const span = cell.span || 12
+    if (span <= 6) return
+    const half = span / 2
+    cell.span = half
+    row.splice(ci + 1, 0, { field: undefined, span: half })
+    selectCell(si, ri, ci + 1)
+  }
+  else if (action === 'insertRight') { row.splice(ci + 1, 0, { field: undefined, span: 12 }); selectCell(si, ri, ci + 1) }
+  else if (action === 'insertRowBelow') { sec.rows.splice(ri + 1, 0, [{ field: undefined, span: 12 }]); selectCell(si, ri + 1, 0) }
+  else if (action === 'duplicate') { row.splice(ci + 1, 0, { ...cell }); selectCell(si, ri, ci + 1) }
+  else if (action === 'toNote') { cell.note = ''; delete cell.field; cell.span = 24; cell.noteLabel = undefined }
+  else if (action === 'editLabel') { cellEdit(si, ri, ci) }
+  else if (action === 'del') { removeActiveCell() }
+}
+function cellEdit(si, ri, ci) {
+  const row = layout.value.sections[si]?.rows?.[ri]
+  const cell = row && row[ci]
+  if (!cell) return
+  selectCell(si, ri, ci)
+  proxy.$prompt(cell.note ? '请输入说明文字' : '自定义标签（留空使用字段显示名）', cell.note ? '编辑说明行' : '自定义标签', {
+    confirmButtonText: '确 定', cancelButtonText: '取 消',
+    inputValue: cell.note || cell.label || ''
+  }).then(({ value }) => {
+    pushUndo()
+    if (cell.note) cell.note = value || ''
+    else cell.label = value || undefined
+  }).catch(() => {})
+}
+
+// ---- 单元格样式 ----
+const FONT_OPTIONS = [
+  { l: '默认', v: undefined }, { l: '微软雅黑', v: 'Microsoft YaHei' }, { l: '宋体', v: 'SimSun' },
+  { l: '黑体', v: 'SimHei' }, { l: '楷体', v: 'KaiTi' }, { l: '仿宋', v: 'FangSong' }, { l: '等线', v: 'DengXian' }
+]
+/** 单元格样式 → 内联样式对象（设计器与发起页共用同一规则） */
+function cellStyle(cell) {
+  if (!cell) return {}
+  const s = {}
+  if (cell.fontFamily) s.fontFamily = cell.fontFamily
+  if (cell.fontSize) s.fontSize = cell.fontSize + 'px'
+  if (cell.bold) s.fontWeight = '700'
+  if (cell.italic) s.fontStyle = 'italic'
+  if (cell.color) s.color = cell.color
+  if (cell.bgColor) s.backgroundColor = cell.bgColor
+  if (cell.borderColor) s.borderColor = cell.borderColor
+  return s
+}
+function clearCellStyle() {
+  const c = activeCell.value
+  if (!c) return
+  pushUndo()
+  ;['fontFamily', 'fontSize', 'bold', 'italic', 'color', 'bgColor', 'border', 'borderColor'].forEach(k => { delete c[k] })
+}
+
+// ---- 键盘：Delete 删除选中单元格，Ctrl+Z 撤销 ----
+function onLayoutKeydown(e) {
+  if (!open.value || activeTab.value !== 'layout' || layoutPreview.value) return
+  const tag = (e.target.tagName || '').toLowerCase()
+  if (tag === 'input' || tag === 'textarea' || e.target.isContentEditable) return
+  if (e.key === 'Delete' && sel.value) { pushUndo(); removeActiveCell(); e.preventDefault() }
+  else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) { if (canUndo.value) { undoLayout(); e.preventDefault() } }
+  else if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === 'y' || (e.shiftKey && e.key.toLowerCase() === 'z'))) { if (canRedo.value) { redoLayout(); e.preventDefault() } }
+}
+window.addEventListener('keydown', onLayoutKeydown)
+onBeforeUnmount(() => window.removeEventListener('keydown', onLayoutKeydown))
+watch(() => ctxMenu.show, v => { if (!v) return; document.addEventListener('click', closeCtxMenu, { once: true }) })
+
+// ---- 拖拽 ----
+const dragField = ref(null)
+const sel = ref(null) // {si, ri, ci}
+const activeCell = computed(() => {
+  const s = sel.value
+  if (!s) return null
+  const row = (layout.value.sections[s.si] || {}).rows?.[s.ri]
+  return row ? (row[s.ci] || null) : null
+})
+function selectCell(si, ri, ci) { sel.value = { si, ri, ci } }
+function isCellActive(si, ri, ci) { const s = sel.value; return !!s && s.si === si && s.ri === ri && s.ci === ci }
+function removeActiveCell() {
+  const s = sel.value
+  if (!s) return
+  const row = layout.value.sections[s.si]?.rows?.[s.ri]
+  if (row) row.splice(s.ci, 1)
+  sel.value = null
+}
+function onPoolDragStart(e, field) {
+  dragField.value = field
+  if (e.dataTransfer) e.dataTransfer.setData('text/plain', 'field:' + field)
+}
+function onCellDragStart(e, si, ri, ci) {
+  if (e.dataTransfer) e.dataTransfer.setData('text/plain', 'cell:' + si + ':' + ri + ':' + ci)
+}
+/** 拖入单元格：字段 → 插到该单元格后；单元格 → 换位 */
+function onDropToCell(e, si, ri, ci) {
+  const data = e.dataTransfer ? e.dataTransfer.getData('text/plain') || '' : ''
+  if (data.startsWith('cell:')) {
+    const [x, xsi, xri, xci] = data.split(':')
+    if (+xsi === si && +xri === ri && +xci === ci) return
+    const srcRow = layout.value.sections[+xsi]?.rows?.[+xri]
+    if (!srcRow) return
+    const [cell] = srcRow.splice(+xci, 1)
+    const dstRow = layout.value.sections[si].rows[ri]
+    dstRow.splice(ci > srcRow.length ? ci : ci, 0, cell)
+    return
+  }
+  const field = dragField.value || (data.startsWith('field:') ? data.slice(6) : null)
+  if (!field) return
+  const sec = layout.value.sections[si]
+  if (!sec) { appendFieldToLastRow(field); dragField.value = null; return }
+  if (!sec.rows.length) sec.rows.push([])
+  const row = sec.rows[Math.min(ri, sec.rows.length - 1)]
+  const usedSpan = row.reduce((s, c) => s + (c.span || 12), 0)
+  row.splice(Math.min(ci + 1, row.length), 0, { field, span: usedSpan + 12 > 24 ? 24 : 12 })
+  dragField.value = null
+}
+/** 拖入行空白：追加到该行末尾 */
+function onDropToRow(e, si, ri) {
+  const data = e.dataTransfer ? e.dataTransfer.getData('text/plain') || '' : ''
+  if (data.startsWith('cell:')) { onDropToCell(e, si, ri, 999); return }
+  const field = dragField.value || (data.startsWith('field:') ? data.slice(6) : null)
+  if (!field) return
+  onDropToCell(e, si, ri, 999)
+}
+function onDropToSection(e, si) {
+  const data = e.dataTransfer ? e.dataTransfer.getData('text/plain') || '' : ''
+  const field = dragField.value || (data.startsWith('field:') ? data.slice(6) : null)
+  if (!field) return
+  const sec = layout.value.sections[si]
+  if (!sec) return
+  sec.rows.push([{ field, span: 12 }])
+  dragField.value = null
+}
+function onDropToEnd(e) {
+  const data = e.dataTransfer ? e.dataTransfer.getData('text/plain') || '' : ''
+  const field = dragField.value || (data.startsWith('field:') ? data.slice(6) : null)
+  if (!field) return
+  layout.value.sections.push({ title: '', rows: [[{ field, span: 12 }]] })
+  dragField.value = null
+}
+
+function autoLayout() {
+  const secs = [{ title: '基本信息', rows: [] }]
+  let row = []
+  for (const f of mainFields.value) {
+    row.push({ field: f.field, span: 12 })
+    if (row.length === 2) { secs[0].rows.push(row); row = [] }
+  }
+  if (row.length) secs[0].rows.push(row)
+  layout.value = { sections: secs }
+  proxy.$modal.msgSuccess('已按两栏自动生成布局，可继续拖拽调整')
+}
+
+/** 预览：含未布局字段回退区与说明行 */
+const previewSections = computed(() => {
+  const list = layout.value.sections.map(sec => ({
+    title: sec.title,
+    cells: sec.rows.flat().filter(c => c.field || c.note).map(c => ({ ...c }))
+  }))
+  const rest = unplacedFields.value
+  if (rest.length) list.push({ title: '其他信息', cells: rest.map(f => ({ field: f.field, span: 12 })) })
+  return list
+})
+
+/** 单元格合法宽度：标准值(6/8/12/24)直接放行，合并宽度(6<x<24)放行，其余归一为默认 */
+function cellSpan(c) {
+  const s = Number(c.span)
+  if ([6, 8, 12, 24].includes(s)) return s
+  if (s > 6 && s < 24) return s
+  return c.note ? 24 : 12
+}
+
+function normalizeLayout(json) {
+  const p = parseLayout(json)
+  const sections = p.sections.map(s => ({
+    title: s.title || '',
+    collapsed: !!s.collapsed,
+    rows: (Array.isArray(s.rows) ? s.rows : [])
+      .map(r => (Array.isArray(r) ? r : []).filter(c => c && typeof c === 'object' && (c.field || c.note)).map(c => {
+        const n = { field: c.note ? undefined : c.field, note: c.note || undefined, label: c.label || undefined, noteLabel: c.noteLabel || undefined, span: cellSpan(c) }
+        for (const k of ['fontFamily', 'fontSize', 'bold', 'italic', 'color', 'bgColor', 'border', 'borderColor']) if (c[k] !== undefined && c[k] !== null && c[k] !== '') n[k] = c[k]
+        return n
+      }))
+      .filter(r => r.length)
+  }))
+  return { mode: p.grid ? 'grid' : 'section', sections, grid: p.grid }
+}
+
+/** 确保 Excel 网格模式：无网格时按旧布局/字段一键初始化（旧布局保留不丢） */
+function ensureGridMode() {
+  if (!layout.value.grid) {
+    layout.value.grid = (layout.value.sections && layout.value.sections.length)
+      ? sectionsToGrid(layout.value.sections)
+      : fieldsToGrid(mainFields.value)
+    proxy.$modal.msgSuccess('已初始化 Excel 网格，可继续拖拽布局与格式化，操作见右上"帮助"')
+  }
+  layout.value.mode = 'grid'
+}
+
+/** 顶部模式切换按钮：grid ↔ section 双向切换（互不销毁，双布局并存） */
+function toggleLayoutMode() {
+  if (layout.value.mode === 'grid') {
+    layout.value.mode = 'section'
+  } else {
+    ensureGridMode()
+  }
+}
+
+
 // "+" 添加明细表页签：新增后直接弹出添加字段
 watch(activeTableTab, v => {
   if (v === '__add') {
@@ -716,7 +1240,7 @@ watch(activeTableTab, v => {
   }
 })
 
-function submitForm() {
+function submitForm(keepOpen) {
   if (!form.value.formName || !form.value.formKey) { proxy.$modal.msgWarning('请填写表单名称与表单Key'); return }
   if (!/^[a-z0-9][a-z0-9_]{0,39}$/.test(form.value.formKey)) { proxy.$modal.msgWarning('表单Key仅允许小写字母/数字开头的字母、数字、下划线'); return }
   for (const f of fields.value) {
@@ -735,12 +1259,21 @@ function submitForm() {
     formId: form.value.formId, formKey: form.value.formKey, formName: form.value.formName,
     formDesc: form.value.formDesc || undefined,
     processKey: form.value.processKey || undefined,
-    fieldsJson: JSON.stringify(fields.value.map(({ rowKey, ...rest }) => rest))
+    fieldsJson: JSON.stringify(fields.value.map(({ rowKey, ...rest }) => rest)),
+    layoutJson: serializeLayout({ mode: layout.value.mode, sections: layout.value.sections.map(s => ({ title: s.title, rows: s.rows })), grid: layout.value.grid })
   }
   if (form.value.formId) {
-    updateForm(payload).then(() => { proxy.$modal.msgSuccess('保存成功'); open.value = false; getList() })
+    updateForm(payload).then(() => {
+      proxy.$modal.msgSuccess('保存成功')
+      if (!keepOpen) open.value = false
+      getList()
+    })
   } else {
-    addForm(payload).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList() })
+    addForm(payload).then(() => {
+      proxy.$modal.msgSuccess('新增成功')
+      if (!keepOpen) open.value = false
+      getList()
+    })
   }
 }
 
@@ -780,4 +1313,80 @@ onActivated(() => { getList() })
 .copy-table { width: 100%; }
 .batch-toolbar { display: flex; align-items: center; gap: 8px; margin: 0 12px 10px; }
 .tbl-name-row { line-height: 28px; }
+
+/* ===== 页面设计（类Excel布局设计器） ===== */
+.ed-wrap { display: flex; gap: 12px; margin: 0 12px 10px; align-items: flex-start; position: relative; }
+.ed-main { flex: 1; min-width: 0; }
+.ed-toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+.ed-canvas { max-height: 470px; overflow: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 2px; }
+.ed-ruler { display: flex; border: 1px solid #e2e8f0; border-radius: 6px 6px 0 0; background: #f1f5f9; overflow: hidden; }
+.ed-ruler-corner { width: 42px; flex: none; border-right: 1px solid #e2e8f0; }
+.ed-ruler-label { width: 110px; flex: none; }
+.ed-ruler-col { flex: 1; text-align: center; font-size: 11px; color: #64748b; padding: 3px 0; border-right: 1px dashed #dbe3ec; font-family: Consolas, monospace; }
+.ed-ruler-col:last-child { border-right: none; }
+.ed-empty { text-align: center; color: var(--ink-400, #94a3b8); font-size: 13px; padding: 40px 0; border: 1px dashed #cbd5e1; border-radius: 8px; }
+.ed-section { border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; }
+.ed-sec-bar { display: flex; align-items: center; gap: 8px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 5px 8px; border-radius: 8px 8px 0 0; }
+.ed-sec-title { flex: 1; border: 1px dashed transparent; background: transparent; font-size: 13px; font-weight: 600; color: #0f172a; padding: 3px 6px; border-radius: 4px; outline: none; min-width: 0; }
+.ed-sec-title:hover { border-color: #cbd5e1; background: #fff; }
+.ed-sec-title:focus { border-color: var(--brand-600, #4f46e5); background: #fff; }
+.ed-sec-ops { display: flex; align-items: center; gap: 0; flex: none; }
+.ed-row { display: flex; align-items: stretch; border-bottom: 1px dashed #eef2f7; }
+.ed-row:last-of-type { border-bottom: none; }
+.ed-row-cells { flex: 1; display: flex; min-width: 0; padding: 6px 0 6px 8px; gap: 0; }
+.ed-cell { box-sizing: border-box; border: 1px solid #dbe3ec; border-left: none; background: #fbfcfe; cursor: grab; position: relative; display: flex; min-width: 0; }
+.ed-cell:first-child { border-left: 1px solid #dbe3ec; }
+.ed-cell:hover { border-color: #94a3b8; }
+.ed-cell.is-active { border: 1px solid var(--brand-600, #4f46e5); box-shadow: 0 0 0 2px rgba(79, 70, 229, .12); z-index: 1; }
+.ed-cell.is-note { background: #fffbeb; border-color: #fcd34d; }
+.ed-cell-label { width: 96px; flex: none; font-size: 12px; color: #475569; background: #f1f5f9; border-right: 1px solid #dbe3ec; padding: 8px 6px; display: flex; align-items: center; gap: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ed-cell.is-note .ed-cell-label { background: #fef3c7; }
+.ed-cell-ctrl { flex: 1; font-size: 12px; color: #94a3b8; padding: 8px 8px; display: flex; align-items: center; gap: 6px; min-width: 0; background-image: repeating-linear-gradient(to right, transparent 0, transparent calc(25% - 1px), #eef2f7 calc(25% - 1px), #eef2f7 25%); }
+.ed-cell-placeholder { color: #cbd5e1; }
+.ed-note-text { color: #b45309; font-size: 12px; }
+.ed-ctrl-demo { width: 40%; height: 14px; border: 1px solid #dbe3ec; border-radius: 3px; background: #fff; flex: none; }
+.ed-row-ops { width: 34px; flex: none; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 0; opacity: .25; transition: opacity .15s; }
+.ed-row:hover .ed-row-ops { opacity: 1; }
+.ed-sec-empty { font-size: 12px; color: var(--ink-400, #94a3b8); text-align: center; padding: 10px 0; }
+.ed-drop-last { border: 1px dashed #cbd5e1; border-radius: 8px; text-align: center; font-size: 12px; color: #94a3b8; padding: 10px 0; margin-top: 2px; }
+.ed-drop-last:hover { border-color: var(--brand-600, #4f46e5); color: var(--brand-600, #4f46e5); }
+.ed-side { width: 230px; flex: none; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; max-height: 500px; overflow: auto; }
+.ed-side-title { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: #0f172a; padding: 8px 10px; border-bottom: 1px solid #f1f5f9; position: sticky; top: 0; background: #fff; }
+.ed-pool { padding: 8px; display: flex; flex-direction: column; gap: 6px; }
+.ed-pool-item { display: flex; align-items: center; gap: 6px; border: 1px solid #e2e8f0; border-radius: 6px; padding: 6px 8px; cursor: grab; font-size: 12px; background: #fafbfc; }
+.ed-pool-item:hover { border-color: var(--brand-600, #4f46e5); color: var(--brand-600, #4f46e5); }
+.ed-pool-item .pi-label { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ed-pool-item em { font-style: normal; color: #94a3b8; font-size: 11px; }
+.ed-pool-empty { font-size: 12px; color: #94a3b8; text-align: center; padding: 8px 0; }
+.ed-props { padding: 10px; display: flex; flex-direction: column; gap: 10px; }
+.ed-prop label { display: block; font-size: 12px; color: #64748b; margin-bottom: 4px; }
+.ed-props-empty { font-size: 12px; color: #94a3b8; text-align: center; padding: 14px 8px; }
+.ed-cell.cell-b-none { border-color: transparent !important; }
+.ed-cell.cell-b-none .ed-cell-label { border-right-color: transparent; background: transparent; }
+.ed-cell.cell-b-all { outline: 1px solid #94a3b8; outline-offset: -1px; }
+.ed-cell.cell-b-bottom { border-bottom-width: 2px; }
+.ed-props .ed-prop-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.ed-color-item { display: flex; align-items: center; gap: 4px; font-size: 12px; color: #64748b; }
+.ed-ctx-sep { height: 1px; background: #f1f5f9; margin: 4px 8px; }
+.ed-merge-badge { margin-left: auto; font-size: 10px; color: #7c3aed; background: #f5f3ff; border: 1px solid #ddd6fe; border-radius: 4px; padding: 0 4px; flex: none; }
+.ed-cell-label { justify-content: flex-start; gap: 4px; }
+.ed-ctxmenu { position: absolute; z-index: 30; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 8px 24px rgba(15, 23, 42, .12); padding: 4px; min-width: 148px; }
+.ed-ctx-item { font-size: 13px; color: #334155; padding: 7px 12px; border-radius: 6px; cursor: pointer; }
+.ed-ctx-item:hover { background: #f1f5f9; }
+.ed-ctx-item.danger { color: #ef4444; }
+.ed-ctx-item.danger:hover { background: #fef2f2; }
+.layout-preview { margin: 0; padding: 14px 16px; border: 1px solid #e2e8f0; border-radius: 10px; max-height: 470px; overflow: auto; }
+.pv-section-title { font-size: 14px; font-weight: 600; color: #0f172a; border-left: 3px solid var(--brand-600, #4f46e5); padding-left: 8px; margin: 6px 0 10px; }
+.pv-row { margin-bottom: 4px; }
+.pv-item { display: flex; align-items: flex-start; border-bottom: 1px dashed #eef2f7; padding: 6px 4px; min-height: 34px; }
+.pv-label { width: 120px; flex: none; font-size: 13px; color: var(--ink-500, #64748b); }
+.pv-value { flex: 1; font-size: 13px; color: #cbd5e1; }
+.pv-note { background: #fffbeb; border: 1px dashed #fcd34d; border-radius: 6px; color: #b45309; font-size: 12px; padding: 6px 10px; margin: 2px 0 6px; }
+.pv-b-all { border: 1px solid #94a3b8; border-radius: 4px; padding: 4px; }
+.pv-b-bottom { border-bottom: 2px solid #94a3b8; }
+.layout-mode-bar { display: flex; align-items: center; gap: 10px; margin: 0 12px 8px; }
+.rd-max-btn {
+  position: absolute; right: 52px; top: 50%; transform: translateY(-50%);
+  font-weight: 600; padding: 0 14px; height: 32px; font-size: 13px;
+}
 </style>

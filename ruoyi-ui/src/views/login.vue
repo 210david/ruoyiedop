@@ -30,14 +30,11 @@
 
           <!-- 主标题 -->
           <h1 class="main-title">
-            <span class="title-white">企业数字化</span>
-            <span class="title-blue">运营平台</span>
+            <span class="title-white">EDOP</span><span class="title-blue">企业数字化平台</span>
           </h1>
 
           <!-- 描述 -->
-          <p class="desc-text">
-            整合企业核心业务流程，实现数据驱动决策，提升运营效率，助力企业数字化转型。
-          </p>
+          <p class="desc-text">EDOP 企业数字化平台：一站式赋能企业全链路数字化转型。</p>
 
           <!-- 功能列表 -->
           <ul class="feature-list">

@@ -280,7 +280,15 @@ public class JsonNoticeParser implements NoticeParser
             if (StringUtils.isEmpty(notice.getRegionCode())) { notice.setRegionCode(mapRegion(detail.getString(fieldMap.getString("regionCode")))); }
             if (StringUtils.isEmpty(notice.getIndustry())) { notice.setIndustry(mapIndustry(detail.getString(fieldMap.getString("industry")))); }
             if (StringUtils.isEmpty(notice.getNoticeType())) { notice.setNoticeType(mapNoticeType(detail.getString(fieldMap.getString("noticeType")))); }
-            if (StringUtils.isEmpty(notice.getAttachmentUrl())) { notice.setAttachmentUrl(extractAttachments(detail.get("fileList"))); }
+            if (StringUtils.isEmpty(notice.getAttachmentUrl()))
+            {
+                notice.setAttachmentUrl(extractAttachments(detail.get("fileList")));
+            }
+            // 详情接口 fileList 为空时，从正文 HTML 中提取附件下载链接（如 ggzy 工程招标公告）
+            if (StringUtils.isEmpty(notice.getAttachmentUrl()) && html != null)
+            {
+                notice.setAttachmentUrl(extractAttachmentsFromHtml(html));
+            }
             if (StringUtils.isEmpty(notice.getContent()))
             {
                 String c = detail.getString(fieldMap.getString("content"));
@@ -288,6 +296,11 @@ public class JsonNoticeParser implements NoticeParser
                 {
                     // 接口返回的正文多为 HTML，统一转纯文本入库
                     notice.setContent(c.trim().startsWith("<") ? cleanContent(htmlToText(c)) : c);
+                    // fileList 为空时，从正文 HTML 提取附件下载链接
+                    if (StringUtils.isEmpty(notice.getAttachmentUrl()) && c.trim().startsWith("<"))
+                    {
+                        notice.setAttachmentUrl(extractAttachmentsFromHtml(c));
+                    }
                 }
             }
             if (notice.getBudgetAmount() == null)
@@ -518,6 +531,36 @@ public class JsonNoticeParser implements NoticeParser
                 sb.append(",");
             }
             sb.append("https://ggzy.yn.gov.cn/ynggfwpt-home-api/u/file/downloadFile?fileId=").append(id);
+        }
+        return sb.length() == 0 ? null : sb.toString();
+    }
+
+    /** 从正文 HTML 中提取附件下载链接（a 标签 href 含 downloadFile 或指向常见附件格式） */
+    private String extractAttachmentsFromHtml(String html)
+    {
+        if (StringUtils.isEmpty(html))
+        {
+            return null;
+        }
+        java.util.regex.Matcher m = java.util.regex.Pattern
+                .compile("(?i)<a[^>]+href=['\"]([^'\"]+)['\"][^>]*>(.*?)</a>", java.util.regex.Pattern.DOTALL)
+                .matcher(html);
+        StringBuilder sb = new StringBuilder();
+        while (m.find())
+        {
+            String href = m.group(1).trim();
+            String name = htmlToText(m.group(2)).trim();
+            boolean isAttach = href.toLowerCase().contains("downloadfile")
+                    || href.toLowerCase().matches(".*\\.(pdf|doc|docx|xls|xlsx|zip|rar)(\\?.*)?$");
+            if (!isAttach || StringUtils.isEmpty(href) || href.startsWith("#") || href.toLowerCase().startsWith("javascript"))
+            {
+                continue;
+            }
+            if (sb.length() > 0)
+            {
+                sb.append(",");
+            }
+            sb.append(href);
         }
         return sb.length() == 0 ? null : sb.toString();
     }

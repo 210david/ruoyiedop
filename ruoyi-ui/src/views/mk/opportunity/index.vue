@@ -134,8 +134,8 @@
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
           <el-table-column label="商机编号" prop="opportunityNo" key="opportunityNo" :width="colWidth('opportunityNo', 150)" resizable v-if="columns.opportunityNo.visible" />
-          <el-table-column label="商机名称" prop="opportunityName" key="opportunityName" show-overflow-tooltip v-if="columns.opportunityName.visible" />
-          <el-table-column label="客户名称" prop="customerName" key="customerName" show-overflow-tooltip v-if="columns.customerName.visible" />
+          <el-table-column label="商机名称" prop="opportunityName" key="opportunityName" :min-width="colWidth('opportunityName', 200)" show-overflow-tooltip resizable v-if="columns.opportunityName.visible" />
+          <el-table-column label="客户名称" prop="customerName" key="customerName" :min-width="colWidth('customerName', 200)" show-overflow-tooltip resizable v-if="columns.customerName.visible" />
           <el-table-column label="销售阶段" prop="stageName" key="stageName" :width="colWidth('stageName', 100)" resizable align="center" v-if="columns.stageName.visible">
             <template #default="scope">
               <span class="badge" :class="stageBadgeClass(scope.row.stageCode)">

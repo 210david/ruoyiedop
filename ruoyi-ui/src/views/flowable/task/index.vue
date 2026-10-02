@@ -180,6 +180,23 @@
             </div>
           </div>
         </section>
+        <!-- 节点表单：按节点字段权限渲染（可编辑/只读/隐藏） -->
+        <section class="rd-card" v-if="approveFormFields.length">
+          <div class="rd-card-header">
+            <div class="rd-card-title"><span class="rd-card-icon">▤</span>申请表单</div>
+          </div>
+          <div class="rd-card-body">
+            <el-form :model="approveFormData" label-width="120px" size="small">
+              <template v-for="f in approveFormFields" :key="f.field">
+                <el-form-item v-if="f._perm !== 'hidden'" :label="f.label">
+                  <dyn-field v-if="f._perm === 'edit'" :f="f" v-model="approveFormData[f.field]" />
+                  <span v-else class="approve-ro">{{ approveFormData[f.field] ?? '-' }}</span>
+                </el-form-item>
+              </template>
+            </el-form>
+            <div class="approve-form-tip" v-if="hasEditFields">可修改标亮的可编辑字段，修改将随审批提交保存</div>
+          </div>
+        </section>
         <section class="rd-card">
           <div class="rd-card-header">
             <div class="rd-card-title"><span class="rd-card-icon">✎</span>审批意见</div>
@@ -205,6 +222,8 @@
 <script setup name="FlowTask">
 import { listTodoTask, listDoneTask, countTodoTask, completeTask, getProcessTree } from '@/api/flowable/flow'
 import FlowDetail from '@/components/FlowDetail/index.vue'
+import { DynField } from './task-dyn-field'
+import request from '@/utils/request'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { Search, Filter, Document, Folder, User, Fold, Expand } from '@element-plus/icons-vue'
 
@@ -335,11 +354,66 @@ function handleApprove(row) {
   approveTask.value = row
   approveForm.value.comment = ''
   approveOpen.value = true
+  loadApproveForm(row)
+}
+
+// ===== 节点字段权限：审批页渲染申请表单（可编辑/只读/隐藏） =====
+const approveFormFields = ref([])
+const approveFormData = ref({})
+const hasEditFields = computed(() => approveFormFields.value.some(f => f._perm === 'edit'))
+
+/** 字段归一化（与发起页 normalizeField 一致规则） */
+function normalizeTaskField(f) {
+  const g = { ...f }
+  let t = f.type
+  if (f.form) {
+    if (['check', 'browse', 'attach', 'select', 'textarea', 'radio', 'switch', 'rate'].includes(f.form)) t = f.form
+    else if (f.form === 'date' || f.form === 'datetime') t = f.form
+    else if (f.form === 'number') t = 'number'
+    else t = f.dtype === 'datetime' ? 'datetime' : f.dtype === 'date' ? 'date' : (f.dtype === 'float' || f.dtype === 'int') ? 'number' : 'text'
+  } else if (!t) t = 'text'
+  g.rtype = t
+  if ((g.rtype === 'select' || g.rtype === 'radio')) {
+    let opts = g.selectOptions
+    if (!opts && g.options) {
+      opts = String(g.options).split(/[,，]/).map(s => s.trim()).filter(Boolean).map(s => ({ label: s, value: s }))
+    }
+    g.optionList = opts || []
+  }
+  return g
+}
+
+async function loadApproveForm(row) {
+  approveFormFields.value = []
+  approveFormData.value = {}
+  if (!row || !row.taskId) return
+  try {
+    const res = await request({ url: '/flowable/task/fieldPerms/' + row.taskId, method: 'get' })
+    const d = res.data || {}
+    let perms = {}
+    try { perms = JSON.parse(d.fieldPerms || '{}') || {} } catch (e) {}
+    let fields = []
+    try { fields = JSON.parse(d.fieldsJson || '[]') || [] } catch (e) {}
+    const variables = d.variables || {}
+    approveFormFields.value = fields.map(normalizeTaskField).map(f => {
+      f._perm = perms[f.field] || 'readonly'
+      return f
+    })
+    const data = {}
+    for (const f of approveFormFields.value) data[f.field] = variables[f.field]
+    approveFormData.value = data
+  } catch (e) { /* 无表单或权限数据 */ }
 }
 
 function submitApprove(outcome) {
   proxy.$modal.confirm(outcome === 'approved' ? '确认同意该任务？' : '确认驳回该任务？').then(() => {
-    return completeTask({ taskId: approveTask.value.taskId, comment: approveForm.value.comment, outcome })
+    // 可编辑字段的修改值随办理提交（仅提交有权限可编辑且值有变化的字段）
+    const variables = {}
+    let changed = false
+    for (const f of approveFormFields.value) {
+      if (f._perm === 'edit') { variables[f.field] = approveFormData.value[f.field]; changed = true }
+    }
+    return completeTask({ taskId: approveTask.value.taskId, comment: approveForm.value.comment, outcome, variables: changed ? variables : undefined })
   }).then(() => {
     proxy.$modal.msgSuccess(outcome === 'approved' ? '已同意' : '已驳回')
     approveOpen.value = false
@@ -361,6 +435,9 @@ onActivated(() => { getList(); loadCounts(); loadTree() })
 
 <style lang="scss" scoped>
 @use '../model/flow-model.scss';
+
+.approve-ro { color: #334155; font-size: 13px; line-height: 1.6; word-break: break-all; }
+.approve-form-tip { font-size: 12px; color: #94a3b8; margin-top: 4px; }
 
 /* ===== 左树右列表布局 ===== */
 .flowable-task-page {

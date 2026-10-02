@@ -65,29 +65,28 @@
         <el-alert type="info" :closable="false" show-icon style="margin-bottom:14px"
           :title="'使用表单：' + boundForm.formName" description="填写后提交，数据将存入业务数据表并进入审批" />
         <el-form ref="dynRef" :model="dynData" label-width="120px">
-          <el-form-item v-for="f in boundForm.fields" :key="f.field" :label="f.label" :prop="f.field"
-            :rules="f.required ? [{ required: true, message: '请填写' + f.label, trigger: ['blur','change'] }] : []">
-            <el-select v-if="f.rtype==='select'" v-model="dynData[f.field]" style="width:100%">
-              <el-option v-for="o in (f.optionList||[])" :key="o.value" :label="o.label" :value="o.value" />
-            </el-select>
-            <el-radio-group v-else-if="f.rtype==='radio'" v-model="dynData[f.field]">
-              <el-radio v-for="o in (f.optionList||[])" :key="o.value" :value="o.value">{{ o.label }}</el-radio>
-            </el-radio-group>
-            <el-checkbox v-else-if="f.rtype==='check'" v-model="dynData[f.field]" true-value="1" false-value="0">是</el-checkbox>
-            <el-switch v-else-if="f.rtype==='switch'" v-model="dynData[f.field]" active-value="1" inactive-value="0" />
-            <el-rate v-else-if="f.rtype==='rate'" v-model="dynData[f.field]" />
-            <div v-else-if="f.rtype==='browse'" style="display:flex;gap:8px;width:100%">
-              <el-input v-model="dynData[f.field]" readonly :placeholder="'点击右侧按钮选择' + (browseTypeLabel(f) || '数据')" />
-              <el-button @click="openBrowse(f)">浏览…</el-button>
-            </div>
-            <file-upload v-else-if="f.rtype==='attach'" v-model="dynData[f.field]" :limit="f.attachLimit || 5" :file-type="attachAccept(f)" :file-size="50" />
-            <el-input v-else-if="f.rtype==='text'" v-model="dynData[f.field]" />
-            <el-input v-else-if="f.rtype==='textarea'" v-model="dynData[f.field]" type="textarea" :rows="f.rows || 4" />
-            <el-input-number v-else-if="f.rtype==='number'" v-model="dynData[f.field]" :controls="false" style="width:100%" />
-            <el-date-picker v-else-if="f.rtype==='date'" v-model="dynData[f.field]" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" style="width:100%" />
-            <el-date-picker v-else-if="f.rtype==='datetime'" v-model="dynData[f.field]" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" placeholder="选择日期时间" style="width:100%" />
-            <el-input v-else v-model="dynData[f.field]" />
-          </el-form-item>
+          <FormGridRender v-if="layoutMode === 'grid' && layoutGrid" :grid="layoutGrid"
+            :fields="boundForm.fields" :values="dynData" editable @browse="openBrowse" />
+          <template v-else>
+          <template v-for="(grp, gi) in renderGroups" :key="gi">
+            <div class="dyn-section-title" v-if="grp.title">{{ grp.title }}</div>
+            <el-row :gutter="8">
+              <el-col v-for="c in grp.cells" :key="c.key" :span="c.span || 24">
+                <div v-if="c.note" class="dyn-note" :style="dynCellStyle(c)">{{ c.note }}</div>
+                <div v-else-if="c.style && (c.style.bgColor || c.style.border)" class="dyn-cell-wrap" :style="dynCellStyle(c)">
+                  <el-form-item :label="c.f.label" :prop="c.f.field"
+                    :rules="c.f.required ? [{ required: true, message: '请填写' + c.f.label, trigger: ['blur','change'] }] : []">
+                    <dyn-field :f="c.f" v-model="dynData[c.f.field]" @browse="openBrowse(c.f)" />
+                  </el-form-item>
+                </div>
+                <el-form-item v-else :label="c.f.label" :prop="c.f.field" :style="dynCellStyle(c)"
+                  :rules="c.f.required ? [{ required: true, message: '请填写' + c.f.label, trigger: ['blur','change'] }] : []">
+                  <dyn-field :f="c.f" v-model="dynData[c.f.field]" @browse="openBrowse(c.f)" />
+                </el-form-item>
+              </el-col>
+            </el-row>
+          </template>
+          </template>
         </el-form>
       </div>
       <div v-else>
@@ -134,6 +133,8 @@ import { formByProcess, launch } from '@/api/flowable/form'
 import request from '@/utils/request'
 import useUserStore from '@/store/modules/user'
 import { Search, Promotion, ArrowRight, Files } from '@element-plus/icons-vue'
+import FormGridRender from '@/components/FormGridRender.vue'
+import { parseLayout } from '@/views/flowable/form/designer/converters'
 
 const { proxy } = getCurrentInstance()
 const userStore = useUserStore()
@@ -150,6 +151,10 @@ const approverUserId = ref(undefined)
 const title = ref('')
 const userOptions = ref([])
 const submitting = ref(false)
+/** 表单布局解析：mode grid → FormGridRender 网格渲染；section → 分组渲染 */
+const layoutParsed = ref({ mode: 'section', sections: [], grid: null })
+const layoutMode = computed(() => layoutParsed.value.mode)
+const layoutGrid = computed(() => layoutParsed.value.grid)
 
 const filteredDefs = computed(() => {
   if (!keyword.value) return defs.value
@@ -232,11 +237,55 @@ async function handleLaunch(d) {
     if (res.data && res.data.fieldsJson) {
       let fields = []
       try { fields = (JSON.parse(res.data.fieldsJson) || []).map(normalizeField) } catch (e) {}
-      boundForm.value = { ...res.data, fields }
+      layoutParsed.value = parseLayout(res.data.layoutJson)
+      boundForm.value = { ...res.data, fields, layoutJson: res.data.layoutJson }
     }
   } catch (e) { /* 无绑定表单 */ }
   loadUsers()
   open.value = true
+}
+
+// ===== 页面布局渲染（按表单 layoutJson 分组分栏；无布局回退单栏） =====
+const renderGroups = computed(() => {
+  const all = boundForm.value?.fields || []
+  if (!all.length) return []
+  let layout = { sections: [] }
+  try { const o = JSON.parse(boundForm.value?.layoutJson || '{}'); if (Array.isArray(o.sections)) layout = o } catch (e) {}
+  const byField = {}
+  all.forEach(f => { byField[f.field] = f })
+  const used = new Set()
+  const groups = []
+  let noteSeq = 0
+  const spanOf = s => { const n = Number(s); return ([6, 8, 12, 24].includes(n) || (n > 6 && n < 24)) ? n : 24 }
+  for (const sec of layout.sections) {
+    const cells = (sec.rows || []).flat()
+      .filter(c => c && ((c.field && byField[c.field]) || c.note))
+      .map(c => {
+        if (c.note) return { key: 'note' + (++noteSeq), note: c.note, span: spanOf(c.span), style: c }
+        used.add(c.field)
+        return { key: c.field, f: { ...byField[c.field], label: c.label || byField[c.field].label }, span: spanOf(c.span), style: c }
+      })
+    if (cells.length) groups.push({ title: sec.title || '', cells })
+  }
+  const rest = all.filter(f => !used.has(f.field))
+  if (rest.length) groups.push({ title: layout.sections.length ? '其他信息' : '', cells: rest.map(f => ({ key: f.field, f, span: 24, style: {} })) })
+  return groups
+})
+
+/** 布局单元格样式 → 发起页内联样式（字体/字号/粗斜体/文字色/背景/边框） */
+function dynCellStyle(c) {
+  const s = c && c.style ? c.style : {}
+  const o = {}
+  if (s.fontFamily) o.fontFamily = s.fontFamily
+  if (s.fontSize) o.fontSize = s.fontSize + 'px'
+  if (s.bold) o.fontWeight = '700'
+  if (s.italic) o.fontStyle = 'italic'
+  if (s.color) o.color = s.color
+  if (s.bgColor) o.backgroundColor = s.bgColor
+  if (s.borderColor) o.borderColor = s.borderColor
+  if (s.border === 'all') { o.border = '1px solid ' + (s.borderColor || '#94a3b8'); o.borderRadius = '4px'; o.padding = '4px 8px'; o.marginBottom = '4px' }
+  if (s.border === 'bottom') { o.borderBottom = '2px solid ' + (s.borderColor || '#94a3b8'); o.paddingBottom = '4px' }
+  return o
 }
 
 // 浏览按钮（browse）：多数据源主数据选择（人员/部门/岗位/角色/物料/客户/供应商/合同，支持自定义扩展）
@@ -332,8 +381,51 @@ function submitLaunch() {
 getList()
 </script>
 
+<script>
+import { defineComponent, h, resolveComponent } from 'vue'
+import { ElSelect, ElOption, ElRadioGroup, ElRadio, ElCheckbox, ElSwitch, ElRate, ElInput, ElInputNumber, ElDatePicker, ElButton } from 'element-plus'
+
+/** 动态字段控件：按 rtype 渲染对应 Element 控件（布局样式渲染共用） */
+export const DynField = defineComponent({
+  name: 'DynField',
+  props: { f: { type: Object, required: true }, modelValue: { type: [String, Number, Boolean], default: undefined } },
+  emits: ['update:modelValue', 'browse'],
+  setup(props, { emit }) {
+    const set = v => emit('update:modelValue', v)
+    return () => {
+      const f = props.f
+      const v = props.modelValue
+      switch (f.rtype) {
+        case 'select': return h(ElSelect, { modelValue: v, 'onUpdate:modelValue': set, style: 'width:100%' },
+          () => (f.optionList || []).map(o => h(ElOption, { key: o.value, label: o.label, value: o.value })))
+        case 'radio': return h(ElRadioGroup, { modelValue: v, 'onUpdate:modelValue': set },
+          () => (f.optionList || []).map(o => h(ElRadio, { key: o.value, value: o.value }, () => o.label)))
+        case 'check': return h(ElCheckbox, { modelValue: v, 'onUpdate:modelValue': set, trueValue: '1', falseValue: '0' }, () => '是')
+        case 'switch': return h(ElSwitch, { modelValue: v, 'onUpdate:modelValue': set, activeValue: '1', inactiveValue: '0' })
+        case 'rate': return h(ElRate, { modelValue: v, 'onUpdate:modelValue': set })
+        case 'browse': return h('div', { style: 'display:flex;gap:8px;width:100%' }, [
+          h(ElInput, { modelValue: v, 'onUpdate:modelValue': set, readonly: true, placeholder: '点击右侧按钮选择数据' }),
+          h(ElButton, { onClick: () => emit('browse') }, () => '浏览…')
+        ])
+        case 'attach': return h(resolveComponent('FileUpload'), { modelValue: v, 'onUpdate:modelValue': set, limit: f.attachLimit || 5, fileSize: 50 })
+        case 'textarea': return h(ElInput, { modelValue: v, 'onUpdate:modelValue': set, type: 'textarea', rows: f.rows || 4 })
+        case 'number': return h(ElInputNumber, { modelValue: v, 'onUpdate:modelValue': set, controls: false, style: 'width:100%' })
+        case 'date': return h(ElDatePicker, { modelValue: v, 'onUpdate:modelValue': set, type: 'date', valueFormat: 'YYYY-MM-DD', placeholder: '选择日期', style: 'width:100%' })
+        case 'datetime': return h(ElDatePicker, { modelValue: v, 'onUpdate:modelValue': set, type: 'datetime', valueFormat: 'YYYY-MM-DD HH:mm:ss', placeholder: '选择日期时间', style: 'width:100%' })
+        default: return h(ElInput, { modelValue: v, 'onUpdate:modelValue': set })
+      }
+    }
+  }
+})
+export default { name: 'FlowLaunch', components: { 'dyn-field': DynField } }
+</script>
+
 <style lang="scss" scoped>
 @use '../model/flow-model.scss';
+
+.dyn-section-title { font-size: 14px; font-weight: 600; color: #0f172a; border-left: 3px solid var(--brand-600, #4f46e5); padding-left: 8px; margin: 6px 0 12px; }
+.dyn-note { background: #fffbeb; border: 1px dashed #fcd34d; border-radius: 6px; color: #b45309; font-size: 12px; padding: 6px 10px; margin-bottom: 4px; line-height: 1.5; }
+.dyn-cell-wrap { border-radius: 4px; padding: 4px 8px; margin-bottom: 4px; }
 
 .flowable-launch-page .cat-groups {
   display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 14px; padding: 16px 20px 20px;

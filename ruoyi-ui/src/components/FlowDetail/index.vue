@@ -28,12 +28,18 @@
           <div class="rd-card-title"><span class="rd-card-icon">i</span>{{ detailData.processDefinitionName || '流程表单' }}</div>
         </div>
         <div class="rd-card-body" style="display:block">
-          <div class="rd-grid" v-if="formFields.length">
-            <div class="rd-item" v-for="f in formFields" :key="f.field">
-              <span class="rd-label">{{ f.label }}</span>
-              <div class="rd-value">{{ formatValue(f, detailData.variables?.[f.field]) }}</div>
-            </div>
-          </div>
+          <FormGridRender v-if="gridLayout" :grid="gridLayout" :fields="formFields" :values="detailData.variables" />
+          <template v-else-if="formGroups.length">
+            <template v-for="(grp, gi) in formGroups" :key="gi">
+              <div class="form-section-title" v-if="grp.title">{{ grp.title }}</div>
+              <div class="rd-grid">
+                <div class="rd-item" v-for="f in grp.fields" :key="f.field" :style="f._span === 24 ? '' : ''">
+                  <span class="rd-label">{{ f.label }}</span>
+                  <div class="rd-value">{{ formatValue(f, detailData.variables?.[f.field]) }}</div>
+                </div>
+              </div>
+            </template>
+          </template>
           <div class="rd-grid" v-else>
             <div class="rd-item" v-for="(v, k) in detailData.variables || {}" :key="k">
               <span class="rd-label">{{ k }}</span><div class="rd-value">{{ v ?? '-' }}</div>
@@ -150,6 +156,8 @@
 
 <script setup name="FlowDetail">
 import request from '@/utils/request'
+import FormGridRender from '@/components/FormGridRender.vue'
+import { parseLayout } from '@/views/flowable/form/designer/converters'
 
 const props = defineProps({
   open: { type: Boolean, default: false },
@@ -164,6 +172,28 @@ const historyTasks = ref([])
 const diagramUrl = ref('')
 const detailTab = ref('form')
 const formFields = ref([])
+const formLayout = ref({ sections: [] })
+/** 网格布局（mode=grid 时走 FormGridRender 只读回显） */
+const gridLayout = ref(null)
+
+/** 表单展示分组：按 layoutJson 分组；无布局时整体单组展示 */
+const formGroups = computed(() => {
+  const all = formFields.value
+  if (!all.length) return []
+  const sections = formLayout.value.sections || []
+  if (!sections.length) return [{ title: '', fields: all }]
+  const byField = {}
+  all.forEach(f => { byField[f.field] = f })
+  const used = new Set()
+  const groups = []
+  for (const sec of sections) {
+    const fields = (sec.rows || []).flat().filter(c => c && c.field && byField[c.field]).map(c => { used.add(c.field); return byField[c.field] })
+    if (fields.length) groups.push({ title: sec.title || '', fields })
+  }
+  const rest = all.filter(f => !used.has(f.field))
+  if (rest.length) groups.push({ title: sections.length ? '其他信息' : '', fields: rest })
+  return groups
+})
 
 const statusStats = computed(() => {
   const tasks = historyTasks.value
@@ -205,6 +235,8 @@ function formatValue(field, val) {
 
 async function loadFormFields(processKey) {
   formFields.value = []
+  formLayout.value = { sections: [] }
+  gridLayout.value = null
   if (!processKey) return
   try {
     const res = await request({ url: '/flowable/form/byProcess/' + processKey, method: 'get' })
@@ -212,15 +244,22 @@ async function loadFormFields(processKey) {
     if (form && form.fieldsJson) {
       formFields.value = JSON.parse(form.fieldsJson) || []
     }
+    if (form && form.layoutJson) {
+      const p = parseLayout(form.layoutJson)
+      if (p.mode === 'grid' && p.grid) gridLayout.value = p.grid
+      else formLayout.value = { sections: p.sections }
+    }
   } catch (e) {}
 }
 
-function load() {
+async function load() {
   if (!props.instanceId) return
   detailData.value = {}
   historyTasks.value = []
   diagramUrl.value = ''
   formFields.value = []
+  formLayout.value = { sections: [] }
+  gridLayout.value = null
   detailTab.value = 'form'
   request({ url: '/flowable/process/' + props.instanceId, method: 'get' }).then(res => {
     detailData.value = res.data || {}
@@ -241,7 +280,7 @@ function load() {
   gap: 4px;
   border-bottom: 1px solid var(--rd-border, #e5e7eb);
   margin-bottom: 12px;
-  .detail-tab {
+  .form-section-title { font-size: 14px; font-weight: 600; color: #0f172a; border-left: 3px solid var(--el-color-primary); padding-left: 8px; margin: 8px 0 4px; }  .detail-tab {
     background: none;
     border: none;
     padding: 10px 16px;
