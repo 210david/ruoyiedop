@@ -1,0 +1,265 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.fin.mapper.FinBankStatementMapper">
+
+    <resultMap id="FinBankStatementResult" type="com.ruoyi.fin.domain.FinBankStatement">
+        <result property="statementId"      column="statement_id"/>
+        <result property="companyId"        column="company_id"/>
+        <result property="accountId"        column="account_id"/>
+        <result property="accountName"      column="account_name"/>
+        <result property="statementDate"    column="statement_date"/>
+        <result property="period"           column="period"/>
+        <result property="beginBalance"     column="begin_balance"/>
+        <result property="bankBeginBalance" column="bank_begin_balance"/>
+        <result property="bankEndBalance"   column="bank_end_balance"/>
+        <result property="bookEndBalance"   column="book_end_balance"/>
+        <result property="diffAmount"       column="diff_amount"/>
+        <result property="status"           column="status"/>
+        <result property="fileName"         column="file_name"/>
+        <result property="importBy"         column="import_by"/>
+        <result property="importTime"       column="import_time"/>
+        <result property="deptId"           column="dept_id"/>
+        <result property="userId"           column="user_id"/>
+        <result property="createBy"         column="create_by"/>
+        <result property="createTime"       column="create_time"/>
+        <result property="remark"           column="remark"/>
+    </resultMap>
+
+    <resultMap id="FinBankStatementItemResult" type="com.ruoyi.fin.domain.FinBankStatementItem">
+        <result property="itemId"              column="item_id"/>
+        <result property="statementId"         column="statement_id"/>
+        <result property="transDate"           column="trans_date"/>
+        <result property="transType"           column="trans_type"/>
+        <result property="transAmount"         column="trans_amount"/>
+        <result property="balanceAfter"        column="balance_after"/>
+        <result property="counterparty"        column="counterparty"/>
+        <result property="counterpartyAccount" column="counterparty_account"/>
+        <result property="summary"             column="summary"/>
+        <result property="voucherNo"           column="voucher_no"/>
+        <result property="flowId"              column="flow_id"/>
+        <result property="matchStatus"         column="match_status"/>
+        <result property="createTime"          column="create_time"/>
+    </resultMap>
+
+    <sql id="selectStatementVo">
+        SELECT s.statement_id, s.company_id, s.account_id, s.account_name, s.statement_date, s.period,
+               s.begin_balance, s.bank_begin_balance, s.bank_end_balance, s.book_end_balance,
+               s.diff_amount, s.status, s.file_name, s.import_by, s.import_time,
+               s.dept_id, s.user_id, s.create_by, s.create_time, s.remark
+        FROM fin_bank_statement s
+    </sql>
+
+    <select id="selectStatementList" parameterType="com.ruoyi.fin.domain.FinBankStatement"
+            resultMap="FinBankStatementResult">
+        <include refid="selectStatementVo"/>
+        <where>
+            <if test="accountId != null">
+                AND s.account_id = #{accountId}
+            </if>
+            <if test="period != null and period != ''">
+                AND s.period = #{period}
+            </if>
+            <if test="status != null and status != ''">
+                AND s.status = #{status}
+            </if>
+            AND s.del_flag = '0'
+        </where>
+        ORDER BY s.statement_date DESC, s.statement_id DESC
+    </select>
+
+    <select id="selectStatementById" parameterType="java.lang.Long" resultMap="FinBankStatementResult">
+        <include refid="selectStatementVo"/>
+        WHERE s.statement_id = #{statementId} AND s.del_flag = '0'
+    </select>
+
+    <select id="selectByAccountDate" resultMap="FinBankStatementResult">
+        <include refid="selectStatementVo"/>
+        WHERE s.account_id = #{accountId}
+          AND s.statement_date = #{statementDate}
+          AND s.del_flag = '0'
+        LIMIT 1
+    </select>
+
+    <insert id="insertStatement" parameterType="com.ruoyi.fin.domain.FinBankStatement"
+            useGeneratedKeys="true" keyProperty="statementId">
+        INSERT INTO fin_bank_statement (
+            account_id, statement_date, period,
+            begin_balance, bank_begin_balance, bank_end_balance, book_end_balance, diff_amount,
+            status, file_name, import_by, import_time, dept_id, user_id,
+            create_by, create_time, remark
+        ) VALUES (
+            #{accountId}, #{statementDate}, #{period},
+            #{beginBalance}, #{bankBeginBalance}, #{bankEndBalance}, #{bookEndBalance}, #{diffAmount},
+            #{status}, #{fileName}, #{importBy}, #{importTime}, #{deptId}, #{userId},
+            #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateStatement" parameterType="com.ruoyi.fin.domain.FinBankStatement">
+        UPDATE fin_bank_statement
+        <set>
+            <if test="beginBalance != null">begin_balance = #{beginBalance},</if>
+            <if test="bankBeginBalance != null">bank_begin_balance = #{bankBeginBalance},</if>
+            <if test="bankEndBalance != null">bank_end_balance = #{bankEndBalance},</if>
+            <if test="bookEndBalance != null">book_end_balance = #{bookEndBalance},</if>
+            <if test="diffAmount != null">diff_amount = #{diffAmount},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate(),
+        </set>
+        WHERE statement_id = #{statementId}
+    </update>
+
+    <update id="deleteStatementByIds" parameterType="java.lang.Long">
+        UPDATE fin_bank_statement SET del_flag = '2', update_time = sysdate()
+        WHERE statement_id IN
+        <foreach collection="array" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <!-- ==================== 明细 ==================== -->
+
+    <insert id="insertItems" parameterType="java.util.List">
+        INSERT INTO fin_bank_statement_item (
+            statement_id, trans_date, trans_type, trans_amount, balance_after,
+            counterparty, counterparty_account, summary, voucher_no, match_status, create_time
+        ) VALUES
+        <foreach collection="list" item="i" separator=",">
+            (#{i.statementId}, #{i.transDate}, #{i.transType}, #{i.transAmount}, #{i.balanceAfter},
+             #{i.counterparty}, #{i.counterpartyAccount}, #{i.summary}, #{i.voucherNo}, #{i.matchStatus},
+             sysdate())
+        </foreach>
+    </insert>
+
+    <select id="selectItems" resultMap="FinBankStatementItemResult">
+        SELECT item_id, statement_id, trans_date, trans_type, trans_amount, balance_after,
+               counterparty, counterparty_account, summary, voucher_no, flow_id, match_status, create_time
+        FROM fin_bank_statement_item
+        WHERE statement_id = #{statementId}
+          AND del_flag = '0'
+        <if test="matchStatus != null and matchStatus != ''">
+            AND match_status = #{matchStatus}
+        </if>
+        ORDER BY trans_date, item_id
+    </select>
+
+    <update id="deleteItemsByStatement" parameterType="java.lang.Long">
+        UPDATE fin_bank_statement_item SET del_flag = '2'
+        WHERE statement_id = #{statementId}
+    </update>
+
+    <!--
+      标记已匹配。match_status='0' 前置条件（D-08 修复）：
+      已匹配明细不可被直接改绑，须先 unmarkMatch 解除——
+      否则一笔账面流水可被悄悄换绑且不留痕，对账结果失真。
+    -->
+    <update id="markMatched">
+        UPDATE fin_bank_statement_item
+        SET flow_id      = #{flowId},
+            match_status = '1'
+        WHERE item_id = #{itemId} AND del_flag = '0'
+          AND match_status = '0'
+    </update>
+
+    <update id="unmarkMatch" parameterType="java.lang.Long">
+        UPDATE fin_bank_statement_item
+        SET flow_id      = NULL,
+            match_status = '0'
+        WHERE item_id = #{itemId} AND del_flag = '0'
+    </update>
+
+    <!-- ==================== 勾稽核对 ==================== -->
+
+    <!-- 银行流水合计：trans_amount 已按收入正、支出负存储，可直接求和 -->
+    <select id="sumBankFlow" resultType="java.util.LinkedHashMap">
+        SELECT COUNT(*)                             AS count,
+               COALESCE(SUM(trans_amount), 0)       AS totalAmount,
+               COALESCE(SUM(CASE WHEN trans_amount &gt; 0 THEN trans_amount ELSE 0 END), 0) AS inAmount,
+               COALESCE(SUM(CASE WHEN trans_amount &lt; 0 THEN -trans_amount ELSE 0 END), 0) AS outAmount
+        FROM fin_bank_statement_item
+        WHERE statement_id = #{statementId} AND del_flag = '0'
+    </select>
+
+    <!-- 账面资金流水合计：需按方向换算为带符号金额 -->
+    <select id="sumBookFlow" resultType="java.util.LinkedHashMap">
+        SELECT COUNT(*)  AS count,
+               COALESCE(SUM(CASE WHEN direction = 'IN' THEN amount ELSE 0 END), 0)  AS inAmount,
+               COALESCE(SUM(CASE WHEN direction = 'OUT' THEN amount ELSE 0 END), 0) AS outAmount,
+               COALESCE(SUM(CASE WHEN direction = 'IN' THEN amount ELSE -amount END), 0) AS netAmount
+        FROM fin_cash_flow
+        WHERE account_id = #{accountId}
+          AND flow_date BETWEEN #{beginDate} AND #{endDate}
+          AND del_flag = '0'
+    </select>
+
+    <!--
+      候选匹配：同期同账户、金额绝对值一致、日期在±3 天内。
+      金额必须严格相等（容差 0.01），避免误配导致对账虚假平。
+    -->
+    <select id="selectMatchCandidates" resultType="java.util.LinkedHashMap">
+        SELECT f.flow_id      AS flowId,
+               f.flow_no      AS flowNo,
+               f.flow_date    AS flowDate,
+               f.direction    AS direction,
+               f.biz_type     AS bizType,
+               f.amount       AS amount,
+               f.source_key   AS sourceKey,
+               f.remark       AS remark
+        FROM fin_cash_flow f
+        WHERE f.account_id = #{accountId}
+          AND f.del_flag = '0'
+          AND ABS(
+                CASE WHEN f.direction = 'IN' THEN f.amount ELSE -f.amount END
+              - #{amount}
+              ) &lt; 0.01
+          AND f.flow_date BETWEEN DATE_SUB(#{date}, INTERVAL 3 DAY)
+                              AND DATE_ADD(#{date}, INTERVAL 3 DAY)
+        ORDER BY ABS(DATEDIFF(f.flow_date, #{date})), f.flow_id
+        LIMIT 20
+    </select>
+
+    <!-- 未达账项（银行有、账面无或未匹配） -->
+    <select id="selectUnmatched" resultMap="FinBankStatementItemResult">
+        SELECT item_id, statement_id, trans_date, trans_type, trans_amount, balance_after,
+               counterparty, counterparty_account, summary, voucher_no, flow_id, match_status, create_time
+        FROM fin_bank_statement_item
+        WHERE statement_id = #{statementId}
+          AND del_flag = '0'
+          AND match_status != '1'
+        ORDER BY trans_date, item_id
+    </select>
+
+    <!-- 另一类未达账项：账面有、银行无（未被任何银行明细匹配） -->
+    <select id="selectBookOnlyFlow" resultType="java.util.LinkedHashMap">
+        SELECT f.flow_id      AS flowId,
+               f.flow_no      AS flowNo,
+               f.flow_date    AS flowDate,
+               f.direction    AS direction,
+               f.biz_type     AS bizType,
+               f.amount       AS amount,
+               f.source_key   AS sourceKey,
+               f.remark       AS remark,
+               CASE WHEN f.direction = 'IN' THEN f.amount ELSE -f.amount END AS signedAmount
+        FROM fin_cash_flow f
+        WHERE f.account_id = #{accountId}
+          AND f.del_flag = '0'
+          AND f.flow_date BETWEEN #{beginDate} AND #{endDate}
+          AND NOT EXISTS (
+              SELECT 1 FROM fin_bank_statement_item i
+              WHERE i.flow_id = f.flow_id
+                AND i.del_flag = '0'
+          )
+        ORDER BY f.flow_date, f.flow_id
+    </select>
+
+    <select id="matchStat" resultType="java.util.LinkedHashMap">
+        SELECT COUNT(*)                                                  AS total,
+               SUM(CASE WHEN match_status = '1' THEN 1 ELSE 0 END)        AS matched,
+               SUM(CASE WHEN match_status != '1' THEN 1 ELSE 0 END)       AS unmatched,
+               SUM(CASE WHEN match_status != '1' THEN trans_amount ELSE 0 END) AS unmatchedAmount
+        FROM fin_bank_statement_item
+        WHERE statement_id = #{statementId} AND del_flag = '0'
+    </select>
+
+</mapper>

@@ -25,7 +25,8 @@ export function createGrid(rows = GRID_DEFAULT.rows, cols = GRID_DEFAULT.cols) {
 }
 
 export function makeCell(r, c, extra = {}) {
-  return { id: uid(), r, c, rs: 1, cs: 1, type: 'text', text: '', style: {}, ...extra }
+  // style 必须经 hydrateStyle 补全默认键（含 borders），否则空白格首次设置边框时 cell.style.borders 为 undefined 会抛错
+  return { id: uid(), r, c, rs: 1, cs: 1, type: 'text', text: '', style: hydrateStyle({}), ...extra }
 }
 
 /** 占位矩阵：M[r][c] = {cell,anchor:true} | {skip:true} | null(空白格) */
@@ -123,8 +124,20 @@ export function deleteCol(g, at) {
   }
 }
 
+const PCT_RE = /^\d+(\.\d+)?%$/
+/** 百分比列宽（字符串 "N%"，1~100）；其余为像素数值 */
+export function isPct(w) { return typeof w === 'string' && PCT_RE.test(w) && parseFloat(w) > 0 && parseFloat(w) <= 100 }
+/** 百分比 → 像素（基准为画布内容区总宽） */
+export function pctToPx(w, totalPx) { return Math.round((totalPx || 1000) * parseFloat(w) / 100) }
+
 export function resizeRow(g, r, h) { if (g.rowHeights[r] !== undefined) g.rowHeights[r] = Math.max(0, Math.round(h)) }
-export function resizeCol(g, c, w) { if (g.colWidths[c] !== undefined) g.colWidths[c] = Math.max(0, Math.round(w)) }
+export function resizeCol(g, c, w) {
+  if (g.colWidths[c] === undefined) return
+  if (typeof w === 'string') { if (isPct(w)) g.colWidths[c] = w; return }
+  g.colWidths[c] = Math.max(0, Math.round(w))
+}
+/** 列宽渲染值：px 数值 → "Npx"；百分比字符串原样返回（相对画布自适应） */
+export function colWStyle(w) { return typeof w === 'number' ? w + 'px' : w }
 
 /** 隐藏的行/列集合（尺寸为 0 即隐藏） */
 export function hiddenSets(g) {
@@ -198,6 +211,7 @@ function slimCell(x) {
   const c = { id: x.id, r: x.r, c: x.c, rs: x.rs || 1, cs: x.cs || 1, type: x.type || 'text' }
   if (c.type === 'field' && x.field) c.field = x.field
   if (['title', 'text', 'note'].includes(c.type)) c.text = x.text || ''
+  if (c.type === 'image' && x.src) c.src = x.src
   if (x.labelField) c.labelField = x.labelField
   if (x.attr) c.attr = x.attr
   if (x.detail) c.detail = x.detail
@@ -217,7 +231,7 @@ export function serializeGrid(g) {
 export function normalizeGrid(obj) {
   const g = createGrid(obj && obj.rows > 0 ? obj.rows : GRID_DEFAULT.rows, obj && obj.cols > 0 ? obj.cols : GRID_DEFAULT.cols)
   if (Array.isArray(obj && obj.rowHeights)) obj.rowHeights.forEach((h, i) => { if (i < g.rows && h >= 20) g.rowHeights[i] = h })
-  if (Array.isArray(obj && obj.colWidths)) obj.colWidths.forEach((w, i) => { if (i < g.cols && w >= 40) g.colWidths[i] = w })
+  if (Array.isArray(obj && obj.colWidths)) obj.colWidths.forEach((w, i) => { if (i < g.cols && (isPct(w) || (typeof w === 'number' && w >= 40))) g.colWidths[i] = w })
   g.rowheadW = Math.max(24, Math.min(120, (obj && obj.rowheadW) || 34))
   const seen = new Set()
   for (const raw of ((obj && obj.cells) || [])) {
@@ -229,6 +243,7 @@ export function normalizeGrid(obj) {
     const cell = { id: raw.id || uid(), r, c, rs: Math.max(1, raw.rs | 0), cs: Math.max(1, raw.cs | 0), type: raw.type || 'text', style: hydrateStyle(raw.style) }
     if (cell.type === 'field') cell.field = raw.field
     if (['title', 'text', 'note'].includes(cell.type)) cell.text = raw.text || ''
+    if (cell.type === 'image' && raw.src) cell.src = raw.src
     if (raw.labelField) cell.labelField = raw.labelField
     if (raw.attr) cell.attr = raw.attr
     if (raw.detail) cell.detail = raw.detail
@@ -239,7 +254,8 @@ export function normalizeGrid(obj) {
 }
 
 /** 单元格样式 → 内联 CSS（设计态与运行态共用） */
-export function cellCss(st) {
+// noGrid=true 为运行/预览渲染模式：不显示默认浅灰编辑网格线，s:0（无边框）= 真正无边框，只保留用户绘制的边框
+export function cellCss(st, noGrid) {
   const o = {}
   if (!st) return o
   o.fontFamily = st.font || FONT_DEF
@@ -260,8 +276,11 @@ export function cellCss(st) {
     const e = B[k]
     if (!e) continue
     const key = 'border' + k[0].toUpperCase() + k.slice(1)
-    if (e.s === 0) o[key] = 'none'
-    else o[key] = (wMap[e.s] || '1px') + ' ' + (sMap[e.s] || 'solid') + ' ' + (e.c || '#333333')
+    // s:0（无边框）≠ border:none：collapse 表格中 none 会把默认浅色背景网格线一并擦除。
+    // 泛微口径：无边框 = 清掉用户加的边框、恢复表格默认背景线；只有合并单元格内部才真正无线。
+    // e.w：宽度覆盖（px）——共享边邻格跨度超出时，锚点侧边加粗以赢得 collapse 裁决（宽者优先）
+    if (e.s === 0) { if (!noGrid) o[key] = '1px solid ' + (BORDER_DEF.c || '#dbe3ec') }
+    else o[key] = (e.w ? e.w + 'px' : (wMap[e.s] || '1px')) + ' ' + (sMap[e.s] || 'solid') + ' ' + (e.c || '#333333')
   }
   return o
 }

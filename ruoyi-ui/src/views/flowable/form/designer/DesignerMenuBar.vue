@@ -45,6 +45,7 @@ const menus = [
     { cmd: 'ins_col_right', label: '右侧插入一列' },
     { cmd: 'ins_title', label: '标题行', divided: true },
     { cmd: 'ins_note', label: '说明行' },
+    { cmd: 'ins_image', label: '图片…' },
     { cmd: 'ins_detail', label: '明细表', tag: 'P1', disabled: true }
   ] },
   { key: 'field', label: '字段属性', items: [

@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.fin.mapper.FinInventoryCostMapper">
+
+    <resultMap id="FinInventoryCostResult" type="com.ruoyi.fin.domain.FinInventoryCost">
+        <result property="costId"         column="cost_id"/>
+        <result property="companyId"      column="company_id"/>
+        <result property="materialId"     column="material_id"/>
+        <result property="materialCode"   column="material_code"/>
+        <result property="materialName"   column="material_name"/>
+        <result property="warehouseId"    column="warehouse_id"/>
+        <result property="locationId"     column="location_id"/>
+        <result property="batchNo"        column="batch_no"/>
+        <result property="qty"            column="qty"/>
+        <result property="unitCost"       column="unit_cost"/>
+        <result property="totalCost"      column="total_cost"/>
+        <result property="costMethod"     column="cost_method"/>
+        <result property="sourceModule"   column="source_module"/>
+        <result property="sourceType"     column="source_type"/>
+        <result property="sourceId"       column="source_id"/>
+        <result property="inboundOrderId" column="inbound_order_id"/>
+        <result property="lastInDate"     column="last_in_date"/>
+        <result property="version"        column="version"/>
+        <result property="createBy"       column="create_by"/>
+        <result property="createTime"     column="create_time"/>
+        <result property="updateBy"       column="update_by"/>
+        <result property="updateTime"     column="update_time"/>
+        <result property="remark"         column="remark"/>
+    </resultMap>
+
+    <sql id="selectCostVo">
+        SELECT cost_id, company_id, material_id, material_code, material_name,
+               warehouse_id, location_id, batch_no, qty, unit_cost, total_cost,
+               cost_method, source_module, source_type, source_id, inbound_order_id,
+               last_in_date, version,
+               create_by, create_time, update_by, update_time, remark
+        FROM fin_inventory_cost
+    </sql>
+
+    <select id="selectCostList" parameterType="com.ruoyi.fin.domain.FinInventoryCost" resultMap="FinInventoryCostResult">
+        <include refid="selectCostVo"/>
+        <where>
+            <if test="materialCode != null and materialCode != ''">
+                AND material_code LIKE CONCAT('%', #{materialCode}, '%')
+            </if>
+            <if test="materialName != null and materialName != ''">
+                AND material_name LIKE CONCAT('%', #{materialName}, '%')
+            </if>
+            <if test="materialId != null">
+                AND material_id = #{materialId}
+            </if>
+            <if test="warehouseId != null">
+                AND warehouse_id = #{warehouseId}
+            </if>
+            AND del_flag = '0'
+        </where>
+        ORDER BY material_code, warehouse_id, location_id, batch_no
+    </select>
+
+    <select id="selectByDim" resultMap="FinInventoryCostResult">
+        <include refid="selectCostVo"/>
+        WHERE material_id  = #{materialId}
+          AND warehouse_id = #{warehouseId}
+          AND location_id  = #{locationId}
+          AND batch_no     = #{batchNo}
+          AND del_flag     = '0'
+        LIMIT 1
+    </select>
+
+    <!--
+      【P0-2 并发】计价写入前锁定成本台账行。
+      与 wms_inventory 的 FOR UPDATE 做法一致，防止两张出库单并发结转
+      读到同一 unit_cost 导致总成本失真。
+    -->
+    <select id="selectByDimForUpdate" resultMap="FinInventoryCostResult">
+        <include refid="selectCostVo"/>
+        WHERE material_id  = #{materialId}
+          AND warehouse_id = #{warehouseId}
+          AND location_id  = #{locationId}
+          AND batch_no     = #{batchNo}
+          AND del_flag     = '0'
+        FOR UPDATE
+    </select>
+
+    <select id="sumByMaterial" resultType="java.util.LinkedHashMap">
+        SELECT COALESCE(SUM(qty), 0)                AS totalQty,
+               COALESCE(SUM(total_cost), 0)         AS totalCost,
+               CASE WHEN SUM(qty) = 0 THEN 0
+                    ELSE ROUND(SUM(total_cost) / SUM(qty), 4) END AS avgCost
+        FROM fin_inventory_cost
+        WHERE material_id  = #{materialId}
+          AND warehouse_id = #{warehouseId}
+          AND del_flag     = '0'
+    </select>
+
+    <insert id="insertCost" parameterType="com.ruoyi.fin.domain.FinInventoryCost" useGeneratedKeys="true" keyProperty="costId">
+        INSERT INTO fin_inventory_cost (
+            material_id, material_code, material_name,
+            warehouse_id, location_id, batch_no, qty, unit_cost, total_cost, cost_method,
+            source_module, source_type, source_id, inbound_order_id, last_in_date, version,
+            create_by, create_time, remark
+        ) VALUES (
+            #{materialId}, #{materialCode}, #{materialName},
+            #{warehouseId}, #{locationId}, #{batchNo}, #{qty}, #{unitCost}, #{totalCost}, #{costMethod},
+            #{sourceModule}, #{sourceType}, #{sourceId}, #{inboundOrderId}, #{lastInDate}, 0,
+            #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <!--
+      更新成本记录：带 version 乐观锁。
+      version 不匹配时影响行数为 0，Service 据此重试或报错，
+      防止并发覆盖导致成本金额失真。
+    -->
+    <update id="updateCost" parameterType="com.ruoyi.fin.domain.FinInventoryCost">
+        UPDATE fin_inventory_cost
+        SET qty              = #{qty},
+            unit_cost        = #{unitCost},
+            total_cost       = #{totalCost},
+            cost_method      = #{costMethod},
+            last_in_date     = #{lastInDate},
+            version          = version + 1,
+            update_by        = #{updateBy},
+            update_time      = sysdate(),
+            <if test="inboundOrderId != null">inbound_order_id = #{inboundOrderId},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        WHERE cost_id = #{costId}
+          AND version = #{version}
+    </update>
+
+    <select id="sumValuation" resultType="java.util.LinkedHashMap">
+        SELECT material_id, material_code, MAX(material_name) AS material_name,
+               SUM(qty) AS qty, SUM(total_cost) AS totalCost
+        FROM fin_inventory_cost
+        WHERE del_flag = '0'
+        GROUP BY material_id, material_code
+        ORDER BY material_code
+    </select>
+
+    <select id="sumTotalCost" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(total_cost), 0) FROM fin_inventory_cost WHERE del_flag = '0'
+    </select>
+
+    <select id="countCost" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM fin_inventory_cost WHERE del_flag = '0'
+    </select>
+
+</mapper>

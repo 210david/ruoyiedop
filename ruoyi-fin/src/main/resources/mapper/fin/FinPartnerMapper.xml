@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.fin.mapper.FinPartnerMapper">
+
+    <resultMap id="FinPartnerResult" type="com.ruoyi.fin.domain.FinPartner">
+        <result property="partnerId"      column="partner_id"/>
+        <result property="companyId"      column="company_id"/>
+        <result property="partnerCode"    column="partner_code"/>
+        <result property="partnerName"    column="partner_name"/>
+        <result property="partnerType"    column="partner_type"/>
+        <result property="sourceModule"   column="source_module"/>
+        <result property="sourceId"       column="source_id"/>
+        <result property="taxNumber"      column="tax_number"/>
+        <result property="invoiceTitle"   column="invoice_title"/>
+        <result property="invoiceAddress" column="invoice_address"/>
+        <result property="invoicePhone"   column="invoice_phone"/>
+        <result property="paymentDays"    column="payment_days"/>
+        <result property="settlementType" column="settlement_type"/>
+        <result property="currency"       column="currency"/>
+        <result property="creditLimit"    column="credit_limit"/>
+        <result property="creditUsed"     column="credit_used"/>
+        <result property="deptId"         column="dept_id"/>
+        <result property="userId"         column="user_id"/>
+        <result property="status"         column="status"/>
+        <result property="createBy"       column="create_by"/>
+        <result property="createTime"     column="create_time"/>
+        <result property="updateBy"       column="update_by"/>
+        <result property="updateTime"     column="update_time"/>
+        <result property="remark"         column="remark"/>
+    </resultMap>
+
+    <sql id="selectPartnerVo">
+        SELECT partner_id, company_id, partner_code, partner_name, partner_type,
+               source_module, source_id, tax_number, invoice_title, invoice_address,
+               invoice_phone, payment_days, settlement_type, currency,
+               credit_limit, credit_used, dept_id, user_id, status,
+               create_by, create_time, update_by, update_time, remark
+        FROM fin_partner
+    </sql>
+
+    <!--
+      数据权限（unified-development-standards.md 3.5.3）：
+      Service 侧 @DataScope(deptAlias="partner", userAlias="user_id")
+      因此本查询以 p 为表别名，dataScope 注入的是 p.dept_id / p.user_id。
+    -->
+    <select id="selectPartnerList" parameterType="com.ruoyi.fin.domain.FinPartner" resultMap="FinPartnerResult">
+        SELECT p.partner_id, p.company_id, p.partner_code, p.partner_name, p.partner_type,
+               p.source_module, p.source_id, p.tax_number, p.invoice_title, p.invoice_address,
+               p.invoice_phone, p.payment_days, p.settlement_type, p.currency,
+               p.credit_limit, p.credit_used, p.dept_id, p.user_id, p.status,
+               p.create_by, p.create_time, p.update_by, p.update_time, p.remark
+        FROM fin_partner p
+        <where>
+            <if test="partnerName != null and partnerName != ''">
+                AND p.partner_name LIKE CONCAT('%', #{partnerName}, '%')
+            </if>
+            <if test="partnerCode != null and partnerCode != ''">
+                AND p.partner_code LIKE CONCAT('%', #{partnerCode}, '%')
+            </if>
+            <if test="partnerType != null and partnerType != ''">
+                AND p.partner_type = #{partnerType}
+            </if>
+            <if test="status != null and status != ''">
+                AND p.status = #{status}
+            </if>
+            AND p.del_flag = '0'
+            <!-- 数据权限过滤（框架切面注入） -->
+            <if test="params.dataScope != null and params.dataScope != ''">
+                AND ${params.dataScope}
+            </if>
+        </where>
+        ORDER BY p.partner_type, p.partner_code, p.partner_id
+    </select>
+
+    <select id="selectPartnerById" parameterType="java.lang.Long" resultMap="FinPartnerResult">
+        <include refid="selectPartnerVo"/>
+        WHERE partner_id = #{partnerId} AND del_flag = '0'
+    </select>
+
+    <!-- 映射既有主数据，避免重复建档 -->
+    <select id="selectBySource" resultMap="FinPartnerResult">
+        <include refid="selectPartnerVo"/>
+        WHERE source_module = #{sourceModule}
+          AND source_id     = #{sourceId}
+          AND del_flag      = '0'
+        LIMIT 1
+    </select>
+
+    <!-- 已被凭证辅助核算引用时禁止删除 -->
+    <select id="countVoucherUsage" parameterType="java.lang.Long" resultType="java.lang.Integer">
+        SELECT
+          (SELECT COUNT(*) FROM fin_voucher_entry
+            WHERE aux_customer_id = #{partnerId} AND del_flag = '0')
+        +
+          (SELECT COUNT(*) FROM fin_voucher_entry
+            WHERE aux_supplier_id = #{partnerId} AND del_flag = '0')
+    </select>
+
+    <insert id="insertPartner" parameterType="com.ruoyi.fin.domain.FinPartner" useGeneratedKeys="true" keyProperty="partnerId">
+        INSERT INTO fin_partner (
+            partner_code, partner_name, partner_type, source_module, source_id,
+            tax_number, invoice_title, invoice_address, invoice_phone,
+            payment_days, settlement_type, currency,
+            credit_limit, credit_used, dept_id, user_id, status,
+            create_by, create_time, remark
+        ) VALUES (
+            #{partnerCode}, #{partnerName}, #{partnerType}, #{sourceModule}, #{sourceId},
+            #{taxNumber}, #{invoiceTitle}, #{invoiceAddress}, #{invoicePhone},
+            #{paymentDays}, #{settlementType}, #{currency},
+            #{creditLimit}, #{creditUsed}, #{deptId}, #{userId}, #{status},
+            #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updatePartner" parameterType="com.ruoyi.fin.domain.FinPartner">
+        UPDATE fin_partner
+        <set>
+            <if test="partnerCode != null and partnerCode != ''">partner_code = #{partnerCode},</if>
+            <if test="partnerName != null and partnerName != ''">partner_name = #{partnerName},</if>
+            <if test="partnerType != null and partnerType != ''">partner_type = #{partnerType},</if>
+            <if test="taxNumber != null">tax_number = #{taxNumber},</if>
+            <if test="invoiceTitle != null">invoice_title = #{invoiceTitle},</if>
+            <if test="invoiceAddress != null">invoice_address = #{invoiceAddress},</if>
+            <if test="invoicePhone != null">invoice_phone = #{invoicePhone},</if>
+            <if test="paymentDays != null">payment_days = #{paymentDays},</if>
+            <if test="settlementType != null">settlement_type = #{settlementType},</if>
+            <if test="creditLimit != null">credit_limit = #{creditLimit},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            update_time = sysdate(),
+            <if test="remark != null">remark = #{remark},</if>
+        </set>
+        WHERE partner_id = #{partnerId}
+    </update>
+
+    <update id="deletePartnerByIds" parameterType="java.lang.Long">
+        UPDATE fin_partner SET del_flag = '2', update_time = sysdate()
+        WHERE partner_id IN
+        <foreach collection="array" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <select id="checkNameUnique" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM fin_partner
+        WHERE partner_name = #{partnerName}
+          AND partner_type = #{partnerType}
+          AND del_flag = '0'
+        <if test="partnerId != null">AND partner_id != #{partnerId}</if>
+    </select>
+
+</mapper>

@@ -20,7 +20,7 @@
       </el-radio-group>
     </div>
     <div class="rw-tip" v-if="err">{{ err }}</div>
-    <div class="rw-tip ok" v-else-if="kind === 'col' && unit === 'pct'">百分比按画布总宽自动折算为像素</div>
+    <div class="rw-tip ok" v-else-if="kind === 'col' && unit === 'pct'">百分比将随画布宽度自适应，保存后保持百分比不折算</div>
     <template #footer>
       <div class="rw-footer">
         <el-button type="primary" @click="confirm">确 定</el-button>
@@ -39,6 +39,7 @@ const props = defineProps({
   kind: { type: String, default: 'row' },   // row | col
   index: { type: Number, default: 0 },
   current: { type: Number, default: 30 },
+  currentIsPct: { type: Boolean, default: false },  // 当前列宽是否为百分比（打开时默认选中百分比单位）
   totalPx: { type: Number, default: 1000 }  // 百分比折算基准（画布总宽/总高）
 })
 const emit = defineEmits(['update:open', 'apply'])
@@ -51,7 +52,7 @@ watch(() => props.open, v => {
   if (!v) return
   err.value = ''
   val.value = String(props.current)
-  unit.value = 'px'
+  unit.value = props.currentIsPct ? 'pct' : 'px'
 })
 
 function confirm() {
@@ -60,8 +61,8 @@ function confirm() {
   if (!val.value || isNaN(n) || n <= 0) { err.value = '注：' + (props.kind === 'row' ? '行高' : '列宽') + '值不能为零或负数！'; return }
   if (props.kind === 'col' && unit.value === 'pct') {
     if (n > 100) { err.value = '注：百分比不能超过 100！'; return }
-    const px = Math.max(40, Math.round((props.totalPx || 1000) * n / 100))
-    emit('apply', { kind: props.kind, index: props.index, px })
+    // 百分比原样持久化（"N%"），渲染时按画布总宽自适应折算
+    emit('apply', { kind: props.kind, index: props.index, pct: (Math.round(n * 10) / 10) + '%' })
     emit('update:open', false)
     return
   }

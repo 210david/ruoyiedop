@@ -1375,10 +1375,12 @@ onActivated(() => { getList() })
 .ed-ctx-item:hover { background: #f1f5f9; }
 .ed-ctx-item.danger { color: #ef4444; }
 .ed-ctx-item.danger:hover { background: #fef2f2; }
-.layout-preview { margin: 0; padding: 14px 16px; border: 1px solid #e2e8f0; border-radius: 10px; max-height: 470px; overflow: auto; }
+/* 预览态不显示默认背景框，只保留内容（用户设置的边框由 pv-b-* 条件类渲染） */
+.layout-preview { margin: 0; padding: 14px 16px; max-height: 470px; overflow: auto; }
 .pv-section-title { font-size: 14px; font-weight: 600; color: #0f172a; border-left: 3px solid var(--brand-600, #4f46e5); padding-left: 8px; margin: 6px 0 10px; }
 .pv-row { margin-bottom: 4px; }
-.pv-item { display: flex; align-items: flex-start; border-bottom: 1px dashed #eef2f7; padding: 6px 4px; min-height: 34px; }
+/* 预览态不显示默认线框，只显示用户设置的边框（pv-b-all / pv-b-bottom 由 c.border 条件类控制） */
+.pv-item { display: flex; align-items: flex-start; padding: 6px 4px; min-height: 34px; }
 .pv-label { width: 120px; flex: none; font-size: 13px; color: var(--ink-500, #64748b); }
 .pv-value { flex: 1; font-size: 13px; color: #cbd5e1; }
 .pv-note { background: #fffbeb; border: 1px dashed #fcd34d; border-radius: 6px; color: #b45309; font-size: 12px; padding: 6px 10px; margin: 2px 0 6px; }

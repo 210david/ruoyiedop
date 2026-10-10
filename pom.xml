@@ -255,6 +255,13 @@
                 <version>${ruoyi.version}</version>
             </dependency>
 
+            <!-- FIN财务管理模块-->
+            <dependency>
+                <groupId>com.ruoyi</groupId>
+                <artifactId>ruoyi-fin</artifactId>
+                <version>${ruoyi.version}</version>
+            </dependency>
+
             <!-- HTML解析-->
             <dependency>
                 <groupId>org.jsoup</groupId>
@@ -283,6 +290,7 @@
         <module>ruoyi-hr</module>
         <module>ruoyi-flowable</module>
         <module>ruoyi-bid</module>
+        <module>ruoyi-fin</module>
     </modules>
     <packaging>pom</packaging>
 

@@ -24,14 +24,15 @@
 .wm-designer .wm-fill-col { width: auto; }
 .wm-designer .wm-fill-cell { background: #fbfcfe; }
 .wm-designer table.wm-grid th, .wm-designer table.wm-grid td { border: 1px solid var(--wm-line); }
+/* 边框冲突修复：collapse 模式下相邻格边框冲突裁决中，行号列右框会压过最左数据格的自定义左框、
+   表头下框会压过首行格的自定义上框（同宽同样式时左/上侧格胜出）。
+   将行号列右框与表头下框置为 none（none 优先级低于 solid，数据格边框总能在裁决中胜出）；
+   默认浅色网格线仍由数据格自身边框渲染，默认视觉无回归。
+   已通过像素级复现验证：修复前最左列左框缺失，修复后完整渲染。 */
+.wm-designer table.wm-grid .wm-rowhead { border-right: none; }
+.wm-designer table.wm-grid thead th { border-bottom: none; }
 /* 尾列弹性伸缩：已定义列宽之外的空间由尾列吸收 */
 .wm-designer table.wm-grid col.wm-fill { width: auto !important; }
-.wm-designer table.wm-grid { border-collapse: collapse; table-layout: fixed; width: 100%; }
-/* 末尾弹性填充列：吸收多余宽度，用户列宽精确锁定（对齐 Excel 网格右延） */
-.wm-designer .wm-fill-col { width: auto; }
-.wm-designer .wm-fill-cell { background: #fbfcfe; }
-.wm-designer table.wm-grid th, .wm-designer table.wm-grid td { border: 1px solid var(--wm-line); }
-.wm-designer table.wm-grid th, .wm-designer table.wm-grid td { border: 1px solid var(--wm-line); }
 .wm-designer table.wm-grid td.wm-cell { height: 30px; }
 .wm-designer table.wm-grid thead th {
   background: var(--wm-head); color: #475569; font-size: 11px; font-weight: 600;
@@ -65,20 +66,23 @@
 .wm-rz-dialog .el-dialog__footer { padding: 6px 18px 14px; }
 /* 单元格 */
 .wm-designer .wm-cell { position: relative; padding: 3px 8px; font-size: 12px; background: #fff; vertical-align: middle; min-width: 0; }
-/* 选区底纹（band）优先于单元格自身背景：字段格/文本格被框选时同样显示底纹 */
-.wm-designer .wm-cell.band { background: #eef2ff !important; }
-.wm-designer .wm-cell.sel { outline: 2px solid var(--wm-blue); outline-offset: -2px; box-shadow: 0 0 0 3px rgba(47, 60, 142, .10); z-index: 1; }
-/* 泛微式整行/整列选择底纹：浅蓝填充 + 选区外圈加粗边框（仅选区边缘格生效），不逐格高亮 */
+/* 泛微式多格选区：选区内统一浅灰底；外框用单层细线选框叠加层（.wm-selbox），四边必然完整 */
+.wm-designer .wm-cell.band { background: #e2e2e2 !important; }
 .wm-designer .wm-cell.band.sel { outline: none; box-shadow: none; }
-.wm-designer .wm-cell.band.lead { outline: 2px solid var(--wm-blue); outline-offset: -2px; z-index: 1; }
-.wm-designer .wm-cell.band.band-t { border-top: 2px solid #2b2f3a; }
-.wm-designer .wm-cell.band.band-b { border-bottom: 2px solid #2b2f3a; }
-.wm-designer .wm-cell.band.band-l { border-left: 2px solid #2b2f3a; }
-.wm-designer .wm-cell.band.band-r { border-right: 2px solid #2b2f3a; }
+.wm-designer .wm-canvas { position: relative; }
+.wm-designer .wm-selbox { position: absolute; border: 1px solid #333; pointer-events: none; z-index: 3; box-sizing: border-box; }
+/* 单格选中：蓝色描边线框 */
+.wm-designer .wm-cell.sel { outline: 2px solid var(--wm-blue); outline-offset: -2px; box-shadow: 0 0 0 3px rgba(47, 60, 142, .10); z-index: 1; }
 .wm-designer .wm-cell.t-title { font-weight: 600; }
 .wm-designer .wm-cell.t-note { color: #e0342b; }
+/* 泛微式标签格默认浅蓝底：选中变白底+黑框时对比明显（泛微同款配色） */
+.wm-designer .wm-cell.t-text { background: #dbe9f6; }
 .wm-designer .ph { color: #b6c2d2; }
 .wm-designer .wm-t { display: inline-block; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; }
+/* 下划线/删除线修复：text-decoration 不穿透 inline-block 子元素，
+   .wm-t 因省略号需求为 inline-block，导致 td 上的 textDecoration 不生效；
+   通过 inherit 让内层文本块继承单元格的下划线/删除线样式 */
+.wm-designer .wm-cell .wm-t, .wm-designer .wm-cell .wm-ctrl b { text-decoration: inherit; }
 /* 泛微式字段格：标签列浅黄底 + 右侧控件区，画布视觉密度提升 */
 .wm-designer .wm-f { display: flex; align-items: center; gap: 8px; min-width: 0; height: 100%; }
 .wm-designer .wm-f em {
@@ -89,17 +93,35 @@
 .wm-designer .wm-ctrl { flex: 1; display: flex; align-items: center; gap: 4px; min-width: 0; }
 .wm-designer .wm-box { flex: 1; height: 18px; border: 1px solid var(--wm-line); border-radius: 2px; background: #fbfcfe; display: inline-block; }
 .wm-designer .wm-ico { font-style: normal; font-size: 11px; color: #94a3b8; flex: none; }
+/* 图片格：图片铺满格子、object-fit contain 等比缩放，行高列宽拖动完全不受图片限制
+   （table 单元格内 max-height:100% 不生效会按原图高撑行，必须用绝对定位方案）；
+   对齐用 object-position（左/中/右） */
+.wm-designer .wm-img-wrap { position: relative; display: block; width: 100%; height: 100%; min-width: 0; min-height: 0; overflow: hidden; }
+.wm-designer .wm-img { position: absolute; inset: 0; width: 100%; height: 100%; min-width: 0; min-height: 0; max-width: none; max-height: none; object-fit: contain; object-position: center; display: block; }
+.wm-designer .img-left .wm-img { object-position: left center; }
+.wm-designer .img-right .wm-img { object-position: right center; }
 /* 泛微式：行列号覆盖范围内的空白格保留淡格线；仅末尾弹性填充区（行列号之外）无线 */
 .wm-designer table.wm-grid .wm-fill-cell { background: #fff; border-color: transparent; }
 /* 字段控件只做展示，不接收鼠标事件：按下/拖拽/双击统一落到单元格，保证从控件上也能框选 */
 .wm-designer .wm-f, .wm-designer .wm-f * { pointer-events: none; }
 /* 设计态字段控件聚焦态样式禁用：控件不接收焦点，选区样式统一由单元格呈现 */
 .wm-designer .wm-f * { outline: none !important; box-shadow: none !important; }
-/* 字段格属性标记：必填红星 / 只读眼睛 */
-.wm-designer .wm-attr { font-style: normal; flex: none; margin-right: 2px; }
-.wm-designer .wm-attr.req { color: #f56c6c; font-weight: 700; font-size: 13px; }
-.wm-designer .wm-attr.ro { font-size: 11px; color: #94a3b8; }
-.wm-designer .wm-edit { width: 100%; height: 100%; min-height: 22px; border: 1px solid var(--wm-blue); outline: none; font-size: 12px; padding: 2px 4px; box-sizing: border-box; }
+/* 字段格属性标记：必填红星 / 编辑无标记；只读仅以控件置灰区分（虚线灰边+灰底+灰字），不加图标 */
+.wm-designer .wm-attr {
+  font-style: normal; flex: none; margin-right: 2px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 3px;
+}
+.wm-designer .wm-attr.req { color: #f56c6c; font-weight: 700; font-size: 13px; width: 12px; }
+/* 只读字段控件置灰：虚线灰边 + 灰底 + 斜体灰字，与可编辑控件一眼区分 */
+.wm-designer .wm-f.attr-ro .wm-box { border: 1px dashed #c9d4de; background: #f4f6f8; }
+.wm-designer .wm-f.attr-ro .wm-box b { color: #9aa8b5; font-style: italic; font-weight: 400; }
+.wm-designer .wm-f.attr-ro .wm-ico { color: #b9c4cf; }
+/* 必填字段控件：浅红提示边，呼应红星 */
+.wm-designer .wm-f.attr-req .wm-box { border-color: #f3c1c1; }
+.wm-designer .wm-edit { display: block; width: 100%; height: 100%; min-height: 22px; border: 1px solid var(--wm-blue); outline: none; font-family: inherit; font-size: 12px; text-align: inherit; padding: 0 8px; box-sizing: border-box; background: #fff; }
+/* 编辑态：清零单元格内边距，输入框撑满整格、与外框贴合（泛微同款） */
+.wm-designer .wm-cell.editing { padding: 0; }
 .wm-designer.no-lines table.wm-grid th, .wm-designer.no-lines table.wm-grid td { border-color: transparent; }
 /* 右键菜单（fixed 定位） */
 .wm-ctx { position: fixed; z-index: 3000; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 8px 24px rgba(15, 23, 42, .14); padding: 4px; min-width: 150px; }
@@ -111,7 +133,8 @@
 .wm-ctx-i.danger:hover { background: #fef2f2; }
 /* 全屏预览弹窗（泛微式）：白色表单页面居中，背景灰底 */
 .wm-preview-dialog .el-dialog__body { background: #f0f2f7; height: calc(100vh - 54px); overflow: auto; padding: 12px; }
-.wm-preview-page { background: #fff; margin: 8px auto; padding: 20px 24px; border-radius: 8px; max-width: min(1100px, 96%); min-width: 720px; box-shadow: 0 2px 10px rgba(15, 23, 42, .08); }
+.wm-preview-page { background: #fff; margin: 0 auto; padding: 20px 24px; border-radius: 8px; width: 100%; box-sizing: border-box; box-shadow: 0 2px 10px rgba(15, 23, 42, .08); }
+.wm-preview-actions { display: flex; justify-content: center; gap: 10px; padding: 16px 0 4px; }
 /* 顶栏下拉菜单弹层（挂 body） */
 .wm-menu-popper .el-dropdown-menu__item { font-size: 12px; padding: 6px 14px; }
 .wm-menu-popper .wm-tag { margin-left: 6px; font-size: 10px; color: #94a3b8; }

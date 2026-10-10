@@ -32,14 +32,18 @@
     </div>
     <div class="wm-g" title="线框">
       <el-select :model-value="borderStyle" size="small" @update:model-value="v => (borderStyle = v)" :disabled="!hasSel" style="width:76px">
-        <el-option v-for="b in borderStyles" :key="b.v" :label="b.l" :value="b.v" />
+        <el-option v-for="b in borderStyles" :key="b.v" :label="b.l" :value="b.v">
+          <span class="bd-item"><BorderPresetIcon kind="style" :styleV="b.v" />{{ b.l }}</span>
+        </el-option>
       </el-select>
       <el-color-picker v-model="borderColor" size="small" :disabled="!hasSel" title="线框颜色" />
-      <el-dropdown trigger="click" @command="p => $emit('border', { preset: p, color: borderColor, style: Number(borderStyle) })" :disabled="!hasSel">
-        <button class="wm-btn" :disabled="!hasSel" title="线框类型"><WmIcon name="border-grid" /><i class="caret">▾</i></button>
+      <el-dropdown trigger="click" @command="onBorderPreset" :disabled="!hasSel">
+        <button class="wm-btn" :disabled="!hasSel" :title="'线框类型：' + (presetTitle[borderPreset] || borderPreset)"><BorderPresetIcon :preset="borderPreset" /><i class="caret">▾</i></button>
         <template #dropdown>
           <el-dropdown-menu>
-            <el-dropdown-item v-for="p in borderPresets" :key="p.v" :command="p.v">{{ p.l }}</el-dropdown-item>
+            <el-dropdown-item v-for="p in borderPresets" :key="p.v" :command="p.v">
+              <span class="bd-item"><BorderPresetIcon :preset="p.v" />{{ p.l }}</span>
+            </el-dropdown-item>
           </el-dropdown-menu>
         </template>
       </el-dropdown>
@@ -67,6 +71,7 @@
 <script setup name="WmFormatToolbar">
 import { ref } from 'vue'
 import WmIcon from './WmIcon.vue'
+import BorderPresetIcon from './BorderPresetIcon.vue'
 
 defineProps({
   hasSel: Boolean,
@@ -81,20 +86,28 @@ const emit = defineEmits(['set', 'toggle', 'align', 'valign', 'indent', 'border'
 const fonts = ['Microsoft YaHei', 'SimSun', 'SimHei', 'KaiTi', 'FangSong', 'DengXian']
 const borderColor = ref('#333333')
 const borderStyle = ref('1')
+// 最近一次选择的边框类型：按钮图标跟随变化（无边框→无边框图标等），默认四边框
+const borderPreset = ref('all')
 const borderStyles = [
   { v: '0', l: '无' }, { v: '1', l: '细线' }, { v: '2', l: '粗线' },
   { v: '3', l: '虚线' }, { v: '4', l: '点线' }, { v: '5', l: '双线' }
 ]
 const borderPresets = [
   { v: 'all', l: '四边框' }, { v: 'outer', l: '外框' }, { v: 'none', l: '无边框' },
-  { v: 'top', l: '仅上边框' }, { v: 'bottom', l: '仅下边框' }, { v: 'left', l: '仅左边框' }, { v: 'right', l: '仅右边框' }
+  { v: 'top', l: '仅上边框' }, { v: 'bottom', l: '仅下边框' }, { v: 'left', l: '仅左边框' }, { v: 'right', l: '仅右边框' },
+  { v: 'hinner', l: '内部横线' }, { v: 'vinner', l: '内部竖线' }
 ]
 const alignTitle = { left: '左对齐', center: '居中', right: '右对齐' }
 const valignTitle = { top: '顶对齐', middle: '垂直居中', bottom: '底对齐' }
+const presetTitle = Object.fromEntries(borderPresets.map(p => [p.v, p.l]))
 const FONT_CN = { 'Microsoft YaHei': '微软雅黑', SimSun: '宋体', SimHei: '黑体', KaiTi: '楷体', FangSong: '仿宋', DengXian: '等线' }
 function fontCn(f) { return FONT_CN[f] || f }
 
 function emitSet(k, v) { emit('set', { k, v }) }
+function onBorderPreset(p) {
+  borderPreset.value = p
+  emit('border', { preset: p, color: borderColor, style: Number(borderStyle) })
+}
 </script>
 
 <style lang="scss" scoped>

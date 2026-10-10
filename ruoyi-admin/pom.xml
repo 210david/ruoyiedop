@@ -120,6 +120,12 @@
             <artifactId>ruoyi-bid</artifactId>
         </dependency>
 
+        <!-- FIN财务管理模块（2026-10-09 恢复：原 XML 语法错误已修复，真机回归验证通过） -->
+        <dependency>
+            <groupId>com.ruoyi</groupId>
+            <artifactId>ruoyi-fin</artifactId>
+        </dependency>
+
     </dependencies>
 
     <build>

@@ -86,7 +86,9 @@
         <div class="cf-form">
           <label>线条样式</label>
           <el-select v-model="bdStyle" size="small" style="width:120px">
-            <el-option v-for="b in borderStyles" :key="b.v" :label="b.l" :value="b.v" />
+            <el-option v-for="b in borderStyles" :key="b.v" :label="b.l" :value="b.v">
+              <span class="bd-item"><BorderPresetIcon kind="style" :styleV="b.v" />{{ b.l }}</span>
+            </el-option>
           </el-select>
         </div>
         <div class="cf-form">
@@ -96,7 +98,9 @@
         <div class="cf-form">
           <label>边框类型</label>
           <el-select v-model="bdPreset" size="small" style="width:140px">
-            <el-option v-for="p in borderPresets" :key="p.v" :label="p.l" :value="p.v" />
+            <el-option v-for="p in borderPresets" :key="p.v" :label="p.l" :value="p.v">
+              <span class="bd-item"><BorderPresetIcon :preset="p.v" />{{ p.l }}</span>
+            </el-option>
           </el-select>
           <el-button size="small" type="primary" @click="applyBorder">应用到单元格</el-button>
         </div>
@@ -125,6 +129,8 @@
 
 <script setup name="WmCellFormatDialog">
 import { computed, ref, watch } from 'vue'
+import { ElMessage } from 'element-plus'
+import BorderPresetIcon from './BorderPresetIcon.vue'
 
 const props = defineProps({ open: Boolean, cell: { type: Object, default: null } })
 defineEmits(['update:open'])
@@ -142,7 +148,8 @@ const borderStyles = [
 ]
 const borderPresets = [
   { v: 'all', l: '四边框' }, { v: 'outer', l: '外框' }, { v: 'none', l: '无边框' },
-  { v: 'top', l: '仅上边框' }, { v: 'bottom', l: '仅下边框' }, { v: 'left', l: '仅左边框' }, { v: 'right', l: '仅右边框' }
+  { v: 'top', l: '仅上边框' }, { v: 'bottom', l: '仅下边框' }, { v: 'left', l: '仅左边框' }, { v: 'right', l: '仅右边框' },
+  { v: 'hinner', l: '内部横线' }, { v: 'vinner', l: '内部竖线' }
 ]
 const swatches = ['#ffffff', '#fef3c7', '#fecaca', '#d1fae5', '#dbeafe', '#e0e7ff', '#f3e8ff', '#f1f5f9', '#fde68a', '#bbf7d0']
 const bdStyle = ref('1')
@@ -177,9 +184,18 @@ function setStyle(k, v) {
 function applyBorder() {
   const c = props.cell
   if (!c) return
+  // 内部横线/竖线仅对多格选区有意义（在工具条下拉中使用）；单格对话框中直接提示
+  if (bdPreset.value === 'hinner' || bdPreset.value === 'vinner') {
+    ElMessage.warning('内部横线/竖线需框选多格后从工具条"线框"下拉设置')
+    return
+  }
   const e = bdPreset.value === 'none' ? { s: 0 } : { s: Number(bdStyle.value) || 1, c: bdColor.value || '#333333' }
-  const sides = (bdPreset.value === 'all' || bdPreset.value === 'outer') ? ['top', 'right', 'bottom', 'left'] : [bdPreset.value]
+  // 'none'（无边框）必须显式覆盖四边为 s:0；否则 sides=['none'] 写入无效键，边框不会被清除
+  const all = ['top', 'right', 'bottom', 'left']
+  const sides = (bdPreset.value === 'all' || bdPreset.value === 'outer' || bdPreset.value === 'none') ? all : [bdPreset.value]
   for (const s of sides) c.style.borders[s] = { ...e }
+  // 单边预设（如仅上边框）：其余边显式清除，避免残留旧边框导致"设置不生效"的观感（Excel 同款行为）
+  if (bdPreset.value !== 'all' && bdPreset.value !== 'outer') for (const s of all) if (!sides.includes(s)) c.style.borders[s] = { s: 0 }
 }
 </script>
 

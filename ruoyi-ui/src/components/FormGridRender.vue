@@ -1,12 +1,12 @@
 <template>
   <div class="fgr-wrap">
     <table class="fgr-table" v-if="grid">
-      <colgroup><col v-for="(w, i) in grid.colWidths" :key="i" :style="{ width: w + 'px' }" /><col class="fgr-fill-col" /></colgroup>
+      <colgroup><col v-for="(w, i) in grid.colWidths" :key="i" :style="{ width: colWStyle(w) }" /><col class="fgr-fill-col" /></colgroup>
       <tbody>
         <tr v-for="(row, r) in rowViews" :key="r" :style="{ height: grid.rowHeights[r] + 'px' }">
           <template v-for="(e, ci) in row" :key="r + '-' + ci">
             <td v-if="e.kind !== 'skip'" :rowspan="e.rs || 1" :colspan="e.cs || 1"
-              class="fgr-cell" :class="e.cell ? 't-' + e.cell.type : ''" :style="cellCss(e.cell && e.cell.style)">
+              class="fgr-cell" :class="e.cell ? 't-' + e.cell.type : ''" :style="cellStyle(e.cell && e.cell.style)">
               <template v-if="e.cell">
                 <div v-if="e.cell.type === 'title'" class="fgr-title">{{ e.cell.text || '' }}</div>
                 <div v-else-if="e.cell.type === 'note'" class="fgr-note">{{ e.cell.text || '' }}</div>
@@ -16,6 +16,7 @@
                     <el-form-item :prop="e.cell.field"
                       :rules="fieldReq(e.cell.field) || cellAttr(e.cell) === 'req' ? [{ required: true, message: '请填写' + fieldLabel(e.cell.field), trigger: ['blur', 'change'] }] : []"
                       class="fgr-fi">
+                      <i v-if="fieldReq(e.cell.field) || cellAttr(e.cell) === 'req'" class="req" title="必填">*</i>
                       <grid-control :f="fieldDef(e.cell.field)" :style-obj="e.cell.style" :model-value="values[e.cell.field]"
                         :disabled="cellAttr(e.cell) === 'ro'"
                         @update:model-value="v => (values[e.cell.field] = v)" @browse="fd => $emit('browse', fd)" />
@@ -23,15 +24,18 @@
                   </template>
                   <!-- 详情页 / 预览：泛微式控件回显（空值显示占位提示，带控件图标与必填标记） -->
                   <template v-else>
-                    <span class="val" :class="{ ph: displayValue(e.cell.field, e.cell.style) === null }">
+                    <span class="val" :class="[{ ph: displayValue(e.cell.field, e.cell.style) === null }, 'attr-' + cellAttr(e.cell)]">
                       <i v-if="cellAttr(e.cell) === 'req'" class="req" title="必填">*</i>
-                      <i v-else-if="cellAttr(e.cell) === 'ro'" class="ro" title="只读">👁</i>
                       <span class="val-text">{{ displayValue(e.cell.field, e.cell.style) || placeholderOf(e.cell.field) }}</span>
                       <i v-if="iconOf(e.cell.field)" class="f-ico">{{ iconOf(e.cell.field) }}</i>
                     </span>
                   </template>
                 </div>
                 <div v-else-if="e.cell.type === 'detail'" class="fgr-detail">明细表：{{ e.cell.detail || '—' }}</div>
+                <div v-else-if="e.cell.type === 'image'" class="fgr-img-wrap" :class="'img-' + ((e.cell.style && e.cell.style.align) || 'center')">
+                  <img v-if="e.cell.src" :src="e.cell.src" class="fgr-img" alt="图片" />
+                  <span v-else class="fgr-text ph">图片</span>
+                </div>
                 <div v-else class="fgr-text">{{ e.cell.text || '' }}</div>
               </template>
             </td>
@@ -53,7 +57,9 @@
  */
 import { computed } from 'vue'
 import GridControl, { displayTextOf } from '@/components/FormGridControl.js'
-import { buildRowsView, cellCss } from '@/views/flowable/form/designer/useGridMatrix.js'
+import { buildRowsView, cellCss, colWStyle } from '@/views/flowable/form/designer/useGridMatrix.js'
+// 渲染态不显示编辑网格默认线框，只显示用户绘制的边框
+const cellStyle = st => cellCss(st, true)
 
 const props = defineProps({
   grid: { type: Object, default: null },
@@ -119,12 +125,14 @@ const rowViews = computed(() => {
 </script>
 
 <style lang="scss" scoped>
-.fgr-wrap { min-width: max-content; }
-.fgr-table { border-collapse: collapse; table-layout: fixed; }
+.fgr-wrap { width: 100%; box-sizing: border-box; }
+.fgr-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
 .fgr-fill-col { width: auto; }
 .fgr-fill-cell { background: #fbfcfe; }
-.fgr-cell { border: 1px solid #dbe3ec; padding: 5px 8px; font-size: 13px; background: #fff; vertical-align: middle; min-width: 0; }
+.fgr-cell { padding: 5px 8px; font-size: 13px; background: #fff; vertical-align: middle; min-width: 0; }
 .fgr-cell.t-title { text-align: center; }
+/* 下划线/删除线：textDecoration 由 cellCss 设置在 td 上，块级/弹性子元素需显式继承才能渲染 */
+.fgr-cell .fgr-title, .fgr-cell .fgr-note, .fgr-cell .fgr-text, .fgr-cell .val-text { text-decoration: inherit; }
 .fgr-title { font-weight: 600; }
 .fgr-note { color: #e0342b; font-size: 12px; }
 .fgr-field { display: flex; align-items: flex-start; gap: 8px; min-width: 0; }
@@ -133,11 +141,23 @@ const rowViews = computed(() => {
 .fgr-field .val { flex: 1; color: #0f172a; border: 1px solid #dbe3ec; border-radius: 3px; background: #fbfcfe; min-height: 24px; word-break: break-all; display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; }
 .fgr-field .val.ph .val-text { color: #b6c2d2; }
 .fgr-field .val .req { color: #f56c6c; font-style: normal; font-weight: 700; flex: none; }
-.fgr-field .val .ro { color: #94a3b8; font-style: normal; font-size: 11px; flex: none; }
+/* 只读字段回显置灰：虚线灰边 + 灰底 + 灰字，与可编辑回显区分 */
+.fgr-field .val.attr-ro { border: 1px dashed #c9d4de; background: #f4f6f8; }
+.fgr-field .val.attr-ro .val-text { color: #9aa8b5; }
+.fgr-field .val.attr-ro .f-ico { color: #b9c4cf; }
+/* 必填字段回显：浅红提示边呼应红星 */
+.fgr-field .val.attr-req { border-color: #f3c1c1; }
 .fgr-field .val .val-text { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .fgr-field .val .f-ico { font-style: normal; color: #94a3b8; font-size: 11px; flex: none; }
-.fgr-fi { margin-bottom: 0 !important; flex: 1; min-width: 0; }
+.fgr-fi { margin-bottom: 0 !important; flex: 1; min-width: 0; display: flex; align-items: flex-start; }
+/* 编辑态必填标识：控件前红色星号（与只读回显 .val 内红星同口径） */
+.fgr-fi .req { color: #f56c6c; font-style: normal; margin-right: 2px; line-height: 26px; flex: none; }
 .fgr-fi :deep(.el-form-item__error) { position: static; padding-top: 2px; }
 .fgr-detail { color: #64748b; font-size: 12px; }
 .fgr-text { white-space: pre-wrap; }
+/* 图片格：图片铺满格子、object-fit contain 等比缩放，行高列宽拖动完全不受图片限制；对齐用 object-position */
+.fgr-img-wrap { position: relative; display: block; width: 100%; height: 100%; min-height: 24px; min-width: 0; overflow: hidden; }
+.fgr-img { position: absolute; inset: 0; width: 100%; height: 100%; min-width: 0; min-height: 0; max-width: none; max-height: none; object-fit: contain; object-position: center; display: block; }
+.fgr-img-wrap.img-left .fgr-img { object-position: left center; }
+.fgr-img-wrap.img-right .fgr-img { object-position: right center; }
 </style>
