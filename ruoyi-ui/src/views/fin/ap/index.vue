@@ -1,33 +1,50 @@
 <template>
   <div class="app-container fin-list-page fin-ap-page">
-    <!-- 应付总览 -->
-    <div class="surface summary-bar">
-      <div class="summary-item">
-        <div class="summary-label">应付总额（元）</div>
-        <div class="summary-value">{{ formatAmount(summary.totalAmount) }}</div>
-      </div>
-      <div class="summary-item">
-        <div class="summary-label">已付（元）</div>
-        <div class="summary-value text-paid">{{ formatAmount(summary.paidAmount) }}</div>
-      </div>
-      <div class="summary-item">
-        <div class="summary-label">未付（元）</div>
-        <div class="summary-value text-unpaid">{{ formatAmount(summary.unpaidAmount) }}</div>
-      </div>
-      <div class="summary-item">
-        <div class="summary-label">逾期未付</div>
-        <div class="summary-value" :class="overdueList.length > 0 ? 'text-danger' : ''">
-          {{ overdueList.length }}<span class="summary-unit">笔</span>
+    <!-- 应付总览（stat-card 样式，对齐应收管理页面） -->
+    <el-row :gutter="12" class="mb8">
+      <el-col :span="6">
+        <div class="stat-card">
+          <div class="stat-label">应付总额（元）</div>
+          <div class="stat-value">{{ formatAmount(summary.totalAmount) }}</div>
         </div>
-      </div>
-    </div>
+      </el-col>
+      <el-col :span="6">
+        <div class="stat-card stat-success">
+          <div class="stat-label">已付（元）</div>
+          <div class="stat-value">{{ formatAmount(summary.paidAmount) }}</div>
+        </div>
+      </el-col>
+      <el-col :span="6">
+        <div class="stat-card stat-warning">
+          <div class="stat-label">未付（元）</div>
+          <div class="stat-value">{{ formatAmount(summary.unpaidAmount) }}</div>
+        </div>
+      </el-col>
+      <el-col :span="6">
+        <div class="stat-card stat-danger">
+          <div class="stat-label">逾期未付</div>
+          <div class="stat-value">{{ overdueList.length }}<span class="stat-unit">笔</span></div>
+        </div>
+      </el-col>
+    </el-row>
 
     <!-- ===== 筛选卡片 ===== -->
     <div class="surface filter-card" v-show="showSearch">
       <div class="filter-head">
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+        <div class="adv-link" :class="{ 'is-open': showAdvanced }" @click="showAdvanced = !showAdvanced">
+          高级筛选<el-icon class="chev"><ArrowDown /></el-icon>
+        </div>
       </div>
       <div class="filter-bar">
+        <div class="field">
+          <label>应付单号</label>
+          <div class="control">
+            <el-input v-model="queryParams.apNo" placeholder="请输入单号" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
         <div class="field">
           <label>供应商</label>
           <div class="control">
@@ -38,8 +55,9 @@
         </div>
         <div class="field">
           <label>状态</label>
-          <div class="control">
+          <div class="control is-select">
             <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
+              <template #prefix><el-icon><Filter /></el-icon></template>
               <el-option label="未核销" value="OPEN" />
               <el-option label="部分核销" value="PARTIAL" />
               <el-option label="已核销" value="SETTLED" />
@@ -60,6 +78,15 @@
               style="width: 100%" />
           </div>
         </div>
+        <div class="field" v-show="showAdvanced">
+          <label>会计期间</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.period" placeholder="全部" clearable filterable @change="handleQuery">
+              <template #prefix><el-icon><Filter /></el-icon></template>
+              <el-option v-for="p in periodOptions" :key="p" :label="formatPeriod(p)" :value="p" />
+            </el-select>
+          </div>
+        </div>
       </div>
       <div class="filter-actions">
         <div class="filter-info">
@@ -71,19 +98,18 @@
         </div>
       </div>
     </div>
-
     <div class="surface">
       <div class="toolbar">
         <div class="left">
           <el-button v-hasPermi="['fin:ap:add']" type="primary" icon="Plus" @click="handleGenerate">从发票生成应付单</el-button>
           <el-button v-hasPermi="['fin:ap:pay']" type="warning" icon="Refresh" @click="handleSyncPaid">同步已付金额</el-button>
-          <el-button v-hasPermi="['fin:ap:writeoff']" type="success" icon="CircleCheck" :disabled="!canWriteoff" @click="handleWriteoff">核销</el-button>
           <el-button icon="DataAnalysis" @click="showAging = true">账龄分析</el-button>
           <el-button icon="Warning" @click="showOverdue = true">逾期预警</el-button>
           <el-button v-hasPermi="['fin:ap:export']" icon="Download" @click="handleExport">导出</el-button>
         </div>
         <div class="right">
           <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="fin_ap_columns" />
+          <button class="tip-pill" @click="showStatusHelp = true"><el-icon><WarningFilled /></el-icon><span>业务操作说明</span></button>
         </div>
       </div>
 
@@ -105,11 +131,11 @@
           class="app-table"
           highlight-current
           @current-change="handleCurrentChange"
-          @selection-change="handleSelectionChange"
           @header-dragend="onHeaderDragEnd">
-          <el-table-column type="selection" width="50" align="center" />
           <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" resizable align="center" />
-          <el-table-column prop="apNo" label="应付单号" key="apNo" v-if="columns.apNo.visible" :width="colWidth('应付单号', 160)" resizable align="center" />
+          <el-table-column prop="apNo" label="应付单号" key="apNo" v-if="columns.apNo.visible" :width="colWidth('应付单号', 160)" resizable align="center">
+            <template #default="{ row }"><span class="col-mono">{{ row.apNo }}</span></template>
+          </el-table-column>
           <el-table-column prop="partnerName" label="供应商" key="partnerName" v-if="columns.partnerName.visible" :min-width="colWidth('供应商', 200)" resizable align="center" show-overflow-tooltip />
           <el-table-column prop="sourceKey" label="来源发票" key="sourceKey" v-if="columns.sourceKey.visible" :width="colWidth('来源发票', 150)" resizable align="center">
             <template #default="{ row }">
@@ -154,10 +180,12 @@
               </span>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
+          <el-table-column label="操作" width="180" align="center" fixed="right" class-name="col-action">
             <template #default="{ row }">
               <div class="action-btn-row">
                 <el-button link type="primary" icon="View" @click="handleView(row)">详情</el-button>
+                <el-button v-if="canRowWriteoff(row)" v-hasPermi="['fin:ap:writeoff']"
+                           link type="success" icon="CircleCheck" @click="handleRowWriteoff(row)">核销</el-button>
                 <el-button v-if="row.status !== 'SETTLED' && row.status !== 'VOID'"
                            v-hasPermi="['fin:ap:edit']" link type="warning" icon="Close" @click="handleVoid(row)">作废</el-button>
               </div>
@@ -244,7 +272,18 @@
     </el-dialog>
 
     <!-- 核销弹框 -->
-    <el-dialog v-model="showWriteoff" title="付款核销" width="480px" append-to-body>
+    <el-dialog v-model="showWriteoff" width="480px" append-to-body class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><el-icon :size="20"><CircleCheck /></el-icon></div>
+          <div class="rd-detail-header-main">
+            <div class="rd-detail-header-title">付款核销</div>
+            <div class="rd-detail-header-sub">
+              <span class="rd-detail-header-no">{{ current?.apNo || '' }}</span>
+            </div>
+          </div>
+        </div>
+      </template>
       <el-form label-width="90px">
         <el-form-item label="应付单">
           <el-input :model-value="current?.apNo" disabled />
@@ -272,7 +311,18 @@
     </el-dialog>
 
     <!-- 生成结果 -->
-    <el-dialog v-model="showResult" title="应付单生成结果" width="440px" append-to-body>
+    <el-dialog v-model="showResult" width="440px" append-to-body class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><el-icon :size="20"><Tickets /></el-icon></div>
+          <div class="rd-detail-header-main">
+            <div class="rd-detail-header-title">应付单生成结果</div>
+            <div class="rd-detail-header-sub">
+              <span class="rd-detail-header-no">生成执行留痕</span>
+            </div>
+          </div>
+        </div>
+      </template>
       <el-descriptions :column="1" border v-if="lastResult">
         <el-descriptions-item label="待处理发票">{{ lastResult.total }}</el-descriptions-item>
         <el-descriptions-item label="成功">
@@ -289,7 +339,18 @@
     </el-dialog>
 
     <!-- 账龄分析 -->
-    <el-dialog v-model="showAging" title="应付账龄分析" width="720px" append-to-body>
+    <el-dialog v-model="showAging" width="720px" append-to-body class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><el-icon :size="20"><DataAnalysis /></el-icon></div>
+          <div class="rd-detail-header-main">
+            <div class="rd-detail-header-title">应付账龄分析</div>
+            <div class="rd-detail-header-sub">
+              <span class="rd-detail-header-no">按账龄区间统计未付款项</span>
+            </div>
+          </div>
+        </div>
+      </template>
       <div style="margin-bottom: 12px">
         <el-button type="primary" icon="Search" @click="loadAging">查询</el-button>
       </div>
@@ -308,7 +369,18 @@
     </el-dialog>
 
     <!-- 逾期预警 -->
-    <el-dialog v-model="showOverdue" title="逾期未付预警" width="880px" append-to-body>
+    <el-dialog v-model="showOverdue" width="880px" append-to-body class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><el-icon :size="20"><Warning /></el-icon></div>
+          <div class="rd-detail-header-main">
+            <div class="rd-detail-header-title">逾期未付预警</div>
+            <div class="rd-detail-header-sub">
+              <span class="rd-detail-header-no">已到期仍未付清的应付单</span>
+            </div>
+          </div>
+        </div>
+      </template>
       <el-table :data="overdueList" size="small" border max-height="420">
         <el-table-column prop="apNo" label="应付单号" width="150" align="left" />
         <el-table-column prop="partnerName" label="供应商" min-width="180" align="left" />
@@ -323,10 +395,15 @@
         </el-table-column>
       </el-table>
     </el-dialog>
+    <el-dialog v-model="showStatusHelp" title="应付管理业务操作说明" width="820px" append-to-body>
+      <div class="status-help-content"><h4>一、状态流转图</h4><div class="status-flow"><el-tag type="info">待付</el-tag><span class="flow-arrow">→</span><el-tag type="primary">部分付款</el-tag><span class="flow-arrow">→</span><el-tag type="success">已付清</el-tag><span class="flow-arrow">→</span><el-tag type="warning">已核销</el-tag></div><h4>二、各状态说明</h4><el-descriptions :column="1" border><el-descriptions-item label="待付">应付单已生成，尚未收到任何付款，可跟踪付款进度</el-descriptions-item><el-descriptions-item label="部分付款">已收到部分款项，剩余应付金额继续跟踪</el-descriptions-item><el-descriptions-item label="已付清">应付金额全部付清，单据付款完成</el-descriptions-item><el-descriptions-item label="已核销">应付单与付款完成核销匹配，往来账务闭环</el-descriptions-item></el-descriptions><h4>三、重点业务规则</h4><el-row :gutter="16"><el-col :span="12"><div class="highlight-card highlight-primary"><div class="highlight-card-title">发票自动生成应付单</div><div class="highlight-card-body">从采购发票生成应付单，系统自动<strong>编号（YF 前缀）</strong>并关联来源单据，无需手工录入</div></div></el-col><el-col :span="12"><div class="highlight-card highlight-warning"><div class="highlight-card-title">同步已付金额</div><div class="highlight-card-body">付款完成后点击「同步已付金额」刷新实付数据；<strong>未同步前</strong>单据状态不会变化</div></div></el-col></el-row><el-row :gutter="16" style="margin-top: 12px;"><el-col :span="12"><div class="highlight-card highlight-success"><div class="highlight-card-title">核销闭环</div><div class="highlight-card-body">应付核销将应付单与付款冲抵匹配，<strong>核销金额不得超过单据金额</strong>，保证往来账务闭环</div></div></el-col><el-col :span="12"><div class="highlight-card highlight-danger"><div class="highlight-card-title">账龄与逾期预警</div><div class="highlight-card-body">账龄分析与逾期预警持续监控超账期未付清的应付单据，<strong>超期单据会被标记提示</strong></div></div></el-col></el-row><h4>四、业务操作流程</h4><el-timeline><el-timeline-item type="primary" :hollow="true"><strong>生成应付单：</strong>点击「从发票生成应付单」，选择采购发票自动生成，核对金额与供应商</el-timeline-item><el-timeline-item type="warning" :hollow="true"><strong>付款跟踪：</strong>供应商付款后点击「同步已付金额」，更新实付金额与单据状态</el-timeline-item><el-timeline-item type="success" :hollow="true"><strong>应付核销：</strong>单据付清后执行核销，冲抵往来欠款</el-timeline-item><el-timeline-item type="info" :hollow="true"><strong>账龄监控：</strong>通过账龄分析与逾期预警持续跟踪超期应付款</el-timeline-item></el-timeline></div>
+      <template #footer><el-button type="primary" @click="showStatusHelp = false">我知道了</el-button></template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup name="FinAp">
+const showStatusHelp = ref(false)
 import {
   listAp, getAp, generateAp, syncPaid, writeoffAp, voidAp, getApAging, getApOverdue, getApSummary
 } from '@/api/fin/ap'
@@ -390,28 +467,36 @@ const showAging = ref(false)
 const showOverdue = ref(false)
 const writeoffAmount = ref('')
 const writeoffRemark = ref('')
-const checkedRows = ref([])
 
 // 已选筛选条件数
 const activeFilterCount = computed(() => {
   let n = 0
+  if (queryParams.value.apNo) n++
   if (queryParams.value.partnerName) n++
   if (queryParams.value.status) n++
   if (dateRange.value && dateRange.value.length === 2) n++
+  if (queryParams.value.period) n++
   return n
 })
 
-const queryParams = ref({ pageNum: 1, pageSize: 20, partnerName: undefined, status: undefined })
+const showAdvanced = ref(false)
+
+// 会计期间选项：近 24 个自然月（2026-10 倒推）
+const periodOptions = computed(() => {
+  const list = []
+  const now = new Date()
+  for (let i = 0; i < 24; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+    list.push(`${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}`)
+  }
+  return list
+})
+
+const queryParams = ref({ pageNum: 1, pageSize: 20, apNo: undefined, partnerName: undefined, status: undefined, period: undefined })
 
 const detailUnpaid = computed(() => {
   if (!current.value) return 0
   return Number(current.value.totalAmount || 0) - Number(current.value.paidAmount || 0)
-})
-
-const canWriteoff = computed(() => {
-  const c = current.value
-  if (!c) return false
-  return ['OPEN', 'PARTIAL'].includes(c.status) && detailUnpaid.value > 0
 })
 
 function formatAmount(v) {
@@ -445,12 +530,27 @@ function overdueDays(row) {
 function getList() {
   loading.value = true
   const params = { ...queryParams.value }
+  delete params.apNo
+  delete params.period
   if (dateRange.value && dateRange.value.length === 2) {
     params.params = { beginApDate: dateRange.value[0], endApDate: dateRange.value[1] }
   }
   listAp(params).then(res => {
-    apList.value = res.rows || []
-    total.value = res.total || 0
+    let rows = res.rows || []
+    // apNo / 会计期间后端列表接口不支持，前端过滤（同 fin/config 做法）
+    if (queryParams.value.apNo) {
+      const kw = String(queryParams.value.apNo).trim().toLowerCase()
+      rows = rows.filter(r => String(r.apNo || '').toLowerCase().includes(kw))
+    }
+    if (queryParams.value.period) {
+      rows = rows.filter(r => String(r.period || '') === String(queryParams.value.period))
+    }
+    if (queryParams.value.apNo || queryParams.value.period) {
+      total.value = rows.length
+    } else {
+      total.value = res.total || 0
+    }
+    apList.value = rows
     loading.value = false
     applySavedWidths()
   })
@@ -467,17 +567,9 @@ function loadOverdue() {
 function handleQuery() { queryParams.value.pageNum = 1; getList() }
 
 function resetQuery() {
-  queryParams.value = { pageNum: 1, pageSize: 20, partnerName: undefined, status: undefined }
+  queryParams.value = { pageNum: 1, pageSize: 20, apNo: undefined, partnerName: undefined, status: undefined, period: undefined }
   dateRange.value = []
   getList()
-}
-
-/** 勾选行：单选时同步为当前核销对象，避免必须点行才能核销 */
-function handleSelectionChange(rows) {
-  checkedRows.value = rows
-  if (rows.length === 1) {
-    current.value = rows[0]
-  }
 }
 
 function handleCurrentChange(row) { current.value = row }
@@ -511,12 +603,15 @@ function handleView(row) {
   })
 }
 
-function handleWriteoff() {
-  if (!canWriteoff.value) {
-    proxy.$modal.msgWarning('请选择未核销或部分核销的应付单')
-    return
-  }
-  writeoffAmount.value = String(detailUnpaid.value.toFixed(2))
+/** 行级核销：未核销/部分核销且有未付余额的应付单可核销 */
+function canRowWriteoff(row) {
+  if (!row || ['SETTLED', 'VOID'].includes(row.status)) return false
+  return Number(row.totalAmount || 0) - Number(row.paidAmount || 0) > 0
+}
+
+function handleRowWriteoff(row) {
+  current.value = row
+  writeoffAmount.value = (Number(row.totalAmount || 0) - Number(row.paidAmount || 0)).toFixed(2)
   writeoffRemark.value = ''
   showWriteoff.value = true
 }
@@ -571,15 +666,26 @@ loadOverdue()
 .hint-text { font-size: 12px; }
 .divider-text { font-size: 13px; font-weight: 500; color: var(--color-text-secondary); }
 
-.summary-bar { display: flex; gap: 32px; padding: 16px 20px; margin-bottom: 12px; }
-.summary-label { font-size: 12px; color: var(--color-text-secondary); }
-.summary-value {
-  font-size: 20px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  margin: 4px 0;
+/* ===== stat-card（对齐应收管理页面） ===== */
+.fin-ap-page .stat-card {
+  background: #fff;
+  border: 1px solid var(--ink-200, #e5e7eb);
+  border-radius: var(--r-lg, 14px);
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  padding: 16px 18px;
+  text-align: center;
+  transition: all .15s var(--ease-out, ease);
 }
-.summary-unit { font-size: 12px; margin-left: 2px; font-weight: 400; }
+.fin-ap-page .stat-card:hover {
+  border-color: var(--brand-200, #c7d2fe);
+  box-shadow: 0 4px 12px -2px rgba(99, 102, 241, .12);
+}
+.fin-ap-page .stat-card .stat-label { font-size: 13px; color: var(--ink-500, #6b7280); margin-bottom: 8px; }
+.fin-ap-page .stat-card .stat-value { font-size: 22px; font-weight: 700; color: var(--ink-900, #0f172a); font-feature-settings: "tnum" 1; font-variant-numeric: tabular-nums; }
+.fin-ap-page .stat-card.stat-success .stat-value { color: var(--green-500, #10b981); }
+.fin-ap-page .stat-card.stat-warning .stat-value { color: var(--amber-500, #f59e0b); }
+.fin-ap-page .stat-card.stat-danger .stat-value { color: var(--red-500, #ef4444); }
+.fin-ap-page .stat-unit { font-size: 12px; margin-left: 2px; font-weight: 400; }
 
 .amount-cell { font-variant-numeric: tabular-nums; }
 .amount-cell.strong { font-weight: 600; }
@@ -588,4 +694,65 @@ loadOverdue()
 .text-unpaid { color: #b85450; }
 .text-success { color: #16a34a; font-weight: 600; }
 .text-danger { color: #dc2626; font-weight: 600; }
+
+/* ===== 筛选卡片（对齐 mk 列表页规范） ===== */
+.fin-ap-page .filter-card .filter-head { display: flex; align-items: center; justify-content: space-between; }
+.fin-ap-page .adv-link { display: inline-flex; align-items: center; gap: 4px; border: none; background: none; cursor: pointer; font-size: 13px; font-weight: 500; color: var(--brand-600, #4f46e5); padding: 4px 8px; border-radius: 6px; transition: background .2s var(--ease-out, ease); }
+.fin-ap-page .adv-link:hover, .fin-ap-page .adv-link.is-open { color: var(--brand-600, #4f46e5); }
+.fin-ap-page .adv-link .chev { transition: transform .2s var(--ease-out, ease); }
+.fin-ap-page .adv-link.is-open .chev { transform: rotate(180deg); }
+.fin-ap-page .filter-card .filter-bar { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px 16px; }
+.fin-ap-page .filter-card .field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.fin-ap-page .filter-card .field > label { font-size: 13px; color: var(--ink-500, #6b7280); font-weight: 500; }
+.fin-ap-page .filter-card .control { min-width: 0; }
+.fin-ap-page .filter-card .control.is-select :deep(.el-select) { width: 100%; }
+.fin-ap-page .filter-card .filter-actions {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-top: 14px; padding-top: 12px;
+  border-top: 1px dashed var(--ink-200, #e5e7eb);
+}
+.fin-ap-page .filter-card .filter-info { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-500, #6b7280); }
+.fin-ap-page .filter-card .filter-buttons { display: flex; align-items: center; gap: 8px; }
+
+/* ===== 工具栏 / 表格 ===== */
+.fin-ap-page .toolbar { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; border-bottom: 1px solid var(--ink-200, #e5e7eb); background: var(--ink-50, #f9fafb); }
+.fin-ap-page .toolbar .left { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.fin-ap-page .toolbar .right { display: flex; gap: 8px; align-items: center; }
+.fin-ap-page .table-wrap { overflow-x: auto; }
+.fin-ap-page .app-table { --el-table-bg-color: #fff; --el-table-header-bg-color: var(--ink-50, #f9fafb); --el-table-row-hover-bg-color: #fafbff; --el-table-border-color: var(--ink-200, #e5e7eb); --el-table-text-color: var(--ink-700, #374151); --el-table-header-text-color: var(--ink-500, #6b7280); }
+.fin-ap-page .el-table :deep(.el-table__header th) { background: var(--ink-50, #f9fafb) !important; color: var(--ink-500, #6b7280); font-weight: 600; font-size: 14px; letter-spacing: .02em; padding: 12px 16px; border-bottom: 1px solid var(--ink-200, #e5e7eb); }
+.fin-ap-page .el-table :deep(.el-table__body td) { padding: 14px 16px; border-bottom: 1px solid var(--ink-100, #f3f4f6); color: var(--ink-700, #374151); }
+.fin-ap-page .el-table :deep(.el-table__row:hover > td) { background: #fafbff !important; }
+.fin-ap-page .el-table .col-mono { font-family: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, monospace; font-size: 14px; color: var(--ink-700, #374151); letter-spacing: -.01em; }
+.fin-ap-page .el-table .rd-amount { font-feature-settings: "tnum" 1; font-variant-numeric: tabular-nums; color: #dc2626; font-weight: 600; }
+
+/* ===== 状态徽章（dot + 文字） ===== */
+.fin-ap-page .badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 999px; font-size: 13px; font-weight: 600; line-height: 1; border: 1px solid transparent; }
+.fin-ap-page .badge .dot { width: 6px; height: 6px; border-radius: 50%; }
+.fin-ap-page .badge.badge-amber { background: var(--amber-50, #fffbeb); color: var(--amber-700, #b45309); border-color: #fde68a; }
+.fin-ap-page .badge.badge-amber .dot { background: var(--amber-500, #f59e0b); }
+.fin-ap-page .badge.badge-blue { background: var(--blue-50, #eff6ff); color: var(--blue-700, #1d4ed8); border-color: #bfdbfe; }
+.fin-ap-page .badge.badge-blue .dot { background: var(--blue-500, #3b82f6); }
+.fin-ap-page .badge.badge-green { background: var(--green-50, #ecfdf5); color: var(--green-700, #047857); border-color: #a7f3d0; }
+.fin-ap-page .badge.badge-green .dot { background: var(--green-500, #10b981); }
+.fin-ap-page .badge.badge-gray { background: var(--ink-100, #f3f4f6); color: var(--ink-500, #6b7280); border-color: var(--ink-200, #e5e7eb); }
+.fin-ap-page .badge.badge-gray .dot { background: var(--ink-400, #9ca3af); }
+
+/* ===== 分页 ===== */
+.fin-ap-page .pagination-container { display: flex; align-items: center; justify-content: flex-end; padding: 14px 20px; font-size: 14px; color: var(--ink-500, #6b7280); background: #fff; }
+.fin-ap-page .pagination-container :deep(.el-pagination) { justify-content: flex-end; }
+.fin-ap-page .pagination-container :deep(.el-pagination .el-pager li) { border-radius: 6px; border: 1px solid var(--ink-200, #e5e7eb); background: #fff; min-width: 32px; height: 32px; line-height: 32px; font-size: 14px; color: var(--ink-700, #374151); margin: 0 2px; }
+.fin-ap-page .pagination-container :deep(.el-pagination .el-pager li.is-active) { background: var(--brand-600, #4f46e5); border-color: var(--brand-600, #4f46e5); color: #fff; font-weight: 600; box-shadow: 0 4px 10px -2px rgba(79, 70, 229, .4); }
+.fin-ap-page .pagination-container :deep(.el-pagination .btn-prev), .fin-ap-page .pagination-container :deep(.el-pagination .btn-next) { border-radius: 6px; border: 1px solid var(--ink-200, #e5e7eb); background: #fff; min-width: 32px; height: 32px; }
+
+/* ===== 操作列 ===== */
+:deep(.col-action) { padding: 6px 4px !important; }
+:deep(.col-action .cell) { display: flex; justify-content: center; padding: 0; }
+.action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
+:deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
+:deep(.col-action .el-button + .el-button) { margin-left: 2px; }
+
+/* ===== 响应式 ===== */
+@media (max-width: 1100px) { .fin-ap-page .filter-card .filter-bar { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 720px) { .fin-ap-page .filter-card .filter-bar { grid-template-columns: 1fr; } .fin-ap-page .toolbar { flex-wrap: wrap; gap: 10px; } }
 </style>

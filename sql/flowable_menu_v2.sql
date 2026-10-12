@@ -100,3 +100,7 @@ CREATE TABLE IF NOT EXISTS `flow_form` (
 -- ========== 表单描述字段（泛微e9字段设计改造，2026-09-17） ==========
 -- flow_form 增加 form_desc 表单描述列（重复执行报 Duplicate column 可忽略）
 ALTER TABLE flow_form ADD COLUMN form_desc varchar(500) DEFAULT NULL COMMENT '表单描述' AFTER form_name;
+
+-- ========== 流程分类字段（表单管理增加流程分类，2026-10-11） ==========
+-- flow_form 增加 category 流程分类列（重复执行报 Duplicate column 可忽略），字典：flowable_category
+ALTER TABLE flow_form ADD COLUMN category varchar(50) DEFAULT NULL COMMENT '流程分类（字典 flowable_category）' AFTER form_desc;

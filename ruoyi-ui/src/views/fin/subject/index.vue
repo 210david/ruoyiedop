@@ -64,17 +64,14 @@
         </div>
         <div class="right">
           <el-tooltip content="展开/折叠" placement="top">
-            <el-icon class="tree-act" @click="toggleTreeExpand"><Sort /></el-icon>
-          </el-tooltip>
-          <el-tooltip content="刷新" placement="top">
-            <el-icon class="tree-act" @click="getList"><Refresh /></el-icon>
+            <el-button circle icon="Sort" @click="toggleTreeExpand" />
           </el-tooltip>
           <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="fin_subject_index" />
         </div>
       </div>
 
       <!-- 提示条：说明三条硬规则 -->
-      <el-alert type="info" :closable="false" show-icon style="margin: 12px 16px 0;">
+      <el-alert type="info" :closable="false" show-icon style="width: auto; margin: 12px 16px 0; border-radius: 8px;">
         <template #title>
           <span class="rule-hint">
             科目层级最多 4 级 ｜ 有子科目不可删除 ｜ 已有凭证分录不可删除（请改为停用）
@@ -152,7 +149,7 @@
     </div>
 
     <!-- ===== 新增/修改弹框 ===== -->
-    <el-dialog v-model="open" width="680px" append-to-body draggable class="rd-dialog">
+    <el-dialog v-model="open" width="816px" append-to-body draggable class="rd-dialog">
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
@@ -161,109 +158,145 @@
       </template>
       <div class="rd-page">
       <el-form ref="subjectRefForm" :model="form" :rules="rules" label-width="110px">
-        <el-row :gutter="16">
-          <el-col :span="12">
-            <el-form-item label="上级科目" prop="parentId">
-              <el-tree-select
-                v-model="form.parentId"
-                :data="parentTreeOptions"
-                :props="{ label: 'subjectName', value: 'subjectId', children: 'children' }"
-                value-key="subjectId"
-                placeholder="不选则为一级科目"
-                check-strictly
-                clearable
-                style="width: 100%" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="级次" prop="level">
-              <el-input v-model="form.level" disabled placeholder="由上级科目自动推导" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="16">
-          <el-col :span="12">
-            <el-form-item label="科目编码" prop="subjectCode">
-              <el-input v-model="form.subjectCode" placeholder="如 1001 / 2202 / 6001" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="科目名称" prop="subjectName">
-              <el-input v-model="form.subjectName" placeholder="如 库存现金" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="16">
-          <el-col :span="12">
-            <el-form-item label="科目类别" prop="category">
-              <el-select v-model="form.category" placeholder="请选择" style="width: 100%" @change="onCategoryChange">
-                <el-option v-for="d in subjectCategoryOptions" :key="d.value" :label="d.label" :value="d.value" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="余额方向" prop="direction">
-              <el-radio-group v-model="form.direction">
-                <el-radio value="DEBIT">借</el-radio>
-                <el-radio value="CREDIT">贷</el-radio>
-              </el-radio-group>
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="16">
-          <el-col :span="12">
-            <el-form-item label="是否明细科目">
-              <el-radio-group v-model="form.isLeaf">
-                <el-radio value="1">明细科目</el-radio>
-                <el-radio value="0">非明细</el-radio>
-              </el-radio-group>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="现金等价物">
-              <el-switch v-model="form.isCashEquiv" active-value="1" inactive-value="0" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="16">
-          <el-col :span="12">
-            <el-form-item label="现金流分类">
-              <el-select v-model="form.cashFlowCategory" placeholder="非现金科目可不填" clearable style="width: 100%">
-                <el-option label="经营活动" value="OPERATING" />
-                <el-option label="投资活动" value="INVESTING" />
-                <el-option label="筹资活动" value="FINANCING" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="辅助核算">
-              <el-select v-model="auxTypesArr" multiple placeholder="按需勾选" style="width: 100%">
-                <el-option label="客户" value="C" />
-                <el-option label="供应商" value="S" />
-                <el-option label="部门" value="D" />
-                <el-option label="项目" value="P" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="16">
-          <el-col :span="12">
-            <el-form-item label="排序号">
-              <el-input-number v-model="form.sortOrder" :min="0" :max="9999" controls-position="right" style="width: 100%" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="状态">
-              <el-radio-group v-model="form.status">
-                <el-radio value="0">正常</el-radio>
-                <el-radio value="1">停用</el-radio>
-              </el-radio-group>
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-form-item label="备注">
-          <el-input v-model="form.remark" type="textarea" :rows="2" placeholder="请输入备注" />
-        </el-form-item>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('c1')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>基本信息</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.c1">
+          <el-row :gutter="16">
+            <el-col :span="12">
+              <el-form-item label="科目编码" prop="subjectCode">
+                <el-input v-model="form.subjectCode" placeholder="如 1001 / 2202 / 6001" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="科目名称" prop="subjectName">
+                <el-input v-model="form.subjectName" placeholder="如 库存现金" />
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-row :gutter="16">
+            <el-col :span="12">
+              <el-form-item label="科目类别" prop="category">
+                <el-select v-model="form.category" placeholder="请选择" style="width: 100%" @change="onCategoryChange">
+                  <el-option v-for="d in subjectCategoryOptions" :key="d.value" :label="d.label" :value="d.value" />
+                </el-select>
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="余额方向" prop="direction">
+                <el-radio-group v-model="form.direction">
+                  <el-radio value="DEBIT">借</el-radio>
+                  <el-radio value="CREDIT">贷</el-radio>
+                </el-radio-group>
+              </el-form-item>
+            </el-col>
+          </el-row>
+          </div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('c3')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></span>层级与属性</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c3 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.c3">
+          <el-row :gutter="16">
+            <el-col :span="12">
+              <el-form-item label="上级科目" prop="parentId">
+                <el-tree-select
+                  v-model="form.parentId"
+                  :data="parentTreeOptions"
+                  :props="{ label: 'subjectName', value: 'subjectId', children: 'children' }"
+                  value-key="subjectId"
+                  placeholder="不选则为一级科目"
+                  check-strictly
+                  clearable
+                  style="width: 100%" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="级次" prop="level">
+                <el-input v-model="form.level" disabled placeholder="由上级科目自动推导" />
+              </el-form-item>
+            </el-col>
+          </el-row>
+  <el-row :gutter="16">
+            <el-col :span="12">
+              <el-form-item label="是否明细科目">
+                <el-radio-group v-model="form.isLeaf">
+                  <el-radio value="1">明细科目</el-radio>
+                  <el-radio value="0">非明细</el-radio>
+                </el-radio-group>
+              </el-form-item>
+            </el-col>
+  </el-row>
+          </div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('c2')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></span>辅助信息</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.c2">
+  <el-row :gutter="16">
+            <el-col :span="12">
+              <el-form-item label="现金等价物">
+                <el-switch v-model="form.isCashEquiv" active-value="1" inactive-value="0" />
+              </el-form-item>
+            </el-col>
+  </el-row>
+          <el-row :gutter="16">
+            <el-col :span="12">
+              <el-form-item label="现金流分类">
+                <el-select v-model="form.cashFlowCategory" placeholder="非现金科目可不填" clearable style="width: 100%">
+                  <el-option label="经营活动" value="OPERATING" />
+                  <el-option label="投资活动" value="INVESTING" />
+                  <el-option label="筹资活动" value="FINANCING" />
+                </el-select>
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="辅助核算">
+                <el-select v-model="auxTypesArr" multiple placeholder="按需勾选" style="width: 100%">
+                  <el-option label="客户" value="C" />
+                  <el-option label="供应商" value="S" />
+                  <el-option label="部门" value="D" />
+                  <el-option label="项目" value="P" />
+                </el-select>
+              </el-form-item>
+            </el-col>
+          </el-row>
+  <el-row :gutter="16">
+            <el-col :span="12">
+              <el-form-item label="排序号">
+                <el-input-number v-model="form.sortOrder" :min="0" :max="9999" controls-position="right" style="width: 100%" />
+              </el-form-item>
+            </el-col>
+  </el-row>
+          </div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('c0')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>其他信息</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c0 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.c0">
+  <el-row :gutter="16">
+            <el-col :span="12">
+              <el-form-item label="状态">
+                <el-radio-group v-model="form.status">
+                  <el-radio value="0">正常</el-radio>
+                  <el-radio value="1">停用</el-radio>
+                </el-radio-group>
+              </el-form-item>
+            </el-col>
+  </el-row>
+          <el-form-item label="备注">
+            <el-input v-model="form.remark" type="textarea" :rows="2" placeholder="请输入备注" />
+          </el-form-item>
+          </div>
+        </section>
       </el-form>
       </div>
       <template #footer>
@@ -275,7 +308,7 @@
     </el-dialog>
 
     <!-- ===== 只读详情弹窗 ===== -->
-    <el-dialog v-model="viewOpen" width="680px" append-to-body draggable class="rd-dialog">
+    <el-dialog v-model="viewOpen" width="816px" append-to-body draggable class="rd-dialog">
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></div>
@@ -311,6 +344,17 @@
                 <span class="rd-label">余额方向</span>
                 <div class="rd-value">{{ viewData.direction === 'DEBIT' ? '借' : (viewData.direction === 'CREDIT' ? '贷' : '-') }}</div>
               </div>
+            </div>
+          </div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header">
+            <div class="rd-card-title">
+              <span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></span>层级与属性
+            </div>
+          </div>
+          <div class="rd-card-body">
+            <div class="rd-grid">
               <div class="rd-item">
                 <span class="rd-label">级次</span>
                 <div class="rd-value">{{ viewData.level || '-' }}</div>
@@ -319,6 +363,17 @@
                 <span class="rd-label">明细科目</span>
                 <div class="rd-value">{{ viewData.isLeaf === '1' ? '是' : (viewData.isLeaf === '0' ? '否' : '-') }}</div>
               </div>
+            </div>
+          </div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header">
+            <div class="rd-card-title">
+              <span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></span>辅助信息
+            </div>
+          </div>
+          <div class="rd-card-body">
+            <div class="rd-grid">
               <div class="rd-item">
                 <span class="rd-label">现金等价物</span>
                 <div class="rd-value">{{ viewData.isCashEquiv === '1' ? '是' : '否' }}</div>
@@ -335,6 +390,17 @@
                 <span class="rd-label">排序号</span>
                 <div class="rd-value">{{ viewData.sortOrder ?? '-' }}</div>
               </div>
+            </div>
+          </div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header">
+            <div class="rd-card-title">
+              <span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>其他信息
+            </div>
+          </div>
+          <div class="rd-card-body">
+            <div class="rd-grid">
               <div class="rd-item">
                 <span class="rd-label">状态</span>
                 <div class="rd-value">
@@ -372,6 +438,7 @@
 import { listSubject, addSubject, updateSubject, delSubject, checkCodeUnique } from '@/api/fin/subject'
 import ExcelImportDialog from '@/components/ExcelImportDialog'
 import { useColumnResize } from '@/composables/useColumnResize'
+import { useDetailCard } from '@/composables/useDetailCard'
 
 const { proxy } = getCurrentInstance()
 
@@ -390,6 +457,7 @@ const auxTypesArr = ref([])
 
 // 列宽持久化
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('fin_subject_index')
+const { collapsedCards, toggleCard } = useDetailCard(["c3", "c2", "c1", "c0"])
 
 const columns = ref({
   subjectCode: { visible: true },
@@ -676,7 +744,7 @@ getList()
 /* ===== 筛选卡片 ===== */
 .fin-subject-page .filter-card {
   margin-bottom: 12px;
-  padding: 14px 16px 4px;
+  padding: 14px 16px 16px;
 }
 .fin-subject-page .filter-head {
   display: flex;
@@ -693,15 +761,11 @@ getList()
   color: var(--page-text);
 }
 .fin-subject-page .filter-title .glyph {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 6px;
-  background: var(--page-primary-light);
-  color: var(--page-primary);
-  font-size: 13px;
+  display: inline-block;
+  width: 4px;
+  height: 14px;
+  background: var(--page-primary);
+  border-radius: 2px;
 }
 .fin-subject-page .filter-bar {
   display: flex;
@@ -731,24 +795,42 @@ getList()
 .fin-subject-page .filter-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 2px 0 12px;
-  margin-left: auto;
+  justify-content: space-between;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--page-border);
 }
 .fin-subject-page .filter-info {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--page-text-secondary);
-  margin-right: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
   white-space: nowrap;
+}
+.fin-subject-page .filter-buttons {
+  display: flex;
+  gap: 8px;
 }
 
 /* ===== 工具栏 / 表格 ===== */
 .fin-subject-page .toolbar {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
   padding: 12px 16px;
   border-bottom: 1px solid var(--page-border);
+}
+.fin-subject-page .toolbar .left {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.fin-subject-page .toolbar .right {
+  display: flex;
+  gap: 8px;
+  align-items: center;
 }
 .fin-subject-page .table-wrap {
   padding: 0 16px 12px;
@@ -764,6 +846,16 @@ getList()
 .fin-subject-page .col-mono {
   font-family: 'JetBrains Mono', Consolas, monospace;
   font-size: 13px;
+}
+
+.fin-subject-page .tree-act {
+  color: var(--page-text-secondary);
+  cursor: pointer;
+  font-size: 16px;
+  transition: color 0.15s;
+}
+.fin-subject-page .tree-act:hover {
+  color: var(--page-primary);
 }
 
 /* ===== badge（无圆点/带圆点）===== */
@@ -817,98 +909,5 @@ getList()
   padding: 16px 20px;
   max-height: 62vh;
   overflow: auto;
-}
-.rd-detail-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 14px 20px;
-  background: linear-gradient(90deg, var(--page-primary-light), #fff);
-  border-bottom: 1px solid var(--page-border);
-}
-.rd-detail-header-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  background: var(--page-primary);
-  color: #fff;
-}
-.rd-detail-header-title {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--page-text);
-}
-.rd-detail-header-sub {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-left: 4px;
-}
-.rd-detail-header-divider {
-  width: 1px;
-  height: 14px;
-  background: var(--page-border);
-}
-.rd-detail-header-no {
-  font-size: 13px;
-  color: var(--page-text-secondary);
-}
-
-.rd-page { display: flex; flex-direction: column; gap: 12px; }
-.rd-card {
-  background: #fff;
-  border: 1px solid var(--page-border);
-  border-radius: var(--page-radius);
-  overflow: hidden;
-}
-.rd-card-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--page-border);
-  background: #fafbfc;
-}
-.rd-card-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--page-text);
-}
-.rd-card-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 6px;
-  background: var(--page-primary-light);
-  color: var(--page-primary);
-}
-.rd-card-body { padding: 12px 14px; }
-.rd-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px 20px;
-}
-.rd-item {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  min-width: 0;
-}
-.rd-item--full { grid-column: 1 / -1; }
-.rd-label { font-size: 12px; color: var(--page-text-secondary); }
-.rd-value { font-size: 13px; color: var(--page-text); line-height: 20px; word-break: break-all; }
-
-:deep(.rd-dialog .dialog-footer) {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
 }
 </style>

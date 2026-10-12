@@ -9,6 +9,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="formKey"    column="form_key"/>
         <result property="formName"   column="form_name"/>
         <result property="formDesc"   column="form_desc"/>
+        <result property="category"   column="category"/>
         <result property="processKey" column="process_key"/>
         <result property="fieldsJson" column="fields_json"/>
         <result property="layoutJson" column="layout_json"/>
@@ -22,7 +23,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectFlowFormVo">
-        select form_id, form_key, form_name, form_desc, process_key, fields_json, layout_json, table_name, del_flag,
+        select form_id, form_key, form_name, form_desc, category, process_key, fields_json, layout_json, table_name, del_flag,
                create_by, create_time, update_by, update_time, remark from flow_form
     </sql>
 
@@ -30,6 +31,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <include refid="selectFlowFormVo"/>
         where del_flag = '0'
         <if test="formName != null and formName != ''"> AND form_name LIKE CONCAT('%', #{formName}, '%')</if>
+        <if test="category != null and category != ''"> AND category = #{category}</if>
         <if test="processKey != null and processKey != ''"> AND process_key = #{processKey}</if>
         order by form_id desc
     </select>
@@ -55,6 +57,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="formKey != null">form_key,</if>
             <if test="formName != null">form_name,</if>
             <if test="formDesc != null">form_desc,</if>
+            <if test="category != null">category,</if>
             <if test="processKey != null">process_key,</if>
             <if test="fieldsJson != null">fields_json,</if>
             <if test="layoutJson != null">layout_json,</if>
@@ -68,6 +71,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="formKey != null">#{formKey},</if>
             <if test="formName != null">#{formName},</if>
             <if test="formDesc != null">#{formDesc},</if>
+            <if test="category != null">#{category},</if>
             <if test="processKey != null">#{processKey},</if>
             <if test="fieldsJson != null">#{fieldsJson},</if>
             <if test="layoutJson != null">#{layoutJson},</if>
@@ -85,6 +89,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="formKey != null">form_key = #{formKey},</if>
             <if test="formName != null">form_name = #{formName},</if>
             <if test="formDesc != null">form_desc = #{formDesc},</if>
+            <if test="category != null">category = #{category},</if>
             <if test="processKey != null">process_key = #{processKey},</if>
             <if test="fieldsJson != null">fields_json = #{fieldsJson},</if>
             <if test="layoutJson != null">layout_json = #{layoutJson},</if>

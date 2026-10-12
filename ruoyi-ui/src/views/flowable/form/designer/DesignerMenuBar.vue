@@ -45,8 +45,7 @@ const menus = [
     { cmd: 'ins_col_right', label: '右侧插入一列' },
     { cmd: 'ins_title', label: '标题行', divided: true },
     { cmd: 'ins_note', label: '说明行' },
-    { cmd: 'ins_image', label: '图片…' },
-    { cmd: 'ins_detail', label: '明细表', tag: 'P1', disabled: true }
+    { cmd: 'ins_image', label: '图片…' }
   ] },
   { key: 'field', label: '字段属性', items: [
     { cmd: 'fld_bind', label: '绑定字段…' },
@@ -54,8 +53,7 @@ const menus = [
     { cmd: 'fld_info', label: '字段信息', divided: true }
   ] },
   { key: 'detail', label: '明细表', items: [
-    { cmd: 'dt_new', label: '新增明细表', tag: 'P1', disabled: true },
-    { cmd: 'dt_props', label: '明细表属性', tag: 'P1', disabled: true }
+    { cmd: 'dt_new', label: '新增明细表' }
   ] },
   { key: 'style', label: '样式', items: [
     { cmd: 'sty_painter', label: '格式刷' },

@@ -16,6 +16,7 @@
         <result property="probationSalary" column="probation_salary"/>
         <result property="regularSalary" column="regular_salary"/>
         <result property="renewCount" column="renew_count"/>
+        <result property="contractStatus" column="contract_status"/>
         <result property="remindStatus" column="remind_status"/>
         <result property="attachmentUrl" column="attachment_url"/>
         <result property="status" column="status"/>
@@ -28,7 +29,7 @@
     </resultMap>
 
     <sql id="selectVo">
-        SELECT contract_id, contract_no, employee_id, employee_name, employee_no, contract_type, start_date, end_date, sign_date, probation_months, probation_salary, regular_salary, renew_count, remind_status, attachment_url, status, del_flag, create_by, create_time, update_by, update_time, remark
+        SELECT contract_id, contract_no, employee_id, employee_name, employee_no, contract_type, start_date, end_date, sign_date, probation_months, probation_salary, regular_salary, renew_count, contract_status, remind_status, attachment_url, status, del_flag, create_by, create_time, update_by, update_time, remark
         FROM biz_hr_contract
     </sql>
 
@@ -54,6 +55,7 @@
             <if test="probationSalary != null"> AND probation_salary = #{probationSalary}</if>
             <if test="regularSalary != null"> AND regular_salary = #{regularSalary}</if>
             <if test="renewCount != null"> AND renew_count = #{renewCount}</if>
+            <if test="contractStatus != null and contractStatus != ''"> AND contract_status = #{contractStatus}</if>
             <if test="remindStatus != null and remindStatus != ''"> AND remind_status LIKE CONCAT('%', #{remindStatus}, '%')</if>
             <if test="attachmentUrl != null and attachmentUrl != ''"> AND attachment_url LIKE CONCAT('%', #{attachmentUrl}, '%')</if>
             <if test="status != null and status != ''"> AND status LIKE CONCAT('%', #{status}, '%')</if>
@@ -69,9 +71,9 @@
 
     <insert id="insertHrContract" parameterType="HrContract" useGeneratedKeys="true" keyProperty="contractId">
         INSERT INTO biz_hr_contract (
-            contract_no, employee_id, employee_name, employee_no, contract_type, start_date, end_date, sign_date, probation_months, probation_salary, regular_salary, renew_count, remind_status, attachment_url, status, del_flag, create_by, create_time, remark
+            contract_no, employee_id, employee_name, employee_no, contract_type, start_date, end_date, sign_date, probation_months, probation_salary, regular_salary, renew_count, contract_status, remind_status, attachment_url, status, del_flag, create_by, create_time, remark
         ) VALUES (
-            #{contractNo}, #{employeeId}, #{employeeName}, #{employeeNo}, #{contractType}, #{startDate}, #{endDate}, #{signDate}, #{probationMonths}, #{probationSalary}, #{regularSalary}, #{renewCount}, #{remindStatus}, #{attachmentUrl}, #{status}, #{delFlag}, #{createBy}, sysdate(), #{remark}
+            #{contractNo}, #{employeeId}, #{employeeName}, #{employeeNo}, #{contractType}, #{startDate}, #{endDate}, #{signDate}, #{probationMonths}, #{probationSalary}, #{regularSalary}, #{renewCount}, #{contractStatus}, #{remindStatus}, #{attachmentUrl}, #{status}, #{delFlag}, #{createBy}, sysdate(), #{remark}
         )
     </insert>
 
@@ -90,6 +92,7 @@
             <if test="probationSalary != null">probation_salary = #{probationSalary},</if>
             <if test="regularSalary != null">regular_salary = #{regularSalary},</if>
             <if test="renewCount != null">renew_count = #{renewCount},</if>
+            <if test="contractStatus != null and contractStatus != ''">contract_status = #{contractStatus},</if>
             <if test="remindStatus != null and remindStatus != ''">remind_status = #{remindStatus},</if>
             <if test="attachmentUrl != null and attachmentUrl != ''">attachment_url = #{attachmentUrl},</if>
             <if test="status != null and status != ''">status = #{status},</if>

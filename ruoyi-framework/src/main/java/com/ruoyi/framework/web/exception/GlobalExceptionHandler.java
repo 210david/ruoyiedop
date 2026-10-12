@@ -128,7 +128,8 @@ public class GlobalExceptionHandler
     {
         String requestURI = request.getRequestURI();
         log.error("请求地址'{}',发生参数异常.", requestURI, e);
-        return AjaxResult.error("请求参数有误，请检查后重试");
+        // 业务校验的 IllegalArgumentException 消息为面向用户的中文文案，透出具体原因
+        return AjaxResult.error(e.getMessage());
     }
 
     /**

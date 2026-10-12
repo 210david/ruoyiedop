@@ -32,6 +32,10 @@ public class HrContractServiceImpl implements IHrContractService
         {
             hrContract.setContractNo(mkNumberRuleService.generateNumber("hr_contract"));
         }
+        if (StringUtils.isEmpty(hrContract.getContractStatus()))
+        {
+            hrContract.setContractStatus("0");
+        }
         return hrContractMapper.insertHrContract(hrContract);
     }
 

@@ -42,6 +42,8 @@ public class HrContract extends BaseEntity
     private BigDecimal regularSalary;
     @Excel(name = "续签次数")
     private Integer renewCount;
+    @Excel(name = "合同状态", dictType = "hr_contract_status")
+    private String contractStatus;
     @Excel(name = "预警状态", dictType = "hr_remind_status")
     private String remindStatus;
     @Excel(name = "附件URL")
@@ -77,6 +79,8 @@ public class HrContract extends BaseEntity
     public void setRegularSalary(BigDecimal regularSalary) { this.regularSalary = regularSalary; }
     public Integer getRenewCount() { return renewCount; }
     public void setRenewCount(Integer renewCount) { this.renewCount = renewCount; }
+    public String getContractStatus() { return contractStatus; }
+    public void setContractStatus(String contractStatus) { this.contractStatus = contractStatus; }
     public String getRemindStatus() { return remindStatus; }
     public void setRemindStatus(String remindStatus) { this.remindStatus = remindStatus; }
     public String getAttachmentUrl() { return attachmentUrl; }

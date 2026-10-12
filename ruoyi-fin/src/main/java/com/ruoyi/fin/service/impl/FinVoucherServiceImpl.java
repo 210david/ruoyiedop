@@ -110,7 +110,9 @@ public class FinVoucherServiceImpl implements IFinVoucherService
         voucher.setSourceType("");
         voucher.setSourceId(0L);
         voucher.setSourceKey(null);
-        voucher.setRuleKey("");
+        // 手工凭证 rule_key 用凭证号占位，保证 uk_source(source_module,source_type,source_id,rule_key,del_flag)
+        // 对每张手工凭证唯一；固定空串会导致第二张手工凭证必撞唯一索引（2026-10-10 修复）
+        voucher.setRuleKey(voucher.getVoucherNo());
         voucher.setEntryCount(entries.size());
         voucher.setStatus(FinVoucher.STATUS_DRAFT);
         voucher.setAttachCount(0);

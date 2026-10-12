@@ -43,6 +43,14 @@
           </div>
         </div>
         <div class="field" v-show="showAdvanced">
+          <label>合同状态</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.contractStatus" placeholder="全部" clearable @change="handleQuery">
+              <el-option v-for="d in hr_contract_status" :key="d.value" :label="d.label" :value="d.value" />
+            </el-select>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
           <label>开始日期</label>
           <div class="control">
             <el-date-picker v-model="startDateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
@@ -74,6 +82,22 @@
 
     <!-- 数据列表卡片 -->
     <div class="surface">
+      <div class="status-tabs">
+        <div class="tabs-track">
+          <button class="status-tab" :class="{ 'is-active': activeStatusTab === 'all' }" @click="handleStatusTabClick('all')">
+            <span class="dot"></span>
+            <span>全部</span>
+            <span class="count">{{ statusCounts.all }}</span>
+          </button>
+          <button v-for="s in statusTabList" :key="s.value" class="status-tab"
+            :class="[statusTabClass(s.value), { 'is-active': activeStatusTab === s.value }]"
+            @click="handleStatusTabClick(s.value)">
+            <span class="dot"></span>
+            <span>{{ s.label }}</span>
+            <span class="count">{{ statusCounts[s.value] || 0 }}</span>
+          </button>
+        </div>
+      </div>
       <div class="toolbar">
         <div class="left">
           <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['hr:contract:add']">新增</el-button>
@@ -110,6 +134,14 @@
             <template #default="scope">
               <span class="badge" :class="contractTypeBadgeClass(scope.row.contractType)" v-if="scope.row.contractType !== undefined && scope.row.contractType !== null && scope.row.contractType !== ''">
                 <span class="dot"></span>{{ contractTypeLabel(scope.row.contractType) }}
+              </span>
+              <span v-else>-</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="合同状态" prop="contractStatus" key="contractStatus" align="center" :width="colWidth('contractStatus', 110)" resizable v-if="columns.contractStatus.visible">
+            <template #default="scope">
+              <span class="badge" :class="contractStatusBadgeClass(scope.row.contractStatus)" v-if="scope.row.contractStatus !== undefined && scope.row.contractStatus !== null && scope.row.contractStatus !== ''">
+                <span class="dot"></span>{{ contractStatusLabel(scope.row.contractStatus) }}
               </span>
               <span v-else>-</span>
             </template>
@@ -180,6 +212,13 @@
 <el-form-item label="合同类型" prop="contractType">
 <el-select v-model="form.contractType" placeholder="请选择" clearable style="width: 100%" @change="onContractTypeChange"><el-option v-for="d in hr_contract_type" :key="d.value" :label="d.label" :value="d.value" /></el-select>
 </el-form-item>
+                </el-col>
+                <el-col :span="12">
+                  <el-form-item label="合同状态" prop="contractStatus">
+                    <el-select v-model="form.contractStatus" placeholder="请选择" style="width: 100%">
+                      <el-option v-for="d in hr_contract_status" :key="d.value" :label="d.label" :value="d.value" />
+                    </el-select>
+                  </el-form-item>
                 </el-col>
               </el-row>
             </div>
@@ -284,6 +323,7 @@
               <div class="rd-item"><span class="rd-label">员工姓名</span><div class="rd-value">{{ viewData.employeeName || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">工号</span><div class="rd-value">{{ viewData.employeeNo || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">合同类型</span><div class="rd-value"><dict-tag :options="hr_contract_type" :value="viewData.contractType" v-if="viewData.contractType !== undefined && viewData.contractType !== null && viewData.contractType !== ''" /><span v-else>-</span></div></div>
+              <div class="rd-item"><span class="rd-label">合同状态</span><div class="rd-value"><dict-tag :options="hr_contract_status" :value="viewData.contractStatus" v-if="viewData.contractStatus !== undefined && viewData.contractStatus !== null && viewData.contractStatus !== ''" /><span v-else>-</span></div></div>
             </div>
           </div>
         </section>
@@ -365,7 +405,7 @@ import { BellFilled } from '@element-plus/icons-vue'
 import EmployeePicker from '@/components/EmployeePicker'
 
 const { proxy } = getCurrentInstance()
-const { hr_contract_type } = proxy.useDict('hr_contract_type')
+const { hr_contract_type, hr_contract_status } = proxy.useDict('hr_contract_type', 'hr_contract_status')
 
 const hrContractList = ref([])
 const open = ref(false)
@@ -394,6 +434,7 @@ const defaultColumns = {
   employeeName: { label: '员工姓名', visible: true },
   employeeNo: { label: '工号', visible: true },
   contractType: { label: '合同类型', visible: true },
+  contractStatus: { label: '合同状态', visible: true },
   startDate: { label: '开始日期', visible: true },
   endDate: { label: '结束日期', visible: true },
   signDate: { label: '签订日期', visible: true },
@@ -456,7 +497,7 @@ const expiringList = computed(() => (hrContractList.value || []).filter(r => exp
 
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, contractNo: undefined, employeeName: undefined, employeeNo: undefined, contractType: undefined },
+  queryParams: { pageNum: 1, pageSize: 10, contractNo: undefined, employeeName: undefined, employeeNo: undefined, contractType: undefined, contractStatus: undefined },
 rules: {
 employeeId: [{ required: true, message: '请选择人员', trigger: 'change' }],
 startDate: [{ required: true, message: '开始日期不能为空', trigger: 'blur' }],
@@ -471,6 +512,7 @@ const activeFilterCount = computed(() => {
   if (queryParams.value.employeeName) count++
   if (queryParams.value.employeeNo) count++
   if (queryParams.value.contractType) count++
+  if (queryParams.value.contractStatus) count++
   if (startDateRange.value && startDateRange.value.length === 2) count++
   if (endDateRange.value && endDateRange.value.length === 2) count++
   if (signDateRange.value && signDateRange.value.length === 2) count++
@@ -484,6 +526,7 @@ function getList() {
     total.value = response.total
     loading.value = false
     applySavedWidths()
+    loadStatusCounts()
   })
 }
 
@@ -501,6 +544,8 @@ function resetQuery() {
   queryParams.value.employeeName = undefined
   queryParams.value.employeeNo = undefined
   queryParams.value.contractType = undefined
+  queryParams.value.contractStatus = undefined
+  activeStatusTab.value = 'all'
   startDateRange.value = []
   endDateRange.value = []
   signDateRange.value = []
@@ -534,6 +579,7 @@ function reset() {
     employeeName: undefined,
     employeeNo: undefined,
     contractType: undefined,
+    contractStatus: '0',
     startDate: undefined,
     endDate: undefined,
     signDate: undefined,
@@ -616,6 +662,40 @@ function contractTypeBadgeClass(v) {
   return map[v] || 'gray'
 }
 
+/** 合同状态文字/徽标映射 */
+function contractStatusLabel(v) {
+  if (v === undefined || v === null || v === '') return '-'
+  const d = (hr_contract_status.value || []).find(i => i.value == v)
+  return d ? d.label : String(v)
+}
+function contractStatusBadgeClass(v) {
+  const map = { '0': 'green', '1': 'amber', '2': 'violet', '3': 'red' }
+  return map[v] || 'gray'
+}
+
+/** ===== 状态统计页签 ===== */
+const activeStatusTab = ref('all')
+const statusTabList = computed(() => (hr_contract_status.value || []).map(d => ({ label: d.label, value: d.value })))
+const statusCounts = ref({ all: 0 })
+function loadStatusCounts() {
+  listHrContract({ pageNum: 1, pageSize: 999 }).then(res => {
+    const counts = { all: res.total }
+    hr_contract_status.value.forEach(d => { counts[d.value] = 0 })
+    ;(res.rows || []).forEach(r => { if (counts[r.contractStatus] !== undefined) counts[r.contractStatus]++ })
+    statusCounts.value = counts
+  }).catch(() => {})
+}
+function statusTabClass(value) {
+  const map = { '0': 'tab-active-c', '1': 'tab-expired', '2': 'tab-release', '3': 'tab-end' }
+  return map[value] || ''
+}
+function handleStatusTabClick(tab) {
+  activeStatusTab.value = tab
+  queryParams.value.contractStatus = tab === 'all' ? undefined : tab
+  queryParams.value.pageNum = 1
+  getList()
+}
+
 /** ===== 人员弹框选择 ===== */
 function openEmployeePicker() { employeePickerRef.value.open(form.value.employeeId); }
 function onEmployeePickerConfirm(emp) {
@@ -687,6 +767,30 @@ getList()
 .hr-contract-page .field .control :deep(.el-select .el-select__wrapper) { box-shadow:none !important; background:transparent !important; padding:0; min-height:34px; height:34px; }
 .hr-contract-page .field .control :deep(.el-select .el-select__wrapper .el-select__placeholder) { font-size:14px; color:var(--ink-900); }
 .hr-contract-page .field .control :deep(.el-select .el-select__wrapper.is-focused) { box-shadow:none !important; }
+
+/* ===== Status Tabs（状态统计页签） ===== */
+.hr-contract-page .status-tabs { display:flex; align-items:center; gap:12px; padding:6px 10px 6px 12px; border-bottom:1px solid var(--ink-200); background:#fff; }
+.hr-contract-page .tabs-track { display:flex; align-items:center; gap:4px; flex:1; min-width:0; overflow-x:auto; scrollbar-width:none; }
+.hr-contract-page .tabs-track::-webkit-scrollbar { display:none; }
+.hr-contract-page .status-tab { display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 12px; border-radius:var(--r-sm); font-size:14px; color:var(--ink-500); cursor:pointer; user-select:none; transition:all .15s var(--ease-out); white-space:nowrap; border:1px solid transparent; background:transparent; }
+.hr-contract-page .status-tab .dot { width:6px; height:6px; border-radius:50%; background:var(--ink-300); flex-shrink:0; }
+.hr-contract-page .status-tab .count { font-size:12px; font-weight:600; padding:1px 6px; border-radius:999px; background:var(--ink-100); color:var(--ink-500); min-width:18px; text-align:center; line-height:1.4; font-feature-settings:"tnum" 1; }
+.hr-contract-page .status-tab:hover { background:var(--ink-50); color:var(--ink-700); }
+.hr-contract-page .status-tab.is-active { background:var(--brand-50); color:var(--brand-700); font-weight:600; border-color:var(--brand-200); }
+.hr-contract-page .status-tab.is-active .count { background:var(--brand-600); color:#fff; }
+.hr-contract-page .status-tab.is-active .dot { background:var(--brand-500); }
+.hr-contract-page .status-tab.tab-active-c .dot { background:var(--green-500); }
+.hr-contract-page .status-tab.tab-active-c .count { background:var(--green-50); color:var(--green-700); }
+.hr-contract-page .status-tab.is-active.tab-active-c .count { background:var(--green-500); color:#fff; }
+.hr-contract-page .status-tab.tab-expired .dot { background:var(--amber-500); }
+.hr-contract-page .status-tab.tab-expired .count { background:var(--amber-50); color:var(--amber-700); }
+.hr-contract-page .status-tab.is-active.tab-expired .count { background:var(--amber-500); color:#fff; }
+.hr-contract-page .status-tab.tab-release .dot { background:var(--brand-500); }
+.hr-contract-page .status-tab.tab-release .count { background:var(--brand-50); color:var(--brand-700); }
+.hr-contract-page .status-tab.is-active.tab-release .count { background:var(--brand-500); color:#fff; }
+.hr-contract-page .status-tab.tab-end .dot { background:var(--red-500); }
+.hr-contract-page .status-tab.tab-end .count { background:var(--red-50); color:var(--red-700); }
+.hr-contract-page .status-tab.is-active.tab-end .count { background:var(--red-500); color:#fff; }
 
 /* ===== Toolbar ===== */
 .hr-contract-page .toolbar { display:flex; align-items:center; justify-content:space-between; padding:12px 20px; border-bottom:1px solid var(--ink-200); background:var(--ink-50); }

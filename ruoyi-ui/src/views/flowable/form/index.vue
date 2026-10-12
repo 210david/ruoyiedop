@@ -14,6 +14,14 @@
             </el-input>
           </div>
         </div>
+        <div class="field">
+          <label>流程分类</label>
+          <div class="control">
+            <el-select v-model="queryParams.category" placeholder="全部" clearable @change="handleQuery" style="width: 100%">
+              <el-option v-for="d in flowable_category" :key="d.value" :label="d.label" :value="d.value" />
+            </el-select>
+          </div>
+        </div>
       </div>
       <div class="filter-actions">
         <div class="filter-info"><el-icon><Filter /></el-icon> 支持回车快速搜索</div>
@@ -35,10 +43,16 @@
         </div>
       </div>
       <div class="table-wrap">
-        <el-table v-loading="loading" :data="list" border class="app-table">
+        <el-table ref="tableRef" v-loading="loading" :data="list" border class="app-table" @header-dragend="onHeaderDragEnd">
           <el-table-column type="index" label="序号" width="85" align="center" />
           <el-table-column label="表单名称" prop="formName" key="formName" :min-width="colWidth('formName', 180)" align="center" show-overflow-tooltip resizable>
             <template #default="scope"><span class="col-strong">{{ scope.row.formName }}</span></template>
+          </el-table-column>
+          <el-table-column label="流程分类" prop="category" key="category" :min-width="colWidth('category', 110)" align="center" resizable>
+            <template #default="scope">
+              <span v-if="scope.row.category" class="badge violet">{{ categoryLabel(scope.row.category) }}</span>
+              <span v-else class="badge gray"><span class="dot"></span>未分类</span>
+            </template>
           </el-table-column>
           <el-table-column label="数据库表名" prop="tableName" key="tableName" :min-width="colWidth('tableName', 180)" align="center" show-overflow-tooltip resizable>
             <template #default="scope">
@@ -83,6 +97,9 @@
       </template>
       <el-form ref="addRef" :model="addFormData" :rules="addRules" label-width="120px" size="small">
         <el-form-item label="表单名称" prop="formName"><el-input v-model="addFormData.formName" placeholder="如：销售合同" maxlength="50" /></el-form-item>
+        <el-form-item label="流程分类"><el-select v-model="addFormData.category" placeholder="请选择分类（可留空）" clearable style="width:100%">
+          <el-option v-for="d in flowable_category" :key="d.value" :label="d.label" :value="d.value" />
+        </el-select></el-form-item>
         <el-form-item label="从已有表单复制">
           <div class="copy-field">
             <el-input :model-value="copySourceName" readonly placeholder="未选择（字段将为空，可稍后在编辑字段中设计）">
@@ -147,19 +164,18 @@
         <!-- ===== 基本信息 ===== -->
         <el-tab-pane label="基本信息" name="basic">
           <el-form :model="form" label-width="110px" size="small" class="basic-form">
-            <el-row :gutter="16">
-              <el-col :span="12"><el-form-item label="表单名称" required><el-input v-model="form.formName" placeholder="如：销售合同" /></el-form-item></el-col>
-              <el-col :span="12"><el-form-item label="表单Key"><el-input :model-value="form.formKey" disabled /><div class="form-tip">系统自动生成的唯一数字标识，用于数据表命名</div></el-form-item></el-col>
-            </el-row>
-            <el-row :gutter="16">
-              <el-col :span="12"><el-form-item label="数据库表名">
-                <div class="tbl-name-row">
-                  <span v-if="form.tableName" class="badge green"><span class="dot"></span>{{ form.tableName }}</span>
-                  <span v-else class="badge gray"><span class="dot"></span>{{ 'flow_data_' + (form.formKey || '{表单Key}') }}</span>
-                </div>
-                <div class="form-tip" v-if="!form.tableName">尚未生成数据表，点击列表"生成数据表"后按此名称创建（明细表自动追加 _dt1/_dt2…）</div>
-              </el-form-item></el-col>
-            </el-row>
+            <el-form-item label="表单名称" required><el-input v-model="form.formName" placeholder="如：销售合同" /></el-form-item>
+            <el-form-item label="流程分类"><el-select v-model="form.category" placeholder="请选择分类（可留空）" clearable style="width:100%">
+              <el-option v-for="d in flowable_category" :key="d.value" :label="d.label" :value="d.value" />
+            </el-select></el-form-item>
+            <el-form-item label="数据库表名">
+              <div class="tbl-name-row">
+                <span v-if="form.tableName" class="badge green"><span class="dot"></span>{{ form.tableName }}</span>
+                <span v-else class="badge gray"><span class="dot"></span>{{ 'flow_data_' + (form.formKey || '{表单Key}') }}</span>
+              </div>
+              <div class="form-tip" v-if="!form.tableName">尚未生成数据表，点击列表"生成数据表"后按此名称创建（明细表自动追加 _dt1/_dt2…）</div>
+            </el-form-item>
+            <el-form-item label="表单Key"><el-input :model-value="form.formKey" disabled /><div class="form-tip">系统自动生成的唯一数字标识，用于数据表命名</div></el-form-item>
             <el-form-item label="表单描述"><el-input v-model="form.formDesc" type="textarea" :rows="2" maxlength="200" placeholder="表单用途说明" /></el-form-item>
           </el-form>
         </el-tab-pane>
@@ -253,6 +269,14 @@
                 <el-button size="small" type="primary" plain icon="Plus" @click="addSection">添加分组</el-button>
                 <el-button size="small" plain icon="MagicStick" @click="autoLayout">自动布局</el-button>
                 <el-button size="small" plain icon="ChatLineSquare" @click="addNoteRow">插入说明行</el-button>
+                <el-dropdown trigger="click" @command="addDetailBlock">
+                  <el-button size="small" plain icon="Grid" :disabled="!detailTables.length">插入明细表</el-button>
+                  <template #dropdown>
+                    <el-dropdown-menu>
+                      <el-dropdown-item v-for="dt in detailTables" :key="dt" :command="dt">明细表{{ dt.slice(2) }}（{{ mainTableName + '_' + dt }}）</el-dropdown-item>
+                    </el-dropdown-menu>
+                  </template>
+                </el-dropdown>
                 <el-button size="small" :type="layoutPreview ? 'primary' : 'default'" :icon="layoutPreview ? 'EditPen' : 'View'" @click="layoutPreview = !layoutPreview">{{ layoutPreview ? '返回设计' : '预览效果' }}</el-button>
                 <span class="field-tip">像 Excel 一样操作：拖拽布局、右键合并/拆分单元格、Ctrl+Z 撤销、Delete 删除选中</span>
               </div>
@@ -279,7 +303,7 @@
                   <div class="ed-row" v-show="!sec.collapsed" v-for="(row, ri) in sec.rows" :key="ri">
                     <div class="ed-row-cells" @dragover.prevent @drop.prevent="onDropToRow($event, si, ri)">
                       <div class="ed-cell" v-for="(cell, ci) in row" :key="ci"
-                        :class="['ed-cell', { 'is-active': isCellActive(si, ri, ci), 'is-note': !!cell.note, 'cell-b-all': cell.border === 'all', 'cell-b-bottom': cell.border === 'bottom', 'cell-b-none': cell.border === 'none' }]"
+                        :class="['ed-cell', { 'is-active': isCellActive(si, ri, ci), 'is-note': !!cell.note, 'is-detail': !!cell.detailTable, 'cell-b-all': cell.border === 'all', 'cell-b-bottom': cell.border === 'bottom', 'cell-b-none': cell.border === 'none' }]"
                         :style="[{ width: (cell.span / 24 * 100) + '%' }, cellStyle(cell)]"
                         draggable="true" @dragstart="onCellDragStart($event, si, ri, ci)"
                         @dragover.prevent.stop @drop.prevent.stop="onDropToCell($event, si, ri, ci)"
@@ -288,11 +312,25 @@
                         @contextmenu.prevent.stop="openCtxMenu($event, si, ri, ci)">
                         <div class="ed-cell-label">
                           <el-icon v-if="cell.note"><ChatLineSquare /></el-icon>
-                          <span>{{ cell.note ? (cell.noteLabel || '说明') : (cell.label || fieldShortLabel(cell.field) || '未选字段') }}</span>
-                          <span class="ed-merge-badge" v-if="cell.span > 12" title="合并单元格：右键可拆分">{{ (cell.span / 24 * 4).toFixed(cell.span % 6 === 0 ? 0 : 1) }}格</span>
+                          <el-icon v-if="cell.detailTable"><Grid /></el-icon>
+                          <span v-if="cell.detailTable">{{ detailTableLabel(cell.detailTable) }}</span>
+                          <span v-else>{{ cell.note ? (cell.noteLabel || '说明') : (cell.label || fieldShortLabel(cell.field) || '未选字段') }}</span>
+                          <span class="ed-merge-badge" v-if="cell.span > 12 && !cell.detailTable" title="合并单元格：右键可拆分">{{ (cell.span / 24 * 4).toFixed(cell.span % 6 === 0 ? 0 : 1) }}格</span>
                         </div>
                         <div class="ed-cell-ctrl">
-                          <span v-if="cell.note" class="ed-note-text">{{ cell.note || '（点击输入说明文字）' }}</span>
+                          <span v-if="cell.detailTable" class="ed-detail-mini">
+                            <div class="ed-detail-head">
+                              <span class="ed-detail-th" style="width:36px">序号</span>
+                              <span class="ed-detail-th" v-for="f in detailTableFields(cell.detailTable)" :key="f.field">{{ f.label }}</span>
+                              <span class="ed-detail-th" v-if="!detailTableFields(cell.detailTable).length" style="flex:1">（该明细表暂无字段）</span>
+                            </div>
+                            <div class="ed-detail-tr" v-for="i in 3" :key="i"><span class="ed-detail-td" style="width:36px;color:#cbd5e1">{{ i }}</span><span class="ed-detail-td" v-for="f in detailTableFields(cell.detailTable)" :key="f.field"></span></div>
+                            <div class="ed-detail-tr ed-detail-sum" v-if="(cell.detailSum || []).length">
+                              <span class="ed-detail-td" :style="{width:36+'px',flex:'none'}">合计</span>
+                              <span class="ed-detail-td" v-for="f in detailTableFields(cell.detailTable)" :key="f.field">{{ cell.detailSum.includes(f.field) ? 'Σ' : '' }}</span>
+                            </div>
+                          </span>
+                          <span v-else-if="cell.note" class="ed-note-text">{{ cell.note || '（点击输入说明文字）' }}</span>
                           <template v-else-if="cell.field"><span class="ed-ctrl-demo"></span>{{ fieldShortLabel(cell.field) }}输入框</template>
                           <span v-else class="ed-cell-placeholder">拖入字段 / 双击编辑</span>
                         </div>
@@ -314,7 +352,17 @@
                   <div class="pv-section-title" v-if="sec.title">{{ sec.title }}</div>
                   <el-row :gutter="12" class="pv-row">
                     <el-col v-for="(c, idx) in sec.cells" :key="idx" :span="c.span">
-                      <div v-if="c.note" class="pv-note" :style="cellStyle(c)">{{ c.note }}</div>
+                      <div v-if="c.detailTable" class="pv-detail">
+                        <div class="pv-detail-title">{{ detailTableLabel(c.detailTable) }}</div>
+                        <table class="pv-detail-table">
+                          <thead><tr><th style="width:44px">序号</th><th v-for="f in detailTableFields(c.detailTable)" :key="f.field">{{ f.label }}</th></tr></thead>
+                          <tbody>
+                            <tr v-for="i in 3" :key="i"><td style="color:#cbd5e1">{{ i }}</td><td v-for="f in detailTableFields(c.detailTable)" :key="f.field"></td></tr>
+                            <tr v-if="(c.detailSum || []).length" class="pv-detail-sum"><td>合计</td><td v-for="f in detailTableFields(c.detailTable)" :key="f.field">{{ c.detailSum.includes(f.field) ? 'Σ' : '' }}</td></tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div v-else-if="c.note" class="pv-note" :style="cellStyle(c)">{{ c.note }}</div>
                       <div v-else class="pv-item" :class="{ 'pv-b-all': c.border === 'all', 'pv-b-bottom': c.border === 'bottom' }" :style="cellStyle(c)">
                         <span class="pv-label">{{ c.field ? mainFieldLabel(c.field) : '（未选字段）' }}</span><div class="pv-value">—</div>
                       </div>
@@ -336,7 +384,21 @@
                 <div class="ed-pool-empty" v-if="!unplacedFields.length">主表字段均已布局</div>
               </div>
               <div class="ed-side-title"><el-icon><Setting /></el-icon> 单元格属性</div>
-              <div class="ed-props" v-if="activeCell">
+              <div class="ed-props" v-if="activeCell && activeCell.detailTable">
+                <div class="ed-prop"><label>明细表</label>
+                  <el-select v-model="activeCell.detailTable" size="small">
+                    <el-option v-for="dt in detailTables" :key="dt" :label="detailTableLabel(dt) + '（' + mainTableName + '_' + dt + '）'" :value="dt" />
+                  </el-select>
+                </div>
+                <div class="ed-prop"><label>表尾合计字段（数值类）</label>
+                  <el-select v-model="activeCell.detailSum" size="small" multiple collapse-tags style="width:100%" placeholder="选择需要自动合计的列">
+                    <el-option v-for="f in detailTableFields(activeCell.detailTable)" :key="f.field" :label="f.label + '（' + f.field + '）'" :value="f.field" :disabled="f.dtype !== 'int' && f.dtype !== 'float'" />
+                  </el-select>
+                  <div class="form-tip">仅整数/浮点数字段可合计；勾选后明细表底部显示 Σ 合计行</div>
+                </div>
+                <el-button size="small" type="danger" link icon="Delete" @click="removeActiveCell">删除该明细表块</el-button>
+              </div>
+              <div class="ed-props" v-else-if="activeCell">
                 <div class="ed-prop"><label>宽度{{ activeCell.span > 12 ? '（已合并 ' + activeCell.span + '/24）' : '' }}</label>
                   <el-select v-model="activeCell.span" size="small">
                     <el-option :value="6" label="1/4 宽" /><el-option :value="8" label="1/3 宽" />
@@ -552,6 +614,7 @@ function autoFillFieldName(target, label) {
 }
 
 const { proxy } = getCurrentInstance()
+const { flowable_category } = proxy.useDict('flowable_category')
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('flowable_form_index')
 const list = ref([])
 const loading = ref(true)
@@ -645,7 +708,7 @@ const data = reactive({
   fields: [],
   detailTables: [],
   newField: {},
-  queryParams: { pageNum: 1, pageSize: 10, formName: undefined }
+  queryParams: { pageNum: 1, pageSize: 10, formName: undefined, category: undefined }
 })
 const { queryParams, form, fields, detailTables, newField } = toRefs(data)
 
@@ -703,11 +766,16 @@ function getList() {
     applySavedWidths()
   }).catch(() => { loading.value = false })
 }
+/** 流程分类字典值 → 显示标签 */
+function categoryLabel(value) {
+  const item = (flowable_category.value || []).find(d => d.value == value)
+  return item ? item.label : (value || '未分类')
+}
 function handleQuery() { queryParams.value.pageNum = 1; getList() }
-function resetQuery() { queryParams.value.formName = undefined; handleQuery() }
+function resetQuery() { queryParams.value.formName = undefined; queryParams.value.category = undefined; handleQuery() }
 
 function handleAdd() {
-  addFormData.value = { formName: undefined, copyFrom: undefined, copyFieldsJson: undefined, formDesc: undefined }
+  addFormData.value = { formName: undefined, category: undefined, copyFrom: undefined, copyFieldsJson: undefined, formDesc: undefined }
   copySelected.value = null
   addOpen.value = true
   nextTick(() => addRef.value && addRef.value.clearValidate())
@@ -718,7 +786,7 @@ function submitAdd(enterDesign) {
   addRef.value.validate(async valid => {
     if (!valid) return
     const fieldsJson = addFormData.value.copyFieldsJson || '[]'
-    const payload = { formName: addFormData.value.formName, formDesc: addFormData.value.formDesc || undefined, fieldsJson }
+    const payload = { formName: addFormData.value.formName, category: addFormData.value.category || undefined, formDesc: addFormData.value.formDesc || undefined, fieldsJson }
     const res = await addForm(payload)
     const newId = res.data
     const copied = fieldsJson !== '[]'
@@ -889,6 +957,11 @@ function removeCheckedFields() {
 function removeDetailTable(name) {
   fields.value = fields.value.filter(f => f.table !== name)
   detailTables.value = detailTables.value.filter(t => t !== name)
+  // 同步清理布局中该明细表的占位块
+  for (const sec of layout.value.sections) {
+    sec.rows = sec.rows.filter(row => !(row.length === 1 && row[0].detailTable === name))
+  }
+  layout.value.sections = layout.value.sections.filter(sec => sec.rows.length || sec.title)
   activeTableTab.value = 'main'
 }
 
@@ -941,6 +1014,26 @@ function addNoteRow() {
   if (!layout.value.sections.length) addSection()
   const sec = layout.value.sections[layout.value.sections.length - 1]
   sec.rows.push([{ note: '', span: 24 }])
+  sel.value = { si: layout.value.sections.length - 1, ri: sec.rows.length - 1, ci: 0 }
+}
+
+// ===== 明细表块（参照泛微 e-cology：明细表整体作为占位块插入布局，含表头/空白行/表尾合计） =====
+/** 明细表显示名：dt1 → 明细表1 */
+function detailTableLabel(dt) {
+  const idx = detailTables.value.indexOf(dt)
+  return '明细表' + (idx >= 0 ? String(idx + 1) : dt.slice(2))
+}
+/** 明细表字段清单（按显示顺序） */
+function detailTableFields(dt) {
+  return fields.value.filter(f => f.table === dt).sort((a, b) => (a.order || 1) - (b.order || 1))
+}
+/** 插入明细表块：整行 24 格，独立占位（泛微式：明细表区域不与其他字段混排） */
+function addDetailBlock(dt) {
+  if (!dt) return
+  if (!layout.value.sections.length) addSection()
+  const sec = layout.value.sections[layout.value.sections.length - 1]
+  pushUndo()
+  sec.rows.push([{ detailTable: dt, detailSum: [], span: 24 }])
   sel.value = { si: layout.value.sections.length - 1, ri: sec.rows.length - 1, ci: 0 }
 }
 function appendFieldToLastRow(field) {
@@ -999,6 +1092,7 @@ const canMergeRight = computed(() => {
   const row = layout.value.sections[si]?.rows?.[ri]
   if (!row || ci >= row.length - 1) return false
   const cur = row[ci], nxt = row[ci + 1]
+  if (cur.detailTable || nxt.detailTable) return false
   return (cur.span + nxt.span) <= 24
 })
 function ctxAction(action) {
@@ -1020,7 +1114,7 @@ function ctxAction(action) {
   }
   else if (action === 'splitCell') {
     const span = cell.span || 12
-    if (span <= 6) return
+    if (span <= 6 || cell.detailTable) return
     const half = span / 2
     cell.span = half
     row.splice(ci + 1, 0, { field: undefined, span: half })
@@ -1175,7 +1269,7 @@ function autoLayout() {
 const previewSections = computed(() => {
   const list = layout.value.sections.map(sec => ({
     title: sec.title,
-    cells: sec.rows.flat().filter(c => c.field || c.note).map(c => ({ ...c }))
+    cells: sec.rows.flat().filter(c => c.field || c.note || c.detailTable).map(c => ({ ...c }))
   }))
   const rest = unplacedFields.value
   if (rest.length) list.push({ title: '其他信息', cells: rest.map(f => ({ field: f.field, span: 12 })) })
@@ -1196,7 +1290,11 @@ function normalizeLayout(json) {
     title: s.title || '',
     collapsed: !!s.collapsed,
     rows: (Array.isArray(s.rows) ? s.rows : [])
-      .map(r => (Array.isArray(r) ? r : []).filter(c => c && typeof c === 'object' && (c.field || c.note)).map(c => {
+      .map(r => (Array.isArray(r) ? r : []).filter(c => c && typeof c === 'object' && (c.field || c.note || c.detailTable)).map(c => {
+        // 明细表块：整行占位，仅保留明细表 key 与合计字段配置
+        if (c.detailTable) {
+          return { detailTable: c.detailTable, detailSum: Array.isArray(c.detailSum) ? c.detailSum.filter(x => detailTableFields(c.detailTable).some(f => f.field === x)) : [], span: 24 }
+        }
         const n = { field: c.note ? undefined : c.field, note: c.note || undefined, label: c.label || undefined, noteLabel: c.noteLabel || undefined, span: cellSpan(c) }
         for (const k of ['fontFamily', 'fontSize', 'bold', 'italic', 'color', 'bgColor', 'border', 'borderColor']) if (c[k] !== undefined && c[k] !== null && c[k] !== '') n[k] = c[k]
         return n
@@ -1257,6 +1355,7 @@ function submitForm(keepOpen) {
   }
   const payload = {
     formId: form.value.formId, formKey: form.value.formKey, formName: form.value.formName,
+    category: form.value.category || undefined,
     formDesc: form.value.formDesc || undefined,
     processKey: form.value.processKey || undefined,
     fieldsJson: JSON.stringify(fields.value.map(({ rowKey, ...rest }) => rest)),
@@ -1313,6 +1412,24 @@ onActivated(() => { getList() })
 .copy-table { width: 100%; }
 .batch-toolbar { display: flex; align-items: center; gap: 8px; margin: 0 12px 10px; }
 .tbl-name-row { line-height: 28px; }
+
+/* ===== 明细表块（参照泛微 e-cology） ===== */
+.ed-cell.is-detail { background: #f8fafc; }
+.ed-detail-mini { display: block; width: 100%; font-size: 11px; }
+.ed-detail-head { display: flex; background: #fef3c7; border: 1px solid #fcd34d; border-radius: 3px 3px 0 0; }
+.ed-detail-th { flex: 1; padding: 3px 6px; color: #92400e; font-weight: 600; border-right: 1px solid #fde68a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ed-detail-th:last-child { border-right: none; }
+.ed-detail-tr { display: flex; border: 1px solid #e2e8f0; border-top: none; background: #fff; }
+.ed-detail-td { flex: 1; min-height: 16px; padding: 2px 6px; border-right: 1px dashed #eef2f7; text-align: center; color: #334155; }
+.ed-detail-td:last-child { border-right: none; }
+.ed-detail-sum { background: #f8fafc; color: #7c3aed; font-weight: 600; }
+/* 预览态明细表 */
+.pv-detail { border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden; margin: 2px 0 8px; }
+.pv-detail-title { font-size: 13px; font-weight: 600; color: #0f172a; background: #f8fafc; padding: 5px 10px; border-bottom: 1px solid #e2e8f0; }
+.pv-detail-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.pv-detail-table th { background: #fef3c7; color: #92400e; padding: 5px 8px; border: 1px solid #fde68a; font-weight: 600; }
+.pv-detail-table td { border: 1px solid #eef2f7; padding: 5px 8px; height: 22px; text-align: center; color: #94a3b8; }
+.pv-detail-sum td { background: #f8fafc; color: #7c3aed; font-weight: 600; }
 
 /* ===== 页面设计（类Excel布局设计器） ===== */
 .ed-wrap { display: flex; gap: 12px; margin: 0 12px 10px; align-items: flex-start; position: relative; }

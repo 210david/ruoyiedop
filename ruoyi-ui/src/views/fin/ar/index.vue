@@ -1,37 +1,46 @@
 <template>
   <div class="app-container fin-ar-page">
-    <!-- 应收总览 -->
-    <div class="surface summary-bar">
-      <div class="summary-item">
-        <div class="summary-label">应收总额（元）</div>
-        <div class="summary-value">{{ formatAmount(summary.totalAmount) }}</div>
-      </div>
-      <div class="summary-item">
-        <div class="summary-label">已收（元）</div>
-        <div class="summary-value text-received">{{ formatAmount(summary.receivedAmount) }}</div>
-      </div>
-      <div class="summary-item">
-        <div class="summary-label">未收（元）</div>
-        <div class="summary-value text-unreceived">{{ formatAmount(summary.unreceivedAmount) }}</div>
-      </div>
-      <div class="summary-item">
-        <div class="summary-label">逾期未付</div>
-        <div class="summary-value" :class="overdueList.length > 0 ? 'text-danger' : ''">
-          {{ overdueList.length }}<span class="summary-unit">笔</span>
+    <!-- 应收总览（stat-card 样式，对齐回款管理页面） -->
+    <el-row :gutter="12" class="mb8">
+      <el-col :span="6">
+        <div class="stat-card">
+          <div class="stat-label">应收总额（元）</div>
+          <div class="stat-value">{{ formatAmount(summary.totalAmount) }}</div>
         </div>
-      </div>
-    </div>
+      </el-col>
+      <el-col :span="6">
+        <div class="stat-card stat-success">
+          <div class="stat-label">已收（元）</div>
+          <div class="stat-value">{{ formatAmount(summary.receivedAmount) }}</div>
+        </div>
+      </el-col>
+      <el-col :span="6">
+        <div class="stat-card stat-warning">
+          <div class="stat-label">未收（元）</div>
+          <div class="stat-value">{{ formatAmount(summary.unreceivedAmount) }}</div>
+        </div>
+      </el-col>
+      <el-col :span="6">
+        <div class="stat-card stat-danger">
+          <div class="stat-label">逾期未付</div>
+          <div class="stat-value">{{ overdueList.length }}<span class="stat-unit">笔</span></div>
+        </div>
+      </el-col>
+    </el-row>
 
     <!-- 筛选卡片 -->
     <div class="surface filter-card" v-show="showSearch">
       <div class="filter-head">
         <div class="filter-title"><span class="glyph"></span>筛选条件</div>
+        <div class="adv-link" :class="{ 'is-open': showAdvanced }" @click="showAdvanced = !showAdvanced">
+          高级筛选<el-icon><ArrowDown /></el-icon>
+        </div>
       </div>
       <div class="filter-bar">
         <div class="field">
           <label>应收单号</label>
           <div class="control">
-            <el-input v-model="queryParams.apNo" placeholder="请输入应收单号" clearable @keyup.enter="handleQuery">
+            <el-input v-model="queryParams.arNo" placeholder="请输入应收单号" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
@@ -46,8 +55,9 @@
         </div>
         <div class="field">
           <label>状态</label>
-          <div class="control">
-            <el-select v-model="queryParams.status" placeholder="全部" clearable>
+          <div class="control is-select">
+            <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
+              <template #prefix><el-icon><Filter /></el-icon></template>
               <el-option label="未核销" value="OPEN" />
               <el-option label="部分核销" value="PARTIAL" />
               <el-option label="已核销" value="SETTLED" />
@@ -67,9 +77,18 @@
               value-format="YYYY-MM-DD" />
           </div>
         </div>
+        <div class="field" v-show="showAdvanced">
+          <label>会计期间</label>
+          <div class="control">
+            <el-select v-model="queryParams.period" placeholder="全部" clearable class="control is-select" @change="handleQuery">
+              <template #prefix><el-icon><Filter /></el-icon></template>
+              <el-option v-for="p in periodOptions" :key="p" :label="formatPeriod(p)" :value="p" />
+            </el-select>
+          </div>
+        </div>
       </div>
       <div class="filter-actions">
-        <div class="filter-info">已选 {{ checkedRows.length }} 条</div>
+        <div class="filter-info"><el-icon><Filter /></el-icon> 已选 {{ activeFilterCount }} 个条件，支持回车快速搜索</div>
         <div class="filter-buttons">
           <el-button icon="RefreshLeft" @click="resetQuery">重置</el-button>
           <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
@@ -83,15 +102,14 @@
         <div class="left">
           <el-button v-hasPermi="['fin:ar:add']" type="primary" plain icon="Plus" @click="handleGenerate">从发货单生成应收单</el-button>
           <el-button v-hasPermi="['fin:ar:receipt']" type="warning" icon="Refresh" @click="handleSyncReceived">同步已收金额</el-button>
-          <el-button v-hasPermi="['fin:ar:invoice']" type="success" icon="Tickets" :disabled="!canInvoice" @click="handleInvoice">登记销项发票</el-button>
           <el-button v-hasPermi="['fin:ar:badDebt']" type="danger" icon="Warning" @click="handleBadDebt">坏账计提</el-button>
-          <el-button v-hasPermi="['fin:ar:writeoff']" type="success" icon="CircleCheck" :disabled="!canWriteoff" @click="handleWriteoff">核销</el-button>
           <el-button icon="DataAnalysis" @click="showAging = true">账龄分析</el-button>
           <el-button icon="Warning" @click="showOverdue = true">逾期预警</el-button>
           <el-button v-hasPermi="['fin:ar:export']" icon="Download" @click="handleExport">导出</el-button>
         </div>
         <div class="right">
           <right-toolbar v-model:show-search="showSearch" :columns="columns" storageKey="fin_ar_columns" @query-table="getArList" />
+          <button class="tip-pill" @click="showStatusHelp = true"><el-icon><WarningFilled /></el-icon><span>业务操作说明</span></button>
         </div>
       </div>
 
@@ -113,51 +131,49 @@
           border
           highlight-current
           @header-dragend="onHeaderDragEnd"
-          @current-change="handleCurrentChange"
-          @selection-change="handleSelectionChange">
-          <el-table-column type="selection" width="50" align="center" />
+          @current-change="handleCurrentChange">
           <el-table-column type="index" label="序号" width="85" align="center" />
-          <el-table-column v-if="columns.apNo.visible" key="apNo" prop="apNo" label="应收单号" align="center" resizable :min-width="colWidth('apNo', 150)" show-overflow-tooltip>
-            <template #default="{ row }"><span class="col-mono">{{ row.apNo }}</span></template>
+          <el-table-column v-if="colVisible('apNo')" key="apNo" prop="arNo" label="应收单号" align="center" resizable :min-width="colWidth('apNo', 150)" show-overflow-tooltip>
+            <template #default="{ row }"><span class="col-mono">{{ row.arNo }}</span></template>
           </el-table-column>
-          <el-table-column v-if="columns.partnerName.visible" key="partnerName" prop="partnerName" label="客户" align="center" resizable :min-width="colWidth('partnerName', 180)" show-overflow-tooltip />
-          <el-table-column v-if="columns.sourceKey.visible" key="sourceKey" prop="sourceKey" label="来源发货单" align="center" resizable :width="colWidth('sourceKey', 140)">
+          <el-table-column v-if="colVisible('partnerName')" key="partnerName" prop="partnerName" label="客户" align="center" resizable :min-width="colWidth('partnerName', 180)" show-overflow-tooltip />
+          <el-table-column v-if="colVisible('sourceKey')" key="sourceKey" prop="sourceKey" label="来源发货单" align="center" resizable :width="colWidth('sourceKey', 140)">
             <template #default="{ row }">
               <el-tooltip :content="`来源：${row.sourceModule} / ${row.sourceType}`">
                 <span class="text-muted">{{ row.sourceKey || '手工' }}</span>
               </el-tooltip>
             </template>
           </el-table-column>
-          <el-table-column v-if="columns.apDate.visible" key="apDate" prop="apDate" label="应收日期" align="center" resizable :width="colWidth('apDate', 110)">
+          <el-table-column v-if="colVisible('apDate')" key="apDate" prop="apDate" label="应收日期" align="center" resizable :width="colWidth('apDate', 110)">
             <template #default="{ row }">{{ row.apDate ? String(row.apDate).slice(0, 10) : '—' }}</template>
           </el-table-column>
-          <el-table-column v-if="columns.amountExclTax.visible" key="amountExclTax" prop="amountExclTax" label="不含税" align="center" resizable :width="colWidth('amountExclTax', 120)">
+          <el-table-column v-if="colVisible('amountExclTax')" key="amountExclTax" prop="amountExclTax" label="不含税" align="center" resizable :width="colWidth('amountExclTax', 120)">
             <template #default="{ row }">{{ formatAmount(row.amountExclTax) }}</template>
           </el-table-column>
-          <el-table-column v-if="columns.taxAmount.visible" key="taxAmount" prop="taxAmount" label="税额" align="center" resizable :width="colWidth('taxAmount', 110)">
+          <el-table-column v-if="colVisible('taxAmount')" key="taxAmount" prop="taxAmount" label="税额" align="center" resizable :width="colWidth('taxAmount', 110)">
             <template #default="{ row }">{{ formatAmount(row.taxAmount) }}</template>
           </el-table-column>
-          <el-table-column v-if="columns.totalAmount.visible" key="totalAmount" prop="totalAmount" label="价税合计" align="center" resizable :width="colWidth('totalAmount', 130)">
+          <el-table-column v-if="colVisible('totalAmount')" key="totalAmount" prop="totalAmount" label="价税合计" align="center" resizable :width="colWidth('totalAmount', 130)">
             <template #default="{ row }"><span class="rd-amount">{{ formatAmount(row.totalAmount) }}</span></template>
           </el-table-column>
-          <el-table-column v-if="columns.receivedAmount.visible" key="receivedAmount" prop="receivedAmount" label="已收" align="center" resizable :width="colWidth('receivedAmount', 120)">
+          <el-table-column v-if="colVisible('receivedAmount')" key="receivedAmount" prop="receivedAmount" label="已收" align="center" resizable :width="colWidth('receivedAmount', 120)">
             <template #default="{ row }"><span class="text-received">{{ formatAmount(row.receivedAmount) }}</span></template>
           </el-table-column>
-          <el-table-column v-if="columns.unreceivedAmount.visible" key="unreceivedAmount" prop="unreceivedAmount" label="未付" align="center" resizable :width="colWidth('unreceivedAmount', 130)">
+          <el-table-column v-if="colVisible('unreceivedAmount')" key="unreceivedAmount" prop="unreceivedAmount" label="未付" align="center" resizable :width="colWidth('unreceivedAmount', 130)">
             <template #default="{ row }">
               <span class="amount-cell strong text-unreceived">
                 {{ formatAmount(Number(row.totalAmount || 0) - Number(row.receivedAmount || 0)) }}
               </span>
             </template>
           </el-table-column>
-          <el-table-column v-if="columns.dueDate.visible" key="dueDate" prop="dueDate" label="到期日" align="center" resizable :width="colWidth('dueDate', 110)">
+          <el-table-column v-if="colVisible('dueDate')" key="dueDate" prop="dueDate" label="到期日" align="center" resizable :width="colWidth('dueDate', 110)">
             <template #default="{ row }">
               <span :class="isOverdue(row) ? 'text-danger' : 'text-muted'">
                 {{ row.dueDate ? String(row.dueDate).slice(0, 10) : '—' }}
               </span>
             </template>
           </el-table-column>
-          <el-table-column v-if="columns.status.visible" key="status" prop="status" label="状态" align="center" resizable :width="colWidth('status', 100)">
+          <el-table-column v-if="colVisible('status')" key="status" prop="status" label="状态" align="center" resizable :width="colWidth('status', 100)">
             <template #default="{ row }">
               <span class="badge" :class="badgeClass(row.status)"><span class="dot"></span>{{ statusLabel(row.status) }}</span>
             </template>
@@ -166,6 +182,10 @@
             <template #default="{ row }">
               <div class="action-btn-row">
                 <el-button link type="primary" icon="View" @click="handleView(row)">详情</el-button>
+                <el-button v-if="canRowWriteoff(row)" v-hasPermi="['fin:ar:writeoff']"
+                           link type="success" icon="CircleCheck" @click="handleRowWriteoff(row)">核销</el-button>
+                <el-button v-if="canRowInvoice(row)" v-hasPermi="['fin:ar:invoice']"
+                           link type="primary" icon="Tickets" @click="handleRowInvoice(row)">登记发票</el-button>
                 <el-button v-if="row.status !== 'SETTLED' && row.status !== 'VOID'"
                            v-hasPermi="['fin:ar:edit']" link type="warning" icon="Close" @click="handleVoid(row)">作废</el-button>
               </div>
@@ -192,7 +212,7 @@
           <div class="rd-detail-header-main">
             <div class="rd-detail-header-title">应收单详情</div>
             <div class="rd-detail-header-sub">
-              <span class="rd-detail-header-no">{{ current?.apNo }}</span>
+              <span class="rd-detail-header-no">{{ current?.arNo }}</span>
             </div>
           </div>
         </div>
@@ -255,10 +275,21 @@
     </el-dialog>
 
     <!-- 核销弹框 -->
-    <el-dialog v-model="showWriteoff" title="收款核销" width="480px" append-to-body>
+    <el-dialog v-model="showWriteoff" width="480px" append-to-body class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><el-icon :size="20"><CircleCheck /></el-icon></div>
+          <div class="rd-detail-header-main">
+            <div class="rd-detail-header-title">收款核销</div>
+            <div class="rd-detail-header-sub">
+              <span class="rd-detail-header-no">{{ current?.arNo || '' }}</span>
+            </div>
+          </div>
+        </div>
+      </template>
       <el-form label-width="90px">
         <el-form-item label="应收单">
-          <el-input :model-value="current?.apNo" disabled />
+          <el-input :model-value="current?.arNo" disabled />
         </el-form-item>
         <el-form-item label="未付余额">
           <el-input :model-value="formatAmount(detailUnreceived)" disabled />
@@ -283,7 +314,18 @@
     </el-dialog>
 
     <!-- 生成结果 -->
-    <el-dialog v-model="showResult" title="应收单生成结果" width="440px" append-to-body>
+    <el-dialog v-model="showResult" width="440px" append-to-body class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><el-icon :size="20"><Tickets /></el-icon></div>
+          <div class="rd-detail-header-main">
+            <div class="rd-detail-header-title">应收单生成结果</div>
+            <div class="rd-detail-header-sub">
+              <span class="rd-detail-header-no">生成执行留痕</span>
+            </div>
+          </div>
+        </div>
+      </template>
       <el-descriptions :column="1" border v-if="lastResult">
         <el-descriptions-item label="待处理发票">{{ lastResult.total }}</el-descriptions-item>
         <el-descriptions-item label="成功">
@@ -300,10 +342,21 @@
     </el-dialog>
 
     <!-- 销项发票登记 -->
-    <el-dialog v-model="showInvoice" title="登记销项发票" width="480px" append-to-body>
+    <el-dialog v-model="showInvoice" width="480px" append-to-body class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><el-icon :size="20"><Tickets /></el-icon></div>
+          <div class="rd-detail-header-main">
+            <div class="rd-detail-header-title">登记销项发票</div>
+            <div class="rd-detail-header-sub">
+              <span class="rd-detail-header-no">{{ current?.arNo || '' }}</span>
+            </div>
+          </div>
+        </div>
+      </template>
       <el-form label-width="90px">
         <el-form-item label="应收单号">
-          <el-input :model-value="current?.apNo" disabled />
+          <el-input :model-value="current?.arNo" disabled />
         </el-form-item>
         <el-form-item label="发票号码" required>
           <el-input v-model="invoiceForm.invoiceNo" placeholder="请输入销项发票号码" />
@@ -325,7 +378,18 @@
     </el-dialog>
 
     <!-- 账龄分析 -->
-    <el-dialog v-model="showAging" title="应收账龄分析" width="720px" append-to-body>
+    <el-dialog v-model="showAging" width="720px" append-to-body class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><el-icon :size="20"><DataAnalysis /></el-icon></div>
+          <div class="rd-detail-header-main">
+            <div class="rd-detail-header-title">应收账龄分析</div>
+            <div class="rd-detail-header-sub">
+              <span class="rd-detail-header-no">按账龄区间统计未收款项</span>
+            </div>
+          </div>
+        </div>
+      </template>
       <div style="margin-bottom: 12px">
         <el-button type="primary" icon="Search" @click="loadAging">查询</el-button>
       </div>
@@ -344,9 +408,20 @@
     </el-dialog>
 
     <!-- 逾期预警 -->
-    <el-dialog v-model="showOverdue" title="逾期未付预警" width="880px" append-to-body>
+    <el-dialog v-model="showOverdue" width="880px" append-to-body class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><el-icon :size="20"><Warning /></el-icon></div>
+          <div class="rd-detail-header-main">
+            <div class="rd-detail-header-title">逾期未付预警</div>
+            <div class="rd-detail-header-sub">
+              <span class="rd-detail-header-no">已到期仍未收清的应收单</span>
+            </div>
+          </div>
+        </div>
+      </template>
       <el-table :data="overdueList" size="small" border max-height="420">
-        <el-table-column prop="apNo" label="应收单号" width="150" align="center" />
+        <el-table-column prop="arNo" label="应收单号" width="150" align="center" />
         <el-table-column prop="partnerName" label="客户" min-width="180" align="center" />
         <el-table-column prop="dueDate" label="到期日" width="110" align="center" />
         <el-table-column label="未收金额" width="140" align="center">
@@ -359,10 +434,15 @@
         </el-table-column>
       </el-table>
     </el-dialog>
+    <el-dialog v-model="showStatusHelp" title="应收管理业务操作说明" width="820px" append-to-body>
+      <div class="status-help-content"><h4>一、状态流转图</h4><div class="status-flow"><el-tag type="info">待收</el-tag><span class="flow-arrow">→</span><el-tag type="primary">部分收款</el-tag><span class="flow-arrow">→</span><el-tag type="success">已收清</el-tag><span class="flow-arrow">→</span><el-tag type="warning">已核销</el-tag></div><h4>二、各状态说明</h4><el-descriptions :column="1" border><el-descriptions-item label="待收">应收单已生成，尚未收到任何回款，可跟踪收款进度</el-descriptions-item><el-descriptions-item label="部分收款">已收到部分回款，剩余应收金额继续跟踪</el-descriptions-item><el-descriptions-item label="已收清">应收金额全部收回，单据收款完成</el-descriptions-item><el-descriptions-item label="已核销">应收单与回款完成核销匹配，往来账务闭环</el-descriptions-item></el-descriptions><h4>三、重点业务规则</h4><el-row :gutter="16"><el-col :span="12"><div class="highlight-card highlight-primary"><div class="highlight-card-title">发货自动生成应收单</div><div class="highlight-card-body">从销售发货单生成应收单，系统自动<strong>编号（AR 前缀）</strong>并关联客户与发货单</div></div></el-col><el-col :span="12"><div class="highlight-card highlight-warning"><div class="highlight-card-title">同步已收金额</div><div class="highlight-card-body">回款完成后点击「同步已收金额」刷新实收数据；<strong>未同步前</strong>单据状态不会变化</div></div></el-col></el-row><el-row :gutter="16" style="margin-top: 12px;"><el-col :span="12"><div class="highlight-card highlight-success"><div class="highlight-card-title">坏账计提</div><div class="highlight-card-body">点击「坏账计提」按规则计提坏账准备，<strong>自动生成计提单号（BD 前缀）</strong>并生成凭证</div></div></el-col><el-col :span="12"><div class="highlight-card highlight-danger"><div class="highlight-card-title">账龄分析</div><div class="highlight-card-body">账龄分析按客户与账期区间统计应收余额，<strong>超期应收一目了然</strong></div></div></el-col></el-row><h4>四、业务操作流程</h4><el-timeline><el-timeline-item type="primary" :hollow="true"><strong>生成应收单：</strong>点击「从发货单生成应收单」，选择销售发货单自动生成，核对金额与客户</el-timeline-item><el-timeline-item type="warning" :hollow="true"><strong>收款跟踪：</strong>客户回款后点击「同步已收金额」，更新实收金额与单据状态</el-timeline-item><el-timeline-item type="success" :hollow="true"><strong>应收核销：</strong>单据收清后执行核销，冲抵往来欠款</el-timeline-item><el-timeline-item type="info" :hollow="true"><strong>坏账计提：</strong>对预计无法收回的应收按规则计提坏账，生成计提单与凭证</el-timeline-item></el-timeline></div>
+      <template #footer><el-button type="primary" @click="showStatusHelp = false">我知道了</el-button></template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup name="FinAr">
+const showStatusHelp = ref(false)
 import {
   listAr, getAr, generateAr, syncReceived, writeoffAr, voidAr, getArAging, getArOverdue, getArSummary,
   invoiceAr, badDebt
@@ -394,7 +474,6 @@ const showAging = ref(false)
 const showOverdue = ref(false)
 const writeoffAmount = ref('')
 const writeoffRemark = ref('')
-const checkedRows = ref([])
 
 /** 列显隐配置 */
 const defaultColumns = [
@@ -412,6 +491,12 @@ const defaultColumns = [
 ]
 const columns = ref(defaultColumns.map(c => ({ ...c })))
 
+/** 列显隐辅助（columns 为数组，模板不能按对象访问） */
+function colVisible(key) {
+  const c = columns.value.find(x => x.key === key)
+  return c ? c.visible !== false : true
+}
+
 function loadColumnVisibility() {
   try {
     const saved = localStorage.getItem('fin_ar_columns')
@@ -426,23 +511,35 @@ function loadColumnVisibility() {
 }
 loadColumnVisibility()
 
-const queryParams = ref({ pageNum: 1, pageSize: 20, apNo: undefined, partnerName: undefined, status: undefined })
+const queryParams = ref({ pageNum: 1, pageSize: 20, arNo: undefined, partnerName: undefined, status: undefined, period: undefined })
+
+const showAdvanced = ref(false)
+
+const activeFilterCount = computed(() => {
+  const q = queryParams.value
+  let n = 0
+  if (q.arNo) n++
+  if (q.partnerName) n++
+  if (q.status) n++
+  if (q.period) n++
+  if (dateRange.value && dateRange.value.length === 2) n++
+  return n
+})
+
+/** 近 24 个自然月（yyyyMM） */
+const periodOptions = computed(() => {
+  const list = []
+  const d = new Date()
+  for (let i = 0; i < 24; i++) {
+    const dd = new Date(d.getFullYear(), d.getMonth() - i, 1)
+    list.push(`${dd.getFullYear()}${String(dd.getMonth() + 1).padStart(2, '0')}`)
+  }
+  return list
+})
 
 const detailUnreceived = computed(() => {
   if (!current.value) return 0
   return Number(current.value.totalAmount || 0) - Number(current.value.receivedAmount || 0)
-})
-
-const canWriteoff = computed(() => {
-  const c = current.value
-  if (!c) return false
-  return ['OPEN', 'PARTIAL'].includes(c.status) && detailUnreceived.value > 0
-})
-
-/** 可登记销项发票的应收单（未作废即可） */
-const canInvoice = computed(() => {
-  const c = current.value
-  return !!c && c.status !== 'VOID'
 })
 
 function formatAmount(v) {
@@ -477,7 +574,7 @@ function getArList() {
   loading.value = true
   const params = { ...queryParams.value }
   if (dateRange.value && dateRange.value.length === 2) {
-    params.params = { beginApDate: dateRange.value[0], endApDate: dateRange.value[1] }
+    params.params = { beginArDate: dateRange.value[0], endArDate: dateRange.value[1] }
   }
   listAr(params).then(res => {
     arList.value = res.rows || []
@@ -498,18 +595,12 @@ function loadOverdue() {
 function handleQuery() { queryParams.value.pageNum = 1; getArList() }
 
 function resetQuery() {
-  queryParams.value = { pageNum: 1, pageSize: 20, apNo: undefined, partnerName: undefined, status: undefined }
+  queryParams.value = { pageNum: 1, pageSize: 20, arNo: undefined, partnerName: undefined, status: undefined, period: undefined }
   dateRange.value = []
   getArList()
 }
 
-/** 勾选行：单选时同步为当前核销对象，避免必须点行才能核销 */
-function handleSelectionChange(rows) {
-  checkedRows.value = rows
-  if (rows.length === 1) {
-    current.value = rows[0]
-  }
-}
+/** 行选中：同步为当前核销对象 */
 
 function handleCurrentChange(row) { current.value = row }
 
@@ -535,15 +626,17 @@ function handleSyncReceived() {
 }
 
 /** 登记销项发票 */
-function handleInvoice() {
-  if (!canInvoice.value) {
-    proxy.$modal.msgWarning('请先选择一张应收单')
-    return
-  }
-  invoiceForm.invoiceNo = current.value.invoiceNo || ''
-  invoiceForm.invoiceCode = current.value.invoiceCode || ''
-  invoiceForm.invoiceDate = current.value.invoiceDate
-    ? String(current.value.invoiceDate).slice(0, 10) : ''
+/** 行级发票登记：未作废的应收单可登记销项发票 */
+function canRowInvoice(row) {
+  return !!row && row.status !== 'VOID'
+}
+
+function handleRowInvoice(row) {
+  current.value = row
+  invoiceForm.invoiceNo = row.invoiceNo || ''
+  invoiceForm.invoiceCode = row.invoiceCode || ''
+  invoiceForm.invoiceDate = row.invoiceDate
+    ? String(row.invoiceDate).slice(0, 10) : ''
   showInvoice.value = true
 }
 
@@ -580,18 +673,21 @@ function handleBadDebt() {
 /** 查看详情（独立只读弹窗） */
 function handleView(row) {
   getAr(row.arId).then(res => {
-    current.value = res.data.ap
+    current.value = res.data.ar
     writeoffList.value = res.data.writeoffs || []
     viewOpen.value = true
   })
 }
 
-function handleWriteoff() {
-  if (!canWriteoff.value) {
-    proxy.$modal.msgWarning('请选择未核销或部分核销的应收单')
-    return
-  }
-  writeoffAmount.value = String(detailUnreceived.value.toFixed(2))
+/** 行级核销：未核销/部分核销且有未收余额的应收单可核销 */
+function canRowWriteoff(row) {
+  if (!row || ['SETTLED', 'VOID'].includes(row.status)) return false
+  return Number(row.totalAmount || 0) - Number(row.receivedAmount || 0) > 0
+}
+
+function handleRowWriteoff(row) {
+  current.value = row
+  writeoffAmount.value = (Number(row.totalAmount || 0) - Number(row.receivedAmount || 0)).toFixed(2)
   writeoffRemark.value = ''
   showWriteoff.value = true
 }
@@ -613,7 +709,7 @@ function submitWriteoff() {
     // 刷新当前单据，避免详情弹框显示过期数据
     if (current.value && current.value.arId) {
       getAr(current.value.arId).then(res => {
-        current.value = res.data.ap
+        current.value = res.data.ar
         writeoffList.value = res.data.writeoffs || []
       })
     }
@@ -621,7 +717,7 @@ function submitWriteoff() {
 }
 
 function handleVoid(row) {
-  proxy.$modal.confirm(`是否确认作废应收单「${row.apNo}」？作废后不再参与账龄统计。`).then(() => {
+  proxy.$modal.confirm(`是否确认作废应收单「${row.arNo}」？作废后不再参与账龄统计。`).then(() => {
     return voidAr(row.arId, '手工作废')
   }).then(() => {
     proxy.$modal.msgSuccess('作废成功')
@@ -664,10 +760,26 @@ loadOverdue()
 .fin-ar-page .surface { background:#fff; border:1px solid var(--ink-200); border-radius:var(--r-lg); box-shadow:var(--shadow-card); overflow:hidden; margin-bottom:8px; }
 
 /* ===== Summary Bar ===== */
-.fin-ar-page .summary-bar { display:flex; gap:32px; padding:16px 20px; flex-wrap:wrap; }
-.fin-ar-page .summary-label { font-size:12px; color:var(--ink-500); }
-.fin-ar-page .summary-value { font-size:20px; font-weight:600; font-variant-numeric:tabular-nums; margin:4px 0; color:var(--ink-900); }
-.fin-ar-page .summary-unit { font-size:12px; margin-left:2px; font-weight:400; }
+/* ===== stat-card（对齐回款管理页面） ===== */
+.fin-ar-page .stat-card {
+  background:#fff;
+  border:1px solid var(--ink-200);
+  border-radius:var(--r-lg);
+  box-shadow:var(--shadow-card);
+  padding:16px 18px;
+  text-align:center;
+  transition:all .15s var(--ease-out);
+}
+.fin-ar-page .stat-card:hover {
+  border-color:var(--brand-200);
+  box-shadow:0 4px 12px -2px rgba(99,102,241,.12);
+}
+.fin-ar-page .stat-card .stat-label { font-size:13px; color:var(--ink-500); margin-bottom:8px; }
+.fin-ar-page .stat-card .stat-value { font-size:22px; font-weight:700; color:var(--ink-900); font-feature-settings:"tnum" 1; font-variant-numeric:tabular-nums; }
+.fin-ar-page .stat-card.stat-success .stat-value { color:var(--green-500); }
+.fin-ar-page .stat-card.stat-warning .stat-value { color:var(--amber-500); }
+.fin-ar-page .stat-card.stat-danger .stat-value { color:var(--red-500); }
+.fin-ar-page .stat-unit { font-size:12px; margin-left:2px; font-weight:400; }
 
 /* ===== Filter Card ===== */
 .fin-ar-page .filter-card { padding:14px 20px 16px; }
@@ -678,6 +790,10 @@ loadOverdue()
 .fin-ar-page .filter-card .filter-actions { display:flex; align-items:center; justify-content:space-between; margin-top:14px; padding-top:14px; border-top:1px dashed var(--ink-200); }
 .fin-ar-page .filter-card .filter-info { font-size:13px; color:var(--ink-500); display:flex; align-items:center; gap:6px; }
 .fin-ar-page .filter-card .filter-buttons { display:flex; gap:8px; }
+.fin-ar-page .adv-link { display:flex; align-items:center; gap:4px; font-size:13px; color:var(--brand-600); cursor:pointer; user-select:none; transition:color .15s var(--ease-out); }
+.fin-ar-page .adv-link:hover { color:var(--brand-700); }
+.fin-ar-page .adv-link .el-icon { transition:transform .2s var(--ease-out); }
+.fin-ar-page .adv-link.is-open .el-icon { transform:rotate(180deg); }
 
 /* ===== Form Field ===== */
 .fin-ar-page .field { display:flex; flex-direction:column; gap:6px; }

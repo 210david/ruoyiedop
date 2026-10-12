@@ -31,7 +31,42 @@
                     </span>
                   </template>
                 </div>
-                <div v-else-if="e.cell.type === 'detail'" class="fgr-detail">明细表：{{ e.cell.detail || '—' }}</div>
+                <div v-else-if="e.cell.type === 'detail'" class="fgr-detail-block">
+                  <div class="fgr-dbar">
+                    <span class="fgr-dname"><i class="dot"></i>{{ e.cell.text || '明细表' }}</span>
+                    <span v-if="editable && values"><el-button size="small" link type="primary" @click="addDetailRow(e.cell.detail && e.cell.detail.table)">＋ 添加明细</el-button></span>
+                  </div>
+                  <table class="fgr-dtable" v-if="detailFieldsOf(e.cell.detail && e.cell.detail.table).length">
+                    <thead><tr>
+                      <th style="width:48px">序号</th>
+                      <th v-for="f in detailFieldsOf(e.cell.detail && e.cell.detail.table)" :key="f.field">{{ f.label }}<i v-if="f.required" class="req">*</i></th>
+                      <th v-if="editable && values" style="width:48px">操作</th>
+                    </tr></thead>
+                    <tbody>
+                      <tr v-for="(row, ri) in (detailRows[(e.cell.detail && e.cell.detail.table)] || [])" :key="row._key">
+                        <td style="text-align:center;color:#94a3b8">{{ ri + 1 }}</td>
+                        <td v-for="f in detailFieldsOf(e.cell.detail && e.cell.detail.table)" :key="f.field">
+                          <template v-if="editable && values">
+                            <grid-control :f="fieldDef(f.field)" :model-value="row[f.field]"
+                              @update:model-value="v => (row[f.field] = v)" @browse="fd => $emit('browse', fd)" />
+                          </template>
+                          <template v-else><span class="val-text">{{ displayTextOf(fieldDef(f.field), row[f.field], '—') }}</span></template>
+                        </td>
+                        <td v-if="editable && values" style="text-align:center">
+                          <el-button size="small" link type="danger" @click="removeDetailRow(e.cell.detail && e.cell.detail.table, ri)">✕</el-button>
+                        </td>
+                      </tr>
+                      <tr v-if="((e.cell.detail && e.cell.detail.sumFields) || []).length && (detailRows[(e.cell.detail && e.cell.detail.table)] || []).length" class="fgr-dsum">
+                        <td style="text-align:center">合计</td>
+                        <td v-for="f in detailFieldsOf(e.cell.detail && e.cell.detail.table)" :key="f.field" style="text-align:right;color:#7c3aed;font-weight:600">
+                          <template v-if="(e.cell.detail.sumFields || []).includes(f.field)">Σ {{ detailSumValue(e.cell, f.field) }}</template>
+                        </td>
+                        <td v-if="editable && values"></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <div v-else class="fgr-dempty">{{ e.cell.text || '明细表' }}暂无字段，请到「编辑字段」页签添加明细表字段</div>
+                </div>
                 <div v-else-if="e.cell.type === 'image'" class="fgr-img-wrap" :class="'img-' + ((e.cell.style && e.cell.style.align) || 'center')">
                   <img v-if="e.cell.src" :src="e.cell.src" class="fgr-img" alt="图片" />
                   <span v-else class="fgr-text ph">图片</span>
@@ -122,6 +157,52 @@ const rowViews = computed(() => {
   if (!props.grid) return []
   return buildRowsView(props.grid)
 })
+
+// ===== 运行时明细表（参照泛微 e-cology）：行管理 + 表尾 Σ 合计 =====
+import { ref, watch } from 'vue'
+const detailRows = ref({})
+/** 明细表字段清单（按 table 分组） */
+function detailFieldsOf(dt) {
+  return (props.fields || []).filter(f => f.table === dt)
+}
+function blankDetailRow(fs) {
+  const row = { _key: 'r' + Math.random().toString(36).slice(2, 8) }
+  fs.forEach(f => { row[f.field] = undefined })
+  return row
+}
+/** 明细块变化时初始化默认 1 行（泛微"新增默认明细行数"） */
+watch(() => props.grid, g => {
+  const rows = {}
+  for (const c of ((g && g.cells) || [])) {
+    if (c.type === 'detail' && c.detail && c.detail.table) {
+      const fs = detailFieldsOf(c.detail.table)
+      rows[c.detail.table] = fs.length ? [blankDetailRow(fs)] : []
+    }
+  }
+  detailRows.value = rows
+}, { immediate: true, deep: false })
+function addDetailRow(dt) {
+  if (!dt) return
+  if (!detailRows.value[dt]) detailRows.value[dt] = []
+  detailRows.value[dt].push(blankDetailRow(detailFieldsOf(dt)))
+}
+function removeDetailRow(dt, idx) {
+  detailRows.value[dt].splice(idx, 1)
+  if (!detailRows.value[dt].length) addDetailRow(dt)
+}
+function detailSumValue(cell, field) {
+  const rows = detailRows.value[cell.detail.table] || []
+  return rows.reduce((s, r) => s + (Number(r[field]) || 0), 0)
+}
+/** 父组件可取走明细行数据（提交时随流程变量上抛） */
+function getDetailData() {
+  const out = {}
+  for (const [dt, rows] of Object.entries(detailRows.value || {})) {
+    if (rows.length) out[dt] = rows.map(({ _key, ...rest }) => rest)
+  }
+  return out
+}
+defineExpose({ getDetailData })
 </script>
 
 <style lang="scss" scoped>
@@ -154,6 +235,17 @@ const rowViews = computed(() => {
 .fgr-fi .req { color: #f56c6c; font-style: normal; margin-right: 2px; line-height: 26px; flex: none; }
 .fgr-fi :deep(.el-form-item__error) { position: static; padding-top: 2px; }
 .fgr-detail { color: #64748b; font-size: 12px; }
+/* ===== 运行时明细表块（参照泛微 e-cology） ===== */
+.fgr-detail-block { border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden; width: 100%; }
+.fgr-dbar { display: flex; align-items: center; justify-content: space-between; background: #2F3C8E; color: #fff; padding: 5px 10px; }
+.fgr-dname { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; font-weight: 600; }
+.fgr-dname .dot { width: 6px; height: 6px; border-radius: 50%; background: #fbbf24; }
+.fgr-dtable { width: 100%; border-collapse: collapse; font-size: 13px; }
+.fgr-dtable th { background: #fef3c7; color: #92400e; padding: 6px 8px; border: 1px solid #fde68a; font-weight: 600; text-align: center; white-space: nowrap; }
+.fgr-dtable th .req { color: #f56c6c; font-style: normal; margin-left: 2px; }
+.fgr-dtable td { border: 1px solid #eef2f7; padding: 4px 6px; }
+.fgr-dsum td { background: #f8fafc; }
+.fgr-dempty { padding: 16px; text-align: center; color: #94a3b8; font-size: 13px; }
 .fgr-text { white-space: pre-wrap; }
 /* 图片格：图片铺满格子、object-fit contain 等比缩放，行高列宽拖动完全不受图片限制；对齐用 object-position */
 .fgr-img-wrap { position: relative; display: block; width: 100%; height: 100%; min-height: 24px; min-width: 0; overflow: hidden; }

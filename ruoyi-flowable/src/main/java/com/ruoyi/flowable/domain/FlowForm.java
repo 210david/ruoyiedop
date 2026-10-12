@@ -23,6 +23,9 @@ public class FlowForm extends BaseEntity
     /** 表单描述 */
     private String formDesc;
 
+    /** 流程分类（字典 flowable_category） */
+    private String category;
+
     /** 绑定的流程Key */
     private String processKey;
 
@@ -46,6 +49,8 @@ public class FlowForm extends BaseEntity
     public void setFormName(String formName) { this.formName = formName; }
     public String getFormDesc() { return formDesc; }
     public void setFormDesc(String formDesc) { this.formDesc = formDesc; }
+    public String getCategory() { return category; }
+    public void setCategory(String category) { this.category = category; }
     public String getProcessKey() { return processKey; }
     public void setProcessKey(String processKey) { this.processKey = processKey; }
     public String getFieldsJson() { return fieldsJson; }

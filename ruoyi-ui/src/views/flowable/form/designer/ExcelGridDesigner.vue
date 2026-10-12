@@ -61,6 +61,19 @@
                           <img v-if="e.cell.src" :src="e.cell.src" class="wm-img" alt="图片" />
                           <span v-else class="wm-t ph">图片</span>
                         </span>
+                        <span v-else-if="e.cell.type === 'detail'" class="wm-detail-mini">
+                          <div class="wdm-bar">{{ e.cell.text || '明细表' }}<em>双击进入明细表设置</em></div>
+                          <div class="wdm-head">
+                            <span class="wdm-th" style="flex:none;width:34px">序号</span>
+                            <span class="wdm-th" v-for="f in detailFieldsOf(e.cell.detail && e.cell.detail.table)" :key="f.field">{{ f.label }}</span>
+                            <span class="wdm-th" v-if="!detailFieldsOf(e.cell.detail && e.cell.detail.table).length" style="flex:1;color:#b45309">（尚未选择明细表或该明细表无字段，双击设置）</span>
+                          </div>
+                          <div class="wdm-tr" v-for="i in 3" :key="i"><span class="wdm-td" style="flex:none;width:34px;color:#cbd5e1">{{ i }}</span><span class="wdm-td" v-for="f in detailFieldsOf(e.cell.detail && e.cell.detail.table)" :key="f.field"></span></div>
+                          <div class="wdm-tr wdm-sum" v-if="((e.cell.detail && e.cell.detail.sumFields) || []).length">
+                            <span class="wdm-td" style="flex:none;width:34px">合计</span>
+                            <span class="wdm-td" v-for="f in detailFieldsOf(e.cell.detail && e.cell.detail.table)" :key="f.field">{{ (e.cell.detail.sumFields || []).includes(f.field) ? 'Σ' : '' }}</span>
+                          </div>
+                        </span>
                         <span v-else class="wm-t" :class="{ ph: !e.cell.text }"><template v-if="e.cell.text">{{ e.cell.text }}</template><template v-else-if="isSingleActiveCell(e.r, e.c)">双击输入文本</template></span>
                       </template>
                       <template v-else><span v-if="isSingleActiveCell(e.r, e.c)" class="wm-t ph wm-cell-tip">双击输入文本</span></template>
@@ -102,6 +115,31 @@
       <template #footer>
         <el-button type="primary" @click="confirmPicker">确 定</el-button>
         <el-button @click="pickerOpen = false">取 消</el-button>
+      </template>
+    </el-dialog>
+    <!-- 明细表设置（泛微式：新增明细表后双击块进入设置） -->
+    <el-dialog v-model="dtPropsOpen" :title="dtPropsCell ? '明细表设置 · ' + (dtPropsCell.text || '明细表') : '明细表设置'" width="520px" append-to-body :close-on-click-modal="false">
+      <el-form label-width="120px" size="small">
+        <el-form-item label="明细表名称">
+          <el-input v-model="dtPropsForm.title" placeholder="如：明细表1 / 费用明细" maxlength="30" />
+        </el-form-item>
+        <el-form-item label="数据来源" required>
+          <el-select v-model="dtPropsForm.table" placeholder="选择明细表（编辑字段页签中定义）" style="width:100%">
+            <el-option v-for="dt in detailTableKeys" :key="dt" :label="dt + '（' + detailFieldsOf(dt).length + ' 个字段）'" :value="dt" />
+          </el-select>
+          <div class="wdm-tip">如无明细表，请先到「编辑字段」页签添加明细表字段（+ 页签 → 主表/明细表）</div>
+        </el-form-item>
+        <el-form-item label="表尾合计字段">
+          <el-select v-model="dtPropsForm.sumFields" multiple collapse-tags placeholder="选择需要 Σ 自动合计的数值列" style="width:100%">
+            <el-option v-for="f in detailFieldsOf(dtPropsForm.table)" :key="f.field" :label="f.label + '（' + f.field + '）'" :value="f.field" :disabled="f.dtype !== 'int' && f.dtype !== 'float'" />
+          </el-select>
+          <div class="wdm-tip">仅整数/浮点字段可合计</div>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button type="danger" plain @click="removeDtBlock">删除该明细表块</el-button>
+        <el-button @click="dtPropsOpen = false">取 消</el-button>
+        <el-button type="primary" @click="confirmDtProps">确 定</el-button>
       </template>
     </el-dialog>
     <CellFormatDialog v-model="fmtOpen" :cell="activeCell" />
@@ -517,6 +555,7 @@ function colSel(c) { const t = rect.value; return !!t && t.c1 <= c && t.c2 >= c 
 // ---- 编辑 ----
 function startEdit(r, c) {
   const cell = findAnchorCell(grid.value, r, c)
+  if (cell && cell.type === 'detail') { selRange.value = expandSelRange(r, c, r, c); openDtProps(cell); return }
   if (cell && cell.type === 'field') { selRange.value = expandSelRange(r, c, r, c); openPicker(); return }
   if (cell && cell.rs > 1) { r = cell.r; c = cell.c }
   editing.value = { r, c }
@@ -871,6 +910,77 @@ function insTitle() {
   grid.value.cells.push(makeCell(at, 0, { type: 'title', text: '标题', rs: 1, cs: grid.value.cols, style: hydrateStyle({ bold: true, fontSize: 16, align: 'center' }) }))
   selRange.value = { r1: at, c1: 0, r2: at, c2: 0 }
 }
+
+// ---- 明细表块（参照泛微 e-cology：新增明细表插入占位块，双击进入明细表设置） ----
+const dtPropsOpen = ref(false)
+const dtPropsCell = ref(null)
+const dtPropsForm = ref({ table: undefined, title: '', sumFields: [] })
+/** 画布中已有的明细表 key 集合（含字段定义中的明细表），用于编号与下拉 */
+const detailTableKeys = computed(() => {
+  const set = new Set()
+  for (const f of props.fields || []) if (f.table && f.table !== 'main') set.add(f.table)
+  for (const c of grid.value.cells) if (c.type === 'detail' && c.detail && c.detail.table) set.add(c.detail.table)
+  return [...set].sort()
+})
+function detailFieldsOf(dt) {
+  return (props.fields || []).filter(f => f.table === dt)
+}
+function nextDetailKey() {
+  const used = new Set(detailTableKeys.value)
+  let i = 1
+  while (used.has('dt' + i)) i++
+  return 'dt' + i
+}
+/** 新增明细表：在当前行下方插入一块整行明细表占位（标题行由块内渲染，双击块进入设置）。
+ * 泛微口径：明细块编号按画布已有明细块数递增（明细表1、明细表2…），数据来源默认自动建 dtN，双击可改绑。 */
+function insDetailBlock() {
+  pushUndo()
+  const at = anchorPos().r + 1
+  for (let i = 0; i < 4; i++) insertRow(grid.value, at)
+  const n = grid.value.cells.filter(c => c.type === 'detail').length
+  const key = nextDetailKey()
+  const name = '明细表' + (n + 1)
+  grid.value.cells.push(makeCell(at, 0, {
+    type: 'detail', text: name, rs: 4, cs: grid.value.cols,
+    detail: { table: key, title: name, sumFields: [] }
+  }))
+  selRange.value = { r1: at, c1: 0, r2: at, c2: 0 }
+  ElMessage.success('已插入' + name + '：双击该块可进入明细表设置')
+}
+/** 明细块显示名：按画布出现顺序编号 */
+function detailBlockTitle(key) {
+  const blocks = grid.value.cells.filter(c => c.type === 'detail').sort((a, b) => a.r - b.r)
+  const idx = blocks.findIndex(c => c.detail && c.detail.table === key)
+  return idx >= 0 ? ('明细表' + (idx + 1)) : (key || '明细表')
+}
+/** 双击明细块 → 明细表设置（泛微式：添加后双击进入设置） */
+function openDtProps(cell) {
+  if (!cell || cell.type !== 'detail') return
+  dtPropsCell.value = cell
+  dtPropsForm.value = {
+    table: (cell.detail && cell.detail.table) || undefined,
+    title: cell.text || '',
+    sumFields: [...((cell.detail && cell.detail.sumFields) || [])]
+  }
+  dtPropsOpen.value = true
+}
+function confirmDtProps() {
+  const cell = dtPropsCell.value
+  if (!cell) return
+  if (!dtPropsForm.value.table) { ElMessage.warning('请选择明细表数据来源'); return }
+  pushUndo()
+  cell.text = dtPropsForm.value.title || detailBlockTitle(dtPropsForm.value.table)
+  cell.detail = { ...(cell.detail || {}), table: dtPropsForm.value.table, sumFields: dtPropsForm.value.sumFields }
+  dtPropsOpen.value = false
+}
+function removeDtBlock() {
+  const cell = dtPropsCell.value
+  if (!cell) return
+  pushUndo()
+  grid.value.cells = grid.value.cells.filter(c => c !== cell)
+  dtPropsOpen.value = false
+  ElMessage.success('明细表块已删除')
+}
 function insNote() {
   pushUndo()
   const at = anchorPos().r + 1
@@ -1151,6 +1261,7 @@ function onCmd(cmd) {
     ins_row_above: insRowAbove, ins_row_below: insRowBelow, ins_col_left: insColLeft, ins_col_right: insColRight,
     ins_title: insTitle, ins_note: insNote, fld_bind: openPicker, fld_clear: clearBind,
     ins_image: insImage,
+    dt_new: insDetailBlock,
     sty_clear: clearStyles, sty_painter: togglePainter
   }
   const fn = map[cmd]

@@ -1,7 +1,8 @@
 <template>
   <div class="app-container fin-report-page">
     <!-- 会计恒等式校验条 -->
-    <div class="surface equation-bar" :class="checkClass">
+    <!-- 会计恒等式校验条：仅资产负债表展示（校验资产=负债+权益，与其他报表无关） -->
+    <div v-if="tab === 'assets'" class="surface equation-bar" :class="checkClass">
       <div class="eq-left">
         <span class="eq-label">会计恒等式校验</span>
         <span class="eq-formula">
@@ -21,12 +22,13 @@
       </div>
     </div>
 
-    <div class="surface filter-card">
+    <div class="surface filter-card" v-show="showSearch">
       <div class="filter-head">
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+        <right-toolbar v-model:showSearch="showSearch" @queryTable="loadAll" />
       </div>
       <div class="filter-bar">
-        <div class="field">
+        <div v-if="periodUsed" class="field">
           <label>会计期间</label>
           <div class="control is-select">
             <el-select v-model="period" placeholder="请选择" style="width: 150px">
@@ -36,7 +38,7 @@
         </div>
       </div>
       <div class="filter-actions">
-        <div class="filter-info"><el-icon><Filter /></el-icon> 选择会计期间后查询对应报表</div>
+        <div class="filter-info"><el-icon><Filter /></el-icon> {{ periodUsed ? '选择会计期间后查询对应报表' : '本表按当前全量数据统计，不区分会计期间' }}</div>
         <div class="filter-buttons">
           <el-button icon="Download" @click="handleExport">导出</el-button>
           <el-button type="primary" icon="Search" @click="loadAll">查询报表</el-button>
@@ -284,6 +286,7 @@ import { useColumnResize } from '@/composables/useColumnResize'
 const { proxy } = getCurrentInstance()
 
 const tab = ref('assets')
+const showSearch = ref(true)
 
 /** 菜单重构（路径A）：财务报表页签独立菜单，按路由 path 激活对应页签 */
 const route = useRoute()
@@ -336,6 +339,9 @@ const checkClass = computed(() => {
   return check.value.balanced ? 'is-balanced' : 'is-unbalanced'
 })
 
+/** 会计期间筛选仅对资产负债表/利润表/现金流量表生效；往来对账、账龄分析后端不使用 period */
+const periodUsed = computed(() => ['assets', 'profit', 'cashflow'].includes(tab.value))
+
 const cashSummary = computed(() => [
   { label: '一、经营活动产生的现金流量净额', value: cashFlow.value.operating || 0 },
   { label: '二、投资活动产生的现金流量净额', value: cashFlow.value.investing || 0 },
@@ -371,7 +377,7 @@ function loadPeriods() {
 }
 
 function loadAll() {
-  loadBalanceCheck()
+  if (tab.value === 'assets') loadBalanceCheck()
   if (tab.value === 'assets') loadBalance()
   else if (tab.value === 'profit') loadIncome()
   else if (tab.value === 'cashflow') loadCash()

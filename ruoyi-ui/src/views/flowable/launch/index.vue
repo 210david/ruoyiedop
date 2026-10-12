@@ -65,14 +65,52 @@
         <el-alert type="info" :closable="false" show-icon style="margin-bottom:14px"
           :title="'使用表单：' + boundForm.formName" description="填写后提交，数据将存入业务数据表并进入审批" />
         <el-form ref="dynRef" :model="dynData" label-width="120px">
-          <FormGridRender v-if="layoutMode === 'grid' && layoutGrid" :grid="layoutGrid"
+          <FormGridRender v-if="layoutMode === 'grid' && layoutGrid" ref="gridRenderRef" :grid="layoutGrid"
             :fields="boundForm.fields" :values="dynData" editable @browse="openBrowse" />
           <template v-else>
           <template v-for="(grp, gi) in renderGroups" :key="gi">
             <div class="dyn-section-title" v-if="grp.title">{{ grp.title }}</div>
             <el-row :gutter="8">
               <el-col v-for="c in grp.cells" :key="c.key" :span="c.span || 24">
-                <div v-if="c.note" class="dyn-note" :style="dynCellStyle(c)">{{ c.note }}</div>
+                <div v-if="c.detailTable" class="dyn-detail-block">
+                  <div class="dyn-detail-bar">
+                    <span class="dyn-detail-name"><el-icon><Grid /></el-icon> {{ detailTableLabel(c.detailTable) }}</span>
+                    <span class="dyn-detail-ops">
+                      <el-button size="small" link type="primary" icon="Plus" @click="addDetailRow(c.detailTable)">添加明细</el-button>
+                    </span>
+                  </div>
+                  <table class="dyn-detail-table" v-if="detailTableFields(c.detailTable).length">
+                    <thead>
+                      <tr>
+                        <th style="width:48px">序号</th>
+                        <th v-for="f in detailTableFields(c.detailTable)" :key="f.field">
+                          {{ f.label }}<span v-if="f.required" style="color:#ef4444"> *</span>
+                        </th>
+                        <th style="width:48px">操作</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="(row, ri) in (detailRows[c.detailTable] || [])" :key="row._key">
+                        <td style="text-align:center;color:#94a3b8">{{ ri + 1 }}</td>
+                        <td v-for="f in detailTableFields(c.detailTable)" :key="f.field">
+                          <dyn-field :f="f" v-model="row[f.field]" @browse="openBrowse(f)" />
+                        </td>
+                        <td style="text-align:center">
+                          <el-button size="small" link type="danger" icon="Delete" @click="removeDetailRow(c.detailTable, ri)" />
+                        </td>
+                      </tr>
+                      <tr v-if="(detailRows[c.detailTable] || []).length" class="dyn-detail-sum-row">
+                        <td style="text-align:center">合计</td>
+                        <td v-for="f in detailTableFields(c.detailTable)" :key="f.field" style="text-align:right;color:#7c3aed;font-weight:600">
+                          <template v-if="(c.detailSum || []).includes(f.field)">Σ {{ detailSumValue(c, f.field) }}</template>
+                        </td>
+                        <td></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <div v-else class="dyn-detail-empty">明细表{{ c.detailTable }}暂无字段，请先到表单管理"编辑字段"中添加</div>
+                </div>
+                <div v-else-if="c.note" class="dyn-note" :style="dynCellStyle(c)">{{ c.note }}</div>
                 <div v-else-if="c.style && (c.style.bgColor || c.style.border)" class="dyn-cell-wrap" :style="dynCellStyle(c)">
                   <el-form-item :label="c.f.label" :prop="c.f.field"
                     :rules="c.f.required ? [{ required: true, message: '请填写' + c.f.label, trigger: ['blur','change'] }] : []">
@@ -155,6 +193,7 @@ const submitting = ref(false)
 const layoutParsed = ref({ mode: 'section', sections: [], grid: null })
 const layoutMode = computed(() => layoutParsed.value.mode)
 const layoutGrid = computed(() => layoutParsed.value.grid)
+const gridRenderRef = ref(null)
 
 const filteredDefs = computed(() => {
   if (!keyword.value) return defs.value
@@ -239,6 +278,7 @@ async function handleLaunch(d) {
       try { fields = (JSON.parse(res.data.fieldsJson) || []).map(normalizeField) } catch (e) {}
       layoutParsed.value = parseLayout(res.data.layoutJson)
       boundForm.value = { ...res.data, fields, layoutJson: res.data.layoutJson }
+      initDetailRows()
     }
   } catch (e) { /* 无绑定表单 */ }
   loadUsers()
@@ -254,23 +294,74 @@ const renderGroups = computed(() => {
   const byField = {}
   all.forEach(f => { byField[f.field] = f })
   const used = new Set()
+  const detailUsed = new Set()
   const groups = []
   let noteSeq = 0
+  let dtSeq = 0
   const spanOf = s => { const n = Number(s); return ([6, 8, 12, 24].includes(n) || (n > 6 && n < 24)) ? n : 24 }
   for (const sec of layout.sections) {
     const cells = (sec.rows || []).flat()
-      .filter(c => c && ((c.field && byField[c.field]) || c.note))
+      .filter(c => c && ((c.field && byField[c.field]) || c.note || c.detailTable))
       .map(c => {
+        if (c.detailTable) { detailUsed.add(c.detailTable); return { key: 'dtb' + (++dtSeq), detailTable: c.detailTable, detailSum: c.detailSum || [], span: 24, style: {} } }
         if (c.note) return { key: 'note' + (++noteSeq), note: c.note, span: spanOf(c.span), style: c }
         used.add(c.field)
         return { key: c.field, f: { ...byField[c.field], label: c.label || byField[c.field].label }, span: spanOf(c.span), style: c }
       })
     if (cells.length) groups.push({ title: sec.title || '', cells })
   }
-  const rest = all.filter(f => !used.has(f.field))
+  // 未布局字段回退区：仅主表字段（明细字段由明细表块承载）
+  const rest = all.filter(f => !used.has(f.field) && (!f.table || f.table === 'main'))
   if (rest.length) groups.push({ title: layout.sections.length ? '其他信息' : '', cells: rest.map(f => ({ key: f.field, f, span: 24, style: {} })) })
+  // 布局中未出现但字段里存在的明细表：追加默认明细表块，避免明细字段丢失
+  for (const dt of new Set(all.filter(f => f.table && f.table !== 'main').map(f => f.table))) {
+    if (!detailUsed.has(dt)) groups.push({ title: '', cells: [{ key: 'dtb_auto_' + dt, detailTable: dt, detailSum: [], span: 24, style: {} }] })
+  }
   return groups
 })
+
+// ===== 明细表运行时（参照泛微：可编辑表格 + 添加/删除行 + 表尾合计） =====
+const detailRows = ref({})
+/** 按布局初始化各明细表行（默认 1 行，泛微式"新增默认明细行数"） */
+function initDetailRows() {
+  const rows = {}
+  for (const grp of renderGroups.value) {
+    for (const c of grp.cells) {
+      if (c.detailTable && !rows[c.detailTable]) {
+        const fs = detailTableFields(c.detailTable)
+        rows[c.detailTable] = fs.length ? [blankDetailRow(fs)] : []
+      }
+    }
+  }
+  detailRows.value = rows
+}
+function detailTableFields(dt) {
+  return (boundForm.value?.fields || []).filter(f => f.table === dt)
+}
+/** 明细表显示名：dt1 → 明细表1 */
+function detailTableLabel(dt) {
+  const set = [...new Set((boundForm.value?.fields || []).filter(f => f.table && f.table !== 'main').map(f => f.table))]
+  const idx = set.indexOf(dt)
+  return '明细表' + (idx >= 0 ? String(idx + 1) : dt.slice(2))
+}
+function blankDetailRow(fs) {
+  const row = { _key: 'r' + Math.random().toString(36).slice(2, 8) }
+  fs.forEach(f => { row[f.field] = undefined })
+  return row
+}
+function addDetailRow(dt) {
+  if (!detailRows.value[dt]) detailRows.value[dt] = []
+  detailRows.value[dt].push(blankDetailRow(detailTableFields(dt)))
+}
+function removeDetailRow(dt, idx) {
+  detailRows.value[dt].splice(idx, 1)
+  if (!detailRows.value[dt].length) addDetailRow(dt)
+}
+/** 表尾合计：对 detailSum 字段逐列求和（仅数值） */
+function detailSumValue(cell, field) {
+  const rows = detailRows.value[cell.detailTable] || []
+  return rows.reduce((s, r) => s + (Number(r[field]) || 0), 0)
+}
 
 /** 布局单元格样式 → 发起页内联样式（字体/字号/粗斜体/文字色/背景/边框） */
 function dynCellStyle(c) {
@@ -366,12 +457,22 @@ function doLaunch() {
 function submitLaunch() {
   if (!approverUserId.value) { proxy.$modal.msgWarning('请选择首节点审批人'); return }
   submitting.value = true
+  // 简易分组模式：明细行数据从 detailRows 提取；网格模式：从 FormGridRender 实例取
+  let detailData = {}
+  const rows = {}
+  for (const [dt, list] of Object.entries(detailRows.value || {})) {
+    if (list.length) rows[dt] = list.map(({ _key, ...rest }) => rest)
+  }
+  if (Object.keys(rows).length) detailData = rows
+  else if (gridRenderRef.value && gridRenderRef.value.getDetailData) detailData = gridRenderRef.value.getDetailData()
+  const variables = { ...dynData.value }
+  if (Object.keys(detailData).length) variables.detailData = detailData
   launch({
     definitionKey: current.value.modelKey,
     formId: boundForm.value ? boundForm.value.formId : null,
     approverUserId: approverUserId.value,
     title: title.value,
-    variables: dynData.value
+    variables
   }).then(() => {
     proxy.$modal.msgSuccess('流程已发起，等待审批人处理')
     open.value = false
@@ -426,6 +527,16 @@ export default { name: 'FlowLaunch', components: { 'dyn-field': DynField } }
 .dyn-section-title { font-size: 14px; font-weight: 600; color: #0f172a; border-left: 3px solid var(--brand-600, #4f46e5); padding-left: 8px; margin: 6px 0 12px; }
 .dyn-note { background: #fffbeb; border: 1px dashed #fcd34d; border-radius: 6px; color: #b45309; font-size: 12px; padding: 6px 10px; margin-bottom: 4px; line-height: 1.5; }
 .dyn-cell-wrap { border-radius: 4px; padding: 4px 8px; margin-bottom: 4px; }
+
+/* ===== 运行时明细表块（参照泛微 e-cology） ===== */
+.dyn-detail-block { border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden; margin: 4px 0 10px; }
+.dyn-detail-bar { display: flex; align-items: center; justify-content: space-between; background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 5px 10px; }
+.dyn-detail-name { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; font-weight: 600; color: #0f172a; }
+.dyn-detail-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.dyn-detail-table th { background: #fef3c7; color: #92400e; padding: 6px 8px; border: 1px solid #fde68a; font-weight: 600; text-align: center; white-space: nowrap; }
+.dyn-detail-table td { border: 1px solid #eef2f7; padding: 4px 6px; }
+.dyn-detail-sum-row td { background: #f8fafc; }
+.dyn-detail-empty { padding: 16px; text-align: center; color: #94a3b8; font-size: 13px; }
 
 .flowable-launch-page .cat-groups {
   display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 14px; padding: 16px 20px 20px;

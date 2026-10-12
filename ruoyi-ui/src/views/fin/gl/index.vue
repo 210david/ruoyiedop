@@ -70,6 +70,7 @@
         <div class="right">
           <el-button icon="DataAnalysis" @click="showTrialBalance = true">试算平衡</el-button>
           <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="fin_gl_columns" />
+          <button class="tip-pill" @click="showStatusHelp = true"><el-icon><WarningFilled /></el-icon><span>业务操作说明</span></button>
         </div>
       </div>
 
@@ -91,11 +92,11 @@
                 <table class="entry-table">
                   <thead>
                     <tr>
-                      <th style="width:50px">行</th>
-                      <th style="width:90px">方向</th>
-                      <th style="width:110px">科目编码</th>
-                      <th style="width:180px">科目名称</th>
-                      <th style="width:120px;text-align:right">金额</th>
+                      <th style="width:4%">行</th>
+                      <th style="width:8%">方向</th>
+                      <th style="width:12%">科目编码</th>
+                      <th style="width:20%">科目名称</th>
+                      <th style="width:12%;text-align:right">金额</th>
                       <th>摘要</th>
                     </tr>
                   </thead>
@@ -115,12 +116,12 @@
               </div>
             </template>
           </el-table-column>
-          <el-table-column key="voucherNo" prop="voucherNo" label="凭证号" :width="colWidth('voucherNo', 150)" align="center" resizable v-if="columns.voucherNo.visible" />
-          <el-table-column key="voucherDate" prop="voucherDate" label="凭证日期" :width="colWidth('voucherDate', 110)" align="center" resizable v-if="columns.voucherDate.visible" />
-          <el-table-column key="period" prop="period" label="期间" :width="colWidth('period', 90)" align="center" resizable v-if="columns.period.visible">
+          <el-table-column key="voucherNo" prop="voucherNo" label="凭证号" :width="colWidth('voucherNo', 150)" align="center" resizable v-if="colVisible.voucherNo.visible" />
+          <el-table-column key="voucherDate" prop="voucherDate" label="凭证日期" :width="colWidth('voucherDate', 110)" align="center" resizable v-if="colVisible.voucherDate.visible" />
+          <el-table-column key="period" prop="period" label="期间" :width="colWidth('period', 90)" align="center" resizable v-if="colVisible.period.visible">
             <template #default="{ row }">{{ formatPeriod(row.period) }}</template>
           </el-table-column>
-          <el-table-column key="sourceModule" prop="sourceModule" label="来源" :width="colWidth('sourceModule', 110)" align="center" resizable v-if="columns.sourceModule.visible">
+          <el-table-column key="sourceModule" prop="sourceModule" label="来源" :width="colWidth('sourceModule', 110)" align="center" resizable v-if="colVisible.sourceModule.visible">
             <template #default="{ row }">
               <el-tooltip v-if="row.sourceModule !== 'manual'" :content="`${row.sourceModule} / ${row.sourceKey || ''}`">
                 <span class="badge badge-amber">自动</span>
@@ -128,19 +129,19 @@
               <span v-else class="badge badge-gray">手工</span>
             </template>
           </el-table-column>
-          <el-table-column key="totalAmount" prop="totalAmount" label="金额" :width="colWidth('totalAmount', 130)" align="center" resizable v-if="columns.totalAmount.visible">
+          <el-table-column key="totalAmount" prop="totalAmount" label="金额" :width="colWidth('totalAmount', 130)" align="center" resizable v-if="colVisible.totalAmount.visible">
             <template #default="{ row }">
               <span class="rd-amount">{{ formatAmount(row.totalAmount) }}</span>
             </template>
           </el-table-column>
-          <el-table-column key="summary" prop="summary" label="摘要" :min-width="colWidth('summary', 160)" align="center" resizable show-overflow-tooltip v-if="columns.summary.visible" />
-          <el-table-column key="entryCount" prop="entryCount" label="分录" :width="colWidth('entryCount', 70)" align="center" resizable v-if="columns.entryCount.visible" />
-          <el-table-column key="status" prop="status" label="状态" :width="colWidth('status', 100)" align="center" resizable v-if="columns.status.visible">
+          <el-table-column key="summary" prop="summary" label="摘要" :min-width="colWidth('summary', 160)" align="center" resizable show-overflow-tooltip v-if="colVisible.summary.visible" />
+          <el-table-column key="entryCount" prop="entryCount" label="分录" :width="colWidth('entryCount', 70)" align="center" resizable v-if="colVisible.entryCount.visible" />
+          <el-table-column key="status" prop="status" label="状态" :width="colWidth('status', 100)" align="center" resizable v-if="colVisible.status.visible">
             <template #default="{ row }">
               <span class="badge" :class="badgeClass(row.status)"><span class="dot"></span>{{ statusLabel(row.status) }}</span>
             </template>
           </el-table-column>
-          <el-table-column key="createBy" prop="createBy" label="制单/审核" :width="colWidth('createBy', 130)" align="center" resizable v-if="columns.createBy.visible">
+          <el-table-column key="createBy" prop="createBy" label="制单/审核" :width="colWidth('createBy', 130)" align="center" resizable v-if="colVisible.createBy.visible">
             <template #default="{ row }">
               <span class="text-muted">{{ row.createBy }}</span>
               <span v-if="row.auditBy" class="audit-name"> / {{ row.auditBy }}</span>
@@ -175,23 +176,42 @@
       width="1000px"
       top="5vh"
       append-to-body
+      draggable
       :close-on-click-modal="false"
       @closed="handleDialogClosed">
       <template #header>
         <div class="rd-detail-header">
-          <div class="rd-detail-header-main">
+          <div class="rd-detail-header-icon">
             <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
               <polyline points="14 2 14 8 20 8" />
               <line x1="8" y1="13" x2="16" y2="13" />
               <line x1="8" y1="17" x2="16" y2="17" />
             </svg>
-            <span class="rd-detail-title">{{ dialogTitle }}</span>
+          </div>
+          <div class="rd-detail-header-main">
+            <span class="rd-detail-header-title">{{ dialogTitle }}</span>
+            <div class="rd-detail-header-sub" v-if="editingId">
+              <div class="rd-detail-header-divider"></div>
+              <span class="rd-detail-header-no">编号：{{ form.voucherNo }}</span>
+              <span class="badge" :class="badgeClass(editingStatus)"><span class="dot"></span>{{ statusLabel(editingStatus) }}</span>
+            </div>
+            <div class="rd-detail-header-sub" v-else>
+              <div class="rd-detail-header-divider"></div>
+              <span class="rd-detail-header-placeholder">凭证号保存后自动生成</span>
+            </div>
           </div>
         </div>
       </template>
       <div class="rd-page">
       <div class="rd-card">
+        <div class="rd-card-header">
+          <div class="rd-card-title">
+            <span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg></span>
+            基本信息
+          </div>
+        </div>
+        <div class="rd-card-body">
       <el-form ref="voucherFormRef" :model="form" :rules="rules" label-width="90px">
         <el-row :gutter="16">
           <el-col :span="8">
@@ -216,14 +236,25 @@
             </el-form-item>
           </el-col>
         </el-row>
+        <el-row :gutter="16">
+          <el-col :span="24">
+            <el-form-item label="备注">
+              <el-input v-model="form.remark" type="textarea" :rows="2" :disabled="!isEditMode" placeholder="请输入备注" />
+            </el-form-item>
+          </el-col>
+        </el-row>
       </el-form>
+        </div>
       </div>
 
       <div class="rd-card">
-      <el-divider content-position="left">
-        <span class="divider-text">会计分录</span>
-      </el-divider>
-
+        <div class="rd-card-header">
+          <div class="rd-card-title">
+            <span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/></svg></span>
+            会计分录
+          </div>
+        </div>
+        <div class="rd-card-body" style="display:block">
       <el-table :data="form.entries" size="small" border class="entry-editor">
         <el-table-column type="index" label="#" width="45" align="center" />
         <el-table-column label="方向" width="95" align="center">
@@ -309,12 +340,7 @@
           <el-tag v-else type="danger" effect="dark" size="small">借贷不平衡</el-tag>
         </span>
       </div>
-
-      <el-form label-width="90px" style="margin-top: 8px">
-        <el-form-item label="备注">
-          <el-input v-model="form.remark" type="textarea" :rows="2" :disabled="!isEditMode" placeholder="请输入备注" />
-        </el-form-item>
-      </el-form>
+        </div>
       </div>
       </div>
 
@@ -334,52 +360,74 @@
       width="900px"
       top="6vh"
       append-to-body
+      draggable
       :close-on-click-modal="false">
       <template #header>
         <div class="rd-detail-header">
-          <div class="rd-detail-header-main">
+          <div class="rd-detail-header-icon">
             <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
               <polyline points="14 2 14 8 20 8" />
               <line x1="8" y1="13" x2="16" y2="13" />
               <line x1="8" y1="17" x2="16" y2="17" />
             </svg>
-            <span class="rd-detail-title">查看凭证</span>
+          </div>
+          <div class="rd-detail-header-main">
+            <span class="rd-detail-header-title">查看凭证</span>
+            <div class="rd-detail-header-sub" v-if="viewData.voucherNo">
+              <div class="rd-detail-header-divider"></div>
+              <span class="rd-detail-header-no">编号：{{ viewData.voucherNo }}</span>
+              <span class="badge" :class="badgeClass(viewData.status)"><span class="dot"></span>{{ statusLabel(viewData.status) }}</span>
+            </div>
           </div>
         </div>
       </template>
       <div class="rd-page">
         <div class="rd-card">
-          <div class="rd-card-title">基本信息</div>
-          <div class="rd-grid">
-            <div class="rd-item"><div class="rd-label">凭证号</div><div class="rd-value rd-mono">{{ viewData.voucherNo || '-' }}</div></div>
-            <div class="rd-item"><div class="rd-label">凭证日期</div><div class="rd-value">{{ viewData.voucherDate || '-' }}</div></div>
-            <div class="rd-item"><div class="rd-label">会计期间</div><div class="rd-value">{{ formatPeriod(viewData.period) || '-' }}</div></div>
-            <div class="rd-item"><div class="rd-label">状态</div><div class="rd-value"><span class="badge" :class="badgeClass(viewData.status)"><span class="dot"></span>{{ statusLabel(viewData.status) }}</span></div></div>
-            <div class="rd-item"><div class="rd-label">金额</div><div class="rd-value rd-amount">{{ formatAmount(viewData.totalAmount) }}</div></div>
-            <div class="rd-item"><div class="rd-label">分录数</div><div class="rd-value">{{ viewData.entryCount ?? '-' }}</div></div>
-            <div class="rd-item"><div class="rd-label">制单人</div><div class="rd-value">{{ viewData.createBy || '-' }}</div></div>
-            <div class="rd-item"><div class="rd-label">审核人</div><div class="rd-value">{{ viewData.auditBy || '-' }}</div></div>
-            <div class="rd-item rd-full"><div class="rd-label">备注</div><div class="rd-value">{{ viewData.remark || '-' }}</div></div>
+          <div class="rd-card-header">
+            <div class="rd-card-title">
+              <span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg></span>
+              基本信息
+            </div>
+          </div>
+          <div class="rd-card-body">
+            <div class="rd-grid">
+              <div class="rd-item"><div class="rd-label">凭证号</div><div class="rd-value rd-mono">{{ viewData.voucherNo || '-' }}</div></div>
+              <div class="rd-item"><div class="rd-label">凭证日期</div><div class="rd-value">{{ viewData.voucherDate || '-' }}</div></div>
+              <div class="rd-item"><div class="rd-label">会计期间</div><div class="rd-value">{{ formatPeriod(viewData.period) || '-' }}</div></div>
+              <div class="rd-item"><div class="rd-label">状态</div><div class="rd-value"><span class="badge" :class="badgeClass(viewData.status)"><span class="dot"></span>{{ statusLabel(viewData.status) }}</span></div></div>
+              <div class="rd-item"><div class="rd-label">金额</div><div class="rd-value rd-amount">{{ formatAmount(viewData.totalAmount) }}</div></div>
+              <div class="rd-item"><div class="rd-label">分录数</div><div class="rd-value">{{ viewData.entryCount ?? '-' }}</div></div>
+              <div class="rd-item"><div class="rd-label">制单人</div><div class="rd-value">{{ viewData.createBy || '-' }}</div></div>
+              <div class="rd-item"><div class="rd-label">审核人</div><div class="rd-value">{{ viewData.auditBy || '-' }}</div></div>
+              <div class="rd-item rd-item--full"><div class="rd-label">备注</div><div class="rd-value">{{ viewData.remark || '-' }}</div></div>
+            </div>
           </div>
         </div>
         <div class="rd-card">
-          <div class="rd-card-title">分录明细</div>
-          <el-table :data="viewData.entries || []" size="small" border>
-            <el-table-column type="index" label="#" width="50" align="center" />
-            <el-table-column label="方向" width="70" align="center">
-              <template #default="{ row }">{{ row.direction === 'DEBIT' ? '借' : '贷' }}</template>
-            </el-table-column>
-            <el-table-column prop="accountCode" label="科目编码" width="120" align="center" />
-            <el-table-column prop="accountName" label="科目名称" min-width="160" align="center" show-overflow-tooltip />
-            <el-table-column prop="amount" label="金额（元）" width="130" align="right">
-              <template #default="{ row }">{{ formatAmount(row.amount) }}</template>
-            </el-table-column>
-            <el-table-column prop="taxAmount" label="税额" width="110" align="right">
-              <template #default="{ row }">{{ formatAmount(row.taxAmount) }}</template>
-            </el-table-column>
-            <el-table-column prop="summary" label="摘要" min-width="150" align="center" show-overflow-tooltip />
-          </el-table>
+          <div class="rd-card-header">
+            <div class="rd-card-title">
+              <span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/></svg></span>
+              分录明细
+            </div>
+          </div>
+          <div class="rd-card-body">
+            <el-table :data="viewData.entries || []" size="small" border>
+              <el-table-column type="index" label="#" width="50" align="center" />
+              <el-table-column label="方向" width="70" align="center">
+                <template #default="{ row }">{{ row.direction === 'DEBIT' ? '借' : '贷' }}</template>
+              </el-table-column>
+              <el-table-column prop="accountCode" label="科目编码" width="120" align="center" />
+              <el-table-column prop="accountName" label="科目名称" min-width="160" align="center" show-overflow-tooltip />
+              <el-table-column prop="amount" label="金额（元）" width="130" align="right">
+                <template #default="{ row }">{{ formatAmount(row.amount) }}</template>
+              </el-table-column>
+              <el-table-column prop="taxAmount" label="税额" width="110" align="right">
+                <template #default="{ row }">{{ formatAmount(row.taxAmount) }}</template>
+              </el-table-column>
+              <el-table-column prop="summary" label="摘要" min-width="150" align="center" show-overflow-tooltip />
+            </el-table>
+          </div>
         </div>
       </div>
       <template #footer>
@@ -431,10 +479,15 @@
         </el-table-column>
       </el-table>
     </el-dialog>
+    <el-dialog v-model="showStatusHelp" title="总账凭证业务操作说明" width="820px" append-to-body>
+      <div class="status-help-content"><h4>一、状态流转图</h4><div class="status-flow"><el-tag type="info">草稿</el-tag><span class="flow-arrow">→</span><el-tag type="success">已入账</el-tag><span class="flow-arrow">→</span><el-tag type="warning">已红冲</el-tag></div><h4>二、各状态说明</h4><el-descriptions :column="1" border><el-descriptions-item label="草稿">凭证新建后的初始状态，可编辑、删除、提交审核；借贷必须平衡方可保存</el-descriptions-item><el-descriptions-item label="已入账">审核通过后凭证正式入账，影响科目余额与报表，不可直接修改</el-descriptions-item><el-descriptions-item label="已红冲">已入账凭证发生错误时通过红冲更正，红冲凭证与原凭证金额相反、方向对冲</el-descriptions-item></el-descriptions><h4>三、重点业务规则</h4><el-row :gutter="16"><el-col :span="12"><div class="highlight-card highlight-primary"><div class="highlight-card-title">借贷平衡校验</div><div class="highlight-card-body">凭证借方合计必须等于贷方合计方可保存；<strong>分录不足时可点「自动补平最后一行」</strong>差额自动补齐</div></div></el-col><el-col :span="12"><div class="highlight-card highlight-danger"><div class="highlight-card-title">科目与方向校验</div><div class="highlight-card-body">科目必须为明细科目，借贷方向与科目性质须匹配，<strong>任一校验不过则拒绝保存</strong></div></div></el-col></el-row><el-row :gutter="16" style="margin-top: 12px;"><el-col :span="12"><div class="highlight-card highlight-warning"><div class="highlight-card-title">审核后入账</div><div class="highlight-card-body">草稿凭证单选后点击「审核」，<strong>审核通过方可入账</strong>影响总账与报表</div></div></el-col><el-col :span="12"><div class="highlight-card highlight-success"><div class="highlight-card-title">红冲更正</div><div class="highlight-card-body">已入账凭证发现错误不可直接修改，<strong>通过红冲生成对冲凭证</strong>再重新编制正确凭证</div></div></el-col></el-row><h4>四、业务操作流程</h4><el-timeline><el-timeline-item type="primary" :hollow="true"><strong>新增凭证：</strong>点击「新增凭证」，添加借贷分录（科目、方向、金额、摘要），确保借贷平衡</el-timeline-item><el-timeline-item type="warning" :hollow="true"><strong>审核入账：</strong>草稿凭证单选后点击「审核」，审核通过后凭证入账</el-timeline-item><el-timeline-item type="success" :hollow="true"><strong>红冲更正：</strong>已入账凭证有误时执行红冲，生成对冲凭证后重新编制</el-timeline-item><el-timeline-item type="info" :hollow="true"><strong>导出存档：</strong>凭证列表支持按条件筛选并导出，用于存档与审计</el-timeline-item></el-timeline></div>
+      <template #footer><el-button type="primary" @click="showStatusHelp = false">我知道了</el-button></template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup name="FinVoucher">
+const showStatusHelp = ref(false)
 import {
   listVoucher, getVoucher, addVoucher, updateVoucher, delVoucher,
   auditVoucher, cancelAudit, getTrialBalance,
@@ -463,6 +516,7 @@ const trialPeriod = ref('')
 const trialResult = ref(null)
 const isEditMode = ref(false)
 const editingId = ref(null)
+const editingStatus = ref('')
 
 const form = reactive({ voucherDate: '', voucherNo: '', remark: '', entries: [] })
 const rules = { voucherDate: [{ required: true, message: '凭证日期不能为空', trigger: 'change' }] }
@@ -482,6 +536,9 @@ const defaultColumns = [
   { label: '制单/审核', prop: 'createBy', visible: true }
 ]
 const columns = ref(defaultColumns.map(c => ({ ...c })))
+
+/** 列可见性映射（模板按 prop.visible 取值，避免数组直取 undefined 报错） */
+const colVisible = computed(() => Object.fromEntries(columns.value.map(c => [c.prop, { visible: c.visible }])))
 
 function loadColumnVisibility() {
   try {
@@ -715,6 +772,7 @@ function handleSaveAndAudit() {
 function handleAdd() {
   isEditMode.value = true
   editingId.value = null
+  editingStatus.value = ''
   form.voucherDate = new Date().toISOString().slice(0, 10)
   form.voucherNo = ''
   form.remark = ''
@@ -739,6 +797,7 @@ function handleUpdate(row) {
     const d = res.data
     isEditMode.value = true
     editingId.value = d.voucher.voucherId
+    editingStatus.value = d.voucher.status
     form.voucherDate = String(d.voucher.voucherDate).slice(0, 10)
     form.voucherNo = d.voucher.voucherNo
     form.remark = d.voucher.remark || ''
@@ -912,13 +971,14 @@ loadPeriods()
 .balance-sep { color: var(--color-text-tertiary); }
 .balance-status { margin-left: auto; }
 
-.entry-expand { padding: 8px 16px; background: var(--color-background-secondary); }
-.entry-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.entry-expand { padding: 8px 16px; background: #f9fafb; }
+.entry-table { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 13px; }
 .entry-table th, .entry-table td {
   padding: 6px 10px;
-  border-bottom: 1px solid var(--color-border-tertiary);
+  border-bottom: 1px solid #ebeef5;
   text-align: left;
+  word-break: break-all;
 }
-.entry-table th { color: var(--color-text-secondary); font-weight: 500; }
+.entry-table th { color: #64748b; font-weight: 500; }
 .entry-table td.amount-cell { text-align: right; }
 </style>

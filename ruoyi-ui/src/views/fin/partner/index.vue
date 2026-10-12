@@ -85,13 +85,13 @@
           <el-table-column label="账期" prop="paymentDays" key="paymentDays" :width="colWidth('paymentDays', 90)" resizable align="center" v-if="columns.paymentDays.visible">
             <template #default="scope">{{ scope.row.paymentDays ? scope.row.paymentDays + ' 天' : '现结' }}</template>
           </el-table-column>
-          <el-table-column label="信用额度" prop="creditLimit" key="creditLimit" :width="colWidth('creditLimit', 130)" resizable align="right" class-name="col-num" v-if="columns.creditLimit.visible">
-            <template #default="scope"><span class="rd-amount">{{ formatAmount(scope.row.creditLimit) }}</span></template>
+          <el-table-column label="信用额度" prop="creditLimit" key="creditLimit" :width="colWidth('creditLimit', 130)" resizable align="center" class-name="col-num" v-if="columns.creditLimit.visible">
+            <template #default="scope"><span class="rd-amount">￥{{ formatAmount(scope.row.creditLimit) }}</span></template>
           </el-table-column>
-          <el-table-column label="可用额度" prop="creditAvailable" key="creditAvailable" :width="colWidth('creditAvailable', 130)" resizable align="right" class-name="col-num" v-if="columns.creditAvailable.visible">
+          <el-table-column label="可用额度" prop="creditAvailable" key="creditAvailable" :width="colWidth('creditAvailable', 130)" resizable align="center" class-name="col-num" v-if="columns.creditAvailable.visible">
             <template #default="scope">
               <span class="rd-amount" :class="{ 'rd-amount--negative': Number(scope.row.creditLimit - scope.row.creditUsed) < 0 }">
-                {{ formatAmount(Number(scope.row.creditLimit || 0) - Number(scope.row.creditUsed || 0)) }}
+                ￥{{ formatAmount(Number(scope.row.creditLimit || 0) - Number(scope.row.creditUsed || 0)) }}
               </span>
             </template>
           </el-table-column>
@@ -119,88 +119,114 @@
     </div>
 
     <!-- ===== 新增/修改弹窗 ===== -->
-    <el-dialog v-model="open" width="720px" append-to-body draggable class="rd-dialog">
+    <el-dialog v-model="open" width="860px" append-to-body draggable class="rd-dialog">
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/></svg>
           </div>
           <span class="rd-detail-header-title">{{ dialogTitle }}</span>
         </div>
       </template>
-      <el-form ref="partnerFormRef" :model="form" :rules="rules" label-width="100px">
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="单位名称" prop="partnerName">
-              <el-input v-model="form.partnerName" placeholder="请输入单位名称" clearable />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="单位编码" prop="partnerCode">
-              <el-input v-model="form.partnerCode" placeholder="请输入单位编码" clearable />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="单位类型" prop="partnerType">
-              <el-select v-model="form.partnerType" placeholder="请选择" style="width: 100%">
-                <el-option label="供应商" value="SUPPLIER" />
-                <el-option label="客户" value="CUSTOMER" />
-                <el-option label="既是供应商又是客户" value="BOTH" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="状态" prop="status">
-              <el-radio-group v-model="form.status">
-                <el-radio value="0">正常</el-radio>
-                <el-radio value="1">停用</el-radio>
-              </el-radio-group>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="税号" prop="taxNumber">
-              <el-input v-model="form.taxNumber" placeholder="请输入税号" clearable />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="发票抬头" prop="invoiceTitle">
-              <el-input v-model="form.invoiceTitle" placeholder="请输入发票抬头" clearable />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="账期(天)" prop="paymentDays">
-              <el-input-number v-model="form.paymentDays" :min="0" style="width: 100%" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="结算方式" prop="settlementType">
-              <el-select v-model="form.settlementType" placeholder="请选择" clearable style="width: 100%">
-                <el-option label="现结" value="0" />
-                <el-option label="月结" value="1" />
-                <el-option label="预付" value="2" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="信用额度" prop="creditLimit">
-              <el-input-number v-model="form.creditLimit" :min="0" :precision="2" style="width: 100%" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="24">
-            <el-form-item label="备注" prop="remark">
-              <el-input v-model="form.remark" type="textarea" :rows="3" placeholder="请输入备注" />
-            </el-form-item>
-          </el-col>
+      <el-form ref="partnerFormRef" :model="form" :rules="rules" label-width="110px">
+      <section class="rd-card">
+        <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/></svg></span>基本信息</div></div>
+        <div class="rd-card-body" style="display:block">
+          <el-row :gutter="20">
+        <el-col :span="12">
+                    <el-form-item label="单位名称" prop="partnerName">
+                      <el-input v-model="form.partnerName" placeholder="请输入单位名称" clearable />
+                    </el-form-item>
+                  </el-col>
+        <el-col :span="12">
+                    <el-form-item label="单位编码" prop="partnerCode">
+                      <el-input v-model="form.partnerCode" placeholder="请输入单位编码" clearable />
+                    </el-form-item>
+                  </el-col>
+        <el-col :span="12">
+                    <el-form-item label="单位类型" prop="partnerType">
+                      <el-select v-model="form.partnerType" placeholder="请选择" style="width: 100%">
+                        <el-option label="供应商" value="SUPPLIER" />
+                        <el-option label="客户" value="CUSTOMER" />
+                        <el-option label="既是供应商又是客户" value="BOTH" />
+                      </el-select>
+                    </el-form-item>
+                  </el-col>
+        <el-col :span="12">
+                    <el-form-item label="状态" prop="status">
+                      <el-radio-group v-model="form.status">
+                        <el-radio value="0">正常</el-radio>
+                        <el-radio value="1">停用</el-radio>
+                      </el-radio-group>
+                    </el-form-item>
+                  </el-col>
         </el-row>
+        </div>
+      </section>
+      <section class="rd-card">
+        <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>开票信息</div></div>
+        <div class="rd-card-body" style="display:block">
+          <el-row :gutter="20">
+        <el-col :span="12">
+                    <el-form-item label="税号" prop="taxNumber">
+                      <el-input v-model="form.taxNumber" placeholder="请输入税号" clearable />
+                    </el-form-item>
+                  </el-col>
+        <el-col :span="12">
+                    <el-form-item label="发票抬头" prop="invoiceTitle">
+                      <el-input v-model="form.invoiceTitle" placeholder="请输入发票抬头" clearable />
+                    </el-form-item>
+                  </el-col>
+        </el-row>
+        </div>
+      </section>
+      <section class="rd-card">
+        <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>结算信息</div></div>
+        <div class="rd-card-body" style="display:block">
+          <el-row :gutter="20">
+        <el-col :span="12">
+                    <el-form-item label="账期(天)" prop="paymentDays">
+                      <el-input-number v-model="form.paymentDays" :min="0" style="width: 100%" />
+                    </el-form-item>
+                  </el-col>
+        <el-col :span="12">
+                    <el-form-item label="结算方式" prop="settlementType">
+                      <el-select v-model="form.settlementType" placeholder="请选择" clearable style="width: 100%">
+                        <el-option label="现结" value="0" />
+                        <el-option label="月结" value="1" />
+                        <el-option label="预付" value="2" />
+                      </el-select>
+                    </el-form-item>
+                  </el-col>
+        <el-col :span="12">
+                    <el-form-item label="信用额度" prop="creditLimit">
+                      <el-input-number v-model="form.creditLimit" :min="0" :precision="2" style="width: 100%" />
+                    </el-form-item>
+                  </el-col>
+        </el-row>
+        </div>
+      </section>
+      <section class="rd-card">
+        <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>其他信息</div></div>
+        <div class="rd-card-body" style="display:block">
+          <el-row :gutter="20">
+            <el-col :span="24">
+              <el-form-item label="备注" prop="remark">
+                <el-input v-model="form.remark" type="textarea" :autosize="{ minRows: 4, maxRows: 8 }" placeholder="请输入备注" />
+              </el-form-item>
+            </el-col>
+          </el-row>
+        </div>
+      </section>
       </el-form>
       <template #footer>
-        <el-button @click="open = false">取 消</el-button>
         <el-button type="primary" @click="submitForm">确 定</el-button>
+        <el-button @click="open = false">取 消</el-button>
       </template>
     </el-dialog>
 
     <!-- ===== 查看详情弹窗（独立只读） ===== -->
-    <el-dialog v-model="viewOpen" width="720px" append-to-body draggable class="rd-dialog">
+    <el-dialog v-model="viewOpen" width="860px" append-to-body draggable class="rd-dialog">
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></div>
@@ -215,7 +241,7 @@
         <section class="rd-card">
           <div class="rd-card-header">
             <div class="rd-card-title">
-              <span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>基本信息
+              <span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/></svg></span>基本信息
             </div>
           </div>
           <div class="rd-card-body">
@@ -238,6 +264,17 @@
                   <span class="badge" :class="statusBadgeClass(viewData.status)"><span class="dot"></span>{{ viewData.status === '0' ? '正常' : '停用' }}</span>
                 </div>
               </div>
+            </div>
+          </div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header">
+            <div class="rd-card-title">
+              <span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>开票信息
+            </div>
+          </div>
+          <div class="rd-card-body">
+            <div class="rd-grid">
               <div class="rd-item">
                 <span class="rd-label">税号</span>
                 <div class="rd-value">{{ viewData.taxNumber || '暂无' }}</div>
@@ -252,7 +289,7 @@
         <section class="rd-card">
           <div class="rd-card-header">
             <div class="rd-card-title">
-              <span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></span>结算信息
+              <span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>结算信息
             </div>
           </div>
           <div class="rd-card-body">
@@ -267,12 +304,23 @@
               </div>
               <div class="rd-item">
                 <span class="rd-label">信用额度</span>
-                <div class="rd-value"><span class="rd-amount">{{ formatAmount(viewData.creditLimit) }}</span></div>
+                <div class="rd-value rd-amount">￥{{ formatAmount(viewData.creditLimit) }}</div>
               </div>
               <div class="rd-item">
                 <span class="rd-label">已用额度</span>
-                <div class="rd-value">{{ formatAmount(viewData.creditUsed) }}</div>
+                <div class="rd-value rd-amount">￥{{ formatAmount(viewData.creditUsed) }}</div>
               </div>
+            </div>
+          </div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header">
+            <div class="rd-card-title">
+              <span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>其他信息
+            </div>
+          </div>
+          <div class="rd-card-body">
+            <div class="rd-grid">
               <div class="rd-item rd-item--full">
                 <span class="rd-label">备注</span>
                 <div class="rd-value">{{ viewData.remark || '暂无' }}</div>
@@ -487,6 +535,12 @@ getList()
   --violet-bg: #ede9fe;
   --gray: #6b7280;
   --gray-bg: #f3f4f6;
+  /* supplier 页规范 token（筛选区/弹框样式对齐） */
+  --brand-50: #eef2ff; --brand-100: #e0e7ff; --brand-200: #c7d2fe; --brand-500: #6366f1; --brand-600: #4f46e5; --brand-700: #4338ca;
+  --ink-900: #0f172a; --ink-700: #334155; --ink-500: #64748b; --ink-400: #94a3b8; --ink-300: #cbd5e1; --ink-200: #e2e8f0; --ink-100: #f1f5f9; --ink-50: #f8fafc;
+  --r-sm: 6px; --r-md: 10px; --r-lg: 14px;
+  --shadow-card: 0 1px 0 rgba(15,23,42,.04), 0 1px 2px rgba(15,23,42,.04);
+  --ease-out: cubic-bezier(.16,.84,.44,1);
 }
 
 /* ===== Surface 卡片 ===== */
@@ -499,32 +553,37 @@ getList()
   box-shadow: 0 1px 2px rgba(34, 48, 74, 0.04);
 }
 
-/* ===== 筛选卡片 ===== */
-.filter-card { padding: 14px 16px 16px; }
-.filter-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-.filter-title { display: inline-flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 600; color: var(--ink); }
-.filter-title .glyph { display: inline-flex; width: 6px; height: 16px; border-radius: 3px; background: linear-gradient(180deg, var(--brand), #74a4ff); }
-.adv-link { color: var(--brand); font-size: 13px; cursor: pointer; }
-.adv-link:hover { text-decoration: underline; }
-.filter-bar { display: flex; flex-wrap: wrap; gap: 12px 18px; align-items: center; }
-.filter-bar .field { display: inline-flex; align-items: center; gap: 8px; }
-.filter-bar .field > label { font-size: 13px; color: var(--ink-light); white-space: nowrap; }
-.filter-bar .control { width: 200px; }
-.filter-actions { display: flex; align-items: center; gap: 10px; }
-.filter-info { font-size: 12px; color: var(--muted); }
-.filter-info .n { color: var(--brand); font-weight: 600; }
-.filter-buttons { display: flex; gap: 10px; }
-
-/* 控件透明化，融入卡片背景 */
-.fin-partner-page :deep(.filter-card .el-input__wrapper),
-.fin-partner-page :deep(.filter-card .el-select__wrapper) {
-  background: #fff;
-  box-shadow: 0 0 0 1px var(--line) inset;
-}
-.fin-partner-page :deep(.filter-card .el-input__wrapper.is-focus),
-.fin-partner-page :deep(.filter-card .el-select__wrapper.is-focused) {
-  box-shadow: 0 0 0 1px var(--brand) inset;
-}
+/* ===== 筛选卡片（对齐 pms/supplier 规范） ===== */
+.fin-partner-page .filter-card { padding: 14px 20px 16px; }
+.fin-partner-page .filter-card .filter-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.fin-partner-page .filter-card .filter-title { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: var(--ink-700); }
+.fin-partner-page .filter-card .filter-title .glyph { width: 4px; height: 14px; background: var(--brand-600); border-radius: 2px; }
+.fin-partner-page .filter-card .adv-link { font-size: 14px; color: var(--ink-500); text-decoration: none; display: flex; align-items: center; gap: 4px; transition: color .15s; cursor: pointer; }
+.fin-partner-page .filter-card .adv-link:hover { color: var(--brand-600); }
+.fin-partner-page .filter-card .adv-link .chev { transition: transform .2s var(--ease-out); }
+.fin-partner-page .filter-card .adv-link.is-open .chev { transform: rotate(180deg); }
+.fin-partner-page .filter-card .filter-bar { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px 16px; }
+.fin-partner-page .filter-card .filter-actions { display: flex; align-items: center; justify-content: space-between; margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--ink-200); }
+.fin-partner-page .filter-card .filter-info { font-size: 13px; color: var(--ink-500); display: flex; align-items: center; gap: 6px; }
+.fin-partner-page .filter-card .filter-buttons { display: flex; gap: 8px; }
+.fin-partner-page .field { display: flex; flex-direction: column; gap: 6px; }
+.fin-partner-page .field label { font-size: 14px; font-weight: 500; color: var(--ink-700); display: flex; align-items: center; gap: 6px; }
+.fin-partner-page .field .control { display: flex; align-items: center; height: 36px; padding: 0 12px; background: #fff; border: 1px solid var(--ink-200); border-radius: var(--r-sm); transition: border-color .15s var(--ease-out), box-shadow .15s var(--ease-out); }
+.fin-partner-page .field .control:focus-within { border-color: var(--brand-500); box-shadow: 0 0 0 3px rgba(99,102,241,.15); }
+.fin-partner-page .field .control :deep(.el-input__wrapper) { box-shadow: none !important; background: transparent !important; padding: 0; height: 34px; }
+.fin-partner-page .field .control :deep(.el-input__inner) { border: 0; background: transparent; font-size: 14px; color: var(--ink-900); height: 34px; line-height: 34px; }
+.fin-partner-page .field .control :deep(.el-input__inner::placeholder) { color: var(--ink-400); }
+.fin-partner-page .field .control :deep(.el-input__prefix) { color: var(--ink-400); margin-right: 4px; }
+.fin-partner-page .field .control :deep(.el-input__prefix .el-icon) { font-size: 14px; }
+.fin-partner-page .field .control :deep(.el-select) { width: 100%; }
+.fin-partner-page .field .control :deep(.el-select .el-select__wrapper) { box-shadow: none !important; background: transparent !important; padding: 0; min-height: 34px; height: 34px; }
+.fin-partner-page .field .control :deep(.el-select .el-select__wrapper .el-select__placeholder) { font-size: 14px; color: var(--ink-900); }
+.fin-partner-page .field .control :deep(.el-select .el-select__wrapper.is-focused) { box-shadow: none !important; }
+.fin-partner-page .field .control :deep(.el-date-editor) { width: 100%; }
+.fin-partner-page .field .control :deep(.el-date-editor .el-range-input) { background: transparent; border: 0; font-size: 14px; color: var(--ink-900); }
+.fin-partner-page .field .control :deep(.el-date-editor .el-range-separator) { color: var(--ink-400); }
+.fin-partner-page .field .control :deep(.el-date-editor .el-range__icon) { color: var(--ink-400); }
+.fin-partner-page .filter-info .n { color: var(--brand-600); font-weight: 600; }
 
 /* ===== 工具栏 ===== */
 .toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
@@ -544,7 +603,6 @@ getList()
 
 .col-mono { font-family: 'JetBrains Mono', Consolas, monospace; font-size: 13px; color: var(--ink); }
 .fin-partner-page :deep(.el-table .col-num) { font-variant-numeric: tabular-nums; }
-.rd-amount--negative { color: var(--red) !important; }
 
 /* ===== 表格 ===== */
 .table-wrap { width: 100%; }
@@ -594,68 +652,11 @@ getList()
   padding-top: 14px; margin-top: 4px; border-top: 1px dashed var(--line);
 }
 
-/* ===== 弹窗（rd-dialog）===== */
-.fin-partner-page :deep(.rd-dialog) { border-radius: 12px; overflow: hidden; }
-.fin-partner-page :deep(.rd-dialog .el-dialog__header) {
-  padding: 0; margin: 0 0 4px;
+@media (max-width: 1100px) {
+  .fin-partner-page .filter-card .filter-bar { grid-template-columns: repeat(2, 1fr); }
 }
-.fin-partner-page :deep(.rd-dialog .el-dialog__headerbtn) {
-  top: 16px; right: 16px; width: 28px; height: 28px;
-}
-.fin-partner-page :deep(.rd-dialog .el-dialog__body) { padding: 0 20px 8px; }
-
-.rd-detail-header {
-  display: flex; align-items: center; gap: 10px;
-  padding: 14px 20px;
-  background: linear-gradient(90deg, var(--brand-light), #f6f9ff);
-  border-bottom: 1px solid var(--line);
-}
-.rd-detail-header-icon {
-  width: 34px; height: 34px; border-radius: 8px;
-  display: inline-flex; align-items: center; justify-content: center;
-  color: var(--brand); background: #fff;
-  box-shadow: 0 1px 3px rgba(75, 123, 236, 0.25);
-}
-.rd-detail-header-title { font-size: 16px; font-weight: 600; color: var(--ink); }
-.rd-detail-header-sub { display: inline-flex; align-items: center; gap: 10px; margin-left: 4px; }
-.rd-detail-header-divider { width: 1px; height: 14px; background: var(--line); }
-.rd-detail-header-no { font-size: 12px; color: var(--ink-light); }
-
-/* ===== 详情页 rd- 体系 ===== */
-.rd-page { display: flex; flex-direction: column; gap: 14px; padding: 4px 0 8px; }
-.rd-card {
-  background: #fff; border: 1px solid var(--line); border-radius: 10px;
-  box-shadow: 0 1px 2px rgba(34, 48, 74, 0.04);
-  animation: rdFadeIn 0.25s ease;
-}
-.rd-card-header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 12px 16px; border-bottom: 1px solid var(--line);
-  background: #fafbfd; border-radius: 10px 10px 0 0;
-}
-.rd-card-title { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: var(--ink); }
-.rd-card-icon {
-  width: 28px; height: 28px; border-radius: 7px;
-  display: inline-flex; align-items: center; justify-content: center;
-  color: var(--brand); background: var(--brand-light);
-}
-.rd-card-body { padding: 16px; }
-.rd-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 20px; }
-.rd-item { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
-.rd-item--full { grid-column: 1 / -1; }
-.rd-label { font-size: 12px; color: var(--muted); }
-.rd-value { font-size: 14px; color: var(--ink); line-height: 1.5; word-break: break-all; }
-.rd-amount { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--brand); }
-
-.rd-empty { padding: 32px 0; text-align: center; color: var(--muted); font-size: 13px; }
-
-@keyframes rdFadeIn {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@media (max-width: 768px) {
-  .rd-grid { grid-template-columns: 1fr; }
-  .filter-bar .control { width: 100%; }
+@media (max-width: 720px) {
+  .fin-partner-page .filter-card .filter-bar { grid-template-columns: 1fr; }
+  .fin-partner-page .toolbar { flex-wrap: wrap; gap: 10px; }
 }
 </style>

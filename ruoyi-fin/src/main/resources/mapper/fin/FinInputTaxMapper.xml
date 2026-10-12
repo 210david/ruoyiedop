@@ -192,6 +192,25 @@
             <if test="materialCode != null and materialCode != ''">
                 AND v.material_code LIKE CONCAT('%', #{materialCode}, '%')
             </if>
+            <if test="materialName != null and materialName != ''">
+                AND m.material_name LIKE CONCAT('%', #{materialName}, '%')
+            </if>
+            <if test="params.provisionStatus != null and params.provisionStatus != ''">
+                <choose>
+                    <when test="params.provisionStatus == 'REVERSED'">
+                        AND v.remark LIKE CONCAT('%', '[已冲回]', '%')
+                    </when>
+                    <otherwise>
+                        AND (v.remark IS NULL OR v.remark NOT LIKE CONCAT('%', '[已冲回]', '%'))
+                    </otherwise>
+                </choose>
+            </if>
+            <if test="params.beginCreateTime != null and params.beginCreateTime != ''">
+                AND date(v.create_time) &gt;= #{params.beginCreateTime}
+            </if>
+            <if test="params.endCreateTime != null and params.endCreateTime != ''">
+                AND date(v.create_time) &lt;= #{params.endCreateTime}
+            </if>
             AND v.del_flag = '0'
         </where>
         ORDER BY v.period DESC, v.material_code

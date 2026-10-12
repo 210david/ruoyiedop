@@ -18,8 +18,8 @@ VALUES (906100, '基础设置', 905938, 1, 'base', NULL, '', '', 1, 0, 'M', '0',
 INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark)
 VALUES (906101, '日常核算', 905938, 2, 'daily', NULL, '', '', 1, 0, 'M', '0', '0', '', 'documentation', 'admin', NOW(), '财务模块菜单重构：日常核算分组');
 
--- 3. 原一级菜单归入对应分组
-UPDATE sys_menu SET parent_id=906100, order_num=1 WHERE menu_id=905939;  -- 往来单位(M)及其子页
+-- 3. 原一级菜单归入对应分组（往来单位管理为 C 直挂分组，无三级目录）
+UPDATE sys_menu SET parent_id=906100, order_num=1 WHERE menu_id=905940;  -- 往来单位管理(C)
 UPDATE sys_menu SET parent_id=906100, order_num=2 WHERE menu_id=905946;  -- 会计科目
 UPDATE sys_menu SET parent_id=906100, order_num=3 WHERE menu_id=906007;  -- 财务配置
 UPDATE sys_menu SET parent_id=906101, order_num=1 WHERE menu_id=905987;  -- 总账凭证

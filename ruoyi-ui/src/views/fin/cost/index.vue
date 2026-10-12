@@ -1,53 +1,62 @@
 <template>
   <div class="app-container fin-cost-page">
-    <!-- 计价总览 -->
-    <div class="surface summary-bar">
-      <div class="summary-item">
-        <div class="summary-label">存货总成本（元）</div>
-        <div class="summary-value">{{ formatAmount(totalCost) }}</div>
-        <div class="summary-hint">资产负债表「存货」科目取数</div>
-      </div>
-      <div class="summary-item">
-        <div class="summary-label">台账记录数</div>
-        <div class="summary-value">{{ total }}</div>
-        <div class="summary-hint">物料 × 仓库 × 库位 × 批次 四维</div>
-      </div>
-    </div>
+    <!-- 计价总览（stat-card 样式，对齐应收管理页面；结转流水/物料税率维护页不显示——统计为成本台账数据，与流水、税率档案无关） -->
+    <el-row :gutter="12" class="mb8" v-if="!isIndependent || (tab !== 'tax' && tab !== 'carry')">
+      <el-col :span="6">
+        <div class="stat-card">
+          <div class="stat-label">存货总成本（元）</div>
+          <div class="stat-value">{{ formatAmount(totalCost) }}</div>
+          <div class="stat-hint">资产负债表「存货」科目取数</div>
+        </div>
+      </el-col>
+      <el-col :span="6">
+        <div class="stat-card">
+          <div class="stat-label">台账记录数</div>
+          <div class="stat-value">{{ total }}</div>
+          <div class="stat-hint">物料 × 仓库 × 库位 × 批次 四维</div>
+        </div>
+      </el-col>
+    </el-row>
 
-    <!-- 筛选条件卡片 -->
-    <div class="surface filter-card" v-show="showSearch">
-      <div class="filter-head">
+    <!-- 筛选条件卡片（独立菜单模式下按页面拆分：税率页无筛选不显示，且不再显示卡片标题头） -->
+    <div class="surface filter-card" v-show="showSearch && (!isIndependent || tab !== 'tax')">
+      <div class="filter-head" v-if="!isIndependent">
         <div class="filter-title">
           <span class="glyph"></span> 筛选条件
         </div>
       </div>
       <div class="filter-bar">
-        <div class="field">
+        <div class="field" v-if="!isIndependent || tab === 'cost'">
           <label>物料编码</label>
           <div class="control">
-            <el-input v-model="queryParams.materialCode" placeholder="请输入编码" clearable @keyup.enter="handleQuery" />
+            <el-input v-model="queryParams.materialCode" placeholder="请输入编码" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
           </div>
         </div>
-        <div class="field">
+        <div class="field" v-if="!isIndependent || tab === 'cost'">
           <label>物料名称</label>
           <div class="control">
-            <el-input v-model="queryParams.materialName" placeholder="请输入名称" clearable @keyup.enter="handleQuery" />
+            <el-input v-model="queryParams.materialName" placeholder="请输入名称" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
           </div>
         </div>
-        <div class="field">
+        <div class="field" v-if="!isIndependent || tab === 'carry'">
           <label>结转类型</label>
-          <div class="control">
+          <div class="control is-select">
             <el-select v-model="carryQuery.sourceType" placeholder="全部类型" clearable @change="getCarryList">
+              <template #prefix><el-icon><Filter /></el-icon></template>
               <el-option label="入库" value="inbound" />
               <el-option label="出库" value="outbound" />
             </el-select>
           </div>
         </div>
-        <div class="field">
+        <div class="field" v-if="!isIndependent || tab === 'carry'">
           <label>结转日期</label>
           <div class="control">
             <el-date-picker v-model="dateRange" type="daterange" value-format="YYYY-MM-DD"
-                            range-separator="至" start-placeholder="开始日期" end-placeholder="结束日期"
+                            range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期"
                             @change="getCarryList" style="width: 100%" />
           </div>
         </div>
@@ -65,17 +74,18 @@
 
     <!-- 数据列表卡片 -->
     <div class="surface">
-      <div class="toolbar">
+      <div class="toolbar" v-if="!isIndependent || tab !== 'tax'">
         <div class="toolbar-left">
-          <el-button v-hasPermi="['fin:cost:carry']" type="primary" icon="Download" @click="handlePriceInbound">入库计价</el-button>
-          <el-button v-hasPermi="['fin:cost:carry']" type="warning" icon="Upload" @click="handleCarryOutbound">出库结转</el-button>
-          <el-button v-hasPermi="['fin:cost:carry']" type="success" icon="Edit" @click="handleInit">录入期初成本</el-button>
-          <el-button icon="List" @click="tab = 'carry'">结转流水</el-button>
-          <el-button icon="DataAnalysis" @click="showValuation = true">存货计价表</el-button>
+          <el-button v-if="!isIndependent || tab === 'cost'" v-hasPermi="['fin:cost:carry']" type="primary" icon="Download" @click="handlePriceInbound">入库计价</el-button>
+          <el-button v-if="!isIndependent || tab === 'cost'" v-hasPermi="['fin:cost:carry']" type="warning" icon="Upload" @click="handleCarryOutbound">出库结转</el-button>
+          <el-button v-if="!isIndependent || tab === 'cost'" v-hasPermi="['fin:cost:carry']" type="success" icon="Edit" @click="handleInit">录入期初成本</el-button>
+          <el-button v-if="!isIndependent" icon="List" @click="tab = 'carry'">结转流水</el-button>
+          <el-button v-if="!isIndependent || tab === 'cost'" icon="DataAnalysis" @click="showValuation = true">存货计价表</el-button>
           <el-button v-hasPermi="['fin:cost:export']" icon="Download" @click="handleExport">导出</el-button>
         </div>
         <div class="toolbar-right">
-          <right-toolbar v-model:showSearch="showSearch" @queryTable="handleQuery" />
+          <right-toolbar v-model:showSearch="showSearch" :columns="columns" storageKey="fin_cost_ledger_columns" @queryTable="handleQuery" />
+          <button class="tip-pill" @click="showStatusHelp = true"><el-icon><WarningFilled /></el-icon><span>业务操作说明</span></button>
         </div>
       </div>
 
@@ -88,9 +98,9 @@
         </template>
       </el-alert>
 
-      <el-tabs v-model="tab">
+      <el-tabs v-model="tab" :class="{ 'cost-tabs-solo': isIndependent }">
         <!-- ========== 成本台账 ========== -->
-        <el-tab-pane label="成本台账" name="cost">
+        <el-tab-pane v-if="!isIndependent || tab === 'cost'" label="成本台账" name="cost">
           <div class="table-wrap">
             <el-table v-loading="loading" :data="costList" border
                       :ref="costCol.tableRef" @header-dragend="costCol.onHeaderDragEnd">
@@ -101,9 +111,13 @@
                                :min-width="costCol.colWidth('materialName', 180)" show-overflow-tooltip
                                resizable align="center" v-if="columns.materialName.visible" />
               <el-table-column prop="warehouseId" key="warehouseId" label="仓库"
-                               :width="costCol.colWidth('warehouseId', 80)" resizable align="center" v-if="columns.warehouseId.visible" />
+                               :width="costCol.colWidth('warehouseId', 110)" resizable align="center" v-if="columns.warehouseId.visible">
+                <template #default="{ row }">{{ warehouseLabel(row.warehouseId) }}</template>
+              </el-table-column>
               <el-table-column prop="locationId" key="locationId" label="库位"
-                               :width="costCol.colWidth('locationId', 80)" resizable align="center" v-if="columns.locationId.visible" />
+                               :width="costCol.colWidth('locationId', 110)" resizable align="center" v-if="columns.locationId.visible">
+                <template #default="{ row }">{{ warehouseLabel(row.locationId) }}</template>
+              </el-table-column>
               <el-table-column prop="batchNo" key="batchNo" label="批次号"
                                :width="costCol.colWidth('batchNo', 130)" resizable align="center" v-if="columns.batchNo.visible">
                 <template #default="{ row }">
@@ -154,7 +168,7 @@
         </el-tab-pane>
 
         <!-- ========== 结转流水 ========== -->
-        <el-tab-pane label="结转流水" name="carry">
+        <el-tab-pane v-if="!isIndependent || tab === 'carry'" label="结转流水" name="carry">
           <div class="table-wrap">
             <el-table v-loading="carryLoading" :data="carryList" border
                       :ref="carryCol.tableRef" @header-dragend="carryCol.onHeaderDragEnd">
@@ -214,7 +228,7 @@
         </el-tab-pane>
 
         <!-- ========== 物料税率维护 ========== -->
-        <el-tab-pane label="物料税率维护" name="tax">
+        <el-tab-pane v-if="!isIndependent || tab === 'tax'" label="物料税率维护" name="tax">
           <el-alert type="info" :closable="false" show-icon style="margin-bottom: 12px">
             <template #title>
               <span class="hint-text">
@@ -228,9 +242,9 @@
           <div class="toolbar">
             <div class="toolbar-left">
               <el-button icon="Refresh" @click="getTaxList">刷新</el-button>
-              <el-button v-hasPermi="['fin:materialTax:add']" type="primary" plain icon="Plus" @click="handleAddTax">新增档案</el-button>
+              <el-button v-hasPermi="['fin:cost:tax']" type="primary" plain icon="Plus" @click="handleAddTax">新增档案</el-button>
               <el-button icon="Warning" @click="loadUntaxed">待建档物料</el-button>
-              <el-button v-hasPermi="['fin:materialTax:add']" type="success" icon="Finished" @click="showBatchInit = true">批量初始化</el-button>
+              <el-button v-hasPermi="['fin:cost:tax']" type="success" icon="Finished" @click="showBatchInit = true">批量初始化</el-button>
             </div>
           </div>
 
@@ -282,9 +296,9 @@
               <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
                 <template #default="{ row }">
                   <div class="action-btn-row">
-                    <el-button v-hasPermi="['fin:materialTax:query']" link type="primary" size="small" @click="handleViewTax(row)">详情</el-button>
-                    <el-button v-hasPermi="['fin:materialTax:edit']" link type="primary" size="small" @click="handleEditTax(row)">修改</el-button>
-                    <el-button v-hasPermi="['fin:materialTax:remove']" link type="danger" size="small" @click="handleDelTax(row)">删除</el-button>
+                    <el-button v-hasPermi="['fin:cost:tax']" link type="primary" size="small" @click="handleViewTax(row)">详情</el-button>
+                    <el-button v-hasPermi="['fin:cost:tax']" link type="primary" size="small" @click="handleEditTax(row)">修改</el-button>
+                    <el-button v-hasPermi="['fin:cost:tax']" link type="danger" size="small" @click="handleDelTax(row)">删除</el-button>
                   </div>
                 </template>
               </el-table-column>
@@ -295,7 +309,15 @@
     </div>
 
     <!-- 计价结果弹窗 -->
-    <el-dialog v-model="showResult" title="入库计价结果" width="640px" append-to-body>
+    <el-dialog v-model="showResult" width="640px" append-to-body class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 14l2 2 4-4M12 3l7 4v5c0 4.5-3 8.5-7 9-4-.5-7-4.5-7-9V7l7-4z"/>
+          </svg>
+          <span class="rd-detail-title">入库计价结果</span>
+        </div>
+      </template>
       <el-alert v-if="priceResult && priceResult.skipped && priceResult.skipped.length" type="warning" :closable="false" show-icon style="margin-bottom: 12px">
         <template #title>{{ priceResult.skipped.length }} 条单价为 0 的明细被跳过</template>
       </el-alert>
@@ -306,14 +328,22 @@
         <el-descriptions-item label="单位成本(不含税)">
           <span class="amount-cell strong">{{ formatAmount(priceResult && priceResult.unitCost) }}</span>
         </el-descriptions-item>
-      </el-des>
+      </el-descriptions>
       <template #footer>
         <el-button type="primary" @click="showResult = false">关 闭</el-button>
       </template>
     </el-dialog>
 
     <!-- 存货计价表弹窗 -->
-    <el-dialog v-model="showValuation" title="存货计价表" width="760px" append-to-body>
+    <el-dialog v-model="showValuation" width="760px" append-to-body class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/>
+          </svg>
+          <span class="rd-detail-title">存货计价表</span>
+        </div>
+      </template>
       <div class="table-wrap">
         <el-table :data="valuationList" border max-height="420">
           <el-table-column type="index" label="序号" width="85" align="center" />
@@ -340,18 +370,40 @@
     </el-dialog>
 
     <!-- 期初成本录入弹窗 -->
-    <el-dialog v-model="showInit" title="录入期初成本" width="680px" append-to-body>
+    <el-dialog v-model="showInit" width="680px" append-to-body class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>
+          </svg>
+          <span class="rd-detail-title">录入期初成本</span>
+        </div>
+      </template>
       <el-form :model="initForm" label-width="120px">
-        <el-form-item label="物料">
-          <el-select v-model="initForm.materialCode" filterable placeholder="请选择物料" style="width: 100%">
-            <el-option v-for="m in materialOptions" :key="m.code" :label="m.code + ' / ' + m.name" :value="m.code" />
-          </el-select>
+        <el-form-item label="物料" required>
+          <el-input v-model="initMaterialText" readonly placeholder="请选择物料" style="width: 100%" @click="openInitMaterialPicker">
+            <template #append><el-button icon="Search" @click="openInitMaterialPicker" /></template>
+            <template #suffix>
+              <el-icon v-if="initMaterialText" class="clear-icon" @click.stop="clearInitMaterial"><CircleClose /></el-icon>
+            </template>
+          </el-input>
         </el-form-item>
-        <el-form-item label="仓库">
-          <el-input-number v-model="initForm.warehouseId" :min="1" style="width: 100%" />
+        <el-form-item label="仓库" required>
+          <el-input v-model="initForm.warehouseName" readonly placeholder="请选择仓库" style="width: 100%" @click="openInitWarehousePicker">
+            <template #append><el-button icon="Search" @click="openInitWarehousePicker" /></template>
+            <template #suffix>
+              <el-icon v-if="initForm.warehouseName" class="clear-icon" @click.stop="clearInitWarehouse"><CircleClose /></el-icon>
+            </template>
+          </el-input>
         </el-form-item>
         <el-form-item label="库位">
-          <el-input-number v-model="initForm.locationId" :min="1" style="width: 100%" />
+          <el-input v-model="initForm.locationName" readonly placeholder="请先选择仓库，再选择库位" style="width: 100%"
+                    :disabled="!initForm.warehouseId" @click="openInitLocationPicker">
+            <template #append><el-button icon="Search" :disabled="!initForm.warehouseId" @click="openInitLocationPicker" /></template>
+            <template #suffix>
+              <el-icon v-if="initForm.locationName" class="clear-icon" @click.stop="clearInitLocation"><CircleClose /></el-icon>
+            </template>
+          </el-input>
         </el-form-item>
         <el-form-item label="批次号">
           <el-input v-model="initForm.batchNo" placeholder="留空表示不区分批次" />
@@ -362,8 +414,9 @@
         <el-form-item label="含税总金额">
           <el-input-number v-model="initForm.amountTax" :min="0" :precision="2" style="width: 100%" />
         </el-form-item>
-        <el-form-item label="税率(%)">
-          <el-input-number v-model="initForm.taxRate" :min="0" :max="17" :precision="0" style="width: 100%" />
+        <el-form-item label="税率">
+          <el-input-number v-model="initForm.taxRate" :min="0" :max="1" :step="0.01" :precision="2" style="width: 100%" />
+          <div class="form-tip">如 0.13 表示 13%</div>
         </el-form-item>
         <div class="form-tip">系统自动除税得不含税单位成本，写入台账 version=1 记录</div>
       </el-form>
@@ -377,38 +430,74 @@
     <el-dialog v-model="showTaxEdit" class="rd-dialog" width="560px" append-to-body>
       <template #header>
         <div class="rd-detail-header">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M9 14l2 2 4-4M12 3l7 4v5c0 4.5-3 8.5-7 9-4-.5-7-4.5-7-9V7l7-4z"/>
-          </svg>
-          <span class="rd-detail-title">{{ taxForm.id ? '修改物料税率档案' : '新增物料税率档案' }}</span>
+          <div class="rd-detail-header-icon">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 14l2 2 4-4M12 3l7 4v5c0 4.5-3 8.5-7 9-4-.5-7-4.5-7-9V7l7-4z"/>
+            </svg>
+          </div>
+          <div class="rd-detail-header-main">
+            <div class="rd-detail-header-title">{{ taxForm.id ? '修改物料税率档案' : '新增物料税率档案' }}</div>
+            <div class="rd-detail-header-sub" v-if="taxForm.id">
+              <span class="rd-detail-header-no">物料编码：{{ taxForm.materialCode }}</span>
+            </div>
+            <div class="rd-detail-header-sub" v-else>
+              <span class="rd-detail-header-placeholder">完善物料税率档案信息</span>
+            </div>
+          </div>
         </div>
       </template>
-      <el-form :model="taxForm" label-width="110px">
-        <el-form-item label="物料编码" required>
-          <el-input v-model="taxForm.materialCode" placeholder="请输入物料编码" :disabled="!!taxForm.id" />
-        </el-form-item>
-        <el-form-item label="物料名称" required>
-          <el-input v-model="taxForm.materialName" placeholder="请输入物料名称" />
-        </el-form-item>
-        <el-form-item label="税率(%)" required>
-          <el-input-number v-model="taxForm.taxRate" :min="0" :max="17" :precision="0" style="width: 100%" />
-        </el-form-item>
-        <el-form-item label="是否含税">
-          <el-radio-group v-model="taxForm.isTax">
-            <el-radio value="Y">是</el-radio>
-            <el-radio value="N">否</el-radio>
-          </el-radio-group>
-        </el-form-item>
-        <el-form-item label="生效日期">
-          <el-date-picker v-model="taxForm.effectiveDate" type="date" value-format="YYYY-MM-DD" style="width: 100%" />
-        </el-form-item>
-        <el-form-item label="失效日期">
-          <el-date-picker v-model="taxForm.expireDate" type="date" value-format="YYYY-MM-DD" style="width: 100%" />
-        </el-form-item>
-        <el-form-item label="备注">
-          <el-input v-model="taxForm.remark" type="textarea" :rows="2" placeholder="选填" />
-        </el-form-item>
-      </el-form>
+      <div class="rd-page">
+        <div class="rd-card">
+          <div class="rd-card-header">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/></svg></span>基本信息</div>
+          </div>
+          <div class="rd-card-body">
+            <el-form :model="taxForm" label-width="110px">
+              <el-form-item label="物料" required>
+                <el-input v-model="taxMaterialText" readonly :placeholder="taxForm.id ? '' : '请选择物料'"
+                          :disabled="!!taxForm.id" style="width: 100%"
+                          @click="!taxForm.id && openTaxMaterialPicker()">
+                  <template v-if="!taxForm.id" #append><el-button icon="Search" @click="openTaxMaterialPicker" /></template>
+                </el-input>
+              </el-form-item>
+            </el-form>
+          </div>
+        </div>
+        <div class="rd-card">
+          <div class="rd-card-header">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg></span>税率信息</div>
+          </div>
+          <div class="rd-card-body">
+            <el-form :model="taxForm" label-width="110px">
+              <el-form-item label="税率" required>
+                <el-input-number v-model="taxForm.taxRate" :min="0" :max="1" :step="0.01" :precision="2" style="width: 100%" />
+                <div class="form-tip">如 0.13 表示 13%</div>
+              </el-form-item>
+              <el-form-item label="是否含税">
+                <el-radio-group v-model="taxForm.isTax">
+                  <el-radio value="Y">是</el-radio>
+                  <el-radio value="N">否</el-radio>
+                </el-radio-group>
+              </el-form-item>
+              <el-row :gutter="12">
+                <el-col :span="12">
+                  <el-form-item label="生效日期">
+                    <el-date-picker v-model="taxForm.effectiveDate" type="date" value-format="YYYY-MM-DD" style="width: 100%" />
+                  </el-form-item>
+                </el-col>
+                <el-col :span="12">
+                  <el-form-item label="失效日期">
+                    <el-date-picker v-model="taxForm.expireDate" type="date" value-format="YYYY-MM-DD" style="width: 100%" />
+                  </el-form-item>
+                </el-col>
+              </el-row>
+              <el-form-item label="备注">
+                <el-input v-model="taxForm.remark" type="textarea" :rows="2" placeholder="选填" />
+              </el-form-item>
+            </el-form>
+          </div>
+        </div>
+      </div>
       <template #footer>
         <el-button @click="showTaxEdit = false">取 消</el-button>
         <el-button type="primary" @click="submitTax">确 定</el-button>
@@ -419,48 +508,69 @@
     <el-dialog v-model="viewTaxOpen" class="rd-dialog" width="560px" append-to-body>
       <template #header>
         <div class="rd-detail-header">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
-          </svg>
-          <span class="rd-detail-title">物料税率档案详情</span>
+          <div class="rd-detail-header-icon">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+            </svg>
+          </div>
+          <div class="rd-detail-header-main">
+            <div class="rd-detail-header-title">物料税率档案详情</div>
+            <div class="rd-detail-header-sub" v-if="viewData.materialCode">
+              <span class="rd-detail-header-no">物料编码：{{ viewData.materialCode }}</span>
+              <span class="badge" :class="isEffective(viewData) ? 'green dot' : 'gray dot'" style="margin-left: 8px">
+                <span class="dot"></span>{{ isEffective(viewData) ? '生效中' : '已失效' }}
+              </span>
+            </div>
+            <div class="rd-detail-header-sub" v-else>
+              <span class="rd-detail-header-placeholder">查看详细信息</span>
+            </div>
+          </div>
         </div>
       </template>
       <div class="rd-page">
         <div class="rd-card">
-          <div class="rd-card-title">基本信息</div>
-          <div class="rd-grid">
-            <div class="rd-item">
-              <div class="rd-label">物料编码</div>
-              <div class="rd-value">{{ viewData.materialCode || '-' }}</div>
-            </div>
-            <div class="rd-item">
-              <div class="rd-label">物料名称</div>
-              <div class="rd-value">{{ viewData.materialName || '-' }}</div>
+          <div class="rd-card-header">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/></svg></span>基本信息</div>
+          </div>
+          <div class="rd-card-body">
+            <div class="rd-grid">
+              <div class="rd-item">
+                <div class="rd-label">物料编码</div>
+                <div class="rd-value">{{ viewData.materialCode || '-' }}</div>
+              </div>
+              <div class="rd-item">
+                <div class="rd-label">物料名称</div>
+                <div class="rd-value">{{ viewData.materialName || '-' }}</div>
+              </div>
             </div>
           </div>
         </div>
         <div class="rd-card">
-          <div class="rd-card-title">税率信息</div>
-          <div class="rd-grid">
-            <div class="rd-item">
-              <div class="rd-label">税率</div>
-              <div class="rd-value rd-amount">{{ viewData.taxRate != null ? viewData.taxRate + '%' : '-' }}</div>
-            </div>
-            <div class="rd-item">
-              <div class="rd-label">是否含税</div>
-              <div class="rd-value">{{ viewData.isTax === 'Y' ? '是' : (viewData.isTax === 'N' ? '否' : '-') }}</div>
-            </div>
-            <div class="rd-item">
-              <div class="rd-label">生效日期</div>
-              <div class="rd-value">{{ viewData.effectiveDate || '-' }}</div>
-            </div>
-            <div class="rd-item">
-              <div class="rd-label">失效日期</div>
-              <div class="rd-value">{{ viewData.expireDate || '长期' }}</div>
-            </div>
-            <div class="rd-item rd-item-full">
-              <div class="rd-label">备注</div>
-              <div class="rd-value">{{ viewData.remark || '-' }}</div>
+          <div class="rd-card-header">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg></span>税率信息</div>
+          </div>
+          <div class="rd-card-body">
+            <div class="rd-grid">
+              <div class="rd-item">
+                <div class="rd-label">税率</div>
+                <div class="rd-value rd-amount">{{ formatTaxRate(viewData.taxRate) }}</div>
+              </div>
+              <div class="rd-item">
+                <div class="rd-label">是否含税</div>
+                <div class="rd-value">{{ viewData.isTax === 'Y' ? '是' : (viewData.isTax === 'N' ? '否' : '-') }}</div>
+              </div>
+              <div class="rd-item">
+                <div class="rd-label">生效日期</div>
+                <div class="rd-value">{{ viewData.effectiveDate || '-' }}</div>
+              </div>
+              <div class="rd-item">
+                <div class="rd-label">失效日期</div>
+                <div class="rd-value">{{ viewData.expireDate || '长期' }}</div>
+              </div>
+              <div class="rd-item rd-item--full">
+                <div class="rd-label">备注</div>
+                <div class="rd-value">{{ viewData.remark || '-' }}</div>
+              </div>
             </div>
           </div>
         </div>
@@ -471,7 +581,15 @@
     </el-dialog>
 
     <!-- 待建档物料弹窗 -->
-    <el-dialog v-model="showUntaxed" title="待建档物料" width="640px" append-to-body>
+    <el-dialog v-model="showUntaxed" width="640px" append-to-body class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/>
+          </svg>
+          <span class="rd-detail-title">待建档物料</span>
+        </div>
+      </template>
       <el-alert v-if="untaxedList.length" type="warning" :closable="false" show-icon style="margin-bottom: 12px">
         <template #title>以下 {{ untaxedList.length }} 个物料尚未维护税率档案，入库计价将按默认 13% 处理</template>
       </el-alert>
@@ -490,10 +608,19 @@
     </el-dialog>
 
     <!-- 批量初始化弹窗 -->
-    <el-dialog v-model="showBatchInit" title="批量初始化税率档案" width="480px" append-to-body>
+    <el-dialog v-model="showBatchInit" width="480px" append-to-body class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+          </svg>
+          <span class="rd-detail-title">批量初始化税率档案</span>
+        </div>
+      </template>
       <el-form label-width="110px">
-        <el-form-item label="默认税率(%)">
-          <el-input-number v-model="batchInitForm.taxRate" :min="0" :max="17" :precision="0" style="width: 100%" />
+        <el-form-item label="默认税率">
+          <el-input-number v-model="batchInitForm.taxRate" :min="0" :max="1" :step="0.01" :precision="2" style="width: 100%" />
+          <div class="form-tip">如 0.13 表示 13%</div>
         </el-form-item>
         <el-form-item label="是否含税">
           <el-radio-group v-model="batchInitForm.isTax">
@@ -508,16 +635,40 @@
         <el-button type="primary" @click="submitBatchInit">确 定</el-button>
       </template>
     </el-dialog>
+
+    <!-- 物料 / 仓库 / 库位 弹框选择器（picker 规范） -->
+    <material-picker ref="initMaterialPickerRef" title="选择物料" @confirm="onInitMaterialConfirm" />
+    <warehouse-picker ref="initWarehousePickerRef" title="选择仓库" @confirm="onInitWarehouseConfirm" />
+    <location-picker ref="initLocationPickerRef" title="选择库位" @confirm="onInitLocationConfirm" />
+    <material-picker ref="taxMaterialPickerRef" title="选择物料" @confirm="onTaxMaterialConfirm" />
+    <el-dialog v-model="showStatusHelp" title="成本台账业务操作说明" width="820px" append-to-body>
+      <div class="status-help-content"><h4>一、状态流转图</h4><div class="status-flow"><el-tag type="primary">录入期初</el-tag><span class="flow-arrow">→</span><el-tag type="warning">入库计价</el-tag><span class="flow-arrow">→</span><el-tag type="success">出库结转</el-tag></div><h4>二、各状态说明</h4><el-descriptions :column="1" border><el-descriptions-item label="录入期初">新启用物料/仓库时录入期初成本数据，作为计价的基础</el-descriptions-item><el-descriptions-item label="入库计价">按物料计价方法计算入库单价并更新库存成本</el-descriptions-item><el-descriptions-item label="出库结转">按计价方法结转出库成本，生成结转单号（CB 前缀）</el-descriptions-item></el-descriptions><h4>三、重点业务规则</h4><el-row :gutter="16"><el-col :span="12"><div class="highlight-card highlight-primary"><div class="highlight-card-title">两级计价配置</div><div class="highlight-card-body">成本方法支持<strong>全局默认与指定物料</strong>两级配置，指定物料优先级高于全局默认</div></div></el-col><el-col :span="12"><div class="highlight-card highlight-warning"><div class="highlight-card-title">加权平均</div><div class="highlight-card-body">按加权平均法计算：出库单价 =（期初金额 + 入库金额）/（期初数量 + 入库数量）</div></div></el-col></el-row><el-row :gutter="16" style="margin-top: 12px;"><el-col :span="12"><div class="highlight-card highlight-success"><div class="highlight-card-title">先进先出</div><div class="highlight-card-body">按先进先出（FIFO）结转：<strong>最早批次成本先行结转</strong>，批次维度跟踪结转金额</div></div></el-col><el-col :span="12"><div class="highlight-card highlight-danger"><div class="highlight-card-title">结转流水可追溯</div><div class="highlight-card-body">每次入库计价与出库结转均生成结转流水，<strong>成本来源与去向全程可追溯</strong></div></div></el-col></el-row><h4>四、业务操作流程</h4><el-timeline><el-timeline-item type="primary" :hollow="true"><strong>录入期初：</strong>新启用时点击「录入期初成本」，录入各物料/仓库的期初数量与金额</el-timeline-item><el-timeline-item type="warning" :hollow="true"><strong>入库计价：</strong>点击「入库计价」，系统按物料计价方法计算入库成本</el-timeline-item><el-timeline-item type="success" :hollow="true"><strong>出库结转：</strong>点击「出库结转」，按计价方法结转出库成本并生成结转单</el-timeline-item><el-timeline-item type="info" :hollow="true"><strong>流水追溯：</strong>在结转流水页签查看历次计价与结转明细</el-timeline-item></el-timeline></div>
+      <template #footer><el-button type="primary" @click="showStatusHelp = false">我知道了</el-button></template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup name="Cost">
+import { WarningFilled } from '@element-plus/icons-vue'
+const showStatusHelp = ref(false)
 import { listCost, priceInbound, carryOutbound, getValuation, getTotalCost, initCost, listCarry } from "@/api/fin/cost";
 import { listMaterialTax, addMaterialTax, updateMaterialTax, delMaterialTax, listUntaxedMaterials, countMaterialTax, batchInitTax } from "@/api/fin/materialTax";
 import { useColumnResize } from "@/composables/useColumnResize";
+import MaterialPicker from '@/components/MaterialPicker/index.vue';
+import WarehousePicker from '@/components/WarehousePicker/index.vue';
+import LocationPicker from '@/components/LocationPicker/index.vue';
+import { listWarehouseTree } from '@/api/wms/warehouse';
 
 const { proxy } = getCurrentInstance();
 const tab = ref("cost");
+
+/** 菜单重构（路径A）：成本台账/结转流水/物料税率维护独立菜单，按路由 path 激活对应页签 */
+const route = useRoute();
+const PATH_TABS = [["/ledger", "cost"], ["/carry", "carry"], ["/tax", "tax"]];
+const matchedTab = PATH_TABS.find(([p]) => route.path.endsWith(p));
+if (matchedTab) tab.value = matchedTab[1];
+/** 独立菜单模式下仅展示对应分区并隐藏页签栏 */
+const isIndependent = computed(() => PATH_TABS.some(([p]) => route.path.endsWith(p)));
 
 /* ---------- 列宽管理（每页签独立） ---------- */
 const costCol = useColumnResize("fin_cost_ledger_index");
@@ -652,12 +803,12 @@ function loadUntaxed() {
 function onMaterialChange() {}
 function handleAddTax() {
   Object.keys(taxForm).forEach(k => delete taxForm[k]);
-  taxForm.taxRate = 13;
+  taxForm.taxRate = 0.13;
   taxForm.isTax = "Y";
   showTaxEdit.value = true;
 }
 function quickAddTax() {
-  batchInitTax({ taxRate: 13, isTax: "Y" }).then(() => {
+  batchInitTax(0.13).then(() => {
     proxy.$modal.msgSuccess("批量建档完成");
     showUntaxed.value = false;
     getTaxList();
@@ -692,13 +843,86 @@ function handleDelTax(row) {
     getTaxList();
   }).catch(() => {});
 }
-const batchInitForm = reactive({ taxRate: 13, isTax: "Y" });
+const batchInitForm = reactive({ taxRate: 0.13, isTax: "Y" });
 function submitBatchInit() {
-  batchInitTax(batchInitForm).then(res => {
+  batchInitTax(batchInitForm.taxRate).then(res => {
     proxy.$modal.msgSuccess(`已初始化 ${res.data || 0} 个物料档案`);
     showBatchInit.value = false;
     getTaxList();
   });
+}
+
+/* ---------- 仓库结构映射（仓库/库位 ID → 名称，取仓库管理数据） ---------- */
+const warehouseMap = ref({});
+function loadWarehouseMap() {
+  listWarehouseTree({ pageNum: 1, pageSize: 500 }).then(res => {
+    const map = {};
+    (res.rows || res.data || []).forEach(n => { map[n.warehouseId] = n.warehouseName || n.name; });
+    warehouseMap.value = map;
+  }).catch(() => {});
+}
+function warehouseLabel(id) {
+  if (id == null) return '—';
+  return warehouseMap.value[id] || String(id);
+}
+
+/* ---------- 期初成本：物料/仓库/库位 弹框选择（picker 规范） ---------- */
+const initMaterialPickerRef = ref(null);
+const initWarehousePickerRef = ref(null);
+const initLocationPickerRef = ref(null);
+const taxMaterialPickerRef = ref(null);
+const initMaterialText = computed(() =>
+  initForm.materialCode ? (initForm.materialCode + (initForm.materialName ? ' - ' + initForm.materialName : '')) : ''
+);
+const taxMaterialText = computed(() =>
+  taxForm.materialCode ? (taxForm.materialCode + (taxForm.materialName ? ' - ' + taxForm.materialName : '')) : ''
+);
+function openInitMaterialPicker() { initMaterialPickerRef.value.open(initForm.materialId); }
+function onInitMaterialConfirm(m) {
+  initForm.materialId = m.materialId;
+  initForm.materialCode = m.materialCode;
+  initForm.materialName = m.materialName;
+}
+function clearInitMaterial() {
+  initForm.materialId = undefined;
+  initForm.materialCode = undefined;
+  initForm.materialName = undefined;
+}
+function openInitWarehousePicker() { initWarehousePickerRef.value.open(initForm.warehouseId); }
+function onInitWarehouseConfirm(w) {
+  if (initForm.warehouseId && initForm.warehouseId !== w.warehouseId) {
+    initForm.locationId = undefined;
+    initForm.locationName = undefined;
+  }
+  initForm.warehouseId = w.warehouseId;
+  initForm.warehouseName = w.warehouseName;
+}
+function clearInitWarehouse() {
+  initForm.warehouseId = undefined;
+  initForm.warehouseName = undefined;
+  initForm.locationId = undefined;
+  initForm.locationName = undefined;
+}
+function openInitLocationPicker() {
+  if (!initForm.warehouseId) {
+    proxy.$modal.msgWarning('请先选择仓库');
+    return;
+  }
+  initLocationPickerRef.value.open(initForm.warehouseId, initForm.locationId);
+}
+function onInitLocationConfirm(l) {
+  initForm.locationId = l.locationId;
+  initForm.locationName = l.locationName;
+}
+function clearInitLocation() {
+  initForm.locationId = undefined;
+  initForm.locationName = undefined;
+}
+function openTaxMaterialPicker() { taxMaterialPickerRef.value.open(taxForm.materialId); }
+function onTaxMaterialConfirm(m) {
+  taxForm.materialId = m.materialId;
+  taxForm.materialCode = m.materialCode;
+  taxForm.materialName = m.materialName;
 }
 
 /* ---------- 计价 / 结转 / 期初 ---------- */
@@ -708,7 +932,6 @@ const showValuation = ref(false);
 const valuationList = ref([]);
 const showInit = ref(false);
 const initForm = reactive({});
-const materialOptions = ref([]);
 
 function loadTotal() {
   getTotalCost().then(res => { totalCost.value = res.data || 0; });
@@ -755,7 +978,7 @@ function handleInit() {
   Object.keys(initForm).forEach(k => delete initForm[k]);
   initForm.warehouseId = 1;
   initForm.locationId = 1;
-  initForm.taxRate = 13;
+  initForm.taxRate = 0.13;
   showInit.value = true;
 }
 function submitInit() {
@@ -784,6 +1007,11 @@ function isEffective(row) {
   return (!row.effectiveDate || row.effectiveDate <= now) && (!row.expireDate || row.expireDate >= now);
 }
 function percent(v) { return v != null ? v + "%" : "-"; }
+/** 税率小数（0.13）→ 百分比显示（13%） */
+function formatTaxRate(v) {
+  if (v == null || v === '') return '-';
+  return (Number(v) * 100).toFixed(0) + '%';
+}
 
 /* ---------- 初始化 ---------- */
 getList();
@@ -791,6 +1019,7 @@ getTaxList();
 loadTotal();
 getCarryList();
 loadValuation();
+loadWarehouseMap();
 </script>
 
 <style scoped>
@@ -815,6 +1044,27 @@ loadValuation();
   min-height: calc(100vh - 84px);
 }
 
+/* ===== stat-card（对齐应收管理页面） ===== */
+.fin-cost-page .stat-card {
+  background: #fff;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  box-shadow: var(--shadow-card);
+  padding: 16px 18px;
+  text-align: center;
+  transition: all .15s cubic-bezier(.16,.84,.44,1);
+}
+.fin-cost-page .stat-card:hover {
+  border-color: #c7d2fe;
+  box-shadow: 0 4px 12px -2px rgba(99,102,241,.12);
+}
+.fin-cost-page .stat-card .stat-label { font-size: 13px; color: var(--text-secondary); margin-bottom: 8px; }
+.fin-cost-page .stat-card .stat-value { font-size: 22px; font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.fin-cost-page .stat-card .stat-hint { font-size: 12px; color: var(--text-secondary); margin-top: 6px; }
+
+/* 菜单重构：独立菜单模式下隐藏页签栏（页签已拆为独立菜单） */
+.fin-cost-page .cost-tabs-solo > :deep(.el-tabs__header) { display: none; }
+
 /* ===== 卡片容器 ===== */
 .fin-cost-page .surface {
   background: var(--card-bg);
@@ -825,9 +1075,9 @@ loadValuation();
   margin-bottom: 16px;
 }
 
-/* ===== 筛选条件卡片 ===== */
+/* ===== 筛选条件卡片（对齐应收管理页面 / fin-list-page 共享规范） ===== */
 .fin-cost-page .filter-card {
-  padding: 14px 16px 6px;
+  padding: 14px 20px 16px;
 }
 .fin-cost-page .filter-head {
   display: flex;
@@ -841,7 +1091,7 @@ loadValuation();
   gap: 8px;
   font-size: 14px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--ink-700, #334155);
 }
 .fin-cost-page .filter-title .glyph {
   width: 4px;
@@ -850,52 +1100,104 @@ loadValuation();
   background: var(--primary-color);
 }
 .fin-cost-page .filter-bar {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px 16px;
 }
 .fin-cost-page .filter-bar .field {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 220px;
-  flex: 1 1 220px;
+  flex-direction: column;
+  gap: 6px;
 }
 .fin-cost-page .filter-bar .field label {
-  font-size: 13px;
-  color: var(--text-regular);
-  white-space: nowrap;
-  width: 62px;
-  text-align: right;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink-700, #334155);
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 .fin-cost-page .filter-bar .field .control {
-  flex: 1;
-  min-width: 0;
-}
-.fin-cost-page .filter-bar .field .control :deep(.el-input__wrapper),
-.fin-cost-page .filter-bar .field .control :deep(.el-select__wrapper) {
-  background: #fafbfc;
-  box-shadow: 0 0 0 1px var(--border-color) inset;
-}
-.fin-cost-page .filter-bar .field .control :deep(.el-input__wrapper.is-focus),
-.fin-cost-page .filter-bar .field .control :deep(.el-select__wrapper.is-focused) {
+  display: flex;
+  align-items: center;
+  height: 36px;
+  padding: 0 12px;
   background: #fff;
-  box-shadow: 0 0 0 1px var(--primary-color) inset;
+  border: 1px solid var(--ink-200, #e2e8f0);
+  border-radius: 6px;
+  transition: border-color .15s ease-out, box-shadow .15s ease-out;
+}
+.fin-cost-page .filter-bar .field .control.is-select {
+  padding: 0 8px;
+}
+.fin-cost-page .filter-bar .field .control:focus-within {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, .15);
+}
+.fin-cost-page .filter-bar .field .control :deep(.el-input__wrapper) {
+  box-shadow: none !important;
+  background: transparent !important;
+  padding: 0;
+  height: 34px;
+}
+.fin-cost-page .filter-bar .field .control :deep(.el-input__inner) {
+  border: 0;
+  background: transparent;
+  font-size: 14px;
+  color: var(--ink-900, #0f172a);
+  height: 34px;
+  line-height: 34px;
+}
+.fin-cost-page .filter-bar .field .control :deep(.el-input__inner::placeholder) {
+  color: var(--ink-400, #94a3b8);
+}
+.fin-cost-page .filter-bar .field .control :deep(.el-input__prefix) {
+  color: var(--ink-400, #94a3b8);
+  margin-right: 4px;
+}
+.fin-cost-page .filter-bar .field .control :deep(.el-select) {
+  width: 100%;
+}
+.fin-cost-page .filter-bar .field .control :deep(.el-select .el-select__wrapper) {
+  box-shadow: none !important;
+  background: transparent !important;
+  padding: 0;
+  min-height: 34px;
+  height: 34px;
+}
+.fin-cost-page .filter-bar .field .control :deep(.el-select .el-select__wrapper .el-select__placeholder) {
+  font-size: 14px;
+  color: var(--ink-900, #0f172a);
+}
+.fin-cost-page .filter-bar .field .control :deep(.el-date-editor) {
+  width: 100%;
+}
+.fin-cost-page .filter-bar .field .control :deep(.el-date-editor .el-range-input) {
+  background: transparent;
+  border: 0;
+  font-size: 14px;
+  color: var(--ink-900, #0f172a);
+}
+.fin-cost-page .filter-bar .field .control :deep(.el-date-editor .el-range-separator) {
+  color: var(--ink-400, #94a3b8);
+}
+.fin-cost-page .filter-bar .field .control :deep(.el-date-editor .el-range__icon) {
+  color: var(--ink-400, #94a3b8);
 }
 .fin-cost-page .filter-actions {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-top: 1px dashed var(--border-light);
-  margin-top: 12px;
-  padding: 10px 0;
+  border-top: 1px dashed var(--ink-200, #e2e8f0);
+  margin-top: 14px;
+  padding-top: 14px;
 }
 .fin-cost-page .filter-info {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 12px;
-  color: var(--text-secondary);
+  font-size: 13px;
+  color: var(--ink-500, #64748b);
 }
 .fin-cost-page .filter-buttons {
   display: flex;
@@ -921,6 +1223,8 @@ loadValuation();
 }
 
 /* ===== 表格容器 ===== */
+.fin-cost-page .clear-icon { color: var(--text-secondary); cursor: pointer; }
+.fin-cost-page .clear-icon:hover { color: var(--danger-color); }
 .fin-cost-page .table-wrap {
   width: 100%;
 }
@@ -1040,97 +1344,26 @@ loadValuation();
 }
 .fin-cost-page .hint-text { font-size: 12px; font-weight: normal; }
 
-/* ===== 弹窗（rd-dialog） ===== */
-.fin-cost-page :deep(.rd-dialog .el-dialog__header) {
-  padding: 0;
-  margin: 0;
-}
-.fin-cost-page :deep(.rd-dialog .el-dialog__headerbtn) {
-  top: 14px;
-  right: 16px;
-}
-.fin-cost-page :deep(.rd-dialog .el-dialog__body) {
-  padding: 20px 24px;
-}
-.fin-cost-page :deep(.rd-detail-header) {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 16px 24px;
-  background: linear-gradient(135deg, #eef4ff 0%, #f7faff 100%);
-  border-bottom: 1px solid var(--border-light);
-  color: var(--primary-color);
-}
-.fin-cost-page :deep(.rd-detail-title) {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--text-primary);
-}
+/* rd- 弹窗体系样式统一走全局规范（detail-page.scss），此处禁止本地重定义：
+   :deep() 选择器会覆盖全局样式，导致卡片/头部与参考页面（partner 等）视觉不一致；本页仅保留下方页面独有样式 */
 
-/* ===== 详情页 rd- 结构 ===== */
-.fin-cost-page .rd-page {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-.fin-cost-page .rd-card {
-  background: var(--card-bg);
-  border: 1px solid var(--border-light);
-  border-radius: 8px;
-  padding: 16px 20px;
-  animation: rdFadeIn 0.3s ease;
-}
-.fin-cost-page .rd-card-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: 14px;
-  padding-left: 10px;
-  border-left: 3px solid var(--primary-color);
-  line-height: 18px;
-}
-.fin-cost-page .rd-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px 24px;
-}
-.fin-cost-page .rd-item {
-  min-width: 0;
-}
-.fin-cost-page .rd-item-full {
-  grid-column: 1 / -1;
-}
-.fin-cost-page .rd-label {
-  font-size: 12px;
-  color: var(--text-secondary);
-  margin-bottom: 4px;
-}
-.fin-cost-page .rd-value {
-  font-size: 14px;
-  color: var(--text-primary);
-  word-break: break-all;
-}
-.fin-cost-page .rd-amount {
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  color: var(--primary-color);
-}
-.fin-cost-page .rd-empty {
-  padding: 32px 0;
-  text-align: center;
-  color: var(--text-secondary);
-  font-size: 13px;
-}
-@keyframes rdFadeIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: none; }
-}
+/* 分组卡片内表单留白压缩（避免单字段卡片底部大空白） */
+.fin-cost-page .rd-card-body .el-form-item { margin-bottom: 14px; }
+.fin-cost-page .rd-card-body .el-form-item:last-child { margin-bottom: 0; }
 
 /* ===== 响应式 ===== */
-@media (max-width: 768px) {
-  .fin-cost-page .filter-bar .field {
-    min-width: 100%;
-    flex: 1 1 100%;
+@media (max-width: 1100px) {
+  .fin-cost-page .filter-bar {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 720px) {
+  .fin-cost-page .filter-bar {
+    grid-template-columns: 1fr;
+  }
+  .fin-cost-page .toolbar {
+    flex-wrap: wrap;
+    gap: 10px;
   }
   .fin-cost-page .rd-grid {
     grid-template-columns: 1fr;
