@@ -9,7 +9,7 @@ ruoyi:
   # 文件上传根目录
   # 优先级：环境变量 EDOP_UPLOAD_PATH > 外部 application.yml > 此默认值
   # 生产环境建议在外部 application.yml 中显式配置（如 D:/EDOP/uploadPath），或设置环境变量 EDOP_UPLOAD_PATH
-  profile: ${EDOP_UPLOAD_PATH:D:/ruoyi/uploadPath}
+  profile: ${EDOP_UPLOAD_PATH:D:/EDOP_QY/EDOP_CFSP/EDOP_CFSP_KF/uploadPath}
   # 获取ip地址开关
   addressEnabled: false
   # 验证码类型 math 数字计算 char 字符验证
@@ -20,7 +20,7 @@ ruoyi:
 # 开发环境配置
 server:
   # 服务器的HTTP端口
-  port: 8081
+  port: 8082
   servlet:
     # 应用的访问路径
     context-path: /
@@ -88,7 +88,7 @@ spring:
       # 端口，默认为6379
       port: 6379
       # 数据库索引
-      database: 0
+      database: 1
       # 密码
       password:
       # 连接超时时间
