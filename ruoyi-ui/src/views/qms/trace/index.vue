@@ -598,7 +598,7 @@ function handlePrint() {
     '@page{size:A4 landscape;margin:12mm}' +
     '</style></head><body>' +
     '<div class="toolbar"><button class="ghost" id="btnDl">下载 HTML 报告</button><button id="btnPrint">打印 / 保存 PDF</button></div>' +
-    '<div class="sheet"><h1>质量追溯报告</h1><div class="sub">EDOP 企业数字化平台 · 质量管理 · 质量追溯</div>' +
+    '<div class="sheet"><h1>质量追溯报告</h1><div class="sub">传丰食品数字化运营平台 · 质量管理 · 质量追溯</div>' +
     '<h2>一、追溯概要</h2><table class="meta"><tr><td>追溯批次</td><td>' + esc(traceBatch) + '</td><td>追溯方向</td><td>' + dirText + '</td></tr>' +
     '<tr><td>关联节点数</td><td>' + rows.length + '</td><td>断点节点数</td><td>' + breakCount + '</td></tr>' +
     '<tr><td>追溯时间</td><td>' + esc(traceData.value.traceTime) + '</td><td>报告生成时间</td><td>' + now + '</td></tr></table>' +

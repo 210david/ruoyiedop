@@ -62,6 +62,6 @@ export default {
   /**
    * 底部版权文本内容
    */
-  footerContent: 'Copyright © 2026 EDOP. All Rights Reserved.'
+  footerContent: 'Copyright © 2026 传丰食品 CFSP. All Rights Reserved.'
 }
 

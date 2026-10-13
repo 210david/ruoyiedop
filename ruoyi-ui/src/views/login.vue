@@ -23,18 +23,18 @@
               </svg>
             </div>
             <div class="logo-text">
-              <span class="logo-main">EDOP</span>
-              <span class="logo-sub">ENTERPRISE DIGITAL OPERATION PLATFORM</span>
+              <span class="logo-main">CFSP</span>
+              <span class="logo-sub">CHUANFENG FOOD DIGITAL OPERATION PLATFORM</span>
             </div>
           </div>
 
           <!-- 主标题 -->
           <h1 class="main-title">
-            <span class="title-white">EDOP</span><span class="title-blue">企业数字化平台</span>
+            <span class="title-white">传丰食品</span><span class="title-blue">数字化运营平台</span>
           </h1>
 
           <!-- 描述 -->
-          <p class="desc-text">EDOP 企业数字化平台：一站式赋能企业全链路数字化转型。</p>
+          <p class="desc-text">传丰食品数字化运营平台：一站式赋能企业全链路数字化转型。</p>
 
           <!-- 功能列表 -->
           <ul class="feature-list">
@@ -55,7 +55,7 @@
 
         <!-- 版权 -->
         <div class="copyright">
-          © 2026 EDOP Enterprise Platform. All rights reserved.
+          © 2026 传丰食品 Chuanfeng Food. All rights reserved.
         </div>
       </div>
 
@@ -157,7 +157,7 @@
           </el-form>
 
           <!-- 版本 -->
-          <div class="version-text">EDOP Enterprise Platform v1.0</div>
+          <div class="version-text">传丰食品数字化运营平台 v1.0</div>
         </div>
       </div>
     </div>
