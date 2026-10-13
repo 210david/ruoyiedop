@@ -1,7 +1,7 @@
 <template>
   <div class="wm-designer" :class="{ 'wm-full': fullscreen }" v-show="active">
     <input ref="imageInput" type="file" accept="image/*" style="display:none" @change="onImagePicked" />
-    <MenuBar :preview="preview" @cmd="onCmd" @help="helpOpen = true" @save="$emit('save')" @toggle-preview="preview = !preview" />
+    <MenuBar :preview="preview" :detail-items="detailMenuItems" @cmd="onCmd" @help="helpOpen = true" @save="$emit('save')" @toggle-preview="preview = !preview" />
     <FormatToolbar v-if="!preview" :has-sel="!!rect" :pos-label="posLabel" :style-obj="activeStyle"
       :can-merge="canMergeSel" :can-split="canSplitSel" :painter="!!painterStyle"
       @set="onSetStyle" @toggle="onToggleStyle" @align="v => onSetStyle({ k: 'align', v })"
@@ -26,7 +26,7 @@
                 <tr>
                   <th class="wm-corner" :style="rhStyle" @click="selAll"><span class="wm-rz-v" @mousedown.stop.prevent="startRowHeadDrag($event)" @click.stop.prevent></span></th>
                   <th v-for="(w, ci) in grid.colWidths" :key="'c' + ci" :class="{ on: colSel(ci) }"
-                    @mousedown.stop.prevent="selCol(ci, $event)" @mouseenter="headerEnter('col', ci, $event)" @contextmenu.prevent.stop="openColCtx($event, ci)">
+                    @mousedown.stop="selCol(ci, $event)" @mouseenter="headerEnter('col', ci, $event)" @contextmenu.prevent.stop="openColCtx($event, ci)">
                     {{ colName(ci) }}<span class="wm-rz-v" @mousedown.stop.prevent="startColDrag($event, ci)" @click.stop.prevent></span>
                   </th>
                   <th class="wm-fill-cell"></th>
@@ -35,7 +35,7 @@
               <tbody>
                 <tr v-for="(row, r) in rowViews" :key="r" :style="{ height: grid.rowHeights[r] + 'px' }">
                   <td class="wm-rowhead" :class="{ on: rowSel(r) }" :style="rhStyle"
-                    @mousedown.stop.prevent="selRow(r, $event)" @mouseenter="headerEnter('row', r, $event)" @contextmenu.prevent.stop="openRowCtx($event, r)">
+                    @mousedown.stop="selRow(r, $event)" @mouseenter="headerEnter('row', r, $event)" @contextmenu.prevent.stop="openRowCtx($event, r)">
                     {{ r + 1 }}<span class="wm-rz-h" @mousedown.stop.prevent="startRowDrag($event, r)" @click.stop.prevent></span>
                   </td>
                   <template v-for="(e, ci) in row" :key="r + '-' + ci">
@@ -61,19 +61,7 @@
                           <img v-if="e.cell.src" :src="e.cell.src" class="wm-img" alt="图片" />
                           <span v-else class="wm-t ph">图片</span>
                         </span>
-                        <span v-else-if="e.cell.type === 'detail'" class="wm-detail-mini">
-                          <div class="wdm-bar">{{ e.cell.text || '明细表' }}<em>双击进入明细表设置</em></div>
-                          <div class="wdm-head">
-                            <span class="wdm-th" style="flex:none;width:34px">序号</span>
-                            <span class="wdm-th" v-for="f in detailFieldsOf(e.cell.detail && e.cell.detail.table)" :key="f.field">{{ f.label }}</span>
-                            <span class="wdm-th" v-if="!detailFieldsOf(e.cell.detail && e.cell.detail.table).length" style="flex:1;color:#b45309">（尚未选择明细表或该明细表无字段，双击设置）</span>
-                          </div>
-                          <div class="wdm-tr" v-for="i in 3" :key="i"><span class="wdm-td" style="flex:none;width:34px;color:#cbd5e1">{{ i }}</span><span class="wdm-td" v-for="f in detailFieldsOf(e.cell.detail && e.cell.detail.table)" :key="f.field"></span></div>
-                          <div class="wdm-tr wdm-sum" v-if="((e.cell.detail && e.cell.detail.sumFields) || []).length">
-                            <span class="wdm-td" style="flex:none;width:34px">合计</span>
-                            <span class="wdm-td" v-for="f in detailFieldsOf(e.cell.detail && e.cell.detail.table)" :key="f.field">{{ (e.cell.detail.sumFields || []).includes(f.field) ? 'Σ' : '' }}</span>
-                          </div>
-                        </span>
+                        <span v-else-if="e.cell.type === 'detail'" class="wdm-bar" @dblclick.stop="openDtProps(e.cell)">{{ e.cell.text || '明细表' }}<em>双击进入明细编辑</em></span>
                         <span v-else class="wm-t" :class="{ ph: !e.cell.text }"><template v-if="e.cell.text">{{ e.cell.text }}</template><template v-else-if="isSingleActiveCell(e.r, e.c)">双击输入文本</template></span>
                       </template>
                       <template v-else><span v-if="isSingleActiveCell(e.r, e.c)" class="wm-t ph wm-cell-tip">双击输入文本</span></template>
@@ -85,7 +73,7 @@
             </table>
           </div>
         </div>
-        <PropPanel v-show="!preview" :form-name="form.formName" :form-key="form.formKey" :fields="fields"
+        <PropPanel v-show="!preview" :form-name="form.formName" :form-key="form.formKey" :fields="mainFields"
           :placed="placedSet" :placed-labels="placedLabelSet" :active-cell="activeCell" :field-defs="fieldMap"
           @bind="f => bindField(f.field || f)" @insert-label="insertLabel" @clear-bind="clearBind" @pick="openPicker"
           @patch="patchActive" @set="onSetStyle" @toggle="onToggleStyle" />
@@ -117,27 +105,56 @@
         <el-button @click="pickerOpen = false">取 消</el-button>
       </template>
     </el-dialog>
-    <!-- 明细表设置（泛微式：新增明细表后双击块进入设置） -->
-    <el-dialog v-model="dtPropsOpen" :title="dtPropsCell ? '明细表设置 · ' + (dtPropsCell.text || '明细表') : '明细表设置'" width="520px" append-to-body :close-on-click-modal="false">
-      <el-form label-width="120px" size="small">
-        <el-form-item label="明细表名称">
-          <el-input v-model="dtPropsForm.title" placeholder="如：明细表1 / 费用明细" maxlength="30" />
-        </el-form-item>
-        <el-form-item label="数据来源" required>
-          <el-select v-model="dtPropsForm.table" placeholder="选择明细表（编辑字段页签中定义）" style="width:100%">
-            <el-option v-for="dt in detailTableKeys" :key="dt" :label="dt + '（' + detailFieldsOf(dt).length + ' 个字段）'" :value="dt" />
-          </el-select>
-          <div class="wdm-tip">如无明细表，请先到「编辑字段」页签添加明细表字段（+ 页签 → 主表/明细表）</div>
-        </el-form-item>
-        <el-form-item label="表尾合计字段">
-          <el-select v-model="dtPropsForm.sumFields" multiple collapse-tags placeholder="选择需要 Σ 自动合计的数值列" style="width:100%">
-            <el-option v-for="f in detailFieldsOf(dtPropsForm.table)" :key="f.field" :label="f.label + '（' + f.field + '）'" :value="f.field" :disabled="f.dtype !== 'int' && f.dtype !== 'float'" />
-          </el-select>
-          <div class="wdm-tip">仅整数/浮点字段可合计</div>
-        </el-form-item>
+    <!-- 明细表编辑弹窗（泛微式：明细表名称/数据来源 + 逐列配置标签/列宽/表尾合计/必填，序号可拖动排序） -->
+    <el-dialog v-model="dtPropsOpen" :title="dtPropsCell ? '明细表编辑 · ' + (dtPropsCell.text || '明细表') : '明细表编辑'" width="760px" append-to-body :close-on-click-modal="false">
+      <el-form label-width="90px" size="small" class="wdm-head-form">
+        <el-row :gutter="12">
+          <el-col :span="8"><el-form-item label="明细表名称"><el-input v-model="dtPropsForm.title" placeholder="如：明细表1 / 费用明细" maxlength="30" /></el-form-item></el-col>
+          <el-col :span="16"><el-form-item label="数据来源" required>
+            <el-select v-model="dtPropsForm.table" placeholder="选择明细表（编辑字段页签中定义）" style="width:100%">
+              <el-option v-for="dt in detailTableKeys" :key="dt" :label="dt + '（' + detailFieldsOf(dt).length + ' 个字段）'" :value="dt" />
+            </el-select>
+          </el-form-item></el-col>
+        </el-row>
       </el-form>
+      <div class="wdm-tip" style="margin-bottom:8px">按住序号拖动整行可调整列顺序（整行高亮跟随）；标签为明细表列头显示名；列宽按百分比设置，留空自动均分</div>
+      <el-table :data="dtEditRows" border size="small" row-key="field" max-height="320" class="wdm-field-table"
+        :row-class-name="dtRowClass">
+        <el-table-column label="序号" width="80" align="center">
+          <template #default="scope">
+            <span class="wdm-drag-idx" draggable="true"
+              @dragstart="onDtDragStart(scope.$index)"
+              @dragend="dtDragOver = -1"
+              :class="{ dragging: dtDragFrom === scope.$index }" title="拖动调整列顺序">⠿ {{ scope.$index + 1 }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="标签（明细表列头）" min-width="150" align="center">
+          <template #default="scope">
+            <el-input v-model="scope.row.label" size="small" placeholder="如：材料名称" />
+          </template>
+        </el-table-column>
+        <el-table-column label="字段" prop="field" min-width="110" align="center">
+          <template #default="scope"><span style="color:#94a3b8">{{ scope.row.field }}</span></template>
+        </el-table-column>
+        <el-table-column label="列宽(%)" width="110" align="center">
+          <template #default="scope">
+            <el-input-number v-model="scope.row.width" :min="5" :max="100" :controls="false" size="small" style="width:100%" placeholder="自动" />
+          </template>
+        </el-table-column>
+        <el-table-column label="表尾合计" width="85" align="center">
+          <template #default="scope">
+            <el-switch v-model="scope.row.sum" size="small" />
+          </template>
+        </el-table-column>
+        <el-table-column label="展示属性" width="100" align="center">
+          <template #default="scope">
+            <el-select v-model="scope.row.attr" size="small">
+              <el-option label="编辑" value="edit" /><el-option label="只读" value="ro" /><el-option label="必填" value="req" />
+            </el-select>
+          </template>
+        </el-table-column>
+      </el-table>
       <template #footer>
-        <el-button type="danger" plain @click="removeDtBlock">删除该明细表块</el-button>
         <el-button @click="dtPropsOpen = false">取 消</el-button>
         <el-button type="primary" @click="confirmDtProps">确 定</el-button>
       </template>
@@ -163,7 +180,7 @@
 </template>
 
 <script setup name="WmExcelGridDesigner">
-import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import MenuBar from './DesignerMenuBar.vue'
 import FormatToolbar from './FormatToolbar.vue'
@@ -204,8 +221,12 @@ const canvasWrapRef = ref(null)
 // ---- 全屏预览：模拟发起页填写（数据不保存，重开预览重置） ----
 const pvFormRef = ref(null)
 const pvValues = reactive({})
+/** 预览重置：清空后回填字段配置的默认值（选项默认值） */
 function resetPreviewValues() {
   for (const k of Object.keys(pvValues)) delete pvValues[k]
+  for (const f of props.fields || []) {
+    if (f.defaultValue !== undefined && f.defaultValue !== null && f.defaultValue !== '') pvValues[f.field] = f.defaultValue
+  }
 }
 function validatePreview() {
   if (!pvFormRef.value) return
@@ -284,10 +305,12 @@ const placedLabelSet = computed(() => {
   }
   return s
 })
-/** 绑定下拉可选项：仅未使用的字段；当前格已绑定的字段保留可选（便于换绑） */
+/** 主表字段：右侧可拖动字段列表与绑定下拉仅限主表字段，明细表字段不允许拖入主网格 */
+const mainFields = computed(() => (props.fields || []).filter(f => !f.table || f.table === 'main'))
+/** 绑定下拉可选项：仅未使用的主表字段；当前格已绑定的字段保留可选（便于换绑） */
 const availableFields = computed(() => {
   const cur = activeCell.value && activeCell.value.field
-  return (props.fields || []).filter(f => !placedSet.value.has(f.field) || f.field === cur)
+  return mainFields.value.filter(f => !placedSet.value.has(f.field) || f.field === cur)
 })
 const posLabel = computed(() => {  const t = rect.value
   if (!t) return ''
@@ -487,6 +510,9 @@ function expandSelRange(r1, c1, r2, c2) {
 const headerDrag = reactive({ mode: null })
 function selRow(r, e) {
   if (e && e.button !== 0) return
+  // 仅左键阻止默认行为（避免拖拽选行时出现文本选区）；右键路径不得调用 preventDefault，
+  // 否则会吞掉紧随其后的 contextmenu 事件，导致首次右键列表头无菜单
+  if (e) e.preventDefault()
   closeCtx()
   // Ctrl/Cmd+点击行号：多选批量选择整行——已选该行则移除，否则追加；普通点击清空追加选区
   if (e && (e.ctrlKey || e.metaKey)) {
@@ -505,6 +531,9 @@ function selRow(r, e) {
 }
 function selCol(c, e) {
   if (e && e.button !== 0) return
+  // 仅左键阻止默认行为（避免拖拽选列时出现文本选区）；右键路径不得调用 preventDefault，
+  // 否则会吞掉紧随其后的 contextmenu 事件，导致首次右键列表头无菜单
+  if (e) e.preventDefault()
   closeCtx()
   // Ctrl/Cmd+点击列标：多选批量选择整列——已选该列则移除，否则追加
   if (e && (e.ctrlKey || e.metaKey)) {
@@ -529,23 +558,25 @@ function headerEnter(type, idx, e) {
   else selRange.value = { r1: 0, c1: selRange.value.c1, r2: grid.value.rows - 1, c2: idx }
 }
 function openRowCtx(e, r) {
-  const t = rect.value
-  const inSel = !!t && t.c1 === 0 && t.c2 === grid.value.cols - 1 && r >= t.r1 && r <= t.r2
+  // 基于全部选区（主选区 + Ctrl 追加选区）判断：右键任一已选整行时保留多选，仅右键未选行才重置
+  const inSel = allRanges.value.some(t => t.c1 === 0 && t.c2 === grid.value.cols - 1 && r >= t.r1 && r <= t.r2)
   if (!inSel) selRange.value = { r1: r, c1: 0, r2: r, c2: grid.value.cols - 1 }
   ctx.x = e.clientX
   ctx.y = e.clientY
   ctx.r = r
   ctx.c = 0
+  ctx.kind = 'row' // 行号右键：仅行操作
   ctx.show = true
 }
 function openColCtx(e, c) {
-  const t = rect.value
-  const inSel = !!t && t.r1 === 0 && t.r2 === grid.value.rows - 1 && c >= t.c1 && c <= t.c2
+  // 基于全部选区（主选区 + Ctrl 追加选区）判断：右键任一已选整列时保留多选，仅右键未选列才重置
+  const inSel = allRanges.value.some(t => t.r1 === 0 && t.r2 === grid.value.rows - 1 && c >= t.c1 && c <= t.c2)
   if (!inSel) selRange.value = { r1: 0, c1: c, r2: grid.value.rows - 1, c2: c }
   ctx.x = e.clientX
   ctx.y = e.clientY
   ctx.r = 0
   ctx.c = c
+  ctx.kind = 'col' // 列标右键：仅列操作
   ctx.show = true
 }
 function selAll() { closeCtx(); selRange.value = { r1: 0, c1: 0, r2: grid.value.rows - 1, c2: grid.value.cols - 1 }; selRanges.value = [] }
@@ -911,10 +942,7 @@ function insTitle() {
   selRange.value = { r1: at, c1: 0, r2: at, c2: 0 }
 }
 
-// ---- 明细表块（参照泛微 e-cology：新增明细表插入占位块，双击进入明细表设置） ----
-const dtPropsOpen = ref(false)
-const dtPropsCell = ref(null)
-const dtPropsForm = ref({ table: undefined, title: '', sumFields: [] })
+// ---- 明细表块（参照泛微 e-cology：明细占位条双击进入独立明细编辑视图） ----
 /** 画布中已有的明细表 key 集合（含字段定义中的明细表），用于编号与下拉 */
 const detailTableKeys = computed(() => {
   const set = new Set()
@@ -922,6 +950,53 @@ const detailTableKeys = computed(() => {
   for (const c of grid.value.cells) if (c.type === 'detail' && c.detail && c.detail.table) set.add(c.detail.table)
   return [...set].sort()
 })
+/** 明细表菜单动态项（泛微口径）：添加明细表1/2…，数据来源可来自"编辑字段"明细表或画布已有块；已上画布的置灰 */
+const detailMenuItems = computed(() => {
+  const keys = [...detailTableKeys.value]
+  if (!keys.includes('dt1')) keys.unshift('dt1')
+  const onCanvas = new Set(grid.value.cells.filter(c => c.type === 'detail' && c.detail && c.detail.table).map(c => c.detail.table))
+  return keys.map((key, i) => ({
+    cmd: 'dt_add:' + key,
+    label: '添加明细表' + (i + 1),
+    disabled: onCanvas.has(key)
+  }))
+})
+/** 判断某行是否有内容（锚定单元格） */
+function rowHasContent(r) {
+  return grid.value.cells.some(c => c.r === r)
+}
+/** 新增明细表：泛微口径——添加到鼠标指向的单元格内（占用该格，原格内容被覆盖），双击条展开/收起明细网格 */
+function insDetailBlock(key) {
+  if (!key) key = nextDetailKey()
+  pushUndo()
+  const pos = anchorPos()
+  const cell = findAnchorCell(grid.value, pos.r, pos.c)
+  const blocks = grid.value.cells.filter(c => c.type === 'detail')
+  const name = '明细表' + (detailTableKeys.value.indexOf(key) + 1 || blocks.length + 1)
+  const detail = { table: key, title: name, columns: initDtColumns(key), props: initDtProps() }
+  if (cell) {
+    cell.type = 'detail'
+    cell.text = name
+    cell.detail = detail
+    cell.rs = 1
+    cell.field = undefined
+    cell.labelField = undefined
+    cell.attr = undefined
+    cell.src = undefined
+  } else {
+    grid.value.cells.push(makeCell(pos.r, pos.c, { type: 'detail', text: name, rs: 1, cs: 1, detail }))
+  }
+  selRange.value = { r1: pos.r, c1: pos.c, r2: pos.r, c2: pos.c }
+  ElMessage.success('已插入' + name + '：双击占位条进入明细编辑')
+}
+/** 明细列初始清单：从字段定义生成（编辑字段页签中该明细表的字段） */
+function initDtColumns(dt) {
+  return detailFieldsOf(dt).map(f => ({ field: f.field, label: f.label, width: 0, sum: false, required: !!f.required }))
+}
+/** 明细表属性默认值（泛微勾选面板同款） */
+function initDtProps() {
+  return { allowAdd: true, allowEdit: true, allowDelete: true, mustAdd: false, defaultRows: 1 }
+}
 function detailFieldsOf(dt) {
   return (props.fields || []).filter(f => f.table === dt)
 }
@@ -931,38 +1006,90 @@ function nextDetailKey() {
   while (used.has('dt' + i)) i++
   return 'dt' + i
 }
-/** 新增明细表：在当前行下方插入一块整行明细表占位（标题行由块内渲染，双击块进入设置）。
- * 泛微口径：明细块编号按画布已有明细块数递增（明细表1、明细表2…），数据来源默认自动建 dtN，双击可改绑。 */
-function insDetailBlock() {
-  pushUndo()
-  const at = anchorPos().r + 1
-  for (let i = 0; i < 4; i++) insertRow(grid.value, at)
-  const n = grid.value.cells.filter(c => c.type === 'detail').length
-  const key = nextDetailKey()
-  const name = '明细表' + (n + 1)
-  grid.value.cells.push(makeCell(at, 0, {
-    type: 'detail', text: name, rs: 4, cs: grid.value.cols,
-    detail: { table: key, title: name, sumFields: [] }
-  }))
-  selRange.value = { r1: at, c1: 0, r2: at, c2: 0 }
-  ElMessage.success('已插入' + name + '：双击该块可进入明细表设置')
-}
 /** 明细块显示名：按画布出现顺序编号 */
 function detailBlockTitle(key) {
   const blocks = grid.value.cells.filter(c => c.type === 'detail').sort((a, b) => a.r - b.r)
   const idx = blocks.findIndex(c => c.detail && c.detail.table === key)
   return idx >= 0 ? ('明细表' + (idx + 1)) : (key || '明细表')
 }
-/** 双击明细块 → 明细表设置（泛微式：添加后双击进入设置） */
+/** 双击明细占位条 → 弹窗编辑（明细表名称/数据来源 + 逐列配置：标签/列宽/表尾合计/必填，序号可拖动排序） */
+const dtPropsOpen = ref(false)
+const dtPropsCell = ref(null)
+const dtPropsForm = ref({ table: undefined, title: '' })
+/** 可编辑列副本：弹窗内逐行编辑与拖动排序，确定时写回明细块 */
+const dtEditRows = ref([])
 function openDtProps(cell) {
   if (!cell || cell.type !== 'detail') return
   dtPropsCell.value = cell
-  dtPropsForm.value = {
-    table: (cell.detail && cell.detail.table) || undefined,
-    title: cell.text || '',
-    sumFields: [...((cell.detail && cell.detail.sumFields) || [])]
-  }
+  dtPropsForm.value = { table: (cell.detail && cell.detail.table) || undefined, title: cell.text || '' }
+  dtEditRows.value = ((cell.detail && cell.detail.columns) || []).map(c => ({
+    field: c.field,
+    label: c.label,
+    width: c.width || undefined,
+    sum: !!c.sum,
+    attr: c.attr || (c.required ? 'req' : 'edit')
+  }))
   dtPropsOpen.value = true
+  // 原生 DOM 拖放监听（el-table 无 row-drag 事件）：挂载到表格 body，拖动整行高亮 + 落点行交换位置
+  nextTick(attachDtDragListeners)
+}
+/** 序号列拖动排序：拖动行到目标行交换位置（整行高亮跟随） */
+let dtDragFrom = -1
+const dtDragOver = ref(-1)
+let dtDragCleanup = null
+/** 挂载原生拖放监听：dragover 高亮落点行、drop 交换位置，弹窗关闭时移除 */
+function attachDtDragListeners() {
+  detachDtDragListeners()
+  const tbody = document.querySelector('.wdm-field-table .el-table__body-wrapper tbody')
+  if (!tbody) return
+  const rowIdx = el => {
+    const tr = el && el.closest('.el-table__row')
+    if (!tr) return -1
+    const trs = [...tbody.querySelectorAll('.el-table__row')]
+    return trs.indexOf(tr)
+  }
+  const onOver = e => {
+    e.preventDefault()
+    const idx = rowIdx(e.target)
+    if (idx >= 0) dtDragOver.value = idx
+  }
+  const onDrop = e => {
+    e.preventDefault()
+    const idx = rowIdx(e.target)
+    if (idx >= 0) onDtDrop(idx)
+    else { dtDragOver.value = -1; dtDragFrom = -1 }
+  }
+  const onLeave = e => { if (!tbody.contains(e.relatedTarget)) dtDragOver.value = -1 }
+  const onEnd = () => { dtDragOver.value = -1; dtDragFrom = -1 }
+  tbody.addEventListener('dragover', onOver)
+  tbody.addEventListener('drop', onDrop)
+  tbody.addEventListener('dragleave', onLeave)
+  tbody.addEventListener('dragend', onEnd)
+  dtDragCleanup = () => {
+    tbody.removeEventListener('dragover', onOver)
+    tbody.removeEventListener('drop', onDrop)
+    tbody.removeEventListener('dragleave', onLeave)
+    tbody.removeEventListener('dragend', onEnd)
+  }
+}
+function detachDtDragListeners() {
+  if (dtDragCleanup) { dtDragCleanup(); dtDragCleanup = null }
+  dtDragOver.value = -1; dtDragFrom = -1
+}
+watch(dtPropsOpen, open => { if (!open) detachDtDragListeners() })
+/** el-table 行级拖动视觉：拖拽行/落点行整行高亮 */
+function dtRowClass({ row }) {
+  const idx = dtEditRows.value.indexOf(row)
+  return idx === dtDragOver ? 'dt-row-over' : (idx === dtDragFrom ? 'dt-row-dragging' : '')
+}
+function onDtDragStart(idx) { dtDragFrom = idx }
+function onDtDrop(idx) {
+  if (dtDragFrom < 0 || dtDragFrom === idx) { dtDragFrom = -1; return }
+  const rows = dtEditRows.value
+  const [moved] = rows.splice(dtDragFrom, 1)
+  rows.splice(idx, 0, moved)
+  dtDragOver.value = -1
+  dtDragFrom = -1
 }
 function confirmDtProps() {
   const cell = dtPropsCell.value
@@ -970,16 +1097,13 @@ function confirmDtProps() {
   if (!dtPropsForm.value.table) { ElMessage.warning('请选择明细表数据来源'); return }
   pushUndo()
   cell.text = dtPropsForm.value.title || detailBlockTitle(dtPropsForm.value.table)
-  cell.detail = { ...(cell.detail || {}), table: dtPropsForm.value.table, sumFields: dtPropsForm.value.sumFields }
+  cell.detail.table = dtPropsForm.value.table
+  cell.detail.title = cell.text
+  // 写回列配置：标签/列宽/表尾合计/必填 + 拖动后的顺序
+  cell.detail.columns = dtEditRows.value.map(r => ({
+    field: r.field, label: r.label, width: r.width || 0, sum: !!r.sum, attr: r.attr || 'edit'
+  }))
   dtPropsOpen.value = false
-}
-function removeDtBlock() {
-  const cell = dtPropsCell.value
-  if (!cell) return
-  pushUndo()
-  grid.value.cells = grid.value.cells.filter(c => c !== cell)
-  dtPropsOpen.value = false
-  ElMessage.success('明细表块已删除')
 }
 function insNote() {
   pushUndo()
@@ -1001,7 +1125,7 @@ function clearAll() {
   pushUndo()
   eachAnchor(cell => {
     if (cell.type === 'field') { cell.type = 'text'; cell.field = undefined }
-    if (cell.type === 'image') cell.src = undefined
+    if (cell.type === 'image') { cell.type = 'text'; cell.src = undefined } // 图片格清除后重置为文本格，避免残留占位符
     cell.text = ''
     cell.labelField = undefined
     cell.labelLeft = undefined
@@ -1024,15 +1148,17 @@ const rzIndex = ref(0)
 const rzCurrent = ref(30)
 const rzTotal = ref(1000)
 const rzIsPct = ref(false)
+const rzTargets = ref([]) // 批量应用目标（多选整行/整列时的全部行/列索引）；单选时仅一项
 /** 画布内容区像素总宽（百分比折算基准，随窗口/全屏自适应；canvasWrapRef 见上方预览填充区） */
 const canvasTotalPx = computed(() => {
   const w = canvasWrapRef.value && canvasWrapRef.value.clientWidth
   return w && w > 100 ? Math.round(w - ((grid.value && grid.value.rowheadW) || 34)) : 1000
 })
-function openResize(kind, index) {
+function openResize(kind, index, targets) {
   pushUndo()
   rzKind.value = kind
   rzIndex.value = index
+  rzTargets.value = Array.isArray(targets) && targets.length ? targets : [index]
   const cur = kind === 'row' ? grid.value.rowHeights[index] : grid.value.colWidths[index]
   rzIsPct.value = kind === 'col' && isPct(cur)
   rzCurrent.value = isPct(cur) ? parseFloat(cur) : cur
@@ -1043,20 +1169,37 @@ function openResize(kind, index) {
   rzOpen.value = true
 }
 function applyResize({ kind, index, px, pct }) {
-  if (kind === 'row') resizeRow(grid.value, index, px)
-  else if (pct) resizeCol(grid.value, index, pct)
-  else resizeCol(grid.value, index, px)
+  // 批量目标：多选整行/整列时对所有选中行列应用；兜底单索引
+  const targets = rzTargets.value && rzTargets.value.length ? rzTargets.value : [index]
+  for (const idx of targets) {
+    if (kind === 'row') resizeRow(grid.value, idx, px)
+    else if (pct) resizeCol(grid.value, idx, pct)
+    else resizeCol(grid.value, idx, px)
+  }
 }
-/** 对整行/整列选区批量应用设置 */
+/** 对整行/整列选区批量应用设置：Ctrl/Shift 多选整列（或整行）时收集全部选中列（行）索引，弹窗保存后批量生效 */
 function applyResizeToSel(kind) {
   const t = rect.value
   if (!t) return
   const fullRows = t.c1 === 0 && t.c2 === grid.value.cols - 1
   const fullCols = t.r1 === 0 && t.r2 === grid.value.rows - 1
-  if (kind === 'row' && fullRows) return openResize('row', t.r2)
-  if (kind === 'col' && fullCols) return openResize('col', t.c2)
+  if (kind === 'row' && fullRows) return openResize('row', t.r2, selTargets(kind))
+  if (kind === 'col' && fullCols) return openResize('col', t.c2, selTargets(kind))
   // 局部选区：按锚点所在行列设置
   return openResize(kind, kind === 'row' ? t.r2 : t.c2)
+}
+/** 收集全部选区中的整行/整列索引（批量列宽/行高用）；无整行/整列选区时返回空数组 */
+function selTargets(kind) {
+  const g = grid.value
+  const set = new Set()
+  for (const t of allRanges.value) {
+    if (kind === 'col' && t.r1 === 0 && t.r2 === g.rows - 1) {
+      for (let c = t.c1; c <= t.c2; c++) set.add(c)
+    } else if (kind === 'row' && t.c1 === 0 && t.c2 === g.cols - 1) {
+      for (let r = t.r1; r <= t.r2; r++) set.add(r)
+    }
+  }
+  return [...set].sort((a, b) => a - b)
 }
 
 function formTitle() { return (props.form && props.form.formName) || '表单标题' }
@@ -1118,7 +1261,7 @@ function onDrop(e, r, c) {
 }
 
 // ---- 右键菜单 ----
-const ctx = reactive({ show: false, x: 0, y: 0, r: 0, c: 0 })
+const ctx = reactive({ show: false, x: 0, y: 0, r: 0, c: 0, kind: 'cell' })
 function openCtx(e, r, c) {
   const t = rect.value
   const inside = !!t && r >= t.r1 && r <= t.r2 && c >= t.c1 && c <= t.c2
@@ -1132,6 +1275,7 @@ function openCtx(e, r, c) {
   ctx.y = e.clientY
   ctx.r = r
   ctx.c = c
+  ctx.kind = 'cell' // 单元格右键：完整菜单
   ctx.show = true
 }
 function closeCtx() { ctx.show = false }
@@ -1144,6 +1288,31 @@ const ctxItems = computed(() => {
     { label: (!cell.attr || cell.attr === 'edit' ? '✔ ' : '') + '✏ 编辑', run: () => setAttr('edit') },
     { label: (cell.attr === 'req' ? '✔ ' : '') + '❗必填', run: () => setAttr('req') }
   ] : []
+  // 按右键目标过滤菜单：行号右键仅行操作、列标右键仅列操作、单元格右键完整菜单
+  if (ctx.kind === 'row') {
+    return [
+      { label: '上方插入一行', run: insRowAbove },
+      { label: '下方插入一行', run: insRowBelow },
+      { label: '删除选中行', run: delRows, dis: !t, danger: true },
+      { label: '转为说明行', run: () => toType('note'), dis: !cell },
+      { label: '转为标题行', run: () => toType('title'), dis: !cell },
+      { label: '行高…', run: () => applyResizeToSel('row'), dis: !t },
+      { label: '清除内容', run: clearContent, dis: !t },
+      { label: '清除格式', run: clearStyles, dis: !t },
+      { label: '取消隐藏行列', run: unhideAll, dis: !hasHidden.value }
+    ]
+  }
+  if (ctx.kind === 'col') {
+    return [
+      { label: '左侧插入一列', run: insColLeft },
+      { label: '右侧插入一列', run: insColRight },
+      { label: '删除选中列', run: delCols, dis: !t, danger: true },
+      { label: '列宽…', run: () => applyResizeToSel('col'), dis: !t },
+      { label: '清除内容', run: clearContent, dis: !t },
+      { label: '清除格式', run: clearStyles, dis: !t },
+      { label: '取消隐藏行列', run: unhideAll, dis: !hasHidden.value }
+    ]
+  }
   return [
     ...attrItems,
     { label: '上方插入一行', run: insRowAbove },
@@ -1201,7 +1370,8 @@ function clearContent() {
   pushUndo()
   eachAnchor(cell => {
     if (cell.type === 'field') { cell.type = 'text'; cell.field = undefined; cell.attr = undefined; cell.detail = undefined }
-    if (cell.type === 'image') cell.src = undefined
+    if (cell.type === 'detail') { cell.type = 'text'; cell.detail = undefined } // 明细格与其他字段格同口径：清除内容即移除明细块
+    if (cell.type === 'image') { cell.type = 'text'; cell.src = undefined } // 图片格清除后重置为文本格，避免残留占位符
     cell.text = ''
     cell.labelField = undefined
     cell.labelLeft = undefined
@@ -1261,11 +1431,12 @@ function onCmd(cmd) {
     ins_row_above: insRowAbove, ins_row_below: insRowBelow, ins_col_left: insColLeft, ins_col_right: insColRight,
     ins_title: insTitle, ins_note: insNote, fld_bind: openPicker, fld_clear: clearBind,
     ins_image: insImage,
-    dt_new: insDetailBlock,
+    dt_new: () => insDetailBlock(),
     sty_clear: clearStyles, sty_painter: togglePainter
   }
   const fn = map[cmd]
   if (fn) return fn()
+  if (cmd.startsWith('dt_add:')) return insDetailBlock(cmd.slice(7))
   if (cmd === 'fmt_panel') return ElMessage.info('单元格格式在右侧属性面板编辑')
   if (cmd === 'fld_info') return showFieldInfo()
   ElMessage.info('该功能属于 P1/P2 阶段，敬请期待')

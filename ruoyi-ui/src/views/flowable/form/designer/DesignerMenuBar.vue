@@ -21,13 +21,17 @@
 </template>
 
 <script setup name="WmDesignerMenuBar">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
-defineProps({ preview: Boolean })
+const props = defineProps({
+  preview: Boolean,
+  /** 明细表菜单动态项（泛微口径：添加明细表1/2…，已上画布的置灰）；为空时用默认单项 */
+  detailItems: { type: Array, default: null }
+})
 const emit = defineEmits(['cmd', 'help', 'save', 'toggle-preview'])
 
 const active = ref('format')
-const menus = [
+const menus = computed(() => [
   { key: 'template', label: '模板', items: [
     { cmd: 'tmp_fee', label: '套用样式模板：费用报销式' },
     { cmd: 'tmp_apply', label: '套用样式模板：申请单式' },
@@ -52,15 +56,13 @@ const menus = [
     { cmd: 'fld_clear', label: '清除绑定' },
     { cmd: 'fld_info', label: '字段信息', divided: true }
   ] },
-  { key: 'detail', label: '明细表', items: [
-    { cmd: 'dt_new', label: '新增明细表' }
-  ] },
+  { key: 'detail', label: '明细表', items: props.detailItems || [{ cmd: 'dt_new', label: '新增明细表' }] },
   { key: 'style', label: '样式', items: [
     { cmd: 'sty_painter', label: '格式刷' },
     { cmd: 'sty_clear', label: '清除样式' },
     { cmd: 'sty_manage', label: '样式模板管理', tag: 'P1', divided: true, disabled: true }
   ] }
-]
+])
 
 function onCmd(cmd) { emit('cmd', cmd) }
 </script>

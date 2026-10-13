@@ -163,3 +163,63 @@
 .wm-designer .wdm-td:last-child { border-right: none; }
 .wm-designer .wdm-sum { background: #f8fafc; color: #7c3aed; font-weight: 600; }
 .wm-designer .wdm-tip { font-size: 12px; color: #94a3b8; line-height: 1.4; margin-top: 4px; }
+
+/* ===== 明细表单行占位条（泛微式：画布中不展开，双击进入明细表编辑） ===== */
+.wm-designer .wm-cell .wdm-bar { display: flex; align-items: center; justify-content: space-between; width: 100%; height: 100%; background: #2F3C8E; color: #fff; font-weight: 600; font-size: 12px; padding: 3px 10px; border-radius: 3px; cursor: pointer; }
+.wm-designer .wm-cell .wdm-bar em { font-style: normal; font-weight: 400; font-size: 11px; color: #c7d2fe; }
+/* 明细表编辑弹窗 */
+.wm-designer .wdm-toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.wm-designer .wdm-toolbar .wdm-tip { font-size: 12px; color: #94a3b8; width: 220px; line-height: 1.4; }
+.wm-designer .wdm-field-table { margin-bottom: 4px; }
+
+/* ===== 明细表展开网格（泛微式：画布内展开，列宽拖拽/列选中/必填星号/Σ 合计） ===== */
+.wm-designer .wdm-grid { display: flex; flex-direction: column; width: 100%; height: 100%; font-size: 11px; overflow: hidden; border-radius: 3px; }
+.wm-designer .wdm-bar-title { border-radius: 3px 3px 0 0; }
+.wm-designer .wdm-head { display: flex; background: #fef3c7; border: 1px solid #fcd34d; border-top: none; }
+.wm-designer .wdm-head .wdm-th { flex: 1 1 0; min-width: 0; position: relative; padding: 3px 6px; color: #92400e; font-weight: 600; border-right: 1px solid #fde68a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; cursor: pointer; }
+.wm-designer .wdm-head .wdm-th:last-child { border-right: none; }
+.wm-designer .wdm-head .wdm-th.sel { background: #fde68a; outline: 1px solid #d97706; }
+.wm-designer .wdm-req { color: #e0342b; font-style: normal; margin-left: 2px; }
+.wm-designer .wdm-sumi { color: #7c3aed; font-style: normal; margin-left: 2px; }
+.wm-designer .wdm-col-rz { position: absolute; right: -3px; top: 0; width: 6px; height: 100%; cursor: col-resize; z-index: 2; }
+.wm-designer .wdm-col-rz:hover { background: rgba(217, 119, 6, .35); }
+.wm-designer .wdm-tr { display: flex; border: 1px solid #e2e8f0; border-top: none; background: #fff; flex: 1; }
+.wm-designer .wdm-td { flex: 1 1 0; min-width: 0; padding: 2px 6px; border-right: 1px dashed #eef2f7; text-align: center; }
+.wm-designer .wdm-td:last-child { border-right: none; }
+.wm-designer .wdm-sum { background: #f8fafc; color: #7c3aed; font-weight: 600; }
+/* 明细表编辑弹窗：画布操作说明 */
+.wm-designer .wdm-canvas-tip { font-size: 13px; color: #334155; line-height: 1.9; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px 14px; margin-bottom: 10px; }
+.wm-designer .wdm-canvas-tip b { color: #2F3C8E; }
+.wm-designer .wdm-canvas-tip .wdm-tip { margin-top: 4px; }
+
+/* ===== 独立明细编辑视图（泛微式：格式工具栏 + 返回 + 明细网格） ===== */
+/* 明细表编辑弹窗：序号拖动排序 */
+.wdm-drag-idx { display: inline-flex; align-items: center; gap: 4px; cursor: grab; color: #475569; font-size: 12px; padding: 2px 6px; border-radius: 4px; }
+.wdm-drag-idx:hover { background: #f1f5f9; }
+.wdm-drag-idx.over { background: #fef3c7; outline: 1px dashed #d97706; }
+/* 明细表编辑弹窗：名称/数据来源 */
+.wdm-head-form { padding: 0 8px; }
+
+/* ===== 明细编辑视图布局与属性面板（泛微勾选项同款） ===== */
+/* 明细表编辑弹窗：序号拖动排序 */
+.wm-designer .wdm-prop { font-size: 12px; color: #475569; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+.wm-designer .wdm-prop .el-checkbox { margin-right: 0; }
+/* 明细字段行占位（与主表字段格同款控件占位） */
+/* 明细表编辑弹窗：序号拖动排序 */
+
+/* ===== 明细表编辑弹窗：行拖动整行高亮（弹窗 append-to-body，用普通选择器） ===== */
+.el-table .dt-row-dragging td { background: #dbe4ff !important; opacity: 1; box-shadow: inset 3px 0 0 #4f46e5; }
+.el-table .dt-row-over td { background: #fef3c7 !important; box-shadow: inset 0 2px 0 #d97706; }
+/* 明细表编辑弹窗：整行可拖手感（hover 时抓手光标 + 淡高亮） */
+.el-table.wdm-field-table .el-table__row { cursor: grab; transition: background-color .18s ease; }
+.el-table.wdm-field-table .el-table__row:hover td { background: #f5f7ff !important; }
+.el-dialog .wdm-drag-idx { display: inline-flex; align-items: center; gap: 4px; cursor: grab; color: #475569; font-size: 12px; padding: 2px 6px; border-radius: 4px; }
+.el-dialog .wdm-drag-idx:hover { background: #f1f5f9; }
+.el-dialog .wdm-drag-idx.dragging { background: #e0e7ff; color: #4f46e5; }
+.el-dialog .wdm-head-form { padding: 0 8px; }
+.el-dialog .wdm-tip { font-size: 12px; color: #94a3b8; line-height: 1.4; }
+
+/* ===== 明细表编辑弹窗：拖动动画过渡（背景高亮平滑过渡 + 行位移过渡） ===== */
+.el-table.wdm-field-table td { transition: background-color .18s ease, box-shadow .18s ease; }
+.el-table.wdm-field-table .el-table__row { transition: transform .2s ease, opacity .2s ease; }
+.el-table.wdm-field-table .dt-row-over td { box-shadow: inset 0 2px 0 #d97706; }

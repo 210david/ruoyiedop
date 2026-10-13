@@ -204,13 +204,17 @@
             <span class="field-tip">当前表：{{ activeTableTab === 'main' ? mainTableName : mainTableName + '_' + activeTableTab }}<template v-if="activeTableTab !== 'main'">（明细表通过 mainid 字段关联主表主键，生成数据表时自动创建）</template></span>
           </div>
 
-          <el-table :data="activeFields" border size="small" row-key="rowKey" @selection-change="onFieldSelChange" class="field-table" max-height="380">
+          <el-table ref="fieldTableRef" :data="activeFields" border size="small" row-key="rowKey" @selection-change="onFieldSelChange" class="field-table" max-height="380">
+            <el-table-column width="36" align="center"><template #default><span class="drag-handle" title="拖动排序">☰</span></template></el-table-column>
             <el-table-column type="selection" width="45" align="center" />
             <el-table-column label="字段显示名" min-width="130" align="center"><template #default="scope"><el-input v-model="scope.row.label" placeholder="如：合同名称" size="small" /></template></el-table-column>
             <el-table-column label="数据库字段名称" min-width="130" align="center"><template #default="scope"><el-input v-model="scope.row.field" placeholder="小写英文，如 htmc" size="small" /></template></el-table-column>
             <el-table-column label="表现形式" width="130" align="center">
               <template #default="scope">
                 <el-select v-model="scope.row.form" size="small" @change="onFormChange(scope.row)">
+                  <el-option-group label="选择框">
+                    <el-option v-for="(v, k) in SELECT_FORM_OPTIONS" :key="k" :label="v" :value="k" />
+                  </el-option-group>
                   <el-option v-for="(v, k) in FORM_OPTIONS" :key="k" :label="v" :value="k" />
                 </el-select>
               </template>
@@ -241,15 +245,15 @@
                   </el-select>
                   <el-input-number v-model="scope.row.attachLimit" :min="1" :max="20" :controls="false" size="small" style="width:64px" />
                 </div>
-                <!-- 选择框/单选框：选项键值对 -->
-                <el-input v-else-if="scope.row.form === 'select' || scope.row.form === 'radio'" :model-value="selectOptionsText(scope.row)" @input="v => setSelectOptions(scope.row, v)" placeholder="显示值:存储值 每行一对" size="small" />
+                <!-- 选择框（下拉/单选/复选）：配置按钮弹出泛微式选项配置页 -->
+                <el-button v-else-if="isSelForm(scope.row.form)" link type="primary" size="small" @click="openSelConfig(scope.row)">配置</el-button>
                 <span v-else style="color:#cbd5e1">—</span>
               </template>
             </el-table-column>
             <el-table-column label="小数位数" width="95" align="center">
               <template #default="scope"><el-input-number v-if="scope.row.dtype === 'float'" v-model="scope.row.scale" :min="1" :max="6" :controls="false" size="small" style="width:100%" /><span v-else style="color:#cbd5e1">—</span></template>
             </el-table-column>
-            <el-table-column label="必填" width="70" align="center"><template #default="scope"><el-switch v-model="scope.row.required" size="small" /></template></el-table-column>
+            <el-table-column label="填写提示" min-width="120" align="center"><template #default="scope"><el-input v-model="scope.row.placeholder" placeholder="如：请输入合同名称" size="small" /></template></el-table-column>
             <el-table-column label="显示顺序" width="100" align="center"><template #default="scope"><el-input-number v-model="scope.row.order" :min="1" :max="999" :controls="false" size="small" style="width:100%" /></template></el-table-column>
           </el-table>
         </el-tab-pane>
@@ -491,6 +495,9 @@
         <el-form-item label="显示顺序"><el-input-number v-model="newField.order" :min="1" :max="999" :controls="false" style="width:160px" /></el-form-item>
         <el-form-item label="表现形式">
           <el-select v-model="newField.form" style="width:100%" @change="onNewFormChange">
+            <el-option-group label="选择框">
+              <el-option v-for="(v, k) in SELECT_FORM_OPTIONS" :key="k" :label="v" :value="k" />
+            </el-option-group>
             <el-option v-for="(v, k) in FORM_OPTIONS" :key="k" :label="v" :value="k" />
           </el-select>
         </el-form-item>
@@ -518,11 +525,14 @@
           </div>
           <div class="form-tip">类型约束+最大数量</div>
         </el-form-item>
-        <el-form-item label="选项(显示值:存储值)" v-if="newField.form === 'select' || newField.form === 'radio'">
-          <el-input :model-value="selectOptionsText(newField)" @input="v => setSelectOptions(newField, v)" type="textarea" :rows="4" placeholder="每行一个，格式：显示值:存储值（省略则存显示值）&#10;如：&#10;解除:1&#10;终止:2&#10;暂停:3" />
-          <div class="form-tip">泛微式键值分离：界面显示中文，数据库存储实际值</div>
+        <el-form-item label="填写提示">
+          <el-input v-model="newField.placeholder" placeholder="如：请输入合同名称（为空时显示系统默认提示）" />
+          <div class="form-tip">作为输入框背景占位文字，用户输入后自动消失</div>
         </el-form-item>
-        <el-form-item label="必填"><el-switch v-model="newField.required" /></el-form-item>
+        <el-form-item label="选项配置" v-if="isSelForm(newField.form)">
+          <el-button type="primary" plain icon="Setting" size="small" @click="openSelConfig(newField)">配置选项</el-button>
+          <span class="form-tip" style="margin-left:8px">设置显示值/实际值及排序，{{ SELECT_FORM_OPTIONS[newField.form] }}</span>
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button type="primary" @click="confirmAddField">确 定</el-button>
@@ -551,6 +561,9 @@
         <el-table-column label="表现形式" width="125" align="center">
           <template #default="scope">
             <el-select v-model="scope.row.form" size="small" @change="onBatchFormChange(scope.row)">
+              <el-option-group label="选择框">
+                <el-option v-for="(v, k) in SELECT_FORM_OPTIONS" :key="k" :label="v" :value="k" />
+              </el-option-group>
               <el-option v-for="(v, k) in FORM_OPTIONS" :key="k" :label="v" :value="k" />
             </el-select>
           </template>
@@ -572,16 +585,55 @@
             <el-select v-else-if="scope.row.form === 'browse'" v-model="scope.row.browseType" size="small" style="width:100%">
               <el-option v-for="(v, k) in BROWSE_TYPES" :key="k" :label="v" :value="k" />
             </el-select>
-            <el-input v-else-if="scope.row.form === 'select' || scope.row.form === 'radio'" :model-value="selectOptionsText(scope.row)" @input="v => setSelectOptions(scope.row, v)" placeholder="显示值:存储值,逗号分隔" size="small" />
+            <el-button v-else-if="isSelForm(scope.row.form)" link type="primary" size="small" @click="openSelConfig(scope.row)">配置</el-button>
             <span v-else style="color:#cbd5e1">—</span>
           </template>
         </el-table-column>
-        <el-table-column label="必填" width="65" align="center"><template #default="scope"><el-switch v-model="scope.row.required" size="small" /></template></el-table-column>
+        <el-table-column label="填写提示" min-width="120" align="center"><template #default="scope"><el-input v-model="scope.row.placeholder" placeholder="背景提示文字" size="small" /></template></el-table-column>
         <el-table-column label="操作" width="60" align="center"><template #default="scope"><el-button link type="danger" icon="Delete" size="small" @click="removeBatchRow(scope.$index)" /></template></el-table-column>
       </el-table>
       <template #footer>
         <el-button type="primary" @click="confirmBatchAdd">确 定</el-button>
         <el-button @click="batchOpen = false">取 消</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- ===== 选择框选项配置弹窗（参照泛微e9：显示值/实际值/排序） ===== -->
+    <el-dialog v-model="selCfgOpen" width="620px" append-to-body draggable class="rd-dialog" :close-on-click-modal="false">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+          </div>
+          <span class="rd-detail-header-title">选项配置：{{ selCfgField ? selCfgField.label || '（未命名字段）' : '' }}{{ selCfgField ? '（' + (SELECT_FORM_OPTIONS[selCfgField.form] || '') + '）' : '' }}</span>
+        </div>
+      </template>
+      <div class="batch-toolbar">
+        <el-button size="small" type="primary" plain icon="Plus" @click="selCfgAddRow">再加一行</el-button>
+        <span class="field-tip">界面显示中文，数据库存储实际值；可上下移动调整显示顺序</span>
+      </div>
+      <el-table :data="selCfgRows" border size="small" row-key="cfgKey" max-height="320" class="field-table">
+        <el-table-column type="index" label="序号" width="55" align="center" />
+        <el-table-column label="显示值" min-width="140" align="center"><template #default="scope"><el-input v-model="scope.row.label" placeholder="如：解除" size="small" /></template></el-table-column>
+        <el-table-column label="实际值" min-width="140" align="center"><template #default="scope"><el-input v-model="scope.row.value" placeholder="留空则存显示值" size="small" /></template></el-table-column>
+        <el-table-column label="默认值" width="80" align="center">
+          <template #default="scope">
+            <!-- 复选勾选：可多选默认；下拉/点选单选：单选默认（泛微式） -->
+            <el-checkbox v-if="selCfgField && selCfgField.form === 'checkbox'" :model-value="defaultList.includes(scope.row.value)" @change="v => toggleMultiDefault(scope.row, v)" />
+            <el-radio v-else v-model="selCfgDefault" :value="scope.row.value">&nbsp;</el-radio>
+          </template>
+        </el-table-column>
+        <el-table-column label="排序" width="90" align="center">
+          <template #default="scope">
+            <el-button link type="primary" icon="Top" size="small" :disabled="scope.$index === 0" @click="selCfgMove(scope.$index, -1)" />
+            <el-button link type="primary" icon="Bottom" size="small" :disabled="scope.$index === selCfgRows.length - 1" @click="selCfgMove(scope.$index, 1)" />
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="60" align="center"><template #default="scope"><el-button link type="danger" icon="Delete" size="small" @click="selCfgRemoveRow(scope.$index)" /></template></el-table-column>
+      </el-table>
+      <template #footer>
+        <el-button type="primary" @click="confirmSelConfig">确 定</el-button>
+        <el-button @click="selCfgOpen = false">取 消</el-button>
       </template>
     </el-dialog>
   </div>
@@ -594,6 +646,7 @@ import { useColumnResize } from '@/composables/useColumnResize'
 import { pinyin } from 'pinyin-pro'
 import ExcelGridDesigner from './designer/ExcelGridDesigner.vue'
 import { parseLayout, sectionsToGrid, fieldsToGrid, serializeLayout } from './designer/converters'
+import Sortable from 'sortablejs'
 
 /** 中文名称 → 拼音首字母字段名（小写字母开头，仅含字母/数字/下划线），如：合同名称 → htmc */
 function toFieldInitials(label) {
@@ -672,12 +725,15 @@ function clearCopySource() {
   copySelected.value = null
 }
 
-// 表现形式（参照泛微e9）
+// 表现形式（参照泛微e9）：选择框组（下拉框/点选单选/复选勾选）+ 其他独立表现形式
+const SELECT_FORM_OPTIONS = { select: '下拉框', radio: '点选单选', checkbox: '复选勾选' }
 const FORM_OPTIONS = {
   text: '单行文本框', textarea: '多行文本框', browse: '浏览按钮', check: 'Check框',
-  select: '选择框', attach: '附件上传', date: '日期框', datetime: '日期时间框',
-  number: '数字框', radio: '单选框', switch: '开关框', rate: '评分框'
+  attach: '附件上传', date: '日期框', datetime: '日期时间框',
+  number: '数字框', switch: '开关框', rate: '评分框'
 }
+/** 选择框类表现形式（下拉/单选/复选共用选项配置与键值分离逻辑） */
+const isSelForm = f => ['select', 'radio', 'checkbox'].includes(f)
 /** 数据类型（dtype）：决定数据库列类型 */
 const DTYPE_OPTIONS = { text: '文本', date: '日期', datetime: '日期时间', float: '浮点数', int: '整数' }
 /** 浏览框数据源（主数据类型，支持自定义扩展） */
@@ -699,6 +755,7 @@ const FORM_DEFAULTS = {
   datetime: { dtype: 'datetime' },
   number:   { dtype: 'float', scale: 2 },
   radio:    { dtype: 'text', length: 100, selectOptions: [] },
+  checkbox: { dtype: 'text', length: 200, selectOptions: [] },
   switch:   { dtype: 'text', length: 10 },
   rate:     { dtype: 'int' }
 }
@@ -724,6 +781,46 @@ const mainTableName = computed(() => form.value.formKey ? 'flow_data_' + form.va
 
 const activeFields = computed(() => fields.value.filter(f => (f.table || 'main') === activeTableTab.value))
 
+// ===== 字段列表拖动排序（参照泛微：拖拽手柄列触发，拖动后按新顺序重写显示顺序） =====
+const fieldTableRef = ref(null)
+function initFieldDragSort() {
+  const table = fieldTableRef.value && fieldTableRef.value.$el
+  const tbody = table && table.querySelector('.el-table__body-wrapper tbody')
+  if (!tbody || tbody._dragInited) return
+  tbody._dragInited = true
+  Sortable.create(tbody, {
+    handle: '.drag-handle',
+    animation: 150,
+    ghostClass: 'drag-ghost',
+    onEnd: onFieldDragEnd
+  })
+}
+function onFieldDragEnd(evt) {
+  const { oldIndex, newIndex, item } = evt
+  if (oldIndex == null || newIndex == null || oldIndex === newIndex) return
+  // 还原 DOM 位置，交给 Vue 数据驱动重排，避免 el-table 行 DOM 与数据不一致
+  const tbody = item.parentNode
+  if (tbody) {
+    if (newIndex > oldIndex) {
+      const anchor = tbody.children[oldIndex]
+      if (anchor) tbody.insertBefore(item, anchor)
+    } else {
+      const anchor = tbody.children[oldIndex + 1]
+      if (anchor) tbody.insertBefore(item, anchor)
+      else tbody.appendChild(item)
+    }
+  }
+  // 仅当前表页签范围内重排，并按新顺序重写显示顺序
+  const list = activeFields.value.slice()
+  if (oldIndex >= list.length || newIndex >= list.length) return
+  const moved = list.splice(oldIndex, 1)[0]
+  list.splice(newIndex, 0, moved)
+  const others = fields.value.filter(f => (f.table || 'main') !== activeTableTab.value)
+  fields.value = others.concat(list)
+  list.forEach((f, i) => { f.order = i + 1 })
+}
+watch([() => open.value, activeTab, activeTableTab, () => fields.value.length], () => nextTick(initFieldDragSort), { flush: 'post' })
+
 function fieldCount(json) {
   try { return normalizeFields(JSON.parse(json || '[]')).length } catch (e) { return 0 }
 }
@@ -746,7 +843,7 @@ function normalizeFields(arr) {
     n.table = n.table || 'main'
     n.order = n.order || 1
     // 旧选项字符串兼容：options逗号串 → selectOptions[{label,value}]
-    if ((n.form === 'select' || n.form === 'radio') && !n.selectOptions && n.options) {
+    if (isSelForm(n.form) && !n.selectOptions && n.options) {
       n.selectOptions = String(n.options).split(/[,，]/).map(s => s.trim()).filter(Boolean).map(s => ({ label: s, value: s }))
     }
     // 新类型默认值兜底
@@ -834,10 +931,11 @@ function onFormChange(row) {
   applyFormDefaults(row)
 }
 
-/** 应用表现形式默认配置（保留用户已填项） */
+/** 应用表现形式默认配置（保留用户已填项；切换类型后默认值失效清空） */
 function applyFormDefaults(row) {
   const d = FORM_DEFAULTS[row.form] || {}
   row.dtype = d.dtype || row.dtype
+  row.defaultValue = undefined
   if (d.length) row.length = d.length
   if (d.rows) row.rows = d.rows
   if (d.browseType) row.browseType = d.browseType
@@ -851,8 +949,8 @@ function applyFormDefaults(row) {
   if (row.form === 'number') row.dtype = row.dtype === 'int' ? 'int' : 'float'
 }
 
-/** dtype 是否随表现形式锁定（日期/日期时间/数字类不允许改dtype） */
-function isDtypeLocked(form) { return ['date', 'datetime', 'number'].includes(form) || form === 'textarea' }
+/** 数据类型（dtype）是否随表现形式锁定：选项类（check/下拉/点选/复选）、附件、日期、数字类均不允许改dtype */
+function isDtypeLocked(form) { return ['date', 'datetime', 'number', 'textarea', 'check', 'select', 'radio', 'checkbox', 'attach'].includes(form) }
 
 /** 自由表现形式下可选的数据类型：日期/日期时间只能通过表现形式（日期框/日期时间框）选择，避免两处重复 */
 function dtypeOptions(form) {
@@ -864,28 +962,61 @@ function dtypeOptions(form) {
 /** 长度是否自动推导（browse/attach/check 等不需要用户填长度） */
 function isLengthLocked(row) { return ['browse', 'attach', 'check', 'switch'].includes(row.form) }
 
-/** 选择框选项：[{label,value}] → 文本（显示值:存储值，每行一对） */
-function selectOptionsText(row) {
-  const opts = row.selectOptions || []
-  return opts.map(o => (o.value === o.label || o.value === undefined) ? o.label : (o.label + ':' + o.value)).join('\n')
+// ===== 选择框选项配置弹窗（泛微式：显示值/实际值/默认值/排序） =====
+const selCfgOpen = ref(false)
+const selCfgField = ref(null)
+const selCfgRows = ref([])
+const selCfgDefault = ref(undefined)
+const defaultList = computed(() => String((selCfgField.value && selCfgField.value.defaultValue) || '').split(',').filter(Boolean))
+function openSelConfig(row) {
+  selCfgField.value = row
+  selCfgRows.value = (row.selectOptions || []).map(o => ({
+    cfgKey: 'c' + Math.random().toString(36).slice(2, 8),
+    label: o.label, value: o.value !== undefined ? o.value : o.label
+  }))
+  selCfgDefault.value = row.form === 'checkbox' ? undefined : (row.defaultValue || undefined)
+  selCfgOpen.value = true
 }
-
-/** 文本 → 选项数组（兼容旧的逗号分隔字符串 options） */
-function setSelectOptions(row, text) {
-  const arr = (text || '').split(/[\n,，]/).map(s => s.trim()).filter(Boolean).map(pair => {
-    const idx = pair.indexOf(':')
-    if (idx > 0) return { label: pair.substring(0, idx).trim(), value: pair.substring(idx + 1).trim() }
-    return { label: pair, value: pair }
-  })
-  row.selectOptions = arr
-  row.length = Math.max(...arr.map(o => String(o.value || '').length), 10) * 2 + 20
+function selCfgAddRow() { selCfgRows.value.push({ cfgKey: 'c' + Math.random().toString(36).slice(2, 8), label: undefined, value: undefined }) }
+function selCfgRemoveRow(i) { selCfgRows.value.splice(i, 1) }
+/** 复选勾选默认值：勾上追加、去掉移除（逗号分隔多值） */
+function toggleMultiDefault(opt, on) {
+  const row = selCfgField.value
+  if (!row) return
+  const cur = String(row.defaultValue || '').split(',').filter(Boolean)
+  const next = on ? cur.concat(opt.value).filter((v, i, a) => a.indexOf(v) === i) : cur.filter(v => v !== opt.value)
+  row.defaultValue = next.join(',')
+}
+function selCfgMove(i, dir) {
+  const arr = selCfgRows.value
+  const j = i + dir
+  if (j < 0 || j >= arr.length) return
+  const tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp
+}
+function confirmSelConfig() {
+  const row = selCfgField.value
+  if (!row) return
+  row.selectOptions = selCfgRows.value
+    .map(o => ({ label: (o.label || '').trim(), value: (o.value === undefined || o.value === null || o.value === '') ? (o.label || '').trim() : o.value.trim() }))
+    .filter(o => o.label)
+  if (row.selectOptions.length) {
+    row.length = Math.max(...row.selectOptions.map(o => String(o.value || '').length), 10) * 2 + 20
+  }
+  // 默认值清洗：仅保留选项中存在的值（复选多值逗号分隔，单选去重取一个）
+  if (row.form === 'checkbox') {
+    row.defaultValue = String(row.defaultValue || '').split(',').filter(v => row.selectOptions.some(o => o.value === v.trim())).map(v => v.trim()).join(',')
+  } else {
+    const d = selCfgDefault.value
+    row.defaultValue = d && row.selectOptions.some(o => o.value === d) ? d : undefined
+  }
+  selCfgOpen.value = false
 }
 
 function onNewFormChange() { applyFormDefaults(newField.value) }
 function onBatchFormChange(row) { applyFormDefaults(row) }
 
 function openAddField() {
-  newField.value = { label: undefined, field: undefined, autoField: true, table: activeTableTab.value === '__add' ? 'main' : activeTableTab.value, order: fields.value.length + 1, form: 'text', dtype: 'text', length: 500, scale: 2, options: undefined, required: false }
+  newField.value = { label: undefined, field: undefined, autoField: true, table: activeTableTab.value === '__add' ? 'main' : activeTableTab.value, order: fields.value.length + 1, form: 'text', dtype: 'text', length: 500, scale: 2, options: undefined, placeholder: undefined, required: false }
   addFieldOpen.value = true
   nextTick(() => addFieldRef.value && addFieldRef.value.clearValidate())
 }
@@ -1403,6 +1534,10 @@ onActivated(() => { getList() })
 .field-toolbar { display: flex; align-items: center; gap: 8px; margin: 10px 12px; }
 .field-tip { font-size: 12px; color: var(--ink-500, #94a3b8); margin-left: 8px; }
 .field-table { margin: 0 12px 8px; }
+/* 字段列表拖动排序：手柄样式 + 拖拽占位高亮 */
+.field-table .drag-handle { cursor: move; color: var(--ink-400, #94a3b8); font-size: 14px; user-select: none; }
+.field-table .drag-handle:hover { color: var(--brand-600, #4f46e5); }
+.field-table .drag-ghost { opacity: 0.6; background: var(--brand-50, #eef2ff); }
 .form-tip { font-size: 12px; color: var(--ink-500, #94a3b8); line-height: 1.4; margin-top: 4px; }
 .copy-field { display: flex; gap: 8px; width: 100%; }
 .copy-field .el-input { flex: 1; }

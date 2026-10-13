@@ -4,14 +4,14 @@
  * 避免组件反向引用页面模块造成循环依赖。
  */
 import { defineComponent, h, resolveComponent } from 'vue'
-import { ElSelect, ElOption, ElRadioGroup, ElRadio, ElCheckbox, ElSwitch, ElRate, ElInput, ElInputNumber, ElDatePicker, ElButton } from 'element-plus'
+import { ElSelect, ElOption, ElRadioGroup, ElRadio, ElCheckbox, ElCheckboxGroup, ElSwitch, ElRate, ElInput, ElInputNumber, ElDatePicker, ElButton } from 'element-plus'
 
 /** 字段定义 → 渲染类型 rtype（兼容新版 {form,dtype} 与旧版 {type}） */
 export function rtypeOf(f) {
   if (!f) return 'text'
   if (f.rtype) return f.rtype
   if (f.form) {
-    if (['check', 'browse', 'attach', 'select', 'textarea', 'radio', 'switch', 'rate', 'date', 'datetime', 'number'].includes(f.form)) return f.form
+    if (['check', 'browse', 'attach', 'select', 'textarea', 'radio', 'checkbox', 'switch', 'rate', 'date', 'datetime', 'number'].includes(f.form)) return f.form
     return f.dtype === 'datetime' ? 'datetime' : f.dtype === 'date' ? 'date' : (f.dtype === 'float' || f.dtype === 'int') ? 'number' : 'text'
   }
   const t = f.type
@@ -35,13 +35,20 @@ export function optionListOf(f) {
   })
 }
 
-/** 值 → 显示文本（select/radio 按选项映射 label；空值返回占位） */
+/** 值 → 显示文本（select/radio/checkbox 按选项映射 label；空值返回占位） */
 export function displayTextOf(f, val, placeholder = '—') {
   if (val === undefined || val === null || val === '') return placeholder
   const rt = rtypeOf(f)
   if (rt === 'select' || rt === 'radio') {
     const hit = optionListOf(f).find(o => String(o.value) === String(val))
     return hit ? hit.label : val
+  }
+  if (rt === 'checkbox') {
+    // 复选勾选：数据库以逗号分隔多值存储，逐值映射为显示值
+    return String(val).split(',').map(s => {
+      const hit = optionListOf(f).find(o => String(o.value) === String(s.trim()))
+      return hit ? hit.label : s.trim()
+    }).join(',')
   }
   return val
 }
@@ -64,11 +71,16 @@ export default defineComponent({
       const numPrec = fmt && (fmt.cat === 'number' || fmt.cat === 'percent') ? (fmt.decimals == null ? 2 : fmt.decimals) : undefined
       const dis = props.disabled
       switch (rt) {
-        case 'select': return h(ElSelect, { modelValue: v, 'onUpdate:modelValue': set, style: 'width:100%', disabled: dis },
+        case 'select': return h(ElSelect, { modelValue: v, 'onUpdate:modelValue': set, style: 'width:100%', placeholder: f.placeholder || '请选择', disabled: dis },
           () => optionListOf(f).map(o => h(ElOption, { key: o.value, label: o.label, value: o.value })))
         case 'radio': return h(ElRadioGroup, { modelValue: v, 'onUpdate:modelValue': set, disabled: dis },
           () => optionListOf(f).map(o => h(ElRadio, { key: o.value, value: o.value }, () => o.label)))
-        case 'check': return h(ElCheckbox, { modelValue: v, 'onUpdate:modelValue': set, trueValue: '1', falseValue: '0', disabled: dis }, () => '是')
+        case 'checkbox': return h(ElCheckboxGroup, {
+          modelValue: v ? String(v).split(',').filter(Boolean) : [],
+          'onUpdate:modelValue': arr => set((arr || []).join(',')),
+          disabled: dis
+        }, () => optionListOf(f).map(o => h(ElCheckbox, { key: o.value, value: o.value }, () => o.label)))
+        case 'check': return h(ElCheckbox, { modelValue: v, 'onUpdate:modelValue': set, trueValue: '1', falseValue: '0', disabled: dis })
         case 'switch': return h(ElSwitch, { modelValue: v, 'onUpdate:modelValue': set, activeValue: '1', inactiveValue: '0', disabled: dis })
         case 'rate': return h(ElRate, { modelValue: v, 'onUpdate:modelValue': set, disabled: dis })
         case 'browse': return h('div', { style: 'display:flex;gap:8px;width:100%' }, [
@@ -76,13 +88,13 @@ export default defineComponent({
           h(ElButton, { onClick: () => emit('browse', f), disabled: dis }, () => '浏览…')
         ])
         case 'attach': return h(resolveComponent('FileUpload'), { modelValue: v, 'onUpdate:modelValue': set, limit: f.attachLimit || 5, fileSize: 50, disabled: dis })
-        case 'textarea': return h(ElInput, { modelValue: v, 'onUpdate:modelValue': set, type: 'textarea', rows: f.rows || 4, disabled: dis })
-        case 'number': return h(ElInputNumber, { modelValue: v, 'onUpdate:modelValue': set, controls: false, precision: numPrec, style: 'width:100%', disabled: dis })
+        case 'textarea': return h(ElInput, { modelValue: v, 'onUpdate:modelValue': set, type: 'textarea', rows: f.rows || 4, placeholder: f.placeholder, disabled: dis })
+        case 'number': return h(ElInputNumber, { modelValue: v, 'onUpdate:modelValue': set, controls: false, precision: numPrec, style: 'width:100%', placeholder: f.placeholder || '请输入', disabled: dis })
         case 'date': return isTime
-          ? h(ElDatePicker, { modelValue: v, 'onUpdate:modelValue': set, type: 'datetime', valueFormat: 'YYYY-MM-DD HH:mm:ss', placeholder: '选择时间', style: 'width:100%', disabled: dis })
-          : h(ElDatePicker, { modelValue: v, 'onUpdate:modelValue': set, type: 'date', valueFormat: dateVf, placeholder: '选择日期', style: 'width:100%', disabled: dis })
-        case 'datetime': return h(ElDatePicker, { modelValue: v, 'onUpdate:modelValue': set, type: 'datetime', valueFormat: 'YYYY-MM-DD HH:mm:ss', placeholder: '选择日期时间', style: 'width:100%', disabled: dis })
-        default: return h(ElInput, { modelValue: v, 'onUpdate:modelValue': set, disabled: dis })
+          ? h(ElDatePicker, { modelValue: v, 'onUpdate:modelValue': set, type: 'datetime', valueFormat: 'YYYY-MM-DD HH:mm:ss', placeholder: f.placeholder || '选择时间', style: 'width:100%', disabled: dis })
+          : h(ElDatePicker, { modelValue: v, 'onUpdate:modelValue': set, type: 'date', valueFormat: dateVf, placeholder: f.placeholder || '选择日期', style: 'width:100%', disabled: dis })
+        case 'datetime': return h(ElDatePicker, { modelValue: v, 'onUpdate:modelValue': set, type: 'datetime', valueFormat: 'YYYY-MM-DD HH:mm:ss', placeholder: f.placeholder || '选择日期时间', style: 'width:100%', disabled: dis })
+        default: return h(ElInput, { modelValue: v, 'onUpdate:modelValue': set, placeholder: f.placeholder || '请输入', disabled: dis })
       }
     }
   }

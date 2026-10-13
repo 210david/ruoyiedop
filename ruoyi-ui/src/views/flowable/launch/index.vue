@@ -239,13 +239,13 @@ function normalizeField(f) {
   const g = { ...f }
   let t = f.type
   if (f.form) {
-    if (['check', 'browse', 'attach', 'select', 'textarea', 'radio', 'switch', 'rate'].includes(f.form)) t = f.form
+    if (['check', 'browse', 'attach', 'select', 'textarea', 'radio', 'checkbox', 'switch', 'rate'].includes(f.form)) t = f.form
     else if (f.form === 'date' || f.form === 'datetime') t = f.form
     else if (f.form === 'number') t = 'number'
     else t = f.dtype === 'datetime' ? 'datetime' : f.dtype === 'date' ? 'date' : (f.dtype === 'float' || f.dtype === 'int') ? 'number' : 'text'
   } else if (!t) t = 'text'
   g.rtype = t
-  if (t === 'select' || t === 'radio') {
+  if (t === 'select' || t === 'radio' || t === 'checkbox') {
     // 新版键值对 selectOptions: [{label,value}]；旧版 options 字符串/数组兼容（label=value）
     if (Array.isArray(f.selectOptions) && f.selectOptions.length) {
       g.optionList = f.selectOptions.map(o => typeof o === 'object' ? { label: o.label, value: o.value !== undefined ? o.value : o.label } : { label: o, value: o })
@@ -465,6 +465,11 @@ function submitLaunch() {
   }
   if (Object.keys(rows).length) detailData = rows
   else if (gridRenderRef.value && gridRenderRef.value.getDetailData) detailData = gridRenderRef.value.getDetailData()
+  // 明细属性校验：必须填写明细（mustAdd）→ 至少一行且必填列已填（网格模式经实例校验）
+  if (gridRenderRef.value && gridRenderRef.value.validateDetails) {
+    const msgs = gridRenderRef.value.validateDetails()
+    if (msgs.length) { proxy.$modal.msgWarning(msgs[0]); submitting.value = false; return }
+  }
   const variables = { ...dynData.value }
   if (Object.keys(detailData).length) variables.detailData = detailData
   launch({
@@ -484,7 +489,7 @@ getList()
 
 <script>
 import { defineComponent, h, resolveComponent } from 'vue'
-import { ElSelect, ElOption, ElRadioGroup, ElRadio, ElCheckbox, ElSwitch, ElRate, ElInput, ElInputNumber, ElDatePicker, ElButton } from 'element-plus'
+import { ElSelect, ElOption, ElRadioGroup, ElRadio, ElCheckbox, ElCheckboxGroup, ElSwitch, ElRate, ElInput, ElInputNumber, ElDatePicker, ElButton } from 'element-plus'
 
 /** 动态字段控件：按 rtype 渲染对应 Element 控件（布局样式渲染共用） */
 export const DynField = defineComponent({
@@ -497,10 +502,14 @@ export const DynField = defineComponent({
       const f = props.f
       const v = props.modelValue
       switch (f.rtype) {
-        case 'select': return h(ElSelect, { modelValue: v, 'onUpdate:modelValue': set, style: 'width:100%' },
+        case 'select': return h(ElSelect, { modelValue: v, 'onUpdate:modelValue': set, style: 'width:100%', placeholder: f.placeholder || '请选择' },
           () => (f.optionList || []).map(o => h(ElOption, { key: o.value, label: o.label, value: o.value })))
         case 'radio': return h(ElRadioGroup, { modelValue: v, 'onUpdate:modelValue': set },
           () => (f.optionList || []).map(o => h(ElRadio, { key: o.value, value: o.value }, () => o.label)))
+        case 'checkbox': return h(ElCheckboxGroup, {
+          modelValue: v ? String(v).split(',').filter(Boolean) : [],
+          'onUpdate:modelValue': arr => set((arr || []).join(','))
+        }, () => (f.optionList || []).map(o => h(ElCheckbox, { key: o.value, value: o.value }, () => o.label)))
         case 'check': return h(ElCheckbox, { modelValue: v, 'onUpdate:modelValue': set, trueValue: '1', falseValue: '0' }, () => '是')
         case 'switch': return h(ElSwitch, { modelValue: v, 'onUpdate:modelValue': set, activeValue: '1', inactiveValue: '0' })
         case 'rate': return h(ElRate, { modelValue: v, 'onUpdate:modelValue': set })
@@ -509,11 +518,11 @@ export const DynField = defineComponent({
           h(ElButton, { onClick: () => emit('browse') }, () => '浏览…')
         ])
         case 'attach': return h(resolveComponent('FileUpload'), { modelValue: v, 'onUpdate:modelValue': set, limit: f.attachLimit || 5, fileSize: 50 })
-        case 'textarea': return h(ElInput, { modelValue: v, 'onUpdate:modelValue': set, type: 'textarea', rows: f.rows || 4 })
-        case 'number': return h(ElInputNumber, { modelValue: v, 'onUpdate:modelValue': set, controls: false, style: 'width:100%' })
-        case 'date': return h(ElDatePicker, { modelValue: v, 'onUpdate:modelValue': set, type: 'date', valueFormat: 'YYYY-MM-DD', placeholder: '选择日期', style: 'width:100%' })
-        case 'datetime': return h(ElDatePicker, { modelValue: v, 'onUpdate:modelValue': set, type: 'datetime', valueFormat: 'YYYY-MM-DD HH:mm:ss', placeholder: '选择日期时间', style: 'width:100%' })
-        default: return h(ElInput, { modelValue: v, 'onUpdate:modelValue': set })
+        case 'textarea': return h(ElInput, { modelValue: v, 'onUpdate:modelValue': set, type: 'textarea', rows: f.rows || 4, placeholder: f.placeholder })
+        case 'number': return h(ElInputNumber, { modelValue: v, 'onUpdate:modelValue': set, controls: false, style: 'width:100%', placeholder: f.placeholder || '请输入' })
+        case 'date': return h(ElDatePicker, { modelValue: v, 'onUpdate:modelValue': set, type: 'date', valueFormat: 'YYYY-MM-DD', placeholder: f.placeholder || '选择日期', style: 'width:100%' })
+        case 'datetime': return h(ElDatePicker, { modelValue: v, 'onUpdate:modelValue': set, type: 'datetime', valueFormat: 'YYYY-MM-DD HH:mm:ss', placeholder: f.placeholder || '选择日期时间', style: 'width:100%' })
+        default: return h(ElInput, { modelValue: v, 'onUpdate:modelValue': set, placeholder: f.placeholder || '请输入' })
       }
     }
   }

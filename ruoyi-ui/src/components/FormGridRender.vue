@@ -34,32 +34,38 @@
                 <div v-else-if="e.cell.type === 'detail'" class="fgr-detail-block">
                   <div class="fgr-dbar">
                     <span class="fgr-dname"><i class="dot"></i>{{ e.cell.text || '明细表' }}</span>
-                    <span v-if="editable && values"><el-button size="small" link type="primary" @click="addDetailRow(e.cell.detail && e.cell.detail.table)">＋ 添加明细</el-button></span>
+                    <span v-if="editable && values && (!e.cell.detail.props || e.cell.detail.props.allowAdd)"><el-button size="small" link type="primary" @click="addDetailRow(e.cell.detail && e.cell.detail.table)">＋ 添加明细</el-button></span>
                   </div>
-                  <table class="fgr-dtable" v-if="detailFieldsOf(e.cell.detail && e.cell.detail.table).length">
+                  <table class="fgr-dtable" v-if="(e.cell.detail && e.cell.detail.columns || []).length">
+                    <colgroup>
+                      <col style="width:48px" />
+                      <col v-for="col in (e.cell.detail.columns || [])" :key="col.field" :style="{ width: detailColWidth(col) }" />
+                      <col v-if="editable && values" style="width:48px" />
+                    </colgroup>
                     <thead><tr>
                       <th style="width:48px">序号</th>
-                      <th v-for="f in detailFieldsOf(e.cell.detail && e.cell.detail.table)" :key="f.field">{{ f.label }}<i v-if="f.required" class="req">*</i></th>
+                      <th v-for="col in (e.cell.detail.columns || [])" :key="col.field">{{ col.label || col.field }}<i v-if="colAttr(col) === 'req'" class="req">*</i></th>
                       <th v-if="editable && values" style="width:48px">操作</th>
                     </tr></thead>
                     <tbody>
                       <tr v-for="(row, ri) in (detailRows[(e.cell.detail && e.cell.detail.table)] || [])" :key="row._key">
                         <td style="text-align:center;color:#94a3b8">{{ ri + 1 }}</td>
-                        <td v-for="f in detailFieldsOf(e.cell.detail && e.cell.detail.table)" :key="f.field">
+                        <td v-for="col in (e.cell.detail.columns || [])" :key="col.field">
                           <template v-if="editable && values">
-                            <grid-control :f="fieldDef(f.field)" :model-value="row[f.field]"
-                              @update:model-value="v => (row[f.field] = v)" @browse="fd => $emit('browse', fd)" />
+                            <grid-control :f="fieldDef(col.field)" :model-value="row[col.field]"
+                              :disabled="colAttr(col) === 'ro'"
+                              @update:model-value="v => (row[col.field] = v)" @browse="fd => $emit('browse', fd)" />
                           </template>
-                          <template v-else><span class="val-text">{{ displayTextOf(fieldDef(f.field), row[f.field], '—') }}</span></template>
+                          <template v-else><span class="val-text">{{ displayTextOf(fieldDef(col.field), row[col.field], '—') }}</span></template>
                         </td>
-                        <td v-if="editable && values" style="text-align:center">
+                        <td v-if="editable && values && (!e.cell.detail.props || e.cell.detail.props.allowDelete)" style="text-align:center">
                           <el-button size="small" link type="danger" @click="removeDetailRow(e.cell.detail && e.cell.detail.table, ri)">✕</el-button>
                         </td>
                       </tr>
-                      <tr v-if="((e.cell.detail && e.cell.detail.sumFields) || []).length && (detailRows[(e.cell.detail && e.cell.detail.table)] || []).length" class="fgr-dsum">
+                      <tr v-if="(e.cell.detail.columns || []).some(c => c.sum) && (detailRows[(e.cell.detail && e.cell.detail.table)] || []).length" class="fgr-dsum">
                         <td style="text-align:center">合计</td>
-                        <td v-for="f in detailFieldsOf(e.cell.detail && e.cell.detail.table)" :key="f.field" style="text-align:right;color:#7c3aed;font-weight:600">
-                          <template v-if="(e.cell.detail.sumFields || []).includes(f.field)">Σ {{ detailSumValue(e.cell, f.field) }}</template>
+                        <td v-for="col in (e.cell.detail.columns || [])" :key="col.field" style="text-align:right;color:#7c3aed;font-weight:600">
+                          <template v-if="col.sum">Σ {{ detailSumValue(e.cell, col.field) }}</template>
                         </td>
                         <td v-if="editable && values"></td>
                       </tr>
@@ -128,11 +134,12 @@ function cellAttr(cell) {
 function iconOf(field) {
   const f = field && fieldMap.value[field]
   if (!f) return ''
-  return { browse: '⌕', date: '▣', datetime: '▣', select: '▾', radio: '◉', attach: '📎', number: '123', check: '✓', switch: '◉' }[f.form] || ''
+  return { browse: '⌕', date: '▣', datetime: '▣', select: '▾', radio: '◉', checkbox: '☑', attach: '📎', number: '123', check: '✓', switch: '◉' }[f.form] || ''
 }
 function placeholderOf(field) {
   const f = field && fieldMap.value[field]
-  const tip = { select: '请选择', radio: '请选择', browse: '点击选择', date: '选择日期', datetime: '选择时间', attach: '上传附件' }[(f && f.form) || '']
+  if (f && f.placeholder) return f.placeholder
+  const tip = { select: '请选择', radio: '请选择', checkbox: '请勾选', browse: '点击选择', date: '选择日期', datetime: '选择时间', attach: '上传附件' }[(f && f.form) || '']
   return tip || '请输入'
 }
 function displayValue(field, style) {
@@ -161,13 +168,18 @@ const rowViews = computed(() => {
 // ===== 运行时明细表（参照泛微 e-cology）：行管理 + 表尾 Σ 合计 =====
 import { ref, watch } from 'vue'
 const detailRows = ref({})
-/** 明细表字段清单（按 table 分组） */
-function detailFieldsOf(dt) {
-  return (props.fields || []).filter(f => f.table === dt)
+/** 明细列宽：设计器拖拽/设置的百分比优先，未设置自动均分 */
+function detailColWidth(col) {
+  return col && col.width ? col.width + '%' : 'auto'
 }
-function blankDetailRow(fs) {
+/** 明细列展示属性：编辑/只读/必填（设计器列配置优先） */
+function colAttr(col) {
+  return (col && col.attr) || 'edit'
+}
+/** 明细列字段清单（columns 自包含，含 field/label/width/sum/required） */
+function blankDetailRow(cols) {
   const row = { _key: 'r' + Math.random().toString(36).slice(2, 8) }
-  fs.forEach(f => { row[f.field] = undefined })
+  cols.forEach(c => { row[c.field] = undefined })
   return row
 }
 /** 明细块变化时初始化默认 1 行（泛微"新增默认明细行数"） */
@@ -175,16 +187,19 @@ watch(() => props.grid, g => {
   const rows = {}
   for (const c of ((g && g.cells) || [])) {
     if (c.type === 'detail' && c.detail && c.detail.table) {
-      const fs = detailFieldsOf(c.detail.table)
-      rows[c.detail.table] = fs.length ? [blankDetailRow(fs)] : []
+      const cols = c.detail.columns || []
+      const n = (c.detail.props && c.detail.props.defaultRows) || 1
+      const count = Math.max(1, Math.min(20, n))
+      rows[c.detail.table] = cols.length ? Array.from({ length: count }, () => blankDetailRow(cols)) : []
     }
   }
   detailRows.value = rows
 }, { immediate: true, deep: false })
 function addDetailRow(dt) {
   if (!dt) return
+  const block = (props.grid.cells || []).find(c => c.type === 'detail' && c.detail && c.detail.table === dt)
   if (!detailRows.value[dt]) detailRows.value[dt] = []
-  detailRows.value[dt].push(blankDetailRow(detailFieldsOf(dt)))
+  detailRows.value[dt].push(blankDetailRow((block && block.detail.columns) || []))
 }
 function removeDetailRow(dt, idx) {
   detailRows.value[dt].splice(idx, 1)
@@ -202,7 +217,21 @@ function getDetailData() {
   }
   return out
 }
-defineExpose({ getDetailData })
+/** 明细属性校验：mustAdd（必须填写明细）→ 至少一行且必填列已填 */
+function validateDetails() {
+  const msgs = []
+  for (const c of ((props.grid && props.grid.cells) || [])) {
+    if (c.type !== 'detail' || !c.detail || !c.detail.props || !c.detail.props.mustAdd) continue
+    const rows = detailRows.value[c.detail.table] || []
+    if (!rows.length) { msgs.push((c.detail.title || '明细表') + '：必须填写至少一行明细'); continue }
+    for (const col of (c.detail.columns || [])) {
+      if (!col || colAttr(col) !== 'req') continue
+      if (rows.some(r => r[col.field] === undefined || r[col.field] === null || r[col.field] === '')) { msgs.push((c.detail.title || '明细表') + '：必填列「' + (col.label || col.field) + '」存在未填写'); break }
+    }
+  }
+  return msgs
+}
+defineExpose({ getDetailData, validateDetails })
 </script>
 
 <style lang="scss" scoped>
