@@ -24,7 +24,7 @@
       <div class="toolbar">
         <div class="left">
           <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['mms:daily:export']">导出</el-button>
-          <el-button type="success" plain icon="MagicStick" @click="handleBatchDailyReport" v-hasPermi="['mms:ai:dailyReport']">AI生成日报</el-button>
+          <el-button v-if="aiModuleEnabled" type="success" plain icon="MagicStick" @click="handleBatchDailyReport" v-hasPermi="['mms:ai:dailyReport']">AI生成日报</el-button>
         </div>
         <div class="right"><right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="mms_daily_columns" /></div>
       </div>
@@ -123,6 +123,11 @@ import { aiDailyReport } from '@/api/ai/assist'
 import { parseTime } from '@/utils/ruoyi'
 import AiAssistButton from '@/components/AiAssist/AiAssistButton.vue'
 import AiResultPanel from '@/components/AiAssist/AiResultPanel.vue'
+import useModuleStore from '@/store/modules/module'
+
+/* 模块联动：AI中心停用时隐藏页面内AI功能按钮 */
+const moduleStore = useModuleStore()
+const aiModuleEnabled = computed(() => moduleStore.isEnabled('ai'))
 import { useColumnResize } from '@/composables/useColumnResize'
 import { Filter, RefreshLeft, QuestionFilled } from '@element-plus/icons-vue'
 const { proxy } = getCurrentInstance();

@@ -116,7 +116,10 @@
           <el-table-column label="变动前" prop="beforeQty" key="beforeQty" :width="colWidth('beforeQty', 110)" resizable align="center" class-name="col-num" v-if="columns.beforeQty.visible" />
           <el-table-column label="变动后" prop="afterQty" key="afterQty" :width="colWidth('afterQty', 110)" resizable align="center" class-name="col-num" v-if="columns.afterQty.visible" />
           <el-table-column label="关联单据" prop="refOrderNo" key="refOrderNo" :width="colWidth('refOrderNo', 180)" resizable v-if="columns.refOrderNo.visible">
-            <template #default="scope"><span class="col-mono">{{ scope.row.refOrderNo }}</span></template>
+            <template #default="scope">
+              <el-link v-if="refOrderTarget(scope.row)" type="primary" :underline="false" class="ref-link" @click="openRefOrder(scope.row)">{{ scope.row.refOrderNo }}</el-link>
+              <span v-else class="col-mono">{{ scope.row.refOrderNo }}</span>
+            </template>
           </el-table-column>
           <el-table-column label="操作人" prop="createBy" key="createBy" :width="colWidth('createBy', 120)" resizable v-if="columns.createBy.visible" />
           <el-table-column label="操作时间" prop="createTime" key="createTime" :width="colWidth('createTime', 180)" resizable align="center" v-if="columns.createTime.visible" />
@@ -192,6 +195,18 @@ function getList() { loading.value = true; listInventoryLog(proxy.addDateRange(q
 function handleQuery() { queryParams.value.pageNum = 1; getList() }
 function resetQuery() { dateRange.value = []; queryParams.value.materialCode = undefined; queryParams.value.materialName = undefined; queryParams.value.changeType = undefined; queryParams.value.refOrderNo = undefined; queryParams.value.warehouseId = undefined; queryParams.value.batchNo = undefined; handleQuery() }
 function changeTypeLabel(type) { const item = wms_change_type.value.find(d => d.value == type); return item ? item.label : '-' }
+
+/* ===== 关联单据跳转：按单据类型路由到对应单据页面并预填单号查询 ===== */
+const router = useRouter()
+const REF_ORDER_ROUTES = {
+  inbound: { path: '/wms/inbound/order', key: 'orderNo' },
+  outbound: { path: '/wms/outbound/order', key: 'orderNo' },
+  move_in: { path: '/wms/move', key: 'moveNo' },
+  move_out: { path: '/wms/move', key: 'moveNo' },
+  stocktake: { path: '/wms/stocktake/task', key: 'takeNo' }
+}
+function refOrderTarget(row) { return row.refOrderNo ? (REF_ORDER_ROUTES[row.refOrderType] || null) : null }
+function openRefOrder(row) { const t = refOrderTarget(row); if (t) router.push({ path: t.path, query: { [t.key]: row.refOrderNo } }) }
 function handleExport() { proxy.download('wms/log/export', proxy.withExportIds({ ...proxy.addDateRange(queryParams.value, dateRange.value) }, ids.value, 'logId'), `inventory_log_${new Date().getTime()}.xlsx`) }
 function handleSelectionChange(sel) { ids.value = sel.map(i => i.logId); multiple.value = !sel.length }
 function handleDelete(row) { const logIds = row.logId || ids.value; proxy.$modal.confirm('确认删除选中的流水记录？').then(() => delInventoryLog(logIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
@@ -254,6 +269,8 @@ listWarehouse({ status: '0', pageSize: 999 }).then(res => { warehouseOptions.val
 .wms-log-page .app-table :deep(.el-table__inner-wrapper::before) { display:none; }
 .wms-log-page .app-table :deep(.el-table__border-left-patch) { display:none; }
 .wms-log-page .app-table .col-mono { font-family:ui-monospace,"JetBrains Mono","SF Mono",Menlo,monospace; font-size:14px; color:var(--ink-700); letter-spacing:-.01em; }
+.wms-log-page .app-table .ref-link { --el-link-text-color:var(--brand-600); --el-link-hover-text-color:var(--brand-700); font-family:ui-monospace,"JetBrains Mono","SF Mono",Menlo,monospace; font-size:14px; letter-spacing:-.01em; height:auto; vertical-align:baseline; }
+.wms-log-page .app-table .ref-link:hover { text-decoration:underline; }
 .wms-log-page .app-table :deep(.col-num) { text-align:center; font-feature-settings:"tnum" 1; font-variant-numeric:tabular-nums; }
 .wms-log-page .badge { display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:999px; font-size:13px; font-weight:600; line-height:1; border:1px solid transparent; }
 .wms-log-page .badge .dot { width:6px; height:6px; border-radius:50%; }

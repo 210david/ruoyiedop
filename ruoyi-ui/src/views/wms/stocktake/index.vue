@@ -601,9 +601,39 @@ function onAreaPickerConfirm(area) {
   form.value.areaId = area.areaId
   form.value.areaName = area.areaName
 }
+/* ===== 路由参数预填（从库存流水"关联单据"跳转）：预填单号查询并自动打开详情弹框 ===== */
+const route = useRoute()
+let appliedTakeNo = null
+let pendingDetail = false
+function applyRoutePrefill() {
+  const no = route.query.takeNo || null
+  if (no === appliedTakeNo) return false
+  appliedTakeNo = no
+  pendingDetail = !!no
+  if (no) queryParams.value.takeNo = no
+  return !!no
+}
+function openDetailFromRoute() {
+  if (!pendingDetail) return
+  pendingDetail = false
+  const no = appliedTakeNo
+  listStockTake({ pageNum: 1, pageSize: 1, takeNo: no }).then(res => {
+    const row = (res.rows || []).find(r => r.takeNo === no)
+    if (row) handleDetail(row)
+  }).catch(() => {})
+}
+
 listWarehouse({ status: '0', pageSize: 999 }).then(res => { warehouseOptions.value = res.rows })
-getList()
+if (applyRoutePrefill()) { handleQuery(); openDetailFromRoute() }
+else getList()
 loadStatusCounts()
+
+onActivated(() => {
+  if (applyRoutePrefill()) { handleQuery(); openDetailFromRoute() }
+  else getList()
+  loadStatusCounts()
+})
+onDeactivated(() => { appliedTakeNo = null })
 
 // ===== AI辅助（外挂式增量） =====
 const aiPanelVisible = ref(false)

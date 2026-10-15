@@ -481,28 +481,28 @@ const activityItems = computed(() => {
   const modules = dashData.value?.modules || []
   const todos = dashData.value?.todos || {}
   const set = enabledKeys.value
-  const timeLabels = ['刚刚', '1 小时前', '2 小时前', '3 小时前', '今天上午', '昨天']
 
   // 置顶预警类动态
   if (todos.safetyHazards > 0 && (!set || set.has('/safety'))) {
-    items.push({ text: `安全生产：${todos.safetyHazards} 项隐患治理进行中`, time: '刚刚', icon: 'warning', color: '#e9423a', bgColor: 'rgba(233, 66, 58, 0.1)', path: findMenuPath(['隐患管理', '隐患排查'], '/safety/dualcontrol/hazard') })
+    items.push({ text: `安全生产：${todos.safetyHazards} 项隐患治理进行中`, time: '实时', icon: 'warning', color: '#e9423a', bgColor: 'rgba(233, 66, 58, 0.1)', path: findMenuPath(['隐患管理', '隐患排查'], '/safety/dualcontrol/hazard') })
   }
   if (todos.qmsNcrs > 0 && (!set || set.has('/qms'))) {
-    items.push({ text: `质量管理：${todos.qmsNcrs} 项NCR处置流程中`, time: '刚刚', icon: 'shield', color: '#e8900f', bgColor: 'rgba(232, 144, 15, 0.1)', path: findMenuPath(['NCR台账'], '/qms/ncr/ncrlist') })
+    items.push({ text: `质量管理：${todos.qmsNcrs} 项NCR处置流程中`, time: '实时', icon: 'shield', color: '#e8900f', bgColor: 'rgba(232, 144, 15, 0.1)', path: findMenuPath(['NCR台账'], '/qms/ncr/ncrlist') })
   }
   if (todos.stockAlerts > 0 && (!set || set.has('/wms'))) {
-    items.push({ text: `仓库管理：${todos.stockAlerts} 项物料库存预警`, time: '1 小时前', icon: 'shopping', color: '#4f46e5', bgColor: 'rgba(79, 70, 229, 0.1)', path: findMenuPath(['库存预警'], '/wms/inv/alert') })
+    items.push({ text: `仓库管理：${todos.stockAlerts} 项物料库存预警`, time: '实时', icon: 'shopping', color: '#4f46e5', bgColor: 'rgba(79, 70, 229, 0.1)', path: findMenuPath(['库存预警'], '/wms/inv/alert') })
   }
   if (todos.workOrders > 0 && (!set || set.has('/dms'))) {
-    items.push({ text: `设备管理：${todos.workOrders} 张工单待处理`, time: '2 小时前', icon: 'clipboard', color: '#2c8af5', bgColor: 'rgba(44, 138, 245, 0.1)', path: findMenuPath(['工单列表'], '/dms/workorder/list') })
+    items.push({ text: `设备管理：${todos.workOrders} 张工单待处理`, time: '实时', icon: 'clipboard', color: '#2c8af5', bgColor: 'rgba(44, 138, 245, 0.1)', path: findMenuPath(['工单列表'], '/dms/workorder/list') })
   }
 
-  // 各模块业务概览动态
-  let idx = 0
+  // 各模块业务概览动态（仅展示有数据的模块，全 0 模块不推送动态）
   modules.forEach(mod => {
     if (items.length >= 8) return
     if (set && !set.has('/' + mod.code)) return
     if (mod.status !== 'active' || !Array.isArray(mod.metrics) || mod.metrics.length === 0) return
+    const hasData = mod.metrics.some(m => parseFloat(m.value) > 0)
+    if (!hasData) return
     const summary = mod.metrics.slice(0, 2)
       .map(m => `${m.label} ${m.value}${m.unit || ''}`)
       .join('，')
@@ -511,13 +511,12 @@ const activityItems = computed(() => {
     const modPath = conf ? findMenuPath(conf.targetTitles, conf.fallback || '') : ''
     items.push({
       text: `${mod.name}：${summary}`,
-      time: timeLabels[idx % timeLabels.length],
+      time: '实时',
       icon: mod.icon,
       color: mod.color,
       bgColor: hexToRgba(mod.color, 0.1),
       path: modPath,
     })
-    idx++
   })
 
   return items.slice(0, 8)

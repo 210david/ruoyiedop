@@ -1,5 +1,5 @@
 <template>
-  <div class="ai-assist">
+  <div v-if="moduleStore.isEnabled('ai')" class="ai-assist">
     <el-button :type="buttonType" :plain="buttonPlain" :size="size"
       :icon="MagicStick" :loading="loading" :disabled="disabled"
       @click="handleClick">{{ buttonText }}</el-button>
@@ -11,10 +11,14 @@
  * 统一AI建议按钮
  * 业务页面一行接入：传 api（返回Promise）与参数，通过 @result / @error 回调接收
  * 组件内部处理 loading / 降级提示，业务代码只传参数和回调
+ * 模块联动：AI中心停用时整体隐藏（由 sys_module 状态驱动）
  */
 import { ref } from 'vue'
 import { MagicStick } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
+import useModuleStore from '@/store/modules/module'
+
+const moduleStore = useModuleStore()
 
 const props = defineProps({
   buttonText: { type: String, default: 'AI建议' },

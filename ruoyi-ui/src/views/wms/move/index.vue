@@ -733,9 +733,39 @@ function onInventoryPickerConfirm(inv) {
   form.value.toLocationId = undefined
 }
 
+/* ===== 路由参数预填（从库存流水"关联单据"跳转）：预填单号查询并自动打开详情弹框 ===== */
+const route = useRoute()
+let appliedMoveNo = null
+let pendingDetail = false
+function applyRoutePrefill() {
+  const no = route.query.moveNo || null
+  if (no === appliedMoveNo) return false
+  appliedMoveNo = no
+  pendingDetail = !!no
+  if (no) queryParams.value.moveNo = no
+  return !!no
+}
+function openDetailFromRoute() {
+  if (!pendingDetail) return
+  pendingDetail = false
+  const no = appliedMoveNo
+  listMove({ pageNum: 1, pageSize: 1, moveNo: no }).then(res => {
+    const row = (res.rows || []).find(r => r.moveNo === no)
+    if (row) handleDetail(row)
+  }).catch(() => {})
+}
+
 listWarehouse({ status: '0', pageSize: 999 }).then(res => { warehouseOptions.value = res.rows })
-getList()
+if (applyRoutePrefill()) { handleQuery(); openDetailFromRoute() }
+else getList()
 loadStatusCounts()
+
+onActivated(() => {
+  if (applyRoutePrefill()) { handleQuery(); openDetailFromRoute() }
+  else getList()
+  loadStatusCounts()
+})
+onDeactivated(() => { appliedMoveNo = null })
 </script>
 
 <style scoped>

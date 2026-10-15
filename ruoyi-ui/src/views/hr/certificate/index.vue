@@ -76,6 +76,20 @@
 
     <!-- 数据列表卡片 -->
     <div class="surface">
+      <!-- 预警状态统计页签 -->
+      <div class="status-tabs">
+        <div class="tabs-track">
+          <button class="status-tab" :class="{ 'is-active': activeStatusTab === 'all' }" @click="handleStatusTabClick('all')">
+            <span class="dot"></span><span>全部</span><span class="count">{{ statusCounts.all }}</span>
+          </button>
+          <button v-for="s in statusTabList" :key="s.value"
+            class="status-tab"
+            :class="[statusTabClass(s.value), { 'is-active': activeStatusTab === s.value }]"
+            @click="handleStatusTabClick(s.value)">
+            <span class="dot"></span><span>{{ s.label }}</span><span class="count">{{ statusCounts[s.value] || 0 }}</span>
+          </button>
+        </div>
+      </div>
       <div class="toolbar">
         <div class="left">
           <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['hr:certificate:add']">新增</el-button>
@@ -95,23 +109,30 @@
       <div class="table-wrap">
         <el-table ref="tableRef" v-loading="loading" :data="hrCertificateList" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" border class="app-table">
           <el-table-column type="selection" width="55" align="center" />
-          <el-table-column label="序号" type="index" :width="colWidth('序号', 85)" align="center" />
+          <el-table-column label="序号" type="index" :width="colWidth('序号', 55)" align="center" />
           <el-table-column label="员工姓名" prop="employeeName" key="employeeName" align="center" :min-width="colWidth('employeeName', 110)" show-overflow-tooltip resizable v-if="columns.employeeName.visible" />
           <el-table-column label="工号" prop="employeeNo" key="employeeNo" align="center" :width="colWidth('employeeNo', 110)" resizable v-if="columns.employeeNo.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.employeeNo }}</span></template>
           </el-table-column>
           <el-table-column label="证书类别" prop="certType" key="certType" align="center" :width="colWidth('certType', 120)" resizable v-if="columns.certType.visible">
             <template #default="scope">
-              <span v-if="scope.row.certType" class="badge" :class="dictBadgeClass(certTypeOptions, scope.row.certType, 'blue')"><span class="dot"></span>{{ dictLabel(certTypeOptions, scope.row.certType) }}</span>
+              <span v-if="scope.row.certType" class="badge" :class="certTypeBadgeClass(scope.row.certType)"><span class="dot"></span>{{ dictLabel(certTypeOptions, scope.row.certType) }}</span>
               <span v-else>-</span>
             </template>
           </el-table-column>
-          <el-table-column label="证书名称" prop="certName" key="certName" align="center" :min-width="colWidth('certName', 180)" resizable show-overflow-tooltip v-if="columns.certName.visible" />
-          <el-table-column label="证书编号" prop="certNo" key="certNo" align="center" :width="colWidth('certNo', 150)" resizable v-if="columns.certNo.visible">
+          <el-table-column label="证书名称" prop="certName" key="certName" align="center" :min-width="colWidth('certName', 140)" resizable show-overflow-tooltip v-if="columns.certName.visible" />
+          <el-table-column label="证书编号" prop="certNo" key="certNo" align="center" :width="colWidth('certNo', 125)" resizable v-if="columns.certNo.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.certNo }}</span></template>
           </el-table-column>
-          <el-table-column label="发证日期" prop="issueDate" key="issueDate" align="center" :width="colWidth('issueDate', 120)" resizable v-if="columns.issueDate.visible" />
-          <el-table-column label="有效起始日" prop="validFrom" key="validFrom" align="center" :width="colWidth('validFrom', 120)" resizable v-if="columns.validFrom.visible" />
+          <el-table-column label="发证日期" prop="issueDate" key="issueDate" align="center" :width="colWidth('issueDate', 105)" resizable v-if="columns.issueDate.visible" />
+          <el-table-column label="有效起始日" prop="validFrom" key="validFrom" align="center" :width="colWidth('validFrom', 105)" resizable v-if="columns.validFrom.visible" />
+          <el-table-column label="有效期至" prop="validTo" key="validTo" align="center" :width="colWidth('validTo', 105)" resizable v-if="columns.validTo.visible" />
+          <el-table-column label="预警状态" prop="remindStatus" key="remindStatus" align="center" :width="colWidth('remindStatus', 95)" resizable v-if="columns.remindStatus.visible">
+            <template #default="scope">
+              <span v-if="scope.row.remindStatus !== undefined && scope.row.remindStatus !== null && scope.row.remindStatus !== ''" class="badge" :class="remindBadgeClass(scope.row.remindStatus)"><span class="dot"></span>{{ dictLabel(remindStatusOptions, scope.row.remindStatus) }}</span>
+              <span v-else>-</span>
+            </template>
+          </el-table-column>
           <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
               <div class="action-btn-row">
@@ -363,6 +384,8 @@ const total = ref(0)
 const showAdvanced = ref(false)
 const issueDateRange = ref([])
 const validFromRange = ref([])
+const activeStatusTab = ref('all')
+const statusCounts = ref({ all: 0, '0': 0, '1': 0, '2': 0 })
 const filePreviewRef = ref(null)
 const collapsedCards = reactive({ vc0: false, vc1: false, vc2: false, e0: false, e1: false, e2: false })
 
@@ -376,7 +399,9 @@ const defaultColumns = {
   certName: { label: '证书名称', visible: true },
   certNo: { label: '证书编号', visible: true },
   issueDate: { label: '发证日期', visible: true },
-  validFrom: { label: '有效起始日', visible: true },
+  validFrom: { label: '有效起始日', visible: false },
+  validTo: { label: '有效期至', visible: true },
+  remindStatus: { label: '预警状态', visible: true },
 }
 function loadColumnVisibility() {
   try {
@@ -394,9 +419,11 @@ function loadColumnVisibility() {
 }
 const columns = ref(loadColumnVisibility())
 
+const statusTabList = computed(() => remindStatusOptions.value)
+
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, employeeName: undefined, employeeNo: undefined, certType: undefined, certName: undefined, certNo: undefined },
+  queryParams: { pageNum: 1, pageSize: 10, employeeName: undefined, employeeNo: undefined, certType: undefined, certName: undefined, certNo: undefined, remindStatus: undefined },
   rules: {
     employeeId: [{ required: true, message: '请选择人员', trigger: 'change' }],
     certType: [{ required: true, message: '证书类别不能为空', trigger: 'change' }],
@@ -429,6 +456,7 @@ function getList() {
     total.value = response.total
     loading.value = false
     applySavedWidths()
+    loadStatusCounts()
   })
 }
 
@@ -446,11 +474,32 @@ function resetQuery() {
   queryParams.value.certType = undefined
   queryParams.value.certName = undefined
   queryParams.value.certNo = undefined
+  queryParams.value.remindStatus = undefined
   issueDateRange.value = []
   validFromRange.value = []
+  activeStatusTab.value = 'all'
   queryParams.value.params = {}
   handleQuery()
 }
+
+/** 预警状态统计页签 */
+function handleStatusTabClick(status) {
+  activeStatusTab.value = status
+  queryParams.value.remindStatus = status === 'all' ? undefined : status
+  handleQuery()
+}
+function loadStatusCounts() {
+  // 基于当前筛选条件（剔除预警状态与分页）拉取全量数据统计，与列表筛选保持一致
+  const query = { ...queryParams.value, pageNum: 1, pageSize: 9999, remindStatus: undefined, params: { ...queryParams.value.params } }
+  listHrCertificate(query).then(res => {
+    const counts = { all: 0, '0': 0, '1': 0, '2': 0 }
+    const rows = res.rows || []
+    rows.forEach(r => { if (counts[r.remindStatus] !== undefined) counts[r.remindStatus]++ })
+    counts.all = rows.length
+    statusCounts.value = counts
+  }).catch(() => {})
+}
+function statusTabClass(value) { const map = { '0': 'tab-approved', '1': 'tab-draft', '2': 'tab-reject' }; return map[value] || '' }
 
 /** 字典展示辅助：标签与徽章颜色（按字典 elTagType 映射） */
 function dictLabel(options, v) {
@@ -458,11 +507,10 @@ function dictLabel(options, v) {
   const d = (options || []).find(o => String(o.value) === String(v))
   return d ? d.label : String(v)
 }
-function dictBadgeClass(options, v, fallback = 'gray') {
-  const d = (options || []).find(o => String(o.value) === String(v))
-  const map = { success: 'green', primary: 'blue', info: 'gray', warning: 'amber', danger: 'red' }
-  return map[d && d.elTagType] || fallback
-}
+/** 预警状态徽章颜色：正常=绿 / 临期=琥珀 / 过期=红 */
+function remindBadgeClass(v) { const map = { '0': 'green', '1': 'amber', '2': 'red' }; return map[v] || 'gray' }
+/** 证书类别徽章颜色 */
+function certTypeBadgeClass(v) { const map = { '0': 'red', '1': 'green', '2': 'blue', '3': 'amber', '4': 'gray' }; return map[v] || 'gray' }
 
 /** ===== 人员弹框选择 ===== */
 function openEmployeePicker() { employeePickerRef.value.open(form.value.employeeId); }
@@ -646,6 +694,30 @@ getList()
 .hr-certificate-page .btn-soft:disabled { opacity:.5; cursor:not-allowed; }
 .hr-certificate-page .btn-soft:disabled:hover { transform:none; box-shadow:none; }
 .hr-certificate-page .btn-soft:focus-visible { outline:2px solid var(--brand-500); outline-offset:2px; }
+
+/* ===== Status Tabs ===== */
+.hr-certificate-page .status-tabs { display:flex; align-items:center; gap:12px; padding:6px 10px 6px 12px; border-bottom:1px solid var(--ink-200); background:#fff; }
+.hr-certificate-page .tabs-track { display:flex; align-items:center; gap:4px; flex:1; min-width:0; overflow-x:auto; scrollbar-width:none; }
+.hr-certificate-page .tabs-track::-webkit-scrollbar { display:none; }
+.hr-certificate-page .status-tab { display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 12px; border-radius:var(--r-sm); font-size:14px; color:var(--ink-500); cursor:pointer; user-select:none; transition:all .15s var(--ease-out); white-space:nowrap; border:1px solid transparent; background:transparent; }
+.hr-certificate-page .status-tab .dot { width:6px; height:6px; border-radius:50%; background:var(--ink-300); }
+.hr-certificate-page .status-tab .count { font-size:12px; font-weight:600; padding:1px 6px; border-radius:999px; background:var(--ink-100); color:var(--ink-500); min-width:18px; text-align:center; line-height:1.4; font-feature-settings:"tnum" 1; }
+.hr-certificate-page .status-tab:hover { background:var(--ink-50); color:var(--ink-700); }
+.hr-certificate-page .status-tab.is-active { background:var(--brand-50); color:var(--brand-700); font-weight:600; border-color:var(--brand-200); }
+.hr-certificate-page .status-tab.is-active .count { background:var(--brand-600); color:#fff; }
+.hr-certificate-page .status-tab.is-active .dot { background:var(--brand-500); }
+/* 正常（绿色） */
+.hr-certificate-page .status-tab.tab-approved .dot { background:var(--green-500); }
+.hr-certificate-page .status-tab.tab-approved .count { background:var(--green-50); color:var(--green-700); }
+.hr-certificate-page .status-tab.is-active.tab-approved .count { background:var(--green-500); color:#fff; }
+/* 临期（琥珀色） */
+.hr-certificate-page .status-tab.tab-draft .dot { background:var(--amber-500); }
+.hr-certificate-page .status-tab.tab-draft .count { background:var(--amber-50); color:var(--amber-700); }
+.hr-certificate-page .status-tab.is-active.tab-draft .count { background:var(--amber-500); color:#fff; }
+/* 过期（红色） */
+.hr-certificate-page .status-tab.tab-reject .dot { background:var(--red-500); }
+.hr-certificate-page .status-tab.tab-reject .count { background:var(--red-50); color:var(--red-700); }
+.hr-certificate-page .status-tab.is-active.tab-reject .count { background:var(--red-500); color:#fff; }
 
 /* ===== Table ===== */
 .hr-certificate-page .table-wrap { overflow-x:auto; }

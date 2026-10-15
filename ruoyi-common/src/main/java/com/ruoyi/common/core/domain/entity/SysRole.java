@@ -42,6 +42,12 @@ public class SysRole extends BaseEntity
     @Excel(name = "角色分类", readConverterExp = "system=系统管理,dms=设备管理,pms=采购管理,mk=营销管理,wms=仓储管理,safety=安全生产管理,qms=质量管理,mms=生产管控,fin=财务管理")
     private String roleCategory;
 
+    /** 所属模块标识（关联sys_module.module_key，NULL为平台级角色） */
+    private String moduleKey;
+
+    /** 查询参数：是否显示已停用模块角色（仅查询用，非表字段） */
+    private String showDisabledModule;
+
     /** 数据范围（1：所有数据权限；2：自定义数据权限；3：本部门数据权限；4：本部门及以下数据权限；5：仅本人数据权限） */
     @Excel(name = "数据范围", readConverterExp = "1=所有数据权限,2=自定义数据权限,3=本部门数据权限,4=本部门及以下数据权限,5=仅本人数据权限")
     private String dataScope;
@@ -174,6 +180,26 @@ public class SysRole extends BaseEntity
         {
             this.roleCategory = String.join(",", roleCategoryList);
         }
+    }
+
+    public String getModuleKey()
+    {
+        return moduleKey;
+    }
+
+    public void setModuleKey(String moduleKey)
+    {
+        this.moduleKey = moduleKey;
+    }
+
+    public String getShowDisabledModule()
+    {
+        return showDisabledModule;
+    }
+
+    public void setShowDisabledModule(String showDisabledModule)
+    {
+        this.showDisabledModule = showDisabledModule;
     }
 
     public String getDataScope()

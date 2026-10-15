@@ -1,5 +1,5 @@
 <template>
-  <div class="ai-assistant-entry" id="header-ai-assistant">
+  <div v-if="aiModuleEnabled" class="ai-assistant-entry" id="header-ai-assistant">
     <!-- 入口：宽屏显示"输入框+发送按钮"形态（所见即所得，用户一看就懂），窄屏（<1200px）降级为图标按钮 -->
     <div v-if="pillMode" class="ai-search-box" :class="{ 'is-active': open }" role="button" tabindex="0" title="AI 智能问答" @click="togglePanel" @keydown.enter.prevent="togglePanel">
       <svg class="ai-box-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -228,10 +228,15 @@ import { parseTime } from '@/utils/ruoyi'
 import { saveAs } from 'file-saver'
 import { knowledgeQa, listQaHistory, clearQaHistory, getDocInfo, getDocChunks, downloadDoc, findDocByName, getDocPreviewUrl } from '@/api/ai/knowledge'
 import { nlQuery, listNlqHistory, clearNlqHistory } from '@/api/ai/manage'
+import useModuleStore from '@/store/modules/module'
 
 const { proxy } = getCurrentInstance()
 
 const open = ref(false)
+
+/* ===== 模块联动：AI中心停用时隐藏全局AI助手入口（默认显示，仅在确认停用后隐藏） ===== */
+const moduleStore = useModuleStore()
+const aiModuleEnabled = computed(() => moduleStore.isEnabled('ai'))
 
 /* ===== 双模式：knowledge=知识问答（默认） / data=数据查询（NL2SQL） ===== */
 const MODE_STORAGE_KEY = 'ai_assistant_mode'

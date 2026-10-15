@@ -524,14 +524,39 @@ function onWarehouseChange(warehouseId) {
 function loadOptions() {
   listWarehouse({ status: '0', pageSize: 999 }).then(res => { warehouseOptions.value = res.rows })
 }
+/* ===== 路由参数预填（从库存流水"关联单据"跳转）：预填单号查询并自动打开详情弹框 ===== */
+const route = useRoute()
+let appliedOrderNo = null
+let pendingDetail = false
+function applyRoutePrefill() {
+  const no = route.query.orderNo || null
+  if (no === appliedOrderNo) return false
+  appliedOrderNo = no
+  pendingDetail = !!no
+  if (no) queryParams.value.orderNo = no
+  return !!no
+}
+function openDetailFromRoute() {
+  if (!pendingDetail) return
+  pendingDetail = false
+  const no = appliedOrderNo
+  listOutbound({ pageNum: 1, pageSize: 1, orderNo: no }).then(res => {
+    const row = (res.rows || []).find(r => r.orderNo === no)
+    if (row) handleDetail(row)
+  }).catch(() => {})
+}
+
 loadOptions()
-getList()
+if (applyRoutePrefill()) { handleQuery(); openDetailFromRoute() }
+else getList()
 loadStatusCounts()
 
 onActivated(() => {
-  getList()
+  if (applyRoutePrefill()) { handleQuery(); openDetailFromRoute() }
+  else getList()
   loadStatusCounts()
 })
+onDeactivated(() => { appliedOrderNo = null })
 </script>
 
 <style scoped>
